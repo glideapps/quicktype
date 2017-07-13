@@ -1,0 +1,20 @@
+{
+  "name": "firebase-models",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "dependencies": {
+    "purescript-prelude": "^3.1.0",
+    "purescript-console": "^3.0.0",
+    "purescript-lists": "^4.9.0",
+    "purescript-argonaut-core": "^3.1.0",
+    "purescript-either": "^3.1.0",
+    "purescript-foldable-traversable": "^3.4.0"
+  },
+  "devDependencies": {
+    "purescript-psci-support": "^3.0.0"
+  }
+}
