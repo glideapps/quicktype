@@ -1,10 +1,8 @@
 ## Setup
 
 ```shell
-$ . script/setup
+$ npm install
 ```
-
-Run this whenever you open a terminal to work on the project.
 
 ## Edit
 
