@@ -1,20 +1,22 @@
-## Install
+## Setup
 
 ```shell
-$ npm install -g purescript bower pulp
-$ bower install
-$ code . # open in VSCode
+$ . script/setup
 ```
 
+Run this whenever you open a terminal to work on the project.
+
 ## Edit
+
+```shell
+$ code . # open in VSCode
+```
 
 Install the `purescript-ide` extension in VSCode, then use the command pallete to start the `psc-ide` server for code completion, etc.
 
 ## Play
 
 ```shell
-$ cd app # The react app lives here
-$ npm install
 $ npm start
 ```
 
