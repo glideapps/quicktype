@@ -19,11 +19,11 @@ let json = `{
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {left: json, right: Main.jsonToCSharp(json)};
+    this.state = {left: json, right: Main.jsonToCSharp(json).value0};
   }
 
   sourceEdited = (newValue) => {
-    let result = Main.jsonToCSharpE(newValue);
+    let result = Main.jsonToCSharp(newValue);
 
     if (result.constructor.name === "Left") {
       console.log(result.value0);
