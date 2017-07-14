@@ -17,7 +17,13 @@ let json = `{
   "addresses": [
     {
       "street": "222 Clayton St",
-      "city": "San Francisco"
+      "city": "San Francisco",
+      "roommates": 3
+    },
+    {
+      "city": "Minneapolis",
+      "state": "MN",
+      "roommates": ["Mom", "Dad"]
     }
   ]
 }`;
