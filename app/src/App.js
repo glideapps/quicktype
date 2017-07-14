@@ -18,7 +18,8 @@ let json = `{
     {
       "street": "222 Clayton St",
       "city": "San Francisco",
-      "roommates": 3
+      "roommates": 3,
+      "area": 2000
     },
     {
       "city": "Minneapolis",
