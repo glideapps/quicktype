@@ -1,51 +1,39 @@
-module Swift where
+module Swift
+    ( renderSwiftClass
+    ) where
 
 import Prelude
 
 import Data.Foldable (for_)
-import Data.Maybe (Maybe(..), fromMaybe)
 
-import Doc (Doc, indent, line, string, words)
+import Data.List as L
+import Data.List (List(..))
 
-data SType =
-    Struct
-    { name :: Maybe String
-    , fields :: Array TValue
-    }
+import Doc
+import IR
 
-data TPrim = TString | TInt | TArray TPrim | TExtern String
-
-type TValue = { name :: String, typ :: TPrim }
-
-renderSwift :: SType -> Doc Unit
-renderSwift (Struct { name, fields }) = do
-    line $ words ["struct", fromMaybe "MyStruct" name]
+renderSwiftClass :: IRClassData -> Doc Unit
+renderSwiftClass { name, properties } = do
+    line $ words ["class", name]
     line "{"
     indent do
-        for_ fields renderValue
+        for_ properties renderProperty
     line "}"
 
-renderValue :: TValue -> Doc Unit
-renderValue { name, typ } = line do
+renderProperty :: IRProperty -> Doc Unit
+renderProperty { name, typ } = line do
     words ["let", name <> ":"]
     string " "
-    renderTPrim typ
+    string $ renderType typ
 
-renderTPrim :: TPrim -> Doc Unit
-renderTPrim TString = string "string"
-renderTPrim TInt = string "int"
-renderTPrim (TArray typ) =  do
-    string "["
-    renderTPrim typ
-    string "]"
-renderTPrim (TExtern name) = string name
-
-sample :: SType
-sample = Struct
-    { name: Just "Person"
-    , fields:
-        [ { name: "name", typ: TString }
-        , { name: "age", typ: TInt }
-        , { name: "friends", typ: TArray TString }
-        ]
-    }
+renderType :: IRType -> String
+renderType = case _ of
+    IRNothing -> "Any"
+    IRNull -> "Any"
+    IRInteger -> "Int"
+    IRDouble -> "Double"
+    IRBool -> "Bool"
+    IRString -> "String"
+    IRArray a -> "[" <> renderType a <> "]"
+    IRClass { name } -> name
+    IRUnion _ -> "FIXME"
