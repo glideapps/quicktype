@@ -2,16 +2,15 @@ module CSharp
     ( renderCSharpClass
     ) where
 
+import Doc
+import IR
 import Prelude
 
-import IR
-import Doc
 
-import Data.Foldable (for_)
-import Data.Tuple as Tuple
+import Data.Foldable (for_, intercalate)
 import Data.Map as Map
-import Data.String as String
-import Data.Array as Array
+import Data.Set as Set
+import Data.Tuple as Tuple
 
 renderTypeToCSharp :: IRType -> String
 renderTypeToCSharp = case _ of
@@ -23,7 +22,7 @@ renderTypeToCSharp = case _ of
     IRString -> "string"
     IRArray a -> renderTypeToCSharp a <> "[]"
     IRClass { name } -> name
-    IRUnion types -> "Either<" <> String.joinWith ", " (map renderTypeToCSharp (Array.fromFoldable types)) <> ">"
+    IRUnion types -> "Either<" <> intercalate ", " (Set.map renderTypeToCSharp types) <> ">"
 
 renderCSharpClass :: IRClassData -> Doc Unit
 renderCSharpClass { name, properties } = do
