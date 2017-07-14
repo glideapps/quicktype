@@ -1,5 +1,6 @@
 module Main where
 
+import Doc
 import Prelude
 
 import Control.Plus (empty)
@@ -7,14 +8,10 @@ import Data.Argonaut.Core (Json, foldJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Either (Either)
 import Data.Foldable (for_)
-
-import Data.List as L
 import Data.List ((:))
+import Data.List as L
 import Data.List.Types (List(..))
-
-import Data.StrMap (StrMap, foldMap) as StrMap
-
-import Doc
+import Data.StrMap as StrMap
 
 type IRProperty = { name :: String, typ :: IRType }
 type IRClassData = { name :: String, properties :: L.List IRProperty }
@@ -50,20 +47,22 @@ singularize :: String -> String
 singularize s = "OneOf" <> s
 
 gatherClassesFromType :: IRType -> L.List IRClassData
-gatherClassesFromType (IRClass cls) = cls : L.concatMap (gatherClassesFromType <<< _.typ) cls.properties
-gatherClassesFromType (IRArray t) = gatherClassesFromType t
-gatherClassesFromType _ = empty
+gatherClassesFromType = case _ of 
+    IRClass cls -> cls : L.concatMap (gatherClassesFromType <<< _.typ) cls.properties
+    IRArray t -> gatherClassesFromType t
+    _ -> empty
 
 renderTypeToCSharp :: IRType -> String
-renderTypeToCSharp IRNothing = "object"
-renderTypeToCSharp IRNull = "object"
-renderTypeToCSharp IRInteger = "int"
-renderTypeToCSharp IRDouble = "double"
-renderTypeToCSharp IRBool = "bool"
-renderTypeToCSharp IRString = "string"
-renderTypeToCSharp (IRArray a) = renderTypeToCSharp a <> "[]"
-renderTypeToCSharp (IRClass { name }) = name
-renderTypeToCSharp (IRUnion _) = "FIXME"
+renderTypeToCSharp = case _ of
+    IRNothing -> "object"
+    IRNull -> "object"
+    IRInteger -> "int"
+    IRDouble -> "double"
+    IRBool -> "bool"
+    IRString -> "string"
+    IRArray a -> renderTypeToCSharp a <> "[]"
+    IRClass { name } -> name
+    IRUnion _ -> "FIXME"
 
 renderClassToCSharp :: IRClassData -> Doc Unit
 renderClassToCSharp { name, properties } = do
