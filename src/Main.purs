@@ -29,13 +29,27 @@ import CSharp as CSharp
 type Renderer = IRClassData -> Doc Unit
 
 renderers = {
-    csharp: CSharp.renderCSharpClass,
-    swift: Swift.renderSwiftClass
+    csharp: CSharp.renderCSharpClass --, swift: Swift.renderSwiftClass
 }
+
+lookupOrDefault :: forall k v. Ord k => v -> k -> Map.Map k v -> v
+lookupOrDefault default key m =
+    case Map.lookup key m of
+    Nothing -> default
+    Just x -> x
+
+-- FIXME: this is ugly and inefficient
+unionWithDefault :: forall k v. Ord k => (v -> v -> v) -> v -> Map.Map k v -> Map.Map k v -> Map.Map k v
+unionWithDefault unifier default m1 m2 =
+    let allKeys = L.fromFoldable $ S.union (S.fromFoldable $ Map.keys m1) (S.fromFoldable $ Map.keys m2)
+        valueFor k = (unifier (lookupOrDefault default k m1) (lookupOrDefault default k m2))
+        kvps = map (\k -> Tuple.Tuple k (valueFor k)) allKeys
+    in
+        Map.fromFoldable kvps
 
 unifyClasses :: IRClassData -> IRClassData -> IRClassData
 unifyClasses { name: na, properties: pa } { name: nb, properties: pb } =
-    { name: na, properties: Map.unionWith unifyTypes pa pb }
+    { name: na, properties: unionWithDefault unifyTypesWithNull IRNothing pa pb }
 
 removeElement :: forall a. Ord a => (a -> Boolean) -> S.Set a -> { element :: Maybe a, rest :: S.Set a }
 removeElement p s =
@@ -83,6 +97,14 @@ unifyTypes (IRUnion a) (IRUnion b) = IRUnion (unifyUnion a b)
 unifyTypes (IRUnion a) b = IRUnion (unifyUnion a (S.singleton b))
 unifyTypes a (IRUnion b) = IRUnion (unifyUnion (S.singleton a) b)
 unifyTypes a b = if a == b then a else IRUnion (S.fromFoldable [a, b])
+
+nullifyNothing :: IRType -> IRType
+nullifyNothing IRNothing = IRNull
+nullifyNothing x = x
+
+unifyTypesWithNull :: IRType -> IRType -> IRType
+unifyTypesWithNull IRNothing IRNothing = IRNothing
+unifyTypesWithNull a b = unifyTypes (nullifyNothing a) (nullifyNothing b)
 
 makeTypeFromJson :: String -> Json -> IRType
 makeTypeFromJson name json = foldJson
