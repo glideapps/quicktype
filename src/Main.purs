@@ -14,34 +14,37 @@ import Data.StrMap (StrMap, fromFoldable, keys, values, foldMap, toUnfoldable) a
 import Data.Tuple (uncurry, Tuple(..), fst, snd)
 import Partial.Unsafe (unsafePartial)
 
-data CSharpClass = CSClass { name :: String, properties :: StrMap.StrMap CSharpType } 
-data CSharpType
-    = CSClassType CSharpClass
-    | CSArray CSharpType
-    | CSObject
-    | CSBool
-    | CSDouble
-    | CSString
+data IRClassData = IRClassData { name :: String, properties :: StrMap.StrMap IRType }
+data IRType
+    = IRNothing
+    | IRNull
+    | IRInteger
+    | IRDouble
+    | IRBool
+    | IRString
+    | IRArray IRType
+    | IRClass IRClassData
+    | IRUnion (Array IRType)
 
-makeCSharpTypeFromJson :: String -> Json -> CSharpType
-makeCSharpTypeFromJson name json = foldJson
-    (const $ CSObject)
-    (\b -> CSBool)
-    (\x -> CSDouble)
-    (\s -> CSString)
+makeTypeFromJson :: String -> Json -> IRType
+makeTypeFromJson name json = foldJson
+    (const $ IRNull)
+    (\b -> IRBool)
+    (\x -> IRDouble)
+    (\s -> IRString)
     (case _ of
-        [] -> CSArray CSObject
+        [] -> IRArray IRNothing
         a ->
-            let elementType = makeCSharpTypeFromJson (singularize name) (unsafePartial $ fromJust $ a !! 0) in
-            CSArray elementType)
+            let elementType = makeTypeFromJson (singularize name) (unsafePartial $ fromJust $ a !! 0) in
+            IRArray elementType)
     (\o ->
         let props = mapProperties o in
-        CSClassType (CSClass { name: name, properties: props }))
+        IRClass (IRClassData { name: name, properties: props }))
     json
 
-mapProperties :: StrMap.StrMap Json -> StrMap.StrMap CSharpType
+mapProperties :: StrMap.StrMap Json -> StrMap.StrMap IRType
 mapProperties sm = StrMap.fromFoldable results
-  where mapper (Tuple n j) = Tuple n (makeCSharpTypeFromJson n j)
+  where mapper (Tuple n j) = Tuple n (makeTypeFromJson n j)
         results = map mapper (unfold sm)
 
 singularize :: String -> String
@@ -52,38 +55,41 @@ singularize s = "OneOf" <> s
 unfold :: forall a. StrMap.StrMap a -> Array (Tuple String a)
 unfold sm = StrMap.toUnfoldable sm
 
-gatherClassesFromType :: CSharpType -> Array CSharpClass
-gatherClassesFromType (CSClassType c) =
-    let CSClass { name, properties } = c in
-    c : (concatMap gatherClassesFromType (StrMap.values properties))
-gatherClassesFromType (CSArray t) = gatherClassesFromType t
+gatherClassesFromType :: IRType -> Array IRClassData
+gatherClassesFromType (IRClass classData) =
+    let IRClassData { name, properties } = classData in
+    classData : (concatMap gatherClassesFromType (StrMap.values properties))
+gatherClassesFromType (IRArray t) = gatherClassesFromType t
 gatherClassesFromType _ = []
 
-renderCSharpType :: CSharpType -> String
-renderCSharpType (CSArray a) = (renderCSharpType a) <> "[]"
-renderCSharpType (CSClassType (CSClass { name, properties })) = name
-renderCSharpType CSObject = "object"
-renderCSharpType CSBool = "bool"
-renderCSharpType CSDouble = "double"
-renderCSharpType CSString = "string"
+renderTypeToCSharp :: IRType -> String
+renderTypeToCSharp IRNothing = "object"
+renderTypeToCSharp IRNull = "object"
+renderTypeToCSharp IRInteger = "int"
+renderTypeToCSharp IRDouble = "double"
+renderTypeToCSharp IRBool = "bool"
+renderTypeToCSharp IRString = "string"
+renderTypeToCSharp (IRArray a) = (renderTypeToCSharp a) <> "[]"
+renderTypeToCSharp (IRClass (IRClassData { name, properties })) = name
+renderTypeToCSharp (IRUnion _) = "FIXME"
 
-renderCSharpClass :: CSharpClass -> String
-renderCSharpClass (CSClass { name, properties }) =
+renderClassToCSharp :: IRClassData -> String
+renderClassToCSharp (IRClassData { name, properties }) =
     "class " <> name <> """
 {""" <>
     StrMap.foldMap (\n -> \t -> "\n" <> nameToProperty n t) properties
     <> """
 }
 """
-    where nameToProperty name csType = "    public " <> (renderCSharpType csType) <> " " <> name <> " { get; set; }"
+    where nameToProperty name irType = "    public " <> (renderTypeToCSharp irType) <> " " <> name <> " { get; set; }"
 
-renderCSharpClasses :: Array CSharpClass -> String
-renderCSharpClasses classes =
-    foldMap (\c -> (renderCSharpClass c) <> "\n\n") classes
+renderClassesToCSharp :: Array IRClassData -> String
+renderClassesToCSharp classes =
+    foldMap (\c -> (renderClassToCSharp c) <> "\n\n") classes
 
 jsonToCSharp :: String -> Either String String
 jsonToCSharp json =
     jsonParser json
-    <#> makeCSharpTypeFromJson "TopLevel"
+    <#> makeTypeFromJson "TopLevel"
     <#> gatherClassesFromType
-    <#> renderCSharpClasses
+    <#> renderClassesToCSharp
