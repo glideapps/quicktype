@@ -11,6 +11,8 @@
     "purescript-console": "^3.0.0",
     "purescript-lists": "^4.9.0",
     "purescript-sets": "^3.0.0",
+    "purescript-maps": "^3.3.1",
+    "purescript-tuples": "^4.1.0",
     "purescript-argonaut-core": "^3.1.0",
     "purescript-either": "^3.1.0",
     "purescript-foldable-traversable": "^3.4.0",
