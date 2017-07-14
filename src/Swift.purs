@@ -68,7 +68,7 @@ unionName s = intercalate "Or" $ (caseName <$> S.toUnfoldable s :: Array _)
 caseName :: IRType -> String
 caseName = case _ of
     IRArray a -> renderType a <> "s"
-    IRUnion _ ->  "Union"
+    IRUnion s ->  unionName s
     t -> renderType t
 
 renderUnion :: S.Set IRType -> Doc Unit
