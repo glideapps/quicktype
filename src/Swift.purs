@@ -14,6 +14,8 @@ import Data.List.NonEmpty as NE
 import Data.Tuple (Tuple(..))
 import Data.Map as M
 
+import Data.Set as S
+
 renderSwiftClass :: IRClassData -> Doc Unit
 renderSwiftClass { name, properties } = do
     line $ words ["struct", name]
@@ -43,4 +45,4 @@ renderType = case _ of
     IRString -> "String"
     IRArray a -> "[" <> renderType a <> "]"
     IRClass { name } -> name
-    _ -> "FIXME"
+    IRUnion s ->  "Either<" <> intercalate ", " (S.map renderType s) <> ">"
