@@ -7,7 +7,7 @@ import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Console as C
 import Data.Argonaut.Core (JArray, JBoolean, JNull, JString, Json, JObject, foldJson, foldJsonObject)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (length, toUnfoldable, (:), concat, (!!), foldMap)
+import Data.Array (length, toUnfoldable, (:), concat, (!!), foldMap, concatMap)
 import Data.Either (Either)
 import Data.Maybe (fromJust)
 import Data.StrMap (StrMap, fromFoldable, keys, values, foldMap, toUnfoldable) as StrMap
@@ -23,36 +23,41 @@ data CSharpType
     | CSDouble
     | CSString
 
-gatherCSharpClassesFromJson :: String -> Json -> Tuple CSharpType (Array CSharpClass)
-gatherCSharpClassesFromJson name json = foldJson
-    (const $ Tuple CSObject [])
-    (\b -> Tuple CSBool [])
-    (\x -> Tuple CSDouble [])
-    (\s -> Tuple CSString [])
+makeCSharpTypeFromJson :: String -> Json -> CSharpType
+makeCSharpTypeFromJson name json = foldJson
+    (const $ CSObject)
+    (\b -> CSBool)
+    (\x -> CSDouble)
+    (\s -> CSString)
     (case _ of
-        [] -> Tuple (CSArray CSObject) []
+        [] -> CSArray CSObject
         a ->
-            let Tuple et classes = gatherCSharpClassesFromJson (singularize name) (unsafePartial $ fromJust $ a !! 0) in
-            Tuple (CSArray et) classes)
+            let elementType = makeCSharpTypeFromJson (singularize name) (unsafePartial $ fromJust $ a !! 0) in
+            CSArray elementType)
     (\o ->
-        let Tuple props classes = mapProperties o
-            c = CSClass { name: name, properties: props } in
-        Tuple (CSClassType c) (c : classes))
+        let props = mapProperties o in
+        CSClassType (CSClass { name: name, properties: props }))
     json
 
-mapStrMap :: forall a b. (String -> a -> b) -> StrMap.StrMap a -> Array b
-mapStrMap f sm = map (uncurry f) (StrMap.toUnfoldable sm)
+mapProperties :: StrMap.StrMap Json -> StrMap.StrMap CSharpType
+mapProperties sm = StrMap.fromFoldable results
+  where mapper (Tuple n j) = Tuple n (makeCSharpTypeFromJson n j)
+        results = map mapper (unfold sm)
 
 singularize :: String -> String
 singularize s = "OneOf" <> s
 
-mapProperties :: StrMap.StrMap Json -> Tuple (StrMap.StrMap CSharpType) (Array CSharpClass)
-mapProperties sm = Tuple propMap classes
-  where mapper (Tuple n j) = let Tuple t classes = gatherCSharpClassesFromJson n j
-                              in Tuple (Tuple n t) classes
-        results = map mapper (StrMap.toUnfoldable sm)
-        propMap = StrMap.fromFoldable $ map fst results
-        classes = concat $ map snd results
+-- This is a travesty.  Try putting this function definition
+-- in the where clause below.
+unfold :: forall a. StrMap.StrMap a -> Array (Tuple String a)
+unfold sm = StrMap.toUnfoldable sm
+
+gatherClassesFromType :: CSharpType -> Array CSharpClass
+gatherClassesFromType (CSClassType c) =
+    let CSClass { name, properties } = c in
+    c : (concatMap gatherClassesFromType (StrMap.values properties))
+gatherClassesFromType (CSArray t) = gatherClassesFromType t
+gatherClassesFromType _ = []
 
 renderCSharpType :: CSharpType -> String
 renderCSharpType (CSArray a) = (renderCSharpType a) <> "[]"
@@ -79,6 +84,6 @@ renderCSharpClasses classes =
 jsonToCSharp :: String -> Either String String
 jsonToCSharp json =
     jsonParser json
-    <#> gatherCSharpClassesFromJson "TopLevel"
-    <#> snd
+    <#> makeCSharpTypeFromJson "TopLevel"
+    <#> gatherClassesFromType
     <#> renderCSharpClasses
