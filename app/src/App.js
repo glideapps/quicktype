@@ -13,7 +13,13 @@ import Main from "../../output/Main";
 let json = `{
   "name": "David",
   "age": 31,
-  "addresses": [{"street": "222 Clayton St"}]
+  "weight": 195,
+  "addresses": [
+    {
+      "street": "222 Clayton St",
+      "city": "San Francisco"
+    }
+  ]
 }`;
 
 class App extends Component {
