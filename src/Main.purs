@@ -63,5 +63,5 @@ jsonToCSharp json =
     jsonParser json
     <#> makeTypeFromJson "TopLevel"
     <#> gatherClassesFromType
-    <#> renderClasses renderers.csharp
+    <#> renderClasses renderers.swift
     <#> Doc.render
