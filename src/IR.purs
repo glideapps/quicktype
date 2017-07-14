@@ -2,9 +2,10 @@ module IR where
 
 import Prelude
 import Data.List (List())
+import Data.Set (Set)
 
 type IRProperty = { name :: String, typ :: IRType }
-type IRClassData = { name :: String, properties :: List IRProperty }
+type IRClassData = { name :: String, properties :: Set IRProperty }
 
 data IRType
     = IRNothing
@@ -15,7 +16,7 @@ data IRType
     | IRString
     | IRArray IRType
     | IRClass IRClassData
-    | IRUnion (Array IRType)
+    | IRUnion (Set IRType)
 
 -- TODO finish later! Just a little equality will go a long way for now
 instance eqIRType :: Eq IRType where
