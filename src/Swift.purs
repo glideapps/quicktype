@@ -14,7 +14,7 @@ import Data.List.NonEmpty as NE
 
 renderSwiftClass :: IRClassData -> Doc Unit
 renderSwiftClass { name, properties } = do
-    line $ words ["class", name]
+    line $ words ["struct", name]
     line "{"
     indent do
         let propGroups = L.groupBy (eq `on` _.typ) properties
