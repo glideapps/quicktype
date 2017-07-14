@@ -51,8 +51,7 @@ singularize :: String -> String
 singularize s = "OneOf" <> s
 
 gatherClassesFromType :: IRType -> L.List IRClassData
-gatherClassesFromType (IRClass classData@{ name, properties }) =
-     classData : L.concatMap gatherClassesFromType (_.typ <$> properties)
+gatherClassesFromType (IRClass cls) = cls : L.concatMap (gatherClassesFromType <<< _.typ) cls.properties
 gatherClassesFromType (IRArray t) = gatherClassesFromType t
 gatherClassesFromType _ = empty
 
