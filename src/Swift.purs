@@ -11,17 +11,20 @@ import Data.Function (on)
 import Data.List (List(..), groupBy)
 import Data.List as L
 import Data.List.NonEmpty as NE
+import Data.Tuple (Tuple(..))
+import Data.Map as M
 
 renderSwiftClass :: IRClassData -> Doc Unit
 renderSwiftClass { name, properties } = do
     line $ words ["struct", name]
     line "{"
     indent do
-        let propGroups = L.groupBy (eq `on` _.typ) properties
+        let props = properties # M.toUnfoldable <#> \(Tuple name typ) -> { name, typ }
+        let propGroups = L.groupBy (eq `on` _.typ) props
         for_ propGroups renderPropGroup
     line "}"
 
-renderPropGroup :: NE.NonEmptyList IRProperty -> Doc Unit
+renderPropGroup :: NE.NonEmptyList { name :: String, typ :: IRType} -> Doc Unit
 renderPropGroup props = line do
     let names = intercalate ", " (_.name <$> props)
     words ["let", names <> ":"]
@@ -40,4 +43,4 @@ renderType = case _ of
     IRString -> "String"
     IRArray a -> "[" <> renderType a <> "]"
     IRClass { name } -> name
-    IRUnion _ -> "FIXME"
+    _ -> "FIXME"

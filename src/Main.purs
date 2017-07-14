@@ -23,14 +23,14 @@ import IR
 import Doc (Doc())
 import Doc as Doc
 
---import Swift as Swift
+import Swift as Swift
 import CSharp as CSharp
 
 type Renderer = IRClassData -> Doc Unit
 
 renderers = {
-    csharp: CSharp.renderCSharpClass
---    swift: Swift.renderSwiftClass
+    csharp: CSharp.renderCSharpClass,
+    swift: Swift.renderSwiftClass
 }
 
 unifyClasses :: IRClassData -> IRClassData -> IRClassData
