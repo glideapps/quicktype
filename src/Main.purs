@@ -2,16 +2,22 @@ module Main where
 
 import Prelude
 
+import Control.Plus (empty)
 import Data.Argonaut.Core (Json, foldJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (concatMap, foldMap, (!!), (:))
 import Data.Either (Either)
-import Data.Maybe (fromJust)
-import Data.StrMap (StrMap, foldMap, fromFoldable, toUnfoldable, values) as StrMap
-import Data.Tuple (Tuple(Tuple))
-import Partial.Unsafe (unsafePartial)
+import Data.Foldable (for_)
 
-type IRClassData = { name :: String, properties :: StrMap.StrMap IRType }
+import Data.List as L
+import Data.List ((:))
+import Data.List.Types (List(..))
+
+import Data.StrMap (StrMap, foldMap) as StrMap
+
+import Doc
+
+type IRProperty = { name :: String, typ :: IRType }
+type IRClassData = { name :: String, properties :: L.List IRProperty }
 
 data IRType
     = IRNothing
@@ -30,33 +36,25 @@ makeTypeFromJson name json = foldJson
     (const IRBool)
     (const IRDouble)
     (const IRString)
-    (case _ of
-        [] -> IRArray IRNothing
-        a ->
-            let elementType = makeTypeFromJson (singularize name) (unsafePartial $ fromJust $ a !! 0) in
-            IRArray elementType)
+    -- Convert from Array to List before we match to make things tidier (foldJson is pretty crude)
+    (L.fromFoldable >>> case _ of
+        Nil -> IRArray IRNothing
+        Cons x _ -> IRArray $ makeTypeFromJson (singularize name) x)
     (\o -> IRClass { name, properties: mapProperties o })
     json
 
-mapProperties :: StrMap.StrMap Json -> StrMap.StrMap IRType
-mapProperties sm = StrMap.fromFoldable results
-  where mapper (Tuple n j) = Tuple n (makeTypeFromJson n j)
-        results = map mapper (unfold sm)
+mapProperties :: StrMap.StrMap Json -> L.List IRProperty
+mapProperties sm = StrMap.foldMap toProperty sm
+  where toProperty name json = L.singleton { name, typ: makeTypeFromJson name json }
 
 singularize :: String -> String
 singularize s = "OneOf" <> s
 
--- This is a travesty.  Try putting this function definition
--- in the where clause below.
-unfold :: forall a. StrMap.StrMap a -> Array (Tuple String a)
-unfold sm = StrMap.toUnfoldable sm
-
-gatherClassesFromType :: IRType -> Array IRClassData
-gatherClassesFromType (IRClass classData) =
-    let { name, properties } = classData in
-    classData : (concatMap gatherClassesFromType (StrMap.values properties))
+gatherClassesFromType :: IRType -> L.List IRClassData
+gatherClassesFromType (IRClass classData@{ name, properties }) =
+     classData : L.concatMap gatherClassesFromType (_.typ <$> properties)
 gatherClassesFromType (IRArray t) = gatherClassesFromType t
-gatherClassesFromType _ = []
+gatherClassesFromType _ = empty
 
 renderTypeToCSharp :: IRType -> String
 renderTypeToCSharp IRNothing = "object"
@@ -65,23 +63,25 @@ renderTypeToCSharp IRInteger = "int"
 renderTypeToCSharp IRDouble = "double"
 renderTypeToCSharp IRBool = "bool"
 renderTypeToCSharp IRString = "string"
-renderTypeToCSharp (IRArray a) = (renderTypeToCSharp a) <> "[]"
+renderTypeToCSharp (IRArray a) = renderTypeToCSharp a <> "[]"
 renderTypeToCSharp (IRClass { name }) = name
 renderTypeToCSharp (IRUnion _) = "FIXME"
 
-renderClassToCSharp :: IRClassData -> String
-renderClassToCSharp { name, properties } =
-    "class " <> name <> """
-{""" <>
-    StrMap.foldMap (\n -> \t -> "\n" <> nameToProperty n t) properties
-    <> """
-}
-"""
-    where nameToProperty name irType = "    public " <> (renderTypeToCSharp irType) <> " " <> name <> " { get; set; }"
+renderClassToCSharp :: IRClassData -> Doc Unit
+renderClassToCSharp { name, properties } = do
+    line $ words ["class", name]
+    line "{"
+    indent do
+        for_ properties \p -> line do
+            string "public "
+            string $ renderTypeToCSharp p.typ
+            words ["", p.name, "{ get; set; }"]
+    line "}"
 
-renderClassesToCSharp :: Array IRClassData -> String
-renderClassesToCSharp classes =
-    foldMap (\c -> (renderClassToCSharp c) <> "\n\n") classes
+renderClassesToCSharp :: L.List IRClassData -> Doc Unit
+renderClassesToCSharp classes = for_ classes \cls -> do
+    renderClassToCSharp cls
+    blank
 
 jsonToCSharp :: String -> Either String String
 jsonToCSharp json =
@@ -89,3 +89,4 @@ jsonToCSharp json =
     <#> makeTypeFromJson "TopLevel"
     <#> gatherClassesFromType
     <#> renderClassesToCSharp
+    <#> render
