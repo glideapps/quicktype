@@ -40,12 +40,11 @@ makeTypeFromJson name json = foldJson
     (L.fromFoldable >>> case _ of
         Nil -> IRArray IRNothing
         Cons x _ -> IRArray $ makeTypeFromJson (singularize name) x)
-    (\o -> IRClass { name, properties: mapProperties o })
+    fromJObject
     json
-
-mapProperties :: StrMap.StrMap Json -> L.List IRProperty
-mapProperties sm = StrMap.foldMap toProperty sm
-  where toProperty name json = L.singleton { name, typ: makeTypeFromJson name json }
+    where
+        fromJObject obj = IRClass { name, properties: StrMap.foldMap toProperty obj }
+        toProperty name json = L.singleton { name, typ: makeTypeFromJson name json }
 
 singularize :: String -> String
 singularize s = "OneOf" <> s
