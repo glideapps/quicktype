@@ -2,19 +2,17 @@ module Main where
 
 import Prelude
 
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE)
-import Control.Monad.Eff.Console as C
-import Data.Argonaut.Core (JArray, JBoolean, JNull, JString, Json, JObject, foldJson, foldJsonObject)
+import Data.Argonaut.Core (Json, foldJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (length, toUnfoldable, (:), concat, (!!), foldMap, concatMap)
+import Data.Array (concatMap, foldMap, (!!), (:))
 import Data.Either (Either)
 import Data.Maybe (fromJust)
-import Data.StrMap (StrMap, fromFoldable, keys, values, foldMap, toUnfoldable) as StrMap
-import Data.Tuple (uncurry, Tuple(..), fst, snd)
+import Data.StrMap (StrMap, foldMap, fromFoldable, toUnfoldable, values) as StrMap
+import Data.Tuple (Tuple(Tuple))
 import Partial.Unsafe (unsafePartial)
 
-data IRClassData = IRClassData { name :: String, properties :: StrMap.StrMap IRType }
+type IRClassData = { name :: String, properties :: StrMap.StrMap IRType }
+
 data IRType
     = IRNothing
     | IRNull
@@ -28,18 +26,16 @@ data IRType
 
 makeTypeFromJson :: String -> Json -> IRType
 makeTypeFromJson name json = foldJson
-    (const $ IRNull)
-    (\b -> IRBool)
-    (\x -> IRDouble)
-    (\s -> IRString)
+    (const IRNull)
+    (const IRBool)
+    (const IRDouble)
+    (const IRString)
     (case _ of
         [] -> IRArray IRNothing
         a ->
             let elementType = makeTypeFromJson (singularize name) (unsafePartial $ fromJust $ a !! 0) in
             IRArray elementType)
-    (\o ->
-        let props = mapProperties o in
-        IRClass (IRClassData { name: name, properties: props }))
+    (\o -> IRClass { name, properties: mapProperties o })
     json
 
 mapProperties :: StrMap.StrMap Json -> StrMap.StrMap IRType
@@ -57,7 +53,7 @@ unfold sm = StrMap.toUnfoldable sm
 
 gatherClassesFromType :: IRType -> Array IRClassData
 gatherClassesFromType (IRClass classData) =
-    let IRClassData { name, properties } = classData in
+    let { name, properties } = classData in
     classData : (concatMap gatherClassesFromType (StrMap.values properties))
 gatherClassesFromType (IRArray t) = gatherClassesFromType t
 gatherClassesFromType _ = []
@@ -70,11 +66,11 @@ renderTypeToCSharp IRDouble = "double"
 renderTypeToCSharp IRBool = "bool"
 renderTypeToCSharp IRString = "string"
 renderTypeToCSharp (IRArray a) = (renderTypeToCSharp a) <> "[]"
-renderTypeToCSharp (IRClass (IRClassData { name, properties })) = name
+renderTypeToCSharp (IRClass { name }) = name
 renderTypeToCSharp (IRUnion _) = "FIXME"
 
 renderClassToCSharp :: IRClassData -> String
-renderClassToCSharp (IRClassData { name, properties }) =
+renderClassToCSharp { name, properties } =
     "class " <> name <> """
 {""" <>
     StrMap.foldMap (\n -> \t -> "\n" <> nameToProperty n t) properties
