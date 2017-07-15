@@ -14,7 +14,7 @@ import Data.Tuple as Tuple
 import Data.List as L
 import Data.List ((:))
 import Data.Maybe (Maybe(..))
-
+import Data.String.Util (capitalize)
 
 isValueType :: IRType -> Boolean
 isValueType IRInteger = true
@@ -55,5 +55,5 @@ renderCSharpClass { name, properties } = do
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple.Tuple pname ptype) -> line do
             string "public "
             string $ renderTypeToCSharp ptype
-            words ["", pname, "{ get; set; }"]
+            words ["", capitalize pname, "{ get; set; }"]
     line "}"
