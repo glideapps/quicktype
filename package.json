@@ -5,7 +5,8 @@
   "dependencies": {},
   "scripts": {
     "postinstall": "bower install && pulp build && pushd app && npm install && popd",
-    "start": "cd app && npm start"
+    "start": "cd app && npm start",
+    "deploy": "npm install && cd app && npm run deploy"
   },
   "devDependencies": {
     "bower": "^1.8.0",

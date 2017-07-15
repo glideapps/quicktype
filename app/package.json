@@ -46,6 +46,7 @@
   "scripts": {
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
+    "deploy": "npm run build && cd build && now && pbpaste | xargs -0 -I {} now alias {} quicktype.io",
     "test": "node scripts/test.js --env=jsdom"
   },
   "jest": {
@@ -87,5 +88,8 @@
   },
   "eslintConfig": {
     "extends": "react-app"
+  },
+  "devDependencies": {
+    "now": "^7.2.4"
   }
 }
