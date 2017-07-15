@@ -44,12 +44,12 @@ renderTypeToCSharp = case _ of
     IRBool -> "bool"
     IRString -> "string"
     IRArray a -> renderTypeToCSharp a <> "[]"
-    IRClass { name } -> name
+    IRClass { name } -> capitalize name
     IRUnion types -> renderUnionToCSharp types
 
 renderCSharpClass :: IRClassData -> Doc Unit
 renderCSharpClass { name, properties } = do
-    line $ words ["class", name]
+    line $ words ["class", capitalize name]
     line "{"
     indent do
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple.Tuple pname ptype) -> line do
