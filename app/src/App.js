@@ -11,12 +11,12 @@ import 'brace/theme/cobalt';
 import Main from "../../output/Main";
  
 let json = `{
-  "name": "David",
-  "age": 31,
-  "weight": 195,
+  "name": "Vince",
+  "age": 58,
+  "weight": 203,
   "addresses": [
     {
-      "street": "222 Clayton St",
+      "street": "123 Rainbow Ave",
       "city": "San Francisco",
       "roommates": 3,
       "area": 2000
