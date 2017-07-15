@@ -1,7 +1,15 @@
+@import "dropdown.css";
+
 body {
   margin: 0;
   padding: 0;
   font-family: sans-serif;
+  font-size: 13pt;
+}
+
+.Dropdown-root {
+    width: 400px;
+    margin: 10px;
 }
 
 #editors {

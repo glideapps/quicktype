@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { render } from 'react-dom';
 import brace from 'brace';
 import AceEditor from 'react-ace';
+import Dropdown from 'react-dropdown';
 
 import 'brace/mode/json';
 import 'brace/mode/swift';
@@ -9,30 +10,27 @@ import 'brace/theme/github';
 import 'brace/theme/cobalt';
 
 import Main from "../../output/Main";
- 
-let json = `{
-  "name": "Vince",
-  "age": 58,
-  "weight": 203,
-  "addresses": [
-    {
-      "street": "123 Rainbow Ave",
-      "city": "San Francisco",
-      "roommates": 3,
-      "area": 2000
-    },
-    {
-      "city": "Minneapolis",
-      "state": "MN",
-      "roommates": ["Mom", "Dad"]
-    }
-  ]
-}`;
+
+let samples = [
+  "pokédex.json",
+  "bitcoin-latest-block.json",
+  "bitcoin-unconfirmed-transactions.json",
+  "github-events.json",
+  "us-average-temperatures.json",
+];
 
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {left: json, right: Main.jsonToCSharp(json).value0};
+    this.state = {
+      left: "",
+      right: "",
+      sample: localStorage["sample"] || samples[0]
+    };
+  }
+
+  componentWillMount() {
+    this.changeSample(this.state.sample);
   }
 
   sourceEdited = (newValue) => {
@@ -49,31 +47,42 @@ class App extends Component {
         right: result.value0
       });
     }
+  }
 
-    //console.log(window.e = Main.jsonToCSharpE(newValue));
+  changeSample = (sample) => {
+    this.setState({ sample });
+    localStorage["sample"] = sample;
+    fetch(`/sample/json/${sample}`)
+      .then((data) => data.text())
+      .then((data) => {
+        this.sourceEdited(data);
+      });
   }
 
   render() {
     return (
-      <div id="editors">
-        <AceEditor
-          name="left"
-          mode="json"
-          theme="github"
-          fontSize="12pt"
-          onChange={this.sourceEdited}
-          editorProps={{$blockScrolling: true}}
-          value={this.state.left}
-        />
-        <AceEditor
-          name="right"
-          mode="swift"
-          theme="cobalt"
-          fontSize="12pt"
-          editorProps={{$blockScrolling: true}}
-          value={this.state.right}
-        />
+      <div>
+        <Dropdown options={samples} value={this.state.sample} onChange={({value}) => this.changeSample(value)} />
+        <div id="editors">
+          <AceEditor
+            name="left"
+            mode="json"
+            theme="github"
+            fontSize="12pt"
+            onChange={this.sourceEdited}
+            editorProps={{$blockScrolling: true}}
+            value={this.state.left}
+          />
+          <AceEditor
+            name="right"
+            mode="swift"
+            theme="cobalt"
+            fontSize="12pt"
+            editorProps={{$blockScrolling: true}}
+            value={this.state.right}
+          />
         </div>
+      </div>
     );
   }
 }
