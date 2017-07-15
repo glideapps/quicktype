@@ -129,6 +129,7 @@ gatherClassesFromType :: IRType -> L.List IRClassData
 gatherClassesFromType = case _ of 
     IRClass cls -> cls : L.concatMap gatherClassesFromType (Map.values cls.properties)
     IRArray t -> gatherClassesFromType t
+    IRUnion s -> L.concatMap gatherClassesFromType (L.fromFoldable s)
     _ -> empty
 
 renderClasses :: Renderer -> L.List IRClassData -> Doc Unit
