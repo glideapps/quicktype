@@ -68,7 +68,7 @@ class App extends Component {
             name="left"
             mode="json"
             theme="github"
-            fontSize="12pt"
+            fontSize="11pt"
             onChange={this.sourceEdited}
             editorProps={{$blockScrolling: true}}
             value={this.state.left}
@@ -77,7 +77,7 @@ class App extends Component {
             name="right"
             mode="swift"
             theme="cobalt"
-            fontSize="12pt"
+            fontSize="11pt"
             editorProps={{$blockScrolling: true}}
             value={this.state.right}
           />
