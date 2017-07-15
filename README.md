@@ -19,3 +19,9 @@ $ npm start
 ```
 
 The react app will live-reload when you edit any source.
+
+## Deploy
+
+```shell
+$ npm run deploy # quicktype.io
+```
