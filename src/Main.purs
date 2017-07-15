@@ -8,7 +8,7 @@ import Data.Argonaut.Parser (jsonParser)
 import Data.Either (Either)
 import Data.Foldable (find)
 import Data.Maybe (Maybe(..))
-import Data.String.Util (singular, capitalize)
+import Data.String.Util (singular)
 import Data.List ((:))
 import Data.List as L
 import Data.Tuple as Tuple
@@ -112,8 +112,7 @@ makeTypeFromJson name json = foldJson
     (const IRBool)
     (const IRDouble)
     (const IRString)
-    -- Convert from Array to List before we match to make things tidier (foldJson is pretty crude)
-    (\arr -> let typeName = name # singular # capitalize
+    (\arr -> let typeName = singular name
         in
             IRArray (L.foldl (\t j -> unifyTypes t (makeTypeFromJson typeName j)) IRNothing arr))
     fromJObject
