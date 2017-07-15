@@ -1,5 +1,4 @@
-[
-  {
+[{
     "id": "6263117491",
     "type": "PushEvent",
     "actor": {
@@ -22,18 +21,16 @@
       "ref": "refs/heads/job-worker-features-V5zkpTEUgBlA4TOEJrWq",
       "head": "f283b1955dd88fe65210c842e63408d5ad30d322",
       "before": "873d322eb50db0068ae3d0ea2e79cee345e31c93",
-      "commits": [
-        {
-          "sha": "f283b1955dd88fe65210c842e63408d5ad30d322",
-          "author": {
-            "email": "CodePipeline-Test@users.noreply.github.com",
-            "name": "CodePipeline-Test"
-          },
-          "message": "Test commit",
-          "distinct": true,
-          "url": "https://api.github.com/repos/CodePipeline-Test/feature-tests/commits/f283b1955dd88fe65210c842e63408d5ad30d322"
-        }
-      ]
+      "commits": [{
+        "sha": "f283b1955dd88fe65210c842e63408d5ad30d322",
+        "author": {
+          "email": "CodePipeline-Test@users.noreply.github.com",
+          "name": "CodePipeline-Test"
+        },
+        "message": "Test commit",
+        "distinct": true,
+        "url": "https://api.github.com/repos/CodePipeline-Test/feature-tests/commits/f283b1955dd88fe65210c842e63408d5ad30d322"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:47Z"
@@ -61,18 +58,16 @@
       "ref": "refs/heads/master",
       "head": "a11c7aedf4f1800357864302fe08fc277e9e8652",
       "before": "d33e7adbb46926d1d4030d0c855b245062f1d9b5",
-      "commits": [
-        {
-          "sha": "a11c7aedf4f1800357864302fe08fc277e9e8652",
-          "author": {
-            "email": "jonathandpickard@gmail.com",
-            "name": "Jonny Pickard"
-          },
-          "message": "Add basic server to send JSON",
-          "distinct": true,
-          "url": "https://api.github.com/repos/JonnyPickard/albums-react-native/commits/a11c7aedf4f1800357864302fe08fc277e9e8652"
-        }
-      ]
+      "commits": [{
+        "sha": "a11c7aedf4f1800357864302fe08fc277e9e8652",
+        "author": {
+          "email": "jonathandpickard@gmail.com",
+          "name": "Jonny Pickard"
+        },
+        "message": "Add basic server to send JSON",
+        "distinct": true,
+        "url": "https://api.github.com/repos/JonnyPickard/albums-react-native/commits/a11c7aedf4f1800357864302fe08fc277e9e8652"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:47Z"
@@ -124,15 +119,13 @@
           "type": "User",
           "site_admin": false
         },
-        "labels": [
-          {
-            "id": 308803045,
-            "url": "https://api.github.com/repos/Microsoft/visualfsharp/labels/Area-CoreCLR",
-            "name": "Area-CoreCLR",
-            "color": "5319e7",
-            "default": false
-          }
-        ],
+        "labels": [{
+          "id": 308803045,
+          "url": "https://api.github.com/repos/Microsoft/visualfsharp/labels/Area-CoreCLR",
+          "name": "Area-CoreCLR",
+          "color": "5319e7",
+          "default": false
+        }],
         "state": "closed",
         "locked": false,
         "assignee": null,
@@ -242,18 +235,16 @@
       "ref": "refs/heads/master",
       "head": "31e079597959be78850e06c623383d522f8fe283",
       "before": "11d32ac0eb7051ddc7da05dab183f10ed861fa61",
-      "commits": [
-        {
-          "sha": "31e079597959be78850e06c623383d522f8fe283",
-          "author": {
-            "email": "alex@goretoy.com",
-            "name": "Alex Goretoy"
-          },
-          "message": "update",
-          "distinct": true,
-          "url": "https://api.github.com/repos/AudioBible/AudioBible.life/commits/31e079597959be78850e06c623383d522f8fe283"
-        }
-      ]
+      "commits": [{
+        "sha": "31e079597959be78850e06c623383d522f8fe283",
+        "author": {
+          "email": "alex@goretoy.com",
+          "name": "Alex Goretoy"
+        },
+        "message": "update",
+        "distinct": true,
+        "url": "https://api.github.com/repos/AudioBible/AudioBible.life/commits/31e079597959be78850e06c623383d522f8fe283"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:47Z",
@@ -321,18 +312,16 @@
       "ref": "refs/heads/readmeworks",
       "head": "e09f4ef810382578be4ba49bcc351c94ac8b15f9",
       "before": "10f052d3f22eaad13302b5e0e6d1a4af77a73f91",
-      "commits": [
-        {
-          "sha": "e09f4ef810382578be4ba49bcc351c94ac8b15f9",
-          "author": {
-            "email": "f.toens@gmx.de",
-            "name": "musikdusche"
-          },
-          "message": "Update README.md\n\ntrying out markdown syntaxes",
-          "distinct": true,
-          "url": "https://api.github.com/repos/musikdusche/hello-world/commits/e09f4ef810382578be4ba49bcc351c94ac8b15f9"
-        }
-      ]
+      "commits": [{
+        "sha": "e09f4ef810382578be4ba49bcc351c94ac8b15f9",
+        "author": {
+          "email": "f.toens@gmx.de",
+          "name": "musikdusche"
+        },
+        "message": "Update README.md\n\ntrying out markdown syntaxes",
+        "distinct": true,
+        "url": "https://api.github.com/repos/musikdusche/hello-world/commits/e09f4ef810382578be4ba49bcc351c94ac8b15f9"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:47Z"
@@ -360,18 +349,16 @@
       "ref": "refs/heads/master",
       "head": "1557e3155279ca19e35048f8a6758189cbb2231a",
       "before": "fb1b8c70b324bf73231728a708fe496991c51607",
-      "commits": [
-        {
-          "sha": "1557e3155279ca19e35048f8a6758189cbb2231a",
-          "author": {
-            "email": "ruihfazevedo@gmail.com",
-            "name": "Rui Azevedo"
-          },
-          "message": "remove pin collision between encoder and serial on I2C example as noted by Paul Gaertner",
-          "distinct": true,
-          "url": "https://api.github.com/repos/neu-rah/ArduinoMenu/commits/1557e3155279ca19e35048f8a6758189cbb2231a"
-        }
-      ]
+      "commits": [{
+        "sha": "1557e3155279ca19e35048f8a6758189cbb2231a",
+        "author": {
+          "email": "ruihfazevedo@gmail.com",
+          "name": "Rui Azevedo"
+        },
+        "message": "remove pin collision between encoder and serial on I2C example as noted by Paul Gaertner",
+        "distinct": true,
+        "url": "https://api.github.com/repos/neu-rah/ArduinoMenu/commits/1557e3155279ca19e35048f8a6758189cbb2231a"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:47Z"
@@ -399,18 +386,16 @@
       "ref": "refs/heads/master",
       "head": "dffd54fc9872b0a14ae7b3089c541db439c77dc6",
       "before": "31643c5f628a91714dabf3c0472d6b3b6f2d75f9",
-      "commits": [
-        {
-          "sha": "dffd54fc9872b0a14ae7b3089c541db439c77dc6",
-          "author": {
-            "email": "zfang@nd.edu",
-            "name": "Zhaoyuan Fang"
-          },
-          "message": "Reverse Linked List II",
-          "distinct": true,
-          "url": "https://api.github.com/repos/zfang399/LeetCode-Problems/commits/dffd54fc9872b0a14ae7b3089c541db439c77dc6"
-        }
-      ]
+      "commits": [{
+        "sha": "dffd54fc9872b0a14ae7b3089c541db439c77dc6",
+        "author": {
+          "email": "zfang@nd.edu",
+          "name": "Zhaoyuan Fang"
+        },
+        "message": "Reverse Linked List II",
+        "distinct": true,
+        "url": "https://api.github.com/repos/zfang399/LeetCode-Problems/commits/dffd54fc9872b0a14ae7b3089c541db439c77dc6"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:46Z"
@@ -438,18 +423,16 @@
       "ref": "refs/heads/master",
       "head": "90effa1defcc57fbb19d118a3cf773e200542333",
       "before": "a3a94db8f23bec183df701cc6f27b761be8f6250",
-      "commits": [
-        {
-          "sha": "90effa1defcc57fbb19d118a3cf773e200542333",
-          "author": {
-            "email": "rohinkt@gmail.com",
-            "name": "Rohin Tangirala"
-          },
-          "message": "Set theme jekyll-theme-tactile",
-          "distinct": true,
-          "url": "https://api.github.com/repos/Twenty-App/Twenty-App.github.io/commits/90effa1defcc57fbb19d118a3cf773e200542333"
-        }
-      ]
+      "commits": [{
+        "sha": "90effa1defcc57fbb19d118a3cf773e200542333",
+        "author": {
+          "email": "rohinkt@gmail.com",
+          "name": "Rohin Tangirala"
+        },
+        "message": "Set theme jekyll-theme-tactile",
+        "distinct": true,
+        "url": "https://api.github.com/repos/Twenty-App/Twenty-App.github.io/commits/90effa1defcc57fbb19d118a3cf773e200542333"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:46Z",
@@ -521,18 +504,16 @@
       "ref": "refs/heads/master",
       "head": "9c67ee2a43c0e12a5d8d0345e42c866f550d5d0a",
       "before": "2361fa599a16a10ad07ffe863fe00bb2bc75d29a",
-      "commits": [
-        {
-          "sha": "9c67ee2a43c0e12a5d8d0345e42c866f550d5d0a",
-          "author": {
-            "email": "wizard@roborooter.com",
-            "name": "Francis Gulotta"
-          },
-          "message": "[unix] Move setting up the baudrate to the end of the open()\n\n- Test 1000000 baud",
-          "distinct": true,
-          "url": "https://api.github.com/repos/EmergingTechnologyAdvisors/node-serialport/commits/9c67ee2a43c0e12a5d8d0345e42c866f550d5d0a"
-        }
-      ]
+      "commits": [{
+        "sha": "9c67ee2a43c0e12a5d8d0345e42c866f550d5d0a",
+        "author": {
+          "email": "wizard@roborooter.com",
+          "name": "Francis Gulotta"
+        },
+        "message": "[unix] Move setting up the baudrate to the end of the open()\n\n- Test 1000000 baud",
+        "distinct": true,
+        "url": "https://api.github.com/repos/EmergingTechnologyAdvisors/node-serialport/commits/9c67ee2a43c0e12a5d8d0345e42c866f550d5d0a"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:46Z",
@@ -770,18 +751,16 @@
       "ref": "refs/heads/master",
       "head": "490f194beb4be216ed955d187aee265443dd532c",
       "before": "14034277c8e715f9988686d85701b501845705e7",
-      "commits": [
-        {
-          "sha": "490f194beb4be216ed955d187aee265443dd532c",
-          "author": {
-            "email": "keri.wheatley@civitaslearning.com",
-            "name": "Keri Wheatley"
-          },
-          "message": "updates to twitter_popularity",
-          "distinct": true,
-          "url": "https://api.github.com/repos/keriwheatley/coursework/commits/490f194beb4be216ed955d187aee265443dd532c"
-        }
-      ]
+      "commits": [{
+        "sha": "490f194beb4be216ed955d187aee265443dd532c",
+        "author": {
+          "email": "keri.wheatley@civitaslearning.com",
+          "name": "Keri Wheatley"
+        },
+        "message": "updates to twitter_popularity",
+        "distinct": true,
+        "url": "https://api.github.com/repos/keriwheatley/coursework/commits/490f194beb4be216ed955d187aee265443dd532c"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:46Z"
@@ -864,18 +843,16 @@
       "ref": "refs/heads/master",
       "head": "46f85052c269c7ede354a698e05e5ef5359bc71b",
       "before": "ecb8a45cc1e49ee60ffa880eba8219b294ec44f5",
-      "commits": [
-        {
-          "sha": "46f85052c269c7ede354a698e05e5ef5359bc71b",
-          "author": {
-            "email": "geoff.cowin@gmail.com",
-            "name": "Geoffers888"
-          },
-          "message": "Create README.md",
-          "distinct": true,
-          "url": "https://api.github.com/repos/Geoffers888/Console-Boxes/commits/46f85052c269c7ede354a698e05e5ef5359bc71b"
-        }
-      ]
+      "commits": [{
+        "sha": "46f85052c269c7ede354a698e05e5ef5359bc71b",
+        "author": {
+          "email": "geoff.cowin@gmail.com",
+          "name": "Geoffers888"
+        },
+        "message": "Create README.md",
+        "distinct": true,
+        "url": "https://api.github.com/repos/Geoffers888/Console-Boxes/commits/46f85052c269c7ede354a698e05e5ef5359bc71b"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:46Z"
@@ -1302,18 +1279,16 @@
       "ref": "refs/heads/master",
       "head": "59de0a8bfb229e7e72a1960132fdf24f0a770a08",
       "before": "27327b3a3cb4e58ddb1b1188cb0f04092d850106",
-      "commits": [
-        {
-          "sha": "59de0a8bfb229e7e72a1960132fdf24f0a770a08",
-          "author": {
-            "email": "trimoxal@gmail.com",
-            "name": "Dominic Carretto"
-          },
-          "message": "fix(snackbar): Fix actionHandler still required if actionText is empty",
-          "distinct": true,
-          "url": "https://api.github.com/repos/trimox/angular-mdc-web/commits/59de0a8bfb229e7e72a1960132fdf24f0a770a08"
-        }
-      ]
+      "commits": [{
+        "sha": "59de0a8bfb229e7e72a1960132fdf24f0a770a08",
+        "author": {
+          "email": "trimoxal@gmail.com",
+          "name": "Dominic Carretto"
+        },
+        "message": "fix(snackbar): Fix actionHandler still required if actionText is empty",
+        "distinct": true,
+        "url": "https://api.github.com/repos/trimox/angular-mdc-web/commits/59de0a8bfb229e7e72a1960132fdf24f0a770a08"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:46Z"
@@ -1363,18 +1338,16 @@
       "ref": "refs/heads/master",
       "head": "16bb35eb4a43d916a40155996c9d7dfadb007573",
       "before": "ad4b96a5b924783e42d1d0cbf0fd1b5cba3cbd2f",
-      "commits": [
-        {
-          "sha": "16bb35eb4a43d916a40155996c9d7dfadb007573",
-          "author": {
-            "email": "taine049@gmail.com",
-            "name": "james341"
-          },
-          "message": "Add files via upload",
-          "distinct": true,
-          "url": "https://api.github.com/repos/james341/loading-yan-rp/commits/16bb35eb4a43d916a40155996c9d7dfadb007573"
-        }
-      ]
+      "commits": [{
+        "sha": "16bb35eb4a43d916a40155996c9d7dfadb007573",
+        "author": {
+          "email": "taine049@gmail.com",
+          "name": "james341"
+        },
+        "message": "Add files via upload",
+        "distinct": true,
+        "url": "https://api.github.com/repos/james341/loading-yan-rp/commits/16bb35eb4a43d916a40155996c9d7dfadb007573"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:45Z"
@@ -1402,18 +1375,16 @@
       "ref": "refs/heads/master",
       "head": "e6312819f0acdc40008b06ae7a2c6c211c2f1db0",
       "before": "f9a4fe7e866181c74fbc9352310fbc6c539d2aff",
-      "commits": [
-        {
-          "sha": "e6312819f0acdc40008b06ae7a2c6c211c2f1db0",
-          "author": {
-            "email": "sugarkanke@yahoo.com",
-            "name": "Kanke"
-          },
-          "message": "Adding gitignore and readme.md content. Code cleanup.",
-          "distinct": true,
-          "url": "https://api.github.com/repos/kanke/RedisServerClone/commits/e6312819f0acdc40008b06ae7a2c6c211c2f1db0"
-        }
-      ]
+      "commits": [{
+        "sha": "e6312819f0acdc40008b06ae7a2c6c211c2f1db0",
+        "author": {
+          "email": "sugarkanke@yahoo.com",
+          "name": "Kanke"
+        },
+        "message": "Adding gitignore and readme.md content. Code cleanup.",
+        "distinct": true,
+        "url": "https://api.github.com/repos/kanke/RedisServerClone/commits/e6312819f0acdc40008b06ae7a2c6c211c2f1db0"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:45Z"
@@ -1441,18 +1412,16 @@
       "ref": "refs/heads/master",
       "head": "9e3c3f5f437fbc1f21a30f19f764787b86a393be",
       "before": "d69d496b80a5806406f2313d67e63f3adf61b97e",
-      "commits": [
-        {
-          "sha": "9e3c3f5f437fbc1f21a30f19f764787b86a393be",
-          "author": {
-            "email": "jainhitesh9998@gmail.com",
-            "name": "Hitesh C"
-          },
-          "message": "added sounds for the clone",
-          "distinct": true,
-          "url": "https://api.github.com/repos/jainhitesh9998/WebDevelopment/commits/9e3c3f5f437fbc1f21a30f19f764787b86a393be"
-        }
-      ]
+      "commits": [{
+        "sha": "9e3c3f5f437fbc1f21a30f19f764787b86a393be",
+        "author": {
+          "email": "jainhitesh9998@gmail.com",
+          "name": "Hitesh C"
+        },
+        "message": "added sounds for the clone",
+        "distinct": true,
+        "url": "https://api.github.com/repos/jainhitesh9998/WebDevelopment/commits/9e3c3f5f437fbc1f21a30f19f764787b86a393be"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:45Z"
@@ -1480,8 +1449,7 @@
       "ref": "refs/heads/dev",
       "head": "7ef25bf6aad45c9da53a2d5918e553c68cd69dd4",
       "before": "931cef7db8ec69cc951fe8a5ecc2b909397e29a4",
-      "commits": [
-        {
+      "commits": [{
           "sha": "88b9e4e53f62ff7c9597f66d9e45a0a9be5fe1ca",
           "author": {
             "email": "mike.kroace@gmail.com",
@@ -1619,18 +1587,16 @@
       "ref": "refs/heads/issue-4",
       "head": "4b7341d9b7bb95f5f0e1d50831a9c978fc4fceb4",
       "before": "57c0a65ee93de1955ad5691585a51c358188f311",
-      "commits": [
-        {
-          "sha": "4b7341d9b7bb95f5f0e1d50831a9c978fc4fceb4",
-          "author": {
-            "email": "jarifibrahim@gmail.com",
-            "name": "Ibrahim Jarif"
-          },
-          "message": "Add travs.yml",
-          "distinct": true,
-          "url": "https://api.github.com/repos/jarifibrahim/OpenSourceHelpCommunity.github.io/commits/4b7341d9b7bb95f5f0e1d50831a9c978fc4fceb4"
-        }
-      ]
+      "commits": [{
+        "sha": "4b7341d9b7bb95f5f0e1d50831a9c978fc4fceb4",
+        "author": {
+          "email": "jarifibrahim@gmail.com",
+          "name": "Ibrahim Jarif"
+        },
+        "message": "Add travs.yml",
+        "distinct": true,
+        "url": "https://api.github.com/repos/jarifibrahim/OpenSourceHelpCommunity.github.io/commits/4b7341d9b7bb95f5f0e1d50831a9c978fc4fceb4"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:45Z"
@@ -1682,15 +1648,13 @@
           "type": "User",
           "site_admin": false
         },
-        "labels": [
-          {
-            "id": 150880243,
-            "url": "https://api.github.com/repos/golang/go/labels/HelpWanted",
-            "name": "HelpWanted",
-            "color": "fbca04",
-            "default": false
-          }
-        ],
+        "labels": [{
+          "id": 150880243,
+          "url": "https://api.github.com/repos/golang/go/labels/HelpWanted",
+          "name": "HelpWanted",
+          "color": "fbca04",
+          "default": false
+        }],
         "state": "open",
         "locked": false,
         "assignee": null,
@@ -1800,8 +1764,7 @@
       "ref": "refs/heads/1.12",
       "head": "07334b1700ec9cd173c7560f293b7dd10dc24fd9",
       "before": "ee8e1058833056afdcac559c22518b3706b3657f",
-      "commits": [
-        {
+      "commits": [{
           "sha": "52080012d79ae0320392379b5d054f3e17ec1b98",
           "author": {
             "email": "ordinastie@hotmail.com",
@@ -1873,18 +1836,16 @@
       "ref": "refs/heads/master",
       "head": "70d47755fde8a5c4cfde101ba65caa6c1d6fcdb2",
       "before": "f673e6b191197827bddb31bcffea61611e8a50b0",
-      "commits": [
-        {
-          "sha": "70d47755fde8a5c4cfde101ba65caa6c1d6fcdb2",
-          "author": {
-            "email": "zxshen@qq.com",
-            "name": "zxui"
-          },
-          "message": "update",
-          "distinct": true,
-          "url": "https://api.github.com/repos/zxui/auto-admin/commits/70d47755fde8a5c4cfde101ba65caa6c1d6fcdb2"
-        }
-      ]
+      "commits": [{
+        "sha": "70d47755fde8a5c4cfde101ba65caa6c1d6fcdb2",
+        "author": {
+          "email": "zxshen@qq.com",
+          "name": "zxui"
+        },
+        "message": "update",
+        "distinct": true,
+        "url": "https://api.github.com/repos/zxui/auto-admin/commits/70d47755fde8a5c4cfde101ba65caa6c1d6fcdb2"
+      }]
     },
     "public": true,
     "created_at": "2017-07-15T17:06:45Z"
