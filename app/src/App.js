@@ -5,32 +5,91 @@ import AceEditor from 'react-ace';
 import Dropdown from 'react-dropdown';
 
 import 'brace/mode/json';
-import 'brace/mode/swift';
+import 'brace/mode/csharp';
 import 'brace/theme/github';
 import 'brace/theme/cobalt';
 
 import Main from "../../output/Main";
 
-let samples = [
-  "pokédex.json",
-  "bitcoin-latest-block.json",
-  "bitcoin-unconfirmed-transactions.json",
-  "github-events.json",
-  "us-average-temperatures.json",
-];
+class Editor extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      value: props.value
+    };
+  }
+
+  render() {
+    return (
+      <div className={this.props.className}>
+        <div className="titleBar">{this.props.language}</div>
+        <AceEditor
+          name={this.props.className + "-editor"}
+          mode={this.props.language}
+          theme={this.props.theme}
+          fontSize="10pt"
+          showGutter={this.props.showGutter}
+          onChange={this.props.onChange}
+          highlightActiveLine={false}
+          showPrintMargin={false}
+          displayIndentGuides={false}
+          editorProps={{$blockScrolling: true}}
+          value={this.props.value}
+        />
+      </div>
+    );
+  }
+}
+
+class TopBar extends Component {
+  samples = [
+    "pokédex.json",
+    "bitcoin-latest-block.json",
+    "bitcoin-unconfirmed-transactions.json",
+    "github-events.json",
+    "us-average-temperatures.json",
+  ];
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      sample: localStorage["sample"] || this.samples[0]
+    };
+  }
+
+  componentWillMount() {
+    this.changeSample(this.state.sample);
+  }
+
+  changeSample = (sample) => {
+    this.setState({sample});
+    localStorage["sample"] = sample;
+    fetch(`/sample/json/${sample}`)
+      .then((data) => data.text())
+      .then((data) => {
+        this.props.onChangeSample(data);
+      });
+  }
+
+  render() {
+    return (
+      <div className="topBar">
+        <Dropdown
+          options={this.samples}
+          value={this.state.sample}
+          onChange={({value}) => this.changeSample(value)} />
+      </div>
+    );
+  }
+}
 
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       left: "",
-      right: "",
-      sample: localStorage["sample"] || samples[0]
+      right: ""
     };
-  }
-
-  componentWillMount() {
-    this.changeSample(this.state.sample);
   }
 
   sourceEdited = (newValue) => {
@@ -49,36 +108,24 @@ class App extends Component {
     }
   }
 
-  changeSample = (sample) => {
-    this.setState({ sample });
-    localStorage["sample"] = sample;
-    fetch(`/sample/json/${sample}`)
-      .then((data) => data.text())
-      .then((data) => {
-        this.sourceEdited(data);
-      });
-  }
-
   render() {
     return (
       <div>
-        <Dropdown options={samples} value={this.state.sample} onChange={({value}) => this.changeSample(value)} />
+        <TopBar
+          onChangeSample={this.sourceEdited} />
         <div id="editors">
-          <AceEditor
-            name="left"
-            mode="json"
+          <Editor
+            className="left"
+            language="json"
             theme="github"
-            fontSize="11pt"
+            showGutter={false}
             onChange={this.sourceEdited}
-            editorProps={{$blockScrolling: true}}
             value={this.state.left}
           />
-          <AceEditor
-            name="right"
-            mode="swift"
+          <Editor
+            className="right"
+            language="csharp"
             theme="cobalt"
-            fontSize="11pt"
-            editorProps={{$blockScrolling: true}}
             value={this.state.right}
           />
         </div>
