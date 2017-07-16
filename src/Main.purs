@@ -11,15 +11,14 @@ import Data.Argonaut.Core (Json, foldJson, isString)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Either (Either)
 import Data.Either.Nested (in1)
-import Data.Foldable (find)
-import Data.Foldable (for_)
+import Data.Foldable (find, for_, all, any)
 import Data.List (List(..), fromFoldable, length, nub, partition, (:))
 import Data.List as L
 import Data.List.Types (List(..))
 import Data.Map (Map, lookup, mapWithKey, toUnfoldable)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
-import Data.Set (Set, insert)
+import Data.Set (Set, insert, member)
 import Data.Set as S
 import Data.StrMap as StrMap
 import Data.String.Util (singular)
@@ -146,6 +145,30 @@ propertiesSimilar pa pb =
     in
         (aInB * 4 >= (Map.size pa) * 3) && (bInA * 4 >= (Map.size pb) * 3)
 
+isMaybeSubtypeOfMaybe :: Maybe IRType -> Maybe IRType -> Boolean
+isMaybeSubtypeOfMaybe Nothing Nothing = true
+isMaybeSubtypeOfMaybe (Just a) (Just b) = isSubtypeOf a b
+isMaybeSubtypeOfMaybe _ _ = false
+
+isSubtypeOf :: IRType -> IRType -> Boolean
+isSubtypeOf IRNothing _ = true
+isSubtypeOf (IRUnion sa) (IRUnion sb) =
+    all (\ta -> any (isSubtypeOf ta) sb) sa
+isSubtypeOf (IRArray a) (IRArray b) =
+    isSubtypeOf a b
+isSubtypeOf (IRClass (IRClassData _ ma)) (IRClass (IRClassData _ mb)) =
+    propertiesAreSubset ma mb
+isSubtypeOf a b = a == b
+
+propertiesAreSubset :: Map.Map String IRType -> Map.Map String IRType -> Boolean
+propertiesAreSubset ma mb =
+    all isInB (Map.toUnfoldable ma :: List _)
+    where
+        isInB (Tuple n ta) =
+            case Map.lookup n mb of
+            Nothing -> false
+            Just tb -> isSubtypeOf ta tb
+
 similarClasses :: L.List IRClassData -> { classes :: S.Set IRClassData, replacements :: Map.Map IRClassData IRClassData }
 similarClasses L.Nil = { classes: S.empty, replacements: Map.empty }
 similarClasses (thisClass@(IRClassData name properties) : rest) =
@@ -159,7 +182,11 @@ similarClasses (thisClass@(IRClassData name properties) : rest) =
                 newReplacements = Map.fromFoldable (map (\c -> Tuple.Tuple c unified) (thisClass : similar))
             in
                 { classes: S.insert unified classes, replacements: Map.union replacements newReplacements  }         
-    where isSimilar (IRClassData _ p) = propertiesSimilar p properties
+    where
+        isSimilar (IRClassData _ p) =
+            propertiesSimilar p properties ||
+            propertiesAreSubset p properties ||
+            propertiesAreSubset properties p
 
 replaceClasses :: (Map.Map IRClassData IRClassData) -> IRType -> IRType
 replaceClasses m t@(IRClass c@(IRClassData name properties)) =
