@@ -74,12 +74,17 @@ setFromType :: IRType -> S.Set IRType
 setFromType IRNothing = S.empty
 setFromType x = S.singleton x
 
+decomposeTypeSet :: S.Set IRType -> { maybeArray :: Maybe IRType, maybeClass :: Maybe IRType, rest :: S.Set IRType }
+decomposeTypeSet s =
+    let { element: maybeArray, rest: rest } = removeElement isArray s
+        { element: maybeClass, rest: rest } = removeElement isClass rest
+    in
+        { maybeArray, maybeClass, rest }
+
 unifyUnion :: S.Set IRType -> S.Set IRType -> S.Set IRType
 unifyUnion sa sb =
-    let { element: arrayA, rest: sa } = removeElement isArray sa
-        { element: arrayB, rest: sb } = removeElement isArray sb
-        { element: classA, rest: sa } = removeElement isClass sa
-        { element: classB, rest: sb } = removeElement isClass sb
+    let { maybeArray: arrayA, maybeClass: classA, rest: sa } = decomposeTypeSet sa
+        { maybeArray: arrayB, maybeClass: classB, rest: sb } = decomposeTypeSet sb
         unifiedArray = setFromType $ unifyMaybes arrayA arrayB
         unifiedClasses = setFromType $ unifyMaybes classA classB
     in
