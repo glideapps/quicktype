@@ -44,11 +44,11 @@ renderTypeToCSharp = case _ of
     IRBool -> "bool"
     IRString -> "string"
     IRArray a -> renderTypeToCSharp a <> "[]"
-    IRClass { name } -> capitalize name
+    IRClass (IRClassData name _) -> capitalize name
     IRUnion types -> renderUnionToCSharp types
 
 renderCSharpClass :: IRClassData -> Doc Unit
-renderCSharpClass { name, properties } = do
+renderCSharpClass (IRClassData name properties) = do
     line $ words ["class", capitalize name]
     line "{"
     indent do

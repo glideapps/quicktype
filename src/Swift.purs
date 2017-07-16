@@ -20,7 +20,7 @@ import Data.Tuple (Tuple(..))
 
 
 renderSwiftClass :: IRClassData -> Doc Unit
-renderSwiftClass { name, properties } = do
+renderSwiftClass (IRClassData name properties) = do
     line $ words ["struct", name]
     line "{"
     indent do
@@ -51,7 +51,7 @@ renderType = case _ of
     IRBool -> "Bool"
     IRString -> "String"
     IRArray a -> "[" <> renderType a <> "]"
-    IRClass { name } -> name
+    IRClass (IRClassData name _) -> name
     IRUnion s ->  unionName s
 
 renderUnions :: IRType -> Doc Unit

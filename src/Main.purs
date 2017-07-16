@@ -48,8 +48,8 @@ unionWithDefault unifier default m1 m2 =
         Map.fromFoldable kvps
 
 unifyClasses :: IRClassData -> IRClassData -> IRClassData
-unifyClasses { name: na, properties: pa } { name: nb, properties: pb } =
-    { name: na, properties: unionWithDefault unifyTypesWithNull IRNothing pa pb }
+unifyClasses (IRClassData na pa) (IRClassData nb pb) =
+    IRClassData na (unionWithDefault unifyTypesWithNull IRNothing pa pb)
 
 removeElement :: forall a. Ord a => (a -> Boolean) -> S.Set a -> { element :: Maybe a, rest :: S.Set a }
 removeElement p s =
@@ -118,12 +118,12 @@ makeTypeFromJson name json = foldJson
     fromJObject
     json
     where
-        fromJObject obj = IRClass { name, properties: Map.fromFoldable $ StrMap.foldMap toProperty obj }
+        fromJObject obj = IRClass (IRClassData name (Map.fromFoldable $ StrMap.foldMap toProperty obj))
         toProperty name json = L.singleton $ Tuple.Tuple name (makeTypeFromJson name json)
 
 gatherClassesFromType :: IRType -> L.List IRClassData
 gatherClassesFromType = case _ of 
-    IRClass cls -> cls : L.concatMap gatherClassesFromType (Map.values cls.properties)
+    IRClass cls@(IRClassData _ properties) -> cls : L.concatMap gatherClassesFromType (Map.values properties)
     IRArray t -> gatherClassesFromType t
     IRUnion s -> L.concatMap gatherClassesFromType (L.fromFoldable s)
     _ -> empty
