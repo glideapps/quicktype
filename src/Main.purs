@@ -1,30 +1,31 @@
 module Main where
 
+import IR
 import Prelude
 
+import CSharp as CSharp
 import Control.Plus (empty)
-import Data.Argonaut.Core (Json, foldJson)
+import Data.Argonaut.Core (Json, foldJson, isString)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Either (Either)
+import Data.Either.Nested (in1)
 import Data.Foldable (find)
-import Data.Maybe (Maybe(..))
-import Data.String.Util (singular)
-import Data.List ((:))
-import Data.List as L
-import Data.Tuple as Tuple
-import Data.List.Types (List(..))
-import Data.StrMap as StrMap
-import Data.Map as Map
 import Data.Foldable (for_)
+import Data.List (List(..), fromFoldable, length, nub, partition, (:))
+import Data.List as L
+import Data.List.Types (List(..))
+import Data.Map (Map, lookup, mapWithKey, toUnfoldable)
+import Data.Map as Map
+import Data.Maybe (Maybe(..))
+import Data.Set (Set, insert)
 import Data.Set as S
-
-import IR
-
-import Doc (Doc())
+import Data.StrMap as StrMap
+import Data.String.Util (singular)
+import Data.Tuple (Tuple(..))
+import Data.Tuple as Tuple
+import Doc (Doc)
 import Doc as Doc
-
 import Swift as Swift
-import CSharp as CSharp
 
 type Renderer = IRClassData -> Doc Unit
 
@@ -128,6 +129,52 @@ gatherClassesFromType = case _ of
     IRUnion s -> L.concatMap gatherClassesFromType (L.fromFoldable s)
     _ -> empty
 
+matchingProperties :: forall v. Eq v => Map.Map String v -> Map.Map String v -> Map.Map String v
+matchingProperties ma mb =
+    Map.fromFoldable (L.concatMap getFromB (Map.toUnfoldable ma))
+    where
+        getFromB (Tuple.Tuple k va) =
+            case Map.lookup k mb of
+            Just vb -> if va == vb then Tuple.Tuple k vb : L.Nil else L.Nil
+            Nothing -> L.Nil
+
+propertiesSimilar :: forall v. Eq v => Map.Map String v -> Map.Map String v -> Boolean
+propertiesSimilar pa pb =
+    let aInB = Map.size $ matchingProperties pa pb
+        bInA = Map.size $ matchingProperties pb pa
+    in
+        (aInB * 4 >= (Map.size pa) * 3) && (bInA * 4 >= (Map.size pb) * 3)
+
+similarClasses :: L.List IRClassData -> { classes :: S.Set IRClassData, replacements :: Map.Map IRClassData IRClassData }
+similarClasses L.Nil = { classes: S.empty, replacements: Map.empty }
+similarClasses (thisClass@(IRClassData name properties) : rest) =
+    let { yes: similar, no: others } = L.partition isSimilar rest
+        recursiveResult@{ classes, replacements } = similarClasses others
+    in
+        if L.length similar == 0 then
+            recursiveResult
+        else
+            let unified = L.foldl unifyClasses thisClass similar
+                newReplacements = Map.fromFoldable (map (\c -> Tuple.Tuple c unified) (thisClass : similar))
+            in
+                { classes: S.insert unified classes, replacements: Map.union replacements newReplacements  }         
+    where isSimilar (IRClassData _ p) = propertiesSimilar p properties
+
+replaceClasses :: (Map.Map IRClassData IRClassData) -> IRType -> IRType
+replaceClasses m t@(IRClass c@(IRClassData name properties)) =
+    case Map.lookup c m of
+    Nothing -> IRClass (IRClassData name (Map.mapWithKey (\n t -> replaceClasses m t) properties))
+    Just replacement -> IRClass replacement
+replaceClasses m (IRArray t) = IRArray (replaceClasses m t)
+replaceClasses m (IRUnion s) = IRUnion (S.map (replaceClasses m) s)
+replaceClasses _ t = t
+
+replaceSimilarClasses :: IRType -> IRType
+replaceSimilarClasses t =
+    let { classes, replacements } = similarClasses (gatherClassesFromType t)
+    in
+        replaceClasses replacements t
+
 renderClasses :: Renderer -> L.List IRClassData -> Doc Unit
 renderClasses renderer classes = for_ classes \cls -> do
     renderer cls
@@ -137,6 +184,8 @@ jsonToCSharp :: String -> Either String String
 jsonToCSharp json =
     jsonParser json
     <#> makeTypeFromJson "TopLevel"
+    <#> replaceSimilarClasses
     <#> gatherClassesFromType
+    <#> L.nub
     <#> renderClasses renderers.csharp
     <#> Doc.render
