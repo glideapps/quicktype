@@ -14,7 +14,7 @@ import Data.List as L
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Set as Set
-import Data.String.Util (capitalize)
+import Data.String.Util (capitalize, camelCase)
 import Data.Tuple as Tuple
 
 renderer :: Renderer
@@ -52,7 +52,7 @@ renderTypeToCSharp = case _ of
     IRBool -> "bool"
     IRString -> "string"
     IRArray a -> renderTypeToCSharp a <> "[]"
-    IRClass (IRClassData name _) -> capitalize name
+    IRClass (IRClassData name _) -> csNameStyle name
     IRUnion types -> renderUnionToCSharp types
 
 renderCSharp :: L.List IRClassData -> Doc Unit
@@ -69,6 +69,9 @@ renderCSharp classes = do
             blank
     line "}"
 
+csNameStyle :: String -> String
+csNameStyle = camelCase >>> capitalize
+
 renderCSharpClass :: IRClassData -> Doc Unit
 renderCSharpClass (IRClassData name properties) = do
     line $ words ["class", capitalize name]
@@ -82,6 +85,6 @@ renderCSharpClass (IRClassData name properties) = do
             line do
                 string "public "
                 string $ renderTypeToCSharp ptype
-                words ["", capitalize pname, "{ get; set; }"]
+                words ["", csNameStyle pname, "{ get; set; }"]
                 blank
     line "}"
