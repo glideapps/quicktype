@@ -74,7 +74,7 @@ csNameStyle = camelCase >>> capitalize
 
 renderCSharpClass :: IRClassData -> Doc Unit
 renderCSharpClass (IRClassData name properties) = do
-    line $ words ["class", capitalize name]
+    line $ words ["class", csNameStyle name]
     line "{"
     indent do
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple.Tuple pname ptype) -> do
