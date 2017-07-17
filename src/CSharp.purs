@@ -77,17 +77,6 @@ renderCSharpClass (IRClassData name properties) = do
     line $ words ["class", csNameStyle name]
     line "{"
     indent do
-
-        -- TODO don't rely on 'TopLevel'
-        when (name == "TopLevel") do
-            line "public static TopLevel LoadFromUrl(string url)"
-            line "{"
-            indent do
-                line "var json = new WebClient().DownloadString(url);"
-                line "return JsonConvert.DeserializeObject<TopLevel>(json);"
-            line "}"
-            blank
-
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple.Tuple pname ptype) -> do
             line do
                 string "[JsonProperty(\""
@@ -98,4 +87,10 @@ renderCSharpClass (IRClassData name properties) = do
                 string $ renderTypeToCSharp ptype
                 words ["", csNameStyle pname, "{ get; set; }"]
                 blank
+        
+        -- TODO don't rely on 'TopLevel'
+        when (name == "TopLevel") do
+            line "// Loading helpers"
+            line "public static TopLevel FromJson(string json) => JsonConvert.DeserializeObject<TopLevel>(json);"
+            line "public static TopLevel FromUrl(string url) => FromJson(new WebClient().DownloadString(url));"
     line "}"
