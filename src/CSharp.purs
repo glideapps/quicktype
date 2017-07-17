@@ -9,7 +9,7 @@ import Prelude
 import Types
 
 import Data.Foldable (for_, intercalate)
-import Data.List (List, (:))
+import Data.List (List, fromFoldable, (:))
 import Data.List as L
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
@@ -41,7 +41,7 @@ renderUnionToCSharp :: IRGraph -> Set.Set IRType -> String
 renderUnionToCSharp graph s =
     case nullableFromSet s of
     Just x -> if isValueType x then renderTypeToCSharp graph x <> "?" else renderTypeToCSharp graph x
-    Nothing -> "Either<" <> intercalate ", " (Set.map (renderTypeToCSharp graph) s) <> ">"
+    Nothing -> "Either<" <> intercalate ", " (map (renderTypeToCSharp graph) (L.fromFoldable s)) <> ">"
 
 renderTypeToCSharp :: IRGraph -> IRType -> String
 renderTypeToCSharp graph = case _ of
