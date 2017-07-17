@@ -37,26 +37,32 @@ nullableFromSet s =
     x : IRNull : L.Nil -> Just x
     _ -> Nothing
 
-renderUnionToCSharp :: Set.Set IRType -> String
-renderUnionToCSharp s =
+renderUnionToCSharp :: IRGraph -> Set.Set IRType -> String
+renderUnionToCSharp graph s =
     case nullableFromSet s of
-    Just x -> if isValueType x then renderTypeToCSharp x <> "?" else renderTypeToCSharp x
-    Nothing -> "Either<" <> intercalate ", " (Set.map renderTypeToCSharp s) <> ">"
+    Just x -> if isValueType x then renderTypeToCSharp graph x <> "?" else renderTypeToCSharp graph x
+    Nothing -> "Either<" <> intercalate ", " (Set.map (renderTypeToCSharp graph) s) <> ">"
 
-renderTypeToCSharp :: IRType -> String
-renderTypeToCSharp = case _ of
+renderTypeToCSharp :: IRGraph -> IRType -> String
+renderTypeToCSharp graph = case _ of
     IRNothing -> "object"
     IRNull -> "object"
     IRInteger -> "int"
     IRDouble -> "double"
     IRBool -> "bool"
     IRString -> "string"
-    IRArray a -> renderTypeToCSharp a <> "[]"
-    IRClass (IRClassData name _) -> csNameStyle name
-    IRUnion types -> renderUnionToCSharp types
+    IRArray a -> renderTypeToCSharp graph a <> "[]"
+    IRClass i ->
+        let IRClassData { names: names, properties } = getClassFromGraph graph i
+        in
+            csNameStyle $ combineNames names
+    IRUnion types -> renderUnionToCSharp graph types
 
-renderCSharp :: L.List IRClassData -> Doc Unit
-renderCSharp classes = do
+csNameStyle :: String -> String
+csNameStyle = camelCase >>> capitalize
+
+renderCSharp :: IRGraph -> L.List IRClassData -> Doc Unit
+renderCSharp graph classes = do
     line "namespace QuickType"
     line "{"
     blank
@@ -65,16 +71,13 @@ renderCSharp classes = do
         line "using Newtonsoft.Json;"
         blank
         for_ classes \cls -> do
-            renderCSharpClass cls
+            renderCSharpClass graph cls
             blank
     line "}"
 
-csNameStyle :: String -> String
-csNameStyle = camelCase >>> capitalize
-
-renderCSharpClass :: IRClassData -> Doc Unit
-renderCSharpClass (IRClassData name properties) = do
-    line $ words ["class", csNameStyle name]
+renderCSharpClass :: IRGraph -> IRClassData -> Doc Unit
+renderCSharpClass graph (IRClassData { names, properties }) = do
+    line $ words ["class", csNameStyle $ combineNames names]
     line "{"
     indent do
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple.Tuple pname ptype) -> do
@@ -84,12 +87,12 @@ renderCSharpClass (IRClassData name properties) = do
                 string "\")]"
             line do
                 string "public "
-                string $ renderTypeToCSharp ptype
+                string $ renderTypeToCSharp graph ptype
                 words ["", csNameStyle pname, "{ get; set; }"]
                 blank
         
         -- TODO don't rely on 'TopLevel'
-        when (name == "TopLevel") do
+        when (names == Set.singleton "TopLevel") do
             line "// Loading helpers"
             line "public static TopLevel FromJson(string json) => JsonConvert.DeserializeObject<TopLevel>(json);"
             line "public static TopLevel FromUrl(string url) => FromJson(new WebClient().DownloadString(url));"
