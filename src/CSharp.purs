@@ -62,7 +62,7 @@ renderCSharp classes = do
     blank
     
     indent do
-        line "using Newtonsoft.Json.JsonPropertyAttribute"
+        line "using Newtonsoft.Json.JsonPropertyAttribute;"
         blank
         for_ classes \cls -> do
             renderCSharpClass cls
