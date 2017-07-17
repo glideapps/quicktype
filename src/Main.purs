@@ -2,7 +2,9 @@ module Main where
 
 import IR
 import Prelude
+import Types
 
+import CSharp (renderer)
 import CSharp as CSharp
 import Control.Plus (empty)
 import Data.Argonaut.Core (Json, foldJson, isString)
@@ -26,12 +28,6 @@ import Data.Tuple as Tuple
 import Doc (Doc)
 import Doc as Doc
 import Swift as Swift
-
-type Renderer = IRClassData -> Doc Unit
-
-renderers = {
-    csharp: CSharp.renderCSharpClass --, swift: Swift.renderSwiftClass
-}
 
 lookupOrDefault :: forall k v. Ord k => v -> k -> Map.Map k v -> v
 lookupOrDefault default key m =
@@ -175,11 +171,6 @@ replaceSimilarClasses t =
     in
         replaceClasses replacements t
 
-renderClasses :: Renderer -> L.List IRClassData -> Doc Unit
-renderClasses renderer classes = for_ classes \cls -> do
-    renderer cls
-    Doc.blank
-
 jsonToCSharp :: String -> Either String String
 jsonToCSharp json =
     jsonParser json
@@ -187,5 +178,5 @@ jsonToCSharp json =
     <#> replaceSimilarClasses
     <#> gatherClassesFromType
     <#> L.nub
-    <#> renderClasses renderers.csharp
+    <#> CSharp.renderer.render
     <#> Doc.render
