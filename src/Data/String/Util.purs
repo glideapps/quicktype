@@ -19,3 +19,6 @@ capitalize "" = ""
 capitalize s = case S.uncons s of
     Just { head, tail } -> S.toUpper (S.singleton head) <> tail
     _ -> s
+
+camelCase :: String -> String
+camelCase = S.split (S.Pattern "_") >>> map capitalize >>> S.joinWith ""
