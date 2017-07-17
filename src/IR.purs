@@ -4,16 +4,17 @@ import Control.Monad.State
 import Control.Monad.State.Class
 import Prelude
 
-import Data.Either (Either(..))
-import Data.Foldable (find, all, any)
-import Data.List (List(..), concatMap, length, singleton, (:))
+import Data.Either (Either(..), isLeft)
+import Data.Foldable (find, all, any, for_, foldM)
+import Data.List (List(..), concatMap, length, mapWithIndex, singleton, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromJust)
-import Data.Set (Set)
+import Data.Set (Set, empty, fromFoldable)
 import Data.Set as S
 import Data.Tuple (Tuple(..))
+import Data.Tuple as T
 import Partial.Unsafe (unsafePartial)
 
 newtype IRGraph = IRGraph { classes :: List (Either IRClassData Int) }
@@ -27,12 +28,19 @@ makeClass name properties =
 emptyGraph :: IRGraph
 emptyGraph = IRGraph { classes: L.Nil }
 
+addClassWithIndex :: IRClassData -> State IRGraph (Tuple Int IRType)
+addClassWithIndex classData =
+    do
+        IRGraph { classes } <- get
+        let index = L.length classes
+        put (IRGraph { classes: (L.snoc classes (Left classData)) })
+        pure $ Tuple index (IRClass index)
+
 addClass :: IRClassData -> State IRGraph IRType
 addClass classData =
     do
-        IRGraph { classes } <- get
-        put (IRGraph { classes: (L.snoc classes (Left classData)) })
-        pure $ IRClass (L.length classes)
+        Tuple _ t <- addClassWithIndex classData
+        pure t
 
 redirectClass :: Int -> Int -> State IRGraph Unit
 redirectClass from to =
@@ -63,14 +71,18 @@ combineClasses ia ib combined =
         redirectClass ib newIndex
         pure t
 
-classesInGraph :: IRGraph -> List IRClassData
-classesInGraph (IRGraph { classes }) =
-    L.concatMap mapper classes
+mapClasses :: forall a. (Int -> IRClassData -> a) -> IRGraph -> List a
+mapClasses f (IRGraph { classes }) =
+    L.concat $ L.mapWithIndex mapper classes
     where
-        mapper =
-            case _ of
-            Left cd -> L.singleton cd
+        mapper i e =
+            case e of
+            Left cd -> L.singleton $ f i cd
             Right _ -> L.Nil
+
+classesInGraph :: IRGraph -> List IRClassData
+classesInGraph  =
+    mapClasses (\i cd -> cd)
 
 data IRType
     = IRNothing
@@ -137,6 +149,9 @@ decomposeTypeSet s =
 setFromType :: IRType -> S.Set IRType
 setFromType IRNothing = S.empty
 setFromType x = S.singleton x
+
+zeroClass :: IRClassData
+zeroClass = IRClassData { names: S.empty, properties: M.empty }
 
 unifyClasses :: IRClassData -> IRClassData -> State IRGraph IRClassData
 unifyClasses (IRClassData { names: na, properties: pa }) (IRClassData { names: nb, properties: pb }) =
@@ -241,25 +256,48 @@ propertiesAreSubset graph ma mb =
 
 classesSimilar :: IRGraph -> IRClassData -> IRClassData -> Boolean
 classesSimilar graph (IRClassData { names: _, properties: pa }) (IRClassData { names: _, properties: pb }) =
-    propertiesSimilar pa pb ||
-    propertiesAreSubset graph pa pb ||
-    propertiesAreSubset graph pb pa
+    propertiesSimilar pa pb --||
+    --propertiesAreSubset graph pa pb ||
+    --propertiesAreSubset graph pb pa
 
--- similarClasses :: L.List IRClassData -> { classes :: Set IRClassData, replacements :: Map IRClassData IRClassData }
--- similarClasses L.Nil = { classes: S.empty, replacements: M.empty }
--- similarClasses (thisClass@(IRClassData name properties) : rest) =
---     let { yes: similar, no: others } = L.partition isSimilar rest
---         recursiveResult@{ classes, replacements } = similarClasses others
---     in
---         if L.length similar == 0 then
---             recursiveResult
---         else
---             let unified = L.foldl unifyClasses thisClass similar
---                 newReplacements = M.fromFoldable (map (\c -> Tuple c unified) (thisClass : similar))
---             in
---                 { classes: S.insert unified classes, replacements: M.union replacements newReplacements  }         
---     where
---         isSimilar = classesSimilar thisClass
+similarClasses :: IRGraph -> Set (Set Int)
+similarClasses graph@(IRGraph { classes }) =
+    accumulate (mapClasses Tuple graph)
+    where
+        accumulate :: List (Tuple Int IRClassData) -> Set (Set Int)
+        accumulate L.Nil = S.empty
+        accumulate ((Tuple i thisClass) : rest) =
+            let { yes: similar, no: others } = L.partition (isSimilar thisClass) rest
+                recursiveResult = accumulate others
+            in
+                if L.length similar == 0 then
+                    recursiveResult
+                else
+                    let similarSet = S.fromFoldable (i : (map T.fst similar))
+                    in
+                        S.insert similarSet recursiveResult
+        isSimilar cd1 (Tuple _ cd2) =
+            classesSimilar graph cd1 cd2
+
+unifySetOfClasses :: Set Int -> (State IRGraph Unit)
+unifySetOfClasses indexes =
+    do
+        combined <- foldM folder zeroClass indexes
+        Tuple newIndex _ <- addClassWithIndex combined
+        for_ indexes \i -> do
+            redirectClass i newIndex
+    where
+        folder cd1 i2 =
+            do
+                cd2 <- getClass i2
+                unifyClasses cd1 cd2
+
+replaceSimilarClasses :: State IRGraph Unit
+replaceSimilarClasses =
+    do
+        graph <- get
+        let similar = similarClasses graph
+        for_ similar unifySetOfClasses
 
 combineNames :: S.Set String -> String
 combineNames s =

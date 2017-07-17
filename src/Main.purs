@@ -60,31 +60,10 @@ makeTypeFromJson name json =
                 t <- makeTypeFromJson name json
                 pure $ Tuple.Tuple name t
 
--- gatherClassesFromType :: IRType -> L.List IRClassData
--- gatherClassesFromType = case _ of 
---     IRClass cls@(IRClassData _ properties) -> cls : L.concatMap gatherClassesFromType (Map.values properties)
---     IRArray t -> gatherClassesFromType t
---     IRUnion s -> L.concatMap gatherClassesFromType (L.fromFoldable s)
---     _ -> empty
-
--- replaceClasses :: (Map.Map IRClassData IRClassData) -> IRType -> IRType
--- replaceClasses m t@(IRClass c@(IRClassData name properties)) =
---     case Map.lookup c m of
---     Nothing -> IRClass (IRClassData name (Map.mapWithKey (\n t -> replaceClasses m t) properties))
---     Just replacement -> IRClass replacement
--- replaceClasses m (IRArray t) = IRArray (replaceClasses m t)
--- replaceClasses m (IRUnion s) = IRUnion (S.map (replaceClasses m) s)
--- replaceClasses _ t = t
-
--- replaceSimilarClasses :: IRType -> IRType
--- replaceSimilarClasses t =
---     let { classes, replacements } = similarClasses (gatherClassesFromType t)
---     in
---         replaceClasses replacements t
-
 jsonToCSharp :: String -> Either String String
 jsonToCSharp json =
     jsonParser json
     <#> (\j -> execState (makeTypeFromJson "TopLevel" j) emptyGraph)
+    <#> (\g -> execState replaceSimilarClasses g)
     <#> (\g -> CSharp.renderer.render g (classesInGraph g))
     <#> Doc.render
