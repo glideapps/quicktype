@@ -94,7 +94,7 @@ removeElement p s =
     let element = (find p s)
     in
         case element of
-            Just x -> { element: element, rest: S.difference s (S.delete x s) }
+            Just x -> { element: element, rest: S.delete x s }
             Nothing -> { element: element, rest: s }
 
 mapM :: forall a b. (a -> State IRGraph b) -> List a -> State IRGraph (List b)
