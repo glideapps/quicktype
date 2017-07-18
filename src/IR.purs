@@ -6,7 +6,7 @@ import Prelude
 
 import Data.Either (Either(..), isLeft)
 import Data.Foldable (find, all, any, for_, foldM)
-import Data.List (List(..), concatMap, length, mapWithIndex, singleton, (:))
+import Data.List (List(..), concatMap, elemIndex, length, mapWithIndex, singleton, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
@@ -46,9 +46,14 @@ addClassWithIndex :: IRClassData -> State IRGraph (Tuple Int IRType)
 addClassWithIndex classData =
     do
         IRGraph { classes } <- get
-        let index = L.length classes
-        put (IRGraph { classes: (L.snoc classes (Left classData)) })
-        pure $ Tuple index (IRClass index)
+        case elemIndex (Left classData) classes of
+            Nothing ->
+                do
+                    let index = L.length classes
+                    put (IRGraph { classes: (L.snoc classes (Left classData)) })
+                    pure $ Tuple index (IRClass index)
+            Just index ->
+                pure $ Tuple index (IRClass index)
 
 addClass :: IRClassData -> State IRGraph IRType
 addClass classData =
@@ -56,18 +61,28 @@ addClass classData =
         Tuple _ t <- addClassWithIndex classData
         pure t
 
+followIndex :: IRGraph -> Int -> Tuple Int IRClassData
+followIndex graph@(IRGraph { classes }) index =
+    case unsafePartial $ fromJust $ L.index classes index of
+    Left cd -> Tuple index cd
+    Right i -> followIndex graph i
+
 redirectClass :: Int -> Int -> State IRGraph Unit
 redirectClass from to =
     do
-        (IRGraph { classes: c1 }) <- get
-        let c2 = unsafePartial $ fromJust $ L.updateAt from (Right to) c1
-        put (IRGraph { classes: c2 })
+        graph@(IRGraph { classes: c1 }) <- get
+        let realTo = T.fst $ followIndex graph to
+        if from == realTo
+            then
+                pure unit
+            else
+                do
+                    let c2 = unsafePartial $ fromJust $ L.updateAt from (Right realTo) c1
+                    put (IRGraph { classes: c2 })
 
 getClassFromGraph :: IRGraph -> Int -> IRClassData
-getClassFromGraph graph@(IRGraph { classes }) index =
-    case unsafePartial $ fromJust $ L.index classes index of
-    Left cd -> cd
-    Right i -> getClassFromGraph graph i
+getClassFromGraph graph index =
+    T.snd $ followIndex graph index
 
 getClass :: Int -> State IRGraph IRClassData
 getClass index =
@@ -79,8 +94,8 @@ combineClasses :: Int -> Int -> IRClassData -> State IRGraph IRType
 combineClasses ia ib combined =
     do
         IRGraph { classes } <- get
-        let newIndex = L.length classes
-        t <- addClass combined
+        Tuple newIndex t <- addClassWithIndex combined
+        -- FIXME: could newIndex be ia or ib?
         redirectClass ia newIndex
         redirectClass ib newIndex
         pure t
@@ -181,12 +196,15 @@ unifyTypes (IRArray a) (IRArray b) =
     do
         unified <- unifyTypes a b
         pure $ IRArray unified
-unifyTypes (IRClass ia) (IRClass ib) =
-    do
-        a <- getClass ia
-        b <- getClass ib
-        unified <- unifyClasses a b
-        combineClasses ia ib unified
+unifyTypes a@(IRClass ia) (IRClass ib) =
+    if ia == ib then
+        pure a
+    else
+        do
+            a <- getClass ia
+            b <- getClass ib
+            unified <- unifyClasses a b
+            combineClasses ia ib unified
 unifyTypes (IRUnion a) (IRUnion b) =
     do
         unified <- unifyUnion a b 
