@@ -70,7 +70,11 @@ class TopBar extends Component {
     this.changeSample(this.state.sample);
   }
 
+  sendEvent = (name, value) => window.ga("send", "event", "TopBar", name, value);
+
   changeSample = (sample) => {
+    this.sendEvent("changeSample", sample);
+
     this.setState({sample});
     localStorage["sample"] = sample;
     fetch(`/sample/json/${sample}`)
@@ -101,8 +105,12 @@ class App extends Component {
     };
   }
 
+  sendEvent = (name, value) => window.ga("send", "event", "App", name, value);
+
   sourceEdited = (newValue) => {
     let result = Main.jsonToCSharp(newValue);
+
+    this.sendEvent("sourceEdited");
 
     if (result.constructor.name === "Left") {
       console.log(result.value0);
