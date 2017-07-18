@@ -8,6 +8,7 @@ import Data.Either (Either(..), isLeft)
 import Data.Foldable (find, all, any, for_, foldM)
 import Data.List (List(..), concatMap, elemIndex, length, mapWithIndex, singleton, (:))
 import Data.List as L
+import Data.Sequence as Seq
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromJust)
@@ -17,7 +18,7 @@ import Data.Tuple (Tuple(..))
 import Data.Tuple as T
 import Partial.Unsafe (unsafePartial)
 
-newtype IRGraph = IRGraph { classes :: List (Either IRClassData Int) }
+newtype IRGraph = IRGraph { classes :: Seq.Seq (Either IRClassData Int) }
 
 newtype IRClassData = IRClassData { names :: Set String, properties :: Map String IRType }
 
@@ -34,23 +35,24 @@ data IRType
 
 derive instance eqIRType :: Eq IRType
 derive instance ordIRType :: Ord IRType
+derive instance eqIRClassData :: Eq IRClassData
 
 makeClass :: String -> Map String IRType -> IRClassData
 makeClass name properties =
     IRClassData { names: S.singleton name, properties }
 
 emptyGraph :: IRGraph
-emptyGraph = IRGraph { classes: L.Nil }
+emptyGraph = IRGraph { classes: Seq.empty }
 
 addClassWithIndex :: IRClassData -> State IRGraph (Tuple Int IRType)
 addClassWithIndex classData =
     do
         IRGraph { classes } <- get
-        case elemIndex (Left classData) classes of
+        case Seq.elemIndex (Left classData) classes of
             Nothing ->
                 do
-                    let index = L.length classes
-                    put (IRGraph { classes: (L.snoc classes (Left classData)) })
+                    let index = Seq.length classes
+                    put (IRGraph { classes: (Seq.snoc classes (Left classData)) })
                     pure $ Tuple index (IRClass index)
             Just index ->
                 pure $ Tuple index (IRClass index)
@@ -63,7 +65,7 @@ addClass classData =
 
 followIndex :: IRGraph -> Int -> Tuple Int IRClassData
 followIndex graph@(IRGraph { classes }) index =
-    case unsafePartial $ fromJust $ L.index classes index of
+    case unsafePartial $ fromJust $ Seq.index index classes of
     Left cd -> Tuple index cd
     Right i -> followIndex graph i
 
@@ -77,7 +79,7 @@ redirectClass from to =
                 pure unit
             else
                 do
-                    let c2 = unsafePartial $ fromJust $ L.updateAt from (Right realTo) c1
+                    let c2 = Seq.replace (Right realTo) from c1
                     put (IRGraph { classes: c2 })
 
 getClassFromGraph :: IRGraph -> Int -> IRClassData
@@ -102,7 +104,7 @@ combineClasses ia ib combined =
 
 mapClasses :: forall a. (Int -> IRClassData -> a) -> IRGraph -> List a
 mapClasses f (IRGraph { classes }) =
-    L.concat $ L.mapWithIndex mapper classes
+    L.concat $ L.mapWithIndex mapper (L.fromFoldable classes)
     where
         mapper i e =
             case e of
