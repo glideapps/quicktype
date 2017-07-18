@@ -58,7 +58,9 @@ class TopBar extends Component {
     "bitcoin-unconfirmed-transactions.json",
     "github-events.json",
     "us-average-temperatures.json",
-    "list.json"
+    "list.json",
+    "sabre1.json",
+    "sabre2.json"
   ];
 
   constructor(props) {
