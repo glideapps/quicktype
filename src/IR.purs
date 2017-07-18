@@ -153,9 +153,6 @@ setFromType :: IRType -> S.Set IRType
 setFromType IRNothing = S.empty
 setFromType x = S.singleton x
 
-zeroClass :: IRClassData
-zeroClass = IRClassData { names: S.empty, properties: M.empty }
-
 unifyClasses :: IRClassData -> IRClassData -> State IRGraph IRClassData
 unifyClasses (IRClassData { names: na, properties: pa }) (IRClassData { names: nb, properties: pb }) =
     do
@@ -284,11 +281,16 @@ similarClasses graph@(IRGraph { classes }) =
 
 unifySetOfClasses :: Set Int -> (State IRGraph Unit)
 unifySetOfClasses indexes =
-    do
-        combined <- foldM folder zeroClass indexes
-        Tuple newIndex _ <- addClassWithIndex combined
-        for_ indexes \i -> do
-            redirectClass i newIndex
+    case L.fromFoldable indexes of
+    L.Nil -> pure unit
+    _ : L.Nil -> pure unit
+    first : rest ->
+        do
+            firstClass <- getClass first
+            combined <- foldM folder firstClass rest
+            Tuple newIndex _ <- addClassWithIndex combined
+            for_ indexes \i -> do
+                redirectClass i newIndex
     where
         folder cd1 i2 =
             do
