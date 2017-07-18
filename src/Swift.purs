@@ -19,67 +19,70 @@ import Data.Set as S
 import Data.Tuple (Tuple(..))
 
 
-renderSwiftClass :: IRClassData -> Doc Unit
-renderSwiftClass (IRClassData name properties) = do
-    line $ words ["struct", name]
+renderSwiftClass :: IRGraph -> IRClassData -> Doc Unit
+renderSwiftClass graph (IRClassData { names, properties }) = do
+    line $ words ["struct", combineNames names]
     line "{"
     indent do
         let props = properties # M.toUnfoldable <#> \(Tuple name typ) -> { name, typ }
         let propGroups = L.groupBy (eq `on` _.typ) props
-        for_ propGroups renderPropGroup
+        for_ propGroups (renderPropGroup graph)
     line "}"
     
     blank
 
-    for_ (M.values properties) renderUnions
+    for_ (M.values properties) (renderUnions graph)
 
-renderPropGroup :: NE.NonEmptyList { name :: String, typ :: IRType} -> Doc Unit
-renderPropGroup props = line do
+renderPropGroup :: IRGraph -> NE.NonEmptyList { name :: String, typ :: IRType} -> Doc Unit
+renderPropGroup graph props = line do
     let names = intercalate ", " (_.name <$> props)
     words ["let", names <> ":"]
     string " "
 
     let { typ } = NE.head props
-    string $ renderType typ
+    string $ renderType graph typ
 
-renderType :: IRType -> String
-renderType = case _ of
+renderType :: IRGraph -> IRType -> String
+renderType graph = case _ of
     IRNothing -> "Any"
     IRNull -> "Any?"
     IRInteger -> "Int"
     IRDouble -> "Double"
     IRBool -> "Bool"
     IRString -> "String"
-    IRArray a -> "[" <> renderType a <> "]"
-    IRClass (IRClassData name _) -> name
-    IRUnion s ->  unionName s
+    IRArray a -> "[" <> renderType graph a <> "]"
+    IRClass i ->
+        let IRClassData { names, properties } = getClassFromGraph graph i
+        in
+            combineNames names
+    IRUnion s ->  unionName graph s
 
-renderUnions :: IRType -> Doc Unit
-renderUnions = case _ of
+renderUnions :: IRGraph -> IRType -> Doc Unit
+renderUnions graph = case _ of
     IRUnion s -> do
-        renderUnion s
-        for_ (S.toUnfoldable s :: Array _) renderUnions 
-    IRArray (IRUnion s) -> renderUnion s
+        renderUnion graph s
+        for_ (S.toUnfoldable s :: Array _) (renderUnions graph)
+    IRArray (IRUnion s) -> renderUnion graph s
     _ -> pure unit
 
-unionName :: S.Set IRType -> String
-unionName s = intercalate "Or" $ (caseName <$> S.toUnfoldable s :: Array _)
+unionName :: IRGraph -> S.Set IRType -> String
+unionName graph s = intercalate "Or" $ (caseName graph <$> S.toUnfoldable s :: Array _)
 
-caseName :: IRType -> String
-caseName = case _ of
-    IRArray a -> renderType a <> "s"
+caseName :: IRGraph -> IRType -> String
+caseName graph = case _ of
+    IRArray a -> renderType graph a <> "s"
     IRNull -> "Nullable"
-    t -> renderType t
+    t -> renderType graph t
 
-renderUnion :: S.Set IRType -> Doc Unit
-renderUnion types = do
-    line $ words ["enum", unionName types, "{"]
+renderUnion :: IRGraph -> S.Set IRType -> Doc Unit
+renderUnion graph types = do
+    line $ words ["enum", unionName graph types, "{"]
     indent do
         for_ types \typ -> line do
             string "case ."
-            string $ "some" <> caseName typ
+            string $ "some" <> caseName graph typ
             string "("
-            string $ renderType typ
+            string $ renderType graph typ
             string ")"
     line "}"
     blank
