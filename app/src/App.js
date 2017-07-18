@@ -19,13 +19,20 @@ class Editor extends Component {
     };
   }
 
+  componentDidMount() {
+    this.getEditor().setOption("displayIndentGuides", false);
+  }
+
+  getEditor = () => window.ace.edit(this.getName())
+  getName = () => this.props.name + "-editor"
+
   render() {
     return (
       <div className={this.props.className}>
         <div className="titleBar">{this.props.language}</div>
         <div className="editor-container">
           <AceEditor
-            name={this.props.className + "-editor"}
+            name={this.getName()}
             mode={this.props.language}
             theme={this.props.theme}
             fontSize="10pt"
@@ -117,14 +124,14 @@ class App extends Component {
           onChangeSample={this.sourceEdited} />
         <div id="editors">
           <Editor
-            className="left"
+            name="left"
             language="json"
             theme="github"
             onChange={this.sourceEdited}
             value={this.state.left}
           />
           <Editor
-            className="right"
+            name="right"
             language="csharp"
             theme="cobalt"
             value={this.state.right}
