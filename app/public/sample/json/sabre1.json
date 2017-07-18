@@ -1,0 +1,257 @@
+{
+	"PricedItineraries": [{
+		"AirItinerary": {
+			"OriginDestinationOptions": {
+				"OriginDestinationOption": [{
+					"FlightSegment": [{
+						"DepartureAirport": {
+							"LocationCode": "ATL"
+						},
+						"ArrivalAirport": {
+							"LocationCode": "LAS"
+						},
+						"MarketingAirline": {
+							"Code": "F9"
+						},
+						"ArrivalTimeZone": {
+							"GMTOffset": -7
+						},
+						"TPA_Extensions": {
+							"eTicket": {
+								"Ind": true
+							}
+						},
+						"StopQuantity": 0,
+						"ElapsedTime": 252,
+						"ResBookDesigCode": "W",
+						"MarriageGrp": "O",
+						"Equipment": {
+							"AirEquipType": 320
+						},
+						"DepartureDateTime": "2016-08-13T18:15:00",
+						"ArrivalDateTime": "2016-08-13T19:27:00",
+						"FlightNumber": 1455,
+						"OnTimePerformance": {
+							"Percentage": 86
+						},
+						"OperatingAirline": {
+							"FlightNumber": 1455,
+							"Code": "F9"
+						},
+						"DepartureTimeZone": {
+							"GMTOffset": -4
+						}
+					}],
+					"ElapsedTime": 252
+				},
+				{
+					"FlightSegment": [{
+						"DepartureAirport": {
+							"LocationCode": "LAS"
+						},
+						"ArrivalAirport": {
+							"LocationCode": "ATL"
+						},
+						"MarketingAirline": {
+							"Code": "F9"
+						},
+						"ArrivalTimeZone": {
+							"GMTOffset": -4
+						},
+						"TPA_Extensions": {
+							"eTicket": {
+								"Ind": true
+							}
+						},
+						"StopQuantity": 0,
+						"ElapsedTime": 238,
+						"ResBookDesigCode": "W",
+						"MarriageGrp": "O",
+						"Equipment": {
+							"AirEquipType": 320
+						},
+						"DepartureDateTime": "2016-08-15T21:45:00",
+						"ArrivalDateTime": "2016-08-16T04:43:00",
+						"FlightNumber": 1456,
+						"OnTimePerformance": {
+							"Percentage": 79
+						},
+						"OperatingAirline": {
+							"FlightNumber": 1456,
+							"Code": "F9"
+						},
+						"DepartureTimeZone": {
+							"GMTOffset": -7
+						}
+					}],
+					"ElapsedTime": 238
+				}]
+			},
+			"DirectionInd": "Return"
+		},
+		"TPA_Extensions": {
+			"ValidatingCarrier": {
+				"Code": "F9"
+			},
+			"TagID": "instaflights~dfa7834f-34ab-4edc-835e-0cd14927d642~1"
+		},
+		"SequenceNumber": 1,
+		"AirItineraryPricingInfo": {
+			"PTC_FareBreakdowns": {
+				"PTC_FareBreakdown": {
+					"FareBasisCodes": {
+						"FareBasisCode": [{
+							"BookingCode": "W",
+							"DepartureAirportCode": "ATL",
+							"AvailabilityBreak": true,
+							"ArrivalAirportCode": "LAS",
+							"content": "W14AXS5"
+						},
+						{
+							"BookingCode": "W",
+							"DepartureAirportCode": "LAS",
+							"AvailabilityBreak": true,
+							"ArrivalAirportCode": "ATL",
+							"content": "W14AXS5"
+						}]
+					},
+					"PassengerTypeQuantity": {
+						"Quantity": 1,
+						"Code": "ADT"
+					},
+					"PassengerFare": {
+						"FareConstruction": {
+							"CurrencyCode": "USD",
+							"DecimalPlaces": 2,
+							"Amount": 119.06
+						},
+						"TotalFare": {
+							"CurrencyCode": "USD",
+							"Amount": "156.20"
+						},
+						"Taxes": {
+							"TotalTax": {
+								"CurrencyCode": "USD",
+								"DecimalPlaces": 2,
+								"Amount": 37.14
+							},
+							"Tax": [{
+								"CurrencyCode": "USD",
+								"DecimalPlaces": 2,
+								"TaxCode": "US1",
+								"Amount": 8.94
+							},
+							{
+								"CurrencyCode": "USD",
+								"DecimalPlaces": 2,
+								"TaxCode": "ZP",
+								"Amount": "8.00"
+							},
+							{
+								"CurrencyCode": "USD",
+								"DecimalPlaces": 2,
+								"TaxCode": "AY",
+								"Amount": "11.20"
+							},
+							{
+								"CurrencyCode": "USD",
+								"DecimalPlaces": 2,
+								"TaxCode": "XF",
+								"Amount": "9.00"
+							}]
+						},
+						"BaseFare": {
+							"CurrencyCode": "USD",
+							"Amount": 119.06
+						},
+						"EquivFare": {
+							"CurrencyCode": "USD",
+							"DecimalPlaces": 2,
+							"Amount": 119.06
+						}
+					}
+				}
+			},
+			"FareInfos": {
+				"FareInfo": [{
+					"TPA_Extensions": {
+						"Cabin": {
+							"Cabin": "Y"
+						},
+						"SeatsRemaining": {
+							"BelowMin": false,
+							"Number": 4
+						}
+					},
+					"FareReference": "W"
+				},
+				{
+					"TPA_Extensions": {
+						"Cabin": {
+							"Cabin": "Y"
+						},
+						"SeatsRemaining": {
+							"BelowMin": false,
+							"Number": 4
+						}
+					},
+					"FareReference": "W"
+				}]
+			},
+			"TPA_Extensions": {
+				"DivideInParty": {
+					"Indicator": false
+				}
+			},
+			"ItinTotalFare": {
+				"FareConstruction": {
+					"CurrencyCode": "USD",
+					"DecimalPlaces": 2,
+					"Amount": 119.06
+				},
+				"TotalFare": {
+					"CurrencyCode": "USD",
+					"DecimalPlaces": 2,
+					"Amount": "156.20"
+				},
+				"Taxes": {
+					"Tax": [{
+						"CurrencyCode": "USD",
+						"DecimalPlaces": 2,
+						"TaxCode": "TOTALTAX",
+						"Amount": 37.14
+					}]
+				},
+				"BaseFare": {
+					"CurrencyCode": "USD",
+					"DecimalPlaces": 2,
+					"Amount": 119.06
+				},
+				"EquivFare": {
+					"CurrencyCode": "USD",
+					"DecimalPlaces": 2,
+					"Amount": 119.06
+				}
+			}
+		},
+		"TicketingInfo": {
+			"TicketType": "eTicket"
+		}
+	}],
+	"ReturnDateTime": "2016-08-15",
+	"DepartureDateTime": "2016-08-13",
+	"DestinationLocation": "LAS",
+	"OriginLocation": "ATL",
+	"Links": [{
+		"rel": "self",
+		"href": "https://api.havail.sabre.com/v1/shop/flights?origin=ATL&destination=LAS&departuredate=2016-08-13&returndate=2016-08-15&limit=1&enabletagging=true"
+	},
+	{
+		"rel": "linkTemplate",
+		"href": "https://api.havail.sabre.com/v1/shop/flights?origin=<origin>&destination=<destination>&departuredate=<departuredate>&returndate=<returndate>&offset=<offset>&limit=<limit>&sortby=<sortby>&order=<order>&sortby2=<sortby2>&order2=<order2>&minfare=<minfare>&maxfare=<maxfare>&includedcarriers=<includedcarriers>&excludedcarriers=<excludedcarriers>&outboundflightstops=<outboundflightstops>&inboundflightstops=<inboundflightstops>&outboundstopduration=<outboundstopduration>&inboundstopduration=<inboundstopduration>&outbounddeparturewindow=<outbounddeparturewindow>&outboundarrivalwindow=<outboundarrivalwindow>&inbounddeparturewindow=<inbounddeparturewindow>&inboundarrivalwindow=<inboundarrivalwindow>&onlineitinerariesonly=<onlineitinerariesonly>&eticketsonly=<eticketsonly>&includedconnectpoints=<includedconnectpoints>&excludedconnectpoints=<excludedconnectpoints>&pointofsalecountry=<pointofsalecountry>&passengercount=<passengercount>&enabletagging=<enabletagging>"
+	},
+    {
+        "rel": "tagLookupLinkTemplate",
+        "href": "https://api.havail.sabre.com/v1/shop/flights/tags/<tagid>"
+	}]
+}
