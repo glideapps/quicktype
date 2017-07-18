@@ -23,19 +23,21 @@ class Editor extends Component {
     return (
       <div className={this.props.className}>
         <div className="titleBar">{this.props.language}</div>
-        <AceEditor
-          name={this.props.className + "-editor"}
-          mode={this.props.language}
-          theme={this.props.theme}
-          fontSize="10pt"
-          showGutter={this.props.showGutter}
-          onChange={this.props.onChange}
-          highlightActiveLine={false}
-          showPrintMargin={false}
-          displayIndentGuides={false}
-          editorProps={{$blockScrolling: true}}
-          value={this.props.value}
-        />
+        <div className="editor-container">
+          <AceEditor
+            name={this.props.className + "-editor"}
+            mode={this.props.language}
+            theme={this.props.theme}
+            fontSize="10pt"
+            showGutter={false}
+            onChange={this.props.onChange}
+            highlightActiveLine={false}
+            showPrintMargin={false}
+            displayIndentGuides={false}
+            editorProps={{$blockScrolling: true}}
+            value={this.props.value}
+          />
+        </div>
       </div>
     );
   }
@@ -118,7 +120,6 @@ class App extends Component {
             className="left"
             language="json"
             theme="github"
-            showGutter={false}
             onChange={this.sourceEdited}
             value={this.state.left}
           />

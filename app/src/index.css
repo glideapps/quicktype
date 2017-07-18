@@ -9,30 +9,38 @@ body {
 
 .topBar {
   background-color: #8e44ad;
-  padding: 10px;
+  height: 40px;
+  padding: 10px 0 0 12px;
 }
 
 .Dropdown-root {
-  width: 400px;
+  width: 320px;
+  font-size: 10pt;
 }
 
 #editors {
   display: flex;
   flex-direction: row;
   width: 100%;
-
-  position: absolute;
-  height: 100vh;
 }
 
 .ace_editor {
-  width: 50vw !important;
-  height: 100vh !important;
+  width: calc(50vw - 12px) !important;
+  height: calc(100vh - 91px) !important;
+}
+
+.right .editor-container {
+  background: rgb(0, 34, 64);
+}
+
+.editor-container {
+  padding: 16px 0 0 12px;
 }
 
 .titleBar {
   background-color: #F7F7F7;
-  padding: 14px 10px;
+  height: 26px;
+  padding: 14px 0 0 12px;
   text-transform: uppercase;
   font-size: 9pt;
   color: gray;
