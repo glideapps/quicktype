@@ -24,7 +24,7 @@ class Editor extends Component {
   }
 
   getEditor = () => window.ace.edit(this.getName())
-  getName = () => this.props.name + "-editor"
+  getName = () => this.props.className + "-editor"
 
   render() {
     return (
@@ -124,14 +124,14 @@ class App extends Component {
           onChangeSample={this.sourceEdited} />
         <div id="editors">
           <Editor
-            name="left"
+            className="left"
             language="json"
             theme="github"
             onChange={this.sourceEdited}
             value={this.state.left}
           />
           <Editor
-            name="right"
+            className="right"
             language="csharp"
             theme="cobalt"
             value={this.state.right}
