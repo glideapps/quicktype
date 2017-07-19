@@ -1,7 +1,9 @@
 module Main where
 
-import IR
 import Prelude
+
+import IR
+import Doc as Doc
 import CSharp as CSharp
 import Swift as Swift
 
@@ -14,9 +16,6 @@ import Data.Set as S
 import Data.StrMap as StrMap
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
-import Data.Tuple as Tuple
-import Doc as Doc
-import Types (Renderer)
 
 makeTypeFromJson :: String -> Json -> IR IRType
 makeTypeFromJson name json =
@@ -35,7 +34,7 @@ makeTypeFromJson name json =
     json
     where
         unify typeName t1 j2 = makeTypeFromJson typeName j2 >>= unifyTypes t1
-        toProperty (Tuple name json) = Tuple.Tuple name <$> makeTypeFromJson name json
+        toProperty (Tuple name json) = Tuple name <$> makeTypeFromJson name json
 
 makeTypeAndUnify :: String -> Json -> IRGraph
 makeTypeAndUnify name json = runIR do
