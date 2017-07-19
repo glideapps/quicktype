@@ -1,11 +1,12 @@
 module Swift
-    ( renderSwiftClass
+    ( renderer
     ) where
 
 import Prelude
 
 import Doc
 import IR
+import Types
 
 import Data.Foldable (for_, intercalate)
 import Data.Function (on)
@@ -18,28 +19,44 @@ import Data.Map as M
 import Data.Set as S
 import Data.Tuple (Tuple(..))
 
+renderer :: Renderer
+renderer =
+    { name: "Swift"
+    , aceMode: "swift"
+    , doc: swiftDoc
+    }
 
-renderSwiftClass :: IRGraph -> IRClassData -> Doc Unit
-renderSwiftClass graph (IRClassData { names, properties }) = do
-    line $ words ["struct", combineNames names]
+swiftDoc :: Doc Unit
+swiftDoc = do
+    line "import Foundation"
+    blank
+    classes <- getClasses
+    for_ classes \cls -> do
+        renderSwiftClass cls
+        blank
+
+renderSwiftClass :: IRClassData -> Doc Unit
+renderSwiftClass (IRClassData { names, properties }) = do
+    line ["struct ", combineNames names]
+    
     line "{"
     indent do
         let props = properties # M.toUnfoldable <#> \(Tuple name typ) -> { name, typ }
         let propGroups = L.groupBy (eq `on` _.typ) props
-        for_ propGroups (renderPropGroup graph)
+        for_ propGroups renderPropGroup
     line "}"
     
     blank
 
-    for_ (M.values properties) (renderUnions graph)
+    for_ (M.values properties) renderUnions
 
-renderPropGroup :: IRGraph -> NE.NonEmptyList { name :: String, typ :: IRType} -> Doc Unit
-renderPropGroup graph props = line do
+renderPropGroup :: NE.NonEmptyList { name :: String, typ :: IRType} -> Doc Unit
+renderPropGroup props = line do
     let names = intercalate ", " (_.name <$> props)
-    words ["let", names <> ":"]
-    string " "
+    words ["let", names <> ": "]
 
     let { typ } = NE.head props
+    graph <- getGraph
     string $ renderType graph typ
 
 renderType :: IRGraph -> IRType -> String
@@ -52,17 +69,16 @@ renderType graph = case _ of
     IRString -> "String"
     IRArray a -> "[" <> renderType graph a <> "]"
     IRClass i ->
-        let IRClassData { names, properties } = getClassFromGraph graph i
-        in
-            combineNames names
-    IRUnion s ->  unionName graph s
+        let IRClassData { names } = getClassFromGraph graph i
+        in combineNames names
+    IRUnion s -> unionName graph s
 
-renderUnions :: IRGraph -> IRType -> Doc Unit
-renderUnions graph = case _ of
+renderUnions :: IRType -> Doc Unit
+renderUnions = case _ of
     IRUnion s -> do
-        renderUnion graph s
-        for_ (S.toUnfoldable s :: Array _) (renderUnions graph)
-    IRArray (IRUnion s) -> renderUnion graph s
+        renderUnion s
+        for_ (S.toUnfoldable s :: Array _) renderUnions
+    IRArray (IRUnion s) -> renderUnion s
     _ -> pure unit
 
 unionName :: IRGraph -> S.Set IRType -> String
@@ -74,9 +90,12 @@ caseName graph = case _ of
     IRNull -> "Nullable"
     t -> renderType graph t
 
-renderUnion :: IRGraph -> S.Set IRType -> Doc Unit
-renderUnion graph types = do
-    line $ words ["enum", unionName graph types, "{"]
+renderUnion :: S.Set IRType -> Doc Unit
+renderUnion types = do
+    graph <- getGraph
+    
+    line ["enum ", unionName graph types, " {"]
+
     indent do
         for_ types \typ -> line do
             string "case ."

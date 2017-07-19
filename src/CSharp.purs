@@ -21,7 +21,7 @@ renderer :: Renderer
 renderer =
     { name: "C#"
     , aceMode: "csharp"
-    , render: renderCSharp
+    , doc: csharpDoc
     }
 
 isValueType :: IRType -> Boolean
@@ -61,8 +61,8 @@ renderTypeToCSharp graph = case _ of
 csNameStyle :: String -> String
 csNameStyle = camelCase >>> capitalize
 
-renderCSharp :: IRGraph -> L.List IRClassData -> Doc Unit
-renderCSharp graph classes = do
+csharpDoc :: Doc Unit
+csharpDoc = do
     line "namespace QuickType"
     line "{"
     blank
@@ -70,26 +70,29 @@ renderCSharp graph classes = do
         line "using System.Net;"
         line "using Newtonsoft.Json;"
         blank
+        classes <- getClasses
         for_ classes \cls -> do
-            renderCSharpClass graph cls
+            renderCSharpClass cls
             blank
     line "}"
 
-renderCSharpClass :: IRGraph -> IRClassData -> Doc Unit
-renderCSharpClass graph (IRClassData { names, properties }) = do
-    line $ words ["class", csNameStyle $ combineNames names]
+renderCSharpClass :: IRClassData -> Doc Unit
+renderCSharpClass (IRClassData { names, properties }) = do
+    line ["class ", csNameStyle $ combineNames names]
+
     line "{"
     indent do
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple.Tuple pname ptype) -> do
             line do
-                string "[JsonProperty(\""
+                string  "[JsonProperty(\""
                 string pname
                 string "\")]"
             line do
                 string "public "
+                graph <- getGraph
                 string $ renderTypeToCSharp graph ptype
                 words ["", csNameStyle pname, "{ get; set; }"]
-                blank
+            blank
         
         -- TODO don't rely on 'TopLevel'
         when (names == Set.singleton "TopLevel") do

@@ -1,46 +1,69 @@
 module Doc
     ( Doc
+    , getGraph
+    , getClasses
+    , getClass
+    , class Renderable
+    , render
     , string
     , line
     , words
     , blank
     , indent
-    , class Renderable
     -- Build Doc Unit with monad syntax, then render to string
-    , render
+    , runDoc
     ) where
 
 import Prelude
-import Control.Monad.RWS (RWS, evalRWS, gets, modify, tell)
-import Control.Monad.State (class MonadState)
-import Data.Foldable (intercalate)
-import Data.Tuple (snd)
 
+import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
+import Data.Foldable (for_, intercalate)
+import Data.List as L
+import Data.Tuple (snd)
+import IR (IRClassData(..))
+import IR as IR
 
 type DocState = { indent :: Int }
-newtype Doc a = Doc (RWS Unit String DocState a)
+type DocEnv = { graph :: IR.IRGraph }
+newtype Doc a = Doc (RWS DocEnv String DocState a)
 
 derive newtype instance functorDoc :: Functor Doc
 derive newtype instance applyDoc :: Apply Doc
 derive newtype instance applicativeDoc :: Applicative Doc
 derive newtype instance bindDoc :: Bind Doc
 derive newtype instance monadDoc :: Monad Doc
-derive newtype instance monadStateDoc :: MonadState { indent :: Int } Doc
+    
+runDoc :: forall a. Doc a -> IR.IRGraph -> String
+runDoc (Doc w) graph = evalRWS w { graph } { indent: 0 } # snd
+
+getGraph :: Doc IR.IRGraph
+getGraph = Doc (asks _.graph)
+
+getClasses :: Doc (L.List IR.IRClassData)
+getClasses = IR.classesInGraph <$> getGraph
+
+getClass :: Int -> Doc IR.IRClassData
+getClass i = do
+  graph <- getGraph
+  pure $ IR.getClassFromGraph graph i
 
 class Renderable r where
-    render :: r -> String
+  render :: r -> Doc Unit
 
 instance renderableString :: Renderable String where
-    render = id
+  render = string
 
 instance renderableDoc :: Renderable (Doc Unit) where
-    render (Doc w) = evalRWS w unit { indent: 0 } # snd
+  render = id
 
-line :: forall a. Renderable a => a -> Doc Unit
-line a = do
-    indent <- gets _.indent
+instance renderableArray :: Renderable r => Renderable (Array r) where
+  render rs = for_ rs render
+
+line :: forall r. Renderable r => r -> Doc Unit
+line r = do
+    indent <- Doc (gets _.indent)
     string $ times "\t" indent
-    string $ render a
+    render r
     string "\n"
 
 -- Cannot make this work any other way!
@@ -60,7 +83,7 @@ words = string <<< intercalate " "
 
 indent :: forall a. Doc a -> Doc a
 indent doc = do
-    modify \s -> { indent: s.indent + 1 }
+    Doc $ modify (\s -> { indent: s.indent + 1 })
     a <- doc
-    modify \s -> { indent: s.indent - 1 }
+    Doc $ modify (\s -> { indent: s.indent - 1 })
     pure a
