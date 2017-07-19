@@ -55,6 +55,7 @@ renderTypeToCSharp graph = case _ of
         let IRClassData { names: names, properties } = getClassFromGraph graph i
         in
             csNameStyle $ combineNames names
+    IRMap t -> "Dictionary<string, " <> renderTypeToCSharp graph t <> ">"
     IRUnion types -> renderUnionToCSharp graph types
 
 csNameStyle :: String -> String
