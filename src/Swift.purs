@@ -28,7 +28,7 @@ renderer =
 
 swiftDoc :: Doc Unit
 swiftDoc = do
-    line "import Foundation"
+    lines "import Foundation"
     blank
     classes <- getClasses
     for_ classes \cls -> do
@@ -37,14 +37,14 @@ swiftDoc = do
 
 renderSwiftClass :: IRClassData -> Doc Unit
 renderSwiftClass (IRClassData { names, properties }) = do
-    line ["struct ", combineNames names]
+    line $ words ["struct", combineNames names]
     
-    line "{"
+    lines "{"
     indent do
         let props = properties # M.toUnfoldable <#> \(Tuple name typ) -> { name, typ }
         let propGroups = L.groupBy (eq `on` _.typ) props
         for_ propGroups renderPropGroup
-    line "}"
+    lines "}"
     
     blank
 
@@ -94,7 +94,7 @@ renderUnion :: S.Set IRType -> Doc Unit
 renderUnion types = do
     graph <- getGraph
     
-    line ["enum ", unionName graph types, " {"]
+    line $ words ["enum", unionName graph types, "{"]
 
     indent do
         for_ types \typ -> line do
@@ -103,6 +103,6 @@ renderUnion types = do
             string "("
             string $ renderType graph typ
             string ")"
-    line "}"
+    lines "}"
     blank
 

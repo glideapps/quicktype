@@ -3,10 +3,9 @@ module Doc
     , getGraph
     , getClasses
     , getClass
-    , class Renderable
-    , render
     , string
     , line
+    , lines
     , words
     , blank
     , indent
@@ -17,10 +16,10 @@ module Doc
 import Prelude
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
-import Data.Foldable (for_, intercalate)
+import Data.Foldable (intercalate, sequence_)
 import Data.List as L
+import Data.String as String
 import Data.Tuple (snd)
-import IR (IRClassData(..))
 import IR as IR
 
 type DocState = { indent :: Int }
@@ -47,24 +46,21 @@ getClass i = do
   graph <- getGraph
   pure $ IR.getClassFromGraph graph i
 
-class Renderable r where
-  render :: r -> Doc Unit
-
-instance renderableString :: Renderable String where
-  render = string
-
-instance renderableDoc :: Renderable (Doc Unit) where
-  render = id
-
-instance renderableArray :: Renderable r => Renderable (Array r) where
-  render rs = for_ rs render
-
-line :: forall r. Renderable r => r -> Doc Unit
+line ::  Doc Unit -> Doc Unit
 line r = do
     indent <- Doc (gets _.indent)
     string $ times "\t" indent
-    render r
+    r
     string "\n"
+
+-- Given a potentially multi-line string, render each line at the current indent level
+lines :: String -> Doc Unit
+lines =
+  String.split (String.Pattern "\n")
+  >>> map String.trim
+  >>> map string
+  >>> map line
+  >>> sequence_
 
 -- Cannot make this work any other way!
 times :: String -> Int -> String
