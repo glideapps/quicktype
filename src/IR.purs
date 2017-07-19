@@ -26,7 +26,9 @@ import Control.Monad.State.Class (get, put)
 import Partial.Unsafe (unsafePartial)
 
 type IR = State IRGraph
+
 newtype IRGraph = IRGraph { classes :: Seq.Seq (Either IRClassData Int) }
+
 newtype IRClassData = IRClassData { names :: Set String, properties :: Map String IRType }
 
 data IRType
