@@ -6,6 +6,7 @@ import Dropdown from 'react-dropdown';
 
 import 'brace/mode/json';
 import 'brace/mode/csharp';
+import 'brace/mode/swift';
 import 'brace/theme/github';
 import 'brace/theme/cobalt';
 
@@ -177,7 +178,7 @@ class App extends Component {
           />
           <Editor
             className="right"
-            language="csharp"
+            language={this.state.renderer.aceMode}
             theme="cobalt"
             value={this.state.right}
           />
