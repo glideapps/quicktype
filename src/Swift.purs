@@ -71,6 +71,7 @@ renderType graph = case _ of
     IRClass i ->
         let IRClassData { names } = getClassFromGraph graph i
         in combineNames names
+    IRMap t -> "[String: " <> renderType graph t <> "]"
     IRUnion s -> unionName graph s
 
 renderUnions :: IRType -> Doc Unit

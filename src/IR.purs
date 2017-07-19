@@ -40,6 +40,7 @@ data IRType
     | IRString
     | IRArray IRType
     | IRClass Int
+    | IRMap IRType
     | IRUnion (Set IRType)
 
 derive instance eqIRType :: Eq IRType
@@ -135,11 +136,17 @@ isClass :: IRType -> Boolean
 isClass (IRClass _) = true
 isClass _ = false
 
-decomposeTypeSet :: S.Set IRType -> { maybeArray :: Maybe IRType, maybeClass :: Maybe IRType, rest :: S.Set IRType }
+isMap :: IRType -> Boolean
+isMap (IRMap _) = true
+isMap _ = false
+
+-- FIXME: this is horribly inefficient
+decomposeTypeSet :: S.Set IRType -> { maybeArray :: Maybe IRType, maybeClass :: Maybe IRType, maybeMap :: Maybe IRType, rest :: S.Set IRType }
 decomposeTypeSet s =
     let { element: maybeArray, rest: rest } = removeElement isArray s
         { element: maybeClass, rest: rest } = removeElement isClass rest
-    in { maybeArray, maybeClass, rest }
+        { element: maybeMap, rest: rest } = removeElement isMap rest
+    in { maybeArray, maybeClass, maybeMap, rest }
 
 setFromType :: IRType -> S.Set IRType
 setFromType IRNothing = S.empty
@@ -158,11 +165,12 @@ unifyMaybes (Just a) (Just b) = unifyTypes a b
 
 unifyUnion :: S.Set IRType -> S.Set IRType -> IR (S.Set IRType)
 unifyUnion sa sb = do
-    let { maybeArray: arrayA, maybeClass: classA, rest: sa } = decomposeTypeSet sa
-    let { maybeArray: arrayB, maybeClass: classB, rest: sb } = decomposeTypeSet sb
+    let { maybeArray: arrayA, maybeClass: classA, maybeMap: mapA, rest: sa } = decomposeTypeSet sa
+    let { maybeArray: arrayB, maybeClass: classB, maybeMap: mapB, rest: sb } = decomposeTypeSet sb
     unifiedArray <- unifyMaybes arrayA arrayB
     unifiedClasses <- unifyMaybes classA classB
-    pure $ S.unions [sa, sb, setFromType unifiedArray, setFromType unifiedClasses]
+    unifiedMap <- unifyMaybes mapA mapB
+    pure $ S.unions [sa, sb, setFromType unifiedArray, setFromType unifiedClasses, setFromType unifiedMap]
 
 unifyTypes :: IRType -> IRType -> IR IRType
 unifyTypes IRNothing x = pure x
@@ -176,6 +184,7 @@ unifyTypes a@(IRClass ia) (IRClass ib) =
         b <- getClass ib
         unified <- unifyClasses a b
         combineClasses ia ib unified
+unifyTypes (IRMap a) (IRMap b) = IRMap <$> unifyTypes a b
 unifyTypes (IRUnion a) (IRUnion b) = IRUnion <$> unifyUnion a b
 unifyTypes (IRUnion a) b = IRUnion <$> unifyUnion a (S.singleton b)
 unifyTypes a (IRUnion b) = IRUnion <$> unifyUnion (S.singleton a) b
@@ -215,6 +224,7 @@ isSubtypeOf :: IRGraph ->  IRType -> IRType -> Boolean
 isSubtypeOf _ IRNothing _ = true
 isSubtypeOf graph (IRUnion sa) (IRUnion sb) = all (\ta -> any (isSubtypeOf graph ta) sb) sa
 isSubtypeOf graph (IRArray a) (IRArray b) = isSubtypeOf graph a b
+isSubtypeOf graph (IRMap a) (IRMap b) = isSubtypeOf graph a b
 isSubtypeOf graph (IRClass ia) (IRClass ib) =
     let IRClassData { properties: pa } = getClassFromGraph graph ia
         IRClassData { properties: pb } = getClassFromGraph graph ib
