@@ -17,6 +17,7 @@
     "purescript-stringutils": "^0.0.6",
     "purescript-argonaut-core": "^3.1.0",
     "purescript-either": "^3.1.0",
+    "purescript-filterable": "^2.2.0",
     "purescript-foldable-traversable": "^3.4.0",
     "purescript-transformers": "^3.4.0",
     "pluralize": "^5.0.0"
