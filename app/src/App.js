@@ -62,12 +62,14 @@ class TopBar extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      sample: localStorage["sample"] || this.samples[0]
+      sample: localStorage["sample"] || this.samples[0],
+      renderer: this.getRenderer().name
     };
   }
 
   componentWillMount() {
     this.changeSample(this.state.sample);
+    this.changeRenderer(this.state.renderer.name);
   }
 
   sendEvent = (name, value) => window.ga("send", "event", "TopBar", name, value);
@@ -75,22 +77,47 @@ class TopBar extends Component {
   changeSample = (sample) => {
     this.sendEvent("changeSample", sample);
 
-    this.setState({sample});
+
     localStorage["sample"] = sample;
-    fetch(`/sample/json/${sample}`)
+    this.setState({ sample }, () => this.refresh());
+  }
+
+  refresh = () => {
+    fetch(`/sample/json/${this.state.sample}`)
       .then((data) => data.text())
       .then((data) => {
         this.props.onChangeSample(data);
       });
   }
 
+  getRenderer = (name) => {
+    let theName = name || localStorage["renderer"] || Main.renderers[0].name;
+    return Main.renderers.find((r) => r.name === theName) || Main.renderers[0];
+  }
+
+  changeRenderer = (name) => {
+    this.sendEvent("changeRenderer", name);
+
+    let renderer = this.getRenderer(name);
+    this.setState({ renderer: renderer.name });
+    localStorage["renderer"] = renderer.name;
+
+    this.props.onChangeRenderer(renderer);
+  }
+
   render() {
     return (
       <div className="topBar">
         <Dropdown
+          name="sample"
           options={this.samples}
           value={this.state.sample}
           onChange={({value}) => this.changeSample(value)} />
+        <Dropdown
+          name="renderer"
+          options={Main.renderers.map((r) => r.name)}
+          value={this.getRenderer().name}
+          onChange={({value}) => this.changeRenderer(value)} />
       </div>
     );
   }
@@ -101,14 +128,16 @@ class App extends Component {
     super(props);
     this.state = {
       left: "",
-      right: ""
+      right: "",
+      renderer: Main.renderers[0]
     };
   }
 
   sendEvent = (name, value) => window.ga("send", "event", "App", name, value);
 
   sourceEdited = (newValue) => {
-    let result = Main.jsonToCSharp(newValue);
+    let renderer = this.state.renderer;
+    let result = Main.renderJson(renderer)(newValue);
 
     this.sendEvent("sourceEdited");
 
@@ -125,11 +154,19 @@ class App extends Component {
     }
   }
 
+  changeRenderer = (renderer) => {
+    this.setState({ renderer }, () => {
+      this.sourceEdited(this.state.left);
+    });
+  }
+
   render() {
     return (
       <div>
         <TopBar
-          onChangeSample={this.sourceEdited} />
+          onChangeSample={this.sourceEdited}
+          renderer={this.state.renderer}
+          onChangeRenderer={this.changeRenderer} />
         <div id="editors">
           <Editor
             className="left"

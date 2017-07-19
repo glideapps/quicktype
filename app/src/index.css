@@ -11,11 +11,15 @@ body {
   background-color: #8e44ad;
   height: 40px;
   padding: 10px 0 0 12px;
+
+  display: flex;
+  flex-direction: row;
 }
 
 .Dropdown-root {
   width: 320px;
   font-size: 10pt;
+  margin-right: 10px;
 }
 
 #editors {

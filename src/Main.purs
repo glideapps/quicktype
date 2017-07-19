@@ -1,14 +1,16 @@
 module Main where
 
-import Prelude
-
 import IR
+import Prelude
+import Types
 import Doc as Doc
+
 import CSharp as CSharp
 import Swift as Swift
 
 import Data.Argonaut.Core (Json, foldJson)
 import Data.Argonaut.Parser (jsonParser)
+
 import Data.Array as A
 import Data.Either (Either)
 import Data.Map as Map
@@ -16,6 +18,12 @@ import Data.Set as S
 import Data.StrMap as StrMap
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
+
+renderers :: Array Renderer
+renderers = [
+    CSharp.renderer,
+    Swift.renderer
+]
 
 makeTypeFromJson :: String -> Json -> IR IRType
 makeTypeFromJson name json =
@@ -41,8 +49,8 @@ makeTypeAndUnify name json = runIR do
     topLevel <- makeTypeFromJson name json
     replaceSimilarClasses
 
-jsonToCSharp :: String -> Either String String
-jsonToCSharp json =
+renderJson :: Renderer -> String -> Either String String
+renderJson renderer json =
     jsonParser json
     <#> makeTypeAndUnify "TopLevel"
-    <#> Doc.runDoc CSharp.renderer.doc
+    <#> Doc.runDoc renderer.doc
