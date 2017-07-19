@@ -247,7 +247,7 @@ similarClasses graph = accumulate (mapClasses Tuple graph)
         
         isSimilar cd1 (Tuple _ cd2) = classesSimilar graph cd1 cd2
 
-unifySetOfClasses :: Set Int -> (IR Unit)
+unifySetOfClasses :: Set Int -> IR Unit
 unifySetOfClasses indexes =
     case L.fromFoldable indexes of
         L.Nil -> pure unit
