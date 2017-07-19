@@ -1,25 +1,32 @@
 module IR where
 
-import Control.Monad.State
-import Control.Monad.State.Class
 import Prelude
 
-import Data.Either (Either(..), isLeft, either)
-import Data.Foldable (find, all, any, for_, foldM)
-import Data.List (List(..), concatMap, elemIndex, length, mapWithIndex, singleton, (:))
-import Data.List as L
-import Data.Map (Map)
-import Data.Map as M
+import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..), fromJust, maybe)
+import Data.Foldable (find, all, any, for_, foldM)
+
+import Data.List as L
+import Data.List (List, (:))
+
+import Data.Map as M
+import Data.Map (Map)
+
 import Data.Sequence as Seq
-import Data.Set (Set, empty, fromFoldable)
+
 import Data.Set as S
-import Data.Tuple (Tuple(..))
+import Data.Set (Set)
+
 import Data.Tuple as T
+import Data.Tuple (Tuple(..))
+
+import Control.Monad.State (State, execState)
+import Control.Monad.State.Class (get, put)
+
 import Partial.Unsafe (unsafePartial)
 
+type IR = State IRGraph
 newtype IRGraph = IRGraph { classes :: Seq.Seq (Either IRClassData Int) }
-
 newtype IRClassData = IRClassData { names :: Set String, properties :: Map String IRType }
 
 data IRType
@@ -37,13 +44,16 @@ derive instance eqIRType :: Eq IRType
 derive instance ordIRType :: Ord IRType
 derive instance eqIRClassData :: Eq IRClassData
 
+runIR :: forall a. IR a -> IRGraph
+runIR ir = execState ir emptyGraph
+
 makeClass :: String -> Map String IRType -> IRClassData
 makeClass name properties = IRClassData { names: S.singleton name, properties }
 
 emptyGraph :: IRGraph
 emptyGraph = IRGraph { classes: Seq.empty }
 
-addClassWithIndex :: IRClassData -> State IRGraph (Tuple Int IRType)
+addClassWithIndex :: IRClassData -> IR (Tuple Int IRType)
 addClassWithIndex classData = do
     IRGraph { classes } <- get
     case Seq.elemIndex (Left classData) classes of
@@ -53,8 +63,7 @@ addClassWithIndex classData = do
             pure $ Tuple index (IRClass index)
         Just index -> pure $ Tuple index (IRClass index)
 
-
-addClass :: IRClassData -> State IRGraph IRType
+addClass :: IRClassData -> IR IRType
 addClass classData = T.snd <$> addClassWithIndex classData
 
 followIndex :: IRGraph -> Int -> Tuple Int IRClassData
@@ -63,7 +72,7 @@ followIndex graph@(IRGraph { classes }) index =
     Left cd -> Tuple index cd
     Right i -> followIndex graph i
 
-redirectClass :: Int -> Int -> State IRGraph Unit
+redirectClass :: Int -> Int -> IR Unit
 redirectClass from to = do
     graph@(IRGraph { classes: c1 }) <- get
     let realTo = T.fst $ followIndex graph to
@@ -76,12 +85,12 @@ redirectClass from to = do
 getClassFromGraph :: IRGraph -> Int -> IRClassData
 getClassFromGraph graph index = T.snd $ followIndex graph index
 
-getClass :: Int -> State IRGraph IRClassData
+getClass :: Int -> IR IRClassData
 getClass index = do
     graph <- get
     pure $ getClassFromGraph graph index
 
-combineClasses :: Int -> Int -> IRClassData -> State IRGraph IRType
+combineClasses :: Int -> Int -> IRClassData -> IR IRType
 combineClasses ia ib combined = do
     IRGraph { classes } <- get
     Tuple newIndex t <- addClassWithIndex combined
@@ -104,12 +113,12 @@ removeElement :: forall a. Ord a => (a -> Boolean) -> S.Set a -> { element :: Ma
 removeElement p s = { element, rest: maybe s (\x -> S.delete x s) element }
     where element = find p s 
 
-mapM :: forall a b. (a -> State IRGraph b) -> List a -> State IRGraph (List b)
+mapM :: forall a b. (a -> IR b) -> List a -> IR (List b)
 mapM _ L.Nil = pure L.Nil
 mapM f (x : xs) = L.Cons <$> f x <*> mapM f xs
 
 -- FIXME: this is ugly and inefficient
-unionWithDefault :: forall k v. Ord k => (v -> v -> State IRGraph v) -> v -> Map k v -> Map k v -> State IRGraph (Map k v)
+unionWithDefault :: forall k v. Ord k => (v -> v -> IR v) -> v -> Map k v -> Map k v -> IR (Map k v)
 unionWithDefault unifier default m1 m2 =
     let allKeys = L.fromFoldable $ S.union (S.fromFoldable $ M.keys m1) (S.fromFoldable $ M.keys m2)
         valueFor k = unifier (lookupOrDefault default k m1) (lookupOrDefault default k m2)
@@ -134,18 +143,18 @@ setFromType :: IRType -> S.Set IRType
 setFromType IRNothing = S.empty
 setFromType x = S.singleton x
 
-unifyClasses :: IRClassData -> IRClassData -> State IRGraph IRClassData
+unifyClasses :: IRClassData -> IRClassData -> IR IRClassData
 unifyClasses (IRClassData { names: na, properties: pa }) (IRClassData { names: nb, properties: pb }) = do
     properties <- unionWithDefault unifyTypesWithNull IRNothing pa pb
     pure $ IRClassData { names: S.union na nb, properties }
 
-unifyMaybes :: Maybe IRType -> Maybe IRType -> State IRGraph IRType
+unifyMaybes :: Maybe IRType -> Maybe IRType -> IR IRType
 unifyMaybes Nothing Nothing = pure IRNothing
 unifyMaybes (Just a) Nothing = pure a
 unifyMaybes Nothing (Just b) = pure b
 unifyMaybes (Just a) (Just b) = unifyTypes a b
 
-unifyUnion :: S.Set IRType -> S.Set IRType -> State IRGraph (S.Set IRType)
+unifyUnion :: S.Set IRType -> S.Set IRType -> IR (S.Set IRType)
 unifyUnion sa sb = do
     let { maybeArray: arrayA, maybeClass: classA, rest: sa } = decomposeTypeSet sa
     let { maybeArray: arrayB, maybeClass: classB, rest: sb } = decomposeTypeSet sb
@@ -153,7 +162,7 @@ unifyUnion sa sb = do
     unifiedClasses <- unifyMaybes classA classB
     pure $ S.unions [sa, sb, setFromType unifiedArray, setFromType unifiedClasses]
 
-unifyTypes :: IRType -> IRType -> State IRGraph IRType
+unifyTypes :: IRType -> IRType -> IR IRType
 unifyTypes IRNothing x = pure x
 unifyTypes x IRNothing = pure x
 unifyTypes (IRArray a) (IRArray b) = IRArray <$> unifyTypes a b
@@ -175,7 +184,7 @@ nullifyNothing :: IRType -> IRType
 nullifyNothing IRNothing = IRNull
 nullifyNothing x = x
 
-unifyTypesWithNull :: IRType -> IRType -> State IRGraph IRType
+unifyTypesWithNull :: IRType -> IRType -> IR IRType
 unifyTypesWithNull IRNothing IRNothing = pure IRNothing
 unifyTypesWithNull a b = unifyTypes (nullifyNothing a) (nullifyNothing b)
 
@@ -236,7 +245,7 @@ similarClasses graph = accumulate (mapClasses Tuple graph)
         
         isSimilar cd1 (Tuple _ cd2) = classesSimilar graph cd1 cd2
 
-unifySetOfClasses :: Set Int -> (State IRGraph Unit)
+unifySetOfClasses :: Set Int -> (IR Unit)
 unifySetOfClasses indexes =
     case L.fromFoldable indexes of
         L.Nil -> pure unit
@@ -250,7 +259,7 @@ unifySetOfClasses indexes =
             Tuple newIndex _ <- addClassWithIndex combined
             for_ indexes \i ->  redirectClass i newIndex
 
-replaceSimilarClasses :: State IRGraph Unit
+replaceSimilarClasses :: IR Unit
 replaceSimilarClasses = do
     graph <- get
     let similar = similarClasses graph
