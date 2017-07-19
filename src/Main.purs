@@ -45,4 +45,4 @@ jsonToCSharp :: String -> Either String String
 jsonToCSharp json =
     jsonParser json
     <#> makeTypeAndUnify "TopLevel"
-    <#> Doc.runDoc Swift.renderer.doc
+    <#> Doc.runDoc CSharp.renderer.doc

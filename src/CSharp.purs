@@ -2,7 +2,6 @@ module CSharp
     ( renderer
     ) where
 
-
 import Doc
 import IR
 import Prelude
@@ -63,28 +62,28 @@ csNameStyle = camelCase >>> capitalize
 
 csharpDoc :: Doc Unit
 csharpDoc = do
-    line "namespace QuickType"
-    line "{"
+    lines """namespace QuickType
+             {"""
     blank
     indent do
-        line "using System.Net;"
-        line "using Newtonsoft.Json;"
+        lines """using System.Net;
+                 using Newtonsoft.Json;"""
         blank
         classes <- getClasses
         for_ classes \cls -> do
             renderCSharpClass cls
             blank
-    line "}"
+    lines "}"
 
 renderCSharpClass :: IRClassData -> Doc Unit
 renderCSharpClass (IRClassData { names, properties }) = do
-    line ["class ", csNameStyle $ combineNames names]
+    line $ words ["class", csNameStyle $ combineNames names]
 
-    line "{"
+    lines "{"
     indent do
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple.Tuple pname ptype) -> do
             line do
-                string  "[JsonProperty(\""
+                string "[JsonProperty(\""
                 string pname
                 string "\")]"
             line do
@@ -96,7 +95,7 @@ renderCSharpClass (IRClassData { names, properties }) = do
         
         -- TODO don't rely on 'TopLevel'
         when (names == Set.singleton "TopLevel") do
-            line "// Loading helpers"
-            line "public static TopLevel FromJson(string json) => JsonConvert.DeserializeObject<TopLevel>(json);"
-            line "public static TopLevel FromUrl(string url) => FromJson(new WebClient().DownloadString(url));"
-    line "}"
+            lines """// Loading helpers
+                     public static TopLevel FromJson(string json) => JsonConvert.DeserializeObject<TopLevel>(json);
+                     public static TopLevel FromUrl(string url) => FromJson(new WebClient().DownloadString(url));"""
+    lines "}"
