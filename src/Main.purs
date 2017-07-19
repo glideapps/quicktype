@@ -1,10 +1,9 @@
 module Main where
 
-import Prelude
-
 import IR
-import Doc as Doc
+import Prelude
 import CSharp as CSharp
+import Swift as Swift
 
 import Data.Argonaut.Core (Json, foldJson)
 import Data.Argonaut.Parser (jsonParser)
@@ -16,6 +15,8 @@ import Data.StrMap as StrMap
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
+import Doc as Doc
+import Types (Renderer)
 
 makeTypeFromJson :: String -> Json -> IR IRType
 makeTypeFromJson name json =
@@ -45,5 +46,4 @@ jsonToCSharp :: String -> Either String String
 jsonToCSharp json =
     jsonParser json
     <#> makeTypeAndUnify "TopLevel"
-    <#> (\g -> CSharp.renderer.render g (classesInGraph g))
-    <#> Doc.render
+    <#> Doc.runDoc Swift.renderer.doc

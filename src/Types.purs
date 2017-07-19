@@ -10,5 +10,5 @@ import Doc
 type Renderer = {
     name :: String,
     aceMode :: String,
-    render :: IRGraph -> L.List IRClassData -> Doc Unit
+    doc :: Doc Unit
 }
