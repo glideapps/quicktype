@@ -80,9 +80,10 @@ class TopBar extends Component {
 
   refresh = () => {
     fetch(`/sample/json/${this.state.sample}`)
-      .then((data) => data.text())
+      .then((data) => data.json())
       .then((data) => {
-        this.props.onChangeSample(data);
+        let pretty = JSON.stringify(data, null, 2);
+        this.props.onChangeSample(pretty);
       });
   }
 
