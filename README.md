@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/dvdsgl/quicktype.svg?token=PSTj9tVyM1RDRiZ17Sgd&branch=master)](https://travis-ci.com/dvdsgl/quicktype)
+
 ## Setup
 
 ```shell
