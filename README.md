@@ -22,6 +22,13 @@ $ npm start
 
 The react app will live-reload when you edit any source.
 
+## Install
+
+```shell
+$ npm link
+$ quicktype https://blockchain.info/latestblock
+```
+
 ## Deploy
 
 ```shell
