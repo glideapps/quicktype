@@ -1,4 +1,14 @@
-module IR where
+module IR
+    ( IR
+    , unifySetOfClasses
+    , followRedirections
+    , getClass
+    , addClass
+    , replaceClass
+    , unifyTypes
+    , runIR
+    , mapM
+    ) where
 
 import Prelude
 
@@ -66,6 +76,7 @@ combineClasses ia ib combined = do
     redirectClass ib newIndex
     pure t
 
+-- FIXME: doesn't really belong here
 mapM :: forall a b. (a -> IR b) -> List a -> IR (List b)
 mapM _ L.Nil = pure L.Nil
 mapM f (x : xs) = L.Cons <$> f x <*> mapM f xs
