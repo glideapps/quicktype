@@ -97,6 +97,5 @@ renderCSharpClass (IRClassData { names, properties }) = do
         -- TODO don't rely on 'TopLevel'
         when (names == Set.singleton "TopLevel") do
             lines """// Loading helpers
-                     public static TopLevel FromJson(string json) => JsonConvert.DeserializeObject<TopLevel>(json);
-                     public static TopLevel FromUrl(string url) => FromJson(new WebClient().DownloadString(url));"""
+                     public static TopLevel FromJson(string json) => JsonConvert.DeserializeObject<TopLevel>(json);"""
     lines "}"
