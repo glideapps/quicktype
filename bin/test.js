@@ -19,12 +19,7 @@ shell.exec("dotnet restore", { silent: true });
 Samples.samples.forEach((sample) => {
     console.error(`* Parsing ${sample}`);
 
-    shell.exec("pwd");
-    shell.exec("ls ../../");
-    shell.exec("ls ../../app");
-    shell.exec("ls -R ../../app/public");
-
     let path = `../../app/public/sample/json/${sample}`;
-    exec(`cat ${path} | node ../../bin/quicktype.js > QuickType.cs`);
+    exec(`node ../../bin/quicktype.js ${path} > QuickType.cs`);
     exec(`dotnet run ${path}`);
 });
