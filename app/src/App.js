@@ -60,7 +60,8 @@ class TopBar extends Component {
     "us-average-temperatures.json",
     "list.json",
     "sabre1.json",
-    "sabre2.json"
+    "sabre2.json",
+    "identifiers.json"
   ];
 
   constructor(props) {

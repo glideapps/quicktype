@@ -21,7 +21,7 @@ import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Foldable (intercalate, sequence_)
 import Data.List as L
 import Data.String as String
-import Data.Tuple (snd)
+import Data.Tuple (Tuple, snd)
 
 type DocState = { indent :: Int }
 type DocEnv = { graph :: IRGraph }
@@ -39,7 +39,7 @@ runDoc (Doc w) graph = evalRWS w { graph } { indent: 0 } # snd
 getGraph :: Doc IRGraph
 getGraph = Doc (asks _.graph)
 
-getClasses :: Doc (L.List IRClassData)
+getClasses :: Doc (L.List (Tuple Int IRClassData))
 getClasses = classesInGraph <$> getGraph
 
 getClass :: Int -> Doc IRClassData

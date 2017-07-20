@@ -11,14 +11,15 @@ import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
 import Data.Foldable (for_, intercalate)
 import Data.List (List, fromFoldable, (:))
 import Data.List as L
+import Data.Map (keys, lookup)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromJust, fromMaybe)
 import Data.Set as Set
 import Data.String (toCharArray)
 import Data.String as Str
 import Data.String.Util (capitalize, camelCase)
 import Data.String.Utils (mapChars)
-import Data.Tuple as Tuple
+import Data.Tuple (Tuple(..))
 
 renderer :: Renderer
 renderer =
@@ -70,27 +71,28 @@ nullableFromSet s =
     x : IRNull : L.Nil -> Just x
     _ -> Nothing
 
-renderUnionToCSharp :: IRGraph -> Set.Set IRType -> String
-renderUnionToCSharp graph s =
+renderUnionToCSharp :: (Map.Map Int String) -> IRGraph -> Set.Set IRType -> String
+renderUnionToCSharp classNames graph s =
     case nullableFromSet s of
-    Just x -> if isValueType x then renderTypeToCSharp graph x <> "?" else renderTypeToCSharp graph x
-    Nothing -> "Either<" <> intercalate ", " (map (renderTypeToCSharp graph) (L.fromFoldable s)) <> ">"
+    Just x -> if isValueType x then renderTypeToCSharp classNames graph x <> "?" else renderTypeToCSharp classNames graph x
+    Nothing -> "Either<" <> intercalate ", " (map (renderTypeToCSharp classNames graph) (L.fromFoldable s)) <> ">"
 
-renderTypeToCSharp :: IRGraph -> IRType -> String
-renderTypeToCSharp graph = case _ of
+lookupName :: forall a. Ord a => a -> (Map.Map a String) -> String
+lookupName original nameMap =
+    fromMaybe "NAME_NOT_PROCESSED" $ Map.lookup original nameMap
+
+renderTypeToCSharp :: (Map.Map Int String) -> IRGraph -> IRType -> String
+renderTypeToCSharp classNames graph = case _ of
     IRNothing -> "object"
     IRNull -> "object"
     IRInteger -> "int"
     IRDouble -> "double"
     IRBool -> "bool"
     IRString -> "string"
-    IRArray a -> renderTypeToCSharp graph a <> "[]"
-    IRClass i ->
-        let IRClassData { names: names, properties } = getClassFromGraph graph i
-        in
-            csNameStyle $ combineNames names
-    IRMap t -> "Dictionary<string, " <> renderTypeToCSharp graph t <> ">"
-    IRUnion types -> renderUnionToCSharp graph types
+    IRArray a -> renderTypeToCSharp classNames graph a <> "[]"
+    IRClass i -> lookupName i classNames
+    IRMap t -> "Dictionary<string, " <> renderTypeToCSharp classNames graph t <> ">"
+    IRUnion types -> renderUnionToCSharp classNames graph types
 
 csNameStyle :: String -> String
 csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
@@ -106,18 +108,21 @@ csharpDoc = do
                  using Newtonsoft.Json;"""
         blank
         classes <- getClasses
-        for_ classes \cls -> do
-            renderCSharpClass cls
+        let names = transformNames (\(IRClassData { names }) -> csNameStyle $ combineNames names) ("Other" <> _) classes
+        for_ classes \(Tuple i cls) -> do
+            renderCSharpClass names i cls
             blank
     lines "}"
 
-renderCSharpClass :: IRClassData -> Doc Unit
-renderCSharpClass (IRClassData { names, properties }) = do
-    line $ words ["class", csNameStyle $ combineNames names]
+renderCSharpClass :: (Map.Map Int String) -> Int -> IRClassData -> Doc Unit
+renderCSharpClass classNames classIndex (IRClassData { names, properties }) = do
+    let className = lookupName classIndex classNames
+    let propertyNames = transformNames csNameStyle ("Other" <> _) $ map (\n -> Tuple n n) $ Map.keys properties
+    line $ words ["class", className]
 
     lines "{"
     indent do
-        for_ (Map.toUnfoldable properties :: Array _) \(Tuple.Tuple pname ptype) -> do
+        for_ (Map.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
             line do
                 string "[JsonProperty(\""
                 string pname
@@ -125,8 +130,9 @@ renderCSharpClass (IRClassData { names, properties }) = do
             line do
                 string "public "
                 graph <- getGraph
-                string $ renderTypeToCSharp graph ptype
-                words ["", csNameStyle pname, "{ get; set; }"]
+                string $ renderTypeToCSharp classNames graph ptype
+                let csPropName = lookupName pname propertyNames
+                words ["", csPropName, "{ get; set; }"]
             blank
         
         -- TODO don't rely on 'TopLevel'

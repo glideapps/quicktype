@@ -16,6 +16,7 @@ module IRGraph
     , combineNames
     , classesInGraph
     , regatherClassNames
+    , transformNames
     ) where
 
 import Prelude
@@ -27,7 +28,7 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
 import Data.Sequence as Seq
-import Data.Set (Set)
+import Data.Set (Set, empty, insert, member)
 import Data.Set as S
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
@@ -83,8 +84,8 @@ mapClasses f (IRGraph { classes }) = L.concat $ L.mapWithIndex mapper (L.fromFol
         mapper _ (Redirect _) = L.Nil
         mapper i (Class cd) = (f i cd) : L.Nil
 
-classesInGraph :: IRGraph -> List IRClassData
-classesInGraph  = mapClasses (const id)
+classesInGraph :: IRGraph -> List (Tuple Int IRClassData)
+classesInGraph  = mapClasses Tuple
 
 -- FIXME: doesn't really belong here
 lookupOrDefault :: forall k v. Ord k => v -> k -> Map k v -> v
@@ -191,3 +192,22 @@ combineNames :: S.Set String -> String
 combineNames s = case L.fromFoldable s of
     L.Nil -> "NONAME"
     n : _ -> n
+
+transformNames :: forall a b. Ord a => (b -> String) -> (String -> String) -> List (Tuple a b) -> Map a String
+transformNames legalize otherize names =
+    process S.empty M.empty names
+    where
+        makeName :: b -> String -> Set String -> String
+        makeName name tryName setSoFar =
+            if S.member tryName setSoFar then
+                makeName name (otherize tryName) setSoFar
+            else
+                tryName
+        process :: (Set String) -> (Map a String) -> (List (Tuple a b)) -> (Map a String)
+        process setSoFar mapSoFar l =
+            case l of
+            L.Nil -> mapSoFar
+            (Tuple identifier inputs) : rest ->
+                let name = makeName inputs (legalize inputs) setSoFar
+                in
+                    process (S.insert name setSoFar) (M.insert identifier name mapSoFar) rest
