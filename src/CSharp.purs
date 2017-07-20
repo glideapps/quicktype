@@ -3,7 +3,7 @@ module CSharp
     ) where
 
 import Doc
-import IR
+import IRGraph
 import Prelude
 import Types
 

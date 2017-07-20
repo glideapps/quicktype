@@ -14,16 +14,17 @@ module Doc
     ) where
 
 import Prelude
+import IRGraph
+import IR
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Foldable (intercalate, sequence_)
 import Data.List as L
 import Data.String as String
 import Data.Tuple (snd)
-import IR as IR
 
 type DocState = { indent :: Int }
-type DocEnv = { graph :: IR.IRGraph }
+type DocEnv = { graph :: IRGraph }
 newtype Doc a = Doc (RWS DocEnv String DocState a)
 
 derive newtype instance functorDoc :: Functor Doc
@@ -32,19 +33,19 @@ derive newtype instance applicativeDoc :: Applicative Doc
 derive newtype instance bindDoc :: Bind Doc
 derive newtype instance monadDoc :: Monad Doc
     
-runDoc :: forall a. Doc a -> IR.IRGraph -> String
+runDoc :: forall a. Doc a -> IRGraph -> String
 runDoc (Doc w) graph = evalRWS w { graph } { indent: 0 } # snd
 
-getGraph :: Doc IR.IRGraph
+getGraph :: Doc IRGraph
 getGraph = Doc (asks _.graph)
 
-getClasses :: Doc (L.List IR.IRClassData)
-getClasses = IR.classesInGraph <$> getGraph
+getClasses :: Doc (L.List IRClassData)
+getClasses = classesInGraph <$> getGraph
 
-getClass :: Int -> Doc IR.IRClassData
+getClass :: Int -> Doc IRClassData
 getClass i = do
   graph <- getGraph
-  pure $ IR.getClassFromGraph graph i
+  pure $ getClassFromGraph graph i
 
 line ::  Doc Unit -> Doc Unit
 line r = do

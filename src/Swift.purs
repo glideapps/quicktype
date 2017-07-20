@@ -5,7 +5,7 @@ module Swift
 import Prelude
 
 import Doc
-import IR
+import IRGraph
 import Types
 
 import Data.Foldable (for_, intercalate)
