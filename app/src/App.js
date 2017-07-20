@@ -11,6 +11,7 @@ import 'brace/theme/github';
 import 'brace/theme/cobalt';
 
 import Main from "../../output/Main";
+import Samples from "../../output/Samples";
 
 class Editor extends Component {
   constructor(props) {
@@ -52,17 +53,7 @@ class Editor extends Component {
 }
 
 class TopBar extends Component {
-  samples = [
-    "pokédex.json",
-    "bitcoin-latest-block.json",
-    "bitcoin-unconfirmed-transactions.json",
-    "github-events.json",
-    "us-average-temperatures.json",
-    "list.json",
-    "sabre1.json",
-    "sabre2.json",
-    "identifiers.json"
-  ];
+  samples = Samples.samples;
 
   constructor(props) {
     super(props);
