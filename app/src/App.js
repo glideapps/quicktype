@@ -134,7 +134,7 @@ class App extends Component {
 
   sourceEdited = (newValue) => {
     let renderer = this.state.renderer;
-    let result = Main.renderJson(renderer)(newValue);
+    let result = Main.renderJsonString(renderer)(newValue);
 
     this.sendEvent("sourceEdited");
 

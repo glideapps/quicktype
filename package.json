@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "shelljs": "^0.7.8"
+    "shelljs": "^0.7.8",
+    "stream-json": "0.5.2"
   },
   "scripts": {
     "setup": "npm install && cd app && npm install",

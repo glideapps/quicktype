@@ -36,7 +36,7 @@ makeTypeFromJson name json =
     (\_ -> pure IRString)
     (\arr -> do
         let typeName = singular name
-        IRArray <$> A.foldM (unify typeName) IRNothing arr)
+        IRArray <$> A.foldRecM (unify typeName) IRNothing arr)
     (\obj -> do
         let l1 = StrMap.toUnfoldable obj
         l2 <- mapM toProperty l1
@@ -52,9 +52,13 @@ makeTypeAndUnify name json = runIR do
     replaceSimilarClasses
     makeMaps
 
-renderJson :: Renderer -> String -> Either String String
-renderJson renderer json =
+renderJson :: Renderer -> Json -> String
+renderJson renderer =
+    makeTypeAndUnify "TopLevel"
+    >>> regatherClassNames
+    >>> Doc.runDoc renderer.doc
+
+renderJsonString :: Renderer -> String -> Either String String
+renderJsonString renderer json =
     jsonParser json
-    <#> makeTypeAndUnify "TopLevel"
-    <#> regatherClassNames
-    <#> Doc.runDoc renderer.doc
+    <#> renderJson renderer
