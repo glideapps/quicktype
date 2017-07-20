@@ -14,12 +14,14 @@
     "purescript-maps": "^3.3.1",
     "purescript-tuples": "^4.1.0",
     "purescript-sequences": "https://github.com/schani/purescript-sequences.git#8aa15619e32a84e2cbc5db74f0416bee95873349",
+    "purescript-strings": "^3.3.0",
     "purescript-stringutils": "^0.0.6",
     "purescript-argonaut-core": "^3.1.0",
     "purescript-either": "^3.1.0",
     "purescript-filterable": "^2.2.0",
     "purescript-foldable-traversable": "^3.4.0",
     "purescript-transformers": "^3.4.0",
+    "purescript-unicode": "^3.0.1",
     "pluralize": "^5.0.0"
   },
   "devDependencies": {
