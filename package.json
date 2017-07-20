@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {},
   "scripts": {
-    "setup": "npm install && npm install app",
+    "setup": "npm install && cd app && npm install",
     "build": "pulp build",
     "test": "pulp test",
     "postinstall": "bower install && npm run build",
