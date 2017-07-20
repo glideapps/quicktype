@@ -7,13 +7,17 @@ import IRGraph
 import Prelude
 import Types
 
+import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
 import Data.Foldable (for_, intercalate)
 import Data.List (List, fromFoldable, (:))
 import Data.List as L
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set as Set
+import Data.String (toCharArray)
+import Data.String as Str
 import Data.String.Util (capitalize, camelCase)
+import Data.String.Utils (mapChars)
 import Data.Tuple as Tuple
 
 renderer :: Renderer
@@ -28,6 +32,36 @@ isValueType IRInteger = true
 isValueType IRDouble = true
 isValueType IRBool = true
 isValueType _ = false
+
+isLetterCharacter :: Char -> Boolean
+isLetterCharacter c =
+    isLetter c || (generalCategory c == Just LetterNumber)
+
+isStartCharacter :: Char -> Boolean
+isStartCharacter c =
+    isLetterCharacter c || c == '_'
+
+isPartCharacter :: Char -> Boolean
+isPartCharacter c =
+    case generalCategory c of
+    Nothing -> false
+    Just DecimalNumber -> true
+    Just ConnectorPunctuation -> true
+    Just NonSpacingMark -> true
+    Just SpacingCombiningMark -> true
+    Just Format -> true
+    _ -> isLetterCharacter c
+
+legalizeIdentifier :: String -> String
+legalizeIdentifier str =
+    case Str.charAt 0 str of
+    -- FIXME: use the type to infer a name?
+    Nothing -> "Empty"
+    Just s ->
+        if isStartCharacter s then
+            Str.fromCharArray $ map (\c -> if isLetterCharacter c then c else '_') $ Str.toCharArray str
+        else
+            legalizeIdentifier ("_" <> str)
 
 nullableFromSet :: Set.Set IRType -> Maybe IRType
 nullableFromSet s =
@@ -59,7 +93,7 @@ renderTypeToCSharp graph = case _ of
     IRUnion types -> renderUnionToCSharp graph types
 
 csNameStyle :: String -> String
-csNameStyle = camelCase >>> capitalize
+csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
 csharpDoc :: Doc Unit
 csharpDoc = do
