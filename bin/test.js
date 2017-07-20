@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 const shell = require("shelljs");
-const Main = require("./output/Main");
-const Samples = require("./output/Samples");
+const Main = require("../output/Main");
+const Samples = require("../output/Samples");
 
 
 function exec(s, opts, cb) {
