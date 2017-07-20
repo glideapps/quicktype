@@ -4,3 +4,4 @@ cache:
   directories:
   - bower_components
   - node_modules
+  - $HOME/.cache/bower
