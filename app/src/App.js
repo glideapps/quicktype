@@ -133,9 +133,21 @@ class App extends Component {
 
   sendEvent = (name, value) => window.ga("send", "event", "App", name, value);
 
+  sendPerformance = (category, variable, work) => {
+    let start = window.performance && window.performance.now();
+    let result = work();
+    let elapsed = start && (window.performance.now() - start);
+
+    if (elapsed) {
+      window.ga('send', 'timing', category, variable, Math.round(elapsed));
+    }
+
+    return result;
+  }
+
   sourceEdited = (newValue) => {
     let renderer = this.state.renderer;
-    let result = Main.renderJsonString(renderer)(newValue);
+    let result = this.sendPerformance("Main", "renderJsonString", () => Main.renderJsonString(renderer)(newValue));
 
     this.sendEvent("sourceEdited");
 
