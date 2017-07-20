@@ -4,9 +4,12 @@
   "private": true,
   "dependencies": {},
   "scripts": {
-    "postinstall": "bower install && pulp build && pushd app && npm install && popd",
+    "setup": "npm install && npm install app",
+    "build": "pulp build",
+    "test": "pulp test",
+    "postinstall": "bower install && npm run build",
     "start": "cd app && npm start",
-    "deploy": "npm install && cd app && npm run deploy"
+    "deploy": "npm install && cd app && npm install && npm run deploy"
   },
   "devDependencies": {
     "bower": "^1.8.0",

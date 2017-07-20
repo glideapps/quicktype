@@ -1,7 +1,7 @@
 ## Setup
 
 ```shell
-$ npm install
+$ npm run setup
 ```
 
 ## Edit
