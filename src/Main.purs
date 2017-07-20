@@ -1,6 +1,8 @@
 module Main where
 
+import IRGraph
 import IR
+import Transformations
 import Prelude
 import Types
 import Doc as Doc

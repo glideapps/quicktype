@@ -2,58 +2,26 @@ module IR where
 
 import Prelude
 
+import IRGraph
+
 import Control.Monad.State (State, execState)
 import Control.Monad.State.Class (get, put)
-import Data.Filterable (filtered)
-import Data.Foldable (find, all, any, for_, foldM)
-import Data.List (List, foldl, fromFoldable, length, (:))
+import Data.Foldable (for_, foldM)
+import Data.List (List, (:))
 import Data.List as L
-import Data.Map (Map, mapWithKey, values)
+import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
+import Data.Maybe (Maybe(..))
 import Data.Sequence as Seq
 import Data.Set (Set)
 import Data.Set as S
 import Data.Tuple (Tuple(..))
 import Data.Tuple as T
-import Partial.Unsafe (unsafePartial)
 
 type IR = State IRGraph
 
-data Entry
-    = NoType
-    | Class IRClassData
-    | Redirect Int
-
-newtype IRGraph = IRGraph { classes :: Seq.Seq Entry }
-
-newtype IRClassData = IRClassData { names :: Set String, properties :: Map String IRType }
-
-data IRType
-    = IRNothing
-    | IRNull
-    | IRInteger
-    | IRDouble
-    | IRBool
-    | IRString
-    | IRArray IRType
-    | IRClass Int
-    | IRMap IRType
-    | IRUnion (Set IRType)
-
-derive instance eqEntry :: Eq Entry
-derive instance eqIRType :: Eq IRType
-derive instance ordIRType :: Ord IRType
-derive instance eqIRClassData :: Eq IRClassData
-
 runIR :: forall a. IR a -> IRGraph
 runIR ir = execState ir emptyGraph
-
-makeClass :: String -> Map String IRType -> IRClassData
-makeClass name properties = IRClassData { names: S.singleton name, properties }
-
-emptyGraph :: IRGraph
-emptyGraph = IRGraph { classes: Seq.empty }
 
 addClassWithIndex :: IRClassData -> IR (Tuple Int IRType)
 addClassWithIndex classData = do
@@ -67,13 +35,6 @@ addClassWithIndex classData = do
 
 addClass :: IRClassData -> IR IRType
 addClass classData = T.snd <$> addClassWithIndex classData
-
-followIndex :: IRGraph -> Int -> Tuple Int IRClassData
-followIndex graph@(IRGraph { classes }) index =
-    unsafePartial $
-        case fromJust $ Seq.index index classes of
-        Class cd -> Tuple index cd
-        Redirect i -> followIndex graph i
 
 redirectClass :: Int -> Int -> IR Unit
 redirectClass from to = do
@@ -91,9 +52,6 @@ deleteClass i = do
     let newClasses = Seq.replace NoType i classes
     put $ IRGraph { classes: newClasses }
 
-getClassFromGraph :: IRGraph -> Int -> IRClassData
-getClassFromGraph graph index = T.snd $ followIndex graph index
-
 getClass :: Int -> IR IRClassData
 getClass index = do
     graph <- get
@@ -108,23 +66,6 @@ combineClasses ia ib combined = do
     redirectClass ib newIndex
     pure t
 
-mapClasses :: forall a. (Int -> IRClassData -> a) -> IRGraph -> List a
-mapClasses f (IRGraph { classes }) = L.concat $ L.mapWithIndex mapper (L.fromFoldable classes)
-    where
-        mapper _ NoType = L.Nil
-        mapper _ (Redirect _) = L.Nil
-        mapper i (Class cd) = (f i cd) : L.Nil
-
-classesInGraph :: IRGraph -> List IRClassData
-classesInGraph  = mapClasses (const id)
-
-lookupOrDefault :: forall k v. Ord k => v -> k -> Map k v -> v
-lookupOrDefault default key m = maybe default id $ M.lookup key m
-
-removeElement :: forall a. Ord a => (a -> Boolean) -> S.Set a -> { element :: Maybe a, rest :: S.Set a }
-removeElement p s = { element, rest: maybe s (\x -> S.delete x s) element }
-    where element = find p s 
-
 mapM :: forall a b. (a -> IR b) -> List a -> IR (List b)
 mapM _ L.Nil = pure L.Nil
 mapM f (x : xs) = L.Cons <$> f x <*> mapM f xs
@@ -136,30 +77,6 @@ unionWithDefault unifier default m1 m2 =
         valueFor k = unifier (lookupOrDefault default k m1) (lookupOrDefault default k m2)
         keyMapper k = Tuple k <$> valueFor k
     in M.fromFoldable <$> mapM keyMapper allKeys
-
-isArray :: IRType -> Boolean
-isArray (IRArray _) = true
-isArray _ = false
-
-isClass :: IRType -> Boolean
-isClass (IRClass _) = true
-isClass _ = false
-
-isMap :: IRType -> Boolean
-isMap (IRMap _) = true
-isMap _ = false
-
--- FIXME: this is horribly inefficient
-decomposeTypeSet :: S.Set IRType -> { maybeArray :: Maybe IRType, maybeClass :: Maybe IRType, maybeMap :: Maybe IRType, rest :: S.Set IRType }
-decomposeTypeSet s =
-    let { element: maybeArray, rest: rest } = removeElement isArray s
-        { element: maybeClass, rest: rest } = removeElement isClass rest
-        { element: maybeMap, rest: rest } = removeElement isMap rest
-    in { maybeArray, maybeClass, maybeMap, rest }
-
-setFromType :: IRType -> S.Set IRType
-setFromType IRNothing = S.empty
-setFromType x = S.singleton x
 
 unifyClasses :: IRClassData -> IRClassData -> IR IRClassData
 unifyClasses (IRClassData { names: na, properties: pa }) (IRClassData { names: nb, properties: pb }) = do
@@ -200,71 +117,9 @@ unifyTypes a (IRUnion b) = IRUnion <$> unifyUnion (S.singleton a) b
 unifyTypes a b | a == b = pure a
                | otherwise = pure $ IRUnion (S.fromFoldable [a, b])
 
-nullifyNothing :: IRType -> IRType
-nullifyNothing IRNothing = IRNull
-nullifyNothing x = x
-
 unifyTypesWithNull :: IRType -> IRType -> IR IRType
 unifyTypesWithNull IRNothing IRNothing = pure IRNothing
 unifyTypesWithNull a b = unifyTypes (nullifyNothing a) (nullifyNothing b)
-
-matchingProperties :: forall v. Eq v => Map String v -> Map String v -> Map String v
-matchingProperties ma mb = M.fromFoldable $ L.concatMap getFromB (M.toUnfoldable ma)
-    where
-        getFromB (Tuple k va) =
-            case M.lookup k mb of
-            Just vb | va == vb -> Tuple k vb : L.Nil
-                    | otherwise -> L.Nil
-            Nothing -> L.Nil
-
-propertiesSimilar :: forall v. Eq v => Map String v -> Map String v -> Boolean
-propertiesSimilar pa pb =
-    let aInB = M.size $ matchingProperties pa pb
-        bInA = M.size $ matchingProperties pb pa
-    in
-        (aInB * 4 >= (M.size pa) * 3) && (bInA * 4 >= (M.size pb) * 3)
-
-isMaybeSubtypeOfMaybe :: IRGraph -> Maybe IRType -> Maybe IRType -> Boolean
-isMaybeSubtypeOfMaybe _ Nothing Nothing = true
-isMaybeSubtypeOfMaybe graph (Just a) (Just b) = isSubtypeOf graph a b
-isMaybeSubtypeOfMaybe _ _ _ = false
-
-isSubtypeOf :: IRGraph ->  IRType -> IRType -> Boolean
-isSubtypeOf _ IRNothing _ = true
-isSubtypeOf graph (IRUnion sa) (IRUnion sb) = all (\ta -> any (isSubtypeOf graph ta) sb) sa
-isSubtypeOf graph (IRArray a) (IRArray b) = isSubtypeOf graph a b
-isSubtypeOf graph (IRMap a) (IRMap b) = isSubtypeOf graph a b
-isSubtypeOf graph (IRClass ia) (IRClass ib) =
-    let IRClassData { properties: pa } = getClassFromGraph graph ia
-        IRClassData { properties: pb } = getClassFromGraph graph ib
-    in propertiesAreSubset graph pa pb
-isSubtypeOf _ a b = a == b
-
-propertiesAreSubset :: IRGraph -> Map String IRType -> Map String IRType -> Boolean
-propertiesAreSubset graph ma mb = all isInB (M.toUnfoldable ma :: List _)
-    where isInB (Tuple n ta) = maybe false (isSubtypeOf graph ta) (M.lookup n mb)
-
-classesSimilar :: IRGraph -> IRClassData -> IRClassData -> Boolean
-classesSimilar graph (IRClassData { properties: pa }) (IRClassData { properties: pb }) =
-    propertiesSimilar pa pb --||
-    --propertiesAreSubset graph pa pb ||
-    --propertiesAreSubset graph pb pa
-
-similarClasses :: IRGraph -> Set (Set Int)
-similarClasses graph = accumulate (mapClasses Tuple graph)
-    where
-        accumulate :: List (Tuple Int IRClassData) -> Set (Set Int)
-        accumulate L.Nil = S.empty
-        accumulate (Tuple i thisClass : rest) =
-            let { yes: similar, no: others } = L.partition (isSimilar thisClass) rest
-                recursiveResult = accumulate others
-            in case similar of
-                L.Nil -> recursiveResult
-                _ ->
-                    let similarSet = S.fromFoldable (i : map T.fst similar)
-                    in S.insert similarSet recursiveResult
-        
-        isSimilar cd1 (Tuple _ cd2) = classesSimilar graph cd1 cd2
 
 unifySetOfClasses :: Set Int -> IR Unit
 unifySetOfClasses indexes =
@@ -285,13 +140,6 @@ followRedirections = do
     graph <- get
     replaceClasses \i -> Just $ IRClass $ T.fst $ followIndex graph i
 
-replaceSimilarClasses :: IR Unit
-replaceSimilarClasses = do
-    graph <- get
-    let similar = similarClasses graph
-    for_ similar unifySetOfClasses
-    followRedirections
-
 updateClasses :: (IRClassData -> IR IRClassData) -> IR Unit
 updateClasses updater = do
     IRGraph { classes } <- get
@@ -302,15 +150,6 @@ updateClasses updater = do
             case entry of
             Class cd -> Class <$> updater cd
             _ -> pure entry
-
-replaceClassesInType :: (Int -> Maybe IRType) -> IRType -> IRType
-replaceClassesInType replacer t =
-    case t of
-    IRClass i -> fromMaybe t $ replacer i
-    IRArray a -> IRArray $ replaceClassesInType replacer a
-    IRMap m -> IRMap $ replaceClassesInType replacer m
-    IRUnion s -> IRUnion $ S.map (replaceClassesInType replacer) s
-    _ -> t
 
 replaceClasses :: (Int -> Maybe IRType) -> IR Unit
 replaceClasses replacer = do
@@ -324,29 +163,3 @@ replaceClass :: Int -> IRType -> IR Unit
 replaceClass from to = do
     replaceClasses (\i -> if i == from then Just to else Nothing)
     deleteClass from
-
-replaceClassWithMap :: Int -> IR Unit
-replaceClassWithMap i = do
-    IRClassData { names, properties } <- getClass i
-    let types = M.values properties
-    t <- L.foldM unifyTypes IRNothing types
-    replaceClass i (IRMap t)
-
-makeMaps :: IR Unit
-makeMaps = do
-    graph <- get
-    let mapIndexes = filtered $ mapClasses isMapMapper graph
-    for_ mapIndexes \i -> do
-        replaceClassWithMap i
-    where
-        isMapMapper i (IRClassData { names, properties }) =
-            let types = M.values properties
-                isMap = (L.length types) >= 20 && allEqual types
-            in if isMap then Just i else Nothing
-        allEqual L.Nil = true
-        allEqual (t : ts) = all (eq t) ts
-
-combineNames :: S.Set String -> String
-combineNames s = case L.fromFoldable s of
-    L.Nil -> "NONAME"
-    n : _ -> n
