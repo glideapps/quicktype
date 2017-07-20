@@ -1,16 +1,23 @@
 #!/usr/bin/env node
 
-var shell = require("shelljs");
 const fs = require('fs');
+const shell = require("shelljs");
 const Main = require("../output/Main");
+const makeSource = require("stream-json");
+const Assembler  = require("stream-json/utils/Assembler");
 
-function render(json) {
+function renderString(json) {
     let renderer = Main.renderers[0];
-    return Main.renderJson(renderer)(json).value0;
+    return Main.renderJsonString(renderer)(json).value0;
+}
+
+function renderJson(json) {
+    let renderer = Main.renderers[0];
+    return Main.renderJson(renderer)(json);
 }
 
 function work(json) {
-  let out = render(json);
+  let out = renderString(json);
   shell.echo(out);
 }
 
@@ -44,18 +51,20 @@ function parseFileOrUrl(fileOrUrl) {
 let args = process.argv.slice(2);
 
 if (args.length == 0) {
-  // https://gist.github.com/kristopherjohnson/5065599
+  let source = makeSource();
+  let assembler = new Assembler();
+
+  source.output.on("data", function (chunk) {
+    assembler[chunk.name] && assembler[chunk.name](chunk.value);
+  });
+  source.output.on("end", function () {
+    shell.echo(renderJson(assembler.current));
+  });
+
+  process.stdin.pipe(source.input);
+
   process.stdin.resume();
   process.stdin.setEncoding('utf8');
-
-  let chunks = [];
-  process.stdin.on('data', function (chunk) {
-    chunks.push(chunk);
-  });
-
-  process.stdin.on('end', function () {
-    work(chunks.join(""));
-  });
 } else if (args.length == 1 && args[0] == "--help") {
   usage();
 } else if (args.length == 1) {
