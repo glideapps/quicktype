@@ -6,6 +6,7 @@ import Dropdown from 'react-dropdown';
 
 import 'brace/mode/json';
 import 'brace/mode/csharp';
+import 'brace/mode/golang';
 import 'brace/mode/swift';
 import 'brace/theme/github';
 import 'brace/theme/cobalt';
