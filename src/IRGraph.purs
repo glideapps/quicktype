@@ -1,4 +1,21 @@
-module IRGraph where
+module IRGraph
+    ( IRGraph(..)
+    , IRClassData(..)
+    , IRType(..)
+    , Entry(..)
+    , emptyGraph
+    , followIndex
+    , getClassFromGraph
+    , lookupOrDefault
+    , decomposeTypeSet
+    , nullifyNothing
+    , replaceClassesInType
+    , setFromType
+    , matchingProperties
+    , mapClasses
+    , combineNames
+    , classesInGraph
+    ) where
 
 import Prelude
 
@@ -67,9 +84,11 @@ mapClasses f (IRGraph { classes }) = L.concat $ L.mapWithIndex mapper (L.fromFol
 classesInGraph :: IRGraph -> List IRClassData
 classesInGraph  = mapClasses (const id)
 
+-- FIXME: doesn't really belong here
 lookupOrDefault :: forall k v. Ord k => v -> k -> Map k v -> v
 lookupOrDefault default key m = maybe default id $ M.lookup key m
 
+-- FIXME: doesn't really belong here
 removeElement :: forall a. Ord a => (a -> Boolean) -> S.Set a -> { element :: Maybe a, rest :: S.Set a }
 removeElement p s = { element, rest: maybe s (\x -> S.delete x s) element }
     where element = find p s 
@@ -140,6 +159,7 @@ replaceClassesInType replacer t =
     IRUnion s -> IRUnion $ S.map (replaceClassesInType replacer) s
     _ -> t
 
+-- FIXME: doesn't really belong here
 combineNames :: S.Set String -> String
 combineNames s = case L.fromFoldable s of
     L.Nil -> "NONAME"

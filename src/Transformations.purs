@@ -1,4 +1,7 @@
-module Transformations where
+module Transformations
+    ( replaceSimilarClasses
+    , makeMaps
+    ) where
 
 import Prelude
 import IRGraph
