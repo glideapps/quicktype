@@ -1,2 +1,6 @@
 language: node_js
 os: osx
+cache:
+  directories:
+  - bower_components
+  - node_modules
