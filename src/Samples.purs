@@ -2,9 +2,9 @@ module Samples where
 
 samples :: Array String
 samples = [
-    "pokédex.json",
     "bitcoin-latest-block.json",
     "bitcoin-unconfirmed-transactions.json",
+    "pokedex.json",
     "github-events.json",
     "us-average-temperatures.json",
     "list.json",
