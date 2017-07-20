@@ -14,6 +14,7 @@ import Data.List as L
 import Data.Map (keys, lookup)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromJust, fromMaybe)
+import Data.Set (empty)
 import Data.Set as Set
 import Data.String (toCharArray)
 import Data.String as Str
@@ -108,7 +109,7 @@ csharpDoc = do
                  using Newtonsoft.Json;"""
         blank
         classes <- getClasses
-        let names = transformNames (\(IRClassData { names }) -> csNameStyle $ combineNames names) ("Other" <> _) classes
+        let names = transformNames (\(IRClassData { names }) -> csNameStyle $ combineNames names) ("Other" <> _) Set.empty classes
         for_ classes \(Tuple i cls) -> do
             renderCSharpClass names i cls
             blank
@@ -117,7 +118,7 @@ csharpDoc = do
 renderCSharpClass :: (Map.Map Int String) -> Int -> IRClassData -> Doc Unit
 renderCSharpClass classNames classIndex (IRClassData { names, properties }) = do
     let className = lookupName classIndex classNames
-    let propertyNames = transformNames csNameStyle ("Other" <> _) $ map (\n -> Tuple n n) $ Map.keys properties
+    let propertyNames = transformNames csNameStyle ("Other" <> _) (Set.singleton className) $ map (\n -> Tuple n n) $ Map.keys properties
     line $ words ["class", className]
 
     lines "{"

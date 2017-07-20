@@ -193,9 +193,9 @@ combineNames s = case L.fromFoldable s of
     L.Nil -> "NONAME"
     n : _ -> n
 
-transformNames :: forall a b. Ord a => (b -> String) -> (String -> String) -> List (Tuple a b) -> Map a String
-transformNames legalize otherize names =
-    process S.empty M.empty names
+transformNames :: forall a b. Ord a => (b -> String) -> (String -> String) -> (Set String) -> List (Tuple a b) -> Map a String
+transformNames legalize otherize illegalNames names =
+    process illegalNames M.empty names
     where
         makeName :: b -> String -> Set String -> String
         makeName name tryName setSoFar =
