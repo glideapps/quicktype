@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var shell = require("shelljs");
+const fs = require('fs');
 const Main = require("../output/Main");
 
 function render(json) {
@@ -16,7 +17,28 @@ function work(json) {
 function usage() {
   shell.echo("Usage:");
   shell.echo("    quicktype          reads JSON from stdin");
+  shell.echo("    quicktype FILE     reads JSON from FILE");
   shell.echo("    quicktype URL      fetches JSON from URL");
+}
+
+function parseFile(file) {
+  fs.readFile(file, 'utf8', (err, json) => {
+    work(json);
+  });
+}
+
+function parseUrl(url) {
+  shell.exec(`curl -s ${url} 2> /dev/null`, { silent: true }, (code, json, stderr) => {
+    work(json);
+  });
+}
+
+function parseFileOrUrl(fileOrUrl) {
+  if (fs.existsSync(fileOrUrl)) {
+    parseFile(fileOrUrl);
+  } else {
+    parseUrl(fileOrUrl);
+  }
 }
 
 let args = process.argv.slice(2);
@@ -37,11 +59,7 @@ if (args.length == 0) {
 } else if (args.length == 1 && args[0] == "--help") {
   usage();
 } else if (args.length == 1) {
-  let url = args[0];
-
-  shell.exec(`curl -s ${url} 2> /dev/null`, { silent: true }, (code, json, stderr) => {
-    work(json);
-  });
+  parseFileOrUrl(args[0]);
 } else {
   usage();
   shell.exit(1);
