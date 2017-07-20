@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
 const shell = require("shelljs");
-const Main = require("../output/Main");
-const Samples = require("../output/Samples");
+const Main = require("./output/Main");
+const Samples = require("./output/Samples");
 
-shell.cd("test/csharp");
-shell.exec("dotnet restore", { silent: true });
 
 function exec(s, opts, cb) {
     let result = shell.exec(s, opts, cb);
@@ -15,8 +13,16 @@ function exec(s, opts, cb) {
     return result;
 }
 
+shell.cd("test/csharp");
+shell.exec("dotnet restore", { silent: true });
+
 Samples.samples.forEach((sample) => {
     console.error(`* Parsing ${sample}`);
+
+    shell.exec("pwd");
+    shell.exec("ls ../../");
+    shell.exec("ls ../../app");
+    shell.exec("ls -R ../../app/public");
 
     let path = `../../app/public/sample/json/${sample}`;
     exec(`cat ${path} | node ../../bin/quicktype.js > QuickType.cs`);
