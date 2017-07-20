@@ -17,7 +17,7 @@ shell.cd("test/csharp");
 shell.exec("dotnet restore", { silent: true });
 
 Samples.samples.forEach((sample) => {
-    console.error(`* Parsing ${sample}`);
+    console.error(`* Building C# code for ${sample}`);
 
     let path = `../../app/public/sample/json/${sample}`;
     exec(`node ../../bin/quicktype.js ${path} > QuickType.cs`);
