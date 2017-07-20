@@ -7,7 +7,9 @@ import IRGraph
 import Prelude
 import Types
 
-import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
+import Data.Array (concatMap)
+import Data.Char (toCharCode)
+import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter, isPrint)
 import Data.Foldable (for_, intercalate)
 import Data.List (List, fromFoldable, (:))
 import Data.List as L
@@ -16,9 +18,9 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromJust, fromMaybe)
 import Data.Set (empty)
 import Data.Set as Set
-import Data.String (toCharArray)
+import Data.String (fromCharArray, toCharArray)
 import Data.String as Str
-import Data.String.Util (capitalize, camelCase)
+import Data.String.Util (capitalize, camelCase, intToHex)
 import Data.String.Utils (mapChars)
 import Data.Tuple (Tuple(..))
 
@@ -64,6 +66,27 @@ legalizeIdentifier str =
             Str.fromCharArray $ map (\c -> if isLetterCharacter c then c else '_') $ Str.toCharArray str
         else
             legalizeIdentifier ("_" <> str)
+
+stringify :: String -> String
+stringify str =
+    "\"" <> (Str.fromCharArray $ concatMap charRep $ Str.toCharArray str) <> "\""
+    where
+        charRep c =
+            case c of
+            '\\' -> ['\\', '\\']
+            '\"' -> ['\\', '\"']
+            '\n' -> ['\\', 'n']
+            '\t' -> ['\\', 't']
+            _ ->
+                if isPrint c then
+                    [c]
+                else
+                    let i = toCharCode c
+                    in
+                        if i <= 0xffff then
+                            Str.toCharArray $ "\\u" <> intToHex 4 i
+                        else
+                            Str.toCharArray $ "\\U" <> intToHex 8 i
 
 nullableFromSet :: Set.Set IRType -> Maybe IRType
 nullableFromSet s =
@@ -125,9 +148,9 @@ renderCSharpClass classNames classIndex (IRClassData { names, properties }) = do
     indent do
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
             line do
-                string "[JsonProperty(\""
-                string pname
-                string "\")]"
+                string "[JsonProperty("
+                string $ stringify pname
+                string ")]"
             line do
                 string "public "
                 graph <- getGraph
