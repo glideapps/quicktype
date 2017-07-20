@@ -31,7 +31,7 @@ swiftDoc = do
     lines "import Foundation"
     blank
     classes <- getClasses
-    for_ classes \cls -> do
+    for_ classes \(Tuple _ cls) -> do
         renderSwiftClass cls
         blank
 
