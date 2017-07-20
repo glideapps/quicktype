@@ -7,3 +7,4 @@
 /.purs*
 /.psa*
 npm-debug.log
+test/csharp/QuickType.cs
