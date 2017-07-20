@@ -56,4 +56,5 @@ renderJson :: Renderer -> String -> Either String String
 renderJson renderer json =
     jsonParser json
     <#> makeTypeAndUnify "TopLevel"
+    <#> regatherClassNames
     <#> Doc.runDoc renderer.doc

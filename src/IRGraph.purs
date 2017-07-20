@@ -15,6 +15,7 @@ module IRGraph
     , mapClasses
     , combineNames
     , classesInGraph
+    , regatherClassNames
     ) where
 
 import Prelude
@@ -28,6 +29,7 @@ import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
 import Data.Sequence as Seq
 import Data.Set (Set)
 import Data.Set as S
+import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
 import Data.Tuple as T
 import Partial.Unsafe (unsafePartial)
@@ -158,6 +160,31 @@ replaceClassesInType replacer t =
     IRMap m -> IRMap $ replaceClassesInType replacer m
     IRUnion s -> IRUnion $ S.map (replaceClassesInType replacer) s
     _ -> t
+
+regatherClassNames :: IRGraph -> IRGraph
+regatherClassNames graph@(IRGraph { classes }) =
+    IRGraph { classes: Seq.fromFoldable $ L.mapWithIndex entryMapper $ L.fromFoldable classes }
+    where
+        newNames = combine $ mapClasses gatherFromClassData graph
+        entryMapper :: Int -> Entry -> Entry
+        entryMapper i entry =
+            case entry of
+            Class (IRClassData { names, properties }) -> Class $ IRClassData { names: fromMaybe names (M.lookup i newNames), properties}
+            _ -> entry
+        gatherFromClassData :: Int -> IRClassData -> Map Int (Set String)
+        gatherFromClassData _ (IRClassData { properties }) =
+            combine $ map (\(Tuple n t) -> gatherFromType n t) (M.toUnfoldable properties :: List _)
+        combine :: List (Map Int (Set String)) -> Map Int (Set String)
+        combine =
+            L.foldr (M.unionWith S.union) M.empty
+        gatherFromType :: String -> IRType -> Map Int (Set String)
+        gatherFromType name t =
+            case t of
+            IRClass i -> M.singleton i (S.singleton name)
+            IRArray a -> gatherFromType (singular name) a
+            IRMap m -> gatherFromType (singular name) m
+            IRUnion types -> combine $ map (gatherFromType name) (L.fromFoldable types)
+            _ -> M.empty
 
 -- FIXME: doesn't really belong here
 combineNames :: S.Set String -> String
