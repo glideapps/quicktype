@@ -68,6 +68,7 @@ csharpDoc = do
     blank
     indent do
         lines """using System.Net;
+                 using System.Collections.Generic;
                  using Newtonsoft.Json;"""
         blank
         classes <- getClasses
