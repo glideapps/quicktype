@@ -14,6 +14,7 @@ import Data.List as L
 import Data.Map (keys, lookup)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromJust, fromMaybe)
+import Data.Set (empty)
 import Data.Set as Set
 import Data.String (toCharArray)
 import Data.String as Str
@@ -96,7 +97,7 @@ golangDoc = do
     lines "import \"encoding/json\""
     blank
     classes <- getClasses
-    let names = transformNames (\(IRClassData { names }) -> goNameStyle $ combineNames names) ("Other" <> _) classes
+    let names = transformNames (\(IRClassData { names }) -> goNameStyle $ combineNames names) ("Other" <> _) Set.empty classes
     for_ classes \(Tuple i cls) -> do
         renderGolangType names i cls
         blank
@@ -104,7 +105,7 @@ golangDoc = do
 renderGolangType :: (Map.Map Int String) -> Int -> IRClassData -> Doc Unit
 renderGolangType classNames classIndex (IRClassData { names, properties }) = do
     let className = lookupName classIndex classNames
-    let propertyNames = transformNames goNameStyle ("Other" <> _) $ map (\n -> Tuple n n) $ Map.keys properties
+    let propertyNames = transformNames goNameStyle ("Other" <> _) Set.empty $ map (\n -> Tuple n n) $ Map.keys properties
     line $ words ["type", className, "struct {"]
     indent do
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
