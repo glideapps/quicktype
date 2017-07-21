@@ -12,7 +12,7 @@
     "test": "pulp test && bin/test.js",
     "postinstall": "bower install && npm run build",
     "start": "cd app && npm start",
-    "deploy": "npm install && cd app && npm install && npm run deploy"
+    "deploy": "cd app && npm install && npm run deploy"
   },
   "devDependencies": {
     "bower": "^1.8.0",
