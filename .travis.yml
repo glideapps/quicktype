@@ -2,10 +2,10 @@ language: node_js
 node_js: '6'
 sudo: enabled
 before_install:
-  - sudo sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ trusty main" > /etc/apt/sources.list.d/dotnetdev.list'
-  - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 417A0893
-  - sudo apt-get update
-  - sudo apt-get install dotnet-dev-1.0.4
+- sudo sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ trusty main" > /etc/apt/sources.list.d/dotnetdev.list'
+- sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 417A0893
+- sudo apt-get update
+- sudo apt-get install dotnet-dev-1.0.4
 cache:
   directories:
   - bower_components
@@ -16,3 +16,11 @@ cache:
 notifications:
   slack:
     secure: IeuuD+F4GlTrrm/AFPk30PbRN6iYpq2SO9ta9C40UGtWWTR4bmxZUb5WftrRbt4dBtBb5+NrOBgEIIb5PhHvJP93k38OJgybBDoLzs163O4WQHivA9OztDGoWeE3SLSfRaaH+GSU3IzWRaNPbf9KFPsi5ydQdw3R9jv61w4EUKXmSsGuArOpGP2wFpKD0gamhkzjdYlsVWL/TDEVly1BYkT/8JcYqLKtgrKm8/7G5sT6utzdDAINofvooUyKlxBGx6sgWzKgvmSPPp9GWAp5UZq9rp9xsXf/l6h6gWsyTWrM+6jV94GdUQRgb8SxsrVWtDvKuNPuCJ3M8z1kb9hHY8aSQvZSxmCBm84bQkDT0ifkq+Ij9t1fsXOlMPSLAXjTGY39gLLL71eK/1NgmnchgzkifOjfFGC8/5m/yNGFmeA0nBxHtmGslkgJUHUUZkhkO2o31NQub2a7XfFmLzi9jO145kZU/5D/pQ2oncCs+MUdc5PyCiaVRgiG+v6EYw56+CTO/lgEYdjoOeuoTVQaZJmwwmZRQOczkLCQrv2i6wsq76OBrJBE/IarjPdnNobYLduovRocOSPHdOgoCes0ZG4PKi9jLLCNwCRYJAd0vunHDh7lipJmbq56JJiq6xMu8RvL228BSF51PRs8Wv0YipzSnLJQkjuHrmYUGyGlxGs=
+env:
+  global:
+    secure: YjbQUvi9c88hlz2BkbBwEVVkutLyW/7klxzkbdhJDbSz69UwSJIbIzhnybvJq0Wh71Cu3TN4N7kfjQ+9xgr4bA6t2gnCNRwVtK2F/yxpOBhqCPYKPMlc6WgzuE+6QsiSHMWGU8HkXqZzdOSefJ1hxkaRk37uiENuBfchj0G/gwJET/RFtnNSv5P0PuJxUOsFUvasL0bL5NrqZs/zv8gwsEKH8kMHDtFPdhp5neR4vK/lVyz7Xz3ovwVEL3+ttyTn6pVNwCM5tv0iJ8FdG6AsRQ+0ugmok7Oz8egEhAgugYQUhvSwya2nvLoaUX4uibB3hxpcYN4YvgOJyFkynbcTfW1fq+nTQLawEslLtS3zKtCF5RChyNg6vFYFi08CvMyU5W2r1b7db1V+Wb/EPVgE33Pl+2PlF+FOMd/stdAg+pL+nmmP4Q5B0KW0FPHGsOV+GkIgm9RM4TqYFSoK4O47pjc3t1K5YtQZ9FD++4ABXMBdGUklULKrdTbC1nOihsp26HgzMaBe7xEaQmlwRLmNLVrVBvXoRwP8b2CIgO34oaLifbVYKqSenhF+pgcFhSEJXiyh4ivMbxTDPzO1SFR3iVQpbTqOEGcQ+qeB4zmdU2oQ3rc3NJSZs8Yzl1JSPnrU7O1iWN+mA3DQCLlB75j1l/J7YNY/7sQVaO280+DmsGU=
+after_script:
+  - NOW_ALIAS=quicktype.io node_modules/.bin/now-travis
+  branches:
+    only:
+      - master
