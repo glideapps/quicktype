@@ -16,7 +16,6 @@
   },
   "devDependencies": {
     "bower": "^1.8.0",
-    "now-travis": "^1.0.1",
     "pulp": "^11.0.2",
     "purescript": "^0.11.6"
   },
