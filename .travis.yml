@@ -24,6 +24,7 @@ deploy:
   bucket: quicktype-io
   local-dir: app/build
   skip_cleanup: true
+  acl: public-read
   on:
     repo: dvdsgl/quicktype
     branch: master
