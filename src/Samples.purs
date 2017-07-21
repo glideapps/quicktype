@@ -10,5 +10,6 @@ samples = [
     "list.json",
     "sabre1.json",
     "sabre2.json",
-    "identifiers.json"
+    "identifiers.json",
+    "unions.json"
   ]

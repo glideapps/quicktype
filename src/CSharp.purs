@@ -11,13 +11,13 @@ import Data.Array (concatMap)
 import Data.Char (toCharCode)
 import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter, isPrint)
 import Data.Foldable (for_, intercalate)
-import Data.List (List, fromFoldable, (:))
+import Data.List (List, fromFoldable, sort, (:))
 import Data.List as L
-import Data.Map (keys, lookup)
-import Data.Map as Map
-import Data.Maybe (Maybe(..), fromJust, fromMaybe)
-import Data.Set (empty)
-import Data.Set as Set
+import Data.Map (Map, lookup)
+import Data.Map as M
+import Data.Maybe (Maybe(..), fromJust, fromMaybe, isNothing)
+import Data.Set (Set, insert, singleton, union)
+import Data.Set as S
 import Data.String (fromCharArray, toCharArray)
 import Data.String as Str
 import Data.String.Util (capitalize, camelCase, intToHex)
@@ -88,38 +88,61 @@ stringify str =
                         else
                             Str.toCharArray $ "\\U" <> intToHex 8 i
 
-nullableFromSet :: Set.Set IRType -> Maybe IRType
+nullableFromSet :: Set IRType -> Maybe IRType
 nullableFromSet s =
     case L.fromFoldable s of
     IRNull : x : L.Nil -> Just x
     x : IRNull : L.Nil -> Just x
     _ -> Nothing
 
-renderUnionToCSharp :: (Map.Map Int String) -> IRGraph -> Set.Set IRType -> String
-renderUnionToCSharp classNames graph s =
+renderUnionToCSharp :: Map Int String -> Map (Set IRType) String -> IRGraph -> Set IRType -> String
+renderUnionToCSharp classNames unionNames graph s =
     case nullableFromSet s of
-    Just x -> if isValueType x then renderTypeToCSharp classNames graph x <> "?" else renderTypeToCSharp classNames graph x
-    Nothing -> "Either<" <> intercalate ", " (map (renderTypeToCSharp classNames graph) (L.fromFoldable s)) <> ">"
+    Just x ->
+        let rendered = renderTypeToCSharp classNames unionNames graph x
+        in
+            if isValueType x then rendered <> "?" else rendered
+    Nothing -> lookupName s unionNames
 
-lookupName :: forall a. Ord a => a -> (Map.Map a String) -> String
+lookupName :: forall a. Ord a => a -> Map a String -> String
 lookupName original nameMap =
-    fromMaybe "NAME_NOT_PROCESSED" $ Map.lookup original nameMap
+    fromMaybe "NAME_NOT_PROCESSED" $ M.lookup original nameMap
 
-renderTypeToCSharp :: (Map.Map Int String) -> IRGraph -> IRType -> String
-renderTypeToCSharp classNames graph = case _ of
+renderTypeToCSharp :: Map Int String -> Map (Set IRType) String -> IRGraph -> IRType -> String
+renderTypeToCSharp classNames unionNames graph = case _ of
     IRNothing -> "object"
     IRNull -> "object"
     IRInteger -> "int"
     IRDouble -> "double"
     IRBool -> "bool"
     IRString -> "string"
-    IRArray a -> renderTypeToCSharp classNames graph a <> "[]"
+    IRArray a -> renderTypeToCSharp classNames unionNames graph a <> "[]"
     IRClass i -> lookupName i classNames
-    IRMap t -> "Dictionary<string, " <> renderTypeToCSharp classNames graph t <> ">"
-    IRUnion types -> renderUnionToCSharp classNames graph types
+    IRMap t -> "Dictionary<string, " <> renderTypeToCSharp classNames unionNames graph t <> ">"
+    IRUnion types -> renderUnionToCSharp classNames unionNames graph types
 
 csNameStyle :: String -> String
 csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
+
+typeNameForUnion :: Map Int String -> IRGraph -> IRType -> String
+typeNameForUnion classNames graph = case _ of
+    IRNothing -> "nothing"
+    IRNull -> "null"
+    IRInteger -> "int"
+    IRDouble -> "double"
+    IRBool -> "bool"
+    IRString -> "string"
+    IRArray a -> typeNameForUnion classNames graph a <> "_array"
+    IRClass i ->
+        let IRClassData { names } = getClassFromGraph graph i
+        in
+            combineNames names
+    IRMap t -> typeNameForUnion classNames graph t <> "_map"
+    IRUnion _ -> "union"
+
+unionName :: Map Int String -> IRGraph -> Set IRType -> String
+unionName classNames graph s =
+    "OneOf" <> (csNameStyle $ intercalate "_" $ map (typeNameForUnion classNames graph) $ L.sort $ L.fromFoldable s)
 
 csharpDoc :: Doc Unit
 csharpDoc = do
@@ -132,21 +155,50 @@ csharpDoc = do
                  using Newtonsoft.Json;"""
         blank
         classes <- getClasses
-        let names = transformNames (\(IRClassData { names }) -> csNameStyle $ combineNames names) ("Other" <> _) Set.empty classes
+        let classNames = transformNames (\(IRClassData { names }) -> csNameStyle $ combineNames names) ("Other" <> _) S.empty classes
+        graph <- getGraph
+        let unions = filterTypes unionPredicate graph
+        let unionNames = transformNames (unionName classNames graph) ("Other" <> _) (S.fromFoldable $ M.values classNames) $ map (\s -> Tuple s s) unions
         for_ classes \(Tuple i cls) -> do
-            renderCSharpClass names i cls
+            renderCSharpClass classNames unionNames i cls
+            blank
+        for_ unions \types -> do
+            renderCSharpUnion classNames unionNames types
             blank
     lines "}"
+    where
+        unionPredicate =
+            case _ of
+            IRUnion s ->
+                if isNothing $ nullableFromSet s then
+                    Just s
+                else
+                    Nothing
+            _ -> Nothing
 
-renderCSharpClass :: (Map.Map Int String) -> Int -> IRClassData -> Doc Unit
-renderCSharpClass classNames classIndex (IRClassData { names, properties }) = do
+renderCSharpUnion :: Map Int String -> Map (Set IRType) String -> Set IRType -> Doc Unit
+renderCSharpUnion classNames unionNames types = do
+    let name = lookupName types unionNames
+    let { element: emptyOrNull, rest: types } = removeElement (_ == IRNull) types
+    line $ words ["struct", name, "{"]
+    indent do
+        for_ types \t -> do
+            line do
+                graph <- getGraph
+                let typeString = renderTypeToCSharp classNames unionNames graph $ IRUnion $ S.union (S.singleton t) (S.singleton IRNull)
+                let fieldName = csNameStyle $ typeNameForUnion classNames graph t
+                words ["public", typeString, fieldName <> ";"]
+    lines "}"
+
+renderCSharpClass :: Map Int String -> Map (Set IRType) String -> Int -> IRClassData -> Doc Unit
+renderCSharpClass classNames unionNames classIndex (IRClassData { names, properties }) = do
     let className = lookupName classIndex classNames
-    let propertyNames = transformNames csNameStyle ("Other" <> _) (Set.singleton className) $ map (\n -> Tuple n n) $ Map.keys properties
+    let propertyNames = transformNames csNameStyle ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ words ["class", className]
 
     lines "{"
     indent do
-        for_ (Map.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
+        for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
             line do
                 string "[JsonProperty("
                 string $ stringify pname
@@ -154,13 +206,13 @@ renderCSharpClass classNames classIndex (IRClassData { names, properties }) = do
             line do
                 string "public "
                 graph <- getGraph
-                string $ renderTypeToCSharp classNames graph ptype
+                string $ renderTypeToCSharp classNames unionNames graph ptype
                 let csPropName = lookupName pname propertyNames
                 words ["", csPropName, "{ get; set; }"]
             blank
         
         -- TODO don't rely on 'TopLevel'
-        when (names == Set.singleton "TopLevel") do
+        when (names == S.singleton "TopLevel") do
             lines """// Loading helpers
                      public static TopLevel FromJson(string json) => JsonConvert.DeserializeObject<TopLevel>(json);"""
     lines "}"

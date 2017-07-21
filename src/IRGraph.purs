@@ -3,6 +3,7 @@ module IRGraph
     , IRClassData(..)
     , IRType(..)
     , Entry(..)
+    , removeElement
     , emptyGraph
     , followIndex
     , getClassFromGraph
@@ -17,14 +18,18 @@ module IRGraph
     , classesInGraph
     , regatherClassNames
     , transformNames
+    , filterTypes
     ) where
 
 import Prelude
 
+import Data.Array.Partial (last)
+import Data.Char.Unicode (isPunctuation)
+import Data.Either.Nested (in1)
 import Data.Foldable (find, all, any)
-import Data.List (List, (:))
+import Data.List (List, concatMap, fromFoldable, singleton, (:))
 import Data.List as L
-import Data.Map (Map)
+import Data.Map (Map, values)
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
 import Data.Sequence as Seq
@@ -211,3 +216,25 @@ transformNames legalize otherize illegalNames names =
                 let name = makeName inputs (legalize inputs) setSoFar
                 in
                     process (S.insert name setSoFar) (M.insert identifier name mapSoFar) rest
+
+filterTypes :: forall a. (IRType -> Maybe a) -> IRGraph -> List a
+filterTypes predicate graph@(IRGraph { classes, toplevel }) =
+    filterType toplevel <> (L.concat $ mapClasses (\_ cd -> filterClass cd) graph)
+    where
+        filterClass :: IRClassData -> List a
+        filterClass (IRClassData { properties }) =
+            L.concatMap filterType $ M.values properties
+        recurseType t =
+            case t of
+            IRArray t -> filterType t
+            IRMap t -> filterType t
+            IRUnion s ->
+                L.concatMap filterType (L.fromFoldable s)
+            _ -> L.Nil
+        filterType :: IRType -> List a
+        filterType t =
+            let l = recurseType t
+            in
+                case predicate t of
+                Nothing -> l
+                Just x -> L.Cons x l
