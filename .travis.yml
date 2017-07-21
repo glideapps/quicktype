@@ -11,6 +11,7 @@ cache:
   - bower_components
   - node_modules
   - output
+  - app/node_modules
   - $HOME/.cache/bower
   - $HOME/.nuget/packages
 notifications:
