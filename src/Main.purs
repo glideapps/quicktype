@@ -51,6 +51,7 @@ makeTypeFromJson name json =
 makeTypeAndUnify :: String -> Json -> IRGraph
 makeTypeAndUnify name json = runIR do
     topLevel <- makeTypeFromJson name json
+    setTopLevel topLevel
     replaceSimilarClasses
     makeMaps
 

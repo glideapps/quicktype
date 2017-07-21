@@ -40,7 +40,7 @@ data Entry
     | Class IRClassData
     | Redirect Int
 
-newtype IRGraph = IRGraph { classes :: Seq.Seq Entry }
+newtype IRGraph = IRGraph { classes :: Seq.Seq Entry, toplevel :: IRType }
 
 newtype IRClassData = IRClassData { names :: Set String, properties :: Map String IRType }
 
@@ -65,7 +65,7 @@ makeClass :: String -> Map String IRType -> IRClassData
 makeClass name properties = IRClassData { names: S.singleton name, properties }
 
 emptyGraph :: IRGraph
-emptyGraph = IRGraph { classes: Seq.empty }
+emptyGraph = IRGraph { classes: Seq.empty, toplevel: IRNothing }
 
 followIndex :: IRGraph -> Int -> Tuple Int IRClassData
 followIndex graph@(IRGraph { classes }) index =
@@ -163,8 +163,8 @@ replaceClassesInType replacer t =
     _ -> t
 
 regatherClassNames :: IRGraph -> IRGraph
-regatherClassNames graph@(IRGraph { classes }) =
-    IRGraph { classes: Seq.fromFoldable $ L.mapWithIndex entryMapper $ L.fromFoldable classes }
+regatherClassNames graph@(IRGraph { classes, toplevel }) =
+    IRGraph { classes: Seq.fromFoldable $ L.mapWithIndex entryMapper $ L.fromFoldable classes, toplevel }
     where
         newNames = combine $ mapClasses gatherFromClassData graph
         entryMapper :: Int -> Entry -> Entry

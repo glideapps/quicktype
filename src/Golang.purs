@@ -98,6 +98,10 @@ golangDoc = do
     blank
     classes <- getClasses
     let names = transformNames (\(IRClassData { names }) -> goNameStyle $ combineNames names) ("Other" <> _) Set.empty classes
+    graph@IRGraph { toplevel } <- getGraph
+    words ["// toplevel is ", renderTypeToGolang names graph toplevel]
+    blank
+    blank
     for_ classes \(Tuple i cls) -> do
         renderGolangType names i cls
         blank
