@@ -7,8 +7,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install dotnet-dev-1.0.4
 script:
-  - npm run setup
-  - npm run test
+  - npm run setup && npm run test
 cache:
   directories:
     - bower_components
