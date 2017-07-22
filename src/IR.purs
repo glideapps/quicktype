@@ -8,12 +8,12 @@ module IR
     , replaceClass
     , unifyTypes
     , runIR
-    , mapM
     ) where
 
 import Prelude
 
 import IRGraph
+import Utils (mapM)
 
 import Control.Monad.State (State, execState)
 import Control.Monad.State.Class (get, put)
@@ -81,11 +81,6 @@ combineClasses ia ib combined = do
     redirectClass ia newIndex
     redirectClass ib newIndex
     pure t
-
--- FIXME: doesn't really belong here
-mapM :: forall a b. (a -> IR b) -> List a -> IR (List b)
-mapM _ L.Nil = pure L.Nil
-mapM f (x : xs) = L.Cons <$> f x <*> mapM f xs
 
 -- FIXME: this is ugly and inefficient
 unionWithDefault :: forall k v. Ord k => (v -> v -> IR v) -> v -> Map k v -> Map k v -> IR (Map k v)

@@ -5,6 +5,7 @@ import IR
 import Transformations
 import Prelude
 import Types
+import Utils (mapM)
 import Doc as Doc
 
 import CSharp as CSharp
