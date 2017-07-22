@@ -214,8 +214,9 @@ csharpDoc = do
                  using Newtonsoft.Json;"""
         blank
         classes <- getClasses
-        for_ classes \(Tuple i cls) -> do
-            renderCSharpClass i cls needConverter
+        for_ classes \(Tuple i cd) -> do
+            className <- lookupClassName i
+            renderCSharpClass cd className needConverter
             blank
         unions <- getUnions
         for_ unions \types -> do
@@ -337,9 +338,8 @@ renderCSharpUnion allTypes = do
         lines "}"
     lines "}"
 
-renderCSharpClass :: Int -> IRClassData -> Boolean -> CSDoc Unit
-renderCSharpClass classIndex (IRClassData { names, properties }) needConverter = do
-    className <- lookupClassName classIndex
+renderCSharpClass :: IRClassData -> String -> Boolean -> CSDoc Unit
+renderCSharpClass (IRClassData { names, properties }) className needConverter = do
     let propertyNames = transformNames csNameStyle ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ words ["class", className]
 
