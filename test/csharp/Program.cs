@@ -8,8 +8,8 @@ namespace test
         static void Main(string[] args)
         {
             var path = args[0];
-            // var json = File.ReadAllText(path);
-            // var qt = QuickType.TopLevel.FromJson(json);
+            var json = File.ReadAllText(path);
+            var qt = QuickType.TopLevel.FromJson(json);
         }
     }
 }
