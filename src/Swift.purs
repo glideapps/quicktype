@@ -23,6 +23,7 @@ renderer :: Renderer
 renderer =
     { name: "Swift"
     , aceMode: "swift"
+    , extension: "swift"
     , doc: swiftDoc
     }
 
