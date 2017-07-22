@@ -8,8 +8,6 @@ import Types
 import Doc as Doc
 
 import CSharp as CSharp
-import Swift as Swift
-import Golang as Golang
 
 import Data.Argonaut.Core (Json, foldJson)
 import Data.Argonaut.Parser (jsonParser)
@@ -23,11 +21,7 @@ import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
 
 renderers :: Array Renderer
-renderers = [
-    CSharp.renderer,
-    Swift.renderer,
-    Golang.renderer
-]
+renderers = [CSharp.renderer]
 
 makeTypeFromJson :: String -> Json -> IR IRType
 makeTypeFromJson name json =
