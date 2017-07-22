@@ -201,6 +201,8 @@ csharpDoc = do
              {"""
     blank
     indent do
+        unionNames <- getUnionNames
+        let needConverter = not $ M.isEmpty unionNames
         lines """using System;
                  using System.Net;
                  using System.Collections.Generic;
@@ -208,14 +210,13 @@ csharpDoc = do
         blank
         classes <- getClasses
         for_ classes \(Tuple i cls) -> do
-            renderCSharpClass i cls
+            renderCSharpClass i cls needConverter
             blank
         unions <- getUnions
         for_ unions \types -> do
             renderCSharpUnion types
             blank
-        unionNames <- getUnionNames
-        unless (M.isEmpty unionNames) do
+        when needConverter do
             renderJsonConverter
     lines "}"
 
@@ -331,8 +332,8 @@ renderCSharpUnion allTypes = do
         lines "}"
     lines "}"
 
-renderCSharpClass :: Int -> IRClassData -> CSDoc Unit
-renderCSharpClass classIndex (IRClassData { names, properties }) = do
+renderCSharpClass :: Int -> IRClassData -> Boolean -> CSDoc Unit
+renderCSharpClass classIndex (IRClassData { names, properties }) needConverter = do
     className <- lookupClassName classIndex
     let propertyNames = transformNames csNameStyle ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ words ["class", className]
@@ -357,5 +358,6 @@ renderCSharpClass classIndex (IRClassData { names, properties }) = do
             IRGraph { toplevel } <- getGraph
             toplevelType <- renderTypeToCSharp toplevel
             lines "// Loading helpers"
-            lines $ "public static " <> toplevelType <> " FromJson(string json) => JsonConvert.DeserializeObject<" <> toplevelType <> ">(json);"
+            let converterParam = if needConverter then ", new Converter()" else ""
+            lines $ "public static " <> toplevelType <> " FromJson(string json) => JsonConvert.DeserializeObject<" <> toplevelType <> ">(json" <> converterParam <> ");"
     lines "}"
