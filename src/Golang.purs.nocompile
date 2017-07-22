@@ -22,13 +22,19 @@ import Data.String.Util (capitalize, camelCase)
 import Data.String.Utils (mapChars)
 import Data.Tuple (Tuple(..))
 
+type GoDoc = Doc Unit
+
 renderer :: Renderer
 renderer =
     { name: "Go"
     , aceMode: "golang"
     , extension: "go"
-    , doc: golangDoc
+    , render: renderGraphToGolang
     }
+
+renderGraphToGolang :: IRGraph -> String
+renderGraphToGolang graph =
+    runDoc golangDoc graph unit
 
 isValueType :: IRType -> Boolean
 isValueType IRInteger = true
@@ -93,7 +99,7 @@ renderTypeToGolang classNames graph = case _ of
 goNameStyle :: String -> String
 goNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
-golangDoc :: Doc Unit
+golangDoc :: GoDoc Unit
 golangDoc = do
     lines "import \"encoding/json\""
     blank
@@ -107,7 +113,7 @@ golangDoc = do
         renderGolangType names i cls
         blank
 
-renderGolangType :: (Map.Map Int String) -> Int -> IRClassData -> Doc Unit
+renderGolangType :: (Map.Map Int String) -> Int -> IRClassData -> GoDoc Unit
 renderGolangType classNames classIndex (IRClassData { names, properties }) = do
     let className = lookupName classIndex classNames
     let propertyNames = transformNames goNameStyle ("Other" <> _) Set.empty $ map (\n -> Tuple n n) $ Map.keys properties

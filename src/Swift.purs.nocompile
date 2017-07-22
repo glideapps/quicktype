@@ -19,15 +19,21 @@ import Data.Map as M
 import Data.Set as S
 import Data.Tuple (Tuple(..))
 
+type SwiftDoc = Doc Unit
+
 renderer :: Renderer
 renderer =
     { name: "Swift"
     , aceMode: "swift"
     , extension: "swift"
-    , doc: swiftDoc
+    , render: renderGraphToSwift
     }
 
-swiftDoc :: Doc Unit
+renderGraphToSwift :: IRGraph -> String
+renderGraphToSwift graph =
+    runDoc swiftDoc graph unit
+
+swiftDoc :: SwiftDoc Unit
 swiftDoc = do
     lines "import Foundation"
     blank
@@ -36,7 +42,7 @@ swiftDoc = do
         renderSwiftClass cls
         blank
 
-renderSwiftClass :: IRClassData -> Doc Unit
+renderSwiftClass :: IRClassData -> SwiftDoc Unit
 renderSwiftClass (IRClassData { names, properties }) = do
     line $ words ["struct", combineNames names]
     
@@ -51,7 +57,7 @@ renderSwiftClass (IRClassData { names, properties }) = do
 
     for_ (M.values properties) renderUnions
 
-renderPropGroup :: NE.NonEmptyList { name :: String, typ :: IRType} -> Doc Unit
+renderPropGroup :: NE.NonEmptyList { name :: String, typ :: IRType} -> SwiftDoc Unit
 renderPropGroup props = line do
     let names = intercalate ", " (_.name <$> props)
     words ["let", names <> ": "]
@@ -75,7 +81,7 @@ renderType graph = case _ of
     IRMap t -> "[String: " <> renderType graph t <> "]"
     IRUnion s -> unionName graph s
 
-renderUnions :: IRType -> Doc Unit
+renderUnions :: IRType -> SwiftDoc Unit
 renderUnions = case _ of
     IRUnion s -> do
         renderUnion s
@@ -92,7 +98,7 @@ caseName graph = case _ of
     IRNull -> "Nullable"
     t -> renderType graph t
 
-renderUnion :: S.Set IRType -> Doc Unit
+renderUnion :: S.Set IRType -> SwiftDoc Unit
 renderUnion types = do
     graph <- getGraph
     
