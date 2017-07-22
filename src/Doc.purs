@@ -3,6 +3,7 @@ module Doc
     , getGraph
     , getClasses
     , getClass
+    , getRendererInfo
     , string
     , line
     , lines
