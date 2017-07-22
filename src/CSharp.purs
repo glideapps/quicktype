@@ -10,19 +10,18 @@ import Types
 import Data.Array (concatMap)
 import Data.Char (toCharCode)
 import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter, isPrint)
-import Data.Foldable (for_, intercalate)
-import Data.List (List, fromFoldable, sort, (:))
+import Data.Foldable (find, for_, intercalate)
+import Data.List (List, (:))
 import Data.List as L
-import Data.Map (Map, lookup)
+import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), fromJust, fromMaybe, isNothing)
-import Data.Set (Set, insert, singleton, union)
+import Data.Maybe (Maybe(..), fromMaybe, isNothing)
+import Data.Set (Set)
 import Data.Set as S
-import Data.String (fromCharArray, toCharArray)
 import Data.String as Str
 import Data.String.Util (capitalize, camelCase, intToHex)
-import Data.String.Utils (mapChars)
 import Data.Tuple (Tuple(..))
+import Partial.Unsafe (unsafePartial)
 
 renderer :: Renderer
 renderer =
@@ -151,7 +150,8 @@ csharpDoc = do
              {"""
     blank
     indent do
-        lines """using System.Net;
+        lines """using System;
+                 using System.Net;
                  using System.Collections.Generic;
                  using Newtonsoft.Json;"""
         blank
@@ -166,6 +166,8 @@ csharpDoc = do
         for_ unions \types -> do
             renderCSharpUnion classNames unionNames types
             blank
+        unless (M.isEmpty unionNames) do
+            renderJsonConverter unionNames unions
     lines "}"
     where
         unionPredicate =
@@ -177,19 +179,120 @@ csharpDoc = do
                     Nothing
             _ -> Nothing
 
+renderJsonConverter :: Map (Set IRType) String -> List (Set IRType) -> Doc Unit
+renderJsonConverter unionNames unions = do
+    let names = M.values unionNames
+    lines "class Converter : JsonConverter {"
+    indent do
+        lines "public override bool CanConvert(Type t) {"
+        indent $ lines $ "return " <> intercalate " || " (map (\n -> "t == typeof(" <> n <> ")") names) <> ";"
+        lines "}"
+        blank
+        lines "public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer) {"
+        indent do
+            -- FIXME: call the constructor via reflection?
+            for_ names \name -> do
+                lines $ "if (t == typeof(" <> name <> "))"
+                indent $ lines $ "return new " <> name <> "(reader, serializer);"
+            lines "throw new Exception(\"Unknown type\");"
+        lines "}"
+        blank
+        lines "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) {"
+        indent $ lines "throw new NotImplementedException();"
+        lines "}"
+        blank
+        lines "public override bool CanWrite { get { return false; } }"
+    lines "}"
+
+tokenCase :: String -> Doc Unit
+tokenCase tokenType =
+    lines $ "case JsonToken." <> tokenType <> ":"
+
+renderNullDeserializer :: Set IRType -> Doc Unit
+renderNullDeserializer types =
+    when (S.member IRNull types) do
+        tokenCase "Null"
+        indent do
+            lines "break;"
+
+unionFieldName :: Map Int String -> IRGraph -> IRType -> String
+unionFieldName classNames graph t =
+    csNameStyle $ typeNameForUnion classNames graph t
+
+deserialize :: String -> String -> Doc Unit
+deserialize fieldName typeName = do
+    lines $ fieldName <> " = serializer.Deserialize<" <> typeName <> ">(reader);"
+    lines "break;"
+
+deserializeType :: Map Int String -> Map (Set IRType) String -> IRType -> Doc Unit
+deserializeType classNames unionNames t = do
+    graph <- getGraph
+    deserialize (unionFieldName classNames graph t) (renderTypeToCSharp classNames unionNames graph t)
+
+deserializeCase :: String -> String -> String -> Doc Unit
+deserializeCase tokenType fieldName typeName = do
+    tokenCase tokenType
+    indent do
+        deserialize fieldName typeName
+
+renderPrimitiveDeserializer :: Map Int String -> Map (Set IRType) String -> String -> IRType -> Set IRType -> Doc Unit
+renderPrimitiveDeserializer classNames unionNames tokenType t types =
+    when (S.member t types) do
+        graph <- getGraph
+        deserializeCase tokenType (unionFieldName classNames graph t) (renderTypeToCSharp classNames unionNames graph t)
+
+renderDoubleDeserializer :: Map Int String -> Map (Set IRType) String -> Set IRType -> Doc Unit
+renderDoubleDeserializer classNames unionNames types =
+    when (S.member IRDouble types) do
+        unless (S.member IRInteger types) do
+            tokenCase "Integer"
+        tokenCase "Float"
+        indent do
+            graph <- getGraph
+            deserializeType classNames unionNames IRDouble
+
+renderGenericDeserializer :: Map Int String -> Map (Set IRType) String -> (IRType -> Boolean) -> String -> Set IRType -> Doc Unit
+renderGenericDeserializer classNames unionNames predicate tokenType types = unsafePartial $
+    case find predicate types of
+    Nothing -> pure unit
+    Just t -> do
+        tokenCase tokenType
+        indent do
+            graph <- getGraph
+            deserializeType classNames unionNames t
+
 renderCSharpUnion :: Map Int String -> Map (Set IRType) String -> Set IRType -> Doc Unit
-renderCSharpUnion classNames unionNames types = do
-    let name = lookupName types unionNames
-    let { element: emptyOrNull, rest: types } = removeElement (_ == IRNull) types
+renderCSharpUnion classNames unionNames allTypes = do
+    let name = lookupName allTypes unionNames
+    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
+    graph <- getGraph
     line $ words ["struct", name, "{"]
     indent do
-        for_ types \t -> do
-            line do
-                graph <- getGraph
-                let typeString = renderTypeToCSharp classNames unionNames graph $ IRUnion $ S.union (S.singleton t) (S.singleton IRNull)
-                let fieldName = csNameStyle $ typeNameForUnion classNames graph t
-                words ["public", typeString, fieldName <> ";"]
+        for_ nonNullTypes \t -> do
+            let typeString = renderTypeToCSharp classNames unionNames graph $ IRUnion $ S.union (S.singleton t) (S.singleton IRNull)
+            let field = fieldName graph t
+            lines $ "public " <> typeString <> " " <> field <> ";"
+        blank
+        lines $ "public " <> name <> "(JsonReader reader, JsonSerializer serializer) {"
+        indent do
+            for_ (map (fieldName graph) $ L.fromFoldable nonNullTypes) \field -> do
+                lines $ field <> " = null;"
+            lines "switch (reader.TokenType) {"
+            indent do
+                renderNullDeserializer allTypes
+                renderPrimitiveDeserializer classNames unionNames "Integer" IRInteger allTypes
+                renderDoubleDeserializer classNames unionNames allTypes
+                renderPrimitiveDeserializer classNames unionNames "Boolean" IRBool allTypes
+                renderPrimitiveDeserializer classNames unionNames "String" IRString allTypes
+                renderGenericDeserializer classNames unionNames isArray "StartArray" allTypes
+                renderGenericDeserializer classNames unionNames isClass "StartObject" allTypes
+                renderGenericDeserializer classNames unionNames isMap "StartObject" allTypes
+                lines $ "default: throw new Exception(\"Cannot convert " <> name <> "\");"
+            lines "}"
+        lines "}"
     lines "}"
+    where
+        fieldName graph = unionFieldName classNames graph
 
 renderCSharpClass :: Map Int String -> Map (Set IRType) String -> Int -> IRClassData -> Doc Unit
 renderCSharpClass classNames unionNames classIndex (IRClassData { names, properties }) = do
