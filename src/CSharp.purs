@@ -23,13 +23,19 @@ import Data.String.Util (capitalize, camelCase, intToHex)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 
+type CSDoc = Doc Unit
+
 renderer :: Renderer
 renderer =
     { name: "C#"
     , aceMode: "csharp"
     , extension: "cs"
-    , doc: csharpDoc
+    , render: renderGraphToCSharp
     }
+
+renderGraphToCSharp :: IRGraph -> String
+renderGraphToCSharp graph =
+    runDoc csharpDoc graph unit
 
 isValueType :: IRType -> Boolean
 isValueType IRInteger = true
@@ -144,7 +150,7 @@ unionName :: Map Int String -> IRGraph -> Set IRType -> String
 unionName classNames graph s =
     "OneOf" <> (csNameStyle $ intercalate "_" $ map (typeNameForUnion classNames graph) $ L.sort $ L.fromFoldable s)
 
-csharpDoc :: Doc Unit
+csharpDoc :: CSDoc Unit
 csharpDoc = do
     lines """namespace QuickType
              {"""
@@ -179,7 +185,7 @@ csharpDoc = do
                     Nothing
             _ -> Nothing
 
-renderJsonConverter :: Map (Set IRType) String -> List (Set IRType) -> Doc Unit
+renderJsonConverter :: Map (Set IRType) String -> List (Set IRType) -> CSDoc Unit
 renderJsonConverter unionNames unions = do
     let names = M.values unionNames
     lines "class Converter : JsonConverter {"
@@ -204,11 +210,11 @@ renderJsonConverter unionNames unions = do
         lines "public override bool CanWrite { get { return false; } }"
     lines "}"
 
-tokenCase :: String -> Doc Unit
+tokenCase :: String -> CSDoc Unit
 tokenCase tokenType =
     lines $ "case JsonToken." <> tokenType <> ":"
 
-renderNullDeserializer :: Set IRType -> Doc Unit
+renderNullDeserializer :: Set IRType -> CSDoc Unit
 renderNullDeserializer types =
     when (S.member IRNull types) do
         tokenCase "Null"
@@ -219,29 +225,29 @@ unionFieldName :: Map Int String -> IRGraph -> IRType -> String
 unionFieldName classNames graph t =
     csNameStyle $ typeNameForUnion classNames graph t
 
-deserialize :: String -> String -> Doc Unit
+deserialize :: String -> String -> CSDoc Unit
 deserialize fieldName typeName = do
     lines $ fieldName <> " = serializer.Deserialize<" <> typeName <> ">(reader);"
     lines "break;"
 
-deserializeType :: Map Int String -> Map (Set IRType) String -> IRType -> Doc Unit
+deserializeType :: Map Int String -> Map (Set IRType) String -> IRType -> CSDoc Unit
 deserializeType classNames unionNames t = do
     graph <- getGraph
     deserialize (unionFieldName classNames graph t) (renderTypeToCSharp classNames unionNames graph t)
 
-deserializeCase :: String -> String -> String -> Doc Unit
+deserializeCase :: String -> String -> String -> CSDoc Unit
 deserializeCase tokenType fieldName typeName = do
     tokenCase tokenType
     indent do
         deserialize fieldName typeName
 
-renderPrimitiveDeserializer :: Map Int String -> Map (Set IRType) String -> String -> IRType -> Set IRType -> Doc Unit
+renderPrimitiveDeserializer :: Map Int String -> Map (Set IRType) String -> String -> IRType -> Set IRType -> CSDoc Unit
 renderPrimitiveDeserializer classNames unionNames tokenType t types =
     when (S.member t types) do
         graph <- getGraph
         deserializeCase tokenType (unionFieldName classNames graph t) (renderTypeToCSharp classNames unionNames graph t)
 
-renderDoubleDeserializer :: Map Int String -> Map (Set IRType) String -> Set IRType -> Doc Unit
+renderDoubleDeserializer :: Map Int String -> Map (Set IRType) String -> Set IRType -> CSDoc Unit
 renderDoubleDeserializer classNames unionNames types =
     when (S.member IRDouble types) do
         unless (S.member IRInteger types) do
@@ -251,7 +257,7 @@ renderDoubleDeserializer classNames unionNames types =
             graph <- getGraph
             deserializeType classNames unionNames IRDouble
 
-renderGenericDeserializer :: Map Int String -> Map (Set IRType) String -> (IRType -> Boolean) -> String -> Set IRType -> Doc Unit
+renderGenericDeserializer :: Map Int String -> Map (Set IRType) String -> (IRType -> Boolean) -> String -> Set IRType -> CSDoc Unit
 renderGenericDeserializer classNames unionNames predicate tokenType types = unsafePartial $
     case find predicate types of
     Nothing -> pure unit
@@ -261,7 +267,7 @@ renderGenericDeserializer classNames unionNames predicate tokenType types = unsa
             graph <- getGraph
             deserializeType classNames unionNames t
 
-renderCSharpUnion :: Map Int String -> Map (Set IRType) String -> Set IRType -> Doc Unit
+renderCSharpUnion :: Map Int String -> Map (Set IRType) String -> Set IRType -> CSDoc Unit
 renderCSharpUnion classNames unionNames allTypes = do
     let name = lookupName allTypes unionNames
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
@@ -294,7 +300,7 @@ renderCSharpUnion classNames unionNames allTypes = do
     where
         fieldName graph = unionFieldName classNames graph
 
-renderCSharpClass :: Map Int String -> Map (Set IRType) String -> Int -> IRClassData -> Doc Unit
+renderCSharpClass :: Map Int String -> Map (Set IRType) String -> Int -> IRClassData -> CSDoc Unit
 renderCSharpClass classNames unionNames classIndex (IRClassData { names, properties }) = do
     let className = lookupName classIndex classNames
     let propertyNames = transformNames csNameStyle ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
