@@ -11,5 +11,6 @@ samples = [
     "sabre1.json",
     "sabre2.json",
     "identifiers.json",
-    "unions.json"
+    "unions.json",
+    "no-classes.json"
   ]
