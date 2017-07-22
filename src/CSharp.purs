@@ -6,7 +6,6 @@ import Doc
 import IRGraph
 import Prelude
 import Types
-import Utils (mapM)
 
 import Data.Array (concatMap)
 import Data.Char (toCharCode)
@@ -39,9 +38,9 @@ renderer =
 renderGraphToCSharp :: IRGraph -> String
 renderGraphToCSharp graph =
     let classes = classesInGraph graph
-        classNames = transformNames (\(IRClassData { names }) -> csNameStyle $ combineNames names) ("Other" <> _) S.empty classes
+        classNames = transformNames nameForClass nextNameToTry (S.singleton "Converter") classes
         unions = filterTypes unionPredicate graph
-        unionNames = transformNames (unionName classNames graph) ("Other" <> _) (S.fromFoldable $ M.values classNames) $ map (\s -> Tuple s s) unions
+        unionNames = transformNames (unionName classNames graph) nextNameToTry (S.fromFoldable $ M.values classNames) $ map (\s -> Tuple s s) unions
     in
         runDoc csharpDoc graph (CSInfo { classNames, unionNames, unions })
     where
@@ -53,6 +52,10 @@ renderGraphToCSharp graph =
                 else
                     Nothing
             _ -> Nothing
+        nameForClass (IRClassData { names }) =
+            csNameStyle $ combineNames names
+        nextNameToTry s =
+            "Other" <> s
 
 unionName :: Map Int String -> IRGraph -> Set IRType -> String
 unionName classNames graph s =
@@ -199,57 +202,75 @@ csharpDoc :: CSDoc Unit
 csharpDoc = do
     lines """// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do:
              //
-             //   var data = QuickType.TopLevel.FromJson(jsonString);
+             //   var data = QuickType.Converter.FromJson(jsonString);
              //
              namespace QuickType
              {"""
     blank
     indent do
-        unionNames <- getUnionNames
-        let needConverter = not $ M.isEmpty unionNames
         lines """using System;
                  using System.Net;
                  using System.Collections.Generic;
 
                  using Newtonsoft.Json;"""
         blank
+        renderJsonConverter
+        blank
         classes <- getClasses
         for_ classes \(Tuple i cd) -> do
             className <- lookupClassName i
-            renderCSharpClass cd className needConverter
+            renderCSharpClass cd className
             blank
         unions <- getUnions
         for_ unions \types -> do
             renderCSharpUnion types
             blank
-        when needConverter do
-            renderJsonConverter
     lines "}"
+
+stringIfTrue :: Boolean -> String -> String
+stringIfTrue true s = s
+stringIfTrue false _ = ""
 
 renderJsonConverter :: CSDoc Unit
 renderJsonConverter = do
     unionNames <- getUnionNames
+    let haveUnions = not $ M.isEmpty unionNames
     let names = M.values unionNames
-    lines "class Converter : JsonConverter {"
+    lines $ "class Converter" <> stringIfTrue haveUnions " : JsonConverter" <> " {"
     indent do
-        lines "public override bool CanConvert(Type t) {"
-        indent $ lines $ "return " <> intercalate " || " (map (\n -> "t == typeof(" <> n <> ")") names) <> ";"
-        lines "}"
-        blank
-        lines "public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer) {"
-        indent do
-            -- FIXME: call the constructor via reflection?
-            for_ names \name -> do
-                lines $ "if (t == typeof(" <> name <> "))"
-                indent $ lines $ "return new " <> name <> "(reader, serializer);"
-            lines "throw new Exception(\"Unknown type\");"
-        lines "}"
-        blank
-        lines "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) {"
-        indent $ lines "throw new NotImplementedException();"
-        lines "}"
-        blank
-        lines "public override bool CanWrite { get { return false; } }"
+        IRGraph { toplevel } <- getGraph
+        toplevelType <- renderTypeToCSharp toplevel
+        lines "// Loading helpers"
+        let converterParam = stringIfTrue haveUnions ", new Converter()"
+        lines
+            $ "public static "
+            <> toplevelType
+            <> " FromJson(string json) => JsonConvert.DeserializeObject<"
+            <> toplevelType
+            <> ">(json"
+            <> converterParam
+            <> ");"
+
+        when haveUnions do
+            blank
+            lines "public override bool CanConvert(Type t) {"
+            indent $ lines $ "return " <> intercalate " || " (map (\n -> "t == typeof(" <> n <> ")") names) <> ";"
+            lines "}"
+            blank
+            lines "public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer) {"
+            indent do
+                -- FIXME: call the constructor via reflection?
+                for_ names \name -> do
+                    lines $ "if (t == typeof(" <> name <> "))"
+                    indent $ lines $ "return new " <> name <> "(reader, serializer);"
+                lines "throw new Exception(\"Unknown type\");"
+            lines "}"
+            blank
+            lines "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) {"
+            indent $ lines "throw new NotImplementedException();"
+            lines "}"
+            blank
+            lines "public override bool CanWrite { get { return false; } }"
     lines "}"
 
 tokenCase :: String -> CSDoc Unit
@@ -338,8 +359,8 @@ renderCSharpUnion allTypes = do
         lines "}"
     lines "}"
 
-renderCSharpClass :: IRClassData -> String -> Boolean -> CSDoc Unit
-renderCSharpClass (IRClassData { names, properties }) className needConverter = do
+renderCSharpClass :: IRClassData -> String -> CSDoc Unit
+renderCSharpClass (IRClassData { names, properties }) className = do
     let propertyNames = transformNames csNameStyle ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ words ["class", className]
 
@@ -357,12 +378,4 @@ renderCSharpClass (IRClassData { names, properties }) className needConverter = 
                 let csPropName = lookupName pname propertyNames
                 words ["", csPropName, "{ get; set; }"]
             blank
-        
-        -- TODO don't rely on 'TopLevel'
-        when (names == S.singleton "TopLevel") do
-            IRGraph { toplevel } <- getGraph
-            toplevelType <- renderTypeToCSharp toplevel
-            lines "// Loading helpers"
-            let converterParam = if needConverter then ", new Converter()" else ""
-            lines $ "public static " <> toplevelType <> " FromJson(string json) => JsonConvert.DeserializeObject<" <> toplevelType <> ">(json" <> converterParam <> ");"
     lines "}"

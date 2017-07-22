@@ -9,7 +9,7 @@ namespace test
         {
             var path = args[0];
             var json = File.ReadAllText(path);
-            var qt = QuickType.TopLevel.FromJson(json);
+            var qt = QuickType.Converter.FromJson(json);
         }
     }
 }
