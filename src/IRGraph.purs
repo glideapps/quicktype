@@ -10,6 +10,9 @@ module IRGraph
     , lookupOrDefault
     , decomposeTypeSet
     , nullifyNothing
+    , isArray
+    , isClass
+    , isMap
     , replaceClassesInType
     , setFromType
     , matchingProperties
