@@ -5,6 +5,7 @@ import IR
 import Transformations
 import Prelude
 import Types
+import Utils (mapM)
 import Doc as Doc
 
 import CSharp as CSharp
@@ -59,7 +60,7 @@ renderJson :: Renderer -> Json -> String
 renderJson renderer =
     makeTypeAndUnify "TopLevel"
     >>> regatherClassNames
-    >>> Doc.runDoc renderer.doc
+    >>> renderer.render
 
 renderJsonString :: Renderer -> String -> Either String String
 renderJsonString renderer json =
