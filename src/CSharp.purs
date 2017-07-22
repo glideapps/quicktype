@@ -354,6 +354,8 @@ renderCSharpClass classIndex (IRClassData { names, properties }) = do
         
         -- TODO don't rely on 'TopLevel'
         when (names == S.singleton "TopLevel") do
-            lines """// Loading helpers
-                     public static TopLevel FromJson(string json) => JsonConvert.DeserializeObject<TopLevel>(json);"""
+            IRGraph { toplevel } <- getGraph
+            toplevelType <- renderTypeToCSharp toplevel
+            lines "// Loading helpers"
+            lines $ "public static " <> toplevelType <> " FromJson(string json) => JsonConvert.DeserializeObject<" <> toplevelType <> ">(json);"
     lines "}"
