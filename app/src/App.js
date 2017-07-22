@@ -109,11 +109,13 @@ class TopBar extends Component {
           options={this.samples}
           value={this.state.sample}
           onChange={({value}) => this.changeSample(value)} />
+        {/*
         <Dropdown
           name="renderer"
           options={Main.renderers.map((r) => r.name)}
           value={this.getRenderer().name}
           onChange={({value}) => this.changeRenderer(value)} />
+        */}
       </div>
     );
   }
