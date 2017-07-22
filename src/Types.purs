@@ -4,12 +4,12 @@ import Prelude
 
 import Data.List as L
 
-import IR
+import IRGraph
 import Doc
 
 type Renderer = {
     name :: String,
     extension :: String,
     aceMode :: String,
-    doc :: Doc Unit
+    render :: IRGraph -> String
 }
