@@ -197,7 +197,11 @@ typeNameForUnion classNames graph = case _ of
 
 csharpDoc :: CSDoc Unit
 csharpDoc = do
-    lines """namespace QuickType
+    lines """// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do:
+             //
+             //   var data = QuickType.TopLevel.FromJson(jsonString);
+             //
+             namespace QuickType
              {"""
     blank
     indent do
@@ -206,6 +210,7 @@ csharpDoc = do
         lines """using System;
                  using System.Net;
                  using System.Collections.Generic;
+
                  using Newtonsoft.Json;"""
         blank
         classes <- getClasses
