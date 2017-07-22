@@ -26,6 +26,7 @@ renderer :: Renderer
 renderer =
     { name: "Go"
     , aceMode: "golang"
+    , extension: "go"
     , doc: golangDoc
     }
 

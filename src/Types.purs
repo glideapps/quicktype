@@ -9,6 +9,7 @@ import Doc
 
 type Renderer = {
     name :: String,
+    extension :: String,
     aceMode :: String,
     doc :: Doc Unit
 }

@@ -5,14 +5,64 @@ const shell = require("shelljs");
 const Main = require("../output/Main");
 const makeSource = require("stream-json");
 const Assembler  = require("stream-json/utils/Assembler");
+const commandLineArgs = require('command-line-args')
+const getUsage = require('command-line-usage')
+
+const optionDefinitions = [
+  {
+    name: 'src',
+    type: String,
+    multiple: true,
+    defaultOption: true,
+    typeLabel: '[underline]{file|url}',
+    description: 'The JSON file or url to type.'
+  },
+  {
+    name: 'lang',
+    alias: 'l',
+    type: String,
+    typeLabel: `[underline]{${Main.renderers.map((r) => r.extension).join("|")}}`,
+    description: 'The target language.'
+  },
+  {
+    name: 'help',
+    alias: 'h',
+    type: Boolean,
+    description: 'Get some help.'
+  }
+];
+
+const sections = [
+  {
+    header: 'quicktype',
+    content: 'Quickly generate types from data'
+  },
+  {
+    header: 'Options',
+    optionList: optionDefinitions
+  },
+  {
+    header: 'Examples',
+    content: [
+      '$ quicktype [[bold]{--lang} [underline]{cs}] [underline]{file}'
+    ]
+  }
+];
+
+const options = commandLineArgs(optionDefinitions);
+
+function getRenderer() {
+  let lang = options.lang || "cs";
+  return Main.renderers.find((r) => r.extension === lang);
+}
 
 function renderString(json) {
-    let renderer = Main.renderers[0];
+    let renderer = getRenderer();
     return Main.renderJsonString(renderer)(json).value0;
 }
 
 function renderJson(json) {
-    let renderer = Main.renderers[0];
+    let renderer = getRenderer();
     return Main.renderJson(renderer)(json);
 }
 
@@ -22,10 +72,7 @@ function work(json) {
 }
 
 function usage() {
-  shell.echo("Usage:");
-  shell.echo("    quicktype          reads JSON from stdin");
-  shell.echo("    quicktype FILE     reads JSON from FILE");
-  shell.echo("    quicktype URL      fetches JSON from URL");
+  console.log(getUsage(sections));
 }
 
 function parseFile(file) {
@@ -48,9 +95,9 @@ function parseFileOrUrl(fileOrUrl) {
   }
 }
 
-let args = process.argv.slice(2);
-
-if (args.length == 0) {
+if (options.help) {
+  usage();
+} else if (!options.src || options.src.length === 0) {
   let source = makeSource();
   let assembler = new Assembler();
 
@@ -65,10 +112,8 @@ if (args.length == 0) {
 
   process.stdin.resume();
   process.stdin.setEncoding('utf8');
-} else if (args.length == 1 && args[0] == "--help") {
-  usage();
-} else if (args.length == 1) {
-  parseFileOrUrl(args[0]);
+} else if (options.src.length == 1) {
+  parseFileOrUrl(options.src[0]);
 } else {
   usage();
   shell.exit(1);

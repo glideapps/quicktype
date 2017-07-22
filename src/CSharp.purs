@@ -28,6 +28,7 @@ renderer :: Renderer
 renderer =
     { name: "C#"
     , aceMode: "csharp"
+    , extension: "cs"
     , doc: csharpDoc
     }
 
