@@ -72,8 +72,10 @@ class TopBar extends Component {
   changeSample = (sample) => {
     this.sendEvent("changeSample", sample);
 
+    try {
+      localStorage["sample"] = sample;
+    } catch (e) {}
 
-    localStorage["sample"] = sample;
     this.setState({ sample }, () => this.refresh());
   }
 
@@ -96,7 +98,10 @@ class TopBar extends Component {
 
     let renderer = this.getRenderer(name);
     this.setState({ renderer: renderer.name });
-    localStorage["renderer"] = renderer.name;
+    
+    try {
+      localStorage["renderer"] = renderer.name;
+    } catch (e) {}
 
     this.props.onChangeRenderer(renderer);
   }
