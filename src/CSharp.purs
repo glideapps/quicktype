@@ -27,6 +27,9 @@ data CSInfo = CSInfo { classNames ::  Map Int String, unionNames :: Map (Set IRT
 
 type CSDoc = Doc CSInfo
 
+forbiddenNames :: Array String
+forbiddenNames = [ "Converter", "JsonConverter", "Type" ]
+
 renderer :: Renderer
 renderer =
     { name: "C#"
@@ -38,7 +41,7 @@ renderer =
 renderGraphToCSharp :: IRGraph -> String
 renderGraphToCSharp graph =
     let classes = classesInGraph graph
-        classNames = transformNames nameForClass nextNameToTry (S.singleton "Converter") classes
+        classNames = transformNames nameForClass nextNameToTry (S.fromFoldable forbiddenNames) classes
         unions = L.fromFoldable $ filterTypes unionPredicate graph
         unionNames = transformNames (unionName classNames graph) nextNameToTry (S.fromFoldable $ M.values classNames) $ map (\s -> Tuple s s) unions
     in
