@@ -39,7 +39,7 @@ renderGraphToCSharp :: IRGraph -> String
 renderGraphToCSharp graph =
     let classes = classesInGraph graph
         classNames = transformNames nameForClass nextNameToTry (S.singleton "Converter") classes
-        unions = L.nub $ filterTypes unionPredicate graph
+        unions = L.fromFoldable $ filterTypes unionPredicate graph
         unionNames = transformNames (unionName classNames graph) nextNameToTry (S.fromFoldable $ M.values classNames) $ map (\s -> Tuple s s) unions
     in
         runDoc csharpDoc graph (CSInfo { classNames, unionNames, unions })

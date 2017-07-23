@@ -220,24 +220,24 @@ transformNames legalize otherize illegalNames names =
                 in
                     process (S.insert name setSoFar) (M.insert identifier name mapSoFar) rest
 
-filterTypes :: forall a. (IRType -> Maybe a) -> IRGraph -> List a
+filterTypes :: forall a. Ord a => (IRType -> Maybe a) -> IRGraph -> Set a
 filterTypes predicate graph@(IRGraph { classes, toplevel }) =
-    filterType toplevel <> (L.concat $ mapClasses (\_ cd -> filterClass cd) graph)
+    filterType toplevel <> (S.unions $ mapClasses (\_ cd -> filterClass cd) graph)
     where
-        filterClass :: IRClassData -> List a
+        filterClass :: IRClassData -> Set a
         filterClass (IRClassData { properties }) =
-            L.concatMap filterType $ M.values properties
+            S.unions $ map filterType $ M.values properties
         recurseType t =
             case t of
             IRArray t -> filterType t
             IRMap t -> filterType t
             IRUnion s ->
-                L.concatMap filterType (L.fromFoldable s)
-            _ -> L.Nil
-        filterType :: IRType -> List a
+                S.unions $ S.map filterType s
+            _ -> S.empty
+        filterType :: IRType -> Set a
         filterType t =
             let l = recurseType t
             in
                 case predicate t of
                 Nothing -> l
-                Just x -> L.Cons x l
+                Just x -> S.insert x l
