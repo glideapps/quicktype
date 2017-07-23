@@ -305,10 +305,11 @@ deserializeType t = do
     renderedType <- renderTypeToCSharp t
     deserialize fieldName renderedType
 
-renderPrimitiveDeserializer :: String -> IRType -> Set IRType -> CSDoc Unit
-renderPrimitiveDeserializer tokenType t types =
+renderPrimitiveDeserializer :: List String -> IRType -> Set IRType -> CSDoc Unit
+renderPrimitiveDeserializer tokenTypes t types =
     when (S.member t types) do
-        tokenCase tokenType
+        for_ tokenTypes \tokenType -> do
+            tokenCase tokenType
         indent do
             deserializeType t
 
@@ -350,10 +351,10 @@ renderCSharpUnion allTypes = do
             lines "switch (reader.TokenType) {"
             indent do
                 renderNullDeserializer allTypes
-                renderPrimitiveDeserializer "Integer" IRInteger allTypes
+                renderPrimitiveDeserializer (L.singleton "Integer") IRInteger allTypes
                 renderDoubleDeserializer allTypes
-                renderPrimitiveDeserializer "Boolean" IRBool allTypes
-                renderPrimitiveDeserializer "String" IRString allTypes
+                renderPrimitiveDeserializer (L.singleton "Boolean") IRBool allTypes
+                renderPrimitiveDeserializer ("String" : "Date" : L.Nil) IRString allTypes
                 renderGenericDeserializer isArray "StartArray" allTypes
                 renderGenericDeserializer isClass "StartObject" allTypes
                 renderGenericDeserializer isMap "StartObject" allTypes
