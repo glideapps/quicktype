@@ -49,11 +49,13 @@ renderGraphToCSharp graph =
     where
         unionPredicate =
             case _ of
-            IRUnion s ->
-                if isNothing $ nullableFromSet s then
-                    Just s
-                else
-                    Nothing
+            IRUnion ur ->
+                let s = unionToSet ur
+                in
+                    if isNothing $ nullableFromSet s then
+                        Just s
+                    else
+                        Nothing
             _ -> Nothing
         nameForClass (IRClassData { names }) =
             csNameStyle $ combineNames names
@@ -180,7 +182,7 @@ renderTypeToCSharp = case _ of
     IRMap t -> do
         rendered <- renderTypeToCSharp t
         pure $ "Dictionary<string, " <> rendered <> ">"
-    IRUnion types -> renderUnionToCSharp types
+    IRUnion types -> renderUnionToCSharp $ unionToSet types
 
 csNameStyle :: String -> String
 csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
@@ -339,7 +341,7 @@ renderCSharpUnion allTypes = do
     line $ words ["struct", name, "{"]
     indent do
         for_ nonNullTypes \t -> do
-            typeString <- renderTypeToCSharp $ IRUnion $ S.union (S.singleton t) (S.singleton IRNull)
+            typeString <- renderUnionToCSharp $ S.union (S.singleton t) (S.singleton IRNull)
             field <- unionFieldName t
             lines $ "public " <> typeString <> " " <> field <> ";"
         blank

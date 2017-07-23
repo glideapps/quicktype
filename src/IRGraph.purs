@@ -2,6 +2,14 @@ module IRGraph
     ( IRGraph(..)
     , IRClassData(..)
     , IRType(..)
+    , IRUnionRep(..)
+    , irUnion_Nothing 
+    , irUnion_Null
+    , irUnion_Integer
+    , irUnion_Double
+    , irUnion_Bool
+    , irUnion_String
+    , unionToSet
     , Entry(..)
     , removeElement
     , emptyGraph
@@ -13,7 +21,6 @@ module IRGraph
     , isArray
     , isClass
     , isMap
-    , replaceClassesInType
     , setFromType
     , matchingProperties
     , mapClasses
@@ -22,21 +29,20 @@ module IRGraph
     , regatherClassNames
     , transformNames
     , filterTypes
+    , emptyUnion
     ) where
 
 import Prelude
 
-import Data.Array.Partial (last)
-import Data.Char.Unicode (isPunctuation)
-import Data.Either.Nested (in1)
-import Data.Foldable (find, all, any)
-import Data.List (List, concatMap, fromFoldable, singleton, (:))
+import Data.Foldable (find, all)
+import Data.Int.Bits as Bits
+import Data.List (List, (:))
 import Data.List as L
-import Data.Map (Map, values)
+import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
 import Data.Sequence as Seq
-import Data.Set (Set, empty, insert, member)
+import Data.Set (Set)
 import Data.Set as S
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
@@ -52,6 +58,15 @@ newtype IRGraph = IRGraph { classes :: Seq.Seq Entry, toplevel :: IRType }
 
 newtype IRClassData = IRClassData { names :: Set String, properties :: Map String IRType }
 
+newtype IRUnionRep = IRUnionRep { primitives :: Int, arrayType :: Maybe IRType, classRef :: Maybe Int, mapType :: Maybe IRType }
+
+irUnion_Nothing = 1
+irUnion_Null = 2
+irUnion_Integer = 4
+irUnion_Double = 8
+irUnion_Bool = 16
+irUnion_String = 32
+
 data IRType
     = IRNothing
     | IRNull
@@ -62,12 +77,14 @@ data IRType
     | IRArray IRType
     | IRClass Int
     | IRMap IRType
-    | IRUnion (Set IRType)
+    | IRUnion IRUnionRep
 
 derive instance eqEntry :: Eq Entry
 derive instance eqIRType :: Eq IRType
 derive instance ordIRType :: Ord IRType
 derive instance eqIRClassData :: Eq IRClassData
+derive instance eqIRUnionRep :: Eq IRUnionRep
+derive instance ordIRUnionRep :: Ord IRUnionRep
 
 makeClass :: String -> Map String IRType -> IRClassData
 makeClass name properties = IRClassData { names: S.singleton name, properties }
@@ -141,34 +158,42 @@ matchingProperties ma mb = M.fromFoldable $ L.concatMap getFromB (M.toUnfoldable
                     | otherwise -> L.Nil
             Nothing -> L.Nil
 
-propertiesAreSubset :: IRGraph -> Map String IRType -> Map String IRType -> Boolean
-propertiesAreSubset graph ma mb = all isInB (M.toUnfoldable ma :: List _)
-    where isInB (Tuple n ta) = maybe false (isSubtypeOf graph ta) (M.lookup n mb)
 
 isMaybeSubtypeOfMaybe :: IRGraph -> Maybe IRType -> Maybe IRType -> Boolean
 isMaybeSubtypeOfMaybe _ Nothing Nothing = true
 isMaybeSubtypeOfMaybe graph (Just a) (Just b) = isSubtypeOf graph a b
 isMaybeSubtypeOfMaybe _ _ _ = false
 
-isSubtypeOf :: IRGraph ->  IRType -> IRType -> Boolean
-isSubtypeOf _ IRNothing _ = true
-isSubtypeOf graph (IRUnion sa) (IRUnion sb) = all (\ta -> any (isSubtypeOf graph ta) sb) sa
-isSubtypeOf graph (IRArray a) (IRArray b) = isSubtypeOf graph a b
-isSubtypeOf graph (IRMap a) (IRMap b) = isSubtypeOf graph a b
-isSubtypeOf graph (IRClass ia) (IRClass ib) =
+isSubclassOf :: IRGraph -> Int -> Int -> Boolean
+isSubclassOf graph ia ib =
     let IRClassData { properties: pa } = getClassFromGraph graph ia
         IRClassData { properties: pb } = getClassFromGraph graph ib
-    in propertiesAreSubset graph pa pb
-isSubtypeOf _ a b = a == b
+    in propertiesAreSubset pa pb
+    where
+        propertiesAreSubset :: Map String IRType -> Map String IRType -> Boolean
+        propertiesAreSubset ma mb = all (isInB mb) (M.toUnfoldable ma :: List _)
+        isInB mb (Tuple n ta) = maybe false (isSubtypeOf graph ta) (M.lookup n mb)
 
-replaceClassesInType :: (Int -> Maybe IRType) -> IRType -> IRType
-replaceClassesInType replacer t =
-    case t of
-    IRClass i -> fromMaybe t $ replacer i
-    IRArray a -> IRArray $ replaceClassesInType replacer a
-    IRMap m -> IRMap $ replaceClassesInType replacer m
-    IRUnion s -> IRUnion $ S.map (replaceClassesInType replacer) s
-    _ -> t
+-- FIXME: generalize with isMaybeSubtypeOfMaybe
+isMaybeSubclassOfMaybe :: IRGraph -> Maybe Int -> Maybe Int -> Boolean
+isMaybeSubclassOfMaybe _ Nothing Nothing = true
+isMaybeSubclassOfMaybe graph (Just a) (Just b) = isSubclassOf graph a b
+isMaybeSubclassOfMaybe _ _ _ = false
+
+isSubtypeOf :: IRGraph ->  IRType -> IRType -> Boolean
+isSubtypeOf _ IRNothing _ = true
+isSubtypeOf graph (IRUnion a) (IRUnion b) =
+    let IRUnionRep { primitives: pa, arrayType: aa, classRef: ca, mapType: ma } = a
+        IRUnionRep { primitives: pb, arrayType: ab, classRef: cb, mapType: mb } = a
+    in
+        (Bits.and pa pb) == pa &&
+        isMaybeSubtypeOfMaybe graph aa ab &&
+        isMaybeSubtypeOfMaybe graph ma mb &&
+        isMaybeSubclassOfMaybe graph ca cb
+isSubtypeOf graph (IRArray a) (IRArray b) = isSubtypeOf graph a b
+isSubtypeOf graph (IRMap a) (IRMap b) = isSubtypeOf graph a b
+isSubtypeOf graph (IRClass ia) (IRClass ib) = isSubclassOf graph ia ib
+isSubtypeOf _ a b = a == b
 
 regatherClassNames :: IRGraph -> IRGraph
 regatherClassNames graph@(IRGraph { classes, toplevel }) =
@@ -192,7 +217,12 @@ regatherClassNames graph@(IRGraph { classes, toplevel }) =
             IRClass i -> M.singleton i (S.singleton name)
             IRArray a -> gatherFromType (singular name) a
             IRMap m -> gatherFromType (singular name) m
-            IRUnion types -> combine $ map (gatherFromType name) (L.fromFoldable types)
+            IRUnion (IRUnionRep { arrayType, classRef, mapType }) ->
+                let fromArray = maybe M.empty (gatherFromType name) arrayType
+                    fromMap = maybe M.empty (gatherFromType name) mapType
+                    fromClass = maybe M.empty (\i -> gatherFromType name $ IRClass i) classRef
+                in
+                    combine $ (fromArray : fromMap : fromClass : L.Nil)
             _ -> M.empty
 
 -- FIXME: doesn't really belong here
@@ -220,6 +250,28 @@ transformNames legalize otherize illegalNames names =
                 in
                     process (S.insert name setSoFar) (M.insert identifier name mapSoFar) rest
 
+unionToSet :: IRUnionRep -> Set IRType
+unionToSet (IRUnionRep { primitives, arrayType, classRef, mapType }) =
+    let types1 = addIfSet irUnion_Nothing IRNothing L.Nil
+        types2 = addIfSet irUnion_Null IRNull types1
+        types3 = addIfSet irUnion_Integer IRInteger types2
+        types4 = addIfSet irUnion_Double IRDouble types3
+        types5 = addIfSet irUnion_Bool IRBool types4
+        types6 = addIfSet irUnion_String IRString types5
+        types7 = addIfJust IRArray arrayType types6
+        types8 = addIfJust IRClass classRef types7
+        types9 = addIfJust IRMap mapType types8
+    in
+        S.fromFoldable types9
+    where
+        addIfSet bit t l =
+            if (Bits.and bit primitives) == 0 then l else t : l
+        addIfJust :: forall a. (a -> IRType) -> Maybe a -> List IRType -> List IRType
+        addIfJust c m l =
+            case m of
+            Just x -> c x : l
+            Nothing -> l
+
 filterTypes :: forall a. Ord a => (IRType -> Maybe a) -> IRGraph -> Set a
 filterTypes predicate graph@(IRGraph { classes, toplevel }) =
     filterType toplevel <> (S.unions $ mapClasses (\_ cd -> filterClass cd) graph)
@@ -231,8 +283,8 @@ filterTypes predicate graph@(IRGraph { classes, toplevel }) =
             case t of
             IRArray t -> filterType t
             IRMap t -> filterType t
-            IRUnion s ->
-                S.unions $ S.map filterType s
+            IRUnion r ->
+                S.unions $ S.map filterType $ unionToSet r
             _ -> S.empty
         filterType :: IRType -> Set a
         filterType t =
@@ -241,3 +293,7 @@ filterTypes predicate graph@(IRGraph { classes, toplevel }) =
                 case predicate t of
                 Nothing -> l
                 Just x -> S.insert x l
+
+emptyUnion :: IRUnionRep
+emptyUnion =
+    IRUnionRep { primitives: 0, arrayType: Nothing, classRef: Nothing, mapType: Nothing }
