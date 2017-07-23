@@ -3,6 +3,7 @@
 /.pulp-cache/
 /output/
 /generated-docs/
+/test/awesome-json-results/
 /.psc*
 /.purs*
 /.psa*
