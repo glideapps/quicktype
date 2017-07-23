@@ -14,12 +14,17 @@ body {
 
   display: flex;
   flex-direction: row;
+  justify-content: flex-end
+}
+
+.twitter-follow-button {
+  margin-right: 10px;
 }
 
 .Dropdown-root {
   width: 320px;
   font-size: 10pt;
-  margin-right: 10px;
+  margin-right: auto;
 }
 
 #editors {

@@ -67,6 +67,10 @@ class TopBar extends Component {
     this.changeRenderer(this.state.renderer.name);
   }
 
+  componentDidMount() {
+    window.twttr.widgets.load();
+  }
+
   sendEvent = (name, value) => window.ga("send", "event", "TopBar", name, value);
 
   changeSample = (sample) => {
@@ -121,7 +125,13 @@ class TopBar extends Component {
           value={this.getRenderer().name}
           onChange={({value}) => this.changeRenderer(value)} />
         */}
-      </div>
+        <a className="twitter-follow-button"
+          data-size="large"
+          data-show-count="false"
+          href="https://twitter.com/quicktypeio">
+          Follow @quicktypeio
+        </a>
+     </div>
     );
   }
 }
