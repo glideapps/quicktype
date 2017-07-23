@@ -37,30 +37,29 @@ function testCSharp(samples) {
     shell.cd("../..");
 }
 
-if (process.argv.length > 3) {
-    console.log("Usage: " + __filename + " [TEST-DIR]");
-    process.exit(1);
-}
-
 if (process.argv.length == 2) {
     testCSharp(Samples.samples);
 } else {
-    let dir = process.argv[2];
-    fs.readdir(dir, function(err, items) {
-        if (err) {
-            console.log("Error: Could not read directory " + dir);
-            process.exit(1);
+    for (var i = 2; i < process.argv.length; i++) {
+        let arg = process.argv[i];
+
+        if (fs.lstatSync(arg).isDirectory()) {
+            fs.readdir(arg, function(err, items) {
+                if (err) {
+                    console.log("Error: Could not read directory " + arg);
+                    process.exit(1);
+                }
+                let samples = [];
+                for (var i=0; i<items.length; i++) {
+                    let name = items[i];
+                    if (name.startsWith(".") || !name.endsWith(".json"))
+                        continue;
+                    samples.push(absolutize(path.join(arg, name)));
+                }
+                testCSharp(samples);
+            });
+        } else {
+            testCSharp([absolutize(arg)]);
         }
-        let samples = [];
-        for (var i=0; i<items.length; i++) {
-            let name = items[i];
-            if (name.startsWith(".") || !name.endsWith(".json"))
-                continue;
-            var joined = path.join(dir, name);
-            if (!path.isAbsolute(joined))
-                joined = path.join(process.cwd(), joined);
-            samples.push(joined);
-        }
-        testCSharp(samples);
-    });
+    }
 }
