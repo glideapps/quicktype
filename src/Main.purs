@@ -1,18 +1,14 @@
 module Main where
 
-import IRGraph
 import IR
-import Transformations
+import IRGraph
 import Prelude
+import Transformations
 import Types
-import Utils (mapM)
-import Doc as Doc
 
 import CSharp as CSharp
-
 import Data.Argonaut.Core (Json, foldJson)
 import Data.Argonaut.Parser (jsonParser)
-
 import Data.Array as A
 import Data.Either (Either)
 import Data.Map as Map
@@ -20,9 +16,13 @@ import Data.Set as S
 import Data.StrMap as StrMap
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
+import Doc as Doc
+import Golang (renderer)
+import Golang as Golang
+import Utils (mapM)
 
 renderers :: Array Renderer
-renderers = [CSharp.renderer]
+renderers = [CSharp.renderer, Golang.renderer]
 
 makeTypeFromJson :: String -> Json -> IR IRType
 makeTypeFromJson name json =
