@@ -1,0 +1,15 @@
+{
+  "name": "quicktype",
+  "version": "0.1.2",
+  "dependencies": {
+    "command-line-args": "^4.0.6",
+    "command-line-usage": "^4.0.0",
+    "shelljs": "^0.7.8",
+    "stream-json": "0.5.2"
+  },
+  "scripts": {
+    "postinstall": "cd .. && npm run bundle-cli",
+    "patch-release": "npm version patch && npm publish"
+  },
+  "bin": "quicktype.js"
+}

@@ -2,26 +2,19 @@
   "name": "quicktype",
   "version": "0.1.0",
   "private": true,
-  "dependencies": {
-    "command-line-args": "^4.0.6",
-    "command-line-usage": "^4.0.0",
-    "shelljs": "^0.7.8",
-    "stream-json": "0.5.2"
-  },
   "scripts": {
     "setup": "npm install && cd app && npm install",
     "build": "pulp build",
     "test": "pulp test && bin/test.js",
     "postinstall": "bower install && npm run build",
     "start": "cd app && npm start",
-    "deploy": "cd app && npm run deploy"
+    "deploy": "cd app && npm run deploy",
+    "bundle-cli": "pulp browserify --standalone --skip-entry-point > /tmp/bundle.js && uglifyjs --compress -- /tmp/bundle.js > cli/bundle.js"
   },
   "devDependencies": {
     "bower": "^1.8.0",
     "pulp": "^11.0.2",
-    "purescript": "^0.11.6"
-  },
-  "bin": {
-    "quicktype": "bin/quicktype.js"
+    "purescript": "^0.11.6",
+    "uglify-js": "^3.0.26"
   }
 }
