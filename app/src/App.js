@@ -125,6 +125,12 @@ class TopBar extends Component {
           value={this.getRenderer().name}
           onChange={({value}) => this.changeRenderer(value)} />
         */}
+
+        <a className="what-is-this"
+          href="http://blog.quicktype.io/2017/previewing-quicktype"
+          target="_new">
+          What is this?
+        </a>
         <a className="twitter-follow-button"
           data-size="large"
           data-show-count="false"

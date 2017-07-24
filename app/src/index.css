@@ -21,6 +21,19 @@ body {
   margin-right: 10px;
 }
 
+.what-is-this {
+  display: inline-block;
+  padding: 7px 12px;
+  height: 14px;
+  background: #2ecc71;
+  border-radius: 3px;
+  text-align: center;
+  text-decoration: none;
+  margin-right: 10px;
+  color: white;
+  font-size: 11pt;
+}
+
 .Dropdown-root {
   width: 320px;
   font-size: 10pt;
