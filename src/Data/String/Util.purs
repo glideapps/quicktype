@@ -1,8 +1,17 @@
-module Data.String.Util where
+module Data.String.Util
+    ( plural
+    , singular
+    , capitalize
+    , camelCase
+    , intToHex
+    , stringEscape
+    ) where
 
 import Prelude
 
 import Data.Array as A
+import Data.Char (toCharCode)
+import Data.Char.Unicode (isPrint)
 import Data.Int as Int
 import Data.Maybe (Maybe(..))
 import Data.String as S
@@ -32,3 +41,24 @@ intToHex width number =
         fullArr = if len < width then A.replicate (width - len) '0' <> arr else arr
     in
         S.fromCharArray fullArr
+
+stringEscape :: String -> String
+stringEscape str =
+    S.fromCharArray $ A.concatMap charRep $ S.toCharArray str
+    where
+        charRep c =
+            case c of
+            '\\' -> ['\\', '\\']
+            '\"' -> ['\\', '\"']
+            '\n' -> ['\\', 'n']
+            '\t' -> ['\\', 't']
+            _ ->
+                if isPrint c then
+                    [c]
+                else
+                    let i = toCharCode c
+                    in
+                        if i <= 0xffff then
+                            S.toCharArray $ "\\u" <> intToHex 4 i
+                        else
+                            S.toCharArray $ "\\U" <> intToHex 8 i

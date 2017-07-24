@@ -3,7 +3,12 @@ module Doc
     , getGraph
     , getClasses
     , getClass
+    , getClassNames
+    , getUnions
+    , getUnionNames
     , getRendererInfo
+    , lookupName
+    , lookupClassName
     , string
     , line
     , lines
@@ -12,20 +17,27 @@ module Doc
     , indent
     -- Build Doc Unit with monad syntax, then render to string
     , runDoc
+    , typeNameForUnion
     ) where
 
-import Prelude
-import IRGraph
 import IR
+import IRGraph
+import Prelude
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Foldable (intercalate, sequence_)
+import Data.List (List)
 import Data.List as L
+import Data.Map (Map)
+import Data.Map as M
+import Data.Maybe (Maybe, fromMaybe)
+import Data.Set (Set)
+import Data.Set as S
 import Data.String as String
-import Data.Tuple (Tuple, snd)
+import Data.Tuple (Tuple(..), snd)
 
 type DocState = { indent :: Int }
-type DocEnv r = { graph :: IRGraph, rendererInfo :: r }
+type DocEnv r = { graph :: IRGraph, classNames ::  Map Int String, unionNames :: Map (Set IRType) String, unions :: List (Set IRType), rendererInfo :: r }
 newtype Doc r a = Doc (RWS (DocEnv r) String DocState a)
 
 derive newtype instance functorDoc :: Functor (Doc r)
@@ -34,11 +46,46 @@ derive newtype instance applicativeDoc :: Applicative (Doc r)
 derive newtype instance bindDoc :: Bind (Doc r)
 derive newtype instance monadDoc :: Monad (Doc r)
     
-runDoc :: forall r a. Doc r a -> IRGraph -> r -> String
-runDoc (Doc w) graph rendererInfo = evalRWS w { graph, rendererInfo } { indent: 0 } # snd
+runDoc :: forall r a. Doc r a -> (IRClassData -> String) -> (List String -> String) -> (IRType -> Maybe (Set IRType)) -> (String -> String) -> (Set String) -> IRGraph -> r -> String
+runDoc (Doc w) nameForClass unionName unionPredicate nextNameToTry forbiddenNames graph rendererInfo =
+    let classes = classesInGraph graph
+        classNames = transformNames nameForClass nextNameToTry forbiddenNames classes
+        unions = L.fromFoldable $ filterTypes unionPredicate graph
+        forbiddenForUnions = S.union forbiddenNames $ S.fromFoldable $ M.values classNames
+        unionNames = transformNames nameForUnion nextNameToTry forbiddenForUnions $ map (\s -> Tuple s s) unions
+    in
+        evalRWS w { graph, classNames, unionNames, unions, rendererInfo } { indent: 0 } # snd
+    where
+        nameForUnion s =
+            unionName $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
+
+typeNameForUnion :: IRGraph -> IRType -> String
+typeNameForUnion graph = case _ of
+    IRNothing -> "nothing"
+    IRNull -> "null"
+    IRInteger -> "int"
+    IRDouble -> "double"
+    IRBool -> "bool"
+    IRString -> "string"
+    IRArray a -> typeNameForUnion graph a <> "_array"
+    IRClass i ->
+        let IRClassData { names } = getClassFromGraph graph i
+        in
+            combineNames names
+    IRMap t -> typeNameForUnion graph t <> "_map"
+    IRUnion _ -> "union"
 
 getGraph :: forall r. Doc r IRGraph
 getGraph = Doc (asks _.graph)
+
+getClassNames :: forall r. Doc r (Map Int String)
+getClassNames = Doc (asks _.classNames)
+
+getUnions :: forall r. Doc r (List (Set IRType))
+getUnions = Doc (asks _.unions)
+
+getUnionNames :: forall r. Doc r (Map (Set IRType) String)
+getUnionNames = Doc (asks _.unionNames)
 
 getRendererInfo :: forall r. Doc r r
 getRendererInfo = Doc (asks _.rendererInfo)
@@ -50,6 +97,15 @@ getClass :: forall r. Int -> Doc r IRClassData
 getClass i = do
   graph <- getGraph
   pure $ getClassFromGraph graph i
+
+lookupName :: forall a. Ord a => a -> Map a String -> String
+lookupName original nameMap =
+    fromMaybe "NAME_NOT_PROCESSED" $ M.lookup original nameMap
+
+lookupClassName :: forall r. Int -> Doc r String
+lookupClassName i = do
+    classNames <- getClassNames
+    pure $ lookupName i classNames
 
 line :: forall r.  Doc r Unit -> Doc r Unit
 line r = do

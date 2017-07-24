@@ -7,25 +7,23 @@ import IRGraph
 import Prelude
 import Types
 
-import Data.Array (concatMap)
-import Data.Char (toCharCode)
-import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter, isPrint)
+import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
 import Data.Foldable (find, for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), fromMaybe, isNothing)
+import Data.Maybe (Maybe(..), isNothing)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
-import Data.String.Util (capitalize, camelCase, intToHex)
+import Data.String.Util (capitalize, camelCase, stringEscape)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 
-data CSInfo = CSInfo { classNames ::  Map Int String, unionNames :: Map (Set IRType) String, unions :: List (Set IRType) }
+import Utils (removeElement)
 
-type CSDoc = Doc CSInfo
+type CSDoc = Doc Unit
 
 forbiddenNames :: Array String
 forbiddenNames = [ "Converter", "JsonConverter", "Type" ]
@@ -40,12 +38,7 @@ renderer =
 
 renderGraphToCSharp :: IRGraph -> String
 renderGraphToCSharp graph =
-    let classes = classesInGraph graph
-        classNames = transformNames nameForClass nextNameToTry (S.fromFoldable forbiddenNames) classes
-        unions = L.fromFoldable $ filterTypes unionPredicate graph
-        unionNames = transformNames (unionName classNames graph) nextNameToTry (S.fromFoldable $ M.values classNames) $ map (\s -> Tuple s s) unions
-    in
-        runDoc csharpDoc graph (CSInfo { classNames, unionNames, unions })
+    runDoc csharpDoc nameForClass unionName unionPredicate nextNameToTry (S.fromFoldable forbiddenNames) graph unit
     where
         unionPredicate =
             case _ of
@@ -62,29 +55,12 @@ renderGraphToCSharp graph =
         nextNameToTry s =
             "Other" <> s
 
-unionName :: Map Int String -> IRGraph -> Set IRType -> String
-unionName classNames graph s =
+unionName :: List String -> String
+unionName s =
     s
-    # L.fromFoldable
     # L.sort
-    <#> typeNameForUnion classNames graph
     <#> csNameStyle
     # intercalate "Or"
-
-getClassNames :: CSDoc (Map Int String)
-getClassNames = do
-    CSInfo { classNames } <- getRendererInfo
-    pure classNames
-
-getUnions :: CSDoc (List (Set IRType))
-getUnions = do
-    CSInfo { unions } <- getRendererInfo
-    pure unions
-
-getUnionNames :: CSDoc (Map (Set IRType) String)
-getUnionNames = do
-    CSInfo { unionNames } <- getRendererInfo
-    pure unionNames
 
 isValueType :: IRType -> Boolean
 isValueType IRInteger = true
@@ -122,27 +98,6 @@ legalizeIdentifier str =
         else
             legalizeIdentifier ("_" <> str)
 
-stringify :: String -> String
-stringify str =
-    "\"" <> (Str.fromCharArray $ concatMap charRep $ Str.toCharArray str) <> "\""
-    where
-        charRep c =
-            case c of
-            '\\' -> ['\\', '\\']
-            '\"' -> ['\\', '\"']
-            '\n' -> ['\\', 'n']
-            '\t' -> ['\\', 't']
-            _ ->
-                if isPrint c then
-                    [c]
-                else
-                    let i = toCharCode c
-                    in
-                        if i <= 0xffff then
-                            Str.toCharArray $ "\\u" <> intToHex 4 i
-                        else
-                            Str.toCharArray $ "\\U" <> intToHex 8 i
-
 nullableFromSet :: Set IRType -> Maybe IRType
 nullableFromSet s =
     case L.fromFoldable s of
@@ -157,15 +112,6 @@ renderUnionToCSharp s =
         rendered <- renderTypeToCSharp x
         pure if isValueType x then rendered <> "?" else rendered
     Nothing -> lookupUnionName s
-
-lookupName :: forall a. Ord a => a -> Map a String -> String
-lookupName original nameMap =
-    fromMaybe "NAME_NOT_PROCESSED" $ M.lookup original nameMap
-
-lookupClassName :: Int -> CSDoc String
-lookupClassName i = do
-    classNames <- getClassNames
-    pure $ lookupName i classNames
 
 lookupUnionName :: Set IRType -> CSDoc String
 lookupUnionName s = do
@@ -191,22 +137,6 @@ renderTypeToCSharp = case _ of
 
 csNameStyle :: String -> String
 csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
-
-typeNameForUnion :: Map Int String -> IRGraph -> IRType -> String
-typeNameForUnion classNames graph = case _ of
-    IRNothing -> "nothing"
-    IRNull -> "null"
-    IRInteger -> "int"
-    IRDouble -> "double"
-    IRBool -> "bool"
-    IRString -> "string"
-    IRArray a -> typeNameForUnion classNames graph a <> "_array"
-    IRClass i ->
-        let IRClassData { names } = getClassFromGraph graph i
-        in
-            combineNames names
-    IRMap t -> typeNameForUnion classNames graph t <> "_map"
-    IRUnion _ -> "union"
 
 csharpDoc :: CSDoc Unit
 csharpDoc = do
@@ -296,9 +226,8 @@ renderNullDeserializer types =
 
 unionFieldName :: IRType -> CSDoc String
 unionFieldName t = do
-    classNames <- getClassNames
     graph <- getGraph
-    let typeName = typeNameForUnion classNames graph t
+    let typeName = typeNameForUnion graph t
     pure $ csNameStyle typeName
 
 deserialize :: String -> String -> CSDoc Unit
@@ -379,9 +308,9 @@ renderCSharpClass (IRClassData { names, properties }) className = do
     indent do
         for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
             line do
-                string "[JsonProperty("
-                string $ stringify pname
-                string ")]"
+                string "[JsonProperty(\""
+                string $ stringEscape pname
+                string "\")]"
             line do
                 string "public "
                 rendered <- renderTypeToCSharp ptype
