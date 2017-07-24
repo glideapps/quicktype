@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "0.1.3",
+  "version": "0.1.6",
   "dependencies": {
     "command-line-args": "^4.0.6",
     "command-line-usage": "^4.0.0",
@@ -11,5 +11,9 @@
     "bundle": "cd .. && npm run bundle-cli",
     "patch-release": "npm version patch && npm publish"
   },
+  "files": [
+    "bundle.js",
+    "quicktype.js"
+  ],
   "bin": "quicktype.js"
 }
