@@ -68,7 +68,8 @@ class TopBar extends Component {
   }
 
   componentDidMount() {
-    window.twttr.widgets.load();
+    // TODO why is widgets sometimes undefined?
+    window.twttr.widgets && window.twttr.widgets.load();
   }
 
   sendEvent = (name, value) => window.ga("send", "event", "TopBar", name, value);
