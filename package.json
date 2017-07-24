@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "setup": "npm install && cd app && npm install",
-    "build": "pulp build",
+    "setup": "npm install && cd app && npm install && cd ../cli && npm install",
+    "build": "pulp build && npm run bundle-cli",
     "test": "pulp test && bin/test.js",
     "postinstall": "bower install && npm run build",
     "start": "cd app && npm start",
