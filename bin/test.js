@@ -30,7 +30,7 @@ function testCSharp(samples) {
         var p = sample;
         if (!path.isAbsolute(p))
             p = path.join("..", "..", "app", "public", "sample", "json", p);
-        exec(`node ../../bin/quicktype.js "${p}" > QuickType.cs`);
+        exec(`node ../../cli/quicktype.js "${p}" > QuickType.cs`);
         exec(`dotnet run "${p}"`);
     });
 
