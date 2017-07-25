@@ -64,7 +64,12 @@ renderGraphToCSharp graph =
 
 unionName :: Map Int String -> IRGraph -> Set IRType -> String
 unionName classNames graph s =
-    "OneOf" <> (csNameStyle $ intercalate "_" $ map (typeNameForUnion classNames graph) $ L.sort $ L.fromFoldable s)
+    s
+    # L.fromFoldable
+    # L.sort
+    <#> typeNameForUnion classNames graph
+    <#> csNameStyle
+    # intercalate "Or"
 
 getClassNames :: CSDoc (Map Int String)
 getClassNames = do
