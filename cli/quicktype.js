@@ -18,6 +18,13 @@ const optionDefinitions = [
     description: 'The JSON file or url to type.'
   },
   {
+    name: 'output',
+    alias: 'o',
+    type: String,
+    typeLabel: `[underline]{output}`,
+    description: 'The desired output file name.'
+  },
+  {
     name: 'lang',
     alias: 'l',
     type: String,
@@ -44,7 +51,7 @@ const sections = [
   {
     header: 'Examples',
     content: [
-      '$ quicktype [[bold]{--lang} [underline]{cs}] [underline]{file}'
+      '$ quicktype [bold]{-o} LatestBlock.cs [underline]{https://blockchain.info/latestblock}'
     ]
   }
 ];
@@ -68,7 +75,16 @@ function renderJson(json) {
 
 function work(json) {
   let out = renderString(json);
-  shell.echo(out);
+  if (options.output) {
+    fs.writeFile(options.output, out, (err) => {
+        if (err) {
+            console.error(err);
+            shell.exit(1);
+        }
+    }); 
+  } else {
+    console.log(out);
+  }
 }
 
 function usage() {
@@ -93,6 +109,15 @@ function parseFileOrUrl(fileOrUrl) {
   } else {
     parseUrl(fileOrUrl);
   }
+}
+
+// Output file extension determines the language if language is undefined
+if (options.output && !options.lang) {
+  if (options.output.indexOf(".") < 0) {
+    console.error("Please specify a language (--lang) or an output file extension.");
+    shell.exit(1);
+  }
+  options.lang = options.output.split(".").pop();
 }
 
 if (options.help) {
