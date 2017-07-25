@@ -241,7 +241,7 @@ renderJsonConverter = do
     unionNames <- getUnionNames
     let haveUnions = not $ M.isEmpty unionNames
     let names = M.values unionNames
-    lines $ "class Converter" <> stringIfTrue haveUnions " : JsonConverter" <> " {"
+    lines $ "public class Converter" <> stringIfTrue haveUnions " : JsonConverter" <> " {"
     indent do
         IRGraph { toplevel } <- getGraph
         toplevelType <- renderTypeToCSharp toplevel
@@ -338,7 +338,7 @@ renderCSharpUnion allTypes = do
     name <- lookupUnionName allTypes
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     graph <- getGraph
-    line $ words ["struct", name, "{"]
+    line $ words ["public struct", name, "{"]
     indent do
         for_ nonNullTypes \t -> do
             typeString <- renderUnionToCSharp $ S.union (S.singleton t) (S.singleton IRNull)
@@ -368,7 +368,7 @@ renderCSharpUnion allTypes = do
 renderCSharpClass :: IRClassData -> String -> CSDoc Unit
 renderCSharpClass (IRClassData { names, properties }) className = do
     let propertyNames = transformNames csNameStyle ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
-    line $ words ["class", className]
+    line $ words ["public class", className]
 
     lines "{"
     indent do
