@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "npm install --ignore-scripts && bower install && npm run bundle-cli",
+    "build": "npm install --ignore-scripts && bower install && pulp build -- --source-maps && npm run bundle-cli",
     "test": "npm run build && pulp test && test/test.js",
     "postinstall": "(cd app && npm install) && (cd cli && npm install) && npm run build",
     "start": "cd app && npm start",
