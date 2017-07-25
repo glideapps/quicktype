@@ -2,7 +2,15 @@
 
 const fs = require('fs');
 const shell = require("shelljs");
-const Main = require("./bundle");
+
+const Main = (() => {
+  try {
+    return require("../output/Main");
+  } catch (e) {
+    return require("./bundle");    
+  }
+})();
+
 const makeSource = require("stream-json");
 const Assembler  = require("stream-json/utils/Assembler");
 const commandLineArgs = require('command-line-args')
