@@ -40,4 +40,5 @@ The react app will live-reload when you edit any source.
 
 ## Deploy
 
-Commit to master.
+* Commit to master to deploy `quicktype.io`.
+* The `quicktype` CLI will also deploy to NPM if it has a newer version number.
