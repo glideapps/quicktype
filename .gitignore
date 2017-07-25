@@ -9,4 +9,5 @@
 /.psa*
 npm-debug.log
 test/csharp/QuickType.cs
+test/golang/quicktype.go
 package-lock.json
