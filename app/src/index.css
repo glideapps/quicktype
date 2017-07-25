@@ -35,8 +35,21 @@ body {
 }
 
 .Dropdown-root {
-  width: 320px;
   font-size: 10pt;
+  margin-right: 10px;
+}
+
+.Dropdown-root:first-child {
+  width: 320px;
+}
+
+.Dropdown-root:last-child {
+  width: 200px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: row;
   margin-right: auto;
 }
 

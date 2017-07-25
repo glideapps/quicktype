@@ -115,19 +115,18 @@ class TopBar extends Component {
   render() {
     return (
       <div className="topBar">
-        <Dropdown
-          name="sample"
-          options={this.samples}
-          value={this.state.sample}
-          onChange={({value}) => this.changeSample(value)} />
-        {/*
-        <Dropdown
-          name="renderer"
-          options={Main.renderers.map((r) => r.name)}
-          value={this.getRenderer().name}
-          onChange={({value}) => this.changeRenderer(value)} />
-        */}
-
+        <div className="controls">
+          <Dropdown
+            name="sample"
+            options={this.samples}
+            value={this.state.sample}
+            onChange={({value}) => this.changeSample(value)} />
+          <Dropdown
+            name="renderer"
+            options={Main.renderers.map((r) => r.name)}
+            value={this.getRenderer().name}
+            onChange={({value}) => this.changeRenderer(value)} />
+        </div>
         <a className="what-is-this"
           href="http://blog.quicktype.io/2017/previewing-quicktype"
           target="_new">
