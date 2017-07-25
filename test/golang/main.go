@@ -18,4 +18,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	bytes, err = json.Marshal(t)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	n, err := os.Stdout.Write(bytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if n != len(bytes) {
+		log.Fatal("Could not write output")
+	}
+	os.Stdout.Write([]byte("\n"))
 }
