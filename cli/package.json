@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "dependencies": {
     "command-line-args": "^4.0.6",
     "command-line-usage": "^4.0.0",
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "bundle": "cd .. && npm run bundle-cli && cd cli",
-    "deploy": "npm run bundle && npm version patch"
+    "deploy": "npm run bundle"
   },
   "files": [
     "bundle.js",

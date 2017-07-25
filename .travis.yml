@@ -25,7 +25,7 @@ before_deploy:
     if ! [ "$BEFORE_DEPLOY_RUN" ]; then
       export BEFORE_DEPLOY_RUN=1
       cd app && npm run deploy && cd ..
-      cd cli && npm version patch # we have to cd here to make npm deploy the CLI correctly
+      cd cli # we have to cd here to make npm deploy the CLI correctly
     fi
 deploy:
   - provider: npm
