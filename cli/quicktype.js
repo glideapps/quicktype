@@ -59,8 +59,14 @@ const sections = [
 const options = commandLineArgs(optionDefinitions);
 
 function getRenderer() {
-  let lang = options.lang || "cs";
-  return Main.renderers.find((r) => r.extension === lang);
+  let renderer = Main.renderers.find((r) => r.extension === options.lang);
+
+  if (!renderer) {
+    console.error(`'${options.lang}' is not yet supported as an output language.`);
+    shell.exit(1);
+  }
+
+  return renderer;
 }
 
 function renderString(json) {
