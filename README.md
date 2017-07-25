@@ -6,6 +6,22 @@
 $ npm install
 ```
 
+## Build
+
+```shell
+$ npm run build
+```
+
+## Test
+
+```shell
+$ npm run test
+```
+
+### Requirements
+
+* [`dotnetcore`](https://www.microsoft.com/net/core#macos)
+
 ## Edit
 
 ```shell
