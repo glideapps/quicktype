@@ -4,11 +4,10 @@
   "private": true,
   "scripts": {
     "setup": "npm install && cd app && npm install && cd ../cli && npm install",
-    "build": "pulp build && npm run bundle-cli",
+    "build": "npm run bundle-cli",
     "test": "pulp test && bin/test.js",
     "postinstall": "bower install && npm run build",
     "start": "cd app && npm start",
-    "deploy": "cd app && npm run deploy",
     "bundle-cli": "pulp browserify --standalone --skip-entry-point > /tmp/bundle.js && uglifyjs --compress --mangle -- /tmp/bundle.js > cli/bundle.js"
   },
   "devDependencies": {
