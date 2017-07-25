@@ -98,13 +98,6 @@ legalizeIdentifier str =
         else
             legalizeIdentifier ("_" <> str)
 
-nullableFromSet :: Set IRType -> Maybe IRType
-nullableFromSet s =
-    case L.fromFoldable s of
-    IRNull : x : L.Nil -> Just x
-    x : IRNull : L.Nil -> Just x
-    _ -> Nothing
-
 renderUnionToCSharp :: Set IRType -> CSDoc String
 renderUnionToCSharp s =
     case nullableFromSet s of
@@ -112,11 +105,6 @@ renderUnionToCSharp s =
         rendered <- renderTypeToCSharp x
         pure if isValueType x then rendered <> "?" else rendered
     Nothing -> lookupUnionName s
-
-lookupUnionName :: Set IRType -> CSDoc String
-lookupUnionName s = do
-    unionNames <- getUnionNames
-    pure $ lookupName s unionNames
 
 renderTypeToCSharp :: IRType -> CSDoc String
 renderTypeToCSharp = case _ of
@@ -271,7 +259,6 @@ renderCSharpUnion :: Set IRType -> CSDoc Unit
 renderCSharpUnion allTypes = do
     name <- lookupUnionName allTypes
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
-    graph <- getGraph
     line $ words ["public struct", name, "{"]
     indent do
         for_ nonNullTypes \t -> do

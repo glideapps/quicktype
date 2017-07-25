@@ -29,7 +29,7 @@ import Data.Set (Set)
 import Data.Set as S
 import Data.Tuple (Tuple(..))
 import Data.Tuple as T
-import Utils (mapM, mapMapM)
+import Utils (lookupOrDefault, mapM, mapMapM)
 
 type IR = State IRGraph
 

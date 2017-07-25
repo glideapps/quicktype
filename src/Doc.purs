@@ -9,6 +9,7 @@ module Doc
     , getRendererInfo
     , lookupName
     , lookupClassName
+    , lookupUnionName
     , string
     , line
     , lines
@@ -106,6 +107,11 @@ lookupClassName :: forall r. Int -> Doc r String
 lookupClassName i = do
     classNames <- getClassNames
     pure $ lookupName i classNames
+
+lookupUnionName :: forall r. Set IRType -> Doc r String
+lookupUnionName s = do
+    unionNames <- getUnionNames
+    pure $ lookupName s unionNames
 
 line :: forall r.  Doc r Unit -> Doc r Unit
 line r = do

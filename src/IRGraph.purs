@@ -11,17 +11,14 @@ module IRGraph
     , irUnion_String
     , unionToSet
     , Entry(..)
-    , removeElement
     , emptyGraph
     , followIndex
     , getClassFromGraph
-    , lookupOrDefault
-    , decomposeTypeSet
     , nullifyNothing
+    , nullableFromSet
     , isArray
     , isClass
     , isMap
-    , setFromType
     , matchingProperties
     , mapClasses
     , combineNames
@@ -34,7 +31,7 @@ module IRGraph
 
 import Prelude
 
-import Data.Foldable (find, all)
+import Data.Foldable (all)
 import Data.Int.Bits as Bits
 import Data.List (List, (:))
 import Data.List as L
@@ -112,15 +109,6 @@ mapClasses f (IRGraph { classes }) = L.concat $ L.mapWithIndex mapper (L.fromFol
 classesInGraph :: IRGraph -> List (Tuple Int IRClassData)
 classesInGraph  = mapClasses Tuple
 
--- FIXME: doesn't really belong here
-lookupOrDefault :: forall k v. Ord k => v -> k -> Map k v -> v
-lookupOrDefault default key m = maybe default id $ M.lookup key m
-
--- FIXME: doesn't really belong here
-removeElement :: forall a. Ord a => (a -> Boolean) -> S.Set a -> { element :: Maybe a, rest :: S.Set a }
-removeElement p s = { element, rest: maybe s (\x -> S.delete x s) element }
-    where element = find p s 
-
 isArray :: IRType -> Boolean
 isArray (IRArray _) = true
 isArray _ = false
@@ -133,21 +121,16 @@ isMap :: IRType -> Boolean
 isMap (IRMap _) = true
 isMap _ = false
 
--- FIXME: this is horribly inefficient
-decomposeTypeSet :: S.Set IRType -> { maybeArray :: Maybe IRType, maybeClass :: Maybe IRType, maybeMap :: Maybe IRType, rest :: S.Set IRType }
-decomposeTypeSet s =
-    let { element: maybeArray, rest: rest } = removeElement isArray s
-        { element: maybeClass, rest: rest } = removeElement isClass rest
-        { element: maybeMap, rest: rest } = removeElement isMap rest
-    in { maybeArray, maybeClass, maybeMap, rest }
-
-setFromType :: IRType -> S.Set IRType
-setFromType IRNothing = S.empty
-setFromType x = S.singleton x
-
 nullifyNothing :: IRType -> IRType
 nullifyNothing IRNothing = IRNull
 nullifyNothing x = x
+
+nullableFromSet :: Set IRType -> Maybe IRType
+nullableFromSet s =
+    case L.fromFoldable s of
+    IRNull : x : L.Nil -> Just x
+    x : IRNull : L.Nil -> Just x
+    _ -> Nothing
 
 matchingProperties :: forall v. Eq v => Map String v -> Map String v -> Map String v
 matchingProperties ma mb = M.fromFoldable $ L.concatMap getFromB (M.toUnfoldable ma)

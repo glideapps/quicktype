@@ -1,14 +1,20 @@
 module Utils
     ( mapM
     , mapMapM
+    , lookupOrDefault
+    , removeElement
     ) where
 
 import Prelude
 
+import Data.Foldable (find)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
+import Data.Maybe (Maybe, maybe)
+import Data.Set (Set)
+import Data.Set as S
 import Data.Tuple (Tuple(..))
 
 mapM :: forall m a b. Monad m => (a -> m b) -> List a -> m (List b)
@@ -23,3 +29,10 @@ mapMapM f m = do
         mapper (Tuple a b) = do
             c <- f a b
             pure $ Tuple a c
+
+lookupOrDefault :: forall k v. Ord k => v -> k -> Map k v -> v
+lookupOrDefault default key m = maybe default id $ M.lookup key m
+
+removeElement :: forall a. Ord a => (a -> Boolean) -> Set a -> { element :: Maybe a, rest :: Set a }
+removeElement p s = { element, rest: maybe s (\x -> S.delete x s) element }
+    where element = find p s 
