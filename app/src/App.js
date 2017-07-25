@@ -60,7 +60,8 @@ class TopBar extends Component {
     super(props);
 
     let { query } = urlParse(window.location.href, true);
-    let queryRenderer = query.lang && Main.renderers.find((r) => r.extension === query.lang);
+    let queryExtension = query.lang || query.l;
+    let queryRenderer = queryExtension && Main.renderers.find((r) => r.extension === queryExtension);
 
     this.state = {
       sample: localStorage["sample"] || this.samples[0],
