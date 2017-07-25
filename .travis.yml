@@ -14,6 +14,7 @@ cache:
     - node_modules
     - output
     - app/node_modules
+    - cli/node_modules
     - $HOME/.cache/bower
     - $HOME/.nuget/packages
 notifications:
@@ -21,15 +22,23 @@ notifications:
     secure: IeuuD+F4GlTrrm/AFPk30PbRN6iYpq2SO9ta9C40UGtWWTR4bmxZUb5WftrRbt4dBtBb5+NrOBgEIIb5PhHvJP93k38OJgybBDoLzs163O4WQHivA9OztDGoWeE3SLSfRaaH+GSU3IzWRaNPbf9KFPsi5ydQdw3R9jv61w4EUKXmSsGuArOpGP2wFpKD0gamhkzjdYlsVWL/TDEVly1BYkT/8JcYqLKtgrKm8/7G5sT6utzdDAINofvooUyKlxBGx6sgWzKgvmSPPp9GWAp5UZq9rp9xsXf/l6h6gWsyTWrM+6jV94GdUQRgb8SxsrVWtDvKuNPuCJ3M8z1kb9hHY8aSQvZSxmCBm84bQkDT0ifkq+Ij9t1fsXOlMPSLAXjTGY39gLLL71eK/1NgmnchgzkifOjfFGC8/5m/yNGFmeA0nBxHtmGslkgJUHUUZkhkO2o31NQub2a7XfFmLzi9jO145kZU/5D/pQ2oncCs+MUdc5PyCiaVRgiG+v6EYw56+CTO/lgEYdjoOeuoTVQaZJmwwmZRQOczkLCQrv2i6wsq76OBrJBE/IarjPdnNobYLduovRocOSPHdOgoCes0ZG4PKi9jLLCNwCRYJAd0vunHDh7lipJmbq56JJiq6xMu8RvL228BSF51PRs8Wv0YipzSnLJQkjuHrmYUGyGlxGs=
 before_deploy:
   - npm run deploy
+  - cd cli # we have to deploy from here to make the CLI deploy correctly
 deploy:
-  provider: gcs
-  access_key_id: GOOGNPS7EMS255T46UCZ
-  secret_access_key:
-    secure: fRBjrrbKI+zCpCYCzHVhHr1GKWs96XJvwkNvWj0Rm+XTCclf3RO8h721Ttv/sKI0f0CrIqoSadp3QB1j8QJ+9KXvJCa8Sq72Bz3TxGkjxG8Qdxoo6AlytGLjldtoZ1YTdIFFBcrH1X/J5GkvQ3T89g41wsABWQF4cJfqlVfRHkvgjE36zPuMfpXdOxBu2N8sUsjm4wi+G478oZe86F+Tl4XnTVRi416WKvs6xnbXTw9iuq2WrKmVnSnzIynC69uyFgsmH63hsJHw+Vcr4Az7HGsEZGg3X/tEFKdf/bZ3i1NOqxaORbc2xGm+5cJwrA7SsSSK06rsYQH0bI+kl0CPeVWw0PNjKB50T88Lest5z6VX2CqlQz6NF5iS/8DtRAjSDsUIGpePy3nE1gyhs+wTJ/H4gnIZyDWlXvDPVqt1HvYqzhkEP5KATFtKBXlbfZrSj/cVXZMdFwR0w/iVWdtDUwBmL35szrDdj3mSJKByJXmkIkbd5R3SoatUmgUr7BQ45Eofuis4N09h0g3IQ3RaTMWOeW1EzfRDO5REQwwYuobZhcByGxKMHIlLfujadV23/rFgGFGLzIutIx0ogXysVnkaqJvRGMWqI5ORFX5OWiZXdlb/jJCXOrDVl5Auhl1w5zRktevK35kFD8zMNzFhA4z3zy9q2lvzLMtscSovOhI=
-  bucket: www.quicktype.io
-  local-dir: app/build
-  skip_cleanup: true
-  acl: public-read
-  on:
-    repo: dvdsgl/quicktype
-    branch: master
+  - provider: gcs
+    access_key_id: GOOGNPS7EMS255T46UCZ
+    secret_access_key:
+      secure: fRBjrrbKI+zCpCYCzHVhHr1GKWs96XJvwkNvWj0Rm+XTCclf3RO8h721Ttv/sKI0f0CrIqoSadp3QB1j8QJ+9KXvJCa8Sq72Bz3TxGkjxG8Qdxoo6AlytGLjldtoZ1YTdIFFBcrH1X/J5GkvQ3T89g41wsABWQF4cJfqlVfRHkvgjE36zPuMfpXdOxBu2N8sUsjm4wi+G478oZe86F+Tl4XnTVRi416WKvs6xnbXTw9iuq2WrKmVnSnzIynC69uyFgsmH63hsJHw+Vcr4Az7HGsEZGg3X/tEFKdf/bZ3i1NOqxaORbc2xGm+5cJwrA7SsSSK06rsYQH0bI+kl0CPeVWw0PNjKB50T88Lest5z6VX2CqlQz6NF5iS/8DtRAjSDsUIGpePy3nE1gyhs+wTJ/H4gnIZyDWlXvDPVqt1HvYqzhkEP5KATFtKBXlbfZrSj/cVXZMdFwR0w/iVWdtDUwBmL35szrDdj3mSJKByJXmkIkbd5R3SoatUmgUr7BQ45Eofuis4N09h0g3IQ3RaTMWOeW1EzfRDO5REQwwYuobZhcByGxKMHIlLfujadV23/rFgGFGLzIutIx0ogXysVnkaqJvRGMWqI5ORFX5OWiZXdlb/jJCXOrDVl5Auhl1w5zRktevK35kFD8zMNzFhA4z3zy9q2lvzLMtscSovOhI=
+    bucket: www.quicktype.io
+    local-dir: ../app/build
+    skip_cleanup: true
+    acl: public-read
+    on:
+      repo: dvdsgl/quicktype
+      branch: master
+  - provider: npm
+    email: djsiegel@gmail.com
+    api_key:
+      secure: GSAyOzM1iYwUrzIy5jeC09V+3c4DuiwljOG9EmnUslG6hZLmgRyeIIToK041HqQyTBrUt/QW3UbopBXjF+c/jOAVyA1Luwf2FKuKYQGcOXYuJp4GaPpcydT12jcT5G1XFL3FSQkxu7FWhWYV+uNUY5orHOKrgsLa4oRKITpVazKOKTIpEK1NxqWqdCVWvsdXgKO9FnbNiaapjsjW8ijG9sqn+INTG/78j6r1ug7Aafz/SBYXD6p37ccwSc/+yI7xa9D/cbB2Ot0gy87AM6/O35+Rp/Lkdod2gCuiCSIvKMAWqQdQ//L6NVyhzXEIf1z5XxCo2a0uJyYtLGb2Ts8C+B6nW9OSDV2lwekBl0yD8PU02TxUlcIq7TA5s0DVU0Af8RuSK+zLBvsJZWlZrivPsbEZXgq0aT1foXmThAEOrUNfEa5Uvgo9FBouCiy3EVIGQZP+oEWyrgtjMq9g1uE9P0QAum9zTpePO/3twpIjXRGtkmGTxqG0sfYPsdf7VeVPVJly08cjW1c5U9ObFwNcF6uIzTWF5XwFxD01rnjAS1PpfZYQHSC5FFLTMZW4rU7JP5reWdf5+OfbqJmjZQ/nRln9ez5yvAHxoAH17H1m5oJuw5oZccOXXKRwq39luj5w62OBS0R38BWTqLrdJPYs5FwKb4RdJt+1xF7oCwDgH1A=
+    on:
+      repo: dvdsgl/quicktype
+      branch: master
