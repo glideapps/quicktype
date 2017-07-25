@@ -8,7 +8,7 @@
     "test": "pulp test && bin/test.js",
     "postinstall": "bower install && npm run build",
     "start": "cd app && npm start",
-    "deploy": "npm run bundle-cli && cd app && npm run deploy",
+    "deploy": "cd app && npm run deploy",
     "bundle-cli": "pulp browserify --standalone --skip-entry-point > /tmp/bundle.js && uglifyjs --compress --mangle -- /tmp/bundle.js > cli/bundle.js"
   },
   "devDependencies": {
