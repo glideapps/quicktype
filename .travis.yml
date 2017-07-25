@@ -7,7 +7,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install dotnet-dev-1.0.4
 script:
-  - npm run setup # && npm run test
+  - npm run test
 cache:
   directories:
     - bower_components
@@ -25,9 +25,17 @@ before_deploy:
     if ! [ "$BEFORE_DEPLOY_RUN" ]; then
       export BEFORE_DEPLOY_RUN=1
       cd app && npm run deploy && cd ..
-      cd cli # we have to deploy from here to make the CLI deploy correctly
+      cd cli # we have to cd here to make npm deploy the CLI correctly
     fi
 deploy:
+  - provider: npm
+    email: djsiegel@gmail.com
+    api_key:
+      secure: GSAyOzM1iYwUrzIy5jeC09V+3c4DuiwljOG9EmnUslG6hZLmgRyeIIToK041HqQyTBrUt/QW3UbopBXjF+c/jOAVyA1Luwf2FKuKYQGcOXYuJp4GaPpcydT12jcT5G1XFL3FSQkxu7FWhWYV+uNUY5orHOKrgsLa4oRKITpVazKOKTIpEK1NxqWqdCVWvsdXgKO9FnbNiaapjsjW8ijG9sqn+INTG/78j6r1ug7Aafz/SBYXD6p37ccwSc/+yI7xa9D/cbB2Ot0gy87AM6/O35+Rp/Lkdod2gCuiCSIvKMAWqQdQ//L6NVyhzXEIf1z5XxCo2a0uJyYtLGb2Ts8C+B6nW9OSDV2lwekBl0yD8PU02TxUlcIq7TA5s0DVU0Af8RuSK+zLBvsJZWlZrivPsbEZXgq0aT1foXmThAEOrUNfEa5Uvgo9FBouCiy3EVIGQZP+oEWyrgtjMq9g1uE9P0QAum9zTpePO/3twpIjXRGtkmGTxqG0sfYPsdf7VeVPVJly08cjW1c5U9ObFwNcF6uIzTWF5XwFxD01rnjAS1PpfZYQHSC5FFLTMZW4rU7JP5reWdf5+OfbqJmjZQ/nRln9ez5yvAHxoAH17H1m5oJuw5oZccOXXKRwq39luj5w62OBS0R38BWTqLrdJPYs5FwKb4RdJt+1xF7oCwDgH1A=
+    skip_cleanup: true
+    on:
+      repo: dvdsgl/quicktype
+      branch: master
   - provider: gcs
     access_key_id: GOOGNPS7EMS255T46UCZ
     secret_access_key:
@@ -36,13 +44,6 @@ deploy:
     local-dir: ../app/build
     skip_cleanup: true
     acl: public-read
-    on:
-      repo: dvdsgl/quicktype
-      branch: master
-  - provider: npm
-    email: djsiegel@gmail.com
-    api_key:
-      secure: GSAyOzM1iYwUrzIy5jeC09V+3c4DuiwljOG9EmnUslG6hZLmgRyeIIToK041HqQyTBrUt/QW3UbopBXjF+c/jOAVyA1Luwf2FKuKYQGcOXYuJp4GaPpcydT12jcT5G1XFL3FSQkxu7FWhWYV+uNUY5orHOKrgsLa4oRKITpVazKOKTIpEK1NxqWqdCVWvsdXgKO9FnbNiaapjsjW8ijG9sqn+INTG/78j6r1ug7Aafz/SBYXD6p37ccwSc/+yI7xa9D/cbB2Ot0gy87AM6/O35+Rp/Lkdod2gCuiCSIvKMAWqQdQ//L6NVyhzXEIf1z5XxCo2a0uJyYtLGb2Ts8C+B6nW9OSDV2lwekBl0yD8PU02TxUlcIq7TA5s0DVU0Af8RuSK+zLBvsJZWlZrivPsbEZXgq0aT1foXmThAEOrUNfEa5Uvgo9FBouCiy3EVIGQZP+oEWyrgtjMq9g1uE9P0QAum9zTpePO/3twpIjXRGtkmGTxqG0sfYPsdf7VeVPVJly08cjW1c5U9ObFwNcF6uIzTWF5XwFxD01rnjAS1PpfZYQHSC5FFLTMZW4rU7JP5reWdf5+OfbqJmjZQ/nRln9ez5yvAHxoAH17H1m5oJuw5oZccOXXKRwq39luj5w62OBS0R38BWTqLrdJPYs5FwKb4RdJt+1xF7oCwDgH1A=
     on:
       repo: dvdsgl/quicktype
       branch: master
