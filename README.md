@@ -15,7 +15,7 @@ $ npm run build
 ## Test
 
 ```shell
-$ npm run test
+$ npm test
 ```
 
 ### Requirements
