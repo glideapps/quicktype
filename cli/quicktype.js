@@ -23,15 +23,14 @@ const optionDefinitions = [
     alias: 'o',
     type: String,
     typeLabel: `[underline]{output}`,
-    description: 'The desired output file name.'
+    description: 'The output file.'
   },
   {
     name: 'lang',
     alias: 'l',
     type: String,
     typeLabel: `[underline]{${Main.renderers.map((r) => r.extension).join("|")}}`,
-    description: 'The target language.',
-    defaultValue: "cs"
+    description: 'The target language.'
   },
   {
     name: 'help',
@@ -61,10 +60,11 @@ const sections = [
 const options = commandLineArgs(optionDefinitions);
 
 function getRenderer() {
-  let renderer = Main.renderers.find((r) => r.extension === options.lang);
+  let lang = options.lang || "cs";
+  let renderer = Main.renderers.find((r) => r.extension === lang);
 
   if (!renderer) {
-    console.error(`'${options.lang}' is not yet supported as an output language.`);
+    console.error(`'${lang}' is not yet supported as an output language.`);
     shell.exit(1);
   }
 
