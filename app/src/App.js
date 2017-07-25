@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import AceEditor from 'react-ace';
 import Dropdown from 'react-dropdown';
+import debounce from 'debounce';
 
 import 'brace/mode/json';
 import 'brace/mode/csharp';
@@ -204,7 +205,7 @@ class App extends Component {
             className="left"
             language="json"
             theme="github"
-            onChange={this.sourceEdited}
+            onChange={debounce(this.sourceEdited, 300)}
             value={this.state.left}
           />
           <Editor
