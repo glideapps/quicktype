@@ -10,13 +10,10 @@ import Types
 import Data.Array as A
 import Data.Char.Unicode (isDigit, isLetter)
 import Data.Foldable (for_, intercalate)
-import Data.FoldableWithIndex (allWithIndex)
-import Data.Functor (map)
-import Data.List (fromFoldable, (:))
 import Data.List as L
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, isNothing)
-import Data.Set (Set, isEmpty, member, singleton, union)
+import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
 import Data.String.Util (capitalize, camelCase, stringEscape)
@@ -119,11 +116,10 @@ golangDoc = do
     blank
     unions <- getUnions
     unless (unions == L.Nil) do
-        indent do
-            lines "import \"bytes\""
-            lines "import \"errors\""
-            lines "import \"encoding/json\""
-            blank
+        lines "import \"bytes\""
+        lines "import \"errors\""
+        lines "import \"encoding/json\""
+        blank
     IRGraph { toplevel } <- getGraph
     renderedToplevel <- renderTypeToGolang toplevel
     lines $ "type Root " <> renderedToplevel
@@ -134,7 +130,7 @@ golangDoc = do
         blank
     unless (unions == L.Nil) do
         line $ string """
-func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, pa interface{}, pc interface{}, pm interface{}, nullable bool) error {
+func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, nullable bool) (bool, error) {
 	if pi != nil {
 		*pi = nil
 	}
@@ -152,7 +148,7 @@ func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **strin
 	dec.UseNumber()
 	tok, err := dec.Token()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	switch v := tok.(type) {
@@ -161,59 +157,87 @@ func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **strin
 			i, err := v.Int64()
 			if err == nil {
 				*pi = &i
-				return nil
+				return false, nil
 			}
 		}
 		if pf != nil {
 			f, err := v.Float64()
 			if err == nil {
 				*pf = &f
-				return nil
+				return false, nil
 			}
-			return errors.New("Unparsable number")
+			return false, errors.New("Unparsable number")
 		}
-		return errors.New("Union does not contain number")
+		return false, errors.New("Union does not contain number")
 	case float64:
-		return errors.New("Decoder should not return float64")
+		return false, errors.New("Decoder should not return float64")
 	case bool:
 		if pb != nil {
 			*pb = &v
-			return nil
+			return false, nil
 		}
-		return errors.New("Union does not contain bool")
+		return false, errors.New("Union does not contain bool")
 	case string:
 		if ps != nil {
 			*ps = &v
-			return nil
+			return false, nil
 		}
-		return errors.New("Union does not contain string")
+		return false, errors.New("Union does not contain string")
 	case nil:
 		if nullable {
-			return nil
+			return false, nil
 		}
-		return errors.New("Union does not contain null")
+		return false, errors.New("Union does not contain null")
 	case json.Delim:
 		if v == '{' {
-			if pc != nil {
-				return json.Unmarshal(data, pc)
+			if haveObject {
+				return true, json.Unmarshal(data, pc)
 			}
-			if pm != nil {
-				return json.Unmarshal(data, pm)
+			if haveMap {
+				return false, json.Unmarshal(data, pm)
 			}
-			return errors.New("Union does not contain object")
+			return false, errors.New("Union does not contain object")
 		}
 		if v == '[' {
-			if pa != nil {
-				return json.Unmarshal(data, pa)
+			if haveArray {
+				return false, json.Unmarshal(data, pa)
 			}
-			return errors.New("Union does not contain array")
+			return false, errors.New("Union does not contain array")
 		}
-		return errors.New("Cannot handle delimiter")
+		return false, errors.New("Cannot handle delimiter")
 	}
-	return errors.New("Cannot unmarshal union")
+	return false, errors.New("Cannot unmarshal union")
 
-}"""
-        blank
+}
+
+func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, nullable bool) ([]byte, error) {
+	if pi != nil {
+		return json.Marshal(*pi)
+	}
+	if pf != nil {
+		return json.Marshal(*pf)
+	}
+	if pb != nil {
+		return json.Marshal(*pb)
+	}
+	if ps != nil {
+		return json.Marshal(*ps)
+	}
+	if haveArray {
+		return json.Marshal(pa)
+	}
+	if haveObject {
+		return json.Marshal(pc)
+	}
+	if haveMap {
+		return json.Marshal(pm)
+	}
+	if nullable {
+		return json.Marshal(nil)
+	}
+	return nil, errors.New("Union must not be null")
+}
+"""
     for_ unions \types -> do
         renderGolangUnion types
         blank
@@ -243,6 +267,7 @@ renderGolangUnion :: Set IRType -> GoDoc Unit
 renderGolangUnion allTypes = do
     name <- lookupUnionName allTypes
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
+    let isNullableString = if isJust emptyOrNull then "true" else "false"
     line $ words ["type", name, "struct {"]
     indent do
         for_ nonNullTypes \t -> do
@@ -251,15 +276,40 @@ renderGolangUnion allTypes = do
             lines $ field <> " " <> typeString
     lines "}"
     blank
-    lines $ "func (x *" <> name <> ") UnmarshalJSON(data []byte) error {"
-    primitiveArgs <- mapM primitiveMemberPtr $ L.fromFoldable [IRInteger, IRDouble, IRBool, IRString]
-    compoundArgs <- mapM memberPtr $ L.fromFoldable compoundPredicates
-    let args = intercalate ", " $ A.concat [A.fromFoldable primitiveArgs, A.fromFoldable compoundArgs]
+    lines $ "func (x *" <> name <> ") UnmarshalJSON(data []byte) error {"    
     indent do
         for_ compoundPredicates \p -> maybeAssignNil p
-        lines $ "\treturn unmarshalUnion(data, " <> args <> ", " <> (if isJust emptyOrNull then "true" else "false") <> ")"
+        ifClass \name -> do
+            lines $ "var c " <> name
+        args <- makeArgs primitiveUnmarshalArg compoundUnmarshalArg
+        lines $ "object, err := unmarshalUnion(data, " <> args <> ", " <> isNullableString <> ")"
+        lines "if err != nil {"
+        indent do
+    		lines "return err"
+        lines "}"
+        lines "if object {"
+        ifClass \name -> do
+            indent do
+                lines $ "x." <> name <> " = &c"
+        lines "}"
+        lines "return nil"
+    lines "}"
+    blank
+    lines $ "func (x *" <> name <> ") MarshalJSON() ([]byte, error) {"
+    indent do
+        args <- makeArgs primitiveMarshalArg compoundMarshalArg
+        lines $ "return marshalUnion(" <> args <> ", " <> isNullableString <> ")"
     lines "}"
     where
+        ifClass :: (String -> GoDoc Unit) -> GoDoc Unit
+        ifClass f =
+            let { element } = removeElement isClass allTypes
+            in
+                case element of
+                Just t -> do
+                    name <- unionFieldName t
+                    f name
+                Nothing -> pure unit
         maybeAssignNil p =
             let { element } = removeElement p allTypes
             in
@@ -268,13 +318,27 @@ renderGolangUnion allTypes = do
                     name <- unionFieldName t
                     lines $ "x." <> name <> " = nil"
                 Nothing -> pure unit
-        memberPtr p =
+        makeArgs :: (IRType -> GoDoc String) -> ((IRType -> Boolean) -> GoDoc String) -> GoDoc String
+        makeArgs primitive compound = do
+            primitiveArgs <- mapM primitive $ L.fromFoldable [IRInteger, IRDouble, IRBool, IRString]
+            compoundArgs <- mapM compound $ L.fromFoldable compoundPredicates
+            pure $ intercalate ", " $ A.concat [A.fromFoldable primitiveArgs, A.fromFoldable compoundArgs]
+        memberArg :: String -> (String -> String) -> (IRType -> Boolean) -> GoDoc String
+        memberArg notPresentValue renderPresent p =
             let { element } = removeElement p allTypes
             in
                 case element of
                 Just t -> do
                     name <- unionFieldName t
-                    pure $ "&x." <> name
-                Nothing -> pure "nil"
-        primitiveMemberPtr t =
-            memberPtr (eq t)
+                    pure $ renderPresent name
+                Nothing -> pure notPresentValue
+        primitiveUnmarshalArg t =
+            memberArg "nil" ("&x." <> _) (eq t)
+        compoundUnmarshalArg p =
+            memberArg "false, nil" ("true, &x." <> _) p
+        primitiveMarshalArg :: IRType -> GoDoc String
+        primitiveMarshalArg t =
+            memberArg "nil" ("x." <> _) (eq t)
+        compoundMarshalArg :: (IRType -> Boolean) -> GoDoc String
+        compoundMarshalArg p =
+            memberArg "false, nil" (\n -> "x." <> n <> " != nil, x." <> n) p

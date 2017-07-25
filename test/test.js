@@ -47,7 +47,7 @@ function testGolang(samples) {
         if (!path.isAbsolute(p))
             p = path.join("..", "..", "app", "public", "sample", "json", p);
         exec(`node ../../cli/quicktype.js --lang go "${p}" > quicktype.go`);
-        exec(`go run main.go quicktype.go < "${p}"`);
+        exec(`go run main.go quicktype.go < "${p}"`, {silent:true});
     });
 
     shell.cd("../..");
