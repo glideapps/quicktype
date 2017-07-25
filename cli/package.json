@@ -1,9 +1,10 @@
 {
   "name": "quicktype",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "dependencies": {
     "command-line-args": "^4.0.6",
     "command-line-usage": "^4.0.0",
+    "node-fetch": "^1.7.1",
     "shelljs": "^0.7.8",
     "stream-json": "0.5.2"
   },

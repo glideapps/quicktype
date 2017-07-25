@@ -7,6 +7,7 @@ const makeSource = require("stream-json");
 const Assembler  = require("stream-json/utils/Assembler");
 const commandLineArgs = require('command-line-args')
 const getUsage = require('command-line-usage')
+const fetch = require('node-fetch');
 
 const optionDefinitions = [
   {
@@ -105,9 +106,9 @@ function parseFile(file) {
 }
 
 function parseUrl(url) {
-  shell.exec(`curl -s ${url} 2> /dev/null`, { silent: true }, (code, json, stderr) => {
-    work(json);
-  });
+  fetch(url)
+    .then((data) => data.text())
+    .then(work);
 }
 
 function parseFileOrUrl(fileOrUrl) {
