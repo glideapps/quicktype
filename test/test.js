@@ -30,15 +30,36 @@ function testCSharp(samples) {
         var p = sample;
         if (!path.isAbsolute(p))
             p = path.join("..", "..", "app", "public", "sample", "json", p);
-        exec(`node ../../cli/quicktype.js "${p}" > QuickType.cs`);
+        exec(`node ../../cli/quicktype.js --lang cs "${p}" > QuickType.cs`);
         exec(`dotnet run "${p}"`);
     });
 
     shell.cd("../..");
 }
 
+function testGolang(samples) {
+    shell.cd("test/golang");
+
+    samples.forEach((sample) => {
+        console.error(`* Building Go code for ${sample}`);
+
+        var p = sample;
+        if (!path.isAbsolute(p))
+            p = path.join("..", "..", "app", "public", "sample", "json", p);
+        exec(`node ../../cli/quicktype.js --lang go "${p}" > quicktype.go`);
+        exec(`go run main.go quicktype.go < "${p}"`);
+    });
+
+    shell.cd("../..");
+}
+
+function testAll(samples) {
+    testCSharp(samples);
+    testGolang(samples);
+}
+
 if (process.argv.length == 2) {
-    testCSharp(Samples.samples);
+    testAll(Samples.samples)
 } else {
     for (var i = 2; i < process.argv.length; i++) {
         let arg = process.argv[i];
@@ -56,10 +77,10 @@ if (process.argv.length == 2) {
                         continue;
                     samples.push(absolutize(path.join(arg, name)));
                 }
-                testCSharp(samples);
+                testAll(samples);
             });
         } else {
-            testCSharp([absolutize(arg)]);
+            testAll([absolutize(arg)]);
         }
     }
 }
