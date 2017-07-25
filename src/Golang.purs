@@ -121,7 +121,6 @@ golangDoc = do
     unless (unions == L.Nil) do
         indent do
             lines "import \"bytes\""
-            lines "import \"fmt\""
             lines "import \"errors\""
             lines "import \"encoding/json\""
             blank
@@ -147,8 +146,6 @@ golangDoc = do
 	if ps != nil {
 		*ps = nil
 	}
-
-	fmt.Printf("union: %s\n", string(data))
 
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
