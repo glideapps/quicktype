@@ -133,7 +133,8 @@ golangDoc = do
         renderGolangType i cls
         blank
     unless (unions == L.Nil) do
-        lines """func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, pa interface{}, pc interface{}, pm interface{}, nullable bool) error {
+        line $ string """
+func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, pa interface{}, pc interface{}, pm interface{}, nullable bool) error {
 	if pi != nil {
 		*pi = nil
 	}
