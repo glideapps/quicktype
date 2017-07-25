@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import AceEditor from 'react-ace';
 import Dropdown from 'react-dropdown';
 import debounce from 'debounce';
+import urlParse from 'url-parse';
 
 import 'brace/mode/json';
 import 'brace/mode/csharp';
@@ -57,9 +58,13 @@ class TopBar extends Component {
 
   constructor(props) {
     super(props);
+
+    let { query } = urlParse(window.location.href, true);
+    let queryRenderer = query.lang && Main.renderers.find((r) => r.extension === query.lang);
+
     this.state = {
       sample: localStorage["sample"] || this.samples[0],
-      renderer: this.getRenderer().name
+      renderer: queryRenderer || this.getRenderer()
     };
   }
 
