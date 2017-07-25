@@ -29,7 +29,8 @@ const optionDefinitions = [
     alias: 'l',
     type: String,
     typeLabel: `[underline]{${Main.renderers.map((r) => r.extension).join("|")}}`,
-    description: 'The target language.'
+    description: 'The target language.',
+    defaultValue: "cs"
   },
   {
     name: 'help',
