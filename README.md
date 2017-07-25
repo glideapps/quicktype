@@ -3,7 +3,7 @@
 ## Setup
 
 ```shell
-$ npm run setup
+$ npm install
 ```
 
 ## Edit
@@ -24,6 +24,4 @@ The react app will live-reload when you edit any source.
 
 ## Deploy
 
-```shell
-$ npm run deploy # quicktype.io
-```
+Commit to master.
