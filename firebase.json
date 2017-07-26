@@ -1,5 +1,5 @@
 {
     "hosting": {
-        "public": "app/build"
+        "public": "../app/build"
     }
 }
