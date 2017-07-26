@@ -2,14 +2,23 @@ module Types where
 
 import Prelude
 
-import Data.List as L
+import Data.Set (Set())
+import Data.List (List())
+import Data.Maybe (Maybe())
 
 import IRGraph
-import Doc
 
 type Renderer = {
     name :: String,
     extension :: String,
     aceMode :: String,
     render :: IRGraph -> String
+}
+
+type RendererTransformations = {
+    nameForClass :: IRClassData -> String,
+    unionName :: List String -> String,
+    unionPredicate :: IRType -> Maybe (Set IRType),
+    nextNameToTry :: String -> String,
+    forbiddenNames :: Array String
 }

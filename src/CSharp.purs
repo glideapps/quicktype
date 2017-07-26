@@ -26,7 +26,7 @@ import Utils (removeElement)
 type CSDoc = Doc Unit
 
 forbiddenNames :: Array String
-forbiddenNames = [ "Converter", "JsonConverter", "Type" ]
+forbiddenNames = ["Converter", "JsonConverter", "Type"]
 
 renderer :: Renderer
 renderer =
@@ -36,24 +36,33 @@ renderer =
     , render: renderGraphToCSharp
     }
 
+transforms :: RendererTransformations
+transforms = {
+    nameForClass,
+    unionName,
+    unionPredicate,
+    nextNameToTry: \s -> "Other" <> s,
+    forbiddenNames
+}
+
 renderGraphToCSharp :: IRGraph -> String
-renderGraphToCSharp graph =
-    runDoc csharpDoc nameForClass unionName unionPredicate nextNameToTry (S.fromFoldable forbiddenNames) graph unit
-    where
-        unionPredicate =
-            case _ of
-            IRUnion ur ->
-                let s = unionToSet ur
-                in
-                    if isNothing $ nullableFromSet s then
-                        Just s
-                    else
-                        Nothing
-            _ -> Nothing
-        nameForClass (IRClassData { names }) =
-            csNameStyle $ combineNames names
-        nextNameToTry s =
-            "Other" <> s
+renderGraphToCSharp graph = runDoc csharpDoc transforms graph unit
+
+unionPredicate :: IRType -> Maybe (Set IRType)
+unionPredicate = case _ of
+    IRUnion ur ->
+        let s = unionToSet ur
+        in
+            if isNothing $ nullableFromSet s then
+                Just s
+            else
+                Nothing
+    _ -> Nothing
+            
+
+nameForClass :: IRClassData -> String
+nameForClass (IRClassData { names }) =
+    csNameStyle $ combineNames names
 
 unionName :: List String -> String
 unionName s =
