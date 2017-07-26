@@ -1,12 +1,12 @@
 module Doc
     ( Doc
-    , getGraph
+    , Renderer
+    , Transforms
+    , getTopLevel
     , getClasses
     , getClass
-    , getClassNames
     , getUnions
     , getUnionNames
-    , getRendererInfo
     , lookupName
     , lookupClassName
     , lookupUnionName
@@ -16,15 +16,17 @@ module Doc
     , indent
     -- Build Doc Unit with monad syntax, then render to string
     , runDoc
-    , typeNameForUnion
+    , runRenderer
+    , getTypeNameForUnion
     ) where
+
+import Prelude
 
 import IR
 import IRGraph
-import Prelude
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
-import Data.Foldable (for_, intercalate, sequence_)
+import Data.Foldable (for_)
 import Data.List (List)
 import Data.List as L
 import Data.Map (Map)
@@ -35,28 +37,53 @@ import Data.Set as S
 import Data.String as String
 import Data.Tuple (Tuple(..), snd)
 
-type DocState = { indent :: Int }
-type DocEnv r = { graph :: IRGraph, classNames ::  Map Int String, unionNames :: Map (Set IRType) String, unions :: List (Set IRType), rendererInfo :: r }
-newtype Doc r a = Doc (RWS (DocEnv r) String DocState a)
+type Renderer =
+    { name :: String
+    , extension :: String
+    , aceMode :: String
+    , doc :: Doc Unit
+    , transforms :: Transforms
+    }
 
-derive newtype instance functorDoc :: Functor (Doc r)
-derive newtype instance applyDoc :: Apply (Doc r)
-derive newtype instance applicativeDoc :: Applicative (Doc r)
-derive newtype instance bindDoc :: Bind (Doc r)
-derive newtype instance monadDoc :: Monad (Doc r)
-    
-runDoc :: forall r a. Doc r a -> (IRClassData -> String) -> (List String -> String) -> (IRType -> Maybe (Set IRType)) -> (String -> String) -> (Set String) -> IRGraph -> r -> String
-runDoc (Doc w) nameForClass unionName unionPredicate nextNameToTry forbiddenNames graph rendererInfo =
+type Transforms =
+    { nameForClass :: IRClassData -> String
+    , unionName :: List String -> String
+    , unionPredicate :: IRType -> Maybe (Set IRType)
+    , nextName :: String -> String
+    , forbiddenNames :: Array String
+    }
+
+type DocState = { indent :: Int }
+
+type DocEnv =
+    { graph :: IRGraph
+    , classNames :: Map Int String
+    , unionNames :: Map (Set IRType) String
+    , unions :: List (Set IRType)
+    }
+
+newtype Doc a = Doc (RWS DocEnv String DocState a)
+
+derive newtype instance functorDoc :: Functor Doc
+derive newtype instance applyDoc :: Apply Doc
+derive newtype instance applicativeDoc :: Applicative Doc
+derive newtype instance bindDoc :: Bind Doc
+derive newtype instance monadDoc :: Monad Doc
+
+runRenderer :: Renderer -> IRGraph -> String
+runRenderer { doc, transforms } = runDoc doc transforms
+
+runDoc :: forall a. Doc a -> Transforms -> IRGraph -> String
+runDoc (Doc w) t graph =
     let classes = classesInGraph graph
-        classNames = transformNames nameForClass nextNameToTry forbiddenNames classes
-        unions = L.fromFoldable $ filterTypes unionPredicate graph
-        forbiddenForUnions = S.union forbiddenNames $ S.fromFoldable $ M.values classNames
-        unionNames = transformNames nameForUnion nextNameToTry forbiddenForUnions $ map (\s -> Tuple s s) unions
+        forbidden = S.fromFoldable t.forbiddenNames
+        classNames = transformNames t.nameForClass t.nextName forbidden classes
+        unions = L.fromFoldable $ filterTypes t.unionPredicate graph
+        forbiddenForUnions = S.union forbidden $ S.fromFoldable $ M.values classNames
+        nameForUnion s = t.unionName $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
+        unionNames = transformNames nameForUnion t.nextName forbiddenForUnions $ map (\s -> Tuple s s) unions
     in
-        evalRWS w { graph, classNames, unionNames, unions, rendererInfo } { indent: 0 } # snd
-    where
-        nameForUnion s =
-            unionName $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
+        evalRWS w { graph, classNames, unionNames, unions } { indent: 0 } # snd        
 
 typeNameForUnion :: IRGraph -> IRType -> String
 typeNameForUnion graph = case _ of
@@ -69,30 +96,36 @@ typeNameForUnion graph = case _ of
     IRArray a -> typeNameForUnion graph a <> "_array"
     IRClass i ->
         let IRClassData { names } = getClassFromGraph graph i
-        in
-            combineNames names
+        in combineNames names
     IRMap t -> typeNameForUnion graph t <> "_map"
     IRUnion _ -> "union"
 
-getGraph :: forall r. Doc r IRGraph
+getTypeNameForUnion :: IRType -> Doc String
+getTypeNameForUnion typ = do
+  g <- getGraph
+  pure $ typeNameForUnion g typ
+
+getGraph :: Doc IRGraph
 getGraph = Doc (asks _.graph)
 
-getClassNames :: forall r. Doc r (Map Int String)
+getTopLevel :: Doc IRType
+getTopLevel = do
+    IRGraph { toplevel } <- getGraph
+    pure toplevel
+
+getClassNames :: Doc (Map Int String)
 getClassNames = Doc (asks _.classNames)
 
-getUnions :: forall r. Doc r (List (Set IRType))
+getUnions :: Doc (List (Set IRType))
 getUnions = Doc (asks _.unions)
 
-getUnionNames :: forall r. Doc r (Map (Set IRType) String)
+getUnionNames :: Doc (Map (Set IRType) String)
 getUnionNames = Doc (asks _.unionNames)
 
-getRendererInfo :: forall r. Doc r r
-getRendererInfo = Doc (asks _.rendererInfo)
-
-getClasses :: forall r. Doc r (L.List (Tuple Int IRClassData))
+getClasses :: Doc (L.List (Tuple Int IRClassData))
 getClasses = classesInGraph <$> getGraph
 
-getClass :: forall r. Int -> Doc r IRClassData
+getClass :: Int -> Doc IRClassData
 getClass i = do
   graph <- getGraph
   pure $ getClassFromGraph graph i
@@ -101,18 +134,18 @@ lookupName :: forall a. Ord a => a -> Map a String -> String
 lookupName original nameMap =
     fromMaybe "NAME_NOT_PROCESSED" $ M.lookup original nameMap
 
-lookupClassName :: forall r. Int -> Doc r String
+lookupClassName :: Int -> Doc String
 lookupClassName i = do
     classNames <- getClassNames
     pure $ lookupName i classNames
 
-lookupUnionName :: forall r. Set IRType -> Doc r String
+lookupUnionName :: Set IRType -> Doc String
 lookupUnionName s = do
     unionNames <- getUnionNames
     pure $ lookupName s unionNames
 
 -- Given a potentially multi-line string, render each line at the current indent level
-line :: forall r. String -> Doc r Unit
+line :: String -> Doc Unit
 line s = do
     indent <- Doc (gets _.indent)
     let whitespace = times "\t" indent
@@ -128,13 +161,13 @@ times s n | n < 1 = ""
 times s 1 = s
 times s n = s <> times s (n - 1)
 
-string :: forall r. String -> Doc r Unit
+string :: String -> Doc Unit
 string = Doc <<< tell
 
-blank :: forall r. Doc r Unit
+blank :: Doc Unit
 blank = string "\n"
 
-indent :: forall r a. Doc r a -> Doc r a
+indent :: forall a. Doc a -> Doc a
 indent doc = do
     Doc $ modify (\s -> { indent: s.indent + 1 })
     a <- doc
