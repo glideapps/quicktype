@@ -120,8 +120,7 @@ golangDoc = do
         line "import \"errors\""
         line "import \"encoding/json\""
         blank
-    IRGraph { toplevel } <- getGraph
-    renderedToplevel <- renderTypeToGolang toplevel
+    renderedToplevel <- getTopLevel >>= renderTypeToGolang
     line $ "type Root " <> renderedToplevel
     blank
     classes <- getClasses
@@ -254,10 +253,7 @@ renderGolangType classIndex (IRClassData { names, properties }) = do
     line "}"
 
 unionFieldName :: IRType -> Doc String
-unionFieldName t = do
-    graph <- getGraph
-    let typeName = typeNameForUnion graph t
-    pure $ goNameStyle typeName
+unionFieldName t = goNameStyle <$> getTypeNameForUnion t
 
 compoundPredicates :: Array (IRType -> Boolean)
 compoundPredicates = [isArray, isClass, isMap]

@@ -169,8 +169,7 @@ renderJsonConverter = do
     line $ "public class Converter" <> stringIfTrue haveUnions ": JsonConverter"
     line "{"
     indent do
-        IRGraph { toplevel } <- getGraph
-        toplevelType <- renderTypeToCSharp toplevel
+        toplevelType <- getTopLevel >>= renderTypeToCSharp
         line "// Loading helpers"
         let converterParam = stringIfTrue haveUnions ", new Converter()"
         line
@@ -219,10 +218,7 @@ renderNullDeserializer types =
             line "break;"
 
 unionFieldName :: IRType -> Doc String
-unionFieldName t = do
-    graph <- getGraph
-    let typeName = typeNameForUnion graph t
-    pure $ csNameStyle typeName
+unionFieldName t = csNameStyle <$> getTypeNameForUnion t
 
 deserialize :: String -> String -> Doc Unit
 deserialize fieldName typeName = do
