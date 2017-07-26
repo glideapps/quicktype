@@ -4,6 +4,8 @@ export DEPLOY_COUNT=$((DEPLOY_COUNT+1))
 
 echo about to deploy $DEPLOY_COUNT
 pwd
+ls
+ls app
 
 case $DEPLOY_COUNT in
   1)
