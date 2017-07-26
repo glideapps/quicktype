@@ -79,18 +79,13 @@ function getRenderer() {
   return renderer;
 }
 
-function renderString(json) {
-    let renderer = getRenderer();
-    return Main.renderJsonString(renderer)(json).value0;
-}
-
 function renderJson(json) {
     let renderer = getRenderer();
     return Main.renderJson(renderer)(json);
 }
 
 function work(json) {
-  let out = renderString(json);
+  let out = renderJson(json);
   if (options.output) {
     fs.writeFile(options.output, out, (err) => {
         if (err) {
@@ -103,27 +98,31 @@ function work(json) {
   }
 }
 
+function workFromStream(stream) {
+  let source = makeSource();
+  let assembler = new Assembler();
+
+  source.output.on("data", function (chunk) {
+    assembler[chunk.name] && assembler[chunk.name](chunk.value);
+  });
+  source.output.on("end", function () {
+    work(assembler.current);
+  });
+
+  stream.setEncoding('utf8');
+  stream.pipe(source.input);
+  stream.resume();
+}
+
 function usage() {
   console.log(getUsage(sections));
 }
 
-function parseFile(file) {
-  fs.readFile(file, 'utf8', (err, json) => {
-    work(json);
-  });
-}
-
-function parseUrl(url) {
-  fetch(url)
-    .then((data) => data.text())
-    .then(work);
-}
-
 function parseFileOrUrl(fileOrUrl) {
   if (fs.existsSync(fileOrUrl)) {
-    parseFile(fileOrUrl);
+    workFromStream(fs.createReadStream(fileOrUrl));
   } else {
-    parseUrl(fileOrUrl);
+    fetch(fileOrUrl).then(res => workFromStream(res.body));
   }
 }
 
@@ -139,20 +138,7 @@ if (options.output && !options.lang) {
 if (options.help) {
   usage();
 } else if (!options.src || options.src.length === 0) {
-  let source = makeSource();
-  let assembler = new Assembler();
-
-  source.output.on("data", function (chunk) {
-    assembler[chunk.name] && assembler[chunk.name](chunk.value);
-  });
-  source.output.on("end", function () {
-    shell.echo(renderJson(assembler.current));
-  });
-
-  process.stdin.pipe(source.input);
-
-  process.stdin.resume();
-  process.stdin.setEncoding('utf8');
+  workFromStream(process.stdin);
 } else if (options.src.length == 1) {
   parseFileOrUrl(options.src[0]);
 } else {
