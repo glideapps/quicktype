@@ -5,7 +5,6 @@ module Doc
     , getTopLevel
     , getClasses
     , getClass
-    , getClassNames
     , getUnions
     , getUnionNames
     , lookupName
