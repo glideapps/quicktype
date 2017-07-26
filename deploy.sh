@@ -2,6 +2,9 @@
 
 export DEPLOY_COUNT=$((DEPLOY_COUNT+1))
 
+echo about to deploy $DEPLOY_COUNT
+pwd
+
 case $DEPLOY_COUNT in
   1)
     # Deploying gcs react app
