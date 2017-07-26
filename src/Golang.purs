@@ -318,22 +318,22 @@ renderGolangUnion allTypes = do
             primitiveArgs <- mapM primitive $ L.fromFoldable [IRInteger, IRDouble, IRBool, IRString]
             compoundArgs <- mapM compound $ L.fromFoldable compoundPredicates
             pure $ intercalate ", " $ A.concat [A.fromFoldable primitiveArgs, A.fromFoldable compoundArgs]
-        memberArg :: String -> (String -> String) -> (IRType -> Boolean) -> Doc String
+        memberArg :: String -> (IRType -> String -> String) -> (IRType -> Boolean) -> Doc String
         memberArg notPresentValue renderPresent p =
             let { element } = removeElement p allTypes
             in
                 case element of
                 Just t -> do
                     name <- unionFieldName t
-                    pure $ renderPresent name
+                    pure $ renderPresent t name
                 Nothing -> pure notPresentValue
         primitiveUnmarshalArg t =
-            memberArg "nil" ("&x." <> _) (eq t)
+            memberArg "nil" (\_ n -> "&x." <> n) (eq t)
         compoundUnmarshalArg p =
-            memberArg "false, nil" ("true, &x." <> _) p
+            memberArg "false, nil" (\t n -> if isClass t then "true, &c" else "true, &x." <> n) p
         primitiveMarshalArg :: IRType -> Doc String
         primitiveMarshalArg t =
-            memberArg "nil" ("x." <> _) (eq t)
+            memberArg "nil" (\_ n -> "x." <> n) (eq t)
         compoundMarshalArg :: (IRType -> Boolean) -> Doc String
         compoundMarshalArg p =
-            memberArg "false, nil" (\n -> "x." <> n <> " != nil, x." <> n) p
+            memberArg "false, nil" (\t n -> "x." <> n <> " != nil, x." <> n) p
