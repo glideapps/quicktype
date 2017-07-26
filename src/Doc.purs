@@ -1,5 +1,7 @@
 module Doc
     ( Doc
+    , Renderer
+    , Transforms
     , getGraph
     , getClasses
     , getClass
@@ -15,13 +17,13 @@ module Doc
     , indent
     -- Build Doc Unit with monad syntax, then render to string
     , runDoc
+    , runRenderer
     , typeNameForUnion
     ) where
 
 import IR
 import IRGraph
 import Prelude
-import Types
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Foldable (for_, intercalate, sequence_)
@@ -35,8 +37,26 @@ import Data.Set as S
 import Data.String as String
 import Data.Tuple (Tuple(..), snd)
 
+type Renderer = {
+    name :: String,
+    extension :: String,
+    aceMode :: String,
+    doc :: Doc Unit,
+    transforms :: Transforms
+}
+
+type Transforms = {
+    nameForClass :: IRClassData -> String,
+    unionName :: List String -> String,
+    unionPredicate :: IRType -> Maybe (Set IRType),
+    nextNameToTry :: String -> String,
+    forbiddenNames :: Array String
+}
+
 type DocState = { indent :: Int }
+
 type DocEnv = { graph :: IRGraph, classNames ::  Map Int String, unionNames :: Map (Set IRType) String, unions :: List (Set IRType) }
+
 newtype Doc a = Doc (RWS DocEnv String DocState a)
 
 derive newtype instance functorDoc :: Functor Doc
@@ -44,8 +64,11 @@ derive newtype instance applyDoc :: Apply Doc
 derive newtype instance applicativeDoc :: Applicative Doc
 derive newtype instance bindDoc :: Bind Doc
 derive newtype instance monadDoc :: Monad Doc
-    
-runDoc :: forall a. Doc a -> RendererTransformations -> IRGraph -> String
+
+runRenderer :: Renderer -> IRGraph -> String
+runRenderer { doc, transforms } = runDoc doc transforms
+
+runDoc :: forall a. Doc a -> Transforms -> IRGraph -> String
 runDoc (Doc w) t graph =
     let classes = classesInGraph graph
         forbidden = S.fromFoldable t.forbiddenNames

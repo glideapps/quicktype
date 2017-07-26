@@ -5,7 +5,6 @@ module Golang
 import Doc
 import IRGraph
 import Prelude
-import Types
 
 import Data.Array as A
 import Data.Char.Unicode (isDigit, isLetter)
@@ -25,21 +24,16 @@ renderer =
     { name: "Go"
     , aceMode: "golang"
     , extension: "go"
-    , render: renderGraphToGolang
+    , doc: golangDoc
+    , transforms:
+        { nameForClass
+        , unionName
+        , unionPredicate
+        , nextNameToTry: \s -> "Other" <> s
+        , forbiddenNames: []
+        }
     }
 
-transforms :: RendererTransformations
-transforms = {
-    nameForClass,
-    unionName,
-    unionPredicate,
-    nextNameToTry: \s -> "Other" <> s,
-    forbiddenNames: []
-}
-
-renderGraphToGolang :: IRGraph -> String
-renderGraphToGolang graph = runDoc golangDoc transforms graph
-    
 unionPredicate :: IRType -> Maybe (Set IRType)
 unionPredicate = case _ of
     IRUnion ur ->

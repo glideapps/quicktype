@@ -5,7 +5,6 @@ module CSharp
 import Doc
 import IRGraph
 import Prelude
-import Types
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
 import Data.Foldable (find, for_, intercalate)
@@ -31,20 +30,15 @@ renderer =
     { name: "C#"
     , aceMode: "csharp"
     , extension: "cs"
-    , render: renderGraphToCSharp
+    , doc: csharpDoc
+    , transforms:
+        { nameForClass
+        , unionName
+        , unionPredicate
+        , nextNameToTry: \s -> "Other" <> s
+        , forbiddenNames
+        }
     }
-
-transforms :: RendererTransformations
-transforms = {
-    nameForClass,
-    unionName,
-    unionPredicate,
-    nextNameToTry: \s -> "Other" <> s,
-    forbiddenNames
-}
-
-renderGraphToCSharp :: IRGraph -> String
-renderGraphToCSharp graph = runDoc csharpDoc transforms graph
 
 unionPredicate :: IRType -> Maybe (Set IRType)
 unionPredicate = case _ of
