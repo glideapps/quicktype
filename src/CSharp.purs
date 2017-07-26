@@ -165,7 +165,8 @@ renderJsonConverter = do
     unionNames <- getUnionNames
     let haveUnions = not $ M.isEmpty unionNames
     let names = M.values unionNames
-    line $ "public class Converter" <> stringIfTrue haveUnions " : JsonConverter" <> " {"
+    line $ "public class Converter" <> stringIfTrue haveUnions ": JsonConverter"
+    line "{"
     indent do
         IRGraph { toplevel } <- getGraph
         toplevelType <- renderTypeToCSharp toplevel
@@ -182,11 +183,13 @@ renderJsonConverter = do
 
         when haveUnions do
             blank
-            line "public override bool CanConvert(Type t) {"
+            line "public override bool CanConvert(Type t)"
+            line "{"
             indent $ line $ "return " <> intercalate " || " (map (\n -> "t == typeof(" <> n <> ")") names) <> ";"
             line "}"
             blank
-            line "public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer) {"
+            line "public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)"
+            line "{"
             indent do
                 -- FIXME: call the constructor via reflection?
                 for_ names \name -> do
@@ -195,11 +198,12 @@ renderJsonConverter = do
                 line "throw new Exception(\"Unknown type\");"
             line "}"
             blank
-            line "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) {"
+            line "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)"
+            line "{"
             indent $ line "throw new NotImplementedException();"
             line "}"
             blank
-            line "public override bool CanWrite { get { return false; } }"
+            line "public override bool CanWrite => false;"
     line "}"
 
 tokenCase :: String -> CSDoc Unit
@@ -260,19 +264,23 @@ renderCSharpUnion :: Set IRType -> CSDoc Unit
 renderCSharpUnion allTypes = do
     name <- lookupUnionName allTypes
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
-    line $ "public struct " <> name <> " {"
+    line $ "public struct " <> name
+    line "{"
     indent do
         for_ nonNullTypes \t -> do
             typeString <- renderUnionToCSharp $ S.union (S.singleton t) (S.singleton IRNull)
             field <- unionFieldName t
             line $ "public " <> typeString <> " " <> field <> ";"
         blank
-        line $ "public " <> name <> "(JsonReader reader, JsonSerializer serializer) {"
+        line $ "public " <> name <> "(JsonReader reader, JsonSerializer serializer)"
+        line "{"
         indent do
             for_ (L.fromFoldable nonNullTypes) \field -> do
                 fieldName <- unionFieldName field
                 line $ fieldName <> " = null;"
-            line "switch (reader.TokenType) {"
+            blank
+            line "switch (reader.TokenType)"
+            line "{"
             indent do
                 renderNullDeserializer allTypes
                 renderPrimitiveDeserializer (L.singleton "Integer") IRInteger allTypes
