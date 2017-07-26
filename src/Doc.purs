@@ -12,8 +12,6 @@ module Doc
     , lookupUnionName
     , string
     , line
-    , lines
-    , words
     , blank
     , indent
     -- Build Doc Unit with monad syntax, then render to string
@@ -26,7 +24,7 @@ import IRGraph
 import Prelude
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
-import Data.Foldable (intercalate, sequence_)
+import Data.Foldable (for_, intercalate, sequence_)
 import Data.List (List)
 import Data.List as L
 import Data.Map (Map)
@@ -113,21 +111,16 @@ lookupUnionName s = do
     unionNames <- getUnionNames
     pure $ lookupName s unionNames
 
-line :: forall r.  Doc r Unit -> Doc r Unit
-line r = do
-    indent <- Doc (gets _.indent)
-    string $ times "\t" indent
-    r
-    string "\n"
-
 -- Given a potentially multi-line string, render each line at the current indent level
-lines :: forall r. String -> Doc r Unit
-lines =
-  String.split (String.Pattern "\n")
-  >>> map String.trim
-  >>> map string
-  >>> map line
-  >>> sequence_
+line :: forall r. String -> Doc r Unit
+line s = do
+    indent <- Doc (gets _.indent)
+    let whitespace = times "\t" indent
+    let lines = String.split (String.Pattern "\n") s
+    for_ lines \l -> do
+        string whitespace
+        string l
+        string "\n"  
 
 -- Cannot make this work any other way!
 times :: String -> Int -> String
@@ -140,9 +133,6 @@ string = Doc <<< tell
 
 blank :: forall r. Doc r Unit
 blank = string "\n"
-
-words :: forall r. Array String -> Doc r Unit
-words = string <<< intercalate " "
 
 indent :: forall r a. Doc r a -> Doc r a
 indent doc = do

@@ -112,25 +112,24 @@ goNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
 golangDoc :: GoDoc Unit
 golangDoc = do
-    lines "package main"
+    line "package main"
     blank
     unions <- getUnions
     unless (unions == L.Nil) do
-        lines "import \"bytes\""
-        lines "import \"errors\""
-        lines "import \"encoding/json\""
+        line "import \"bytes\""
+        line "import \"errors\""
+        line "import \"encoding/json\""
         blank
     IRGraph { toplevel } <- getGraph
     renderedToplevel <- renderTypeToGolang toplevel
-    lines $ "type Root " <> renderedToplevel
+    line $ "type Root " <> renderedToplevel
     blank
     classes <- getClasses
     for_ classes \(Tuple i cls) -> do
         renderGolangType i cls
         blank
     unless (unions == L.Nil) do
-        line $ string """
-func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, nullable bool) (bool, error) {
+        line """func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, nullable bool) (bool, error) {
 	if pi != nil {
 		*pi = nil
 	}
@@ -246,13 +245,13 @@ renderGolangType :: Int -> IRClassData -> GoDoc Unit
 renderGolangType classIndex (IRClassData { names, properties }) = do
     className <- lookupClassName classIndex
     let propertyNames = transformNames goNameStyle ("Other" <> _) S.empty $ map (\n -> Tuple n n) $ Map.keys properties
-    line $ words ["type", className, "struct {"]
+    line $ "type " <> className <> " struct {"
     indent do
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
             let csPropName = lookupName pname propertyNames
             rendered <- renderTypeToGolang ptype
-            lines $ csPropName <> " " <> rendered <> " `json:\"" <> (stringEscape pname) <> "\"`"
-    lines "}"
+            line $ csPropName <> " " <> rendered <> " `json:\"" <> (stringEscape pname) <> "\"`"
+    line "}"
 
 unionFieldName :: IRType -> GoDoc String
 unionFieldName t = do
@@ -268,38 +267,38 @@ renderGolangUnion allTypes = do
     name <- lookupUnionName allTypes
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     let isNullableString = if isJust emptyOrNull then "true" else "false"
-    line $ words ["type", name, "struct {"]
+    line $ "type " <> name <> " struct {"
     indent do
         for_ nonNullTypes \t -> do
             typeString <- renderUnionToGolang $ S.union (S.singleton t) (S.singleton IRNull)
             field <- unionFieldName t
-            lines $ field <> " " <> typeString
-    lines "}"
+            line $ field <> " " <> typeString
+    line "}"
     blank
-    lines $ "func (x *" <> name <> ") UnmarshalJSON(data []byte) error {"    
+    line $ "func (x *" <> name <> ") UnmarshalJSON(data []byte) error {"    
     indent do
         for_ compoundPredicates \p -> maybeAssignNil p
         ifClass \name -> do
-            lines $ "var c " <> name
+            line $ "var c " <> name
         args <- makeArgs primitiveUnmarshalArg compoundUnmarshalArg
-        lines $ "object, err := unmarshalUnion(data, " <> args <> ", " <> isNullableString <> ")"
-        lines "if err != nil {"
+        line $ "object, err := unmarshalUnion(data, " <> args <> ", " <> isNullableString <> ")"
+        line "if err != nil {"
         indent do
-    		lines "return err"
-        lines "}"
-        lines "if object {"
+    		line "return err"
+        line "}"
+        line "if object {"
         ifClass \name -> do
             indent do
-                lines $ "x." <> name <> " = &c"
-        lines "}"
-        lines "return nil"
-    lines "}"
+                line $ "x." <> name <> " = &c"
+        line "}"
+        line "return nil"
+    line "}"
     blank
-    lines $ "func (x *" <> name <> ") MarshalJSON() ([]byte, error) {"
+    line $ "func (x *" <> name <> ") MarshalJSON() ([]byte, error) {"
     indent do
         args <- makeArgs primitiveMarshalArg compoundMarshalArg
-        lines $ "return marshalUnion(" <> args <> ", " <> isNullableString <> ")"
-    lines "}"
+        line $ "return marshalUnion(" <> args <> ", " <> isNullableString <> ")"
+    line "}"
     where
         ifClass :: (String -> GoDoc Unit) -> GoDoc Unit
         ifClass f =
@@ -316,7 +315,7 @@ renderGolangUnion allTypes = do
                 case element of
                 Just t -> do
                     name <- unionFieldName t
-                    lines $ "x." <> name <> " = nil"
+                    line $ "x." <> name <> " = nil"
                 Nothing -> pure unit
         makeArgs :: (IRType -> GoDoc String) -> ((IRType -> Boolean) -> GoDoc String) -> GoDoc String
         makeArgs primitive compound = do
