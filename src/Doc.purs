@@ -49,7 +49,7 @@ type Transforms = {
     nameForClass :: IRClassData -> String,
     unionName :: List String -> String,
     unionPredicate :: IRType -> Maybe (Set IRType),
-    nextNameToTry :: String -> String,
+    nextName :: String -> String,
     forbiddenNames :: Array String
 }
 
@@ -72,11 +72,11 @@ runDoc :: forall a. Doc a -> Transforms -> IRGraph -> String
 runDoc (Doc w) t graph =
     let classes = classesInGraph graph
         forbidden = S.fromFoldable t.forbiddenNames
-        classNames = transformNames t.nameForClass t.nextNameToTry forbidden classes
+        classNames = transformNames t.nameForClass t.nextName forbidden classes
         unions = L.fromFoldable $ filterTypes t.unionPredicate graph
         forbiddenForUnions = S.union forbidden $ S.fromFoldable $ M.values classNames
         nameForUnion s = t.unionName $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
-        unionNames = transformNames nameForUnion t.nextNameToTry forbiddenForUnions $ map (\s -> Tuple s s) unions
+        unionNames = transformNames nameForUnion t.nextName forbiddenForUnions $ map (\s -> Tuple s s) unions
     in
         evalRWS w { graph, classNames, unionNames, unions } { indent: 0 } # snd        
 
