@@ -10,6 +10,7 @@ module Doc
     , lookupName
     , lookupClassName
     , lookupUnionName
+    , combineNames
     , string
     , line
     , blank
@@ -20,14 +21,14 @@ module Doc
     , getTypeNameForUnion
     ) where
 
-import Prelude
-
 import IR
 import IRGraph
+import Prelude
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
+import Data.Array as A
 import Data.Foldable (for_)
-import Data.List (List)
+import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
@@ -173,3 +174,31 @@ indent doc = do
     a <- doc
     Doc $ modify (\s -> { indent: s.indent - 1 })
     pure a
+
+combineNames :: S.Set String -> String
+combineNames s = case L.fromFoldable s of
+    L.Nil -> "NONAME"
+    name : L.Nil -> name
+    firstName : rest ->
+        let a = String.toCharArray firstName
+            { p, s } = L.foldl prefixSuffixFolder { p: a, s: A.reverse a } rest
+            prefix = if A.length p > 2 then p else []
+            suffix = if A.length s > 2 then A.reverse s else []
+            name = String.fromCharArray $ A.concat [prefix, suffix]
+        in
+            if String.length name > 2 then
+                name
+            else
+                firstName
+
+commonPrefix :: Array Char -> Array Char -> Array Char
+commonPrefix a b =
+    let l = A.length $ A.takeWhile id $ A.zipWith eq a b
+    in A.take l a
+
+prefixSuffixFolder :: { p :: Array Char, s :: Array Char } -> String -> { p :: Array Char, s :: Array Char }
+prefixSuffixFolder { p, s } x =
+    let a = String.toCharArray x
+        newP = commonPrefix p a
+        newS = commonPrefix s (A.reverse a)
+    in { p: newP, s: newS }
