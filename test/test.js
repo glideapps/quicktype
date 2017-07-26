@@ -113,6 +113,20 @@ function exec(s, opts, cb) {
     return result;
 }
 
+function execAndCompare(cmd, sample, p, knownFails) {
+    let outputString = exec(cmd, {silent:true}).stdout;
+    if (knownFails.indexOf(sample) < 0) {
+        let outputJSON = JSON.parse(outputString);
+        let inputJSON = JSON.parse(fs.readFileSync(p));
+        if (!deepEquals(inputJSON, outputJSON)) {
+            console.log("Error: Output is not equivalent to input.");
+            process.exit(1);
+        }
+    } else {
+        console.log("Known to fail - not checking output.");
+    }
+}
+
 function absolutize(p) {
     if (path.isAbsolute(p))
         return p;
@@ -130,7 +144,7 @@ function testCSharp(samples, knownFails) {
         if (!path.isAbsolute(p))
             p = path.join("..", "..", "app", "public", "sample", "json", p);
         exec(`node ../../cli/quicktype.js -o QuickType.cs "${p}"`);
-        exec(`dotnet run "${p}"`);
+        execAndCompare(`dotnet run "${p}"`, sample, p, knownFails);
     });
     
     shell.cd("../..");
@@ -146,17 +160,7 @@ function testGolang(samples, knownFails) {
         if (!path.isAbsolute(p))
             p = path.join("..", "..", "app", "public", "sample", "json", p);
         exec(`node ../../cli/quicktype.js -o quicktype.go "${p}"`);
-        let outputString = exec(`go run main.go quicktype.go < "${p}"`, {silent:true}).stdout;
-        if (knownFails.indexOf(sample) < 0) {
-            let outputJSON = JSON.parse(outputString);
-            let inputJSON = JSON.parse(fs.readFileSync(p));
-            if (!deepEquals(inputJSON, outputJSON)) {
-                console.log("Error: Output is not equivalent to input.");
-                process.exit(1);
-            }
-        } else {
-            console.log("Known to fail - not checking output.");
-        }
+        execAndCompare(`go run main.go quicktype.go < "${p}"`, sample, p, knownFails);
     });
     
     shell.cd("../..");

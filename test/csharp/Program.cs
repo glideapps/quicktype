@@ -10,6 +10,8 @@ namespace test
             var path = args[0];
             var json = File.ReadAllText(path);
             var qt = QuickType.Converter.FromJson(json);
+            var output = QuickType.Converter.ToJson(qt);
+            Console.WriteLine("{0}", output);
         }
     }
 }

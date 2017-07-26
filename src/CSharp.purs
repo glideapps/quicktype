@@ -11,7 +11,7 @@ import Data.Foldable (find, for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
@@ -174,6 +174,12 @@ renderJsonConverter = do
             <> ">(json"
             <> converterParam
             <> ");"
+        line
+            $ "public static string ToJson("
+            <> toplevelType
+            <> " o) => JsonConvert.SerializeObject(o"
+            <> converterParam
+            <> ");"
 
         when haveUnions do
             blank
@@ -194,10 +200,16 @@ renderJsonConverter = do
             blank
             line "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)"
             line "{"
-            indent $ line "throw new NotImplementedException();"
+            indent do
+                line "var t = value.GetType();"
+                for_ names \name -> do
+                    line $ "if (t == typeof(" <> name <> ")) {"
+                    indent do
+                        line $ "((" <> name <> ")value).WriteJson(writer, serializer);"
+                        line "return;"
+                    line "}"
+                line "throw new Exception(\"Unknown type\");"
             line "}"
-            blank
-            line "public override bool CanWrite => false;"
     line "}"
 
 tokenCase :: String -> Doc Unit
@@ -283,6 +295,22 @@ renderCSharpUnion allTypes = do
                 renderGenericDeserializer isMap "StartObject" allTypes
                 line $ "default: throw new Exception(\"Cannot convert " <> name <> "\");"
             line "}"
+        line "}"
+        blank
+        line $ "public void WriteJson(JsonWriter writer, JsonSerializer serializer)"
+        line "{"
+        indent do
+            for_ (L.fromFoldable nonNullTypes) \field -> do
+                fieldName <- unionFieldName field
+                line $ "if (" <> fieldName <> " != null) {"
+                indent do
+                    line $ "serializer.Serialize(writer, " <> fieldName <> ");"
+                    line "return;"
+                line "}"
+            when (isJust emptyOrNull) do
+                line "writer.WriteNull();"
+            when (isNothing emptyOrNull) do
+                line "throw new Exception(\"Union must not be null\");"
         line "}"
     line "}"
 
