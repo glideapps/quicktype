@@ -20,12 +20,13 @@ module Doc
     , getTypeNameForUnion
     ) where
 
-import IR
-import IRGraph
 import Prelude
 
+import IR
+import IRGraph
+
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
-import Data.Foldable (for_, intercalate, sequence_)
+import Data.Foldable (for_)
 import Data.List (List)
 import Data.List as L
 import Data.Map (Map)
