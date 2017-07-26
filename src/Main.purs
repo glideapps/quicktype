@@ -4,7 +4,6 @@ import IR
 import IRGraph
 import Prelude
 import Transformations
-import Types
 
 import CSharp as CSharp
 import Data.Argonaut.Core (Json, foldJson)
@@ -16,12 +15,13 @@ import Data.Set as S
 import Data.StrMap as StrMap
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
+
 import Doc as Doc
-import Golang (renderer)
+
 import Golang as Golang
 import Utils (mapM)
 
-renderers :: Array Renderer
+renderers :: Array Doc.Renderer
 renderers = [CSharp.renderer, Golang.renderer]
 
 makeTypeFromJson :: String -> Json -> IR IRType
@@ -50,13 +50,14 @@ makeTypeAndUnify name json = runIR do
     replaceSimilarClasses
     makeMaps
 
-renderJson :: Renderer -> Json -> String
-renderJson renderer =
-    makeTypeAndUnify "TopLevel"
-    >>> regatherClassNames
-    >>> renderer.render
+renderJson :: Doc.Renderer -> Json -> String
+renderJson renderer json =
+    json
+    # makeTypeAndUnify "TopLevel"
+    # regatherClassNames
+    # Doc.runRenderer renderer
 
-renderJsonString :: Renderer -> String -> Either String String
+renderJsonString :: Doc.Renderer -> String -> Either String String
 renderJsonString renderer json =
     jsonParser json
     <#> renderJson renderer

@@ -5,15 +5,13 @@ module CSharp
 import Doc
 import IRGraph
 import Prelude
-import Types
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
 import Data.Foldable (find, for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
-import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
@@ -23,42 +21,39 @@ import Partial.Unsafe (unsafePartial)
 
 import Utils (removeElement)
 
-type CSDoc = Doc Unit
-
 forbiddenNames :: Array String
-forbiddenNames = [ "Converter", "JsonConverter", "Type" ]
+forbiddenNames = ["Converter", "JsonConverter", "Type"]
 
 renderer :: Renderer
 renderer =
     { name: "C#"
     , aceMode: "csharp"
     , extension: "cs"
-    , render: renderGraphToCSharp
+    , doc: csharpDoc
+    , transforms:
+        { nameForClass
+        , unionName
+        , unionPredicate
+        , nextName: \s -> "Other" <> s
+        , forbiddenNames
+        }
     }
 
-renderGraphToCSharp :: IRGraph -> String
-renderGraphToCSharp graph =
-    runDoc csharpDoc nameForClass unionName unionPredicate nextNameToTry (S.fromFoldable forbiddenNames) graph unit
-    where
-        unionPredicate =
-            case _ of
-            IRUnion ur ->
-                let s = unionToSet ur
-                in
-                    if isNothing $ nullableFromSet s then
-                        Just s
-                    else
-                        Nothing
+unionPredicate :: IRType -> Maybe (Set IRType)
+unionPredicate = case _ of
+    IRUnion ur ->
+        let s = unionToSet ur
+        in case nullableFromSet s of
+            Nothing -> Just s
             _ -> Nothing
-        nameForClass (IRClassData { names }) =
-            csNameStyle $ combineNames names
-        nextNameToTry s =
-            "Other" <> s
+    _ -> Nothing      
+
+nameForClass :: IRClassData -> String
+nameForClass (IRClassData { names }) = csNameStyle $ combineNames names
 
 unionName :: List String -> String
 unionName s =
-    s
-    # L.sort
+    L.sort s
     <#> csNameStyle
     # intercalate "Or"
 
@@ -98,7 +93,7 @@ legalizeIdentifier str =
         else
             legalizeIdentifier ("_" <> str)
 
-renderUnionToCSharp :: Set IRType -> CSDoc String
+renderUnionToCSharp :: Set IRType -> Doc String
 renderUnionToCSharp s =
     case nullableFromSet s of
     Just x -> do
@@ -106,7 +101,7 @@ renderUnionToCSharp s =
         pure if isValueType x then rendered <> "?" else rendered
     Nothing -> lookupUnionName s
 
-renderTypeToCSharp :: IRType -> CSDoc String
+renderTypeToCSharp :: IRType -> Doc String
 renderTypeToCSharp = case _ of
     IRNothing -> pure "object"
     IRNull -> pure "object"
@@ -126,7 +121,7 @@ renderTypeToCSharp = case _ of
 csNameStyle :: String -> String
 csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
-csharpDoc :: CSDoc Unit
+csharpDoc :: Doc Unit
 csharpDoc = do
     line """// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do:
 //
@@ -160,7 +155,7 @@ stringIfTrue :: Boolean -> String -> String
 stringIfTrue true s = s
 stringIfTrue false _ = ""
 
-renderJsonConverter :: CSDoc Unit
+renderJsonConverter :: Doc Unit
 renderJsonConverter = do
     unionNames <- getUnionNames
     let haveUnions = not $ M.isEmpty unionNames
@@ -168,8 +163,7 @@ renderJsonConverter = do
     line $ "public class Converter" <> stringIfTrue haveUnions ": JsonConverter"
     line "{"
     indent do
-        IRGraph { toplevel } <- getGraph
-        toplevelType <- renderTypeToCSharp toplevel
+        toplevelType <- getTopLevel >>= renderTypeToCSharp
         line "// Loading helpers"
         let converterParam = stringIfTrue haveUnions ", new Converter()"
         line
@@ -206,35 +200,32 @@ renderJsonConverter = do
             line "public override bool CanWrite => false;"
     line "}"
 
-tokenCase :: String -> CSDoc Unit
+tokenCase :: String -> Doc Unit
 tokenCase tokenType =
     line $ "case JsonToken." <> tokenType <> ":"
 
-renderNullDeserializer :: Set IRType -> CSDoc Unit
+renderNullDeserializer :: Set IRType -> Doc Unit
 renderNullDeserializer types =
     when (S.member IRNull types) do
         tokenCase "Null"
         indent do
             line "break;"
 
-unionFieldName :: IRType -> CSDoc String
-unionFieldName t = do
-    graph <- getGraph
-    let typeName = typeNameForUnion graph t
-    pure $ csNameStyle typeName
+unionFieldName :: IRType -> Doc String
+unionFieldName t = csNameStyle <$> getTypeNameForUnion t
 
-deserialize :: String -> String -> CSDoc Unit
+deserialize :: String -> String -> Doc Unit
 deserialize fieldName typeName = do
     line $ fieldName <> " = serializer.Deserialize<" <> typeName <> ">(reader);"
     line "break;"
 
-deserializeType :: IRType -> CSDoc Unit
+deserializeType :: IRType -> Doc Unit
 deserializeType t = do
     fieldName <- unionFieldName t
     renderedType <- renderTypeToCSharp t
     deserialize fieldName renderedType
 
-renderPrimitiveDeserializer :: List String -> IRType -> Set IRType -> CSDoc Unit
+renderPrimitiveDeserializer :: List String -> IRType -> Set IRType -> Doc Unit
 renderPrimitiveDeserializer tokenTypes t types =
     when (S.member t types) do
         for_ tokenTypes \tokenType -> do
@@ -242,7 +233,7 @@ renderPrimitiveDeserializer tokenTypes t types =
         indent do
             deserializeType t
 
-renderDoubleDeserializer :: Set IRType -> CSDoc Unit
+renderDoubleDeserializer :: Set IRType -> Doc Unit
 renderDoubleDeserializer types =
     when (S.member IRDouble types) do
         unless (S.member IRInteger types) do
@@ -251,7 +242,7 @@ renderDoubleDeserializer types =
         indent do
             deserializeType IRDouble
 
-renderGenericDeserializer :: (IRType -> Boolean) -> String -> Set IRType -> CSDoc Unit
+renderGenericDeserializer :: (IRType -> Boolean) -> String -> Set IRType -> Doc Unit
 renderGenericDeserializer predicate tokenType types = unsafePartial $
     case find predicate types of
     Nothing -> pure unit
@@ -260,7 +251,7 @@ renderGenericDeserializer predicate tokenType types = unsafePartial $
         indent do
             deserializeType t
 
-renderCSharpUnion :: Set IRType -> CSDoc Unit
+renderCSharpUnion :: Set IRType -> Doc Unit
 renderCSharpUnion allTypes = do
     name <- lookupUnionName allTypes
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
@@ -295,7 +286,7 @@ renderCSharpUnion allTypes = do
         line "}"
     line "}"
 
-renderCSharpClass :: IRClassData -> String -> CSDoc Unit
+renderCSharpClass :: IRClassData -> String -> Doc Unit
 renderCSharpClass (IRClassData { names, properties }) className = do
     let propertyNames = transformNames csNameStyle ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ "public class " <> className
