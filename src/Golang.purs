@@ -29,7 +29,7 @@ renderer =
         { nameForClass
         , unionName
         , unionPredicate
-        , nextNameToTry: \s -> "Other" <> s
+        , nextName: ("Other" <> _)
         , forbiddenNames: []
         }
     }
