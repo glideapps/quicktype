@@ -10,9 +10,8 @@ import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
 import Data.Foldable (find, for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
-import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
@@ -47,8 +46,7 @@ unionPredicate = case _ of
         in case nullableFromSet s of
             Nothing -> Just s
             _ -> Nothing
-    _ -> Nothing
-            
+    _ -> Nothing      
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = csNameStyle $ combineNames names
