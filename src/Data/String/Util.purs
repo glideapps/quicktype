@@ -12,9 +12,13 @@ import Prelude
 import Data.Array as A
 import Data.Char (toCharCode)
 import Data.Char.Unicode (isPrint)
+import Data.Either as Either
 import Data.Int as Int
 import Data.Maybe (Maybe(..))
 import Data.String as S
+import Data.String.Regex as Rx
+import Data.String.Regex.Flags as RxFlags
+import Partial.Unsafe (unsafePartial)
 
 foreign import _plural :: String -> String
 foreign import _singular :: String -> String
@@ -31,8 +35,11 @@ capitalize s = case S.uncons s of
     Just { head, tail } -> S.toUpper (S.singleton head) <> tail
     _ -> s
 
+wordSeparatorRegex :: Rx.Regex
+wordSeparatorRegex = unsafePartial $ Either.fromRight $ Rx.regex "[-_. ]" RxFlags.noFlags
+
 camelCase :: String -> String
-camelCase = S.split (S.Pattern "_") >>> map capitalize >>> S.joinWith ""
+camelCase = Rx.split wordSeparatorRegex >>> map capitalize >>> S.joinWith ""
 
 intToHex :: Int -> Int -> String
 intToHex width number =

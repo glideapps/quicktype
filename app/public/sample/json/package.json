@@ -1,0 +1,19 @@
+{
+  "name": "quicktype",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "npm install --ignore-scripts && bower install && pulp build -- --source-maps && npm run bundle-cli",
+    "test": "npm run build && pulp test && test/test.js",
+    "postinstall": "(cd app && npm install) && (cd cli && npm install) && npm run build",
+    "start": "cd app && npm start",
+    "bundle-cli": "pulp browserify --standalone --skip-entry-point > /tmp/bundle.js && uglifyjs --compress --mangle -- /tmp/bundle.js > cli/bundle.js"
+  },
+  "devDependencies": {
+    "bower": "^1.8.0",
+    "pulp": "^11.0.2",
+    "purescript": "^0.11.6",
+    "shelljs": "^0.7.8",
+    "uglify-js": "^3.0.26"
+  }
+}
