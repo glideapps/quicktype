@@ -22,6 +22,7 @@ module Doc
 import IR
 import IRGraph
 import Prelude
+import Types
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Foldable (for_, intercalate, sequence_)
@@ -45,18 +46,17 @@ derive newtype instance applicativeDoc :: Applicative (Doc r)
 derive newtype instance bindDoc :: Bind (Doc r)
 derive newtype instance monadDoc :: Monad (Doc r)
     
-runDoc :: forall r a. Doc r a -> (IRClassData -> String) -> (List String -> String) -> (IRType -> Maybe (Set IRType)) -> (String -> String) -> (Set String) -> IRGraph -> r -> String
-runDoc (Doc w) nameForClass unionName unionPredicate nextNameToTry forbiddenNames graph rendererInfo =
+runDoc :: forall r a. Doc r a -> RendererTransformations -> IRGraph -> r -> String
+runDoc (Doc w) t graph rendererInfo =
     let classes = classesInGraph graph
-        classNames = transformNames nameForClass nextNameToTry forbiddenNames classes
-        unions = L.fromFoldable $ filterTypes unionPredicate graph
-        forbiddenForUnions = S.union forbiddenNames $ S.fromFoldable $ M.values classNames
-        unionNames = transformNames nameForUnion nextNameToTry forbiddenForUnions $ map (\s -> Tuple s s) unions
+        forbidden = S.fromFoldable t.forbiddenNames
+        classNames = transformNames t.nameForClass t.nextNameToTry forbidden classes
+        unions = L.fromFoldable $ filterTypes t.unionPredicate graph
+        forbiddenForUnions = S.union forbidden $ S.fromFoldable $ M.values classNames
+        nameForUnion s = t.unionName $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
+        unionNames = transformNames nameForUnion t.nextNameToTry forbiddenForUnions $ map (\s -> Tuple s s) unions
     in
-        evalRWS w { graph, classNames, unionNames, unions, rendererInfo } { indent: 0 } # snd
-    where
-        nameForUnion s =
-            unionName $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
+        evalRWS w { graph, classNames, unionNames, unions, rendererInfo } { indent: 0 } # snd        
 
 typeNameForUnion :: IRGraph -> IRType -> String
 typeNameForUnion graph = case _ of

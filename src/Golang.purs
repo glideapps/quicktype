@@ -32,25 +32,35 @@ renderer =
     , render: renderGraphToGolang
     }
 
+transforms :: RendererTransformations
+transforms = {
+    nameForClass,
+    unionName,
+    unionPredicate,
+    nextNameToTry: \s -> "Other" <> s,
+    forbiddenNames: []
+}
+
 renderGraphToGolang :: IRGraph -> String
-renderGraphToGolang graph =
-    runDoc golangDoc nameForClass unionName unionPredicate nextNameToTry S.empty graph unit
-    where
-        unionPredicate =
-            case _ of
-            IRUnion ur ->
-                let s = unionToSet ur
-                in
-                    if isNothing $ nullableFromSet s then
-                        Just s
-                    else
-                        Nothing
-            _ -> Nothing
-        nameForClass (IRClassData { names }) = goNameStyle $ combineNames names
-        unionName components =
-            "OneOf" <> (goNameStyle $ intercalate "_" $ components)
-        nextNameToTry s =
-            "Other" <> s
+renderGraphToGolang graph = runDoc golangDoc transforms graph unit
+    
+unionPredicate :: IRType -> Maybe (Set IRType)
+unionPredicate = case _ of
+    IRUnion ur ->
+        let s = unionToSet ur
+        in
+            if isNothing $ nullableFromSet s then
+                Just s
+            else
+                Nothing
+    _ -> Nothing
+
+nameForClass :: IRClassData -> String
+nameForClass (IRClassData { names }) = goNameStyle $ combineNames names
+
+unionName :: L.List String -> String
+unionName components =
+    "OneOf" <> (goNameStyle $ intercalate "_" $ components)
 
 isValueType :: IRType -> Boolean
 isValueType IRInteger = true
