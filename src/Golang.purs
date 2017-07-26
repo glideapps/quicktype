@@ -20,10 +20,6 @@ import Data.String.Util (capitalize, camelCase, stringEscape)
 import Data.Tuple (Tuple(..))
 import Utils (mapM, removeElement)
 
--- data GoInfo = GoInfo { classNames ::  Map Int String }
-
-type GoDoc = Doc Unit
-
 renderer :: Renderer
 renderer =
     { name: "Go"
@@ -42,7 +38,7 @@ transforms = {
 }
 
 renderGraphToGolang :: IRGraph -> String
-renderGraphToGolang graph = runDoc golangDoc transforms graph unit
+renderGraphToGolang graph = runDoc golangDoc transforms graph
     
 unionPredicate :: IRType -> Maybe (Set IRType)
 unionPredicate = case _ of
@@ -92,7 +88,7 @@ legalizeIdentifier str =
         else
             legalizeIdentifier ("_" <> str)
 
-renderUnionToGolang :: Set IRType -> GoDoc String
+renderUnionToGolang :: Set IRType -> Doc String
 renderUnionToGolang s =
     case nullableFromSet s of
     Just x -> do
@@ -100,7 +96,7 @@ renderUnionToGolang s =
         pure if isValueType x then "*" <> rendered else rendered
     Nothing -> lookupUnionName s
 
-renderTypeToGolang :: IRType -> GoDoc String
+renderTypeToGolang :: IRType -> Doc String
 renderTypeToGolang = case _ of
     IRNothing -> pure "interface{}"
     IRNull -> pure "interface{}"
@@ -120,7 +116,7 @@ renderTypeToGolang = case _ of
 goNameStyle :: String -> String
 goNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
-golangDoc :: GoDoc Unit
+golangDoc :: Doc Unit
 golangDoc = do
     line "package main"
     blank
@@ -251,7 +247,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         renderGolangUnion types
         blank
 
-renderGolangType :: Int -> IRClassData -> GoDoc Unit
+renderGolangType :: Int -> IRClassData -> Doc Unit
 renderGolangType classIndex (IRClassData { names, properties }) = do
     className <- lookupClassName classIndex
     let propertyNames = transformNames goNameStyle ("Other" <> _) S.empty $ map (\n -> Tuple n n) $ Map.keys properties
@@ -263,7 +259,7 @@ renderGolangType classIndex (IRClassData { names, properties }) = do
             line $ csPropName <> " " <> rendered <> " `json:\"" <> (stringEscape pname) <> "\"`"
     line "}"
 
-unionFieldName :: IRType -> GoDoc String
+unionFieldName :: IRType -> Doc String
 unionFieldName t = do
     graph <- getGraph
     let typeName = typeNameForUnion graph t
@@ -272,7 +268,7 @@ unionFieldName t = do
 compoundPredicates :: Array (IRType -> Boolean)
 compoundPredicates = [isArray, isClass, isMap]
 
-renderGolangUnion :: Set IRType -> GoDoc Unit
+renderGolangUnion :: Set IRType -> Doc Unit
 renderGolangUnion allTypes = do
     name <- lookupUnionName allTypes
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
@@ -310,7 +306,7 @@ renderGolangUnion allTypes = do
         line $ "return marshalUnion(" <> args <> ", " <> isNullableString <> ")"
     line "}"
     where
-        ifClass :: (String -> GoDoc Unit) -> GoDoc Unit
+        ifClass :: (String -> Doc Unit) -> Doc Unit
         ifClass f =
             let { element } = removeElement isClass allTypes
             in
@@ -327,12 +323,12 @@ renderGolangUnion allTypes = do
                     name <- unionFieldName t
                     line $ "x." <> name <> " = nil"
                 Nothing -> pure unit
-        makeArgs :: (IRType -> GoDoc String) -> ((IRType -> Boolean) -> GoDoc String) -> GoDoc String
+        makeArgs :: (IRType -> Doc String) -> ((IRType -> Boolean) -> Doc String) -> Doc String
         makeArgs primitive compound = do
             primitiveArgs <- mapM primitive $ L.fromFoldable [IRInteger, IRDouble, IRBool, IRString]
             compoundArgs <- mapM compound $ L.fromFoldable compoundPredicates
             pure $ intercalate ", " $ A.concat [A.fromFoldable primitiveArgs, A.fromFoldable compoundArgs]
-        memberArg :: String -> (String -> String) -> (IRType -> Boolean) -> GoDoc String
+        memberArg :: String -> (String -> String) -> (IRType -> Boolean) -> Doc String
         memberArg notPresentValue renderPresent p =
             let { element } = removeElement p allTypes
             in
@@ -345,9 +341,9 @@ renderGolangUnion allTypes = do
             memberArg "nil" ("&x." <> _) (eq t)
         compoundUnmarshalArg p =
             memberArg "false, nil" ("true, &x." <> _) p
-        primitiveMarshalArg :: IRType -> GoDoc String
+        primitiveMarshalArg :: IRType -> Doc String
         primitiveMarshalArg t =
             memberArg "nil" ("x." <> _) (eq t)
-        compoundMarshalArg :: (IRType -> Boolean) -> GoDoc String
+        compoundMarshalArg :: (IRType -> Boolean) -> Doc String
         compoundMarshalArg p =
             memberArg "false, nil" (\n -> "x." <> n <> " != nil, x." <> n) p
