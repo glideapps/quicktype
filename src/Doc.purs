@@ -96,8 +96,7 @@ typeNameForUnion graph = case _ of
     IRArray a -> typeNameForUnion graph a <> "_array"
     IRClass i ->
         let IRClassData { names } = getClassFromGraph graph i
-        in
-            combineNames names
+        in combineNames names
     IRMap t -> typeNameForUnion graph t <> "_map"
     IRUnion _ -> "union"
 
