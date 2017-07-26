@@ -82,33 +82,38 @@ legalizeIdentifier str =
         else
             legalizeIdentifier ("_" <> str)
 
-renderUnionToGolang :: Set IRType -> Doc (Tuple String (Maybe String))
+noComment :: String -> Doc { rendered :: String, comment :: Maybe String }
+noComment rendered =
+    pure { rendered, comment: Nothing }
+
+renderUnionToGolang :: Set IRType -> Doc { rendered :: String, comment :: Maybe String }
 renderUnionToGolang s =
     case nullableFromSet s of
     Just x -> do
-        Tuple rendered comment <- renderTypeToGolang x
-        pure if isValueType x then Tuple ("*" <> rendered) (Just $ maybe "optional" ("optional "<> _) comment) else Tuple rendered Nothing
+        { rendered, comment } <- renderTypeToGolang x
+        pure
+            if isValueType x then
+                { rendered: "*" <> rendered, comment: Just $ maybe "optional" ("optional "<> _) comment }
+            else
+                { rendered, comment: Nothing }
     Nothing -> do
-        name <- lookupUnionName s
-        pure $ Tuple name Nothing
+        noComment =<< lookupUnionName s
 
-renderTypeToGolang :: IRType -> Doc (Tuple String (Maybe String))
+renderTypeToGolang :: IRType -> Doc { rendered :: String, comment :: Maybe String }
 renderTypeToGolang = case _ of
-    IRNothing -> pure $ Tuple "interface{}" Nothing
-    IRNull -> pure $ Tuple "interface{}" Nothing
-    IRInteger -> pure $ Tuple "int64" Nothing
-    IRDouble -> pure $ Tuple "float64" Nothing
-    IRBool -> pure $ Tuple "bool" Nothing
-    IRString -> pure $ Tuple "string" Nothing
+    IRNothing -> noComment "interface{}"
+    IRNull -> noComment "interface{}"
+    IRInteger -> noComment "int64"
+    IRDouble -> noComment "float64"
+    IRBool -> noComment "bool"
+    IRString -> noComment "string"
     IRArray a -> do
-        (Tuple rendered comment) <- renderTypeToGolang a
-        pure $ Tuple ("[]" <> rendered) (map ("array of " <> _) comment)
-    IRClass i -> do
-        name <- lookupClassName i
-        pure $ Tuple name Nothing
+        { rendered, comment } <- renderTypeToGolang a
+        pure { rendered: "[]" <> rendered, comment: map ("array of " <> _) comment }
+    IRClass i -> noComment =<< lookupClassName i
     IRMap t -> do
-        (Tuple rendered comment) <- renderTypeToGolang t
-        pure $ Tuple ("map[string]" <> rendered) (map ("map to " <> _) comment)
+        { rendered, comment } <- renderTypeToGolang t
+        pure { rendered: "map[string]" <> rendered, comment: map ("map to " <> _) comment }
     IRUnion types -> renderUnionToGolang $ unionToSet types
 
 renderComment :: Maybe String -> String
@@ -133,7 +138,7 @@ package main
         line "import \"errors\""
     line "import \"encoding/json\""
     blank
-    (Tuple renderedToplevel toplevelComment) <- getTopLevel >>= renderTypeToGolang
+    { rendered: renderedToplevel, comment: toplevelComment } <- getTopLevel >>= renderTypeToGolang
     line $ "type Root " <> renderedToplevel <> (renderComment toplevelComment)
     blank
     line """func UnmarshalRoot(data []byte) (Root, error) {
@@ -271,7 +276,7 @@ renderGolangType classIndex (IRClassData { names, properties }) = do
     indent do
         for_ (Map.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
             let csPropName = lookupName pname propertyNames
-            Tuple rendered comment <- renderTypeToGolang ptype
+            { rendered, comment } <- renderTypeToGolang ptype
             line $ csPropName <> " " <> rendered <> " `json:\"" <> (stringEscape pname) <> "\"`" <> (renderComment comment)
     line "}"
 
@@ -289,9 +294,9 @@ renderGolangUnion allTypes = do
     line $ "type " <> name <> " struct {"
     indent do
         for_ nonNullTypes \t -> do
-            Tuple typeString comment <- renderUnionToGolang $ S.union (S.singleton t) (S.singleton IRNull)
+            { rendered, comment } <- renderUnionToGolang $ S.union (S.singleton t) (S.singleton IRNull)
             field <- unionFieldName t
-            line $ field <> " " <> typeString <> (renderComment comment)
+            line $ field <> " " <> rendered <> (renderComment comment)
     line "}"
     blank
     line $ "func (x *" <> name <> ") UnmarshalJSON(data []byte) error {"    
