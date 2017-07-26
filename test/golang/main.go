@@ -1,7 +1,5 @@
 package main
 
-import "encoding/json"
-
 import "io/ioutil"
 import "log"
 import "os"
@@ -12,14 +10,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var t Root
-
-	err = json.Unmarshal(bytes, &t)
+	t, err := UnmarshalRoot(bytes)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	bytes, err = json.Marshal(t)
+	bytes, err = t.Marshal()
 	if err != nil {
 		log.Fatal(err)
 	}

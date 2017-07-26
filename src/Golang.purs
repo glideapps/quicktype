@@ -112,17 +112,32 @@ goNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
 golangDoc :: Doc Unit
 golangDoc = do
-    line "package main"
-    blank
+    line """// To parse and unparse this JSON data, add this code to your project and do:
+//
+//    r, err := UnmarshalRoot(bytes)
+//    bytes, err = r.Marshal()
+
+package main
+"""
     unions <- getUnions
     unless (unions == L.Nil) do
         line "import \"bytes\""
         line "import \"errors\""
-        line "import \"encoding/json\""
-        blank
+    line "import \"encoding/json\""
+    blank
     renderedToplevel <- getTopLevel >>= renderTypeToGolang
     line $ "type Root " <> renderedToplevel
     blank
+    line """func UnmarshalRoot(data []byte) (Root, error) {
+	var r Root
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *Root) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+"""
     classes <- getClasses
     for_ classes \(Tuple i cls) -> do
         renderGolangType i cls
