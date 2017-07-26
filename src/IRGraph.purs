@@ -21,7 +21,6 @@ module IRGraph
     , isMap
     , matchingProperties
     , mapClasses
-    , combineNames
     , classesInGraph
     , regatherClassNames
     , transformNames
@@ -207,12 +206,6 @@ regatherClassNames graph@(IRGraph { classes, toplevel }) =
                 in
                     combine $ (fromArray : fromMap : fromClass : L.Nil)
             _ -> M.empty
-
--- FIXME: doesn't really belong here
-combineNames :: S.Set String -> String
-combineNames s = case L.fromFoldable s of
-    L.Nil -> "NONAME"
-    n : _ -> n
 
 transformNames :: forall a b. Ord a => (b -> String) -> (String -> String) -> (Set String) -> List (Tuple a b) -> Map a String
 transformNames legalize otherize illegalNames names =
