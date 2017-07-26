@@ -44,22 +44,18 @@ unionPredicate :: IRType -> Maybe (Set IRType)
 unionPredicate = case _ of
     IRUnion ur ->
         let s = unionToSet ur
-        in
-            if isNothing $ nullableFromSet s then
-                Just s
-            else
-                Nothing
+        in case nullableFromSet s of
+            Nothing -> Just s
+            _ -> Nothing
     _ -> Nothing
             
 
 nameForClass :: IRClassData -> String
-nameForClass (IRClassData { names }) =
-    csNameStyle $ combineNames names
+nameForClass (IRClassData { names }) = csNameStyle $ combineNames names
 
 unionName :: List String -> String
 unionName s =
-    s
-    # L.sort
+    L.sort s
     <#> csNameStyle
     # intercalate "Or"
 
