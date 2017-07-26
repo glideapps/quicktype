@@ -37,25 +37,30 @@ import Data.Set as S
 import Data.String as String
 import Data.Tuple (Tuple(..), snd)
 
-type Renderer = {
-    name :: String,
-    extension :: String,
-    aceMode :: String,
-    doc :: Doc Unit,
-    transforms :: Transforms
-}
+type Renderer =
+    { name :: String
+    , extension :: String
+    , aceMode :: String
+    , doc :: Doc Unit
+    , transforms :: Transforms
+    }
 
-type Transforms = {
-    nameForClass :: IRClassData -> String,
-    unionName :: List String -> String,
-    unionPredicate :: IRType -> Maybe (Set IRType),
-    nextName :: String -> String,
-    forbiddenNames :: Array String
-}
+type Transforms =
+    { nameForClass :: IRClassData -> String
+    , unionName :: List String -> String
+    , unionPredicate :: IRType -> Maybe (Set IRType)
+    , nextName :: String -> String
+    , forbiddenNames :: Array String
+    }
 
 type DocState = { indent :: Int }
 
-type DocEnv = { graph :: IRGraph, classNames ::  Map Int String, unionNames :: Map (Set IRType) String, unions :: List (Set IRType) }
+type DocEnv =
+    { graph :: IRGraph
+    , classNames :: Map Int String
+    , unionNames :: Map (Set IRType) String
+    , unions :: List (Set IRType)
+    }
 
 newtype Doc a = Doc (RWS DocEnv String DocState a)
 
