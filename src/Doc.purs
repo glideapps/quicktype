@@ -2,7 +2,7 @@ module Doc
     ( Doc
     , Renderer
     , Transforms
-    , getGraph
+    , getTopLevel
     , getClasses
     , getClass
     , getClassNames
@@ -18,7 +18,7 @@ module Doc
     -- Build Doc Unit with monad syntax, then render to string
     , runDoc
     , runRenderer
-    , typeNameForUnion
+    , getTypeNameForUnion
     ) where
 
 import IR
@@ -96,8 +96,18 @@ typeNameForUnion graph = case _ of
     IRMap t -> typeNameForUnion graph t <> "_map"
     IRUnion _ -> "union"
 
+getTypeNameForUnion :: IRType -> Doc String
+getTypeNameForUnion typ = do
+  g <- getGraph
+  pure $ typeNameForUnion g typ
+
 getGraph :: Doc IRGraph
 getGraph = Doc (asks _.graph)
+
+getTopLevel :: Doc IRType
+getTopLevel = do
+    IRGraph { toplevel } <- getGraph
+    pure toplevel
 
 getClassNames :: Doc (Map Int String)
 getClassNames = Doc (asks _.classNames)
