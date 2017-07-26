@@ -30,7 +30,7 @@ function testCSharp(samples) {
         var p = sample;
         if (!path.isAbsolute(p))
             p = path.join("..", "..", "app", "public", "sample", "json", p);
-        exec(`node ../../cli/quicktype.js --lang cs "${p}" > QuickType.cs`);
+        exec(`node ../../cli/quicktype.js -o QuickType.cs "${p}"`);
         exec(`dotnet run "${p}"`);
     });
 
@@ -46,7 +46,7 @@ function testGolang(samples) {
         var p = sample;
         if (!path.isAbsolute(p))
             p = path.join("..", "..", "app", "public", "sample", "json", p);
-        exec(`node ../../cli/quicktype.js --lang go "${p}" > quicktype.go`);
+        exec(`node ../../cli/quicktype.js -o quicktype.go "${p}"`);
         exec(`go run main.go quicktype.go < "${p}"`, {silent:true});
     });
 
@@ -58,29 +58,23 @@ function testAll(samples) {
     testCSharp(samples);
 }
 
-if (process.argv.length == 2) {
-    testAll(Samples.samples)
-} else {
-    for (var i = 2; i < process.argv.length; i++) {
-        let arg = process.argv[i];
-
-        if (fs.lstatSync(arg).isDirectory()) {
-            fs.readdir(arg, function(err, items) {
-                if (err) {
-                    console.log("Error: Could not read directory " + arg);
-                    process.exit(1);
-                }
-                let samples = [];
-                for (var i=0; i<items.length; i++) {
-                    let name = items[i];
-                    if (name.startsWith(".") || !name.endsWith(".json"))
-                        continue;
-                    samples.push(absolutize(path.join(arg, name)));
-                }
+function main(sources) {
+    if (sources.length == 0) {
+        testAll(Samples.samples)
+    } else {
+        sources.forEach((source) => {
+            if (fs.lstatSync(source).isDirectory()) {
+                let samples =
+                    fs.readdirSync(source)
+                        .filter((name) => name.endsWith(".json") && !name.startsWith("."))
+                        .map((name) => absolutize(path.join(source, name)));
                 testAll(samples);
-            });
-        } else {
-            testAll([absolutize(arg)]);
-        }
+            } else {
+                testAll([absolutize(arg)]);
+            }
+        });
     }
 }
+
+// skip 2 `node` args
+main(process.argv.slice(2));
