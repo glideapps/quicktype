@@ -54,8 +54,8 @@ function testGolang(samples) {
 }
 
 function testAll(samples) {
-    testCSharp(samples);
     testGolang(samples);
+    testCSharp(samples);
 }
 
 if (process.argv.length == 2) {
