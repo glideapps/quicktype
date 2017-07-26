@@ -38,6 +38,7 @@ deploy:
       branch: master
   - provider: firebase
     project: quicktype-174421
+    skip_cleanup: true
     on:
       repo: dvdsgl/quicktype
       branch: master
