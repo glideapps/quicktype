@@ -128,19 +128,20 @@ csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
 csharpDoc :: CSDoc Unit
 csharpDoc = do
-    lines """// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do:
-             //
-             //   var data = QuickType.Converter.FromJson(jsonString);
-             //
-             namespace QuickType
-             {"""
+    line """// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do:
+//
+//    var data = QuickType.Converter.FromJson(jsonString);
+//
+namespace QuickType
+{"""
+         
     blank
     indent do
-        lines """using System;
-                 using System.Net;
-                 using System.Collections.Generic;
+        line """using System;
+using System.Net;
+using System.Collections.Generic;
 
-                 using Newtonsoft.Json;"""
+using Newtonsoft.Json;"""
         blank
         renderJsonConverter
         blank
@@ -153,7 +154,7 @@ csharpDoc = do
         for_ unions \types -> do
             renderCSharpUnion types
             blank
-    lines "}"
+    line "}"
 
 stringIfTrue :: Boolean -> String -> String
 stringIfTrue true s = s
@@ -164,13 +165,13 @@ renderJsonConverter = do
     unionNames <- getUnionNames
     let haveUnions = not $ M.isEmpty unionNames
     let names = M.values unionNames
-    lines $ "public class Converter" <> stringIfTrue haveUnions " : JsonConverter" <> " {"
+    line $ "public class Converter" <> stringIfTrue haveUnions " : JsonConverter" <> " {"
     indent do
         IRGraph { toplevel } <- getGraph
         toplevelType <- renderTypeToCSharp toplevel
-        lines "// Loading helpers"
+        line "// Loading helpers"
         let converterParam = stringIfTrue haveUnions ", new Converter()"
-        lines
+        line
             $ "public static "
             <> toplevelType
             <> " FromJson(string json) => JsonConvert.DeserializeObject<"
@@ -181,36 +182,36 @@ renderJsonConverter = do
 
         when haveUnions do
             blank
-            lines "public override bool CanConvert(Type t) {"
-            indent $ lines $ "return " <> intercalate " || " (map (\n -> "t == typeof(" <> n <> ")") names) <> ";"
-            lines "}"
+            line "public override bool CanConvert(Type t) {"
+            indent $ line $ "return " <> intercalate " || " (map (\n -> "t == typeof(" <> n <> ")") names) <> ";"
+            line "}"
             blank
-            lines "public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer) {"
+            line "public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer) {"
             indent do
                 -- FIXME: call the constructor via reflection?
                 for_ names \name -> do
-                    lines $ "if (t == typeof(" <> name <> "))"
-                    indent $ lines $ "return new " <> name <> "(reader, serializer);"
-                lines "throw new Exception(\"Unknown type\");"
-            lines "}"
+                    line $ "if (t == typeof(" <> name <> "))"
+                    indent $ line $ "return new " <> name <> "(reader, serializer);"
+                line "throw new Exception(\"Unknown type\");"
+            line "}"
             blank
-            lines "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) {"
-            indent $ lines "throw new NotImplementedException();"
-            lines "}"
+            line "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) {"
+            indent $ line "throw new NotImplementedException();"
+            line "}"
             blank
-            lines "public override bool CanWrite { get { return false; } }"
-    lines "}"
+            line "public override bool CanWrite { get { return false; } }"
+    line "}"
 
 tokenCase :: String -> CSDoc Unit
 tokenCase tokenType =
-    lines $ "case JsonToken." <> tokenType <> ":"
+    line $ "case JsonToken." <> tokenType <> ":"
 
 renderNullDeserializer :: Set IRType -> CSDoc Unit
 renderNullDeserializer types =
     when (S.member IRNull types) do
         tokenCase "Null"
         indent do
-            lines "break;"
+            line "break;"
 
 unionFieldName :: IRType -> CSDoc String
 unionFieldName t = do
@@ -220,8 +221,8 @@ unionFieldName t = do
 
 deserialize :: String -> String -> CSDoc Unit
 deserialize fieldName typeName = do
-    lines $ fieldName <> " = serializer.Deserialize<" <> typeName <> ">(reader);"
-    lines "break;"
+    line $ fieldName <> " = serializer.Deserialize<" <> typeName <> ">(reader);"
+    line "break;"
 
 deserializeType :: IRType -> CSDoc Unit
 deserializeType t = do
@@ -259,19 +260,19 @@ renderCSharpUnion :: Set IRType -> CSDoc Unit
 renderCSharpUnion allTypes = do
     name <- lookupUnionName allTypes
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
-    line $ words ["public struct", name, "{"]
+    line $ "public struct " <> name <> " {"
     indent do
         for_ nonNullTypes \t -> do
             typeString <- renderUnionToCSharp $ S.union (S.singleton t) (S.singleton IRNull)
             field <- unionFieldName t
-            lines $ "public " <> typeString <> " " <> field <> ";"
+            line $ "public " <> typeString <> " " <> field <> ";"
         blank
-        lines $ "public " <> name <> "(JsonReader reader, JsonSerializer serializer) {"
+        line $ "public " <> name <> "(JsonReader reader, JsonSerializer serializer) {"
         indent do
             for_ (L.fromFoldable nonNullTypes) \field -> do
                 fieldName <- unionFieldName field
-                lines $ fieldName <> " = null;"
-            lines "switch (reader.TokenType) {"
+                line $ fieldName <> " = null;"
+            line "switch (reader.TokenType) {"
             indent do
                 renderNullDeserializer allTypes
                 renderPrimitiveDeserializer (L.singleton "Integer") IRInteger allTypes
@@ -281,28 +282,21 @@ renderCSharpUnion allTypes = do
                 renderGenericDeserializer isArray "StartArray" allTypes
                 renderGenericDeserializer isClass "StartObject" allTypes
                 renderGenericDeserializer isMap "StartObject" allTypes
-                lines $ "default: throw new Exception(\"Cannot convert " <> name <> "\");"
-            lines "}"
-        lines "}"
-    lines "}"
+                line $ "default: throw new Exception(\"Cannot convert " <> name <> "\");"
+            line "}"
+        line "}"
+    line "}"
 
 renderCSharpClass :: IRClassData -> String -> CSDoc Unit
 renderCSharpClass (IRClassData { names, properties }) className = do
     let propertyNames = transformNames csNameStyle ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
-    line $ words ["public class", className]
-
-    lines "{"
+    line $ "public class " <> className
+    line "{"
     indent do
         for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
-            line do
-                string "[JsonProperty(\""
-                string $ stringEscape pname
-                string "\")]"
-            line do
-                string "public "
-                rendered <- renderTypeToCSharp ptype
-                string rendered
-                let csPropName = lookupName pname propertyNames
-                words ["", csPropName, "{ get; set; }"]
+            line $ "[JsonProperty(\"" <> stringEscape pname <> "\")]"
+            rendered <- renderTypeToCSharp ptype
+            let csPropName = lookupName pname propertyNames
+            line $ "public " <> rendered <> " " <> csPropName <> " { get; set; }"
             blank
-    lines "}"
+    line "}"
