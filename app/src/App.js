@@ -1,8 +1,5 @@
 import React, { Component } from 'react';
 
-// TODO why do we need this ugly import to make the build work?
-import * as mdc from 'material-components-web/dist/material-components-web.js';
-
 import Sidebar from './Sidebar';
 import Editor from './Editor';
 
@@ -19,10 +16,6 @@ class App extends Component {
       right: "",
       renderer: Main.renderers[0]
     };
-  }
-
-  componentDidMount() {
-     mdc.autoInit();
   }
 
   sendEvent = (name, value) => window.ga("send", "event", "App", name, value);

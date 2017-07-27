@@ -12,6 +12,14 @@ export default class Dropdown extends Component {
     this.id = `select-${this.props.name}`;
   }
 
+  componentDidMount() {
+    const select = new MDCSelect(document.querySelector(`#${this.id}`));
+    select.listen('MDCSelect:change', () => {
+      this.setState({selected: select.value});
+      this.props.onChange && this.props.onChange(select.value);
+    });
+  }
+
   render() {
     return (
         <div id={this.id} className="mdc-select" role="listbox" tabIndex="0">
@@ -21,7 +29,7 @@ export default class Dropdown extends Component {
                 {this.props.entries.map((label) => {
                   return (
                     <li
-                      id={label}
+                      key={label}
                       className="mdc-list-item"
                       role="option" 
                       tabIndex="0"

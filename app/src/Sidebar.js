@@ -6,7 +6,7 @@ import urlParse from 'url-parse';
 import Editor from './Editor';
 import Entry from './Entry';
 import Switch from './Switch';
-import Button from './Button';
+import Button from "@react-mdc/button";
 import Dropdown from './Dropdown';
 
 import Main from "../../output/Main";
@@ -99,10 +99,12 @@ export default class Sidebar extends Component {
                     <Dropdown
                         name="source"
                         entries={Samples.samples}
+                        onChange={this.changeSample}
                         />
                     <Dropdown
                         name="lang"
                         entries={Main.renderers.map((r) => r.name)}
+                        onChange={this.changeRenderer}
                         />
                 </div>
 
@@ -121,7 +123,9 @@ export default class Sidebar extends Component {
                 <Switch name="showHelpers" />
 
                 <div id="button-parent">
-                    <Button />
+                    <Button raised primary>
+                        Copy C#
+                    </Button>
                 </div>
             </div>
         </sidebar>
