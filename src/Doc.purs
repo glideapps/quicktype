@@ -32,7 +32,7 @@ import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe, fromMaybe)
+import Data.Maybe (Maybe, fromMaybe, maybe)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as String
@@ -48,8 +48,8 @@ type Renderer =
 
 type Transforms =
     { nameForClass :: IRClassData -> String
-    , unionName :: List String -> String
-    , unionPredicate :: IRType -> Maybe (Set IRType)
+    , unionName :: Maybe (List String -> String)
+    , unionPredicate :: Maybe (IRType -> Maybe (Set IRType))
     , nextName :: String -> String
     , forbiddenNames :: Array String
     }
@@ -79,10 +79,10 @@ runDoc (Doc w) t graph =
     let classes = classesInGraph graph
         forbidden = S.fromFoldable t.forbiddenNames
         classNames = transformNames t.nameForClass t.nextName forbidden classes
-        unions = L.fromFoldable $ filterTypes t.unionPredicate graph
+        unions = maybe L.Nil (\up -> L.fromFoldable $ filterTypes up graph) t.unionPredicate
         forbiddenForUnions = S.union forbidden $ S.fromFoldable $ M.values classNames
-        nameForUnion s = t.unionName $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
-        unionNames = transformNames nameForUnion t.nextName forbiddenForUnions $ map (\s -> Tuple s s) unions
+        nameForUnion un s = un $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
+        unionNames = maybe M.empty (\un -> transformNames (nameForUnion un) t.nextName forbiddenForUnions $ map (\s -> Tuple s s) unions) t.unionName
     in
         evalRWS w { graph, classNames, unionNames, unions } { indent: 0 } # snd        
 

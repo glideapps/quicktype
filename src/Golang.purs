@@ -27,8 +27,8 @@ renderer =
     , doc: golangDoc
     , transforms:
         { nameForClass
-        , unionName
-        , unionPredicate
+        , unionName: Just unionName
+        , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames: []
         }
