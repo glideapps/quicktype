@@ -134,61 +134,53 @@ function absolutize(p) {
     return path.join(process.cwd(), p);
 }
 
-function testCSharp(samples, knownFails) {
-    shell.cd("test/csharp");
-    shell.exec("dotnet restore", { silent: true });
+function runTests(description, samples, dir, prepareCmd, filename, testFn) {
+    shell.cd(dir);
+    if (prepareCmd)
+        shell.exec(prepareCmd, { silent: true });
     
     samples.forEach((sample) => {
-        console.error(`* Building C# code for ${sample}`);
+        console.error(`* Building ${description} for ${sample}`);
         
         var p = sample;
         if (!path.isAbsolute(p))
             p = path.join("..", "..", "app", "public", "sample", "json", p);
-        exec(`node ../../cli/quicktype.js -o QuickType.cs "${p}"`);
-        execAndCompare(`dotnet run "${p}"`, sample, p, knownFails);
+        exec(`node ../../cli/quicktype.js -o "${filename}" "${p}"`);
+        testFn(sample, p);
     });
     
     shell.cd("../..");
+}
+
+function testCSharp(samples, knownFails) {
+    runTests("C# code", samples, "test/csharp", "dotnet restore", "QuickType.cs",
+        function (sample, p) {
+            execAndCompare(`dotnet run "${p}"`, sample, p, knownFails);
+        }
+    );
 }
 
 function testGolang(samples, knownFails) {
-    shell.cd("test/golang");
-    
-    samples.forEach((sample) => {
-        console.error(`* Building Go code for ${sample}`);
-        
-        var p = sample;
-        if (!path.isAbsolute(p))
-            p = path.join("..", "..", "app", "public", "sample", "json", p);
-        exec(`node ../../cli/quicktype.js -o quicktype.go "${p}"`);
-        execAndCompare(`go run main.go quicktype.go < "${p}"`, sample, p, knownFails);
-    });
-    
-    shell.cd("../..");
+    runTests("Go code", samples, "test/golang", null, "quicktype.go",
+        function (sample, p) {
+            execAndCompare(`go run main.go quicktype.go < "${p}"`, sample, p, knownFails);
+        }
+    );
 }
 
 function testJsonSchema(samples, knownFails) {
-    shell.cd("test/golang");
-    
-    samples.forEach((sample) => {
-        console.error(`* Building JSON Schema for ${sample}`);
-        
-        var p = sample;
-        if (!path.isAbsolute(p))
-            p = path.join("..", "..", "app", "public", "sample", "json", p);
-        exec(`node ../../cli/quicktype.js -o schema.json "${p}"`);
-
-        let input = JSON.parse(fs.readFileSync(p));
-        let schema = JSON.parse(fs.readFileSync("schema.json"));
-        let ajv = new Ajv();
-        let valid = ajv.validate(schema, input);
-        if (!valid) {
-            console.log("Error: Generated schema does not validate input JSON.");
-            process.exit(1);
+    runTests("JSON Schema", samples, "test/golang", null, "schema.json",
+        function (sample, p) {
+            let input = JSON.parse(fs.readFileSync(p));
+            let schema = JSON.parse(fs.readFileSync("schema.json"));
+            let ajv = new Ajv();
+            let valid = ajv.validate(schema, input);
+            if (!valid) {
+                console.log("Error: Generated schema does not validate input JSON.");
+                process.exit(1);
+            }
         }
-    });
-    
-    shell.cd("../..");
+    );
 }
 
 function testAll(samples, goFails, csFails, jsonSchemaFails) {
