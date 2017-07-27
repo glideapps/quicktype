@@ -10,6 +10,7 @@
 npm-debug.log
 test/csharp/QuickType.cs
 test/golang/quicktype.go
+test/golang/schema.json
 package-lock.json
 
 *.log
