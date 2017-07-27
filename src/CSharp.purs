@@ -105,7 +105,7 @@ renderTypeToCSharp :: IRType -> Doc String
 renderTypeToCSharp = case _ of
     IRNothing -> pure "object"
     IRNull -> pure "object"
-    IRInteger -> pure "int"
+    IRInteger -> pure "long"
     IRDouble -> pure "double"
     IRBool -> pure "bool"
     IRString -> pure "string"
