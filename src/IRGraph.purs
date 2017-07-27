@@ -16,6 +16,7 @@ module IRGraph
     , getClassFromGraph
     , nullifyNothing
     , nullableFromSet
+    , canBeNull
     , isArray
     , isClass
     , isMap
@@ -64,6 +65,7 @@ irUnion_Bool = 16
 irUnion_String = 32
 
 data IRType
+    -- FIXME: IRNothing should never appear in proper types
     = IRNothing
     | IRNull
     | IRInteger
@@ -130,6 +132,13 @@ nullableFromSet s =
     IRNull : x : L.Nil -> Just x
     x : IRNull : L.Nil -> Just x
     _ -> Nothing
+
+canBeNull :: IRType -> Boolean
+canBeNull =
+    case _ of
+    IRNull -> true
+    IRUnion (IRUnionRep { primitives }) -> (Bits.and primitives irUnion_Null) /= 0
+    _ -> false
 
 matchingProperties :: forall v. Eq v => Map String v -> Map String v -> Map String v
 matchingProperties ma mb = M.fromFoldable $ L.concatMap getFromB (M.toUnfoldable ma)
