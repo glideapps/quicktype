@@ -5,7 +5,7 @@ import IRGraph
 import Prelude
 import Utils
 
-import Data.Argonaut.Core (Json, fromArray, fromBoolean, fromObject, fromString, stringify)
+import Data.Argonaut.Core (Json, fromArray, fromBoolean, fromObject, fromString, stringifyWithSpace)
 import Data.Array as A
 import Data.Foldable (intercalate)
 import Data.List (List)
@@ -96,4 +96,4 @@ irToJson = do
 jsonSchemaDoc :: Doc Unit
 jsonSchemaDoc = do
     json <- irToJson
-    line $ stringify json
+    line $ stringifyWithSpace "    " json
