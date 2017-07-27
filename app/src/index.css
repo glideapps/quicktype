@@ -66,12 +66,12 @@ sidebar .source-dest {
 
 #output-editor {
   z-index: 0;
-  width: calc(100vw - 420px) !important;
+  width: calc(100vw - 400px) !important;
   height: calc(100vh - 20px) !important;
   top: 20px;
-  left: 420px;
+  left: 400px;
   margin: 0;
-  font-size: 11pt !important;
+  font-size: 12pt !important;
   font-family: Consolas, Menlo, monospace;
   background: var(--editor-background);
 }

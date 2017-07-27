@@ -106,10 +106,11 @@ export default class Sidebar extends Component {
 
                 <Editor
                     className="json"
-                    language="json"
+                    lang="json"
                     theme="solarized_dark"
                     onChange={debounce(this.sourceEdited, 300)}
                     value={this.state.source}
+                    showGutter={false}
                     />
 
                 <Entry name="toplevel" label="Top-level type" value="TopLevel" />

@@ -1,5 +1,8 @@
 import React, { Component } from 'react';
 
+import * as mdc from 'material-components-web/dist/material-components-web.js';
+const { MDCSelect } = mdc.select; 
+
 export default class Dropdown extends Component {
    constructor(props) {
     super(props);

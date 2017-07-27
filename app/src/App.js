@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
 
+// TODO why do we need this ugly import to make the build work?
+import * as mdc from 'material-components-web/dist/material-components-web.js';
+
 import Sidebar from './Sidebar';
 import Editor from './Editor';
 
 import Main from "../../output/Main";
-import Samples from "../../output/Samples";
-
-import * as mdc from 'material-components-web';
 
 import 'brace/mode/csharp';
 import 'brace/theme/solarized_dark';
@@ -74,9 +74,10 @@ class App extends Component {
           onChangeSample={this.sourceEdited} />
         <Editor
           className="output"
-          language="csharp"
+          lang="csharp"
           theme="solarized_dark"
           value={this.state.right}
+          showGutter={true}
           />
       </main>
     );

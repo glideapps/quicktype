@@ -1,8 +1,5 @@
 import React, { Component } from 'react';
 
-import * as mdc from 'material-components-web';
-const { MDCTextfield } = mdc.textfield;
-
 export default class Entry extends Component {
    constructor(props) {
     super(props);

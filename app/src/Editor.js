@@ -20,10 +20,9 @@ export default class Editor extends Component {
     return (
       <AceEditor
             name={this.getName()}
-            mode={this.props.language}
+            mode={this.props.lang}
             theme={this.props.theme}
-            fontSize="10pt"
-            showGutter={false}
+            showGutter={this.props.showGutter}
             onChange={this.props.onChange}
             highlightActiveLine={false}
             showPrintMargin={false}
