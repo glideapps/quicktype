@@ -15,6 +15,7 @@ import Data.Set as S
 import Data.StrMap as StrMap
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
+import Math (round)
 
 import Doc as Doc
 
@@ -29,7 +30,7 @@ makeTypeFromJson name json =
     foldJson
     (\_ -> pure IRNull)
     (\_ -> pure IRBool)
-    (\_ -> pure IRDouble)
+    (\n -> pure if round n == n then IRInteger else IRDouble)
     (\_ -> pure IRString)
     (\arr -> do
         let typeName = singular name

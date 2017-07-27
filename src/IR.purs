@@ -115,6 +115,8 @@ unifyMaybes (Just a) (Just b) = unifyTypes a b
 unifyTypes :: IRType -> IRType -> IR IRType
 unifyTypes IRNothing x = pure x
 unifyTypes x IRNothing = pure x
+unifyTypes IRInteger IRDouble = pure IRDouble
+unifyTypes IRDouble IRInteger = pure IRDouble
 unifyTypes (IRArray a) (IRArray b) = IRArray <$> unifyTypes a b
 unifyTypes a@(IRClass ia) (IRClass ib) = do
     unified <- unifyClassRefs ia ib
