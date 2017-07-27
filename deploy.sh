@@ -5,7 +5,7 @@ export DEPLOY_COUNT=$((DEPLOY_COUNT+1))
 case $DEPLOY_COUNT in
   1)
     # Deploying firebase react app
-    cd app && npm run deploy && cd ..
+    cd app && npm run build && cd ..
     ;;
   2)
     # Deploying npm
