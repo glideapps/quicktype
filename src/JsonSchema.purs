@@ -7,6 +7,7 @@ import Utils
 
 import Data.Argonaut.Core (Json, fromArray, fromBoolean, fromObject, fromString, stringifyWithSpace)
 import Data.Array as A
+import Data.Char as Char
 import Data.Foldable (intercalate)
 import Data.List (List)
 import Data.List as L
@@ -14,6 +15,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
+import Data.String as String
 import Data.String.Util (camelCase, capitalize)
 import Data.Tuple (Tuple(..))
 
@@ -35,9 +37,17 @@ renderer =
         }
     }
 
+legalize :: String -> String
+legalize s =
+    String.fromCharArray $ map (\c -> if isLegal c then c else '_') (String.toCharArray s)
+    where
+        isLegal c =
+            let cc = Char.toCharCode c
+            in cc >= 32 && cc < 128
+
 jsonNameStyle :: String -> String
 jsonNameStyle =
-    camelCase >>> capitalize
+    camelCase >>> capitalize >>> legalize
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = jsonNameStyle $ combineNames names
