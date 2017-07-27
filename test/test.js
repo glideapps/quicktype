@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const Ajv = require('ajv');
 const fs = require("fs");
 const path = require("path");
 const shell = require("shelljs");
@@ -166,14 +167,39 @@ function testGolang(samples, knownFails) {
     shell.cd("../..");
 }
 
-function testAll(samples, goFails, csFails) {
+function testJsonSchema(samples, knownFails) {
+    shell.cd("test/golang");
+    
+    samples.forEach((sample) => {
+        console.error(`* Building JSON Schema for ${sample}`);
+        
+        var p = sample;
+        if (!path.isAbsolute(p))
+            p = path.join("..", "..", "app", "public", "sample", "json", p);
+        exec(`node ../../cli/quicktype.js -o schema.json "${p}"`);
+
+        let input = JSON.parse(fs.readFileSync(p));
+        let schema = JSON.parse(fs.readFileSync("schema.json"));
+        let ajv = new Ajv();
+        let valid = ajv.validate(schema, input);
+        if (!valid) {
+            console.log("Error: Generated schema does not validate input JSON.");
+            process.exit(1);
+        }
+    });
+    
+    shell.cd("../..");
+}
+
+function testAll(samples, goFails, csFails, jsonSchemaFails) {
+    testJsonSchema(samples, jsonSchemaFails);
     testGolang(samples, goFails);
     testCSharp(samples, csFails);
 }
 
 function main(sources) {
     if (sources.length == 0) {
-        testAll(Samples.samples, ["identifiers.json"], [])
+        testAll(Samples.samples, ["identifiers.json"], [], []);
     } else {
         sources.forEach((source) => {
             if (fs.lstatSync(source).isDirectory()) {
