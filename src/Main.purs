@@ -15,15 +15,14 @@ import Data.Set as S
 import Data.StrMap as StrMap
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
-import Math (round)
-
 import Doc as Doc
-
 import Golang as Golang
+import JsonSchema as JsonSchema
+import Math (round)
 import Utils (mapM)
 
 renderers :: Array Doc.Renderer
-renderers = [CSharp.renderer, Golang.renderer]
+renderers = [CSharp.renderer, Golang.renderer, JsonSchema.renderer]
 
 makeTypeFromJson :: String -> Json -> IR IRType
 makeTypeFromJson name json =
