@@ -17,7 +17,7 @@
     "purescript-sequences": "https://github.com/schani/purescript-sequences.git#8aa15619e32a84e2cbc5db74f0416bee95873349",
     "purescript-strings": "^3.3.0",
     "purescript-stringutils": "^0.0.6",
-    "purescript-argonaut-core": "^3.1.0",
+    "purescript-argonaut-core": "https://github.com/schani/purescript-argonaut-core.git#e879fbfb01d4d0e61559481899b42cdb12a54352",
     "purescript-either": "^3.1.0",
     "purescript-filterable": "^2.2.0",
     "purescript-foldable-traversable": "^3.4.0",
