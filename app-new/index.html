@@ -21,6 +21,10 @@
       background: var(--editor-background);
     }
 
+    #logo {
+      margin-right: -24px;
+    }
+
     sidebar {
       background: var(--mdc-theme--background);
       position: absolute;
@@ -98,8 +102,11 @@
       <header class="mdc-toolbar mdc-elevation--z2">
         <div class="mdc-toolbar__row">
           <section class="mdc-toolbar__section mdc-toolbar__section--align-start">
-            <a href="#" class="material-icons mdc-toolbar__icon--menu">polymer</a>
+            <a id="logo" href="#" class="material-icons mdc-toolbar__icon--menu">radio_button_checked</a>
             <span class="mdc-toolbar__title">quicktype</span>
+          </section>
+          <section class="mdc-toolbar__section mdc-toolbar__section--align-end">
+            <a href="#" class="material-icons mdc-toolbar__icon--menu">info_outline</a>
           </section>
         </div>
       </header>
