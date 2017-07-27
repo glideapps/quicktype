@@ -12,24 +12,33 @@
       --mdc-theme-primary: #009688;
       --mdc-theme--background: #00212B;
       --mdx-theme--accent: #009688;
+      --editor-background: #002B36;
     }
 
     body {
       margin: 0;
       padding: 0;
+      background: var(--editor-background);
     }
 
     sidebar {
-      background: #00212B;
+      background: var(--mdc-theme--background);
       position: absolute;
       top: 0;
       left: 0;
       bottom: 0;
       width: 400px;
+      z-index: 1;
     }
 
     sidebar>.content {
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    sidebar .mdc-switch {
+      margin-top: 30px;
     }
 
     sidebar .source-dest {
@@ -37,16 +46,8 @@
       flex-direction: row;
     }
 
-    sidebar button {
-      margin-top: 40px;
-    }
-
-    sidebar .mdc-textfield {
-      width: 100%;
-    }
-
-    sidebar .mdc-switch {
-      margin-top: 30px;
+    #button-parent {
+      margin-top: 60px;
     }
 
     #select-source {
@@ -61,16 +62,31 @@
     #json {
       height: 300px;
       font-size: 10pt;
-      width: 100%;
       border-radius: 3px;
     }
 
     #output {
+      z-index: 0;
       width: calc(100vw - 400px);
-      height: 100vh;
+
+      height: calc(100vh - 10px);
+      top: 10px;
+
       left: 400px;
       margin: 0;
-      font-size: 11pt;
+      font-size: 12pt;
+      font-family: Consolas, Menlo, monospace;
+      background: var(--editor-background);
+    }
+
+    #output .ace_gutter {
+      color: white;
+      opacity: 0.3;
+      background: var(--editor-background);
+    }
+
+    #output .ace_fold-widget {
+      display: none;
     }
 
   </style>
@@ -78,8 +94,8 @@
 
 <body>
   <main>
-    <sidebar class="">
-      <header class="mdc-toolbar">
+    <sidebar class="mdc-elevation--z4">
+      <header class="mdc-toolbar mdc-elevation--z2">
         <div class="mdc-toolbar__row">
           <section class="mdc-toolbar__section mdc-toolbar__section--align-start">
             <a href="#" class="material-icons mdc-toolbar__icon--menu">polymer</a>
@@ -131,8 +147,6 @@
         </label>
         </div>
 
-        <br />
-
         <div id="namespace" class="mdc-textfield mdc-textfield--upgraded">
           <input type="text" id="pre-filled" class="mdc-textfield__input" value="QuickType">
           <label class="mdc-textfield__label mdc-textfield__label--float-above" for="pre-filled">
@@ -140,19 +154,21 @@
           </label>
         </div>
 
-        <div id="include-helpers" class="mdc-switch">
-          <input type="checkbox" id="basic-switch" class="mdc-switch__native-control" />
-          <div class="mdc-switch__background">
-            <div class="mdc-switch__knob"></div>
+        <div>
+          <div id="include-helpers" class="mdc-switch">
+            <input type="checkbox" id="basic-switch" class="mdc-switch__native-control" />
+            <div class="mdc-switch__background">
+              <div class="mdc-switch__knob"></div>
+            </div>
           </div>
+          <label for="basic-switch" class="mdc-switch-label mdc-theme--text-secondary-on-primary">Include to/from JSON helpers</label>
         </div>
-        <label for="basic-switch" class="mdc-switch-label mdc-theme--text-secondary-on-primary">Include to/from JSON helpers</label>
 
-        <br />
-
-        <button class="mdc-button mdc-button--raised mdc-button--primary">
-          Copy C#
-        </button>
+        <div id="button-parent">
+          <button class="mdc-button mdc-button--raised mdc-button--primary">
+            Copy C#
+          </button>
+        </div>
 
       </div>
     </sidebar>
@@ -184,6 +200,7 @@
     jsonEditor.renderer.setShowGutter(false);
     jsonEditor.renderer.setShowPrintMargin(false);
     jsonEditor.setHighlightActiveLine(false);
+    jsonEditor.session.setFoldStyle('manual');
 
   </script>
   <script>
