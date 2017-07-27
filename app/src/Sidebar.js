@@ -15,6 +15,8 @@ import Samples from "../../output/Samples";
 import 'brace/mode/json';
 import 'brace/theme/solarized_dark';
 
+const about_url = "http://blog.quicktype.io/2017/previewing-quicktype";
+
 export default class Sidebar extends Component {
   constructor(props) {
     super(props);
@@ -84,11 +86,11 @@ export default class Sidebar extends Component {
             <header className="mdc-toolbar mdc-elevation--z2">
                 <div className="mdc-toolbar__row">
                 <section className="mdc-toolbar__section mdc-toolbar__section--align-start">
-                    <a id="logo" href="#" className="material-icons mdc-toolbar__icon--menu">radio_button_checked</a>
+                    <a id="logo" className="material-icons mdc-toolbar__icon--menu">radio_button_checked</a>
                     <span className="mdc-toolbar__title">quicktype</span>
                 </section>
                 <section className="mdc-toolbar__section mdc-toolbar__section--align-end">
-                    <a href="#" className="material-icons mdc-toolbar__icon--menu">info_outline</a>
+                    <a href={about_url} target="_new" className="material-icons mdc-toolbar__icon--menu">info_outline</a>
                 </section>
                 </div>
             </header>
