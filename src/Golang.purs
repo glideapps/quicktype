@@ -117,7 +117,7 @@ renderTypeToGolang = case _ of
     IRUnion types -> renderUnionToGolang $ unionToSet types
 
 renderComment :: Maybe String -> String
-renderComment (Just s) = " // " <> s
+renderComment (Just s) = " /* " <> s <> " */"
 renderComment Nothing = ""
 
 goNameStyle :: String -> String
@@ -262,11 +262,10 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
 		return json.Marshal(nil)
 	}
 	return nil, errors.New("Union must not be null")
-}
-"""
+}"""
     for_ unions \types -> do
-        renderGolangUnion types
         blank
+        renderGolangUnion types
 
 renderGolangType :: Int -> IRClassData -> Doc Unit
 renderGolangType classIndex (IRClassData { names, properties }) = do
