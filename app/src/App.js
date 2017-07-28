@@ -13,6 +13,11 @@ import 'brace/mode/golang';
 import 'brace/mode/json';
 import 'brace/theme/chrome';
 
+const titleForHost = {
+  "java.quicktype.io": "JSON to Java classes and helper code",
+  "csharp.quicktype.io": "JSON to C# classes and helper code"
+};
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -27,6 +32,17 @@ class App extends Component {
       rendererName: (queryRenderer && queryRenderer.name) || this.getRenderer().name,
       sampleName: localStorage["sample"] || Samples.samples[0]
     };
+  }
+
+  setTitleAndMeta = () => {
+    let subtitle = titleForHost[window.location.host];
+    if (subtitle) {
+      window.document.title = `quicktype – ${subtitle}`;
+    }
+  }
+
+  componentWillMount() {
+    this.setTitleAndMeta();
   }
 
   componentDidMount() {
