@@ -29,7 +29,7 @@ export default class Sidebar extends Component {
                     <span className="mdc-toolbar__title">quicktype</span>
                 </section>
                 <section className="mdc-toolbar__section mdc-toolbar__section--align-end">
-                    <a href={about_url} target="_new" className="material-icons mdc-toolbar__icon--menu">info_outline</a>
+                    <a href={about_url} target="_blank" className="material-icons mdc-toolbar__icon--menu">info_outline</a>
                 </section>
                 </div>
             </header>
