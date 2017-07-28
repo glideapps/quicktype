@@ -145,9 +145,7 @@ class App extends Component {
           value={this.state.output}
           showGutter={true}
           />
-        <Snackbar
-          name="default"
-          ref={(r) => { this.snackbar = r; }} />
+        <Snackbar ref={(r) => { this.snackbar = r; }} />
       </main>
     );
   }

@@ -12,21 +12,22 @@ export default class Snackbar extends Component {
   }
 
   show = (options) => {
-    const snackbar = new MDCSnackbar(document.querySelector(`#${this.id}`));
+    const snackbar = new MDCSnackbar(this.ref);
     snackbar.show(options);
   }
 
   render() {
     return (
-        <div id={this.id}
-            className="mdc-snackbar"
-            aria-live="assertive"
-            aria-atomic="true"
-            aria-hidden="true">
-            <div className="mdc-snackbar__text"></div>
-            <div className="mdc-snackbar__action-wrapper">
-                <button type="button" className="mdc-button mdc-snackbar__action-button"></button>
-            </div>
+        <div
+          ref={(r) => { this.ref = r; }}
+          className="mdc-snackbar"
+          aria-live="assertive"
+          aria-atomic="true"
+          aria-hidden="true">
+          <div className="mdc-snackbar__text"></div>
+          <div className="mdc-snackbar__action-wrapper">
+              <button type="button" className="mdc-button mdc-snackbar__action-button"></button>
+          </div>
         </div>
     );
   }   
