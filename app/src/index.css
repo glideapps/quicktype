@@ -48,12 +48,11 @@ sidebar .source-dest {
 }
 
 #select-source {
-  flex-grow: 3;
   margin-right: 20px;
 }
 
 #select-lang {
-  flex-grow: 2;
+  min-width: 120px;
 }
 
 #json-editor {
