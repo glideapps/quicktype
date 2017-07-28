@@ -23,8 +23,10 @@ export default class Dropdown extends Component {
   }
 
   componentDidMount() {
-    const select = new MDCSelect(document.querySelector(`#${this.id}`));
+    let el = document.querySelector(`#${this.id}`);
+    const select = new MDCSelect(el);
     select.listen('MDCSelect:change', () => {
+      el.blur();
       this.setState({selected: select.value});
       this.props.onChange && this.props.onChange(select.value);
     });
