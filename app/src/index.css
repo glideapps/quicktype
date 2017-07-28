@@ -10,7 +10,6 @@
 body {
   margin: 0;
   padding: 0;
-  background: var(--editor-background);
 }
 
 #logo {
@@ -23,7 +22,7 @@ sidebar {
   top: 0;
   left: 0;
   bottom: 0;
-  width: 400px;
+  width: 440px;
   z-index: 1;
 }
 
@@ -56,7 +55,7 @@ sidebar .source-dest {
 }
 
 #json-editor {
-  font-size: 10pt;
+  font-size: 9pt;
   border-radius: 3px;
 
   height: 380px !important;
@@ -65,20 +64,19 @@ sidebar .source-dest {
 
 #output-editor {
   z-index: 0;
-  width: calc(100vw - 400px) !important;
+  width: calc(100vw - 440px) !important;
   height: calc(100vh - 20px) !important;
   top: 20px;
-  left: 400px;
+  left: 440px;
   margin: 0;
-  font-size: 12pt !important;
+  font-size: 10pt !important;
   font-family: Consolas, Menlo, monospace;
-  background: var(--editor-background);
 }
 
 #output-editor .ace_gutter {
-  color: white;
+  color: black;
   opacity: 0.3;
-  background: var(--editor-background);
+  background: white;
 }
 
 #output-editor .ace_fold-widget {

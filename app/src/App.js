@@ -10,6 +10,7 @@ import Samples from "../../output/Samples";
 import 'brace/mode/csharp';
 import 'brace/mode/golang';
 import 'brace/theme/solarized_dark';
+import 'brace/theme/github';
 
 class App extends Component {
   constructor(props) {
@@ -113,7 +114,7 @@ class App extends Component {
         <Editor
           className="output"
           lang={this.getRenderer().aceMode}
-          theme="solarized_dark"
+          theme="github"
           value={this.state.output}
           showGutter={true}
           />
