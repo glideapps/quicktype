@@ -55,7 +55,7 @@ sidebar .source-dest {
 }
 
 #json-editor {
-  font-size: 9pt;
+  font-size: 10pt;
   border-radius: 3px;
 
   height: 380px !important;
@@ -69,7 +69,7 @@ sidebar .source-dest {
   top: 20px;
   left: 440px;
   margin: 0;
-  font-size: 10pt !important;
+  font-size: 11pt !important;
   font-family: Consolas, Menlo, monospace;
 }
 
