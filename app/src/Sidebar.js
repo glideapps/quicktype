@@ -56,11 +56,13 @@ export default class Sidebar extends Component {
                     showGutter={false}
                     />
 
+                {/*
                 <Entry name="toplevel" label="Top-level type" value="TopLevel" />
                 <Entry name="namespace" label="Namespace" value="QuickType" />
 
                 <Switch name="showHelpers" />
-
+                */}
+                
                 <div id="button-parent">
                     <Button raised primary>
                         Copy {this.props.rendererName}
