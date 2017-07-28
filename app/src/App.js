@@ -77,6 +77,10 @@ class App extends Component {
   }
 
   changeRendererName = (rendererName) => {
+    try {
+      localStorage["renderer"] = rendererName;
+    } catch (e) {}
+
     this.setState({ rendererName }, () => {
       this.sourceEdited(this.state.source);
     });
