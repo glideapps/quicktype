@@ -9,6 +9,7 @@ import Samples from "../../output/Samples";
 
 import 'brace/mode/csharp';
 import 'brace/mode/golang';
+import 'brace/mode/json';
 import 'brace/theme/chrome';
 
 class App extends Component {
