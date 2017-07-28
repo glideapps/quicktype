@@ -3,8 +3,8 @@ import React, { Component } from 'react';
 import debounce from 'debounce';
 
 import Editor from './Editor';
-import Entry from './Entry';
-import Switch from './Switch';
+//import Entry from './Entry';
+//import Switch from './Switch';
 import Button from "@react-mdc/button";
 import Dropdown from './Dropdown';
 
