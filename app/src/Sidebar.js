@@ -21,7 +21,7 @@ export default class Sidebar extends Component {
 
   render() {
     return (
-        <sidebar className="mdc-elevation--z4">
+        <sidebar className="mdc-theme--dark mdc-elevation--z4">
             <header className="mdc-toolbar mdc-elevation--z2">
                 <div className="mdc-toolbar__row">
                 <section className="mdc-toolbar__section mdc-toolbar__section--align-start">

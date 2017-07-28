@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import Sidebar from './Sidebar';
 import Editor from './Editor';
+import Snackbar from './Snackbar';
 
 import urlParse from 'url-parse';
 
@@ -28,6 +29,33 @@ class App extends Component {
     };
   }
 
+  componentDidMount() {
+    if (this.state.source === "") {
+      this.loadSample();
+    } else {
+      this.sourceEdited(this.state.source);
+    }
+    
+    let copyButton = window.document.querySelector('sidebar .mdc-button--primary');
+    copyButton.addEventListener('click', this.copyOutput);
+  }
+
+  copyOutput = () => {
+    let editor = window.ace.edit("output-editor");
+    let savedSelection = editor.selection.toJSON();
+
+    editor.selectAll();
+    editor.focus();
+    let success = window.document.execCommand('copy');
+    editor.selection.fromJSON(savedSelection);
+
+    let message = success
+      ? `${this.state.rendererName} code copied`
+      : `Could not copy ${this.state.rendererName} code`;
+      
+    this.snackbar.show({ message });
+  }
+
   getRenderer = (name) => {
     let currentRenderer = this.state && this.state.rendererName;
     let theName = name || currentRenderer || localStorage["renderer"] || Main.renderers[0].name;
@@ -46,14 +74,6 @@ class App extends Component {
     }
 
     return result;
-  }
-
-  componentDidMount() {
-    if (this.state.source === "") {
-      this.loadSample();
-    } else {
-      this.sourceEdited(this.state.source);
-    }
   }
 
   sourceEdited = (source) => {
@@ -108,7 +128,7 @@ class App extends Component {
 
   render() {
     return (
-      <main className="mdc-theme--dark mdc-typography">
+      <main className="mdc-typography">
         <Sidebar
           source={this.state.source}
           onChangeSource={this.sourceEdited}
@@ -123,6 +143,9 @@ class App extends Component {
           value={this.state.output}
           showGutter={true}
           />
+        <Snackbar
+          name="default"
+          ref={(r) => { this.snackbar = r; }} />
       </main>
     );
   }
