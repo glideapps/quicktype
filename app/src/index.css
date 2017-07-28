@@ -46,11 +46,11 @@ sidebar .source-dest {
   margin-top: 30px;
 }
 
-#select-source {
+sidebar .mdc-select:first-child {
   margin-right: 20px;
 }
 
-#select-lang {
+sidebar .mdc-select:last-child {
   min-width: 120px;
 }
 

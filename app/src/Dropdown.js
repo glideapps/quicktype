@@ -18,15 +18,12 @@ export default class Dropdown extends Component {
       selected: props.selected,
       entries
     };
-
-    this.id = `select-${this.props.name}`;
   }
 
-  componentDidMount() {
-    let el = document.querySelector(`#${this.id}`);
-    const select = new MDCSelect(el);
+  componentDidMount = () => {
+    let select = new MDCSelect(this.ref);
     select.listen('MDCSelect:change', () => {
-      el.blur();
+      this.ref.blur();
       this.setState({selected: select.value});
       this.props.onChange && this.props.onChange(select.value);
     });
@@ -34,7 +31,11 @@ export default class Dropdown extends Component {
 
   render() {
     return (
-        <div id={this.id} className="mdc-select" role="listbox" tabIndex="0">
+        <div
+          className="mdc-select"
+          ref={(r) => { this.ref = r; }}
+          role="listbox"
+          tabIndex="0">
             <span className="mdc-select__selected-text">{this.state.selected}</span>
             <div className="mdc-simple-menu mdc-select__menu">
               <ul className="mdc-list mdc-simple-menu__items">

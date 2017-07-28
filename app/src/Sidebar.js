@@ -36,13 +36,11 @@ export default class Sidebar extends Component {
             <div className="content">
                 <div className="source-dest">
                     <Dropdown
-                        name="source"
                         selected={this.props.sampleName}
                         entries={Samples.samples}
                         onChange={this.props.onChangeSample}
                         />
                     <Dropdown
-                        name="lang"
                         selected={this.props.rendererName}
                         entries={Main.renderers.map((r) => r.name)}
                         onChange={this.props.onChangeRenderer}
