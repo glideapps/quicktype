@@ -65,8 +65,8 @@ sidebar .source-dest {
 #output-editor {
   z-index: 0;
   width: calc(100vw - 440px) !important;
-  height: calc(100vh - 20px) !important;
-  top: 20px;
+  height: 100vh !important;
+  top: 0px;
   left: 440px;
   margin: 0;
   font-size: 11pt !important;
