@@ -7,9 +7,10 @@ import Transformations
 
 import CSharp as CSharp
 import Data.Argonaut.Core (Json, foldJson)
+import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array as A
-import Data.Either (Either)
+import Data.Either (Either(..), either)
 import Data.Map as Map
 import Data.Set as S
 import Data.StrMap as StrMap
@@ -17,6 +18,7 @@ import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
 import Doc as Doc
 import Golang as Golang
+import JsonSchema (JSONSchema, jsonSchemaToIR)
 import JsonSchema as JsonSchema
 import Math (round)
 import Utils (mapM)
@@ -50,14 +52,36 @@ makeTypeAndUnify name json = runIR do
     replaceSimilarClasses
     makeMaps
 
-renderJson :: Doc.Renderer -> Json -> String
-renderJson renderer json =
+irFromError :: String -> IR IRType
+irFromError err = do
+    addClass $ IRClassData { names: S.singleton err, properties: Map.empty }
+
+makeTypeFromSchema :: String -> Json -> IRGraph
+makeTypeFromSchema name json =
+    case decodeJson json :: Either String JSONSchema of
+    Left err -> runIR do
+        topLevel <- irFromError err
+        setTopLevel topLevel
+    Right schema -> runIR do
+        topLevelOrError <- jsonSchemaToIR schema "TopLevel" schema
+        topLevel <- either irFromError pure topLevelOrError
+        setTopLevel topLevel
+
+renderFromJson :: Doc.Renderer -> Json -> String
+renderFromJson renderer json =
     json
     # makeTypeAndUnify "TopLevel"
     # regatherClassNames
     # Doc.runRenderer renderer
 
-renderJsonString :: Doc.Renderer -> String -> Either String String
-renderJsonString renderer json =
+renderFromJsonSchema :: Doc.Renderer -> Json -> String
+renderFromJsonSchema renderer json =
+    json
+    # makeTypeFromSchema "TopLevel"
+    # regatherClassNames
+    # Doc.runRenderer renderer
+
+renderFromJsonString :: Doc.Renderer -> String -> Either String String
+renderFromJsonString renderer json =
     jsonParser json
-    <#> renderJson renderer
+    <#> renderFromJson renderer

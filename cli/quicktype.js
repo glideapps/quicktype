@@ -34,6 +34,13 @@ const optionDefinitions = [
     description: 'The output file.'
   },
   {
+    name: 'srcLang',
+    type: String,
+    defaultValue: 'json',
+    typeLabel: '[underline]{json|json-schema}',
+    description: 'The source language.'
+  },
+  {
     name: 'lang',
     alias: 'l',
     type: String,
@@ -73,24 +80,29 @@ function getRenderer() {
 
   if (!renderer) {
     console.error(`'${lang}' is not yet supported as an output language.`);
-    shell.exit(1);
+    process.exit(1);
   }
 
   return renderer;
 }
 
-function renderJson(json) {
+function renderFromJson(json) {
     let renderer = getRenderer();
-    return Main.renderJson(renderer)(json);
+    if (options.srcLang === 'json')
+      return Main.renderFromJson(renderer)(json);
+    if (options.srcLang === 'json-schema')
+      return Main.renderFromJsonSchema(renderer)(json);
+    console.error(`Input language '${options.srcLang}' is not supported.`);
+    process.exit(1);
 }
 
 function work(json) {
-  let out = renderJson(json);
+  let out = renderFromJson(json);
   if (options.output) {
     fs.writeFile(options.output, out, (err) => {
         if (err) {
             console.error(err);
-            shell.exit(1);
+            process.exit(1);
         }
     }); 
   } else {
@@ -130,7 +142,7 @@ function parseFileOrUrl(fileOrUrl) {
 if (options.output && !options.lang) {
   if (options.output.indexOf(".") < 0) {
     console.error("Please specify a language (--lang) or an output file extension.");
-    shell.exit(1);
+    process.exit(1);
   }
   options.lang = options.output.split(".").pop();
 }
@@ -143,5 +155,5 @@ if (options.help) {
   parseFileOrUrl(options.src[0]);
 } else {
   usage();
-  shell.exit(1);
+  process.exit(1);
 }

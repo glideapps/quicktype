@@ -175,7 +175,7 @@ class App extends Component {
 
   sourceEdited = (newValue) => {
     let renderer = this.state.renderer;
-    let result = this.sendPerformance("Main", "renderJsonString", () => Main.renderJsonString(renderer)(newValue));
+    let result = this.sendPerformance("Main", "renderJsonString", () => Main.renderFromJsonString(renderer)(newValue));
 
     this.sendEvent("sourceEdited");
 
