@@ -27,6 +27,7 @@
     "fs-extra": "3.0.1",
     "html-webpack-plugin": "2.29.0",
     "jest": "20.0.4",
+    "material-components-web": "^0.16.0",
     "object-assign": "4.1.1",
     "postcss-flexbugs-fixes": "3.0.0",
     "postcss-loader": "2.0.6",
@@ -37,6 +38,7 @@
     "react-dom": "^15.6.1",
     "react-dropdown": "^1.2.5",
     "react-error-overlay": "^1.0.9",
+    "react-material-components-web": "^0.1.18",
     "style-loader": "0.18.2",
     "sw-precache-webpack-plugin": "0.11.3",
     "url-loader": "0.5.9",
@@ -49,7 +51,6 @@
   "scripts": {
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
-    "deploy": "scripts/deploy.sh",
     "test": "node scripts/test.js --env=jsdom"
   },
   "jest": {

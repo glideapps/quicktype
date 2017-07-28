@@ -1,83 +1,84 @@
-@import "dropdown.css";
+@import "../node_modules/material-components-web/dist/material-components-web.css";
+
+:root {
+  --mdc-theme-primary: #009688;
+  --mdc-theme--background: #00212B;
+  --mdx-theme--accent: #009688;
+  --editor-background: #002B36;
+}
 
 body {
   margin: 0;
   padding: 0;
-  font-family: sans-serif;
-  font-size: 12pt;
 }
 
-.topBar {
-  background-color: #8e44ad;
-  height: 40px;
-  padding: 10px 0 0 12px;
+#logo {
+  margin-right: -24px;
+}
 
+sidebar {
+  background: var(--mdc-theme--background);
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 440px;
+  z-index: 1;
+}
+
+sidebar > .content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+sidebar .mdc-switch {
+  margin-top: 30px;
+}
+
+sidebar .source-dest {
   display: flex;
   flex-direction: row;
-  justify-content: flex-end
+  margin-bottom: 20px;
 }
 
-.twitter-follow-button {
-  margin-right: 10px;
+#button-parent {
+  margin-top: 30px;
 }
 
-.what-is-this {
-  display: inline-block;
-  padding: 6px 12px;
-  height: 16px;
-  background: #2ecc71;
-  border-radius: 3px;
-  text-align: center;
-  text-decoration: none;
-  margin-right: 10px;
-  color: white;
-  font-size: 11pt;
+sidebar .mdc-select:first-child {
+  margin-right: 20px;
 }
 
-.Dropdown-root {
+sidebar .mdc-select:last-child {
+  min-width: 120px;
+}
+
+#json-editor {
   font-size: 10pt;
-  margin-right: 10px;
+  border-radius: 3px;
+
+  height: 480px !important;
+  width: inherit !important;
 }
 
-.Dropdown-root:first-child {
-  width: 320px;
+#output-editor {
+  z-index: 0;
+  width: calc(100vw - 440px) !important;
+  height: 100vh !important;
+  top: 0px;
+  left: 440px;
+  margin: 0;
+  font-size: 11pt !important;
+  font-family: Consolas, Menlo, monospace;
 }
 
-.Dropdown-root:last-child {
-  width: 200px;
+#output-editor .ace_gutter {
+  color: black;
+  opacity: 0.3;
+  background: white;
 }
 
-.controls {
-  display: flex;
-  flex-direction: row;
-  margin-right: auto;
-}
-
-#editors {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-}
-
-.ace_editor {
-  width: calc(50vw - 12px) !important;
-  height: calc(100vh - 91px) !important;
-}
-
-.right .editor-container {
-  background: rgb(0, 34, 64);
-}
-
-.editor-container {
-  padding: 16px 0 0 12px;
-}
-
-.titleBar {
-  background-color: #F7F7F7;
-  height: 26px;
-  padding: 14px 0 0 12px;
-  text-transform: uppercase;
-  font-size: 9pt;
-  color: gray;
-  border-bottom: 1px solid lightgray;
+#output-editor .ace_fold-widget {
+  display: none;
 }

@@ -1,61 +1,19 @@
 import React, { Component } from 'react';
-import AceEditor from 'react-ace';
-import Dropdown from 'react-dropdown';
-import debounce from 'debounce';
-import urlParse from 'url-parse';
+import Sidebar from './Sidebar';
+import Editor from './Editor';
+import Snackbar from './Snackbar';
 
-import 'brace/mode/json';
-import 'brace/mode/csharp';
-import 'brace/mode/golang';
-import 'brace/mode/swift';
-import 'brace/theme/github';
-import 'brace/theme/cobalt';
+import urlParse from 'url-parse';
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
 
-class Editor extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      value: props.value
-    };
-  }
+import 'brace/mode/csharp';
+import 'brace/mode/golang';
+import 'brace/mode/json';
+import 'brace/theme/chrome';
 
-  componentDidMount() {
-    this.getEditor().setOption("displayIndentGuides", false);
-  }
-
-  getEditor = () => window.ace.edit(this.getName())
-  getName = () => this.props.className + "-editor"
-
-  render() {
-    return (
-      <div className={this.props.className}>
-        <div className="titleBar">{this.props.language}</div>
-        <div className="editor-container">
-          <AceEditor
-            name={this.getName()}
-            mode={this.props.language}
-            theme={this.props.theme}
-            fontSize="10pt"
-            showGutter={false}
-            onChange={this.props.onChange}
-            highlightActiveLine={false}
-            showPrintMargin={false}
-            displayIndentGuides={false}
-            editorProps={{$blockScrolling: true}}
-            value={this.props.value}
-          />
-        </div>
-      </div>
-    );
-  }
-}
-
-class TopBar extends Component {
-  samples = Samples.samples;
-
+class App extends Component {
   constructor(props) {
     super(props);
 
@@ -64,99 +22,44 @@ class TopBar extends Component {
     let queryRenderer = queryExtension && Main.renderers.find((r) => r.extension === queryExtension);
 
     this.state = {
-      sample: localStorage["sample"] || this.samples[0],
-      renderer: queryRenderer || this.getRenderer()
+      source: localStorage["source"] || "",
+      output: "",
+      rendererName: (queryRenderer && queryRenderer.name) || this.getRenderer().name,
+      sampleName: localStorage["sample"] || Samples.samples[0]
     };
-  }
-
-  componentWillMount() {
-    this.changeSample(this.state.sample);
-    this.changeRenderer(this.state.renderer.name);
   }
 
   componentDidMount() {
-    // TODO why is widgets sometimes undefined?
-    window.twttr.widgets && window.twttr.widgets.load();
+    if (this.state.source === "") {
+      this.loadSample();
+    } else {
+      this.sourceEdited(this.state.source);
+    }
+    
+    let copyButton = window.document.querySelector('sidebar .mdc-button--primary');
+    copyButton.addEventListener('click', this.copyOutput);
   }
 
-  sendEvent = (name, value) => window.ga("send", "event", "TopBar", name, value);
+  copyOutput = () => {
+    let editor = window.ace.edit("output-editor");
+    let savedSelection = editor.selection.toJSON();
 
-  changeSample = (sample) => {
-    this.sendEvent("changeSample", sample);
+    editor.selectAll();
+    editor.focus();
+    let success = window.document.execCommand('copy');
+    editor.selection.fromJSON(savedSelection);
 
-    try {
-      localStorage["sample"] = sample;
-    } catch (e) {}
+    let message = success
+      ? `${this.state.rendererName} code copied`
+      : `Could not copy ${this.state.rendererName} code`;
 
-    this.setState({ sample }, () => this.refresh());
-  }
-
-  refresh = () => {
-    fetch(`/sample/json/${this.state.sample}`)
-      .then((data) => data.json())
-      .then((data) => {
-        let pretty = JSON.stringify(data, null, 2);
-        this.props.onChangeSample(pretty);
-      });
+    this.snackbar.show({ message });
   }
 
   getRenderer = (name) => {
-    let theName = name || localStorage["renderer"] || Main.renderers[0].name;
+    let currentRenderer = this.state && this.state.rendererName;
+    let theName = name || currentRenderer || localStorage["renderer"] || Main.renderers[0].name;
     return Main.renderers.find((r) => r.name === theName) || Main.renderers[0];
-  }
-
-  changeRenderer = (name) => {
-    this.sendEvent("changeRenderer", name);
-
-    let renderer = this.getRenderer(name);
-    this.setState({ renderer: renderer.name });
-    
-    try {
-      localStorage["renderer"] = renderer.name;
-    } catch (e) {}
-
-    this.props.onChangeRenderer(renderer);
-  }
-
-  render() {
-    return (
-      <div className="topBar">
-        <div className="controls">
-          <Dropdown
-            name="sample"
-            options={this.samples}
-            value={this.state.sample}
-            onChange={({value}) => this.changeSample(value)} />
-          <Dropdown
-            name="renderer"
-            options={Main.renderers.map((r) => r.name)}
-            value={this.getRenderer().name}
-            onChange={({value}) => this.changeRenderer(value)} />
-        </div>
-        <a className="what-is-this"
-          href="http://blog.quicktype.io/2017/previewing-quicktype"
-          target="_new">
-          What is this?
-        </a>
-        <a className="twitter-follow-button"
-          data-size="large"
-          data-show-count="false"
-          href="https://twitter.com/quicktypeio">
-          Follow @quicktypeio
-        </a>
-     </div>
-    );
-  }
-}
-
-class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      left: "",
-      right: "",
-      renderer: Main.renderers[0]
-    };
   }
 
   sendEvent = (name, value) => window.ga("send", "event", "App", name, value);
@@ -173,54 +76,77 @@ class App extends Component {
     return result;
   }
 
-  sourceEdited = (newValue) => {
-    let renderer = this.state.renderer;
-    let result = this.sendPerformance("Main", "renderJsonString", () => Main.renderJsonString(renderer)(newValue));
+  sourceEdited = (source) => {
+    let renderer = this.getRenderer();
+    let { constructor, value0: output } = this.sendPerformance("Main", "renderJsonString", () => {
+      return Main.renderJsonString(renderer)(source);
+    });
 
     this.sendEvent("sourceEdited");
 
-    if (result.constructor.name === "Left") {
-      console.log(result.value0);
-      this.setState({
-        left: newValue
+    if (constructor.name === "Left") {
+      this.snackbar.show({
+        message: `Error: ${output}`
       });
+      this.setState({ source });
     } else {
-      this.setState({
-        left: newValue,
-        right: result.value0
-      });
+      this.setState({ source, output });
     }
+
+    try {
+      localStorage["source"] = source;
+    } catch (e) {}
   }
 
-  changeRenderer = (renderer) => {
-    this.setState({ renderer }, () => {
-      this.sourceEdited(this.state.left);
+  changeRendererName = (rendererName) => {
+    try {
+      localStorage["renderer"] = rendererName;
+    } catch (e) {}
+
+    this.setState({ rendererName }, () => {
+      this.sourceEdited(this.state.source);
     });
+  }
+
+  changeSampleName = (sampleName) => {
+    try {
+      localStorage["sample"] = sampleName;
+    } catch (e) {}
+
+    this.setState({ sampleName }, () => {
+      this.loadSample();
+    });
+  }
+
+  loadSample = () => {
+    fetch(`/sample/json/${this.state.sampleName}`)
+      .then((data) => data.json())
+      .then((data) => {
+        let source = JSON.stringify(data, null, 2);
+        this.setState({ source });
+        this.sourceEdited(source);
+      });
   }
 
   render() {
     return (
-      <div>
-        <TopBar
-          onChangeSample={this.sourceEdited}
-          renderer={this.state.renderer}
-          onChangeRenderer={this.changeRenderer} />
-        <div id="editors">
-          <Editor
-            className="left"
-            language="json"
-            theme="github"
-            onChange={debounce(this.sourceEdited, 300)}
-            value={this.state.left}
+      <main className="mdc-typography">
+        <Sidebar
+          source={this.state.source}
+          onChangeSource={this.sourceEdited}
+          sampleName={this.state.sampleName}
+          onChangeSample={this.changeSampleName} 
+          rendererName={this.state.rendererName}
+          onChangeRenderer={this.changeRendererName} />
+        <Editor
+          className="output"
+          lang={this.getRenderer().aceMode}
+          theme="chrome"
+          value={this.state.output}
+          showGutter={true}
           />
-          <Editor
-            className="right"
-            language={this.state.renderer.aceMode}
-            theme="cobalt"
-            value={this.state.right}
-          />
-        </div>
-      </div>
+        <Snackbar ref={(r) => { this.snackbar = r; }} />
+      </main>
     );
   }
 }
