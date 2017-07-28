@@ -7,8 +7,9 @@ export default class Dropdown extends Component {
    constructor(props) {
     super(props);
     this.state = {
-      selected: props.entries[0]
+      selected: props.selected
     };
+
     this.id = `select-${this.props.name}`;
   }
 

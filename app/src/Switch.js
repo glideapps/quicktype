@@ -5,7 +5,7 @@ export default class Switch extends Component {
         super(props);
         this.state = {
         };
-        this.id = "switch-" + this.props.name;
+        this.id = `switch-${this.props.name}`;
     }
 
     render() {
@@ -18,7 +18,7 @@ export default class Switch extends Component {
                     </div>
                 </div>
                 <label htmlFor={this.id} className="mdc-switch-label mdc-theme--text-secondary-on-primary">
-                    Include to/from JSON helpers
+                    &nbsp;&nbsp;Include to/from JSON helpers
                 </label>
             </div>
         );

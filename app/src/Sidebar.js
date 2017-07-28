@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 
 import debounce from 'debounce';
-import urlParse from 'url-parse';
 
 import Editor from './Editor';
 import Entry from './Entry';
@@ -18,67 +17,7 @@ import 'brace/theme/solarized_dark';
 const about_url = "http://blog.quicktype.io/2017/previewing-quicktype";
 
 export default class Sidebar extends Component {
-  constructor(props) {
-    super(props);
-
-    let { query } = urlParse(window.location.href, true);
-    let queryExtension = query.lang || query.l;
-    let queryRenderer = queryExtension && Main.renderers.find((r) => r.extension === queryExtension);
-
-    this.state = {
-        sample: localStorage["sample"] || Samples.samples[0],
-        renderer: queryRenderer || this.getRenderer(),
-        source: props.source
-    };
-  }
-
   sendEvent = (name, value) => window.ga("send", "event", "Sidebar", name, value);
-
-  componentWillMount() {
-    this.changeSample(this.state.sample);
-    this.changeRenderer(this.state.renderer.name);
-  }
-
-  sourceEdited = (source) => {
-    this.setState({ source });
-    this.props.onChangeSample(source);
-  }
-
-  changeSample = (sample) => {
-    try {
-      localStorage["sample"] = sample;
-    } catch (e) {}
-
-    this.setState({ sample }, () => this.refresh());
-  }
-
-  refresh = () => {
-    fetch(`/sample/json/${this.state.sample}`)
-      .then((data) => data.json())
-      .then((data) => {
-        let pretty = JSON.stringify(data, null, 2);
-        this.setState({ source: pretty });
-        this.props.onChangeSample(pretty);
-      });
-  }
-
-  getRenderer = (name) => {
-    let theName = name || localStorage["renderer"] || Main.renderers[0].name;
-    return Main.renderers.find((r) => r.name === theName) || Main.renderers[0];
-  }
-
-  changeRenderer = (name) => {
-    this.sendEvent("changeRenderer", name);
-
-    let renderer = this.getRenderer(name);
-    this.setState({ renderer: renderer.name });
-    
-    try {
-      localStorage["renderer"] = renderer.name;
-    } catch (e) {}
-
-    this.props.onChangeRenderer(renderer);
-  }
 
   render() {
     return (
@@ -98,13 +37,15 @@ export default class Sidebar extends Component {
                 <div className="source-dest">
                     <Dropdown
                         name="source"
+                        selected={this.props.sampleName}
                         entries={Samples.samples}
-                        onChange={this.changeSample}
+                        onChange={this.props.onChangeSample}
                         />
                     <Dropdown
                         name="lang"
+                        selected={this.props.rendererName}
                         entries={Main.renderers.map((r) => r.name)}
-                        onChange={this.changeRenderer}
+                        onChange={this.props.onChangeRenderer}
                         />
                 </div>
 
@@ -112,8 +53,8 @@ export default class Sidebar extends Component {
                     className="json"
                     lang="json"
                     theme="solarized_dark"
-                    onChange={debounce(this.sourceEdited, 300)}
-                    value={this.state.source}
+                    onChange={debounce(this.props.onChangeSource, 300)}
+                    value={this.props.source}
                     showGutter={false}
                     />
 
@@ -124,7 +65,7 @@ export default class Sidebar extends Component {
 
                 <div id="button-parent">
                     <Button raised primary>
-                        Copy C#
+                        Copy {this.props.rendererName}
                     </Button>
                 </div>
             </div>
