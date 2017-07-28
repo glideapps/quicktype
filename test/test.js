@@ -114,9 +114,9 @@ function exec(s, opts, cb) {
     return result;
 }
 
-function execAndCompare(cmd, sample, p, knownFails) {
+function execAndCompare(cmd, p, knownFails) {
     let outputString = exec(cmd, {silent:true}).stdout;
-    if (knownFails.indexOf(sample) < 0) {
+    if (knownFails.indexOf(path.basename(p)) < 0) {
         let outputJSON = JSON.parse(outputString);
         let inputJSON = JSON.parse(fs.readFileSync(p));
         if (!deepEquals(inputJSON, outputJSON)) {
@@ -141,12 +141,8 @@ function runTests(description, samples, dir, prepareCmd, filename, testFn) {
     
     samples.forEach((sample) => {
         console.error(`* Building ${description} for ${sample}`);
-        
-        var p = sample;
-        if (!path.isAbsolute(p))
-            p = path.join("..", "..", "app", "public", "sample", "json", p);
-        exec(`node ../../cli/quicktype.js -o "${filename}" "${p}"`);
-        testFn(sample, p);
+        exec(`node ../../cli/quicktype.js -o "${filename}" "${sample}"`);
+        testFn(sample);
     });
     
     shell.cd("../..");
@@ -154,23 +150,23 @@ function runTests(description, samples, dir, prepareCmd, filename, testFn) {
 
 function testCSharp(samples, knownFails) {
     runTests("C# code", samples, "test/csharp", "dotnet restore", "QuickType.cs",
-        function (sample, p) {
-            execAndCompare(`dotnet run "${p}"`, sample, p, knownFails);
+        function (p) {
+            execAndCompare(`dotnet run "${p}"`, p, knownFails);
         }
     );
 }
 
 function testGolang(samples, knownFails) {
     runTests("Go code", samples, "test/golang", null, "quicktype.go",
-        function (sample, p) {
-            execAndCompare(`go run main.go quicktype.go < "${p}"`, sample, p, knownFails);
+        function (p) {
+            execAndCompare(`go run main.go quicktype.go < "${p}"`, p, knownFails);
         }
     );
 }
 
 function testJsonSchema(samples, knownFails) {
     runTests("JSON Schema", samples, "test/golang", null, "schema.json",
-        function (sample, p) {
+        function (p) {
             let input = JSON.parse(fs.readFileSync(p));
             let schema = JSON.parse(fs.readFileSync("schema.json"));
             let ajv = new Ajv();
@@ -189,19 +185,25 @@ function testAll(samples, goFails, csFails, jsonSchemaFails) {
     testCSharp(samples, csFails);
 }
 
+function testAllInDir(dir, goFails, csFails, jsonSchemaFails) {
+    let samples =
+        fs.readdirSync(dir)
+            .filter((name) => name.endsWith(".json") && !name.startsWith("."))
+            .map((name) => absolutize(path.join(dir, name)));
+    testAll(samples, goFails, csFails, jsonSchemaFails);
+}
+
 function main(sources) {
     if (sources.length == 0) {
-        testAll(Samples.samples, ["identifiers.json"], [], []);
+        let samples = Samples.samples.map((name) => path.join("..", "..", "app", "public", "sample", "json", name));
+        testAll(samples, [], [], []);
+        testAllInDir(path.join("test", "inputs", "json"), ["identifiers.json"], [], []);
     } else {
         sources.forEach((source) => {
             if (fs.lstatSync(source).isDirectory()) {
-                let samples =
-                    fs.readdirSync(source)
-                        .filter((name) => name.endsWith(".json") && !name.startsWith("."))
-                        .map((name) => absolutize(path.join(source, name)));
-                testAll(samples, [], []);
+                testAllInDir(source, [], [], []);
             } else {
-                testAll([absolutize(arg)], [], []);
+                testAll([absolutize(arg)], [], [], []);
             }
         });
     }
