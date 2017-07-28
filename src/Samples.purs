@@ -8,10 +8,5 @@ samples = [
     "github-events.json",
     "us-average-temperatures.json",
     "package.json",
-    "list.json",
-    "sabre1.json",
-    "sabre2.json",
-    "identifiers.json",
-    "unions.json",
-    "no-classes.json"
+    "sabre1.json"
   ]
