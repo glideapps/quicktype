@@ -22,14 +22,14 @@ class App extends Component {
   constructor(props) {
     super(props);
 
-    let { query } = urlParse(window.location.href, true);
-    let queryExtension = query.lang || query.l;
-    let queryRenderer = queryExtension && Main.renderers.find((r) => r.extension === queryExtension);
+    let preferredExtension = this.tryGetPreferredRendererExtension();
+    let preferredRenderer = preferredExtension && Main.renderers.find((r) => r.extension === preferredExtension);
+    let preferredRendererName = preferredRenderer && preferredRenderer.name;
 
     this.state = {
       source: localStorage["source"] || "",
       output: "",
-      rendererName: (queryRenderer && queryRenderer.name) || this.getRenderer().name,
+      rendererName: preferredRendererName || this.getRenderer().name,
       sampleName: localStorage["sample"] || Samples.samples[0]
     };
   }
@@ -39,6 +39,24 @@ class App extends Component {
     if (subtitle) {
       window.document.title = `quicktype – ${subtitle}`;
     }
+  }
+
+  tryGetPreferredRendererExtension = () => {
+    // This comes in either as ?l=ext or ?lang=ext
+    let { query } = urlParse(window.location.href, true);
+    let queryExtension = query.lang || query.l;
+
+    if (queryExtension) return queryExtension;
+
+    // Or on the hostname like java.quicktype.io
+    let hostLang = window.location.host.split('.')[0];
+    let hostLangRenderer = Main.renderers.find((r) => {
+      // Match extension or the aceMode (e.g. 'cs' or 'csharp')
+      return r.extension === hostLang || r.aceMode === hostLang;
+    });
+    let hostExtension = hostLangRenderer && hostLangRenderer.extension;
+
+    return hostExtension;
   }
 
   componentWillMount() {
