@@ -52,7 +52,7 @@ class App extends Component {
     let message = success
       ? `${this.state.rendererName} code copied`
       : `Could not copy ${this.state.rendererName} code`;
-      
+
     this.snackbar.show({ message });
   }
 
@@ -85,7 +85,9 @@ class App extends Component {
     this.sendEvent("sourceEdited");
 
     if (constructor.name === "Left") {
-      console.log(output);
+      this.snackbar.show({
+        message: `Error: ${output}`
+      });
       this.setState({ source });
     } else {
       this.setState({ source, output });

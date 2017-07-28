@@ -53,7 +53,7 @@ export default class Sidebar extends Component {
                     className="json"
                     lang="json"
                     theme="solarized_dark"
-                    onChange={debounce(this.props.onChangeSource, 300)}
+                    onChange={debounce(this.props.onChangeSource, 500)}
                     value={this.props.source}
                     showGutter={false}
                     />
