@@ -29,7 +29,8 @@ class App extends Component {
   }
 
   getRenderer = (name) => {
-    let theName = name || this.state.rendererName || localStorage["renderer"] || Main.renderers[0].name;
+    let currentRenderer = this.state && this.state.rendererName;
+    let theName = name || currentRenderer || localStorage["renderer"] || Main.renderers[0].name;
     return Main.renderers.find((r) => r.name === theName) || Main.renderers[0];
   }
 
