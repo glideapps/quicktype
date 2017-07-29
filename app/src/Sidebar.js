@@ -47,6 +47,12 @@ export default class Sidebar extends Component {
                         />
                 </div>
 
+                <Entry
+                    name="toplevel"
+                    label="Top-level type"
+                    value={this.props.topLevelName}
+                    onChange={this.props.onChangeTopLevelName} />
+
                 <Editor
                     className="json"
                     lang="json"
@@ -55,12 +61,6 @@ export default class Sidebar extends Component {
                     value={this.props.source}
                     showGutter={false}
                     />
-
-                <Entry
-                    name="toplevel"
-                    label="Top-level type"
-                    value={this.props.topLevelName}
-                    onChange={this.props.onChangeTopLevelName} />
 
                 {/*
                 <Entry name="namespace" label="Namespace" value="QuickType" />

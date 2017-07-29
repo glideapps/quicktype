@@ -39,7 +39,6 @@ sidebar .mdc-switch {
 sidebar .source-dest {
   display: flex;
   flex-direction: row;
-  margin-bottom: 20px;
 }
 
 #button-parent {
@@ -56,6 +55,7 @@ sidebar .mdc-select:last-child {
 
 #json-editor {
   font-size: 10pt;
+  margin-top: 10px;
   border-radius: 3px;
 
   height: 480px !important;
