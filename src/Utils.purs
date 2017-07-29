@@ -9,9 +9,9 @@ module Utils
 
 import Prelude
 
-import Data.Foldable (find, foldl)
 import Data.Either (Either(..))
-import Data.List (List, (:))
+import Data.Foldable (find, foldl)
+import Data.List (List(..), (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
@@ -23,18 +23,17 @@ import Data.StrMap as SM
 import Data.Traversable (class Foldable, traverse)
 import Data.Tuple (Tuple(..))
 
-foldError :: forall a b e f. Foldable f => (b -> a -> b) -> b -> f (Either e a) -> Either e b
-foldError foldF zero items =
-    foldl folder (Right zero) items
+foldError :: forall a f e. Foldable f => f (Either e a) -> Either e (List a)
+foldError items =
+    foldl folder (Right L.Nil) items
     where
-        folder :: Either e b -> Either e a -> Either e b
         folder b a =
             case b of
             Left err -> Left err
             Right xb ->
                 case a of
                 Left err -> Left err
-                Right xa -> Right $ foldF xb xa
+                Right xa -> Right $ xa : xb
 
 mapM :: forall m a b. Applicative m => (a -> m b) -> List a -> m (List b)
 mapM = traverse
