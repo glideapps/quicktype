@@ -19,11 +19,6 @@ const about_url = "http://blog.quicktype.io/2017/previewing-quicktype";
 export default class Sidebar extends Component {
   sendEvent = (name, value) => window.ga("send", "event", "Sidebar", name, value);
 
-  onChangeTopLevelName = (topLevelName) => {
-    this.setState({ topLevelName });
-    this.props.onChangeTopLevelName(topLevelName);
-  }
-
   render() {
     return (
         <sidebar className="mdc-theme--dark mdc-elevation--z4">
@@ -65,7 +60,7 @@ export default class Sidebar extends Component {
                     name="toplevel"
                     label="Top-level type"
                     value={this.props.topLevelName}
-                    onChange={this.onChangeTopLevelName} />
+                    onChange={this.props.onChangeTopLevelName} />
 
                 {/*
                 <Entry name="namespace" label="Namespace" value="QuickType" />

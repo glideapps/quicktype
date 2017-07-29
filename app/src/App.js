@@ -29,12 +29,14 @@ class App extends Component {
     let preferredRendererName = preferredRenderer && preferredRenderer.name;
 
     let sampleName = localStorage["sample"] || Samples.samples[0];
+    let topLevelName = this.topLevelNameFromSample(sampleName);
+    
     this.state = {
       source: localStorage["source"] || "",
       output: "",
       rendererName: preferredRendererName || this.getRenderer().name,
       sampleName,
-      topLevelName: this.topLevelNameFromSample(sampleName)
+      topLevelName
     };
   }
 
@@ -165,10 +167,6 @@ class App extends Component {
   }
 
   changeTopLevelName = (topLevelName) => {
-    try {
-      localStorage["topLevelName"] = topLevelName;
-    } catch (e) {}
-
     this.setState({ topLevelName }, () => {
       this.sourceEdited(this.state.source);
     });
