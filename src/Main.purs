@@ -5,9 +5,6 @@ import IRGraph
 import Prelude
 import Transformations
 
-import Environment (Environment(..))
-import Environment as Env
-
 import CSharp as CSharp
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (foldJson) as J
@@ -23,6 +20,8 @@ import Data.StrMap as StrMap
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
 import Doc as Doc
+import Environment (Environment(..))
+import Environment as Env
 import Golang as Golang
 import JsonSchema (JSONSchema, jsonSchemaToIR)
 import JsonSchema as JsonSchema
@@ -31,7 +30,7 @@ import Utils (mapM)
 
 type Error = String
 
-type Pipeline = Doc.Renderer -> String -> Either Error String
+type Pipeline = Doc.Renderer -> Json -> Either Error String
 
 renderers :: Array Doc.Renderer
 renderers = [CSharp.renderer, Golang.renderer, JsonSchema.renderer]
@@ -78,18 +77,17 @@ makeTypeFromSchema name schema = eitherify $ runIR do
         eitherify (Tuple (Just err) _) = Left err
         eitherify (Tuple Nothing g) = Right g
 
-jsonPipeline :: Pipeline
-jsonPipeline renderer json =
+renderFromJson :: Pipeline
+renderFromJson renderer json =
     json
-    # J.jsonParser
-    <#> makeTypeAndUnify "TopLevel"
-    <#> regatherClassNames
-    <#> Doc.runRenderer renderer
+    # makeTypeAndUnify "TopLevel"
+    # regatherClassNames
+    # Doc.runRenderer renderer
+    # Right
 
-jsonSchemaPipeline :: Pipeline
-jsonSchemaPipeline renderer json = do
-    obj <- J.jsonParser json
-    schema <- J.decodeJson obj
+renderFromJsonSchema :: Pipeline
+renderFromJsonSchema renderer json = do
+    schema <- J.decodeJson json
     graph <- makeTypeFromSchema "TopLevel" schema
     graph
         # regatherClassNames
@@ -97,8 +95,8 @@ jsonSchemaPipeline renderer json = do
         # pure
 
 pipelines :: Environment -> Array Pipeline
-pipelines Development = [jsonSchemaPipeline, jsonPipeline]
-pipelines Production = [jsonPipeline]
+pipelines Development = [renderFromJsonSchema, renderFromJson]
+pipelines Production = [renderFromJson]
 
 firstSuccess :: Array Pipeline -> Pipeline
 firstSuccess pipes renderer json = foldl takeFirstRight (Left "no pipelines provided") pipes
@@ -106,5 +104,7 @@ firstSuccess pipes renderer json = foldl takeFirstRight (Left "no pipelines prov
         takeFirstRight (Right output) _ = Right output
         takeFirstRight _ pipeline = pipeline renderer json
 
-renderForUI :: Pipeline
-renderForUI = firstSuccess (pipelines Env.current)
+renderForUI :: Doc.Renderer -> String -> Either Error String
+renderForUI renderer json = do
+    obj <- J.jsonParser json
+    firstSuccess (pipelines Env.current) renderer obj
