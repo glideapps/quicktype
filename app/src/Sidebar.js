@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import debounce from 'debounce';
 
 import Editor from './Editor';
-//import Entry from './Entry';
+import Entry from './Entry';
 //import Switch from './Switch';
 import Button from "@react-mdc/button";
 import Dropdown from './Dropdown';
@@ -47,6 +47,12 @@ export default class Sidebar extends Component {
                         />
                 </div>
 
+                <Entry
+                    name="toplevel"
+                    label="Top-level type"
+                    value={this.props.topLevelName}
+                    onChange={this.props.onChangeTopLevelName} />
+
                 <Editor
                     className="json"
                     lang="json"
@@ -57,9 +63,7 @@ export default class Sidebar extends Component {
                     />
 
                 {/*
-                <Entry name="toplevel" label="Top-level type" value="TopLevel" />
                 <Entry name="namespace" label="Namespace" value="QuickType" />
-
                 <Switch name="showHelpers" />
                 */}
                 

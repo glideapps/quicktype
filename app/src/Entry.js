@@ -10,7 +10,17 @@ export default class Entry extends Component {
   }
 
   handleChange = (event) => {
-    this.setState({value: event.target.value});
+    let value = event.target.value;
+    this.setState({ value });
+    this.props.onChange && this.props.onChange(value);
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    let { value: lastValue } = prevProps;
+    let { value } = this.props;
+    if (lastValue !== value) {
+      this.setState({ value });
+    }
   }
 
   render() {
