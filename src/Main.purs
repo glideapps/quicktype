@@ -31,7 +31,7 @@ import Utils (mapM)
 
 type Error = String
 
-type Pipeline = Doc.Renderer -> String -> Either Error String
+type Pipeline a = Doc.Renderer -> a -> Either Error String
 
 renderers :: Array Doc.Renderer
 renderers = [CSharp.renderer, Golang.renderer, JsonSchema.renderer]
@@ -78,33 +78,37 @@ makeTypeFromSchema name schema = eitherify $ runIR do
         eitherify (Tuple (Just err) _) = Left err
         eitherify (Tuple Nothing g) = Right g
 
-jsonPipeline :: Pipeline
-jsonPipeline renderer json =
+renderFromJson :: Pipeline Json
+renderFromJson renderer json =
     json
-    # J.jsonParser
-    <#> makeTypeAndUnify "TopLevel"
-    <#> regatherClassNames
-    <#> Doc.runRenderer renderer
+    # makeTypeAndUnify "TopLevel"
+    # regatherClassNames
+    # Doc.runRenderer renderer
+    # Right
 
-jsonSchemaPipeline :: Pipeline
-jsonSchemaPipeline renderer json = do
-    obj <- J.jsonParser json
-    schema <- J.decodeJson obj
+renderFromJsonSchema :: Pipeline Json
+renderFromJsonSchema renderer json = do
+    schema <- J.decodeJson json
     graph <- makeTypeFromSchema "TopLevel" schema
     graph
         # regatherClassNames
         # Doc.runRenderer renderer
         # pure
 
-pipelines :: Environment -> Array Pipeline
-pipelines Development = [jsonSchemaPipeline, jsonPipeline]
-pipelines Production = [jsonPipeline]
+pipelines :: Environment -> Array (Pipeline Json)
+pipelines Development = [renderFromJsonSchema, renderFromJson]
+pipelines Production = [renderFromJson]
 
-firstSuccess :: Array Pipeline -> Pipeline
+firstSuccess :: forall a. Array (Pipeline a) -> Pipeline a
 firstSuccess pipes renderer json = foldl takeFirstRight (Left "no pipelines provided") pipes
     where
         takeFirstRight (Right output) _ = Right output
         takeFirstRight _ pipeline = pipeline renderer json
 
-renderForUI :: Pipeline
-renderForUI = firstSuccess (pipelines Env.current)
+relax :: Pipeline Json -> Pipeline String
+relax pipeline renderer jsonString = do
+    obj <- J.jsonParser jsonString
+    pipeline renderer obj
+
+renderFromJsonString :: Pipeline String
+renderFromJsonString = relax $ firstSuccess (pipelines Env.current)
