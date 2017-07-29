@@ -99,7 +99,7 @@ pipelines Development = [jsonSchemaPipeline, jsonPipeline]
 pipelines Production = [jsonPipeline]
 
 firstSuccess :: Array Pipeline -> Pipeline
-firstSuccess pipes renderer json = foldl takeFirstRight (Left "") pipes
+firstSuccess pipes renderer json = foldl takeFirstRight (Left "no pipelines provided") pipes
     where
         takeFirstRight (Right output) _ = Right output
         takeFirstRight _ pipeline = pipeline renderer json
