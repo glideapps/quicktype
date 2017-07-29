@@ -138,7 +138,7 @@ jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, pr
     | Just jss <- oneOf =
         toIRAndUnify (jsonSchemaToIR root name) jss
     | otherwise =
-        pure $ Left "Unsupported schema"
+        pure $ Right IRNothing
 
 jsonTypeToIR :: JSONSchema -> String -> JSONType -> JSONSchema -> IR (Either String IRType)
 jsonTypeToIR root name jsonType (JSONSchema schema) =
