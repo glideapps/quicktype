@@ -6,11 +6,12 @@ import Prelude
 import Transformations
 
 import CSharp as CSharp
-import Data.Argonaut.Core (Json, foldJson)
-import Data.Argonaut.Decode (decodeJson)
-import Data.Argonaut.Parser (jsonParser)
+import Data.Argonaut.Core (Json)
+import Data.Argonaut.Core (foldJson) as J
+import Data.Argonaut.Decode (decodeJson) as J
+import Data.Argonaut.Parser (jsonParser) as J
 import Data.Array as A
-import Data.Either (Either(..), either)
+import Data.Either (Either(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Set as S
@@ -24,12 +25,14 @@ import JsonSchema as JsonSchema
 import Math (round)
 import Utils (mapM)
 
+type Error = String
+
 renderers :: Array Doc.Renderer
 renderers = [CSharp.renderer, Golang.renderer, JsonSchema.renderer]
 
 makeTypeFromJson :: String -> Json -> IR IRType
 makeTypeFromJson name json =
-    foldJson
+    J.foldJson
     (\_ -> pure IRNull)
     (\_ -> pure IRBool)
     (\n -> pure if round n == n then IRInteger else IRDouble)
@@ -57,7 +60,7 @@ irFromError :: String -> IR IRType
 irFromError err = do
     addClass $ IRClassData { names: S.singleton err, properties: Map.empty }
 
-makeTypeFromSchema :: String -> JSONSchema -> Either String IRGraph
+makeTypeFromSchema :: String -> JSONSchema -> Either Error IRGraph
 makeTypeFromSchema name schema = eitherify $ runIR do
     topLevelOrError <- jsonSchemaToIR schema "TopLevel" schema
     case topLevelOrError of
@@ -76,17 +79,20 @@ renderFromJson renderer json =
     # regatherClassNames
     # Doc.runRenderer renderer
 
-tryRenderFromJsonSchema :: Doc.Renderer -> Json -> Either String String
+tryRenderFromJsonSchema :: Doc.Renderer -> Json -> Either Error String
 tryRenderFromJsonSchema renderer json =
     json
-    # decodeJson
+    # J.decodeJson
     >>= makeTypeFromSchema "TopLevel"
     <#> regatherClassNames
     <#> Doc.runRenderer renderer
 
-renderForUI :: Doc.Renderer -> String -> Either String String
-renderForUI renderer json =
-    jsonParser json
-    >>= (\j ->
-        tryRenderFromJsonSchema renderer j
-        # either (\_ -> Right $ renderFromJson renderer j) Right)
+-- Try to render from Json as Schema, falling back on simply rendering from Json
+renderFromSchemaOrJson :: Doc.Renderer -> Json -> String
+renderFromSchemaOrJson renderer json = 
+    case tryRenderFromJsonSchema renderer json of
+        Left err -> renderFromJson renderer json
+        Right src -> src
+
+renderForUI :: Doc.Renderer -> String -> Either Error String
+renderForUI renderer json = renderFromSchemaOrJson renderer <$> J.jsonParser json
