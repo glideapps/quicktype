@@ -3,21 +3,184 @@ module JsonSchema where
 import Doc
 import IRGraph
 import Prelude
-import Utils
 
-import Data.Argonaut.Core (Json, fromArray, fromBoolean, fromObject, fromString, stringifyWithSpace)
+import Data.Argonaut.Core (Json, foldJson, fromArray, fromBoolean, fromObject, fromString, isBoolean, stringifyWithSpace)
+import Data.Argonaut.Decode ((.??), decodeJson, class DecodeJson)
 import Data.Array as A
 import Data.Char as Char
-import Data.Foldable (intercalate)
-import Data.List (List)
+import Data.Either (Either(..), either)
+import Data.Foldable (class Foldable, foldM, intercalate)
+import Data.List (List, (:))
 import Data.List as L
+import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
+import Data.Set (Set)
+import Data.Set as S
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
 import Data.String as String
-import Data.String.Util (camelCase, capitalize)
+import Data.String.Util (camelCase, capitalize, singular)
 import Data.Tuple (Tuple(..))
+import IR (IR, addClass, unifyTypes)
+import Utils (foldError, mapM, mapMapM, mapStrMapM)
+
+data JSONType
+    = JSONObject
+    | JSONArray
+    | JSONBoolean
+    | JSONString
+    | JSONNull
+    | JSONInteger
+    | JSONNumber
+
+derive instance eqJSONType :: Eq JSONType
+derive instance ordJSONType :: Ord JSONType
+
+jsonTypeEnumMap :: StrMap JSONType
+jsonTypeEnumMap = SM.fromFoldable [
+    Tuple "object" JSONObject, Tuple "array" JSONArray, Tuple "boolean" JSONBoolean,
+    Tuple "string" JSONString, Tuple "null" JSONNull, Tuple "integer" JSONInteger,
+    Tuple "number" JSONNumber
+    ]
+
+newtype JSONSchemaRef = JSONSchemaRef (List String)
+
+newtype JSONSchema = JSONSchema
+    { definitions :: Maybe (StrMap JSONSchema)
+    , ref :: Maybe JSONSchemaRef
+    , types :: Maybe (Either JSONType (Set JSONType))
+    , oneOf :: Maybe (Array JSONSchema)
+    , properties :: Maybe (StrMap JSONSchema)
+    , additionalProperties :: Either Boolean JSONSchema
+    , items :: Maybe JSONSchema
+    , required :: Maybe (Array String)
+    }
+
+decodeEnum :: forall a. StrMap a -> Json -> Either String a
+decodeEnum sm j = do
+    key <- decodeJson j
+    maybe (Left "Unexpected enum key") Right $ SM.lookup key sm
+
+instance decodeJsonType :: DecodeJson JSONType where
+    decodeJson = decodeEnum jsonTypeEnumMap
+
+instance decodeJsonSchemaRef :: DecodeJson JSONSchemaRef where
+    decodeJson j = do
+        ref <- decodeJson j
+        pure $ JSONSchemaRef $ L.fromFoldable $ String.split (String.Pattern "/") ref
+
+decodeTypes :: Maybe Json -> Either String (Maybe (Either JSONType (Set JSONType)))
+decodeTypes Nothing = Right Nothing
+decodeTypes (Just j) =
+    foldJson
+        (\_ -> Left "`types` cannot be null")
+        (\_ -> Left "`types` cannot be a boolean")
+        (\_ -> Left "`types` cannot be a number")
+        (\s -> either Left (\t -> Right $ Just $ Left t) $ decodeEnum jsonTypeEnumMap j)
+        (\a -> either Left (\l -> Right $ Just $ Right $ S.fromFoldable l) $ foldError $ map (decodeEnum jsonTypeEnumMap) a)
+        (\_ -> Left "`Types` cannot be an object")
+        j
+
+decodeAdditionalProperties :: Maybe Json -> Either String (Either Boolean JSONSchema)
+decodeAdditionalProperties Nothing = Right $ Left true
+decodeAdditionalProperties (Just j)
+    | isBoolean j = do
+        b <- decodeJson j
+        pure $ Left b
+    | otherwise = do
+        js <- decodeJson j
+        pure $ Right js
+
+instance decodeJsonSchema :: DecodeJson JSONSchema where
+    decodeJson j = do
+        obj <- decodeJson j
+        definitions <- obj .?? "definitions"
+        ref <- obj .?? "$ref"
+        types <- decodeTypes $ SM.lookup "type" obj
+        oneOf <- obj .?? "oneOf"
+        properties <- obj .?? "properties"
+        additionalProperties <- decodeAdditionalProperties $ SM.lookup "additionalProperties" obj
+        items <- obj .?? "items"
+        required <- obj .?? "required"
+        pure $ JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required }
+
+lookupRef :: JSONSchema -> List String -> JSONSchema -> Either String JSONSchema
+lookupRef root ref local@(JSONSchema { definitions }) =
+    case ref of
+    L.Nil -> Right local
+    "#" : rest -> lookupRef root rest root
+    "definitions" : name : rest ->
+        case definitions of
+        Just sm ->
+            case SM.lookup name sm of
+            Just js -> lookupRef root rest js
+            Nothing -> Left "Reference not found"
+        Nothing -> Left "Definitions not found"
+    _ -> Left "Reference not supported"
+
+toIRAndUnify :: forall a f. Foldable f => (a -> IR (Either String IRType)) -> f a -> IR (Either String IRType)
+toIRAndUnify toIR l = do
+    irsAndErrors <- mapM toIR $ L.fromFoldable l
+    let irsOrError = foldError irsAndErrors
+    either (\e -> pure $ Left e) (\irs -> Right <$> foldM unifyTypes IRNothing irs) irsOrError
+
+jsonSchemaToIR :: JSONSchema -> String -> JSONSchema -> IR (Either String IRType)
+jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
+    | Just (JSONSchemaRef r) <- ref =
+        case lookupRef root r schema of
+        Left err -> pure $ Left err
+        Right js -> jsonSchemaToIR root name js
+    | Just (Left jt) <- types =
+        jsonTypeToIR root name jt schema
+    | Just (Right jts) <- types =
+        toIRAndUnify (\jt -> jsonTypeToIR root name jt schema) jts
+    | Just jss <- oneOf =
+        toIRAndUnify (jsonSchemaToIR root name) jss
+    | otherwise =
+        pure $ Left "Unsupported schema"
+
+jsonTypeToIR :: JSONSchema -> String -> JSONType -> JSONSchema -> IR (Either String IRType)
+jsonTypeToIR root name jsonType (JSONSchema schema) =
+    case jsonType of
+    JSONObject ->
+        case schema.properties of
+        Just sm -> do
+            propsAndErrorsWrong :: List _ <- SM.toUnfoldable <$> mapStrMapM (jsonSchemaToIR root) sm
+            let propsOrError = M.fromFoldable <$> (foldError $ map raiseTuple propsAndErrorsWrong)
+            let required = maybe S.empty S.fromFoldable schema.required
+            nulledPropsOrError <- either (\x -> pure $ Left x) (\x -> Right <$> mapMapM (\n -> if S.member n required then pure else unifyTypes IRNull) x) propsOrError
+            classFromPropsOrError nulledPropsOrError
+        Nothing ->
+            case schema.additionalProperties of
+            Left true ->
+                pure $ Right $ IRMap IRNothing
+            Left false ->
+                pure $ Right $ IRNothing
+            Right js -> do
+                irOrError <- jsonSchemaToIR root (singular name) js
+                pure $ either Left (\ir -> Right $ IRMap ir) irOrError
+    JSONArray ->
+        case schema.items of
+        Just js -> do
+            itemIROrError <- (jsonSchemaToIR root $ singular name) js
+            pure $ either Left (\ir -> Right $ IRArray ir) itemIROrError
+        Nothing -> pure $ Right $ IRArray IRNothing
+    JSONBoolean -> pure $ Right IRBool
+    JSONString -> pure $ Right IRString
+    JSONNull -> pure $ Right IRNull
+    JSONInteger -> pure $ Right IRInteger
+    JSONNumber -> pure $ Right IRDouble
+    where
+        classFromPropsOrError :: Either String (Map String IRType) -> IR (Either String IRType)
+        classFromPropsOrError =
+            case _ of
+            Left err -> pure $ Left err
+            Right props -> do
+                Right <$> (addClass $ IRClassData { names: S.singleton name, properties: props })
+        raiseTuple :: Tuple String (Either String IRType) -> Either String (Tuple String IRType)
+        raiseTuple (Tuple k irOrError) =
+            either Left (\ir -> Right $ Tuple k ir) irOrError
 
 forbiddenNames :: Array String
 forbiddenNames = []

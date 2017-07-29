@@ -34,6 +34,13 @@ const optionDefinitions = [
     description: 'The output file.'
   },
   {
+    name: 'srcLang',
+    type: String,
+    defaultValue: 'json',
+    typeLabel: '[underline]{json|json-schema}',
+    description: 'The source language.'
+  },
+  {
     name: 'lang',
     alias: 'l',
     type: String,
@@ -73,28 +80,43 @@ function getRenderer() {
 
   if (!renderer) {
     console.error(`'${lang}' is not yet supported as an output language.`);
-    shell.exit(1);
+    process.exit(1);
   }
 
   return renderer;
 }
 
-function renderJson(json) {
+function fromRight(either) {
+  let { constructor: { name }, value0: result } = either;
+  if (name == "Left") {
+    console.error(result);
+    console.exit(1);
+  } else {
+    return result;
+  }
+}
+
+function renderFromJson(json) {
+    let pipeline = {
+      "json": Main.renderFromJson,
+      "json-schema": Main.renderFromJsonSchema
+    }[options.srcLang];
+ 
+    if (!pipeline) {
+      console.error(`Input language '${options.srcLang}' is not supported.`);
+      process.exit(1);
+    }
+
     let renderer = getRenderer();
-    return Main.renderJson(renderer)(json);
+    return fromRight(pipeline(renderer)(json));    
 }
 
 function work(json) {
-  let out = renderJson(json);
+  let output = renderFromJson(json);
   if (options.output) {
-    fs.writeFile(options.output, out, (err) => {
-        if (err) {
-            console.error(err);
-            shell.exit(1);
-        }
-    }); 
+    fs.writeFileSync(options.output, output); 
   } else {
-    console.log(out);
+    console.log(output);
   }
 }
 
@@ -130,7 +152,7 @@ function parseFileOrUrl(fileOrUrl) {
 if (options.output && !options.lang) {
   if (options.output.indexOf(".") < 0) {
     console.error("Please specify a language (--lang) or an output file extension.");
-    shell.exit(1);
+    process.exit(1);
   }
   options.lang = options.output.split(".").pop();
 }
@@ -143,5 +165,5 @@ if (options.help) {
   parseFileOrUrl(options.src[0]);
 } else {
   usage();
-  shell.exit(1);
+  process.exit(1);
 }
