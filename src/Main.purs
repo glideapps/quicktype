@@ -1,7 +1,7 @@
 module Main
     ( renderFromJson
     , renderFromJsonSchema
-    , renderFromJsonString
+    , renderFromJsonStringPossiblyAsSchemaInDevelopment
     , renderers
     ) where
 
@@ -110,12 +110,7 @@ firstSuccess pipes renderer json = foldl takeFirstRight (Left "no pipelines prov
         takeFirstRight (Right output) _ = Right output
         takeFirstRight _ pipeline = pipeline renderer json
 
-relax :: Pipeline Json -> Pipeline String
-relax pipeline renderer jsonString = do
+renderFromJsonStringPossiblyAsSchemaInDevelopment :: Pipeline String
+renderFromJsonStringPossiblyAsSchemaInDevelopment renderer jsonString = do
     obj <- J.jsonParser jsonString
-    pipeline renderer obj
-
--- Depending on the environment, treat a JSON string as a JSON schema
--- or fallback on rendering as a simple JSON document
-renderFromJsonString :: Pipeline String
-renderFromJsonString = relax $ firstSuccess (pipelines Env.current)
+    firstSuccess (pipelines Env.current) renderer obj
