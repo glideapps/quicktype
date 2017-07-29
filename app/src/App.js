@@ -8,6 +8,7 @@ import debounce from 'debounce';
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
+import { camelCase } from "../../output/Data.String.Util";
 
 import 'brace/mode/csharp';
 import 'brace/mode/golang';
@@ -149,7 +150,7 @@ class App extends Component {
   }
 
   topLevelNameFromSample = (sampleName) => {
-    return sampleName.split(".")[0] || "TopLevel";
+    return camelCase(sampleName.split(".")[0]) || "TopLevel";
   }
 
   changeSampleName = (sampleName) => {
