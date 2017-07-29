@@ -134,6 +134,10 @@ function absolutize(p) {
     return path.join(process.cwd(), p);
 }
 
+function execQuicktype(source, output, sourceLanguage) {
+    exec(`node ../../cli/quicktype.js --srcLang "${sourceLanguage}" -o "${output}" "${source}"`);    
+}
+
 function runTests(description, samples, dir, prepareCmd, filename, testFn) {
     shell.cd(dir);
     if (prepareCmd)
@@ -141,7 +145,7 @@ function runTests(description, samples, dir, prepareCmd, filename, testFn) {
     
     samples.forEach((sample) => {
         console.error(`* Building ${description} for ${sample}`);
-        exec(`node ../../cli/quicktype.js -o "${filename}" "${sample}"`);
+        execQuicktype(sample, filename, "json");
         testFn(sample);
     });
     
@@ -164,7 +168,7 @@ function testGolang(samples, knownFails) {
     );
 }
 
-function testJsonSchema(samples, knownFails) {
+function testJsonSchema(samples, knownFails, knownGoFails) {
     runTests("JSON Schema", samples, "test/golang", null, "schema.json",
         function (p) {
             let input = JSON.parse(fs.readFileSync(p));
@@ -175,12 +179,14 @@ function testJsonSchema(samples, knownFails) {
                 console.log("Error: Generated schema does not validate input JSON.");
                 process.exit(1);
             }
+            execQuicktype("schema.json", "quicktype.go", "json-schema");
+            execAndCompare(`go run main.go quicktype.go < "${p}"`, p, knownGoFails);
         }
     );
 }
 
 function testAll(samples, goFails, csFails, jsonSchemaFails) {
-    testJsonSchema(samples, jsonSchemaFails);
+    testJsonSchema(samples, jsonSchemaFails, goFails);
     testGolang(samples, goFails);
     testCSharp(samples, csFails);
 }
