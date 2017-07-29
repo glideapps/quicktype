@@ -24,6 +24,8 @@ import JsonSchema as JsonSchema
 import Math (round)
 import Utils (mapM)
 
+type Error = String
+
 renderers :: Array Doc.Renderer
 renderers = [CSharp.renderer, Golang.renderer, JsonSchema.renderer]
 
@@ -57,7 +59,7 @@ irFromError :: String -> IR IRType
 irFromError err = do
     addClass $ IRClassData { names: S.singleton err, properties: Map.empty }
 
-makeTypeFromSchema :: String -> JSONSchema -> Either String IRGraph
+makeTypeFromSchema :: String -> JSONSchema -> Either Error IRGraph
 makeTypeFromSchema name schema = eitherify $ runIR do
     topLevelOrError <- jsonSchemaToIR schema "TopLevel" schema
     case topLevelOrError of
@@ -76,7 +78,7 @@ renderFromJson renderer json =
     # regatherClassNames
     # Doc.runRenderer renderer
 
-tryRenderFromJsonSchema :: Doc.Renderer -> Json -> Either String String
+tryRenderFromJsonSchema :: Doc.Renderer -> Json -> Either Error String
 tryRenderFromJsonSchema renderer json =
     json
     # decodeJson
@@ -84,7 +86,7 @@ tryRenderFromJsonSchema renderer json =
     <#> regatherClassNames
     <#> Doc.runRenderer renderer
 
-renderForUI :: Doc.Renderer -> String -> Either String String
+renderForUI :: Doc.Renderer -> String -> Either Error String
 renderForUI renderer json =
     jsonParser json
     >>= (\j ->
