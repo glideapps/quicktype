@@ -10,9 +10,6 @@ import IRGraph
 import Prelude
 import Transformations
 
-import Environment (Environment(..))
-import Environment as Env
-
 import CSharp as CSharp
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (foldJson) as J
@@ -27,7 +24,10 @@ import Data.Set as S
 import Data.StrMap as StrMap
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
+import Doc (Renderer)
 import Doc as Doc
+import Environment (Environment(..))
+import Environment as Env
 import Golang as Golang
 import JsonSchema (JSONSchema, jsonSchemaToIR)
 import JsonSchema as JsonSchema
@@ -37,7 +37,15 @@ import Utils (mapM)
 type Error = String
 type SourceCode = String
 
-type Pipeline input = Doc.Renderer -> input -> Either Error SourceCode
+-- A type representing the input to Pipelines
+-- This makes pipelines easier to call from JavaScript
+type Input a =
+    { input :: a
+    , renderer :: Doc.Renderer
+    , topLevelName :: String
+    }
+
+type Pipeline a = Input a -> Either Error SourceCode
 
 renderers :: Array Doc.Renderer
 renderers = [CSharp.renderer, Golang.renderer, JsonSchema.renderer]
@@ -85,17 +93,17 @@ makeTypeFromSchema name schema = eitherify $ runIR do
         eitherify (Tuple Nothing g) = Right g
 
 renderFromJson :: Pipeline Json
-renderFromJson renderer json =
+renderFromJson { renderer, input: json, topLevelName } =
     json
-    # makeTypeAndUnify "TopLevel"
+    # makeTypeAndUnify topLevelName
     # regatherClassNames
     # Doc.runRenderer renderer
     # Right
 
 renderFromJsonSchema :: Pipeline Json
-renderFromJsonSchema renderer json = do
+renderFromJsonSchema { renderer, input: json, topLevelName } = do
     schema <- J.decodeJson json
-    graph <- makeTypeFromSchema "TopLevel" schema
+    graph <- makeTypeFromSchema topLevelName schema
     graph
         # regatherClassNames
         # Doc.runRenderer renderer
@@ -106,12 +114,12 @@ pipelines Development = [renderFromJsonSchema, renderFromJson]
 pipelines Production = [renderFromJson]
 
 firstSuccess :: forall a. Array (Pipeline a) -> Pipeline a
-firstSuccess pipes renderer json = foldl takeFirstRight (Left "no pipelines provided") pipes
+firstSuccess pipes input = foldl takeFirstRight (Left "no pipelines provided") pipes
     where
         takeFirstRight (Right output) _ = Right output
-        takeFirstRight _ pipeline = pipeline renderer json
+        takeFirstRight _ pipeline = pipeline input
 
 renderFromJsonStringPossiblyAsSchemaInDevelopment :: Pipeline String
-renderFromJsonStringPossiblyAsSchemaInDevelopment renderer jsonString = do
+renderFromJsonStringPossiblyAsSchemaInDevelopment { renderer, input: jsonString, topLevelName } = do
     obj <- J.jsonParser jsonString
-    firstSuccess (pipelines Env.current) renderer obj
+    firstSuccess (pipelines Env.current) { renderer, input: obj, topLevelName }
