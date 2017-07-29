@@ -5,11 +5,15 @@ import IRGraph
 import Prelude
 import Transformations
 
+import Environment (Environment(..))
+import Environment as Env
+
 import CSharp as CSharp
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (foldJson) as J
 import Data.Argonaut.Decode (decodeJson) as J
 import Data.Argonaut.Parser (jsonParser) as J
+import Data.Array (foldl)
 import Data.Array as A
 import Data.Either (Either(..))
 import Data.Map as Map
@@ -26,6 +30,8 @@ import Math (round)
 import Utils (mapM)
 
 type Error = String
+
+type Pipeline = Doc.Renderer -> String -> Either Error String
 
 renderers :: Array Doc.Renderer
 renderers = [CSharp.renderer, Golang.renderer, JsonSchema.renderer]
@@ -72,27 +78,33 @@ makeTypeFromSchema name schema = eitherify $ runIR do
         eitherify (Tuple (Just err) _) = Left err
         eitherify (Tuple Nothing g) = Right g
 
-renderFromJson :: Doc.Renderer -> Json -> String
-renderFromJson renderer json =
+jsonPipeline :: Pipeline
+jsonPipeline renderer json =
     json
-    # makeTypeAndUnify "TopLevel"
-    # regatherClassNames
-    # Doc.runRenderer renderer
-
-tryRenderFromJsonSchema :: Doc.Renderer -> Json -> Either Error String
-tryRenderFromJsonSchema renderer json =
-    json
-    # J.decodeJson
-    >>= makeTypeFromSchema "TopLevel"
+    # J.jsonParser
+    <#> makeTypeAndUnify "TopLevel"
     <#> regatherClassNames
     <#> Doc.runRenderer renderer
 
--- Try to render from Json as Schema, falling back on simply rendering from Json
-renderFromSchemaOrJson :: Doc.Renderer -> Json -> String
-renderFromSchemaOrJson renderer json = 
-    case tryRenderFromJsonSchema renderer json of
-        Left err -> renderFromJson renderer json
-        Right src -> src
+jsonSchemaPipeline :: Pipeline
+jsonSchemaPipeline renderer json = do
+    obj <- J.jsonParser json
+    schema <- J.decodeJson obj
+    graph <- makeTypeFromSchema "TopLevel" schema
+    graph
+        # regatherClassNames
+        # Doc.runRenderer renderer
+        # pure
 
-renderForUI :: Doc.Renderer -> String -> Either Error String
-renderForUI renderer json = renderFromSchemaOrJson renderer <$> J.jsonParser json
+pipelines :: Environment -> Array Pipeline
+pipelines Development = [jsonSchemaPipeline, jsonPipeline]
+pipelines Production = [jsonPipeline]
+
+firstSuccess :: Array Pipeline -> Pipeline
+firstSuccess pipes renderer json = foldl takeFirstRight (Left "no pipelines provided") pipes
+    where
+        takeFirstRight (Right output) _ = Right output
+        takeFirstRight _ pipeline = pipeline renderer json
+
+renderForUI :: Pipeline
+renderForUI = firstSuccess (pipelines Env.current)
