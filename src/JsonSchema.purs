@@ -147,9 +147,10 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
         case schema.properties of
         Just sm -> do
             propsAndErrorsWrong :: List _ <- SM.toUnfoldable <$> mapStrMapM (jsonSchemaToIR root) sm
-            let propsOrError = foldError $ map raiseTuple propsAndErrorsWrong
-            classFromPropsOrError $ either Left (\l -> Right $ M.fromFoldable l) propsOrError
-            -- FIXME: nullify non-required properties
+            let propsOrError = M.fromFoldable <$> (foldError $ map raiseTuple propsAndErrorsWrong)
+            let required = maybe S.empty S.fromFoldable schema.required
+            nulledPropsOrError <- either (\x -> pure $ Left x) (\x -> Right <$> mapMapM (\n -> if S.member n required then pure else unifyTypes IRNull) x) propsOrError
+            classFromPropsOrError nulledPropsOrError
         Nothing ->
             case schema.additionalProperties of
             Left true ->
