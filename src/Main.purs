@@ -6,14 +6,12 @@ import Prelude
 import Transformations
 
 import CSharp as CSharp
-
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (foldJson) as J
 import Data.Argonaut.Decode (decodeJson) as J
 import Data.Argonaut.Parser (jsonParser) as J
-
 import Data.Array as A
-import Data.Either (Either(..), either)
+import Data.Either (Either(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Set as S
@@ -89,9 +87,12 @@ tryRenderFromJsonSchema renderer json =
     <#> regatherClassNames
     <#> Doc.runRenderer renderer
 
+-- Try to render from Json as Schema, falling back on simply rendering from Json
+renderFromSchemaOrJson :: Doc.Renderer -> Json -> String
+renderFromSchemaOrJson renderer json = 
+    case tryRenderFromJsonSchema renderer json of
+        Left err -> renderFromJson renderer json
+        Right src -> src
+
 renderForUI :: Doc.Renderer -> String -> Either Error String
-renderForUI renderer json =
-    J.jsonParser json
-    >>= (\j ->
-        tryRenderFromJsonSchema renderer j
-        # either (\_ -> Right $ renderFromJson renderer j) Right)
+renderForUI renderer json = renderFromSchemaOrJson renderer <$> J.jsonParser json
