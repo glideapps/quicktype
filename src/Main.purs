@@ -1,4 +1,9 @@
-module Main where
+module Main
+    ( renderFromJson
+    , renderFromJsonSchema
+    , renderFromJsonString
+    , renderers
+    ) where
 
 import IR
 import IRGraph
