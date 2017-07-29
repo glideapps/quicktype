@@ -6,9 +6,12 @@ import Prelude
 import Transformations
 
 import CSharp as CSharp
-import Data.Argonaut.Core (Json, foldJson)
-import Data.Argonaut.Decode (decodeJson)
-import Data.Argonaut.Parser (jsonParser)
+
+import Data.Argonaut.Core (Json)
+import Data.Argonaut.Core (foldJson) as J
+import Data.Argonaut.Decode (decodeJson) as J
+import Data.Argonaut.Parser (jsonParser) as J
+
 import Data.Array as A
 import Data.Either (Either(..), either)
 import Data.Map as Map
@@ -31,7 +34,7 @@ renderers = [CSharp.renderer, Golang.renderer, JsonSchema.renderer]
 
 makeTypeFromJson :: String -> Json -> IR IRType
 makeTypeFromJson name json =
-    foldJson
+    J.foldJson
     (\_ -> pure IRNull)
     (\_ -> pure IRBool)
     (\n -> pure if round n == n then IRInteger else IRDouble)
@@ -81,14 +84,14 @@ renderFromJson renderer json =
 tryRenderFromJsonSchema :: Doc.Renderer -> Json -> Either Error String
 tryRenderFromJsonSchema renderer json =
     json
-    # decodeJson
+    # J.decodeJson
     >>= makeTypeFromSchema "TopLevel"
     <#> regatherClassNames
     <#> Doc.runRenderer renderer
 
 renderForUI :: Doc.Renderer -> String -> Either Error String
 renderForUI renderer json =
-    jsonParser json
+    J.jsonParser json
     >>= (\j ->
         tryRenderFromJsonSchema renderer j
         # either (\_ -> Right $ renderFromJson renderer j) Right)
