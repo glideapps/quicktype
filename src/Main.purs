@@ -98,8 +98,8 @@ pipelines :: Environment -> Array Pipeline
 pipelines Development = [jsonSchemaPipeline, jsonPipeline]
 pipelines Production = [jsonPipeline]
 
-arrayPipeline :: Array Pipeline -> Pipeline
-arrayPipeline pipes renderer json = foldl takeFirstRight (Left "") pipes
+firstSuccess :: Array Pipeline -> Pipeline
+firstSuccess pipes renderer json = foldl takeFirstRight (Left "") pipes
     where
         takeFirstRight (Right output) _ = Right output
         takeFirstRight _ pipeline = pipeline renderer json
@@ -107,4 +107,4 @@ arrayPipeline pipes renderer json = foldl takeFirstRight (Left "") pipes
 renderForUI :: Doc.Renderer -> String -> Either Error String
 renderForUI renderer json = do
     obj <- J.jsonParser json
-    arrayPipeline (pipelines Env.current) renderer obj
+    firstSuccess (pipelines Env.current) renderer obj
