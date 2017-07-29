@@ -12,6 +12,7 @@ import Data.Argonaut.Parser (jsonParser)
 import Data.Array as A
 import Data.Either (Either(..), either)
 import Data.Map as Map
+import Data.Maybe (Maybe(..))
 import Data.Set as S
 import Data.StrMap as StrMap
 import Data.String.Util (singular)
@@ -46,7 +47,7 @@ makeTypeFromJson name json =
         toProperty (Tuple name json) = Tuple name <$> makeTypeFromJson name json
 
 makeTypeAndUnify :: String -> Json -> IRGraph
-makeTypeAndUnify name json = runIR do
+makeTypeAndUnify name json = execIR do
     topLevel <- makeTypeFromJson name json
     setTopLevel topLevel
     replaceSimilarClasses
@@ -56,16 +57,17 @@ irFromError :: String -> IR IRType
 irFromError err = do
     addClass $ IRClassData { names: S.singleton err, properties: Map.empty }
 
-makeTypeFromSchema :: String -> Json -> IRGraph
-makeTypeFromSchema name json =
-    case decodeJson json :: Either String JSONSchema of
-    Left err -> runIR do
-        topLevel <- irFromError err
-        setTopLevel topLevel
-    Right schema -> runIR do
-        topLevelOrError <- jsonSchemaToIR schema "TopLevel" schema
-        topLevel <- either irFromError pure topLevelOrError
-        setTopLevel topLevel
+makeTypeFromSchema :: String -> JSONSchema -> Either String IRGraph
+makeTypeFromSchema name schema = eitherify $ runIR do
+    topLevelOrError <- jsonSchemaToIR schema "TopLevel" schema
+    case topLevelOrError of
+        Left err -> pure $ Just err
+        Right topLevel -> do
+            setTopLevel topLevel
+            pure Nothing
+    where
+        eitherify (Tuple (Just err) _) = Left err
+        eitherify (Tuple Nothing g) = Right g
 
 renderFromJson :: Doc.Renderer -> Json -> String
 renderFromJson renderer json =
@@ -74,14 +76,17 @@ renderFromJson renderer json =
     # regatherClassNames
     # Doc.runRenderer renderer
 
-renderFromJsonSchema :: Doc.Renderer -> Json -> String
-renderFromJsonSchema renderer json =
+tryRenderFromJsonSchema :: Doc.Renderer -> Json -> Either String String
+tryRenderFromJsonSchema renderer json =
     json
-    # makeTypeFromSchema "TopLevel"
-    # regatherClassNames
-    # Doc.runRenderer renderer
+    # decodeJson
+    >>= makeTypeFromSchema "TopLevel"
+    <#> regatherClassNames
+    <#> Doc.runRenderer renderer
 
-renderFromJsonString :: Doc.Renderer -> String -> Either String String
-renderFromJsonString renderer json =
+renderForUI :: Doc.Renderer -> String -> Either String String
+renderForUI renderer json =
     jsonParser json
-    <#> renderFromJson renderer
+    >>= (\j ->
+        tryRenderFromJsonSchema renderer j
+        # either (\_ -> Right $ renderFromJson renderer j) Right)
