@@ -7,23 +7,22 @@ module IR
     , setTopLevel
     , replaceClass
     , unifyTypes
+    , execIR
     , runIR
     ) where
 
 import IRGraph
 import Prelude
 
-import Control.Monad.State (State, execState)
+import Control.Monad.State (State, execState, runState)
 import Control.Monad.State.Class (get, put)
 import Data.Foldable (for_, foldM)
-import Data.Int.Bits (or)
 import Data.Int.Bits as Bits
-import Data.List (List, (:))
+import Data.List ((:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Sequence (fromFoldable)
 import Data.Sequence as Seq
 import Data.Set (Set)
 import Data.Set as S
@@ -33,8 +32,11 @@ import Utils (lookupOrDefault, mapM, mapMapM)
 
 type IR = State IRGraph
 
-runIR :: forall a. IR a -> IRGraph
-runIR ir = execState ir emptyGraph
+execIR :: forall a. IR a -> IRGraph
+execIR ir = execState ir emptyGraph
+
+runIR :: forall a. IR a -> Tuple a IRGraph
+runIR ir = runState ir emptyGraph
 
 setTopLevel :: IRType -> IR Unit
 setTopLevel toplevel = do
