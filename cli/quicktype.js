@@ -86,27 +86,37 @@ function getRenderer() {
   return renderer;
 }
 
+function fromRight(either) {
+  let { constructor: { name }, value0: result } = either;
+  if (name == "Left") {
+    console.error(result);
+    console.exit(1);
+  } else {
+    return result;
+  }
+}
+
 function renderFromJson(json) {
+    let pipeline = {
+      "json": Main.renderFromJson,
+      "json-schema": Main.renderFromJsonSchema
+    }[options.srcLang];
+ 
+    if (!pipeline) {
+      console.error(`Input language '${options.srcLang}' is not supported.`);
+      process.exit(1);
+    }
+
     let renderer = getRenderer();
-    if (options.srcLang === 'json')
-      return Main.renderFromJson(renderer)(json);
-    if (options.srcLang === 'json-schema')
-      return Main.renderFromJsonSchema(renderer)(json);
-    console.error(`Input language '${options.srcLang}' is not supported.`);
-    process.exit(1);
+    return fromRight(pipeline(renderer)(json));    
 }
 
 function work(json) {
-  let out = renderFromJson(json);
+  let output = renderFromJson(json);
   if (options.output) {
-    fs.writeFile(options.output, out, (err) => {
-        if (err) {
-            console.error(err);
-            process.exit(1);
-        }
-    }); 
+    fs.writeFileSync(options.output, output); 
   } else {
-    console.log(out);
+    console.log(output);
   }
 }
 
