@@ -107,8 +107,13 @@ function renderFromJson(json) {
       process.exit(1);
     }
 
-    let renderer = getRenderer();
-    return fromRight(pipeline(renderer)(json));    
+    let input = {
+      input: json,
+      renderer: getRenderer(),
+      topLevelName: "TopLevel"
+    };
+    
+    return fromRight(pipeline(input));    
 }
 
 function work(json) {
