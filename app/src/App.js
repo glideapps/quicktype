@@ -113,7 +113,7 @@ class App extends Component {
   sourceEdited = (source) => {
     let renderer = this.getRenderer();
     let { constructor, value0: output } = this.sendPerformance("Main", "renderJsonString", () => {
-      return Main.renderFromJsonString(renderer)(source);
+      return Main.renderFromJsonStringPossiblyAsSchemaInDevelopment(renderer)(source);
     });
 
     this.sendEvent("sourceEdited");
