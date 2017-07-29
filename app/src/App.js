@@ -4,6 +4,7 @@ import Editor from './Editor';
 import Snackbar from './Snackbar';
 
 import urlParse from 'url-parse';
+import debounce from 'debounce';
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
@@ -26,11 +27,13 @@ class App extends Component {
     let preferredRenderer = preferredExtension && Main.renderers.find((r) => r.extension === preferredExtension);
     let preferredRendererName = preferredRenderer && preferredRenderer.name;
 
+    let sampleName = localStorage["sample"] || Samples.samples[0];
     this.state = {
       source: localStorage["source"] || "",
       output: "",
       rendererName: preferredRendererName || this.getRenderer().name,
-      sampleName: localStorage["sample"] || Samples.samples[0]
+      sampleName,
+      topLevelName: this.topLevelNameFromSample(sampleName)
     };
   }
 
@@ -111,9 +114,12 @@ class App extends Component {
   }
 
   sourceEdited = (source) => {
-    let renderer = this.getRenderer();
     let { constructor, value0: output } = this.sendPerformance("Main", "renderJsonString", () => {
-      return Main.renderFromJsonStringPossiblyAsSchemaInDevelopment(renderer)(source);
+      return Main.renderFromJsonStringPossiblyAsSchemaInDevelopment({
+        input: source,
+        renderer: this.getRenderer(),
+        topLevelName: this.state.topLevelName || "TopLevel"
+      });
     });
 
     this.sendEvent("sourceEdited");
@@ -142,13 +148,28 @@ class App extends Component {
     });
   }
 
+  topLevelNameFromSample = (sampleName) => {
+    return sampleName.split(".")[0] || "TopLevel";
+  }
+
   changeSampleName = (sampleName) => {
     try {
       localStorage["sample"] = sampleName;
     } catch (e) {}
 
-    this.setState({ sampleName }, () => {
+    let topLevelName = this.topLevelNameFromSample(sampleName);
+    this.setState({ sampleName, topLevelName }, () => {
       this.loadSample();
+    });
+  }
+
+  changeTopLevelName = (topLevelName) => {
+    try {
+      localStorage["topLevelName"] = topLevelName;
+    } catch (e) {}
+
+    this.setState({ topLevelName }, () => {
+      this.sourceEdited(this.state.source);
     });
   }
 
@@ -171,7 +192,9 @@ class App extends Component {
           sampleName={this.state.sampleName}
           onChangeSample={this.changeSampleName} 
           rendererName={this.state.rendererName}
-          onChangeRenderer={this.changeRendererName} />
+          onChangeRenderer={this.changeRendererName}
+          topLevelName={this.state.topLevelName}
+          onChangeTopLevelName={debounce(this.changeTopLevelName, 300)} />
         <Editor
           className="output"
           lang={this.getRenderer().aceMode}

@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import debounce from 'debounce';
 
 import Editor from './Editor';
-//import Entry from './Entry';
+import Entry from './Entry';
 //import Switch from './Switch';
 import Button from "@react-mdc/button";
 import Dropdown from './Dropdown';
@@ -18,6 +18,11 @@ const about_url = "http://blog.quicktype.io/2017/previewing-quicktype";
 
 export default class Sidebar extends Component {
   sendEvent = (name, value) => window.ga("send", "event", "Sidebar", name, value);
+
+  onChangeTopLevelName = (topLevelName) => {
+    this.setState({ topLevelName });
+    this.props.onChangeTopLevelName(topLevelName);
+  }
 
   render() {
     return (
@@ -56,10 +61,14 @@ export default class Sidebar extends Component {
                     showGutter={false}
                     />
 
-                {/*
-                <Entry name="toplevel" label="Top-level type" value="TopLevel" />
-                <Entry name="namespace" label="Namespace" value="QuickType" />
+                <Entry
+                    name="toplevel"
+                    label="Top-level type"
+                    value={this.props.topLevelName}
+                    onChange={this.onChangeTopLevelName} />
 
+                {/*
+                <Entry name="namespace" label="Namespace" value="QuickType" />
                 <Switch name="showHelpers" />
                 */}
                 
