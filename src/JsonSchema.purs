@@ -70,11 +70,6 @@ instance decodeJsonSchemaRef :: DecodeJson JSONSchemaRef where
         ref <- decodeJson j
         pure $ JSONSchemaRef $ L.fromFoldable $ String.split (String.Pattern "/") ref
 
--- instance decodeSet :: DecodeJson t => DecodeJson (Set t) where
---     decodeJson j = do
---         a <- decodeJson j :: Array _
---         pure $ S.fromFoldable a
-
 decodeTypes :: Maybe Json -> Either String (Maybe (Either JSONType (Set JSONType)))
 decodeTypes Nothing = Right Nothing
 decodeTypes (Just j) =
@@ -83,7 +78,7 @@ decodeTypes (Just j) =
         (\_ -> Left "`types` cannot be a boolean")
         (\_ -> Left "`types` cannot be a number")
         (\s -> either Left (\t -> Right $ Just $ Left t) $ decodeEnum jsonTypeEnumMap j)
-        (\a -> either Left (\l -> Right $ Just $ Right $ S.fromFoldable l) $ foldError (flip (:)) L.Nil $ map (decodeEnum jsonTypeEnumMap) a)
+        (\a -> either Left (\l -> Right $ Just $ Right $ S.fromFoldable l) $ foldError $ map (decodeEnum jsonTypeEnumMap) a)
         (\_ -> Left "`Types` cannot be an object")
         j
 
@@ -127,7 +122,7 @@ lookupRef root ref local@(JSONSchema { definitions }) =
 toIRAndUnify :: forall a f. Foldable f => (a -> IR (Either String IRType)) -> f a -> IR (Either String IRType)
 toIRAndUnify toIR l = do
     irsAndErrors <- mapM toIR $ L.fromFoldable l
-    let irsOrError = foldError (flip (:)) L.Nil irsAndErrors
+    let irsOrError = foldError irsAndErrors
     either (\e -> pure $ Left e) (\irs -> Right <$> foldM unifyTypes IRNothing irs) irsOrError
 
 jsonSchemaToIR :: JSONSchema -> String -> JSONSchema -> IR (Either String IRType)
@@ -137,38 +132,35 @@ jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, pr
         Left err -> pure $ Left err
         Right js -> jsonSchemaToIR root name js
     | Just (Left jt) <- types =
-        jsonTypeToIR root name jt properties required additionalProperties items
+        jsonTypeToIR root name jt schema
     | Just (Right jts) <- types =
-        toIRAndUnify (\jt -> jsonTypeToIR root name jt properties required additionalProperties items) jts
+        toIRAndUnify (\jt -> jsonTypeToIR root name jt schema) jts
     | Just jss <- oneOf =
         toIRAndUnify (jsonSchemaToIR root name) jss
     | otherwise =
         pure $ Left "Unsupported schema"
 
--- FIXME: just pass the JSONSchema instead of all the individual items?
-jsonTypeToIR :: JSONSchema -> String -> JSONType -> Maybe (StrMap JSONSchema) -> Maybe (Array String) -> Either Boolean JSONSchema -> Maybe JSONSchema -> IR (Either String IRType)
-jsonTypeToIR root name jsonType properties required additionalProperties items =
+jsonTypeToIR :: JSONSchema -> String -> JSONType -> JSONSchema -> IR (Either String IRType)
+jsonTypeToIR root name jsonType (JSONSchema schema) =
     case jsonType of
     JSONObject ->
-        case properties of
+        case schema.properties of
         Just sm -> do
-            mapWithErrors <- (mapStrMapM (jsonSchemaToIR root) sm) :: IR (StrMap (Either String IRType))
-            let propsAndErrorsWrong = (SM.toUnfoldable mapWithErrors) :: List (Tuple String (Either String IRType)) 
-            let propsAndErrorsRight = (map raiseTuple propsAndErrorsWrong) :: List (Either String (Tuple String IRType))
-            let propsOrError = foldError (flip (:)) L.Nil $ L.fromFoldable propsAndErrorsRight
+            propsAndErrorsWrong :: List _ <- SM.toUnfoldable <$> mapStrMapM (jsonSchemaToIR root) sm
+            let propsOrError = foldError $ map raiseTuple propsAndErrorsWrong
             classFromPropsOrError $ either Left (\l -> Right $ M.fromFoldable l) propsOrError
             -- FIXME: nullify non-required properties
         Nothing ->
-            case additionalProperties of
+            case schema.additionalProperties of
             Left true ->
                 pure $ Right $ IRMap IRNothing
             Left false ->
-                pure $ Left "object without properties and no allowed additionalProperties" -- FIXME: empty object?
+                pure $ Right $ IRNothing
             Right js -> do
                 irOrError <- jsonSchemaToIR root (singular name) js
                 pure $ either Left (\ir -> Right $ IRMap ir) irOrError
     JSONArray ->
-        case items of
+        case schema.items of
         Just js -> do
             itemIROrError <- (jsonSchemaToIR root $ singular name) js
             pure $ either Left (\ir -> Right $ IRArray ir) itemIROrError
@@ -188,8 +180,6 @@ jsonTypeToIR root name jsonType properties required additionalProperties items =
         raiseTuple :: Tuple String (Either String IRType) -> Either String (Tuple String IRType)
         raiseTuple (Tuple k irOrError) =
             either Left (\ir -> Right $ Tuple k ir) irOrError
-
-
 
 forbiddenNames :: Array String
 forbiddenNames = []
