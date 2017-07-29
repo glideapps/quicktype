@@ -35,8 +35,9 @@ import Math (round)
 import Utils (mapM)
 
 type Error = String
+type SourceCode = String
 
-type Pipeline a = Doc.Renderer -> a -> Either Error String
+type Pipeline input = Doc.Renderer -> input -> Either Error SourceCode
 
 renderers :: Array Doc.Renderer
 renderers = [CSharp.renderer, Golang.renderer, JsonSchema.renderer]
