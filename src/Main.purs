@@ -115,5 +115,7 @@ relax pipeline renderer jsonString = do
     obj <- J.jsonParser jsonString
     pipeline renderer obj
 
+-- Depending on the environment, treat a JSON string as a JSON schema
+-- or fallback on rendering as a simple JSON document
 renderFromJsonString :: Pipeline String
 renderFromJsonString = relax $ firstSuccess (pipelines Env.current)
