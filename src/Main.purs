@@ -94,8 +94,8 @@ jsonSchemaPipeline renderer json =
     <#> Doc.runRenderer renderer
 
 pipelines :: Env.Environment -> Array Pipeline
-pipelines Env.Production = [jsonSchemaPipeline, jsonPipeline]
-pipelines Env.Development = [jsonPipeline]
+pipelines Env.Development = [jsonSchemaPipeline, jsonPipeline]
+pipelines Env.Production = [jsonPipeline]
 
 arrayPipeline :: Array Pipeline -> Pipeline
 arrayPipeline pipes renderer json = foldl takeFirstRight (Left "") pipes
