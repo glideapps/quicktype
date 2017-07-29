@@ -31,7 +31,7 @@ import Utils (mapM)
 
 type Error = String
 
-type Pipeline = Doc.Renderer -> Json -> Either Error String
+type Pipeline = Doc.Renderer -> String -> Either Error String
 
 renderers :: Array Doc.Renderer
 renderers = [CSharp.renderer, Golang.renderer, JsonSchema.renderer]
@@ -81,18 +81,20 @@ makeTypeFromSchema name schema = eitherify $ runIR do
 jsonPipeline :: Pipeline
 jsonPipeline renderer json =
     json
-    # makeTypeAndUnify "TopLevel"
-    # regatherClassNames
-    # Doc.runRenderer renderer
-    # Right
-
-jsonSchemaPipeline :: Pipeline
-jsonSchemaPipeline renderer json =
-    json
-    # J.decodeJson
-    >>= makeTypeFromSchema "TopLevel"
+    # J.jsonParser
+    <#> makeTypeAndUnify "TopLevel"
     <#> regatherClassNames
     <#> Doc.runRenderer renderer
+
+jsonSchemaPipeline :: Pipeline
+jsonSchemaPipeline renderer json = do
+    obj <- J.jsonParser json
+    schema <- J.decodeJson obj
+    graph <- makeTypeFromSchema "TopLevel" schema
+    graph
+        # regatherClassNames
+        # Doc.runRenderer renderer
+        # pure
 
 pipelines :: Environment -> Array Pipeline
 pipelines Development = [jsonSchemaPipeline, jsonPipeline]
@@ -104,7 +106,5 @@ firstSuccess pipes renderer json = foldl takeFirstRight (Left "no pipelines prov
         takeFirstRight (Right output) _ = Right output
         takeFirstRight _ pipeline = pipeline renderer json
 
-renderForUI :: Doc.Renderer -> String -> Either Error String
-renderForUI renderer json = do
-    obj <- J.jsonParser json
-    firstSuccess (pipelines Env.current) renderer obj
+renderForUI :: Pipeline
+renderForUI = firstSuccess (pipelines Env.current)
