@@ -5,14 +5,17 @@ import IRGraph
 import Prelude
 import Transformations
 
+import Environment (Environment(..))
+import Environment as Env
+
 import CSharp as CSharp
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (foldJson) as J
 import Data.Argonaut.Decode (decodeJson) as J
 import Data.Argonaut.Parser (jsonParser) as J
-import Data.Array (find, foldl)
+import Data.Array (foldl)
 import Data.Array as A
-import Data.Either (Either(..), isRight)
+import Data.Either (Either(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Set as S
@@ -20,8 +23,6 @@ import Data.StrMap as StrMap
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
 import Doc as Doc
-import Environment (Environment(..))
-import Environment as Env
 import Golang as Golang
 import JsonSchema (JSONSchema, jsonSchemaToIR)
 import JsonSchema as JsonSchema
@@ -93,9 +94,9 @@ jsonSchemaPipeline renderer json =
     <#> regatherClassNames
     <#> Doc.runRenderer renderer
 
-pipelines :: Env.Environment -> Array Pipeline
-pipelines Env.Development = [jsonSchemaPipeline, jsonPipeline]
-pipelines Env.Production = [jsonPipeline]
+pipelines :: Environment -> Array Pipeline
+pipelines Development = [jsonSchemaPipeline, jsonPipeline]
+pipelines Production = [jsonPipeline]
 
 arrayPipeline :: Array Pipeline -> Pipeline
 arrayPipeline pipes renderer json = foldl takeFirstRight (Left "") pipes
