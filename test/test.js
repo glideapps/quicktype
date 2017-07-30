@@ -145,6 +145,11 @@ function runTests(description, samples, dir, prepareCmd, filename, testFn) {
         shell.exec(prepareCmd, { silent: true });
     
     samples.forEach((sample) => {
+        let stats = fs.statSync(sample);
+        if (stats.size > 32 * 1024 * 1024) {
+            console.log(`* Skipping ${sample} because it's too large`);
+            return;
+        }
         console.error(`* Building ${description} for ${sample}`);
         execQuicktype(sample, filename, "json");
         testFn(sample);
