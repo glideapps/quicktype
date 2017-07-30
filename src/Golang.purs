@@ -78,10 +78,10 @@ legalizeIdentifier str =
     -- FIXME: use the type to infer a name?
     Nothing -> "Empty"
     Just s ->
-        if isStartCharacter s then
+        if isLetter s then
             Str.fromCharArray $ map (\c -> if isLetterCharacter c then c else '_') $ Str.toCharArray str
         else
-            legalizeIdentifier ("_" <> str)
+            legalizeIdentifier ("F_" <> str)
 
 noComment :: String -> Doc { rendered :: String, comment :: Maybe String }
 noComment rendered =
