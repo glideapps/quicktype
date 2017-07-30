@@ -87,13 +87,19 @@ class App extends Component {
     editor.selectAll();
     editor.focus();
     let success = window.document.execCommand('copy');
+    editor.blur();
     editor.selection.fromJSON(savedSelection);
 
     let message = success
-      ? `${this.state.rendererName} code copied`
-      : `Could not copy ${this.state.rendererName} code`;
+      ? `${this.state.rendererName} copied`
+      : `Could not copy code`;
 
-    this.snackbar.show({ message });
+    setImmediate(() => {
+      document.activeElement.blur();
+      setTimeout(() => {
+        this.snackbar.show({ message });
+      }, 100);
+    });
   }
 
   getRenderer = (name) => {
