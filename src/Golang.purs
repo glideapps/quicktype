@@ -318,8 +318,8 @@ renderGolangUnion allTypes = do
     line $ "func (x *" <> name <> ") UnmarshalJSON(data []byte) error {"    
     indent do
         for_ compoundPredicates \p -> maybeAssignNil p
-        ifClass \name -> do
-            line $ "var c " <> name
+        ifClass \_ typeString -> do
+            line $ "var c " <> typeString
         args <- makeArgs primitiveUnmarshalArg compoundUnmarshalArg
         line $ "object, err := unmarshalUnion(data, " <> args <> ", " <> isNullableString <> ")"
         line "if err != nil {"
@@ -327,7 +327,7 @@ renderGolangUnion allTypes = do
     		line "return err"
         line "}"
         line "if object {"
-        ifClass \name -> do
+        ifClass \name _ -> do
             indent do
                 line $ "x." <> name <> " = &c"
         line "}"
@@ -340,14 +340,15 @@ renderGolangUnion allTypes = do
         line $ "return marshalUnion(" <> args <> ", " <> isNullableString <> ")"
     line "}"
     where
-        ifClass :: (String -> Doc Unit) -> Doc Unit
+        ifClass :: (String -> String -> Doc Unit) -> Doc Unit
         ifClass f =
             let { element } = removeElement isClass allTypes
             in
                 case element of
                 Just t -> do
                     name <- unionFieldName t
-                    f name
+                    { rendered } <- renderTypeToGolang t
+                    f name rendered
                 Nothing -> pure unit
         maybeAssignNil p =
             let { element } = removeElement p allTypes
