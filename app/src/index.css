@@ -12,17 +12,22 @@ body {
   padding: 0;
 }
 
+main {
+  padding: 0 !important;
+  height: 100vh;
+}
+
+.mdc-layout-grid__inner {
+  grid-gap: 0 !important;
+  height: 100%;
+}
+
 #logo {
   margin-right: -24px;
 }
 
 sidebar {
   background: var(--mdc-theme--background);
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 440px;
   z-index: 1;
 }
 
@@ -36,21 +41,12 @@ sidebar .mdc-switch {
   margin-top: 30px;
 }
 
-sidebar .source-dest {
-  display: flex;
-  flex-direction: row;
-}
-
 #button-parent {
-  margin-top: 30px;
+  margin-top: 20px;
 }
 
 sidebar .mdc-select:first-child {
   margin-right: 20px;
-}
-
-sidebar .mdc-select:last-child {
-  min-width: 120px;
 }
 
 #json-editor {
@@ -64,10 +60,8 @@ sidebar .mdc-select:last-child {
 
 #output-editor {
   z-index: 0;
-  width: calc(100vw - 440px) !important;
-  height: 100vh !important;
-  top: 0px;
-  left: 440px;
+  width: 100% !important;
+  height: 100% !important;
   margin: 0;
   font-size: 11pt !important;
   font-family: Consolas, Menlo, monospace;

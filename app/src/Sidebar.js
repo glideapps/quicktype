@@ -21,7 +21,7 @@ export default class Sidebar extends Component {
 
   render() {
     return (
-        <sidebar className="mdc-theme--dark mdc-elevation--z4">
+        <sidebar className="mdc-layout-grid__cell mdc-layout-grid__cell--span-4 mdc-theme--dark mdc-elevation--z4">
             <header className="mdc-toolbar mdc-elevation--z2">
                 <div className="mdc-toolbar__row">
                 <section className="mdc-toolbar__section mdc-toolbar__section--align-start">
@@ -54,7 +54,7 @@ export default class Sidebar extends Component {
                     onChange={this.props.onChangeTopLevelName} />
 
                 <Editor
-                    className="json"
+                    id="json"
                     lang="json"
                     theme="solarized_dark"
                     onChange={debounce(this.props.onChangeSource, 500)}
