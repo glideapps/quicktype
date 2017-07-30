@@ -206,7 +206,7 @@ legalize s =
     where
         isLegal c =
             let cc = Char.toCharCode c
-            in cc >= 32 && cc < 128
+            in cc >= 32 && cc < 128 && c /= '/'
 
 jsonNameStyle :: String -> String
 jsonNameStyle =
