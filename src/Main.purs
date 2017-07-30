@@ -55,7 +55,7 @@ makeTypeFromJson name json =
     J.foldJson
     (\_ -> pure IRNull)
     (\_ -> pure IRBool)
-    (\n -> pure if round n == n then IRInteger else IRDouble)
+    (\n -> pure IRDouble)
     (\_ -> pure IRString)
     (\arr -> do
         let typeName = singular name
