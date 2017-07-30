@@ -19,6 +19,19 @@ const about_url = "http://blog.quicktype.io/2017/previewing-quicktype";
 export default class Sidebar extends Component {
   sendEvent = (name, value) => window.ga("send", "event", "Sidebar", name, value);
 
+  componentDidMount() {
+    window.addEventListener('resize', () => {
+        this.adjustSourceEditorHeight();
+    });
+    this.adjustSourceEditorHeight();
+  }
+
+  adjustSourceEditorHeight = () => {
+      let editor = window.document.getElementById("json-editor");
+      let height = Math.max(300, window.innerHeight - 360);
+      editor.style.height = `${height}px`;
+  }
+
   render() {
     return (
         <sidebar className="mdc-layout-grid__cell mdc-layout-grid__cell--span-4 mdc-theme--dark mdc-elevation--z4">

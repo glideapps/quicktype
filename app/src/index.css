@@ -32,13 +32,17 @@ sidebar {
 }
 
 sidebar > .content {
-  padding: 20px;
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
 }
 
 sidebar .mdc-switch {
   margin-top: 30px;
+}
+
+sidebar .source-dest > .mdc-select {
+  margin-top: 20px;
 }
 
 #button-parent {
@@ -53,8 +57,6 @@ sidebar .mdc-select:first-child {
   font-size: 10pt;
   margin-top: 10px;
   border-radius: 3px;
-
-  height: 480px !important;
   width: inherit !important;
 }
 
