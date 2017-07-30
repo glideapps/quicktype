@@ -1,11 +1,12 @@
 language: node_js
 node_js: '6'
-sudo: enabled
-before_install:
-  - sudo sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ trusty main" > /etc/apt/sources.list.d/dotnetdev.list'
-  - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 417A0893
-  - sudo apt-get update
-  - sudo apt-get install dotnet-dev-1.0.4
+addons:
+  apt:
+    sources:
+      - sourceline: 'deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ trusty main'
+        key_url: 'https://apt-mo.trafficmanager.net/keys/microsoft.asc'
+    packages:
+      - dotnet-dev-1.0.1
 script:
   - npm run test
 cache:
