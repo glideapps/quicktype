@@ -44,4 +44,4 @@ for url in urls:
         f.write(data)
     print("%s: %d bytes" % (filename, len(data)))
 
-subprocess.call(["node", "bin/test.js", "test/awesome-json-results"])
+subprocess.call(["node", "test/test.js", "test/awesome-json-results"])
