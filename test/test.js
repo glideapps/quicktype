@@ -109,6 +109,7 @@ function deepEquals(x, y) {
 function exec(s, opts, cb) {
     let result = shell.exec(s, opts, cb);
     if (result.code !== 0) {
+        console.error(`Error: Command failed: ${s}`);
         shell.exit(result.code);
     }
     return result;
@@ -120,7 +121,7 @@ function execAndCompare(cmd, p, knownFails) {
         let outputJSON = JSON.parse(outputString);
         let inputJSON = JSON.parse(fs.readFileSync(p));
         if (!deepEquals(inputJSON, outputJSON)) {
-            console.log("Error: Output is not equivalent to input.");
+            console.error("Error: Output is not equivalent to input.");
             process.exit(1);
         }
     } else {
