@@ -110,7 +110,7 @@ renderFromJsonSchema { renderer, input: json, topLevelName } = do
         # pure
 
 pipelines :: Environment -> Array (Pipeline Json)
-pipelines Development = [renderFromJsonSchema, renderFromJson]
+pipelines Development = [renderFromJson]
 pipelines Production = [renderFromJson]
 
 firstSuccess :: forall a. Array (Pipeline a) -> Pipeline a
