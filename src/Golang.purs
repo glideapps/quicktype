@@ -8,7 +8,8 @@ import Prelude
 
 import Data.Array as A
 import Data.Char.Unicode (isDigit, isLetter)
-import Data.Foldable (for_, intercalate)
+import Data.Foldable (for_, intercalate, foldl)
+import Data.List (List, (:))
 import Data.List as L
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe)
@@ -267,17 +268,35 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         blank
         renderGolangUnion types
 
+pad :: Int -> String -> String
+pad n s = s <> Str.fromCharArray (A.replicate (n - (Str.length s)) ' ')
+
+columnize :: List (List String) -> Doc Unit
+columnize L.Nil = pure unit
+columnize rows@(firstRow : otherRows) =
+    let columnWidths = foldl (\m l -> L.zipWith max m $ map Str.length l) (map Str.length firstRow) otherRows
+        paddedRows = map (L.zipWith pad columnWidths) rows
+    in
+        for_ paddedRows \row -> do
+            line $ Str.trim $ intercalate " " row
+
+renderStruct :: String -> List (List String) -> Doc Unit
+renderStruct name columns = do
+    line $ "type " <> name <> " struct {"
+    indent do
+        columnize columns
+    line "}"
+
 renderGolangType :: Int -> IRClassData -> Doc Unit
 renderGolangType classIndex (IRClassData { names, properties }) = do
     className <- lookupClassName classIndex
     let propertyNames = transformNames goNameStyle ("Other" <> _) S.empty $ map (\n -> Tuple n n) $ Map.keys properties
-    line $ "type " <> className <> " struct {"
-    indent do
-        for_ (Map.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
-            let csPropName = lookupName pname propertyNames
-            { rendered, comment } <- renderTypeToGolang ptype
-            line $ csPropName <> " " <> rendered <> " `json:\"" <> (stringEscape pname) <> "\"`" <> (renderComment comment)
-    line "}"
+    let propsArray = Map.toUnfoldable properties :: List _
+    columns <- propsArray # mapM \(Tuple pname ptype) -> do
+        let csPropName = lookupName pname propertyNames
+        { rendered, comment } <- renderTypeToGolang ptype
+        pure $ (csPropName : rendered : ("`json:\"" <> (stringEscape pname) <> "\"`" <> renderComment comment) : L.Nil)
+    renderStruct className columns
 
 unionFieldName :: IRType -> Doc String
 unionFieldName t = goNameStyle <$> getTypeNameForUnion t
@@ -290,13 +309,11 @@ renderGolangUnion allTypes = do
     name <- lookupUnionName allTypes
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     let isNullableString = if isJust emptyOrNull then "true" else "false"
-    line $ "type " <> name <> " struct {"
-    indent do
-        for_ nonNullTypes \t -> do
-            { rendered, comment } <- renderUnionToGolang $ S.union (S.singleton t) (S.singleton IRNull)
-            field <- unionFieldName t
-            line $ field <> " " <> rendered <> (renderComment comment)
-    line "}"
+    columns <- (L.fromFoldable nonNullTypes) # mapM \t -> do
+        { rendered, comment } <- renderUnionToGolang $ S.union (S.singleton t) (S.singleton IRNull)
+        field <- unionFieldName t
+        pure $ (field : (rendered <> renderComment comment) : L.Nil)
+    renderStruct name columns
     blank
     line $ "func (x *" <> name <> ") UnmarshalJSON(data []byte) error {"    
     indent do
