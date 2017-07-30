@@ -1,0 +1,131 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Business Service Providers API",
+        "description": "The Business Service Providers (BSP) API is a directory of U.S. and foreign-based businesses providing services that many small and medium sized exporters require to succeed in foreign markets Parameters.",
+        "version": "2.0.0"
+    },
+    "host": "api.trade.gov",
+    "schemes": [
+        "https"
+    ],
+    "basePath": "/v2",
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/business_service_providers/search": {
+            "get": {
+                "summary": "Business Service Providers API",
+                "description": "The Business Service Providers (BSP) API is a directory of U.S. and foreign-based businesses providing services that many small and medium sized exporters require to succeed in foreign markets Parameters.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Returns business service providers for a match in the company_name, company_description, or contact_name fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "ita_offices",
+                        "in": "query",
+                        "description": "Returns business service providers based on country. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "categories",
+                        "in": "query",
+                        "description": "Returns business service providers for a specific category. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "Service Providers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "History information for the given user",
+                        "schema": {
+                            "$ref": "#/definitions/Provider"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Provider": {
+            "properties": {
+                "ita_contact_email": {
+                    "type": "string",
+                    "description": "Email for ITA contact."
+                },
+                "company_name": {
+                    "type": "string",
+                    "description": "Name of company providing the service."
+                },
+                "company_phone": {
+                    "type": "string",
+                    "description": "Phone number for company."
+                },
+                "company_address": {
+                    "type": "string",
+                    "description": "Street, city, and country address for company."
+                },
+                "company_website": {
+                    "type": "string",
+                    "description": "URL for company site."
+                },
+                "company_description": {
+                    "type": "string",
+                    "description": "Description of company."
+                },
+                "company_email": {
+                    "type": "string",
+                    "description": "Email for contact at company."
+                },
+                "ita_office": {
+                    "type": "string",
+                    "description": "Name of ITA office that has provided company information."
+                },
+                "contact_title": {
+                    "type": "string",
+                    "description": "Title of contact at company."
+                },
+                "contact_name": {
+                    "type": "string",
+                    "description": "Name of contact at company."
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Category of services that company provides."
+                }                
+            }
+        }
+    }
+}

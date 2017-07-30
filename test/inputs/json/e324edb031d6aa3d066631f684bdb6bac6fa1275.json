@@ -1,0 +1,204 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "FTA Tariff Rates API",
+        "description": "The FTA Tariff Rates API provides data about each country with whom the United States has a Free Trade Agreement (FTA). When the U.S. enters into an FTA with a foreign government, it negotiates lower tariff rates with that government for a wide variety of products. A tariff is a tax that a company must pay a foreign country when shipping a product to that country. Typically the FTA tariffs rates decline over several years.",
+        "version": "2.0.0"
+    },
+    "host": "api.trade.gov",
+    "schemes": [
+        "https"
+    ],
+    "basePath": "/v2",
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/tariff_rates/search": {
+            "get": {
+                "summary": "FTA Tariff Rates API",
+                "description": "The FTA Tariff Rates API provides data about each country with whom the United States has a Free Trade Agreement (FTA). When the U.S. enters into an FTA with a foreign government, it negotiates lower tariff rates with that government for a wide variety of products. A tariff is a tax that a company must pay a foreign country when shipping a product to that country. Typically the FTA tariffs rates decline over several years.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Searches for a match within the subheading_description, tariff_rate_quota_note, rule_text, and tariff_line fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "sources",
+                        "in": "query",
+                        "description": "Returns tariff rates based on the ISO alpha-2 country codes of the source country. This method allows you to search for multiple sources (plural) separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "final_years",
+                        "in": "query",
+                        "description": "Returns entries based on the final_year field. Years are specified as a comma-delimited list.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "partner_start_years",
+                        "in": "query",
+                        "description": "Returns entries based on the partner_start_year field. Years are specified as a comma-delimited list.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "reporter_start_years",
+                        "in": "query",
+                        "description": "Returns entries based on the reporter_start_year field. Years are specified as a comma-delimited list.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "Tariffs",
+                    "Duties",
+                    "Free Trade Agreements"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Rate Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Rate"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Rate": {
+            "properties": {
+                "source": {
+                    "description": "Two letter code for the “reporter” country with whom the U.S. has the Free Trade Agreement.",
+                    "type": "string"
+                },
+                "source_id": {
+                    "description": "Unique identifier.",
+                    "type": "string"
+                },
+                "tariff_line": {
+                    "description": "Product's Harmonized System (HS) code for the product according to the reporter's nomenclature.",
+                    "type": "string"
+                },
+                "subheading_description": {
+                    "description": "English description at the subheading level (6-digit HS code).",
+                    "type": "string"
+                },
+                "hs_6": {
+                    "description": "6-digit HS code for the product.",
+                    "type": "string"
+                },
+                "base_rate": {
+                    "description": "The numeric tariff rate from which tariff reductions are calculated. Typically, this is the applied tariff rate at the time the FTA was negotiated.",
+                    "type": "string"
+                },
+                "base_rate_alt": {
+                    "description": "The non-numeric (specific) tariff rate from which the tariff reductions are calculated. Typically, this is the applied tariff rate at the time the FTA was negotiated.",
+                    "type": "string"
+                },
+                "final_year": {
+                    "description": "The year the tariff is eliminated under the FTA.",
+                    "type": "string"
+                },
+                "tariff_rate_quota": {
+                    "description": "Flag noting tariff treatment for products within quota (2) and out of quota (1).",
+                    "type": "string"
+                },
+                "tariff_rate_quota_note": {
+                    "description": "Text note about the tariff-rate quota (TRQ) applicable to the product.",
+                    "type": "string"
+                },
+                "tariff_eliminated": {
+                    "description": "Flag noting whether or not the tariff is eventually eliminated. “False”= not eliminated.",
+                    "type": "string"
+                },
+                "partner_name": {
+                    "description": "Exporting country's code.",
+                    "type": "string"
+                },
+                "reporter_name": {
+                    "description": "Importing country's code.",
+                    "type": "string"
+                },
+                "staging_basket": {
+                    "description": "The agreed tariff phase-out period for the product under the FTA.",
+                    "type": "string"
+                },
+                "partner_start_year": {
+                    "description": "Year the agreement entered into force for the partner. (The first year of tariff cuts).",
+                    "type": "string"
+                },
+                "reporter_start_year": {
+                    "description": "Year the agreement entered into force for the reporter. (The first year of tariff cuts).",
+                    "type": "string"
+                },
+                "partner_agreement_name": {
+                    "description": "Agreement name for the partner country.",
+                    "type": "string"
+                },
+                "reporter_agreement_name": {
+                    "description": "Agreement name for the reporter country.",
+                    "type": "string"
+                },
+                "quota_name": {
+                    "description": "Description for products subject to tariff-rate quotas. (Describes in-quota and out-of-quota tariff lines).",
+                    "type": "string"
+                },
+                "rule_text": {
+                    "description": "Text describing the applicable rule of origin for the product.",
+                    "type": "string"
+                },
+                "link_text": {
+                    "description": "Text describing URL to more detailed rule of origin information.",
+                    "type": "string"
+                },
+                "link_url": {
+                    "description": "URL to more detailed rule of origin information.",
+                    "type": "string"
+                },
+                "annual_rates": {
+                    "description": "Numeric year-by-year tariff rates under the FTA as the tariff is eliminated.",
+                    "type": "string"
+                },
+                "annual_rates_alt": {
+                    "description": "Non-numeric (specific) year-by-year tariff rates under the FTA.",
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

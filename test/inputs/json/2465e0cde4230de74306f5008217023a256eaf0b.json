@@ -1,0 +1,112 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "ITA Taxonomies",
+        "description": "The ITA Taxonomies API gives developers direct access to the exporting, trade, and investment terms that ITA uses to tag the content and data in its other APIs.",
+        "version": "2.0.0"
+    },
+    "host": "api.trade.gov",
+    "schemes": [
+        "https"
+    ],
+    "basePath": "/v2",
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/ita_taxonomies/search": {
+            "get": {
+                "summary": "Ita Taxonomies API",
+                "description": "The ITA Taxonomies API gives developers direct access to the exporting, trade, and investment terms that ITA uses to tag the content and data in its other APIs.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Returns taxonomy terms for a match within label field.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "types",
+                        "in": "query",
+                        "description": "Returns terms that fall under the given high-level taxonomy types. Enter multiple values separated by commas. The possible values are Industries, Topics, Countries, Trade Regions, and World Regions.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "labels",
+                        "in": "query",
+                        "description": "Returns terms based on exact matching of the label field. Enter multiple values separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "ITA"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Taxonomy"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Taxonomy": {
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The id assigned to the term."
+                },
+                "label": {
+                    "type": "string",
+                    "description": "The name of the given taxonomy term."
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The high level taxonomy type under which the given term belongs."
+                },
+                "sub_class_of": {
+                    "type": "string",
+                    "description": "An array containing hashes with the id and label of each parent term."
+                },
+                "annotations": {
+                    "type": "string",
+                    "description": "A hash containing key/value pairs of annotation properties."
+                },
+                "datatype_properties": {
+                    "type": "string",
+                    "description": "A hash containing key/array pairs of datatype properties. Each array contains id/label hashes."
+                },
+                "annotations": {
+                    "type": "string",
+                    "description": "A hash containing key/array pairs of object properties. Each array contains id/label hashes."
+                }
+            }
+        }
+    }
+}

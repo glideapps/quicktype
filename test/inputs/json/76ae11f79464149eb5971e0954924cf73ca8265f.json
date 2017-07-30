@@ -1,0 +1,2236 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "International Trade Administration API",
+        "description": "This is an inventory of APIs available at the International Trade Administration.",
+        "version": "2.0.0"
+    },
+    "host": "api.trade.gov",
+    "schemes": [
+        "https"
+    ],
+    "basePath": "/v2",
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/market_research_library/search": {
+            "get": {
+                "summary": "Market Research Library API",
+                "description": "The Market Research Library API provides metadata for country and industry reports that are produced by ITA's trade experts and are available in ITA's online market research library. ITA commercial officers that are stationed around the world, publish these authoritative reports in conjunction with Foreign Service officers from the State Department.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Returns market research reports for a match in the description or title fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "countries",
+                        "in": "query",
+                        "description": "Returns market research reports for a specific country based on ISO alpha-2 country codes. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "industries",
+                        "in": "query",
+                        "description": "Returns market research reports for specific controlled industry terms. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "expiration_date",
+                        "in": "query",
+                        "description": "Returns entries based on their expiration date. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "Market Research",
+                    "Market Intelligence"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Report Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Report"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/consolidated_screening_list/search": {
+            "get": {
+                "summary": "Consolidated Screening List API",
+                "description": "The Consolidated Screening List API consolidates eleven export screening lists of the Departments of Commerce, State and the Treasury into a single data feed as an aid to industry in conducting electronic screens of potential parties to regulated transactions.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Searches for a match within the name, alt_names, remarks, and title fields from all eleven lists.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "sources",
+                        "in": "query",
+                        "description": "Searches only the lists specified by the Source Abbreviation.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "countries",
+                        "in": "query",
+                        "description": "Searches only entities whose country, nationalities, or citizenships fields match the country code based on ISO alpha-2 country codes. The country fields are found in the addresses and ids arrays. This method allows you to search for multiple countries (plural) separated by commas but will only return one country (singular) per entity.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "address",
+                        "in": "query",
+                        "description": "Searches against fields in the addresses array.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "description": "Searches against the name and alt_names fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "fuzzy_name",
+                        "in": "query",
+                        "description": "Set fuzzy_name=true to utilize fuzzy name matching.  Fuzzy name matching enables users to query a name and get usable results without knowing the exact spelling of an entry.  The fuzzy_name parameter only works in tandem with name.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Searches based on the type of the entry (e.g, Individual, Entity, Vessel).",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Returns entries based on their start date. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "Returns entries based on their end date. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "issue_date",
+                        "in": "query",
+                        "description": "Returns entries based on the issue dates of the ids array. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "expiration_date",
+                        "in": "query",
+                        "description": "Returns entries based on the expiration dates of the ids array. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "Screening Lists",
+                    "Compliance",
+                    "Denied Parties"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful List Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/List"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/trade_events/search": {
+            "get": {
+                "summary": "Trade Events API",
+                "description": "The Trade Events API provides data on events for U.S. businesses interested in selling their products and services overseas. These events include industry conferences, webinars, lectures, and trade missions organized by ITA and other trade agencies.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Searches for a match within the registration_title, description, event_name, industries, city, venues.city, venues.state, venues.country, contacts.first_name, contacts.last_name, and contacts.person_title fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "industries",
+                        "in": "query",
+                        "description": "Returns trade events for specific controlled industry terms. This method allows you to search for multiple industries (plural) separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "countries",
+                        "in": "query",
+                        "description": "Returns trade events for a specific country based on ISO alpha-2 country codes. This method allows you to search for multiple countries (plural) separated by commas but will only return one country (singular) per event.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "trade_regions",
+                        "in": "query",
+                        "description": "Returns trade events for a specific Trade Region.  Enter multiple values by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "world_regions",
+                        "in": "query",
+                        "description": "Returns trade events for a specific World Region.  Enter multiple values by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "sources",
+                        "in": "query",
+                        "description": "Searches only the events specified by the Source Abbreviation.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Returns events based on their start date. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "Returns events based on their end date. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "Events",
+                    "Webinars",
+                    "Seminars",
+                    "Training"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of products",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Event"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/trade_leads/search": {
+            "get": {
+                "summary": "Trade Leads API",
+                "description": "The Trade Leads API provides contract opportunities for U.S. businesses selling their products and services overseas. These leads come from a variety of sources.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Searches for a match within the title, description, topic, tags, industry, ita_industries, and procurement_organization fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "industries",
+                        "in": "query",
+                        "description": "Returns trade leads for specific controlled industry terms. This method allows you to search for multiple industries (plural) separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "countries",
+                        "in": "query",
+                        "description": "Returns trade leads for a specific country based on ISO alpha-2 country codes. This method allows you to search for multiple countries (plural) separated by commas but will only return one country (singular) per lead.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "trade_regions",
+                        "in": "query",
+                        "description": "Returns trade leads for a specific Trade Region.  Enter multiple values by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "world_regions",
+                        "in": "query",
+                        "description": "Returns trade leads for a specific World Region.  Enter multiple values by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "sources",
+                        "in": "query",
+                        "description": "Searches only the leads specified by the Source field.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "publish_date",
+                        "in": "query",
+                        "description": "Returns leads based on their publish date. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "Returns leads based on their end date. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "publish_date_amended",
+                        "in": "query",
+                        "description": "Returns leads based on their amended publish date. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "Leads",
+                    "Procurement Opportunities",
+                    "Contracting Opportunities"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Lead Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Lead"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tariff_rates/search": {
+            "get": {
+                "summary": "Tariff Rates API",
+                "description": "The Tariff Rates API provides data about each country with whom the United States has a Free Trade Agreement (FTA). When the U.S. enters into an FTA with a foreign government, it negotiates lower tariff rates with that government for a wide variety of products. A tariff is a tax that a company must pay a foreign country when shipping a product to that country. Typically the FTA tariffs rates decline over several years.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Searches for a match within the subheading_description, tariff_rate_quota_note, rule_text, and tariff_line fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "sources",
+                        "in": "query",
+                        "description": "Returns tariff rates based on the ISO alpha-2 country codes of the source country. This method allows you to search for multiple sources (plural) separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "final_years",
+                        "in": "query",
+                        "description": "Returns entries based on the final_year field. Years are specified as a comma-delimited list.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "partner_start_years",
+                        "in": "query",
+                        "description": "Returns entries based on the partner_start_year field. Years are specified as a comma-delimited list.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "reporter_start_years",
+                        "in": "query",
+                        "description": "Returns entries based on the reporter_start_year field. Years are specified as a comma-delimited list.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "Tariffs",
+                    "Duties",
+                    "Free Trade Agreements"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Rate Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Rate"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ita_faqs/search": {
+            "get": {
+                "summary": "FAQs on Exporting API",
+                "description": "The Frequently Asked Questions (FAQs) API includes more than 200 commonly asked questions about exporting. The answers provided are from government experts that specialize in unique aspects of trade.\n",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Searches for a match within the question and answer fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "topics",
+                        "in": "query",
+                        "description": "Returns FAQs based on topic name. This method allows you to search for multiple topics (plural) separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "industries",
+                        "in": "query",
+                        "description": "Returns FAQs for specific controlled industry terms. This method allows you to search for multiple industries (plural) separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "countries",
+                        "in": "query",
+                        "description": "Returns office locations for a specific country based on ISO alpha-2 country codes. This method allows you to search for multiple countries (plural) separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "trade_regions",
+                        "in": "query",
+                        "description": "Returns FAQs based on trade region.  This method allows you to search for multiple trade regions separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "world_regions",
+                        "in": "query",
+                        "description": "Returns FAQs based on world region.  This method allows you to search for multiple world regions separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "first_published_date",
+                        "in": "query",
+                        "description": "Returns FAQs based on the date they were first published.  Dates are filtered by comparing them against an inclusive range, which must be entered with the following format:  YYYY-mm-dd TO YYYY-mm-dd.  Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "last_published_date",
+                        "in": "query",
+                        "description": "Returns FAQs based on the date they were last updated.  Dates are filtered by comparing them against an inclusive range, which must be entered with the following format:  YYYY-mm-dd TO YYYY-mm-dd.  Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "FAQs"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Rate Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/FAQ"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ita_office_locations/search": {
+            "get": {
+                "summary": "ITA Offices & Centers API",
+                "description": "The ITA Offices & Centers API provides contact and address information for all of ITA's domestic and international export assistance centers. There are almost 200 ITA centers worldwide whose locations are managed by ITA's internal office management system.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Returns office locations for a match within the post or office name fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "city",
+                        "in": "query",
+                        "description": "Returns office locations based on city name.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "description": "Returns locations for export assistance centers located in a specific U.S. State or Dependent Area.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "countries",
+                        "in": "query",
+                        "description": "Returns office locations for a specific country based on ISO alpha-2 country codes. This method allows you to search for multiple countries (plural) separated by commas but will only return one country (singular) per office location.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "Offices"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Office Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Office"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/trade_articles/search": {
+            "get": {
+                "summary": "Trade News & Articles API",
+                "description": "The Trade News & Articles API provides in-depth news and articles written by Trade Specialists working in the Federal government. The authors include staff from ITA as well as other Trade Promotion Coordinating Committee (TPCC) agencies.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Searches for a match within the title, short_title, summary, content, and keyword fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "export_phases",
+                        "in": "query",
+                        "description": "Returns articles based on the export phase. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "industries",
+                        "in": "query",
+                        "description": "Returns articles for specific controlled industry terms. This method allows you to search for multiple industries separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "countries",
+                        "in": "query",
+                        "description": "Returns office locations based on ISO alpha-2 country codes.  This method allows you to search for multiple countries separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "topics",
+                        "in": "query",
+                        "description": "Returns articles based on topic. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "sub_topics",
+                        "in": "query",
+                        "description": "Returns articles based on sub-topic. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "geo_regions",
+                        "in": "query",
+                        "description": "Returns articles based on geo region. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "geo_subregions",
+                        "in": "query",
+                        "description": "Returns articles based on geo sub-region. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "trade_regions",
+                        "in": "query",
+                        "description": "Returns articles based on trade region. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "trade_programs",
+                        "in": "query",
+                        "description": "Returns articles based on trade program. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "trade_initiatives",
+                        "in": "query",
+                        "description": "Returns articles based on trade initiative. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "creation_date",
+                        "in": "query",
+                        "description": "Returns articles based on the date they were created. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format: YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "release_date",
+                        "in": "query",
+                        "description": "Returns articles based on their release date. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format: YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "expiration_date",
+                        "in": "query",
+                        "description": "Returns articles based on their expiration date. Dates are filtered by comparing them against an inclusive range, which must be entered with the following format: YYYY-mm-dd TO YYYY-mm-dd. Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the maximum amount of hits to be returned.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "News",
+                    "Articles"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Article Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Article"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ita_zipcode_to_post/search": {
+            "get": {
+                "summary": "Zip Code to USEAC API",
+                "description": "The Zip Code to USEAC API provides direct access to the U.S. Export Assistance Centers (USEACs) that have been assigned to all of the 40,000+ zip codes in the United States.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Returns zip code entries for a match within the post, office_name or zip_city fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "zip_codes",
+                        "in": "query",
+                        "description": "Returns zip code entries that match the specified zip codes. Enter muliple values separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "Offices"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "History information for the given user",
+                        "schema": {
+                            "$ref": "#/definitions/Center"
+                        }
+                    }
+                }
+            }
+        },
+        "/business_service_providers/search": {
+            "get": {
+                "summary": "Business Service Providers API",
+                "description": "The Business Service Providers (BSP) API is a directory of U.S. and foreign-based businesses providing services that many small and medium sized exporters require to succeed in foreign markets Parameters.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Returns business service providers for a match in the company_name, company_description, or contact_name fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "ita_offices",
+                        "in": "query",
+                        "description": "Returns business service providers based on country. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "categories",
+                        "in": "query",
+                        "description": "Returns business service providers for a specific category. Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International",
+                    "Service Providers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "History information for the given user",
+                        "schema": {
+                            "$ref": "#/definitions/Provider"
+                        }
+                    }
+                }
+            }
+        },
+        "/ita_taxonomies/search": {
+            "get": {
+                "summary": "Ita Taxonomies API",
+                "description": "The ITA Taxonomies API gives developers direct access to the exporting, trade, and investment terms that ITA uses to tag the content and data in its other APIs.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Returns taxonomy terms for a match within label field.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "types",
+                        "in": "query",
+                        "description": "Returns terms that fall under the given high-level taxonomy types. Enter multiple values separated by commas. The possible values are Industries, Topics, Countries, Trade Regions, and World Regions.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "labels",
+                        "in": "query",
+                        "description": "Returns terms based on exact matching of the label field. Enter multiple values separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "ITA"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Taxonomy"
+                        }
+                    }
+                }
+            }
+        },
+        "/de_minimis/search": {
+            "get": {
+                "summary": "De Minimis API",
+                "description": "The De Minimis API provides data about the De Minimis amount and the Value Added Tax (VAT) amount that products may be subject to when exported to foreign countries.  “De Minimis” is the threshold for a product’s value below which no duty or tax is charged.  Furthermore, products below the De Minimis undergo minimal clearance procedures, such as customs and paperwork requirements.  Similarly, the value of the exported products must exceed the VAT amount before it is subject to VAT.",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Returns de minimis rates for a match in the country or notes fields.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "countries",
+                        "in": "query",
+                        "description": "Returns de minimis rates based on ISO alpha-2 country codes.  Enter multiple terms by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the maximum amount of hits to be returned.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Trade",
+                    "Exporting",
+                    "ITA",
+                    "International"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful De Minimis Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/DeMinimis"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/market_intelligence/search": {
+            "get": {
+                "summary": "Market Intelligence API",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Searches for a match within the atom, references, section, summary, and title fields.  Note:  the atom field is searchable, but not returned in the JSON results.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "industries",
+                        "in": "query",
+                        "description": "Returns articles for a specific controlled industry term. This method allows you to search for multiple industries (plural) separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "topics",
+                        "in": "query",
+                        "description": "Returns articles for a specific topic term. This method allows you to search for multiple topics (plural) separated by commas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "countries",
+                        "in": "query",
+                        "description": "Returns articles for a specific country based on ISO alpha-2 country codes. This method allows you to search for multiple countries (plural) separated by commas but will only return one country (singular) per event.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "trade_regions",
+                        "in": "query",
+                        "description": "Returns articles for a specific Trade Region.  Enter multiple values by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "world_regions",
+                        "in": "query",
+                        "description": "Returns articles for a specific World Region.  Enter multiple values by separating with a comma.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "sources",
+                        "in": "query",
+                        "description": "Searches only the articles specified by the Source Abbreviation.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "first_published_date",
+                        "in": "query",
+                        "description": "Returns articles based on their initial publish date.  Dates are filtered by comparing them against an inclusive range, which must be entered with the following format:  YYYY-mm-dd TO YYYY-mm-dd.  Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "last_published_date",
+                        "in": "query",
+                        "description": "Returns articles based on their most recent publish date.  Dates are filtered by comparing them against an inclusive range, which must be entered with the following format:  YYYY-mm-dd TO YYYY-mm-dd.  Searching on a single date can be done by entering the same value for the start and end of the range.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "The size parameter allows you to configure the number of results to be returned up to a maximum of 100.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "The offset parameter defines the offset from the first result you want to fetch. Unless specified the API returns 10 results at a time.",
+                        "required": false,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "ITA"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of products",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/MarketIntelligence"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Report": {
+            "properties": {
+                "id": {
+                    "description": "Unique identifier assigned to the report.",
+                    "type": "string"
+                },
+                "countries": {
+                    "description": "Country category(ies) assigned to the report.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Abstract of the report's content.",
+                    "type": "string"
+                },
+                "expiration_date": {
+                    "description": "Date when the report is no longer valid.",
+                    "type": "string"
+                },
+                "industries": {
+                    "description": "Industry categories assigned to the report.",
+                    "type": "string"
+                },
+                 "ita_industries": {
+                    "description": "The ITA industries associated with the report.",
+                    "type": "string"
+                },
+                "report_type": {
+                    "description": "The report type can either be CCG, Best Market Report, or Market Research Report.",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Report title (default sort).",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL for the report.",
+                    "type": "string"
+                }
+            }
+        },
+        "List": {
+            "properties": {
+                "addresses": {
+                    "description": "Array of entity's complete addresses.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Entity's name.",
+                    "type": "string"
+                },
+                "alt_names": {
+                    "description": "Alias names used by the entity.",
+                    "type": "string"
+                },
+                "source_list_url": {
+                    "description": "Location of the original list.",
+                    "type": "string"
+                },
+                "source_information_url": {
+                    "description": "Information from the Source agency about the list.",
+                    "type": "string"
+                },
+                "ids": {
+                    "description": "An array showing specific identification information of the entity.",
+                    "type": "string"
+                },
+                "citizenships": {
+                    "description": "Entity's citizenships.",
+                    "type": "string"
+                },
+                "dates_of_birth": {
+                    "description": "Entity's dates of birth.",
+                    "type": "string"
+                },
+                "nationalities": {
+                    "description": "Entity's nationalities.",
+                    "type": "string"
+                },
+                "places_of_birth": {
+                    "description": "Entity's places of birth.",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Entity's title.",
+                    "type": "string"
+                },
+                "entity_number": {
+                    "description": "Unique id assigned by the originating list.",
+                    "type": "string"
+                },
+                "start_date": {
+                    "description": "The effective date for the entity to be included on the list as defined by the Federal Register Notice.",
+                    "type": "string"
+                },
+                "end_date": {
+                    "description": "The date on which the entity's inclusion on the list will be lifted, waived, or will have expired.",
+                    "type": "string"
+                },
+                "federal_register_notice": {
+                    "description": "The official source of information about the parties on this list.",
+                    "type": "string"
+                },
+                "license_requirement": {
+                    "description": "The license requirement as determined by the Export Administration Regulations.",
+                    "type": "string"
+                },
+                "license_policy": {
+                    "description": "The policy set forth in the Export Administration Regulations regarding denial.",
+                    "type": "string"
+                },
+                "remarks": {
+                    "description": "Additional remarks or notes regarding the company, entity, or person on the list.",
+                    "type": "string"
+                },
+                "standard_order": {
+                    "description": "Whether or not (Y/N) the standard order applies to the Denied Party as defined by the Bureau of Industry and Security (BIS).",
+                    "type": "string"
+                },
+                "programs": {
+                    "description": "Agency programs related to the entity on the list.",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "The name of the source list where this entity is listed.",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Classification of the entity.",
+                    "type": "string"
+                },
+                "call_sign": {
+                    "description": "Call sign of the vessel.",
+                    "type": "string"
+                },
+                "gross_registered_tonnage": {
+                    "description": "The gross weight in tons registered for the vessel.",
+                    "type": "string"
+                },
+                "gross_tonnage": {
+                    "description": "The gross weight in tons not-registered for the vessel.",
+                    "type": "string"
+                },
+                "vessel_flag": {
+                    "description": "Country flag of the vessel.",
+                    "type": "string"
+                },
+                "vessel_owner": {
+                    "description": "Owner/Operator of the vessel.",
+                    "type": "string"
+                },
+                "vessel_type": {
+                    "description": "Describes the type of vessel (ferry, bulk cargo, tug).",
+                    "type": "string"
+                }
+            }
+        },
+        "Event": {
+            "properties": {
+                "id": {
+                    "description": "Unique identifier for event.",
+                    "type": "string"
+                },
+                "event_name": {
+                    "description": "Name given for the event.",
+                    "type": "string"
+                },
+                "event_type": {
+                    "description": "The type of the event.",
+                    "type": "string"
+                },
+                "start_date": {
+                    "description": "Start date of the event.",
+                    "type": "string"
+                },
+                "start_time": {
+                    "description": "The start time of the event.",
+                    "type": "string"
+                },
+                "end_date": {
+                    "description": "The date the event will end.",
+                    "type": "string"
+                },
+                "end_time": {
+                    "description": "The end time of the event.",
+                    "type": "string"
+                },
+                "time_zone": {
+                    "description": "The time zone of the event’s location.",
+                    "type": "string"
+                },
+                "cost": {
+                    "description": "Cost of the event.",
+                    "type": "string"
+                },
+                "cost_currency": {
+                    "description": "The currency of the cost value.",
+                    "type": "string"
+                },
+                "registration_link": {
+                    "description": "URL for the event's registration page.",
+                    "type": "string"
+                },
+                "registration_title": {
+                    "description": "Title of the registration URL.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Text describing the event.",
+                    "type": "string"
+                },
+                "industries": {
+                    "description": "Industry categories assigned to the event.",
+                    "type": "string"
+                },
+                "ita_industries": {
+                    "description": "The ITA industries associated with the assigned industries.",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "Link to the event's web page.",
+                    "type": "string"
+                },
+                "venues": {
+                    "description": "Array of venue information.",
+                    "type": "string"
+                },
+                "contacts": {
+                    "description": "Array of contact information.",
+                    "type": "string"
+                },
+                "first_name": {
+                    "description": "The event contact’s first name.",
+                    "type": "string"
+                },
+                "last_name": {
+                    "description": "The event contact’s last name.",
+                    "type": "string"
+                },
+                "post": {
+                    "description": "The event contact’s location.",
+                    "type": "string"
+                },
+                "person_title": {
+                    "description": "The event contact’s title.",
+                    "type": "string"
+                },
+                "phone": {
+                    "description": "The event contact’s phone number.",
+                    "type": "string"
+                },
+                "email": {
+                    "description": "The event contact’s email address.",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "Agency providing the event information.",
+                    "type": "string"
+                },
+                "trade_regions": {
+                    "description": "The trade regions associated with the event.",
+                    "type": "string"
+                },
+                "world_regions": {
+                    "description": "The world regions associated with the event.",
+                    "type": "string"
+                }
+            }
+        },
+        "Lead": {
+            "properties": {
+                "country": {
+                    "description": "Country where the procurement opportunity is taking place.",
+                    "type": "string"
+                },
+                "country_name": {
+                    "description": "Full country name.",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Title of the lead.",
+                    "type": "string"
+                },
+                "reference_number": {
+                    "description": "The lead's reference number.",
+                    "type": "string"
+                },
+                "contract_number": {
+                    "description": "Contract number for the opportunity.",
+                    "type": "string"
+                },
+                "project_number": {
+                    "description": "Number for the opportunity.",
+                    "type": "string"
+                },
+                "publish_date": {
+                    "description": "Date lead was posted.",
+                    "type": "string"
+                },
+                "end_date": {
+                    "description": "Closing date for the lead.",
+                    "type": "string"
+                },
+                "publish_date_amended": {
+                    "description": "Amended publish date for the lead.",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status of the lead (note this API only shows open leads).",
+                    "type": "string"
+                },
+                "industry": {
+                    "description": "Industry category assigned to the opportunity.",
+                    "type": "string"
+                },
+                "ita_industries": {
+                    "description": "ITA industry terms associated with the assigned industry.",
+                    "type": "string"
+                },
+                "project_size": {
+                    "description": "Budget for project in U.S. dollars.",
+                    "type": "string"
+                },
+                "min_contract_value": {
+                    "description": "Minimum value of the lead (in U.K. pounds).",
+                    "type": "string"
+                },
+                "max_contract_value": {
+                    "description": "Maximum value of the lead (in U.K. pounds).",
+                    "type": "string"
+                },
+                "specific_location": {
+                    "description": "Location of the opportunity.",
+                    "type": "string"
+                },
+                "specific_address": {
+                    "description": "Address of the opportunity's location.",
+                    "type": "string"
+                },
+                "notice_type": {
+                    "description": "Type of contract.",
+                    "type": "string"
+                },
+                "trade_agreement": {
+                    "description": "Relevant trade agreement for the contract.",
+                    "type": "string"
+                },
+                "bid_type": {
+                    "description": "The criteria for the contract.",
+                    "type": "string"
+                },
+                "funding_source": {
+                    "description": "Funding source of the project.",
+                    "type": "string"
+                },
+                "borrowing_entity": {
+                    "description": "Bank funding the project.",
+                    "type": "string"
+                },
+                "competitive_procurement_strategy": {
+                    "description": "Bidding criteria for respondents.",
+                    "type": "string"
+                },
+                "non_competitive_procurement_strategy": {
+                    "description": "States whether it is a competitive procurement.",
+                    "type": "string"
+                },
+                "procurement_organization": {
+                    "description": "Agency responsible for the contract.",
+                    "type": "string"
+                },
+                "procurement_office": {
+                    "description": "Office responsible of the contract.",
+                    "type": "string"
+                },
+                "procurement_office_address": {
+                    "description": "Address of the procurement office.",
+                    "type": "string"
+                },
+                "procurement_organization_address": {
+                    "description": "Address of the procurement organization.",
+                    "type": "string"
+                },
+                "classification_code": {
+                    "description": "Code that classifies the lead.",
+                    "type": "string"
+                },
+                "implementing_entity": {
+                    "description": "Agency responsible for the implementation.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Description of the opportunity.",
+                    "type": "string"
+                },
+                "tags": {
+                    "description": "Keywords associated with the opportunity.",
+                    "type": "string"
+                },
+                "contact": {
+                    "description": "Point of contact.",
+                    "type": "string"
+                },
+                "urls": {
+                    "description": "URLs that pertain to the bid.",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "Entity providing the trade lead information.",
+                    "type": "string"
+                },
+                "lead_source": {
+                    "description": "Source of the trade lead, typically an organization.",
+                    "type": "string"
+                },
+                "comments": {
+                    "description": "Comments about the project.",
+                    "type": "string"
+                },
+                "submitting_officer": {
+                    "description": "Contract officer name.",
+                    "type": "string"
+                },
+                "submitting_officer_contact": {
+                    "description": "Contract officer email.",
+                    "type": "string"
+                },
+                "categories": {
+                    "description": "Array of categories that describe the procurement opportunity.",
+                    "type": "string"
+                },
+                "agency": {
+                    "description": "Agency responsible for the contract.",
+                    "type": "string"
+                },
+                "contract_value": {
+                    "description": "Value of the lead.",
+                    "type": "string"
+                },
+                "parent_id": {
+                    "description": "Procurement opportunity that this lead is related to.",
+                    "type": "string"
+                },
+                "procurement_method": {
+                    "description": "Describes who may respond to the lead.",
+                    "type": "string"
+                },
+                "topic": {
+                    "description": "Short description of the category that the lead falls under",
+                    "type": "string"
+                },
+                "topic": {
+                    "description": "Short description of the category that the lead falls under",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL that pertains to the bid.",
+                    "type": "string"
+                },
+                "trade_regions": {
+                    "description": "The trade regions associated with the lead.",
+                    "type": "string"
+                },
+                "world_regions": {
+                    "description": "The world regions associated with the lead.",
+                    "type": "string"
+                }
+            }
+        },
+        "Rate": {
+            "properties": {
+                "source": {
+                    "description": "Two letter code for the “reporter” country with whom the U.S. has the Free Trade Agreement.",
+                    "type": "string"
+                },
+                "source_id": {
+                    "description": "Unique identifier.",
+                    "type": "string"
+                },
+                "tariff_line": {
+                    "description": "Product's Harmonized System (HS) code for the product according to the reporter's nomenclature.",
+                    "type": "string"
+                },
+                "subheading_description": {
+                    "description": "English description at the subheading level (6-digit HS code).",
+                    "type": "string"
+                },
+                "hs_6": {
+                    "description": "6-digit HS code for the product.",
+                    "type": "string"
+                },
+                "base_rate": {
+                    "description": "The numeric tariff rate from which tariff reductions are calculated. Typically, this is the applied tariff rate at the time the FTA was negotiated.",
+                    "type": "string"
+                },
+                "base_rate_alt": {
+                    "description": "The non-numeric (specific) tariff rate from which the tariff reductions are calculated. Typically, this is the applied tariff rate at the time the FTA was negotiated.",
+                    "type": "string"
+                },
+                "final_year": {
+                    "description": "The year the tariff is eliminated under the FTA.",
+                    "type": "string"
+                },
+                "tariff_rate_quota": {
+                    "description": "Flag noting tariff treatment for products within quota (2) and out of quota (1).",
+                    "type": "string"
+                },
+                "tariff_rate_quota_note": {
+                    "description": "Text note about the tariff-rate quota (TRQ) applicable to the product.",
+                    "type": "string"
+                },
+                "tariff_eliminated": {
+                    "description": "Flag noting whether or not the tariff is eventually eliminated. “False”= not eliminated.",
+                    "type": "string"
+                },
+                "partner_name": {
+                    "description": "Exporting country's code.",
+                    "type": "string"
+                },
+                "reporter_name": {
+                    "description": "Importing country's code.",
+                    "type": "string"
+                },
+                "staging_basket": {
+                    "description": "The agreed tariff phase-out period for the product under the FTA.",
+                    "type": "string"
+                },
+                "partner_start_year": {
+                    "description": "Year the agreement entered into force for the partner. (The first year of tariff cuts).",
+                    "type": "string"
+                },
+                "reporter_start_year": {
+                    "description": "Year the agreement entered into force for the reporter. (The first year of tariff cuts).",
+                    "type": "string"
+                },
+                "partner_agreement_name": {
+                    "description": "Agreement name for the partner country.",
+                    "type": "string"
+                },
+                "reporter_agreement_name": {
+                    "description": "Agreement name for the reporter country.",
+                    "type": "string"
+                },
+                "quota_name": {
+                    "description": "Description for products subject to tariff-rate quotas. (Describes in-quota and out-of-quota tariff lines).",
+                    "type": "string"
+                },
+                "rule_text": {
+                    "description": "Text describing the applicable rule of origin for the product.",
+                    "type": "string"
+                },
+                "link_text": {
+                    "description": "Text describing URL to more detailed rule of origin information.",
+                    "type": "string"
+                },
+                "link_url": {
+                    "description": "URL to more detailed rule of origin information.",
+                    "type": "string"
+                },
+                "annual_rates": {
+                    "description": "Numeric year-by-year tariff rates under the FTA as the tariff is eliminated.",
+                    "type": "string"
+                },
+                "annual_rates_alt": {
+                    "description": "Non-numeric (specific) year-by-year tariff rates under the FTA.",
+                    "type": "string"
+                }
+            }
+        },
+        "FAQ": {
+            "properties": {
+                "id": {
+                    "description": "Unique identifier for the FAQ.",
+                    "type": "string"
+                },
+                "question": {
+                    "description": "The question being addressed by the FAQ.",
+                    "type": "string"
+                },
+                "answer": {
+                    "description": "The answer portion of the FAQ.",
+                    "type": "string"
+                },
+                "first_published_date": {
+                    "description": "The date the FAQ was first published.",
+                    "type": "string"
+                },
+                "last_published_date": {
+                    "description": "The date the FAQ was last updated.",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "The URL where the published FAQ can be viewed.",
+                    "type": "string"
+                },
+                "industries": {
+                    "description": "Industry categories assigned to the FAQ.",
+                    "type": "string"
+                },
+                "topics": {
+                    "description": "Topic categories assigned to the FAQ.",
+                    "type": "string"
+                },
+                "countries": {
+                    "description": "Countries relevent to the FAQ.",
+                    "type": "string"
+                },
+                "trade_regions": {
+                    "description": "Trade regions relevent to the FAQ.",
+                    "type": "string"
+                },
+                "world_regions": {
+                    "description": "World regions relevent to the FAQ.",
+                    "type": "string"
+                }
+            }
+        },
+        "Office": {
+            "properties": {
+                "id": {
+                    "description": "Unique identifier for post.",
+                    "type": "string"
+                },
+                "post": {
+                    "description": "Name of the post (Default sort).",
+                    "type": "string"
+                },
+                "office_name": {
+                    "description": "Office name.",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "State abbreviation, for domestic offices.",
+                    "type": "string"
+                },
+                "city": {
+                    "description": "City.",
+                    "type": "string"
+                },
+                "address": {
+                    "description": "Street address of office.",
+                    "type": "string"
+                },
+                "country": {
+                    "description": "Country.",
+                    "type": "string"
+                },
+                "email": {
+                    "description": "Office email address.",
+                    "type": "string"
+                },
+                "fax": {
+                    "description": "Fax number.",
+                    "type": "string"
+                },
+                "mail_instructions": {
+                    "description": "Snail mail instructions.",
+                    "type": "string"
+                },
+                "phone": {
+                    "description": "Office phone number.",
+                    "type": "string"
+                },
+                "post_type": {
+                    "description": "Type of post (domestic or international).",
+                    "type": "string"
+                }
+            }
+        },
+        "Article": {
+            "properties": {
+                "id": {
+                    "description": "Unique identifier for the article.",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "The title of the article.",
+                    "type": "string"
+                },
+                "short_title": {
+                    "description": "A shortened title for the article.",
+                    "type": "string"
+                },
+                "summary": {
+                    "description": "A summary of the article's content.",
+                    "type": "string"
+                },
+                "creation_date": {
+                    "description": "The date of the article's creation.",
+                    "type": "string"
+                },
+                "release_date": {
+                    "description": "The date of the article's release.",
+                    "type": "string"
+                },
+                "expiration_date": {
+                    "description": "The date of the article's expiration.",
+                    "type": "string"
+                },
+                "source_agencies": {
+                    "description": "The article's source agencies.",
+                    "type": "string"
+                },
+                "source_business_units": {
+                    "description": "The business units for each source agency.",
+                    "type": "string"
+                },
+                "source_offices": {
+                    "description": "The offices for each source business unit.",
+                    "type": "string"
+                },
+                "evergreen": {
+                    "description": "Flag to designate “timeless” articles, always topically relevant.",
+                    "type": "string"
+                },
+                "content": {
+                    "description": "The body of the article.",
+                    "type": "string"
+                },
+                "keyword": {
+                    "description": "A list of keywords for the article assigned by the author.",
+                    "type": "string"
+                },
+                "export_phases": {
+                    "description": "The export phases assigned to the article.",
+                    "type": "string"
+                },
+                "industries": {
+                    "description": "The industries assigned to the article.",
+                    "type": "string"
+                },
+                "countries": {
+                    "description": "The countries associated with the article.",
+                    "type": "string"
+                },
+                "topics": {
+                    "description": "The topics assigned to the article.",
+                    "type": "string"
+                },
+                "sub_topics": {
+                    "description": "The sub-topics assigned to the article for each topic.",
+                    "type": "string"
+                },
+                "geo_regions": {
+                    "description": "The world regions covered by the article's content.",
+                    "type": "string"
+                },
+                "geo_subregions": {
+                    "description": "The world sub-regions associated with the article for each geo region.",
+                    "type": "string"
+                },
+                "trade_regions": {
+                    "description": "The trade regions covered by the article's content.",
+                    "type": "string"
+                },
+                "trade_programs": {
+                    "description": "The trade programs covered by the article's content.",
+                    "type": "string"
+                },
+                "trade_initiatives": {
+                    "description": "The trade initiatives covered by the article's content.",
+                    "type": "string"
+                },
+                "seo_metadata_title": {
+                    "description": "Title metadata for the article.",
+                    "type": "string"
+                },
+                "seo_metadata_description": {
+                    "description": "Description metadata for the article.",
+                    "type": "string"
+                },
+                "seo_metadata_keyword": {
+                    "description": "Keyword metadata for the article.",
+                    "type": "string"
+                },
+                "trade_url": {
+                    "description": "The article's export.gov URL.",
+                    "type": "string"
+                },
+                "file_url": {
+                    "description": "The URLs for files included in the article.",
+                    "type": "string"
+                },
+                "image_url": {
+                    "description": "The URLs for images included in the article.",
+                    "type": "string"
+                },
+                "url_html_source": {
+                    "description": "The URL for the HTML of the article's source.",
+                    "type": "string"
+                },
+                "url_xml_source": {
+                    "description": "The URL for the XML of the article's source.",
+                    "type": "string"
+                }
+            }
+        },
+        "Center": {
+            "properties": {
+                "zip_code": {
+                    "type": "string",
+                    "description": "5-digit U.S. ZIP Code."
+                },
+                "zip_city": {
+                    "type": "string",
+                    "description": "Name of the city corresponding to the ZIP code."
+                },
+                "post": {
+                    "type": "string",
+                    "description": "Name of the post (default sort)."
+                },
+                "office_name": {
+                    "type": "string",
+                    "description": "Office name."
+                },
+                "country": {
+                    "type": "string",
+                    "description": "This will always be US since this is a list of ITA offices in the U.S."
+                },
+                "state": {
+                    "type": "string",
+                    "description": "State abbreviation."
+                },
+                "post_city": {
+                    "type": "string",
+                    "description": "Name of the city corresponding to the office location."
+                },
+                "address": {
+                    "type": "string",
+                    "description": "Street address of office."
+                },
+                "email": {
+                    "type": "string",
+                    "description": "Office email address."
+                },
+                "fax": {
+                    "type": "string",
+                    "description": "Fax number."
+                },
+                "mail_instructions": {
+                    "type": "string",
+                    "description": "Snail mail instructions."
+                },
+                "phone": {
+                    "type": "string",
+                    "description": "Office phone number."
+                }
+            }
+        },
+        "Provider": {
+            "properties": {
+                "ita_contact_email": {
+                    "type": "string",
+                    "description": "Email for ITA contact."
+                },
+                "company_name": {
+                    "type": "string",
+                    "description": "Name of company providing the service."
+                },
+                "company_phone": {
+                    "type": "string",
+                    "description": "Phone number for company."
+                },
+                "company_address": {
+                    "type": "string",
+                    "description": "Street, city, and country address for company."
+                },
+                "company_website": {
+                    "type": "string",
+                    "description": "URL for company site."
+                },
+                "company_description": {
+                    "type": "string",
+                    "description": "Description of company."
+                },
+                "company_email": {
+                    "type": "string",
+                    "description": "Email for contact at company."
+                },
+                "ita_office": {
+                    "type": "string",
+                    "description": "Name of ITA office that has provided company information."
+                },
+                "contact_title": {
+                    "type": "string",
+                    "description": "Title of contact at company."
+                },
+                "contact_name": {
+                    "type": "string",
+                    "description": "Name of contact at company."
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Category of services that company provides."
+                }                
+            }
+        },
+        "Taxonomy": {
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The id assigned to the term."
+                },
+                "label": {
+                    "type": "string",
+                    "description": "The name of the given taxonomy term."
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The high level taxonomy type under which the given term belongs."
+                },
+                "sub_class_of": {
+                    "type": "string",
+                    "description": "An array containing hashes with the id and label of each parent term."
+                },
+                "annotations": {
+                    "type": "string",
+                    "description": "A hash containing key/value pairs of annotation properties."
+                },
+                "datatype_properties": {
+                    "type": "string",
+                    "description": "A hash containing key/array pairs of datatype properties. Each array contains id/label hashes."
+                },
+                "annotations": {
+                    "type": "string",
+                    "description": "A hash containing key/array pairs of object properties. Each array contains id/label hashes."
+                }
+            }
+        },
+        "DeMinimis": {
+            "properties": {
+                "country": {
+                    "description": "Name of the country",
+                    "type": "string"
+                },
+                "countries": {
+                    "description": "ISO-2 country code",
+                    "type": "string"
+                },
+                "de_minimis_value": {
+                    "description": "De Minimis value for that country",
+                    "type": "string"
+                },
+                "de_minimis_currency": {
+                    "description": "ISO-3 currency code for the country's De Minimis",
+                    "type": "string"
+                },
+                "vat_amount": {
+                    "description": "Value Added Tax amount",
+                    "type": "string"
+                },
+                "vat_currency": {
+                    "description": "ISO-3 currency code for the country's VAT",
+                    "type": "string"
+                },
+                "notes": {
+                    "description": "Notes for each De Minimis and VAT amount",
+                    "type": "string"
+                }
+            }
+        },
+        "MarketIntelligence": {
+            "properties": {
+                "id": {
+                    "description": "Unique identifier for the article.",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "The source type of the article.",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "The title of the article.",
+                    "type": "string"
+                },
+                "summary": {
+                    "description": "A short summary of the article's content.",
+                    "type": "string"
+                },
+                "first_published_date": {
+                    "description": "The date that the article of first published.",
+                    "type": "string"
+                },
+                "last_published_date": {
+                    "description": "The article's most recent publish date.",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "",
+                    "type": "string"
+                },
+                "references": {
+                    "description": "",
+                    "type": "string"
+                },
+                "url_name": {
+                    "description": "A unique URL indentifier for the article.",
+                    "type": "string"
+                },
+                "industries": {
+                    "description": "The ITA industry terms associated with the article.",
+                    "type": "string"
+                },    
+                "topics": {
+                    "description": "The ITA topic terms associated with the article.",
+                    "type": "string"
+                }, 
+                "countries": {
+                    "description": "The countries relevant to the article.",
+                    "type": "string"
+                }, 
+                "trade_regions": {
+                    "description": "The trade regions relevant to the article.",
+                    "type": "string"
+                },  
+                "world_regions": {
+                    "description": "The world regions relevant to the article.",
+                    "type": "string"
+                }         
+            }
+        }
+    }
+}
