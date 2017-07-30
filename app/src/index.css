@@ -26,6 +26,10 @@ main {
   margin-right: -24px;
 }
 
+.mdc-snackbar {
+  z-index: 2;
+}
+
 sidebar {
   background: var(--mdc-theme--background);
   z-index: 1;
