@@ -45,6 +45,11 @@ sidebar .source-dest > .mdc-select {
   margin-top: 20px;
 }
 
+/* Get open menu above Ace red cursor */
+sidebar .mdc-simple-menu--open {
+  z-index: 1000;
+}
+
 #button-parent {
   margin-top: 20px;
 }
