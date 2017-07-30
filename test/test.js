@@ -215,7 +215,7 @@ function main(sources) {
             if (fs.lstatSync(source).isDirectory()) {
                 testAllInDir(source, [], [], []);
             } else {
-                testAll([absolutize(arg)], [], [], []);
+                testAll([absolutize(source)], [], [], []);
             }
         });
     }
