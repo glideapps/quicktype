@@ -7,8 +7,12 @@ const shell = require("shelljs");
 const Main = require("../output/Main");
 const Samples = require("../output/Samples");
 
+function pathToString(path) {
+    return path.join(".");
+}
+
 // https://stackoverflow.com/questions/1068834/object-comparison-in-javascript
-function deepEquals(x, y) {
+function deepEquals(x, y, path) {
     var i;
     var p;
 
@@ -27,7 +31,7 @@ function deepEquals(x, y) {
 
     if ((x instanceof String && y instanceof String) || (x instanceof Number && y instanceof Number)) {
         if (x.toString() !== y.toString()) {
-            console.log("Number or string not equal.");
+            console.error(`Number or string not equal at path ${pathToString(path)}.`);
             return false;
         }
         return true;
@@ -35,28 +39,30 @@ function deepEquals(x, y) {
 
     // At last checking prototypes as good as we can
     if (!(x instanceof Object && y instanceof Object)) {
-        console.log("One is not an object.")
+        console.error(`One is not an object at path ${pathToString(path)}.`)
         return false;
     }
 
     if (x.constructor !== y.constructor) {
-        console.log("Not the same constructor.");
+        console.error(`Not the same constructor at path ${pathToString(path)}.`);
         return false;
     }
 
     if (x.prototype !== y.prototype) {
-        console.log("Not the same prototype.");
+        console.error(`Not the same prototype at path ${pathToString(path)}.`);
         return false;
     }
 
     if (Array.isArray(x)) {
         if (x.length !== y.length){
-            console.log("Arrays don't have the same length.");
+            console.error(`Arrays don't have the same length at path ${pathToString(path)}.`);
             return false;
         }
         for (i = 0; i < x.length; i++) {
-            if (!deepEquals(x[i], y[i]))
+            path.push(i)
+            if (!deepEquals(x[i], y[i], path))
                 return false;
+            path.pop();
         }
         return true;
     }
@@ -66,37 +72,39 @@ function deepEquals(x, y) {
         // so long as they're null.
         if (y.hasOwnProperty(p) && !x.hasOwnProperty(p)) {
             if (y[p] !== null) {
-                console.log(`Non-null property ${p} is not expected.`);
+                console.error(`Non-null property ${p} is not expected at path ${pathToString(path)}.`);
                 return false;
             }
             continue;
         }
         if (typeof y[p] !== typeof x[p]) {
-            console.log(`Properties ${p} don't have the same types.`);
+            console.error(`Properties ${p} don't have the same types at path ${pathToString(path)}.`);
             return false;
         }
     }
     
     for (p in x) {
         if (x.hasOwnProperty(p) && !y.hasOwnProperty(p)) {
-            console.log(`Expected property ${p} not found.`);
+            console.error(`Expected property ${p} not found at path ${pathToString(path)}.`);
             return false;
         }
         if (typeof x[p] !== typeof y[p]) {
-            console.log(`Properties ${p} don't have the same types.`);
+            console.error(`Properties ${p} don't have the same types at path ${pathToString(path)}.`);
             return false;
         }
 
         switch (typeof(x[p])) {
         case 'object':
-            if (!deepEquals(x[p], y[p])) {
+            path.push(p);
+            if (!deepEquals(x[p], y[p], path)) {
                 return false;
             }
+            path.pop(p);
             break;
             
         default:
             if (x[p] !== y[p]) {
-                console.log(`Non-object properties ${p} are not equal.`)
+                console.error(`Non-object properties ${p} are not equal at path ${pathToString(path)}.`)
                 return false;
             }
             break;
@@ -120,7 +128,7 @@ function execAndCompare(cmd, p, knownFails) {
     if (knownFails.indexOf(path.basename(p)) < 0) {
         let outputJSON = JSON.parse(outputString);
         let inputJSON = JSON.parse(fs.readFileSync(p));
-        if (!deepEquals(inputJSON, outputJSON)) {
+        if (!deepEquals(inputJSON, outputJSON, [])) {
             console.error("Error: Output is not equivalent to input.");
             process.exit(1);
         }
