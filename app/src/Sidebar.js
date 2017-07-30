@@ -34,7 +34,7 @@ export default class Sidebar extends Component {
 
   render() {
     return (
-        <sidebar className="mdc-layout-grid__cell mdc-layout-grid__cell--span-4 mdc-theme--dark mdc-elevation--z4">
+        <sidebar className={`mdc-theme--dark mdc-elevation--z4 ${this.props.className}`}>
             <header className="mdc-toolbar mdc-elevation--z2">
                 <div className="mdc-toolbar__row">
                 <section className="mdc-toolbar__section mdc-toolbar__section--align-start">

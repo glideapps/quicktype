@@ -193,6 +193,7 @@ class App extends Component {
       <main className="mdc-typography mdc-layout-grid">
         <div className="mdc-layout-grid__inner">
             <Sidebar
+              className="mdc-layout-grid__cell mdc-layout-grid__cell--span-4"
               source={this.state.source}
               onChangeSource={this.sourceEdited}
               sampleName={this.state.sampleName}
