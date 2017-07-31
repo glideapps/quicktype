@@ -7,6 +7,12 @@ const shell = require("shelljs");
 const Main = require("../output/Main");
 const Samples = require("../output/Samples");
 
+const IsCI = process.env.CI === "true";
+const Branch = process.env.TRAVIS_BRANCH;
+const IsBlessed = ["master"].indexOf(Branch) !== -1;
+const IsPush = process.env.TRAVIS_EVENT_TYPE === "push";
+const IsPR = process.env.TRAVIS_PULL_REQUEST && process.env.TRAVIS_PULL_REQUEST !== "false";
+
 function pathToString(path) {
     return path.join(".");
 }
@@ -218,9 +224,18 @@ function testAllInDir(dir, goFails, csFails, jsonSchemaFails) {
 
 function main(sources) {
     if (sources.length == 0) {
-        let samples = Samples.samples.map((name) => path.join("..", "..", "app", "public", "sample", "json", name));
-        testAll(samples, [], [], []);
-        testAllInDir(path.join("test", "inputs", "json"), ["identifiers.json"], [], []);
+        if (!IsCI || !(IsPR || IsBlessed)) {
+            console.error("* Testing samples on non-PR non-blessed branch");
+            let samples = Samples.samples.map((name) => path.join("..", "..", "app", "public", "sample", "json", name));
+            testAll(samples, [], [], []);
+        }
+
+        if (!IsCI || (IsBlessed)) {
+            console.error("* Running full test suite");
+            testAllInDir(path.join("test", "inputs", "json"), ["identifiers.json"], [], []);
+        } else {
+            console.error("* Skipping full test suite");
+        }
     } else {
         sources.forEach((source) => {
             if (fs.lstatSync(source).isDirectory()) {
