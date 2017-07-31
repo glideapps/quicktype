@@ -17,8 +17,8 @@ import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
 import Data.String.Util (capitalize, camelCase, stringEscape)
-import Data.Tuple (Tuple(..))
-import Utils (mapM, removeElement)
+import Data.Tuple (Tuple(..), fst)
+import Utils (mapM, removeElement, sortByKeyM, sortByKey)
 
 renderer :: Renderer
 renderer =
@@ -291,8 +291,8 @@ renderGolangType :: Int -> IRClassData -> Doc Unit
 renderGolangType classIndex (IRClassData { names, properties }) = do
     className <- lookupClassName classIndex
     let propertyNames = transformNames goNameStyle ("Other" <> _) S.empty $ map (\n -> Tuple n n) $ Map.keys properties
-    let propsArray = Map.toUnfoldable properties :: List _
-    columns <- propsArray # mapM \(Tuple pname ptype) -> do
+    let propsList = Map.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
+    columns <- propsList # mapM \(Tuple pname ptype) -> do
         let csPropName = lookupName pname propertyNames
         { rendered, comment } <- renderTypeToGolang ptype
         pure $ (csPropName : rendered : ("`json:\"" <> (stringEscape pname) <> "\"`" <> renderComment comment) : L.Nil)
@@ -309,7 +309,8 @@ renderGolangUnion allTypes = do
     name <- lookupUnionName allTypes
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     let isNullableString = if isJust emptyOrNull then "true" else "false"
-    columns <- (L.fromFoldable nonNullTypes) # mapM \t -> do
+    fields <- L.fromFoldable nonNullTypes # sortByKeyM unionFieldName
+    columns <- fields # mapM \t -> do
         { rendered, comment } <- renderUnionToGolang $ S.union (S.singleton t) (S.singleton IRNull)
         field <- unionFieldName t
         pure $ (field : (rendered <> renderComment comment) : L.Nil)

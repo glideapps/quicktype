@@ -3,6 +3,7 @@ module Utils
     , mapMapM
     , mapStrMapM
     , sortByKeyM
+    , sortByKey
     , foldError
     , lookupOrDefault
     , removeElement
@@ -12,7 +13,7 @@ import Prelude
 
 import Data.Either (Either(..))
 import Data.Foldable (find, foldl)
-import Data.List (List(..), (:))
+import Data.List (List(..), sortBy, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
@@ -56,6 +57,9 @@ mapStrMapM f m = do
         mapper (Tuple a b) = do
             c <- f a b
             pure $ Tuple a c
+
+sortByKey :: forall a b. Ord b => (a -> b) -> List a -> List a
+sortByKey keyF = L.sortBy (\a b -> compare (keyF a) (keyF b))
 
 sortByKeyM :: forall a b m. Ord b => Monad m => (a -> m b) -> List a -> m (List a)
 sortByKeyM keyF items = do
