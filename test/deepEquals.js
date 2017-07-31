@@ -1,5 +1,11 @@
+function pathToString(path) {
+    return path.join(".");
+}
+
 // https://stackoverflow.com/questions/1068834/object-comparison-in-javascript
 function deepEquals(x, y, path) {
+    path = path || [];
+
     var i;
     var p;
 
