@@ -160,20 +160,16 @@ renderJsonConverter = do
     unionNames <- getUnionNames
     let haveUnions = not $ M.isEmpty unionNames
     let names = M.values unionNames
-    line ("public class Converter" <> stringIfTrue haveUnions ": JsonConverter" <> " {")
+    line $ "public class Converter" <> stringIfTrue haveUnions ": JsonConverter" <> " {"
     indent do
-        line "static JsonSerializerSettings Settings {"
+        line "static JsonSerializerSettings Settings = new JsonSerializerSettings"
+        line "{"
         indent do
-            line "get {"
-            indent do
-                line "JsonSerializerSettings settings = new JsonSerializerSettings();"
-                line "settings.MetadataPropertyHandling = MetadataPropertyHandling.Ignore;"
-                line "settings.DateParseHandling = DateParseHandling.None;"
-                when haveUnions do
-                    line "settings.Converters = new JsonConverter[] { new Converter() };"
-                line "return settings;"
-            line $ "}"
-        line "}"
+            line "MetadataPropertyHandling = MetadataPropertyHandling.Ignore,"
+            line "DateParseHandling = DateParseHandling.None,"
+            when haveUnions do
+                line "Converters = { new Converter() },"
+        line "};"
         blank
         toplevelType <- getTopLevel >>= renderTypeToCSharp
         line "// Loading helpers"
