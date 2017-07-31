@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const Ajv = require('ajv');
+const strictDeepEquals = require('deep-equal');
 const fs = require("fs");
 const path = require("path");
 const shell = require("shelljs");
@@ -126,18 +127,26 @@ function exec(s, opts, cb) {
     return result;
 }
 
+function compareJSONs(expectedFilename, givenString, strict) {
+    let expectedJSON = JSON.parse(fs.readFileSync(expectedFilename));
+    let givenJSON = JSON.parse(givenString);
+    var result;
+    if (strict)
+        result = strictDeepEquals(givenJSON, expectedJSON);
+    else
+        result = deepEquals(expectedJSON, givenJSON, []);
+    if (!result) {
+        console.error("Error: Output is not equivalent to input.");
+        process.exit(1);
+    }
+}
+
 function execAndCompare(cmd, p, knownFails) {
     let outputString = exec(cmd, {silent:true}).stdout;
-    if (knownFails.indexOf(path.basename(p)) < 0) {
-        let outputJSON = JSON.parse(outputString);
-        let inputJSON = JSON.parse(fs.readFileSync(p));
-        if (!deepEquals(inputJSON, outputJSON, [])) {
-            console.error("Error: Output is not equivalent to input.");
-            process.exit(1);
-        }
-    } else {
+    if (knownFails.indexOf(path.basename(p)) < 0)
+        compareJSONs(p, outputString, false);
+    else
         console.log("Known to fail - not checking output.");
-    }
 }
 
 function absolutize(p) {
@@ -198,6 +207,8 @@ function testJsonSchema(samples, knownFails, knownGoFails) {
             }
             execQuicktype("schema.json", "quicktype.go", "json-schema");
             execAndCompare(`go run main.go quicktype.go < "${p}"`, p, knownGoFails);
+            execQuicktype("schema.json", "schema-from-schema.json", "json-schema");
+            compareJSONs("schema.json", fs.readFileSync("schema-from-schema.json"), true);
         }
     );
 }

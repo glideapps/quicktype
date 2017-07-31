@@ -105,7 +105,6 @@ renderFromJsonSchema { renderer, input: json, topLevelName } = do
     schema <- J.decodeJson json
     graph <- makeTypeFromSchema topLevelName schema
     graph
-        # regatherClassNames
         # Doc.runRenderer renderer
         # pure
 
