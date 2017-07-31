@@ -213,7 +213,7 @@ legalize s =
 
 jsonNameStyle :: String -> String
 jsonNameStyle =
-    camelCase >>> capitalize >>> legalize
+    legalize >>> camelCase >>> capitalize
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = jsonNameStyle $ combineNames names
