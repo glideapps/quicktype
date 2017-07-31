@@ -2,6 +2,7 @@ module Utils
     ( mapM
     , mapMapM
     , mapStrMapM
+    , sortByKeyM
     , foldError
     , lookupOrDefault
     , removeElement
@@ -55,6 +56,12 @@ mapStrMapM f m = do
         mapper (Tuple a b) = do
             c <- f a b
             pure $ Tuple a c
+
+sortByKeyM :: forall a b m. Ord b => Monad m => (a -> m b) -> List a -> m (List a)
+sortByKeyM keyF items = do
+    itemsWithKeys :: List _ <- mapM (\item -> keyF item >>= (\key -> pure $ { item, key })) items
+    let sortedItemsWithKeys = L.sortBy (\a b -> compare a.key b.key) itemsWithKeys
+    pure $ map (_.item) sortedItemsWithKeys
 
 lookupOrDefault :: forall k v. Ord k => v -> k -> Map k v -> v
 lookupOrDefault default key m = maybe default id $ M.lookup key m
