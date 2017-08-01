@@ -205,7 +205,7 @@ function runFixtureWithSample(fixture, sample) {
         fixture.test(sampleAbs);
 
         if (fixture.diffViaSchema) {
-            console.error("* Diffing with code generated via JSON Schema");
+            debug("* Diffing with code generated via JSON Schema");
             // Make a schema
             quicktype(`--src ${sampleAbs} --srcLang json -o schema.json`);
             // Quicktype from the schema and compare to expected code
