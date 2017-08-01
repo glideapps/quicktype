@@ -75,7 +75,6 @@ isPartCharacter c =
 legalizeIdentifier :: String -> String
 legalizeIdentifier str =
     case Str.charAt 0 str of
-    -- FIXME: use the type to infer a name?
     Nothing -> "Empty"
     Just s ->
         if isLetter s then
