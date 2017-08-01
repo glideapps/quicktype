@@ -36,7 +36,8 @@ import Data.Maybe (Maybe, fromMaybe, maybe)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as String
-import Data.Tuple (Tuple(..), snd)
+import Data.Tuple (Tuple(..), fst, snd)
+import Utils (sortByKeyM)
 
 type Renderer =
     { name :: String
@@ -118,13 +119,17 @@ getClassNames :: Doc (Map Int String)
 getClassNames = Doc (asks _.classNames)
 
 getUnions :: Doc (List (Set IRType))
-getUnions = Doc (asks _.unions)
+getUnions = do
+    unsorted <- Doc (asks _.unions)
+    sortByKeyM lookupUnionName unsorted
 
 getUnionNames :: Doc (Map (Set IRType) String)
 getUnionNames = Doc (asks _.unionNames)
 
 getClasses :: Doc (L.List (Tuple Int IRClassData))
-getClasses = classesInGraph <$> getGraph
+getClasses = do
+    unsorted <- classesInGraph <$> getGraph
+    sortByKeyM (\t -> lookupClassName (fst t)) unsorted
 
 getClass :: Int -> Doc IRClassData
 getClass i = do
