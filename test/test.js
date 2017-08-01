@@ -7,6 +7,7 @@ const path = require("path");
 const shell = require("shelljs");
 const Main = require("../output/Main");
 const Samples = require("../output/Samples");
+const assert = require("assert");
 
 function pathToString(path) {
     return path.join(".");
@@ -118,11 +119,15 @@ function deepEquals(x, y, path) {
     return true;
 }
 
-function exec(s, opts, cb) {
+function exec(s, opts, cb, allowFailure) {
     let result = shell.exec(s, opts, cb);
     if (result.code !== 0) {
-        console.error(`Error: Command failed: ${s}`);
-        shell.exit(result.code);
+        if (allowFailure) {
+            console.log(`Command failed, but we're allowing it: ${s}`);
+        } else {
+            console.error(`Error: Command failed: ${s}`);
+            shell.exit(result.code);
+        }
     }
     return result;
 }
@@ -155,11 +160,25 @@ function absolutize(p) {
     return path.join(process.cwd(), p);
 }
 
-function execQuicktype(source, output, sourceLanguage) {
-    exec(`node ../../cli/quicktype.js --srcLang "${sourceLanguage}" -o "${output}" "${source}"`);    
+function quicktypeCommand(source, sourceLang, output, outputLang) {
+    assert(output !== null || outputLang !== null);
+    let outputFlag = (output === null) ? "" : `-o "${output}"`;
+    let langFlag = (outputLang === null) ? "" : `--lang "${outputLang}"`;
+    return `node ../../cli/quicktype.js --srcLang "${sourceLang}" ${outputFlag} ${langFlag} "${source}"`;
 }
 
-function runTests(description, samples, dir, prepareCmd, filename, testFn) {
+function execQuicktype(source, sourceLang, output, outputLang) {
+    exec(quicktypeCommand(source, sourceLang, output, outputLang));
+}
+
+function generateViaSchemaAndDiff(p, expected) {
+    let language = path.extname(expected).substr(1);
+    execQuicktype(p, "json", "schema.json", null);
+    // FIXME: Set this to fail once we have it working.  See issue #59.
+    exec(`${quicktypeCommand("schema.json", "json-schema", null, language)} | diff -Naur - "${expected}"`, null, null, "allow-failure");
+}
+
+function runTests(description, samples, dir, prepareCmd, filename, diffViaSchema, testFn) {
     shell.cd(dir);
     if (prepareCmd)
         shell.exec(prepareCmd, { silent: true });
@@ -171,15 +190,20 @@ function runTests(description, samples, dir, prepareCmd, filename, testFn) {
             return;
         }
         console.error(`* Building ${description} for ${sample}`);
-        execQuicktype(sample, filename, "json");
+        execQuicktype(sample, "json", filename, null);
         testFn(sample);
+        if (diffViaSchema) {
+            console.log("  Diffing with code generated via JSON Schema");
+            generateViaSchemaAndDiff(sample, filename);
+        }
     });
     
     shell.cd("../..");
 }
 
 function testCSharp(samples, knownFails) {
-    runTests("C# code", samples, "test/csharp", "dotnet restore", "QuickType.cs",
+    // FIXME: enable diff-via-schema once it works
+    runTests("C# code", samples, "test/csharp", "dotnet restore", "QuickType.cs", false,
         function (p) {
             execAndCompare(`dotnet run "${p}"`, p, knownFails);
         }
@@ -187,7 +211,7 @@ function testCSharp(samples, knownFails) {
 }
 
 function testGolang(samples, knownFails) {
-    runTests("Go code", samples, "test/golang", null, "quicktype.go",
+    runTests("Go code", samples, "test/golang", null, "quicktype.go", true,
         function (p) {
             execAndCompare(`go run main.go quicktype.go < "${p}"`, p, knownFails);
         }
@@ -195,7 +219,7 @@ function testGolang(samples, knownFails) {
 }
 
 function testJsonSchema(samples, knownFails, knownGoFails) {
-    runTests("JSON Schema", samples, "test/golang", null, "schema.json",
+    runTests("JSON Schema", samples, "test/golang", null, "schema.json", false,
         function (p) {
             let input = JSON.parse(fs.readFileSync(p));
             let schema = JSON.parse(fs.readFileSync("schema.json"));
@@ -205,9 +229,9 @@ function testJsonSchema(samples, knownFails, knownGoFails) {
                 console.log("Error: Generated schema does not validate input JSON.");
                 process.exit(1);
             }
-            execQuicktype("schema.json", "quicktype.go", "json-schema");
+            execQuicktype("schema.json", "json-schema", "quicktype.go", null);
             execAndCompare(`go run main.go quicktype.go < "${p}"`, p, knownGoFails);
-            execQuicktype("schema.json", "schema-from-schema.json", "json-schema");
+            execQuicktype("schema.json", "json-schema", "schema-from-schema.json", null);
             compareJSONs("schema.json", fs.readFileSync("schema-from-schema.json"), true);
         }
     );
