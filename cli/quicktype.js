@@ -121,7 +121,7 @@ function work(json) {
   if (options.output) {
     fs.writeFileSync(options.output, output); 
   } else {
-    console.log(output);
+    process.stdout.write(output);
   }
 }
 
