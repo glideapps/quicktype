@@ -39,6 +39,10 @@ function quicktype(args) {
     return exec(`node ${QUICKTYPE_CLI} ${args}`);
 }
 
+//////////////////////////////////////
+// Fixtures
+/////////////////////////////////////
+
 const FIXTURES = [
     {
         name: "csharp",
