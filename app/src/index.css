@@ -12,22 +12,31 @@ body {
   padding: 0;
 }
 
+main {
+  padding: 0 !important;
+  height: 100vh;
+}
+
+.mdc-layout-grid__inner {
+  grid-gap: 0 !important;
+  height: 100%;
+}
+
 #logo {
   margin-right: -24px;
 }
 
+.mdc-snackbar {
+  z-index: 2;
+}
+
 sidebar {
   background: var(--mdc-theme--background);
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 440px;
   z-index: 1;
 }
 
 sidebar > .content {
-  padding: 20px;
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
 }
@@ -36,38 +45,34 @@ sidebar .mdc-switch {
   margin-top: 30px;
 }
 
-sidebar .source-dest {
-  display: flex;
-  flex-direction: row;
+sidebar .source-dest > .mdc-select {
+  margin-top: 20px;
+}
+
+/* Get open menu above Ace red cursor */
+sidebar .mdc-simple-menu--open {
+  z-index: 1000;
 }
 
 #button-parent {
-  margin-top: 30px;
+  margin-top: 20px;
 }
 
 sidebar .mdc-select:first-child {
   margin-right: 20px;
 }
 
-sidebar .mdc-select:last-child {
-  min-width: 120px;
-}
-
 #json-editor {
   font-size: 10pt;
   margin-top: 10px;
   border-radius: 3px;
-
-  height: 480px !important;
   width: inherit !important;
 }
 
 #output-editor {
   z-index: 0;
-  width: calc(100vw - 440px) !important;
-  height: 100vh !important;
-  top: 0px;
-  left: 440px;
+  width: 100% !important;
+  height: 100% !important;
   margin: 0;
   font-size: 11pt !important;
   font-family: Consolas, Menlo, monospace;

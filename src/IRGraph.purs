@@ -42,9 +42,10 @@ import Data.Sequence as Seq
 import Data.Set (Set)
 import Data.Set as S
 import Data.String.Util (singular)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), snd)
 import Data.Tuple as T
 import Partial.Unsafe (unsafePartial)
+import Utils (sortByKey)
 
 data Entry
     = NoType
@@ -81,6 +82,7 @@ derive instance eqEntry :: Eq Entry
 derive instance eqIRType :: Eq IRType
 derive instance ordIRType :: Ord IRType
 derive instance eqIRClassData :: Eq IRClassData
+derive instance ordIRClassData :: Ord IRClassData
 derive instance eqIRUnionRep :: Eq IRUnionRep
 derive instance ordIRUnionRep :: Ord IRUnionRep
 
@@ -216,9 +218,9 @@ regatherClassNames graph@(IRGraph { classes, toplevel }) =
                     combine $ (fromArray : fromMap : fromClass : L.Nil)
             _ -> M.empty
 
-transformNames :: forall a b. Ord a => (b -> String) -> (String -> String) -> (Set String) -> List (Tuple a b) -> Map a String
+transformNames :: forall a b. Ord a => Ord b => (b -> String) -> (String -> String) -> (Set String) -> List (Tuple a b) -> Map a String
 transformNames legalize otherize illegalNames names =
-    process illegalNames M.empty names
+    process illegalNames M.empty (sortByKey snd names)
     where
         makeName :: b -> String -> Set String -> String
         makeName name tryName setSoFar =

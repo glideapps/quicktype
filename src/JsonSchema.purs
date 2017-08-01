@@ -12,6 +12,7 @@ import Data.Either (Either(..), either)
 import Data.Foldable (class Foldable, foldM, intercalate)
 import Data.List (List, (:))
 import Data.List as L
+import Data.List.NonEmpty as NEL
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
@@ -44,7 +45,7 @@ jsonTypeEnumMap = SM.fromFoldable [
     Tuple "number" JSONNumber
     ]
 
-newtype JSONSchemaRef = JSONSchemaRef (List String)
+newtype JSONSchemaRef = JSONSchemaRef (NEL.NonEmptyList String)
 
 newtype JSONSchema = JSONSchema
     { definitions :: Maybe (StrMap JSONSchema)
@@ -68,7 +69,9 @@ instance decodeJsonType :: DecodeJson JSONType where
 instance decodeJsonSchemaRef :: DecodeJson JSONSchemaRef where
     decodeJson j = do
         ref <- decodeJson j
-        pure $ JSONSchemaRef $ L.fromFoldable $ String.split (String.Pattern "/") ref
+        case NEL.fromFoldable $ String.split (String.Pattern "/") ref of
+            Just nel -> pure $ JSONSchemaRef nel
+            Nothing -> Left "ERROR: String.split should return at least one element."
 
 decodeTypes :: Maybe Json -> Either String (Maybe (Either JSONType (Set JSONType)))
 decodeTypes Nothing = Right Nothing
@@ -128,9 +131,9 @@ toIRAndUnify toIR l = do
 jsonSchemaToIR :: JSONSchema -> String -> JSONSchema -> IR (Either String IRType)
 jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
     | Just (JSONSchemaRef r) <- ref =
-        case lookupRef root r schema of
+        case lookupRef root (NEL.toList r) schema of
         Left err -> pure $ Left err
-        Right js -> jsonSchemaToIR root name js
+        Right js -> jsonSchemaToIR root (NEL.last r) js
     | Just (Left jt) <- types =
         jsonTypeToIR root name jt schema
     | Just (Right jts) <- types =
@@ -210,7 +213,7 @@ legalize s =
 
 jsonNameStyle :: String -> String
 jsonNameStyle =
-    camelCase >>> capitalize >>> legalize
+    legalize >>> camelCase >>> capitalize
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = jsonNameStyle $ combineNames names

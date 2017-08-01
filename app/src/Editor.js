@@ -14,13 +14,14 @@ export default class Editor extends Component {
   }
 
   getEditor = () => window.ace.edit(this.getName())
-  getName = () => this.props.className + "-editor"
+  getName = () => this.props.id + "-editor"
 
   render() {
     return (
       <AceEditor
             name={this.getName()}
             mode={this.props.lang}
+            className={this.props.className}
             theme={this.props.theme}
             showGutter={this.props.showGutter}
             onChange={this.props.onChange}
