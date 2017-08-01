@@ -35,10 +35,6 @@ const CPUs = IS_CI
 
 const QUICKTYPE_CLI = path.resolve("./cli/quicktype.js");
 
-function quicktype(args) {
-    return exec(`node ${QUICKTYPE_CLI} ${args}`);
-}
-
 //////////////////////////////////////
 // Fixtures
 /////////////////////////////////////
@@ -116,7 +112,7 @@ function testJsonSchema(sample) {
     }
 
     // Generate Go from the schema
-    quicktype(`--srcLang json-schema -o quicktype.go --src schema.json`);
+    exec(`quicktype --srcLang json-schema -o quicktype.go --src schema.json`);
 
     // Possibly check the output of the Go program against the sample
     if (goWillFail(sample)) {
@@ -130,12 +126,10 @@ function testJsonSchema(sample) {
         });
     }
     
-    // Generate a schema from the schema
-    quicktype(`--srcLang json-schema --src schema.json -o schema-from-schema.json`);
-    // Make sure the schemas are the same
+    // Generate a schema from the schema, making sure the schemas are the same
     compareJsonFileToJson({
         expectedFile: "schema.json",
-        jsonFile: "schema-from-schema.json",
+        jsonCommand: `quicktype --srcLang json-schema --src schema.json --lang json`,
         strict: true
     });
 }
@@ -145,6 +139,9 @@ function testJsonSchema(sample) {
 /////////////////////////////////////
 
 function exec(s, opts, cb) {
+    // We special-case quicktype execution
+    s = s.replace(/^quicktype /, `node ${QUICKTYPE_CLI} `);
+
     debug(s);
 
     let result = shell.exec(s, opts, cb);
@@ -206,17 +203,17 @@ function runFixtureWithSample(fixture, sample) {
 
     inDir(tmp, () => {
         // Generate code from the sample
-        quicktype(`--src ${sampleAbs} --srcLang json -o ${fixture.output}`);
+        exec(`quicktype --src ${sampleAbs} --srcLang json -o ${fixture.output}`);
 
         fixture.test(sampleAbs);
 
         if (fixture.diffViaSchema) {
             debug("* Diffing with code generated via JSON Schema");
             // Make a schema
-            quicktype(`--src ${sampleAbs} --srcLang json -o schema.json`);
+            exec(`quicktype --src ${sampleAbs} --srcLang json -o schema.json`);
             // Quicktype from the schema and compare to expected code
             shell.mv(fixture.output, `${fixture.output}.expected`);
-            quicktype(`--src schema.json --srcLang json-schema -o ${fixture.output}`);
+            exec(`quicktype --src schema.json --srcLang json-schema -o ${fixture.output}`);
 
             // Compare fixture.output to fixture.output.expected
             try {
