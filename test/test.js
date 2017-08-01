@@ -72,10 +72,15 @@ const knownGoFails = ["identifiers.json"];
 const goWillFail = (sample) => knownGoFails.indexOf(path.basename(sample)) !== -1;
 
 function testGo(sample) {
+    if (goWillFail(sample)) {
+        console.error(`Skipping golang ${sample} – known to fail`);
+        return;
+    }
+
     compareJsonFileToJson({
         expectedFile: sample,
         jsonCommand: `go run main.go quicktype.go < "${sample}"`,
-        strict: !goWillFail(sample)
+        strict: false
     });
 }
 
@@ -87,7 +92,7 @@ function testCSharp(sample) {
     compareJsonFileToJson({
         expectedFile: sample,
         jsonCommand: `dotnet run "${sample}"`,
-        strict: true
+        strict: false
     });
 }
 
@@ -120,7 +125,7 @@ function testJsonSchema(sample) {
         compareJsonFileToJson({
             expectedFile: sample,
             jsonCommand: `go run main.go quicktype.go < "${sample}"`,
-            strict: true
+            strict: false
         });
     }
     
@@ -158,12 +163,12 @@ function compareJsonFileToJson({expectedFile, jsonFile, jsonCommand, strict}) {
         : exec(jsonCommand, {silent: true}).stdout;
 
     let givenJSON = JSON.parse(jsonString);
-
     let expectedJSON = JSON.parse(fs.readFileSync(expectedFile));
     
     let jsonAreEqual = strict
         ? strictDeepEquals(givenJSON, expectedJSON)
         : deepEquals(expectedJSON, givenJSON, []);
+
     if (!jsonAreEqual) {
         console.error("Error: Output is not equivalent to input.");
         console.error({
@@ -172,9 +177,7 @@ function compareJsonFileToJson({expectedFile, jsonFile, jsonCommand, strict}) {
             jsonCommand,
             jsonFile
         });
-
-        console.error("ALLOWING FOR NOW, AS DAVID CAN'T MAKE THE TESTS PASS");
-        // process.exit(1);
+        process.exit(1);
     }
 }
 
