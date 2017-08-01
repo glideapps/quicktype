@@ -12,6 +12,7 @@
   "devDependencies": {
     "ajv": "^5.2.2",
     "bower": "^1.8.0",
+    "lodash": "^4.17.4",
     "deep-equal": "^1.0.1",
     "pulp": "^11.0.2",
     "purescript": "^0.11.6",

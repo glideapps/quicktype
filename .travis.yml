@@ -8,7 +8,7 @@ addons:
     packages:
       - dotnet-dev-1.0.1
 script:
-  - npm run test
+  - test/test.js
 cache:
   directories:
     - bower_components

@@ -3,267 +3,273 @@
 const Ajv = require('ajv');
 const strictDeepEquals = require('deep-equal');
 const fs = require("fs");
+const _ = require("lodash");
 const path = require("path");
 const shell = require("shelljs");
+const deepEquals = require("./deepEquals");
 const Main = require("../output/Main");
 const Samples = require("../output/Samples");
 const assert = require("assert");
+const { inParallel } = require("./multicore");
+const os = require("os");
 
-function pathToString(path) {
-    return path.join(".");
+//////////////////////////////////////
+// Constants
+/////////////////////////////////////
+
+function debug(x) {
+    if (!process.env.DEBUG) return;
+    console.log(x);
+    return x;
 }
 
-// https://stackoverflow.com/questions/1068834/object-comparison-in-javascript
-function deepEquals(x, y, path) {
-    var i;
-    var p;
+const IS_CI = process.env.CI === "true";
+const BRANCH = process.env.TRAVIS_BRANCH;
+const IS_BLESSED = ["master"].indexOf(BRANCH) !== -1;
+const IS_PUSH = process.env.TRAVIS_EVENT_TYPE === "push";
+const IS_PR = process.env.TRAVIS_PULL_REQUEST && process.env.TRAVIS_PULL_REQUEST !== "false";
 
-    // remember that NaN === NaN returns false
-    // and isNaN(undefined) returns true
-    if (typeof x === 'number' && typeof y === 'number') {
-        if (isNaN(x) && isNaN(y))
-            return true;
-        // because sometimes Newtonsoft.JSON is not exact
-        return Math.fround(x) === Math.fround(y);
+const CPUs = IS_CI
+    ? 2 /* Travis has only 2 but reports 8 */
+    : process.env.CPUs || os.cpus().length;
+
+const QUICKTYPE_CLI = path.resolve("./cli/quicktype.js");
+
+//////////////////////////////////////
+// Fixtures
+/////////////////////////////////////
+
+const FIXTURES = [
+    {
+        name: "csharp",
+        base: "test/csharp",
+        setup: "dotnet restore",
+        diffViaSchema: false,
+        output: "QuickType.cs",
+        test: testCSharp
+    },
+    {
+        name: "golang",
+        base: "test/golang",
+        diffViaSchema: true,
+        output: "quicktype.go",
+        test: testGo
+    },
+    {
+        name: "json-schema",
+        base: "test/golang",
+        diffViaSchema: false,
+        output: "schema.json",
+        test: testJsonSchema
+    }
+].filter(({name}) => !process.env.FIXTURE || name === process.env.FIXTURE);
+
+//////////////////////////////////////
+// Go tests
+/////////////////////////////////////
+
+const knownGoFails = ["identifiers.json"];
+const goWillFail = (sample) => knownGoFails.indexOf(path.basename(sample)) !== -1;
+
+function testGo(sample) {
+    if (goWillFail(sample)) {
+        console.error(`Skipping golang ${sample} – known to fail`);
+        return;
     }
 
-    // Compare primitives and functions.     
-    // Check if both arguments link to the same object.
-    // Especially useful on the step where we compare prototypes
-    if (x === y) {
-        return true;
-    }
-
-    if ((x instanceof String && y instanceof String) || (x instanceof Number && y instanceof Number)) {
-        if (x.toString() !== y.toString()) {
-            console.error(`Number or string not equal at path ${pathToString(path)}.`);
-            return false;
-        }
-        return true;
-    }
-
-    // At last checking prototypes as good as we can
-    if (!(x instanceof Object && y instanceof Object)) {
-        console.error(`One is not an object at path ${pathToString(path)}.`)
-        return false;
-    }
-
-    if (x.constructor !== y.constructor) {
-        console.error(`Not the same constructor at path ${pathToString(path)}.`);
-        return false;
-    }
-
-    if (x.prototype !== y.prototype) {
-        console.error(`Not the same prototype at path ${pathToString(path)}.`);
-        return false;
-    }
-
-    if (Array.isArray(x)) {
-        if (x.length !== y.length){
-            console.error(`Arrays don't have the same length at path ${pathToString(path)}.`);
-            return false;
-        }
-        for (i = 0; i < x.length; i++) {
-            path.push(i)
-            if (!deepEquals(x[i], y[i], path))
-                return false;
-            path.pop();
-        }
-        return true;
-    }
-
-    for (p in y) {
-        // We allow properties in y that aren't present in x
-        // so long as they're null.
-        if (y.hasOwnProperty(p) && !x.hasOwnProperty(p)) {
-            if (y[p] !== null) {
-                console.error(`Non-null property ${p} is not expected at path ${pathToString(path)}.`);
-                return false;
-            }
-            continue;
-        }
-        if (typeof y[p] !== typeof x[p]) {
-            console.error(`Properties ${p} don't have the same types at path ${pathToString(path)}.`);
-            return false;
-        }
-    }
-    
-    for (p in x) {
-        if (x.hasOwnProperty(p) && !y.hasOwnProperty(p)) {
-            console.error(`Expected property ${p} not found at path ${pathToString(path)}.`);
-            return false;
-        }
-        if (typeof x[p] !== typeof y[p]) {
-            console.error(`Properties ${p} don't have the same types at path ${pathToString(path)}.`);
-            return false;
-        }
-
-        switch (typeof(x[p])) {
-        case 'object':
-            path.push(p);
-            if (!deepEquals(x[p], y[p], path)) {
-                return false;
-            }
-            path.pop(p);
-            break;
-            
-        default:
-            if (x[p] !== y[p]) {
-                console.error(`Non-object properties ${p} are not equal at path ${pathToString(path)}.`)
-                return false;
-            }
-            break;
-        }
-    }
-    
-    return true;
+    compareJsonFileToJson({
+        expectedFile: sample,
+        jsonCommand: `go run main.go quicktype.go < "${sample}"`,
+        strict: false
+    });
 }
 
-function exec(s, opts, cb, allowFailure) {
+//////////////////////////////////////
+// C# tests
+/////////////////////////////////////
+
+function testCSharp(sample) {
+    compareJsonFileToJson({
+        expectedFile: sample,
+        jsonCommand: `dotnet run "${sample}"`,
+        strict: false
+    });
+}
+
+//////////////////////////////////////
+// JSON Schema tests
+/////////////////////////////////////
+
+function testJsonSchema(sample) {
+    let input = JSON.parse(fs.readFileSync(sample));
+    let schema = JSON.parse(fs.readFileSync("schema.json"));
+    
+    let ajv = new Ajv();
+    let valid = ajv.validate(schema, input);
+    if (!valid) {
+        console.error("Error: Generated schema does not validate input JSON.");
+        process.exit(1);
+    }
+
+    // Generate Go from the schema
+    exec(`quicktype --srcLang json-schema -o quicktype.go --src schema.json`);
+
+    // Possibly check the output of the Go program against the sample
+    if (goWillFail(sample)) {
+        console.error("Known to fail - not checking output.");
+    } else {
+        // Parse the sample with Go generated from its schema, and compare to the sample
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `go run main.go quicktype.go < "${sample}"`,
+            strict: false
+        });
+    }
+    
+    // Generate a schema from the schema, making sure the schemas are the same
+    compareJsonFileToJson({
+        expectedFile: "schema.json",
+        jsonCommand: `quicktype --srcLang json-schema --src schema.json --lang json`,
+        strict: true
+    });
+}
+
+//////////////////////////////////////
+// Test driver
+/////////////////////////////////////
+
+function exec(s, opts, cb) {
+    // We special-case quicktype execution
+    s = s.replace(/^quicktype /, `node ${QUICKTYPE_CLI} `);
+
+    debug(s);
+
     let result = shell.exec(s, opts, cb);
     if (result.code !== 0) {
-        if (allowFailure) {
-            console.log(`Command failed, but we're allowing it: ${s}`);
-        } else {
-            console.error(`Error: Command failed: ${s}`);
-            shell.exit(result.code);
-        }
+        console.error(result.stdout);
+        console.error(result.stderr);
+        throw { command: s, code: result.code }
     }
     return result;
 }
 
-function compareJSONs(expectedFilename, givenString, strict) {
-    let expectedJSON = JSON.parse(fs.readFileSync(expectedFilename));
-    let givenJSON = JSON.parse(givenString);
-    var result;
-    if (strict)
-        result = strictDeepEquals(givenJSON, expectedJSON);
-    else
-        result = deepEquals(expectedJSON, givenJSON, []);
-    if (!result) {
+function compareJsonFileToJson({expectedFile, jsonFile, jsonCommand, strict}) {
+    debug({expectedFile, jsonFile, jsonCommand, strict});
+
+    let jsonString = jsonFile
+        ? fs.readFileSync(jsonFile)
+        : exec(jsonCommand, {silent: true}).stdout;
+
+    let givenJSON = JSON.parse(jsonString);
+    let expectedJSON = JSON.parse(fs.readFileSync(expectedFile));
+    
+    let jsonAreEqual = strict
+        ? strictDeepEquals(givenJSON, expectedJSON)
+        : deepEquals(expectedJSON, givenJSON, []);
+
+    if (!jsonAreEqual) {
         console.error("Error: Output is not equivalent to input.");
+        console.error({
+            cwd: process.cwd(),
+            expectedFile,
+            jsonCommand,
+            jsonFile
+        });
         process.exit(1);
     }
 }
 
-function execAndCompare(cmd, p, knownFails) {
-    let outputString = exec(cmd, {silent:true}).stdout;
-    if (knownFails.indexOf(path.basename(p)) < 0)
-        compareJSONs(p, outputString, false);
-    else
-        console.log("Known to fail - not checking output.");
-}
-
-function absolutize(p) {
-    if (path.isAbsolute(p))
-        return p;
-    return path.join(process.cwd(), p);
-}
-
-function quicktypeCommand(source, sourceLang, output, outputLang) {
-    assert(output !== null || outputLang !== null);
-    let outputFlag = (output === null) ? "" : `-o "${output}"`;
-    let langFlag = (outputLang === null) ? "" : `--lang "${outputLang}"`;
-    return `node ../../cli/quicktype.js --srcLang "${sourceLang}" ${outputFlag} ${langFlag} "${source}"`;
-}
-
-function execQuicktype(source, sourceLang, output, outputLang) {
-    exec(quicktypeCommand(source, sourceLang, output, outputLang));
-}
-
-function generateViaSchemaAndDiff(p, expected) {
-    let language = path.extname(expected).substr(1);
-    execQuicktype(p, "json", "schema.json", null);
-    // FIXME: Set this to fail once we have it working.  See issue #59.
-    exec(`${quicktypeCommand("schema.json", "json-schema", null, language)} | diff -Naur - "${expected}"`, null, null, "allow-failure");
-}
-
-function runTests(description, samples, dir, prepareCmd, filename, diffViaSchema, testFn) {
-    shell.cd(dir);
-    if (prepareCmd)
-        shell.exec(prepareCmd, { silent: true });
+function inDir(dir, work) {
+    let origin = process.cwd();
     
-    samples.forEach((sample) => {
-        let stats = fs.statSync(sample);
-        if (stats.size > 32 * 1024 * 1024) {
-            console.log(`* Skipping ${sample} because it's too large`);
-            return;
-        }
-        console.error(`* Building ${description} for ${sample}`);
-        execQuicktype(sample, "json", filename, null);
-        testFn(sample);
-        if (diffViaSchema) {
-            console.log("  Diffing with code generated via JSON Schema");
-            generateViaSchemaAndDiff(sample, filename);
+    debug(`cd ${dir}`)
+    process.chdir(dir);
+
+    work();
+    process.chdir(origin);
+}
+
+function runFixtureWithSample(fixture, sample) {
+    let tmp = path.resolve(os.tmpdir(), require("crypto").randomBytes(8).toString('hex'));
+    let sampleAbs = path.resolve(sample);
+
+    let stats = fs.statSync(sampleAbs);
+    if (stats.size > 32 * 1024 * 1024) {
+        console.error(`* Skipping ${sampleAbs} because it's too large`);
+        return;
+    }
+
+    shell.cp("-R", fixture.base, tmp);
+
+    inDir(tmp, () => {
+        // Generate code from the sample
+        exec(`quicktype --src ${sampleAbs} --srcLang json -o ${fixture.output}`);
+
+        fixture.test(sampleAbs);
+
+        if (fixture.diffViaSchema) {
+            debug("* Diffing with code generated via JSON Schema");
+            // Make a schema
+            exec(`quicktype --src ${sampleAbs} --srcLang json -o schema.json`);
+            // Quicktype from the schema and compare to expected code
+            shell.mv(fixture.output, `${fixture.output}.expected`);
+            exec(`quicktype --src schema.json --srcLang json-schema -o ${fixture.output}`);
+
+            // Compare fixture.output to fixture.output.expected
+            try {
+                exec(`diff -Naur ${fixture.output}.expected ${fixture.output}`);
+            } catch ({ command }) {
+                // FIXME: Set this to fail once we have it working.  See issue #59.
+                console.error(`Command failed, but we're allowing it: ${command}`);
+            }
         }
     });
+}
+
+function testAll(samples) {
+    // Get an array of all { sample, fixtureName } objects we'll run
+    let tests =  _
+        .chain(FIXTURES)
+        .flatMap((fixture) => samples.map((sample) => { 
+            return { sample, fixtureName: fixture.name };
+        }))
+        .shuffle()
+        .value();
     
-    shell.cd("../..");
-}
+    inParallel({
+        queue: tests,
+        workers: CPUs,
+        setup: () => {
+            FIXTURES.forEach(({ name, base, setup }) => {
+                if (!setup) return;
+                console.error(`* Setting up ${name} fixture`);
+                inDir(base, () => exec(setup, { silent: true }));
+            });
+        },
+        work: ({ sample, fixtureName }, i) => {
+            console.error(`* [${i+1}/${tests.length}] ${fixtureName} ${sample}`);
 
-function testCSharp(samples, knownFails) {
-    // FIXME: enable diff-via-schema once it works
-    runTests("C# code", samples, "test/csharp", "dotnet restore", "QuickType.cs", false,
-        function (p) {
-            execAndCompare(`dotnet run "${p}"`, p, knownFails);
+            let fixture = _.find(FIXTURES, { name: fixtureName });
+            runFixtureWithSample(fixture, sample);
         }
-    );
+    });
 }
 
-function testGolang(samples, knownFails) {
-    runTests("Go code", samples, "test/golang", null, "quicktype.go", true,
-        function (p) {
-            execAndCompare(`go run main.go quicktype.go < "${p}"`, p, knownFails);
-        }
-    );
-}
-
-function testJsonSchema(samples, knownFails, knownGoFails) {
-    runTests("JSON Schema", samples, "test/golang", null, "schema.json", false,
-        function (p) {
-            let input = JSON.parse(fs.readFileSync(p));
-            let schema = JSON.parse(fs.readFileSync("schema.json"));
-            let ajv = new Ajv();
-            let valid = ajv.validate(schema, input);
-            if (!valid) {
-                console.log("Error: Generated schema does not validate input JSON.");
-                process.exit(1);
-            }
-            execQuicktype("schema.json", "json-schema", "quicktype.go", null);
-            execAndCompare(`go run main.go quicktype.go < "${p}"`, p, knownGoFails);
-            execQuicktype("schema.json", "json-schema", "schema-from-schema.json", null);
-            compareJSONs("schema.json", fs.readFileSync("schema-from-schema.json"), true);
-        }
-    );
-}
-
-function testAll(samples, goFails, csFails, jsonSchemaFails) {
-    testJsonSchema(samples, jsonSchemaFails, goFails);
-    testGolang(samples, goFails);
-    testCSharp(samples, csFails);
-}
-
-function testAllInDir(dir, goFails, csFails, jsonSchemaFails) {
-    let samples =
-        fs.readdirSync(dir)
-            .filter((name) => name.endsWith(".json") && !name.startsWith("."))
-            .map((name) => absolutize(path.join(dir, name)));
-    testAll(samples, goFails, csFails, jsonSchemaFails);
+function testsInDir(dir) {
+    return shell.ls(`${dir}/*.json`);
 }
 
 function main(sources) {
     if (sources.length == 0) {
-        let samples = Samples.samples.map((name) => path.join("..", "..", "app", "public", "sample", "json", name));
-        testAll(samples, [], [], []);
-        testAllInDir(path.join("test", "inputs", "json"), ["identifiers.json"], [], []);
+        if (IS_CI && !IS_PR && !IS_BLESSED) {
+            return main(testsInDir("app/public/sample/json"));
+        } else {
+            return main(testsInDir("test/inputs/json"));
+        }
+    } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
+        return main(testsInDir(sources[0]));
     } else {
-        sources.forEach((source) => {
-            if (fs.lstatSync(source).isDirectory()) {
-                testAllInDir(source, [], [], []);
-            } else {
-                testAll([absolutize(source)], [], [], []);
-            }
-        });
+        testAll(sources);
     }
 }
 
