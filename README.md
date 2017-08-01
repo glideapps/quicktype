@@ -18,6 +18,14 @@ $ npm run build
 $ npm test
 ```
 
+### Test only a specific fixture
+
+```shell
+$ FIXTURE=golang npm test
+```
+
+Fixtures are defined in `test/test.js`.
+
 ### Requirements
 
 * [`dotnetcore`](https://www.microsoft.com/net/core#macos)
