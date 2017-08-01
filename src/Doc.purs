@@ -154,7 +154,7 @@ lookupUnionName s = do
 line :: String -> Doc Unit
 line s = do
     indent <- Doc (gets _.indent)
-    let whitespace = times "\t" indent
+    let whitespace = times "    " indent
     let lines = String.split (String.Pattern "\n") s
     for_ lines \l -> do
         string whitespace

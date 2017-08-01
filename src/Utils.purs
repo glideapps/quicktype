@@ -7,13 +7,14 @@ module Utils
     , foldError
     , lookupOrDefault
     , removeElement
+    , forEnumerated_
     ) where
 
 import Prelude
 
 import Data.Either (Either(..))
 import Data.Foldable (find, foldl)
-import Data.List (List(..), sortBy, (:))
+import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
@@ -22,7 +23,7 @@ import Data.Set (Set)
 import Data.Set as S
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
-import Data.Traversable (class Foldable, traverse)
+import Data.Traversable (class Foldable, traverse, for_)
 import Data.Tuple (Tuple(..))
 
 foldError :: forall a f e. Foldable f => f (Either e a) -> Either e (List a)
@@ -73,3 +74,9 @@ lookupOrDefault default key m = maybe default id $ M.lookup key m
 removeElement :: forall a. Ord a => (a -> Boolean) -> Set a -> { element :: Maybe a, rest :: Set a }
 removeElement p s = { element, rest: maybe s (\x -> S.delete x s) element }
     where element = find p s 
+
+forEnumerated_ :: forall a b m. Applicative m => List a -> (Int -> a -> m b) -> m Unit
+forEnumerated_ l f =
+    let lWithIndexes = L.zip (L.range 0 ((L.length l) - 1)) l
+    in
+        for_ lWithIndexes \(Tuple i x) -> f i x
