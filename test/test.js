@@ -62,6 +62,13 @@ const FIXTURES = [
         diffViaSchema: false,
         output: "schema.json",
         test: testJsonSchema
+    },
+    {
+        name: "elm",
+        base: "test/elm",
+        diffViaSchema: false,
+        output: "QuickType.elm",
+        test: testElm
     }
 ].filter(({name}) => !process.env.FIXTURE || name === process.env.FIXTURE);
 
@@ -69,11 +76,11 @@ const FIXTURES = [
 // Go tests
 /////////////////////////////////////
 
-const knownGoFails = ["identifiers.json"];
-const goWillFail = (sample) => knownGoFails.indexOf(path.basename(sample)) !== -1;
+const knownUnicodeFails = ["identifiers.json"];
+const unicodeWillFail = (sample) => knownUnicodeFails.indexOf(path.basename(sample)) !== -1;
 
 function testGo(sample) {
-    if (goWillFail(sample)) {
+    if (unicodeWillFail(sample)) {
         console.error(`Skipping golang ${sample} – known to fail`);
         return;
     }
@@ -95,6 +102,20 @@ function testCSharp(sample) {
         jsonCommand: `dotnet run "${sample}"`,
         strict: false
     });
+}
+
+//////////////////////////////////////
+// Elm tests
+/////////////////////////////////////
+
+function testElm(sample) {
+    if (unicodeWillFail(sample)) {
+        console.error(`Skipping elm ${sample} – known to fail`);
+        return;
+    }
+
+    exec("elm-make Main.elm QuickType.elm --output elm.js");
+    exec(`node ./runner.js "${sample}"`)
 }
 
 //////////////////////////////////////
