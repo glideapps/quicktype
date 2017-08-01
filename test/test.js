@@ -106,9 +106,6 @@ function testCSharp(sample) {
 
 function testJsonSchema(sample) {
     let input = JSON.parse(fs.readFileSync(sample));
-
-    // Generate a schema from the sample
-    quicktype(`--srcLang json -o schema.json --src ${sample}`);
     let schema = JSON.parse(fs.readFileSync("schema.json"));
     
     let ajv = new Ajv();
