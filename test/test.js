@@ -161,8 +161,10 @@ function compareJsonFileToJson({expectedFile, jsonFile, jsonCommand, strict}) {
 
     let expectedJSON = JSON.parse(fs.readFileSync(expectedFile));
     
-    let equals = strict ? strictDeepEquals : deepEquals;
-    if (!equals(givenJSON, expectedJSON)) {
+    let jsonAreEqual = strict
+        ? strictDeepEquals(givenJSON, expectedJSON)
+        : deepEquals(expectedJSON, givenJSON, []);
+    if (!jsonAreEqual) {
         console.error("Error: Output is not equivalent to input.");
         console.error({
             cwd: process.cwd(),
