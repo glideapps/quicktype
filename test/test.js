@@ -107,8 +107,10 @@ function testJsonSchema(sample) {
     let ajv = new Ajv();
     let valid = ajv.validate(schema, input);
     if (!valid) {
-        console.error("Error: Generated schema does not validate input JSON.");
-        process.exit(1);
+        failWith({
+            sample,
+            error: "Generated schema does not validate input JSON.",
+        });
     }
 
     // Generate Go from the schema
@@ -138,6 +140,23 @@ function testJsonSchema(sample) {
 // Test driver
 /////////////////////////////////////
 
+function failWith(...args) {
+    let objs = args.concat([
+        {
+            cwd: process.cwd()
+        }
+    ]);
+
+    objs.forEach((o) => {
+        let s = typeof o === 'object'
+            ? JSON.stringify(o, null, "  ")
+            : o.toString();
+        console.error(s);
+    });
+
+    throw args.length === 1 ? args[0] : args;
+}
+
 function exec(s, opts, cb) {
     // We special-case quicktype execution
     s = s.replace(/^quicktype /, `node ${QUICKTYPE_CLI} `);
@@ -148,7 +167,10 @@ function exec(s, opts, cb) {
     if (result.code !== 0) {
         console.error(result.stdout);
         console.error(result.stderr);
-        throw { command: s, code: result.code }
+        failWith({
+            command: s,
+            code: result.code
+        });
     }
     return result;
 }
@@ -169,13 +191,11 @@ function compareJsonFileToJson({expectedFile, jsonFile, jsonCommand, strict}) {
 
     if (!jsonAreEqual) {
         console.error("Error: Output is not equivalent to input.");
-        console.error({
-            cwd: process.cwd(),
+        failWith({
             expectedFile,
             jsonCommand,
             jsonFile
         });
-        process.exit(1);
     }
 }
 
@@ -250,7 +270,11 @@ function testAll(samples) {
             console.error(`* [${i+1}/${tests.length}] ${fixtureName} ${sample}`);
 
             let fixture = _.find(FIXTURES, { name: fixtureName });
-            runFixtureWithSample(fixture, sample);
+            try {
+                runFixtureWithSample(fixture, sample);
+            } catch (e) {
+                process.exit(1);
+            }
         }
     });
 }
