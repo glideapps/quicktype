@@ -143,7 +143,7 @@ function testJsonSchema(sample) {
     exec(`quicktype --srcLang json-schema -o quicktype.go --src schema.json`);
 
     // Possibly check the output of the Go program against the sample
-    if (goWillFail(sample)) {
+    if (unicodeWillFail(sample)) {
         console.error("Known to fail - not checking output.");
     } else {
         // Parse the sample with Go generated from its schema, and compare to the sample
