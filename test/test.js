@@ -69,9 +69,7 @@ const FIXTURES = [
     {
         name: "elm",
         base: "test/elm",
-        setup: IS_CI
-                ? "$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make --yes"
-                : "elm-make --yes",
+        setup: IS_CI ? "setup-ci.sh" : "elm-make --yes",
         diffViaSchema: false,
         output: "QuickType.elm",
         test: testElm
@@ -123,7 +121,7 @@ function testElm(sample) {
     IS_CI
         ? exec("$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make Main.elm QuickType.elm --output elm.js")
         : exec("elm-make Main.elm QuickType.elm --output elm.js");
-        
+
     exec(`node ./runner.js "${sample}"`)
 }
 
