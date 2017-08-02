@@ -29,6 +29,7 @@ const BRANCH = process.env.TRAVIS_BRANCH;
 const IS_BLESSED = ["master"].indexOf(BRANCH) !== -1;
 const IS_PUSH = process.env.TRAVIS_EVENT_TYPE === "push";
 const IS_PR = process.env.TRAVIS_PULL_REQUEST && process.env.TRAVIS_PULL_REQUEST !== "false";
+const DEBUG = typeof process.env.DEBUG !== 'undefined';
 
 const CPUs = IS_CI
     ? 2 /* Travis has only 2 but reports 8 */
@@ -177,6 +178,10 @@ function failWith(obj) {
 }
 
 function exec(s, opts, cb) {
+    // Disable silent when DEBUG
+    opts = opts || {};
+    opts.silent = !DEBUG && opts.silent;
+
     // We special-case quicktype execution
     s = s.replace(/^quicktype /, `node ${QUICKTYPE_CLI} `);
 
@@ -223,7 +228,7 @@ function inDir(dir, work) {
     
     debug(`cd ${dir}`)
     process.chdir(dir);
-
+    
     work();
     process.chdir(origin);
 }
