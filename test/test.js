@@ -282,6 +282,7 @@ function testAll(samples) {
                 console.error(`* Setting up ${name} fixture`);
                 inDir(base, () => exec(setup, { silent: true }));
             });
+            exec(`du -h test/elm`);
         },
         work: ({ sample, fixtureName }, i) => {
             console.error(`* [${i+1}/${tests.length}] ${fixtureName} ${sample}`);
