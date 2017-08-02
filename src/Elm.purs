@@ -20,8 +20,8 @@ import Data.String.Util (capitalize, decapitalize, camelCase, stringEscape)
 import Data.Tuple (Tuple(..), fst)
 import Utils (sortByKey, sortByKeyM, forEnumerated_)
 
-keywords :: Array String
-keywords =
+forbiddenWords :: Array String
+forbiddenWords =
     [ "if", "then", "else"
     , "case", "of"
     , "let", "in"
@@ -30,13 +30,15 @@ keywords =
     , "import", "exposing"
     , "as"
     , "port"
+    , "int", "float", "bool", "string"
+    , "root", "jenc", "jdec", "jpipe", "array", "dict", "maybe"
     ]
 
 forbiddenPropertyNames :: Set String
-forbiddenPropertyNames = S.fromFoldable keywords
+forbiddenPropertyNames = S.fromFoldable forbiddenWords
 
 forbiddenNames :: Array String
-forbiddenNames = A.insert "Root" $ map capitalize keywords
+forbiddenNames = A.insert "Root" $ map capitalize forbiddenWords
 
 renderer :: Renderer
 renderer =
@@ -99,8 +101,8 @@ elmDoc :: Doc Unit
 elmDoc = do
     line """module QuickType exposing (Root, root)
 
-import Json.Decode exposing (Decoder, Value, int, float, bool, string, array, dict, null, nullable, value, map, oneOf)
-import Json.Decode.Pipeline exposing (decode, required, optional)
+import Json.Decode as Jdec
+import Json.Decode.Pipeline as Jpipe
 import Array exposing (Array)
 import Dict exposing (Dict)
 """
@@ -108,7 +110,7 @@ import Dict exposing (Dict)
     { rendered: topLevelRendered, comment: topLevelComment } <- typeStringForType topLevel
     line $ "type alias Root = " <> topLevelRendered <> renderComment topLevelComment
     blank
-    line "root : Decoder Root"
+    line "root : Jdec.Decoder Root"
     rootDecoder <- decoderNameForType topLevel
     line $ "root = " <> rootDecoder
     blank
@@ -136,7 +138,7 @@ typeStringForUnion s =
 
 typeStringForType :: IRType -> Doc { rendered :: String, comment :: Maybe String }
 typeStringForType = case _ of
-    IRNothing -> noComment "Value"
+    IRNothing -> noComment "Jdec.Value"
     IRNull -> noComment "()"
     IRInteger -> noComment "Int"
     IRDouble -> noComment "Float"
@@ -165,24 +167,24 @@ unionConstructorName s t = do
 
 decoderNameForType :: IRType -> Doc String
 decoderNameForType = case _ of
-    IRNothing -> pure "value"
-    IRNull -> pure "(null ())"
-    IRInteger -> pure "int"
-    IRDouble -> pure "float"
-    IRBool -> pure "bool"
-    IRString -> pure "string"
+    IRNothing -> pure "Jdec.value"
+    IRNull -> pure "(Jdec.null ())"
+    IRInteger -> pure "Jdec.int"
+    IRDouble -> pure "Jdec.float"
+    IRBool -> pure "Jdec.bool"
+    IRString -> pure "Jdec.string"
     IRArray a -> do
         rendered <- decoderNameForType a
-        pure $ "(array " <> rendered <> ")"
+        pure $ "(Jdec.array " <> rendered <> ")"
     IRClass i -> lookupClassDecoderName i
     IRMap t -> do
         rendered <- decoderNameForType t
-        pure $ "(dict " <> rendered <> ")"
+        pure $ "(Jdec.dict " <> rendered <> ")"
     IRUnion types ->
         case nullableFromSet $ unionToSet types of
         Just t -> do
             rendered <- decoderNameForType t
-            pure $ "(nullable " <> rendered <> ")"
+            pure $ "(Jdec.nullable " <> rendered <> ")"
         Nothing -> do
             lookupUnionDecoderName $ unionToSet types
 
@@ -216,14 +218,14 @@ renderTypeDefinition classIndex (IRClassData { names, properties }) = do
         line "}"
     blank
     decoderName <- lookupClassDecoderName classIndex
-    line $ decoderName <> " : Decoder " <> className
+    line $ decoderName <> " : Jdec.Decoder " <> className
     line $ decoderName <> " ="
     indent do
-        line $ "decode " <> className
+        line $ "Jpipe.decode " <> className
         for_ propsList \(Tuple pname ptype) -> do
             indent do
                 decoderName <- decoderNameForType ptype
-                let { reqOrOpt, fallback } = if isOptional ptype then { reqOrOpt: "optional", fallback: " Nothing" } else { reqOrOpt: "required", fallback: "" }
+                let { reqOrOpt, fallback } = if isOptional ptype then { reqOrOpt: "Jpipe.optional", fallback: " Nothing" } else { reqOrOpt: "Jpipe.required", fallback: "" }
                 line $ "|> " <> reqOrOpt <> " \"" <> stringEscape pname <> "\" " <> decoderName <> fallback
 
 renderUnionDefinition :: Set IRType -> Doc Unit
@@ -241,16 +243,16 @@ renderUnionDefinition allTypes = do
                 line $ equalsOrPipe <> " " <> constructor <> " " <> rendered <> renderComment comment
     blank
     decoderName <- lookupUnionDecoderName allTypes
-    line $ decoderName <> " : Decoder " <> name
+    line $ decoderName <> " : Jdec.Decoder " <> name
     line $ decoderName <> " ="
     indent do
-        line "oneOf"
+        line "Jdec.oneOf"
         indent do
             forWithPrefix_ fields "[" "," \bracketOrComma t -> do
                 constructor <- unionConstructorName allTypes t
                 when (t == IRNull) do
-                    line $ bracketOrComma <> " null " <> constructor
+                    line $ bracketOrComma <> " Jdec.null " <> constructor
                 unless (t == IRNull) do
                     decoder <- decoderNameForType t
-                    line $ bracketOrComma <> " map " <> constructor <> " " <> decoder
+                    line $ bracketOrComma <> " Jdec.map " <> constructor <> " " <> decoder
             line "]"
