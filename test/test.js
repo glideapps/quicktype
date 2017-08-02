@@ -304,16 +304,19 @@ function testsInDir(dir) {
 
 function main(sources) {
     if (sources.length == 0) {
-        if (IS_CI && !IS_PR && !IS_BLESSED) {
-            return main(testsInDir("app/public/sample/json"));
-        } else {
-            return main(testsInDir("test/inputs/json"));
-        }
-    } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
-        return main(testsInDir(sources[0]));
-    } else {
-        testAll(sources);
+        sources = testsInDir("test/inputs/json");
     }
+
+    if (IS_CI && !IS_PR && !IS_BLESSED) {
+        // Run just a few random samples on low-priority CI branches
+        sources = _.chain(sources).shuffle().take(3).value();
+    }
+    
+    if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
+        sources = testsInDir(sources[0]);
+    }
+
+    testAll(sources);
 }
 
 // skip 2 `node` args
