@@ -7,10 +7,22 @@ addons:
         key_url: 'https://apt-mo.trafficmanager.net/keys/microsoft.asc'
     packages:
       - dotnet-dev-1.0.1
+install:
+  - |
+    if [ ! -d sysconfcpus/bin ];
+    then
+      git clone https://github.com/obmarg/libsysconfcpus.git; 
+      cd libsysconfcpus;
+      ./configure --prefix=$TRAVIS_BUILD_DIR/sysconfcpus;
+      make && make install;
+      cd ..;
+    fi
+  - npm install
 script:
   - test/test.js
 cache:
   directories:
+    - sysconfcpus/bin
     - bower_components
     - node_modules
     - output
@@ -18,6 +30,7 @@ cache:
     - cli/node_modules
     - $HOME/.cache/bower
     - $HOME/.nuget/packages
+    - test/elm
 notifications:
   slack:
     secure: IeuuD+F4GlTrrm/AFPk30PbRN6iYpq2SO9ta9C40UGtWWTR4bmxZUb5WftrRbt4dBtBb5+NrOBgEIIb5PhHvJP93k38OJgybBDoLzs163O4WQHivA9OztDGoWeE3SLSfRaaH+GSU3IzWRaNPbf9KFPsi5ydQdw3R9jv61w4EUKXmSsGuArOpGP2wFpKD0gamhkzjdYlsVWL/TDEVly1BYkT/8JcYqLKtgrKm8/7G5sT6utzdDAINofvooUyKlxBGx6sgWzKgvmSPPp9GWAp5UZq9rp9xsXf/l6h6gWsyTWrM+6jV94GdUQRgb8SxsrVWtDvKuNPuCJ3M8z1kb9hHY8aSQvZSxmCBm84bQkDT0ifkq+Ij9t1fsXOlMPSLAXjTGY39gLLL71eK/1NgmnchgzkifOjfFGC8/5m/yNGFmeA0nBxHtmGslkgJUHUUZkhkO2o31NQub2a7XfFmLzi9jO145kZU/5D/pQ2oncCs+MUdc5PyCiaVRgiG+v6EYw56+CTO/lgEYdjoOeuoTVQaZJmwwmZRQOczkLCQrv2i6wsq76OBrJBE/IarjPdnNobYLduovRocOSPHdOgoCes0ZG4PKi9jLLCNwCRYJAd0vunHDh7lipJmbq56JJiq6xMu8RvL228BSF51PRs8Wv0YipzSnLJQkjuHrmYUGyGlxGs=
