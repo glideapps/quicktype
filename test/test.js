@@ -69,7 +69,7 @@ const FIXTURES = [
     {
         name: "elm",
         base: "test/elm",
-        setup: IS_CI ? "setup-ci.sh" : "elm-make --yes",
+        setup: IS_CI ? "./setup-ci.sh" : "elm-make --yes",
         diffViaSchema: false,
         output: "QuickType.elm",
         test: testElm
