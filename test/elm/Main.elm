@@ -15,7 +15,7 @@ update msg _ =
     case msg of
         FromJS str ->
             case decodeString QuickType.root str of
-            Ok _ -> ((), toJS "Ok")
+            Ok r -> ((), toJS (QuickType.encodeRoot r))
             Err err -> ((), toJS ("Error: " ++ err))
 
 subscriptions : () -> Sub Msg
