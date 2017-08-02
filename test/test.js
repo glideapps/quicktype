@@ -259,6 +259,8 @@ function runFixtureWithSample(fixture, sample) {
             }
         }
     });
+
+    shell.rm("-rf", tmp);
 }
 
 function testAll(samples) {
