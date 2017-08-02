@@ -9,7 +9,7 @@ import Prelude
 import Data.Array as A
 import Data.Char.Unicode (isLetter)
 import Data.Foldable (for_, intercalate)
-import Data.List (List)
+import Data.List (List, (:))
 import Data.List as L
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
@@ -18,7 +18,7 @@ import Data.Set as S
 import Data.String as Str
 import Data.String.Util (capitalize, decapitalize, camelCase, stringEscape)
 import Data.Tuple (Tuple(..), fst)
-import Utils (sortByKey, sortByKeyM, forEnumerated_)
+import Utils (forEnumerated_, removeElement, sortByKey, sortByKeyM)
 
 forbiddenWords :: Array String
 forbiddenWords =
@@ -307,9 +307,12 @@ renderUnionDefinition allTypes = do
     line $ decoderName <> " : Jdec.Decoder " <> name
     line $ decoderName <> " ="
     indent do
+        let { element: maybeArray, rest: nonArrayFields } = removeElement isArray allTypes
+        nonArrayDecFields <- L.fromFoldable nonArrayFields # sortByKeyM (unionConstructorName allTypes)
+        let decFields = maybe nonArrayDecFields (\f -> f : nonArrayDecFields) maybeArray
         line "Jdec.oneOf"
         indent do
-            forWithPrefix_ fields "[" "," \bracketOrComma t -> do
+            forWithPrefix_ decFields "[" "," \bracketOrComma t -> do
                 constructor <- unionConstructorName allTypes t
                 when (t == IRNull) do
                     line $ bracketOrComma <> " Jdec.null " <> constructor
@@ -322,6 +325,7 @@ renderUnionDefinition allTypes = do
     line $ encoderName <> " : " <> name <> " -> Jenc.Value"
     line $ encoderName <> " x = case x of"
     indent do
+        fields <- L.fromFoldable allTypes # sortByKeyM (unionConstructorName allTypes)
         for_ fields \t -> do
             constructor <- unionConstructorName allTypes t
             when (t == IRNull) do
