@@ -31,7 +31,7 @@ const IS_PUSH = process.env.TRAVIS_EVENT_TYPE === "push";
 const IS_PR = process.env.TRAVIS_PULL_REQUEST && process.env.TRAVIS_PULL_REQUEST !== "false";
 
 const CPUs = IS_CI
-    ? 1 /* Travis has only 2 but reports 8 */
+    ? 2 /* Travis has only 2 but reports 8 */
     : process.env.CPUs || os.cpus().length;
 
 const QUICKTYPE_CLI = path.resolve("./cli/quicktype.js");
@@ -69,7 +69,9 @@ const FIXTURES = [
     {
         name: "elm",
         base: "test/elm",
-        setup: "elm-make --yes",
+        setup: IS_CI
+                ? "$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make --yes"
+                : "elm-make --yes",
         diffViaSchema: false,
         output: "QuickType.elm",
         test: testElm
@@ -118,7 +120,10 @@ function testElm(sample) {
         return;
     }
 
-    exec("elm-make Main.elm QuickType.elm --output elm.js");
+    IS_CI
+        ? exec("$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make Main.elm QuickType.elm --output elm.js")
+        : exec("elm-make Main.elm QuickType.elm --output elm.js");
+        
     exec(`node ./runner.js "${sample}"`)
 }
 
