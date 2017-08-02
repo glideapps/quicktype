@@ -31,7 +31,7 @@ const IS_PUSH = process.env.TRAVIS_EVENT_TYPE === "push";
 const IS_PR = process.env.TRAVIS_PULL_REQUEST && process.env.TRAVIS_PULL_REQUEST !== "false";
 
 const CPUs = IS_CI
-    ? 2 /* Travis has only 2 but reports 8 */
+    ? 1 /* Travis has only 2 but reports 8 */
     : process.env.CPUs || os.cpus().length;
 
 const QUICKTYPE_CLI = path.resolve("./cli/quicktype.js");
@@ -282,7 +282,6 @@ function testAll(samples) {
                 console.error(`* Setting up ${name} fixture`);
                 inDir(base, () => exec(setup, { silent: true }));
             });
-            exec(`du -h test/elm`);
         },
         work: ({ sample, fixtureName }, i) => {
             console.error(`* [${i+1}/${tests.length}] ${fixtureName} ${sample}`);
