@@ -12,6 +12,7 @@ const Samples = require("../output/Samples");
 const assert = require("assert");
 const { inParallel } = require("./multicore");
 const os = require("os");
+const exit = require('exit');
 
 //////////////////////////////////////
 // Constants
@@ -262,7 +263,7 @@ function testAll(samples) {
             try {
                 runFixtureWithSample(fixture, sample);
             } catch (e) {
-                process.exit(1);
+                exit(1);
             }
         }
     });
