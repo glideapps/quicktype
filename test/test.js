@@ -140,21 +140,10 @@ function testJsonSchema(sample) {
 // Test driver
 /////////////////////////////////////
 
-function failWith(...args) {
-    let objs = args.concat([
-        {
-            cwd: process.cwd()
-        }
-    ]);
-
-    objs.forEach((o) => {
-        let s = typeof o === 'object'
-            ? JSON.stringify(o, null, "  ")
-            : o.toString();
-        console.error(s);
-    });
-
-    throw args.length === 1 ? args[0] : args;
+function failWith(obj) {
+    obj.cwd = process.cwd();
+    console.error(JSON.stringify(obj, null, "  "));
+    throw obj;
 }
 
 function exec(s, opts, cb) {
