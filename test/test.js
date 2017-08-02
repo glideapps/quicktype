@@ -118,9 +118,8 @@ function testElm(sample) {
         return;
     }
 
-    IS_CI
-        ? exec("$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make Main.elm QuickType.elm --output elm.js")
-        : exec("elm-make Main.elm QuickType.elm --output elm.js");
+    let limit_cpus = IS_CI ? "$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2" : "";
+    exec(`${limit_cpus} elm-make Main.elm QuickType.elm --output elm.js`)
 
     exec(`node ./runner.js "${sample}"`)
 }
