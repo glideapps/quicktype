@@ -84,11 +84,10 @@ export default class Sidebar extends Component {
                     <Button raised primary>
                         Copy {this.props.rendererName}
                     </Button>
-                </div>
-
-                <div className="cli-hint">
-                    <p>Install quicktype locally with:</p>
-                    <pre>npm install -g quicktype</pre>
+                    <div className="cli-hint">
+                        <p>Install quicktype locally:</p>
+                        <pre>npm i -g quicktype</pre>
+                    </div>
                 </div>
             </div>
         </sidebar>

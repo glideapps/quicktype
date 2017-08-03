@@ -90,13 +90,15 @@ sidebar .mdc-select:first-child {
 
 .cli-hint {
   color: white;
-  margin-top: 10px;
+  float: right;
+  text-align: right;
 }
 
 .cli-hint p {
   color: white;
   opacity: 0.5;
-  margin-bottom: 6px;
+  margin: 0 0 4px 0;
+  font-size: 11pt;
 }
 
 .cli-hint pre {
