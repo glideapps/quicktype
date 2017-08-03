@@ -210,6 +210,8 @@ function compareJsonFileToJson({expectedFile, jsonFile, jsonCommand, strict}) {
         ? fs.readFileSync(jsonFile)
         : exec(jsonCommand, {silent: true}).stdout;
 
+    debug({ jsonString });
+
     let givenJSON = JSON.parse(jsonString);
     let expectedJSON = JSON.parse(fs.readFileSync(expectedFile));
     
