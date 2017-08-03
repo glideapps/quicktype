@@ -135,19 +135,35 @@ typeScriptDoc = do
     top <- getTopLevel >>= renderType
     line $ """// To parse this JSON data:
 //
-//     let result: """ <> top <> """ = JSON.parse(json);
+//     import * as """ <> top <> """ from "./""" <> top <> """;
+//     let value = """ <> top <> """.fromJson(json);
 //
-"""       
+"""      
+    renderHelpers
+    blank 
     classes <- getClasses
     for_ classes \(Tuple i cd) -> do
         interface <- lookupClassName i
         renderInterface cd interface
         blank
 
+renderHelpers :: Doc Unit
+renderHelpers = do
+    top <- getTopLevel >>= renderType
+    line $ "export function fromJson(json: string): " <> top <> " {"
+    indent do
+        line $ "return JSON.parse(json): " <> top <> ";"
+    line "}"
+    blank
+    line $ "export function toJson(value: " <> top <> "): string {"
+    indent do
+        line $ "return JSON.stringify(value);"
+    line "}"
+
 renderInterface :: IRClassData -> String -> Doc Unit
 renderInterface (IRClassData { names, properties }) className = do
     let propertyNames = transformNames propertyNamify (_ <> "_") (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
-    line $ "interface " <> className <> " {"
+    line $ "export interface " <> className <> " {"
     indent do
         let props = M.toUnfoldable properties :: Array _
         let resolved = props <#> \(Tuple a b) -> Tuple (lookupName a propertyNames) b
