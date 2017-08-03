@@ -318,6 +318,18 @@ function testsInDir(dir) {
 }
 
 function main(sources) {
+    if (IS_CI && process.env.TRAVIS_COMMIT_RANGE) {
+        let changed = exec("git diff --name-only $TRAVIS_COMMIT_RANGE").split("\n");
+        let onlyWebAppChanged = _.every(changed, (file) => file.startsWith("app/"));
+        if (onlyWebAppChanged) {
+            console.error(`Only app/ paths changed; skipping tests.`);
+            return;
+        } else {
+            console.error(`Other paths changed; not skipping tests.`);
+            return;
+        }
+    }
+
     if (sources.length == 0) {
         sources = testsInDir("test/inputs/json");
     }
