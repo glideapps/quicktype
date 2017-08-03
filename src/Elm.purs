@@ -109,20 +109,6 @@ import Json.Decode.Pipeline as Jpipe
 import Json.Encode as Jenc
 import Array
 import Dict
-
-array__enc : (a -> Jenc.Value) -> Array.Array a -> Jenc.Value
-array__enc f arr =
-    Jenc.array (Array.map f arr)
-
-dict__enc : (a -> Jenc.Value) -> Dict.Dict String a -> Jenc.Value
-dict__enc f dict =
-    Jenc.object (Dict.toList (Dict.map (\k -> f) dict))
-
-nullable__enc : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
-nullable__enc f m =
-    case m of
-    Just x -> f x
-    Nothing -> Jenc.null
 """
     topLevel <- getTopLevel
     { rendered: topLevelRendered } <- typeStringForType topLevel
@@ -143,6 +129,20 @@ nullable__enc f m =
     for_ unions \types -> do
         blank
         renderUnionDefinition types
+    blank
+    line """array__enc : (a -> Jenc.Value) -> Array.Array a -> Jenc.Value
+array__enc f arr =
+    Jenc.array (Array.map f arr)
+
+dict__enc : (a -> Jenc.Value) -> Dict.Dict String a -> Jenc.Value
+dict__enc f dict =
+    Jenc.object (Dict.toList (Dict.map (\k -> f) dict))
+
+nullable__enc : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
+nullable__enc f m =
+    case m of
+    Just x -> f x
+    Nothing -> Jenc.null"""
 
 singleWord :: String -> Doc { rendered :: String, multiWord :: Boolean }
 singleWord w = pure { rendered: w, multiWord: false }
