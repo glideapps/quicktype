@@ -112,6 +112,8 @@ import Json.Decode.Pipeline as Jpipe
 import Json.Encode as Jenc
 import Array
 import Dict
+
+-- top level type
 """
     topLevel <- getTopLevel
     { rendered: topLevelRendered } <- typeStringForType topLevel
@@ -124,16 +126,28 @@ import Dict
     { rendered: rootEncoder } <- encoderNameForType topLevel
     line $ "encode" <> givenTopLevel <> " : " <> givenTopLevel <> " -> String"
     line $ "encode" <> givenTopLevel <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
+    blank
+    line "-- JSON types"
     classes <- getClasses
+    unions <- getUnions
     for_ classes \(Tuple i cls) -> do
         blank
-        renderTypeDefinition i cls
-    unions <- getUnions
+        typeRenderer renderTypeDefinition i cls
     for_ unions \types -> do
         blank
         renderUnionDefinition types
     blank
-    line """array__enc : (a -> Jenc.Value) -> Array.Array a -> Jenc.Value
+    line "-- decoders and encoders"
+    for_ classes \(Tuple i cls) -> do
+        blank
+        typeRenderer renderTypeFunctions i cls
+    for_ unions \types -> do
+        blank
+        renderUnionFunctions types
+    blank
+    line """--- encoder helpers
+
+array__enc : (a -> Jenc.Value) -> Array.Array a -> Jenc.Value
 array__enc f arr =
     Jenc.array (Array.map f arr)
 
@@ -258,11 +272,8 @@ isOptional = case _ of
     -- IRUnion u -> S.member IRNull $ unionToSet u
     _ -> false
 
-renderTypeDefinition :: Int -> IRClassData -> Doc Unit
-renderTypeDefinition classIndex (IRClassData { names, properties }) = do
-    className <- lookupClassName classIndex
-    let propertyNames = transformNames lowerNameStyle (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ Map.keys properties
-    let propsList = Map.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
+renderTypeDefinition :: Int -> String -> Map.Map String String -> List (Tuple String IRType) -> Doc Unit
+renderTypeDefinition classIndex className propertyNames propsList = do
     line $ "type alias " <> className <> " ="
     indent do
         forWithPrefix_ propsList "{ " ", " \braceOrComma (Tuple pname ptype) -> do
@@ -272,7 +283,9 @@ renderTypeDefinition classIndex (IRClassData { names, properties }) = do
         when (propsList == L.Nil) do
             line "{"
         line "}"
-    blank
+
+renderTypeFunctions :: Int -> String -> Map.Map String String -> List (Tuple String IRType) -> Doc Unit
+renderTypeFunctions classIndex className propertyNames propsList = do
     decoderName <- lookupClassDecoderName classIndex
     line $ decoderName <> " : Jdec.Decoder " <> className
     line $ decoderName <> " ="
@@ -298,11 +311,18 @@ renderTypeDefinition classIndex (IRClassData { names, properties }) = do
             line "["
         line "]"
 
+typeRenderer :: (Int -> String -> Map.Map String String -> List (Tuple String IRType) -> Doc Unit) -> Int -> IRClassData -> Doc Unit
+typeRenderer renderer classIndex (IRClassData { properties }) = do
+    className <- lookupClassName classIndex
+    let propertyNames = transformNames lowerNameStyle (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ Map.keys properties
+    let propsList = Map.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
+    renderer classIndex className propertyNames propsList
+
 renderUnionDefinition :: Set IRType -> Doc Unit
 renderUnionDefinition allTypes = do
-    name <- lookupUnionName allTypes
+    unionName <- lookupUnionName allTypes
     fields <- L.fromFoldable allTypes # sortByKeyM (unionConstructorName allTypes)
-    line $ "type " <> name
+    line $ "type " <> unionName
     forWithPrefix_ fields "=" "|" \equalsOrPipe t -> do
         indent do
             constructor <- unionConstructorName allTypes t
@@ -311,9 +331,12 @@ renderUnionDefinition allTypes = do
             unless (t == IRNull) do
                 ts <- typeStringForType t
                 line $ equalsOrPipe <> " " <> constructor <> " " <> (parenIfNeeded ts)
-    blank
+
+renderUnionFunctions :: Set IRType -> Doc Unit
+renderUnionFunctions allTypes = do
+    unionName <- lookupUnionName allTypes
     decoderName <- lookupUnionDecoderName allTypes
-    line $ decoderName <> " : Jdec.Decoder " <> name
+    line $ decoderName <> " : Jdec.Decoder " <> unionName
     line $ decoderName <> " ="
     indent do
         let { element: maybeArray, rest: nonArrayFields } = removeElement isArray allTypes
@@ -331,7 +354,7 @@ renderUnionDefinition allTypes = do
             line "]"
     blank
     let encoderName = encoderNameFromDecoderName decoderName
-    line $ encoderName <> " : " <> name <> " -> Jenc.Value"
+    line $ encoderName <> " : " <> unionName <> " -> Jenc.Value"
     line $ encoderName <> " x = case x of"
     indent do
         fields <- L.fromFoldable allTypes # sortByKeyM (unionConstructorName allTypes)
