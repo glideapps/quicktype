@@ -139,8 +139,8 @@ elmDoc = do
 --
 -- add these imports
 --
---    import Json.Decode exposing (decodeString)"""
-    line $ "--    import " <> givenTopLevel <> " exposing (" <> topLevelDecoder <> ")"
+--     import Json.Decode exposing (decodeString)"""
+    line $ "--     import " <> givenTopLevel <> " exposing (" <> topLevelDecoder <> ")"
     line """--
 -- and you're off to the races with
 --"""
