@@ -125,14 +125,14 @@ nullable__enc f m =
     Nothing -> Jenc.null
 """
     topLevel <- getTopLevel
-    { rendered: topLevelRendered, comment: topLevelComment } <- typeStringForType topLevel
-    line $ "type alias Root = " <> topLevelRendered <> renderComment topLevelComment
+    { rendered: topLevelRendered } <- typeStringForType topLevel
+    line $ "type alias Root = " <> topLevelRendered
     blank
-    rootDecoder <- decoderNameForType topLevel
+    { rendered: rootDecoder } <- decoderNameForType topLevel
     line "root : Jdec.Decoder Root"
     line $ "root = " <> rootDecoder
     blank
-    rootEncoder <- encoderNameForType topLevel
+    { rendered: rootEncoder } <- encoderNameForType topLevel
     line "encodeRoot : Root -> String"
     line $ "encodeRoot r = Jenc.encode 0 (" <> rootEncoder <> " r)"
     classes <- getClasses
@@ -144,35 +144,39 @@ nullable__enc f m =
         blank
         renderUnionDefinition types
 
-noComment :: String -> Doc { rendered :: String, comment :: Maybe String }
-noComment rendered =
-    pure { rendered, comment: Nothing }
+singleWord :: String -> Doc { rendered :: String, multiWord :: Boolean }
+singleWord w = pure { rendered: w, multiWord: false }
 
-typeStringForUnion :: Set IRType -> Doc { rendered :: String, comment :: Maybe String }
-typeStringForUnion s =
-    case nullableFromSet s of
-    Just x -> do
-        { rendered, comment } <- typeStringForType x
-        pure { rendered: "(Maybe " <> rendered <> ")", comment: Just $ maybe "optional" ("optional " <> _) comment }
-    Nothing -> do
-        noComment =<< lookupUnionName s
+multiWord :: String -> String -> Doc { rendered :: String, multiWord :: Boolean }
+multiWord s1 s2 = pure { rendered: s1 <> " " <> s2, multiWord: true }
 
-typeStringForType :: IRType -> Doc { rendered :: String, comment :: Maybe String }
+parenIfNeeded :: { rendered :: String, multiWord :: Boolean } -> String
+parenIfNeeded { rendered, multiWord: false } = rendered
+parenIfNeeded { rendered, multiWord: true } = "(" <> rendered <> ")"
+
+typeStringForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
 typeStringForType = case _ of
-    IRNothing -> noComment "Jdec.Value"
-    IRNull -> noComment "()"
-    IRInteger -> noComment "Int"
-    IRDouble -> noComment "Float"
-    IRBool -> noComment "Bool"
-    IRString -> noComment "String"
+    IRNothing -> singleWord "Jdec.Value"
+    IRNull -> singleWord "()"
+    IRInteger -> singleWord "Int"
+    IRDouble -> singleWord "Float"
+    IRBool -> singleWord "Bool"
+    IRString -> singleWord "String"
     IRArray a -> do
-        { rendered, comment } <- typeStringForType a
-        pure { rendered: "(Array.Array " <> rendered <> ")", comment: map ("array of " <> _) comment }
-    IRClass i -> noComment =<< lookupClassName i
+        ts <- typeStringForType a
+        multiWord "Array.Array" $ parenIfNeeded ts
+    IRClass i -> singleWord =<< lookupClassName i
     IRMap t -> do
-        { rendered, comment } <- typeStringForType t
-        pure { rendered: "(Dict.Dict String " <> rendered <> ")", comment: map ("map to " <> _) comment }
-    IRUnion types -> typeStringForUnion $ unionToSet types
+        ts <- typeStringForType t
+        multiWord "Dict.Dict String" $ parenIfNeeded ts
+    IRUnion u ->
+        let s = unionToSet u
+        in case nullableFromSet s of
+        Just x -> do
+            ts <- typeStringForType x
+            multiWord "Maybe" $ parenIfNeeded ts
+        Nothing -> do
+            singleWord =<< lookupUnionName s
 
 lookupClassDecoderName :: Int -> Doc String
 lookupClassDecoderName i = decapitalize <$> lookupClassName i
@@ -189,51 +193,53 @@ unionConstructorName s t = do
     unionName <- lookupUnionName s
     pure $ typeName <> "In" <> unionName
 
-decoderNameForType :: IRType -> Doc String
+decoderNameForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
 decoderNameForType = case _ of
-    IRNothing -> pure "Jdec.value"
-    IRNull -> pure "(Jdec.null ())"
-    IRInteger -> pure "Jdec.int"
-    IRDouble -> pure "Jdec.float"
-    IRBool -> pure "Jdec.bool"
-    IRString -> pure "Jdec.string"
+    IRNothing -> singleWord "Jdec.value"
+    IRNull -> multiWord "Jdec.null" "()"
+    IRInteger -> singleWord "Jdec.int"
+    IRDouble -> singleWord "Jdec.float"
+    IRBool -> singleWord "Jdec.bool"
+    IRString -> singleWord "Jdec.string"
     IRArray a -> do
-        rendered <- decoderNameForType a
-        pure $ "(Jdec.array " <> rendered <> ")"
-    IRClass i -> lookupClassDecoderName i
+        dn <- decoderNameForType a
+        multiWord "Jdec.array" $ parenIfNeeded dn
+    IRClass i -> singleWord =<< lookupClassDecoderName i
     IRMap t -> do
-        rendered <- decoderNameForType t
-        pure $ "(Jdec.dict " <> rendered <> ")"
-    IRUnion types ->
-        case nullableFromSet $ unionToSet types of
+        dn <- decoderNameForType t
+        multiWord "Jdec.dict" $ parenIfNeeded dn
+    IRUnion u ->
+        let s = unionToSet u
+        in case nullableFromSet s of
         Just t -> do
-            rendered <- decoderNameForType t
-            pure $ "(Jdec.nullable " <> rendered <> ")"
+            dn <- decoderNameForType t
+            multiWord "Jdec.nullable" $ parenIfNeeded dn
         Nothing -> do
-            lookupUnionDecoderName $ unionToSet types
+            singleWord =<< lookupUnionDecoderName s
 
-encoderNameForType :: IRType -> Doc String
+encoderNameForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
 encoderNameForType = case _ of
-    IRNothing -> pure "identity"
-    IRNull -> pure "(always Jenc.null)"
-    IRInteger -> pure $ "Jenc.int"
-    IRDouble -> pure $ "Jenc.float"
-    IRBool -> pure $ "Jenc.bool"
-    IRString -> pure $ "Jenc.string"
+    IRNothing -> singleWord "identity"
+    IRNull -> multiWord "always" "Jenc.null"
+    IRInteger -> singleWord "Jenc.int"
+    IRDouble -> singleWord "Jenc.float"
+    IRBool -> singleWord "Jenc.bool"
+    IRString -> singleWord "Jenc.string"
     IRArray a -> do
         rendered <- encoderNameForType a
-        pure $ "(array__enc " <> rendered <> ")"
-    IRClass i -> encoderNameFromDecoderName <$> lookupClassDecoderName i
+        multiWord "array__enc" $ parenIfNeeded rendered
+    IRClass i -> singleWord =<< encoderNameFromDecoderName <$> lookupClassDecoderName i
     IRMap t -> do
         rendered <- encoderNameForType t
-        pure $ "(dict__enc " <> rendered <> ")"
-    IRUnion types ->
-        case nullableFromSet $ unionToSet types of
+        multiWord "dict__enc" $ parenIfNeeded rendered
+    IRUnion u ->
+        let s = unionToSet u
+        in case nullableFromSet s of
         Just t -> do
             rendered <- encoderNameForType t
-            pure $ "(nullable__enc " <> rendered <> ")"
+            multiWord "nullable__enc" $ parenIfNeeded rendered
         Nothing ->
-            encoderNameFromDecoderName <$> (lookupUnionDecoderName $ unionToSet types)
+            singleWord =<< encoderNameFromDecoderName <$> lookupUnionDecoderName s
 
 forWithPrefix_ :: forall a b p m. Applicative m => List a -> p -> p -> (p -> a -> m b) -> m Unit
 forWithPrefix_ l firstPrefix restPrefix f =
@@ -258,8 +264,8 @@ renderTypeDefinition classIndex (IRClassData { names, properties }) = do
     indent do
         forWithPrefix_ propsList "{ " ", " \braceOrComma (Tuple pname ptype) -> do
             let propName = lookupName pname propertyNames
-            { rendered, comment } <- typeStringForType ptype
-            line $ braceOrComma <> propName <> " : " <> rendered <> renderComment comment
+            { rendered } <- typeStringForType ptype
+            line $ braceOrComma <> propName <> " : " <> rendered
         when (propsList == L.Nil) do
             line "{"
         line "}"
@@ -273,7 +279,7 @@ renderTypeDefinition classIndex (IRClassData { names, properties }) = do
             indent do
                 propDecoder <- decoderNameForType ptype
                 let { reqOrOpt, fallback } = if isOptional ptype then { reqOrOpt: "Jpipe.optional", fallback: " Nothing" } else { reqOrOpt: "Jpipe.required", fallback: "" }
-                line $ "|> " <> reqOrOpt <> " \"" <> stringEscape pname <> "\" " <> propDecoder <> fallback
+                line $ "|> " <> reqOrOpt <> " \"" <> stringEscape pname <> "\" " <> (parenIfNeeded propDecoder) <> fallback
     blank
     let encoderName = encoderNameFromDecoderName decoderName
     line $ encoderName <> " : " <> className <> " -> Jenc.Value"
@@ -283,7 +289,7 @@ renderTypeDefinition classIndex (IRClassData { names, properties }) = do
         indent do
             forWithPrefix_ propsList "[ " ", " \bracketOrComma (Tuple pname ptype) -> do
                 let propName = lookupName pname propertyNames
-                propEncoder <- encoderNameForType ptype
+                { rendered: propEncoder } <- encoderNameForType ptype
                 line $ bracketOrComma <> "(\"" <> stringEscape pname <> "\", " <> propEncoder <> " x." <> propName <> ")"
         when (propsList == L.Nil) do
             line "["
@@ -300,8 +306,8 @@ renderUnionDefinition allTypes = do
             when (t == IRNull) do
                 line $ equalsOrPipe <> " " <> constructor
             unless (t == IRNull) do
-                { rendered, comment } <- typeStringForType t
-                line $ equalsOrPipe <> " " <> constructor <> " " <> rendered <> renderComment comment
+                ts <- typeStringForType t
+                line $ equalsOrPipe <> " " <> constructor <> " " <> (parenIfNeeded ts)
     blank
     decoderName <- lookupUnionDecoderName allTypes
     line $ decoderName <> " : Jdec.Decoder " <> name
@@ -318,7 +324,7 @@ renderUnionDefinition allTypes = do
                     line $ bracketOrComma <> " Jdec.null " <> constructor
                 unless (t == IRNull) do
                     decoder <- decoderNameForType t
-                    line $ bracketOrComma <> " Jdec.map " <> constructor <> " " <> decoder
+                    line $ bracketOrComma <> " Jdec.map " <> constructor <> " " <> parenIfNeeded decoder
             line "]"
     blank
     let encoderName = encoderNameFromDecoderName decoderName
@@ -331,5 +337,5 @@ renderUnionDefinition allTypes = do
             when (t == IRNull) do
                 line $ constructor <> " -> Jenc.null"
             unless (t == IRNull) do
-                encoder <- encoderNameForType t
+                { rendered: encoder } <- encoderNameForType t
                 line $ constructor <> " y -> " <> encoder <> " y"
