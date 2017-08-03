@@ -322,7 +322,7 @@ function main(sources) {
         let changed = exec("git diff --name-only $TRAVIS_COMMIT_RANGE").trim().split("\n");
         let onlyWebAppChanged = _.every(changed, (file) => file.startsWith("app/"));
         if (onlyWebAppChanged) {
-            console.error(`Only app/ paths changed; skipping tests.`);
+            console.error(`* Only app/ paths changed; skipping tests.`);
             exit(0);
         }
     }
