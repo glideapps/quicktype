@@ -35,7 +35,7 @@ renderer =
     , extension: "ts"
     , doc: typeScriptDoc
     , transforms:
-        { nameForClass
+        { nameForClass: simpleNamer nameForClass
         , unionName: Nothing
         , unionPredicate: Just unionPredicate
         , nextName: \s -> s <> "_"
@@ -95,9 +95,7 @@ legalizeIdentifier str =
 renderUnion :: Set IRType -> Doc String
 renderUnion s =
     case nullableFromSet s of
-    Just x -> do
-        rendered <- renderType x
-        pure if isValueType x then rendered <> "?" else rendered
+    Just x -> renderType x
     Nothing -> do
         types <- mapM renderType $ L.fromFoldable s
         pure $ intercalate " | " types
@@ -116,7 +114,7 @@ renderType = case _ of
     IRClass i -> lookupClassName i
     IRMap t -> do
         rendered <- renderType t
-        pure $ "Map<string, " <> rendered <> ">"
+        pure $ "{ [key: string]: " <> rendered <> " }"
     IRUnion types -> renderUnion $ unionToSet types
 
 interfaceNamify :: String -> String
@@ -124,11 +122,15 @@ interfaceNamify = Str.camelCase >>> Str.capitalize >>> legalizeIdentifier
 
 propertyNamify :: String -> String
 propertyNamify s
-    | Rx.test needsQuotes s = "\"" <> s <> "\""
-    | otherwise = s
-    
-needsQuotes :: Rx.Regex
-needsQuotes = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
+    | Rx.test hasInternalSeparator s = "\"" <> s <> "\""
+    | otherwise =
+        case Str.charAt 0 s of
+            Nothing -> "Empty"
+            Just c | isStartCharacter c -> s
+                   | otherwise -> "\"" <> s <> "\""
+
+hasInternalSeparator :: Rx.Regex
+hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
 
 typeScriptDoc :: Doc Unit
 typeScriptDoc = do
@@ -162,14 +164,26 @@ renderHelpers = do
 
 renderInterface :: IRClassData -> String -> Doc Unit
 renderInterface (IRClassData { names, properties }) className = do
-    let propertyNames = transformNames propertyNamify (_ <> "_") (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
+    let propertyNames = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
+
+    let resolver name typ = markNullable (lookupName name propertyNames) typ
+    let resolvePropertyNameWithType (Tuple name typ) = Tuple (resolver name typ) typ         
+
     line $ "export interface " <> className <> " {"
     indent do
         let props = M.toUnfoldable properties :: Array _
-        let resolved = props <#> \(Tuple a b) -> Tuple (lookupName a propertyNames) b
+        let resolved = resolvePropertyNameWithType <$> props
         let maxWidth = resolved <#> fst <#> Str.length # maximum
         for_ resolved \(Tuple pname ptype) -> do
             let indent = maybe 1 (\w -> w - Str.length pname + 1) maxWidth 
             rendered <- renderType ptype
             line $ pname <> ":" <> Str.times " " indent <> rendered <> ";"
     line "}"
+
+-- If this is a nullable, add a '?'
+markNullable :: String -> IRType -> String
+markNullable name (IRUnion unionRep) =
+    case nullableFromSet $ unionToSet unionRep of
+        Just _ -> name <> "?"
+        _ -> name
+markNullable name _ = name
