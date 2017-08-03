@@ -93,6 +93,13 @@ const FIXTURES: Fixture[] = [
         output: "QuickType.elm",
         topLevel: "QuickType",
         test: testElm
+    },
+    {
+        name: "typescript",
+        base: "test/typescript",
+        diffViaSchema: false,
+        output: "TopLevel.ts",
+        test: testTypeScript
     }
 ].filter(({name}) => !process.env.FIXTURE || name === process.env.FIXTURE);
 
@@ -184,6 +191,18 @@ function testJsonSchema(sample: string) {
         expectedFile: "schema.json",
         jsonCommand: `quicktype --srcLang json-schema --src schema.json --lang json`,
         strict: true
+    });
+}
+
+//////////////////////////////////////
+// TypeScript test
+/////////////////////////////////////
+
+function testTypeScript(sample) {
+    compareJsonFileToJson({
+        expectedFile: sample,
+        jsonCommand: `ts-node main.ts \"${sample}\"`,
+        strict: false
     });
 }
 
