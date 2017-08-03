@@ -303,6 +303,8 @@ function testAll(samples) {
             try {
                 runFixtureWithSample(fixture, sample);
             } catch (e) {
+                console.error(e);
+                console.trace();
                 exit(1);
             }
         }
