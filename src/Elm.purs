@@ -105,6 +105,19 @@ elmDoc :: Doc Unit
 elmDoc = do
     givenTopLevel <- upperNameStyle <$> getTopLevelNameGiven
     topLevelDecoder <- lowerNameStyle <$> getTopLevelNameGiven
+    line """-- To decode the JSON data, add this file to your project, run
+--
+--     elm-package install NoRedInk/elm-decode-pipeline
+--
+-- add these imports
+--
+--    import Json.Decode exposing (decodeString)
+--    import QuickType
+--
+-- and you're off to the races with
+--"""
+    line $ "--     decodeString QuickType." <> topLevelDecoder <> " myJsonString"
+    blank
     line $ "module QuickType exposing (" <> givenTopLevel <> ", " <> topLevelDecoder <> ", encode" <> givenTopLevel <> ")"
     blank
     line """import Json.Decode as Jdec
