@@ -111,14 +111,14 @@ elmDoc = do
 --
 -- add these imports
 --
---    import Json.Decode exposing (decodeString)
---    import QuickType
---
+--    import Json.Decode exposing (decodeString)"""
+    line $ "--    import " <> givenTopLevel <> " exposing (" <> topLevelDecoder <> ")"
+    line """--
 -- and you're off to the races with
 --"""
-    line $ "--     decodeString QuickType." <> topLevelDecoder <> " myJsonString"
+    line $ "--     decodeString " <> topLevelDecoder <> " myJsonString"
     blank
-    line $ "module QuickType exposing (" <> givenTopLevel <> ", " <> topLevelDecoder <> ", encode" <> givenTopLevel <> ")"
+    line $ "module " <> givenTopLevel <> " exposing (" <> givenTopLevel <> ", " <> topLevelDecoder <> ", encode" <> givenTopLevel <> ")"
     blank
     line """import Json.Decode as Jdec
 import Json.Decode.Pipeline as Jpipe
