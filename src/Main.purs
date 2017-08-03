@@ -52,11 +52,11 @@ type Pipeline a = Input a -> Either Error SourceCode
 
 renderers :: Array Doc.Renderer
 renderers = 
-    [ CSharp.renderer
+    [ TypeScript.renderer
     , Golang.renderer
-    , JsonSchema.renderer
-    , TypeScript.renderer
+    , CSharp.renderer
     , Elm.renderer
+    , JsonSchema.renderer
     ]
 
 makeTypeFromJson :: String -> Json -> IR IRType
