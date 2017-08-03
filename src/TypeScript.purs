@@ -152,7 +152,7 @@ renderHelpers = do
     top <- getTopLevel >>= renderType
     line $ "export function fromJson(json: string): " <> top <> " {"
     indent do
-        line $ "return JSON.parse(json): " <> top <> ";"
+        line $ "return JSON.parse(json);"
     line "}"
     blank
     line $ "export function toJson(value: " <> top <> "): string {"
