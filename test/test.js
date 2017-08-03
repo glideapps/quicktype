@@ -75,6 +75,7 @@ const FIXTURES = [
                 : "rm -rf elm-stuff/build-artifacts && elm-make --yes",
         diffViaSchema: false,
         output: "QuickType.elm",
+        topLevel: "QuickType",
         test: testElm
     }
 ].filter(({name}) => !process.env.FIXTURE || name === process.env.FIXTURE);
@@ -252,8 +253,12 @@ function runFixtureWithSample(fixture, sample) {
     shell.cp("-R", fixture.base, tmp);
 
     inDir(tmp, () => {
+        var topLevelFlag = "";
+        if (fixture["topLevel"])
+            topLevelFlag = `--topLevel ${fixture.topLevel}`;
+
         // Generate code from the sample
-        exec(`quicktype --src ${sampleAbs} --srcLang json -o ${fixture.output}`);
+        exec(`quicktype --src ${sampleAbs} --srcLang json ${topLevelFlag} -o ${fixture.output}`);
 
         fixture.test(sampleAbs);
 
