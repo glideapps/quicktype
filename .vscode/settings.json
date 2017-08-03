@@ -1,4 +1,14 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-	"purescript.addNpmPath": true
+	"purescript.addNpmPath": true,
+	"search.exclude": {
+        "**/.git": true,
+        "**/node_modules": true,
+        "**/bower_components": true,
+		"**/tmp": true,
+		"output": true,
+		"**/obj": true,
+		"**/bin": true,
+		"test/inputs": true		
+    }
 }
