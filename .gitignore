@@ -12,6 +12,10 @@ test/csharp/QuickType.cs
 test/golang/quicktype.go
 test/golang/schema.json
 test/golang/schema-from-schema.json
+test/elm/elm-stuff/
+test/elm/elm.js
+test/elm/QuickType.elm
 package-lock.json
 
 *.log
+test/elm/libsysconfcpus/
