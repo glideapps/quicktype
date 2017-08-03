@@ -18,7 +18,9 @@ import 'brace/theme/chrome';
 
 const titleForHost = {
   "java.quicktype.io": "JSON to Java classes and helper code",
-  "csharp.quicktype.io": "JSON to C# classes and helper code"
+  "csharp.quicktype.io": "JSON to C# classes and helper code",
+  "go.quicktype.io": "JSON to Go structs and marshalling helpers",
+  "elm.quicktype.io": "JSON to Elm types and decoders"
 };
 
 class App extends Component {
@@ -44,7 +46,7 @@ class App extends Component {
   setTitleAndMeta = () => {
     let subtitle = titleForHost[window.location.host];
     if (subtitle) {
-      window.document.title = `quicktype – ${subtitle}`;
+      window.document.title = `${subtitle} – quicktype`;
     }
   }
 
