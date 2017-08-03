@@ -7,20 +7,26 @@ import IRGraph
 import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
-import Data.Foldable (for_, intercalate, maximum, maximumBy)
-import Data.Function (on)
-import Data.List (fromFoldable)
+import Data.Foldable (for_, intercalate, maximum)
+
 import Data.List as L
-import Data.Map (keys)
+
 import Data.Map as M
-import Data.Maybe (Maybe(Nothing, Just), fromMaybe, maybe)
+import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Set (Set)
 import Data.Set as S
-import Data.String (Pattern(..), contains, length)
+
 import Data.String as Str
 import Data.String.Util as Str
+
+import Data.String.Regex as Rx
+import Data.String.Regex.Flags as RxFlags
+import Data.String.Util (camelCase, capitalize)
+
 import Data.Tuple (Tuple(..), fst)
+import Partial.Unsafe (unsafePartial)
 import Utils (mapM)
+import Data.Either as Either
 
 renderer :: Renderer
 renderer =
@@ -98,11 +104,11 @@ renderUnion s =
 
 renderType :: IRType -> Doc String
 renderType = case _ of
-    IRNothing -> pure "object" -- we can have arrays of nothing
-    IRNull -> pure "object"
-    IRInteger -> pure "long"
-    IRDouble -> pure "double"
-    IRBool -> pure "bool"
+    IRNothing -> pure "any" -- we can have arrays of nothing
+    IRNull -> pure "any"
+    IRInteger -> pure "number"
+    IRDouble -> pure "number"
+    IRBool -> pure "boolean"
     IRString -> pure "string"
     IRArray a -> do
         rendered <- renderType a
@@ -118,8 +124,11 @@ interfaceNamify = Str.camelCase >>> Str.capitalize >>> legalizeIdentifier
 
 propertyNamify :: String -> String
 propertyNamify s
-    | Str.contains (Str.Pattern " ") s = "\"" <> s <> "\""
+    | Rx.test needsQuotes s = "\"" <> s <> "\""
     | otherwise = s
+
+needsQuotes :: Rx.Regex
+needsQuotes = unsafePartial $ Either.fromRight $ Rx.regex "[-_. ]" RxFlags.noFlags
 
 typeScriptDoc :: Doc Unit
 typeScriptDoc = do
@@ -142,8 +151,8 @@ renderInterface (IRClassData { names, properties }) className = do
     indent do
         let props = M.toUnfoldable properties :: Array _
         let resolved = props <#> \(Tuple a b) -> Tuple (lookupName a propertyNames) b
-        let maxWidth = props <#> fst <#> Str.length # maximum
-        for_ props \(Tuple pname ptype) -> do
+        let maxWidth = resolved <#> fst <#> Str.length # maximum
+        for_ resolved \(Tuple pname ptype) -> do
             let indent = maybe 1 (\w -> w - Str.length pname + 1) maxWidth 
             rendered <- renderType ptype
             line $ pname <> ":" <> Str.times " " indent <> rendered <> ";"
