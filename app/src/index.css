@@ -87,3 +87,20 @@ sidebar .mdc-select:first-child {
 #output-editor .ace_fold-widget {
   display: none;
 }
+
+.cli-hint {
+  color: white;
+  margin-top: 10px;
+}
+
+.cli-hint p {
+  color: white;
+  opacity: 0.5;
+  margin-bottom: 6px;
+}
+
+.cli-hint pre {
+  margin: 0;
+  font-size: 13pt;
+  font-family: Consolas, Menlo, monospace;
+}
