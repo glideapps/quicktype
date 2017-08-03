@@ -7,21 +7,19 @@ import IRGraph
 import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
-import Data.Foldable (for_, intercalate, maximumBy)
+import Data.Foldable (for_, intercalate, maximum, maximumBy)
 import Data.Function (on)
 import Data.List (fromFoldable)
 import Data.List as L
 import Data.Map (keys)
 import Data.Map as M
-import Data.Maybe (Maybe(Nothing, Just))
+import Data.Maybe (Maybe(Nothing, Just), fromMaybe, maybe)
 import Data.Set (Set)
 import Data.Set as S
-
+import Data.String (Pattern(..), contains, length)
 import Data.String as Str
 import Data.String.Util as Str
-
-import Data.String.Util (camelCase, capitalize, decapitalize)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), fst)
 import Utils (mapM)
 
 renderer :: Renderer
@@ -116,10 +114,12 @@ renderType = case _ of
     IRUnion types -> renderUnion $ unionToSet types
 
 interfaceNamify :: String -> String
-interfaceNamify = camelCase >>> capitalize >>> legalizeIdentifier
+interfaceNamify = Str.camelCase >>> Str.capitalize >>> legalizeIdentifier
 
 propertyNamify :: String -> String
-propertyNamify = camelCase >>> decapitalize >>> legalizeIdentifier
+propertyNamify s
+    | Str.contains (Str.Pattern " ") s = "\"" <> s <> "\""
+    | otherwise = s
 
 typeScriptDoc :: Doc Unit
 typeScriptDoc = do
@@ -140,9 +140,11 @@ renderInterface (IRClassData { names, properties }) className = do
     let propertyNames = transformNames propertyNamify ("other " <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ "interface " <> className <> " {"
     indent do
-        let maxWidth = properties # M.keys # maximumBy (compare `on` Str.length)
-        for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
+        let props = M.toUnfoldable properties :: Array _
+        let resolved = props <#> \(Tuple a b) -> Tuple (lookupName a propertyNames) b
+        let maxWidth = props <#> fst <#> Str.length # maximum
+        for_ props \(Tuple pname ptype) -> do
+            let indent = maybe 1 (\w -> w - Str.length pname + 1) maxWidth 
             rendered <- renderType ptype
-            let csPropName = lookupName pname propertyNames
-            line $ csPropName <> ": " <> rendered <> ";"
+            line $ pname <> ":" <> Str.times " " indent <> rendered <> ";"
     line "}"
