@@ -31,7 +31,6 @@ forbiddenWords =
     , "as"
     , "port"
     , "int", "float", "bool", "string"
-    , "root", "encodeRoot"
     , "jenc", "jdec", "jpipe"
     , "always", "identity"
     , "array", "dict", "maybe"
@@ -41,7 +40,7 @@ forbiddenPropertyNames :: Set String
 forbiddenPropertyNames = S.fromFoldable forbiddenWords
 
 forbiddenNames :: Array String
-forbiddenNames = A.insert "Root" $ map capitalize forbiddenWords
+forbiddenNames = map capitalize forbiddenWords
 
 renderer :: Renderer
 renderer =
@@ -55,6 +54,8 @@ renderer =
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames: forbiddenNames
+        , topLevelNameFromGiven: const "Root"
+        , forbiddenFromTopLevelNameGiven: upperNameStyle >>> A.singleton
         }
     }
 
@@ -102,9 +103,11 @@ renderComment Nothing = ""
 
 elmDoc :: Doc Unit
 elmDoc = do
-    line """module QuickType exposing (Root, root, encodeRoot)
-
-import Json.Decode as Jdec
+    givenTopLevel <- upperNameStyle <$> getTopLevelNameGiven
+    topLevelDecoder <- lowerNameStyle <$> getTopLevelNameGiven
+    line $ "module QuickType exposing (" <> givenTopLevel <> ", " <> topLevelDecoder <> ", encode" <> givenTopLevel <> ")"
+    blank
+    line """import Json.Decode as Jdec
 import Json.Decode.Pipeline as Jpipe
 import Json.Encode as Jenc
 import Array
@@ -112,15 +115,15 @@ import Dict
 """
     topLevel <- getTopLevel
     { rendered: topLevelRendered } <- typeStringForType topLevel
-    line $ "type alias Root = " <> topLevelRendered
+    line $ "type alias " <> givenTopLevel <> " = " <> topLevelRendered
     blank
     { rendered: rootDecoder } <- decoderNameForType topLevel
-    line "root : Jdec.Decoder Root"
-    line $ "root = " <> rootDecoder
+    line $ topLevelDecoder <> " : Jdec.Decoder " <> givenTopLevel
+    line $ topLevelDecoder <> " = " <> rootDecoder
     blank
     { rendered: rootEncoder } <- encoderNameForType topLevel
-    line "encodeRoot : Root -> String"
-    line $ "encodeRoot r = Jenc.encode 0 (" <> rootEncoder <> " r)"
+    line $ "encode" <> givenTopLevel <> " : " <> givenTopLevel <> " -> String"
+    line $ "encode" <> givenTopLevel <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
     classes <- getClasses
     for_ classes \(Tuple i cls) -> do
         blank

@@ -92,20 +92,24 @@ makeTypeFromSchema name schema = eitherify $ runIR do
         eitherify (Tuple Nothing g) = Right g
 
 renderFromJson :: Pipeline Json
-renderFromJson { renderer, input: json, topLevelName } =
-    json
-    # makeTypeAndUnify topLevelName
-    # regatherClassNames
-    # Doc.runRenderer renderer
-    # Right
+renderFromJson { renderer, input: json, topLevelName: topLevelNameGiven } =
+    let topLevelName = renderer.transforms.topLevelNameFromGiven topLevelNameGiven
+    in
+        json
+        # makeTypeAndUnify topLevelName
+        # regatherClassNames
+        # Doc.runRenderer renderer topLevelNameGiven
+        # Right
 
 renderFromJsonSchema :: Pipeline Json
-renderFromJsonSchema { renderer, input: json, topLevelName } = do
-    schema <- J.decodeJson json
-    graph <- makeTypeFromSchema topLevelName schema
-    graph
-        # Doc.runRenderer renderer
-        # pure
+renderFromJsonSchema { renderer, input: json, topLevelName: topLevelNameGiven } = 
+    let topLevelName = renderer.transforms.topLevelNameFromGiven topLevelNameGiven
+    in do
+        schema <- J.decodeJson json
+        graph <- makeTypeFromSchema topLevelName schema
+        graph
+            # Doc.runRenderer renderer topLevelNameGiven
+            # pure
 
 pipelines :: Environment -> Array (Pipeline Json)
 pipelines Development = [renderFromJson]
