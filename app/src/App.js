@@ -16,13 +16,6 @@ import 'brace/mode/json';
 import 'brace/mode/elm';
 import 'brace/theme/chrome';
 
-const titleForHost = {
-  "java.quicktype.io": "JSON to Java classes and helper code",
-  "csharp.quicktype.io": "JSON to C# classes and helper code",
-  "go.quicktype.io": "JSON to Go structs and marshalling helpers",
-  "elm.quicktype.io": "JSON to Elm types and decoders"
-};
-
 class App extends Component {
   constructor(props) {
     super(props);
@@ -43,13 +36,6 @@ class App extends Component {
     };
   }
 
-  setTitleAndMeta = () => {
-    let subtitle = titleForHost[window.location.host];
-    if (subtitle) {
-      window.document.title = `${subtitle} – quicktype`;
-    }
-  }
-
   tryGetPreferredRendererExtension = () => {
     // This comes in either as ?l=ext or ?lang=ext
     let { query } = urlParse(window.location.href, true);
@@ -66,10 +52,6 @@ class App extends Component {
     let hostExtension = hostLangRenderer && hostLangRenderer.extension;
 
     return hostExtension;
-  }
-
-  componentWillMount() {
-    this.setTitleAndMeta();
   }
 
   componentDidMount() {
