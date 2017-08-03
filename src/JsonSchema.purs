@@ -200,6 +200,8 @@ renderer =
         , unionPredicate: Nothing
         , nextName: \s -> "Other" <> s
         , forbiddenNames
+        , topLevelNameFromGiven: id
+        , forbiddenFromTopLevelNameGiven: const []
         }
     }
 

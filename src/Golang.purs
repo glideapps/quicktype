@@ -32,6 +32,8 @@ renderer =
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames: []
+        , topLevelNameFromGiven: id
+        , forbiddenFromTopLevelNameGiven: const []
         }
     }
 
