@@ -7,6 +7,7 @@ module Doc
     , getClass
     , getUnions
     , getUnionNames
+    , getTopLevelNameGiven
     , lookupName
     , lookupClassName
     , lookupUnionName
@@ -53,6 +54,8 @@ type Transforms =
     , unionPredicate :: Maybe (IRType -> Maybe (Set IRType))
     , nextName :: String -> String
     , forbiddenNames :: Array String
+    , topLevelNameFromGiven :: String -> String
+    , forbiddenFromTopLevelNameGiven :: String -> Array String
     }
 
 type DocState = { indent :: Int }
@@ -62,6 +65,7 @@ type DocEnv =
     , classNames :: Map Int String
     , unionNames :: Map (Set IRType) String
     , unions :: List (Set IRType)
+    , topLevelNameGiven :: String
     }
 
 newtype Doc a = Doc (RWS DocEnv String DocState a)
@@ -72,20 +76,20 @@ derive newtype instance applicativeDoc :: Applicative Doc
 derive newtype instance bindDoc :: Bind Doc
 derive newtype instance monadDoc :: Monad Doc
 
-runRenderer :: Renderer -> IRGraph -> String
+runRenderer :: Renderer -> String -> IRGraph -> String
 runRenderer { doc, transforms } = runDoc doc transforms
 
-runDoc :: forall a. Doc a -> Transforms -> IRGraph -> String
-runDoc (Doc w) t graph =
+runDoc :: forall a. Doc a -> Transforms -> String -> IRGraph -> String
+runDoc (Doc w) t topLevelNameGiven graph =
     let classes = classesInGraph graph
-        forbidden = S.fromFoldable t.forbiddenNames
+        forbidden = S.fromFoldable (A.concat [t.forbiddenNames, t.forbiddenFromTopLevelNameGiven topLevelNameGiven])
         classNames = transformNames t.nameForClass t.nextName forbidden classes
         unions = maybe L.Nil (\up -> L.fromFoldable $ filterTypes up graph) t.unionPredicate
         forbiddenForUnions = S.union forbidden $ S.fromFoldable $ M.values classNames
         nameForUnion un s = un $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
         unionNames = maybe M.empty (\un -> transformNames (nameForUnion un) t.nextName forbiddenForUnions $ map (\s -> Tuple s s) unions) t.unionName
     in
-        evalRWS w { graph, classNames, unionNames, unions } { indent: 0 } # snd        
+        evalRWS w { graph, classNames, unionNames, unions, topLevelNameGiven } { indent: 0 } # snd        
 
 typeNameForUnion :: IRGraph -> IRType -> String
 typeNameForUnion graph = case _ of
@@ -126,6 +130,9 @@ getUnions = do
 getUnionNames :: Doc (Map (Set IRType) String)
 getUnionNames = Doc (asks _.unionNames)
 
+getTopLevelNameGiven :: Doc String
+getTopLevelNameGiven = Doc (asks _.topLevelNameGiven)
+
 getClasses :: Doc (L.List (Tuple Int IRClassData))
 getClasses = do
     unsorted <- classesInGraph <$> getGraph
@@ -154,7 +161,7 @@ lookupUnionName s = do
 line :: String -> Doc Unit
 line s = do
     indent <- Doc (gets _.indent)
-    let whitespace = times "\t" indent
+    let whitespace = times "    " indent
     let lines = String.split (String.Pattern "\n") s
     for_ lines \l -> do
         string whitespace

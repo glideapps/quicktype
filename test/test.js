@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env node 
 
 const Ajv = require('ajv');
 const strictDeepEquals = require('deep-equal');
@@ -29,12 +29,16 @@ const BRANCH = process.env.TRAVIS_BRANCH;
 const IS_BLESSED = ["master"].indexOf(BRANCH) !== -1;
 const IS_PUSH = process.env.TRAVIS_EVENT_TYPE === "push";
 const IS_PR = process.env.TRAVIS_PULL_REQUEST && process.env.TRAVIS_PULL_REQUEST !== "false";
+const DEBUG = typeof process.env.DEBUG !== 'undefined';
 
 const CPUs = IS_CI
     ? 2 /* Travis has only 2 but reports 8 */
     : process.env.CPUs || os.cpus().length;
 
 const QUICKTYPE_CLI = path.resolve("./cli/quicktype.js");
+
+const NODE_BIN = path.resolve("./node_modules/.bin");
+process.env.PATH += `:${NODE_BIN}`;
 
 //////////////////////////////////////
 // Fixtures
@@ -62,6 +66,16 @@ const FIXTURES = [
         diffViaSchema: false,
         output: "schema.json",
         test: testJsonSchema
+    },
+    {
+        name: "elm",
+        base: "test/elm",
+        setup: IS_CI
+                ? "./setup-ci.sh"
+                : "rm -rf elm-stuff/build-artifacts && elm-make --yes",
+        diffViaSchema: false,
+        output: "QuickType.elm",
+        test: testElm
     }
 ].filter(({name}) => !process.env.FIXTURE || name === process.env.FIXTURE);
 
@@ -69,11 +83,11 @@ const FIXTURES = [
 // Go tests
 /////////////////////////////////////
 
-const knownGoFails = ["identifiers.json"];
-const goWillFail = (sample) => knownGoFails.indexOf(path.basename(sample)) !== -1;
+const knownUnicodeFails = ["identifiers.json"];
+const unicodeWillFail = (sample) => knownUnicodeFails.indexOf(path.basename(sample)) !== -1;
 
 function testGo(sample) {
-    if (goWillFail(sample)) {
+    if (unicodeWillFail(sample)) {
         console.error(`Skipping golang ${sample} – known to fail`);
         return;
     }
@@ -93,6 +107,26 @@ function testCSharp(sample) {
     compareJsonFileToJson({
         expectedFile: sample,
         jsonCommand: `dotnet run "${sample}"`,
+        strict: false
+    });
+}
+
+//////////////////////////////////////
+// Elm tests
+/////////////////////////////////////
+
+function testElm(sample) {
+    if (unicodeWillFail(sample)) {
+        console.error(`Skipping elm ${sample} – known to fail`);
+        return;
+    }
+
+    let limit_cpus = IS_CI ? "$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2" : "";
+    exec(`${limit_cpus} elm-make Main.elm QuickType.elm --output elm.js`, {silent: true});
+
+    compareJsonFileToJson({
+        expectedFile: sample,
+        jsonCommand: `node ./runner.js "${sample}"`,
         strict: false
     });
 }
@@ -118,7 +152,7 @@ function testJsonSchema(sample) {
     exec(`quicktype --srcLang json-schema -o quicktype.go --src schema.json`);
 
     // Possibly check the output of the Go program against the sample
-    if (goWillFail(sample)) {
+    if (unicodeWillFail(sample)) {
         console.error("Known to fail - not checking output.");
     } else {
         // Parse the sample with Go generated from its schema, and compare to the sample
@@ -148,6 +182,10 @@ function failWith(obj) {
 }
 
 function exec(s, opts, cb) {
+    // Disable silent when DEBUG
+    opts = opts || {};
+    opts.silent = !DEBUG && opts.silent;
+
     // We special-case quicktype execution
     s = s.replace(/^quicktype /, `node ${QUICKTYPE_CLI} `);
 
@@ -172,6 +210,8 @@ function compareJsonFileToJson({expectedFile, jsonFile, jsonCommand, strict}) {
         ? fs.readFileSync(jsonFile)
         : exec(jsonCommand, {silent: true}).stdout;
 
+    debug({ jsonString });
+
     let givenJSON = JSON.parse(jsonString);
     let expectedJSON = JSON.parse(fs.readFileSync(expectedFile));
     
@@ -194,7 +234,7 @@ function inDir(dir, work) {
     
     debug(`cd ${dir}`)
     process.chdir(dir);
-
+    
     work();
     process.chdir(origin);
 }
@@ -234,6 +274,8 @@ function runFixtureWithSample(fixture, sample) {
             }
         }
     });
+
+    shell.rm("-rf", tmp);
 }
 
 function testAll(samples) {
@@ -263,6 +305,8 @@ function testAll(samples) {
             try {
                 runFixtureWithSample(fixture, sample);
             } catch (e) {
+                console.error(e);
+                console.trace();
                 exit(1);
             }
         }
@@ -275,16 +319,19 @@ function testsInDir(dir) {
 
 function main(sources) {
     if (sources.length == 0) {
-        if (IS_CI && !IS_PR && !IS_BLESSED) {
-            return main(testsInDir("app/public/sample/json"));
-        } else {
-            return main(testsInDir("test/inputs/json"));
-        }
-    } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
-        return main(testsInDir(sources[0]));
-    } else {
-        testAll(sources);
+        sources = testsInDir("test/inputs/json");
     }
+
+    if (IS_CI && !IS_PR && !IS_BLESSED) {
+        // Run just a few random samples on low-priority CI branches
+        sources = _.chain(sources).shuffle().take(3).value();
+    }
+    
+    if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
+        sources = testsInDir(sources[0]);
+    }
+
+    testAll(sources);
 }
 
 // skip 2 `node` args

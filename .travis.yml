@@ -11,6 +11,7 @@ script:
   - test/test.js
 cache:
   directories:
+    - sysconfcpus/bin
     - bower_components
     - node_modules
     - output

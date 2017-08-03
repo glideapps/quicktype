@@ -15,7 +15,10 @@ function deepEquals(x, y, path) {
         if (isNaN(x) && isNaN(y))
             return true;
         // because sometimes Newtonsoft.JSON is not exact
-        return Math.fround(x) === Math.fround(y);
+        if (Math.fround(x) === Math.fround(y))
+            return true;
+        console.error(`Numbers are not equal at path ${pathToString(path)}.`);
+        return false;
     }
 
     // Compare primitives and functions.     
@@ -25,7 +28,7 @@ function deepEquals(x, y, path) {
         return true;
     }
 
-    if ((x instanceof String && y instanceof String) || (x instanceof Number && y instanceof Number)) {
+    if (x instanceof String && y instanceof String) {
         if (x.toString() !== y.toString()) {
             console.error(`Number or string not equal at path ${pathToString(path)}.`);
             return false;

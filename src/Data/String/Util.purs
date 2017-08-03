@@ -2,6 +2,7 @@ module Data.String.Util
     ( plural
     , singular
     , capitalize
+    , decapitalize
     , camelCase
     , intToHex
     , stringEscape
@@ -29,11 +30,17 @@ plural = _plural
 singular :: String -> String
 singular = _singular
 
-capitalize :: String -> String
-capitalize "" = ""
-capitalize s = case S.uncons s of
-    Just { head, tail } -> S.toUpper (S.singleton head) <> tail
+modifyFirstChar :: (String -> String) -> String -> String
+modifyFirstChar _ "" = ""
+modifyFirstChar f s = case S.uncons s of
+    Just { head, tail } -> f (S.singleton head) <> tail
     _ -> s
+
+capitalize :: String -> String
+capitalize = modifyFirstChar S.toUpper
+
+decapitalize :: String -> String
+decapitalize = modifyFirstChar S.toLower
 
 wordSeparatorRegex :: Rx.Regex
 wordSeparatorRegex = unsafePartial $ Either.fromRight $ Rx.regex "[-_. ]" RxFlags.noFlags
