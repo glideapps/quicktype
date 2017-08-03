@@ -38,7 +38,7 @@ renderer =
         { nameForClass
         , unionName: Nothing
         , unionPredicate: Just unionPredicate
-        , nextName: \s -> "other_" <> s
+        , nextName: \s -> s <> "_"
         , forbiddenNames: []
         , topLevelNameFromGiven: id
         , forbiddenFromTopLevelNameGiven: const []
@@ -126,9 +126,9 @@ propertyNamify :: String -> String
 propertyNamify s
     | Rx.test needsQuotes s = "\"" <> s <> "\""
     | otherwise = s
-
+    
 needsQuotes :: Rx.Regex
-needsQuotes = unsafePartial $ Either.fromRight $ Rx.regex "[-_. ]" RxFlags.noFlags
+needsQuotes = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
 
 typeScriptDoc :: Doc Unit
 typeScriptDoc = do
@@ -146,7 +146,7 @@ typeScriptDoc = do
 
 renderInterface :: IRClassData -> String -> Doc Unit
 renderInterface (IRClassData { names, properties }) className = do
-    let propertyNames = transformNames propertyNamify ("other " <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
+    let propertyNames = transformNames propertyNamify (_ <> "_") (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ "interface " <> className <> " {"
     indent do
         let props = M.toUnfoldable properties :: Array _
