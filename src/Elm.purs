@@ -18,7 +18,7 @@ import Data.Set as S
 import Data.String as Str
 import Data.String.Util (capitalize, decapitalize, camelCase, stringEscape)
 import Data.Tuple (Tuple(..), fst)
-import Utils (forEnumerated_, removeElement, sortByKey, sortByKeyM)
+import Utils (forEnumerated_, removeElement, sortByKey, sortByKeyM, mapM)
 
 forbiddenNames :: Array String
 forbiddenNames =
@@ -128,6 +128,11 @@ elmDoc = do
     givenTopLevel <- upperNameStyle <$> getTopLevelNameGiven
     let topLevelDecoder = decoderNameFromTypeName givenTopLevel
     let topLevelEncoder = encoderNameFromTypeName givenTopLevel
+    classes <- getClasses
+    unions <- getUnions
+    classNames <- mapM (\t -> lookupClassName $ fst t) classes
+    unionNames <- mapM lookupUnionName unions
+    let exports = givenTopLevel : topLevelDecoder : topLevelEncoder : (L.concat $ classNames : unionNames : L.Nil)
     line """-- To decode the JSON data, add this file to your project, run
 --
 --     elm-package install NoRedInk/elm-decode-pipeline
@@ -141,7 +146,11 @@ elmDoc = do
 --"""
     line $ "--     decodeString " <> topLevelDecoder <> " myJsonString"
     blank
-    line $ "module " <> givenTopLevel <> " exposing (" <> givenTopLevel <> ", " <> topLevelDecoder <> ", " <> topLevelEncoder <> ")"
+    line $ "module " <> givenTopLevel <> " exposing"
+    indent do
+        forWithPrefix_ exports "( " ", " \parenOrComma name ->
+            line $ parenOrComma <> name
+        line ")"
     blank
     line """import Json.Decode as Jdec
 import Json.Decode.Pipeline as Jpipe
@@ -164,8 +173,6 @@ import Dict exposing (Dict, map, toList)
     line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
     blank
     line "-- JSON types"
-    classes <- getClasses
-    unions <- getUnions
     for_ classes \(Tuple i cls) -> do
         blank
         typeRenderer renderTypeDefinition i cls
