@@ -18,10 +18,10 @@ import Data.Set as S
 import Data.String as Str
 import Data.String.Util (capitalize, decapitalize, camelCase, stringEscape)
 import Data.Tuple (Tuple(..), fst)
-import Utils (forEnumerated_, removeElement, sortByKey, sortByKeyM)
+import Utils (forEnumerated_, removeElement, sortByKey, sortByKeyM, mapM)
 
-forbiddenWords :: Array String
-forbiddenWords =
+forbiddenNames :: Array String
+forbiddenNames =
     [ "if", "then", "else"
     , "case", "of"
     , "let", "in"
@@ -31,16 +31,14 @@ forbiddenWords =
     , "as"
     , "port"
     , "int", "float", "bool", "string"
-    , "jenc", "jdec", "jpipe"
+    , "Jenc", "Jdec", "Jpipe"
     , "always", "identity"
-    , "array", "dict", "maybe"
+    , "Array", "Dict", "Maybe", "map", "toList"
+    , "makeArrayEncoder", "makeDictEncoder", "makeNullableEncoder"
     ]
 
 forbiddenPropertyNames :: Set String
-forbiddenPropertyNames = S.fromFoldable forbiddenWords
-
-forbiddenNames :: Array String
-forbiddenNames = map capitalize forbiddenWords
+forbiddenPropertyNames = S.fromFoldable forbiddenNames
 
 renderer :: Renderer
 renderer =
@@ -49,15 +47,31 @@ renderer =
     , extension: "elm"
     , doc: elmDoc
     , transforms:
-        { nameForClass
-        , unionName: Just unionName
+        { nameForClass: elmNamer nameForClass
+        , unionName: Just $ elmNamer unionName
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
-        , forbiddenNames: forbiddenNames
+        , forbiddenNames
         , topLevelNameFromGiven: const "Root"
-        , forbiddenFromTopLevelNameGiven: upperNameStyle >>> A.singleton
+        , forbiddenFromTopLevelNameGiven
         }
     }
+
+decoderNameFromTypeName :: String -> String
+decoderNameFromTypeName = decapitalize
+
+encoderNameFromTypeName :: String -> String
+encoderNameFromTypeName className = "encode" <> className
+
+alsoForbiddenForTypeName :: String -> Array String
+alsoForbiddenForTypeName n = [decoderNameFromTypeName n, encoderNameFromTypeName n]
+
+elmNamer :: forall a. Ord a => (a -> String) -> a -> Maybe String -> NamingResult
+elmNamer namer thing = case _ of
+    Just name -> result name
+    Nothing -> result $ namer thing
+    where
+        result name = { name, forbidAlso: alsoForbiddenForTypeName name }
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = upperNameStyle $ combineNames names
@@ -76,6 +90,14 @@ unionPredicate = case _ of
             Nothing -> Just s
             _ -> Nothing
     _ -> Nothing
+
+typeNameForTopLevelNameGiven :: String -> String
+typeNameForTopLevelNameGiven = upperNameStyle
+
+forbiddenFromTopLevelNameGiven :: String -> Array String
+forbiddenFromTopLevelNameGiven given =
+    let name = typeNameForTopLevelNameGiven given
+    in A.cons name $ alsoForbiddenForTypeName name
 
 isLetterCharacter :: Char -> Boolean
 isLetterCharacter c =
@@ -104,27 +126,37 @@ renderComment Nothing = ""
 elmDoc :: Doc Unit
 elmDoc = do
     givenTopLevel <- upperNameStyle <$> getTopLevelNameGiven
-    topLevelDecoder <- lowerNameStyle <$> getTopLevelNameGiven
+    let topLevelDecoder = decoderNameFromTypeName givenTopLevel
+    let topLevelEncoder = encoderNameFromTypeName givenTopLevel
+    classes <- getClasses
+    unions <- getUnions
+    classNames <- mapM (\t -> lookupClassName $ fst t) classes
+    unionNames <- mapM lookupUnionName unions
+    let exports = givenTopLevel : topLevelDecoder : topLevelEncoder : (L.concat $ classNames : unionNames : L.Nil)
     line """-- To decode the JSON data, add this file to your project, run
 --
 --     elm-package install NoRedInk/elm-decode-pipeline
 --
 -- add these imports
 --
---    import Json.Decode exposing (decodeString)
---    import QuickType
---
+--     import Json.Decode exposing (decodeString)"""
+    line $ "--     import " <> givenTopLevel <> " exposing (" <> topLevelDecoder <> ")"
+    line """--
 -- and you're off to the races with
 --"""
-    line $ "--     decodeString QuickType." <> topLevelDecoder <> " myJsonString"
+    line $ "--     decodeString " <> topLevelDecoder <> " myJsonString"
     blank
-    line $ "module QuickType exposing (" <> givenTopLevel <> ", " <> topLevelDecoder <> ", encode" <> givenTopLevel <> ")"
+    line $ "module " <> givenTopLevel <> " exposing"
+    indent do
+        forWithPrefix_ exports "( " ", " \parenOrComma name ->
+            line $ parenOrComma <> name
+        line ")"
     blank
     line """import Json.Decode as Jdec
 import Json.Decode.Pipeline as Jpipe
 import Json.Encode as Jenc
-import Array
-import Dict
+import Array exposing (Array, map)
+import Dict exposing (Dict, map, toList)
 
 -- top level type
 """
@@ -137,12 +169,10 @@ import Dict
     line $ topLevelDecoder <> " = " <> rootDecoder
     blank
     { rendered: rootEncoder } <- encoderNameForType topLevel
-    line $ "encode" <> givenTopLevel <> " : " <> givenTopLevel <> " -> String"
-    line $ "encode" <> givenTopLevel <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
+    line $ topLevelEncoder <> " : " <> givenTopLevel <> " -> String"
+    line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
     blank
     line "-- JSON types"
-    classes <- getClasses
-    unions <- getUnions
     for_ classes \(Tuple i cls) -> do
         blank
         typeRenderer renderTypeDefinition i cls
@@ -160,16 +190,16 @@ import Dict
     blank
     line """--- encoder helpers
 
-array__enc : (a -> Jenc.Value) -> Array.Array a -> Jenc.Value
-array__enc f arr =
+makeArrayEncoder : (a -> Jenc.Value) -> Array a -> Jenc.Value
+makeArrayEncoder f arr =
     Jenc.array (Array.map f arr)
 
-dict__enc : (a -> Jenc.Value) -> Dict.Dict String a -> Jenc.Value
-dict__enc f dict =
-    Jenc.object (Dict.toList (Dict.map (\k -> f) dict))
+makeDictEncoder : (a -> Jenc.Value) -> Dict String a -> Jenc.Value
+makeDictEncoder f dict =
+    Jenc.object (toList (Dict.map (\k -> f) dict))
 
-nullable__enc : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
-nullable__enc f m =
+makeNullableEncoder : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
+makeNullableEncoder f m =
     case m of
     Just x -> f x
     Nothing -> Jenc.null"""
@@ -194,11 +224,11 @@ typeStringForType = case _ of
     IRString -> singleWord "String"
     IRArray a -> do
         ts <- typeStringForType a
-        multiWord "Array.Array" $ parenIfNeeded ts
+        multiWord "Array" $ parenIfNeeded ts
     IRClass i -> singleWord =<< lookupClassName i
     IRMap t -> do
         ts <- typeStringForType t
-        multiWord "Dict.Dict String" $ parenIfNeeded ts
+        multiWord "Dict String" $ parenIfNeeded ts
     IRUnion u ->
         let s = unionToSet u
         in case nullableFromSet s of
@@ -207,15 +237,6 @@ typeStringForType = case _ of
             multiWord "Maybe" $ parenIfNeeded ts
         Nothing -> do
             singleWord =<< lookupUnionName s
-
-lookupClassDecoderName :: Int -> Doc String
-lookupClassDecoderName i = decapitalize <$> lookupClassName i
-
-lookupUnionDecoderName :: Set IRType -> Doc String
-lookupUnionDecoderName s = decapitalize <$> lookupUnionName s
-
-encoderNameFromDecoderName :: String -> String
-encoderNameFromDecoderName decoderName = "enc__" <> decoderName
 
 unionConstructorName :: Set IRType -> IRType -> Doc String
 unionConstructorName s t = do
@@ -234,7 +255,7 @@ decoderNameForType = case _ of
     IRArray a -> do
         dn <- decoderNameForType a
         multiWord "Jdec.array" $ parenIfNeeded dn
-    IRClass i -> singleWord =<< lookupClassDecoderName i
+    IRClass i -> singleWord =<< decoderNameFromTypeName <$> lookupClassName i
     IRMap t -> do
         dn <- decoderNameForType t
         multiWord "Jdec.dict" $ parenIfNeeded dn
@@ -245,7 +266,7 @@ decoderNameForType = case _ of
             dn <- decoderNameForType t
             multiWord "Jdec.nullable" $ parenIfNeeded dn
         Nothing -> do
-            singleWord =<< lookupUnionDecoderName s
+            singleWord =<< decoderNameFromTypeName <$> lookupUnionName s
 
 encoderNameForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
 encoderNameForType = case _ of
@@ -257,19 +278,19 @@ encoderNameForType = case _ of
     IRString -> singleWord "Jenc.string"
     IRArray a -> do
         rendered <- encoderNameForType a
-        multiWord "array__enc" $ parenIfNeeded rendered
-    IRClass i -> singleWord =<< encoderNameFromDecoderName <$> lookupClassDecoderName i
+        multiWord "makeArrayEncoder" $ parenIfNeeded rendered
+    IRClass i -> singleWord =<< encoderNameFromTypeName <$> lookupClassName i
     IRMap t -> do
         rendered <- encoderNameForType t
-        multiWord "dict__enc" $ parenIfNeeded rendered
+        multiWord "makeDictEncoder" $ parenIfNeeded rendered
     IRUnion u ->
         let s = unionToSet u
         in case nullableFromSet s of
         Just t -> do
             rendered <- encoderNameForType t
-            multiWord "nullable__enc" $ parenIfNeeded rendered
+            multiWord "makeNullableEncoder" $ parenIfNeeded rendered
         Nothing ->
-            singleWord =<< encoderNameFromDecoderName <$> lookupUnionDecoderName s
+            singleWord =<< encoderNameFromTypeName <$> lookupUnionName s
 
 forWithPrefix_ :: forall a b p m. Applicative m => List a -> p -> p -> (p -> a -> m b) -> m Unit
 forWithPrefix_ l firstPrefix restPrefix f =
@@ -299,7 +320,7 @@ renderTypeDefinition classIndex className propertyNames propsList = do
 
 renderTypeFunctions :: Int -> String -> Map.Map String String -> List (Tuple String IRType) -> Doc Unit
 renderTypeFunctions classIndex className propertyNames propsList = do
-    decoderName <- lookupClassDecoderName classIndex
+    let decoderName = decoderNameFromTypeName className
     line $ decoderName <> " : Jdec.Decoder " <> className
     line $ decoderName <> " ="
     indent do
@@ -310,7 +331,7 @@ renderTypeFunctions classIndex className propertyNames propsList = do
                 let { reqOrOpt, fallback } = if isOptional ptype then { reqOrOpt: "Jpipe.optional", fallback: " Nothing" } else { reqOrOpt: "Jpipe.required", fallback: "" }
                 line $ "|> " <> reqOrOpt <> " \"" <> stringEscape pname <> "\" " <> (parenIfNeeded propDecoder) <> fallback
     blank
-    let encoderName = encoderNameFromDecoderName decoderName
+    let encoderName = encoderNameFromTypeName className
     line $ encoderName <> " : " <> className <> " -> Jenc.Value"
     line $ encoderName <> " x ="
     indent do
@@ -320,14 +341,14 @@ renderTypeFunctions classIndex className propertyNames propsList = do
                 let propName = lookupName pname propertyNames
                 { rendered: propEncoder } <- encoderNameForType ptype
                 line $ bracketOrComma <> "(\"" <> stringEscape pname <> "\", " <> propEncoder <> " x." <> propName <> ")"
-        when (propsList == L.Nil) do
-            line "["
-        line "]"
+            when (propsList == L.Nil) do
+                line "["
+            line "]"
 
 typeRenderer :: (Int -> String -> Map.Map String String -> List (Tuple String IRType) -> Doc Unit) -> Int -> IRClassData -> Doc Unit
 typeRenderer renderer classIndex (IRClassData { properties }) = do
     className <- lookupClassName classIndex
-    let propertyNames = transformNames lowerNameStyle (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ Map.keys properties
+    let propertyNames = transformNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ Map.keys properties
     let propsList = Map.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     renderer classIndex className propertyNames propsList
 
@@ -348,7 +369,7 @@ renderUnionDefinition allTypes = do
 renderUnionFunctions :: Set IRType -> Doc Unit
 renderUnionFunctions allTypes = do
     unionName <- lookupUnionName allTypes
-    decoderName <- lookupUnionDecoderName allTypes
+    let decoderName = decoderNameFromTypeName unionName
     line $ decoderName <> " : Jdec.Decoder " <> unionName
     line $ decoderName <> " ="
     indent do
@@ -366,7 +387,7 @@ renderUnionFunctions allTypes = do
                     line $ bracketOrComma <> " Jdec.map " <> constructor <> " " <> parenIfNeeded decoder
             line "]"
     blank
-    let encoderName = encoderNameFromDecoderName decoderName
+    let encoderName = encoderNameFromTypeName unionName
     line $ encoderName <> " : " <> unionName <> " -> Jenc.Value"
     line $ encoderName <> " x = case x of"
     indent do

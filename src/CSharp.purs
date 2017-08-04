@@ -18,7 +18,6 @@ import Data.String as Str
 import Data.String.Util (capitalize, camelCase, stringEscape)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
-
 import Utils (removeElement)
 
 forbiddenNames :: Array String
@@ -31,8 +30,8 @@ renderer =
     , extension: "cs"
     , doc: csharpDoc
     , transforms:
-        { nameForClass
-        , unionName: Just unionName
+        { nameForClass: simpleNamer nameForClass
+        , unionName: Just $ simpleNamer unionName
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames
@@ -321,7 +320,7 @@ renderCSharpUnion allTypes = do
 
 renderCSharpClass :: IRClassData -> String -> Doc Unit
 renderCSharpClass (IRClassData { names, properties }) className = do
-    let propertyNames = transformNames csNameStyle ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
+    let propertyNames = transformNames (simpleNamer csNameStyle) ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ "public class " <> className
     line "{"
     indent do
