@@ -317,14 +317,26 @@ function testsInDir(dir) {
     return shell.ls(`${dir}/*.json`);
 }
 
-function main(sources) {
-    if (IS_CI && process.env.TRAVIS_COMMIT_RANGE) {
-        let changed = exec("git diff --name-only $TRAVIS_COMMIT_RANGE").trim().split("\n");
-        let onlyWebAppChanged = _.every(changed, (file) => file.startsWith("app/"));
-        if (onlyWebAppChanged) {
-            console.error(`* Only app/ paths changed; skipping tests.`);
-            exit(0);
+function shouldSkipTests() {
+    try {
+        if (IS_CI && process.env.TRAVIS_COMMIT_RANGE) {
+            let changed = exec("git diff --name-only $TRAVIS_COMMIT_RANGE").trim().split("\n");
+            let onlyWebAppChanged = _.every(changed, (file) => file.startsWith("app/"));
+            if (onlyWebAppChanged) {
+                console.error(`* Only app/ paths changed; skipping tests.`);
+                return true;
+            }
         }
+    } catch (e) {
+        console.error(`* Could not determine whether to skip tests due to error, so not skipping.`);
+        console.trace(e);
+    }
+    return false;
+}
+
+function main(sources) {
+    if (shouldSkipTests()) {
+        return;
     }
 
     if (sources.length == 0) {
