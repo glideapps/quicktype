@@ -195,7 +195,7 @@ renderer =
     , extension: "json"
     , doc: jsonSchemaDoc
     , transforms:
-        { nameForClass
+        { nameForClass: simpleNamer nameForClass
         , unionName: Nothing
         , unionPredicate: Nothing
         , nextName: \s -> "Other" <> s

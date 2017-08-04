@@ -12,6 +12,9 @@ module Doc
     , lookupClassName
     , lookupUnionName
     , combineNames
+    , NamingResult
+    , transformNames
+    , simpleNamer
     , string
     , line
     , blank
@@ -28,17 +31,17 @@ import Prelude
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Array as A
-import Data.Foldable (for_)
+import Data.Foldable (for_, any)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe, fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as String
 import Data.Tuple (Tuple(..), fst, snd)
-import Utils (sortByKeyM)
+import Utils (sortByKey, sortByKeyM)
 
 type Renderer =
     { name :: String
@@ -48,9 +51,11 @@ type Renderer =
     , transforms :: Transforms
     }
 
+type NamingResult = { name :: String, forbidAlso :: Array String }
+
 type Transforms =
-    { nameForClass :: IRClassData -> String
-    , unionName :: Maybe (List String -> String)
+    { nameForClass :: IRClassData -> Maybe String -> NamingResult
+    , unionName :: Maybe (List String -> Maybe String -> NamingResult)
     , unionPredicate :: Maybe (IRType -> Maybe (Set IRType))
     , nextName :: String -> String
     , forbiddenNames :: Array String
@@ -90,6 +95,31 @@ runDoc (Doc w) t topLevelNameGiven graph =
         unionNames = maybe M.empty (\un -> transformNames (nameForUnion un) t.nextName forbiddenForUnions $ map (\s -> Tuple s s) unions) t.unionName
     in
         evalRWS w { graph, classNames, unionNames, unions, topLevelNameGiven } { indent: 0 } # snd        
+
+transformNames :: forall a b. Ord a => Ord b => (b -> Maybe String -> NamingResult) -> (String -> String) -> (Set String) -> List (Tuple a b) -> Map a String
+transformNames legalize otherize illegalNames names =
+    process illegalNames M.empty (sortByKey snd names)
+    where
+        makeName :: b -> NamingResult -> Set String -> NamingResult
+        makeName name result@{ name: tryName, forbidAlso } setSoFar =
+            if (S.member tryName setSoFar) || any (\x -> S.member x setSoFar) forbidAlso then
+                makeName name (legalize name (Just $ otherize tryName)) setSoFar
+            else
+                result
+        process :: (Set String) -> (Map a String) -> (List (Tuple a b)) -> (Map a String)
+        process setSoFar mapSoFar l =
+            case l of
+            L.Nil -> mapSoFar
+            (Tuple identifier inputs) : rest ->
+                let { name, forbidAlso } = makeName inputs (legalize inputs Nothing) setSoFar
+                    newSoFar = S.union (S.fromFoldable forbidAlso) (S.insert name setSoFar)
+                    newMap = M.insert identifier name mapSoFar
+                in
+                    process newSoFar newMap rest
+
+simpleNamer :: forall a. Ord a => (a -> String) -> a -> Maybe String -> NamingResult
+simpleNamer namer _ (Just name) = { name, forbidAlso: [] }
+simpleNamer namer x Nothing = { name: namer x, forbidAlso: [] }
 
 typeNameForUnion :: IRGraph -> IRType -> String
 typeNameForUnion graph = case _ of

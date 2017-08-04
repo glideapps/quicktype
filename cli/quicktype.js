@@ -48,6 +48,13 @@ const optionDefinitions = [
     description: 'The target language.'
   },
   {
+    name: 'topLevel',
+    type: String,
+    defaultValue: 'TopLevel',
+    typeLabel: '[underline]{type name}',
+    description: 'The name for the top level type.'
+  },
+  {
     name: 'help',
     alias: 'h',
     type: Boolean,
@@ -110,7 +117,7 @@ function renderFromJson(json) {
     let input = {
       input: json,
       renderer: getRenderer(),
-      topLevelName: "TopLevel"
+      topLevelName: options.topLevel
     };
     
     return fromRight(pipeline(input));    
