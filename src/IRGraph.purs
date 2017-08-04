@@ -24,7 +24,6 @@ module IRGraph
     , mapClasses
     , classesInGraph
     , regatherClassNames
-    , transformNames
     , filterTypes
     , emptyUnion
     ) where
@@ -42,10 +41,9 @@ import Data.Sequence as Seq
 import Data.Set (Set)
 import Data.Set as S
 import Data.String.Util (singular)
-import Data.Tuple (Tuple(..), snd)
+import Data.Tuple (Tuple(..))
 import Data.Tuple as T
 import Partial.Unsafe (unsafePartial)
-import Utils (sortByKey)
 
 data Entry
     = NoType
@@ -217,25 +215,6 @@ regatherClassNames graph@(IRGraph { classes, toplevel }) =
                 in
                     combine $ (fromArray : fromMap : fromClass : L.Nil)
             _ -> M.empty
-
-transformNames :: forall a b. Ord a => Ord b => (b -> String) -> (String -> String) -> (Set String) -> List (Tuple a b) -> Map a String
-transformNames legalize otherize illegalNames names =
-    process illegalNames M.empty (sortByKey snd names)
-    where
-        makeName :: b -> String -> Set String -> String
-        makeName name tryName setSoFar =
-            if S.member tryName setSoFar then
-                makeName name (otherize tryName) setSoFar
-            else
-                tryName
-        process :: (Set String) -> (Map a String) -> (List (Tuple a b)) -> (Map a String)
-        process setSoFar mapSoFar l =
-            case l of
-            L.Nil -> mapSoFar
-            (Tuple identifier inputs) : rest ->
-                let name = makeName inputs (legalize inputs) setSoFar
-                in
-                    process (S.insert name setSoFar) (M.insert identifier name mapSoFar) rest
 
 unionToSet :: IRUnionRep -> Set IRType
 unionToSet (IRUnionRep { primitives, arrayType, classRef, mapType }) =

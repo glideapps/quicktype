@@ -49,8 +49,8 @@ renderer =
     , extension: "elm"
     , doc: elmDoc
     , transforms:
-        { nameForClass
-        , unionName: Just unionName
+        { nameForClass: simpleNamer nameForClass
+        , unionName: Just $ simpleNamer unionName
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames: forbiddenNames
@@ -327,7 +327,7 @@ renderTypeFunctions classIndex className propertyNames propsList = do
 typeRenderer :: (Int -> String -> Map.Map String String -> List (Tuple String IRType) -> Doc Unit) -> Int -> IRClassData -> Doc Unit
 typeRenderer renderer classIndex (IRClassData { properties }) = do
     className <- lookupClassName classIndex
-    let propertyNames = transformNames lowerNameStyle (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ Map.keys properties
+    let propertyNames = transformNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ Map.keys properties
     let propsList = Map.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     renderer classIndex className propertyNames propsList
 

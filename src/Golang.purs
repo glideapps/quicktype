@@ -27,8 +27,8 @@ renderer =
     , extension: "go"
     , doc: golangDoc
     , transforms:
-        { nameForClass
-        , unionName: Just unionName
+        { nameForClass: simpleNamer nameForClass
+        , unionName: Just $ simpleNamer unionName
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames: []
@@ -291,7 +291,7 @@ renderStruct name columns = do
 renderGolangType :: Int -> IRClassData -> Doc Unit
 renderGolangType classIndex (IRClassData { names, properties }) = do
     className <- lookupClassName classIndex
-    let propertyNames = transformNames goNameStyle ("Other" <> _) S.empty $ map (\n -> Tuple n n) $ Map.keys properties
+    let propertyNames = transformNames (simpleNamer goNameStyle) ("Other" <> _) S.empty $ map (\n -> Tuple n n) $ Map.keys properties
     let propsList = Map.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     columns <- propsList # mapM \(Tuple pname ptype) -> do
         let csPropName = lookupName pname propertyNames
