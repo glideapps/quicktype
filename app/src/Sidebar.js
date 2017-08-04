@@ -28,7 +28,7 @@ export default class Sidebar extends Component {
 
   adjustSourceEditorHeight = () => {
       let editor = window.document.getElementById("json-editor");
-      let height = Math.max(300, window.innerHeight - 360);
+      let height = Math.max(300, window.innerHeight - 320);
       editor.style.height = `${height}px`;
   }
 
@@ -81,13 +81,13 @@ export default class Sidebar extends Component {
                 */}
                 
                 <div id="button-parent">
-                    <Button raised primary>
-                        Copy {this.props.rendererName}
-                    </Button>
                     <div className="cli-hint">
                         <p>Install quicktype locally:</p>
                         <pre>npm i -g quicktype</pre>
                     </div>
+                    <Button raised primary>
+                        Copy {this.props.rendererName}
+                    </Button>
                 </div>
             </div>
         </sidebar>

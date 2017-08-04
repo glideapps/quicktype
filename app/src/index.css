@@ -58,6 +58,28 @@ sidebar .mdc-simple-menu--open {
   margin-top: 20px;
 }
 
+#button-parent button {
+  float: right;
+}
+
+.cli-hint {
+  color: white;
+  float: left;
+}
+
+.cli-hint p {
+  color: white;
+  opacity: 0.5;
+  margin: 0 0 4px 0;
+  font-size: 11pt;
+}
+
+.cli-hint pre {
+  margin: 0;
+  font-size: 12pt;
+  font-family: Consolas, Menlo, monospace;
+}
+
 sidebar .mdc-select:first-child {
   margin-right: 20px;
 }
@@ -86,23 +108,4 @@ sidebar .mdc-select:first-child {
 
 #output-editor .ace_fold-widget {
   display: none;
-}
-
-.cli-hint {
-  color: white;
-  float: right;
-  text-align: right;
-}
-
-.cli-hint p {
-  color: white;
-  opacity: 0.5;
-  margin: 0 0 4px 0;
-  font-size: 11pt;
-}
-
-.cli-hint pre {
-  margin: 0;
-  font-size: 13pt;
-  font-family: Consolas, Menlo, monospace;
 }
