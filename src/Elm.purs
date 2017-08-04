@@ -33,7 +33,7 @@ forbiddenWords =
     , "int", "float", "bool", "string"
     , "jenc", "jdec", "jpipe"
     , "always", "identity"
-    , "array", "dict", "maybe"
+    , "array", "dict", "maybe", "map", "toList"
     ]
 
 forbiddenPropertyNames :: Set String
@@ -123,8 +123,8 @@ elmDoc = do
     line """import Json.Decode as Jdec
 import Json.Decode.Pipeline as Jpipe
 import Json.Encode as Jenc
-import Array
-import Dict
+import Array exposing (Array, map)
+import Dict exposing (Dict, map, toList)
 
 -- top level type
 """
@@ -160,13 +160,13 @@ import Dict
     blank
     line """--- encoder helpers
 
-array__enc : (a -> Jenc.Value) -> Array.Array a -> Jenc.Value
+array__enc : (a -> Jenc.Value) -> Array a -> Jenc.Value
 array__enc f arr =
     Jenc.array (Array.map f arr)
 
-dict__enc : (a -> Jenc.Value) -> Dict.Dict String a -> Jenc.Value
+dict__enc : (a -> Jenc.Value) -> Dict String a -> Jenc.Value
 dict__enc f dict =
-    Jenc.object (Dict.toList (Dict.map (\k -> f) dict))
+    Jenc.object (toList (Dict.map (\k -> f) dict))
 
 nullable__enc : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
 nullable__enc f m =
@@ -194,11 +194,11 @@ typeStringForType = case _ of
     IRString -> singleWord "String"
     IRArray a -> do
         ts <- typeStringForType a
-        multiWord "Array.Array" $ parenIfNeeded ts
+        multiWord "Array" $ parenIfNeeded ts
     IRClass i -> singleWord =<< lookupClassName i
     IRMap t -> do
         ts <- typeStringForType t
-        multiWord "Dict.Dict String" $ parenIfNeeded ts
+        multiWord "Dict String" $ parenIfNeeded ts
     IRUnion u ->
         let s = unionToSet u
         in case nullableFromSet s of
