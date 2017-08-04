@@ -334,9 +334,9 @@ renderTypeFunctions classIndex className propertyNames propsList = do
                 let propName = lookupName pname propertyNames
                 { rendered: propEncoder } <- encoderNameForType ptype
                 line $ bracketOrComma <> "(\"" <> stringEscape pname <> "\", " <> propEncoder <> " x." <> propName <> ")"
-        when (propsList == L.Nil) do
-            line "["
-        line "]"
+            when (propsList == L.Nil) do
+                line "["
+            line "]"
 
 typeRenderer :: (Int -> String -> Map.Map String String -> List (Tuple String IRType) -> Doc Unit) -> Int -> IRClassData -> Doc Unit
 typeRenderer renderer classIndex (IRClassData { properties }) = do
