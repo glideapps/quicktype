@@ -34,6 +34,7 @@ forbiddenNames =
     , "Jenc", "Jdec", "Jpipe"
     , "always", "identity"
     , "Array", "Dict", "Maybe", "map", "toList"
+    , "makeArrayEncoder", "makeDictEncoder", "makeNullableEncoder"
     ]
 
 forbiddenPropertyNames :: Set String
@@ -182,16 +183,16 @@ import Dict exposing (Dict, map, toList)
     blank
     line """--- encoder helpers
 
-array__enc : (a -> Jenc.Value) -> Array a -> Jenc.Value
-array__enc f arr =
+makeArrayEncoder : (a -> Jenc.Value) -> Array a -> Jenc.Value
+makeArrayEncoder f arr =
     Jenc.array (Array.map f arr)
 
-dict__enc : (a -> Jenc.Value) -> Dict String a -> Jenc.Value
-dict__enc f dict =
+makeDictEncoder : (a -> Jenc.Value) -> Dict String a -> Jenc.Value
+makeDictEncoder f dict =
     Jenc.object (toList (Dict.map (\k -> f) dict))
 
-nullable__enc : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
-nullable__enc f m =
+makeNullableEncoder : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
+makeNullableEncoder f m =
     case m of
     Just x -> f x
     Nothing -> Jenc.null"""
@@ -270,17 +271,17 @@ encoderNameForType = case _ of
     IRString -> singleWord "Jenc.string"
     IRArray a -> do
         rendered <- encoderNameForType a
-        multiWord "array__enc" $ parenIfNeeded rendered
+        multiWord "makeArrayEncoder" $ parenIfNeeded rendered
     IRClass i -> singleWord =<< encoderNameFromTypeName <$> lookupClassName i
     IRMap t -> do
         rendered <- encoderNameForType t
-        multiWord "dict__enc" $ parenIfNeeded rendered
+        multiWord "makeDictEncoder" $ parenIfNeeded rendered
     IRUnion u ->
         let s = unionToSet u
         in case nullableFromSet s of
         Just t -> do
             rendered <- encoderNameForType t
-            multiWord "nullable__enc" $ parenIfNeeded rendered
+            multiWord "makeNullableEncoder" $ parenIfNeeded rendered
         Nothing ->
             singleWord =<< encoderNameFromTypeName <$> lookupUnionName s
 
