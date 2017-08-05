@@ -1,7 +1,23 @@
-const cluster = require("cluster");
+import * as cluster from "cluster";
+import * as process from "process";
+
+const exit = require('exit');
 const _ = require("lodash");
 
-function inParallel({queue, workers, setup, work }) {
+const WORKERS = ["👷🏻", "👷🏼", "👷🏽", "👷🏾", "👷🏿"];
+
+export interface ParallelArgs<T> {
+    queue: T[]
+    workers: number;
+    setup?: () => void;
+    work: (item: T, index: number) => void;
+}
+
+function guys(n: number): string {
+    return _.range(n).map((i) => WORKERS[i % WORKERS.length]).join(' ');
+}
+
+export function inParallel<T>({ queue, workers, setup, work }: ParallelArgs<T>) {
     let items = queue.map((item, i) => {
         return { item, i };
     });
@@ -22,11 +38,11 @@ function inParallel({queue, workers, setup, work }) {
             if (code && code !== 0) {
                 // Kill workers and exit if any worker dies
                 _.forIn(cluster.workers, (w) => w.kill());
-                process.exit(code);
+                exit(code);
             }
         });
 
-        console.error(`* Forking ${workers} workers (${workers} CPUs)`);
+        console.error(`* Forking ${workers} workers ${guys(workers)}`);
         _.range(workers).forEach((i) => cluster.fork({ worker: i }));
         
     } else {
@@ -42,5 +58,3 @@ function inParallel({queue, workers, setup, work }) {
         process.send("ready");
     }
 }
-
-module.exports = { inParallel };

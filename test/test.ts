@@ -1,24 +1,30 @@
-#!/usr/bin/env node 
+#!/usr/bin/env ts-node
+
+import * as process from "process";
+import * as os from "os";
+import * as fs from "fs";
+import * as path from "path";
+
+import { inParallel } from "./lib/multicore";
+import deepEquals from "./lib/deepEquals";
+import { randomBytes } from "crypto";
 
 const Ajv = require('ajv');
-const strictDeepEquals = require('deep-equal');
-const fs = require("fs");
+const strictDeepEquals: (x: any, y: any) => boolean = require('deep-equal');
 const _ = require("lodash");
-const path = require("path");
 const shell = require("shelljs");
-const deepEquals = require("./deepEquals");
+
 const Main = require("../output/Main");
 const Samples = require("../output/Samples");
-const assert = require("assert");
-const { inParallel } = require("./multicore");
-const os = require("os");
+
 const exit = require('exit');
+const chalk = require("chalk");
 
 //////////////////////////////////////
 // Constants
 /////////////////////////////////////
 
-function debug(x) {
+function debug<T>(x: T): T {
     if (!process.env.DEBUG) return;
     console.log(x);
     return x;
@@ -33,7 +39,7 @@ const DEBUG = typeof process.env.DEBUG !== 'undefined';
 
 const CPUs = IS_CI
     ? 2 /* Travis has only 2 but reports 8 */
-    : process.env.CPUs || os.cpus().length;
+    : +process.env.CPUs || os.cpus().length;
 
 const QUICKTYPE_CLI = path.resolve("./cli/quicktype.js");
 
@@ -44,7 +50,17 @@ process.env.PATH += `:${NODE_BIN}`;
 // Fixtures
 /////////////////////////////////////
 
-const FIXTURES = [
+interface Fixture {
+    name: string;
+    base: string;
+    setup?: string;
+    diffViaSchema: boolean;
+    output: string;
+    topLevel?: string;
+    test: (sample: string) => void;
+}
+
+const FIXTURES: Fixture[] = [
     {
         name: "csharp",
         base: "test/csharp",
@@ -85,9 +101,9 @@ const FIXTURES = [
 /////////////////////////////////////
 
 const knownUnicodeFails = ["identifiers.json"];
-const unicodeWillFail = (sample) => knownUnicodeFails.indexOf(path.basename(sample)) !== -1;
+const unicodeWillFail = (sample: string) => knownUnicodeFails.indexOf(path.basename(sample)) !== -1;
 
-function testGo(sample) {
+function testGo(sample: string) {
     if (unicodeWillFail(sample)) {
         console.error(`Skipping golang ${sample} – known to fail`);
         return;
@@ -104,7 +120,7 @@ function testGo(sample) {
 // C# tests
 /////////////////////////////////////
 
-function testCSharp(sample) {
+function testCSharp(sample: string) {
     compareJsonFileToJson({
         expectedFile: sample,
         jsonCommand: `dotnet run "${sample}"`,
@@ -116,14 +132,14 @@ function testCSharp(sample) {
 // Elm tests
 /////////////////////////////////////
 
-function testElm(sample) {
+function testElm(sample: string) {
     if (unicodeWillFail(sample)) {
         console.error(`Skipping elm ${sample} – known to fail`);
         return;
     }
 
     let limit_cpus = IS_CI ? "$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2" : "";
-    exec(`${limit_cpus} elm-make Main.elm QuickType.elm --output elm.js`, {silent: true});
+    exec(`${limit_cpus} elm-make Main.elm QuickType.elm --output elm.js`);
 
     compareJsonFileToJson({
         expectedFile: sample,
@@ -136,16 +152,15 @@ function testElm(sample) {
 // JSON Schema tests
 /////////////////////////////////////
 
-function testJsonSchema(sample) {
-    let input = JSON.parse(fs.readFileSync(sample));
-    let schema = JSON.parse(fs.readFileSync("schema.json"));
+function testJsonSchema(sample: string) {
+    let input = JSON.parse(fs.readFileSync(sample, "utf8"));
+    let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
     
     let ajv = new Ajv();
     let valid = ajv.validate(schema, input);
     if (!valid) {
-        failWith({
-            sample,
-            error: "Generated schema does not validate input JSON.",
+        failWith("Generated schema does not validate input JSON.", {
+            sample
         });
     }
 
@@ -176,16 +191,18 @@ function testJsonSchema(sample) {
 // Test driver
 /////////////////////////////////////
 
-function failWith(obj) {
+function failWith(message: string, obj: any) {
     obj.cwd = process.cwd();
-    console.error(JSON.stringify(obj, null, "  "));
+    console.error(chalk.red(message));
+    console.error(chalk.red(JSON.stringify(obj, null, "  ")));
     throw obj;
 }
 
-function exec(s, opts, cb) {
-    // Disable silent when DEBUG
-    opts = opts || {};
-    opts.silent = !DEBUG && opts.silent;
+function exec(
+    s: string,
+    opts: { silent: boolean } = { silent: !DEBUG },
+    cb?: any)
+    : { stdout: string; code: number; } {
 
     // We special-case quicktype execution
     s = s.replace(/^quicktype /, `node ${QUICKTYPE_CLI} `);
@@ -196,7 +213,7 @@ function exec(s, opts, cb) {
     if (result.code !== 0) {
         console.error(result.stdout);
         console.error(result.stderr);
-        failWith({
+        failWith("Command failed", {
             command: s,
             code: result.code
         });
@@ -204,25 +221,33 @@ function exec(s, opts, cb) {
     return result;
 }
 
-function compareJsonFileToJson({expectedFile, jsonFile, jsonCommand, strict}) {
-    debug({expectedFile, jsonFile, jsonCommand, strict});
+type ComparisonArgs = {
+    expectedFile: string;
+    jsonFile?: string;
+    jsonCommand?: string;
+    strict: boolean
+};
+
+function compareJsonFileToJson(args: ComparisonArgs) {
+    debug(args);
+
+    let { expectedFile, jsonFile, jsonCommand, strict } = args;
 
     let jsonString = jsonFile
-        ? fs.readFileSync(jsonFile)
-        : exec(jsonCommand, {silent: true}).stdout;
+        ? fs.readFileSync(jsonFile, "utf8")
+        : exec(jsonCommand).stdout;
 
     debug({ jsonString });
 
     let givenJSON = JSON.parse(jsonString);
-    let expectedJSON = JSON.parse(fs.readFileSync(expectedFile));
+    let expectedJSON = JSON.parse(fs.readFileSync(expectedFile, "utf8"));
     
     let jsonAreEqual = strict
         ? strictDeepEquals(givenJSON, expectedJSON)
-        : deepEquals(expectedJSON, givenJSON, []);
+        : deepEquals(expectedJSON, givenJSON);
 
     if (!jsonAreEqual) {
-        console.error("Error: Output is not equivalent to input.");
-        failWith({
+        failWith("Error: Output is not equivalent to input.", {
             expectedFile,
             jsonCommand,
             jsonFile
@@ -230,7 +255,7 @@ function compareJsonFileToJson({expectedFile, jsonFile, jsonCommand, strict}) {
     }
 }
 
-function inDir(dir, work) {
+function inDir(dir: string, work: () => void) {
     let origin = process.cwd();
     
     debug(`cd ${dir}`)
@@ -240,32 +265,41 @@ function inDir(dir, work) {
     process.chdir(origin);
 }
 
-function runFixtureWithSample(fixture, sample) {
-    let tmp = path.resolve(os.tmpdir(), require("crypto").randomBytes(8).toString('hex'));
-    let sampleAbs = path.resolve(sample);
+function runFixtureWithSample(fixture: Fixture, sample: string, index: number, total: number) {          
+    let cwd = `test/runs/${fixture.name}-${randomBytes(3).toString('hex')}`;
 
-    let stats = fs.statSync(sampleAbs);
-    if (stats.size > 32 * 1024 * 1024) {
-        console.error(`* Skipping ${sampleAbs} because it's too large`);
+    console.error(
+        `*`,
+        chalk.dim(`[${index+1}/${total}]`),
+        chalk.magenta(fixture.name),
+        path.join(
+            cwd,
+            chalk.cyan(path.basename(sample))));
+
+    if (fs.statSync(sample).size > 32 * 1024 * 1024) {
+        console.error(`* Skipping ${sample} because it's too large`);
         return;
     }
 
-    shell.cp("-R", fixture.base, tmp);
+    shell.cp("-R", fixture.base, cwd);
+    shell.cp(sample, cwd);
 
-    inDir(tmp, () => {
-        var topLevelFlag = "";
-        if (fixture["topLevel"])
-            topLevelFlag = `--topLevel ${fixture.topLevel}`;
+    inDir(cwd, () => {
+        let sampleFile = path.basename(sample);
+
+        let topLevelFlag = fixture.topLevel
+            ? `--topLevel ${fixture.topLevel}`
+            : "";
 
         // Generate code from the sample
-        exec(`quicktype --src ${sampleAbs} --srcLang json ${topLevelFlag} -o ${fixture.output}`);
+        exec(`quicktype --src ${sampleFile} --srcLang json ${topLevelFlag} -o ${fixture.output}`);
 
-        fixture.test(sampleAbs);
+        fixture.test(sampleFile);
 
         if (fixture.diffViaSchema) {
             debug("* Diffing with code generated via JSON Schema");
             // Make a schema
-            exec(`quicktype --src ${sampleAbs} --srcLang json -o schema.json`);
+            exec(`quicktype --src ${sampleFile} --srcLang json -o schema.json`);
             // Quicktype from the schema and compare to expected code
             shell.mv(fixture.output, `${fixture.output}.expected`);
             exec(`quicktype --src schema.json --srcLang json-schema -o ${fixture.output}`);
@@ -275,17 +309,17 @@ function runFixtureWithSample(fixture, sample) {
                 exec(`diff -Naur ${fixture.output}.expected ${fixture.output}`);
             } catch ({ command }) {
                 // FIXME: Set this to fail once we have it working.  See issue #59.
-                console.error(`Command failed, but we're allowing it: ${command}`);
+                console.error(`Command failed but we're allowing it`);
             }
         }
     });
 
-    shell.rm("-rf", tmp);
+    shell.rm("-rf", cwd);
 }
 
-function testAll(samples) {
+function testAll(samples: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run
-    let tests =  _
+    let tests: { sample: string; fixtureName: string }[] =  _
         .chain(FIXTURES)
         .flatMap((fixture) => samples.map((sample) => { 
             return { sample, fixtureName: fixture.name };
@@ -298,19 +332,24 @@ function testAll(samples) {
         workers: CPUs,
         setup: () => {
             FIXTURES.forEach(({ name, base, setup }) => {
-                if (!setup) return;
-                console.error(`* Setting up ${name} fixture`);
-                inDir(base, () => exec(setup, { silent: true }));
+                exec(`rm -rf test/runs`);
+                exec(`mkdir -p test/runs`);
+
+                if (setup) {
+                    console.error(
+                        `* Setting up`,
+                        chalk.magenta(name),
+                        `fixture`);
+
+                    inDir(base, () => exec(setup));
+                }
             });
         },
-        work: ({ sample, fixtureName }, i) => {
-            console.error(`* [${i+1}/${tests.length}] ${fixtureName} ${sample}`);
-
+        work: ({ sample, fixtureName }, index) => {
             let fixture = _.find(FIXTURES, { name: fixtureName });
             try {
-                runFixtureWithSample(fixture, sample);
+                runFixtureWithSample(fixture, sample, index, tests.length);
             } catch (e) {
-                console.error(e);
                 console.trace();
                 exit(1);
             }
@@ -318,14 +357,19 @@ function testAll(samples) {
     });
 }
 
-function testsInDir(dir) {
+function testsInDir(dir: string): string[] {
     return shell.ls(`${dir}/*.json`);
 }
 
-function shouldSkipTests() {
+function changedFiles(): string[] {
+    let diff = exec("git diff --name-only $TRAVIS_COMMIT_RANGE").stdout;
+    return diff.trim().split("\n");
+}
+
+function shouldSkipTests(): boolean {
     try {
         if (IS_CI && process.env.TRAVIS_COMMIT_RANGE) {
-            let changed = exec("git diff --name-only $TRAVIS_COMMIT_RANGE").trim().split("\n");
+            let changed = changedFiles();
             let onlyWebAppChanged = _.every(changed, (file) => file.startsWith("app/"));
             if (onlyWebAppChanged) {
                 console.error(`* Only app/ paths changed; skipping tests.`);
@@ -333,13 +377,11 @@ function shouldSkipTests() {
             }
         }
     } catch (e) {
-        console.error(`* Could not determine whether to skip tests due to error, so not skipping.`);
-        console.trace(e);
     }
     return false;
 }
 
-function main(sources) {
+function main(sources: string[]) {
     if (shouldSkipTests()) {
         return;
     }
