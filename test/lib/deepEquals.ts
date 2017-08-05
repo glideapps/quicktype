@@ -1,11 +1,14 @@
-function pathToString(path) {
+function pathToString(path: string[]): string {
     return path.join(".");
 }
 
-// https://stackoverflow.com/questions/1068834/object-comparison-in-javascript
-function deepEquals(x, y, path) {
-    path = path || [];
+declare module Math {
+    // TypeScript cannot find this function
+    function fround(n: number): number;
+}
 
+// https://stackoverflow.com/questions/1068834/object-comparison-in-javascript
+export default function deepEquals(x: any, y: any, path: string[] = []): boolean {
     var i;
     var p;
 
@@ -98,7 +101,7 @@ function deepEquals(x, y, path) {
             if (!deepEquals(x[p], y[p], path)) {
                 return false;
             }
-            path.pop(p);
+            path.pop();
             break;
             
         default:
@@ -112,5 +115,3 @@ function deepEquals(x, y, path) {
     
     return true;
 }
-
-module.exports = deepEquals;
