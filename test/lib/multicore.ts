@@ -14,7 +14,7 @@ export interface ParallelArgs<T> {
 }
 
 function guys(n: number): string {
-    return _.range(n).map((i) => WORKERS[i % WORKERS.length]).join();
+    return _.range(n).map((i) => WORKERS[i % WORKERS.length]).join(' ');
 }
 
 export function inParallel<T>({ queue, workers, setup, work }: ParallelArgs<T>) {
