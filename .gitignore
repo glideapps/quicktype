@@ -19,3 +19,4 @@ package-lock.json
 
 *.log
 test/elm/libsysconfcpus/
+/test/runs
