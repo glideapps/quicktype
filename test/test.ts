@@ -377,8 +377,6 @@ function shouldSkipTests(): boolean {
             }
         }
     } catch (e) {
-        console.error(`* Could not determine whether to skip tests due to error, so not skipping.`);
-        console.trace(e);
     }
     return false;
 }
