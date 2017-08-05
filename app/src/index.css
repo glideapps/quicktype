@@ -60,6 +60,7 @@ sidebar .mdc-simple-menu--open {
 
 #button-parent button {
   float: right;
+  margin-top: 2px;
 }
 
 .cli-hint {
@@ -76,7 +77,7 @@ sidebar .mdc-simple-menu--open {
 
 .cli-hint pre {
   margin: 0;
-  font-size: 12pt;
+  opacity: 0.8;
   font-family: Consolas, Menlo, monospace;
 }
 

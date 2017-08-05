@@ -28,7 +28,7 @@ export default class Sidebar extends Component {
 
   adjustSourceEditorHeight = () => {
       let editor = window.document.getElementById("json-editor");
-      let height = Math.max(300, window.innerHeight - 320);
+      let height = Math.max(300, window.innerHeight - 340);
       editor.style.height = `${height}px`;
   }
 
