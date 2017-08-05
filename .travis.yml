@@ -8,7 +8,7 @@ addons:
     packages:
       - dotnet-dev-1.0.1
 script:
-  - test/test.js
+  - test/test.ts
 cache:
   directories:
     - sysconfcpus/bin

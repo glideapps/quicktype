@@ -4,21 +4,25 @@
   "private": true,
   "scripts": {
     "build": "npm install --ignore-scripts && bower install && pulp build -- --source-maps && npm run bundle-cli",
-    "test": "npm run build && pulp test && test/test.js",
-    "postinstall": "(cd app && npm install) && (cd cli && npm install) && npm run build",
+    "test": "npm run build && pulp test && test/test.ts",
+    "postinstall": "(cd cli && npm install) && npm run build",
     "start": "cd app && npm start",
     "bundle-cli": "pulp browserify --standalone --skip-entry-point > /tmp/bundle.js && uglifyjs --compress --mangle -- /tmp/bundle.js > cli/bundle.js"
   },
   "devDependencies": {
+    "@types/node": "^8.0.19",
     "ajv": "^5.2.2",
     "bower": "^1.8.0",
     "deep-equal": "^1.0.1",
-    "exit": "^0.1.2",
     "elm": "^0.18.0",
+    "exit": "^0.1.2",
     "lodash": "^4.17.4",
     "pulp": "^11.0.2",
     "purescript": "^0.11.6",
     "shelljs": "^0.7.8",
+    "ts-node": "^3.3.0",
+    "typescript": "^2.4.2",
+    "chalk": "^1.1.3",
     "uglify-js": "^3.0.26"
   }
 }
