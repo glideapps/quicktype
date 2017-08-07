@@ -24,7 +24,7 @@ const optionDefinitions = [
     multiple: true,
     defaultOption: true,
     typeLabel: '[underline]{file|url}',
-    description: 'The JSON file or url to type.'
+    description: 'The JSON files or urls to type.'
   },
   {
     name: 'output',
@@ -103,10 +103,10 @@ function fromRight(either) {
   }
 }
 
-function renderFromJson(json) {
+function renderFromJsonArray(jsonArray) {
     let pipeline = {
-      "json": Main.renderFromJson,
-      "json-schema": Main.renderFromJsonSchema
+      "json": Main.renderFromJsonArray,
+      "json-schema": Main.renderFromJsonSchemaArray
     }[options.srcLang];
  
     if (!pipeline) {
@@ -115,7 +115,7 @@ function renderFromJson(json) {
     }
 
     let input = {
-      input: json,
+      input: jsonArray,
       renderer: getRenderer(),
       topLevelName: options.topLevel
     };
@@ -123,8 +123,8 @@ function renderFromJson(json) {
     return fromRight(pipeline(input));    
 }
 
-function work(json) {
-  let output = renderFromJson(json);
+function work(jsonArray) {
+  let output = renderFromJsonArray(jsonArray);
   if (options.output) {
     fs.writeFileSync(options.output, output); 
   } else {
@@ -132,7 +132,7 @@ function work(json) {
   }
 }
 
-function workFromStream(stream) {
+function parseJsonFromStream(stream, continuationWithJson) {
   let source = makeSource();
   let assembler = new Assembler();
 
@@ -140,7 +140,7 @@ function workFromStream(stream) {
     assembler[chunk.name] && assembler[chunk.name](chunk.value);
   });
   source.output.on("end", function () {
-    work(assembler.current);
+    continuationWithJson(assembler.current);
   });
 
   stream.setEncoding('utf8');
@@ -152,11 +152,23 @@ function usage() {
   console.log(getUsage(sections));
 }
 
-function parseFileOrUrl(fileOrUrl) {
+function parseFileOrUrl(fileOrUrl, continuationWithJson) {
   if (fs.existsSync(fileOrUrl)) {
-    workFromStream(fs.createReadStream(fileOrUrl));
+    parseJsonFromStream(fs.createReadStream(fileOrUrl), continuationWithJson);
   } else {
-    fetch(fileOrUrl).then(res => workFromStream(res.body));
+    fetch(fileOrUrl).then(res => parseJsonFromStream(res.body, continuationWithJson));
+  }
+}
+
+function parseFileOrUrlArray(filesOrUrls, continuationWithJsonArray) {
+  if (filesOrUrls.length === 0) {
+    continuationWithJsonArray([]);
+  } else {
+    parseFileOrUrl(filesOrUrls[0], function (json) {
+      parseFileOrUrlArray(filesOrUrls.slice(1), function (jsons) {
+        continuationWithJsonArray([json].concat(jsons));
+      })
+    });
   }
 }
 
@@ -172,9 +184,9 @@ if (options.output && !options.lang) {
 if (options.help) {
   usage();
 } else if (!options.src || options.src.length === 0) {
-  workFromStream(process.stdin);
-} else if (options.src.length == 1) {
-  parseFileOrUrl(options.src[0]);
+  parseJsonFromStream(process.stdin, function (json) { work([json]); });
+} else if (options.src) {
+  parseFileOrUrlArray(options.src, work);
 } else {
   usage();
   process.exit(1);
