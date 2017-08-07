@@ -110,10 +110,9 @@ class App extends Component {
 
   sourceEdited = (source) => {
     let { constructor, value0: output } = this.sendPerformance("Main", "renderJsonString", () => {
-      return Main.renderFromJsonStringPossiblyAsSchemaInDevelopment({
+      return Main.renderFromJsonStringPossiblyAsSchemaInDevelopment(this.state.topLevelName)({
         input: source,
-        renderer: this.getRenderer(),
-        topLevelName: this.state.topLevelName || "TopLevel"
+        renderer: this.getRenderer()
       });
     });
 

@@ -4,7 +4,7 @@ module IR
     , followRedirections
     , getClass
     , addClass
-    , setTopLevel
+    , addTopLevel
     , replaceClass
     , unifyTypes
     , unifyMultipleTypes
@@ -39,18 +39,19 @@ execIR ir = execState ir emptyGraph
 runIR :: forall a. IR a -> Tuple a IRGraph
 runIR ir = runState ir emptyGraph
 
-setTopLevel :: IRType -> IR Unit
-setTopLevel toplevel = do
-    IRGraph { classes } <- get
-    put $ IRGraph { classes, toplevel }
+addTopLevel :: String -> IRType -> IR Unit
+addTopLevel name toplevel = do
+    IRGraph { classes, toplevels } <- get
+    let newTopLevels = M.insert name toplevel toplevels
+    put $ IRGraph { classes, toplevels: newTopLevels }
 
 addClassWithIndex :: IRClassData -> IR (Tuple Int IRType)
 addClassWithIndex classData = do
-    IRGraph { classes, toplevel } <- get
+    IRGraph { classes, toplevels } <- get
     case Seq.elemIndex (Class classData) classes of
         Nothing -> do
             let index = Seq.length classes
-            put $ IRGraph { classes: Seq.snoc classes (Class classData), toplevel }
+            put $ IRGraph { classes: Seq.snoc classes (Class classData), toplevels }
             pure $ Tuple index (IRClass index)
         Just index -> pure $ Tuple index (IRClass index)
 
@@ -59,19 +60,19 @@ addClass classData = T.snd <$> addClassWithIndex classData
 
 redirectClass :: Int -> Int -> IR Unit
 redirectClass from to = do
-    graph@(IRGraph { classes: c1, toplevel }) <- get
+    graph@(IRGraph { classes: c1, toplevels }) <- get
     let realTo = T.fst $ followIndex graph to
     if from == realTo
         then pure unit
         else do
             let c2 = Seq.replace (Redirect realTo) from c1
-            put $ IRGraph { classes: c2, toplevel }
+            put $ IRGraph { classes: c2, toplevels }
 
 deleteClass :: Int -> IR Unit
 deleteClass i = do
-    IRGraph { classes, toplevel } <- get
+    IRGraph { classes, toplevels } <- get
     let newClasses = Seq.replace NoType i classes
-    put $ IRGraph { classes: newClasses, toplevel }
+    put $ IRGraph { classes: newClasses, toplevels }
 
 getClass :: Int -> IR IRClassData
 getClass index = do
@@ -161,10 +162,10 @@ followRedirections = do
 
 updateClasses :: (IRClassData -> IR IRClassData) -> (IRType -> IR IRType) -> IR Unit
 updateClasses classUpdater typeUpdater = do
-    IRGraph { classes, toplevel } <- get
+    IRGraph { classes, toplevels } <- get
     newClasses <- mapM mapper $ L.fromFoldable classes
-    newToplevel <- typeUpdater toplevel
-    put $ IRGraph { classes: Seq.fromFoldable newClasses, toplevel: newToplevel }
+    newToplevels <- mapMapM (\_ -> typeUpdater) toplevels
+    put $ IRGraph { classes: Seq.fromFoldable newClasses, toplevels: newToplevels }
     where
         mapper entry =
             case entry of

@@ -10,7 +10,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	t, err := UnmarshalRoot(bytes)
+	t, err := UnmarshalTopLevel(bytes)
 	if err != nil {
 		log.Fatal(err)
 	}

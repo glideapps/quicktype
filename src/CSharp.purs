@@ -11,12 +11,12 @@ import Data.Foldable (find, for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
-import Data.Maybe (Maybe(..), isJust, isNothing)
+import Data.Maybe (Maybe(..), maybe, isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
 import Data.String.Util (capitalize, camelCase, stringEscape)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), fst)
 import Partial.Unsafe (unsafePartial)
 import Utils (removeElement)
 
@@ -122,15 +122,21 @@ renderTypeToCSharp = case _ of
 csNameStyle :: String -> String
 csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
+getDecoderHelperPrefix :: String -> Doc String
+getDecoderHelperPrefix topLevelNameGiven = getForSingleOrMultipleTopLevels "" (csNameStyle topLevelNameGiven)
+
 csharpDoc :: Doc Unit
 csharpDoc = do
-    line """// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do:
-//
-//    var data = QuickType.Converter.FromJson(jsonString);
-//
-namespace QuickType
-{"""
-         
+    oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
+    line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
+    forTopLevel_ \topLevelNameGiven topLevelType -> do
+        prefix <- getDecoderHelperPrefix topLevelNameGiven
+        line "//"
+        line $ "//    var data = QuickType.Converter." <> prefix <> "FromJson(jsonString);"
+    line "//"
+    nameSpace <- getModuleName csNameStyle
+    line $ "namespace " <> nameSpace
+    line "{"         
     blank
     indent do
         line """using System;
@@ -161,7 +167,8 @@ renderJsonConverter = do
     unionNames <- getUnionNames
     let haveUnions = not $ M.isEmpty unionNames
     let names = M.values unionNames
-    line $ "public class Converter" <> stringIfTrue haveUnions ": JsonConverter" <> " {"
+    line $ "public class Converter" <> stringIfTrue haveUnions " : JsonConverter"
+    line "{"
     indent do
         line "static JsonSerializerSettings Settings = new JsonSerializerSettings"
         line "{"
@@ -172,18 +179,23 @@ renderJsonConverter = do
                 line "Converters = { new Converter() },"
         line "};"
         blank
-        toplevelType <- getTopLevel >>= renderTypeToCSharp
-        line "// Loading helpers"
-        line
-            $ "public static "
-            <> toplevelType
-            <> " FromJson(string json) => JsonConvert.DeserializeObject<"
-            <> toplevelType
-            <> ">(json, Settings);"
-        line
-            $ "public static string ToJson("
-            <> toplevelType
-            <> " o) => JsonConvert.SerializeObject(o, Settings);"
+        line "// Serialize/deserialize helpers"
+        forTopLevel_ \topLevelNameGiven topLevelType -> do
+            blank
+            topLevelTypeRendered <- renderTypeToCSharp topLevelType
+            fromJsonPrefix <- getDecoderHelperPrefix topLevelNameGiven
+            line
+                $ "public static "
+                <> topLevelTypeRendered 
+                <> " "
+                <> fromJsonPrefix
+                <> "FromJson(string json) => JsonConvert.DeserializeObject<"
+                <> topLevelTypeRendered
+                <> ">(json, Settings);"
+            line
+                $ "public static string ToJson("
+                <> topLevelTypeRendered
+                <> " o) => JsonConvert.SerializeObject(o, Settings);"
 
         when haveUnions do
             blank

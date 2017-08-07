@@ -24,7 +24,13 @@ const optionDefinitions = [
     multiple: true,
     defaultOption: true,
     typeLabel: '[underline]{file|url}',
-    description: 'The JSON files or urls to type.'
+    description: 'The JSON files or URLs to type.'
+  },
+  {
+    name: 'urls-from',
+    type: String,
+    typeLabel: '[underline]{file}',
+    description: 'Tracery grammar describing URLs to crawl.'
   },
   {
     name: 'output',
@@ -103,10 +109,10 @@ function fromRight(either) {
   }
 }
 
-function renderFromJsonArray(jsonArray) {
+function renderFromJsonArrayMap(jsonArrayMap) {
     let pipeline = {
-      "json": Main.renderFromJsonArray,
-      "json-schema": Main.renderFromJsonSchemaArray
+      "json": Main.renderFromJsonArrayMap,
+      "json-schema": Main.renderFromJsonSchemaArrayMap
     }[options.srcLang];
  
     if (!pipeline) {
@@ -115,21 +121,26 @@ function renderFromJsonArray(jsonArray) {
     }
 
     let input = {
-      input: jsonArray,
-      renderer: getRenderer(),
-      topLevelName: options.topLevel
+      input: jsonArrayMap,
+      renderer: getRenderer()
     };
     
     return fromRight(pipeline(input));    
 }
 
-function work(jsonArray) {
-  let output = renderFromJsonArray(jsonArray);
+function work(jsonArrayMap) {
+  let output = renderFromJsonArrayMap(jsonArrayMap);
   if (options.output) {
     fs.writeFileSync(options.output, output); 
   } else {
     process.stdout.write(output);
   }
+}
+
+function workFromJsonArray(jsonArray) {
+  let jsonArrayMap = {};
+  jsonArrayMap[options.topLevel] = jsonArray;
+  work(jsonArrayMap);
 }
 
 function parseJsonFromStream(stream, continuationWithJson) {
@@ -152,6 +163,33 @@ function usage() {
   console.log(getUsage(sections));
 }
 
+function mapArrayC(array, f, continuation) {
+  if (array.length === 0) {
+    continuation([]);
+    return;
+  }
+
+  f(array[0], function(firstResult) {
+    mapArrayC(array.slice(1), f, function(restResults) {
+      continuation([firstResult].concat(restResults));
+    });
+  });
+}
+
+function mapObjectValuesC(obj, f, continuation) {
+  let keys = Object.keys(obj);
+  let resultObject = {};
+  mapArrayC(keys, function(key, arrayContinuation) {
+    let value = obj[key];
+    f(value, function(newValue) {
+      resultObject[key] = newValue;
+      arrayContinuation(null);
+    });
+  }, function(dummy) {
+    continuation(resultObject);
+  });
+}
+
 function parseFileOrUrl(fileOrUrl, continuationWithJson) {
   if (fs.existsSync(fileOrUrl)) {
     parseJsonFromStream(fs.createReadStream(fileOrUrl), continuationWithJson);
@@ -160,16 +198,8 @@ function parseFileOrUrl(fileOrUrl, continuationWithJson) {
   }
 }
 
-function parseFileOrUrlArray(filesOrUrls, continuationWithJsonArray) {
-  if (filesOrUrls.length === 0) {
-    continuationWithJsonArray([]);
-  } else {
-    parseFileOrUrl(filesOrUrls[0], function (json) {
-      parseFileOrUrlArray(filesOrUrls.slice(1), function (jsons) {
-        continuationWithJsonArray([json].concat(jsons));
-      })
-    });
-  }
+function parseFileOrUrlArray(filesOrUrls, continuation) {
+  mapArrayC(filesOrUrls, parseFileOrUrl, continuation);
 }
 
 // Output file extension determines the language if language is undefined
@@ -183,10 +213,22 @@ if (options.output && !options.lang) {
 
 if (options.help) {
   usage();
+} else if (options["urls-from"]) {
+  let json = JSON.parse(fs.readFileSync(options["urls-from"]));
+  let jsonArrayMapOrError = Main.urlsFromJsonGrammar(json);
+  let result = jsonArrayMapOrError.value0;
+  if (typeof result == 'string') {
+    console.error("Error: " + result);
+    process.exit(1);
+  } else {
+    mapObjectValuesC(result, parseFileOrUrlArray, work);
+  }
 } else if (!options.src || options.src.length === 0) {
-  parseJsonFromStream(process.stdin, function (json) { work([json]); });
+  let jsonArrayMap = [];
+  jsonArrayMap[options.topLevel] = [json];
+  parseJsonFromStream(process.stdin, function (json) { workFromJsonArray([json]); });
 } else if (options.src) {
-  parseFileOrUrlArray(options.src, work);
+  parseFileOrUrlArray(options.src, workFromJsonArray);
 } else {
   usage();
   process.exit(1);

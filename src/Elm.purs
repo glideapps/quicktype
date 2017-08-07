@@ -11,7 +11,8 @@ import Data.Char.Unicode (isLetter)
 import Data.Foldable (for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
-import Data.Map as Map
+import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
 import Data.Set as S
@@ -52,8 +53,8 @@ renderer =
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelNameFromGiven: const "Root"
-        , forbiddenFromTopLevelNameGiven
+        , topLevelNameFromGiven: upperNameStyle
+        , forbiddenFromTopLevelNameGiven: namesFromTopLevelNameGiven
         }
     }
 
@@ -94,8 +95,8 @@ unionPredicate = case _ of
 typeNameForTopLevelNameGiven :: String -> String
 typeNameForTopLevelNameGiven = upperNameStyle
 
-forbiddenFromTopLevelNameGiven :: String -> Array String
-forbiddenFromTopLevelNameGiven given =
+namesFromTopLevelNameGiven :: String -> Array String
+namesFromTopLevelNameGiven given =
     let name = typeNameForTopLevelNameGiven given
     in A.cons name $ alsoForbiddenForTypeName name
 
@@ -123,16 +124,23 @@ renderComment :: Maybe String -> String
 renderComment (Just s) = " -- " <> s
 renderComment Nothing = ""
 
+getTopLevelPlural :: Doc String
+getTopLevelPlural = getForSingleOrMultipleTopLevels "" "s"
+
 elmDoc :: Doc Unit
 elmDoc = do
-    givenTopLevel <- upperNameStyle <$> getTopLevelNameGiven
-    let topLevelDecoder = decoderNameFromTypeName givenTopLevel
-    let topLevelEncoder = encoderNameFromTypeName givenTopLevel
+    topLevels <- getTopLevels
+    -- givenTopLevel <- typeNameForTopLevelNameGiven <$> getTopLevelNameGiven
+    -- let topLevelDecoder = decoderNameFromTypeName givenTopLevel
+    -- let topLevelEncoder = encoderNameFromTypeName givenTopLevel
     classes <- getClasses
     unions <- getUnions
     classNames <- mapM (\t -> lookupClassName $ fst t) classes
     unionNames <- mapM lookupUnionName unions
-    let exports = givenTopLevel : topLevelDecoder : topLevelEncoder : (L.concat $ classNames : unionNames : L.Nil)
+    let topLevelDecoders = map (typeNameForTopLevelNameGiven >>> decoderNameFromTypeName) $ M.keys topLevels
+    let topLevelExports = L.concat $ map (namesFromTopLevelNameGiven >>> L.fromFoldable) (M.keys topLevels)
+    let exports = L.concat $ topLevelExports : classNames : unionNames : L.Nil
+    moduleName <- getModuleName upperNameStyle
     line """-- To decode the JSON data, add this file to your project, run
 --
 --     elm-package install NoRedInk/elm-decode-pipeline
@@ -140,13 +148,15 @@ elmDoc = do
 -- add these imports
 --
 --     import Json.Decode exposing (decodeString)"""
-    line $ "--     import " <> givenTopLevel <> " exposing (" <> topLevelDecoder <> ")"
+    line $ "--     import " <> moduleName <> " exposing (" <> (intercalate ", " topLevelDecoders) <> ")"
     line """--
 -- and you're off to the races with
 --"""
-    line $ "--     decodeString " <> topLevelDecoder <> " myJsonString"
+    forTopLevel_ \topLevelNameGiven topLevelType -> do
+        let topLevelDecoder = decoderNameFromTypeName $ typeNameForTopLevelNameGiven topLevelNameGiven
+        line $ "--     decodeString " <> topLevelDecoder <> " myJsonString"
     blank
-    line $ "module " <> givenTopLevel <> " exposing"
+    line $ "module " <> moduleName <> " exposing"
     indent do
         forWithPrefix_ exports "( " ", " \parenOrComma name ->
             line $ parenOrComma <> name
@@ -157,20 +167,24 @@ import Json.Decode.Pipeline as Jpipe
 import Json.Encode as Jenc
 import Array exposing (Array, map)
 import Dict exposing (Dict, map, toList)
-
--- top level type
 """
-    topLevel <- getTopLevel
-    { rendered: topLevelRendered } <- typeStringForType topLevel
-    line $ "type alias " <> givenTopLevel <> " = " <> topLevelRendered
-    blank
-    { rendered: rootDecoder } <- decoderNameForType topLevel
-    line $ topLevelDecoder <> " : Jdec.Decoder " <> givenTopLevel
-    line $ topLevelDecoder <> " = " <> rootDecoder
-    blank
-    { rendered: rootEncoder } <- encoderNameForType topLevel
-    line $ topLevelEncoder <> " : " <> givenTopLevel <> " -> String"
-    line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
+    topLevelPlural <- getTopLevelPlural
+    line $ "-- top level type" <> topLevelPlural
+    forTopLevel_ \topLevelNameGiven topLevel -> do
+        let givenTopLevel = typeNameForTopLevelNameGiven topLevelNameGiven
+        let topLevelDecoder = decoderNameFromTypeName givenTopLevel
+        let topLevelEncoder = encoderNameFromTypeName givenTopLevel
+        blank
+        { rendered: topLevelRendered } <- typeStringForType topLevel
+        line $ "type alias " <> givenTopLevel <> " = " <> topLevelRendered
+        blank
+        { rendered: rootDecoder } <- decoderNameForType topLevel
+        line $ topLevelDecoder <> " : Jdec.Decoder " <> givenTopLevel
+        line $ topLevelDecoder <> " = " <> rootDecoder
+        blank
+        { rendered: rootEncoder } <- encoderNameForType topLevel
+        line $ topLevelEncoder <> " : " <> givenTopLevel <> " -> String"
+        line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
     blank
     line "-- JSON types"
     for_ classes \(Tuple i cls) -> do
@@ -306,7 +320,7 @@ isOptional = case _ of
     -- IRUnion u -> S.member IRNull $ unionToSet u
     _ -> false
 
-renderTypeDefinition :: Int -> String -> Map.Map String String -> List (Tuple String IRType) -> Doc Unit
+renderTypeDefinition :: Int -> String -> Map String String -> List (Tuple String IRType) -> Doc Unit
 renderTypeDefinition classIndex className propertyNames propsList = do
     line $ "type alias " <> className <> " ="
     indent do
@@ -318,7 +332,7 @@ renderTypeDefinition classIndex className propertyNames propsList = do
             line "{"
         line "}"
 
-renderTypeFunctions :: Int -> String -> Map.Map String String -> List (Tuple String IRType) -> Doc Unit
+renderTypeFunctions :: Int -> String -> Map String String -> List (Tuple String IRType) -> Doc Unit
 renderTypeFunctions classIndex className propertyNames propsList = do
     let decoderName = decoderNameFromTypeName className
     line $ decoderName <> " : Jdec.Decoder " <> className
@@ -345,11 +359,11 @@ renderTypeFunctions classIndex className propertyNames propsList = do
                 line "["
             line "]"
 
-typeRenderer :: (Int -> String -> Map.Map String String -> List (Tuple String IRType) -> Doc Unit) -> Int -> IRClassData -> Doc Unit
+typeRenderer :: (Int -> String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> Int -> IRClassData -> Doc Unit
 typeRenderer renderer classIndex (IRClassData { properties }) = do
     className <- lookupClassName classIndex
-    let propertyNames = transformNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ Map.keys properties
-    let propsList = Map.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
+    let propertyNames = transformNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ M.keys properties
+    let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     renderer classIndex className propertyNames propsList
 
 renderUnionDefinition :: Set IRType -> Doc Unit
