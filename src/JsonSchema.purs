@@ -23,7 +23,7 @@ import Data.StrMap as SM
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, singular)
 import Data.Tuple (Tuple(..))
-import IR (IR, addClass, unifyTypes)
+import IR (IR, addClass, unifyMultipleTypes, unifyTypes)
 import Utils (foldError, mapM, mapMapM, mapStrMapM)
 
 data JSONType
@@ -142,6 +142,13 @@ jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, pr
         toIRAndUnify (jsonSchemaToIR root name) jss
     | otherwise =
         pure $ Right IRNothing
+
+jsonSchemaListToIR :: String -> List JSONSchema -> IR (Either String IRType)
+jsonSchemaListToIR name l = do
+    errorOrTypeList <- mapM (\js -> jsonSchemaToIR js name js) l
+    case foldError errorOrTypeList of
+        Left err -> pure $ Left err
+        Right irTypes -> Right <$> unifyMultipleTypes irTypes
 
 jsonTypeToIR :: JSONSchema -> String -> JSONType -> JSONSchema -> IR (Either String IRType)
 jsonTypeToIR root name jsonType (JSONSchema schema) =

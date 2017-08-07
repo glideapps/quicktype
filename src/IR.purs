@@ -7,6 +7,7 @@ module IR
     , setTopLevel
     , replaceClass
     , unifyTypes
+    , unifyMultipleTypes
     , execIR
     , runIR
     ) where
@@ -16,9 +17,9 @@ import Prelude
 
 import Control.Monad.State (State, execState, runState)
 import Control.Monad.State.Class (get, put)
-import Data.Foldable (for_, foldM)
+import Data.Foldable (foldM, for_)
 import Data.Int.Bits as Bits
-import Data.List ((:))
+import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
@@ -131,6 +132,9 @@ unifyTypes a b | a == b = pure a
                     u1 <- unifyWithUnion emptyUnion a
                     u2 <- unifyWithUnion u1 b
                     pure $ IRUnion u2
+
+unifyMultipleTypes :: List IRType -> IR IRType
+unifyMultipleTypes = L.foldM unifyTypes IRNothing
 
 unifyTypesWithNull :: IRType -> IRType -> IR IRType
 unifyTypesWithNull IRNothing IRNothing = pure IRNothing

@@ -1,6 +1,6 @@
 module Main
-    ( renderFromJson
-    , renderFromJsonSchema
+    ( renderFromJsonArray
+    , renderFromJsonSchemaArray
     , renderFromJsonStringPossiblyAsSchemaInDevelopment
     , renderers
     ) where
@@ -16,8 +16,9 @@ import Data.Argonaut.Core (foldJson) as J
 import Data.Argonaut.Decode (decodeJson) as J
 import Data.Argonaut.Parser (jsonParser) as J
 import Data.Array (foldl)
-import Data.Array as A
 import Data.Either (Either(..))
+import Data.List (List)
+import Data.List as L
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Set as S
@@ -29,13 +30,13 @@ import Elm as Elm
 import Environment (Environment(..))
 import Environment as Env
 import Golang as Golang
-import JsonSchema (JSONSchema, jsonSchemaToIR)
+import JsonSchema (JSONSchema, jsonSchemaListToIR)
 import JsonSchema as JsonSchema
 
 import TypeScript as TypeScript
 import Math (round)
 
-import Utils (mapM)
+import Utils (foldError, mapM)
 
 type Error = String
 type SourceCode = String
@@ -68,19 +69,21 @@ makeTypeFromJson name json =
     (\_ -> pure IRString)
     (\arr -> do
         let typeName = singular name
-        IRArray <$> A.foldRecM (unify typeName) IRNothing arr)
+        typeList <- mapM (makeTypeFromJson name) $ L.fromFoldable arr
+        unifiedType <- unifyMultipleTypes typeList
+        pure $ IRArray unifiedType)
     (\obj -> do
         let l1 = StrMap.toUnfoldable obj
         l2 <- mapM toProperty l1
         addClass $ IRClassData { names: S.singleton name, properties: Map.fromFoldable l2 })
     json
     where
-        unify typeName t1 j2 = makeTypeFromJson typeName j2 >>= unifyTypes t1
         toProperty (Tuple name json) = Tuple name <$> makeTypeFromJson name json
 
-makeTypeAndUnify :: String -> Json -> IRGraph
-makeTypeAndUnify name json = execIR do
-    topLevel <- makeTypeFromJson name json
+makeTypeAndUnify :: String -> Array Json -> IRGraph
+makeTypeAndUnify name jsonArray = execIR do
+    topLevelTypes <- mapM (makeTypeFromJson name) $ L.fromFoldable jsonArray
+    topLevel <- unifyMultipleTypes topLevelTypes
     setTopLevel topLevel
     replaceSimilarClasses
     makeMaps
@@ -89,9 +92,9 @@ irFromError :: String -> IR IRType
 irFromError err = do
     addClass $ IRClassData { names: S.singleton err, properties: Map.empty }
 
-makeTypeFromSchema :: String -> JSONSchema -> Either Error IRGraph
-makeTypeFromSchema name schema = eitherify $ runIR do
-    topLevelOrError <- jsonSchemaToIR schema "TopLevel" schema
+makeTypeFromSchemaList :: String -> List JSONSchema -> Either Error IRGraph
+makeTypeFromSchemaList name schemaList = eitherify $ runIR do
+    topLevelOrError <- jsonSchemaListToIR "TopLevel" schemaList
     case topLevelOrError of
         Left err -> pure $ Just err
         Right topLevel -> do
@@ -101,29 +104,29 @@ makeTypeFromSchema name schema = eitherify $ runIR do
         eitherify (Tuple (Just err) _) = Left err
         eitherify (Tuple Nothing g) = Right g
 
-renderFromJson :: Pipeline Json
-renderFromJson { renderer, input: json, topLevelName: topLevelNameGiven } =
+renderFromJsonArray :: Pipeline (Array Json)
+renderFromJsonArray { renderer, input: jsonArray, topLevelName: topLevelNameGiven } =
     let topLevelName = renderer.transforms.topLevelNameFromGiven topLevelNameGiven
     in
-        json
+        jsonArray
         # makeTypeAndUnify topLevelName
         # regatherClassNames
         # Doc.runRenderer renderer topLevelNameGiven
         # Right
 
-renderFromJsonSchema :: Pipeline Json
-renderFromJsonSchema { renderer, input: json, topLevelName: topLevelNameGiven } = 
+renderFromJsonSchemaArray :: Pipeline (Array Json)
+renderFromJsonSchemaArray { renderer, input: jsonArray, topLevelName: topLevelNameGiven } = 
     let topLevelName = renderer.transforms.topLevelNameFromGiven topLevelNameGiven
     in do
-        schema <- J.decodeJson json
-        graph <- makeTypeFromSchema topLevelName schema
+        schemaList <- foldError $ map J.decodeJson jsonArray
+        graph <- makeTypeFromSchemaList topLevelName schemaList
         graph
             # Doc.runRenderer renderer topLevelNameGiven
             # pure
 
-pipelines :: Environment -> Array (Pipeline Json)
-pipelines Development = [renderFromJson]
-pipelines Production = [renderFromJson]
+pipelines :: Environment -> Array (Pipeline (Array Json))
+pipelines Development = [renderFromJsonArray]
+pipelines Production = [renderFromJsonArray]
 
 firstSuccess :: forall a. Array (Pipeline a) -> Pipeline a
 firstSuccess pipes input = foldl takeFirstRight (Left "no pipelines provided") pipes
@@ -134,4 +137,4 @@ firstSuccess pipes input = foldl takeFirstRight (Left "no pipelines provided") p
 renderFromJsonStringPossiblyAsSchemaInDevelopment :: Pipeline String
 renderFromJsonStringPossiblyAsSchemaInDevelopment { renderer, input: jsonString, topLevelName } = do
     obj <- J.jsonParser jsonString
-    firstSuccess (pipelines Env.current) { renderer, input: obj, topLevelName }
+    firstSuccess (pipelines Env.current) { renderer, input: [obj], topLevelName }
