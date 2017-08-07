@@ -8,10 +8,11 @@ import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
 import Data.Either as Either
-import Data.Foldable (all, any, elem, for_, intercalate, maximum)
+import Data.Foldable (any, for_, intercalate, maximum)
+import Data.List (List)
 import Data.List as L
 import Data.Map as M
-import Data.Maybe (Maybe(Nothing, Just), fromMaybe, maybe)
+import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
@@ -49,7 +50,7 @@ unionPredicate = case _ of
     _ -> Nothing      
 
 nameForClass :: IRClassData -> String
-nameForClass (IRClassData { names }) = interfaceNamify $ combineNames names
+nameForClass (IRClassData { names }) = upperNameStyle $ combineNames names
 
 isValueType :: IRType -> Boolean
 isValueType IRInteger = true
@@ -118,8 +119,11 @@ getContainedClassName = case _ of
     IRClass i -> Just <$> lookupClassName i
     _ -> pure Nothing
 
-interfaceNamify :: String -> String
-interfaceNamify = Str.camelCase >>> Str.capitalize >>> legalizeIdentifier
+upperNameStyle :: String -> String
+upperNameStyle = Str.camelCase >>> Str.capitalize >>> legalizeIdentifier
+
+lowerNameStyle :: String -> String
+lowerNameStyle = Str.camelCase >>> Str.decapitalize >>> legalizeIdentifier
 
 quote :: String -> String
 quote s = "\"" <> s <> "\""
@@ -134,34 +138,50 @@ propertyNamify s
 hasInternalSeparator :: Rx.Regex
 hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
 
+typeMethodName :: String -> String -> Doc String
+typeMethodName nameForSingle typeName = do
+    single <- getSingleTopLevel
+    pure $ maybe (lowerNameStyle typeName <> Str.capitalize nameForSingle) (const nameForSingle) single
+
+deserializerName :: String -> Doc String
+deserializerName = typeMethodName "fromJson"
+
+serializerName :: String -> Doc String
+serializerName = typeMethodName "toJson"
+
 typeScriptDoc :: Doc Unit
 typeScriptDoc = do
-    topType <- getTopLevel
-    topFull <- renderType topType
-    topClassName <- getContainedClassName topType
-    module_ <- getTopLevelNameGiven
+    topLevelTypes <- M.values <$> getTopLevels
+    topMaybeClassNames :: List (Maybe String) <- mapM getContainedClassName topLevelTypes
+    let maybeTopClassNames = mapM id topMaybeClassNames
+    moduleName <- getModuleName upperNameStyle
     let imports =
-            case topClassName of
-                Just name -> {
-                    basic:    "{ " <> name  <> " }",
-                    advanced: "{ " <> name  <> ", Convert }"
+            case maybeTopClassNames of
+                Just names -> {
+                    basic:    "{ " <> intercalate ", " names  <> " }",
+                    advanced: "{ " <> intercalate ", " names  <> ", Convert }"
                 }
                 Nothing -> {
-                    basic:    "* as " <> module_,
+                    basic:    "* as " <> moduleName,
                     advanced: "{ Convert }"
                 }
 
     line $ """// To parse this data:
 //
-//   import """ <> imports.basic  <> """ from "./""" <> module_  <> """";
-//   let value: """ <> topFull  <> """ = JSON.parse(json);
-//
+//   import """ <> imports.basic  <> """ from "./""" <> moduleName  <> ";"
+    forTopLevel_ \topLevelNameGiven topLevelType -> do
+        topFull <- renderType topLevelType
+        line $ "//   let value: " <> topFull  <> " = JSON.parse(json);"
+    line $ """//
 // Or use Convert.fromJson to perform a type-checking conversion:
 //
-//   import """ <> imports.advanced  <> """ from "./""" <> module_  <> """";
-//   let value: """ <> topFull  <> """ = Convert.fromJson(json);
-//
-"""
+//   import """ <> imports.advanced  <> """ from "./""" <> moduleName  <> ";"
+    forTopLevel_ \topLevelNameGiven topLevelType -> do
+        topFull <- renderType topLevelType
+        deserializer <- deserializerName topLevelNameGiven
+        line $ "//   let value: " <> topFull  <> " = Convert." <> deserializer <> "(json);"
+    line "//"
+    blank
     classes <- getClasses
     for_ classes \(Tuple i cd) -> do
         interface <- lookupClassName i
@@ -245,21 +265,23 @@ typemap = do
 
 converter :: Doc Unit
 converter = do
-    top <- getTopLevel >>= renderType
-    topTypeMap <- getTopLevel >>= renderTypeMapType
-
     line $ """export module Convert {
     let path = [];
-
-    export function fromJson(json: string): """ <> top <> """ {
+"""
+    forTopLevel_ \topLevelNameGiven topLevelType -> do
+        topFull <- renderType topLevelType
+        topTypeMap <- renderTypeMapType topLevelType
+        deserializer <- deserializerName topLevelNameGiven
+        serializer <- serializerName topLevelNameGiven
+        line $ """    export function """ <> deserializer <> """(json: string): """ <> topFull <> """ {
         return cast(JSON.parse(json), """ <> topTypeMap <> """);
     }
 
-    export function toJson(value: """ <> top <> """): string {
+    export function toJson(value: """ <> topFull <> """): string {
         return JSON.stringify(value);
     }
-
-    function cast<T>(obj: any, typ: any): T {
+"""
+    line """    function cast<T>(obj: any, typ: any): T {
         path = [];
         if (!isValid(typ, obj)) {
             throw `Invalid value: obj${path.join("")}`;

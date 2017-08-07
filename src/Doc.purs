@@ -2,15 +2,18 @@ module Doc
     ( Doc
     , Renderer
     , Transforms
-    , getTopLevel
+    , getTopLevels
+    , getSingleTopLevel
+    , getModuleName
+    , getForSingleOrMultipleTopLevels
     , getClasses
     , getClass
     , getUnions
     , getUnionNames
-    , getTopLevelNameGiven
     , lookupName
     , lookupClassName
     , lookupUnionName
+    , forTopLevel_
     , combineNames
     , NamingResult
     , transformNames
@@ -71,7 +74,6 @@ type DocEnv =
     , classNames :: Map Int String
     , unionNames :: Map (Set IRType) String
     , unions :: List (Set IRType)
-    , topLevelNameGiven :: String
     }
 
 newtype Doc a = Doc (RWS DocEnv String DocState a)
@@ -82,20 +84,21 @@ derive newtype instance applicativeDoc :: Applicative Doc
 derive newtype instance bindDoc :: Bind Doc
 derive newtype instance monadDoc :: Monad Doc
 
-runRenderer :: Renderer -> String -> IRGraph -> String
+runRenderer :: Renderer -> IRGraph -> String
 runRenderer { doc, transforms } = runDoc doc transforms
 
-runDoc :: forall a. Doc a -> Transforms -> String -> IRGraph -> String
-runDoc (Doc w) t topLevelNameGiven graph =
+runDoc :: forall a. Doc a -> Transforms -> IRGraph -> String
+runDoc (Doc w) t graph@(IRGraph { toplevels }) =
     let classes = classesInGraph graph
-        forbidden = S.fromFoldable (A.concat [t.forbiddenNames, t.forbiddenFromTopLevelNameGiven topLevelNameGiven])
+        forbiddenFromTopLevels = S.unions $ map (t.forbiddenFromTopLevelNameGiven >>> S.fromFoldable) $ M.keys toplevels
+        forbidden = S.union forbiddenFromTopLevels $ S.fromFoldable t.forbiddenNames
         classNames = transformNames t.nameForClass t.nextName forbidden classes
         unions = maybe L.Nil (\up -> L.fromFoldable $ filterTypes up graph) t.unionPredicate
         forbiddenForUnions = S.union forbidden $ S.fromFoldable $ M.values classNames
         nameForUnion un s = un $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
         unionNames = maybe M.empty (\un -> transformNames (nameForUnion un) t.nextName forbiddenForUnions $ map (\s -> Tuple s s) unions) t.unionName
     in
-        evalRWS w { graph, classNames, unionNames, unions, topLevelNameGiven } { indent: 0 } # snd        
+        evalRWS w { graph, classNames, unionNames, unions } { indent: 0 } # snd        
 
 transformNames :: forall a b. Ord a => Ord b => (b -> Maybe String -> NamingResult) -> (String -> String) -> (Set String) -> List (Tuple a b) -> Map a String
 transformNames legalize otherize illegalNames names =
@@ -145,10 +148,27 @@ getTypeNameForUnion typ = do
 getGraph :: Doc IRGraph
 getGraph = Doc (asks _.graph)
 
-getTopLevel :: Doc IRType
-getTopLevel = do
-    IRGraph { toplevel } <- getGraph
-    pure toplevel
+getTopLevels :: Doc (Map String IRType)
+getTopLevels = do
+    IRGraph { toplevels } <- getGraph
+    pure toplevels
+
+getSingleTopLevel :: Doc (Maybe (Tuple String IRType))
+getSingleTopLevel = do
+    topLevels <- getTopLevels
+    case M.toUnfoldable topLevels :: List _ of
+        t : L.Nil -> pure $ Just t
+        _ -> pure Nothing
+
+getModuleName :: (String -> String) -> Doc String
+getModuleName nameStyler = do
+    single <- getSingleTopLevel
+    pure $ maybe "QuickType" (fst >>> nameStyler) single
+
+getForSingleOrMultipleTopLevels :: forall a. a -> a -> Doc a
+getForSingleOrMultipleTopLevels forSingle forMultiple = do
+    single <- getSingleTopLevel
+    pure $ maybe forMultiple (const forSingle) single
 
 getClassNames :: Doc (Map Int String)
 getClassNames = Doc (asks _.classNames)
@@ -160,9 +180,6 @@ getUnions = do
 
 getUnionNames :: Doc (Map (Set IRType) String)
 getUnionNames = Doc (asks _.unionNames)
-
-getTopLevelNameGiven :: Doc String
-getTopLevelNameGiven = Doc (asks _.topLevelNameGiven)
 
 getClasses :: Doc (L.List (Tuple Int IRClassData))
 getClasses = do
@@ -187,6 +204,12 @@ lookupUnionName :: Set IRType -> Doc String
 lookupUnionName s = do
     unionNames <- getUnionNames
     pure $ lookupName s unionNames
+
+forTopLevel_ :: (String -> IRType -> Doc Unit) -> Doc Unit
+forTopLevel_ f = do
+    topLevels <- getTopLevels
+    for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) -> do
+        f topLevelNameGiven topLevelType
 
 -- Given a potentially multi-line string, render each line at the current indent level
 line :: String -> Doc Unit
