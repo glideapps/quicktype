@@ -150,15 +150,15 @@ typeScriptDoc = do
                     advanced: "{ Convert }"
                 }
 
-    line $ """// To parse this JSON data:
+    line $ """// To parse this data:
 //
-//     import """ <> imports.basic  <> """ from "./""" <> module_  <> """";
-//     let value: """ <> topFull  <> """ = JSON.parse(json);
+//   import """ <> imports.basic  <> """ from "./""" <> module_  <> """";
+//   let value: """ <> topFull  <> """ = JSON.parse(json);
 //
-// Or use `Convert.fromJson` to perform a runtime assertion on your data:
+// Or use Convert.fromJson to perform a type-checking conversion:
 //
-//     import """ <> imports.advanced  <> """ from "./""" <> module_  <> """";
-//     let value: """ <> topFull  <> """ = Convert.fromJson(json);
+//   import """ <> imports.advanced  <> """ from "./""" <> module_  <> """";
+//   let value: """ <> topFull  <> """ = Convert.fromJson(json);
 //
 """
     classes <- getClasses
