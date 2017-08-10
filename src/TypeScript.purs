@@ -126,8 +126,7 @@ propertyNamify s
     | otherwise =
         case Str.charAt 0 s of
             Nothing -> "Empty"
-            Just c | isStartCharacter c -> s
-                   | otherwise -> "'" <> s <> "'"
+            Just _ -> "'" <> s <> "'"
 
 hasInternalSeparator :: Rx.Regex
 hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
