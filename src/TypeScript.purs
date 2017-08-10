@@ -33,7 +33,7 @@ renderer =
         , unionName: Nothing
         , unionPredicate: Just unionPredicate
         , nextName: \s -> s <> "_"
-        , forbiddenNames: []
+        , forbiddenNames: ["Convert"]
         , topLevelNameFromGiven: id
         , forbiddenFromTopLevelNameGiven: const []
         }
@@ -143,11 +143,11 @@ typeScriptDoc = do
             case topClassName of
                 Just name -> {
                     basic:    "{ " <> name  <> " }",
-                    advanced: "{ " <> name  <> ", Converter }"
+                    advanced: "{ " <> name  <> ", Convert }"
                 }
                 Nothing -> {
                     basic:    "* as " <> module_,
-                    advanced: "{ Converter }"
+                    advanced: "{ Convert }"
                 }
 
     line $ """// To parse this JSON data:
@@ -261,7 +261,7 @@ converter = do
     function cast<T>(obj: any, typ: any): T {
         path = [];
         if (!isValid(typ, obj)) {
-            throw `Invalid value: obj${path.join("")}`
+            throw `Invalid value: obj${path.join("")}`;
         }
         return obj;
     }
