@@ -190,7 +190,7 @@ renderTypeMapType = case _ of
         pure $ "object('" <> name <> "')"
     IRMap t -> do
         rendered <- renderTypeMapType t
-        pure $ "{ [key: string]: " <> rendered <> " }"
+        pure $ "map(" <> rendered <> ")"
     IRUnion types -> do
         renderedTyps <- mapM renderTypeMapType $ L.fromFoldable $ unionToSet types
         pure $ "union(" <> intercalate ", " renderedTyps <> ")"
@@ -246,6 +246,7 @@ converter = do
     function isValid(typ: any, val: any): boolean {
         if      (typ.isUnion)  return isValidUnion(typ.typs, val);
         else if (typ.isArray)  return isValidArray(typ.typ, val);
+        else if (typ.isMap)    return isValidMap(typ.typ, val);
         else if (typ.isObject) return isValidObject(typ.cls, val);
         else    /*primitive*/  return isValidPrimitive(typ, val);
     }
@@ -272,6 +273,17 @@ converter = do
         });
     }
 
+    function isValidMap(typ: any, val: any): boolean {
+        // all values in the map must be typ
+        for (let prop in val) {
+            path.push(`['${prop}']`);
+            if (!isValid(typ, val[prop]))
+                return false;
+            path.pop();
+        }
+        return true;
+    }
+
     function isValidObject(className: string, val: any): boolean {
         let typeRep = typeMap[className];
         
@@ -291,6 +303,10 @@ converter = do
 
     function union(...typs: any[]) {
         return { typs, isUnion: true };
+    }
+
+    function map(typ: any) {
+        return { typ, isMap: true };
     }
 
     function object(className: string) {
