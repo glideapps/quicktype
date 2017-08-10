@@ -11,7 +11,7 @@ import Data.Either as Either
 import Data.Foldable (all, for_, intercalate, maximum)
 import Data.List as L
 import Data.Map as M
-import Data.Maybe (Maybe(Nothing, Just), maybe)
+import Data.Maybe (Maybe(Nothing, Just), fromMaybe, maybe)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
@@ -112,6 +112,12 @@ renderType = case _ of
         pure $ "{ [key: string]: " <> rendered <> " }"
     IRUnion types -> renderUnion $ unionToSet types
 
+getContainedClassName :: IRType -> Doc (Maybe String)
+getContainedClassName = case _ of
+    IRArray a -> getContainedClassName a
+    IRClass i -> Just <$> lookupClassName i
+    _ -> pure Nothing
+
 interfaceNamify :: String -> String
 interfaceNamify = Str.camelCase >>> Str.capitalize >>> legalizeIdentifier
 
@@ -129,12 +135,30 @@ hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFla
 
 typeScriptDoc :: Doc Unit
 typeScriptDoc = do
-    top <- getTopLevel >>= renderType
+    topType <- getTopLevel
+    topFull <- renderType topType
+    topClassName <- getContainedClassName topType
     module_ <- getTopLevelNameGiven
+    let imports =
+            case topClassName of
+                Just name -> {
+                    basic:    "{ " <> name  <> " }",
+                    advanced: "{ " <> name  <> ", Converter }"
+                }
+                Nothing -> {
+                    basic:    "* as " <> module_,
+                    advanced: "{ Converter }"
+                }
+
     line $ """// To parse this JSON data:
 //
-//     import * as """ <> module_  <> """ from "./""" <> module_  <> """";
-//     let value = """ <> module_  <> """.Convert.fromJson(json);
+//     import """ <> imports.basic  <> """ from "./""" <> module_  <> """";
+//     let value: """ <> topFull  <> """ = JSON.parse(json);
+//
+// Or use `Convert.fromJson` to perform a runtime assertion on your data:
+//
+//     import """ <> imports.advanced  <> """ from "./""" <> module_  <> """";
+//     let value: """ <> topFull  <> """ = Convert.fromJson(json);
 //
 """
     classes <- getClasses
@@ -142,6 +166,11 @@ typeScriptDoc = do
         interface <- lookupClassName i
         renderInterface cd interface
         blank
+
+    line "//"
+    line "// The Convert module parses JSON and asserts types"
+    line "//"
+    blank
     converter
 
 renderInterface :: IRClassData -> String -> Doc Unit
