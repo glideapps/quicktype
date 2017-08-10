@@ -7,26 +7,20 @@ import IRGraph
 import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
-import Data.Foldable (for_, intercalate, maximum)
-
+import Data.Either as Either
+import Data.Foldable (all, for_, intercalate, maximum)
 import Data.List as L
-
 import Data.Map as M
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Set (Set)
 import Data.Set as S
-
 import Data.String as Str
-import Data.String.Util as Str
-
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
-import Data.String.Util (camelCase, capitalize)
-
+import Data.String.Util as Str
 import Data.Tuple (Tuple(..), fst)
 import Partial.Unsafe (unsafePartial)
 import Utils (mapM)
-import Data.Either as Either
 
 renderer :: Renderer
 renderer =
@@ -64,12 +58,10 @@ isValueType IRBool = true
 isValueType _ = false
 
 isLetterCharacter :: Char -> Boolean
-isLetterCharacter c =
-    isLetter c || (generalCategory c == Just LetterNumber)
+isLetterCharacter c = isLetter c || generalCategory c == Just LetterNumber
 
 isStartCharacter :: Char -> Boolean
-isStartCharacter c =
-    isLetterCharacter c || c == '_'
+isStartCharacter c = isLetterCharacter c || c == '_'
 
 isPartCharacter :: Char -> Boolean
 isPartCharacter c =
@@ -126,7 +118,8 @@ propertyNamify s
     | otherwise =
         case Str.charAt 0 s of
             Nothing -> "Empty"
-            Just _ -> "'" <> s <> "'"
+            Just _ | all isStartCharacter (Str.toCharArray s) -> s
+                   | otherwise -> "'" <> s <> "'"
 
 hasInternalSeparator :: Rx.Regex
 hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
