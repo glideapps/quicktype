@@ -213,6 +213,8 @@ renderTypeMapClass (IRClassData { names, properties }) className = do
 
 typemap :: Doc Unit
 typemap = do
+    line "// The typeMap is used to assert that objects from"
+    line "// JSON.parse conform to the types we expect them to."
     line $ "const typeMap = {"
     indent do
         classes <- getClasses
