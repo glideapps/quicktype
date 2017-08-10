@@ -8,7 +8,7 @@ import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
 import Data.Either as Either
-import Data.Foldable (all, for_, intercalate, maximum)
+import Data.Foldable (all, any, elem, for_, intercalate, maximum)
 import Data.List as L
 import Data.Map as M
 import Data.Maybe (Maybe(Nothing, Just), fromMaybe, maybe)
@@ -33,7 +33,7 @@ renderer =
         , unionName: Nothing
         , unionPredicate: Just unionPredicate
         , nextName: \s -> s <> "_"
-        , forbiddenNames: ["Convert"]
+        , forbiddenNames: ["Convert", "Converted"] <> reservedWords
         , topLevelNameFromGiven: id
         , forbiddenFromTopLevelNameGiven: const []
         }
@@ -127,11 +127,10 @@ quote s = "\"" <> s <> "\""
 propertyNamify :: String -> String
 propertyNamify s
     | Rx.test hasInternalSeparator s = quote $ Str.stringEscape s
-    | otherwise =
-        case Str.charAt 0 s of
-            Nothing -> quote ""
-            Just _ | all isStartCharacter (Str.toCharArray s) -> Str.stringEscape s
-                   | otherwise -> quote $ Str.stringEscape s
+    | Str.null s = quote ""
+    | s `elem` reservedWords = quote s
+    | any (not <<< isStartCharacter) (Str.toCharArray s) = quote $ Str.stringEscape s
+    | otherwise =  Str.stringEscape s
 
 hasInternalSeparator :: Rx.Regex
 hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
@@ -343,3 +342,6 @@ converter = do
     line """
 }
 """
+
+reservedWords :: Array String
+reservedWords = ["break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else", "enum", "export", "extends", "false", "finally", "for", "function", "if", "import", "in", "instanceof", "new", "null", "return", "super", "switch", "this", "throw", "true", "try", "typeof", "var", "void", "while", "with", "as", "implements", "interface", "let", "package", "private", "protected", "public", "static", "yield", "any", "boolean", "constructor", "declare", "get", "module", "require", "number", "set", "string", "symbol", "type", "from", "of"]
