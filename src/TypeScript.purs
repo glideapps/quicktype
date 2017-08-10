@@ -126,12 +126,12 @@ quote s = "\"" <> s <> "\""
 
 propertyNamify :: String -> String
 propertyNamify s
-    | Rx.test hasInternalSeparator s = quote s
+    | Rx.test hasInternalSeparator s = quote $ Str.stringEscape s
     | otherwise =
         case Str.charAt 0 s of
-            Nothing -> "Empty"
-            Just _ | all isStartCharacter (Str.toCharArray s) -> s
-                   | otherwise -> quote s
+            Nothing -> quote ""
+            Just _ | all isStartCharacter (Str.toCharArray s) -> Str.stringEscape s
+                   | otherwise -> quote $ Str.stringEscape s
 
 hasInternalSeparator :: Rx.Regex
 hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
