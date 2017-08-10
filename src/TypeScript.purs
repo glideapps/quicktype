@@ -150,7 +150,7 @@ typeScriptDoc = do
 
 renderInterface :: IRClassData -> String -> Doc Unit
 renderInterface (IRClassData { names, properties }) className = do
-    let propertyNames = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
+    let propertyNames = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.empty) $ map (\n -> Tuple n n) $ M.keys properties
 
     let resolver name typ = markNullable (lookupName name propertyNames) typ
     let resolvePropertyNameWithType (Tuple name typ) = Tuple (resolver name typ) typ         
