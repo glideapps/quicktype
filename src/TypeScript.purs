@@ -121,14 +121,17 @@ getContainedClassName = case _ of
 interfaceNamify :: String -> String
 interfaceNamify = Str.camelCase >>> Str.capitalize >>> legalizeIdentifier
 
+quote :: String -> String
+quote s = "\"" <> s <> "\""
+
 propertyNamify :: String -> String
 propertyNamify s
-    | Rx.test hasInternalSeparator s = "'" <> s <> "'"
+    | Rx.test hasInternalSeparator s = quote s
     | otherwise =
         case Str.charAt 0 s of
             Nothing -> "Empty"
             Just _ | all isStartCharacter (Str.toCharArray s) -> s
-                   | otherwise -> "'" <> s <> "'"
+                   | otherwise -> quote s
 
 hasInternalSeparator :: Rx.Regex
 hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
@@ -201,18 +204,18 @@ markNullable name _ = name
 
 renderTypeMapType :: IRType -> Doc String
 renderTypeMapType = case _ of
-    IRNothing -> pure "'undefined'" -- we can have arrays of nothing
-    IRNull -> pure "'undefined'"
-    IRInteger -> pure "'number'"
-    IRDouble -> pure "'number'"
-    IRBool -> pure "'boolean'"
-    IRString -> pure "'string'"
+    IRNothing -> pure $ quote "undefined"
+    IRNull -> pure $ quote "undefined"
+    IRInteger -> pure $ quote "number"
+    IRDouble -> pure $ quote "number"
+    IRBool -> pure $ quote "boolean"
+    IRString -> pure $ quote "string"
     IRArray a -> do
         rendered <- renderTypeMapType a
         pure $ "array(" <> rendered <> ")"
     IRClass i -> do
         name <- lookupClassName i
-        pure $ "object('" <> name <> "')"
+        pure $ "object(" <> quote name <> ")"
     IRMap t -> do
         rendered <- renderTypeMapType t
         pure $ "map(" <> rendered <> ")"
@@ -275,7 +278,7 @@ converter = do
     }
 
     function isValidPrimitive(typ: string, val: any) {
-        if (typ == 'undefined') return !val;
+        if (typ == "undefined") return !val;
         return typ === typeof val;
     }
 
@@ -299,7 +302,7 @@ converter = do
     function isValidMap(typ: any, val: any): boolean {
         // all values in the map must be typ
         for (let prop in val) {
-            path.push(`['${prop}']`);
+            path.push(`["${prop}"]`);
             if (!isValid(typ, val[prop]))
                 return false;
             path.pop();
