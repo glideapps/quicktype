@@ -197,7 +197,7 @@ renderTypeMapType = case _ of
 
 renderTypeMapClass :: IRClassData -> String -> Doc Unit
 renderTypeMapClass (IRClassData { names, properties }) className = do
-    let propertyNames = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
+    let propertyNames = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.empty) $ map (\n -> Tuple n n) $ M.keys properties
 
     let resolver name typ = lookupName name propertyNames
     let resolvePropertyNameWithType (Tuple name typ) = Tuple (resolver name typ) typ         
