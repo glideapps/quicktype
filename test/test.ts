@@ -59,6 +59,7 @@ interface Fixture {
     diffViaSchema: boolean;
     output: string;
     topLevel?: string;
+    skip?: string[]
     test: (sample: string) => void;
 }
 
@@ -76,14 +77,22 @@ const FIXTURES: Fixture[] = [
         base: "test/golang",
         diffViaSchema: true,
         output: "quicktype.go",
-        test: testGo
+        test: testGo,
+        skip: [
+            "identifiers.json",
+            "simple-identifiers.json"
+        ]
     },
     {
         name: "json-schema",
         base: "test/golang",
         diffViaSchema: false,
         output: "schema.json",
-        test: testJsonSchema
+        test: testJsonSchema,
+        skip: [
+            "identifiers.json",
+            "simple-identifiers.json"
+        ]
     },
     {
         name: "elm",
@@ -94,14 +103,21 @@ const FIXTURES: Fixture[] = [
         diffViaSchema: false,
         output: "QuickType.elm",
         topLevel: "QuickType",
-        test: testElm
+        test: testElm,
+        skip: [
+            "identifiers.json",
+            "simple-identifiers.json"
+        ]
     },
     {
         name: "typescript",
         base: "test/typescript",
         diffViaSchema: false,
         output: "TopLevel.ts",
-        test: testTypeScript
+        test: testTypeScript,
+        skip: [
+            "identifiers.json"
+        ]
     }
 ].filter(({name}) => !process.env.FIXTURE || name === process.env.FIXTURE);
 
@@ -109,15 +125,7 @@ const FIXTURES: Fixture[] = [
 // Go tests
 /////////////////////////////////////
 
-const knownUnicodeFails = ["identifiers.json"];
-const unicodeWillFail = (sample: string) => knownUnicodeFails.indexOf(path.basename(sample)) !== -1;
-
 function testGo(sample: string) {
-    if (unicodeWillFail(sample)) {
-        console.error(`Skipping golang ${sample} – known to fail`);
-        return;
-    }
-
     compareJsonFileToJson({
         expectedFile: sample,
         jsonCommand: `go run main.go quicktype.go < "${sample}"`,
@@ -142,11 +150,6 @@ function testCSharp(sample: string) {
 /////////////////////////////////////
 
 function testElm(sample: string) {
-    if (unicodeWillFail(sample)) {
-        console.error(`Skipping elm ${sample} – known to fail`);
-        return;
-    }
-
     let limit_cpus = IS_CI ? "$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2" : "";
     exec(`${limit_cpus} elm-make Main.elm QuickType.elm --output elm.js`);
 
@@ -176,17 +179,12 @@ function testJsonSchema(sample: string) {
     // Generate Go from the schema
     exec(`quicktype --srcLang json-schema -o quicktype.go --src schema.json`);
 
-    // Possibly check the output of the Go program against the sample
-    if (unicodeWillFail(sample)) {
-        console.error("Known to fail - not checking output.");
-    } else {
-        // Parse the sample with Go generated from its schema, and compare to the sample
-        compareJsonFileToJson({
-            expectedFile: sample,
-            jsonCommand: `go run main.go quicktype.go < "${sample}"`,
-            strict: false
-        });
-    }
+    // Parse the sample with Go generated from its schema, and compare to the sample
+    compareJsonFileToJson({
+        expectedFile: sample,
+        jsonCommand: `go run main.go quicktype.go < "${sample}"`,
+        strict: false
+    });
     
     // Generate a schema from the schema, making sure the schemas are the same
     compareJsonFileToJson({
@@ -200,16 +198,7 @@ function testJsonSchema(sample: string) {
 // TypeScript test
 /////////////////////////////////////
 
-const tsWillFail = (sample) => [
-    "identifiers.json"
-].indexOf(path.basename(sample)) !== -1;
-
 function testTypeScript(sample) {
-    if (tsWillFail(sample)) {
-        console.error(`Skipping typescript ${sample} – known to fail`);
-        return;
-    }
-
     compareJsonFileToJson({
         expectedFile: sample,
         jsonCommand: `ts-node main.ts \"${sample}\"`,
@@ -297,6 +286,7 @@ function inDir(dir: string, work: () => void) {
 
 function runFixtureWithSample(fixture: Fixture, sample: string, index: number, total: number) {          
     let cwd = `test/runs/${fixture.name}-${randomBytes(3).toString('hex')}`;
+    let sampleFile = path.basename(sample);
 
     console.error(
         `*`,
@@ -311,12 +301,16 @@ function runFixtureWithSample(fixture: Fixture, sample: string, index: number, t
         return;
     }
 
+    let skips = fixture.skip || [];
+    if (skips.indexOf(sampleFile) != -1) {
+        console.error(`* Skipping ${sampleFile} – known to fail`);
+        return;
+    }
+
     shell.cp("-R", fixture.base, cwd);
     shell.cp(sample, cwd);
 
     inDir(cwd, () => {
-        let sampleFile = path.basename(sample);
-
         let topLevelFlag = fixture.topLevel
             ? `--topLevel ${fixture.topLevel}`
             : "";
