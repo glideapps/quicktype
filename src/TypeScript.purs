@@ -135,10 +135,11 @@ hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFla
 typeScriptDoc :: Doc Unit
 typeScriptDoc = do
     top <- getTopLevel >>= renderType
+    module_ <- getTopLevelNameGiven
     line $ """// To parse this JSON data:
 //
-//     import { Convert } from "./quicktype";
-//     let value = Convert.fromJson(json);
+//     import * as """ <> module_  <> """ from "./""" <> module_  <> """";
+//     let value = """ <> module_  <> """.Convert.fromJson(json);
 //
 """
     classes <- getClasses
