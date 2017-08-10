@@ -12,6 +12,7 @@ export default class Editor extends Component {
 
   componentDidMount() {
     this.editor.setOption("displayIndentGuides", false);
+    setTimeout(() => window.session = this.editor.getSession(), 3000);
   }
 
   resize = (height) => {
