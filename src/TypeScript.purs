@@ -243,11 +243,11 @@ converter = do
     }
 
     function isValid(typ: any, val: any): boolean {
-        if      (typ.isUnion)  return isValidUnion(typ.typs, val);
-        else if (typ.isArray)  return isValidArray(typ.typ, val);
-        else if (typ.isMap)    return isValidMap(typ.typ, val);
-        else if (typ.isObject) return isValidObject(typ.cls, val);
-        else    /*primitive*/  return isValidPrimitive(typ, val);
+        return typ.isUnion  ? isValidUnion(typ.typs, val)
+             : typ.isArray  ? isValidArray(typ.typ, val)
+             : typ.isMap    ? isValidMap(typ.typ, val)
+             : typ.isObject ? isValidObject(typ.cls, val)
+             :                isValidPrimitive(typ, val);
     }
 
     function isValidPrimitive(typ: string, val: any) {
