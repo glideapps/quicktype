@@ -122,12 +122,12 @@ interfaceNamify = Str.camelCase >>> Str.capitalize >>> legalizeIdentifier
 
 propertyNamify :: String -> String
 propertyNamify s
-    | Rx.test hasInternalSeparator s = "\"" <> s <> "\""
+    | Rx.test hasInternalSeparator s = "'" <> s <> "'"
     | otherwise =
         case Str.charAt 0 s of
             Nothing -> "Empty"
             Just c | isStartCharacter c -> s
-                   | otherwise -> "\"" <> s <> "\""
+                   | otherwise -> "'" <> s <> "'"
 
 hasInternalSeparator :: Rx.Regex
 hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
@@ -198,18 +198,12 @@ renderTypeMapType = case _ of
 
 renderTypeMapClass :: IRClassData -> String -> Doc Unit
 renderTypeMapClass (IRClassData { names, properties }) className = do
-    let propertyNames = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.empty) $ map (\n -> Tuple n n) $ M.keys properties
-
-    let resolver name typ = lookupName name propertyNames
-    let resolvePropertyNameWithType (Tuple name typ) = Tuple (resolver name typ) typ         
-
     line $ className <> ": {"
     indent do
         let props = M.toUnfoldable properties :: Array _
-        let resolved = resolvePropertyNameWithType <$> props
-        for_ resolved \(Tuple pname ptype) -> do
+        for_ props \(Tuple pname ptype) -> do
             rendered <- renderTypeMapType ptype
-            line $ pname <> ": " <> rendered <> ","
+            line $ propertyNamify pname <> ": " <> rendered <> ","
     line "},"
 
 typemap :: Doc Unit
