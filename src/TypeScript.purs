@@ -103,14 +103,14 @@ renderUnion s =
 renderType :: IRType -> Doc String
 renderType = case _ of
     IRNothing -> pure "any" -- we can have arrays of nothing
-    IRNull -> pure "any"
+    IRNull -> pure "null"
     IRInteger -> pure "number"
     IRDouble -> pure "number"
     IRBool -> pure "boolean"
     IRString -> pure "string"
     IRArray a -> do
         rendered <- renderType a
-        pure $ rendered <> "[]"
+        pure $ "Array<" <> rendered <> ">"
     IRClass i -> lookupClassName i
     IRMap t -> do
         rendered <- renderType t
