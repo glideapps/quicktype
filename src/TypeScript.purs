@@ -137,10 +137,10 @@ typeScriptDoc = do
     top <- getTopLevel >>= renderType
     line $ """// To parse this JSON data:
 //
-//     import * as """ <> top <> """ from "./""" <> top <> """;
-//     let value = """ <> top <> """.Convert.fromJson(json);
+//     import { Convert } from "./quicktype";
+//     let value = Convert.fromJson(json);
 //
-"""      
+"""
     classes <- getClasses
     for_ classes \(Tuple i cd) -> do
         interface <- lookupClassName i
@@ -226,20 +226,22 @@ typemap = do
 converter :: Doc Unit
 converter = do
     top <- getTopLevel >>= renderType
-    line """export module Convert {
+    topTypeMap <- getTopLevel >>= renderTypeMapType
+
+    line $ """export module Convert {
     let path = [];
 
-    export function fromJson(json: string): TopLevel {
-        return cast(JSON.parse(json), "TopLevel");
+    export function fromJson(json: string): """ <> top <> """ {
+        return cast(JSON.parse(json), """ <> topTypeMap <> """);
     }
 
-    export function toJson(value: TopLevel): string {
+    export function toJson(value: """ <> top <> """): string {
         return JSON.stringify(value);
     }
 
-    function cast<T>(obj: any, className: string): T {
+    function cast<T>(obj: any, typ: any): T {
         path = [];
-        if (!isValid(object(className), obj)) {
+        if (!isValid(typ, obj)) {
             throw `Invalid value: obj${path.join("")}`
         }
         return obj;
