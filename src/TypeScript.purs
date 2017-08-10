@@ -138,29 +138,15 @@ typeScriptDoc = do
     line $ """// To parse this JSON data:
 //
 //     import * as """ <> top <> """ from "./""" <> top <> """;
-//     let value = """ <> top <> """.fromJson(json);
+//     let value = """ <> top <> """.Convert.fromJson(json);
 //
 """      
-    renderHelpers
-    blank 
     classes <- getClasses
     for_ classes \(Tuple i cd) -> do
         interface <- lookupClassName i
         renderInterface cd interface
         blank
-
-renderHelpers :: Doc Unit
-renderHelpers = do
-    top <- getTopLevel >>= renderType
-    line $ "export function fromJson(json: string): " <> top <> " {"
-    indent do
-        line $ "return JSON.parse(json);"
-    line "}"
-    blank
-    line $ "export function toJson(value: " <> top <> "): string {"
-    indent do
-        line $ "return JSON.stringify(value);"
-    line "}"
+    converter
 
 renderInterface :: IRClassData -> String -> Doc Unit
 renderInterface (IRClassData { names, properties }) className = do
@@ -187,3 +173,131 @@ markNullable name (IRUnion unionRep) =
         Just _ -> name <> "?"
         _ -> name
 markNullable name _ = name
+
+renderTypeMapType :: IRType -> Doc String
+renderTypeMapType = case _ of
+    IRNothing -> pure "'undefined'" -- we can have arrays of nothing
+    IRNull -> pure "'undefined'"
+    IRInteger -> pure "'number'"
+    IRDouble -> pure "'number'"
+    IRBool -> pure "'boolean'"
+    IRString -> pure "'string'"
+    IRArray a -> do
+        rendered <- renderTypeMapType a
+        pure $ "array(" <> rendered <> ")"
+    IRClass i -> do
+        name <- lookupClassName i
+        pure $ "object('" <> name <> "')"
+    IRMap t -> do
+        rendered <- renderTypeMapType t
+        pure $ "{ [key: string]: " <> rendered <> " }"
+    IRUnion types -> do
+        renderedTyps <- mapM renderTypeMapType $ L.fromFoldable $ unionToSet types
+        pure $ "union(" <> intercalate ", " renderedTyps <> ")"
+
+renderTypeMapClass :: IRClassData -> String -> Doc Unit
+renderTypeMapClass (IRClassData { names, properties }) className = do
+    let propertyNames = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
+
+    let resolver name typ = lookupName name propertyNames
+    let resolvePropertyNameWithType (Tuple name typ) = Tuple (resolver name typ) typ         
+
+    line $ className <> ": {"
+    indent do
+        let props = M.toUnfoldable properties :: Array _
+        let resolved = resolvePropertyNameWithType <$> props
+        for_ resolved \(Tuple pname ptype) -> do
+            rendered <- renderTypeMapType ptype
+            line $ pname <> ": " <> rendered <> ","
+    line "},"
+
+typemap :: Doc Unit
+typemap = do
+    line $ "const typeMap = {"
+    indent do
+        classes <- getClasses
+        for_ classes \(Tuple i cd) -> do
+            className <- lookupClassName i
+            renderTypeMapClass cd className
+    line $ "};"
+
+converter :: Doc Unit
+converter = do
+    top <- getTopLevel >>= renderType
+    line """export module Convert {
+    let path = [];
+
+    export function fromJson(json: string): TopLevel {
+        return cast(JSON.parse(json), "TopLevel");
+    }
+
+    export function toJson(value: TopLevel): string {
+        return JSON.stringify(value);
+    }
+
+    function cast<T>(obj: any, className: string): T {
+        path = [];
+        if (!isValid(object(className), obj)) {
+            throw `Invalid value: obj${path.join("")}`
+        }
+        return obj;
+    }
+
+    function isValid(typ: any, val: any): boolean {
+        if      (typ.isUnion)  return isValidUnion(typ.typs, val);
+        else if (typ.isArray)  return isValidArray(typ.typ, val);
+        else if (typ.isObject) return isValidObject(typ.cls, val);
+        else    /*primitive*/  return isValidPrimitive(typ, val);
+    }
+
+    function isValidPrimitive(typ: string, val: any) {
+        if (typ == 'undefined') return !val;
+        return typ === typeof val;
+    }
+
+    function isValidUnion(typs: any[], val: any): boolean {
+        // val must validate against one typ in typs
+        return typs.find(typ => isValid(typ, val)) !== undefined;
+    }
+
+    function isValidArray(typ: any, val: any): boolean {
+        // val must be an array with no invalid elements
+        return Array.isArray(val) && !val.find((val, i) => {
+            path.push(`[${i}]`);
+            if (isValid(typ, val)) {
+                path.pop();
+            } else {
+                return true;
+            }
+        });
+    }
+
+    function isValidObject(className: string, val: any): boolean {
+        let typeRep = typeMap[className];
+        
+        for (let prop in typeRep) {
+            path.push(`.${prop}`);
+            if (!isValid(typeRep[prop], val[prop]))
+                return false;
+            path.pop();
+        }
+
+        return true;
+    }
+
+    function array(typ: any) {
+        return { typ, isArray: true };
+    }
+
+    function union(...typs: any[]) {
+        return { typs, isUnion: true };
+    }
+
+    function object(className: string) {
+        return { cls: className, isObject: true };
+    }
+"""
+    indent typemap
+    line """
+}
+"""
