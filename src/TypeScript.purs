@@ -100,9 +100,12 @@ renderType = case _ of
     IRDouble -> pure "number"
     IRBool -> pure "boolean"
     IRString -> pure "string"
-    IRArray a -> do
+    IRArray a@(IRUnion _) -> do
         rendered <- renderType a
         pure $ "Array<" <> rendered <> ">"
+    IRArray a -> do
+        rendered <- renderType a
+        pure $ rendered <> "[]"
     IRClass i -> lookupClassName i
     IRMap t -> do
         rendered <- renderType t
