@@ -6,6 +6,7 @@ module Data.String.Util
     , camelCase
     , intToHex
     , stringEscape
+    , times
     ) where
 
 import Prelude
@@ -16,6 +17,7 @@ import Data.Char.Unicode (isPrint)
 import Data.Either as Either
 import Data.Int as Int
 import Data.Maybe (Maybe(..))
+import Data.String (toLower)
 import Data.String as S
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
@@ -76,3 +78,9 @@ stringEscape str =
                             S.toCharArray $ "\\u" <> intToHex 4 i
                         else
                             S.toCharArray $ "\\U" <> intToHex 8 i
+
+-- Cannot make this work any other way!
+times :: String -> Int -> String
+times s n | n < 1 = ""
+times s 1 = s
+times s n = s <> times s (n - 1)

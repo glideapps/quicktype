@@ -1,0 +1,11 @@
+{
+    "": "empty",
+    "x": "singleton",
+    "{}": "weird",
+    "x'": "single quote",
+    "x\"": "double quote",
+    "x y": "space",
+    "continue": "common reserved word",
+    "undefined": "common reserved word",
+    "null": "common reserved word"
+}
