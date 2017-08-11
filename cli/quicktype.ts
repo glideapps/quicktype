@@ -1,7 +1,8 @@
-#!/usr/bin/env node
+#!/usr/bin/env ts-node
 
-const fs = require('fs');
-const shell = require("shelljs");
+import * as fs from "fs";
+import * as path from "path";
+import * as process from "process";
 
 const Main = (() => {
   try {
@@ -15,7 +16,7 @@ const makeSource = require("stream-json");
 const Assembler  = require("stream-json/utils/Assembler");
 const commandLineArgs = require('command-line-args')
 const getUsage = require('command-line-usage')
-const fetch = require('node-fetch');
+const fetch = require("node-fetch");
 
 const optionDefinitions = [
   {
@@ -23,42 +24,43 @@ const optionDefinitions = [
     type: String,
     multiple: true,
     defaultOption: true,
-    typeLabel: '[underline]{file|url}',
-    description: 'The JSON files or URLs to type.'
+    typeLabel: 'file|url',
+    description: 'The JSON file or url to type.'
   },
   {
-    name: 'urls-from',
-    type: String,
-    typeLabel: '[underline]{file}',
-    description: 'Tracery grammar describing URLs to crawl.'
-  },
-  {
-    name: 'output',
+    name: 'out',
     alias: 'o',
     type: String,
-    typeLabel: `[underline]{output}`,
+    typeLabel: `file`,
     description: 'The output file.'
   },
   {
-    name: 'srcLang',
+    name: 'src-lang',
+    alias: 's',
     type: String,
     defaultValue: 'json',
-    typeLabel: '[underline]{json|json-schema}',
+    typeLabel: 'json|schema',
     description: 'The source language.'
   },
   {
     name: 'lang',
     alias: 'l',
     type: String,
-    typeLabel: `[underline]{${Main.renderers.map((r) => r.extension).join("|")}}`,
+    typeLabel: `${Main.renderers.map((r) => r.extension).join("|")}`,
     description: 'The target language.'
   },
   {
-    name: 'topLevel',
+    name: 'top-level',
+    alias: 't',
     type: String,
-    defaultValue: 'TopLevel',
-    typeLabel: '[underline]{type name}',
+    typeLabel: 'name',
     description: 'The name for the top level type.'
+  },
+  {
+    name: 'urls-from',
+    type: String,
+    typeLabel: '[underline]{file}',
+    description: 'Tracery grammar describing URLs to crawl.'
   },
   {
     name: 'help',
@@ -88,11 +90,12 @@ const sections = [
 const options = commandLineArgs(optionDefinitions);
 
 function getRenderer() {
-  let lang = options.lang || "cs";
-  let renderer = Main.renderers.find((r) => r.extension === lang);
+  let renderer = Main.renderers.find((r) => {
+    return [r.extension, r.aceMode, r.name].indexOf(options.lang) !== -1;
+  });
 
   if (!renderer) {
-    console.error(`'${lang}' is not yet supported as an output language.`);
+    console.error(`'${options.lang}' is not yet supported as an output language.`);
     process.exit(1);
   }
 
@@ -103,7 +106,7 @@ function fromRight(either) {
   let { constructor: { name }, value0: result } = either;
   if (name == "Left") {
     console.error(result);
-    console.exit(1);
+    process.exit(1);
   } else {
     return result;
   }
@@ -112,11 +115,11 @@ function fromRight(either) {
 function renderFromJsonArrayMap(jsonArrayMap) {
     let pipeline = {
       "json": Main.renderFromJsonArrayMap,
-      "json-schema": Main.renderFromJsonSchemaArrayMap
-    }[options.srcLang];
+      "schema": Main.renderFromJsonSchemaArrayMap
+    }[options["src-lang"]];
  
     if (!pipeline) {
-      console.error(`Input language '${options.srcLang}' is not supported.`);
+      console.error(`Input language '${options["src-lang"]}' is not supported.`);
       process.exit(1);
     }
 
@@ -128,10 +131,10 @@ function renderFromJsonArrayMap(jsonArrayMap) {
     return fromRight(pipeline(input));    
 }
 
-function work(jsonArrayMap) {
+function renderAndOutput(jsonArrayMap) {
   let output = renderFromJsonArrayMap(jsonArrayMap);
-  if (options.output) {
-    fs.writeFileSync(options.output, output); 
+  if (options.out) {
+    fs.writeFileSync(options.out, output); 
   } else {
     process.stdout.write(output);
   }
@@ -139,19 +142,19 @@ function work(jsonArrayMap) {
 
 function workFromJsonArray(jsonArray) {
   let jsonArrayMap = {};
-  jsonArrayMap[options.topLevel] = jsonArray;
-  work(jsonArrayMap);
+  jsonArrayMap[options["top-level"]] = jsonArray;
+  renderAndOutput(jsonArrayMap);
 }
 
-function parseJsonFromStream(stream, continuationWithJson) {
+function parseJsonFromStream(stream: fs.ReadStream | NodeJS.Socket, continuationWithJson) {
   let source = makeSource();
   let assembler = new Assembler();
 
-  source.output.on("data", function (chunk) {
+  source.output.on("data", chunk => {
     assembler[chunk.name] && assembler[chunk.name](chunk.value);
   });
-  source.output.on("end", function () {
-    continuationWithJson(assembler.current);
+  source.output.on("end", () => {
+    renderAndOutput(assembler.current);
   });
 
   stream.setEncoding('utf8');
@@ -190,7 +193,7 @@ function mapObjectValuesC(obj, f, continuation) {
   });
 }
 
-function parseFileOrUrl(fileOrUrl, continuationWithJson) {
+function parseFileOrUrl(fileOrUrl: string, continuationWithJson) {
   if (fs.existsSync(fileOrUrl)) {
     parseJsonFromStream(fs.createReadStream(fileOrUrl), continuationWithJson);
   } else {
@@ -202,34 +205,63 @@ function parseFileOrUrlArray(filesOrUrls, continuation) {
   mapArrayC(filesOrUrls, parseFileOrUrl, continuation);
 }
 
-// Output file extension determines the language if language is undefined
-if (options.output && !options.lang) {
-  if (options.output.indexOf(".") < 0) {
-    console.error("Please specify a language (--lang) or an output file extension.");
-    process.exit(1);
+function inferLang() {
+  // Output file extension determines the language if language is undefined
+  if (options.out) {
+    let extension = path.extname(options.out);
+    if (extension == "") {
+      console.error("Please specify a language (--lang) or an output file extension.");
+      process.exit(1);
+    }
+    return extension.substr(1);
   }
-  options.lang = options.output.split(".").pop();
+
+  return "go";
 }
 
-if (options.help) {
-  usage();
-} else if (options["urls-from"]) {
-  let json = JSON.parse(fs.readFileSync(options["urls-from"]));
-  let jsonArrayMapOrError = Main.urlsFromJsonGrammar(json);
-  let result = jsonArrayMapOrError.value0;
-  if (typeof result == 'string') {
-    console.error("Error: " + result);
-    process.exit(1);
-  } else {
-    mapObjectValuesC(result, parseFileOrUrlArray, work);
+function inferTopLevel(): string {
+  // Output file name determines the top-level if undefined
+  if (options.out) {
+    let extension = path.extname(options.out);
+    let without = path.basename(options.out).replace(extension, "");
+    return without;
   }
-} else if (!options.src || options.src.length === 0) {
-  let jsonArrayMap = [];
-  jsonArrayMap[options.topLevel] = [json];
-  parseJsonFromStream(process.stdin, function (json) { workFromJsonArray([json]); });
-} else if (options.src) {
-  parseFileOrUrlArray(options.src, workFromJsonArray);
-} else {
-  usage();
-  process.exit(1);
+
+  // Source determines the top-level if undefined
+  if (options.src && options.src.length == 1) {
+    let src = options.src[0];
+    let extension = path.extname(src);
+    let without = path.basename(src).replace(extension, "");
+    return without;
+  }
+
+  return "TopLevel";
 }
+
+function main(args: string[]) {
+  options["lang"] = options["lang"] || inferLang();
+  options["top-level"] = options["top-level"] || inferTopLevel();
+
+  if (options.help) {
+    usage();
+  } else if (options["urls-from"]) {
+    let json = JSON.parse(fs.readFileSync(options["urls-from"], "utf8"));
+    let jsonArrayMapOrError = Main.urlsFromJsonGrammar(json);
+    let result = jsonArrayMapOrError.value0;
+    if (typeof result == 'string') {
+      console.error("Error: " + result);
+      process.exit(1);
+    } else {
+      mapObjectValuesC(result, parseFileOrUrlArray, renderAndOutput);
+    }
+  } else if (!options.src || options.src.length === 0) {
+    parseJsonFromStream(process.stdin, function (json) { workFromJsonArray([json]); });
+  } else if (options.src.length === 1) {
+    parseFileOrUrlArray(options.src, workFromJsonArray);
+  } else {
+    usage();
+    process.exit(1);
+  }
+}
+
+main(process.argv);
