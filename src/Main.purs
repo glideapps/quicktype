@@ -31,6 +31,10 @@ import Environment as Env
 import Golang as Golang
 import JsonSchema (JSONSchema, jsonSchemaToIR)
 import JsonSchema as JsonSchema
+
+import TypeScript as TypeScript
+import Math (round)
+
 import Utils (mapM)
 
 type Error = String
@@ -47,7 +51,13 @@ type Input a =
 type Pipeline a = Input a -> Either Error SourceCode
 
 renderers :: Array Doc.Renderer
-renderers = [CSharp.renderer, Golang.renderer, Elm.renderer, JsonSchema.renderer]
+renderers = 
+    [ TypeScript.renderer
+    , Golang.renderer
+    , CSharp.renderer
+    , Elm.renderer
+    , JsonSchema.renderer
+    ]
 
 makeTypeFromJson :: String -> Json -> IR IRType
 makeTypeFromJson name json =

@@ -7,19 +7,24 @@ export default class Editor extends Component {
     this.state = {
       value: props.value
     };
+    this.name = this.props.id + "-editor";
   }
 
   componentDidMount() {
-    this.getEditor().setOption("displayIndentGuides", false);
+    this.editor.setOption("displayIndentGuides", false);
+    setTimeout(() => window.session = this.editor.getSession(), 3000);
   }
 
-  getEditor = () => window.ace.edit(this.getName())
-  getName = () => this.props.id + "-editor"
+  resize = (height) => {
+      this.editor.container.style.height = `${height}px`;
+      this.editor.resize();
+  }
 
   render() {
     return (
       <AceEditor
-            name={this.getName()}
+            ref={() => { this.editor = window.ace.edit(this.name); }}
+            name={this.name}
             mode={this.props.lang}
             className={this.props.className}
             theme={this.props.theme}

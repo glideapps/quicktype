@@ -106,7 +106,3 @@ sidebar .mdc-select:first-child {
   opacity: 0.3;
   background: white;
 }
-
-#output-editor .ace_fold-widget {
-  display: none;
-}

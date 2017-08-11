@@ -40,6 +40,7 @@ import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as String
+import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
 import Utils (sortByKey, sortByKeyM)
 
@@ -191,18 +192,12 @@ lookupUnionName s = do
 line :: String -> Doc Unit
 line s = do
     indent <- Doc (gets _.indent)
-    let whitespace = times "    " indent
+    let whitespace = String.times "    " indent
     let lines = String.split (String.Pattern "\n") s
     for_ lines \l -> do
         string whitespace
         string l
         string "\n"  
-
--- Cannot make this work any other way!
-times :: String -> Int -> String
-times s n | n < 1 = ""
-times s 1 = s
-times s n = s <> times s (n - 1)
 
 string :: String -> Doc Unit
 string = Doc <<< tell

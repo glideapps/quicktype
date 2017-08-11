@@ -27,9 +27,8 @@ export default class Sidebar extends Component {
   }
 
   adjustSourceEditorHeight = () => {
-      let editor = window.document.getElementById("json-editor");
-      let height = Math.max(300, window.innerHeight - 340);
-      editor.style.height = `${height}px`;
+      let height = Math.max(300, window.innerHeight - 320);
+      this.jsonEditor.resize(height);
   }
 
   render() {
@@ -67,6 +66,7 @@ export default class Sidebar extends Component {
                     onChange={this.props.onChangeTopLevelName} />
 
                 <Editor
+                    ref={(r) => { this.jsonEditor = r; }}
                     id="json"
                     lang="json"
                     theme="solarized_dark"
