@@ -33,7 +33,7 @@ renderer =
         , unionName: Nothing
         , unionPredicate: Just unionPredicate
         , nextName: \s -> s <> "_"
-        , forbiddenNames: ["Convert", "Converted"] <> reservedWords
+        , forbiddenNames: ["Convert"] <> reservedWords
         , topLevelNameFromGiven: id
         , forbiddenFromTopLevelNameGiven: const []
         }
@@ -128,7 +128,6 @@ propertyNamify :: String -> String
 propertyNamify s
     | Rx.test hasInternalSeparator s = quote $ Str.stringEscape s
     | Str.null s = quote ""
-    | s `elem` reservedWords = quote s
     | any (not <<< isStartCharacter) (Str.toCharArray s) = quote $ Str.stringEscape s
     | otherwise =  Str.stringEscape s
 
