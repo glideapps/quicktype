@@ -6,6 +6,10 @@ import { execSync } from "child_process";
 
 execSync("tsc");
 let source = fs.readFileSync("quicktype.js", "utf8");
-let output = source.replace("ts-node", "node");
+
+let output = source.replace(
+    /^(.*)$/m,
+    "#!/usr/bin/env node");
+
 fs.writeFileSync("quicktype.js", output);
 execSync("chmod +x quicktype.js");
