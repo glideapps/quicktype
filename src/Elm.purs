@@ -53,8 +53,7 @@ renderer =
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelNameFromGiven: upperNameStyle
-        , forbiddenFromTopLevelNameGiven: namesFromTopLevelNameGiven
+        , topLevelName: elmNamer upperNameStyle
         }
     }
 
@@ -137,9 +136,10 @@ elmDoc = do
     unions <- getUnions
     classNames <- mapM (\t -> lookupClassName $ fst t) classes
     unionNames <- mapM lookupUnionName unions
-    let topLevelDecoders = map (typeNameForTopLevelNameGiven >>> decoderNameFromTypeName) $ M.keys topLevels
-    let topLevelExports = L.concat $ map (namesFromTopLevelNameGiven >>> L.fromFoldable) (M.keys topLevels)
-    let exports = L.concat $ topLevelExports : classNames : unionNames : L.Nil
+    topLevelNames <- M.values <$> getTopLevelNames
+    let topLevelDecoders = map decoderNameFromTypeName topLevelNames
+    let alsoTopLevelExports = L.concat $ map (alsoForbiddenForTypeName >>> L.fromFoldable) topLevelNames
+    let exports = L.concat $ topLevelNames : alsoTopLevelExports : classNames : unionNames : L.Nil
     moduleName <- getModuleName upperNameStyle
     line """-- To decode the JSON data, add this file to your project, run
 --
@@ -152,8 +152,8 @@ elmDoc = do
     line """--
 -- and you're off to the races with
 --"""
-    forTopLevel_ \topLevelNameGiven topLevelType -> do
-        let topLevelDecoder = decoderNameFromTypeName $ typeNameForTopLevelNameGiven topLevelNameGiven
+    forTopLevel_ \topLevelName topLevelType -> do
+        let topLevelDecoder = decoderNameFromTypeName topLevelName
         line $ "--     decodeString " <> topLevelDecoder <> " myJsonString"
     blank
     line $ "module " <> moduleName <> " exposing"
@@ -170,20 +170,19 @@ import Dict exposing (Dict, map, toList)
 """
     topLevelPlural <- getTopLevelPlural
     line $ "-- top level type" <> topLevelPlural
-    forTopLevel_ \topLevelNameGiven topLevel -> do
-        let givenTopLevel = typeNameForTopLevelNameGiven topLevelNameGiven
-        let topLevelDecoder = decoderNameFromTypeName givenTopLevel
-        let topLevelEncoder = encoderNameFromTypeName givenTopLevel
+    forTopLevel_ \topLevelName topLevel -> do
+        let topLevelDecoder = decoderNameFromTypeName topLevelName
+        let topLevelEncoder = encoderNameFromTypeName topLevelName
         blank
         { rendered: topLevelRendered } <- typeStringForType topLevel
-        line $ "type alias " <> givenTopLevel <> " = " <> topLevelRendered
+        line $ "type alias " <> topLevelName <> " = " <> topLevelRendered
         blank
         { rendered: rootDecoder } <- decoderNameForType topLevel
-        line $ topLevelDecoder <> " : Jdec.Decoder " <> givenTopLevel
+        line $ topLevelDecoder <> " : Jdec.Decoder " <> topLevelName
         line $ topLevelDecoder <> " = " <> rootDecoder
         blank
         { rendered: rootEncoder } <- encoderNameForType topLevel
-        line $ topLevelEncoder <> " : " <> givenTopLevel <> " -> String"
+        line $ topLevelEncoder <> " : " <> topLevelName <> " -> String"
         line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
     blank
     line "-- JSON types"
@@ -362,7 +361,7 @@ renderTypeFunctions classIndex className propertyNames propsList = do
 typeRenderer :: (Int -> String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> Int -> IRClassData -> Doc Unit
 typeRenderer renderer classIndex (IRClassData { properties }) = do
     className <- lookupClassName classIndex
-    let propertyNames = transformNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ M.keys properties
+    let { names: propertyNames } = transformNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ M.keys properties
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     renderer classIndex className propertyNames propsList
 
