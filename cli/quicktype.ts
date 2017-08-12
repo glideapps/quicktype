@@ -61,9 +61,9 @@ const optionDefinitions = [
     description: 'The file or url to type.'
   },
   {
-    name: 'urls-from',
+    name: 'src-urls',
     type: String,
-    typeLabel: '[underline]{file}',
+    typeLabel: 'FILE',
     description: 'Tracery grammar describing URLs to crawl.'
   },
   {
@@ -254,8 +254,8 @@ async function main(args: string[]): Promise<void> {
 
   if (args.length == 0 || options.help) {
     usage();
-  } else if (options["urls-from"]) {
-    let json = JSON.parse(fs.readFileSync(options["urls-from"], "utf8"));
+  } else if (options["src-urls"]) {
+    let json = JSON.parse(fs.readFileSync(options["src-urls"], "utf8"));
     let jsonArrayMapOrError = Main.urlsFromJsonGrammar(json);
     let result = jsonArrayMapOrError.value0;
     if (typeof result == 'string') {
