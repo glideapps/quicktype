@@ -16,7 +16,8 @@ TypeScript, Go, C#, Elm, and more.
 -t, --top-level NAME             The name for the top level type.                    
 -l, --lang ts|go|cs|elm|schema   The target language.                                
 -s, --src-lang json|schema       The source language (default is json).              
---src FILE|URL                   The file or url to type.                            
+--src FILE|URL                   The file or url to type.
+--src-urls FILE                  Tracery grammar describing URLs to crawl.                      
 -h, --help                       Get some help.                                      
 ```
 
