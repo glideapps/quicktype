@@ -17,22 +17,32 @@ const Assembler  = require("stream-json/utils/Assembler");
 const commandLineArgs = require('command-line-args')
 const getUsage = require('command-line-usage')
 const fetch = require("node-fetch");
+const chalk = require("chalk");
+
+const langs = Main.renderers.map((r) => r.extension).join("|");
+const langNames = Main.renderers.map((r) => r.name).join(", ");
 
 const optionDefinitions = [
-  {
-    name: 'src',
-    type: String,
-    multiple: true,
-    defaultOption: true,
-    typeLabel: 'file|url',
-    description: 'The JSON file or url to type.'
-  },
   {
     name: 'out',
     alias: 'o',
     type: String,
-    typeLabel: `file`,
-    description: 'The output file.'
+    typeLabel: `FILE`,
+    description: 'The output file. Determines --lang and --top-level.'
+  },
+  {
+    name: 'top-level',
+    alias: 't',
+    type: String,
+    typeLabel: 'NAME',
+    description: 'The name for the top level type.'
+  },
+  {
+    name: 'lang',
+    alias: 'l',
+    type: String,
+    typeLabel: langs,
+    description: 'The target language.'
   },
   {
     name: 'src-lang',
@@ -40,21 +50,15 @@ const optionDefinitions = [
     type: String,
     defaultValue: 'json',
     typeLabel: 'json|schema',
-    description: 'The source language.'
+    description: 'The source language (default is json).'
   },
   {
-    name: 'lang',
-    alias: 'l',
+    name: 'src',
     type: String,
-    typeLabel: `${Main.renderers.map((r) => r.extension).join("|")}`,
-    description: 'The target language.'
-  },
-  {
-    name: 'top-level',
-    alias: 't',
-    type: String,
-    typeLabel: 'name',
-    description: 'The name for the top level type.'
+    multiple: true,
+    defaultOption: true,
+    typeLabel: 'FILE|URL',
+    description: 'The file or url to type.'
   },
   {
     name: 'urls-from',
@@ -72,8 +76,12 @@ const optionDefinitions = [
 
 const sections = [
   {
-    header: 'quicktype',
-    content: 'Quickly generate types from data'
+    header: 'Synopsis',
+    content: `$ quicktype [[bold]{--lang} ${langs}] FILE|URL ...`
+  },
+  {
+    header: 'Description',
+    content: `Given JSON sample data, quicktype outputs code for working with that data in ${langNames}.`
   },
   {
     header: 'Options',
@@ -82,8 +90,19 @@ const sections = [
   {
     header: 'Examples',
     content: [
-      '$ quicktype [bold]{-o} LatestBlock.cs [underline]{https://blockchain.info/latestblock}'
+      chalk.dim('Generate C# to parse a Bitcoin API'),
+      '$ quicktype -o LatestBlock.cs https://blockchain.info/latestblock',
+      '',
+      chalk.dim('Generate Go code from a JSON file'),
+      '$ quicktype -l go user.json',
+      '',
+      chalk.dim('Generate JSON Schema, then TypeScript'),
+      '$ quicktype -o schema.json https://blockchain.info/latestblock',
+      '$ quicktype -o bitcoin.ts --src-lang schema schema.json'
     ]
+  },
+  {
+    content: 'Learn more at [bold]{quicktype.io}'
   }
 ];
 
@@ -242,7 +261,7 @@ function main(args: string[]) {
   options["lang"] = options["lang"] || inferLang();
   options["top-level"] = options["top-level"] || inferTopLevel();
 
-  if (options.help) {
+  if (args.length == 0 || options.help) {
     usage();
   } else if (options["urls-from"]) {
     let json = JSON.parse(fs.readFileSync(options["urls-from"], "utf8"));
@@ -264,4 +283,4 @@ function main(args: string[]) {
   }
 }
 
-main(process.argv);
+main(process.argv.slice(2));
