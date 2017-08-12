@@ -127,35 +127,33 @@ getDecoderHelperPrefix topLevelNameGiven = getForSingleOrMultipleTopLevels "" (c
 
 csharpDoc :: Doc Unit
 csharpDoc = do
+    module_ <- getModuleName csNameStyle
     oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
     line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
     forTopLevel_ \topLevelNameGiven topLevelType -> do
         prefix <- getDecoderHelperPrefix topLevelNameGiven
         line "//"
-        line $ "//    var data = QuickType.Converter." <> prefix <> "FromJson(jsonString);"
+        line $ "//    var data = " <> module_ <> ".Converter." <> prefix <> "FromJson(jsonString);"
     line "//"
-    nameSpace <- getModuleName csNameStyle
-    line $ "namespace " <> nameSpace
-    line "{"         
-    blank
+    line $ "namespace " <> module_
+    line "{"
     indent do
         line """using System;
 using System.Net;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;"""
-        blank
-        renderJsonConverter
-        blank
         classes <- getClasses
         for_ classes \(Tuple i cd) -> do
             className <- lookupClassName i
-            renderCSharpClass cd className
             blank
+            renderCSharpClass cd className
         unions <- getUnions
         for_ unions \types -> do
-            renderCSharpUnion types
             blank
+            renderCSharpUnion types
+        blank
+        renderJsonConverter
     line "}"
 
 stringIfTrue :: Boolean -> String -> String
@@ -338,12 +336,13 @@ renderCSharpClass :: IRClassData -> String -> Doc Unit
 renderCSharpClass (IRClassData { names, properties }) className = do
     let propertyNames = transformNames (simpleNamer csNameStyle) ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ "public class " <> className
-    line "{"
+    -- TODO fix this manual indentation
+    string "    {"
     indent do
         for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
+            blank
             line $ "[JsonProperty(\"" <> stringEscape pname <> "\")]"
             rendered <- renderTypeToCSharp ptype
             let csPropName = lookupName pname propertyNames
             line $ "public " <> rendered <> " " <> csPropName <> " { get; set; }"
-            blank
     line "}"
