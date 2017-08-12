@@ -200,7 +200,7 @@ renderer :: Renderer
 renderer =
     { name: "JSON Schema"
     , aceMode: "json"
-    , extension: "json"
+    , extension: "schema"
     , doc: jsonSchemaDoc
     , transforms:
         { nameForClass: simpleNamer nameForClass
