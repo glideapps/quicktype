@@ -41,10 +41,7 @@ const CPUs = IS_CI
     ? 2 /* Travis has only 2 but reports 8 */
     : +process.env.CPUs || os.cpus().length;
 
-const QUICKTYPE_CLI = (() => {
-    exec(`cd cli && script/build.ts`);
-    return path.resolve("./cli/quicktype.js");
-})();
+const QUICKTYPE_CLI = path.resolve("./cli/quicktype.js");
 
 const NODE_BIN = path.resolve("./node_modules/.bin");
 process.env.PATH += `:${NODE_BIN}`;
@@ -353,6 +350,8 @@ function testAll(samples: string[]) {
         queue: tests,
         workers: CPUs,
         setup: () => {
+            exec(`cd cli && script/build.ts`);
+
             FIXTURES.forEach(({ name, base, setup }) => {
                 exec(`rm -rf test/runs`);
                 exec(`mkdir -p test/runs`);
