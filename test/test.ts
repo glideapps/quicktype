@@ -190,7 +190,7 @@ function testJsonSchema(sample: string) {
     // Generate a schema from the schema, making sure the schemas are the same
     compareJsonFileToJson({
         expectedFile: "schema.json",
-        jsonCommand: `quicktype --src-lang schema --src schema.json --lang json`,
+        jsonCommand: `quicktype --src-lang schema --src schema.json --lang schema`,
         strict: true
     });
 }
