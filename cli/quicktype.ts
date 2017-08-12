@@ -135,7 +135,7 @@ interface JsonArrayMap {
   [key: string]: object[];
 }
 
-function renderFromJsonArrayMap(jsonArrayMap: JsonArrayMap) {
+function renderFromJsonArrayMap(jsonArrayMap: JsonArrayMap): string {
     let pipeline = {
       "json": Main.renderFromJsonArrayMap,
       "schema": Main.renderFromJsonSchemaArrayMap
@@ -169,75 +169,49 @@ function workFromJsonArray(jsonArray: object[]) {
   renderAndOutput(jsonArrayMap);
 }
 
-function parseJsonFromStream(
-  stream: fs.ReadStream | NodeJS.Socket,
-  continueWithJson: Continue<object>) {
+function parseJsonFromStream(stream: fs.ReadStream | NodeJS.Socket): Promise<object> {
+  return new Promise<object>(resolve => {
+    let source = makeSource();
+    let assembler = new Assembler();
 
-  let source = makeSource();
-  let assembler = new Assembler();
+    source.output.on("data", chunk => {
+      assembler[chunk.name] && assembler[chunk.name](chunk.value);
+    });
 
-  source.output.on("data", chunk => {
-    assembler[chunk.name] && assembler[chunk.name](chunk.value);
+    source.output.on("end", () => resolve(assembler.current));
+
+    stream.setEncoding('utf8');
+    stream.pipe(source.input);
+    stream.resume();
   });
-
-  source.output.on("end", () => {
-    continueWithJson(assembler.current);
-  });
-
-  stream.setEncoding('utf8');
-  stream.pipe(source.input);
-  stream.resume();
 }
 
 function usage() {
   console.log(getUsage(sections));
 }
 
-type Continue<T> = (t: T) => void;
-
-function mapArrayC<T, U>(
-  array: T[],
-  f: (t: T, cont: Continue<U>) => void,
-  continuation: Continue<U[]>) {
-    
-  if (array.length == 0) {
-    return continuation([]);
-  }
-
-  f(array[0], first => {
-    mapArrayC(array.slice(1), f, rest => continuation([first].concat(rest)));
-  });
-}
-
-function mapObjectValuesC(
+async function mapObjectValuesC(
   obj: object,
-  f: (t: any, cont: Continue<any>) => void,
-  continuation: Continue<any>) {
+  f: (t: any) => Promise<any>): Promise<any> {
 
-  let keys = Object.keys(obj);
   let resultObject = {};
-
-  mapArrayC(keys, (key, arrayContinuation) => {
-    let value = obj[key];
-    f(value, newValue => {
-      resultObject[key] = newValue;
-      arrayContinuation(null);
-    });
-  }, () => {
-    continuation(resultObject);
-  });
+  for (let key in Object.keys(obj)) {
+    resultObject[key] = await f(obj[key]);
+  }
+  return resultObject;
 }
 
-function parseFileOrUrl(fileOrUrl: string, continueWithJson: Continue<object>) {
+async function parseFileOrUrl(fileOrUrl: string): Promise<object> {
   if (fs.existsSync(fileOrUrl)) {
-    parseJsonFromStream(fs.createReadStream(fileOrUrl), continueWithJson);
+    return parseJsonFromStream(fs.createReadStream(fileOrUrl));
   } else {
-    fetch(fileOrUrl).then(res => parseJsonFromStream(res.body, continueWithJson));
+    let res = await fetch(fileOrUrl);
+    return parseJsonFromStream(res.body);
   }
 }
 
-function parseFileOrUrlArray(filesOrUrls: string[], continuation) {
-  mapArrayC(filesOrUrls, parseFileOrUrl, continuation);
+function parseFileOrUrlArray(filesOrUrls: string[]): Promise<object[]> {
+  return Promise.all(filesOrUrls.map(parseFileOrUrl));
 }
 
 function inferLang(): string {
@@ -273,10 +247,10 @@ function inferTopLevel(): string {
   return "TopLevel";
 }
 
-function main(args: string[]) {
+async function main(args: string[]): Promise<void> {
+  options.src = options.src || [];
   options["lang"] = options["lang"] || inferLang();
   options["top-level"] = options["top-level"] || inferTopLevel();
-  options.src = options.src || [];
 
   if (args.length == 0 || options.help) {
     usage();
@@ -288,16 +262,22 @@ function main(args: string[]) {
       console.error("Error: " + result);
       process.exit(1);
     } else {
-      mapObjectValuesC(result, parseFileOrUrlArray, renderAndOutput);
+      renderAndOutput(await mapObjectValuesC(result, parseFileOrUrlArray));
     }
   } else if (options.src.length == 0) {
-    parseJsonFromStream(process.stdin, json => workFromJsonArray([json]));
+    let json = await parseJsonFromStream(process.stdin);
+    workFromJsonArray([json]);
   } else if (options.src.length == 1) {
-    parseFileOrUrlArray(options.src, workFromJsonArray);
+    let jsons = await parseFileOrUrlArray(options.src);
+    workFromJsonArray(jsons);
   } else {
     usage();
     process.exit(1);
   }
 }
 
-main(process.argv.slice(2));
+main(process.argv.slice(2))
+  .catch(reason => {
+    console.error(reason);
+    process.exit(1);
+  });
