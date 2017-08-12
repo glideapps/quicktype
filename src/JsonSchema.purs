@@ -22,8 +22,9 @@ import Data.StrMap (StrMap)
 import Data.StrMap as SM
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, singular)
+import Data.Traversable (class Traversable)
 import Data.Tuple (Tuple(..))
-import IR (IR, addClass, unifyTypes)
+import IR (IR, addClass, unifyMultipleTypes, unifyTypes)
 import Utils (foldError, mapM, mapMapM, mapStrMapM)
 
 data JSONType
@@ -143,6 +144,13 @@ jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, pr
     | otherwise =
         pure $ Right IRNothing
 
+jsonSchemaListToIR :: forall t. Traversable t => String -> t JSONSchema -> IR (Either String IRType)
+jsonSchemaListToIR name l = do
+    errorOrTypeList <- mapM (\js -> jsonSchemaToIR js name js) l
+    case foldError errorOrTypeList of
+        Left err -> pure $ Left err
+        Right irTypes -> Right <$> unifyMultipleTypes irTypes
+
 jsonTypeToIR :: JSONSchema -> String -> JSONType -> JSONSchema -> IR (Either String IRType)
 jsonTypeToIR root name jsonType (JSONSchema schema) =
     case jsonType of
@@ -200,8 +208,8 @@ renderer =
         , unionPredicate: Nothing
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelNameFromGiven: id
-        , forbiddenFromTopLevelNameGiven: const []
+        , topLevelNameFromGiven: jsonNameStyle
+        , forbiddenFromTopLevelNameGiven: jsonNameStyle >>> A.singleton
         }
     }
 
@@ -229,45 +237,62 @@ unionName s =
 typeStrMap :: String -> Doc (StrMap Json)
 typeStrMap s = pure $ SM.insert "type" (fromString s) SM.empty
 
+typeJson :: String -> Doc Json
+typeJson s = fromObject <$> typeStrMap s
+
 strMapForType :: IRType -> Doc (StrMap Json)
 strMapForType t =
     case t of
-    IRNothing -> pure SM.empty
+    IRNothing -> pure $ SM.empty
     IRNull -> typeStrMap "null"
     IRInteger -> typeStrMap "integer"
     IRDouble -> typeStrMap "number"
     IRBool -> typeStrMap "boolean"
     IRString -> typeStrMap "string"
     IRArray a -> do
-        itemType <- strMapForType a
+        itemType <- jsonForType a
         sm <- typeStrMap "array"
-        pure $ SM.insert "items" (fromObject itemType) sm
+        pure $ SM.insert "items" itemType sm
     IRClass i -> do
         name <- lookupClassName i
         pure $ SM.insert "$ref" (fromString $ "#/definitions/" <> name) SM.empty
     IRMap m -> do
-        propertyType <- strMapForType m
+        propertyType <- jsonForType m
         sm <- typeStrMap "object"
-        pure $ SM.insert "additionalProperties" (fromObject propertyType) sm
+        pure $ SM.insert "additionalProperties" propertyType sm
     IRUnion ur -> do
-        types <- mapM strMapForType $ L.fromFoldable $ unionToSet ur
-        let typesJson = fromArray $ A.fromFoldable $ map fromObject types
+        types <- mapM jsonForType $ L.fromFoldable $ unionToSet ur
+        let typesJson = fromArray $ A.fromFoldable types
         pure $ SM.insert "oneOf" typesJson SM.empty
+
+jsonForType :: IRType -> Doc Json
+jsonForType t = do
+    sm <- strMapForType t
+    pure $ fromObject sm
+
+strMapForOneOfTypes :: List IRType -> Doc (StrMap Json)
+strMapForOneOfTypes L.Nil = pure $ SM.empty
+strMapForOneOfTypes (t : L.Nil) = strMapForType t
+strMapForOneOfTypes typeList = do
+    objList <- mapM jsonForType typeList
+    pure $ SM.insert "oneOf" (fromArray $ A.fromFoldable objList) SM.empty
 
 definitionForClass :: Tuple Int IRClassData -> Doc (Tuple String Json)
 definitionForClass (Tuple i (IRClassData { properties })) = do
     className <- lookupClassName i
     let sm = SM.insert "additionalProperties" (fromBoolean false) $ SM.insert "type" (fromString "object") SM.empty
-    propsMap <- mapMapM (\_ -> strMapForType) properties
+    propsMap <- mapMapM (const jsonForType) properties
     let requiredProps = A.fromFoldable $ map fromString $ M.keys $ M.filter (\t -> not $ canBeNull t) properties
-    let propsSM = SM.fromFoldable $ (M.toUnfoldable (map fromObject propsMap) :: List _)
-    pure $ Tuple className (fromObject $ SM.insert "required" (fromArray requiredProps) $ SM.insert "properties" (fromObject propsSM) sm)
+    let propsSM = SM.fromFoldable $ (M.toUnfoldable propsMap :: List _)
+    let withProperties = SM.insert "properties" (fromObject propsSM) sm
+    let withRequired = SM.insert "required" (fromArray requiredProps) withProperties
+    pure $ Tuple className $ fromObject withRequired
 
 irToJson :: Doc Json
 irToJson = do
     classes <- getClasses
     definitions <- fromObject <$> SM.fromFoldable <$> mapM definitionForClass classes
-    topLevel <- strMapForType =<< getTopLevel
+    topLevel <- strMapForOneOfTypes =<< M.values <$> getTopLevels
     let sm = SM.insert "definitions" definitions topLevel
     pure $ fromObject sm
 
