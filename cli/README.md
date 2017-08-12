@@ -1,39 +1,31 @@
+## Synopsis
 
-# quicktype
+  $ quicktype [--lang ts|go|cs|elm|schema] FILE|URL ... 
 
-  Quickly generate types from data.
+## Description
+
+Given JSON sample data, quicktype outputs code for working with that data in  
+TypeScript, Go, C#, Elm, and more.                                            
 
 ## Options
 
-```
---src file|url                  The JSON file or url to type.    
--o, --out file                 The output file.                 
--s, --src-lang json|schema     The source language.             
--l, --lang ts|go|cs|elm|json   The target language.             
--t, --top-level name           The name for the top level type. 
--h, --help                     Get some help.                   
-```
+  -o, --out FILE                   The output file. Determines --lang and --top-level. 
+  -t, --top-level NAME             The name for the top level type.                    
+  -l, --lang ts|go|cs|elm|schema   The target language.                                
+  -s, --src-lang json|schema       The source language (default is json).              
+  --src FILE|URL                   The file or url to type.                            
+  -h, --help                       Get some help.                                      
 
-## Examples
+## Examples
 
-#### Generate C# to parse a BitCoin API
+  Generate C# to parse a Bitcoin API                                
+  $ quicktype -o LatestBlock.cs https://blockchain.info/latestblock 
+                                                                    
+  Generate Go code from a JSON file                                 
+  $ quicktype -l go user.json                                       
+                                                                    
+  Generate JSON Schema, then TypeScript                             
+  $ quicktype -o schema.json https://blockchain.info/latestblock    
+  $ quicktype -o bitcoin.ts --src-lang schema schema.json           
 
-```shell
-$ quicktype -o LatestBlock.cs https://blockchain.info/latestblock 
-```
-
-#### Generate Go code to parse `users.json`:
-
-```shell
-$ quicktype --lang go users.json
-```
-
-This will produce `user.go`.
-
-#### Generate JSON Schema, then TypeScript
-
-```shell
-$ quicktype https://blockchain.info/latestblock -o schema.json
-$ # ... audit schema.json
-$ quicktype schema.json -s schema -o bitcoin.ts
-```
+Learn more at [https://quicktype.io](quicktype.io).
