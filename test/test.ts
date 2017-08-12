@@ -331,7 +331,7 @@ function runFixtureWithSample(fixture: Fixture, sample: string, index: number, t
 
             // Compare fixture.output to fixture.output.expected
             try {
-                exec(`diff -Naur ${fixture.output}.expected ${fixture.output}`);
+                exec(`diff -Naur ${fixture.output}.expected ${fixture.output} > /dev/null 2>&1`);
             } catch ({ command }) {
                 // FIXME: Set this to fail once we have it working.  See issue #59.
                 console.error(`Command failed but we're allowing it`);
