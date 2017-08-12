@@ -225,7 +225,7 @@ function exec(
     : { stdout: string; code: number; } {
 
     // We special-case quicktype execution
-    s = s.replace(/^quicktype /, `node ${QUICKTYPE_CLI} `);
+    s = s.replace(/^quicktype/, QUICKTYPE_CLI);
 
     debug(s);
 
