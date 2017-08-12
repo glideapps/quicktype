@@ -50,7 +50,7 @@ data Entry
     | Class IRClassData
     | Redirect Int
 
-newtype IRGraph = IRGraph { classes :: Seq.Seq Entry, toplevel :: IRType }
+newtype IRGraph = IRGraph { classes :: Seq.Seq Entry, toplevels :: Map String IRType }
 
 newtype IRClassData = IRClassData { names :: Set String, properties :: Map String IRType }
 
@@ -88,7 +88,7 @@ makeClass :: String -> Map String IRType -> IRClassData
 makeClass name properties = IRClassData { names: S.singleton name, properties }
 
 emptyGraph :: IRGraph
-emptyGraph = IRGraph { classes: Seq.empty, toplevel: IRNothing }
+emptyGraph = IRGraph { classes: Seq.empty, toplevels: M.empty }
 
 followIndex :: IRGraph -> Int -> Tuple Int IRClassData
 followIndex graph@(IRGraph { classes }) index =
@@ -187,8 +187,9 @@ isSubtypeOf graph (IRClass ia) (IRClass ib) = isSubclassOf graph ia ib
 isSubtypeOf _ a b = a == b
 
 regatherClassNames :: IRGraph -> IRGraph
-regatherClassNames graph@(IRGraph { classes, toplevel }) =
-    IRGraph { classes: Seq.fromFoldable $ L.mapWithIndex entryMapper $ L.fromFoldable classes, toplevel }
+regatherClassNames graph@(IRGraph { classes, toplevels }) =
+    -- FIXME: gather names from top levels map, too
+    IRGraph { classes: Seq.fromFoldable $ L.mapWithIndex entryMapper $ L.fromFoldable classes, toplevels }
     where
         newNames = combine $ mapClasses gatherFromClassData graph
         entryMapper :: Int -> Entry -> Entry
@@ -239,8 +240,11 @@ unionToSet (IRUnionRep { primitives, arrayType, classRef, mapType }) =
             Nothing -> l
 
 filterTypes :: forall a. Ord a => (IRType -> Maybe a) -> IRGraph -> Set a
-filterTypes predicate graph@(IRGraph { classes, toplevel }) =
-    filterType toplevel <> (S.unions $ mapClasses (\_ cd -> filterClass cd) graph)
+filterTypes predicate graph@(IRGraph { classes, toplevels }) =
+    let fromTopLevels = S.unions $ map filterType $ M.values toplevels
+        fromGraph = S.unions $ mapClasses (\_ cd -> filterClass cd) graph
+    in
+        S.union fromTopLevels fromGraph
     where
         filterClass :: IRClassData -> Set a
         filterClass (IRClassData { properties }) =

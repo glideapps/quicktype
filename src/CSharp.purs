@@ -11,17 +11,17 @@ import Data.Foldable (find, for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
-import Data.Maybe (Maybe(..), isJust, isNothing)
+import Data.Maybe (Maybe(..), maybe, isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
 import Data.String.Util (capitalize, camelCase, stringEscape)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), fst)
 import Partial.Unsafe (unsafePartial)
 import Utils (removeElement)
 
 forbiddenNames :: Array String
-forbiddenNames = ["Converter", "JsonConverter", "Type"]
+forbiddenNames = ["Convert", "JsonConverter", "Type"]
 
 renderer :: Renderer
 renderer =
@@ -122,34 +122,38 @@ renderTypeToCSharp = case _ of
 csNameStyle :: String -> String
 csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
+getDecoderHelperPrefix :: String -> Doc String
+getDecoderHelperPrefix topLevelNameGiven = getForSingleOrMultipleTopLevels "" (csNameStyle topLevelNameGiven)
+
 csharpDoc :: Doc Unit
 csharpDoc = do
-    line """// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do:
-//
-//    var data = QuickType.Converter.FromJson(jsonString);
-//
-namespace QuickType
-{"""
-         
-    blank
+    module_ <- getModuleName csNameStyle
+    oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
+    line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
+    forTopLevel_ \topLevelNameGiven topLevelType -> do
+        prefix <- getDecoderHelperPrefix topLevelNameGiven
+        line "//"
+        line $ "//    var data = " <> module_ <> ".Convert." <> prefix <> "FromJson(jsonString);"
+    line "//"
+    line $ "namespace " <> module_
+    line "{"
     indent do
         line """using System;
 using System.Net;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;"""
-        blank
-        renderJsonConverter
-        blank
         classes <- getClasses
         for_ classes \(Tuple i cd) -> do
             className <- lookupClassName i
-            renderCSharpClass cd className
             blank
+            renderCSharpClass cd className
         unions <- getUnions
         for_ unions \types -> do
-            renderCSharpUnion types
             blank
+            renderCSharpUnion types
+        blank
+        renderJsonConverter
     line "}"
 
 stringIfTrue :: Boolean -> String -> String
@@ -161,29 +165,29 @@ renderJsonConverter = do
     unionNames <- getUnionNames
     let haveUnions = not $ M.isEmpty unionNames
     let names = M.values unionNames
-    line $ "public class Converter" <> stringIfTrue haveUnions ": JsonConverter" <> " {"
+    line $ "public class Convert" <> stringIfTrue haveUnions " : JsonConverter"
+    line "{"
     indent do
-        line "static JsonSerializerSettings Settings = new JsonSerializerSettings"
-        line "{"
-        indent do
-            line "MetadataPropertyHandling = MetadataPropertyHandling.Ignore,"
-            line "DateParseHandling = DateParseHandling.None,"
-            when haveUnions do
-                line "Converters = { new Converter() },"
-        line "};"
+        line "// Serialize/deserialize helpers"
+        forTopLevel_ \topLevelNameGiven topLevelType -> do
+            blank
+            topLevelTypeRendered <- renderTypeToCSharp topLevelType
+            fromJsonPrefix <- getDecoderHelperPrefix topLevelNameGiven
+            line
+                $ "public static "
+                <> topLevelTypeRendered 
+                <> " "
+                <> fromJsonPrefix
+                <> "FromJson(string json) => JsonConvert.DeserializeObject<"
+                <> topLevelTypeRendered
+                <> ">(json, Settings);"
+            line
+                $ "public static string ToJson("
+                <> topLevelTypeRendered
+                <> " o) => JsonConvert.SerializeObject(o, Settings);"
+
         blank
-        toplevelType <- getTopLevel >>= renderTypeToCSharp
-        line "// Loading helpers"
-        line
-            $ "public static "
-            <> toplevelType
-            <> " FromJson(string json) => JsonConvert.DeserializeObject<"
-            <> toplevelType
-            <> ">(json, Settings);"
-        line
-            $ "public static string ToJson("
-            <> toplevelType
-            <> " o) => JsonConvert.SerializeObject(o, Settings);"
+        line "// JsonConverter stuff"
 
         when haveUnions do
             blank
@@ -214,6 +218,16 @@ renderJsonConverter = do
                     line "}"
                 line "throw new Exception(\"Unknown type\");"
             line "}"
+
+        blank
+        line "static JsonSerializerSettings Settings = new JsonSerializerSettings"
+        line "{"
+        indent do
+            line "MetadataPropertyHandling = MetadataPropertyHandling.Ignore,"
+            line "DateParseHandling = DateParseHandling.None,"
+            when haveUnions do
+                line "Converters = { new Convert() },"
+        line "};"
     line "}"
 
 tokenCase :: String -> Doc Unit
@@ -322,12 +336,13 @@ renderCSharpClass :: IRClassData -> String -> Doc Unit
 renderCSharpClass (IRClassData { names, properties }) className = do
     let propertyNames = transformNames (simpleNamer csNameStyle) ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ "public class " <> className
-    line "{"
+    -- TODO fix this manual indentation
+    string "    {"
     indent do
         for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
+            blank
             line $ "[JsonProperty(\"" <> stringEscape pname <> "\")]"
             rendered <- renderTypeToCSharp ptype
             let csPropName = lookupName pname propertyNames
             line $ "public " <> rendered <> " " <> csPropName <> " { get; set; }"
-            blank
     line "}"

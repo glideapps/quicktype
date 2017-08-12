@@ -11,7 +11,7 @@ import Data.Char.Unicode (isDigit, isLetter)
 import Data.Foldable (for_, intercalate, foldl)
 import Data.List (List, (:))
 import Data.List as L
-import Data.Map as Map
+import Data.Map as M
 import Data.Maybe (Maybe(..), isJust, maybe)
 import Data.Set (Set)
 import Data.Set as S
@@ -32,8 +32,8 @@ renderer =
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames: []
-        , topLevelNameFromGiven: id
-        , forbiddenFromTopLevelNameGiven: const []
+        , topLevelNameFromGiven: goNameStyle
+        , forbiddenFromTopLevelNameGiven: \n -> [goNameStyle n, "Unmarshal" <> goNameStyle n]
         }
     }
 
@@ -127,32 +127,36 @@ goNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
 golangDoc :: Doc Unit
 golangDoc = do
-    line """// To parse and unparse this JSON data, add this code to your project and do:
-//
-//    r, err := UnmarshalRoot(bytes)
-//    bytes, err = r.Marshal()
-
-package main
-"""
+    line "// To parse and unparse this JSON data, add this code to your project and do:"
+    forTopLevel_ \topLevelNameGiven topLevelType -> do
+        let goName = goNameStyle topLevelNameGiven
+        line "//"
+        line $ "//    r, err := Unmarshal" <> goName <> "(bytes)"
+        line $ "//    bytes, err = r.Marshal()"
+    blank
+    line "package main"
     unions <- getUnions
     unless (unions == L.Nil) do
         line "import \"bytes\""
         line "import \"errors\""
     line "import \"encoding/json\""
-    blank
-    { rendered: renderedToplevel, comment: toplevelComment } <- getTopLevel >>= renderTypeToGolang
-    line $ "type Root " <> renderedToplevel <> (renderComment toplevelComment)
-    blank
-    line """func UnmarshalRoot(data []byte) (Root, error) {
-	var r Root
-	err := json.Unmarshal(data, &r)
-	return r, err
-}
-
-func (r *Root) Marshal() ([]byte, error) {
-	return json.Marshal(r)
+    forTopLevel_ \topLevelNameGiven topLevelType -> do
+        let goName = goNameStyle topLevelNameGiven
+        { rendered: renderedToplevel, comment: toplevelComment } <- renderTypeToGolang topLevelType
+        blank
+        line $ "type " <> goName <> " " <> renderedToplevel <> (renderComment toplevelComment)
+        blank
+        line $ "func Unmarshal" <> goName <> "(data []byte) (" <> goName <> ", error) {"
+        line $ "    var r " <> goName
+        line """    err := json.Unmarshal(data, &r)
+    return r, err
 }
 """
+        line $ "func (r *" <> goName <> ") Marshal() ([]byte, error) {"
+        indent do
+            line "return json.Marshal(r)"
+        line "}"
+    blank
     classes <- getClasses
     for_ classes \(Tuple i cls) -> do
         renderGolangType i cls
@@ -291,8 +295,8 @@ renderStruct name columns = do
 renderGolangType :: Int -> IRClassData -> Doc Unit
 renderGolangType classIndex (IRClassData { names, properties }) = do
     className <- lookupClassName classIndex
-    let propertyNames = transformNames (simpleNamer goNameStyle) ("Other" <> _) S.empty $ map (\n -> Tuple n n) $ Map.keys properties
-    let propsList = Map.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
+    let propertyNames = transformNames (simpleNamer goNameStyle) ("Other" <> _) S.empty $ map (\n -> Tuple n n) $ M.keys properties
+    let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     columns <- propsList # mapM \(Tuple pname ptype) -> do
         let csPropName = lookupName pname propertyNames
         { rendered, comment } <- renderTypeToGolang ptype

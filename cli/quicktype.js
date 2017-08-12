@@ -24,7 +24,13 @@ const optionDefinitions = [
     multiple: true,
     defaultOption: true,
     typeLabel: '[underline]{file|url}',
-    description: 'The JSON file or url to type.'
+    description: 'The JSON files or URLs to type.'
+  },
+  {
+    name: 'urls-from',
+    type: String,
+    typeLabel: '[underline]{file}',
+    description: 'Tracery grammar describing URLs to crawl.'
   },
   {
     name: 'output',
@@ -103,10 +109,10 @@ function fromRight(either) {
   }
 }
 
-function renderFromJson(json) {
+function renderFromJsonArrayMap(jsonArrayMap) {
     let pipeline = {
-      "json": Main.renderFromJson,
-      "json-schema": Main.renderFromJsonSchema
+      "json": Main.renderFromJsonArrayMap,
+      "json-schema": Main.renderFromJsonSchemaArrayMap
     }[options.srcLang];
  
     if (!pipeline) {
@@ -115,16 +121,15 @@ function renderFromJson(json) {
     }
 
     let input = {
-      input: json,
-      renderer: getRenderer(),
-      topLevelName: options.topLevel
+      input: jsonArrayMap,
+      renderer: getRenderer()
     };
     
     return fromRight(pipeline(input));    
 }
 
-function work(json) {
-  let output = renderFromJson(json);
+function work(jsonArrayMap) {
+  let output = renderFromJsonArrayMap(jsonArrayMap);
   if (options.output) {
     fs.writeFileSync(options.output, output); 
   } else {
@@ -132,7 +137,13 @@ function work(json) {
   }
 }
 
-function workFromStream(stream) {
+function workFromJsonArray(jsonArray) {
+  let jsonArrayMap = {};
+  jsonArrayMap[options.topLevel] = jsonArray;
+  work(jsonArrayMap);
+}
+
+function parseJsonFromStream(stream, continuationWithJson) {
   let source = makeSource();
   let assembler = new Assembler();
 
@@ -140,7 +151,7 @@ function workFromStream(stream) {
     assembler[chunk.name] && assembler[chunk.name](chunk.value);
   });
   source.output.on("end", function () {
-    work(assembler.current);
+    continuationWithJson(assembler.current);
   });
 
   stream.setEncoding('utf8');
@@ -152,12 +163,43 @@ function usage() {
   console.log(getUsage(sections));
 }
 
-function parseFileOrUrl(fileOrUrl) {
-  if (fs.existsSync(fileOrUrl)) {
-    workFromStream(fs.createReadStream(fileOrUrl));
-  } else {
-    fetch(fileOrUrl).then(res => workFromStream(res.body));
+function mapArrayC(array, f, continuation) {
+  if (array.length === 0) {
+    continuation([]);
+    return;
   }
+
+  f(array[0], function(firstResult) {
+    mapArrayC(array.slice(1), f, function(restResults) {
+      continuation([firstResult].concat(restResults));
+    });
+  });
+}
+
+function mapObjectValuesC(obj, f, continuation) {
+  let keys = Object.keys(obj);
+  let resultObject = {};
+  mapArrayC(keys, function(key, arrayContinuation) {
+    let value = obj[key];
+    f(value, function(newValue) {
+      resultObject[key] = newValue;
+      arrayContinuation(null);
+    });
+  }, function(dummy) {
+    continuation(resultObject);
+  });
+}
+
+function parseFileOrUrl(fileOrUrl, continuationWithJson) {
+  if (fs.existsSync(fileOrUrl)) {
+    parseJsonFromStream(fs.createReadStream(fileOrUrl), continuationWithJson);
+  } else {
+    fetch(fileOrUrl).then(res => parseJsonFromStream(res.body, continuationWithJson));
+  }
+}
+
+function parseFileOrUrlArray(filesOrUrls, continuation) {
+  mapArrayC(filesOrUrls, parseFileOrUrl, continuation);
 }
 
 // Output file extension determines the language if language is undefined
@@ -171,10 +213,22 @@ if (options.output && !options.lang) {
 
 if (options.help) {
   usage();
+} else if (options["urls-from"]) {
+  let json = JSON.parse(fs.readFileSync(options["urls-from"]));
+  let jsonArrayMapOrError = Main.urlsFromJsonGrammar(json);
+  let result = jsonArrayMapOrError.value0;
+  if (typeof result == 'string') {
+    console.error("Error: " + result);
+    process.exit(1);
+  } else {
+    mapObjectValuesC(result, parseFileOrUrlArray, work);
+  }
 } else if (!options.src || options.src.length === 0) {
-  workFromStream(process.stdin);
-} else if (options.src.length == 1) {
-  parseFileOrUrl(options.src[0]);
+  let jsonArrayMap = [];
+  jsonArrayMap[options.topLevel] = [json];
+  parseJsonFromStream(process.stdin, function (json) { workFromJsonArray([json]); });
+} else if (options.src) {
+  parseFileOrUrlArray(options.src, workFromJsonArray);
 } else {
   usage();
   process.exit(1);
