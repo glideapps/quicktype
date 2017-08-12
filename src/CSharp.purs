@@ -21,7 +21,7 @@ import Partial.Unsafe (unsafePartial)
 import Utils (removeElement)
 
 forbiddenNames :: Array String
-forbiddenNames = ["Converter", "JsonConverter", "Type"]
+forbiddenNames = ["Convert", "JsonConverter", "Type"]
 
 renderer :: Renderer
 renderer =
@@ -133,7 +133,7 @@ csharpDoc = do
     forTopLevel_ \topLevelNameGiven topLevelType -> do
         prefix <- getDecoderHelperPrefix topLevelNameGiven
         line "//"
-        line $ "//    var data = " <> module_ <> ".Converter." <> prefix <> "FromJson(jsonString);"
+        line $ "//    var data = " <> module_ <> ".Convert." <> prefix <> "FromJson(jsonString);"
     line "//"
     line $ "namespace " <> module_
     line "{"
@@ -165,7 +165,7 @@ renderJsonConverter = do
     unionNames <- getUnionNames
     let haveUnions = not $ M.isEmpty unionNames
     let names = M.values unionNames
-    line $ "public class Converter" <> stringIfTrue haveUnions " : JsonConverter"
+    line $ "public class Convert" <> stringIfTrue haveUnions " : JsonConverter"
     line "{"
     indent do
         line "// Serialize/deserialize helpers"
@@ -226,7 +226,7 @@ renderJsonConverter = do
             line "MetadataPropertyHandling = MetadataPropertyHandling.Ignore,"
             line "DateParseHandling = DateParseHandling.None,"
             when haveUnions do
-                line "Converters = { new Converter() },"
+                line "Converters = { new Convert() },"
         line "};"
     line "}"
 
