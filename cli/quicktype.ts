@@ -195,7 +195,7 @@ async function mapObjectValuesC(
   f: (t: any) => Promise<any>): Promise<any> {
 
   let resultObject = {};
-  for (let key in Object.keys(obj)) {
+  for (let key of Object.keys(obj)) {
     resultObject[key] = await f(obj[key]);
   }
   return resultObject;
