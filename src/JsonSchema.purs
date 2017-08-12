@@ -208,8 +208,7 @@ renderer =
         , unionPredicate: Nothing
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelNameFromGiven: jsonNameStyle
-        , forbiddenFromTopLevelNameGiven: jsonNameStyle >>> A.singleton
+        , topLevelName: simpleNamer jsonNameStyle
         }
     }
 
