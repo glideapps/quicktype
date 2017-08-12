@@ -58,6 +58,7 @@ interface Fixture {
     setup?: string;
     diffViaSchema: boolean;
     output: string;
+    topLevel: string;
     skip?: string[]
     test: (sample: string) => void;
 }
@@ -69,6 +70,7 @@ const FIXTURES: Fixture[] = [
         setup: "dotnet restore",
         diffViaSchema: false,
         output: "QuickType.cs",
+        topLevel: "QuickType",
         test: testCSharp
     },
     {
@@ -76,6 +78,7 @@ const FIXTURES: Fixture[] = [
         base: "test/golang",
         diffViaSchema: true,
         output: "quicktype.go",
+        topLevel: "TopLevel",
         test: testGo,
         skip: [
             "identifiers.json",
@@ -83,10 +86,11 @@ const FIXTURES: Fixture[] = [
         ]
     },
     {
-        name: "json-schema",
+        name: "schema",
         base: "test/golang",
         diffViaSchema: false,
         output: "schema.json",
+        topLevel: "schema",
         test: testJsonSchema,
         skip: [
             "identifiers.json",
@@ -101,6 +105,7 @@ const FIXTURES: Fixture[] = [
                 : "rm -rf elm-stuff/build-artifacts && elm-make --yes",
         diffViaSchema: false,
         output: "QuickType.elm",
+        topLevel: "QuickType",
         test: testElm,
         skip: [
             "identifiers.json",
@@ -112,6 +117,7 @@ const FIXTURES: Fixture[] = [
         base: "test/typescript",
         diffViaSchema: false,
         output: "TopLevel.ts",
+        topLevel: "TopLevel",
         test: testTypeScript,
         skip: [
             "identifiers.json"
@@ -175,7 +181,7 @@ function testJsonSchema(sample: string) {
     }
 
     // Generate Go from the schema
-    exec(`quicktype --src-lang schema -o quicktype.go --src schema.json`);
+    exec(`quicktype --src-lang schema -o quicktype.go --top-level TopLevel --src schema.json`);
 
     // Parse the sample with Go generated from its schema, and compare to the sample
     compareJsonFileToJson({
@@ -311,7 +317,7 @@ function runFixtureWithSample(fixture: Fixture, sample: string, index: number, t
     inDir(cwd, () => {
         let sampleFile = path.basename(sample);
         // Generate code from the sample
-        exec(`quicktype --src ${sampleFile} -o ${fixture.output}`);
+        exec(`quicktype --src ${sampleFile} --out ${fixture.output} --top-level ${fixture.topLevel}`);
 
         fixture.test(sampleFile);
 
