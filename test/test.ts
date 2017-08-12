@@ -58,7 +58,7 @@ interface Fixture {
     setup?: string;
     diffViaSchema: boolean;
     output: string;
-    topLevel?: string;
+    topLevel: string;
     skip?: string[]
     test: (sample: string) => void;
 }
@@ -70,6 +70,7 @@ const FIXTURES: Fixture[] = [
         setup: "dotnet restore",
         diffViaSchema: false,
         output: "QuickType.cs",
+        topLevel: "QuickType",
         test: testCSharp
     },
     {
@@ -77,6 +78,7 @@ const FIXTURES: Fixture[] = [
         base: "test/golang",
         diffViaSchema: true,
         output: "quicktype.go",
+        topLevel: "TopLevel",
         test: testGo,
         skip: [
             "identifiers.json",
@@ -84,10 +86,11 @@ const FIXTURES: Fixture[] = [
         ]
     },
     {
-        name: "json-schema",
+        name: "schema",
         base: "test/golang",
         diffViaSchema: false,
         output: "schema.json",
+        topLevel: "schema",
         test: testJsonSchema,
         skip: [
             "identifiers.json",
@@ -114,6 +117,7 @@ const FIXTURES: Fixture[] = [
         base: "test/typescript",
         diffViaSchema: false,
         output: "TopLevel.ts",
+        topLevel: "TopLevel",
         test: testTypeScript,
         skip: [
             "identifiers.json"
@@ -177,7 +181,7 @@ function testJsonSchema(sample: string) {
     }
 
     // Generate Go from the schema
-    exec(`quicktype --srcLang json-schema -o quicktype.go --src schema.json`);
+    exec(`quicktype --src-lang schema -o quicktype.go --top-level TopLevel --src schema.json`);
 
     // Parse the sample with Go generated from its schema, and compare to the sample
     compareJsonFileToJson({
@@ -189,7 +193,7 @@ function testJsonSchema(sample: string) {
     // Generate a schema from the schema, making sure the schemas are the same
     compareJsonFileToJson({
         expectedFile: "schema.json",
-        jsonCommand: `quicktype --srcLang json-schema --src schema.json --lang json`,
+        jsonCommand: `quicktype --src-lang schema --src schema.json --lang schema`,
         strict: true
     });
 }
@@ -224,7 +228,7 @@ function exec(
     : { stdout: string; code: number; } {
 
     // We special-case quicktype execution
-    s = s.replace(/^quicktype /, `node ${QUICKTYPE_CLI} `);
+    s = s.replace(/^quicktype/, QUICKTYPE_CLI);
 
     debug(s);
 
@@ -311,22 +315,19 @@ function runFixtureWithSample(fixture: Fixture, sample: string, index: number, t
     shell.cp(sample, cwd);
 
     inDir(cwd, () => {
-        let topLevelFlag = fixture.topLevel
-            ? `--topLevel ${fixture.topLevel}`
-            : "";
-
+        let sampleFile = path.basename(sample);
         // Generate code from the sample
-        exec(`quicktype --src ${sampleFile} --srcLang json ${topLevelFlag} -o ${fixture.output}`);
+        exec(`quicktype --src ${sampleFile} --out ${fixture.output} --top-level ${fixture.topLevel}`);
 
         fixture.test(sampleFile);
 
         if (fixture.diffViaSchema) {
             debug("* Diffing with code generated via JSON Schema");
             // Make a schema
-            exec(`quicktype --src ${sampleFile} --srcLang json -o schema.json`);
+            exec(`quicktype --src ${sampleFile} -o schema.json`);
             // Quicktype from the schema and compare to expected code
             shell.mv(fixture.output, `${fixture.output}.expected`);
-            exec(`quicktype --src schema.json --srcLang json-schema -o ${fixture.output}`);
+            exec(`quicktype --src schema.json --src-lang schema -o ${fixture.output}`);
 
             // Compare fixture.output to fixture.output.expected
             try {
@@ -355,6 +356,8 @@ function testAll(samples: string[]) {
         queue: tests,
         workers: CPUs,
         setup: () => {
+            exec(`cd cli && script/build.ts`);
+
             FIXTURES.forEach(({ name, base, setup }) => {
                 exec(`rm -rf test/runs`);
                 exec(`mkdir -p test/runs`);
