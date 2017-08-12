@@ -131,7 +131,11 @@ function fromRight(either) {
   }
 }
 
-function renderFromJsonArrayMap(jsonArrayMap) {
+interface JsonArrayMap {
+  [key: string]: object[];
+}
+
+function renderFromJsonArrayMap(jsonArrayMap: JsonArrayMap) {
     let pipeline = {
       "json": Main.renderFromJsonArrayMap,
       "schema": Main.renderFromJsonSchemaArrayMap
@@ -150,7 +154,7 @@ function renderFromJsonArrayMap(jsonArrayMap) {
     return fromRight(pipeline(input));    
 }
 
-function renderAndOutput(jsonArrayMap) {
+function renderAndOutput(jsonArrayMap: JsonArrayMap) {
   let output = renderFromJsonArrayMap(jsonArrayMap);
   if (options.out) {
     fs.writeFileSync(options.out, output); 
@@ -159,21 +163,25 @@ function renderAndOutput(jsonArrayMap) {
   }
 }
 
-function workFromJsonArray(jsonArray) {
+function workFromJsonArray(jsonArray: object[]) {
   let jsonArrayMap = {};
   jsonArrayMap[options["top-level"]] = jsonArray;
   renderAndOutput(jsonArrayMap);
 }
 
-function parseJsonFromStream(stream: fs.ReadStream | NodeJS.Socket, continuationWithJson) {
+function parseJsonFromStream(
+  stream: fs.ReadStream | NodeJS.Socket,
+  continueWithJson: Continue<object>) {
+
   let source = makeSource();
   let assembler = new Assembler();
 
   source.output.on("data", chunk => {
     assembler[chunk.name] && assembler[chunk.name](chunk.value);
   });
+
   source.output.on("end", () => {
-    renderAndOutput(assembler.current);
+    continueWithJson(assembler.current);
   });
 
   stream.setEncoding('utf8');
@@ -185,46 +193,54 @@ function usage() {
   console.log(getUsage(sections));
 }
 
-function mapArrayC(array, f, continuation) {
-  if (array.length === 0) {
-    continuation([]);
-    return;
+type Continue<T> = (t: T) => void;
+
+function mapArrayC<T, U>(
+  array: T[],
+  f: (t: T, cont: Continue<U>) => void,
+  continuation: Continue<U[]>) {
+    
+  if (array.length == 0) {
+    return continuation([]);
   }
 
-  f(array[0], function(firstResult) {
-    mapArrayC(array.slice(1), f, function(restResults) {
-      continuation([firstResult].concat(restResults));
-    });
+  f(array[0], first => {
+    mapArrayC(array.slice(1), f, rest => continuation([first].concat(rest)));
   });
 }
 
-function mapObjectValuesC(obj, f, continuation) {
+function mapObjectValuesC(
+  obj: object,
+  f: (t: any, cont: Continue<any>) => void,
+  continuation: Continue<any>) {
+
   let keys = Object.keys(obj);
   let resultObject = {};
-  mapArrayC(keys, function(key, arrayContinuation) {
+
+  mapArrayC(keys, (key, arrayContinuation) => {
     let value = obj[key];
-    f(value, function(newValue) {
+    f(value, newValue => {
       resultObject[key] = newValue;
       arrayContinuation(null);
     });
-  }, function(dummy) {
+  }, () => {
     continuation(resultObject);
   });
 }
 
-function parseFileOrUrl(fileOrUrl: string, continuationWithJson) {
+function parseFileOrUrl(fileOrUrl: string, continueWithJson: Continue<object>) {
   if (fs.existsSync(fileOrUrl)) {
-    parseJsonFromStream(fs.createReadStream(fileOrUrl), continuationWithJson);
+    parseJsonFromStream(fs.createReadStream(fileOrUrl), continueWithJson);
   } else {
-    fetch(fileOrUrl).then(res => parseJsonFromStream(res.body, continuationWithJson));
+    fetch(fileOrUrl).then(res => parseJsonFromStream(res.body, continueWithJson));
   }
 }
 
-function parseFileOrUrlArray(filesOrUrls, continuation) {
+function parseFileOrUrlArray(filesOrUrls: string[], continuation) {
   mapArrayC(filesOrUrls, parseFileOrUrl, continuation);
 }
 
-function inferLang() {
+function inferLang(): string {
   // Output file extension determines the language if language is undefined
   if (options.out) {
     let extension = path.extname(options.out);
@@ -247,7 +263,7 @@ function inferTopLevel(): string {
   }
 
   // Source determines the top-level if undefined
-  if (options.src && options.src.length == 1) {
+  if (options.src.length == 1) {
     let src = options.src[0];
     let extension = path.extname(src);
     let without = path.basename(src).replace(extension, "");
@@ -260,6 +276,7 @@ function inferTopLevel(): string {
 function main(args: string[]) {
   options["lang"] = options["lang"] || inferLang();
   options["top-level"] = options["top-level"] || inferTopLevel();
+  options.src = options.src || [];
 
   if (args.length == 0 || options.help) {
     usage();
@@ -273,9 +290,9 @@ function main(args: string[]) {
     } else {
       mapObjectValuesC(result, parseFileOrUrlArray, renderAndOutput);
     }
-  } else if (!options.src || options.src.length === 0) {
-    parseJsonFromStream(process.stdin, function (json) { workFromJsonArray([json]); });
-  } else if (options.src.length === 1) {
+  } else if (options.src.length == 0) {
+    parseJsonFromStream(process.stdin, json => workFromJsonArray([json]));
+  } else if (options.src.length == 1) {
     parseFileOrUrlArray(options.src, workFromJsonArray);
   } else {
     usage();
