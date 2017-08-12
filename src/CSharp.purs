@@ -170,15 +170,6 @@ renderJsonConverter = do
     line $ "public class Converter" <> stringIfTrue haveUnions " : JsonConverter"
     line "{"
     indent do
-        line "static JsonSerializerSettings Settings = new JsonSerializerSettings"
-        line "{"
-        indent do
-            line "MetadataPropertyHandling = MetadataPropertyHandling.Ignore,"
-            line "DateParseHandling = DateParseHandling.None,"
-            when haveUnions do
-                line "Converters = { new Converter() },"
-        line "};"
-        blank
         line "// Serialize/deserialize helpers"
         forTopLevel_ \topLevelNameGiven topLevelType -> do
             blank
@@ -196,6 +187,9 @@ renderJsonConverter = do
                 $ "public static string ToJson("
                 <> topLevelTypeRendered
                 <> " o) => JsonConvert.SerializeObject(o, Settings);"
+
+        blank
+        line "// JsonConverter stuff"
 
         when haveUnions do
             blank
@@ -226,6 +220,16 @@ renderJsonConverter = do
                     line "}"
                 line "throw new Exception(\"Unknown type\");"
             line "}"
+
+        blank
+        line "static JsonSerializerSettings Settings = new JsonSerializerSettings"
+        line "{"
+        indent do
+            line "MetadataPropertyHandling = MetadataPropertyHandling.Ignore,"
+            line "DateParseHandling = DateParseHandling.None,"
+            when haveUnions do
+                line "Converters = { new Converter() },"
+        line "};"
     line "}"
 
 tokenCase :: String -> Doc Unit
