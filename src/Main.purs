@@ -58,7 +58,7 @@ renderers =
     , JsonSchema.renderer
     ]
 
-makeTypeFromJson :: Either String String -> Json -> IR IRType
+makeTypeFromJson :: GivenOrInferredName -> Json -> IR IRType
 makeTypeFromJson name json =
     J.foldJson
     (\_ -> pure IRNull)

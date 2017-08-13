@@ -131,7 +131,7 @@ toIRAndUnify toIR l = do
     let irsOrError = foldError irsAndErrors
     either (\e -> pure $ Left e) (\irs -> Right <$> foldM unifyTypes IRNothing irs) irsOrError
 
-jsonSchemaToIR :: JSONSchema -> Either String String -> JSONSchema -> IR (Either String IRType)
+jsonSchemaToIR :: JSONSchema -> GivenOrInferredName -> JSONSchema -> IR (Either String IRType)
 jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
     | Just (JSONSchemaRef r) <- ref =
         case lookupRef root (NEL.toList r) schema of
@@ -146,14 +146,14 @@ jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, pr
     | otherwise =
         pure $ Right IRNothing
 
-jsonSchemaListToIR :: forall t. Traversable t => Either String String -> t JSONSchema -> IR (Either String IRType)
+jsonSchemaListToIR :: forall t. Traversable t => GivenOrInferredName -> t JSONSchema -> IR (Either String IRType)
 jsonSchemaListToIR name l = do
     errorOrTypeList <- mapM (\js -> jsonSchemaToIR js name js) l
     case foldError errorOrTypeList of
         Left err -> pure $ Left err
         Right irTypes -> Right <$> unifyMultipleTypes irTypes
 
-jsonTypeToIR :: JSONSchema -> Either String String -> JSONType -> JSONSchema -> IR (Either String IRType)
+jsonTypeToIR :: JSONSchema -> GivenOrInferredName -> JSONType -> JSONSchema -> IR (Either String IRType)
 jsonTypeToIR root name jsonType (JSONSchema schema) =
     case jsonType of
     JSONObject ->
@@ -186,7 +186,7 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
     JSONInteger -> pure $ Right IRInteger
     JSONNumber -> pure $ Right IRDouble
     where
-        classFromPropsOrError :: Either String String -> Either String (Map String IRType) -> IR (Either String IRType)
+        classFromPropsOrError :: GivenOrInferredName -> Either String (Map String IRType) -> IR (Either String IRType)
         classFromPropsOrError title =
             case _ of
             Left err -> pure $ Left err

@@ -1,5 +1,7 @@
 module IRGraph
     ( IRGraph(..)
+    , NameSet
+    , GivenOrInferredName
     , IRClassData(..)
     , IRType(..)
     , IRUnionRep(..)
@@ -54,8 +56,20 @@ data Entry
 
 newtype IRGraph = IRGraph { classes :: Seq.Seq Entry, toplevels :: Map String IRType }
 
--- names is Left for names given explicitly, Right for names inferred
-newtype IRClassData = IRClassData { names :: Either (Set String) (Set String), properties :: Map String IRType }
+-- If this is a Left, the names in the set have been given
+-- explicitly, like through the top-level, or through a title
+-- or reference name in a JSON Schema.
+--
+-- If it's a Right, the names have been inferred, usually through
+-- property names.
+--
+-- Explicitly given names always take precedence over inferred ones.
+type NameSet = Either (Set String) (Set String)
+
+-- Left is given, Right is inferred
+type GivenOrInferredName = Either String String
+
+newtype IRClassData = IRClassData { names :: NameSet, properties :: Map String IRType }
 
 newtype IRUnionRep = IRUnionRep { primitives :: Int, arrayType :: Maybe IRType, classRef :: Maybe Int, mapType :: Maybe IRType }
 
@@ -87,7 +101,7 @@ derive instance ordIRClassData :: Ord IRClassData
 derive instance eqIRUnionRep :: Eq IRUnionRep
 derive instance ordIRUnionRep :: Ord IRUnionRep
 
-makeClass :: Either String String -> Map String IRType -> IRClassData
+makeClass :: GivenOrInferredName -> Map String IRType -> IRClassData
 makeClass name properties =
     IRClassData { names: either (Left <<< S.singleton) (Right <<< S.singleton) name, properties }
 
