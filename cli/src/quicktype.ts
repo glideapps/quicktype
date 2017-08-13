@@ -5,6 +5,7 @@ import * as path from "path";
 import * as process from "process";
 import * as Either from "./either";
 import tryRequire from "./try-require"
+import * as _ from "lodash";
 
 const Main: Main = tryRequire("../../output/Main", "../dist/bundle", "./bundle");
 const makeSource = require("stream-json");
@@ -101,7 +102,29 @@ const sections = [
   }
 ];
 
-const options = commandLineArgs(optionDefinitions);
+interface Options {
+  lang?: string;
+  src?: string[];
+  topLevel?: string;
+  srcLang?: string;
+  srcUrls?: string;
+  out?: string;
+  help?: boolean;
+}
+
+const options: Options = (() => {
+  let opts: { [key: string]: any } = commandLineArgs(optionDefinitions);
+  let sane = _.mapKeys(opts, (v, k) => {
+    // Turn options like 'src-urls' into 'srcUrls'
+    return _.lowerFirst(k.split('-').map(_.upperFirst).join(''));
+  });
+
+  sane.src = sane.src || [];
+  sane.lang = sane.lang || inferLang(sane);
+  sane.topLevel = sane.topLevel || inferTopLevel(sane);
+
+  return sane;
+})();
 
 function getRenderer() {
   let renderer = Main.renderers.find((r) => {
@@ -120,10 +143,10 @@ function renderFromJsonArrayMap(jsonArrayMap: JsonArrayMap): string {
     let pipeline = {
       "json": Main.renderFromJsonArrayMap,
       "schema": Main.renderFromJsonSchemaArrayMap
-    }[options["src-lang"]] as Pipeline;
+    }[options.srcLang] as Pipeline;
 
     if (!pipeline) {
-      console.error(`Input language '${options["src-lang"]}' is not supported.`);
+      console.error(`Input language '${options.srcLang}' is not supported.`);
       process.exit(1);
     }
 
@@ -146,7 +169,7 @@ function renderAndOutput(jsonArrayMap: JsonArrayMap) {
 
 function workFromJsonArray(jsonArray: object[]) {
   let map = <JsonArrayMap>{};
-  map[options["top-level"]] = jsonArray;
+  map[options.topLevel] = jsonArray;
   renderAndOutput(map);
 }
 
@@ -195,7 +218,7 @@ function parseFileOrUrlArray(filesOrUrls: string[]): Promise<object[]> {
   return Promise.all(filesOrUrls.map(parseFileOrUrl));
 }
 
-function inferLang(): string {
+function inferLang(options: Options): string {
   // Output file extension determines the language if language is undefined
   if (options.out) {
     let extension = path.extname(options.out);
@@ -209,7 +232,7 @@ function inferLang(): string {
   return "go";
 }
 
-function inferTopLevel(): string {
+function inferTopLevel(options: Options): string {
   // Output file name determines the top-level if undefined
   if (options.out) {
     let extension = path.extname(options.out);
@@ -229,14 +252,10 @@ function inferTopLevel(): string {
 }
 
 async function main(args: string[]): Promise<void> {
-  options.src = options.src || [];
-  options["lang"] = options["lang"] || inferLang();
-  options["top-level"] = options["top-level"] || inferTopLevel();
-
   if (args.length == 0 || options.help) {
     usage();
-  } else if (options["src-urls"]) {
-    let json = JSON.parse(fs.readFileSync(options["src-urls"], "utf8"));
+  } else if (options.srcUrls) {
+    let json = JSON.parse(fs.readFileSync(options.srcUrls, "utf8"));
     let jsonArrayMapOrError = Main.urlsFromJsonGrammar(json);
     let jsonMap = Either.fromRight(jsonArrayMapOrError);
     renderAndOutput(await mapObjectValuesC(jsonMap, parseFileOrUrlArray));
