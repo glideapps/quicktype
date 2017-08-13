@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node --project test/tsconfig.json
+#!/usr/bin/env ts-node
 
 import * as process from "process";
 import * as os from "os";
@@ -66,7 +66,7 @@ interface Fixture {
 const FIXTURES: Fixture[] = [
     {
         name: "csharp",
-        base: "test/csharp",
+        base: "test/fixtures/csharp",
         setup: "dotnet restore",
         diffViaSchema: false,
         output: "QuickType.cs",
@@ -75,7 +75,7 @@ const FIXTURES: Fixture[] = [
     },
     {
         name: "golang",
-        base: "test/golang",
+        base: "test/fixtures/golang",
         diffViaSchema: true,
         output: "quicktype.go",
         topLevel: "TopLevel",
@@ -87,7 +87,7 @@ const FIXTURES: Fixture[] = [
     },
     {
         name: "schema",
-        base: "test/golang",
+        base: "test/fixtures/golang",
         diffViaSchema: false,
         output: "schema.json",
         topLevel: "schema",
@@ -99,7 +99,7 @@ const FIXTURES: Fixture[] = [
     },
     {
         name: "elm",
-        base: "test/elm",
+        base: "test/fixtures/elm",
         setup: IS_CI
                 ? "./setup-ci.sh"
                 : "rm -rf elm-stuff/build-artifacts && elm-make --yes",
@@ -114,7 +114,7 @@ const FIXTURES: Fixture[] = [
     },
     {
         name: "typescript",
-        base: "test/typescript",
+        base: "test/fixtures/typescript",
         diffViaSchema: false,
         output: "TopLevel.ts",
         topLevel: "TopLevel",
