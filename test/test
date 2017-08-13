@@ -2,4 +2,4 @@
 
 export NODE_PATH=node_modules
 export PATH=`pwd`/node_modules/.bin:$PATH
-ts-node test/test.ts
+ts-node test/test.ts $@
