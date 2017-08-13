@@ -11,12 +11,12 @@ import Data.Foldable (find, for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
-import Data.Maybe (Maybe(..), maybe, isJust, isNothing)
+import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
 import Data.String.Util (capitalize, camelCase, stringEscape)
-import Data.Tuple (Tuple(..), fst)
+import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import Utils (removeElement)
 
@@ -35,8 +35,7 @@ renderer =
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelNameFromGiven: id
-        , forbiddenFromTopLevelNameGiven: const []
+        , topLevelName: simpleNamer csNameStyle
         }
     }
 
@@ -123,15 +122,15 @@ csNameStyle :: String -> String
 csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
 
 getDecoderHelperPrefix :: String -> Doc String
-getDecoderHelperPrefix topLevelNameGiven = getForSingleOrMultipleTopLevels "" (csNameStyle topLevelNameGiven)
+getDecoderHelperPrefix topLevelName = getForSingleOrMultipleTopLevels "" topLevelName
 
 csharpDoc :: Doc Unit
 csharpDoc = do
     module_ <- getModuleName csNameStyle
     oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
     line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
-    forTopLevel_ \topLevelNameGiven topLevelType -> do
-        prefix <- getDecoderHelperPrefix topLevelNameGiven
+    forTopLevel_ \topLevelName topLevelType -> do
+        prefix <- getDecoderHelperPrefix topLevelName
         line "//"
         line $ "//    var data = " <> module_ <> ".Convert." <> prefix <> "FromJson(jsonString);"
     line "//"
@@ -169,10 +168,10 @@ renderJsonConverter = do
     line "{"
     indent do
         line "// Serialize/deserialize helpers"
-        forTopLevel_ \topLevelNameGiven topLevelType -> do
+        forTopLevel_ \topLevelName topLevelType -> do
             blank
             topLevelTypeRendered <- renderTypeToCSharp topLevelType
-            fromJsonPrefix <- getDecoderHelperPrefix topLevelNameGiven
+            fromJsonPrefix <- getDecoderHelperPrefix topLevelName
             line
                 $ "public static "
                 <> topLevelTypeRendered 
@@ -334,7 +333,7 @@ renderCSharpUnion allTypes = do
 
 renderCSharpClass :: IRClassData -> String -> Doc Unit
 renderCSharpClass (IRClassData { names, properties }) className = do
-    let propertyNames = transformNames (simpleNamer csNameStyle) ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
+    let { names: propertyNames } = transformNames (simpleNamer csNameStyle) ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
     line $ "public class " <> className
     -- TODO fix this manual indentation
     string "    {"

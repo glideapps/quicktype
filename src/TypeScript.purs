@@ -35,8 +35,7 @@ renderer =
         , unionPredicate: Just unionPredicate
         , nextName: \s -> s <> "_"
         , forbiddenNames: ["Convert"] <> reservedWords
-        , topLevelNameFromGiven: id
-        , forbiddenFromTopLevelNameGiven: const []
+        , topLevelName: simpleNamer lowerNameStyle
         }
     }
 
@@ -139,9 +138,9 @@ hasInternalSeparator :: Rx.Regex
 hasInternalSeparator = unsafePartial $ Either.fromRight $ Rx.regex "[-. ]" RxFlags.noFlags
 
 typeMethodName :: String -> String -> Doc String
-typeMethodName nameForSingle typeName = do
+typeMethodName nameForSingle topLevelName = do
     single <- getSingleTopLevel
-    pure $ maybe (lowerNameStyle typeName <> Str.capitalize nameForSingle) (const nameForSingle) single
+    pure $ maybe (topLevelName <> Str.capitalize nameForSingle) (const nameForSingle) single
 
 deserializerName :: String -> Doc String
 deserializerName = typeMethodName "fromJson"
@@ -169,16 +168,16 @@ typeScriptDoc = do
     line $ """// To parse this data:
 //
 //   import """ <> imports.basic  <> """ from "./""" <> moduleName  <> ";"
-    forTopLevel_ \topLevelNameGiven topLevelType -> do
+    forTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
         line $ "//   let value: " <> topFull  <> " = JSON.parse(json);"
     line $ """//
 // Or use Convert.fromJson to perform a type-checking conversion:
 //
 //   import """ <> imports.advanced  <> """ from "./""" <> moduleName  <> ";"
-    forTopLevel_ \topLevelNameGiven topLevelType -> do
+    forTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
-        deserializer <- deserializerName topLevelNameGiven
+        deserializer <- deserializerName topLevelName
         line $ "//   let value: " <> topFull  <> " = Convert." <> deserializer <> "(json);"
     line "//"
     blank
@@ -196,7 +195,7 @@ typeScriptDoc = do
 
 renderInterface :: IRClassData -> String -> Doc Unit
 renderInterface (IRClassData { names, properties }) className = do
-    let propertyNames = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.empty) $ map (\n -> Tuple n n) $ M.keys properties
+    let { names: propertyNames } = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.empty) $ map (\n -> Tuple n n) $ M.keys properties
 
     let resolver name typ = markNullable (lookupName name propertyNames) typ
     let resolvePropertyNameWithType (Tuple name typ) = Tuple (resolver name typ) typ         
@@ -268,11 +267,11 @@ converter = do
     line $ """export module Convert {
     let path = [];
 """
-    forTopLevel_ \topLevelNameGiven topLevelType -> do
+    forTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
         topTypeMap <- renderTypeMapType topLevelType
-        deserializer <- deserializerName topLevelNameGiven
-        serializer <- serializerName topLevelNameGiven
+        deserializer <- deserializerName topLevelName
+        serializer <- serializerName topLevelName
         line $ """    export function """ <> deserializer <> """(json: string): """ <> topFull <> """ {
         return cast(JSON.parse(json), """ <> topTypeMap <> """);
     }

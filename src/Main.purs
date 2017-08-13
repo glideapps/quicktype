@@ -36,8 +36,7 @@ import JsonSchema (JSONSchema, jsonSchemaListToIR)
 import JsonSchema as JsonSchema
 import UrlGrammar (GrammarMap(..), generate)
 import TypeScript as TypeScript
-import Math (round)
-import Utils (foldErrorArray, foldErrorStrMap, foldError, forStrMap_, mapM, mapStrMapM)
+import Utils (foldErrorArray, foldErrorStrMap, forStrMap_, mapM, mapStrMapM)
 
 type Error = String
 type SourceCode = String
