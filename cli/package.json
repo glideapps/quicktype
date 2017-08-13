@@ -7,7 +7,9 @@
     "command-line-usage": "^4.0.0",
     "lodash": "^4.17.4",
     "node-fetch": "^1.7.1",
-    "stream-json": "0.5.2"
+    "stream-json": "0.5.2",
+    "universal-analytics": "^0.4.15",
+    "universal-ga": "^1.1.0"
   },
   "scripts": {
     "prepublish": "script/build.ts",

@@ -192,15 +192,12 @@ function usage() {
   console.log(getUsage(sections));
 }
 
-async function mapObjectValuesC(
-  obj: object,
-  f: (t: any) => Promise<any>): Promise<any> {
-
-  let resultObject = {};
+async function mapValues(obj: object, f: (val: any) => Promise<any>): Promise<any> {
+  let result = {};
   for (let key of Object.keys(obj)) {
-    resultObject[key] = await f(obj[key]);
+    result[key] = await f(obj[key]);
   }
-  return resultObject;
+  return result;
 }
 
 async function parseFileOrUrl(fileOrUrl: string): Promise<object> {
@@ -254,9 +251,8 @@ async function main(args: string[]): Promise<void> {
     usage();
   } else if (options.srcUrls) {
     let json = JSON.parse(fs.readFileSync(options.srcUrls, "utf8"));
-    let jsonArrayMapOrError = Main.urlsFromJsonGrammar(json);
-    let jsonMap = Either.fromRight(jsonArrayMapOrError);
-    renderAndOutput(await mapObjectValuesC(jsonMap, parseFileOrUrlArray));
+    let jsonMap = Either.fromRight(Main.urlsFromJsonGrammar(json));
+    renderAndOutput(await mapValues(jsonMap, parseFileOrUrlArray));
   } else if (options.src.length == 0) {
     let json = await parseJsonFromStream(process.stdin);
     workFromJsonArray([json]);
