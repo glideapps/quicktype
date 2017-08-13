@@ -7,7 +7,7 @@
     "test": "npm run build && pulp test && test/test.ts",
     "postinstall": "(cd cli && npm install) && npm run build",
     "start": "cd app && npm start",
-    "bundle-cli": "pulp browserify --standalone --skip-entry-point > /tmp/bundle.js && uglifyjs --compress --mangle -- /tmp/bundle.js > cli/bundle.js"
+    "bundle-cli": "pulp browserify --standalone --skip-entry-point > /tmp/bundle.js && uglifyjs --compress --mangle -- /tmp/bundle.js > cli/dist/bundle.js"
   },
   "devDependencies": {
     "@types/node": "^8.0.19",

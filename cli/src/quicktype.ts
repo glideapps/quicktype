@@ -3,19 +3,14 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as process from "process";
+import * as Either from "./either";
+import tryRequire from "./try-require"
 
-const Main = (() => {
-  try {
-    return require("../output/Main");
-  } catch (e) {
-    return require("./bundle");    
-  }
-})();
-
+const Main: Main = tryRequire("../../output/Main", "../dist/bundle", "./bundle");
 const makeSource = require("stream-json");
-const Assembler  = require("stream-json/utils/Assembler");
-const commandLineArgs = require('command-line-args')
-const getUsage = require('command-line-usage')
+const Assembler = require("stream-json/utils/Assembler");
+const commandLineArgs = require('command-line-args');
+const getUsage = require('command-line-usage');
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
@@ -121,26 +116,12 @@ function getRenderer() {
   return renderer;
 }
 
-function fromRight(either) {
-  let { constructor: { name }, value0: result } = either;
-  if (name == "Left") {
-    console.error(result);
-    process.exit(1);
-  } else {
-    return result;
-  }
-}
-
-interface JsonArrayMap {
-  [key: string]: object[];
-}
-
 function renderFromJsonArrayMap(jsonArrayMap: JsonArrayMap): string {
     let pipeline = {
       "json": Main.renderFromJsonArrayMap,
       "schema": Main.renderFromJsonSchemaArrayMap
-    }[options["src-lang"]];
- 
+    }[options["src-lang"]] as Pipeline;
+
     if (!pipeline) {
       console.error(`Input language '${options["src-lang"]}' is not supported.`);
       process.exit(1);
@@ -151,7 +132,7 @@ function renderFromJsonArrayMap(jsonArrayMap: JsonArrayMap): string {
       renderer: getRenderer()
     };
     
-    return fromRight(pipeline(input));    
+    return Either.fromRight(pipeline(input));    
 }
 
 function renderAndOutput(jsonArrayMap: JsonArrayMap) {
@@ -164,9 +145,9 @@ function renderAndOutput(jsonArrayMap: JsonArrayMap) {
 }
 
 function workFromJsonArray(jsonArray: object[]) {
-  let jsonArrayMap = {};
-  jsonArrayMap[options["top-level"]] = jsonArray;
-  renderAndOutput(jsonArrayMap);
+  let map = <JsonArrayMap>{};
+  map[options["top-level"]] = jsonArray;
+  renderAndOutput(map);
 }
 
 function parseJsonFromStream(stream: fs.ReadStream | NodeJS.Socket): Promise<object> {

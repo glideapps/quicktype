@@ -41,7 +41,7 @@ const CPUs = IS_CI
     ? 2 /* Travis has only 2 but reports 8 */
     : +process.env.CPUs || os.cpus().length;
 
-const QUICKTYPE_CLI = path.resolve("./cli/quicktype.js");
+const QUICKTYPE_CLI = path.resolve("./cli/dist/quicktype.js");
 
 const NODE_BIN = path.resolve("./node_modules/.bin");
 process.env.PATH += `:${NODE_BIN}`;
