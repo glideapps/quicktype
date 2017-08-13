@@ -323,18 +323,13 @@ function runFixtureWithSample(fixture: Fixture, sample: string, index: number, t
         if (fixture.diffViaSchema) {
             debug("* Diffing with code generated via JSON Schema");
             // Make a schema
-            exec(`quicktype --src ${sampleFile} -o schema.json`);
+            exec(`quicktype --src ${sampleFile} --out schema.json --top-level ${fixture.topLevel}`);
             // Quicktype from the schema and compare to expected code
             shell.mv(fixture.output, `${fixture.output}.expected`);
-            exec(`quicktype --src schema.json --src-lang schema -o ${fixture.output}`);
+            exec(`quicktype --src schema.json --src-lang schema --out ${fixture.output} --top-level ${fixture.topLevel}`);
 
             // Compare fixture.output to fixture.output.expected
-            try {
-                exec(`diff -Naur ${fixture.output}.expected ${fixture.output} > /dev/null 2>&1`);
-            } catch ({ command }) {
-                // FIXME: Set this to fail once we have it working.  See issue #59.
-                console.error(`Command failed but we're allowing it`);
-            }
+            exec(`diff -Naur ${fixture.output}.expected ${fixture.output} > /dev/null 2>&1`);
         }
     });
 
