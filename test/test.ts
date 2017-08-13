@@ -25,8 +25,7 @@ const chalk = require("chalk");
 /////////////////////////////////////
 
 function debug<T>(x: T): T {
-    if (!process.env.DEBUG) return;
-    console.log(x);
+    if (process.env.DEBUG) console.log(x);
     return x;
 }
 
