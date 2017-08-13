@@ -73,15 +73,19 @@ isPartCharacter :: Char -> Boolean
 isPartCharacter c =
     isLetterCharacter c || isDigit c
 
-legalizeIdentifier :: String -> String
-legalizeIdentifier str =
+legalizeCharacters :: String -> String
+legalizeCharacters str =
+    Str.fromCharArray $ map (\c -> if isLetterCharacter c then c else '_') $ Str.toCharArray str
+
+startWithLetter :: String -> String
+startWithLetter str =
     case Str.charAt 0 str of
     Nothing -> "Empty"
     Just s ->
         if isLetter s then
-            Str.fromCharArray $ map (\c -> if isLetterCharacter c then c else '_') $ Str.toCharArray str
+            str
         else
-            legalizeIdentifier ("F_" <> str)
+            "The" <> str
 
 noComment :: String -> Doc { rendered :: String, comment :: Maybe String }
 noComment rendered =
@@ -122,7 +126,7 @@ renderComment (Just s) = " /* " <> s <> " */"
 renderComment Nothing = ""
 
 goNameStyle :: String -> String
-goNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
+goNameStyle = legalizeCharacters >>> camelCase >>> capitalize >>> startWithLetter
 
 golangDoc :: Doc Unit
 golangDoc = do
