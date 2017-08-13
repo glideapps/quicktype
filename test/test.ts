@@ -393,15 +393,25 @@ function changedFiles(): string[] {
     return diff.trim().split("\n");
 }
 
+const testSkippingCriteria = {
+    "Only app/ paths changed"(changed: string[]) {
+        return _.every(changed, (file) => file.startsWith("app/"));
+    },
+    "Only cli/README.json changed"(changed: string[]) {
+        return _.without(changed, "cli/README.md").length === 0;
+    }
+};
+
 function shouldSkipTests(): boolean {
     try {
         if (IS_CI && process.env.TRAVIS_COMMIT_RANGE) {
             let changed = changedFiles();
-            let onlyWebAppChanged = _.every(changed, (file) => file.startsWith("app/"));
-            if (onlyWebAppChanged) {
-                console.error(`* Only app/ paths changed; skipping tests.`);
-                return true;
-            }
+            for (let reason of Object.keys(testSkippingCriteria)) {
+                if (testSkippingCriteria[reason](changed)) {
+                    console.error(`* ${reason}; skipping tests.`);
+                    return true;
+                }
+            }            
         }
     } catch (e) {
     }
