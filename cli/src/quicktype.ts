@@ -127,9 +127,7 @@ const options: Options = (() => {
 })();
 
 function getRenderer() {
-  let renderer = Main.renderers.find((r) => {
-    return [r.extension, r.aceMode, r.name].indexOf(options.lang) !== -1;
-  });
+  let renderer = Main.renderers.find((r) => _.includes(<{}>r, options.lang));
 
   if (!renderer) {
     console.error(`'${options.lang}' is not yet supported as an output language.`);
