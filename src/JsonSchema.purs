@@ -57,6 +57,7 @@ newtype JSONSchema = JSONSchema
     , additionalProperties :: Either Boolean JSONSchema
     , items :: Maybe JSONSchema
     , required :: Maybe (Array String)
+    , title :: Maybe String
     }
 
 decodeEnum :: forall a. StrMap a -> Json -> Either String a
@@ -107,7 +108,8 @@ instance decodeJsonSchema :: DecodeJson JSONSchema where
         additionalProperties <- decodeAdditionalProperties $ SM.lookup "additionalProperties" obj
         items <- obj .?? "items"
         required <- obj .?? "required"
-        pure $ JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required }
+        title <- obj .?? "title"
+        pure $ JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required, title }
 
 lookupRef :: JSONSchema -> List String -> JSONSchema -> Either String JSONSchema
 lookupRef root ref local@(JSONSchema { definitions }) =
@@ -160,8 +162,9 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
             propsAndErrorsWrong :: List _ <- SM.toUnfoldable <$> mapStrMapM (\n -> jsonSchemaToIR root $ Right n) sm
             let propsOrError = M.fromFoldable <$> (foldError $ map raiseTuple propsAndErrorsWrong)
             let required = maybe S.empty S.fromFoldable schema.required
+            let title = maybe name Left schema.title
             nulledPropsOrError <- either (\x -> pure $ Left x) (\x -> Right <$> mapMapM (\n -> if S.member n required then pure else unifyTypes IRNull) x) propsOrError
-            classFromPropsOrError nulledPropsOrError
+            classFromPropsOrError title nulledPropsOrError
         Nothing ->
             case schema.additionalProperties of
             Left true ->
@@ -183,12 +186,12 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
     JSONInteger -> pure $ Right IRInteger
     JSONNumber -> pure $ Right IRDouble
     where
-        classFromPropsOrError :: Either String (Map String IRType) -> IR (Either String IRType)
-        classFromPropsOrError =
+        classFromPropsOrError :: Either String String -> Either String (Map String IRType) -> IR (Either String IRType)
+        classFromPropsOrError title =
             case _ of
             Left err -> pure $ Left err
             Right props -> do
-                Right <$> (addClass $ makeClass name props)
+                Right <$> (addClass $ makeClass title props)
         raiseTuple :: Tuple String (Either String IRType) -> Either String (Tuple String IRType)
         raiseTuple (Tuple k irOrError) =
             either Left (\ir -> Right $ Tuple k ir) irOrError
@@ -209,7 +212,7 @@ renderer =
         , unionPredicate: Nothing
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelName: simpleNamer jsonNameStyle
+        , topLevelName: simpleNamer jsonNameStyle -- FIXME: put title on top levels, too
         }
     }
 
@@ -286,12 +289,14 @@ definitionForClass (Tuple i (IRClassData { properties })) = do
     let propsSM = SM.fromFoldable $ (M.toUnfoldable propsMap :: List _)
     let withProperties = SM.insert "properties" (fromObject propsSM) sm
     let withRequired = SM.insert "required" (fromArray requiredProps) withProperties
-    pure $ Tuple className $ fromObject withRequired
+    let withTitle = SM.insert "title" (fromString className) withRequired
+    pure $ Tuple className $ fromObject withTitle
 
 irToJson :: Doc Json
 irToJson = do
     classes <- getClasses
     definitions <- fromObject <$> SM.fromFoldable <$> mapM definitionForClass classes
+    -- FIXME: give a title to top-levels, too
     topLevel <- strMapForOneOfTypes =<< M.values <$> getTopLevels
     let sm = SM.insert "definitions" definitions topLevel
     pure $ fromObject sm
