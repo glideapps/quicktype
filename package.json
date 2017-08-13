@@ -10,9 +10,11 @@
     "bundle-cli": "pulp browserify --standalone --skip-entry-point > /tmp/bundle.js && uglifyjs --compress --mangle -- /tmp/bundle.js > cli/dist/bundle.js"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.72",
     "@types/node": "^8.0.19",
     "ajv": "^5.2.2",
     "bower": "^1.8.0",
+    "chalk": "^1.1.3",
     "deep-equal": "^1.0.1",
     "elm": "^0.18.0",
     "exit": "^0.1.2",
@@ -22,7 +24,6 @@
     "shelljs": "^0.7.8",
     "ts-node": "^3.3.0",
     "typescript": "^2.4.2",
-    "chalk": "^1.1.3",
     "uglify-js": "^3.0.26"
   }
 }
