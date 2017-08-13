@@ -42,4 +42,4 @@ $ quicktype -o schema.json https://blockchain.info/latestblock
 $ quicktype -o bitcoin.ts --src-lang schema schema.json           
 ```
 
-Learn more at [https://quicktype.io](quicktype.io).
+Learn more at [quicktype.io](https://quicktype.io).
