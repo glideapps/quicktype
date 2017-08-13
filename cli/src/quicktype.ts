@@ -238,13 +238,8 @@ async function main(args: string[]): Promise<void> {
   } else if (options["src-urls"]) {
     let json = JSON.parse(fs.readFileSync(options["src-urls"], "utf8"));
     let jsonArrayMapOrError = Main.urlsFromJsonGrammar(json);
-    let result = jsonArrayMapOrError.value0;
-    if (typeof result == 'string') {
-      console.error("Error: " + result);
-      process.exit(1);
-    } else {
-      renderAndOutput(await mapObjectValuesC(result, parseFileOrUrlArray));
-    }
+    let jsonMap = Either.fromRight(jsonArrayMapOrError);
+    renderAndOutput(await mapObjectValuesC(jsonMap, parseFileOrUrlArray));
   } else if (options.src.length == 0) {
     let json = await parseJsonFromStream(process.stdin);
     workFromJsonArray([json]);
