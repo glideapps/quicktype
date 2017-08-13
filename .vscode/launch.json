@@ -12,8 +12,7 @@
             "args": [
                 "--project",
                 "cli/tsconfig.json",
-                "cli/quicktype.ts",
-                "--urls-from", "test/api-crawling/github.json"
+                "cli/src/quicktype.ts"
             ],
             "cwd": "${workspaceRoot}",
             "protocol": "inspector"

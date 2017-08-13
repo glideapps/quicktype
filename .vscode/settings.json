@@ -9,6 +9,7 @@
 		"output": true,
 		"**/obj": true,
 		"**/bin": true,
-		"test/inputs": true		
+		"test/inputs": true,
+		"cli/dist": true	
     }
 }
