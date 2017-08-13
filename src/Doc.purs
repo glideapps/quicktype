@@ -20,6 +20,7 @@ module Doc
     , NamingResult
     , transformNames
     , simpleNamer
+    , noForbidNamer
     , forbidNamer
     , string
     , line
@@ -58,7 +59,7 @@ type Renderer =
     , transforms :: Transforms
     }
 
-type NamingResult = { name :: String, forbidAlso :: Array String }
+type NamingResult = { name :: String, forbid :: Array String }
 
 type Transforms =
     { nameForClass :: IRClassData -> Maybe String -> NamingResult
@@ -108,8 +109,8 @@ transformNames legalize otherize illegalNames names =
     process illegalNames M.empty (sortByKey snd names)
     where
         makeName :: b -> NamingResult -> Set String -> NamingResult
-        makeName name result@{ name: tryName, forbidAlso } setSoFar =
-            if (S.member tryName setSoFar) || any (\x -> S.member x setSoFar) forbidAlso then
+        makeName name result@{ name: tryName, forbid } setSoFar =
+            if any (\x -> S.member x setSoFar) forbid then
                 makeName name (legalize name (Just $ otherize tryName)) setSoFar
             else
                 result
@@ -118,21 +119,23 @@ transformNames legalize otherize illegalNames names =
             case l of
             L.Nil -> { names: mapSoFar, forbidden: setSoFar }
             (Tuple identifier inputs) : rest ->
-                let { name, forbidAlso } = makeName inputs (legalize inputs Nothing) setSoFar
-                    newSoFar = S.union (S.fromFoldable forbidAlso) (S.insert name setSoFar)
+                let { name, forbid } = makeName inputs (legalize inputs Nothing) setSoFar
+                    newSoFar = S.union (S.fromFoldable forbid) setSoFar
                     newMap = M.insert identifier name mapSoFar
                 in
                     process newSoFar newMap rest
 
-simpleNamer :: forall a. Ord a => (a -> String) -> a -> Maybe String -> NamingResult
-simpleNamer namer _ (Just name) = { name, forbidAlso: [] }
-simpleNamer namer x Nothing = { name: namer x, forbidAlso: [] }
-
 forbidNamer :: forall a. Ord a => (a -> String) -> (String -> Array String) -> a -> Maybe String -> NamingResult
-forbidNamer namer forbidder _ (Just name) = { name, forbidAlso: forbidder name }
+forbidNamer namer forbidder _ (Just name) = { name, forbid: forbidder name }
 forbidNamer namer forbidder x Nothing =
     let name = namer x
-    in { name, forbidAlso: forbidder name }
+    in { name, forbid: forbidder name }
+
+simpleNamer :: forall a. Ord a => (a -> String) -> a -> Maybe String -> NamingResult
+simpleNamer namer = forbidNamer namer A.singleton
+
+noForbidNamer :: forall a. Ord a => (a -> String) -> a -> Maybe String -> NamingResult
+noForbidNamer namer = forbidNamer namer (const [])
 
 typeNameForUnion :: IRGraph -> Map Int String -> IRType -> String
 typeNameForUnion graph classNames = case _ of
