@@ -1,0 +1,4 @@
+#!/bin/bash
+
+export NODE_PATH=cli/node_modules
+ts-node --project cli/tsconfig.json cli/src/quicktype.ts
