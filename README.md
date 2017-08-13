@@ -24,7 +24,7 @@ $ npm test
 $ FIXTURE=golang npm test
 ```
 
-Fixtures are defined in `test/test.js`.
+Fixtures are defined in `test/test.ts`.
 
 ### Requirements
 
