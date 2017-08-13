@@ -252,9 +252,7 @@ renderTypeMapClass (IRClassData { names, properties }) className = do
 
 typemap :: Doc Unit
 typemap = do
-    line "// The typeMap is used to assert that objects from"
-    line "// JSON.parse conform to the types we expect them to."
-    line $ "const typeMap = {"
+    line $ "const typeMap: any = {"
     indent do
         classes <- getClasses
         for_ classes \(Tuple i cd) -> do
@@ -265,7 +263,7 @@ typemap = do
 converter :: Doc Unit
 converter = do
     line $ """export module Convert {
-    let path = [];
+    let path: string[] = [];
 """
     forTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
