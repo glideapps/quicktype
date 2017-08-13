@@ -1,9 +1,10 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env ts-node --project test/tsconfig.json
 
 import * as process from "process";
 import * as os from "os";
 import * as fs from "fs";
 import * as path from "path";
+import * as _ from "lodash";
 
 import { inParallel } from "./lib/multicore";
 import deepEquals from "./lib/deepEquals";
@@ -11,7 +12,6 @@ import { randomBytes } from "crypto";
 
 const Ajv = require('ajv');
 const strictDeepEquals: (x: any, y: any) => boolean = require('deep-equal');
-const _ = require("lodash");
 const shell = require("shelljs");
 
 const Main = require("../output/Main");
@@ -395,7 +395,7 @@ function changedFiles(): string[] {
 
 const testSkippingCriteria = {
     "Only app/ paths changed"(changed: string[]) {
-        return _.every(changed, (file) => file.startsWith("app/"));
+        return _.every(changed, (file) => _.startsWith(file, "app/"));
     },
     "Only cli/README.json changed"(changed: string[]) {
         return _.without(changed, "cli/README.md").length === 0;
