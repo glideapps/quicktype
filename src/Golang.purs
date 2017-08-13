@@ -32,7 +32,7 @@ renderer =
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames: []
-        , topLevelName: forbidNamer goNameStyle (\n -> ["Unmarshal" <> goNameStyle n])
+        , topLevelName: forbidNamer goNameStyle (\n -> let gn = goNameStyle n in [gn, "Unmarshal" <> gn])
         }
     }
 
