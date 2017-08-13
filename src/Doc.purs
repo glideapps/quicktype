@@ -39,6 +39,7 @@ import Prelude
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Array as A
 import Data.Foldable (for_, any)
+import Data.Either (Either, either)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
@@ -255,8 +256,10 @@ indent doc = do
     Doc $ modify (\s -> { indent: s.indent - 1 })
     pure a
 
-combineNames :: S.Set String -> String
-combineNames s = case L.fromFoldable s of
+combineNames :: Either (Set String) (Set String) -> String
+combineNames names =
+    let s = either id id names
+    in case L.fromFoldable s of
     L.Nil -> "NONAME"
     name : L.Nil -> name
     firstName : rest ->

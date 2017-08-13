@@ -11,6 +11,7 @@ module IRGraph
     , irUnion_String
     , unionToSet
     , Entry(..)
+    , makeClass
     , emptyGraph
     , followIndex
     , getClassFromGraph
@@ -31,6 +32,7 @@ module IRGraph
 import Prelude
 
 import Data.Foldable (all)
+import Data.Either (Either(..), either)
 import Data.Int.Bits as Bits
 import Data.List (List, (:))
 import Data.List as L
@@ -52,7 +54,8 @@ data Entry
 
 newtype IRGraph = IRGraph { classes :: Seq.Seq Entry, toplevels :: Map String IRType }
 
-newtype IRClassData = IRClassData { names :: Set String, properties :: Map String IRType }
+-- names is Left for names given explicitly, Right for names inferred
+newtype IRClassData = IRClassData { names :: Either (Set String) (Set String), properties :: Map String IRType }
 
 newtype IRUnionRep = IRUnionRep { primitives :: Int, arrayType :: Maybe IRType, classRef :: Maybe Int, mapType :: Maybe IRType }
 
@@ -84,8 +87,9 @@ derive instance ordIRClassData :: Ord IRClassData
 derive instance eqIRUnionRep :: Eq IRUnionRep
 derive instance ordIRUnionRep :: Ord IRUnionRep
 
-makeClass :: String -> Map String IRType -> IRClassData
-makeClass name properties = IRClassData { names: S.singleton name, properties }
+makeClass :: Either String String -> Map String IRType -> IRClassData
+makeClass name properties =
+    IRClassData { names: either (Left <<< S.singleton) (Right <<< S.singleton) name, properties }
 
 emptyGraph :: IRGraph
 emptyGraph = IRGraph { classes: Seq.empty, toplevels: M.empty }
@@ -195,7 +199,9 @@ regatherClassNames graph@(IRGraph { classes, toplevels }) =
         entryMapper :: Int -> Entry -> Entry
         entryMapper i entry =
             case entry of
-            Class (IRClassData { names, properties }) -> Class $ IRClassData { names: fromMaybe names (M.lookup i newNames), properties}
+            Class (IRClassData { names, properties }) ->
+                let newNamesForClass = either Left (\old -> Right $ fromMaybe old $ M.lookup i newNames) names
+                in Class $ IRClassData { names: newNamesForClass, properties}
             _ -> entry
         gatherFromClassData :: Int -> IRClassData -> Map Int (Set String)
         gatherFromClassData _ (IRClassData { properties }) =
