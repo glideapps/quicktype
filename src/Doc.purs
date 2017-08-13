@@ -107,24 +107,25 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) =
 
 transformNames :: forall a b. Ord a => Ord b => (b -> Maybe String -> NamingResult) -> (String -> String) -> (Set String) -> List (Tuple a b) -> { names :: Map a String, forbidden :: Set String }
 transformNames legalize otherize illegalNames names =
-    process illegalNames M.empty (sortByKey snd names)
+    process S.empty illegalNames M.empty (sortByKey snd names)
     where
-        makeName :: b -> NamingResult -> Set String -> NamingResult
-        makeName name result@{ name: tryName, forbid } setSoFar =
-            if any (\x -> S.member x setSoFar) forbid then
-                makeName name (legalize name (Just $ otherize tryName)) setSoFar
+        makeName :: b -> NamingResult -> Set String -> Set String -> NamingResult
+        makeName name result@{ name: tryName, forbid } forbiddenInScope forbiddenForAll =
+            if S.member tryName forbiddenInScope || any (\x -> S.member x forbiddenForAll) forbid then
+                makeName name (legalize name (Just $ otherize tryName)) forbiddenInScope forbiddenForAll
             else
                 result
-        process :: (Set String) -> (Map a String) -> (List (Tuple a b)) -> { names :: Map a String, forbidden :: Set String }
-        process setSoFar mapSoFar l =
+        process :: Set String -> Set String -> Map a String -> List (Tuple a b) -> { names :: Map a String, forbidden :: Set String }
+        process forbiddenInScope forbiddenForAll mapSoFar l =
             case l of
-            L.Nil -> { names: mapSoFar, forbidden: setSoFar }
+            L.Nil -> { names: mapSoFar, forbidden: forbiddenForAll }
             (Tuple identifier inputs) : rest ->
-                let { name, forbid } = makeName inputs (legalize inputs Nothing) setSoFar
-                    newSoFar = S.union (S.fromFoldable forbid) setSoFar
+                let { name, forbid } = makeName inputs (legalize inputs Nothing) forbiddenInScope forbiddenForAll
+                    newForbiddenInScope = S.insert name forbiddenInScope
+                    newForbiddenForAll = S.union (S.fromFoldable forbid) forbiddenForAll
                     newMap = M.insert identifier name mapSoFar
                 in
-                    process newSoFar newMap rest
+                    process newForbiddenInScope newForbiddenForAll newMap rest
 
 forbidNamer :: forall a. Ord a => (a -> String) -> (String -> Array String) -> a -> Maybe String -> NamingResult
 forbidNamer namer forbidder _ (Just name) = { name, forbid: forbidder name }
