@@ -22,7 +22,6 @@ import Data.Foldable (for_)
 import Data.List as L
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
-import Data.Set as S
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
 import Data.String.Util (singular)
@@ -87,10 +86,6 @@ makeTypeAndUnify jsonArrayMap = execIR do
         addTopLevel name topLevel
     replaceSimilarClasses
     makeMaps
-
-irFromError :: String -> IR IRType
-irFromError err = do
-    addClass $ IRClassData { names: S.singleton err, properties: Map.empty }
 
 makeTypeFromSchemaArrayMap :: StrMap (Array JSONSchema) -> Either Error IRGraph
 makeTypeFromSchemaArrayMap schemaArrayMap = eitherify $ runIR do
