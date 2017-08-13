@@ -14,5 +14,5 @@ interface Main {
     renderers: Renderer[];
     renderFromJsonArrayMap: Pipeline;
     renderFromJsonSchemaArrayMap: Pipeline;
-    urlsFromJsonGrammar: any;
+    urlsFromJsonGrammar(json: object): Either<string, JsonArrayMap>;
 }
