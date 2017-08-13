@@ -98,7 +98,7 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) =
         classes = classesInGraph graph
         { names: classNames, forbidden: forbiddenAfterClasses } = transformNames t.nameForClass t.nextName forbiddenAfterTopLevels classes
         unions = maybe L.Nil (\up -> L.fromFoldable $ filterTypes up graph) t.unionPredicate
-        nameForUnion un s = un $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
+        nameForUnion un s = un $ map (typeNameForUnion graph classNames) $ L.sort $ L.fromFoldable s
         unionNames = maybe M.empty (\un -> (transformNames (nameForUnion un) t.nextName forbiddenAfterClasses $ map (\s -> Tuple s s) unions).names) t.unionName
     in
         evalRWS w { graph, classNames, unionNames, topLevelNames, unions } { indent: 0 } # snd        
@@ -134,25 +134,24 @@ forbidNamer namer forbidder x Nothing =
     let name = namer x
     in { name, forbidAlso: forbidder name }
 
-typeNameForUnion :: IRGraph -> IRType -> String
-typeNameForUnion graph = case _ of
+typeNameForUnion :: IRGraph -> Map Int String -> IRType -> String
+typeNameForUnion graph classNames = case _ of
     IRNothing -> "nothing"
     IRNull -> "null"
     IRInteger -> "int"
     IRDouble -> "double"
     IRBool -> "bool"
     IRString -> "string"
-    IRArray a -> typeNameForUnion graph a <> "_array"
-    IRClass i ->
-        let IRClassData { names } = getClassFromGraph graph i
-        in combineNames names
-    IRMap t -> typeNameForUnion graph t <> "_map"
+    IRArray a -> typeNameForUnion graph classNames a <> "_array"
+    IRClass i -> lookupName i classNames
+    IRMap t -> typeNameForUnion graph classNames t <> "_map"
     IRUnion _ -> "union"
 
 getTypeNameForUnion :: IRType -> Doc String
 getTypeNameForUnion typ = do
   g <- getGraph
-  pure $ typeNameForUnion g typ
+  classNames <- getClassNames
+  pure $ typeNameForUnion g classNames typ
 
 getGraph :: Doc IRGraph
 getGraph = Doc (asks _.graph)
