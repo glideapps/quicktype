@@ -172,6 +172,7 @@ nullifyNothing :: IRType -> IRType
 nullifyNothing IRNothing = IRNull
 nullifyNothing x = x
 
+-- FIXME: This should take an IRUnionRep
 nullableFromSet :: Set IRType -> Maybe IRType
 nullableFromSet s =
     case L.fromFoldable s of
