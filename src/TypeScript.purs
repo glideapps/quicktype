@@ -31,22 +31,12 @@ renderer =
     , doc: typeScriptDoc
     , transforms:
         { nameForClass: simpleNamer nameForClass
-        , unionName: Nothing
-        , unionPredicate: Just unionPredicate
         , nextName: \s -> s <> "_"
         , forbiddenNames: ["Convert"] <> reservedWords
         , topLevelName: simpleNamer lowerNameStyle
+        , unions: Nothing
         }
     }
-
-unionPredicate :: IRType -> Maybe (Set IRType)
-unionPredicate = case _ of
-    IRUnion ur ->
-        let s = unionToSet ur
-        in case nullableFromSet s of
-            Nothing -> Just s
-            _ -> Nothing
-    _ -> Nothing      
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = upperNameStyle $ combineNames names

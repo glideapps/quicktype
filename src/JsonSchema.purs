@@ -9,7 +9,7 @@ import Data.Argonaut.Decode ((.??), decodeJson, class DecodeJson)
 import Data.Array as A
 import Data.Char as Char
 import Data.Either (Either(..), either)
-import Data.Foldable (class Foldable, foldM, intercalate)
+import Data.Foldable (class Foldable, foldM)
 import Data.List (List, (:))
 import Data.List as L
 import Data.List.NonEmpty as NEL
@@ -208,11 +208,10 @@ renderer =
     , doc: jsonSchemaDoc
     , transforms:
         { nameForClass: simpleNamer nameForClass
-        , unionName: Nothing
-        , unionPredicate: Nothing
         , nextName: \s -> "Other" <> s
         , forbiddenNames
         , topLevelName: simpleNamer jsonNameStyle -- FIXME: put title on top levels, too
+        , unions: Nothing
         }
     }
 
@@ -230,12 +229,6 @@ jsonNameStyle =
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = jsonNameStyle $ combineNames names
-
-unionName :: List String -> String
-unionName s =
-    L.sort s
-    <#> jsonNameStyle
-    # intercalate "Or"
 
 typeStrMap :: String -> Doc (StrMap Json)
 typeStrMap s = pure $ SM.insert "type" (fromString s) SM.empty
