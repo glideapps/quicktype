@@ -35,7 +35,7 @@ renderer =
         , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelName: simpleNamer csNameStyle
+        , topLevelName: noForbidNamer csNameStyle
         }
     }
 

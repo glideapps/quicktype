@@ -71,7 +71,7 @@ elmNamer namer thing = case _ of
     Just name -> result name
     Nothing -> result $ namer thing
     where
-        result name = { name, forbidAlso: alsoForbiddenForTypeName name }
+        result name = { name, forbid: A.cons name $ alsoForbiddenForTypeName name }
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = upperNameStyle $ combineNames names
