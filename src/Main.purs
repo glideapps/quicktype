@@ -17,7 +17,7 @@ import Data.Argonaut.Core (foldJson) as J
 import Data.Argonaut.Decode (decodeJson) as J
 import Data.Argonaut.Parser (jsonParser) as J
 import Data.Array (foldl)
-import Data.Either (Either(..), either)
+import Data.Either (Either(..))
 import Data.Foldable (for_)
 import Data.List as L
 import Data.Map as Map
@@ -58,7 +58,7 @@ renderers =
     , JsonSchema.renderer
     ]
 
-makeTypeFromJson :: GivenOrInferredName -> Json -> IR IRType
+makeTypeFromJson :: Named String -> Json -> IR IRType
 makeTypeFromJson name json =
     J.foldJson
     (\_ -> pure IRNull)
@@ -66,8 +66,8 @@ makeTypeFromJson name json =
     (\n -> pure IRDouble)
     (\_ -> pure IRString)
     (\arr -> do
-        let typeName = singular $ either id id name
-        typeList <- mapM (makeTypeFromJson $ Right typeName) $ L.fromFoldable arr
+        let typeName = singular $ namedValue name
+        typeList <- mapM (makeTypeFromJson $ Inferred typeName) $ L.fromFoldable arr
         unifiedType <- unifyMultipleTypes typeList
         pure $ IRArray unifiedType)
     (\obj -> do
@@ -76,12 +76,12 @@ makeTypeFromJson name json =
         addClass $ makeClass name $ Map.fromFoldable l2)
     json
     where
-        toProperty (Tuple name json) = Tuple name <$> makeTypeFromJson (Right name) json
+        toProperty (Tuple name json) = Tuple name <$> makeTypeFromJson (Inferred name) json
 
 makeTypeAndUnify :: StrMap (Array Json) -> IRGraph
 makeTypeAndUnify jsonArrayMap = execIR do
     forStrMap_ jsonArrayMap \name jsonArray -> do
-        topLevelTypes <- mapM (makeTypeFromJson $ Left name) $ L.fromFoldable jsonArray
+        topLevelTypes <- mapM (makeTypeFromJson $ Given name) $ L.fromFoldable jsonArray
         topLevel <- unifyMultipleTypes topLevelTypes
         addTopLevel name topLevel
     replaceSimilarClasses
@@ -89,7 +89,7 @@ makeTypeAndUnify jsonArrayMap = execIR do
 
 makeTypeFromSchemaArrayMap :: StrMap (Array JSONSchema) -> Either Error IRGraph
 makeTypeFromSchemaArrayMap schemaArrayMap = eitherify $ runIR do
-    topLevelOrErrorMap <- mapStrMapM (\n -> jsonSchemaListToIR $ Left n) schemaArrayMap
+    topLevelOrErrorMap <- mapStrMapM (jsonSchemaListToIR <<< Given) schemaArrayMap
     case foldErrorStrMap topLevelOrErrorMap of
         Left err -> pure $ Just err
         Right topLevelMap -> do
