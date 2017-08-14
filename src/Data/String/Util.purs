@@ -7,6 +7,8 @@ module Data.String.Util
     , intToHex
     , stringEscape
     , times
+    , legalizeCharacters
+    , startWithLetter
     ) where
 
 import Prelude
@@ -17,7 +19,6 @@ import Data.Char.Unicode (isPrint)
 import Data.Either as Either
 import Data.Int as Int
 import Data.Maybe (Maybe(..))
-import Data.String (toLower)
 import Data.String as S
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
@@ -84,3 +85,18 @@ times :: String -> Int -> String
 times s n | n < 1 = ""
 times s 1 = s
 times s n = s <> times s (n - 1)
+
+legalizeCharacters :: (Char -> Boolean) -> String -> String
+legalizeCharacters isLegal str =
+    S.fromCharArray $ map (\c -> if isLegal c then c else '_') $ S.toCharArray str
+
+startWithLetter :: (Char -> Boolean) -> Boolean -> String -> String
+startWithLetter isLetter upper str =
+    let modify = if upper then capitalize else decapitalize
+    in case S.charAt 0 str of
+    Nothing -> modify "empty"
+    Just s ->
+        if isLetter s then
+            modify str
+        else
+            modify $ "the" <> str

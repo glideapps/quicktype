@@ -16,8 +16,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
 import Data.Set as S
-import Data.String as Str
-import Data.String.Util (capitalize, decapitalize, camelCase, stringEscape)
+import Data.String.Util (capitalize, decapitalize, camelCase, stringEscape, legalizeCharacters, startWithLetter)
 import Data.Tuple (Tuple(..), fst)
 import Utils (forEnumerated_, removeElement, sortByKey, sortByKeyM, mapM)
 
@@ -97,21 +96,14 @@ isLetterCharacter :: Char -> Boolean
 isLetterCharacter c =
     isLetter c || c == '_'
 
-legalizeIdentifier :: Boolean -> String -> String
-legalizeIdentifier upper str =
-    case Str.charAt 0 str of
-    Nothing -> "Empty"
-    Just s ->
-        if isLetter s then
-            Str.fromCharArray $ map (\c -> if isLetterCharacter c then c else '_') $ Str.toCharArray str
-        else
-            legalizeIdentifier upper ((if upper then "F_" else "f_") <> str)
+elmNameStyle :: Boolean -> String -> String
+elmNameStyle upper = legalizeCharacters isLetterCharacter >>> camelCase >>> (startWithLetter isLetterCharacter upper)
 
 lowerNameStyle :: String -> String
-lowerNameStyle = camelCase >>> decapitalize >>> (legalizeIdentifier false)
+lowerNameStyle = elmNameStyle false
 
 upperNameStyle :: String -> String
-upperNameStyle = camelCase >>> capitalize >>> (legalizeIdentifier true)
+upperNameStyle = elmNameStyle true
 
 renderComment :: Maybe String -> String
 renderComment (Just s) = " -- " <> s
