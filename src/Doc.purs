@@ -2,6 +2,7 @@ module Doc
     ( Doc
     , Renderer
     , Transforms
+    , Namer
     , getTopLevels
     , getSingleTopLevel
     , getModuleName
@@ -22,6 +23,7 @@ module Doc
     , simpleNamer
     , noForbidNamer
     , forbidNamer
+    , excludeNullablesUnionPredicate
     , string
     , line
     , blank
@@ -39,12 +41,11 @@ import Prelude
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Array as A
 import Data.Foldable (for_, any)
-import Data.Either (Either, either)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe, isNothing)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as String
@@ -61,14 +62,18 @@ type Renderer =
     }
 
 type NamingResult = { name :: String, forbid :: Array String }
+type Namer a = a -> Maybe String -> NamingResult
 
 type Transforms =
-    { nameForClass :: IRClassData -> Maybe String -> NamingResult
-    , unionName :: Maybe (List String -> Maybe String -> NamingResult)
-    , unionPredicate :: Maybe (IRType -> Maybe (Set IRType))
+    { nameForClass :: Namer IRClassData
     , nextName :: String -> String
     , forbiddenNames :: Array String
-    , topLevelName :: String -> Maybe String -> NamingResult
+    , topLevelName :: Namer String
+    , unions :: Maybe
+        { predicate :: IRUnionRep -> Boolean
+        , properName :: Namer (Named (Set String))
+        , nameFromTypes :: Namer (Array String)
+        }
     }
 
 type DocState = { indent :: Int }
@@ -76,9 +81,9 @@ type DocState = { indent :: Int }
 type DocEnv =
     { graph :: IRGraph
     , classNames :: Map Int String
-    , unionNames :: Map (Set IRType) String
+    , unionNames :: Map IRUnionRep String
     , topLevelNames :: Map String String
-    , unions :: List (Set IRType)
+    , unions :: Array IRUnionRep -- FIXME: we do we even keep this?
     }
 
 newtype Doc a = Doc (RWS DocEnv String DocState a)
@@ -99,13 +104,33 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) =
         { names: topLevelNames, forbidden: forbiddenAfterTopLevels } = transformNames t.topLevelName t.nextName forbiddenFromStart topLevelTuples
         classes = classesInGraph graph
         { names: classNames, forbidden: forbiddenAfterClasses } = transformNames t.nameForClass t.nextName forbiddenAfterTopLevels classes
-        unions = maybe L.Nil (\up -> L.fromFoldable $ filterTypes up graph) t.unionPredicate
-        nameForUnion un s = un $ map (typeNameForUnion graph classNames) $ L.sort $ L.fromFoldable s
-        unionNames = maybe M.empty (\un -> (transformNames (nameForUnion un) t.nextName forbiddenAfterClasses $ map (\s -> Tuple s s) unions).names) t.unionName
+        { unions, unionNames } = doUnions classNames forbiddenAfterClasses
     in
-        evalRWS w { graph, classNames, unionNames, topLevelNames, unions } { indent: 0 } # snd        
+        evalRWS w { graph, classNames, unionNames, topLevelNames, unions } { indent: 0 } # snd
+    where
+        doUnions :: Map Int String -> Set String -> { unions :: Array IRUnionRep, unionNames :: Map IRUnionRep String }
+        doUnions classNames forbidden = case t.unions of
+            Nothing -> { unions: [], unionNames: M.empty }
+            Just { predicate, properName, nameFromTypes } ->
+                let unions = A.fromFoldable $ filterTypes (unionPredicate predicate) graph
+                    unionNames = (transformNames (unionNamer nameFromTypes properName classNames) t.nextName forbidden $ L.fromFoldable $ map (\s -> Tuple s s) unions).names
+                in
+                    { unions, unionNames }
 
-transformNames :: forall a b. Ord a => Ord b => (b -> Maybe String -> NamingResult) -> (String -> String) -> (Set String) -> List (Tuple a b) -> { names :: Map a String, forbidden :: Set String }
+        unionPredicate :: (IRUnionRep -> Boolean) -> IRType -> Maybe IRUnionRep
+        unionPredicate p (IRUnion ur) = if p ur then Just ur else Nothing
+        unionPredicate _ _ = Nothing
+
+        unionNamer :: Namer (Array String) -> Namer (Named (Set String)) -> Map Int String -> Namer IRUnionRep
+        unionNamer nameFromTypes properName classNames union@(IRUnionRep { names }) =
+            if namedValue names == S.empty then
+                let typeStrings = map (typeNameForUnion graph classNames) $ A.sort $ A.fromFoldable $ unionToSet union
+                in
+                    nameFromTypes typeStrings
+            else
+                properName names
+
+transformNames :: forall a b. Ord a => Ord b => Namer b -> (String -> String) -> Set String -> List (Tuple a b) -> { names :: Map a String, forbidden :: Set String }
 transformNames legalize otherize illegalNames names =
     process S.empty illegalNames M.empty (sortByKey snd names)
     where
@@ -127,16 +152,16 @@ transformNames legalize otherize illegalNames names =
                 in
                     process newForbiddenInScope newForbiddenForAll newMap rest
 
-forbidNamer :: forall a. Ord a => (a -> String) -> (String -> Array String) -> a -> Maybe String -> NamingResult
+forbidNamer :: forall a. Ord a => (a -> String) -> (String -> Array String) -> Namer a
 forbidNamer namer forbidder _ (Just name) = { name, forbid: forbidder name }
 forbidNamer namer forbidder x Nothing =
     let name = namer x
     in { name, forbid: forbidder name }
 
-simpleNamer :: forall a. Ord a => (a -> String) -> a -> Maybe String -> NamingResult
+simpleNamer :: forall a. Ord a => (a -> String) -> Namer a
 simpleNamer namer = forbidNamer namer A.singleton
 
-noForbidNamer :: forall a. Ord a => (a -> String) -> a -> Maybe String -> NamingResult
+noForbidNamer :: forall a. Ord a => (a -> String) -> Namer a
 noForbidNamer namer = forbidNamer namer (const [])
 
 typeNameForUnion :: IRGraph -> Map Int String -> IRType -> String
@@ -151,6 +176,9 @@ typeNameForUnion graph classNames = case _ of
     IRClass i -> lookupName i classNames
     IRMap t -> typeNameForUnion graph classNames t <> "_map"
     IRUnion _ -> "union"
+
+excludeNullablesUnionPredicate :: IRUnionRep -> Boolean
+excludeNullablesUnionPredicate ur = isNothing $ nullableFromSet $ unionToSet ur
 
 getTypeNameForUnion :: IRType -> Doc String
 getTypeNameForUnion typ = do
@@ -186,12 +214,12 @@ getForSingleOrMultipleTopLevels forSingle forMultiple = do
 getClassNames :: Doc (Map Int String)
 getClassNames = Doc (asks _.classNames)
 
-getUnions :: Doc (List (Set IRType))
+getUnions :: Doc (List IRUnionRep)
 getUnions = do
-    unsorted <- Doc (asks _.unions)
+    unsorted <- M.keys <$> getUnionNames
     sortByKeyM lookupUnionName unsorted
 
-getUnionNames :: Doc (Map (Set IRType) String)
+getUnionNames :: Doc (Map IRUnionRep String)
 getUnionNames = Doc (asks _.unionNames)
 
 getTopLevelNames :: Doc (Map String String)
@@ -216,7 +244,7 @@ lookupClassName i = do
     classNames <- getClassNames
     pure $ lookupName i classNames
 
-lookupUnionName :: Set IRType -> Doc String
+lookupUnionName :: IRUnionRep -> Doc String
 lookupUnionName s = do
     unionNames <- getUnionNames
     pure $ lookupName s unionNames

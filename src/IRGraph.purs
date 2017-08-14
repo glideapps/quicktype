@@ -2,6 +2,8 @@ module IRGraph
     ( IRGraph(..)
     , Named(..)
     , namedValue
+    , unifyNamed
+    , mapToInferred
     , IRClassData(..)
     , IRType(..)
     , IRUnionRep(..)
@@ -27,6 +29,7 @@ module IRGraph
     , mapClasses
     , classesInGraph
     , regatherClassNames
+    , regatherUnionNames
     , filterTypes
     , emptyUnion
     ) where
@@ -34,7 +37,6 @@ module IRGraph
 import Prelude
 
 import Data.Foldable (all)
-import Data.Either (Either(..), either)
 import Data.Int.Bits as Bits
 import Data.List (List, (:))
 import Data.List as L
@@ -61,15 +63,26 @@ data Named a
     = Given a
     | Inferred a
 
-replaceNamed :: forall a. (a -> a) -> (a -> a) -> Named a -> Named a
-replaceNamed givenF inferredF =
-    case _ of
-    Given x -> Given $ givenF x
-    Inferred x -> Inferred $ inferredF x
+updateGiven :: forall a b. (Maybe a -> b) -> Named a -> Named b
+updateGiven f (Given x) = Given $ f $ Just x
+updateGiven f _ = Given $ f Nothing
+
+updateInferred :: forall a. (a -> a) -> Named a -> Named a
+updateInferred f (Inferred x) = Inferred $ f x
+updateInferred _ given = given
 
 namedValue :: forall a. Named a -> a
 namedValue (Given x) = x
 namedValue (Inferred x) = x
+
+mapToInferred :: forall a b. (a -> b) -> Named a -> Named b
+mapToInferred f n = Inferred $ f $ namedValue n
+
+unifyNamed :: forall a. (a -> a -> a) -> Named a -> Named a -> Named a
+unifyNamed f (Given ga) (Given gb) = Given $ f ga gb
+unifyNamed f a@(Given _) _ = a
+unifyNamed f _ b@(Given _) = b
+unifyNamed f (Inferred ia) (Inferred ib) = Inferred $ f ia ib
 
 instance functorNamed :: Functor Named where
     map f (Given x) = Given $ f x
@@ -77,7 +90,7 @@ instance functorNamed :: Functor Named where
 
 newtype IRClassData = IRClassData { names :: Named (Set String), properties :: Map String IRType }
 
-newtype IRUnionRep = IRUnionRep { primitives :: Int, arrayType :: Maybe IRType, classRef :: Maybe Int, mapType :: Maybe IRType }
+newtype IRUnionRep = IRUnionRep { names :: Named (Set String), primitives :: Int, arrayType :: Maybe IRType, classRef :: Maybe Int, mapType :: Maybe IRType }
 
 irUnion_Nothing = 1
 irUnion_Null = 2
@@ -133,6 +146,13 @@ mapClasses f (IRGraph { classes }) = L.concat $ L.mapWithIndex mapper (L.fromFol
         mapper _ (Redirect _) = L.Nil
         mapper i (Class cd) = (f i cd) : L.Nil
 
+mapClassesInSeq :: (Int -> IRClassData -> IRClassData) -> Seq.Seq Entry -> Seq.Seq Entry
+mapClassesInSeq f entries =
+    Seq.fromFoldable $ L.mapWithIndex entryMapper $ L.fromFoldable entries
+    where
+        entryMapper i (Class cd) = Class $ f i cd
+        entryMapper _ x = x
+
 classesInGraph :: IRGraph -> List (Tuple Int IRClassData)
 classesInGraph  = mapClasses Tuple
 
@@ -152,6 +172,7 @@ nullifyNothing :: IRType -> IRType
 nullifyNothing IRNothing = IRNull
 nullifyNothing x = x
 
+-- FIXME: This should take an IRUnionRep
 nullableFromSet :: Set IRType -> Maybe IRType
 nullableFromSet s =
     case L.fromFoldable s of
@@ -215,16 +236,13 @@ isSubtypeOf _ a b = a == b
 regatherClassNames :: IRGraph -> IRGraph
 regatherClassNames graph@(IRGraph { classes, toplevels }) =
     -- FIXME: gather names from top levels map, too
-    IRGraph { classes: Seq.fromFoldable $ L.mapWithIndex entryMapper $ L.fromFoldable classes, toplevels }
+    IRGraph { classes: mapClassesInSeq classMapper classes, toplevels }
     where
         newNames = combine $ mapClasses gatherFromClassData graph
-        entryMapper :: Int -> Entry -> Entry
-        entryMapper i entry =
-            case entry of
-            Class (IRClassData { names, properties }) ->
-                let newNamesForClass = replaceNamed id (\old -> fromMaybe old $ M.lookup i newNames) names
-                in Class $ IRClassData { names: newNamesForClass, properties}
-            _ -> entry
+        classMapper :: Int -> IRClassData -> IRClassData
+        classMapper i (IRClassData { names, properties }) =
+            let newNamesForClass = updateInferred (\old -> fromMaybe old $ M.lookup i newNames) names
+            in IRClassData { names: newNamesForClass, properties}
         gatherFromClassData :: Int -> IRClassData -> Map Int (Set String)
         gatherFromClassData _ (IRClassData { properties }) =
             combine $ map (\(Tuple n t) -> gatherFromType n t) (M.toUnfoldable properties :: List _)
@@ -244,6 +262,33 @@ regatherClassNames graph@(IRGraph { classes, toplevels }) =
                 in
                     combine $ (fromArray : fromMap : fromClass : L.Nil)
             _ -> M.empty
+
+regatherUnionNames :: IRGraph -> IRGraph
+regatherUnionNames graph@(IRGraph { classes, toplevels }) =
+    let newClasses = mapClassesInSeq (const classMapper) classes
+        newTopLevels = M.mapWithKey (updateType <<< Given) toplevels
+    in
+        IRGraph { classes: newClasses, toplevels: newTopLevels }
+    where
+        classMapper (IRClassData { names, properties }) =
+            IRClassData { names, properties: M.mapWithKey (updateType <<< Inferred) properties }
+        reassign name names =
+            case name of
+            Given g -> updateGiven (maybe (S.singleton g) (S.insert g)) names
+            Inferred i -> updateInferred (const $ S.singleton i) names
+        updateType :: Named String -> IRType -> IRType
+        updateType name t =
+            case t of
+            IRArray a -> IRArray $ updateType name a
+            IRMap m -> IRMap $ updateType name m
+            IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType}) ->
+                let newNames = reassign name names
+                    singularName = mapToInferred singular name
+                    newArrayType = map (updateType singularName) arrayType
+                    newMapType = map (updateType singularName) mapType
+                in
+                    IRUnion $ IRUnionRep { names: newNames, primitives, arrayType: newArrayType, classRef, mapType: newMapType }
+            _ -> t
 
 unionToSet :: IRUnionRep -> Set IRType
 unionToSet (IRUnionRep { primitives, arrayType, classRef, mapType }) =
@@ -294,4 +339,4 @@ filterTypes predicate graph@(IRGraph { classes, toplevels }) =
 
 emptyUnion :: IRUnionRep
 emptyUnion =
-    IRUnionRep { primitives: 0, arrayType: Nothing, classRef: Nothing, mapType: Nothing }
+    IRUnionRep { names: Inferred $ S.empty, primitives: 0, arrayType: Nothing, classRef: Nothing, mapType: Nothing }

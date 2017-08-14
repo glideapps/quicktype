@@ -31,29 +31,23 @@ renderer =
     , doc: csharpDoc
     , transforms:
         { nameForClass: simpleNamer nameForClass
-        , unionName: Just $ simpleNamer unionName
-        , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames
         , topLevelName: noForbidNamer csNameStyle
+        , unions: Just
+            { predicate: excludeNullablesUnionPredicate
+            , properName: simpleNamer (csNameStyle <<< combineNames)
+            , nameFromTypes: simpleNamer unionNameForTypes
+            }
         }
     }
-
-unionPredicate :: IRType -> Maybe (Set IRType)
-unionPredicate = case _ of
-    IRUnion ur ->
-        let s = unionToSet ur
-        in case nullableFromSet s of
-            Nothing -> Just s
-            _ -> Nothing
-    _ -> Nothing      
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = csNameStyle $ combineNames names
 
-unionName :: List String -> String
-unionName s =
-    L.sort s
+unionNameForTypes :: Array String -> String
+unionNameForTypes names =
+    names
     <#> csNameStyle
     # intercalate "Or"
 
@@ -93,13 +87,16 @@ legalizeIdentifier str =
         else
             legalizeIdentifier ("_" <> str)
 
-renderUnionToCSharp :: Set IRType -> Doc String
-renderUnionToCSharp s =
-    case nullableFromSet s of
-    Just x -> do
-        rendered <- renderTypeToCSharp x
-        pure if isValueType x then rendered <> "?" else rendered
-    Nothing -> lookupUnionName s
+renderNullableToCSharp :: IRType -> Doc String
+renderNullableToCSharp x = do
+    rendered <- renderTypeToCSharp x
+    pure if isValueType x then rendered <> "?" else rendered
+
+renderUnionToCSharp :: IRUnionRep -> Doc String
+renderUnionToCSharp ur =
+    case nullableFromSet $ unionToSet ur of
+    Just x -> renderNullableToCSharp x
+    Nothing -> lookupUnionName ur
 
 renderTypeToCSharp :: IRType -> Doc String
 renderTypeToCSharp = case _ of
@@ -116,7 +113,7 @@ renderTypeToCSharp = case _ of
     IRMap t -> do
         rendered <- renderTypeToCSharp t
         pure $ "Dictionary<string, " <> rendered <> ">"
-    IRUnion types -> renderUnionToCSharp $ unionToSet types
+    IRUnion ur -> renderUnionToCSharp ur
 
 csNameStyle :: String -> String
 csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
@@ -280,15 +277,16 @@ renderGenericDeserializer predicate tokenType types = unsafePartial $
         indent do
             deserializeType t
 
-renderCSharpUnion :: Set IRType -> Doc Unit
-renderCSharpUnion allTypes = do
-    name <- lookupUnionName allTypes
+renderCSharpUnion :: IRUnionRep -> Doc Unit
+renderCSharpUnion ur = do
+    let allTypes = unionToSet ur
+    name <- lookupUnionName ur
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     line $ "public struct " <> name
     line "{"
     indent do
         for_ nonNullTypes \t -> do
-            typeString <- renderUnionToCSharp $ S.union (S.singleton t) (S.singleton IRNull)
+            typeString <- renderNullableToCSharp t
             field <- unionFieldName t
             line $ "public " <> typeString <> " " <> field <> ";"
         blank
