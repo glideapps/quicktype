@@ -39,7 +39,6 @@ import Prelude
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Array as A
 import Data.Foldable (for_, any)
-import Data.Either (Either, either)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)

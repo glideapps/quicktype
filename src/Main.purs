@@ -105,6 +105,7 @@ renderFromJsonArrayMap { renderer, input: jsonArrayMap } =
     jsonArrayMap
     # makeTypeAndUnify
     # regatherClassNames
+    # regatherUnionNames
     # Doc.runRenderer renderer
     # Right
 
