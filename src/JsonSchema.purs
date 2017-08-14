@@ -131,12 +131,12 @@ toIRAndUnify toIR l = do
     let irsOrError = foldError irsAndErrors
     either (\e -> pure $ Left e) (\irs -> Right <$> foldM unifyTypes IRNothing irs) irsOrError
 
-jsonSchemaToIR :: JSONSchema -> GivenOrInferredName -> JSONSchema -> IR (Either String IRType)
+jsonSchemaToIR :: JSONSchema -> Named String -> JSONSchema -> IR (Either String IRType)
 jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
     | Just (JSONSchemaRef r) <- ref =
         case lookupRef root (NEL.toList r) schema of
         Left err -> pure $ Left err
-        Right js -> jsonSchemaToIR root (Left $ NEL.last r) js
+        Right js -> jsonSchemaToIR root (Given $ NEL.last r) js
     | Just (Left jt) <- types =
         jsonTypeToIR root name jt schema
     | Just (Right jts) <- types =
@@ -146,23 +146,23 @@ jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, pr
     | otherwise =
         pure $ Right IRNothing
 
-jsonSchemaListToIR :: forall t. Traversable t => GivenOrInferredName -> t JSONSchema -> IR (Either String IRType)
+jsonSchemaListToIR :: forall t. Traversable t => Named String -> t JSONSchema -> IR (Either String IRType)
 jsonSchemaListToIR name l = do
     errorOrTypeList <- mapM (\js -> jsonSchemaToIR js name js) l
     case foldError errorOrTypeList of
         Left err -> pure $ Left err
         Right irTypes -> Right <$> unifyMultipleTypes irTypes
 
-jsonTypeToIR :: JSONSchema -> GivenOrInferredName -> JSONType -> JSONSchema -> IR (Either String IRType)
+jsonTypeToIR :: JSONSchema -> Named String -> JSONType -> JSONSchema -> IR (Either String IRType)
 jsonTypeToIR root name jsonType (JSONSchema schema) =
     case jsonType of
     JSONObject ->
         case schema.properties of
         Just sm -> do
-            propsAndErrorsWrong :: List _ <- SM.toUnfoldable <$> mapStrMapM (\n -> jsonSchemaToIR root $ Right n) sm
+            propsAndErrorsWrong :: List _ <- SM.toUnfoldable <$> mapStrMapM (\n -> jsonSchemaToIR root $ Inferred n) sm
             let propsOrError = M.fromFoldable <$> (foldError $ map raiseTuple propsAndErrorsWrong)
             let required = maybe S.empty S.fromFoldable schema.required
-            let title = maybe name Left schema.title
+            let title = maybe name Given schema.title
             nulledPropsOrError <- either (\x -> pure $ Left x) (\x -> Right <$> mapMapM (\n -> if S.member n required then pure else unifyTypes IRNull) x) propsOrError
             classFromPropsOrError title nulledPropsOrError
         Nothing ->
@@ -186,7 +186,7 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
     JSONInteger -> pure $ Right IRInteger
     JSONNumber -> pure $ Right IRDouble
     where
-        classFromPropsOrError :: GivenOrInferredName -> Either String (Map String IRType) -> IR (Either String IRType)
+        classFromPropsOrError :: Named String -> Either String (Map String IRType) -> IR (Either String IRType)
         classFromPropsOrError title =
             case _ of
             Left err -> pure $ Left err
@@ -195,7 +195,7 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
         raiseTuple :: Tuple String (Either String IRType) -> Either String (Tuple String IRType)
         raiseTuple (Tuple k irOrError) =
             either Left (\ir -> Right $ Tuple k ir) irOrError
-        singularName = Right $ singular $ either id id name
+        singularName = Inferred $ singular $ namedValue name
 
 forbiddenNames :: Array String
 forbiddenNames = []

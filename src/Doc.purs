@@ -257,9 +257,9 @@ indent doc = do
     Doc $ modify (\s -> { indent: s.indent - 1 })
     pure a
 
-combineNames :: Either (Set String) (Set String) -> String
+combineNames :: Named (Set String) -> String
 combineNames names =
-    let s = either id id names
+    let s = namedValue names
     in case L.fromFoldable s of
     L.Nil -> "NONAME"
     name : L.Nil -> name

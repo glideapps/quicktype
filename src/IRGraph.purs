@@ -1,7 +1,7 @@
 module IRGraph
     ( IRGraph(..)
-    , NameSet
-    , GivenOrInferredName
+    , Named(..)
+    , namedValue
     , IRClassData(..)
     , IRType(..)
     , IRUnionRep(..)
@@ -56,20 +56,26 @@ data Entry
 
 newtype IRGraph = IRGraph { classes :: Seq.Seq Entry, toplevels :: Map String IRType }
 
--- If this is a Left, the names in the set have been given
--- explicitly, like through the top-level, or through a title
--- or reference name in a JSON Schema.
---
--- If it's a Right, the names have been inferred, usually through
--- property names.
---
 -- Explicitly given names always take precedence over inferred ones.
-type NameSet = Either (Set String) (Set String)
+data Named a
+    = Given a
+    | Inferred a
 
--- Left is given, Right is inferred
-type GivenOrInferredName = Either String String
+replaceNamed :: forall a. (a -> a) -> (a -> a) -> Named a -> Named a
+replaceNamed givenF inferredF =
+    case _ of
+    Given x -> Given $ givenF x
+    Inferred x -> Inferred $ inferredF x
 
-newtype IRClassData = IRClassData { names :: NameSet, properties :: Map String IRType }
+namedValue :: forall a. Named a -> a
+namedValue (Given x) = x
+namedValue (Inferred x) = x
+
+instance functorNamed :: Functor Named where
+    map f (Given x) = Given $ f x
+    map f (Inferred x) = Inferred $ f x
+
+newtype IRClassData = IRClassData { names :: Named (Set String), properties :: Map String IRType }
 
 newtype IRUnionRep = IRUnionRep { primitives :: Int, arrayType :: Maybe IRType, classRef :: Maybe Int, mapType :: Maybe IRType }
 
@@ -93,6 +99,8 @@ data IRType
     | IRMap IRType
     | IRUnion IRUnionRep
 
+derive instance eqNamed :: Eq a => Eq (Named a)
+derive instance ordNamed :: Ord a => Ord (Named a)
 derive instance eqEntry :: Eq Entry
 derive instance eqIRType :: Eq IRType
 derive instance ordIRType :: Ord IRType
@@ -101,9 +109,9 @@ derive instance ordIRClassData :: Ord IRClassData
 derive instance eqIRUnionRep :: Eq IRUnionRep
 derive instance ordIRUnionRep :: Ord IRUnionRep
 
-makeClass :: GivenOrInferredName -> Map String IRType -> IRClassData
+makeClass :: Named String -> Map String IRType -> IRClassData
 makeClass name properties =
-    IRClassData { names: either (Left <<< S.singleton) (Right <<< S.singleton) name, properties }
+    IRClassData { names: map S.singleton name, properties }
 
 emptyGraph :: IRGraph
 emptyGraph = IRGraph { classes: Seq.empty, toplevels: M.empty }
@@ -214,7 +222,7 @@ regatherClassNames graph@(IRGraph { classes, toplevels }) =
         entryMapper i entry =
             case entry of
             Class (IRClassData { names, properties }) ->
-                let newNamesForClass = either Left (\old -> Right $ fromMaybe old $ M.lookup i newNames) names
+                let newNamesForClass = replaceNamed id (\old -> fromMaybe old $ M.lookup i newNames) names
                 in Class $ IRClassData { names: newNamesForClass, properties}
             _ -> entry
         gatherFromClassData :: Int -> IRClassData -> Map Int (Set String)

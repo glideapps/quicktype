@@ -101,10 +101,10 @@ unifyClassDatas (IRClassData { names: na, properties: pa }) (IRClassData { names
     properties <- unionWithDefault unifyTypesWithNull IRNothing pa pb
     pure $ IRClassData { names: unifyNames na nb, properties }
     where
-        unifyNames (Left la) (Left lb) = Left (S.union la lb)
-        unifyNames (Left la) _ = Left la
-        unifyNames _ (Left lb) = Left lb
-        unifyNames (Right ra) (Right rb) = Right (S.union ra rb)
+        unifyNames (Given ga) (Given gb) = Given $ S.union ga gb
+        unifyNames a@(Given _) _ = a
+        unifyNames _ b@(Given _) = b
+        unifyNames (Inferred ia) (Inferred ib) = Inferred $ S.union ia ib
 
 unifyClassRefs :: Int -> Int -> IR Int
 unifyClassRefs ia ib =
