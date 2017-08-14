@@ -26,6 +26,9 @@ classesSimilar graph (IRClassData { properties: pa }) (IRClassData { properties:
     --propertiesAreSubset graph pa pb ||
     --propertiesAreSubset graph pb pa
 
+classesEqual :: IRClassData -> IRClassData -> Boolean
+classesEqual (IRClassData a) (IRClassData b) = a.properties == b.properties
+
 propertiesSimilar :: forall v. Eq v => Map String v -> Map String v -> Boolean
 propertiesSimilar pa pb =
     let aInB = M.size $ matchingProperties pa pb
@@ -33,8 +36,8 @@ propertiesSimilar pa pb =
     in
         (aInB * 4 >= (M.size pa) * 3) && (bInA * 4 >= (M.size pb) * 3)
 
-similarClasses :: IRGraph -> Set (Set Int)
-similarClasses graph = accumulate (mapClasses Tuple graph)
+similarClasses :: (IRClassData -> IRClassData -> Boolean) -> IRGraph -> Set (Set Int)
+similarClasses comparator graph = accumulate (mapClasses Tuple graph)
     where
         accumulate :: List (Tuple Int IRClassData) -> Set (Set Int)
         accumulate L.Nil = S.empty
@@ -47,14 +50,24 @@ similarClasses graph = accumulate (mapClasses Tuple graph)
                     let similarSet = S.fromFoldable (i : map T.fst similar)
                     in S.insert similarSet recursiveResult
         
-        isSimilar cd1 (Tuple _ cd2) = classesSimilar graph cd1 cd2
+        isSimilar cd1 (Tuple _ cd2) = comparator cd1 cd2
+
+unifyEqualsUntilFixpoint :: IR Unit
+unifyEqualsUntilFixpoint = do
+    graph <- get
+    let equal = similarClasses classesEqual graph
+    for_ equal unifySetOfClasses
+    followRedirections
+    newGraph <- get
+    when (graph /= newGraph) do
+        unifyEqualsUntilFixpoint
 
 replaceSimilarClasses :: IR Unit
 replaceSimilarClasses = do
     graph <- get
-    let similar = similarClasses graph
+    let similar = similarClasses (classesSimilar graph) graph
     for_ similar unifySetOfClasses
-    followRedirections
+    unifyEqualsUntilFixpoint
 
 replaceClassWithMap :: Int -> IR Unit
 replaceClassWithMap i = do

@@ -14,8 +14,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
-import Data.String as Str
-import Data.String.Util (capitalize, camelCase, stringEscape)
+import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import Utils (removeElement)
@@ -76,17 +75,6 @@ isPartCharacter c =
     Just Format -> true
     _ -> isLetterCharacter c
 
-legalizeIdentifier :: String -> String
-legalizeIdentifier str =
-    case Str.charAt 0 str of
-    -- FIXME: use the type to infer a name?
-    Nothing -> "Empty"
-    Just s ->
-        if isStartCharacter s then
-            Str.fromCharArray $ map (\c -> if isLetterCharacter c then c else '_') $ Str.toCharArray str
-        else
-            legalizeIdentifier ("_" <> str)
-
 renderNullableToCSharp :: IRType -> Doc String
 renderNullableToCSharp x = do
     rendered <- renderTypeToCSharp x
@@ -116,7 +104,7 @@ renderTypeToCSharp = case _ of
     IRUnion ur -> renderUnionToCSharp ur
 
 csNameStyle :: String -> String
-csNameStyle = camelCase >>> capitalize >>> legalizeIdentifier
+csNameStyle = legalizeCharacters isLetterCharacter >>> camelCase >>> startWithLetter isStartCharacter true
 
 getDecoderHelperPrefix :: String -> Doc String
 getDecoderHelperPrefix topLevelName = getForSingleOrMultipleTopLevels "" topLevelName
