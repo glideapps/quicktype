@@ -220,18 +220,34 @@ function failWith(message: string, obj: any) {
     throw obj;
 }
 
+function time<T>(work: () => T): [T, number] {
+    let start = +new Date();
+    let result = work();
+    let end = +new Date();
+    return [result, end - start];
+}
+
 function exec(
     s: string,
     opts: { silent: boolean } = { silent: !DEBUG },
     cb?: any)
     : { stdout: string; code: number; } {
 
+    let isQuicktypeExec = _.startsWith(s, "quicktype");
+    
     // We special-case quicktype execution
     s = s.replace(/^quicktype/, QUICKTYPE_CLI);
 
     debug(s);
 
+    let start = +new Date();
     let result = shell.exec(s, opts, cb);
+    let end = +new Date();
+
+    if (isQuicktypeExec) {
+        workResult.qtime += end - start;
+    }
+
     if (result.code !== 0) {
         console.error(result.stdout);
         console.error(result.stderr);
@@ -240,6 +256,7 @@ function exec(
             code: result.code
         });
     }
+
     return result;
 }
 
@@ -336,6 +353,10 @@ function runFixtureWithSample(fixture: Fixture, sample: string, index: number, t
     shell.rm("-rf", cwd);
 }
 
+type WorkResult = { qtime: number }
+
+let workResult: WorkResult = { qtime: 0 };
+
 function testAll(samples: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run
     let tests: { sample: string; fixtureName: string }[] =  _
@@ -349,7 +370,8 @@ function testAll(samples: string[]) {
     inParallel({
         queue: tests,
         workers: CPUs,
-        setup: () => {
+
+        setup(): WorkResult {
             exec(`cd cli && script/build.ts`);
 
             FIXTURES.forEach(({ name, base, setup }) => {
@@ -365,8 +387,22 @@ function testAll(samples: string[]) {
                     inDir(base, () => exec(setup));
                 }
             });
+
+            return { qtime: 0 };
         },
-        work: ({ sample, fixtureName }, index) => {
+
+        reduce(result: WorkResult, acc: WorkResult): WorkResult {
+            acc.qtime += result.qtime;
+            return acc;
+        },
+        
+        done(accum: WorkResult) {
+            console.log(`done`, accum);
+        },
+
+        map({ sample, fixtureName }, index): WorkResult {
+            workResult = { qtime: 0 };
+
             let fixture = _.find(FIXTURES, { name: fixtureName });
             try {
                 runFixtureWithSample(fixture, sample, index, tests.length);
@@ -374,6 +410,8 @@ function testAll(samples: string[]) {
                 console.trace();
                 exit(1);
             }
+
+            return workResult;
         }
     });
 }
