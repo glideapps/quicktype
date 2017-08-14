@@ -20,6 +20,7 @@ module Doc
     , NamingResult
     , transformNames
     , simpleNamer
+    , noForbidNamer
     , forbidNamer
     , string
     , line
@@ -38,6 +39,7 @@ import Prelude
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Array as A
 import Data.Foldable (for_, any)
+import Data.Either (Either, either)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
@@ -58,7 +60,7 @@ type Renderer =
     , transforms :: Transforms
     }
 
-type NamingResult = { name :: String, forbidAlso :: Array String }
+type NamingResult = { name :: String, forbid :: Array String }
 
 type Transforms =
     { nameForClass :: IRClassData -> Maybe String -> NamingResult
@@ -98,61 +100,63 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) =
         classes = classesInGraph graph
         { names: classNames, forbidden: forbiddenAfterClasses } = transformNames t.nameForClass t.nextName forbiddenAfterTopLevels classes
         unions = maybe L.Nil (\up -> L.fromFoldable $ filterTypes up graph) t.unionPredicate
-        nameForUnion un s = un $ map (typeNameForUnion graph) $ L.sort $ L.fromFoldable s
+        nameForUnion un s = un $ map (typeNameForUnion graph classNames) $ L.sort $ L.fromFoldable s
         unionNames = maybe M.empty (\un -> (transformNames (nameForUnion un) t.nextName forbiddenAfterClasses $ map (\s -> Tuple s s) unions).names) t.unionName
     in
         evalRWS w { graph, classNames, unionNames, topLevelNames, unions } { indent: 0 } # snd        
 
 transformNames :: forall a b. Ord a => Ord b => (b -> Maybe String -> NamingResult) -> (String -> String) -> (Set String) -> List (Tuple a b) -> { names :: Map a String, forbidden :: Set String }
 transformNames legalize otherize illegalNames names =
-    process illegalNames M.empty (sortByKey snd names)
+    process S.empty illegalNames M.empty (sortByKey snd names)
     where
-        makeName :: b -> NamingResult -> Set String -> NamingResult
-        makeName name result@{ name: tryName, forbidAlso } setSoFar =
-            if (S.member tryName setSoFar) || any (\x -> S.member x setSoFar) forbidAlso then
-                makeName name (legalize name (Just $ otherize tryName)) setSoFar
+        makeName :: b -> NamingResult -> Set String -> Set String -> NamingResult
+        makeName name result@{ name: tryName, forbid } forbiddenInScope forbiddenForAll =
+            if S.member tryName forbiddenInScope || any (\x -> S.member x forbiddenForAll) forbid then
+                makeName name (legalize name (Just $ otherize tryName)) forbiddenInScope forbiddenForAll
             else
                 result
-        process :: (Set String) -> (Map a String) -> (List (Tuple a b)) -> { names :: Map a String, forbidden :: Set String }
-        process setSoFar mapSoFar l =
+        process :: Set String -> Set String -> Map a String -> List (Tuple a b) -> { names :: Map a String, forbidden :: Set String }
+        process forbiddenInScope forbiddenForAll mapSoFar l =
             case l of
-            L.Nil -> { names: mapSoFar, forbidden: setSoFar }
+            L.Nil -> { names: mapSoFar, forbidden: forbiddenForAll }
             (Tuple identifier inputs) : rest ->
-                let { name, forbidAlso } = makeName inputs (legalize inputs Nothing) setSoFar
-                    newSoFar = S.union (S.fromFoldable forbidAlso) (S.insert name setSoFar)
+                let { name, forbid } = makeName inputs (legalize inputs Nothing) forbiddenInScope forbiddenForAll
+                    newForbiddenInScope = S.insert name forbiddenInScope
+                    newForbiddenForAll = S.union (S.fromFoldable forbid) forbiddenForAll
                     newMap = M.insert identifier name mapSoFar
                 in
-                    process newSoFar newMap rest
-
-simpleNamer :: forall a. Ord a => (a -> String) -> a -> Maybe String -> NamingResult
-simpleNamer namer _ (Just name) = { name, forbidAlso: [] }
-simpleNamer namer x Nothing = { name: namer x, forbidAlso: [] }
+                    process newForbiddenInScope newForbiddenForAll newMap rest
 
 forbidNamer :: forall a. Ord a => (a -> String) -> (String -> Array String) -> a -> Maybe String -> NamingResult
-forbidNamer namer forbidder _ (Just name) = { name, forbidAlso: forbidder name }
+forbidNamer namer forbidder _ (Just name) = { name, forbid: forbidder name }
 forbidNamer namer forbidder x Nothing =
     let name = namer x
-    in { name, forbidAlso: forbidder name }
+    in { name, forbid: forbidder name }
 
-typeNameForUnion :: IRGraph -> IRType -> String
-typeNameForUnion graph = case _ of
+simpleNamer :: forall a. Ord a => (a -> String) -> a -> Maybe String -> NamingResult
+simpleNamer namer = forbidNamer namer A.singleton
+
+noForbidNamer :: forall a. Ord a => (a -> String) -> a -> Maybe String -> NamingResult
+noForbidNamer namer = forbidNamer namer (const [])
+
+typeNameForUnion :: IRGraph -> Map Int String -> IRType -> String
+typeNameForUnion graph classNames = case _ of
     IRNothing -> "nothing"
     IRNull -> "null"
     IRInteger -> "int"
     IRDouble -> "double"
     IRBool -> "bool"
     IRString -> "string"
-    IRArray a -> typeNameForUnion graph a <> "_array"
-    IRClass i ->
-        let IRClassData { names } = getClassFromGraph graph i
-        in combineNames names
-    IRMap t -> typeNameForUnion graph t <> "_map"
+    IRArray a -> typeNameForUnion graph classNames a <> "_array"
+    IRClass i -> lookupName i classNames
+    IRMap t -> typeNameForUnion graph classNames t <> "_map"
     IRUnion _ -> "union"
 
 getTypeNameForUnion :: IRType -> Doc String
 getTypeNameForUnion typ = do
   g <- getGraph
-  pure $ typeNameForUnion g typ
+  classNames <- getClassNames
+  pure $ typeNameForUnion g classNames typ
 
 getGraph :: Doc IRGraph
 getGraph = Doc (asks _.graph)
@@ -253,8 +257,10 @@ indent doc = do
     Doc $ modify (\s -> { indent: s.indent - 1 })
     pure a
 
-combineNames :: S.Set String -> String
-combineNames s = case L.fromFoldable s of
+combineNames :: Named (Set String) -> String
+combineNames names =
+    let s = namedValue names
+    in case L.fromFoldable s of
     L.Nil -> "NONAME"
     name : L.Nil -> name
     firstName : rest ->

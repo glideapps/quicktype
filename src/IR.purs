@@ -17,6 +17,7 @@ import Prelude
 
 import Control.Monad.State (State, execState, runState)
 import Control.Monad.State.Class (get, put)
+import Data.Either (Either(..))
 import Data.Foldable (foldM, for_)
 import Data.Int.Bits as Bits
 import Data.List (List, (:))
@@ -98,7 +99,12 @@ unionWithDefault unifier default m1 m2 =
 unifyClassDatas :: IRClassData -> IRClassData -> IR IRClassData
 unifyClassDatas (IRClassData { names: na, properties: pa }) (IRClassData { names: nb, properties: pb }) = do
     properties <- unionWithDefault unifyTypesWithNull IRNothing pa pb
-    pure $ IRClassData { names: S.union na nb, properties }
+    pure $ IRClassData { names: unifyNames na nb, properties }
+    where
+        unifyNames (Given ga) (Given gb) = Given $ S.union ga gb
+        unifyNames a@(Given _) _ = a
+        unifyNames _ b@(Given _) = b
+        unifyNames (Inferred ia) (Inferred ib) = Inferred $ S.union ia ib
 
 unifyClassRefs :: Int -> Int -> IR Int
 unifyClassRefs ia ib =
