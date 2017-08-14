@@ -28,11 +28,14 @@ renderer =
     , doc: golangDoc
     , transforms:
         { nameForClass: simpleNamer nameForClass
-        , unionName: Just $ simpleNamer unionName
-        , unionPredicate: Just unionPredicate
         , nextName: \s -> "Other" <> s
         , forbiddenNames: []
         , topLevelName: forbidNamer goNameStyle (\n -> let gn = goNameStyle n in [gn, "Unmarshal" <> gn])
+        , unions: Just
+            { predicate: excludeNullablesUnionPredicate
+            , properName: simpleNamer (goNameStyle <<< combineNames)
+            , nameFromTypes: simpleNamer unionNameFromTypes
+            }
         }
     }
 
@@ -48,9 +51,9 @@ unionPredicate = case _ of
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = goNameStyle $ combineNames names
 
-unionName :: L.List String -> String
-unionName s =
-    L.sort s
+unionNameFromTypes :: Array String -> String
+unionNameFromTypes names =
+    names
     <#> goNameStyle
     # intercalate "Or"
 
@@ -91,18 +94,21 @@ noComment :: String -> Doc { rendered :: String, comment :: Maybe String }
 noComment rendered =
     pure { rendered, comment: Nothing }
 
-renderUnionToGolang :: Set IRType -> Doc { rendered :: String, comment :: Maybe String }
-renderUnionToGolang s =
-    case nullableFromSet s of
-    Just x -> do
-        { rendered, comment } <- renderTypeToGolang x
-        pure
-            if isValueType x then
-                { rendered: "*" <> rendered, comment: Just $ maybe "optional" ("optional "<> _) comment }
-            else
-                { rendered, comment: Nothing }
+renderNullableToGolang :: IRType -> Doc { rendered :: String, comment :: Maybe String }
+renderNullableToGolang x = do
+    { rendered, comment } <- renderTypeToGolang x
+    pure
+        if isValueType x then
+            { rendered: "*" <> rendered, comment: Just $ maybe "optional" ("optional "<> _) comment }
+        else
+            { rendered, comment: Nothing }
+
+renderUnionToGolang :: IRUnionRep -> Doc { rendered :: String, comment :: Maybe String }
+renderUnionToGolang ur =
+    case nullableFromSet $ unionToSet ur of
+    Just x -> renderNullableToGolang x
     Nothing -> do
-        noComment =<< lookupUnionName s
+        noComment =<< lookupUnionName ur
 
 renderTypeToGolang :: IRType -> Doc { rendered :: String, comment :: Maybe String }
 renderTypeToGolang = case _ of
@@ -119,7 +125,7 @@ renderTypeToGolang = case _ of
     IRMap t -> do
         { rendered, comment } <- renderTypeToGolang t
         pure { rendered: "map[string]" <> rendered, comment: map ("map to " <> _) comment }
-    IRUnion types -> renderUnionToGolang $ unionToSet types
+    IRUnion types -> renderUnionToGolang types
 
 renderComment :: Maybe String -> String
 renderComment (Just s) = " /* " <> s <> " */"
@@ -310,14 +316,14 @@ unionFieldName t = goNameStyle <$> getTypeNameForUnion t
 compoundPredicates :: Array (IRType -> Boolean)
 compoundPredicates = [isArray, isClass, isMap]
 
-renderGolangUnion :: Set IRType -> Doc Unit
-renderGolangUnion allTypes = do
-    name <- lookupUnionName allTypes
+renderGolangUnion :: IRUnionRep -> Doc Unit
+renderGolangUnion ur = do
+    name <- lookupUnionName ur
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     let isNullableString = if isJust emptyOrNull then "true" else "false"
     fields <- L.fromFoldable nonNullTypes # sortByKeyM unionFieldName
     columns <- fields # mapM \t -> do
-        { rendered, comment } <- renderUnionToGolang $ S.union (S.singleton t) (S.singleton IRNull)
+        { rendered, comment } <- renderNullableToGolang t
         field <- unionFieldName t
         pure $ (field : (rendered <> renderComment comment) : L.Nil)
     renderStruct name columns
@@ -347,6 +353,7 @@ renderGolangUnion allTypes = do
         line $ "return marshalUnion(" <> args <> ", " <> isNullableString <> ")"
     line "}"
     where
+        allTypes = unionToSet ur
         ifClass :: (String -> String -> Doc Unit) -> Doc Unit
         ifClass f =
             let { element } = removeElement isClass allTypes

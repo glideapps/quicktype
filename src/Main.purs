@@ -105,6 +105,7 @@ renderFromJsonArrayMap { renderer, input: jsonArrayMap } =
     jsonArrayMap
     # makeTypeAndUnify
     # regatherClassNames
+    # regatherUnionNames
     # Doc.runRenderer renderer
     # Right
 
@@ -119,6 +120,7 @@ renderFromJsonSchemaArrayMap { renderer, input: jsonArrayMap } = do
     schemaArrayMap <- mapStrMapArrayWithError J.decodeJson jsonArrayMap
     graph <- makeTypeFromSchemaArrayMap schemaArrayMap
     graph
+        # regatherUnionNames
         # Doc.runRenderer renderer
         # pure
 
