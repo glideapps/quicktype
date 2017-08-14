@@ -67,7 +67,7 @@ const FIXTURES: Fixture[] = [
         name: "csharp",
         base: "test/fixtures/csharp",
         setup: "dotnet restore",
-        diffViaSchema: false,
+        diffViaSchema: true,
         output: "QuickType.cs",
         topLevel: "QuickType",
         test: testCSharp
