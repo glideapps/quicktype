@@ -17,7 +17,6 @@ import Prelude
 
 import Control.Monad.State (State, execState, runState)
 import Control.Monad.State.Class (get, put)
-import Data.Either (Either(..))
 import Data.Foldable (foldM, for_)
 import Data.Int.Bits as Bits
 import Data.List (List, (:))
@@ -99,12 +98,7 @@ unionWithDefault unifier default m1 m2 =
 unifyClassDatas :: IRClassData -> IRClassData -> IR IRClassData
 unifyClassDatas (IRClassData { names: na, properties: pa }) (IRClassData { names: nb, properties: pb }) = do
     properties <- unionWithDefault unifyTypesWithNull IRNothing pa pb
-    pure $ IRClassData { names: unifyNames na nb, properties }
-    where
-        unifyNames (Given ga) (Given gb) = Given $ S.union ga gb
-        unifyNames a@(Given _) _ = a
-        unifyNames _ b@(Given _) = b
-        unifyNames (Inferred ia) (Inferred ib) = Inferred $ S.union ia ib
+    pure $ IRClassData { names: unifyNamed S.union na nb, properties }
 
 unifyClassRefs :: Int -> Int -> IR Int
 unifyClassRefs ia ib =
@@ -179,7 +173,7 @@ updateClasses classUpdater typeUpdater = do
             _ -> pure entry
 
 unifyWithUnion :: IRUnionRep -> IRType -> IR IRUnionRep
-unifyWithUnion u@(IRUnionRep { primitives, arrayType, classRef, mapType }) t =
+unifyWithUnion u@(IRUnionRep { names, primitives, arrayType, classRef, mapType }) t =
     case t of
     IRNothing -> pure u
     IRNull -> addBit irUnion_Null
@@ -189,22 +183,22 @@ unifyWithUnion u@(IRUnionRep { primitives, arrayType, classRef, mapType }) t =
     IRString -> addBit irUnion_String
     IRArray ta -> do
         unified <- doTypes ta arrayType
-        pure $ IRUnionRep { primitives, arrayType: unified, classRef, mapType }
+        pure $ IRUnionRep { names, primitives, arrayType: unified, classRef, mapType }
     IRClass ti -> do
         unified <- doClasses ti classRef
-        pure $ IRUnionRep { primitives, arrayType, classRef: unified, mapType }
+        pure $ IRUnionRep { names, primitives, arrayType, classRef: unified, mapType }
     IRMap tm -> do
         unified <- doTypes tm mapType
-        pure $ IRUnionRep { primitives, arrayType, classRef, mapType: unified }
-    IRUnion (IRUnionRep { primitives: pb, arrayType: ab, classRef: cb, mapType: mb }) -> do
+        pure $ IRUnionRep { names, primitives, arrayType, classRef, mapType: unified }
+    IRUnion (IRUnionRep { names: na, primitives: pb, arrayType: ab, classRef: cb, mapType: mb }) -> do
         let p = Bits.or primitives pb
         a <- doMaybeTypes arrayType ab
         c <- doMaybeClasses classRef cb
         m <- doMaybeTypes mapType mb
-        pure $ IRUnionRep { primitives: p, arrayType: a, classRef: c, mapType: m }
+        pure $ IRUnionRep { names: unifyNamed S.union names na, primitives: p, arrayType: a, classRef: c, mapType: m }
     where
         addBit b =
-            pure $ IRUnionRep { primitives: Bits.or b primitives, arrayType, classRef, mapType }
+            pure $ IRUnionRep { names, primitives: Bits.or b primitives, arrayType, classRef, mapType }
         doWithUnifier :: forall a. (a -> a -> IR a) -> a -> Maybe a -> IR (Maybe a)
         doWithUnifier unify a mb =
             case mb of
@@ -233,10 +227,10 @@ replaceClassesInType replacer t =
     IRMap m -> do
         replaced <- replace m
         pure $ IRMap replaced
-    IRUnion (IRUnionRep { primitives, arrayType, classRef, mapType }) -> do
+    IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType }) -> do
         a <- replaceInMaybe arrayType
         m <- replaceInMaybe mapType
-        IRUnion <$> doClassRef primitives a classRef m
+        IRUnion <$> doClassRef names primitives a classRef m
     _ -> pure t
     where
         replace = replaceClassesInType replacer
@@ -245,15 +239,15 @@ replaceClassesInType replacer t =
             case m of
             Just x -> Just <$> replace x
             Nothing -> pure Nothing
-        doClassRef :: Int -> Maybe IRType -> Maybe Int -> Maybe IRType -> IR IRUnionRep
-        doClassRef primitives arrayType classRef mapType =
+        doClassRef :: Named (Set String) -> Int -> Maybe IRType -> Maybe Int -> Maybe IRType -> IR IRUnionRep
+        doClassRef names primitives arrayType classRef mapType =
             case classRef of
             Just i ->
                 case replacer i of
                 Just replacement ->
-                    unifyWithUnion (IRUnionRep { primitives, arrayType, classRef: Nothing, mapType }) replacement
-                Nothing -> pure $ IRUnionRep { primitives, arrayType, classRef, mapType }
-            _ -> pure $ IRUnionRep { primitives, arrayType, classRef, mapType }
+                    unifyWithUnion (IRUnionRep { names, primitives, arrayType, classRef: Nothing, mapType }) replacement
+                Nothing -> pure $ IRUnionRep { names, primitives, arrayType, classRef, mapType }
+            _ -> pure $ IRUnionRep { names, primitives, arrayType, classRef, mapType }
 
 replaceTypes :: (IRType -> IR IRType) -> IR Unit
 replaceTypes typeUpdater =
