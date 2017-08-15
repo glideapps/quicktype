@@ -39,15 +39,6 @@ renderer =
         }
     }
 
-unionPredicate :: IRType -> Maybe (Set IRType)
-unionPredicate = case _ of
-    IRUnion ur ->
-        let s = unionToSet ur
-        in case nullableFromSet s of
-            Nothing -> Just s
-            _ -> Nothing
-    _ -> Nothing
-
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = goNameStyle $ combineNames names
 
