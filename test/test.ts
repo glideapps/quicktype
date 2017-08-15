@@ -443,7 +443,11 @@ function shouldSkipTests(): boolean {
 }
 
 async function main(sources: string[]) {
-    let prioritySources = testsInDir("test/inputs/json/priority");
+    let prioritySources = _.concat(
+        testsInDir("test/inputs/json/priority"),
+        testsInDir("app/public/sample/json")
+    );
+
     let miscSources = testsInDir("test/inputs/json/misc");
 
     if (shouldSkipTests()) {
