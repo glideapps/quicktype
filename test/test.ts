@@ -233,7 +233,7 @@ async function quicktype(opts: Options) {
     let [_, duration] = await time(async () => {    
         await quicktype_(opts);
     });
-    workResult.qtime += duration;
+    workResult.quicktypeExecTime += duration;
 }
 
 function exec(
@@ -351,8 +351,8 @@ async function runFixtureWithSample(fixture: Fixture, sample: string, index: num
 }
 
 type WorkItem = { sample: string; fixtureName: string; }
-type WorkResult = { qtime: number }
-let workResult: WorkResult = { qtime: 0 };
+type WorkResult = { quicktypeExecTime: number }
+let workResult: WorkResult = { quicktypeExecTime: 0 };
 
 async function testAll(samples: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run
@@ -384,11 +384,11 @@ async function testAll(samples: string[]) {
                 }
             }
 
-            return { qtime: 0 };
+            return { quicktypeExecTime: 0 };
         },
 
         reduce: async (acc: WorkResult, result: WorkResult, item: WorkItem): Promise<WorkResult> => {
-            acc.qtime += result.qtime;
+            acc.quicktypeExecTime += result.quicktypeExecTime;
             return acc;
         },
         
@@ -397,7 +397,7 @@ async function testAll(samples: string[]) {
         },
 
         map: async ({ sample, fixtureName }: WorkItem, index): Promise<WorkResult> => {
-            workResult = { qtime: 0 };
+            workResult = { quicktypeExecTime: 0 };
 
             let fixture = _.find(FIXTURES, { name: fixtureName });
             try {
