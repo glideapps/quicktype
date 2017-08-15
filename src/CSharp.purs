@@ -34,7 +34,7 @@ renderer =
         , forbiddenNames
         , topLevelName: noForbidNamer csNameStyle
         , unions: Just
-            { predicate: excludeNullablesUnionPredicate
+            { predicate: unionIsNotSimpleNullable
             , properName: simpleNamer (csNameStyle <<< combineNames)
             , nameFromTypes: simpleNamer unionNameForTypes
             }
