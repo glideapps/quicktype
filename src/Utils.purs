@@ -2,6 +2,7 @@ module Utils
     ( mapM
     , mapMapM
     , mapStrMapM
+    , mapMaybeM
     , sortByKeyM
     , sortByKey
     , foldError
@@ -22,7 +23,7 @@ import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe, maybe)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
 import Data.Set as S
 import Data.StrMap (StrMap)
@@ -75,6 +76,10 @@ mapStrMapM f m = do
         mapper (Tuple a b) = do
             c <- f a b
             pure $ Tuple a c
+
+mapMaybeM :: forall m a b. Monad m => (a -> m b) -> Maybe a -> m (Maybe b)
+mapMaybeM f (Just x) = Just <$> f x
+mapMaybeM _ _ = pure Nothing
 
 sortByKey :: forall a b. Ord b => (a -> b) -> List a -> List a
 sortByKey keyF = L.sortBy (\a b -> compare (keyF a) (keyF b))

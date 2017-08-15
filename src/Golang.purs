@@ -16,7 +16,7 @@ import Data.Maybe (Maybe(..), isJust, maybe)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
-import Data.String.Util (capitalize, camelCase, stringEscape)
+import Data.String.Util (camelCase, stringEscape, legalizeCharacters, startWithLetter)
 import Data.Tuple (Tuple(..), fst)
 import Utils (mapM, removeElement, sortByKeyM, sortByKey)
 
@@ -76,20 +76,6 @@ isPartCharacter :: Char -> Boolean
 isPartCharacter c =
     isLetterCharacter c || isDigit c
 
-legalizeCharacters :: String -> String
-legalizeCharacters str =
-    Str.fromCharArray $ map (\c -> if isLetterCharacter c then c else '_') $ Str.toCharArray str
-
-startWithLetter :: String -> String
-startWithLetter str =
-    case Str.charAt 0 str of
-    Nothing -> "Empty"
-    Just s ->
-        if isLetter s then
-            str
-        else
-            "The" <> str
-
 noComment :: String -> Doc { rendered :: String, comment :: Maybe String }
 noComment rendered =
     pure { rendered, comment: Nothing }
@@ -132,7 +118,7 @@ renderComment (Just s) = " /* " <> s <> " */"
 renderComment Nothing = ""
 
 goNameStyle :: String -> String
-goNameStyle = legalizeCharacters >>> camelCase >>> capitalize >>> startWithLetter
+goNameStyle = legalizeCharacters isLetterCharacter >>> camelCase >>> startWithLetter isLetterCharacter true
 
 golangDoc :: Doc Unit
 golangDoc = do

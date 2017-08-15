@@ -210,7 +210,7 @@ renderer =
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelName: simpleNamer jsonNameStyle -- FIXME: put title on top levels, too
+        , topLevelName: noForbidNamer jsonNameStyle -- FIXME: put title on top levels, too
         , unions: Nothing
         }
     }
@@ -274,7 +274,7 @@ strMapForOneOfTypes typeList = do
     pure $ SM.insert "oneOf" (fromArray $ A.fromFoldable objList) SM.empty
 
 definitionForClass :: Tuple Int IRClassData -> Doc (Tuple String Json)
-definitionForClass (Tuple i (IRClassData { properties })) = do
+definitionForClass (Tuple i (IRClassData { names, properties })) = do
     className <- lookupClassName i
     let sm = SM.insert "additionalProperties" (fromBoolean false) $ SM.insert "type" (fromString "object") SM.empty
     propsMap <- mapMapM (const jsonForType) properties
@@ -282,7 +282,7 @@ definitionForClass (Tuple i (IRClassData { properties })) = do
     let propsSM = SM.fromFoldable $ (M.toUnfoldable propsMap :: List _)
     let withProperties = SM.insert "properties" (fromObject propsSM) sm
     let withRequired = SM.insert "required" (fromArray requiredProps) withProperties
-    let withTitle = SM.insert "title" (fromString className) withRequired
+    let withTitle = SM.insert "title" (fromString $ combineNames names) withRequired
     pure $ Tuple className $ fromObject withTitle
 
 irToJson :: Doc Json
