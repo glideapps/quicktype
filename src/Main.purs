@@ -106,6 +106,7 @@ renderFromJsonArrayMap { renderer, input: jsonArrayMap } =
     # makeTypeAndUnify
     # regatherClassNames
     # regatherUnionNames
+    # normalizeGraphOrder
     # Doc.runRenderer renderer
     # Right
 
@@ -121,6 +122,7 @@ renderFromJsonSchemaArrayMap { renderer, input: jsonArrayMap } = do
     graph <- makeTypeFromSchemaArrayMap schemaArrayMap
     graph
         # regatherUnionNames
+        # normalizeGraphOrder
         # Doc.runRenderer renderer
         # pure
 
