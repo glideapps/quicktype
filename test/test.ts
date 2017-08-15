@@ -448,13 +448,17 @@ function shouldSkipTests(): boolean {
 
 async function main(sources: string[]) {
     let prioritySources = testsInDir("test/inputs/json/priority");
+    let miscSources = testsInDir("test/inputs/json/misc");
 
     if (shouldSkipTests()) {
         return;
     }
 
     if (sources.length == 0) {
-        sources = testsInDir("test/inputs/json/misc");
+        sources = _.concat(
+            prioritySources,
+            miscSources
+        );
     }
 
     if (IS_CI && !IS_PR && !IS_BLESSED) {
@@ -467,7 +471,7 @@ async function main(sources: string[]) {
         let testMax = 100;
         sources = _.concat(
             prioritySources,
-            _.chain(sources).shuffle().take(testMax - prioritySources.length).value()
+            _.chain(miscSources).shuffle().take(testMax - prioritySources.length).value()
         );
     }
     
