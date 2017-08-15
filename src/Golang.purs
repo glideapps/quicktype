@@ -152,7 +152,7 @@ golangDoc = do
     return r, err
 }
 """
-        line $ "func (r *" <> topLevelName <> ") Marshal() ([]byte, error) {"
+        line $ "func (r *" <> name <> ") Marshal() ([]byte, error) {"
         indent do
             line "return json.Marshal(r)"
         line "}"
