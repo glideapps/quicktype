@@ -391,10 +391,6 @@ async function testAll(samples: string[]) {
             acc.quicktypeExecTime += result.quicktypeExecTime;
             return acc;
         },
-        
-        done(accum: WorkResult) {
-            console.log(`done`, accum);
-        },
 
         map: async ({ sample, fixtureName }: WorkItem, index): Promise<WorkResult> => {
             workResult = { quicktypeExecTime: 0 };
