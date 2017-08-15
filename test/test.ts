@@ -233,7 +233,6 @@ async function quicktype(opts: Options) {
     let [_, duration] = await time(async () => {    
         await quicktype_(opts);
     });
-    workResult.quicktypeExecTime += duration;
 }
 
 function exec(
@@ -351,8 +350,6 @@ async function runFixtureWithSample(fixture: Fixture, sample: string, index: num
 }
 
 type WorkItem = { sample: string; fixtureName: string; }
-type WorkResult = { quicktypeExecTime: number }
-let workResult: WorkResult = { quicktypeExecTime: 0 };
 
 async function testAll(samples: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run
@@ -367,7 +364,7 @@ async function testAll(samples: string[]) {
         queue: tests,
         workers: CPUs,
 
-        setup: async (): Promise<WorkResult> => {
+        setup: async () => {
             console.error(`* Running ${samples.length} tests on ${FIXTURES.length} fixtures`);
 
             for (let { name, base, setup } of FIXTURES) {
@@ -383,18 +380,9 @@ async function testAll(samples: string[]) {
                     await inDir(base, async () => { exec(setup); });
                 }
             }
-
-            return { quicktypeExecTime: 0 };
         },
 
-        reduce: async (acc: WorkResult, result: WorkResult, item: WorkItem): Promise<WorkResult> => {
-            acc.quicktypeExecTime += result.quicktypeExecTime;
-            return acc;
-        },
-
-        map: async ({ sample, fixtureName }: WorkItem, index): Promise<WorkResult> => {
-            workResult = { quicktypeExecTime: 0 };
-
+        map: async ({ sample, fixtureName }: WorkItem, index) => {
             let fixture = _.find(FIXTURES, { name: fixtureName });
             try {
                 await runFixtureWithSample(fixture, sample, index, tests.length);
@@ -402,8 +390,6 @@ async function testAll(samples: string[]) {
                 console.trace(e);
                 exit(1);
             }
-
-            return workResult;
         }
     });
 }
@@ -443,6 +429,10 @@ function shouldSkipTests(): boolean {
 }
 
 async function main(sources: string[]) {
+    if (shouldSkipTests()) {
+        return;
+    }
+
     let prioritySources = _.concat(
         testsInDir("test/inputs/json/priority"),
         testsInDir("app/public/sample/json")
@@ -450,15 +440,13 @@ async function main(sources: string[]) {
 
     let miscSources = testsInDir("test/inputs/json/misc");
 
-    if (shouldSkipTests()) {
-        return;
-    }
-
     if (sources.length == 0) {
         sources = _.concat(
             prioritySources,
-            miscSources
+            _.shuffle(miscSources)
         );
+    } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
+        sources = testsInDir(sources[0]);
     }
 
     if (IS_CI && !IS_PR && !IS_BLESSED) {
@@ -473,10 +461,6 @@ async function main(sources: string[]) {
             prioritySources,
             _.chain(miscSources).shuffle().take(testMax - prioritySources.length).value()
         );
-    }
-    
-    if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
-        sources = testsInDir(sources[0]);
     }
 
     await testAll(sources);
