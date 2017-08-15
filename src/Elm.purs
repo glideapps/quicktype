@@ -52,7 +52,7 @@ renderer =
         , forbiddenNames
         , topLevelName: elmNamer upperNameStyle
         , unions: Just
-            { predicate: excludeNullablesUnionPredicate
+            { predicate: unionIsNotSimpleNullable
             , properName: elmNamer (upperNameStyle <<< combineNames)
             , nameFromTypes: elmNamer unionNameFromTypes
             }

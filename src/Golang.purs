@@ -32,7 +32,7 @@ renderer =
         , forbiddenNames: []
         , topLevelName: forbidNamer goNameStyle (\n -> let gn = goNameStyle n in [gn, "Unmarshal" <> gn])
         , unions: Just
-            { predicate: excludeNullablesUnionPredicate
+            { predicate: unionIsNotSimpleNullable
             , properName: simpleNamer (goNameStyle <<< combineNames)
             , nameFromTypes: simpleNamer unionNameFromTypes
             }

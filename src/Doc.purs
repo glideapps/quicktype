@@ -23,7 +23,7 @@ module Doc
     , simpleNamer
     , noForbidNamer
     , forbidNamer
-    , excludeNullablesUnionPredicate
+    , unionIsNotSimpleNullable
     , string
     , line
     , blank
@@ -177,8 +177,8 @@ typeNameForUnion graph classNames = case _ of
     IRMap t -> typeNameForUnion graph classNames t <> "_map"
     IRUnion _ -> "union"
 
-excludeNullablesUnionPredicate :: IRUnionRep -> Boolean
-excludeNullablesUnionPredicate ur = isNothing $ nullableFromSet $ unionToSet ur
+unionIsNotSimpleNullable :: IRUnionRep -> Boolean
+unionIsNotSimpleNullable ur = isNothing $ nullableFromSet $ unionToSet ur
 
 getTypeNameForUnion :: IRType -> Doc String
 getTypeNameForUnion typ = do
