@@ -16,6 +16,7 @@ module Doc
     , lookupClassName
     , lookupUnionName
     , lookupTopLevelName
+    , getTopLevelsWithNames
     , forTopLevel_
     , combineNames
     , NamingResult
@@ -52,7 +53,7 @@ import Data.Set as S
 import Data.String as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
-import Utils (sortByKeyM)
+import Utils (sortByKeyM, mapM)
 
 type Renderer =
     { name :: String
@@ -264,12 +265,16 @@ lookupTopLevelName n = do
     topLevelNames <- getTopLevelNames
     pure $ lookupName n topLevelNames
 
+getTopLevelsWithNames :: Doc (List (Tuple String IRType))
+getTopLevelsWithNames = do
+    topLevels <- getTopLevels
+    let tuples = M.toUnfoldable topLevels :: List _
+    mapM (\(Tuple gn t) -> (\n -> Tuple n t) <$> lookupTopLevelName gn) tuples
+
 forTopLevel_ :: (String -> IRType -> Doc Unit) -> Doc Unit
 forTopLevel_ f = do
-    topLevels <- getTopLevels
-    for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) -> do
-        topLevelName <- lookupTopLevelName topLevelNameGiven
-        f topLevelName topLevelType
+    topLevels <- getTopLevelsWithNames
+    for_ topLevels \(Tuple n t) -> f n t
 
 -- Given a potentially multi-line string, render each line at the current indent level
 line :: String -> Doc Unit
