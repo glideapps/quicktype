@@ -1,10 +1,10 @@
-#!/usr/bin/env ts-node
-
 import * as process from "process";
 import * as os from "os";
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
+
+import { main as quicktype_, Options } from "../cli/src/quicktype";
 
 import { inParallel } from "./lib/multicore";
 import deepEquals from "./lib/deepEquals";
@@ -24,11 +24,6 @@ const chalk = require("chalk");
 // Constants
 /////////////////////////////////////
 
-function debug<T>(x: T): T {
-    if (process.env.DEBUG) console.log(x);
-    return x;
-}
-
 const IS_CI = process.env.CI === "true";
 const BRANCH = process.env.TRAVIS_BRANCH;
 const IS_BLESSED = ["master"].indexOf(BRANCH) !== -1;
@@ -40,12 +35,10 @@ const CPUs = IS_CI
     ? 2 /* Travis has only 2 but reports 8 */
     : +process.env.CPUs || os.cpus().length;
 
-const QUICKTYPE_CLI = path.resolve("./cli/dist/quicktype.js");
-
-const NODE_BIN = path.resolve("./node_modules/.bin");
-process.env.PATH += `:${NODE_BIN}`;
-
-process.env.NODE_PATH = path.resolve("./node_modules");
+function debug<T>(x: T): T {
+    if (DEBUG) console.log(x);
+    return x;
+}
 
 //////////////////////////////////////
 // Fixtures
@@ -59,7 +52,7 @@ interface Fixture {
     output: string;
     topLevel: string;
     skip?: string[]
-    test: (sample: string) => void;
+    test(sample: string): Promise<void>;
 }
 
 const FIXTURES: Fixture[] = [
@@ -128,7 +121,7 @@ const FIXTURES: Fixture[] = [
 // Go tests
 /////////////////////////////////////
 
-function testGo(sample: string) {
+async function testGo(sample: string) {
     compareJsonFileToJson({
         expectedFile: sample,
         jsonCommand: `go run main.go quicktype.go < "${sample}"`,
@@ -140,7 +133,7 @@ function testGo(sample: string) {
 // C# tests
 /////////////////////////////////////
 
-function testCSharp(sample: string) {
+async function testCSharp(sample: string) {
     compareJsonFileToJson({
         expectedFile: sample,
         jsonCommand: `dotnet run "${sample}"`,
@@ -152,7 +145,7 @@ function testCSharp(sample: string) {
 // Elm tests
 /////////////////////////////////////
 
-function testElm(sample: string) {
+async function testElm(sample: string) {
     let limit_cpus = IS_CI ? "$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2" : "";
     exec(`${limit_cpus} elm-make Main.elm QuickType.elm --output elm.js`);
 
@@ -167,7 +160,7 @@ function testElm(sample: string) {
 // JSON Schema tests
 /////////////////////////////////////
 
-function testJsonSchema(sample: string) {
+async function testJsonSchema(sample: string) {
     let input = JSON.parse(fs.readFileSync(sample, "utf8"));
     let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
     
@@ -180,7 +173,7 @@ function testJsonSchema(sample: string) {
     }
 
     // Generate Go from the schema
-    exec(`quicktype --src-lang schema -o quicktype.go --top-level TopLevel --src schema.json`);
+    await quicktype({ src: ["schema.json"], srcLang: "schema", out: "quicktype.go", topLevel: "TopLevel" });
 
     // Parse the sample with Go generated from its schema, and compare to the sample
     compareJsonFileToJson({
@@ -190,9 +183,11 @@ function testJsonSchema(sample: string) {
     });
     
     // Generate a schema from the schema, making sure the schemas are the same
+    let schemaSchema = "schema-from-schema.json";
+    await quicktype({ src: ["schema.json"], srcLang: "schema", lang: "schema", out: schemaSchema });
     compareJsonFileToJson({
         expectedFile: "schema.json",
-        jsonCommand: `quicktype --src-lang schema --src schema.json --lang schema`,
+        jsonFile: schemaSchema,
         strict: true
     });
 }
@@ -201,10 +196,12 @@ function testJsonSchema(sample: string) {
 // TypeScript test
 /////////////////////////////////////
 
-function testTypeScript(sample) {
+async function testTypeScript(sample) {
     compareJsonFileToJson({
         expectedFile: sample,
-        jsonCommand: `ts-node main.ts \"${sample}\"`,
+        // We have to unset TS_NODE_PROJECT because it gets set on the workers
+        // to the root test/tsconfig.json
+        jsonCommand: `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`,
         strict: false
     });
 }
@@ -220,18 +217,28 @@ function failWith(message: string, obj: any) {
     throw obj;
 }
 
+async function time<T>(work: () => Promise<T>): Promise<[T, number]> {
+    let start = +new Date();
+    let result = await work();
+    let end = +new Date();
+    return [result, end - start];
+}
+
+async function quicktype(opts: Options) {
+    let [_, duration] = await time(async () => {    
+        await quicktype_(opts);
+    });
+}
+
 function exec(
     s: string,
     opts: { silent: boolean } = { silent: !DEBUG },
     cb?: any)
     : { stdout: string; code: number; } {
 
-    // We special-case quicktype execution
-    s = s.replace(/^quicktype/, QUICKTYPE_CLI);
-
     debug(s);
-
     let result = shell.exec(s, opts, cb);
+
     if (result.code !== 0) {
         console.error(result.stdout);
         console.error(result.stderr);
@@ -240,6 +247,7 @@ function exec(
             code: result.code
         });
     }
+
     return result;
 }
 
@@ -259,8 +267,6 @@ function compareJsonFileToJson(args: ComparisonArgs) {
         ? fs.readFileSync(jsonFile, "utf8")
         : exec(jsonCommand).stdout;
 
-    debug({ jsonString });
-
     let givenJSON = JSON.parse(jsonString);
     let expectedJSON = JSON.parse(fs.readFileSync(expectedFile, "utf8"));
     
@@ -277,19 +283,28 @@ function compareJsonFileToJson(args: ComparisonArgs) {
     }
 }
 
-function inDir(dir: string, work: () => void) {
+async function inDir(dir: string, work: () => Promise<void>) {
     let origin = process.cwd();
     
     debug(`cd ${dir}`)
     process.chdir(dir);
     
-    work();
+    await work();
     process.chdir(origin);
 }
 
-function runFixtureWithSample(fixture: Fixture, sample: string, index: number, total: number) {          
+function shouldSkipTest(fixture: Fixture, sample: string): boolean {
+    if (fs.statSync(sample).size > 32 * 1024 * 1024) {
+        return true;
+    }
+    let skips = fixture.skip || [];
+    return _.includes(skips, path.basename(sample));
+}
+
+async function runFixtureWithSample(fixture: Fixture, sample: string, index: number, total: number) {          
     let cwd = `test/runs/${fixture.name}-${randomBytes(3).toString('hex')}`;
     let sampleFile = path.basename(sample);
+    let shouldSkip = shouldSkipTest(fixture, sample);
 
     console.error(
         `*`,
@@ -297,36 +312,29 @@ function runFixtureWithSample(fixture: Fixture, sample: string, index: number, t
         chalk.magenta(fixture.name),
         path.join(
             cwd,
-            chalk.cyan(path.basename(sample))));
+            chalk.cyan(path.basename(sample))),
+        shouldSkip
+            ? chalk.red("SKIP")
+            : '');
 
-    if (fs.statSync(sample).size > 32 * 1024 * 1024) {
-        console.error(`* Skipping ${sample} because it's too large`);
-        return;
-    }
-
-    let skips = fixture.skip || [];
-    if (skips.indexOf(sampleFile) != -1) {
-        console.error(`* Skipping ${sampleFile} – known to fail`);
-        return;
-    }
+    if (shouldSkip) return;
 
     shell.cp("-R", fixture.base, cwd);
     shell.cp(sample, cwd);
 
-    inDir(cwd, () => {
-        let sampleFile = path.basename(sample);
+    await inDir(cwd, async () => {
         // Generate code from the sample
-        exec(`quicktype --src ${sampleFile} --out ${fixture.output} --top-level ${fixture.topLevel}`);
+        await quicktype({ src: [sampleFile], out: fixture.output, topLevel: fixture.topLevel});
 
-        fixture.test(sampleFile);
+        await fixture.test(sampleFile);
 
         if (fixture.diffViaSchema) {
             debug("* Diffing with code generated via JSON Schema");
             // Make a schema
-            exec(`quicktype --src ${sampleFile} --out schema.json --top-level ${fixture.topLevel}`);
+            await quicktype({ src: [sampleFile], out: "schema.json", topLevel: fixture.topLevel});
             // Quicktype from the schema and compare to expected code
             shell.mv(fixture.output, `${fixture.output}.expected`);
-            exec(`quicktype --src schema.json --src-lang schema --out ${fixture.output} --top-level ${fixture.topLevel}`);
+            await quicktype({ src: ["schema.json"], srcLang: "schema", out: fixture.output, topLevel: fixture.topLevel});
 
             // Compare fixture.output to fixture.output.expected
             exec(`diff -Naur ${fixture.output}.expected ${fixture.output} > /dev/null 2>&1`);
@@ -336,23 +344,27 @@ function runFixtureWithSample(fixture: Fixture, sample: string, index: number, t
     shell.rm("-rf", cwd);
 }
 
-function testAll(samples: string[]) {
+type WorkItem = { sample: string; fixtureName: string; }
+
+async function testAll(samples: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run
-    let tests: { sample: string; fixtureName: string }[] =  _
-        .chain(FIXTURES)
-        .flatMap((fixture) => samples.map((sample) => { 
+    let tests =  _
+        .chain(samples)
+        .flatMap(sample => FIXTURES.map(fixture => { 
             return { sample, fixtureName: fixture.name };
         }))
-        .shuffle()
         .value();
     
-    inParallel({
+    await inParallel({
         queue: tests,
         workers: CPUs,
-        setup: () => {
-            exec(`cd cli && script/build.ts`);
 
-            FIXTURES.forEach(({ name, base, setup }) => {
+        setup: async () => {
+            testCLI();
+
+            console.error(`* Running ${samples.length} tests on ${FIXTURES.length} fixtures`);
+
+            for (let { name, base, setup } of FIXTURES) {
                 exec(`rm -rf test/runs`);
                 exec(`mkdir -p test/runs`);
 
@@ -362,20 +374,30 @@ function testAll(samples: string[]) {
                         chalk.magenta(name),
                         `fixture`);
 
-                    inDir(base, () => exec(setup));
+                    await inDir(base, async () => { exec(setup); });
                 }
-            });
+            }
         },
-        work: ({ sample, fixtureName }, index) => {
+
+        map: async ({ sample, fixtureName }: WorkItem, index) => {
             let fixture = _.find(FIXTURES, { name: fixtureName });
             try {
-                runFixtureWithSample(fixture, sample, index, tests.length);
+                await runFixtureWithSample(fixture, sample, index, tests.length);
             } catch (e) {
-                console.trace();
+                console.trace(e);
                 exit(1);
             }
         }
     });
+}
+
+function testCLI() {
+    console.log(`* CLI sanity check`);
+
+    if (!IS_CI) exec(`cd cli && script/build.ts`);
+
+    const qt = "node cli/dist/quicktype.js";
+    exec(`${qt} --help`);
 }
 
 function testsInDir(dir: string): string[] {
@@ -412,26 +434,46 @@ function shouldSkipTests(): boolean {
     return false;
 }
 
-function main(sources: string[]) {
+async function main(sources: string[]) {
     if (shouldSkipTests()) {
         return;
     }
 
-    if (sources.length == 0) {
-        sources = testsInDir("test/inputs/json");
-    }
+    let prioritySources = _.concat(
+        testsInDir("test/inputs/json/priority"),
+        testsInDir("app/public/sample/json")
+    );
 
-    if (IS_CI && !IS_PR && !IS_BLESSED) {
-        // Run just a few random samples on low-priority CI branches
-        sources = _.chain(sources).shuffle().take(3).value();
-    }
-    
-    if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
+    let miscSources = testsInDir("test/inputs/json/misc");
+
+    if (sources.length == 0) {
+        sources = _.concat(
+            prioritySources,
+            _.shuffle(miscSources)
+        );
+    } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
         sources = testsInDir(sources[0]);
     }
 
-    testAll(sources);
+    if (IS_CI && !IS_PR && !IS_BLESSED) {
+        // Run only priority sources on low-priority CI branches
+        sources = prioritySources;
+    } else if (IS_CI) {
+        // On CI, we run a maximum number of test samples. First we test
+        // the priority samples to fail faster, then we continue testing
+        // until testMax with random sources.
+        let testMax = 100;
+        sources = _.concat(
+            prioritySources,
+            _.chain(miscSources).shuffle().take(testMax - prioritySources.length).value()
+        );
+    }
+
+    await testAll(sources);
 }
 
 // skip 2 `node` args
-main(process.argv.slice(2));
+main(process.argv.slice(2)).catch(reason => {
+    console.error(reason);
+    process.exit(1);
+});
