@@ -365,6 +365,8 @@ async function testAll(samples: string[]) {
         workers: CPUs,
 
         setup: async () => {
+            testCLI();
+
             console.error(`* Running ${samples.length} tests on ${FIXTURES.length} fixtures`);
 
             for (let { name, base, setup } of FIXTURES) {
@@ -392,6 +394,15 @@ async function testAll(samples: string[]) {
             }
         }
     });
+}
+
+function testCLI() {
+    console.log(`* CLI sanity check`);
+
+    if (!IS_CI) exec(`cd cli && script/build.ts`);
+
+    const qt = "node cli/dist/quicktype.js";
+    exec(`${qt} --help`);
 }
 
 function testsInDir(dir: string): string[] {
