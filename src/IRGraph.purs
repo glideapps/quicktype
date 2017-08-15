@@ -47,10 +47,9 @@ import Data.Sequence as Seq
 import Data.Set (Set)
 import Data.Set as S
 import Data.String.Util (singular)
-import Data.Tuple (Tuple(..), snd)
+import Data.Tuple (Tuple(..))
 import Data.Tuple as T
 import Partial.Unsafe (unsafePartial)
-import Utils (sortByKey)
 
 data Entry
     = NoType
@@ -156,7 +155,7 @@ mapClassesInSeq f entries =
         entryMapper _ x = x
 
 classesInGraph :: IRGraph -> List (Tuple Int IRClassData)
-classesInGraph = sortByKey snd <<< mapClasses Tuple
+classesInGraph = mapClasses Tuple
 
 isArray :: IRType -> Boolean
 isArray (IRArray _) = true
