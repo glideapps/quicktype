@@ -121,6 +121,7 @@ derive instance eqIRClassData :: Eq IRClassData
 derive instance ordIRClassData :: Ord IRClassData
 derive instance eqIRUnionRep :: Eq IRUnionRep
 derive instance ordIRUnionRep :: Ord IRUnionRep
+derive instance eqGraph :: Eq IRGraph
 
 makeClass :: Named String -> Map String IRType -> IRClassData
 makeClass name properties =
@@ -154,7 +155,7 @@ mapClassesInSeq f entries =
         entryMapper _ x = x
 
 classesInGraph :: IRGraph -> List (Tuple Int IRClassData)
-classesInGraph  = mapClasses Tuple
+classesInGraph = mapClasses Tuple
 
 isArray :: IRType -> Boolean
 isArray (IRArray _) = true

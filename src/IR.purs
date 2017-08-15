@@ -2,6 +2,7 @@ module IR
     ( IR
     , unifySetOfClasses
     , followRedirections
+    , normalizeGraphOrder
     , getClass
     , addClass
     , addTopLevel
@@ -27,9 +28,9 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Sequence as Seq
 import Data.Set (Set)
 import Data.Set as S
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), fst)
 import Data.Tuple as T
-import Utils (lookupOrDefault, mapM, mapMapM)
+import Utils (lookupOrDefault, mapM, mapMapM, mapMaybeM, sortByKey)
 
 type IR = State IRGraph
 
@@ -261,3 +262,36 @@ replaceClass :: Int -> IRType -> IR Unit
 replaceClass from to = do
     replaceTypes $ (replaceClassesInType \i -> if i == from then Just to else Nothing)
     deleteClass from
+
+normalizeGraphOrder :: IRGraph -> IRGraph
+normalizeGraphOrder graph@(IRGraph { toplevels }) =
+    execIR work
+    where
+        sortMap :: Map String IRType -> List (Tuple String IRType)
+        sortMap m = sortByKey fst $ M.toUnfoldable m
+
+        addClassesFromClass :: Int -> IR Int
+        addClassesFromClass i =
+            let IRClassData { names, properties } = getClassFromGraph graph i
+            in do
+                let sorted = sortMap properties
+                newProperties <- M.fromFoldable <$> mapM (\(Tuple n t) -> Tuple n <$> addClasses t) sorted
+                let cd = IRClassData { names, properties: newProperties }
+                fst <$> addClassWithIndex cd
+
+        addClasses :: IRType -> IR IRType
+        addClasses (IRClass i) = IRClass <$> addClassesFromClass i
+        addClasses (IRArray t) = IRArray <$> addClasses t
+        addClasses (IRMap m) = IRMap <$> addClasses m
+        addClasses (IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType })) = do
+            newArrayType <- mapMaybeM addClasses arrayType
+            newClassRef <- mapMaybeM addClassesFromClass classRef
+            newMapType <- mapMaybeM addClasses mapType
+            pure $ IRUnion $ IRUnionRep { names, primitives, arrayType: newArrayType, classRef: newClassRef, mapType: newMapType }
+        addClasses t = pure t
+
+        work :: IR Unit
+        work = do
+            for_ (sortMap toplevels) \(Tuple name t) -> do
+                newT <- addClasses t
+                addTopLevel name newT

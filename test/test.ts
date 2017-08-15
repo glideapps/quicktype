@@ -67,7 +67,7 @@ const FIXTURES: Fixture[] = [
         name: "csharp",
         base: "test/fixtures/csharp",
         setup: "dotnet restore",
-        diffViaSchema: false,
+        diffViaSchema: true,
         output: "QuickType.cs",
         topLevel: "QuickType",
         test: testCSharp
@@ -102,7 +102,7 @@ const FIXTURES: Fixture[] = [
         setup: IS_CI
                 ? "./setup-ci.sh"
                 : "rm -rf elm-stuff/build-artifacts && elm-make --yes",
-        diffViaSchema: false,
+        diffViaSchema: true,
         output: "QuickType.elm",
         topLevel: "QuickType",
         test: testElm,
@@ -114,7 +114,7 @@ const FIXTURES: Fixture[] = [
     {
         name: "typescript",
         base: "test/fixtures/typescript",
-        diffViaSchema: false,
+        diffViaSchema: true,
         output: "TopLevel.ts",
         topLevel: "TopLevel",
         test: testTypeScript,
