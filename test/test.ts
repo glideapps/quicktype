@@ -24,11 +24,6 @@ const chalk = require("chalk");
 // Constants
 /////////////////////////////////////
 
-function debug<T>(x: T): T {
-    if (process.env.DEBUG) console.log(x);
-    return x;
-}
-
 const IS_CI = process.env.CI === "true";
 const BRANCH = process.env.TRAVIS_BRANCH;
 const IS_BLESSED = ["master"].indexOf(BRANCH) !== -1;
@@ -40,10 +35,10 @@ const CPUs = IS_CI
     ? 2 /* Travis has only 2 but reports 8 */
     : +process.env.CPUs || os.cpus().length;
 
-const NODE_BIN = path.resolve("./node_modules/.bin");
-process.env.PATH += `:${NODE_BIN}`;
-
-process.env.NODE_PATH = path.resolve("./node_modules");
+function debug<T>(x: T): T {
+    if (DEBUG) console.log(x);
+    return x;
+}
 
 //////////////////////////////////////
 // Fixtures
