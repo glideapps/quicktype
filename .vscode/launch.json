@@ -16,6 +16,23 @@
             ],
             "cwd": "${workspaceRoot}",
             "protocol": "inspector"
+        },
+        {
+            "name": "test",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/node_modules/ts-node/dist/_bin.js",
+            "args": [
+                "--project",
+                "test/tsconfig.json",
+                "test/test.ts"
+            ],
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "env": {
+                "CPUs": "1",
+                "FIXTURE": "golang"
+            }
         }
     ]
 }
