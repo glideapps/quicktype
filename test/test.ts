@@ -299,6 +299,14 @@ async function inDir(dir: string, work: () => Promise<void>) {
     process.chdir(origin);
 }
 
+function shouldSkipTest(fixture: Fixture, sample: string): boolean {
+    if (fs.statSync(sample).size > 32 * 1024 * 1024) {
+        return true;
+    }
+    let skips = fixture.skip || [];
+    return _.includes(skips, path.basename(sample));
+}
+
 async function runFixtureWithSample(fixture: Fixture, sample: string, index: number, total: number) {          
     let cwd = `test/runs/${fixture.name}-${randomBytes(3).toString('hex')}`;
     let sampleFile = path.basename(sample);
@@ -311,14 +319,7 @@ async function runFixtureWithSample(fixture: Fixture, sample: string, index: num
             cwd,
             chalk.cyan(path.basename(sample))));
 
-    if (fs.statSync(sample).size > 32 * 1024 * 1024) {
-        console.error(`* Skipping ${sample} because it's too large`);
-        return;
-    }
-
-    let skips = fixture.skip || [];
-    if (skips.indexOf(sampleFile) != -1) {
-        console.error(`* Skipping ${sampleFile} – known to fail`);
+    if (shouldSkipTest(fixture, sample)) {
         return;
     }
 
@@ -353,12 +354,11 @@ let workResult: WorkResult = { qtime: 0 };
 
 async function testAll(samples: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run
-    let tests: { sample: string; fixtureName: string }[] =  _
-        .chain(FIXTURES)
-        .flatMap((fixture) => samples.map((sample) => { 
+    let tests =  _
+        .chain(samples)
+        .flatMap(sample => FIXTURES.map(fixture => { 
             return { sample, fixtureName: fixture.name };
         }))
-        .shuffle()
         .value();
     
     await inParallel({
@@ -366,6 +366,8 @@ async function testAll(samples: string[]) {
         workers: CPUs,
 
         setup: async (): Promise<WorkResult> => {
+            console.error(`* Running ${samples.length} tests on ${FIXTURES.length} fixtures`);
+
             for (let { name, base, setup } of FIXTURES) {
                 exec(`rm -rf test/runs`);
                 exec(`mkdir -p test/runs`);
@@ -443,17 +445,28 @@ function shouldSkipTests(): boolean {
 }
 
 async function main(sources: string[]) {
+    let prioritySources = testsInDir("test/inputs/json/priority");
+
     if (shouldSkipTests()) {
         return;
     }
 
     if (sources.length == 0) {
-        sources = testsInDir("test/inputs/json");
+        sources = testsInDir("test/inputs/json/misc");
     }
 
     if (IS_CI && !IS_PR && !IS_BLESSED) {
-        // Run just a few random samples on low-priority CI branches
-        sources = _.chain(sources).shuffle().take(3).value();
+        // Run only priority sources on low-priority CI branches
+        sources = prioritySources;
+    } else if (IS_CI) {
+        // On CI, we run a maximum number of test samples. First we test
+        // the priority samples to fail faster, then we continue testing
+        // until testMax with random sources.
+        let testMax = 100;
+        sources = _.concat(
+            prioritySources,
+            _.chain(sources).shuffle().take(testMax - prioritySources.length).value()
+        );
     }
     
     if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
