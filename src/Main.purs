@@ -81,7 +81,7 @@ makeTypeFromJson name json =
 makeTypeAndUnify :: StrMap (Array Json) -> IRGraph
 makeTypeAndUnify jsonArrayMap = execIR do
     forStrMap_ jsonArrayMap \name jsonArray -> do
-        topLevelTypes <- mapM (makeTypeFromJson $ Given name) $ L.fromFoldable jsonArray
+        topLevelTypes <- mapM (makeTypeFromJson $ Override name) $ L.fromFoldable jsonArray
         topLevel <- unifyMultipleTypes topLevelTypes
         addTopLevel name topLevel
     replaceSimilarClasses
@@ -89,7 +89,7 @@ makeTypeAndUnify jsonArrayMap = execIR do
 
 makeTypeFromSchemaArrayMap :: StrMap (Array JSONSchema) -> Either Error IRGraph
 makeTypeFromSchemaArrayMap schemaArrayMap = eitherify $ runIR do
-    topLevelOrErrorMap <- mapStrMapM (jsonSchemaListToIR <<< Given) schemaArrayMap
+    topLevelOrErrorMap <- mapStrMapM (jsonSchemaListToIR <<< Override) schemaArrayMap
     case foldErrorStrMap topLevelOrErrorMap of
         Left err -> pure $ Just err
         Right topLevelMap -> do

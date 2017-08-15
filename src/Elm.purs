@@ -50,9 +50,9 @@ renderer =
         { nameForClass: elmNamer nameForClass
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelName: elmNamer upperNameStyle
+        , topLevelName: maybeNamer (\(Tuple _ t) -> not $ isClass t) $ elmNamer (upperNameStyle <<< fst)
         , unions: Just
-            { predicate: excludeNullablesUnionPredicate
+            { predicate: unionIsNotSimpleNullable
             , properName: elmNamer (upperNameStyle <<< combineNames)
             , nameFromTypes: elmNamer unionNameFromTypes
             }
@@ -65,8 +65,11 @@ decoderNameFromTypeName = decapitalize
 encoderNameFromTypeName :: String -> String
 encoderNameFromTypeName className = "encode" <> className
 
+stringEncoderNameFromTypeName :: String -> String
+stringEncoderNameFromTypeName className = "encode" <> className <> "ToString"
+
 alsoForbiddenForTypeName :: String -> Array String
-alsoForbiddenForTypeName n = [decoderNameFromTypeName n, encoderNameFromTypeName n]
+alsoForbiddenForTypeName n = [decoderNameFromTypeName n, stringEncoderNameFromTypeName n]
 
 elmNamer :: forall a. Ord a => (a -> String) -> Namer a
 elmNamer namer thing = case _ of
@@ -112,6 +115,10 @@ renderComment Nothing = ""
 getTopLevelPlural :: Doc String
 getTopLevelPlural = getForSingleOrMultipleTopLevels "" "s"
 
+nameForTopLevel :: String -> IRType -> Doc String
+nameForTopLevel _ (IRClass i) = lookupClassName i
+nameForTopLevel assignedName _ = pure assignedName
+
 elmDoc :: Doc Unit
 elmDoc = do
     topLevels <- getTopLevels
@@ -122,10 +129,12 @@ elmDoc = do
     unions <- getUnions
     classNames <- mapM (\t -> lookupClassName $ fst t) classes
     unionNames <- mapM lookupUnionName unions
-    topLevelNames <- M.values <$> getTopLevelNames
+    topLevelNames <- mapM (\(Tuple n t) -> nameForTopLevel n t) =<< getTopLevelsWithNames
     let topLevelDecoders = map decoderNameFromTypeName topLevelNames
     let alsoTopLevelExports = L.concat $ map (alsoForbiddenForTypeName >>> L.fromFoldable) topLevelNames
-    let exports = L.concat $ topLevelNames : alsoTopLevelExports : classNames : unionNames : L.Nil
+    -- We're nubbing here because we might have top-level names that are not aliased, so they're
+    -- in topLevelNames and classNames, but we're too lazy to filter them out.
+    let exports = L.nub $ L.concat $ topLevelNames : alsoTopLevelExports : classNames : unionNames : L.Nil
     moduleName <- getModuleName upperNameStyle
     line """-- To decode the JSON data, add this file to your project, run
 --
@@ -139,7 +148,8 @@ elmDoc = do
 -- and you're off to the races with
 --"""
     forTopLevel_ \topLevelName topLevelType -> do
-        let topLevelDecoder = decoderNameFromTypeName topLevelName
+        name <- nameForTopLevel topLevelName topLevelType
+        let topLevelDecoder = decoderNameFromTypeName name
         line $ "--     decodeString " <> topLevelDecoder <> " myJsonString"
     blank
     line $ "module " <> moduleName <> " exposing"
@@ -156,19 +166,21 @@ import Dict exposing (Dict, map, toList)
 """
     topLevelPlural <- getTopLevelPlural
     line $ "-- top level type" <> topLevelPlural
-    forTopLevel_ \topLevelName topLevel -> do
-        let topLevelDecoder = decoderNameFromTypeName topLevelName
-        let topLevelEncoder = encoderNameFromTypeName topLevelName
+    forTopLevel_ \topLevelName topLevelType -> do
+        name <- nameForTopLevel topLevelName topLevelType
+        unless (isClass topLevelType) do
+            let topLevelDecoder = decoderNameFromTypeName name
+            blank
+            { rendered: topLevelRendered } <- typeStringForType topLevelType
+            line $ "type alias " <> name <> " = " <> topLevelRendered
+            blank
+            { rendered: rootDecoder } <- decoderNameForType topLevelType
+            line $ topLevelDecoder <> " : Jdec.Decoder " <> name
+            line $ topLevelDecoder <> " = " <> rootDecoder
         blank
-        { rendered: topLevelRendered } <- typeStringForType topLevel
-        line $ "type alias " <> topLevelName <> " = " <> topLevelRendered
-        blank
-        { rendered: rootDecoder } <- decoderNameForType topLevel
-        line $ topLevelDecoder <> " : Jdec.Decoder " <> topLevelName
-        line $ topLevelDecoder <> " = " <> rootDecoder
-        blank
-        { rendered: rootEncoder } <- encoderNameForType topLevel
-        line $ topLevelEncoder <> " : " <> topLevelName <> " -> String"
+        { rendered: rootEncoder } <- encoderNameForType topLevelType
+        let topLevelEncoder = stringEncoderNameFromTypeName name
+        line $ topLevelEncoder <> " : " <> name <> " -> String"
         line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
     blank
     line "-- JSON types"
@@ -187,7 +199,7 @@ import Dict exposing (Dict, map, toList)
         blank
         renderUnionFunctions types
     blank
-    line """--- encoder helpers
+    line """-- encoder helpers
 
 makeArrayEncoder : (a -> Jenc.Value) -> Array a -> Jenc.Value
 makeArrayEncoder f arr =

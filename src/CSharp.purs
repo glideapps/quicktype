@@ -15,7 +15,7 @@ import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), fst)
 import Partial.Unsafe (unsafePartial)
 import Utils (removeElement)
 
@@ -32,9 +32,9 @@ renderer =
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelName: noForbidNamer csNameStyle
+        , topLevelName: noForbidNamer (csNameStyle <<< fst)
         , unions: Just
-            { predicate: excludeNullablesUnionPredicate
+            { predicate: unionIsNotSimpleNullable
             , properName: simpleNamer (csNameStyle <<< combineNames)
             , nameFromTypes: simpleNamer unionNameForTypes
             }

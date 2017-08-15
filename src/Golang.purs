@@ -13,7 +13,6 @@ import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
 import Data.Maybe (Maybe(..), isJust, maybe)
-import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
 import Data.String.Util (camelCase, stringEscape, legalizeCharacters, startWithLetter)
@@ -30,23 +29,14 @@ renderer =
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
         , forbiddenNames: []
-        , topLevelName: forbidNamer goNameStyle (\n -> let gn = goNameStyle n in [gn, "Unmarshal" <> gn])
+        , topLevelName: maybeNamer (\(Tuple _ t) -> needsAlias t) $ forbidNamer (goNameStyle <<< fst) (\n -> let gn = goNameStyle n in [gn, "Unmarshal" <> gn])
         , unions: Just
-            { predicate: excludeNullablesUnionPredicate
+            { predicate: unionIsNotSimpleNullable
             , properName: simpleNamer (goNameStyle <<< combineNames)
             , nameFromTypes: simpleNamer unionNameFromTypes
             }
         }
     }
-
-unionPredicate :: IRType -> Maybe (Set IRType)
-unionPredicate = case _ of
-    IRUnion ur ->
-        let s = unionToSet ur
-        in case nullableFromSet s of
-            Nothing -> Just s
-            _ -> Nothing
-    _ -> Nothing
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = goNameStyle $ combineNames names
@@ -64,6 +54,11 @@ isValueType IRBool = true
 isValueType IRString = true
 isValueType (IRClass _) = true
 isValueType _ = false
+
+needsAlias :: IRType -> Boolean
+needsAlias (IRClass _) = false
+needsAlias (IRUnion ur) = not $ unionIsNotSimpleNullable ur
+needsAlias _ = true
 
 isLetterCharacter :: Char -> Boolean
 isLetterCharacter c =
@@ -120,12 +115,22 @@ renderComment Nothing = ""
 goNameStyle :: String -> String
 goNameStyle = legalizeCharacters isLetterCharacter >>> camelCase >>> startWithLetter isLetterCharacter true
 
+nameForTopLevel :: String -> IRType -> Doc String
+nameForTopLevel _ (IRClass i) = lookupClassName i
+nameForTopLevel assignedName (IRUnion ur) =
+    if unionIsNotSimpleNullable ur then
+        pure assignedName
+    else
+        lookupUnionName ur
+nameForTopLevel assignedName _ = pure assignedName
+
 golangDoc :: Doc Unit
 golangDoc = do
     line "// To parse and unparse this JSON data, add this code to your project and do:"
     forTopLevel_ \topLevelName topLevelType -> do
+        name <- nameForTopLevel topLevelName topLevelType
         line "//"
-        line $ "//    r, err := Unmarshal" <> topLevelName <> "(bytes)"
+        line $ "//    r, err := Unmarshal" <> name <> "(bytes)"
         line $ "//    bytes, err = r.Marshal()"
     blank
     line "package main"
@@ -135,17 +140,19 @@ golangDoc = do
         line "import \"errors\""
     line "import \"encoding/json\""
     forTopLevel_ \topLevelName topLevelType -> do
-        { rendered: renderedToplevel, comment: toplevelComment } <- renderTypeToGolang topLevelType
+        name <- nameForTopLevel topLevelName topLevelType
+        when (needsAlias topLevelType) do
+            { rendered: renderedToplevel, comment: toplevelComment } <- renderTypeToGolang topLevelType
+            blank
+            line $ "type " <> name <> " " <> renderedToplevel <> (renderComment toplevelComment)
         blank
-        line $ "type " <> topLevelName <> " " <> renderedToplevel <> (renderComment toplevelComment)
-        blank
-        line $ "func Unmarshal" <> topLevelName <> "(data []byte) (" <> topLevelName <> ", error) {"
-        line $ "    var r " <> topLevelName
+        line $ "func Unmarshal" <> name <> "(data []byte) (" <> name <> ", error) {"
+        line $ "    var r " <> name
         line """    err := json.Unmarshal(data, &r)
     return r, err
 }
 """
-        line $ "func (r *" <> topLevelName <> ") Marshal() ([]byte, error) {"
+        line $ "func (r *" <> name <> ") Marshal() ([]byte, error) {"
         indent do
             line "return json.Marshal(r)"
         line "}"

@@ -16,6 +16,7 @@ module Doc
     , lookupClassName
     , lookupUnionName
     , lookupTopLevelName
+    , getTopLevelsWithNames
     , forTopLevel_
     , combineNames
     , NamingResult
@@ -23,7 +24,8 @@ module Doc
     , simpleNamer
     , noForbidNamer
     , forbidNamer
-    , excludeNullablesUnionPredicate
+    , maybeNamer
+    , unionIsNotSimpleNullable
     , string
     , line
     , blank
@@ -51,7 +53,7 @@ import Data.Set as S
 import Data.String as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
-import Utils (sortByKeyM)
+import Utils (sortByKeyM, mapM)
 
 type Renderer =
     { name :: String
@@ -68,7 +70,7 @@ type Transforms =
     { nameForClass :: Namer IRClassData
     , nextName :: String -> String
     , forbiddenNames :: Array String
-    , topLevelName :: Namer String
+    , topLevelName :: Namer (Tuple String IRType)
     , unions :: Maybe
         { predicate :: IRUnionRep -> Boolean
         , properName :: Namer (Named (Set String))
@@ -99,7 +101,7 @@ runRenderer { doc, transforms } = runDoc doc transforms
 
 runDoc :: forall a. Doc a -> Transforms -> IRGraph -> String
 runDoc (Doc w) t graph@(IRGraph { toplevels }) =
-    let topLevelTuples = map (\n -> Tuple n n) $ M.keys toplevels
+    let topLevelTuples = map (\x@(Tuple n t) -> Tuple n x) $ M.toUnfoldable toplevels
         forbiddenFromStart = S.fromFoldable t.forbiddenNames
         { names: topLevelNames, forbidden: forbiddenAfterTopLevels } = transformNames t.topLevelName t.nextName forbiddenFromStart topLevelTuples
         classes = classesInGraph graph
@@ -164,6 +166,15 @@ simpleNamer namer = forbidNamer namer A.singleton
 noForbidNamer :: forall a. Ord a => (a -> String) -> Namer a
 noForbidNamer namer = forbidNamer namer (const [])
 
+maybeNamer :: forall a. Ord a => (a -> Boolean) -> Namer a -> Namer a
+maybeNamer needsForbid namer x =
+    if needsForbid x then
+        namer x
+    else
+        \proposedName ->
+            let { name } = namer x proposedName
+            in { name, forbid: [] }
+
 typeNameForUnion :: IRGraph -> Map Int String -> IRType -> String
 typeNameForUnion graph classNames = case _ of
     IRNothing -> "nothing"
@@ -177,8 +188,8 @@ typeNameForUnion graph classNames = case _ of
     IRMap t -> typeNameForUnion graph classNames t <> "_map"
     IRUnion _ -> "union"
 
-excludeNullablesUnionPredicate :: IRUnionRep -> Boolean
-excludeNullablesUnionPredicate ur = isNothing $ nullableFromSet $ unionToSet ur
+unionIsNotSimpleNullable :: IRUnionRep -> Boolean
+unionIsNotSimpleNullable ur = isNothing $ nullableFromSet $ unionToSet ur
 
 getTypeNameForUnion :: IRType -> Doc String
 getTypeNameForUnion typ = do
@@ -254,12 +265,16 @@ lookupTopLevelName n = do
     topLevelNames <- getTopLevelNames
     pure $ lookupName n topLevelNames
 
+getTopLevelsWithNames :: Doc (List (Tuple String IRType))
+getTopLevelsWithNames = do
+    topLevels <- getTopLevels
+    let tuples = M.toUnfoldable topLevels :: List _
+    mapM (\(Tuple gn t) -> (\n -> Tuple n t) <$> lookupTopLevelName gn) tuples
+
 forTopLevel_ :: (String -> IRType -> Doc Unit) -> Doc Unit
 forTopLevel_ f = do
-    topLevels <- getTopLevels
-    for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) -> do
-        topLevelName <- lookupTopLevelName topLevelNameGiven
-        f topLevelName topLevelType
+    topLevels <- getTopLevelsWithNames
+    for_ topLevels \(Tuple n t) -> f n t
 
 -- Given a potentially multi-line string, render each line at the current indent level
 line :: String -> Doc Unit

@@ -33,7 +33,7 @@ renderer =
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> s <> "_"
         , forbiddenNames: ["Convert"] <> reservedWords
-        , topLevelName: simpleNamer lowerNameStyle
+        , topLevelName: simpleNamer (lowerNameStyle <<< fst)
         , unions: Nothing
         }
     }

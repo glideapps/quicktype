@@ -23,7 +23,7 @@ import Data.StrMap as SM
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, singular)
 import Data.Traversable (class Traversable)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), fst)
 import IR (IR, addClass, unifyMultipleTypes, unifyTypes)
 import Utils (foldError, mapM, mapMapM, mapStrMapM)
 
@@ -210,7 +210,7 @@ renderer =
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelName: noForbidNamer jsonNameStyle -- FIXME: put title on top levels, too
+        , topLevelName: noForbidNamer (jsonNameStyle <<< fst) -- FIXME: put title on top levels, too
         , unions: Nothing
         }
     }

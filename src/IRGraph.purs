@@ -60,10 +60,12 @@ newtype IRGraph = IRGraph { classes :: Seq.Seq Entry, toplevels :: Map String IR
 
 -- Explicitly given names always take precedence over inferred ones.
 data Named a
-    = Given a
+    = Override a
+    | Given a
     | Inferred a
 
-updateGiven :: forall a b. (Maybe a -> b) -> Named a -> Named b
+updateGiven :: forall a. (Maybe a -> a) -> Named a -> Named a
+updateGiven _ o@(Override _) = o
 updateGiven f (Given x) = Given $ f $ Just x
 updateGiven f _ = Given $ f Nothing
 
@@ -72,6 +74,7 @@ updateInferred f (Inferred x) = Inferred $ f x
 updateInferred _ given = given
 
 namedValue :: forall a. Named a -> a
+namedValue (Override x) = x
 namedValue (Given x) = x
 namedValue (Inferred x) = x
 
@@ -79,12 +82,16 @@ mapToInferred :: forall a b. (a -> b) -> Named a -> Named b
 mapToInferred f n = Inferred $ f $ namedValue n
 
 unifyNamed :: forall a. (a -> a -> a) -> Named a -> Named a -> Named a
+unifyNamed f (Override oa) (Override ob) = Override $ f oa ob
+unifyNamed _ a@(Override _) _ = a
+unifyNamed _ _ b@(Override _) = b
 unifyNamed f (Given ga) (Given gb) = Given $ f ga gb
-unifyNamed f a@(Given _) _ = a
-unifyNamed f _ b@(Given _) = b
+unifyNamed _ a@(Given _) _ = a
+unifyNamed _ _ b@(Given _) = b
 unifyNamed f (Inferred ia) (Inferred ib) = Inferred $ f ia ib
 
 instance functorNamed :: Functor Named where
+    map f (Override x) = Override $ f x
     map f (Given x) = Given $ f x
     map f (Inferred x) = Inferred $ f x
 
@@ -275,6 +282,7 @@ regatherUnionNames graph@(IRGraph { classes, toplevels }) =
             IRClassData { names, properties: M.mapWithKey (updateType <<< Inferred) properties }
         reassign name names =
             case name of
+            Override o -> Override $ S.singleton o
             Given g -> updateGiven (maybe (S.singleton g) (S.insert g)) names
             Inferred i -> updateInferred (const $ S.singleton i) names
         updateType :: Named String -> IRType -> IRType
