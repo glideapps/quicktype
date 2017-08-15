@@ -12,7 +12,7 @@
     "universal-ga": "^1.1.0"
   },
   "scripts": {
-    "prepublishOnly": "script/build.ts",
+    "prepare": "script/build.ts",
     "bundle": "cd .. && npm run bundle-cli && cd cli",
     "deploy": "npm run bundle"
   },
