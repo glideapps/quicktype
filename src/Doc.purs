@@ -51,7 +51,7 @@ import Data.Set as S
 import Data.String as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
-import Utils (sortByKey, sortByKeyM)
+import Utils (sortByKeyM)
 
 type Renderer =
     { name :: String
@@ -132,7 +132,7 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) =
 
 transformNames :: forall a b. Ord a => Ord b => Namer b -> (String -> String) -> Set String -> List (Tuple a b) -> { names :: Map a String, forbidden :: Set String }
 transformNames legalize otherize illegalNames names =
-    process S.empty illegalNames M.empty (sortByKey snd names)
+    process S.empty illegalNames M.empty names
     where
         makeName :: b -> NamingResult -> Set String -> Set String -> NamingResult
         makeName name result@{ name: tryName, forbid } forbiddenInScope forbiddenForAll =
