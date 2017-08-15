@@ -23,6 +23,7 @@ module Doc
     , simpleNamer
     , noForbidNamer
     , forbidNamer
+    , maybeNamer
     , unionIsNotSimpleNullable
     , string
     , line
@@ -68,7 +69,7 @@ type Transforms =
     { nameForClass :: Namer IRClassData
     , nextName :: String -> String
     , forbiddenNames :: Array String
-    , topLevelName :: Namer String
+    , topLevelName :: Namer (Tuple String IRType)
     , unions :: Maybe
         { predicate :: IRUnionRep -> Boolean
         , properName :: Namer (Named (Set String))
@@ -99,7 +100,7 @@ runRenderer { doc, transforms } = runDoc doc transforms
 
 runDoc :: forall a. Doc a -> Transforms -> IRGraph -> String
 runDoc (Doc w) t graph@(IRGraph { toplevels }) =
-    let topLevelTuples = map (\n -> Tuple n n) $ M.keys toplevels
+    let topLevelTuples = map (\x@(Tuple n t) -> Tuple n x) $ M.toUnfoldable toplevels
         forbiddenFromStart = S.fromFoldable t.forbiddenNames
         { names: topLevelNames, forbidden: forbiddenAfterTopLevels } = transformNames t.topLevelName t.nextName forbiddenFromStart topLevelTuples
         classes = classesInGraph graph
@@ -163,6 +164,15 @@ simpleNamer namer = forbidNamer namer A.singleton
 
 noForbidNamer :: forall a. Ord a => (a -> String) -> Namer a
 noForbidNamer namer = forbidNamer namer (const [])
+
+maybeNamer :: forall a. Ord a => (a -> Boolean) -> Namer a -> Namer a
+maybeNamer needsForbid namer x =
+    if needsForbid x then
+        namer x
+    else
+        \proposedName ->
+            let { name } = namer x proposedName
+            in { name, forbid: [] }
 
 typeNameForUnion :: IRGraph -> Map Int String -> IRType -> String
 typeNameForUnion graph classNames = case _ of

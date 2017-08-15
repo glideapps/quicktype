@@ -50,7 +50,7 @@ renderer =
         { nameForClass: elmNamer nameForClass
         , nextName: \s -> "Other" <> s
         , forbiddenNames
-        , topLevelName: elmNamer upperNameStyle
+        , topLevelName: elmNamer (upperNameStyle <<< fst)
         , unions: Just
             { predicate: unionIsNotSimpleNullable
             , properName: elmNamer (upperNameStyle <<< combineNames)
