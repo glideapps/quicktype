@@ -102,7 +102,11 @@ const sections = [
   }
 ];
 
-interface Options {
+function usage() {
+  console.log(getUsage(sections));
+}
+
+export interface Options {  
   lang?: string;
   src?: string[];
   topLevel?: string;
@@ -112,161 +116,180 @@ interface Options {
   help?: boolean;
 }
 
-const options: Options = (() => {
-  let opts: { [key: string]: any } = commandLineArgs(optionDefinitions);
-  let sane = _.mapKeys(opts, (v, k) => {
-    // Turn options like 'src-urls' into 'srcUrls'
-    return _.lowerFirst(k.split('-').map(_.upperFirst).join(''));
-  });
+class Run {
+  options: Options;
 
-  sane.src = sane.src || [];
-  sane.lang = sane.lang || inferLang(sane);
-  sane.topLevel = sane.topLevel || inferTopLevel(sane);
-
-  return sane;
-})();
-
-function getRenderer() {
-  let renderer = Main.renderers.find((r) => _.includes(<{}>r, options.lang));
-
-  if (!renderer) {
-    console.error(`'${options.lang}' is not yet supported as an output language.`);
-    process.exit(1);
+  constructor(argv: string[] | Options) {
+    this.options = _.isArray(argv)
+      ? this.getOptions(argv)
+      : this.inferOptions(argv);
   }
 
-  return renderer;
-}
+  getRenderer = () => {
+    let renderer = Main.renderers.find((r) => _.includes(<{}>r, this.options.lang));
 
-function renderFromJsonArrayMap(jsonArrayMap: JsonArrayMap): string {
+    if (!renderer) {
+      console.error(`'${this.options.lang}' is not yet supported as an output language.`);
+      process.exit(1);
+    }
+
+    return renderer;
+  }
+
+  renderFromJsonArrayMap = (jsonArrayMap: JsonArrayMap): string => {
     let pipeline = {
       "json": Main.renderFromJsonArrayMap,
       "schema": Main.renderFromJsonSchemaArrayMap
-    }[options.srcLang] as Pipeline;
+    }[this.options.srcLang] as Pipeline;
 
     if (!pipeline) {
-      console.error(`Input language '${options.srcLang}' is not supported.`);
+      console.error(`Input language '${this.options.srcLang}' is not supported.`);
       process.exit(1);
     }
 
     let input = {
       input: jsonArrayMap,
-      renderer: getRenderer()
+      renderer: this.getRenderer()
     };
     
     return Either.fromRight(pipeline(input));    
-}
-
-function renderAndOutput(jsonArrayMap: JsonArrayMap) {
-  let output = renderFromJsonArrayMap(jsonArrayMap);
-  if (options.out) {
-    fs.writeFileSync(options.out, output); 
-  } else {
-    process.stdout.write(output);
   }
-}
 
-function workFromJsonArray(jsonArray: object[]) {
-  let map = <JsonArrayMap>{};
-  map[options.topLevel] = jsonArray;
-  renderAndOutput(map);
-}
+  renderAndOutput = (jsonArrayMap: JsonArrayMap) => {
+    let output = this.renderFromJsonArrayMap(jsonArrayMap);
+    if (this.options.out) {
+      fs.writeFileSync(this.options.out, output); 
+    } else {
+      process.stdout.write(output);
+    }
+  }
 
-function parseJsonFromStream(stream: fs.ReadStream | NodeJS.Socket): Promise<object> {
-  return new Promise<object>(resolve => {
-    let source = makeSource();
-    let assembler = new Assembler();
+  workFromJsonArray = (jsonArray: object[]) => {
+    let map = <JsonArrayMap>{};
+    map[this.options.topLevel] = jsonArray;
+    this.renderAndOutput(map);
+  }
 
-    source.output.on("data", chunk => {
-      assembler[chunk.name] && assembler[chunk.name](chunk.value);
+  parseJsonFromStream = (stream: fs.ReadStream | NodeJS.Socket): Promise<object> => {
+    return new Promise<object>(resolve => {
+      let source = makeSource();
+      let assembler = new Assembler();
+
+      source.output.on("data", chunk => {
+        assembler[chunk.name] && assembler[chunk.name](chunk.value);
+      });
+
+      source.output.on("end", () => resolve(assembler.current));
+
+      stream.setEncoding('utf8');
+      stream.pipe(source.input);
+      stream.resume();
     });
-
-    source.output.on("end", () => resolve(assembler.current));
-
-    stream.setEncoding('utf8');
-    stream.pipe(source.input);
-    stream.resume();
-  });
-}
-
-function usage() {
-  console.log(getUsage(sections));
-}
-
-async function mapValues(obj: object, f: (val: any) => Promise<any>): Promise<any> {
-  let result = {};
-  for (let key of Object.keys(obj)) {
-    result[key] = await f(obj[key]);
   }
-  return result;
-}
 
-async function parseFileOrUrl(fileOrUrl: string): Promise<object> {
-  if (fs.existsSync(fileOrUrl)) {
-    return parseJsonFromStream(fs.createReadStream(fileOrUrl));
-  } else {
-    let res = await fetch(fileOrUrl);
-    return parseJsonFromStream(res.body);
+  mapValues = async (obj: object, f: (val: any) => Promise<any>): Promise<any> => {
+    let result = {};
+    for (let key of Object.keys(obj)) {
+      result[key] = await f(obj[key]);
+    }
+    return result;
   }
-}
 
-function parseFileOrUrlArray(filesOrUrls: string[]): Promise<object[]> {
-  return Promise.all(filesOrUrls.map(parseFileOrUrl));
-}
+  parseFileOrUrl = async (fileOrUrl: string): Promise<object> => {
+    if (fs.existsSync(fileOrUrl)) {
+      return this.parseJsonFromStream(fs.createReadStream(fileOrUrl));
+    } else {
+      let res = await fetch(fileOrUrl);
+      return this.parseJsonFromStream(res.body);
+    }
+  }
 
-function inferLang(options: Options): string {
-  // Output file extension determines the language if language is undefined
-  if (options.out) {
-    let extension = path.extname(options.out);
-    if (extension == "") {
-      console.error("Please specify a language (--lang) or an output file extension.");
+  parseFileOrUrlArray = (filesOrUrls: string[]): Promise<object[]> => {
+    return Promise.all(filesOrUrls.map(this.parseFileOrUrl));
+  }
+
+  main = async () => {
+    if (this.options.help) {
+      usage();
+    } else if (this.options.srcUrls) {
+      let json = JSON.parse(fs.readFileSync(this.options.srcUrls, "utf8"));
+      let jsonMap = Either.fromRight(Main.urlsFromJsonGrammar(json));
+      this.renderAndOutput(await this.mapValues(jsonMap, this.parseFileOrUrlArray));
+    } else if (this.options.src.length == 0) {
+      let json = await this.parseJsonFromStream(process.stdin);
+      this.workFromJsonArray([json]);
+    } else if (this.options.src.length == 1) {
+      let jsons = await this.parseFileOrUrlArray(this.options.src);
+      this.workFromJsonArray(jsons);
+    } else {
+      usage();
       process.exit(1);
     }
-    return extension.substr(1);
   }
 
-  return "go";
+  getOptions = (argv: string[]): Options => {
+    let opts: { [key: string]: any } = commandLineArgs(optionDefinitions, { argv });
+    let sane = _.mapKeys(opts, (v, k) => {
+      // Turn options like 'src-urls' into 'srcUrls'
+      return _.lowerFirst(k.split('-').map(_.upperFirst).join(''));
+    });
+    return this.inferOptions(sane);
+  }
+
+  inferOptions = (opts: Options): Options => {
+    opts.src = opts.src || [];
+    opts.srcLang = opts.srcLang || "json";
+    opts.lang = opts.lang || this.inferLang(opts);
+    opts.topLevel = opts.topLevel || this.inferTopLevel(opts);
+    return opts;
+  }
+
+  inferLang = (options: Options): string => {
+    // Output file extension determines the language if language is undefined
+    if (options.out) {
+      let extension = path.extname(options.out);
+      if (extension == "") {
+        console.error("Please specify a language (--lang) or an output file extension.");
+        process.exit(1);
+      }
+      return extension.substr(1);
+    }
+
+    return "go";
+  }
+
+  inferTopLevel = (options: Options): string => {
+    // Output file name determines the top-level if undefined
+    if (options.out) {
+      let extension = path.extname(options.out);
+      let without = path.basename(options.out).replace(extension, "");
+      return without;
+    }
+
+    // Source determines the top-level if undefined
+    if (options.src.length == 1) {
+      let src = options.src[0];
+      let extension = path.extname(src);
+      let without = path.basename(src).replace(extension, "");
+      return without;
+    }
+
+    return "TopLevel";
+  }
 }
 
-function inferTopLevel(options: Options): string {
-  // Output file name determines the top-level if undefined
-  if (options.out) {
-    let extension = path.extname(options.out);
-    let without = path.basename(options.out).replace(extension, "");
-    return without;
-  }
-
-  // Source determines the top-level if undefined
-  if (options.src.length == 1) {
-    let src = options.src[0];
-    let extension = path.extname(src);
-    let without = path.basename(src).replace(extension, "");
-    return without;
-  }
-
-  return "TopLevel";
-}
-
-async function main(args: string[]): Promise<void> {
-  if (args.length == 0 || options.help) {
+export async function main(args: string[] | Options) {
+  if (_.isArray(args) && args.length == 0) {
     usage();
-  } else if (options.srcUrls) {
-    let json = JSON.parse(fs.readFileSync(options.srcUrls, "utf8"));
-    let jsonMap = Either.fromRight(Main.urlsFromJsonGrammar(json));
-    renderAndOutput(await mapValues(jsonMap, parseFileOrUrlArray));
-  } else if (options.src.length == 0) {
-    let json = await parseJsonFromStream(process.stdin);
-    workFromJsonArray([json]);
-  } else if (options.src.length == 1) {
-    let jsons = await parseFileOrUrlArray(options.src);
-    workFromJsonArray(jsons);
   } else {
-    usage();
-    process.exit(1);
+    let run = new Run(args);
+    await run.main();
   }
 }
 
-main(process.argv.slice(2))
-  .catch(reason => {
+if (require.main === module) {
+  main(process.argv.slice(2)).catch(reason => {
     console.error(reason);
     process.exit(1);
   });
+}

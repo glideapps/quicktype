@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "0.6.4",
+  "version": "0.7.0",
   "dependencies": {
     "chalk": "^2.1.0",
     "command-line-args": "^4.0.6",
@@ -12,7 +12,7 @@
     "universal-ga": "^1.1.0"
   },
   "scripts": {
-    "prepublish": "script/build.ts",
+    "prepare": "script/build.ts",
     "bundle": "cd .. && npm run bundle-cli && cd cli",
     "deploy": "npm run bundle"
   },

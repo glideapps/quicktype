@@ -1,5 +1,5 @@
 language: node_js
-node_js: '6'
+node_js: 'node' # latest stable node release
 addons:
   apt:
     sources:
@@ -8,7 +8,7 @@ addons:
     packages:
       - dotnet-dev-1.0.1
 script:
-  - test/test.ts
+  - test/test
 cache:
   directories:
     - sysconfcpus/bin
