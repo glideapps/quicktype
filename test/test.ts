@@ -92,9 +92,7 @@ const FIXTURES: Fixture[] = [
     {
         name: "elm",
         base: "test/fixtures/elm",
-        setup: IS_CI
-                ? "./setup-ci.sh"
-                : "rm -rf elm-stuff/build-artifacts && elm-make --yes",
+        setup: "rm -rf elm-stuff/build-artifacts && elm-make --yes",
         diffViaSchema: true,
         output: "QuickType.elm",
         topLevel: "QuickType",
