@@ -310,6 +310,7 @@ function shouldSkipTest(fixture: Fixture, sample: string): boolean {
 async function runFixtureWithSample(fixture: Fixture, sample: string, index: number, total: number) {          
     let cwd = `test/runs/${fixture.name}-${randomBytes(3).toString('hex')}`;
     let sampleFile = path.basename(sample);
+    let shouldSkip = shouldSkipTest(fixture, sample);
 
     console.error(
         `*`,
@@ -317,11 +318,12 @@ async function runFixtureWithSample(fixture: Fixture, sample: string, index: num
         chalk.magenta(fixture.name),
         path.join(
             cwd,
-            chalk.cyan(path.basename(sample))));
+            chalk.cyan(path.basename(sample))),
+        shouldSkip
+            ? chalk.red("SKIP")
+            : '');
 
-    if (shouldSkipTest(fixture, sample)) {
-        return;
-    }
+    if (shouldSkip) return;
 
     shell.cp("-R", fixture.base, cwd);
     shell.cp(sample, cwd);
