@@ -8,7 +8,7 @@ addons:
     packages:
       - dotnet-dev-1.0.1
 script:
-  - test/test
+  - script/correct-cpus.sh test/test
 cache:
   directories:
     - sysconfcpus/bin
