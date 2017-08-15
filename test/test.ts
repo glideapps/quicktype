@@ -114,7 +114,7 @@ const FIXTURES: Fixture[] = [
     {
         name: "typescript",
         base: "test/fixtures/typescript",
-        diffViaSchema: false,
+        diffViaSchema: true,
         output: "TopLevel.ts",
         topLevel: "TopLevel",
         test: testTypeScript,

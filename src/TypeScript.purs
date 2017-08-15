@@ -108,11 +108,14 @@ getContainedClassName = case _ of
     IRClass i -> Just <$> lookupClassName i
     _ -> pure Nothing
 
+tsNameStyle :: Boolean -> String -> String
+tsNameStyle upper = Str.legalizeCharacters isLetterCharacter >>> Str.camelCase >>> (Str.startWithLetter isStartCharacter upper)
+
 upperNameStyle :: String -> String
-upperNameStyle = Str.camelCase >>> Str.capitalize >>> legalizeIdentifier
+upperNameStyle = tsNameStyle true
 
 lowerNameStyle :: String -> String
-lowerNameStyle = Str.camelCase >>> Str.decapitalize >>> legalizeIdentifier
+lowerNameStyle = tsNameStyle false
 
 quote :: String -> String
 quote s = "\"" <> s <> "\""
