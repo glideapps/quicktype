@@ -3,10 +3,14 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import registerServiceWorker from './registerServiceWorker';
+import browser from "bowser";
 
-window.Intercom("boot", {
-  app_id: "lormewsd"
-});
+if (browser.mobile || browser.tablet) {
+} else {
+  window.Intercom("boot", {
+    app_id: "lormewsd"
+  });
+}
 
 ReactDOM.render(<App />, document.getElementById('root'));
 registerServiceWorker();
