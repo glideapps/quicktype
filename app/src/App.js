@@ -5,6 +5,7 @@ import Snackbar from './Snackbar';
 
 import urlParse from 'url-parse';
 import debounce from 'debounce';
+import * as _ from "lodash";
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
@@ -46,7 +47,7 @@ class App extends Component {
 
     // Or on the hostname like java.quicktype.io
     let hostLang = window.location.host.split('.')[0];
-    let hostLangRenderer = Main.renderers.find((r) => {
+    let hostLangRenderer = _.find(Main.renderers, (r) => {
       // Match extension or the aceMode (e.g. 'cs' or 'csharp')
       return r.extension === hostLang || r.aceMode === hostLang;
     });
@@ -91,7 +92,7 @@ class App extends Component {
   getRenderer = (name) => {
     let currentRenderer = this.state && this.state.rendererName;
     let theName = name || currentRenderer || localStorage["renderer"] || Main.renderers[0].name;
-    return Main.renderers.find((r) => r.name === theName) || Main.renderers[0];
+    return _.find(Main.renderers, { name: theName }) || Main.renderers[0];
   }
 
   sendEvent = (name, value) => window.ga("send", "event", "App", name, value);
