@@ -17,11 +17,6 @@ main {
   height: 100vh;
 }
 
-.mdc-layout-grid__inner {
-  grid-gap: 0 !important;
-  height: 100%;
-}
-
 #logo {
   margin-right: -24px;
 }
@@ -31,8 +26,13 @@ main {
 }
 
 sidebar {
-  background: var(--mdc-theme--background);
+  background: #00212B;
   z-index: 1;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 40vw;
 }
 
 sidebar > .content {
@@ -61,6 +61,12 @@ sidebar .mdc-simple-menu--open {
 #button-parent button {
   float: right;
   margin-top: 2px;
+}
+
+@media (max-width: 1000px) {
+  .cli-hint,  #entry-toplevel {
+    display: none;
+  }
 }
 
 .cli-hint {
@@ -94,8 +100,9 @@ sidebar .mdc-select:first-child {
 
 #output-editor {
   z-index: 0;
-  width: 100% !important;
-  height: 100% !important;
+  width: 60vw !important;
+  height: 100vh !important;
+  left: 40vw;
   margin: 0;
   font-size: 11pt !important;
   font-family: Consolas, Menlo, monospace;
