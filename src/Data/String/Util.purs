@@ -8,6 +8,9 @@ module Data.String.Util
     , stringEscape
     , times
     , legalizeCharacters
+    , isLetterOrUnderscore
+    , isLetterOrUnderscoreOrDigit
+    , isLetterOrLetterNumber
     , startWithLetter
     ) where
 
@@ -15,7 +18,7 @@ import Prelude
 
 import Data.Array as A
 import Data.Char (toCharCode)
-import Data.Char.Unicode (isPrint)
+import Data.Char.Unicode (GeneralCategory(..), generalCategory, isDigit, isLetter, isPrint)
 import Data.Either as Either
 import Data.Int as Int
 import Data.Maybe (Maybe(..))
@@ -89,6 +92,18 @@ times s n = s <> times s (n - 1)
 legalizeCharacters :: (Char -> Boolean) -> String -> String
 legalizeCharacters isLegal str =
     S.fromCharArray $ map (\c -> if isLegal c then c else '_') $ S.toCharArray str
+
+isLetterOrLetterNumber :: Char -> Boolean
+isLetterOrLetterNumber c =
+    isLetter c || (generalCategory c == Just LetterNumber)
+
+isLetterOrUnderscore :: Char -> Boolean
+isLetterOrUnderscore c =
+    isLetter c || c == '_'
+
+isLetterOrUnderscoreOrDigit :: Char -> Boolean
+isLetterOrUnderscoreOrDigit c =
+    isLetterOrUnderscore c || isDigit c
 
 startWithLetter :: (Char -> Boolean) -> Boolean -> String -> String
 startWithLetter isLetter upper str =

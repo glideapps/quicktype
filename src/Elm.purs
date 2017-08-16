@@ -7,7 +7,6 @@ import IRGraph
 import Prelude
 
 import Data.Array as A
-import Data.Char.Unicode (isLetter)
 import Data.Foldable (for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
@@ -16,7 +15,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
 import Data.Set as S
-import Data.String.Util (capitalize, decapitalize, camelCase, stringEscape, legalizeCharacters, startWithLetter)
+import Data.String.Util (camelCase, capitalize, decapitalize, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..), fst)
 import Utils (forEnumerated_, removeElement, sortByKey, sortByKeyM, mapM)
 
@@ -92,12 +91,8 @@ namesFromTopLevelNameGiven given =
     let name = typeNameForTopLevelNameGiven given
     in A.cons name $ alsoForbiddenForTypeName name
 
-isLetterCharacter :: Char -> Boolean
-isLetterCharacter c =
-    isLetter c || c == '_'
-
 elmNameStyle :: Boolean -> String -> String
-elmNameStyle upper = legalizeCharacters isLetterCharacter >>> camelCase >>> (startWithLetter isLetterCharacter upper)
+elmNameStyle upper = legalizeCharacters isLetterOrUnderscoreOrDigit >>> camelCase >>> (startWithLetter isLetterOrUnderscore upper)
 
 lowerNameStyle :: String -> String
 lowerNameStyle = elmNameStyle false
