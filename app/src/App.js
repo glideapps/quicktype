@@ -176,28 +176,24 @@ class App extends Component {
 
   render() {
     return (
-      <main className="mdc-typography mdc-layout-grid">
-        <div className="mdc-layout-grid__inner">
-            <Sidebar
-              className="mdc-layout-grid__cell mdc-layout-grid__cell--span-4"
-              source={this.state.source}
-              onChangeSource={this.sourceEdited}
-              sampleName={this.state.sampleName}
-              onChangeSample={this.changeSampleName} 
-              rendererName={this.state.rendererName}
-              onChangeRenderer={this.changeRendererName}
-              topLevelName={this.state.topLevelName}
-              onChangeTopLevelName={debounce(this.changeTopLevelName, 300)} />
-            <Editor
-              id="output"
-              className="mdc-layout-grid__cell mdc-layout-grid__cell--span-8"
-              lang={this.getRenderer().aceMode}
-              theme="chrome"
-              value={this.state.output}
-              showGutter={true}
-              />
-            <Snackbar ref={(r) => { this.snackbar = r; }} />
-          </div>
+      <main className="mdc-typography">
+          <Sidebar
+            source={this.state.source}
+            onChangeSource={this.sourceEdited}
+            sampleName={this.state.sampleName}
+            onChangeSample={this.changeSampleName} 
+            rendererName={this.state.rendererName}
+            onChangeRenderer={this.changeRendererName}
+            topLevelName={this.state.topLevelName}
+            onChangeTopLevelName={debounce(this.changeTopLevelName, 300)} />
+          <Editor
+            id="output"
+            lang={this.getRenderer().aceMode}
+            theme="chrome"
+            value={this.state.output}
+            showGutter={true}
+            />
+          <Snackbar ref={(r) => { this.snackbar = r; }} />
       </main>
     );
   }
