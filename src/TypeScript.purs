@@ -6,7 +6,7 @@ import Doc
 import IRGraph
 import Prelude
 
-import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
+import Data.Char.Unicode (GeneralCategory(..), generalCategory)
 import Data.Either as Either
 import Data.Foldable (any, for_, intercalate, maximum)
 import Data.List (List)
@@ -47,32 +47,18 @@ isValueType IRDouble = true
 isValueType IRBool = true
 isValueType _ = false
 
-isLetterCharacter :: Char -> Boolean
-isLetterCharacter c = isLetter c || generalCategory c == Just LetterNumber
-
 isStartCharacter :: Char -> Boolean
-isStartCharacter c = isLetterCharacter c || c == '_'
+isStartCharacter c = Str.isLetterOrLetterNumber c || c == '_'
 
 isPartCharacter :: Char -> Boolean
 isPartCharacter c =
     case generalCategory c of
-    Nothing -> false
     Just DecimalNumber -> true
     Just ConnectorPunctuation -> true
     Just NonSpacingMark -> true
     Just SpacingCombiningMark -> true
     Just Format -> true
-    _ -> isLetterCharacter c
-
-legalizeIdentifier :: String -> String
-legalizeIdentifier str =
-    case Str.charAt 0 str of
-    Nothing -> "Empty"
-    Just s ->
-        if isStartCharacter s then
-            Str.fromCharArray $ map (\c -> if isLetterCharacter c then c else '_') $ Str.toCharArray str
-        else
-            legalizeIdentifier ("_" <> str)
+    _ -> isStartCharacter c
 
 renderUnion :: Set IRType -> Doc String
 renderUnion s =
@@ -109,7 +95,7 @@ getContainedClassName = case _ of
     _ -> pure Nothing
 
 tsNameStyle :: Boolean -> String -> String
-tsNameStyle upper = Str.legalizeCharacters isLetterCharacter >>> Str.camelCase >>> (Str.startWithLetter isStartCharacter upper)
+tsNameStyle upper = Str.legalizeCharacters isPartCharacter >>> Str.camelCase >>> (Str.startWithLetter isStartCharacter upper)
 
 upperNameStyle :: String -> String
 upperNameStyle = tsNameStyle true

@@ -7,16 +7,14 @@ import IRGraph
 import Prelude
 
 import Data.Array as A
-import Data.Char.Unicode (isDigit, isLetter)
 import Data.Foldable (for_, intercalate, foldl)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
 import Data.Maybe (Maybe(..), isJust, maybe)
-import Data.Set (Set)
 import Data.Set as S
 import Data.String as Str
-import Data.String.Util (camelCase, stringEscape, legalizeCharacters, startWithLetter)
+import Data.String.Util (camelCase, stringEscape, legalizeCharacters, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, startWithLetter)
 import Data.Tuple (Tuple(..), fst)
 import Utils (mapM, removeElement, sortByKeyM, sortByKey)
 
@@ -55,17 +53,6 @@ isValueType IRBool = true
 isValueType IRString = true
 isValueType (IRClass _) = true
 isValueType _ = false
-
-isLetterCharacter :: Char -> Boolean
-isLetterCharacter c =
-    isLetter c || c == '_'
-
-isStartCharacter :: Char -> Boolean
-isStartCharacter = isLetterCharacter
-
-isPartCharacter :: Char -> Boolean
-isPartCharacter c =
-    isLetterCharacter c || isDigit c
 
 noComment :: String -> Doc { rendered :: String, comment :: Maybe String }
 noComment rendered =
@@ -109,7 +96,7 @@ renderComment (Just s) = " /* " <> s <> " */"
 renderComment Nothing = ""
 
 goNameStyle :: String -> String
-goNameStyle = legalizeCharacters isLetterCharacter >>> camelCase >>> startWithLetter isLetterCharacter true
+goNameStyle = legalizeCharacters isLetterOrUnderscoreOrDigit >>> camelCase >>> startWithLetter isLetterOrUnderscore true
 
 golangDoc :: Doc Unit
 golangDoc = do

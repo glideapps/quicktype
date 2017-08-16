@@ -6,7 +6,7 @@ import Doc
 import IRGraph
 import Prelude
 
-import Data.Char.Unicode (GeneralCategory(..), generalCategory, isLetter)
+import Data.Char.Unicode (GeneralCategory(..), generalCategory)
 import Data.Foldable (find, for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
@@ -14,7 +14,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
-import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape)
+import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import Utils (removeElement)
@@ -56,24 +56,19 @@ isValueType IRDouble = true
 isValueType IRBool = true
 isValueType _ = false
 
-isLetterCharacter :: Char -> Boolean
-isLetterCharacter c =
-    isLetter c || (generalCategory c == Just LetterNumber)
-
 isStartCharacter :: Char -> Boolean
 isStartCharacter c =
-    isLetterCharacter c || c == '_'
+    isLetterOrLetterNumber c || c == '_'
 
 isPartCharacter :: Char -> Boolean
 isPartCharacter c =
     case generalCategory c of
-    Nothing -> false
     Just DecimalNumber -> true
     Just ConnectorPunctuation -> true
     Just NonSpacingMark -> true
     Just SpacingCombiningMark -> true
     Just Format -> true
-    _ -> isLetterCharacter c
+    _ -> isStartCharacter c
 
 renderNullableToCSharp :: IRType -> Doc String
 renderNullableToCSharp x = do
@@ -104,7 +99,7 @@ renderTypeToCSharp = case _ of
     IRUnion ur -> renderUnionToCSharp ur
 
 csNameStyle :: String -> String
-csNameStyle = legalizeCharacters isLetterCharacter >>> camelCase >>> startWithLetter isStartCharacter true
+csNameStyle = legalizeCharacters isPartCharacter >>> camelCase >>> startWithLetter isStartCharacter true
 
 getDecoderHelperPrefix :: String -> Doc String
 getDecoderHelperPrefix topLevelName = getForSingleOrMultipleTopLevels "" topLevelName
