@@ -36,7 +36,7 @@ sidebar {
 }
 
 sidebar > .content {
-  padding: 0 20px;
+  padding: 20px 20px 0 20px;
   display: flex;
   flex-direction: column;
 }
@@ -46,7 +46,7 @@ sidebar .mdc-switch {
 }
 
 sidebar .source-dest > .mdc-select {
-  margin-top: 20px;
+  width: 40% !important;
 }
 
 /* Get open menu above Ace red cursor */
@@ -61,12 +61,6 @@ sidebar .mdc-simple-menu--open {
 #button-parent button {
   float: right;
   margin-top: 2px;
-}
-
-@media (max-width: 1000px) {
-  .cli-hint,  #entry-toplevel {
-    display: none;
-  }
 }
 
 .cli-hint {
@@ -112,4 +106,63 @@ sidebar .mdc-select:first-child {
   color: black;
   opacity: 0.3;
   background: white;
+}
+
+@media (min-width: 1440px) {
+  sidebar {
+    width: 600px;
+  }
+  #output-editor {
+    width: calc(100vw - 600px);
+    left: 600px;
+  }
+}
+
+@media (max-width: 1000px) {
+  sidebar {
+    width: 50vw;
+  }
+  sidebar > .content {
+    padding: 10px;
+  }
+  #output-editor {
+    width: 50vw;
+    left: 50vw;
+  }
+}
+
+@media (max-width: 800px) {
+  .cli-hint,  #entry-toplevel {
+    display: none;
+  }
+  sidebar {
+    width: 100vw;
+    height: 40vh;
+    bottom: inherit;
+  }
+  #output-editor {
+    top: 40vh;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 60vh !important;
+  }
+  #button-parent {
+    display: none;
+  }
+}
+
+@media (max-width: 800px) and (max-height: 600px) {
+  sidebar {
+    height: 50vh;
+  }
+  #output-editor {
+    top: 50vh;
+    height: 50vh !important;
+  }
+}
+
+@media (max-width: 600px) {
+  sidebar .source-dest > .mdc-select {
+    width: 35% !important;
+  }
 }

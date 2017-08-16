@@ -8,6 +8,9 @@ import Entry from './Entry';
 import Button from "@react-mdc/button";
 import Dropdown from './Dropdown';
 
+import innerHeight from 'ios-inner-height';
+import browser from "bowser";
+
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
 
@@ -27,7 +30,15 @@ export default class Sidebar extends Component {
   }
 
   adjustSourceEditorHeight = () => {
-      let height = Math.max(300, window.innerHeight - 320);
+      let fullHeight = innerHeight();
+      let isMobile = browser.mobile || browser.tablet;
+      let height = window.innerWidth > 800
+        ? fullHeight - (isMobile ? 340 : 280)
+        : fullHeight / 2 - 200;
+    
+      // Manual expand a bit on non-table mobile
+      if (fullHeight < 600 || browser.mobile) height += 80;
+
       this.jsonEditor.resize(height);
   }
 

@@ -28,14 +28,21 @@ class App extends Component {
 
     let sampleName = localStorage["sample"] || Samples.samples[0];
     let topLevelName = this.topLevelNameFromSample(sampleName);
-    
+
     this.state = {
       source: localStorage["source"] || "",
       output: "",
+      showEditorGutter: true,
       rendererName: preferredRendererName || this.getRenderer().name,
       sampleName,
       topLevelName
     };
+  }
+
+  adjustEditorGutter = () => {
+    this.setState({
+      showEditorGutter: window.innerWidth > 800
+    });
   }
 
   tryGetPreferredRendererExtension = () => {
@@ -65,6 +72,11 @@ class App extends Component {
     
     let copyButton = window.document.querySelector('sidebar .mdc-button--primary');
     copyButton.addEventListener('click', this.copyOutput);
+
+    window.addEventListener('resize', () => {
+      this.adjustEditorGutter();
+    });
+    this.adjustEditorGutter();
   }
 
   copyOutput = () => {
@@ -191,7 +203,7 @@ class App extends Component {
             lang={this.getRenderer().aceMode}
             theme="chrome"
             value={this.state.output}
-            showGutter={true}
+            showGutter={this.state.showEditorGutter}
             />
           <Snackbar ref={(r) => { this.snackbar = r; }} />
       </main>
