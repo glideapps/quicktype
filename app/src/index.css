@@ -26,7 +26,7 @@ main {
 }
 
 sidebar {
-  background: var(--mdc-theme--background);
+  background: #00212B;
   z-index: 1;
   position: absolute;
   left: 0;
