@@ -11,6 +11,7 @@ import Data.Foldable (find, for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
+import Data.Map (Map)
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
@@ -122,9 +123,9 @@ using System.Net;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;"""
-        forEachClass_ \className cd -> do
+        forEachClass_ \className properties -> do
             blank
-            renderCSharpClass cd className
+            renderCSharpClass className properties
         unions <- getUnions
         for_ unions \types -> do
             blank
@@ -310,8 +311,8 @@ renderCSharpUnion ur = do
         line "}"
     line "}"
 
-renderCSharpClass :: IRClassData -> String -> Doc Unit
-renderCSharpClass (IRClassData { names, properties }) className = do
+renderCSharpClass :: String -> Map String IRType -> Doc Unit
+renderCSharpClass className properties = do
     let propertyNames = transformPropertyNames (simpleNamer csNameStyle) ("Other" <> _) [className] properties
     line $ "public class " <> className
     -- TODO fix this manual indentation

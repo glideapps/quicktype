@@ -269,12 +269,12 @@ forEachTopLevel_ f = do
         topLevelName <- lookupTopLevelName topLevelNameGiven
         f topLevelName topLevelType
 
-forEachClass_ :: (String -> IRClassData -> Doc Unit) -> Doc Unit
+forEachClass_ :: (String -> Map String IRType -> Doc Unit) -> Doc Unit
 forEachClass_ f = do
     classes <- getClasses
-    for_ classes \(Tuple i cd) -> do
+    for_ classes \(Tuple i (IRClassData { properties })) -> do
         className <- lookupClassName i
-        f className cd
+        f className properties
 
 -- Given a potentially multi-line string, render each line at the current indent level
 line :: String -> Doc Unit

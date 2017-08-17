@@ -164,17 +164,17 @@ import Dict exposing (Dict, map, toList)
         line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
     blank
     line "-- JSON types"
-    forEachClass_ \className cd -> do
+    forEachClass_ \className properties -> do
         blank
-        typeRenderer renderTypeDefinition className cd
+        typeRenderer renderTypeDefinition className properties
     for_ unions \types -> do
         blank
         renderUnionDefinition types
     blank
     line "-- decoders and encoders"
-    forEachClass_ \className cd -> do
+    forEachClass_ \className properties -> do
         blank
-        typeRenderer renderTypeFunctions className cd
+        typeRenderer renderTypeFunctions className properties
     for_ unions \types -> do
         blank
         renderUnionFunctions types
@@ -336,8 +336,8 @@ renderTypeFunctions className propertyNames propsList = do
                 line "["
             line "]"
 
-typeRenderer :: (String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> String -> IRClassData -> Doc Unit
-typeRenderer renderer className (IRClassData { properties }) = do
+typeRenderer :: (String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> String -> Map String IRType -> Doc Unit
+typeRenderer renderer className properties = do
     let propertyNames = transformPropertyNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenNames properties
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     renderer className propertyNames propsList
