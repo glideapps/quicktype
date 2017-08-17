@@ -133,7 +133,7 @@ elmDoc = do
     line """--
 -- and you're off to the races with
 --"""
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         let topLevelDecoder = decoderNameFromTypeName topLevelName
         line $ "--     decodeString " <> topLevelDecoder <> " myJsonString"
     blank
@@ -151,7 +151,7 @@ import Dict exposing (Dict, map, toList)
 """
     topLevelPlural <- getTopLevelPlural
     line $ "-- top level type" <> topLevelPlural
-    forTopLevel_ \topLevelName topLevel -> do
+    forEachTopLevel_ \topLevelName topLevel -> do
         let topLevelDecoder = decoderNameFromTypeName topLevelName
         let topLevelEncoder = encoderNameFromTypeName topLevelName
         blank

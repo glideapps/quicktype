@@ -101,7 +101,7 @@ goNameStyle = legalizeCharacters isLetterOrUnderscoreOrDigit >>> camelCase >>> s
 golangDoc :: Doc Unit
 golangDoc = do
     line "// To parse and unparse this JSON data, add this code to your project and do:"
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         line "//"
         line $ "//    r, err := Unmarshal" <> topLevelName <> "(bytes)"
         line $ "//    bytes, err = r.Marshal()"
@@ -112,7 +112,7 @@ golangDoc = do
         line "import \"bytes\""
         line "import \"errors\""
     line "import \"encoding/json\""
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         { rendered: renderedToplevel, comment: toplevelComment } <- renderTypeToGolang topLevelType
         blank
         line $ "type " <> topLevelName <> " " <> renderedToplevel <> (renderComment toplevelComment)

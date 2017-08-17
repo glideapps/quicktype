@@ -147,14 +147,14 @@ typeScriptDoc = do
     line $ """// To parse this data:
 //
 //   import """ <> imports.basic  <> """ from "./""" <> moduleName  <> ";"
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
         line $ "//   let value: " <> topFull  <> " = JSON.parse(json);"
     line $ """//
 // Or use Convert.fromJson to perform a type-checking conversion:
 //
 //   import """ <> imports.advanced  <> """ from "./""" <> moduleName  <> ";"
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
         deserializer <- deserializerName topLevelName
         line $ "//   let value: " <> topFull  <> " = Convert." <> deserializer <> "(json);"
@@ -244,7 +244,7 @@ converter = do
     line $ """export module Convert {
     let path: string[] = [];
 """
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
         topTypeMap <- renderTypeMapType topLevelType
         deserializer <- deserializerName topLevelName

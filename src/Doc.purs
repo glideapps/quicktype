@@ -16,7 +16,7 @@ module Doc
     , lookupClassName
     , lookupUnionName
     , lookupTopLevelName
-    , forTopLevel_
+    , forEachTopLevel_
     , combineNames
     , NamingResult
     , transformNames
@@ -254,8 +254,8 @@ lookupTopLevelName n = do
     topLevelNames <- getTopLevelNames
     pure $ lookupName n topLevelNames
 
-forTopLevel_ :: (String -> IRType -> Doc Unit) -> Doc Unit
-forTopLevel_ f = do
+forEachTopLevel_ :: (String -> IRType -> Doc Unit) -> Doc Unit
+forEachTopLevel_ f = do
     topLevels <- getTopLevels
     for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) -> do
         topLevelName <- lookupTopLevelName topLevelNameGiven
