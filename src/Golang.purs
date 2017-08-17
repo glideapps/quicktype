@@ -264,7 +264,7 @@ renderStruct name columns = do
 
 renderGolangType :: String -> IRClassData -> Doc Unit
 renderGolangType className (IRClassData { names, properties }) = do
-    let { names: propertyNames } = transformNames (simpleNamer goNameStyle) ("Other" <> _) S.empty $ map (\n -> Tuple n n) $ M.keys properties
+    let propertyNames = transformPropertyNames (simpleNamer goNameStyle) ("Other" <> _) [] properties
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     columns <- propsList # mapM \(Tuple pname ptype) -> do
         let csPropName = lookupName pname propertyNames

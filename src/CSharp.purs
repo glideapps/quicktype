@@ -312,7 +312,7 @@ renderCSharpUnion ur = do
 
 renderCSharpClass :: IRClassData -> String -> Doc Unit
 renderCSharpClass (IRClassData { names, properties }) className = do
-    let { names: propertyNames } = transformNames (simpleNamer csNameStyle) ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
+    let propertyNames = transformPropertyNames (simpleNamer csNameStyle) ("Other" <> _) [className] properties
     line $ "public class " <> className
     -- TODO fix this manual indentation
     string "    {"
