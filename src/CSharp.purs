@@ -37,19 +37,13 @@ renderer =
         , unions: Just
             { predicate: unionIsNotSimpleNullable
             , properName: simpleNamer (csNameStyle <<< combineNames)
-            , nameFromTypes: simpleNamer unionNameForTypes
+            , nameFromTypes: simpleNamer (unionNameIntercalated csNameStyle "Or")
             }
         }
     }
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = csNameStyle $ combineNames names
-
-unionNameForTypes :: Array String -> String
-unionNameForTypes names =
-    names
-    <#> csNameStyle
-    # intercalate "Or"
 
 isValueType :: IRType -> Boolean
 isValueType IRInteger = true

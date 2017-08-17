@@ -50,7 +50,7 @@ renderer =
         , unions: Just
             { predicate: unionIsNotSimpleNullable
             , properName: elmNamer (upperNameStyle <<< combineNames)
-            , nameFromTypes: elmNamer unionNameFromTypes
+            , nameFromTypes: elmNamer (unionNameIntercalated upperNameStyle "Or")
             }
         }
     }
@@ -73,12 +73,6 @@ elmNamer namer thing = case _ of
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = upperNameStyle $ combineNames names
-
-unionNameFromTypes :: Array String -> String
-unionNameFromTypes names =
-    names
-    <#> upperNameStyle
-    # intercalate "Or"
 
 typeNameForTopLevelNameGiven :: String -> String
 typeNameForTopLevelNameGiven = upperNameStyle
