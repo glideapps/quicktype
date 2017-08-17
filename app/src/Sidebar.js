@@ -71,9 +71,9 @@ export default class Sidebar extends Component {
                     fontSize={browser.mobile ? 12 : 15}
                     showGutter={false}
                     style={{
-                        display: window.innerWidth > 800
-                            ? "block"
-                            : ["block", "none"][this.props.tab] 
+                        visibility: window.innerWidth > 800
+                            ? "visible"
+                            : ["visible", "hidden"][this.props.tab] 
                     }}
                     />
                 

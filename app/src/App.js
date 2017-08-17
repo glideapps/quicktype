@@ -217,9 +217,9 @@ class App extends Component {
             fontSize={browser.mobile ? 12 : 15}
             showGutter={this.state.showEditorGutter}
             style={{
-                display: window.innerWidth > 800
-                    ? "block"
-                    : ["none", "block"][this.state.tab] 
+                visibility: window.innerWidth > 800
+                    ? "visible"
+                    : ["hidden", "visible"][this.state.tab] 
             }}
             />
           <Snackbar ref={(r) => { this.snackbar = r; }} />
