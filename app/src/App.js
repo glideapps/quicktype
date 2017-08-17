@@ -198,7 +198,7 @@ class App extends Component {
 
   render() {
     return (
-      <main className="mdc-typography">
+      <main className="mdc-typography mdc-theme--dark">
           <Sidebar
             sampleName={this.state.sampleName}
             onChangeSample={this.changeSampleName} 

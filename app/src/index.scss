@@ -1,11 +1,8 @@
-@import "../node_modules/material-components-web/dist/material-components-web.css";
+$mdc-theme-primary: #009688;
+$mdc-theme-accent: #009688;
+$mdc-theme-background: #00212B;
 
-:root {
-  --mdc-theme-primary: #009688;
-  --mdc-theme--background: #00212B;
-  --mdx-theme--accent: #009688;
-  --editor-background: #002B36;
-}
+@import "~material-components-web/material-components-web";
 
 body {
   margin: 0;
@@ -27,32 +24,33 @@ main {
 }
 
 sidebar {
-  background: #00212B;
+  background: $mdc-theme-background;
   z-index: 1;
   position: absolute;
   left: 0;
   top: 0;
   width: 40vw;
-}
 
-sidebar > .content {
-  padding: 20px 20px 0 20px;
-  display: flex;
-  flex-direction: column;
-}
+  .content {
+    padding: 20px 20px 0 20px;
+    display: flex;
+    flex-direction: column;
+  }
 
-sidebar .mdc-select:first-child {
-  margin-right: 20px;
-  width: calc(60% - 35px) !important;
-}
+  .mdc-select {
+    &:first-child {
+      margin-right: 20px;
+      width: calc(60% - 35px) !important;
+    }
+    &:last-child {
+      width: calc(40% - 35px) !important;
+    }
+  }
 
-sidebar .mdc-select:last-child {
-  width: calc(40% - 35px) !important;
-}
-
-/* Get open menu above Ace red cursor */
-sidebar .mdc-simple-menu--open {
-  z-index: 1000;
+  /* Get open menu above Ace red cursor */
+  .mdc-simple-menu--open {
+    z-index: 1000;
+  }
 }
 
 #tab-bar-tabs {
@@ -69,10 +67,10 @@ sidebar .mdc-simple-menu--open {
   top: 200px;
   left: 20px;
   height: calc(100vh - 286px) !important;
-}
 
-#json-editor.mobile {
-  height: calc(100vh - 346px) !important;
+  &.mobile {
+    height: calc(100vh - 346px) !important;
+  }
 }
 
 #button-parent {
@@ -81,29 +79,29 @@ sidebar .mdc-simple-menu--open {
   bottom: 0;
   padding: 20px;
   width: calc(40vw - 40px);
-}
 
-#button-parent button {
-  float: right;
-  margin-top: 2px;
+  button {
+    float: right;
+    margin-top: 2px;
+  }
 }
 
 .cli-hint {
   color: white;
   float: left;
-}
 
-.cli-hint p {
-  color: white;
-  opacity: 0.5;
-  margin: 0 0 4px 0;
-  font-size: 11pt;
-}
+  p {
+    color: white;
+    opacity: 0.5;
+    margin: 0 0 4px 0;
+    font-size: 11pt;
+  }
 
-.cli-hint pre {
-  margin: 0;
-  opacity: 0.8;
-  font-family: Consolas, Menlo, monospace;
+  pre {
+    margin: 0;
+    opacity: 0.8;
+    font-family: Consolas, Menlo, monospace;
+  }
 }
 
 #output-editor {
@@ -115,12 +113,12 @@ sidebar .mdc-simple-menu--open {
   margin: 0;
   font-family: Consolas, Menlo, monospace;
   height: 100vh !important;
-}
 
-#output-editor .ace_gutter {
-  color: black;
-  opacity: 0.3;
-  background: white;
+  .ace_gutter {
+    color: black;
+    opacity: 0.3;
+    background: white;
+  }
 }
 
 @media (min-width: 1440px) {
@@ -140,42 +138,44 @@ sidebar .mdc-simple-menu--open {
 }
 
 @media (max-width: 1000px) {
+  $sidebarWidth: 400px;
   sidebar {
-    width: 50vw;
+    width: $sidebarWidth;
   }
   #json-editor {
-    width: calc(50vw - 40px) !important;
+    width: ($sidebarWidth - 40px) !important;
   }
   #output-editor {
-    width: 50vw;
-    left: 50vw;
+    width: calc(100vw - #{$sidebarWidth});
+    left: $sidebarWidth;
   }
   #button-parent {
-    width: calc(50vw - 40px);
+    width: $sidebarWidth - 40px;
   }
 }
 
 @media (max-width: 800px) {
+  $sidebarHeight: 175px;
   .cli-hint,  #entry-toplevel, #button-parent {
     display: none;
   }
   sidebar {
     width: 100vw;
-    height: 175px;
+    height: $sidebarHeight;
   }
   #output-editor {
-    top: 174px;
+    top: $sidebarHeight;
     left: 0 !important;
     width: 100vw !important;
-    height: calc(100vh - 174px) !important;
+    height: calc(100vh - #{$sidebarHeight}) !important;
   }
   #json-editor, #json-editor.mobile {
     z-index: 0;
     margin: 0 0 0 -20px;
-    top: 174px;
+    top: $sidebarHeight;
     border-radius: 0;
     width: 100vw !important;
-    height: calc(100vh - 174px) !important;
+    height: calc(100vh - #{$sidebarHeight}) !important;
   }
   #tab-bar-tabs {
     display: table;
@@ -183,15 +183,16 @@ sidebar .mdc-simple-menu--open {
 }
 
 @media (max-width: 600px) {
+  $sidebarHeight: 167px;
   sidebar {
-    height: 167px;
+    height: $sidebarHeight;
   }
   #output-editor {
-    top: 167px;
-    height: calc(100vh - 167px) !important;
+    top: $sidebarHeight;
+    height: calc(100vh - #{$sidebarHeight}) !important;
   }
   #json-editor, #json-editor.mobile {
-    top: 167px;
-    height: calc(100vh -  167px) !important;
+    top: $sidebarHeight;
+    height: calc(100vh -  #{$sidebarHeight}) !important;
   }
 }
