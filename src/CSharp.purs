@@ -126,10 +126,9 @@ using Newtonsoft.Json;"""
         forEachClass_ \className properties -> do
             blank
             renderCSharpClass className properties
-        unions <- getUnions
-        for_ unions \types -> do
+        forEachUnion_ \unionName unionTypes -> do
             blank
-            renderCSharpUnion types
+            renderCSharpUnion unionName unionTypes
         blank
         renderJsonConverter
     line "}"
@@ -259,10 +258,8 @@ renderGenericDeserializer predicate tokenType types = unsafePartial $
         indent do
             deserializeType t
 
-renderCSharpUnion :: IRUnionRep -> Doc Unit
-renderCSharpUnion ur = do
-    let allTypes = unionToSet ur
-    name <- lookupUnionName ur
+renderCSharpUnion :: String -> Set IRType -> Doc Unit
+renderCSharpUnion name allTypes = do
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     line $ "public struct " <> name
     line "{"

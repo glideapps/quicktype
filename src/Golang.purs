@@ -13,7 +13,7 @@ import Data.List as L
 import Data.Map as M
 import Data.Map (Map)
 import Data.Maybe (Maybe(..), isJust, maybe)
-import Data.Set as S
+import Data.Set (Set)
 import Data.String as Str
 import Data.String.Util (camelCase, stringEscape, legalizeCharacters, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, startWithLetter)
 import Data.Tuple (Tuple(..), fst)
@@ -240,9 +240,9 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
 	}
 	return nil, errors.New("Union must not be null")
 }"""
-    for_ unions \types -> do
+    forEachUnion_ \unionName unionTypes -> do
         blank
-        renderGolangUnion types
+        renderGolangUnion unionName unionTypes
 
 pad :: Int -> String -> String
 pad n s = s <> Str.fromCharArray (A.replicate (n - (Str.length s)) ' ')
@@ -279,9 +279,8 @@ unionFieldName t = goNameStyle <$> getTypeNameForUnion t
 compoundPredicates :: Array (IRType -> Boolean)
 compoundPredicates = [isArray, isClass, isMap]
 
-renderGolangUnion :: IRUnionRep -> Doc Unit
-renderGolangUnion ur = do
-    name <- lookupUnionName ur
+renderGolangUnion :: String -> Set IRType -> Doc Unit
+renderGolangUnion name allTypes = do
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     let isNullableString = if isJust emptyOrNull then "true" else "false"
     fields <- L.fromFoldable nonNullTypes # sortByKeyM unionFieldName
@@ -316,7 +315,6 @@ renderGolangUnion ur = do
         line $ "return marshalUnion(" <> args <> ", " <> isNullableString <> ")"
     line "}"
     where
-        allTypes = unionToSet ur
         ifClass :: (String -> String -> Doc Unit) -> Doc Unit
         ifClass f =
             let { element } = removeElement isClass allTypes
