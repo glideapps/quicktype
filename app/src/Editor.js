@@ -15,9 +15,10 @@ export default class Editor extends Component {
     setTimeout(() => window.session = this.editor.getSession(), 3000);
   }
 
-  resize = (height) => {
-      this.editor.container.style.height = `${height}px`;
-      this.editor.resize();
+  scrollTop = () => {
+    this.editor.resize(true);
+    this.editor.scrollToLine(0, false, true, () => {});
+    this.editor.gotoLine(0, 0, true);
   }
 
   render() {

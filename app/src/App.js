@@ -159,6 +159,7 @@ class App extends Component {
     this.tryStore({renderer: rendererName});
 
     this.setState({ rendererName }, () => {
+      this.editor.scrollTop();
       this.sourceEdited(this.state.source);
     });
   }
@@ -186,6 +187,7 @@ class App extends Component {
     fetch(`/sample/json/${this.state.sampleName}`)
       .then((data) => data.json())
       .then((data) => {
+        this.jsonEditor.scrollTop();
         let source = JSON.stringify(data, null, 2);
         this.setState({ source });
         this.sourceEdited(source);
