@@ -167,17 +167,17 @@ import Dict exposing (Dict, map, toList)
         line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
     blank
     line "-- JSON types"
-    for_ classes \(Tuple i cls) -> do
+    forEachClass_ \className cd -> do
         blank
-        typeRenderer renderTypeDefinition i cls
+        typeRenderer renderTypeDefinition className cd
     for_ unions \types -> do
         blank
         renderUnionDefinition types
     blank
     line "-- decoders and encoders"
-    for_ classes \(Tuple i cls) -> do
+    forEachClass_ \className cd -> do
         blank
-        typeRenderer renderTypeFunctions i cls
+        typeRenderer renderTypeFunctions className cd
     for_ unions \types -> do
         blank
         renderUnionFunctions types
@@ -300,8 +300,8 @@ isOptional = case _ of
     -- IRUnion u -> S.member IRNull $ unionToSet u
     _ -> false
 
-renderTypeDefinition :: Int -> String -> Map String String -> List (Tuple String IRType) -> Doc Unit
-renderTypeDefinition classIndex className propertyNames propsList = do
+renderTypeDefinition :: String -> Map String String -> List (Tuple String IRType) -> Doc Unit
+renderTypeDefinition className propertyNames propsList = do
     line $ "type alias " <> className <> " ="
     indent do
         forWithPrefix_ propsList "{ " ", " \braceOrComma (Tuple pname ptype) -> do
@@ -312,8 +312,8 @@ renderTypeDefinition classIndex className propertyNames propsList = do
             line "{"
         line "}"
 
-renderTypeFunctions :: Int -> String -> Map String String -> List (Tuple String IRType) -> Doc Unit
-renderTypeFunctions classIndex className propertyNames propsList = do
+renderTypeFunctions :: String -> Map String String -> List (Tuple String IRType) -> Doc Unit
+renderTypeFunctions className propertyNames propsList = do
     let decoderName = decoderNameFromTypeName className
     line $ decoderName <> " : Jdec.Decoder " <> className
     line $ decoderName <> " ="
@@ -339,12 +339,11 @@ renderTypeFunctions classIndex className propertyNames propsList = do
                 line "["
             line "]"
 
-typeRenderer :: (Int -> String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> Int -> IRClassData -> Doc Unit
-typeRenderer renderer classIndex (IRClassData { properties }) = do
-    className <- lookupClassName classIndex
+typeRenderer :: (String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> String -> IRClassData -> Doc Unit
+typeRenderer renderer className (IRClassData { properties }) = do
     let { names: propertyNames } = transformNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ M.keys properties
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
-    renderer classIndex className propertyNames propsList
+    renderer className propertyNames propsList
 
 renderUnionDefinition :: IRUnionRep -> Doc Unit
 renderUnionDefinition ur = do
