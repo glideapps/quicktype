@@ -30,6 +30,7 @@ export default class Editor extends Component {
             theme={this.props.theme}
             showGutter={this.props.showGutter}
             onChange={this.props.onChange}
+            fontSize={this.props.fontSize || 14}
             highlightActiveLine={false}
             showPrintMargin={false}
             displayIndentGuides={false}

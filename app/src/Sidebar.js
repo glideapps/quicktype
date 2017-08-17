@@ -7,6 +7,7 @@ import Entry from './Entry';
 //import Switch from './Switch';
 import Button from "@react-mdc/button";
 import Dropdown from './Dropdown';
+import browser from "bowser";
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
@@ -60,6 +61,7 @@ export default class Sidebar extends Component {
                     theme="solarized_dark"
                     onChange={debounce(this.props.onChangeSource, 500)}
                     value={this.props.source}
+                    fontSize={browser.mobile ? 11 : 13}
                     showGutter={false}
                     />
 

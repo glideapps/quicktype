@@ -6,6 +6,7 @@ import Snackbar from './Snackbar';
 import urlParse from 'url-parse';
 import debounce from 'debounce';
 import * as _ from "lodash";
+import browser from "bowser";
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
@@ -203,6 +204,7 @@ class App extends Component {
             lang={this.getRenderer().aceMode}
             theme="chrome"
             value={this.state.output}
+            fontSize={browser.mobile ? 11 : 15}
             showGutter={this.state.showEditorGutter}
             />
           <Snackbar ref={(r) => { this.snackbar = r; }} />
