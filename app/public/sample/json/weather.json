@@ -1,0 +1,149 @@
+{
+	"query": {
+		"count": 1,
+		"created": "2017-08-17T15:28:08Z",
+		"lang": "en-US",
+		"results": {
+			"channel": {
+				"units": {
+					"distance": "mi",
+					"pressure": "in",
+					"speed": "mph",
+					"temperature": "F"
+				},
+				"title": "Yahoo! Weather - Tokyo, Tokyo Prefecture, JP",
+				"link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1118370/",
+				"description": "Yahoo! Weather for Tokyo, Tokyo Prefecture, JP",
+				"language": "en-us",
+				"lastBuildDate": "Fri, 18 Aug 2017 12:28 AM JST",
+				"ttl": "60",
+				"location": {
+					"city": "Tokyo",
+					"country": "Japan",
+					"region": " Tokyo Prefecture"
+				},
+				"wind": {
+					"chill": "75",
+					"direction": "45",
+					"speed": "7"
+				},
+				"atmosphere": {
+					"humidity": "95",
+					"pressure": "1009.0",
+					"rising": "0",
+					"visibility": "11.5"
+				},
+				"astronomy": {
+					"sunrise": "5:2 am",
+					"sunset": "6:27 pm"
+				},
+				"image": {
+					"title": "Yahoo! Weather",
+					"width": "142",
+					"height": "18",
+					"link": "http://weather.yahoo.com",
+					"url": "http://l.yimg.com/a/i/brand/purplelogo//uh/us/news-wea.gif"
+				},
+				"item": {
+					"title": "Conditions for Tokyo, Tokyo Prefecture, JP at 11:00 PM JST",
+					"lat": "35.670479",
+					"long": "139.740921",
+					"link": "http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1118370/",
+					"pubDate": "Thu, 17 Aug 2017 11:00 PM JST",
+					"condition": {
+						"code": "26",
+						"date": "Thu, 17 Aug 2017 11:00 PM JST",
+						"temp": "75",
+						"text": "Cloudy"
+					},
+					"forecast": [
+						{
+							"code": "4",
+							"date": "18 Aug 2017",
+							"day": "Fri",
+							"high": "85",
+							"low": "74",
+							"text": "Thunderstorms"
+						},
+						{
+							"code": "47",
+							"date": "19 Aug 2017",
+							"day": "Sat",
+							"high": "83",
+							"low": "74",
+							"text": "Scattered Thunderstorms"
+						},
+						{
+							"code": "26",
+							"date": "20 Aug 2017",
+							"day": "Sun",
+							"high": "80",
+							"low": "73",
+							"text": "Cloudy"
+						},
+						{
+							"code": "26",
+							"date": "21 Aug 2017",
+							"day": "Mon",
+							"high": "81",
+							"low": "72",
+							"text": "Cloudy"
+						},
+						{
+							"code": "28",
+							"date": "22 Aug 2017",
+							"day": "Tue",
+							"high": "85",
+							"low": "76",
+							"text": "Mostly Cloudy"
+						},
+						{
+							"code": "30",
+							"date": "23 Aug 2017",
+							"day": "Wed",
+							"high": "86",
+							"low": "76",
+							"text": "Partly Cloudy"
+						},
+						{
+							"code": "30",
+							"date": "24 Aug 2017",
+							"day": "Thu",
+							"high": "85",
+							"low": "72",
+							"text": "Partly Cloudy"
+						},
+						{
+							"code": "4",
+							"date": "25 Aug 2017",
+							"day": "Fri",
+							"high": "86",
+							"low": "77",
+							"text": "Thunderstorms"
+						},
+						{
+							"code": "4",
+							"date": "26 Aug 2017",
+							"day": "Sat",
+							"high": "80",
+							"low": "73",
+							"text": "Thunderstorms"
+						},
+						{
+							"code": "11",
+							"date": "27 Aug 2017",
+							"day": "Sun",
+							"high": "80",
+							"low": "70",
+							"text": "Showers"
+						}
+					],
+					"description": "<![CDATA[<img src=\"http://l.yimg.com/a/i/us/we/52/26.gif\"/>\n<BR />\n<b>Current Conditions:</b>\n<BR />Cloudy\n<BR />\n<BR />\n<b>Forecast:</b>\n<BR /> Fri - Thunderstorms. High: 85Low: 74\n<BR /> Sat - Scattered Thunderstorms. High: 83Low: 74\n<BR /> Sun - Cloudy. High: 80Low: 73\n<BR /> Mon - Cloudy. High: 81Low: 72\n<BR /> Tue - Mostly Cloudy. High: 85Low: 76\n<BR />\n<BR />\n<a href=\"http://us.rd.yahoo.com/dailynews/rss/weather/Country__Country/*https://weather.yahoo.com/country/state/city-1118370/\">Full Forecast at Yahoo! Weather</a>\n<BR />\n<BR />\n<BR />\n]]>",
+					"guid": {
+						"isPermaLink": "false"
+					}
+				}
+			}
+		}
+	}
+}

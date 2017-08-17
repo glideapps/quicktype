@@ -5,10 +5,10 @@ samples = [
     "getting-started.json",
     "pokedex.json",
     "spotify-album.json",
-    "flight.json",
-    "bitcoin-latest-block.json",
-    "bitcoin-transactions.json",
+    "weather.json",
+    "bitcoin-block.json",
+    "reddit.json",
     "github-events.json",
     "us-avg-temperatures.json",
-    "package.json"
+    "us-senators.json"
   ]
