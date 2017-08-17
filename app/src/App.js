@@ -238,7 +238,7 @@ class App extends Component {
             theme="chrome"
             value={this.state.output}
             fontSize={(browser.mobile || browser.tablet) ? 13 : 15}
-            showGutter={this.state.showEditorGutter}
+            showGutter={window.innerWidth > 1000}
             style={window.innerWidth > 800
             ? {
                 visibility: "visible" 

@@ -144,10 +144,12 @@ sidebar {
   }
   #json-editor {
     width: ($sidebarWidth - 40px) !important;
+    font-size: 9pt !important;
   }
   #output-editor {
     width: calc(100vw - #{$sidebarWidth});
     left: $sidebarWidth;
+    font-size: 9pt !important;
   }
   #button-parent {
     width: $sidebarWidth - 40px;
@@ -168,8 +170,10 @@ sidebar {
     left: 0 !important;
     width: 100vw !important;
     height: calc(100vh - #{$sidebarHeight}) !important;
+    font-size: 11pt !important;
   }
   #json-editor, #json-editor.mobile {
+    font-size: 11pt !important;
     z-index: 0;
     margin: 0 0 0 -20px;
     top: $sidebarHeight;
