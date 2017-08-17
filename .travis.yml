@@ -7,6 +7,8 @@ addons:
         key_url: 'https://apt-mo.trafficmanager.net/keys/microsoft.asc'
     packages:
       - dotnet-dev-1.0.1
+      - maven
+      - default-jdk
 script:
   - test/test
 cache:

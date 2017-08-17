@@ -16,6 +16,7 @@ import { camelCase } from "../../output/Data.String.Util";
 import 'brace/mode/csharp';
 import 'brace/mode/golang';
 import 'brace/mode/typescript';
+import 'brace/mode/java';
 import 'brace/mode/json';
 import 'brace/mode/elm';
 import 'brace/mode/groovy';

@@ -66,6 +66,18 @@ const FIXTURES: Fixture[] = [
         test: testCSharp
     },
     {
+        name: "java",
+        base: "test/fixtures/java",
+        diffViaSchema: false,
+        output: "src/main/java/io/quicktype/TopLevel.java",
+        topLevel: "TopLevel",
+        test: testJava,
+        skip: [
+            "identifiers.json",
+            "simple-identifiers.json"
+        ]
+    },
+    {
         name: "golang",
         base: "test/fixtures/golang",
         diffViaSchema: true,
@@ -137,6 +149,19 @@ async function testCSharp(sample: string) {
     compareJsonFileToJson({
         expectedFile: sample,
         jsonCommand: `dotnet run "${sample}"`,
+        strict: false
+    });
+}
+
+//////////////////////////////////////
+// Java tests
+/////////////////////////////////////
+
+async function testJava(sample: string) {
+    exec(`mvn package`);
+    compareJsonFileToJson({
+        expectedFile: sample,
+        jsonCommand: `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`,
         strict: false
     });
 }

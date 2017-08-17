@@ -14,5 +14,6 @@
 		"app/build": true,
 		"elm-stuff": true,
 		"cli/dist": true	
-    }
+	},
+	"java.configuration.updateBuildConfiguration": "automatic"
 }
