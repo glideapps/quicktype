@@ -219,7 +219,7 @@ class App extends Component {
             theme="solarized_dark"
             onChange={debounce(this.sourceEdited, 500)}
             value={this.state.source}
-            fontSize={(browser.mobile || browser.tablet) ? 12 : 15}
+            fontSize={(browser.mobile || browser.tablet) ? 12 : 14}
             showGutter={false}
             style={window.innerWidth > 800
             ? {
@@ -236,7 +236,7 @@ class App extends Component {
             lang={this.getRenderer().aceMode}
             theme="chrome"
             value={this.state.output}
-            fontSize={(browser.mobile || browser.tablet) ? 12 : 15}
+            fontSize={(browser.mobile || browser.tablet) ? 12 : 14}
             showGutter={this.state.showEditorGutter}
             style={window.innerWidth > 800
             ? {
