@@ -11,6 +11,7 @@ import Data.Foldable (for_, intercalate, foldl)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
+import Data.Map (Map)
 import Data.Maybe (Maybe(..), isJust, maybe)
 import Data.Set as S
 import Data.String as Str
@@ -128,8 +129,8 @@ golangDoc = do
             line "return json.Marshal(r)"
         line "}"
     blank
-    forEachClass_ \className cd -> do
-        renderGolangType className cd
+    forEachClass_ \className properties -> do
+        renderGolangType className properties
         blank
     unless (unions == L.Nil) do
         line """func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, nullable bool) (bool, error) {
@@ -262,8 +263,8 @@ renderStruct name columns = do
         columnize columns
     line "}"
 
-renderGolangType :: String -> IRClassData -> Doc Unit
-renderGolangType className (IRClassData { names, properties }) = do
+renderGolangType :: String -> Map String IRType -> Doc Unit
+renderGolangType className properties = do
     let propertyNames = transformPropertyNames (simpleNamer goNameStyle) ("Other" <> _) [] properties
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     columns <- propsList # mapM \(Tuple pname ptype) -> do

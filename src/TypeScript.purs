@@ -12,9 +12,9 @@ import Data.Foldable (any, for_, intercalate, maximum)
 import Data.List (List)
 import Data.List as L
 import Data.Map as M
+import Data.Map (Map)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Set (Set)
-import Data.Set as S
 import Data.String as Str
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
@@ -168,8 +168,8 @@ typeScriptDoc = do
     blank
     converter
 
-renderInterface :: String -> IRClassData -> Doc Unit
-renderInterface className (IRClassData { names, properties }) = do
+renderInterface :: String -> Map String IRType -> Doc Unit
+renderInterface className properties = do
     let propertyNames = transformPropertyNames (simpleNamer propertyNamify) (_ <> "_") [] properties
 
     let resolver name typ = markNullable (lookupName name propertyNames) typ
@@ -216,8 +216,8 @@ renderTypeMapType = case _ of
         renderedTyps <- mapM renderTypeMapType $ L.fromFoldable $ unionToSet types
         pure $ "union(" <> intercalate ", " renderedTyps <> ")"
 
-renderTypeMapClass :: String -> IRClassData -> Doc Unit
-renderTypeMapClass className (IRClassData { names, properties }) = do
+renderTypeMapClass :: String -> Map String IRType -> Doc Unit
+renderTypeMapClass className properties = do
     line $ className <> ": {"
     indent do
         let props = M.toUnfoldable properties :: Array _
