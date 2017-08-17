@@ -18,6 +18,7 @@ module Doc
     , lookupTopLevelName
     , forEachTopLevel_
     , forEachClass_
+    , forEachUnion_
     , combineNames
     , NamingResult
     , transformNames
@@ -275,6 +276,14 @@ forEachClass_ f = do
     for_ classes \(Tuple i (IRClassData { properties })) -> do
         className <- lookupClassName i
         f className properties
+
+forEachUnion_ :: (String -> Set IRType -> Doc Unit) -> Doc Unit
+forEachUnion_ f = do
+    unions <- getUnions
+    for_ unions \ur -> do
+        let allTypes = unionToSet ur
+        unionName <- lookupUnionName ur
+        f unionName allTypes
 
 -- Given a potentially multi-line string, render each line at the current indent level
 line :: String -> Doc Unit
