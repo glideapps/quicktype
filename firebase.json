@@ -1,8 +1,5 @@
 {
     "hosting": {
-        "public": "app/build",
-        "ignore": [
-            "**/*.js.map"
-        ]
+        "public": "app/build"
     }
 }
