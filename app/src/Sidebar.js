@@ -68,7 +68,7 @@ export default class Sidebar extends Component {
                     theme="solarized_dark"
                     onChange={debounce(this.props.onChangeSource, 500)}
                     value={this.props.source}
-                    fontSize={browser.mobile ? 12 : 15}
+                    fontSize={(browser.mobile || browser.tablet) ? 12 : 15}
                     showGutter={false}
                     style={{
                         visibility: window.innerWidth > 800

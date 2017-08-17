@@ -41,10 +41,19 @@ class App extends Component {
     };
   }
 
-  adjustEditorGutter = () => {
+  resize = () => {
     this.setState({
       showEditorGutter: window.innerWidth > 800
     });
+
+    // Set editor height manually
+    if (window.innerWidth <= 800) {
+      let lines = (this.state.output.match(/\r?\n/g) || '').length;
+      let editorHeight = this.editor.editor.renderer.lineHeight * lines;
+      let editor = document.getElementById('output-editor');
+      let height = Math.max(window.outerHeight, editorHeight);
+      editor.style.setProperty("height", `${height}px`, "important");
+    }
   }
 
   tryGetPreferredRendererExtension = () => {
@@ -76,9 +85,8 @@ class App extends Component {
     copyButton.addEventListener('click', this.copyOutput);
 
     window.addEventListener('resize', () => {
-      this.adjustEditorGutter();
+      this.resize();
     });
-    this.adjustEditorGutter();
   }
 
   copyOutput = () => {
@@ -139,7 +147,7 @@ class App extends Component {
       });
       this.setState({ source });
     } else {
-      this.setState({ source, output });
+      this.setState({ source, output }, () => this.resize());
     }
 
     this.tryStore({source});
@@ -209,10 +217,11 @@ class App extends Component {
             onChangeTopLevelName={debounce(this.changeTopLevelName, 300)} />
           <Editor
             id="output"
+            ref={(r) => { this.editor = r; }}
             lang={this.getRenderer().aceMode}
             theme="chrome"
             value={this.state.output}
-            fontSize={browser.mobile ? 12 : 15}
+            fontSize={(browser.mobile || browser.tablet) ? 12 : 15}
             showGutter={this.state.showEditorGutter}
             style={{
                 visibility: window.innerWidth > 800

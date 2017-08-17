@@ -31,7 +31,7 @@ sidebar {
   position: absolute;
   left: 0;
   top: 0;
-  bottom: 0;
+  height: 100vh;
   width: 40vw;
 }
 
@@ -96,16 +96,16 @@ sidebar .mdc-select:first-child {
   margin-top: 10px;
   border-radius: 3px;
   width: inherit !important;
-  height: calc(100vh - 280px) !important;
+  height: calc(100vh - 340px) !important;
 }
 
 #output-editor {
   z-index: 0;
   width: 60vw !important;
-  height: 100vh !important;
   left: 40vw;
   margin: 0;
   font-family: Consolas, Menlo, monospace;
+  height: 100vh !important;
 }
 
 #output-editor .ace_gutter {
@@ -147,7 +147,6 @@ sidebar .mdc-select:first-child {
     top: 174px;
     left: 0 !important;
     width: 100vw !important;
-    bottom: 0;
   }
   #json-editor {
     margin: 0 0 0 -20px;
