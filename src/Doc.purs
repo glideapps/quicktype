@@ -17,6 +17,7 @@ module Doc
     , lookupUnionName
     , lookupTopLevelName
     , forEachTopLevel_
+    , forEachClass_
     , combineNames
     , NamingResult
     , transformNames
@@ -260,6 +261,13 @@ forEachTopLevel_ f = do
     for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) -> do
         topLevelName <- lookupTopLevelName topLevelNameGiven
         f topLevelName topLevelType
+
+forEachClass_ :: (String -> IRClassData -> Doc Unit) -> Doc Unit
+forEachClass_ f = do
+    classes <- getClasses
+    for_ classes \(Tuple i cd) -> do
+        className <- lookupClassName i
+        f className cd
 
 -- Given a potentially multi-line string, render each line at the current indent level
 line :: String -> Doc Unit

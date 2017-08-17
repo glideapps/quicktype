@@ -128,9 +128,8 @@ golangDoc = do
             line "return json.Marshal(r)"
         line "}"
     blank
-    classes <- getClasses
-    for_ classes \(Tuple i cls) -> do
-        renderGolangType i cls
+    forEachClass_ \className cd -> do
+        renderGolangType className cd
         blank
     unless (unions == L.Nil) do
         line """func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, nullable bool) (bool, error) {
@@ -263,9 +262,8 @@ renderStruct name columns = do
         columnize columns
     line "}"
 
-renderGolangType :: Int -> IRClassData -> Doc Unit
-renderGolangType classIndex (IRClassData { names, properties }) = do
-    className <- lookupClassName classIndex
+renderGolangType :: String -> IRClassData -> Doc Unit
+renderGolangType className (IRClassData { names, properties }) = do
     let { names: propertyNames } = transformNames (simpleNamer goNameStyle) ("Other" <> _) S.empty $ map (\n -> Tuple n n) $ M.keys properties
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     columns <- propsList # mapM \(Tuple pname ptype) -> do

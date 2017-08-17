@@ -122,9 +122,7 @@ using System.Net;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;"""
-        classes <- getClasses
-        for_ classes \(Tuple i cd) -> do
-            className <- lookupClassName i
+        forEachClass_ \className cd -> do
             blank
             renderCSharpClass cd className
         unions <- getUnions

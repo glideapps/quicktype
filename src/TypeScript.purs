@@ -160,11 +160,7 @@ typeScriptDoc = do
         line $ "//   let value: " <> topFull  <> " = Convert." <> deserializer <> "(json);"
     line "//"
     blank
-    classes <- getClasses
-    for_ classes \(Tuple i cd) -> do
-        interface <- lookupClassName i
-        renderInterface cd interface
-        blank
+    forEachClass_ renderInterface
 
     line "//"
     line "// The Convert module parses JSON and asserts types"
@@ -172,8 +168,8 @@ typeScriptDoc = do
     blank
     converter
 
-renderInterface :: IRClassData -> String -> Doc Unit
-renderInterface (IRClassData { names, properties }) className = do
+renderInterface :: String -> IRClassData -> Doc Unit
+renderInterface className (IRClassData { names, properties }) = do
     let { names: propertyNames } = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.empty) $ map (\n -> Tuple n n) $ M.keys properties
 
     let resolver name typ = markNullable (lookupName name propertyNames) typ
@@ -189,6 +185,7 @@ renderInterface (IRClassData { names, properties }) className = do
             rendered <- renderType ptype
             line $ pname <> ":" <> Str.times " " indent <> rendered <> ";"
     line "}"
+    blank
 
 -- If this is a nullable, add a '?'
 markNullable :: String -> IRType -> String
@@ -219,8 +216,8 @@ renderTypeMapType = case _ of
         renderedTyps <- mapM renderTypeMapType $ L.fromFoldable $ unionToSet types
         pure $ "union(" <> intercalate ", " renderedTyps <> ")"
 
-renderTypeMapClass :: IRClassData -> String -> Doc Unit
-renderTypeMapClass (IRClassData { names, properties }) className = do
+renderTypeMapClass :: String -> IRClassData -> Doc Unit
+renderTypeMapClass className (IRClassData { names, properties }) = do
     line $ className <> ": {"
     indent do
         let props = M.toUnfoldable properties :: Array _
@@ -233,10 +230,7 @@ typemap :: Doc Unit
 typemap = do
     line $ "const typeMap: any = {"
     indent do
-        classes <- getClasses
-        for_ classes \(Tuple i cd) -> do
-            className <- lookupClassName i
-            renderTypeMapClass cd className
+        forEachClass_ renderTypeMapClass
     line $ "};"
 
 converter :: Doc Unit
