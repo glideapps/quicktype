@@ -12,9 +12,9 @@ import Data.Foldable (any, for_, intercalate, maximum)
 import Data.List (List)
 import Data.List as L
 import Data.Map as M
+import Data.Map (Map)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Set (Set)
-import Data.Set as S
 import Data.String as Str
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
@@ -147,24 +147,20 @@ typeScriptDoc = do
     line $ """// To parse this data:
 //
 //   import """ <> imports.basic  <> """ from "./""" <> moduleName  <> ";"
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
         line $ "//   let value: " <> topFull  <> " = JSON.parse(json);"
     line $ """//
 // Or use Convert.fromJson to perform a type-checking conversion:
 //
 //   import """ <> imports.advanced  <> """ from "./""" <> moduleName  <> ";"
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
         deserializer <- deserializerName topLevelName
         line $ "//   let value: " <> topFull  <> " = Convert." <> deserializer <> "(json);"
     line "//"
     blank
-    classes <- getClasses
-    for_ classes \(Tuple i cd) -> do
-        interface <- lookupClassName i
-        renderInterface cd interface
-        blank
+    forEachClass_ renderInterface
 
     line "//"
     line "// The Convert module parses JSON and asserts types"
@@ -172,9 +168,9 @@ typeScriptDoc = do
     blank
     converter
 
-renderInterface :: IRClassData -> String -> Doc Unit
-renderInterface (IRClassData { names, properties }) className = do
-    let { names: propertyNames } = transformNames (simpleNamer propertyNamify) (_ <> "_") (S.empty) $ map (\n -> Tuple n n) $ M.keys properties
+renderInterface :: String -> Map String IRType -> Doc Unit
+renderInterface className properties = do
+    let propertyNames = transformPropertyNames (simpleNamer propertyNamify) (_ <> "_") [] properties
 
     let resolver name typ = markNullable (lookupName name propertyNames) typ
     let resolvePropertyNameWithType (Tuple name typ) = Tuple (resolver name typ) typ         
@@ -189,6 +185,7 @@ renderInterface (IRClassData { names, properties }) className = do
             rendered <- renderType ptype
             line $ pname <> ":" <> Str.times " " indent <> rendered <> ";"
     line "}"
+    blank
 
 -- If this is a nullable, add a '?'
 markNullable :: String -> IRType -> String
@@ -219,8 +216,8 @@ renderTypeMapType = case _ of
         renderedTyps <- mapM renderTypeMapType $ L.fromFoldable $ unionToSet types
         pure $ "union(" <> intercalate ", " renderedTyps <> ")"
 
-renderTypeMapClass :: IRClassData -> String -> Doc Unit
-renderTypeMapClass (IRClassData { names, properties }) className = do
+renderTypeMapClass :: String -> Map String IRType -> Doc Unit
+renderTypeMapClass className properties = do
     line $ className <> ": {"
     indent do
         let props = M.toUnfoldable properties :: Array _
@@ -233,10 +230,7 @@ typemap :: Doc Unit
 typemap = do
     line $ "const typeMap: any = {"
     indent do
-        classes <- getClasses
-        for_ classes \(Tuple i cd) -> do
-            className <- lookupClassName i
-            renderTypeMapClass cd className
+        forEachClass_ renderTypeMapClass
     line $ "};"
 
 converter :: Doc Unit
@@ -244,7 +238,7 @@ converter = do
     line $ """export module Convert {
     let path: string[] = [];
 """
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
         topTypeMap <- renderTypeMapType topLevelType
         deserializer <- deserializerName topLevelName

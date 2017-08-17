@@ -11,6 +11,7 @@ import Data.Foldable (find, for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
+import Data.Map (Map)
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
@@ -36,19 +37,13 @@ renderer =
         , unions: Just
             { predicate: unionIsNotSimpleNullable
             , properName: simpleNamer (csNameStyle <<< combineNames)
-            , nameFromTypes: simpleNamer unionNameForTypes
+            , nameFromTypes: simpleNamer (unionNameIntercalated csNameStyle "Or")
             }
         }
     }
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = csNameStyle $ combineNames names
-
-unionNameForTypes :: Array String -> String
-unionNameForTypes names =
-    names
-    <#> csNameStyle
-    # intercalate "Or"
 
 isValueType :: IRType -> Boolean
 isValueType IRInteger = true
@@ -109,7 +104,7 @@ csharpDoc = do
     module_ <- getModuleName csNameStyle
     oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
     line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         prefix <- getDecoderHelperPrefix topLevelName
         line "//"
         line $ "//    var data = " <> module_ <> ".Convert." <> prefix <> "FromJson(jsonString);"
@@ -122,15 +117,12 @@ using System.Net;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;"""
-        classes <- getClasses
-        for_ classes \(Tuple i cd) -> do
-            className <- lookupClassName i
+        forEachClass_ \className properties -> do
             blank
-            renderCSharpClass cd className
-        unions <- getUnions
-        for_ unions \types -> do
+            renderCSharpClass className properties
+        forEachUnion_ \unionName unionTypes -> do
             blank
-            renderCSharpUnion types
+            renderCSharpUnion unionName unionTypes
         blank
         renderJsonConverter
     line "}"
@@ -148,7 +140,7 @@ renderJsonConverter = do
     line "{"
     indent do
         line "// Serialize/deserialize helpers"
-        forTopLevel_ \topLevelName topLevelType -> do
+        forEachTopLevel_ \topLevelName topLevelType -> do
             blank
             topLevelTypeRendered <- renderTypeToCSharp topLevelType
             fromJsonPrefix <- getDecoderHelperPrefix topLevelName
@@ -260,10 +252,8 @@ renderGenericDeserializer predicate tokenType types = unsafePartial $
         indent do
             deserializeType t
 
-renderCSharpUnion :: IRUnionRep -> Doc Unit
-renderCSharpUnion ur = do
-    let allTypes = unionToSet ur
-    name <- lookupUnionName ur
+renderCSharpUnion :: String -> Set IRType -> Doc Unit
+renderCSharpUnion name allTypes = do
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     line $ "public struct " <> name
     line "{"
@@ -312,9 +302,9 @@ renderCSharpUnion ur = do
         line "}"
     line "}"
 
-renderCSharpClass :: IRClassData -> String -> Doc Unit
-renderCSharpClass (IRClassData { names, properties }) className = do
-    let { names: propertyNames } = transformNames (simpleNamer csNameStyle) ("Other" <> _) (S.singleton className) $ map (\n -> Tuple n n) $ M.keys properties
+renderCSharpClass :: String -> Map String IRType -> Doc Unit
+renderCSharpClass className properties = do
+    let propertyNames = transformPropertyNames (simpleNamer csNameStyle) ("Other" <> _) [className] properties
     line $ "public class " <> className
     -- TODO fix this manual indentation
     string "    {"
