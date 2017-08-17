@@ -253,7 +253,7 @@ class App extends Component {
                   <pre>npm i -g quicktype</pre>
               </div>
               <Button raised primary>
-                  Copy {this.props.rendererName}
+                  Copy {this.state.rendererName}
               </Button>
           </div>
 
