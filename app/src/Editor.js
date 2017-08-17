@@ -36,6 +36,7 @@ export default class Editor extends Component {
             displayIndentGuides={false}
             editorProps={{$blockScrolling: true}}
             value={this.props.value}
+            style={this.props.style}
           />
     );
   }

@@ -3,6 +3,8 @@
     "instructions": [
         "Type or paste JSON here",
         "Or choose a sample above",
-        "It will convert to code on the right"
+        
+        "quicktype will generate code in your",
+        "chosen language to parse the sample data"
     ]
 }

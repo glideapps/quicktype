@@ -36,7 +36,8 @@ class App extends Component {
       showEditorGutter: true,
       rendererName: preferredRendererName || this.getRenderer().name,
       sampleName,
-      topLevelName
+      topLevelName,
+      tab: +localStorage["tab"] || 0
     };
   }
 
@@ -141,15 +142,19 @@ class App extends Component {
       this.setState({ source, output });
     }
 
+    this.tryStore({source});
+  }
+
+  tryStore = (obj) => {
     try {
-      localStorage["source"] = source;
+      for (let key of Object.getOwnPropertyNames(obj)) {
+        localStorage[key] = obj[key];
+      }
     } catch (e) {}
   }
 
   changeRendererName = (rendererName) => {
-    try {
-      localStorage["renderer"] = rendererName;
-    } catch (e) {}
+    this.tryStore({renderer: rendererName});
 
     this.setState({ rendererName }, () => {
       this.sourceEdited(this.state.source);
@@ -198,14 +203,24 @@ class App extends Component {
             rendererName={this.state.rendererName}
             onChangeRenderer={this.changeRendererName}
             topLevelName={this.state.topLevelName}
+            tab={this.state.tab}
+            tabChanged={(tab) => {
+              this.tryStore({tab});
+              this.setState({tab});
+            }}
             onChangeTopLevelName={debounce(this.changeTopLevelName, 300)} />
           <Editor
             id="output"
             lang={this.getRenderer().aceMode}
             theme="chrome"
             value={this.state.output}
-            fontSize={browser.mobile ? 11 : 15}
+            fontSize={browser.mobile ? 12 : 15}
             showGutter={this.state.showEditorGutter}
+            style={{
+                display: window.innerWidth > 800
+                    ? "block"
+                    : ["none", "block"][this.state.tab] 
+            }}
             />
           <Snackbar ref={(r) => { this.snackbar = r; }} />
       </main>

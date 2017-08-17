@@ -7,6 +7,7 @@ import Entry from './Entry';
 //import Switch from './Switch';
 import Button from "@react-mdc/button";
 import Dropdown from './Dropdown';
+import TabBar from './TabBar';
 import browser from "bowser";
 
 import Main from "../../output/Main";
@@ -22,7 +23,7 @@ export default class Sidebar extends Component {
 
   render() {
     return (
-        <sidebar className={`mdc-theme--dark mdc-elevation--z4 ${this.props.className}`}>
+        <sidebar className={`mdc-theme--dark mdc-elevation--z1 ${this.props.className}`}>
             <header className="mdc-toolbar mdc-elevation--z2">
                 <div className="mdc-toolbar__row">
                 <section className="mdc-toolbar__section mdc-toolbar__section--align-start">
@@ -54,6 +55,12 @@ export default class Sidebar extends Component {
                     value={this.props.topLevelName}
                     onChange={this.props.onChangeTopLevelName} />
 
+                <TabBar
+                    name="tabs"
+                    tab={this.props.tab}
+                    onChange={this.props.tabChanged}
+                    />
+
                 <Editor
                     ref={(r) => { this.jsonEditor = r; }}
                     id="json"
@@ -61,14 +68,14 @@ export default class Sidebar extends Component {
                     theme="solarized_dark"
                     onChange={debounce(this.props.onChangeSource, 500)}
                     value={this.props.source}
-                    fontSize={browser.mobile ? 11 : 13}
+                    fontSize={browser.mobile ? 12 : 15}
                     showGutter={false}
+                    style={{
+                        display: window.innerWidth > 800
+                            ? "block"
+                            : ["block", "none"][this.props.tab] 
+                    }}
                     />
-
-                {/*
-                <Entry name="namespace" label="Namespace" value="QuickType" />
-                <Switch name="showHelpers" />
-                */}
                 
                 <div id="button-parent">
                     <div className="cli-hint">

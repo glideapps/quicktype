@@ -54,6 +54,12 @@ sidebar .mdc-simple-menu--open {
   z-index: 1000;
 }
 
+#tab-bar-tabs {
+  display: none;
+  width: 100%;
+  margin-top: 10px;
+}
+
 #button-parent {
   margin-top: 20px;
 }
@@ -80,6 +86,7 @@ sidebar .mdc-simple-menu--open {
   opacity: 0.8;
   font-family: Consolas, Menlo, monospace;
 }
+
 
 sidebar .mdc-select:first-child {
   margin-right: 20px;
@@ -122,9 +129,6 @@ sidebar .mdc-select:first-child {
   sidebar {
     width: 50vw;
   }
-  sidebar > .content {
-    padding: 10px;
-  }
   #output-editor {
     width: 50vw;
     left: 50vw;
@@ -132,33 +136,39 @@ sidebar .mdc-select:first-child {
 }
 
 @media (max-width: 800px) {
-  .cli-hint,  #entry-toplevel {
+  .cli-hint,  #entry-toplevel, #button-parent {
     display: none;
   }
   sidebar {
     width: 100vw;
-    height: 50vh;
-    bottom: inherit;
+    height: 175px;
+    bottom: auto;
   }
   #output-editor {
-    top: 50vh;
+    top: 174px;
     left: 0 !important;
     width: 100vw !important;
-    height: 50vh !important;
-  }
-  #button-parent {
-    display: none;
+    bottom: 0;
   }
   #json-editor {
-    height: calc(50vh - 130px) !important;
+    margin: 0 0 0 -20px;
+    border-radius: 0;
+    width: 100vw !important;
+    height: calc(100vh - 178px) !important;
+  }
+  #tab-bar-tabs {
+    display: table;
+  }
+  sidebar .source-dest > .mdc-select {
+    width: calc(50% - 34px) !important;
   }
 }
 
 @media (max-width: 600px) {
-  sidebar .source-dest > .mdc-select {
-    width: 35% !important;
+  sidebar {
+    height: 167px;
   }
-  #json-editor {
-    height: calc(50vh - 120px) !important;
+  #output-editor {
+    top: 167px;
   }
 }
