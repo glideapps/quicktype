@@ -87,7 +87,6 @@ sidebar .mdc-simple-menu--open {
   font-family: Consolas, Menlo, monospace;
 }
 
-
 sidebar .mdc-select:first-child {
   margin-right: 20px;
 }
@@ -154,7 +153,7 @@ sidebar .mdc-select:first-child {
     margin: 0 0 0 -20px;
     border-radius: 0;
     width: 100vw !important;
-    height: calc(100vh - 178px) !important;
+    height: calc(100vh - 166px) !important;
   }
   #tab-bar-tabs {
     display: table;
