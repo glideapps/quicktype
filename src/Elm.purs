@@ -36,9 +36,6 @@ forbiddenNames =
     , "makeArrayEncoder", "makeDictEncoder", "makeNullableEncoder"
     ]
 
-forbiddenPropertyNames :: Set String
-forbiddenPropertyNames = S.fromFoldable forbiddenNames
-
 renderer :: Renderer
 renderer =
     { name: "Elm"
@@ -53,7 +50,7 @@ renderer =
         , unions: Just
             { predicate: unionIsNotSimpleNullable
             , properName: elmNamer (upperNameStyle <<< combineNames)
-            , nameFromTypes: elmNamer unionNameFromTypes
+            , nameFromTypes: elmNamer (unionNameIntercalated upperNameStyle "Or")
             }
         }
     }
@@ -76,12 +73,6 @@ elmNamer namer thing = case _ of
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = upperNameStyle $ combineNames names
-
-unionNameFromTypes :: Array String -> String
-unionNameFromTypes names =
-    names
-    <#> upperNameStyle
-    # intercalate "Or"
 
 typeNameForTopLevelNameGiven :: String -> String
 typeNameForTopLevelNameGiven = upperNameStyle
@@ -133,7 +124,7 @@ elmDoc = do
     line """--
 -- and you're off to the races with
 --"""
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         let topLevelDecoder = decoderNameFromTypeName topLevelName
         line $ "--     decodeString " <> topLevelDecoder <> " myJsonString"
     blank
@@ -151,7 +142,7 @@ import Dict exposing (Dict, map, toList)
 """
     topLevelPlural <- getTopLevelPlural
     line $ "-- top level type" <> topLevelPlural
-    forTopLevel_ \topLevelName topLevel -> do
+    forEachTopLevel_ \topLevelName topLevel -> do
         let topLevelDecoder = decoderNameFromTypeName topLevelName
         let topLevelEncoder = encoderNameFromTypeName topLevelName
         blank
@@ -167,20 +158,20 @@ import Dict exposing (Dict, map, toList)
         line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
     blank
     line "-- JSON types"
-    for_ classes \(Tuple i cls) -> do
+    forEachClass_ \className properties -> do
         blank
-        typeRenderer renderTypeDefinition i cls
-    for_ unions \types -> do
+        typeRenderer renderTypeDefinition className properties
+    forEachUnion_ \unionName unionTypes -> do
         blank
-        renderUnionDefinition types
+        renderUnionDefinition unionName unionTypes
     blank
     line "-- decoders and encoders"
-    for_ classes \(Tuple i cls) -> do
+    forEachClass_ \className properties -> do
         blank
-        typeRenderer renderTypeFunctions i cls
-    for_ unions \types -> do
+        typeRenderer renderTypeFunctions className properties
+    forEachUnion_ \unionName unionTypes -> do
         blank
-        renderUnionFunctions types
+        renderUnionFunctions unionName unionTypes
     blank
     line """--- encoder helpers
 
@@ -232,10 +223,9 @@ typeStringForType = case _ of
         Nothing -> do
             singleWord =<< lookupUnionName u
 
-unionConstructorName :: IRUnionRep -> IRType -> Doc String
-unionConstructorName ur t = do
+unionConstructorName :: String -> IRType -> Doc String
+unionConstructorName unionName t = do
     typeName <- upperNameStyle <$> getTypeNameForUnion t
-    unionName <- lookupUnionName ur
     pure $ typeName <> "In" <> unionName
 
 decoderNameForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
@@ -300,8 +290,8 @@ isOptional = case _ of
     -- IRUnion u -> S.member IRNull $ unionToSet u
     _ -> false
 
-renderTypeDefinition :: Int -> String -> Map String String -> List (Tuple String IRType) -> Doc Unit
-renderTypeDefinition classIndex className propertyNames propsList = do
+renderTypeDefinition :: String -> Map String String -> List (Tuple String IRType) -> Doc Unit
+renderTypeDefinition className propertyNames propsList = do
     line $ "type alias " <> className <> " ="
     indent do
         forWithPrefix_ propsList "{ " ", " \braceOrComma (Tuple pname ptype) -> do
@@ -312,8 +302,8 @@ renderTypeDefinition classIndex className propertyNames propsList = do
             line "{"
         line "}"
 
-renderTypeFunctions :: Int -> String -> Map String String -> List (Tuple String IRType) -> Doc Unit
-renderTypeFunctions classIndex className propertyNames propsList = do
+renderTypeFunctions :: String -> Map String String -> List (Tuple String IRType) -> Doc Unit
+renderTypeFunctions className propertyNames propsList = do
     let decoderName = decoderNameFromTypeName className
     line $ decoderName <> " : Jdec.Decoder " <> className
     line $ decoderName <> " ="
@@ -339,43 +329,38 @@ renderTypeFunctions classIndex className propertyNames propsList = do
                 line "["
             line "]"
 
-typeRenderer :: (Int -> String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> Int -> IRClassData -> Doc Unit
-typeRenderer renderer classIndex (IRClassData { properties }) = do
-    className <- lookupClassName classIndex
-    let { names: propertyNames } = transformNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ M.keys properties
+typeRenderer :: (String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> String -> Map String IRType -> Doc Unit
+typeRenderer renderer className properties = do
+    let propertyNames = transformPropertyNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenNames properties
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
-    renderer classIndex className propertyNames propsList
+    renderer className propertyNames propsList
 
-renderUnionDefinition :: IRUnionRep -> Doc Unit
-renderUnionDefinition ur = do
-    let allTypes = unionToSet ur
-    unionName <- lookupUnionName ur
-    fields <- L.fromFoldable allTypes # sortByKeyM (unionConstructorName ur)
+renderUnionDefinition :: String -> Set IRType -> Doc Unit
+renderUnionDefinition unionName allTypes = do
+    fields <- L.fromFoldable allTypes # sortByKeyM (unionConstructorName unionName)
     line $ "type " <> unionName
     forWithPrefix_ fields "=" "|" \equalsOrPipe t -> do
         indent do
-            constructor <- unionConstructorName ur t
+            constructor <- unionConstructorName unionName t
             when (t == IRNull) do
                 line $ equalsOrPipe <> " " <> constructor
             unless (t == IRNull) do
                 ts <- typeStringForType t
                 line $ equalsOrPipe <> " " <> constructor <> " " <> (parenIfNeeded ts)
 
-renderUnionFunctions :: IRUnionRep -> Doc Unit
-renderUnionFunctions ur = do
-    let allTypes = unionToSet ur
-    unionName <- lookupUnionName ur
+renderUnionFunctions :: String -> Set IRType -> Doc Unit
+renderUnionFunctions unionName allTypes = do
     let decoderName = decoderNameFromTypeName unionName
     line $ decoderName <> " : Jdec.Decoder " <> unionName
     line $ decoderName <> " ="
     indent do
         let { element: maybeArray, rest: nonArrayFields } = removeElement isArray allTypes
-        nonArrayDecFields <- L.fromFoldable nonArrayFields # sortByKeyM (unionConstructorName ur)
+        nonArrayDecFields <- L.fromFoldable nonArrayFields # sortByKeyM (unionConstructorName unionName)
         let decFields = maybe nonArrayDecFields (\f -> f : nonArrayDecFields) maybeArray
         line "Jdec.oneOf"
         indent do
             forWithPrefix_ decFields "[" "," \bracketOrComma t -> do
-                constructor <- unionConstructorName ur t
+                constructor <- unionConstructorName unionName t
                 when (t == IRNull) do
                     line $ bracketOrComma <> " Jdec.null " <> constructor
                 unless (t == IRNull) do
@@ -387,9 +372,9 @@ renderUnionFunctions ur = do
     line $ encoderName <> " : " <> unionName <> " -> Jenc.Value"
     line $ encoderName <> " x = case x of"
     indent do
-        fields <- L.fromFoldable allTypes # sortByKeyM (unionConstructorName ur)
+        fields <- L.fromFoldable allTypes # sortByKeyM (unionConstructorName unionName)
         for_ fields \t -> do
-            constructor <- unionConstructorName ur t
+            constructor <- unionConstructorName unionName t
             when (t == IRNull) do
                 line $ constructor <> " -> Jenc.null"
             unless (t == IRNull) do

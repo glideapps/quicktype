@@ -16,13 +16,17 @@ module Doc
     , lookupClassName
     , lookupUnionName
     , lookupTopLevelName
-    , forTopLevel_
+    , forEachTopLevel_
+    , forEachClass_
+    , forEachUnion_
     , combineNames
     , NamingResult
     , transformNames
+    , transformPropertyNames
     , simpleNamer
     , noForbidNamer
     , forbidNamer
+    , unionNameIntercalated
     , unionIsNotSimpleNullable
     , string
     , line
@@ -40,7 +44,7 @@ import Prelude
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Array as A
-import Data.Foldable (for_, any)
+import Data.Foldable (for_, any, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
@@ -152,6 +156,12 @@ transformNames legalize otherize illegalNames names =
                 in
                     process newForbiddenInScope newForbiddenForAll newMap rest
 
+transformPropertyNames :: Namer String -> (String -> String) -> Array String -> Map String IRType -> Map String String
+transformPropertyNames legalize otherize illegalNamesArray properties =
+    let illegalNames = S.fromFoldable illegalNamesArray
+    in
+        _.names $ transformNames legalize otherize illegalNames $ map (\n -> Tuple n n) $ M.keys properties
+
 forbidNamer :: forall a. Ord a => (a -> String) -> (String -> Array String) -> Namer a
 forbidNamer namer forbidder _ (Just name) = { name, forbid: forbidder name }
 forbidNamer namer forbidder x Nothing =
@@ -176,6 +186,12 @@ typeNameForUnion graph classNames = case _ of
     IRClass i -> lookupName i classNames
     IRMap t -> typeNameForUnion graph classNames t <> "_map"
     IRUnion _ -> "union"
+
+unionNameIntercalated :: (String -> String) -> String -> Array String -> String
+unionNameIntercalated nameStyle orString names =
+    names
+    <#> nameStyle
+    # intercalate orString
 
 unionIsNotSimpleNullable :: IRUnionRep -> Boolean
 unionIsNotSimpleNullable ur = isNothing $ nullableFromSet $ unionToSet ur
@@ -254,12 +270,27 @@ lookupTopLevelName n = do
     topLevelNames <- getTopLevelNames
     pure $ lookupName n topLevelNames
 
-forTopLevel_ :: (String -> IRType -> Doc Unit) -> Doc Unit
-forTopLevel_ f = do
+forEachTopLevel_ :: (String -> IRType -> Doc Unit) -> Doc Unit
+forEachTopLevel_ f = do
     topLevels <- getTopLevels
     for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) -> do
         topLevelName <- lookupTopLevelName topLevelNameGiven
         f topLevelName topLevelType
+
+forEachClass_ :: (String -> Map String IRType -> Doc Unit) -> Doc Unit
+forEachClass_ f = do
+    classes <- getClasses
+    for_ classes \(Tuple i (IRClassData { properties })) -> do
+        className <- lookupClassName i
+        f className properties
+
+forEachUnion_ :: (String -> Set IRType -> Doc Unit) -> Doc Unit
+forEachUnion_ f = do
+    unions <- getUnions
+    for_ unions \ur -> do
+        let allTypes = unionToSet ur
+        unionName <- lookupUnionName ur
+        f unionName allTypes
 
 -- Given a potentially multi-line string, render each line at the current indent level
 line :: String -> Doc Unit
