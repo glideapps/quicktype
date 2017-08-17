@@ -109,7 +109,7 @@ csharpDoc = do
     module_ <- getModuleName csNameStyle
     oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
     line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
-    forTopLevel_ \topLevelName topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         prefix <- getDecoderHelperPrefix topLevelName
         line "//"
         line $ "//    var data = " <> module_ <> ".Convert." <> prefix <> "FromJson(jsonString);"
@@ -148,7 +148,7 @@ renderJsonConverter = do
     line "{"
     indent do
         line "// Serialize/deserialize helpers"
-        forTopLevel_ \topLevelName topLevelType -> do
+        forEachTopLevel_ \topLevelName topLevelType -> do
             blank
             topLevelTypeRendered <- renderTypeToCSharp topLevelType
             fromJsonPrefix <- getDecoderHelperPrefix topLevelName
