@@ -8,11 +8,10 @@ export default class TabBar extends Component {
     this.tabBar = new MDCTabBar(this.ref);
     this.tabBar.listen('MDCTabBar:change', ({detail: tabs}) => {
         this.props.onChange && this.props.onChange(tabs.activeTabIndex);
-      });
+    });
    }
  
    render() {
-       console.log("render tabbar with tab=", this.props.tab);
      return (
         <nav
             id={`tab-bar-${this.props.name}`}

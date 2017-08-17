@@ -166,9 +166,7 @@ class App extends Component {
   }
 
   changeSampleName = (sampleName) => {
-    try {
-      localStorage["sample"] = sampleName;
-    } catch (e) {}
+    this.tryStore({sample: sampleName});
 
     let topLevelName = this.topLevelNameFromSample(sampleName);
     this.setState({ sampleName, topLevelName }, () => {
