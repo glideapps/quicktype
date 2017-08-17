@@ -15,8 +15,12 @@ export interface ParallelArgs<Item, Result, Acc> {
     done?(accum: Acc);
 }
 
+function randomPick<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
 function guys(n: number): string {
-    return _.range(n).map((i) => WORKERS[i % WORKERS.length]).join(' ');
+    return _.range(n).map((i) => randomPick(WORKERS)).join(' ');
 }
 
 export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Result, Acc>) {
