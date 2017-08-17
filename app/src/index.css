@@ -10,6 +10,7 @@
 body {
   margin: 0;
   padding: 0;
+  background: #00212B;
 }
 
 main {
@@ -22,7 +23,7 @@ main {
 }
 
 .mdc-snackbar {
-  z-index: 2;
+  z-index: 5;
 }
 
 sidebar {
@@ -31,7 +32,6 @@ sidebar {
   position: absolute;
   left: 0;
   top: 0;
-  height: 100vh;
   width: 40vw;
 }
 
@@ -41,12 +41,8 @@ sidebar > .content {
   flex-direction: column;
 }
 
-sidebar .mdc-switch {
-  margin-top: 30px;
-}
-
 sidebar .source-dest > .mdc-select {
-  width: 40% !important;
+  width: calc(50% - 35px) !important;
 }
 
 /* Get open menu above Ace red cursor */
@@ -60,8 +56,30 @@ sidebar .mdc-simple-menu--open {
   margin-top: 10px;
 }
 
+sidebar .mdc-select:first-child {
+  margin-right: 20px;
+}
+
+#json-editor {
+  z-index: 0;
+  font-size: 10pt;
+  border-radius: 3px;
+  width: calc(40vw - 40px) !important;
+  top: 200px;
+  left: 20px;
+  height: calc(100vh - 286px) !important;
+}
+
+#json-editor.mobile {
+  height: calc(100vh - 346px) !important;
+}
+
 #button-parent {
-  margin-top: calc(100vh - 250px);
+  z-index: 4;
+  position: absolute;
+  bottom: 0;
+  padding: 20px;
+  width: calc(40vw - 40px);
 }
 
 #button-parent button {
@@ -85,28 +103,6 @@ sidebar .mdc-simple-menu--open {
   margin: 0;
   opacity: 0.8;
   font-family: Consolas, Menlo, monospace;
-}
-
-sidebar .mdc-select:first-child {
-  margin-right: 20px;
-}
-
-#json-editor {
-  z-index: 2;
-  font-size: 10pt;
-  border-radius: 3px;
-  width: calc(40vw - 40px) !important;
-  top: 200px;
-  left: 20px;
-  height: calc(100vh - 290px) !important;
-}
-
-#json-editor.mobile {
-  height: calc(100vh - 340px) !important;
-}
-
-#button-parent.mobile {
-  margin-top: calc(100vh - 310px);
 }
 
 #output-editor {
@@ -133,6 +129,9 @@ sidebar .mdc-select:first-child {
   #json-editor {
     width: calc(600px - 40px) !important;
   }
+  #button-parent {
+    width: calc(600px - 40px);
+  }
   #output-editor {
     width: calc(100vw - 600px);
     left: 600px;
@@ -149,6 +148,9 @@ sidebar .mdc-select:first-child {
   #output-editor {
     width: 50vw;
     left: 50vw;
+  }
+  #button-parent {
+    width: calc(50vw - 40px);
   }
 }
 

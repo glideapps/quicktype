@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import Sidebar from './Sidebar';
 import Editor from './Editor';
 import Snackbar from './Snackbar';
+import Button from "@react-mdc/button";
 
 import urlParse from 'url-parse';
 import debounce from 'debounce';
@@ -75,7 +76,7 @@ class App extends Component {
       this.sourceEdited(this.state.source);
     }
     
-    let copyButton = window.document.querySelector('sidebar .mdc-button--primary');
+    let copyButton = window.document.querySelector('.mdc-button--primary');
     copyButton.addEventListener('click', this.copyOutput);
 
     window.addEventListener('resize', () => {
@@ -245,6 +246,16 @@ class App extends Component {
                 visibility: ["hidden", "visible"][this.state.tab]
             }}
             />
+              
+          <div id="button-parent" className={mobileClass}>
+              <div className="cli-hint">
+                  <p>Install quicktype locally:</p>
+                  <pre>npm i -g quicktype</pre>
+              </div>
+              <Button raised primary>
+                  Copy {this.props.rendererName}
+              </Button>
+          </div>
 
           <Snackbar ref={(r) => { this.snackbar = r; }} />
       </main>
