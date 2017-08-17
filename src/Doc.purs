@@ -21,6 +21,7 @@ module Doc
     , combineNames
     , NamingResult
     , transformNames
+    , transformPropertyNames
     , simpleNamer
     , noForbidNamer
     , forbidNamer
@@ -152,6 +153,12 @@ transformNames legalize otherize illegalNames names =
                     newMap = M.insert identifier name mapSoFar
                 in
                     process newForbiddenInScope newForbiddenForAll newMap rest
+
+transformPropertyNames :: Namer String -> (String -> String) -> Array String -> Map String IRType -> Map String String
+transformPropertyNames legalize otherize illegalNamesArray properties =
+    let illegalNames = S.fromFoldable illegalNamesArray
+    in
+        _.names $ transformNames legalize otherize illegalNames $ map (\n -> Tuple n n) $ M.keys properties
 
 forbidNamer :: forall a. Ord a => (a -> String) -> (String -> Array String) -> Namer a
 forbidNamer namer forbidder _ (Just name) = { name, forbid: forbidder name }

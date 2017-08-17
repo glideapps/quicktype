@@ -36,9 +36,6 @@ forbiddenNames =
     , "makeArrayEncoder", "makeDictEncoder", "makeNullableEncoder"
     ]
 
-forbiddenPropertyNames :: Set String
-forbiddenPropertyNames = S.fromFoldable forbiddenNames
-
 renderer :: Renderer
 renderer =
     { name: "Elm"
@@ -341,7 +338,7 @@ renderTypeFunctions className propertyNames propsList = do
 
 typeRenderer :: (String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> String -> IRClassData -> Doc Unit
 typeRenderer renderer className (IRClassData { properties }) = do
-    let { names: propertyNames } = transformNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenPropertyNames $ map (\n -> Tuple n n) $ M.keys properties
+    let propertyNames = transformPropertyNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenNames properties
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     renderer className propertyNames propsList
 
