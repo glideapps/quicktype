@@ -26,6 +26,7 @@ module Doc
     , simpleNamer
     , noForbidNamer
     , forbidNamer
+    , unionNameIntercalated
     , unionIsNotSimpleNullable
     , string
     , line
@@ -43,7 +44,7 @@ import Prelude
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Array as A
-import Data.Foldable (for_, any)
+import Data.Foldable (for_, any, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
@@ -185,6 +186,12 @@ typeNameForUnion graph classNames = case _ of
     IRClass i -> lookupName i classNames
     IRMap t -> typeNameForUnion graph classNames t <> "_map"
     IRUnion _ -> "union"
+
+unionNameIntercalated :: (String -> String) -> String -> Array String -> String
+unionNameIntercalated nameStyle orString names =
+    names
+    <#> nameStyle
+    # intercalate orString
 
 unionIsNotSimpleNullable :: IRUnionRep -> Boolean
 unionIsNotSimpleNullable ur = isNothing $ nullableFromSet $ unionToSet ur
