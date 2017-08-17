@@ -41,8 +41,13 @@ sidebar > .content {
   flex-direction: column;
 }
 
-sidebar .source-dest > .mdc-select {
-  width: calc(50% - 35px) !important;
+sidebar .mdc-select:first-child {
+  margin-right: 20px;
+  width: calc(60% - 35px) !important;
+}
+
+sidebar .mdc-select:last-child {
+  width: calc(40% - 35px) !important;
 }
 
 /* Get open menu above Ace red cursor */
@@ -54,10 +59,6 @@ sidebar .mdc-simple-menu--open {
   display: none;
   width: 100%;
   margin-top: 10px;
-}
-
-sidebar .mdc-select:first-child {
-  margin-right: 20px;
 }
 
 #json-editor {
@@ -178,9 +179,6 @@ sidebar .mdc-select:first-child {
   }
   #tab-bar-tabs {
     display: table;
-  }
-  sidebar .source-dest > .mdc-select {
-    width: calc(50% - 34px) !important;
   }
 }
 
