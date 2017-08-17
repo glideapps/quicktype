@@ -8,9 +8,6 @@ import Entry from './Entry';
 import Button from "@react-mdc/button";
 import Dropdown from './Dropdown';
 
-import innerHeight from 'ios-inner-height';
-import browser from "bowser";
-
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
 
@@ -21,26 +18,6 @@ const about_url = "http://blog.quicktype.io/2017/previewing-quicktype";
 
 export default class Sidebar extends Component {
   sendEvent = (name, value) => window.ga("send", "event", "Sidebar", name, value);
-
-  componentDidMount() {
-    window.addEventListener('resize', () => {
-        this.adjustSourceEditorHeight();
-    });
-    this.adjustSourceEditorHeight();
-  }
-
-  adjustSourceEditorHeight = () => {
-      let fullHeight = innerHeight();
-      let isMobile = browser.mobile || browser.tablet;
-      let height = window.innerWidth > 800
-        ? fullHeight - (isMobile ? 340 : 280)
-        : fullHeight / 2 - 200;
-    
-      // Manual expand a bit on non-table mobile
-      if (fullHeight < 600 || browser.mobile) height += 80;
-
-      this.jsonEditor.resize(height);
-  }
 
   render() {
     return (

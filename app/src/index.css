@@ -90,6 +90,7 @@ sidebar .mdc-select:first-child {
   margin-top: 10px;
   border-radius: 3px;
   width: inherit !important;
+  height: calc(100vh - 280px) !important;
 }
 
 #output-editor {
@@ -137,32 +138,28 @@ sidebar .mdc-select:first-child {
   }
   sidebar {
     width: 100vw;
-    height: 40vh;
+    height: 50vh;
     bottom: inherit;
   }
   #output-editor {
-    top: 40vh;
+    top: 50vh;
     left: 0 !important;
     width: 100vw !important;
-    height: 60vh !important;
+    height: 50vh !important;
   }
   #button-parent {
     display: none;
   }
-}
-
-@media (max-width: 800px) and (max-height: 600px) {
-  sidebar {
-    height: 50vh;
-  }
-  #output-editor {
-    top: 50vh;
-    height: 50vh !important;
+  #json-editor {
+    height: calc(50vh - 130px) !important;
   }
 }
 
 @media (max-width: 600px) {
   sidebar .source-dest > .mdc-select {
     width: 35% !important;
+  }
+  #json-editor {
+    height: calc(50vh - 120px) !important;
   }
 }
