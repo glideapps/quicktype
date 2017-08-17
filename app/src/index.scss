@@ -167,13 +167,13 @@ sidebar {
   }
   #output-editor {
     top: $sidebarHeight;
+    font-size: 10pt !important;
     left: 0 !important;
     width: 100vw !important;
     height: calc(100vh - #{$sidebarHeight}) !important;
-    font-size: 11pt !important;
   }
   #json-editor, #json-editor.mobile {
-    font-size: 11pt !important;
+    font-size: 10pt !important;
     z-index: 0;
     margin: 0 0 0 -20px;
     top: $sidebarHeight;
