@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "npm install --ignore-scripts && bower install && pulp build -- --source-maps --stash --censor-warnings && npm run bundle-cli",
-    "test": "npm run build && pulp test && test/test.ts",
+    "test": "npm run build && pulp test && test/test",
     "postinstall": "npm run build && (cd app && npm install --quiet) && (cd cli && npm install)",
     "start": "cd app && npm start",
     "bundle-cli": "mkdir -p cli/dist && pulp browserify --standalone --skip-entry-point > /tmp/bundle.js && uglifyjs --compress --mangle -- /tmp/bundle.js > cli/dist/bundle.js"
