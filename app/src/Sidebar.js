@@ -1,10 +1,6 @@
 import React, { Component } from 'react';
 
-import debounce from 'debounce';
-
-import Editor from './Editor';
 import Entry from './Entry';
-//import Switch from './Switch';
 import Button from "@react-mdc/button";
 import Dropdown from './Dropdown';
 import TabBar from './TabBar';
@@ -13,10 +9,8 @@ import browser from "bowser";
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
 
-import 'brace/mode/json';
-import 'brace/theme/solarized_dark';
-
 const about_url = "http://blog.quicktype.io/2017/previewing-quicktype";
+const mobileClass = (browser.mobile || browser.tablet) ? "mobile" : "";
 
 export default class Sidebar extends Component {
   sendEvent = (name, value) => window.ga("send", "event", "Sidebar", name, value);
@@ -60,24 +54,8 @@ export default class Sidebar extends Component {
                     tab={this.props.tab}
                     onChange={this.props.tabChanged}
                     />
-
-                <Editor
-                    ref={(r) => { this.jsonEditor = r; }}
-                    id="json"
-                    lang="json"
-                    theme="solarized_dark"
-                    onChange={debounce(this.props.onChangeSource, 500)}
-                    value={this.props.source}
-                    fontSize={(browser.mobile || browser.tablet) ? 12 : 15}
-                    showGutter={false}
-                    style={{
-                        visibility: window.innerWidth > 800
-                            ? "visible"
-                            : ["visible", "hidden"][this.props.tab] 
-                    }}
-                    />
                 
-                <div id="button-parent">
+                <div id="button-parent" className={mobileClass}>
                     <div className="cli-hint">
                         <p>Install quicktype locally:</p>
                         <pre>npm i -g quicktype</pre>

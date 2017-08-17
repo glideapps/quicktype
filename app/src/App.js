@@ -18,6 +18,9 @@ import 'brace/mode/typescript';
 import 'brace/mode/json';
 import 'brace/mode/elm';
 import 'brace/theme/chrome';
+import 'brace/theme/solarized_dark';
+
+const mobileClass = (browser.mobile || browser.tablet) ? "mobile" : "";
 
 class App extends Component {
   constructor(props) {
@@ -45,15 +48,6 @@ class App extends Component {
     this.setState({
       showEditorGutter: window.innerWidth > 800
     });
-
-    // Set editor height manually
-    if (window.innerWidth <= 800) {
-      let lines = (this.state.output.match(/\r?\n/g) || '').length;
-      let editorHeight = this.editor.editor.renderer.lineHeight * lines;
-      let editor = document.getElementById('output-editor');
-      let height = Math.max(window.outerHeight, editorHeight);
-      editor.style.setProperty("height", `${height}px`, "important");
-    }
   }
 
   tryGetPreferredRendererExtension = () => {
@@ -202,8 +196,6 @@ class App extends Component {
     return (
       <main className="mdc-typography">
           <Sidebar
-            source={this.state.source}
-            onChangeSource={this.sourceEdited}
             sampleName={this.state.sampleName}
             onChangeSample={this.changeSampleName} 
             rendererName={this.state.rendererName}
@@ -215,6 +207,26 @@ class App extends Component {
               this.setState({tab});
             }}
             onChangeTopLevelName={debounce(this.changeTopLevelName, 300)} />
+
+          <Editor
+            ref={(r) => { this.jsonEditor = r; }}
+            id="json"
+            className={mobileClass}
+            lang="json"
+            theme="solarized_dark"
+            onChange={debounce(this.sourceEdited, 500)}
+            value={this.state.source}
+            fontSize={(browser.mobile || browser.tablet) ? 12 : 15}
+            showGutter={false}
+            style={window.innerWidth > 800
+            ? {
+                visibility: "visible" 
+            }
+            : {
+                visibility: ["visible", "hidden"][this.state.tab] 
+            }}
+            />
+
           <Editor
             id="output"
             ref={(r) => { this.editor = r; }}
@@ -223,12 +235,15 @@ class App extends Component {
             value={this.state.output}
             fontSize={(browser.mobile || browser.tablet) ? 12 : 15}
             showGutter={this.state.showEditorGutter}
-            style={{
-                visibility: window.innerWidth > 800
-                    ? "visible"
-                    : ["hidden", "visible"][this.state.tab] 
+            style={window.innerWidth > 800
+            ? {
+                visibility: "visible" 
+            }
+            : {
+                visibility: ["hidden", "visible"][this.state.tab]
             }}
             />
+
           <Snackbar ref={(r) => { this.snackbar = r; }} />
       </main>
     );

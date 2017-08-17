@@ -61,7 +61,7 @@ sidebar .mdc-simple-menu--open {
 }
 
 #button-parent {
-  margin-top: 20px;
+  margin-top: calc(100vh - 250px);
 }
 
 #button-parent button {
@@ -92,17 +92,29 @@ sidebar .mdc-select:first-child {
 }
 
 #json-editor {
+  z-index: 2;
   font-size: 10pt;
-  margin-top: 10px;
   border-radius: 3px;
-  width: inherit !important;
+  width: calc(40vw - 40px) !important;
+  top: 200px;
+  left: 20px;
+  height: calc(100vh - 290px) !important;
+}
+
+#json-editor.mobile {
   height: calc(100vh - 340px) !important;
 }
 
+#button-parent.mobile {
+  margin-top: calc(100vh - 310px);
+}
+
 #output-editor {
+  position: absolute;
   z-index: 0;
   width: 60vw !important;
   left: 40vw;
+  top: 0;
   margin: 0;
   font-family: Consolas, Menlo, monospace;
   height: 100vh !important;
@@ -118,6 +130,9 @@ sidebar .mdc-select:first-child {
   sidebar {
     width: 600px;
   }
+  #json-editor {
+    width: calc(600px - 40px) !important;
+  }
   #output-editor {
     width: calc(100vw - 600px);
     left: 600px;
@@ -127,6 +142,9 @@ sidebar .mdc-select:first-child {
 @media (max-width: 1000px) {
   sidebar {
     width: 50vw;
+  }
+  #json-editor {
+    width: calc(50vw - 40px) !important;
   }
   #output-editor {
     width: 50vw;
@@ -141,18 +159,20 @@ sidebar .mdc-select:first-child {
   sidebar {
     width: 100vw;
     height: 175px;
-    bottom: auto;
   }
   #output-editor {
     top: 174px;
     left: 0 !important;
     width: 100vw !important;
+    height: calc(100vh - 174px) !important;
   }
-  #json-editor {
+  #json-editor, #json-editor.mobile {
+    z-index: 0;
     margin: 0 0 0 -20px;
+    top: 174px;
     border-radius: 0;
     width: 100vw !important;
-    height: calc(100vh - 166px) !important;
+    height: calc(100vh - 174px) !important;
   }
   #tab-bar-tabs {
     display: table;
@@ -168,5 +188,10 @@ sidebar .mdc-select:first-child {
   }
   #output-editor {
     top: 167px;
+    height: calc(100vh - 167px) !important;
+  }
+  #json-editor, #json-editor.mobile {
+    top: 167px;
+    height: calc(100vh -  167px) !important;
   }
 }
