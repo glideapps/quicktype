@@ -15,8 +15,6 @@ export default class Editor extends Component {
     if (this.props.tabSize) {
       this.editor.session.setOptions({ tabSize: this.props.tabSize });
     }
-
-    this.editor.renderer.setOption('showLineNumbers', !this.props.hideLineNumbers);
   }
 
   scrollTop = () => {
