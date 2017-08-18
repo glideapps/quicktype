@@ -14,7 +14,6 @@
     "case-sensitive-paths-webpack-plugin": "2.1.1",
     "chalk": "1.1.3",
     "css-loader": "0.28.4",
-    "debounce": "^1.0.2",
     "dotenv": "4.0.0",
     "eslint": "3.19.0",
     "eslint-config-react-app": "^1.0.5",
@@ -40,6 +39,7 @@
     "react-dom": "^15.6.1",
     "react-dropdown": "^1.2.5",
     "react-error-overlay": "^1.0.9",
+    "react-ga": "^2.2.0",
     "react-material-components-web": "^0.1.18",
     "style-loader": "0.18.2",
     "sw-precache-webpack-plugin": "0.11.3",
@@ -48,7 +48,8 @@
     "webpack": "2.6.1",
     "webpack-dev-server": "2.5.0",
     "webpack-manifest-plugin": "1.1.0",
-    "whatwg-fetch": "2.0.3"
+    "whatwg-fetch": "2.0.3",
+    "worker-loader": "^0.8.1"
   },
   "scripts": {
     "start": "node scripts/start.js",

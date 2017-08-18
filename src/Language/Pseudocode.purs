@@ -23,9 +23,9 @@ import Utils (mapM)
 
 renderer :: Renderer
 renderer =
-    { name: "Pseudocode"
+    { name: "Simple Types"
     , aceMode: "groovy"
-    , extension: "pseudo"
+    , extension: "types"
     , doc: pseudocodeDoc
     , transforms:
         { nameForClass: noForbidNamer nameForClass

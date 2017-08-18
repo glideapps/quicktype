@@ -5,12 +5,15 @@ import Snackbar from './Snackbar';
 import Button from "@react-mdc/button";
 
 import urlParse from 'url-parse';
-import debounce from 'debounce';
 import * as _ from "lodash";
 import browser from "bowser";
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
+
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import Worker from "worker-loader?name=static/js/worker.[hash].js!./worker.js";
+
 import { camelCase } from "../../output/Data.String.Util";
 
 import 'brace/mode/csharp';
@@ -28,6 +31,8 @@ const mobileClass = (browser.mobile || browser.tablet) ? "mobile" : "";
 class App extends Component {
   constructor(props) {
     super(props);
+
+    this.worker = new Worker();
 
     let preferredExtension = this.tryGetPreferredRendererExtension();
     let preferredRenderer = preferredExtension && Main.renderers.find((r) => r.extension === preferredExtension);
@@ -49,7 +54,7 @@ class App extends Component {
 
   resize = () => {
     this.setState({
-      showEditorGutter: window.innerWidth > 800
+      showEditorGutter: window.innerWidth > 1000
     });
   }
 
@@ -84,6 +89,8 @@ class App extends Component {
     window.addEventListener('resize', () => {
       this.resize();
     });
+
+    this.resize();
   }
 
   copyOutput = () => {
@@ -128,23 +135,43 @@ class App extends Component {
     return result;
   }
 
-  sourceEdited = (source) => {
-    let { constructor, value0: output } = this.sendPerformance("Main", "renderJsonString", () => {
-      return Main.renderFromJsonStringPossiblyAsSchemaInDevelopment(this.state.topLevelName)({
-        input: source,
-        renderer: this.getRenderer()
-      });
+  renderAsync(inputs) {
+    return new Promise(resolve => {
+      this.worker.onmessage = message => resolve(message.data);
+      this.worker.postMessage(inputs);
+    });
+  }
+
+  displayRenderError(message) {
+    this.snackbar.show({
+      message: `⚠ ${message}`
+    });
+  }
+
+  sourceEdited = async source => {     
+    // For some reason, our renderer sometimes indicates
+    // a successful result, but the 'source code' is a JSON parse
+    // error. If we cannot parse the source as JSON, let's indicate this.
+    // TODO: fix this in Main.purs
+    try {
+      JSON.parse(source);
+    } catch (e) {
+      return;
+    }
+
+    let { constructor, value0: output } = await this.renderAsync({
+      input: source,
+      rendererName: this.getRenderer().name,
+      topLevelName: this.state.topLevelName
     });
 
     this.sendEvent("sourceEdited");
 
     if (constructor.name === "Left") {
-      this.snackbar.show({
-        message: `Error: ${output}`
-      });
+      this.displayRenderError(output);
       this.setState({ source });
     } else {
-      this.setState({ source, output }, () => this.resize());
+      this.setState({ source, output });
     }
 
     this.tryStore({source});
@@ -199,7 +226,7 @@ class App extends Component {
 
   render() {
     return (
-      <main className="mdc-typography">
+      <main className="mdc-typography mdc-theme--dark">
           <Sidebar
             sampleName={this.state.sampleName}
             onChangeSample={this.changeSampleName} 
@@ -211,7 +238,7 @@ class App extends Component {
               this.tryStore({tab});
               this.setState({tab});
             }}
-            onChangeTopLevelName={debounce(this.changeTopLevelName, 300)} />
+            onChangeTopLevelName={_.debounce(this.changeTopLevelName, 200)} />
 
           <Editor
             ref={(r) => { this.jsonEditor = r; }}
@@ -219,9 +246,10 @@ class App extends Component {
             className={mobileClass}
             lang="json"
             theme="solarized_dark"
-            onChange={debounce(this.sourceEdited, 500)}
+            onChange={_.debounce(this.sourceEdited, 200)}
             value={this.state.source}
             fontSize={(browser.mobile || browser.tablet) ? 12 : 14}
+            tabSize={2}
             showGutter={false}
             style={window.innerWidth > 800
             ? {

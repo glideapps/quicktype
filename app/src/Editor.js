@@ -12,7 +12,9 @@ export default class Editor extends Component {
 
   componentDidMount() {
     this.editor.setOption("displayIndentGuides", false);
-    setTimeout(() => window.session = this.editor.getSession(), 3000);
+    if (this.props.tabSize) {
+      this.editor.session.setOptions({ tabSize: this.props.tabSize });
+    }
   }
 
   scrollTop = () => {
