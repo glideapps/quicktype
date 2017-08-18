@@ -55,8 +55,7 @@ module.exports = {
   // devtool: 'source-map',
   // In production, we only want to load the polyfills and the app code.
   entry: {
-    app: [require.resolve('./polyfills'), paths.appIndexJs],
-    worker:  require.resolve('../src/worker')
+    app: [require.resolve('./polyfills'), paths.appIndexJs]
   },
   output: {
     // The build folder.
@@ -247,7 +246,6 @@ module.exports = {
     new HtmlWebpackPlugin({
       inject: true,
       template: paths.appHtml,
-      excludeChunks: ['worker'],
       minify: {
         removeComments: true,
         collapseWhitespace: true,

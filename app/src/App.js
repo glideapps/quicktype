@@ -10,6 +10,10 @@ import browser from "bowser";
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
+
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import Worker from "worker-loader?name=static/js/worker.[hash].js!./worker.js";
+
 import { camelCase } from "../../output/Data.String.Util";
 
 import 'brace/mode/csharp';
@@ -22,12 +26,12 @@ import 'brace/theme/chrome';
 import 'brace/theme/solarized_dark';
 
 const mobileClass = (browser.mobile || browser.tablet) ? "mobile" : "";
-const client = require('webpack-worker/client');
-const worker = new Worker('static/js/worker.bundle.js');
 
 class App extends Component {
   constructor(props) {
     super(props);
+
+    this.worker = new Worker();
 
     let preferredExtension = this.tryGetPreferredRendererExtension();
     let preferredRenderer = preferredExtension && Main.renderers.find((r) => r.extension === preferredExtension);
@@ -117,18 +121,15 @@ class App extends Component {
     return result;
   }
 
-  getWorker = async () => {
-    if (this.worker) return this.worker;
-    
-    return await client(worker).then(api => {
-      return Object.assign(api, { render: _.throttle(api.render, 100) })
+  renderAsync = _.throttle(inputs => {
+    return new Promise(resolve => {
+      this.worker.onmessage = message => resolve(message.data);
+      this.worker.postMessage(inputs);
     });
-  }
+  }, 100)
 
   sourceEdited = async source => {
-    let api = await this.getWorker();
-
-    let { constructor, value0: output } = await api.render({
+    let { constructor, value0: output } = await this.renderAsync({
       input: source,
       rendererName: this.getRenderer().name,
       topLevelName: this.state.topLevelName

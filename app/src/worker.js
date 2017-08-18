@@ -1,6 +1,4 @@
-import * as api from 'webpack-worker/api';
-
-import Main from "../../../output/Main";
+import Main from "../../output/Main";
 import * as _ from "lodash";
 
 function getRenderer(name) {
@@ -14,4 +12,7 @@ function render({ input, rendererName, topLevelName }) {
     });
 }
 
-api(() => Promise.resolve({render}));
+ // eslint-disable-next-line no-restricted-globals
+self.addEventListener("message", message => {
+    postMessage(render(message.data));
+});
