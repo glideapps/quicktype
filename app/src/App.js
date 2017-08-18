@@ -18,6 +18,7 @@ import 'brace/mode/golang';
 import 'brace/mode/typescript';
 import 'brace/mode/json';
 import 'brace/mode/elm';
+import 'brace/mode/groovy';
 import 'brace/theme/chrome';
 import 'brace/theme/solarized_dark';
 
