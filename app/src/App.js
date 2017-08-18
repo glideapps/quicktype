@@ -134,12 +134,12 @@ class App extends Component {
     return result;
   }
 
-  renderAsync = _.throttle(inputs => {
+  renderAsync(inputs) {
     return new Promise(resolve => {
       this.worker.onmessage = message => resolve(message.data);
       this.worker.postMessage(inputs);
     });
-  }, 100)
+  }
 
   displayRenderError(message) {
     this.snackbar.show({
@@ -147,7 +147,7 @@ class App extends Component {
     });
   }
 
-  sourceEdited = async source => {
+  sourceEdited = async source => {     
     // For some reason, our renderer sometimes indicates
     // a successful result, but the 'source code' is a JSON parse
     // error. If we cannot parse the source as JSON, let's indicate this.
@@ -237,7 +237,7 @@ class App extends Component {
               this.tryStore({tab});
               this.setState({tab});
             }}
-            onChangeTopLevelName={this.changeTopLevelName} />
+            onChangeTopLevelName={_.debounce(this.changeTopLevelName, 200)} />
 
           <Editor
             ref={(r) => { this.jsonEditor = r; }}
@@ -245,7 +245,7 @@ class App extends Component {
             className={mobileClass}
             lang="json"
             theme="solarized_dark"
-            onChange={this.sourceEdited}
+            onChange={_.debounce(this.sourceEdited, 200)}
             value={this.state.source}
             fontSize={(browser.mobile || browser.tablet) ? 12 : 14}
             tabSize={2}
