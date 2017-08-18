@@ -53,7 +53,7 @@ class App extends Component {
 
   resize = () => {
     this.setState({
-      showEditorGutter: window.innerWidth > 800
+      showEditorGutter: window.innerWidth > 1000
     });
   }
 
@@ -88,6 +88,8 @@ class App extends Component {
     window.addEventListener('resize', () => {
       this.resize();
     });
+
+    this.resize();
   }
 
   copyOutput = () => {
@@ -168,7 +170,7 @@ class App extends Component {
       this.displayRenderError(output);
       this.setState({ source });
     } else {
-      this.setState({ source, output }, () => this.resize());
+      this.setState({ source, output });
     }
 
     this.tryStore({source});
@@ -264,7 +266,7 @@ class App extends Component {
             theme="chrome"
             value={this.state.output}
             fontSize={(browser.mobile || browser.tablet) ? 13 : 15}
-            showGutter={window.innerWidth > 1000}
+            showGutter={this.state.showEditorGutter}
             style={window.innerWidth > 800
             ? {
                 visibility: "visible" 
