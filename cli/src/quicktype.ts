@@ -155,10 +155,45 @@ class Run {
     return Either.fromRight(pipeline(input));    
   }
 
+  splitAndWriteJava = (dir: string, str: string) => {
+    const lines = str.split("\n");
+    let filename : string | null = null;
+    let currentFileContents : string = "";
+
+    const writeFile = () => {
+      if (filename != null) {
+        fs.writeFileSync(path.join(dir, filename), currentFileContents);
+      }
+      filename = null;
+      currentFileContents = "";      
+    };
+
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      i += 1;
+
+      const results = line.match("^// (.+\\.java)$");
+      if (results == null) {
+        currentFileContents += line + "\n";
+      } else {
+        writeFile();
+        filename = results[1];
+        while (lines[i] == "")
+          i++;
+      }
+    }
+    writeFile();
+  }
+
   renderAndOutput = (jsonArrayMap: JsonArrayMap) => {
     let output = this.renderFromJsonArrayMap(jsonArrayMap);
     if (this.options.out) {
-      fs.writeFileSync(this.options.out, output); 
+      if (this.options.lang == "java") {
+        this.splitAndWriteJava(path.dirname(this.options.out), output);
+      } else {
+        fs.writeFileSync(this.options.out, output);
+      }
     } else {
       process.stdout.write(output);
     }

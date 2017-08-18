@@ -33,6 +33,7 @@ import Elm as Elm
 import Environment (Environment(..))
 import Environment as Env
 import Golang as Golang
+import Java as Java
 import JsonSchema (JSONSchema, jsonSchemaListToIR)
 import JsonSchema as JsonSchema
 import UrlGrammar (GrammarMap(..), generate)
@@ -56,6 +57,7 @@ renderers =
     [ TypeScript.renderer
     , Golang.renderer
     , CSharp.renderer
+    , Java.renderer
     , Elm.renderer
     , Pseudocode.renderer
     , JsonSchema.renderer

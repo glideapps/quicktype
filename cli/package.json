@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "dependencies": {
     "chalk": "^2.1.0",
     "command-line-args": "^4.0.6",
