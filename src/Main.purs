@@ -11,6 +11,8 @@ import IRGraph
 import Prelude
 import Transformations
 
+import Language.Pseudocode as Pseudocode
+
 import CSharp as CSharp
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (foldJson) as J
@@ -55,6 +57,7 @@ renderers =
     , Golang.renderer
     , CSharp.renderer
     , Elm.renderer
+    , Pseudocode.renderer
     , JsonSchema.renderer
     ]
 
