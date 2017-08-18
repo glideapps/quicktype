@@ -122,18 +122,19 @@ sidebar {
 }
 
 @media (min-width: 1440px) {
+  $sidebarWidth: 600px;
   sidebar {
-    width: 600px;
+    width: $sidebarWidth;
   }
   #json-editor {
-    width: calc(600px - 40px) !important;
+    width: calc(#{$sidebarWidth} - 40px) !important;
   }
   #button-parent {
-    width: calc(600px - 40px);
+    width: calc(#{$sidebarWidth} - 40px);
   }
   #output-editor {
-    width: calc(100vw - 600px);
-    left: 600px;
+    width: calc(100vw - #{$sidebarWidth}) !important;
+    left: $sidebarWidth;
   }
 }
 
