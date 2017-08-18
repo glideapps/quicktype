@@ -235,6 +235,7 @@ class App extends Component {
             onChange={this.sourceEdited}
             value={this.state.source}
             fontSize={(browser.mobile || browser.tablet) ? 12 : 14}
+            tabSize={2}
             showGutter={false}
             style={window.innerWidth > 800
             ? {
