@@ -5,7 +5,6 @@ import Snackbar from './Snackbar';
 import Button from "@react-mdc/button";
 
 import urlParse from 'url-parse';
-import debounce from 'debounce';
 import * as _ from "lodash";
 import browser from "bowser";
 
@@ -23,6 +22,8 @@ import 'brace/theme/chrome';
 import 'brace/theme/solarized_dark';
 
 const mobileClass = (browser.mobile || browser.tablet) ? "mobile" : "";
+const client = require('webpack-worker/client');
+const worker = new Worker('static/js/worker.bundle.js');
 
 class App extends Component {
   constructor(props) {
@@ -116,12 +117,21 @@ class App extends Component {
     return result;
   }
 
-  sourceEdited = (source) => {
-    let { constructor, value0: output } = this.sendPerformance("Main", "renderJsonString", () => {
-      return Main.renderFromJsonStringPossiblyAsSchemaInDevelopment(this.state.topLevelName)({
-        input: source,
-        renderer: this.getRenderer()
-      });
+  getWorker = async () => {
+    if (this.worker) return this.worker;
+    
+    return await client(worker).then(api => {
+      return Object.assign(api, { render: _.throttle(api.render, 100) })
+    });
+  }
+
+  sourceEdited = async source => {
+    let api = await this.getWorker();
+
+    let { constructor, value0: output } = await api.render({
+      input: source,
+      rendererName: this.getRenderer().name,
+      topLevelName: this.state.topLevelName
     });
 
     this.sendEvent("sourceEdited");
@@ -199,7 +209,7 @@ class App extends Component {
               this.tryStore({tab});
               this.setState({tab});
             }}
-            onChangeTopLevelName={debounce(this.changeTopLevelName, 300)} />
+            onChangeTopLevelName={this.changeTopLevelName} />
 
           <Editor
             ref={(r) => { this.jsonEditor = r; }}
@@ -207,7 +217,7 @@ class App extends Component {
             className={mobileClass}
             lang="json"
             theme="solarized_dark"
-            onChange={debounce(this.sourceEdited, 500)}
+            onChange={this.sourceEdited}
             value={this.state.source}
             fontSize={(browser.mobile || browser.tablet) ? 12 : 14}
             showGutter={false}
