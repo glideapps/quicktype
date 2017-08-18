@@ -17,7 +17,6 @@ import Data.Set (Set)
 import Data.Set as S
 import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
 import Data.Tuple (Tuple(..))
-import Partial.Unsafe (unsafePartial)
 import Utils (removeElement)
 
 forbiddenNames :: Array String
@@ -244,7 +243,7 @@ renderDoubleDeserializer types =
             deserializeType IRDouble
 
 renderGenericDeserializer :: (IRType -> Boolean) -> String -> Set IRType -> Doc Unit
-renderGenericDeserializer predicate tokenType types = unsafePartial $
+renderGenericDeserializer predicate tokenType types =
     case find predicate types of
     Nothing -> pure unit
     Just t -> do
