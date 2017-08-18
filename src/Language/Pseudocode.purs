@@ -26,10 +26,10 @@ renderer =
     { name: "Pseudocode"
     , aceMode: "groovy"
     , extension: "pseudo"
-    , doc: typeScriptDoc
+    , doc: pseudocodeDoc
     , transforms:
-        { nameForClass: simpleNamer nameForClass
-        , nextName: \s -> s <> "_"
+        { nameForClass: noForbidNamer nameForClass
+        , nextName: \s -> "Other" <> s
         , forbiddenNames: []
         , topLevelName: simpleNamer id
         , unions: Nothing
@@ -39,9 +39,9 @@ renderer =
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = upperNameStyle $ combineNames names
 
-isGeneric :: IRType -> Boolean
-isGeneric = case _ of
-    IRArray a -> isGeneric a    
+isComplex :: IRType -> Boolean
+isComplex = case _ of
+    IRArray a -> isComplex a    
     IRMap _ -> true
     IRUnion _ -> true
     _ -> false
@@ -77,7 +77,7 @@ renderType = case _ of
     IRString -> pure "String"
     IRClass i -> lookupClassName i
 
-    IRArray a | isGeneric a -> do
+    IRArray a | isComplex a -> do
         rendered <- renderType a
         pure $ "Array<" <> rendered <> ">"
 
@@ -89,37 +89,22 @@ renderType = case _ of
         rendered <- renderType t
         pure $ "Map<String, " <> rendered <> ">"
 
-    IRUnion types ->
-        case nullableFromSet $ unionToSet types of
-            Nothing -> renderUnion $ unionToSet types
+    IRUnion types -> do
+        let typeSet = unionToSet types
+        case nullableFromSet typeSet of
+            Nothing -> renderUnion typeSet
             Just t -> do
                 rendered <- renderType t
                 pure $ "Maybe<" <> rendered <> ">"
 
-getContainedClassName :: IRType -> Doc (Maybe String)
-getContainedClassName = case _ of
-    IRArray a -> getContainedClassName a
-    IRClass i -> Just <$> lookupClassName i
-    _ -> pure Nothing
-
-tsNameStyle :: Boolean -> String -> String
-tsNameStyle upper = Str.legalizeCharacters isPartCharacter >>> Str.camelCase >>> (Str.startWithLetter isStartCharacter upper)
+classNameStyle :: Boolean -> String -> String
+classNameStyle upper = Str.legalizeCharacters isPartCharacter >>> Str.camelCase >>> (Str.startWithLetter isStartCharacter upper)
 
 upperNameStyle :: String -> String
-upperNameStyle = tsNameStyle true
+upperNameStyle = classNameStyle true
 
-lowerNameStyle :: String -> String
-lowerNameStyle = tsNameStyle false
-
-quote :: String -> String
-quote s = "\"" <> s <> "\""
-
-typeScriptDoc :: Doc Unit
-typeScriptDoc = forEachClass_ renderClass
-
-renderClass :: String -> Map String IRType -> Doc Unit
-renderClass className properties = do
-    blank
+pseudocodeDoc :: Doc Unit
+pseudocodeDoc = forEachClass_ \className properties -> do
     line $ "class " <> className <> " {"
     indent do
         let props = M.toUnfoldable properties :: Array _
@@ -129,3 +114,4 @@ renderClass className properties = do
             rendered <- renderType ptype
             line $ pname <> ":" <> Str.times " " indent <> rendered
     line "}"
+    blank
