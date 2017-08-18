@@ -40,6 +40,7 @@
     "react-dom": "^15.6.1",
     "react-dropdown": "^1.2.5",
     "react-error-overlay": "^1.0.9",
+    "react-ga": "^2.2.0",
     "react-material-components-web": "^0.1.18",
     "style-loader": "0.18.2",
     "sw-precache-webpack-plugin": "0.11.3",
