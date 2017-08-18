@@ -1,2 +1,4 @@
 /node_modules
 /dist
+/java/.idea/workspace.xml
+/java/out
