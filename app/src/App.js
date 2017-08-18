@@ -128,15 +128,13 @@ class App extends Component {
     });
   }, 100)
 
-  displayRenderError = _.debounce(message => {
+  displayRenderError(message) {
     this.snackbar.show({
       message: `⚠ ${message}`
     });
-  }, 1000, { trailing: true })
+  }
 
   sourceEdited = async source => {
-    let jsonIsValid = true;
-
     // For some reason, our renderer sometimes indicates
     // a successful result, but the 'source code' is a JSON parse
     // error. If we cannot parse the source as JSON, let's indicate this.
@@ -144,7 +142,7 @@ class App extends Component {
     try {
       JSON.parse(source);
     } catch (e) {
-      jsonIsValid = false;
+      return;
     }
 
     let { constructor, value0: output } = await this.renderAsync({
@@ -155,11 +153,10 @@ class App extends Component {
 
     this.sendEvent("sourceEdited");
 
-    if (!jsonIsValid || constructor.name === "Left") {
+    if (constructor.name === "Left") {
       this.displayRenderError(output);
       this.setState({ source });
     } else {
-      this.displayRenderError.cancel();
       this.setState({ source, output });
     }
 
