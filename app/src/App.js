@@ -38,18 +38,11 @@ class App extends Component {
     this.state = {
       source: localStorage["source"] || "",
       output: "",
-      showEditorGutter: true,
       rendererName: preferredRendererName || this.getRenderer().name,
       sampleName,
       topLevelName,
       tab: +localStorage["tab"] || 0
     };
-  }
-
-  resize = () => {
-    this.setState({
-      showEditorGutter: window.innerWidth > 800
-    });
   }
 
   tryGetPreferredRendererExtension = () => {
@@ -79,10 +72,6 @@ class App extends Component {
     
     let copyButton = window.document.querySelector('.mdc-button--primary');
     copyButton.addEventListener('click', this.copyOutput);
-
-    window.addEventListener('resize', () => {
-      this.resize();
-    });
   }
 
   copyOutput = () => {
@@ -143,7 +132,7 @@ class App extends Component {
       });
       this.setState({ source });
     } else {
-      this.setState({ source, output }, () => this.resize());
+      this.setState({ source, output });
     }
 
     this.tryStore({source});
