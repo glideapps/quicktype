@@ -5,7 +5,7 @@ samples = [
     "getting-started.json",
     "pokedex.json",
     "spotify-album.json",
-    "weather.json",
+    "kitchen-sink.json",
     "bitcoin-block.json",
     "reddit.json",
     "github-events.json",
