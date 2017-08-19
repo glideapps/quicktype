@@ -1,4 +1,4 @@
-module Java
+module Language.Java
     ( renderer
     ) where
 

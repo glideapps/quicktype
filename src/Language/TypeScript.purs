@@ -1,4 +1,4 @@
-module TypeScript 
+module Language.TypeScript 
     ( renderer
     ) where
 

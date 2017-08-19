@@ -11,9 +11,9 @@ import IRGraph
 import Prelude
 import Transformations
 
-import Language.Pseudocode as Pseudocode
+import Language.Renderers as Renderers
+import Language.JsonSchema (JSONSchema, jsonSchemaListToIR)
 
-import CSharp as CSharp
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (foldJson) as J
 import Data.Argonaut.Decode (decodeJson) as J
@@ -29,15 +29,9 @@ import Data.StrMap as SM
 import Data.String.Util (singular)
 import Data.Tuple (Tuple(..))
 import Doc as Doc
-import Elm as Elm
 import Environment (Environment(..))
 import Environment as Env
-import Golang as Golang
-import Java as Java
-import JsonSchema (JSONSchema, jsonSchemaListToIR)
-import JsonSchema as JsonSchema
 import UrlGrammar (GrammarMap(..), generate)
-import TypeScript as TypeScript
 import Utils (foldErrorArray, foldErrorStrMap, forStrMap_, mapM, mapStrMapM)
 
 type Error = String
@@ -53,15 +47,7 @@ type Input a =
 type Pipeline a = Input a -> Either Error SourceCode
 
 renderers :: Array Doc.Renderer
-renderers = 
-    [ TypeScript.renderer
-    , Golang.renderer
-    , CSharp.renderer
-    , Java.renderer
-    , Elm.renderer
-    , Pseudocode.renderer
-    , JsonSchema.renderer
-    ]
+renderers = Renderers.all
 
 makeTypeFromJson :: Named String -> Json -> IR IRType
 makeTypeFromJson name json =
