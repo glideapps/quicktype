@@ -6,19 +6,17 @@ import Doc
 import IRGraph
 import Prelude
 
+import Data.Bifunctor (bimap)
 import Data.Char.Unicode (GeneralCategory(..), generalCategory)
-
 import Data.Foldable (for_, intercalate, maximum)
-
 import Data.List as L
-import Data.Map as M
 import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Set (Set)
 import Data.String as Str
 import Data.String.Util as Str
 import Data.Tuple (Tuple(..), fst)
-
 import Utils (mapM)
 
 renderer :: Renderer
@@ -103,13 +101,20 @@ classNameStyle upper = Str.legalizeCharacters isPartCharacter >>> Str.camelCase 
 upperNameStyle :: String -> String
 upperNameStyle = classNameStyle true
 
+propertyNameify :: String -> String
+propertyNameify = case _ of
+    "" -> "\"\""
+    s | Str.contains (Str.Pattern " ") s -> "\"" <> s <> "\""
+    s -> s
+
 pseudocodeDoc :: Doc Unit
 pseudocodeDoc = forEachClass_ \className properties -> do
     line $ "class " <> className <> " {"
     indent do
         let props = M.toUnfoldable properties :: Array _
-        let maxWidth = props <#> fst <#> Str.length # maximum
-        for_ props \(Tuple pname ptype) -> do
+        let propsClean = bimap propertyNameify id <$> props
+        let maxWidth = propsClean <#> fst <#> Str.length # maximum
+        for_ propsClean \(Tuple pname ptype) -> do
             let indent = maybe 1 (\w -> w - Str.length pname + 1) maxWidth 
             rendered <- renderType ptype
             line $ pname <> ":" <> Str.times " " indent <> rendered

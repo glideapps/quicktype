@@ -2,8 +2,8 @@
   "stringValue": "Anteater",
   "dateValue": "Sat Aug 19 11:33:19 EDT 2017",
   "uuidValue": "F5165FDB-F5AD-4F6E-8552-799B1C62B387",
-  "": "(empty property name)",
-  "name with spaces": {},
+  "": null,
+  "name with spaces": null,
   "doubleValue": 3.14159,
   "intValue": 3,
   "booleanValue": false,
@@ -14,15 +14,18 @@
     [2, "two"]
   ],
   "person": {
-    "name": "Bob"
+    "name": "Bob",
+    "intOrString": 70
   },
   "people": [
     {
-      "name": "Sue"
+      "name": "Sue",
+      "intOrString": 50
     },
     {
       "name": "Dave",
-      "optionalValue": true
+      "optionalValue": true,
+      "intOrString": "5"
     }
   ],
   "differentThings": [
@@ -32,7 +35,7 @@
       "name": "Mork"
     }
   ],
-  "map": {
+  "mapValue": {
     "0": 0,
     "1": 0,
     "2": 0,
