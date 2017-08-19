@@ -195,9 +195,11 @@ sidebar {
   #output-editor {
     top: $sidebarHeight;
     height: calc(100vh - #{$sidebarHeight}) !important;
+    font-size: 10pt !important;
   }
   #json-editor, #json-editor.mobile {
     top: $sidebarHeight;
     height: calc(100vh -  #{$sidebarHeight}) !important;
+    font-size: 10pt !important;
   }
 }
