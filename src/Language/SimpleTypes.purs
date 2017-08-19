@@ -1,4 +1,4 @@
-module Language.Pseudocode 
+module Language.SimpleTypes 
     ( renderer
     ) where
 

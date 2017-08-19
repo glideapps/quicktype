@@ -1,4 +1,4 @@
-module Golang 
+module Language.Golang 
     ( renderer
     ) where
 

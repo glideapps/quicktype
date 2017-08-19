@@ -1,4 +1,4 @@
-module JsonSchema where
+module Language.JsonSchema where
 
 import Doc
 import IRGraph
