@@ -1,20 +1,28 @@
 {
 	"stringValue": "Anteater",
+	"": "(empty property name)",
+	"name with spaces": {},
 	"doubleValue": 3.14159,
 	"intValue": 3,
 	"booleanValue": false,
 	"nullValue": null,
 	"person": {
-		"name": "Bob"
+	  "name": "Bob"
 	},
 	"people": [
-		{
-			"name": "Sue"
-		},
-		{
-			"name": "Dave",
-			"optionalValue": true
-		}
+	  {
+		"name": "Sue"
+	  },
+	  {
+		"name": "Dave",
+		"optionalValue": true
+	  }
 	],
-	"differentThings": [1, "1"]
-}
+	"differentThings": [
+	  1,
+	  "1",
+	  {
+		"name": "Mork"
+	  }
+	]
+  }
