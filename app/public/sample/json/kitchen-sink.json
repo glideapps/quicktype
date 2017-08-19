@@ -1,0 +1,20 @@
+{
+	"stringValue": "Anteater",
+	"doubleValue": 3.14159,
+	"intValue": 3,
+	"booleanValue": false,
+	"nullValue": null,
+	"person": {
+		"name": "Bob"
+	},
+	"people": [
+		{
+			"name": "Sue"
+		},
+		{
+			"name": "Dave",
+			"optionalValue": true
+		}
+	],
+	"differentThings": [1, "1"]
+}
