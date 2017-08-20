@@ -48,25 +48,26 @@ renderer =
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = javaNameStyle $ combineNames names
 
-isStartCharacter :: Char -> Boolean
-isStartCharacter c =
-    case generalCategory c of
-    Just CurrencySymbol -> true
-    Just ConnectorPunctuation -> true
-    _ -> isLetterOrLetterNumber c
-
-isPartCharacter :: Char -> Boolean
-isPartCharacter c =
-    case generalCategory c of
-    Just DecimalNumber -> true
-    Just SpacingCombiningMark -> true
-    Just NonSpacingMark -> true
-    Just Format -> true
-    Just Control -> not $ isSpace c
-    _ -> isStartCharacter c
-
 javaNameStyle :: String -> String
-javaNameStyle = legalizeCharacters isPartCharacter >>> camelCase >>> startWithLetter isStartCharacter true
+javaNameStyle =
+    legalizeCharacters isPartCharacter >>> camelCase >>> startWithLetter isStartCharacter true
+    where
+        isStartCharacter :: Char -> Boolean
+        isStartCharacter c =
+            case generalCategory c of
+            Just CurrencySymbol -> true
+            Just ConnectorPunctuation -> true
+            _ -> isLetterOrLetterNumber c
+
+        isPartCharacter :: Char -> Boolean
+        isPartCharacter c =
+            case generalCategory c of
+            Just DecimalNumber -> true
+            Just SpacingCombiningMark -> true
+            Just NonSpacingMark -> true
+            Just Format -> true
+            Just Control -> not $ isSpace c
+            _ -> isStartCharacter c
 
 javaDoc :: Doc Unit
 javaDoc = do
@@ -83,9 +84,6 @@ renderUnionWithTypeRenderer typeRenderer ur =
     case nullableFromSet $ unionToSet ur of
     Just x -> typeRenderer true x
     Nothing -> lookupUnionName ur
-
-renderUnion :: IRUnionRep -> Doc String
-renderUnion = renderUnionWithTypeRenderer renderType
 
 renderType :: Boolean -> IRType -> Doc String
 renderType reference = case _ of
@@ -113,16 +111,6 @@ renderTypeWithoutGenerics reference = case _ of
     IRUnion ur -> renderUnionWithTypeRenderer renderTypeWithoutGenerics ur
     t -> renderType reference t
 
-fieldNameForJavaName :: String -> String
-fieldNameForJavaName = decapitalize >>> ("_" <> _)
-
-forEachProperty_ :: Map String IRType -> Map String String -> (String -> IRType -> String -> String -> String -> Doc Unit) -> Doc Unit
-forEachProperty_ properties propertyNames f =
-    for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
-        let javaName = lookupName pname propertyNames
-        let fieldName = fieldNameForJavaName javaName
-        rendered <- renderType false ptype
-        f pname ptype javaName fieldName rendered
 
 renderFileHeader :: String -> Array String -> Doc Unit
 renderFileHeader fileName imports = do
@@ -133,9 +121,6 @@ renderFileHeader fileName imports = do
     for_ imports \package -> do
         line $ "import " <> package <> ";"
     blank
-
-getDecoderHelperPrefix :: String -> Doc String
-getDecoderHelperPrefix topLevelName = getForSingleOrMultipleTopLevels "" topLevelName
 
 renderConverter :: Doc Unit
 renderConverter = do
@@ -160,6 +145,9 @@ renderConverter = do
                 line "return mapper.writeValueAsString(obj);"
             line "}"
     line "}"
+    where
+        getDecoderHelperPrefix :: String -> Doc String
+        getDecoderHelperPrefix topLevelName = getForSingleOrMultipleTopLevels "" topLevelName
 
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
@@ -169,14 +157,25 @@ renderClassDefinition className properties = do
         line "@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)"
     line $ "public class " <> className <> " {"
     indent do
-        forEachProperty_ properties propertyNames \pname ptype javaName fieldName rendered -> do
+        forEachProperty_ properties propertyNames \_ javaName fieldName rendered -> do
             line $ "private " <> rendered <> " " <> fieldName <> ";"
-        forEachProperty_ properties propertyNames \pname ptype javaName fieldName rendered -> do
+        forEachProperty_ properties propertyNames \pname javaName fieldName rendered -> do
             blank
             line $ "@JsonProperty(\"" <> stringEscape pname <> "\")"
             line $ "public " <> rendered <> " get" <> javaName <> "() { return " <> fieldName <> "; }"
             line $ "public void set" <> javaName <> "(" <> rendered <> " value) { " <> fieldName <> " = value; }"
     line "}"
+    where
+        forEachProperty_ :: Map String IRType -> Map String String -> (String -> String -> String -> String -> Doc Unit) -> Doc Unit
+        forEachProperty_ properties propertyNames f =
+            for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
+                let javaName = lookupName pname propertyNames
+                let fieldName = fieldNameForJavaName javaName
+                rendered <- renderType false ptype
+                f pname javaName fieldName rendered
+
+        fieldNameForJavaName :: String -> String
+        fieldNameForJavaName = decapitalize >>> ("_" <> _)
 
 renderUnionField :: IRType -> Doc { renderedType :: String, fieldName :: String }
 renderUnionField t = do
