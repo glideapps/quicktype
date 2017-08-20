@@ -111,20 +111,44 @@ renderTypeWithoutGenerics reference = case _ of
     IRUnion ur -> renderUnionWithTypeRenderer renderTypeWithoutGenerics ur
     t -> renderType reference t
 
-
-renderFileHeader :: String -> Array String -> Doc Unit
-renderFileHeader fileName imports = do
+renderFileComment :: String -> Doc Unit
+renderFileComment fileName = do
     line $ "// " <> fileName <> ".java"
-    blank
+
+renderPackageAndImports :: Array String -> Doc Unit
+renderPackageAndImports imports = do
     line "package io.quicktype;"
     blank
     for_ imports \package -> do
         line $ "import " <> package <> ";"
+
+renderFileHeader :: String -> Array String -> Doc Unit
+renderFileHeader fileName imports = do
+    renderFileComment fileName
+    blank
+    renderPackageAndImports imports
     blank
 
 renderConverter :: Doc Unit
 renderConverter = do
-    renderFileHeader "Converter" ["java.util.Map", "java.io.IOException", "com.fasterxml.jackson.databind.ObjectMapper", "com.fasterxml.jackson.core.JsonProcessingException"]
+    renderFileComment "Converter"
+    blank
+    line """// To use this code, add the following Maven dependency to your project:
+//
+//     com.fasterxml.jackson.core : jackson-databind : 2.9.0
+//
+// Import this package:
+//
+//     import io.quicktype.Converter;
+//
+// Then you can deserialize a JSON string with
+//"""
+    forEachTopLevel_ \_ topLevelType -> do
+        topLevelTypeRendered <- renderType false topLevelType
+        line $ "//     " <> topLevelTypeRendered <> " data = Converter.FromJsonString(jsonString);"
+    blank
+    renderPackageAndImports ["java.util.Map", "java.io.IOException", "com.fasterxml.jackson.databind.ObjectMapper", "com.fasterxml.jackson.core.JsonProcessingException"]
+    blank
     line "public class Converter {"
     indent do
         line "// Serialize/deserialize helpers"
