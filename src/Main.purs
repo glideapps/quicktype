@@ -1,51 +1,69 @@
-module Main
-    ( renderFromJsonArrayMap
-    , renderFromJsonSchemaArrayMap
-    , renderFromJsonStringPossiblyAsSchemaInDevelopment
-    , renderers
-    , urlsFromJsonGrammar
-    ) where
+module Main (main, renderers, urlsFromJsonGrammar) where
+
+import Core
 
 import IR
 import IRGraph
-import Prelude
-import Transformations
+import Transformations as T
 
-import Language.Renderers as Renderers
-import Language.JsonSchema (JSONSchema, jsonSchemaListToIR)
+import Config as Config
 
+import Control.Monad.State (modify)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (foldJson) as J
 import Data.Argonaut.Decode (decodeJson) as J
-import Data.Argonaut.Parser (jsonParser) as J
-import Data.Array (foldl)
-import Data.Either (Either(..))
-import Data.Foldable (for_)
+
+import Data.Either (Either)
+
 import Data.List as L
+import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
-import Data.StrMap (StrMap)
+
 import Data.StrMap as SM
 import Data.String.Util (singular)
+import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
+
 import Doc as Doc
-import Environment (Environment(..))
-import Environment as Env
+import Language.JsonSchema (JSONSchema, jsonSchemaListToIR)
+import Language.Renderers as Renderers
 import UrlGrammar (GrammarMap(..), generate)
-import Utils (forStrMap_, mapM, mapStrMapM)
-import Control.Monad.Except (except)
+import Utils (forMapM_, mapM)
 
-type Error = String
-type SourceCode = String
+-- json is a Foreign object whose type is defined in /cli/src/Main.d.ts
+main :: Json -> Either Error SourceCode
+main json = do
+    config <- Config.parseConfig json
 
--- A type representing the input to Pipelines
--- This makes pipelines easier to call from JavaScript
-type Input a =
-    { input :: a
-    , renderer :: Doc.Renderer
-    }
+    let samples = Config.topLevelSamples config
+    let schemas = Config.topLevelSchemas config
 
-type Pipeline a = Input a -> Either Error SourceCode
+    renderer <- Config.renderer config
+
+    graph <- normalizeGraphOrder =<< execIR do
+        makeTypesFromSamples samples
+        T.replaceSimilarClasses
+        T.makeMaps
+        modify regatherClassNames
+
+        -- We don't regatherClassNames for schemas
+        makeTypesFromSchemas schemas
+        modify regatherUnionNames
+
+    pure $ Doc.runRenderer renderer graph
+
+makeTypesFromSamples :: Map Name (Array Json) -> IR Unit
+makeTypesFromSamples jsonArrayMap = do
+    forMapM_ jsonArrayMap \name jsonArray -> do
+        topLevelTypes <- traverse (makeTypeFromJson $ Given name) jsonArray
+        topLevel <- unifyMultipleTypes $ L.fromFoldable topLevelTypes
+        addTopLevel name topLevel
+
+makeTypesFromSchemas :: Map Name JSONSchema -> IR Unit
+makeTypesFromSchemas schemaMap = do
+    forMapM_ schemaMap \name schema -> do
+        topLevel <- jsonSchemaListToIR (Given name) [schema]
+        addTopLevel name topLevel
 
 renderers :: Array Doc.Renderer
 renderers = Renderers.all
@@ -70,51 +88,7 @@ makeTypeFromJson name json =
     where
         toProperty (Tuple name json) = Tuple name <$> makeTypeFromJson (Inferred name) json
 
-makeTypeAndUnify :: StrMap (Array Json) -> Either Error IRGraph
-makeTypeAndUnify jsonArrayMap = execIR do
-    forStrMap_ jsonArrayMap \name jsonArray -> do
-        topLevelTypes <- mapM (makeTypeFromJson $ Given name) $ L.fromFoldable jsonArray
-        topLevel <- unifyMultipleTypes topLevelTypes
-        addTopLevel name topLevel
-    replaceSimilarClasses
-    makeMaps
-
-makeTypeFromSchemaArrayMap :: StrMap (Array Json) -> Either Error IRGraph
-makeTypeFromSchemaArrayMap jsonArrayMap = execIR do
-    forStrMap_ jsonArrayMap \name jsonSchemaArray -> do
-        schemaArray <- mapM (except <<< J.decodeJson) jsonSchemaArray
-        topLevel <- jsonSchemaListToIR (Given name) schemaArray
-        addTopLevel name topLevel
-
-renderFromJsonArrayMap :: Pipeline (StrMap (Array Json))
-renderFromJsonArrayMap { renderer, input: jsonArrayMap } = do
-    graph <- makeTypeAndUnify jsonArrayMap
-    normalGraph <- graph # regatherClassNames # regatherUnionNames # normalizeGraphOrder
-    pure $ Doc.runRenderer renderer normalGraph
-    
-renderFromJsonSchemaArrayMap :: Pipeline (StrMap (Array Json))
-renderFromJsonSchemaArrayMap { renderer, input: jsonArrayMap } = do
-    graph <- makeTypeFromSchemaArrayMap jsonArrayMap
-    normalGraph <- normalizeGraphOrder (regatherUnionNames graph)
-    pure $ Doc.runRenderer renderer normalGraph
-
-pipelines :: Environment -> Array (Pipeline (StrMap (Array Json)))
-pipelines Development = [renderFromJsonArrayMap]
-pipelines Production = [renderFromJsonArrayMap]
-
-firstSuccess :: forall a. Array (Pipeline a) -> Pipeline a
-firstSuccess pipes input = foldl takeFirstRight (Left "no pipelines provided") pipes
-    where
-        takeFirstRight (Right output) _ = Right output
-        takeFirstRight _ pipeline = pipeline input
-
-renderFromJsonStringPossiblyAsSchemaInDevelopment :: String -> Pipeline String
-renderFromJsonStringPossiblyAsSchemaInDevelopment  topLevelName { renderer, input: jsonString } = do
-    obj <- J.jsonParser jsonString
-    firstSuccess (pipelines Env.current) { renderer, input: SM.singleton topLevelName [obj] }
-
-urlsFromJsonGrammar :: Json -> Either String (StrMap (Array String))
-urlsFromJsonGrammar json =
-    case J.decodeJson json of
-    Left err -> Left err
-    Right (GrammarMap grammarMap) -> Right $ SM.mapWithKey (const generate) grammarMap
+urlsFromJsonGrammar :: Json -> Either Error (SM.StrMap (Array String))
+urlsFromJsonGrammar json = do
+    GrammarMap grammarMap <- J.decodeJson json
+    pure $ generate <$> grammarMap

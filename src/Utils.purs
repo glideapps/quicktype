@@ -9,13 +9,15 @@ module Utils
     , removeElement
     , forEnumerated_
     , forStrMap_
+    , forMapM
+    , forMapM_
     ) where
 
 import Prelude
 
 import Data.Array as A
 import Data.Either (Either(..), either)
-import Data.Foldable (find, foldr)
+import Data.Foldable (find, foldr, traverse_)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
@@ -30,6 +32,14 @@ import Data.Tuple (Tuple(..))
 
 mapM :: forall m a b t. Applicative m => Traversable t => (a -> m b) -> t a -> m (t b)
 mapM = traverse
+
+forMapM :: forall a v k m. Monad m => Ord k => Map k v -> (k -> v -> m a) -> m (Map k a)
+forMapM = flip mapMapM
+
+forMapM_ :: forall a v k m. Monad m => Ord k => Map k v -> (k -> v -> m a) -> m Unit
+forMapM_ m f = do
+    _ <- forMapM m f
+    pure unit
 
 mapMapM :: forall m k v w. Monad m => Ord k  => (k -> v -> m w) -> Map k v -> m (Map k w)
 mapMapM f m = do

@@ -1,0 +1,18 @@
+{
+    "outFile": "quicktype.js",
+    "language": "typescript",
+    "topLevels": [
+        {
+            "name": "User",
+            "sample": "user.json"
+        },
+        {
+            "name": "Person",
+            "sample": "{ \"name\": \"David\" }"
+        },
+        {
+            "name": "Repos",
+            "sample": "https://api.github.com/users/dvdsgl/repos"
+        }
+    ]
+}

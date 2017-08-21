@@ -1,9 +1,9 @@
 module Language.JsonSchema where
 
+import Core
+
 import Doc
 import IRGraph
-import Prelude
-
 import Control.Monad.Error.Class (throwError)
 
 import Data.Argonaut.Core (Json, foldJson, fromArray, fromBoolean, fromObject, fromString, isBoolean, stringifyWithSpace)
@@ -62,7 +62,7 @@ newtype JSONSchema = JSONSchema
     , title :: Maybe String
     }
 
-decodeEnum :: forall a. StrMap a -> Json -> Either String a
+decodeEnum :: forall a. StrMap a -> Json -> Either Error a
 decodeEnum sm j = do
     key <- decodeJson j
     maybe (Left "Unexpected enum key") Right $ SM.lookup key sm
@@ -77,7 +77,7 @@ instance decodeJsonSchemaRef :: DecodeJson JSONSchemaRef where
             Just nel -> pure $ JSONSchemaRef nel
             Nothing -> Left "ERROR: String.split should return at least one element."
 
-decodeTypes :: Json -> Either String (Either JSONType (Set JSONType))
+decodeTypes :: Json -> Either Error (Either JSONType (Set JSONType))
 decodeTypes j =
     foldJson
         (\_ -> Left "`types` cannot be null")
@@ -92,7 +92,7 @@ decodeTypes j =
         (\_ -> Left "`Types` cannot be an object")
         j
 
-decodeAdditionalProperties :: Maybe Json -> Either String (Either Boolean JSONSchema)
+decodeAdditionalProperties :: Maybe Json -> Either Error (Either Boolean JSONSchema)
 decodeAdditionalProperties Nothing = Right $ Left true
 decodeAdditionalProperties (Just j)
     | isBoolean j = do
@@ -120,7 +120,7 @@ instance decodeJsonSchema :: DecodeJson JSONSchema where
         title <- obj .?? "title"
         pure $ JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required, title }
 
-lookupRef :: JSONSchema -> List String -> JSONSchema -> Either String JSONSchema
+lookupRef :: JSONSchema -> List String -> JSONSchema -> Either Error JSONSchema
 lookupRef root ref local@(JSONSchema { definitions }) =
     case ref of
     L.Nil -> Right local
