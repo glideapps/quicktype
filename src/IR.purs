@@ -16,8 +16,10 @@ module IR
 import IRGraph
 import Prelude
 
+import Control.Monad.Except (ExceptT(..), runExceptT)
 import Control.Monad.State (State, execState, runState)
 import Control.Monad.State.Class (get, put)
+import Data.Either (Either(..))
 import Data.Foldable (foldM, for_)
 import Data.Int.Bits as Bits
 import Data.List (List, (:))
@@ -28,17 +30,20 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Sequence as Seq
 import Data.Set (Set)
 import Data.Set as S
-import Data.Tuple (Tuple(..), fst)
+import Data.Tuple (Tuple(..), fst, snd)
 import Data.Tuple as T
 import Utils (lookupOrDefault, mapM, mapMapM, mapMaybeM, sortByKey)
 
-type IR = State IRGraph
+type IR = ExceptT String (State IRGraph)
 
-execIR :: forall a. IR a -> IRGraph
-execIR ir = execState ir emptyGraph
+execIR :: forall a. IR a -> Either String IRGraph
+execIR ir = snd <$> runIR ir
 
-runIR :: forall a. IR a -> Tuple a IRGraph
-runIR ir = runState ir emptyGraph
+runIR :: forall a. IR a ->  Either String (Tuple a IRGraph)
+runIR ir =
+    case runState (runExceptT ir) emptyGraph of
+        Tuple (Right a) s -> Right (Tuple a s)
+        Tuple (Left error) _ -> Left error
 
 addTopLevel :: String -> IRType -> IR Unit
 addTopLevel name toplevel = do
@@ -263,7 +268,7 @@ replaceClass from to = do
     replaceTypes $ (replaceClassesInType \i -> if i == from then Just to else Nothing)
     deleteClass from
 
-normalizeGraphOrder :: IRGraph -> IRGraph
+normalizeGraphOrder :: IRGraph -> Either String IRGraph
 normalizeGraphOrder graph@(IRGraph { toplevels }) =
     execIR work
     where
