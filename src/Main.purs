@@ -33,6 +33,7 @@ import Environment (Environment(..))
 import Environment as Env
 import UrlGrammar (GrammarMap(..), generate)
 import Utils (foldErrorArray, foldErrorStrMap, forStrMap_, mapM, mapStrMapM)
+import Control.Monad.Except (except)
 
 type Error = String
 type SourceCode = String
@@ -69,7 +70,7 @@ makeTypeFromJson name json =
     where
         toProperty (Tuple name json) = Tuple name <$> makeTypeFromJson (Inferred name) json
 
-makeTypeAndUnify :: StrMap (Array Json) -> IRGraph
+makeTypeAndUnify :: StrMap (Array Json) -> Either Error IRGraph
 makeTypeAndUnify jsonArrayMap = execIR do
     forStrMap_ jsonArrayMap \name jsonArray -> do
         topLevelTypes <- mapM (makeTypeFromJson $ Given name) $ L.fromFoldable jsonArray
@@ -78,44 +79,24 @@ makeTypeAndUnify jsonArrayMap = execIR do
     replaceSimilarClasses
     makeMaps
 
-makeTypeFromSchemaArrayMap :: StrMap (Array JSONSchema) -> Either Error IRGraph
-makeTypeFromSchemaArrayMap schemaArrayMap = eitherify $ runIR do
-    topLevelOrErrorMap <- mapStrMapM (jsonSchemaListToIR <<< Given) schemaArrayMap
-    case foldErrorStrMap topLevelOrErrorMap of
-        Left err -> pure $ Just err
-        Right topLevelMap -> do
-            for_ (SM.toUnfoldable topLevelMap :: Array _) \(Tuple name topLevel) -> do
-                addTopLevel name topLevel
-            pure Nothing
-    where
-        eitherify (Tuple (Just err) _) = Left err
-        eitherify (Tuple Nothing g) = Right g
+makeTypeFromSchemaArrayMap :: StrMap (Array Json) -> Either Error IRGraph
+makeTypeFromSchemaArrayMap jsonArrayMap = execIR do
+    forStrMap_ jsonArrayMap \name jsonSchemaArray -> do
+        schemaArray <- mapM (except <<< J.decodeJson) jsonSchemaArray
+        topLevel <- jsonSchemaListToIR (Given name) schemaArray
+        addTopLevel name topLevel
 
 renderFromJsonArrayMap :: Pipeline (StrMap (Array Json))
-renderFromJsonArrayMap { renderer, input: jsonArrayMap } =
-    jsonArrayMap
-    # makeTypeAndUnify
-    # regatherClassNames
-    # regatherUnionNames
-    # normalizeGraphOrder
-    # Doc.runRenderer renderer
-    # Right
-
-mapStrMapArrayWithError :: forall a b c. (a -> Either b c) -> StrMap (Array a) -> Either b (StrMap (Array c))
-mapStrMapArrayWithError f sm =
-    let mapWithErrors = SM.mapWithKey (\_ arr -> foldErrorArray $ map f arr) sm
-    in
-        foldErrorStrMap mapWithErrors
-
+renderFromJsonArrayMap { renderer, input: jsonArrayMap } = do
+    graph <- makeTypeAndUnify jsonArrayMap
+    normalGraph <- graph # regatherClassNames # regatherUnionNames # normalizeGraphOrder
+    pure $ Doc.runRenderer renderer normalGraph
+    
 renderFromJsonSchemaArrayMap :: Pipeline (StrMap (Array Json))
 renderFromJsonSchemaArrayMap { renderer, input: jsonArrayMap } = do
-    schemaArrayMap <- mapStrMapArrayWithError J.decodeJson jsonArrayMap
-    graph <- makeTypeFromSchemaArrayMap schemaArrayMap
-    graph
-        # regatherUnionNames
-        # normalizeGraphOrder
-        # Doc.runRenderer renderer
-        # pure
+    graph <- makeTypeFromSchemaArrayMap jsonArrayMap
+    normalGraph <- normalizeGraphOrder (regatherUnionNames graph)
+    pure $ Doc.runRenderer renderer normalGraph
 
 pipelines :: Environment -> Array (Pipeline (StrMap (Array Json)))
 pipelines Development = [renderFromJsonArrayMap]

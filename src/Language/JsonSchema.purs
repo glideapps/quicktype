@@ -4,6 +4,8 @@ import Doc
 import IRGraph
 import Prelude
 
+import Control.Monad.Except (except)
+import Control.Monad.Error.Class (throwError)
 import Data.Argonaut.Core (Json, foldJson, fromArray, fromBoolean, fromObject, fromString, isBoolean, stringifyWithSpace)
 import Data.Argonaut.Decode ((.??), decodeJson, class DecodeJson)
 import Data.Array as A
@@ -125,17 +127,16 @@ lookupRef root ref local@(JSONSchema { definitions }) =
         Nothing -> Left "Definitions not found"
     _ -> Left "Reference not supported"
 
-toIRAndUnify :: forall a f. Foldable f => (a -> IR (Either String IRType)) -> f a -> IR (Either String IRType)
+toIRAndUnify :: forall a f. Foldable f => (a -> IR IRType) -> f a -> IR IRType
 toIRAndUnify toIR l = do
-    irsAndErrors <- mapM toIR $ L.fromFoldable l
-    let irsOrError = foldError irsAndErrors
-    either (\e -> pure $ Left e) (\irs -> Right <$> foldM unifyTypes IRNothing irs) irsOrError
+    irs <- mapM toIR $ L.fromFoldable l
+    foldM unifyTypes IRNothing irs
 
-jsonSchemaToIR :: JSONSchema -> Named String -> JSONSchema -> IR (Either String IRType)
+jsonSchemaToIR :: JSONSchema -> Named String -> JSONSchema -> IR IRType
 jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
     | Just (JSONSchemaRef r) <- ref =
         case lookupRef root (NEL.toList r) schema of
-        Left err -> pure $ Left err
+        Left err -> throwError err
         Right js -> jsonSchemaToIR root (Given $ NEL.last r) js
     | Just (Left jt) <- types =
         jsonTypeToIR root name jt schema
@@ -144,57 +145,46 @@ jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, pr
     | Just jss <- oneOf =
         toIRAndUnify (jsonSchemaToIR root name) jss
     | otherwise =
-        pure $ Right IRNothing
+        pure IRNothing
 
-jsonSchemaListToIR :: forall t. Traversable t => Named String -> t JSONSchema -> IR (Either String IRType)
+jsonSchemaListToIR :: forall t. Traversable t => Named String -> t JSONSchema -> IR IRType
 jsonSchemaListToIR name l = do
-    errorOrTypeList <- mapM (\js -> jsonSchemaToIR js name js) l
-    case foldError errorOrTypeList of
-        Left err -> pure $ Left err
-        Right irTypes -> Right <$> unifyMultipleTypes irTypes
+    irTypes <- mapM (\js -> jsonSchemaToIR js name js) l
+    foldM unifyTypes IRNothing irTypes
 
-jsonTypeToIR :: JSONSchema -> Named String -> JSONType -> JSONSchema -> IR (Either String IRType)
+jsonTypeToIR :: JSONSchema -> Named String -> JSONType -> JSONSchema -> IR IRType
 jsonTypeToIR root name jsonType (JSONSchema schema) =
     case jsonType of
     JSONObject ->
         case schema.properties of
         Just sm -> do
-            propsAndErrorsWrong :: List _ <- SM.toUnfoldable <$> mapStrMapM (\n -> jsonSchemaToIR root $ Inferred n) sm
-            let propsOrError = M.fromFoldable <$> (foldError $ map raiseTuple propsAndErrorsWrong)
+            let propMap = M.fromFoldable $ SM.toUnfoldable sm :: Array _
+            props <- mapMapM (\n -> jsonSchemaToIR root $ Inferred n) propMap
             let required = maybe S.empty S.fromFoldable schema.required
             let title = maybe name Given schema.title
-            nulledPropsOrError <- either (\x -> pure $ Left x) (\x -> Right <$> mapMapM (\n -> if S.member n required then pure else unifyTypes IRNull) x) propsOrError
-            classFromPropsOrError title nulledPropsOrError
+            nulled <- mapMapM (\n -> if S.member n required then pure else unifyTypes IRNull) props
+            addClass $ makeClass title nulled
         Nothing ->
             case schema.additionalProperties of
             Left true ->
-                pure $ Right $ IRMap IRNothing
+                pure $ IRMap IRNothing
             Left false ->
-                pure $ Right $ IRNothing
+                pure $ IRNothing
             Right js -> do
-                irOrError <- jsonSchemaToIR root singularName js
-                pure $ either Left (\ir -> Right $ IRMap ir) irOrError
+                ir <- jsonSchemaToIR root singularName js
+                pure $ IRMap ir
     JSONArray ->
         case schema.items of
         Just js -> do
-            itemIROrError <- (jsonSchemaToIR root singularName) js
-            pure $ either Left (\ir -> Right $ IRArray ir) itemIROrError
-        Nothing -> pure $ Right $ IRArray IRNothing
-    JSONBoolean -> pure $ Right IRBool
-    JSONString -> pure $ Right IRString
-    JSONNull -> pure $ Right IRNull
-    JSONInteger -> pure $ Right IRInteger
-    JSONNumber -> pure $ Right IRDouble
+            ir <- (jsonSchemaToIR root singularName) js
+            pure $ IRArray ir
+        Nothing -> pure $ IRArray IRNothing
+    JSONBoolean -> pure IRBool
+    JSONString -> pure IRString
+    JSONNull -> pure IRNull
+    JSONInteger -> pure IRInteger
+    JSONNumber -> pure IRDouble
     where
-        classFromPropsOrError :: Named String -> Either String (Map String IRType) -> IR (Either String IRType)
-        classFromPropsOrError title =
-            case _ of
-            Left err -> pure $ Left err
-            Right props -> do
-                Right <$> (addClass $ makeClass title props)
-        raiseTuple :: Tuple String (Either String IRType) -> Either String (Tuple String IRType)
-        raiseTuple (Tuple k irOrError) =
-            either Left (\ir -> Right $ Tuple k ir) irOrError
         singularName = Inferred $ singular $ namedValue name
 
 forbiddenNames :: Array String
