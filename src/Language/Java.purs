@@ -14,7 +14,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
-import Data.String.Util (camelCase, decapitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape)
+import Data.String.Util (camelCase, capitalize, decapitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..))
 import Utils (removeElement)
 
@@ -143,9 +143,10 @@ renderConverter = do
 //
 // Then you can deserialize a JSON string with
 //"""
-    forEachTopLevel_ \_ topLevelType -> do
+    forEachTopLevel_ \topLevelName topLevelType -> do
         topLevelTypeRendered <- renderType false topLevelType
-        line $ "//     " <> topLevelTypeRendered <> " data = Converter.FromJsonString(jsonString);"
+        decoderName <- getDecoderName topLevelName
+        line $ "//     " <> topLevelTypeRendered <> " data = Converter." <> decoderName <> "(jsonString);"
     blank
     renderPackageAndImports ["java.util.Map", "java.io.IOException", "com.fasterxml.jackson.databind.ObjectMapper", "com.fasterxml.jackson.core.JsonProcessingException"]
     blank
@@ -155,23 +156,28 @@ renderConverter = do
         forEachTopLevel_ \topLevelName topLevelType -> do
             blank
             topLevelTypeRendered <- renderType false topLevelType
-            fromJsonPrefix <- getDecoderHelperPrefix topLevelName
-            line $ "public static " <> topLevelTypeRendered <> " " <> fromJsonPrefix <> "FromJsonString(String json) throws IOException {"
+            decoderName <- getDecoderName topLevelName
+            line $ "public static " <> topLevelTypeRendered <> " " <> decoderName <> "(String json) throws IOException {"
             indent do
                 line "ObjectMapper mapper = new ObjectMapper();"
                 renderedForClass <- renderTypeWithoutGenerics false topLevelType
                 line $ "return mapper.readValue(json, " <> renderedForClass <> ".class);"
             line "}"
             blank
-            line $ "public static String " <> fromJsonPrefix <> "ToJsonString(" <> topLevelTypeRendered <> " obj) throws JsonProcessingException {"
+            encoderName <- getEncoderName topLevelName
+            line $ "public static String " <> encoderName <> "(" <> topLevelTypeRendered <> " obj) throws JsonProcessingException {"
             indent do
                 line "ObjectMapper mapper = new ObjectMapper();"
                 line "return mapper.writeValueAsString(obj);"
             line "}"
     line "}"
     where
-        getDecoderHelperPrefix :: String -> Doc String
-        getDecoderHelperPrefix topLevelName = getForSingleOrMultipleTopLevels "" topLevelName
+        getDecoderName = getHelperMethodName "fromJsonString"
+        getEncoderName = getHelperMethodName "toJsonString"
+
+        getHelperMethodName :: String -> String -> Doc String
+        getHelperMethodName methodName topLevelName =
+            getForSingleOrMultipleTopLevels methodName (topLevelName <> capitalize methodName)
 
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
