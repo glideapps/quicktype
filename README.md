@@ -28,7 +28,15 @@ Fixtures are defined in `test/test.ts`.
 
 ### Requirements
 
-* [`dotnetcore`](https://www.microsoft.com/net/core#macos)
+#### C#
+
+[`dotnetcore`](https://www.microsoft.com/net/core#macos)
+
+#### Java
+
+[Maven](https://maven.apache.org/) (for example via [Homebrew](https://brew.sh))
+
+On MacOS that seems to be sufficient to run the tests with the system Java.
 
 ## Edit
 
