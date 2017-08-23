@@ -184,6 +184,7 @@ nullableFromSet s =
 canBeNull :: IRType -> Boolean
 canBeNull =
     case _ of
+    IRNothing -> true
     IRNull -> true
     IRUnion (IRUnionRep { primitives }) -> (Bits.and primitives irUnion_Null) /= 0
     _ -> false
