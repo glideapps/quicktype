@@ -5,9 +5,6 @@ module Utils
     , mapMaybeM
     , sortByKeyM
     , sortByKey
-    , foldError
-    , foldErrorArray
-    , foldErrorStrMap
     , lookupOrDefault
     , removeElement
     , forEnumerated_
@@ -30,31 +27,6 @@ import Data.StrMap (StrMap)
 import Data.StrMap as SM
 import Data.Traversable (class Foldable, class Traversable, for_, traverse)
 import Data.Tuple (Tuple(..))
-
-foldError :: forall a f e. Foldable f => f (Either e a) -> Either e (List a)
-foldError items =
-    foldr folder (Right L.Nil) items
-    where
-        folder a b =
-            case b of
-            Left err -> Left err
-            Right xb ->
-                case a of
-                Left err -> Left err
-                Right xa -> Right $ xa : xb
-
-foldErrorArray :: forall a f e. Foldable f => f (Either e a) -> Either e (Array a)
-foldErrorArray items =
-    either Left (A.fromFoldable >>> Right) $ foldError items
-
-foldErrorStrMap :: forall a b. StrMap (Either a b) -> Either a (StrMap b)
-foldErrorStrMap sm =
-    case foldErrorArray $ map raiseEither $ SM.toUnfoldable sm :: Array _ of
-    Left err -> Left err
-    Right tuples -> Right $ SM.fromFoldable tuples
-    where
-        raiseEither (Tuple _ (Left x)) = Left x
-        raiseEither (Tuple x (Right y)) = Right $ Tuple x y
 
 mapM :: forall m a b t. Applicative m => Traversable t => (a -> m b) -> t a -> m (t b)
 mapM = traverse
