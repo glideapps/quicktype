@@ -6,7 +6,7 @@ module UrlGrammar
 
 import Prelude
 
-import Data.Argonaut.Core (Json, foldJson, toArray, toObject)
+import Data.Argonaut.Core (Json, JObject, foldJson, toArray, toObject)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson)
 import Data.Array as A
 import Data.Either (Either(..))
@@ -15,8 +15,9 @@ import Data.List as L
 import Data.Maybe (Maybe(..))
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
+import Data.Traversable (class Foldable, traverse)
 import Data.Tuple (Tuple(..))
-import Utils (foldError, mapM)
+import Utils (mapM, mapStrMapM)
 
 data Grammar
     = Literal String
@@ -56,28 +57,18 @@ decodeObject obj =
             mapped <- mapM decodeJson options
             pure $ Choice $ L.fromFoldable mapped
 
+mkSequence :: forall f. Foldable f => f Grammar -> Grammar
+mkSequence = Sequence <<< L.fromFoldable
+
 instance decodeGrammar :: DecodeJson Grammar where
-    decodeJson =
+    decodeJson = do
         foldJson
             (\_ -> Left "Grammar cannot be null")
             (\_ -> Left "Grammar cannot be a boolean")
             (\_ -> Left "Grammar cannot be a number")
             (\s -> Right $ Literal s)
-            (\a -> map Sequence $ foldError $ map decodeJson a)
+            (\a -> mkSequence <$> traverse decodeJson a)
             (\o -> decodeObject o)
 
 instance decodeGrammarMap :: DecodeJson GrammarMap where
-    decodeJson j =
-        case toObject j of
-        Nothing -> Left "Grammar map must be an object"
-        Just sm ->
-            let mapped = map mapper $ SM.toUnfoldable sm :: List _
-            in case foldError mapped of
-            Left err -> Left err
-            Right tuples -> Right $ GrammarMap $ SM.fromFoldable tuples
-        where
-            mapper :: Tuple String Json -> Either String (Tuple String Grammar)
-            mapper (Tuple name json) =
-                case decodeJson json of
-                Left err -> Left err
-                Right g -> Right (Tuple name g)
+    decodeJson j = GrammarMap <$> decodeJson j

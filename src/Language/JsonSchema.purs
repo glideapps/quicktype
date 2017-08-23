@@ -4,18 +4,18 @@ import Doc
 import IRGraph
 import Prelude
 
-import Control.Monad.Except (except)
 import Control.Monad.Error.Class (throwError)
+
 import Data.Argonaut.Core (Json, foldJson, fromArray, fromBoolean, fromObject, fromString, isBoolean, stringifyWithSpace)
 import Data.Argonaut.Decode ((.??), decodeJson, class DecodeJson)
 import Data.Array as A
 import Data.Char as Char
-import Data.Either (Either(..), either)
+import Data.Either (Either(Right, Left))
 import Data.Foldable (class Foldable, foldM)
 import Data.List (List, (:))
 import Data.List as L
 import Data.List.NonEmpty as NEL
-import Data.Map (Map)
+
 import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
@@ -24,10 +24,10 @@ import Data.StrMap (StrMap)
 import Data.StrMap as SM
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, singular)
-import Data.Traversable (class Traversable)
+import Data.Traversable (class Traversable, traverse)
 import Data.Tuple (Tuple(..))
-import IR (IR, addClass, unifyMultipleTypes, unifyTypes)
-import Utils (foldError, mapM, mapMapM, mapStrMapM)
+import IR (IR, addClass, unifyTypes)
+import Utils (mapM, mapMapM)
 
 data JSONType
     = JSONObject
@@ -77,15 +77,18 @@ instance decodeJsonSchemaRef :: DecodeJson JSONSchemaRef where
             Just nel -> pure $ JSONSchemaRef nel
             Nothing -> Left "ERROR: String.split should return at least one element."
 
-decodeTypes :: Maybe Json -> Either String (Maybe (Either JSONType (Set JSONType)))
-decodeTypes Nothing = Right Nothing
-decodeTypes (Just j) =
+decodeTypes :: Json -> Either String (Either JSONType (Set JSONType))
+decodeTypes j =
     foldJson
         (\_ -> Left "`types` cannot be null")
         (\_ -> Left "`types` cannot be a boolean")
         (\_ -> Left "`types` cannot be a number")
-        (\s -> either Left (\t -> Right $ Just $ Left t) $ decodeEnum jsonTypeEnumMap j)
-        (\a -> either Left (\l -> Right $ Just $ Right $ S.fromFoldable l) $ foldError $ map (decodeEnum jsonTypeEnumMap) a)
+        (\s -> do
+            t <- decodeEnum jsonTypeEnumMap j
+            pure $ Left t)
+        (\a -> do
+            l <- traverse (decodeEnum jsonTypeEnumMap) a
+            pure $ Right $ S.fromFoldable l)
         (\_ -> Left "`Types` cannot be an object")
         j
 
@@ -104,7 +107,11 @@ instance decodeJsonSchema :: DecodeJson JSONSchema where
         obj <- decodeJson j
         definitions <- obj .?? "definitions"
         ref <- obj .?? "$ref"
-        types <- decodeTypes $ SM.lookup "type" obj
+        
+        typ <- obj .?? "type"
+        -- TODO this sucks
+        types <- maybe (pure Nothing) (map Just) (decodeTypes <$> typ)
+                    
         oneOf <- obj .?? "oneOf"
         properties <- obj .?? "properties"
         additionalProperties <- decodeAdditionalProperties $ SM.lookup "additionalProperties" obj
