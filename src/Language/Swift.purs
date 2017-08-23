@@ -14,6 +14,7 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
+import Data.Set as S
 import Data.String.Util (camelCase, capitalize, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..))
 import Utils (removeElement)
@@ -157,6 +158,48 @@ renderType = case _ of
         pure $ "[String: " <> rendered <> "]"
     IRUnion ur -> renderUnion ur
 
+convertAnyFunc :: IRType -> Doc String
+convertAnyFunc (IRClass i) = do
+    name <- lookupClassName i
+    pure $ name <> ".init"
+convertAnyFunc (IRUnion ur) = do
+    name <- lookupUnionName ur
+    pure $ name <> ".fromJson"
+convertAnyFunc IRDouble =
+    pure "convertDouble"
+convertAnyFunc IRNull =
+    pure "checkNull"
+convertAnyFunc t = do
+    converted <- convertAny t "$0"
+    pure $ "{ " <> converted <> " }"
+
+convertAny :: IRType -> String -> Doc String
+convertAny (IRArray a) var = do
+    converter <- convertAnyFunc a
+    pure $ "convertArray(converter: " <> converter <> ", json: " <> var <> ")"
+convertAny (IRMap m) var = do
+    converter <- convertAnyFunc m
+    pure $ "convertDict(converter: " <> converter <> ", json: " <> var <> ")"
+convertAny (IRUnion ur) var =
+    case nullableFromSet $ unionToSet ur of
+    Just t -> do
+        converter <- convertAnyFunc t
+        pure $ "convertOptional(converter: " <> converter <> ", json: " <> var <> ")"
+    Nothing -> do
+        name <- lookupUnionName ur
+        pure $ name <> ".fromJson(" <> var <> ")"
+convertAny IRNothing var =
+    pure $ "Optional.some(" <> var <> ")"
+convertAny IRBool var =
+    pure $ var <> " as? Bool"
+convertAny IRInteger var =
+    pure $ var <> " as? Int"
+convertAny IRString var =
+    pure $ var <> " as? String"
+convertAny t var = do
+    converter <- convertAnyFunc t
+    pure $ converter <> "(" <> var <> ")"
+
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
     let forbidden = keywords <> ["jsonUntyped", "json"]
@@ -183,7 +226,7 @@ renderClassDefinition className properties = do
                     let convertedName = lookupName pname convertedNames
                     unless (canBeNull ptype) do
                         line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"]),"
-                    convertCode <- convert ptype untypedName
+                    convertCode <- convertAny ptype untypedName
                     line $ "let " <> convertedName <> " = " <> convertCode <> (if isLast then "" else ",")
             line "else {"
             indent do
@@ -214,48 +257,6 @@ renderClassDefinition className properties = do
             Just t -> isBuiltInType t
             Nothing -> false
         isBuiltInType _ = true
-
-        converterFunc :: IRType -> Doc String
-        converterFunc (IRClass i) = do
-            name <- lookupClassName i
-            pure $ name <> ".init"
-        converterFunc (IRUnion ur) = do
-            name <- lookupUnionName ur
-            pure $ name <> ".fromJson"
-        converterFunc IRDouble =
-            pure "convertDouble"
-        converterFunc IRNull =
-            pure "checkNull"
-        converterFunc t = do
-            converted <- convert t "$0"
-            pure $ "{ " <> converted <> " }"
-
-        convert :: IRType -> String -> Doc String
-        convert (IRArray a) var = do
-            converter <- converterFunc a
-            pure $ "convertArray(converter: " <> converter <> ", json: " <> var <> ")"
-        convert (IRMap m) var = do
-            converter <- converterFunc m
-            pure $ "convertDict(converter: " <> converter <> ", json: " <> var <> ")"
-        convert (IRUnion ur) var =
-            case nullableFromSet $ unionToSet ur of
-            Just t -> do
-                converter <- converterFunc t
-                pure $ "convertOptional(converter: " <> converter <> ", json: " <> var <> ")"
-            Nothing -> do
-                name <- lookupUnionName ur
-                pure $ name <> ".fromJson(" <> var <> ")"
-        convert IRNothing var =
-            pure $ "Optional.some(" <> var <> ")"
-        convert IRBool var =
-            pure $ var <> " as? Bool"
-        convert IRInteger var =
-            pure $ var <> " as? Int"
-        convert IRString var =
-            pure $ var <> " as? String"
-        convert t var = do
-            converter <- converterFunc t
-            pure $ converter <> "(" <> var <> ")"
 
         forEachProperty_ :: Map String IRType -> Map String String -> (String -> IRType -> String -> Boolean -> Doc Unit) -> Doc Unit
         forEachProperty_ properties propertyNames f =
@@ -292,6 +293,24 @@ renderUnionDefinition unionName unionTypes = do
                 name <- caseName t
                 line $ "case " <> name                
             Nothing -> pure unit
+        blank
+        line $ "static func fromJson(_ v: Any) -> " <> unionName <> "? {"
+        indent do
+            case emptyOrNull of
+                Just t -> do
+                    name <- caseName t
+                    line "guard let v = removeNSNull(v)"
+                    line "else {"
+                    indent do
+                        line $ "return " <> unionName <> "." <> name
+                    line "}"
+                Nothing -> pure unit
+            when (S.member IRInteger unionTypes) do
+                renderCase IRInteger
+            for_ (S.delete IRInteger nonNullTypes) \typ -> do
+                renderCase typ
+            line "return nil"
+        line "}"
     line "}"
     where
         caseName :: IRType -> Doc String
@@ -303,3 +322,12 @@ renderUnionDefinition unionName unionTypes = do
             t -> do
                 rendered <- renderType t
                 pure $ "some" <> rendered
+
+        renderCase :: IRType -> Doc Unit
+        renderCase t = do
+            convertCode <- convertAny t "v"
+            line $ "if let x = " <> convertCode <> " {"
+            indent do
+                name <- caseName t
+                line $ "return " <> unionName <> "." <> name <> "(x)"
+            line "}"
