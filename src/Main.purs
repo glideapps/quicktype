@@ -32,7 +32,7 @@ import Doc as Doc
 import Environment (Environment(..))
 import Environment as Env
 import UrlGrammar (GrammarMap(..), generate)
-import Utils (foldErrorArray, foldErrorStrMap, forStrMap_, mapM, mapStrMapM)
+import Utils (forStrMap_, mapM, mapStrMapM)
 import Control.Monad.Except (except)
 
 type Error = String
