@@ -51,7 +51,7 @@ class App extends Component {
       sampleName,
       topLevelName,
       sampleLoading: false,
-      outputLoading: false,
+      outputLoading: true,
       tab: +localStorage["tab"] || 0
     };
   }
@@ -251,6 +251,7 @@ class App extends Component {
     return (
       <main className="mdc-typography mdc-theme--dark">
           <Sidebar
+            loading={this.state.outputLoading || this.state.sampleLoading}
             sampleName={this.state.sampleName}
             onChangeSample={this.changeSampleName} 
             rendererName={this.state.rendererName}

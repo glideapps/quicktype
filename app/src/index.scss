@@ -1,5 +1,5 @@
 $mdc-theme-primary: #009688;
-$mdc-theme-accent: #009688;
+$mdc-theme-accent: #FFF;
 $mdc-theme-background: #00212B;
 
 @import "~material-components-web/material-components-web";
@@ -44,6 +44,11 @@ sidebar {
     padding: 20px 20px 0 20px;
     display: flex;
     flex-direction: column;
+  }
+
+  // Offset vertical displayment on toggle
+  .mdc-linear-progress {
+    margin-bottom: -4px;
   }
 
   .mdc-select {
