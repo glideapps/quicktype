@@ -166,20 +166,20 @@ class App extends Component {
       return;
     }
 
-    let getRenderState = () => ({
-      input: source,
-      rendererName: this.getRenderer().name,
-      topLevelName: this.state.topLevelName
-    });
+    let getRenderState = async () => {
+      await this.forceUpdateAsync(); // Wait for state changes
+      return {
+        input: this.state.source,
+        rendererName: this.getRenderer().name,
+        topLevelName: this.state.topLevelName
+      }
+    };
 
-    this.setState({ outputLoading: true });
-
-    let renderState = getRenderState();
+    let renderState = await getRenderState();
     let { constructor, value0: output } = await this.renderAsync(renderState);
 
     // If render state changed during the await, abort.
-    await this.forceUpdateAsync(); // Wait for state changes
-    if (!_.isEqual(renderState, getRenderState())) return;
+    if (!_.isEqual(renderState, await getRenderState())) return;
 
     this.setState({ outputLoading: false });
 
@@ -207,11 +207,10 @@ class App extends Component {
   }
 
   changeRendererName = (rendererName) => {
-    this.tryStore({renderer: rendererName});
-
-    this.setState({ rendererName }, () => {
+    this.tryStore({ renderer: rendererName });
+    this.setState({ rendererName, outputLoading: true }, () => {
       this.editor.scrollTop();
-      this.sourceEdited(this.state.source, rendererName);
+      this.sourceEdited(this.state.source);
     });
   }
 
@@ -223,7 +222,7 @@ class App extends Component {
     this.tryStore({sample: sampleName});
 
     let topLevelName = this.topLevelNameFromSample(sampleName);
-    this.setState({ sampleName, topLevelName }, () => {
+    this.setState({ sampleName, topLevelName, outputLoading: true, sampleLoading: true }, () => {
       this.loadSample();
     });
   }
@@ -235,8 +234,6 @@ class App extends Component {
   }
 
   loadSample = () => {
-    this.setState({ sampleLoading: true });
-
     fetch(`/sample/json/${this.state.sampleName}`)
       .then((data) => data.json())
       .then((data) => {
