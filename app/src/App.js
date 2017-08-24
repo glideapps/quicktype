@@ -299,7 +299,7 @@ class App extends Component {
             lang={this.getRenderer().aceMode}
             theme="chrome"
             value={this.state.output}
-            fontSize={(browser.mobile || browser.tablet) ? 13 : 15}
+            fontSize={(browser.mobile || browser.tablet) ? 13 : 14}
             showGutter={this.state.showEditorGutter}
             style={window.innerWidth > 800
             ? {
