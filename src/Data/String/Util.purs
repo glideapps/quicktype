@@ -5,7 +5,9 @@ module Data.String.Util
     , decapitalize
     , camelCase
     , intToHex
+    , genericStringEscape
     , stringEscape
+    , standardUnicodeHexEscape
     , times
     , legalizeCharacters
     , isLetterOrUnderscore
@@ -56,16 +58,25 @@ wordSeparatorRegex = unsafePartial $ Either.fromRight $ Rx.regex "[-_. ]" RxFlag
 camelCase :: String -> String
 camelCase = Rx.split wordSeparatorRegex >>> map capitalize >>> S.joinWith ""
 
-intToHex :: Int -> Int -> String
+intToHex :: Int -> Int -> Array Char
 intToHex width number =
     let arr = S.toCharArray $ Int.toStringAs Int.hexadecimal number
         len = A.length arr
-        fullArr = if len < width then A.replicate (width - len) '0' <> arr else arr
     in
-        S.fromCharArray fullArr
+        if len < width then
+            A.replicate (width - len) '0' <> arr
+        else
+            arr
 
-stringEscape :: String -> String
-stringEscape str =
+standardUnicodeHexEscape :: Int -> Array Char
+standardUnicodeHexEscape i =
+    if i <= 0xffff then
+        ['\\', 'u'] <> intToHex 4 i
+    else
+        ['\\', 'U'] <> intToHex 8 i
+
+genericStringEscape :: (Int -> Array Char) -> String -> String
+genericStringEscape unicodeEscape str =
     S.fromCharArray $ A.concatMap charRep $ S.toCharArray str
     where
         charRep c =
@@ -78,12 +89,10 @@ stringEscape str =
                 if isPrint c then
                     [c]
                 else
-                    let i = toCharCode c
-                    in
-                        if i <= 0xffff then
-                            S.toCharArray $ "\\u" <> intToHex 4 i
-                        else
-                            S.toCharArray $ "\\U" <> intToHex 8 i
+                    unicodeEscape $ toCharCode c
+
+stringEscape :: String -> String
+stringEscape = genericStringEscape standardUnicodeHexEscape
 
 -- Cannot make this work any other way!
 times :: String -> Int -> String
