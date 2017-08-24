@@ -148,7 +148,7 @@ class App extends Component {
 
   displayRenderError(message) {
     this.snackbar.show({
-      message: `⚠ ${message}`
+      message: `⚠️ ${message}`
     });
   }
 
