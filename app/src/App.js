@@ -188,7 +188,7 @@ class App extends Component {
   changeRendererName = (rendererName) => {
     this.tryStore({renderer: rendererName});
 
-    this.setState({ rendererName }, () => {
+    this.setState({ rendererName, output: "" }, () => {
       this.editor.scrollTop();
       this.sourceEdited(this.state.source);
     });
@@ -202,7 +202,7 @@ class App extends Component {
     this.tryStore({sample: sampleName});
 
     let topLevelName = this.topLevelNameFromSample(sampleName);
-    this.setState({ sampleName, topLevelName }, () => {
+    this.setState({ sampleName, topLevelName, source: "" }, () => {
       this.loadSample();
     });
   }
