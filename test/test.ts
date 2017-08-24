@@ -117,6 +117,18 @@ const FIXTURES: Fixture[] = [
         ]
     },
     {
+        name: "swift",
+        base: "test/fixtures/swift",
+        diffViaSchema: false,
+        output: "quicktype/quicktype.swift",
+        topLevel: "TopLevel",
+        test: testSwift,
+        skip: [
+            "identifiers.json",
+            "no-classes.json"
+        ]
+    },
+    {
         name: "typescript",
         base: "test/fixtures/typescript",
         diffViaSchema: true,
@@ -177,6 +189,19 @@ async function testElm(sample: string) {
     compareJsonFileToJson({
         expectedFile: sample,
         jsonCommand: `node ./runner.js "${sample}"`,
+        strict: false
+    });
+}
+
+//////////////////////////////////////
+// Swift tests
+/////////////////////////////////////
+
+async function testSwift(sample: string) {
+    exec(`xcodebuild`);
+    compareJsonFileToJson({
+        expectedFile: sample,
+        jsonCommand: `./build/Release/quicktype "${sample}"`,
         strict: false
     });
 }
