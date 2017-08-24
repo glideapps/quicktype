@@ -7,6 +7,7 @@ import Button from "@react-mdc/button";
 import urlParse from 'url-parse';
 import * as _ from "lodash";
 import browser from "bowser";
+import classNames from "classnames";
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
@@ -26,7 +27,8 @@ import 'brace/mode/groovy';
 import 'brace/theme/chrome';
 import 'brace/theme/solarized_dark';
 
-const mobileClass = (browser.mobile || browser.tablet) ? "mobile" : "";
+const isMobile = browser.mobile || browser.tablet;
+const mobileClass = isMobile ? "mobile" : "";
 
 class App extends Component {
   constructor(props) {
@@ -48,6 +50,8 @@ class App extends Component {
       rendererName: preferredRendererName || this.getRenderer().name,
       sampleName,
       topLevelName,
+      sampleLoading: false,
+      outputLoading: true,
       tab: +localStorage["tab"] || 0
     };
   }
@@ -144,11 +148,14 @@ class App extends Component {
 
   displayRenderError(message) {
     this.snackbar.show({
-      message: `⚠ ${message}`
+      message: `⚠️ ${message}`
     });
   }
 
-  sourceEdited = async source => {     
+  sourceEdited = async source => {
+    this.tryStore({ source });
+    this.setState({ source });
+
     // For some reason, our renderer sometimes indicates
     // a successful result, but the 'source code' is a JSON parse
     // error. If we cannot parse the source as JSON, let's indicate this.
@@ -159,23 +166,37 @@ class App extends Component {
       return;
     }
 
-    let { constructor, value0: output } = await this.renderAsync({
-      input: source,
-      rendererName: this.getRenderer().name,
-      topLevelName: this.state.topLevelName
-    });
+    let getRenderState = async () => {
+      await this.forceUpdateAsync(); // Wait for state changes
+      return {
+        input: this.state.source,
+        rendererName: this.getRenderer().name,
+        topLevelName: this.state.topLevelName
+      }
+    };
 
-    this.sendEvent("sourceEdited");
+    let renderState = await getRenderState();
+    let { constructor, value0: output } = await this.renderAsync(renderState);
+
+    // If render state changed during the await, abort.
+    if (!_.isEqual(renderState, await getRenderState())) return;
+
+    this.setState({ outputLoading: false });
 
     if (constructor.name === "Left") {
       this.displayRenderError(output);
-      this.setState({ source });
     } else {
-      this.setState({ source, output });
+      this.setState({ output });
     }
-
-    this.tryStore({source});
   }
+
+  forceUpdateAsync = () => {
+    return new Promise(resolve => {
+      this.forceUpdate(resolve);
+    });
+  }
+
+  sourcEditedDebounced = _.debounce(this.sourceEdited, 300)
 
   tryStore = (obj) => {
     try {
@@ -186,9 +207,8 @@ class App extends Component {
   }
 
   changeRendererName = (rendererName) => {
-    this.tryStore({renderer: rendererName});
-
-    this.setState({ rendererName }, () => {
+    this.tryStore({ renderer: rendererName });
+    this.setState({ rendererName, outputLoading: true }, () => {
       this.editor.scrollTop();
       this.sourceEdited(this.state.source);
     });
@@ -202,14 +222,14 @@ class App extends Component {
     this.tryStore({sample: sampleName});
 
     let topLevelName = this.topLevelNameFromSample(sampleName);
-    this.setState({ sampleName, topLevelName }, () => {
+    this.setState({ sampleName, topLevelName, outputLoading: true, sampleLoading: true }, () => {
       this.loadSample();
     });
   }
 
   changeTopLevelName = (topLevelName) => {
     this.setState({ topLevelName }, () => {
-      this.sourceEdited(this.state.source);
+      this.sourcEditedDebounced(this.state.source);
     });
   }
 
@@ -217,10 +237,13 @@ class App extends Component {
     fetch(`/sample/json/${this.state.sampleName}`)
       .then((data) => data.json())
       .then((data) => {
+        this.editor.scrollTop();
         this.jsonEditor.scrollTop();
+
         let source = JSON.stringify(data, null, 2);
-        this.setState({ source });
         this.sourceEdited(source);
+
+        this.setState({ sampleLoading: false });
       });
   }
 
@@ -228,6 +251,7 @@ class App extends Component {
     return (
       <main className="mdc-typography mdc-theme--dark">
           <Sidebar
+            loading={this.state.outputLoading || this.state.sampleLoading}
             sampleName={this.state.sampleName}
             onChangeSample={this.changeSampleName} 
             rendererName={this.state.rendererName}
@@ -238,15 +262,18 @@ class App extends Component {
               this.tryStore({tab});
               this.setState({tab});
             }}
-            onChangeTopLevelName={_.debounce(this.changeTopLevelName, 200)} />
+            onChangeTopLevelName={this.changeTopLevelName} />
 
           <Editor
             ref={(r) => { this.jsonEditor = r; }}
             id="json"
-            className={mobileClass}
+            className={classNames("fadeable", {
+              mobile: isMobile,
+              fade: this.state.sampleLoading
+            })}
             lang="json"
             theme="solarized_dark"
-            onChange={_.debounce(this.sourceEdited, 200)}
+            onChange={this.sourcEditedDebounced}
             value={this.state.source}
             fontSize={(browser.mobile || browser.tablet) ? 12 : 14}
             tabSize={2}
@@ -263,6 +290,9 @@ class App extends Component {
           <Editor
             id="output"
             ref={(r) => { this.editor = r; }}
+            className={classNames("fadeable", {
+              fade: this.state.sampleLoading || this.state.outputLoading
+            })}
             lang={this.getRenderer().aceMode}
             theme="chrome"
             value={this.state.output}

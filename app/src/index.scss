@@ -1,5 +1,5 @@
 $mdc-theme-primary: #009688;
-$mdc-theme-accent: #009688;
+$mdc-theme-accent: #FFF;
 $mdc-theme-background: #00212B;
 
 @import "~material-components-web/material-components-web";
@@ -23,6 +23,15 @@ main {
   z-index: 5;
 }
 
+.fadeable .ace_gutter, .fadeable .ace_content {
+  opacity: 1;
+  transition: opacity 0.3s; 
+}
+  
+.fadeable.fade .ace_gutter, .fadeable.fade .ace_content {
+  opacity: 0;
+}
+
 sidebar {
   background: $mdc-theme-background;
   z-index: 1;
@@ -35,6 +44,11 @@ sidebar {
     padding: 20px 20px 0 20px;
     display: flex;
     flex-direction: column;
+  }
+
+  // Offset vertical displayment on toggle
+  .mdc-linear-progress {
+    margin-bottom: -4px;
   }
 
   .mdc-select {
