@@ -77,6 +77,13 @@ swiftDoc = do
             line "}"
             line "return nil"
         line "}"
+        blank
+        line $ "func data(from" <> topLevelName <> " x: " <> rendered <> ") -> Data? {"
+        indent do
+            convertCode <- convertToAny topLevelType "x"
+            line $ "let json = " <> convertCode
+            line "return try? JSONSerialization.data(withJSONObject: json, options: [])"
+        line "}"
     forEachClass_ \className properties -> do
         blank
         renderClassDefinition className properties
@@ -215,21 +222,21 @@ convertAny t var = do
 convertToAny :: IRType -> String -> Doc String
 convertToAny (IRArray a) var = do
     convertCode <- convertToAny a "$0"
-    pure $ var <> ".map({ " <> convertCode <> " })"
+    pure $ var <> ".map({ " <> convertCode <> " }) as Any"
 convertToAny (IRMap m) var = do
     convertCode <- convertToAny m "$1"
-    pure $ var <> ".map({ " <> convertCode <> " })"
+    pure $ var <> ".map({ " <> convertCode <> " }) as Any"
 convertToAny (IRClass i) var =
-    pure $ var <> ".toJson()"
+    pure $ var <> ".toJSON()"
 convertToAny (IRUnion ur) var =
     case nullableFromSet $ unionToSet ur of
     Just t -> do
         convertCode <- convertToAny t "$0"
         pure $ var <> ".map({ " <> convertCode  <> " }) ?? NSNull()"
     Nothing ->
-        pure $ var <> ".toJson()"
+        pure $ var <> ".toJSON()"
 convertToAny IRNothing var =
-    pure $ "nilToNSNull(" <> var <> ")"
+    pure $ var <> " ?? NSNull()"
 convertToAny IRNull var =
     pure $ "NSNull() as Any"
 convertToAny _ var =
@@ -272,7 +279,7 @@ renderClassDefinition className properties = do
                 line $ "self." <> fieldName <> " = " <> convertedName
         line "}"
         blank
-        line "func toJson() -> Any {"
+        line "func toJSON() -> Any {"
         indent do
             line "let dict: [String: Any] ="
             indent do
@@ -360,7 +367,7 @@ renderUnionDefinition unionName unionTypes = do
             line "return nil"
         line "}"
         blank
-        line $ "func toJson() -> Any {"
+        line $ "func toJSON() -> Any {"
         indent do
             line $ "switch self {"
             for_ unionTypes \typ -> do
