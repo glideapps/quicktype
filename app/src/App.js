@@ -7,6 +7,7 @@ import Button from "@react-mdc/button";
 import urlParse from 'url-parse';
 import * as _ from "lodash";
 import browser from "bowser";
+import classNames from "classnames";
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
@@ -26,7 +27,8 @@ import 'brace/mode/groovy';
 import 'brace/theme/chrome';
 import 'brace/theme/solarized_dark';
 
-const mobileClass = (browser.mobile || browser.tablet) ? "mobile" : "";
+const isMobile = browser.mobile || browser.tablet;
+const mobileClass = isMobile ? "mobile" : "";
 
 class App extends Component {
   constructor(props) {
@@ -48,6 +50,8 @@ class App extends Component {
       rendererName: preferredRendererName || this.getRenderer().name,
       sampleName,
       topLevelName,
+      sampleLoading: false,
+      outputLoading: false,
       tab: +localStorage["tab"] || 0
     };
   }
@@ -168,12 +172,16 @@ class App extends Component {
       topLevelName: this.state.topLevelName
     });
 
+    this.setState({ outputLoading: true });
+
     let renderState = getRenderState();
     let { constructor, value0: output } = await this.renderAsync(renderState);
 
     // If render state changed during the await, abort.
     await this.forceUpdateAsync(); // Wait for state changes
     if (!_.isEqual(renderState, getRenderState())) return;
+
+    this.setState({ outputLoading: false });
 
     if (constructor.name === "Left") {
       this.displayRenderError(output);
@@ -201,9 +209,9 @@ class App extends Component {
   changeRendererName = (rendererName) => {
     this.tryStore({renderer: rendererName});
 
-    this.setState({ rendererName, output: "" }, () => {
+    this.setState({ rendererName }, () => {
       this.editor.scrollTop();
-      this.sourceEdited(this.state.source);
+      this.sourceEdited(this.state.source, rendererName);
     });
   }
 
@@ -215,7 +223,7 @@ class App extends Component {
     this.tryStore({sample: sampleName});
 
     let topLevelName = this.topLevelNameFromSample(sampleName);
-    this.setState({ sampleName, topLevelName, source: "" }, () => {
+    this.setState({ sampleName, topLevelName }, () => {
       this.loadSample();
     });
   }
@@ -227,13 +235,18 @@ class App extends Component {
   }
 
   loadSample = () => {
+    this.setState({ sampleLoading: true });
+
     fetch(`/sample/json/${this.state.sampleName}`)
       .then((data) => data.json())
       .then((data) => {
+        this.editor.scrollTop();
         this.jsonEditor.scrollTop();
+
         let source = JSON.stringify(data, null, 2);
-        this.setState({ source });
         this.sourceEdited(source);
+
+        this.setState({ sampleLoading: false });
       });
   }
 
@@ -256,7 +269,10 @@ class App extends Component {
           <Editor
             ref={(r) => { this.jsonEditor = r; }}
             id="json"
-            className={mobileClass}
+            className={classNames("fadeable", {
+              mobile: isMobile,
+              fade: this.state.sampleLoading
+            })}
             lang="json"
             theme="solarized_dark"
             onChange={this.sourcEditedDebounced}
@@ -276,6 +292,9 @@ class App extends Component {
           <Editor
             id="output"
             ref={(r) => { this.editor = r; }}
+            className={classNames("fadeable", {
+              fade: this.state.sampleLoading || this.state.outputLoading
+            })}
             lang={this.getRenderer().aceMode}
             theme="chrome"
             value={this.state.output}

@@ -23,6 +23,15 @@ main {
   z-index: 5;
 }
 
+.fadeable .ace_gutter, .fadeable .ace_content {
+  opacity: 1;
+  transition: opacity 0.5s; 
+}
+  
+.fadeable.fade .ace_gutter, .fadeable.fade .ace_content {
+  opacity: 0;
+}
+
 sidebar {
   background: $mdc-theme-background;
   z-index: 1;
