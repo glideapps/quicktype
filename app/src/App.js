@@ -162,13 +162,18 @@ class App extends Component {
       return;
     }
 
-    let { constructor, value0: output } = await this.renderAsync({
+    let getRenderState = () => ({
       input: source,
       rendererName: this.getRenderer().name,
       topLevelName: this.state.topLevelName
     });
 
-    this.sendEvent("sourceEdited");
+    let renderState = getRenderState();
+    let { constructor, value0: output } = await this.renderAsync(renderState);
+
+    // If render state changed during the await, abort.
+    await this.forceUpdateAsync(); // Wait for state changes
+    if (!_.isEqual(renderState, getRenderState())) return;
 
     if (constructor.name === "Left") {
       this.displayRenderError(output);
@@ -176,6 +181,14 @@ class App extends Component {
       this.setState({ output });
     }
   }
+
+  forceUpdateAsync = () => {
+    return new Promise(resolve => {
+      this.forceUpdate(resolve);
+    });
+  }
+
+  sourcEditedDebounced = _.debounce(this.sourceEdited, 300)
 
   tryStore = (obj) => {
     try {
@@ -209,7 +222,7 @@ class App extends Component {
 
   changeTopLevelName = (topLevelName) => {
     this.setState({ topLevelName }, () => {
-      this.sourceEdited(this.state.source);
+      this.sourcEditedDebounced(this.state.source);
     });
   }
 
@@ -238,7 +251,7 @@ class App extends Component {
               this.tryStore({tab});
               this.setState({tab});
             }}
-            onChangeTopLevelName={_.debounce(this.changeTopLevelName, 200)} />
+            onChangeTopLevelName={this.changeTopLevelName} />
 
           <Editor
             ref={(r) => { this.jsonEditor = r; }}
@@ -246,7 +259,7 @@ class App extends Component {
             className={mobileClass}
             lang="json"
             theme="solarized_dark"
-            onChange={_.debounce(this.sourceEdited, 200)}
+            onChange={this.sourcEditedDebounced}
             value={this.state.source}
             fontSize={(browser.mobile || browser.tablet) ? 12 : 14}
             tabSize={2}
