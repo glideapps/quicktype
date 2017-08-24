@@ -35,6 +35,7 @@ class App extends Component {
     super(props);
 
     this.worker = new Worker();
+    this.worker.onmessage = message => this.onWorkerResult(message);
 
     let preferredExtension = this.tryGetPreferredRendererExtension();
     let preferredRenderer = preferredExtension && Main.renderers.find((r) => r.extension === preferredExtension);
@@ -138,13 +139,6 @@ class App extends Component {
     return result;
   }
 
-  renderAsync(inputs) {
-    return new Promise(resolve => {
-      this.worker.onmessage = message => resolve(message.data);
-      this.worker.postMessage(inputs);
-    });
-  }
-
   displayRenderError(message) {
     this.snackbar.show({
       message: `⚠️ ${message}`,
@@ -154,11 +148,12 @@ class App extends Component {
 
   displayRenderErrorDebounced = _.debounce(this.displayRenderError, 1000)
 
-  sourceEdited = async source => {
+  sourceEdited = source => {
     this.tryStore({ source });
     this.setState({ source });
 
     this.displayRenderErrorDebounced.cancel();
+    this.snackbar.hide();
 
     // For some reason, our renderer sometimes indicates
     // a successful result, but the 'source code' is a JSON parse
@@ -172,24 +167,32 @@ class App extends Component {
       return;
     }
 
-    this.snackbar.hide();
-
-    let getRenderState = async () => {
-      await this.forceUpdateAsync(); // Wait for state changes
-      return {
-        input: this.state.source,
-        rendererName: this.getRenderer().name,
-        topLevelName: this.state.topLevelName
-      }
+    let renderState = {
+      input: source,
+      rendererName: this.getRenderer().name,
+      topLevelName: this.state.topLevelName
     };
 
-    let renderState = await getRenderState();
-    let { constructor, value0: output } = await this.renderAsync(renderState);
+    this.worker.postMessage(renderState);
+  }
 
-    // If render state changed during the await, abort.
-    if (!_.isEqual(renderState, await getRenderState())) return;
+  sourceEditedDebounced = _.debounce(this.sourceEdited, 400)
 
+  onWorkerResult = async (message) => {
+    let { renderState, result } = message.data;
+
+    let currentState = {
+      input: this.state.source,
+      rendererName: this.getRenderer().name,
+      topLevelName: this.state.topLevelName
+    };
+
+    // If state changed during the await, abort.
+    if (!_.isEqual(renderState, currentState)) return;
+    
     this.setState({ outputLoading: false });
+
+    let { constructor, value0: output } = result;
 
     if (constructor.name === "Left") {
       this.displayRenderError(output);
@@ -197,14 +200,6 @@ class App extends Component {
       this.setState({ output });
     }
   }
-
-  forceUpdateAsync = () => {
-    return new Promise(resolve => {
-      this.forceUpdate(resolve);
-    });
-  }
-
-  sourcEditedDebounced = _.debounce(this.sourceEdited, 300)
 
   tryStore = (obj) => {
     try {
@@ -237,7 +232,7 @@ class App extends Component {
 
   changeTopLevelName = (topLevelName) => {
     this.setState({ topLevelName }, () => {
-      this.sourcEditedDebounced(this.state.source);
+      this.sourceEditedDebounced(this.state.source);
     });
   }
 
@@ -281,7 +276,7 @@ class App extends Component {
             })}
             lang="json"
             theme="solarized_dark"
-            onChange={this.sourcEditedDebounced}
+            onChange={this.sourceEditedDebounced}
             value={this.state.source}
             fontSize={(browser.mobile || browser.tablet) ? 12 : 14}
             tabSize={2}

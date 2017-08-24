@@ -5,11 +5,13 @@ function getRenderer(name) {
     return _.find(Main.renderers, { name }) || Main.renderers[0];
 }
 
-function render({ input, rendererName, topLevelName }) {
-    return Main.renderFromJsonStringPossiblyAsSchemaInDevelopment(topLevelName)({
+function render(renderState) {
+    let { input, rendererName, topLevelName } = renderState;
+    let result = Main.renderFromJsonStringPossiblyAsSchemaInDevelopment(topLevelName)({
         input,
         renderer: getRenderer(rendererName)
     });
+    return { renderState, result };
 }
 
  // eslint-disable-next-line no-restricted-globals
