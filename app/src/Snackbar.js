@@ -4,23 +4,25 @@ import * as mdc from 'material-components-web/dist/material-components-web.js';
 const { MDCSnackbar } = mdc.snackbar; 
 
 export default class Snackbar extends Component {
-   constructor(props) {
-    super(props);
-    this.state = {
-    };
-    this.id = `entry-${props.name}`;
+  componentDidMount() {
+    this.snackbar = new MDCSnackbar(this.ref);
   }
 
   show = (options) => {
-    const snackbar = new MDCSnackbar(this.ref);
-    snackbar.show(options);
+    this.snackbar.show(options);
+  }
+
+  hide = () => {
+    let snacks = window.document.getElementsByClassName("mdc-snackbar");
+    let snack = snacks && snacks.length && snacks[0];
+    snack && snack.classList.remove("mdc-snackbar--active");
   }
 
   render() {
     return (
         <div
           ref={(r) => { this.ref = r; }}
-          className="mdc-snackbar"
+          className="mdc-snackbar mdc-snackbar--align-start"
           aria-live="assertive"
           aria-atomic="true"
           aria-hidden="true">

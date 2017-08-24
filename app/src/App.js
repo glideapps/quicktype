@@ -107,14 +107,13 @@ class App extends Component {
     editor.blur();
     editor.selection.fromJSON(savedSelection);
 
-    let message = success
-      ? `${this.state.rendererName} copied`
-      : `Could not copy code`;
-
     setImmediate(() => {
       document.activeElement.blur();
+
+      if (success) return;
+
       setTimeout(() => {
-        this.snackbar.show({ message });
+        this.snackbar.show({ message: `⚠️ Could not copy code` });
       }, 100);
     });
   }
@@ -148,13 +147,18 @@ class App extends Component {
 
   displayRenderError(message) {
     this.snackbar.show({
-      message: `⚠️ ${message}`
+      message: `⚠️ ${message}`,
+      timeout: 10000
     });
   }
+
+  displayRenderErrorDebounced = _.debounce(this.displayRenderError, 1000)
 
   sourceEdited = async source => {
     this.tryStore({ source });
     this.setState({ source });
+
+    this.displayRenderErrorDebounced.cancel();
 
     // For some reason, our renderer sometimes indicates
     // a successful result, but the 'source code' is a JSON parse
@@ -163,8 +167,12 @@ class App extends Component {
     try {
       JSON.parse(source);
     } catch (e) {
+      this.displayRenderErrorDebounced(e);
+      this.setState({ outputLoading: false });
       return;
     }
+
+    this.snackbar.hide();
 
     let getRenderState = async () => {
       await this.forceUpdateAsync(); // Wait for state changes
@@ -249,7 +257,7 @@ class App extends Component {
 
   render() {
     return (
-      <main className="mdc-typography mdc-theme--dark">
+      <main className="mdc-typography">
           <Sidebar
             loading={this.state.outputLoading || this.state.sampleLoading}
             sampleName={this.state.sampleName}
