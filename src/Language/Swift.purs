@@ -27,7 +27,7 @@ keywords =
     , "_"
     , "associativity", "convenience", "dynamic", "didSet", "final", "get", "infix", "indirect", "lazy", "left", "mutating", "none", "nonmutating", "optional", "override", "postfix", "precedence", "prefix", "Protocol", "required", "right", "set", "Type", "unowned", "weak", "willSet"
     , "String", "Int", "Double", "Bool"
-    , "checkNull", "convertArray", "convertOptional", "convertDict"
+    , "checkNull", "removeNSNull", "nilToNSNull", "convertArray", "convertOptional", "convertDict", "convertDouble"
     ]
 
 renderer :: Renderer
@@ -189,7 +189,7 @@ convertAny (IRUnion ur) var =
         name <- lookupUnionName ur
         pure $ name <> ".fromJson(" <> var <> ")"
 convertAny IRNothing var =
-    pure $ "Optional.some(" <> var <> ")"
+    pure var
 convertAny IRBool var =
     pure $ var <> " as? Bool"
 convertAny IRInteger var =
@@ -199,6 +199,29 @@ convertAny IRString var =
 convertAny t var = do
     converter <- convertAnyFunc t
     pure $ converter <> "(" <> var <> ")"
+
+convertToAny :: IRType -> String -> Doc String
+convertToAny (IRArray a) var = do
+    convertCode <- convertToAny a "$0"
+    pure $ var <> ".map({ " <> convertCode <> " })"
+convertToAny (IRMap m) var = do
+    convertCode <- convertToAny m "$1"
+    pure $ var <> ".map({ " <> convertCode <> " })"
+convertToAny (IRClass i) var =
+    pure $ var <> ".toJson()"
+convertToAny (IRUnion ur) var =
+    case nullableFromSet $ unionToSet ur of
+    Just t -> do
+        convertCode <- convertToAny t "$0"
+        pure $ var <> ".map({ " <> convertCode  <> " }) ?? NSNull()"
+    Nothing ->
+        pure $ var <> ".toJson()"
+convertToAny IRNothing var =
+    pure $ "nilToNSNull(" <> var <> ")"
+convertToAny IRNull var =
+    pure $ "NSNull() as Any"
+convertToAny _ var =
+    pure $ var <> " as Any"
 
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
@@ -235,6 +258,19 @@ renderClassDefinition className properties = do
             forEachProperty_ properties propertyNames \pname _ fieldName _ -> do
                 let convertedName = lookupName pname convertedNames
                 line $ "self." <> fieldName <> " = " <> convertedName
+        line "}"
+        blank
+        line "func toJson() -> Any {"
+        indent do
+            line "let dict: [String: Any] ="
+            indent do
+                line "["
+                indent do
+                    forEachProperty_ properties propertyNames \pname ptype fieldName _ -> do
+                        convertCode <- convertToAny ptype ("self." <> fieldName)
+                        line $ "\"" <> stringEscape pname <> "\": " <> convertCode <> ","
+                line "]"
+            line "return dict"
         line "}"
     line "}"
     where
@@ -310,6 +346,18 @@ renderUnionDefinition unionName unionTypes = do
             for_ (S.delete IRInteger nonNullTypes) \typ -> do
                 renderCase typ
             line "return nil"
+        line "}"
+        blank
+        line $ "func toJson() -> Any {"
+        indent do
+            line $ "switch self {"
+            for_ unionTypes \typ -> do
+                name <- caseName typ
+                line $ "case ." <> name <> "(let x):"
+                indent do
+                    convertCode <- convertToAny typ "x"
+                    line $ "return " <> convertCode
+            line "}"
         line "}"
     line "}"
     where
