@@ -15,7 +15,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as S
-import Data.String.Util (camelCase, capitalize, legalizeCharacters, startWithLetter, stringEscape)
+import Data.String.Util (camelCase, capitalize, decapitalize, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..))
 import Utils (removeElement)
 
@@ -65,6 +65,18 @@ nameForClass (IRClassData { names }) = swiftNameStyle true $ combineNames names
 swiftDoc :: Doc Unit
 swiftDoc = do
     line "import Foundation"
+    forEachTopLevel_ \topLevelName topLevelType -> do
+        blank
+        rendered <- renderType topLevelType
+        line $ "func " <> (decapitalize topLevelName) <> "(fromData data: Data) -> " <> rendered <> "? {"
+        indent do
+            line "if let json = try? JSONSerialization.jsonObject(with: data, options: []) {"
+            indent do
+                convertCode <- convertAny topLevelType "json"
+                line $ "return " <> convertCode
+            line "}"
+            line "return nil"
+        line "}"
     forEachClass_ \className properties -> do
         blank
         renderClassDefinition className properties
@@ -85,10 +97,10 @@ swiftDoc = do
     return arr
 }
 
-func convertOptional<T>(converter: (Any) -> T?, json: Any?) -> T? {
+func convertOptional<T>(converter: (Any) -> T?, json: Any?) -> T?? {
     guard let v = json
     else {
-        return nil
+        return Optional.some(nil)
     }
     return converter(v)
 }
