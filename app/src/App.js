@@ -148,7 +148,10 @@ class App extends Component {
     });
   }
 
-  sourceEdited = async source => {     
+  sourceEdited = async source => {
+    this.tryStore({ source });
+    this.setState({ source });
+
     // For some reason, our renderer sometimes indicates
     // a successful result, but the 'source code' is a JSON parse
     // error. If we cannot parse the source as JSON, let's indicate this.
@@ -169,12 +172,9 @@ class App extends Component {
 
     if (constructor.name === "Left") {
       this.displayRenderError(output);
-      this.setState({ source });
     } else {
-      this.setState({ source, output });
+      this.setState({ output });
     }
-
-    this.tryStore({source});
   }
 
   tryStore = (obj) => {
