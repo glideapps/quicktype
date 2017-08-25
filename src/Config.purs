@@ -8,11 +8,11 @@ module Config
     , renderer
     ) where
 
+import Data.Argonaut.Decode
 import Prelude
 
-import Data.Argonaut.Decode
+import Control.Alt ((<|>))
 import Data.Argonaut.Core (JObject, Json)
-
 import Data.Array as A
 import Data.Either (Either(Right, Left))
 import Data.Foldable (elem, find)
@@ -26,7 +26,8 @@ import Language.JsonSchema (JSONSchema)
 import Language.Renderers as Renderers
 
 data TypeSource
-    = Literal Json
+    = Literal String
+    | Json Json
 
 data TopLevelConfig = TopLevelConfig
     { name :: String
@@ -40,7 +41,10 @@ newtype Config = Config
     }
 
 instance decodeTypeSource :: DecodeJson TypeSource where
-    decodeJson j = pure $ Literal j
+    decodeJson j =
+        (Literal <$> decodeJson j)
+        <|>
+        (Json <$> decodeJson j)
 
 instance decodeTopLevelConfig :: DecodeJson TopLevelConfig where
     decodeJson j = do
@@ -89,18 +93,13 @@ topLevelsMap (Config { topLevels }) =
     <#> (\top@(TopLevelConfig { name }) -> Tuple name top)
     # Map.fromFoldable
 
-topLevelSamples :: Config -> Map String (Array Json)
+topLevelSamples :: Config -> Map String (Array TypeSource)
 topLevelSamples config = loadTypeSources <$> topLevelsMap config
 
-loadTypeSources :: TopLevelConfig -> Array Json
-loadTypeSources (TopLevelConfig config) = do
-    sample <- config.samples
-    loadTypeSource sample
+loadTypeSources :: TopLevelConfig -> Array TypeSource
+loadTypeSources (TopLevelConfig config) = config.samples
 
-loadTypeSource :: TypeSource -> Array Json
-loadTypeSource (Literal obj) = [obj]
-
-topLevelSchemas :: Config -> Map String JSONSchema
+topLevelSchemas :: Config -> Map String (Array JSONSchema)
 topLevelSchemas (Config config) = withSchemas
     where
       withSchemas =
@@ -109,4 +108,6 @@ topLevelSchemas (Config config) = withSchemas
         # A.catMaybes
         # Map.fromFoldable
 
-      getNameAndSchema (TopLevelConfig { name, schema }) = Tuple name <$> schema
+      getNameAndSchema (TopLevelConfig { name, schema }) = do
+        s <- schema
+        pure $ Tuple name [s]
