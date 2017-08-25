@@ -9,6 +9,8 @@ import Core
 
 import Data.Argonaut.Core (Json, isBoolean, isNull, isNumber, isString)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
+import Data.String as S
+import Data.String.Util as S
 
 type MkEither a b =
     { success :: b -> Either a b
@@ -60,7 +62,9 @@ instance decodeLiteral:: DecodeJson Literal where
 instance decodeKey :: DecodeJson Key where
     decodeJson j = do
         obj <- decodeJson j
-        label <- obj .? "value"
+        -- https://github.com/vtrushin/json-to-ast/issues/17
+        let deslash = S.replaceAll (S.Pattern "\\") (S.Replacement "")
+        label <- deslash <$> obj .? "value"
         pure $ Key label
 
 instance decodeProperty :: DecodeJson Property where
