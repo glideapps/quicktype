@@ -198,10 +198,10 @@ async function testElm(sample: string) {
 /////////////////////////////////////
 
 async function testSwift(sample: string) {
-    exec(`xcodebuild`);
+    exec(`xcodebuild -configuration Debug`);
     compareJsonFileToJson({
         expectedFile: sample,
-        jsonCommand: `./build/Release/quicktype "${sample}"`,
+        jsonCommand: `./build/Debug/quicktype "${sample}"`,
         strict: false
     });
 }
