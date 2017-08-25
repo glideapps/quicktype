@@ -116,6 +116,10 @@ export interface Options {
   help?: boolean;
 }
 
+interface SampleOrSchemaMap {
+  [key: string]: object[];
+}
+
 class Run {
   options: Options;
 
@@ -136,23 +140,22 @@ class Run {
     return renderer;
   }
 
-  renderFromJsonArrayMap = (jsonArrayMap: JsonArrayMap): string => {
-    let pipeline = {
-      "json": Main.renderFromJsonArrayMap,
-      "schema": Main.renderFromJsonSchemaArrayMap
-    }[this.options.srcLang] as Pipeline;
+  renderSamplesOrSchemas = (samplesOrSchemas: SampleOrSchemaMap): SourceCode => {
+    let areSchemas = this.options.srcLang === "schema";
 
-    if (!pipeline) {
-      console.error(`Input language '${this.options.srcLang}' is not supported.`);
-      process.exit(1);
-    }
-
-    let input = {
-      input: jsonArrayMap,
-      renderer: this.getRenderer()
+    let config: Config = {
+      language: this.getRenderer().extension,
+      topLevels: Object.getOwnPropertyNames(samplesOrSchemas).map(name => {
+        if (areSchemas) {
+          // Only one schema per top-level is used right now
+          return { name, schema: samplesOrSchemas[name][0] };
+        } else {
+          return { name, samples: samplesOrSchemas[name]  };
+        }
+      })
     };
-    
-    return Either.fromRight(pipeline(input));    
+
+    return Either.fromRight(Main.main(config));    
   }
 
   splitAndWriteJava = (dir: string, str: string) => {
@@ -186,8 +189,8 @@ class Run {
     writeFile();
   }
 
-  renderAndOutput = (jsonArrayMap: JsonArrayMap) => {
-    let output = this.renderFromJsonArrayMap(jsonArrayMap);
+  renderAndOutput = (samplesOrSchemas: SampleOrSchemaMap) => {
+    let output = this.renderSamplesOrSchemas(samplesOrSchemas);
     if (this.options.out) {
       if (this.options.lang == "java") {
         this.splitAndWriteJava(path.dirname(this.options.out), output);
@@ -200,7 +203,7 @@ class Run {
   }
 
   workFromJsonArray = (jsonArray: object[]) => {
-    let map = <JsonArrayMap>{};
+    let map = <SampleOrSchemaMap>{};
     map[this.options.topLevel] = jsonArray;
     this.renderAndOutput(map);
   }

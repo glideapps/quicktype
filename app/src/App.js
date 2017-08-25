@@ -8,6 +8,7 @@ import urlParse from 'url-parse';
 import * as _ from "lodash";
 import browser from "bowser";
 import classNames from "classnames";
+import { hashCode } from "hashcode";
 
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
@@ -148,6 +149,14 @@ class App extends Component {
 
   displayRenderErrorDebounced = _.debounce(this.displayRenderError, 1000)
 
+  getRenderStateReceipt = () => {
+    return hashCode().value({
+      source: this.state.source,
+      language: this.getRenderer().name,
+      topLevelName: this.state.topLevelName
+    });
+  }
+
   sourceEdited = source => {
     this.tryStore({ source });
     this.setState({ source });
@@ -159,8 +168,9 @@ class App extends Component {
     // a successful result, but the 'source code' is a JSON parse
     // error. If we cannot parse the source as JSON, let's indicate this.
     // TODO: fix this in Main.purs
+    let sampleObject = {};
     try {
-      JSON.parse(source);
+      sampleObject = JSON.parse(source);
     } catch (e) {
       this.displayRenderErrorDebounced(e);
       this.setState({ outputLoading: false });
@@ -168,9 +178,10 @@ class App extends Component {
     }
 
     let renderState = {
-      input: source,
-      rendererName: this.getRenderer().name,
-      topLevelName: this.state.topLevelName
+      sampleObject,
+      language: this.getRenderer().name,
+      topLevelName: this.state.topLevelName,
+      receipt: this.getRenderStateReceipt()
     };
 
     this.worker.postMessage(renderState);
@@ -178,17 +189,11 @@ class App extends Component {
 
   sourceEditedDebounced = _.debounce(this.sourceEdited, 400)
 
-  onWorkerResult = async (message) => {
-    let { renderState, result } = message.data;
-
-    let currentState = {
-      input: this.state.source,
-      rendererName: this.getRenderer().name,
-      topLevelName: this.state.topLevelName
-    };
+  onWorkerResult = message => {
+    let { receipt, result } = message.data;
 
     // If state changed during the await, abort.
-    if (!_.isEqual(renderState, currentState)) return;
+    if (!_.isEqual(receipt, this.getRenderStateReceipt())) return;
     
     this.setState({ outputLoading: false });
 
