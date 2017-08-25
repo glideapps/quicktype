@@ -120,7 +120,7 @@ const FIXTURES: Fixture[] = [
         name: "swift",
         base: "test/fixtures/swift",
         diffViaSchema: false,
-        output: "quicktype/quicktype.swift",
+        output: "quicktype.swift",
         topLevel: "TopLevel",
         test: testSwift,
         skip: [
@@ -198,10 +198,10 @@ async function testElm(sample: string) {
 /////////////////////////////////////
 
 async function testSwift(sample: string) {
-    exec(`xcodebuild -configuration Debug`);
+    exec(`swiftc -o quicktype main.swift quicktype.swift`);
     compareJsonFileToJson({
         expectedFile: sample,
-        jsonCommand: `./build/Debug/quicktype "${sample}"`,
+        jsonCommand: `./quicktype "${sample}"`,
         strict: false
     });
 }
