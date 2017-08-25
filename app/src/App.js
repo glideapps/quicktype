@@ -159,7 +159,7 @@ class App extends Component {
 
   sourceEdited = source => {
     this.tryStore({ source });
-    this.setState({ source });
+    this.setState({ source, outputLoading: true });
 
     this.displayRenderErrorDebounced.cancel();
     this.snackbar.hide();
@@ -216,7 +216,7 @@ class App extends Component {
 
   changeRendererName = (rendererName) => {
     this.tryStore({ renderer: rendererName });
-    this.setState({ rendererName, outputLoading: true }, () => {
+    this.setState({ rendererName }, () => {
       this.editor.scrollTop();
       this.sourceEdited(this.state.source);
     });
@@ -230,7 +230,7 @@ class App extends Component {
     this.tryStore({sample: sampleName});
 
     let topLevelName = this.topLevelNameFromSample(sampleName);
-    this.setState({ sampleName, topLevelName, outputLoading: true, sampleLoading: true }, () => {
+    this.setState({ sampleName, topLevelName, sampleLoading: true }, () => {
       this.loadSample();
     });
   }
