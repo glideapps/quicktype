@@ -1,18 +1,26 @@
-interface JsonArrayMap {
-    [key: string]: object[];
-  }
-
 interface Renderer {
     name: string;
     extension: string;
     aceMode: string;
 }
 
-type Pipeline = ({ input: JsonArrayMap, renderer: Renderer }) => Either<string, string>;
+type SourceCode = string;
+type ErrorMessage = string;
 
 interface Main {
     renderers: Renderer[];
-    renderFromJsonArrayMap: Pipeline;
-    renderFromJsonSchemaArrayMap: Pipeline;
-    urlsFromJsonGrammar(json: object): Either<string, JsonArrayMap>;
+    main(config: Config): Either<ErrorMessage, SourceCode>;
+    urlsFromJsonGrammar(json: object): Either<string, { [key: string]: string[] }>;
+}
+
+type Json = object;
+
+type TopLevelConfig = 
+       { name: string; sample: Json; }
+     | { name: string; samples: Json[]; }
+     | { name: string; schema: Json; };
+
+interface Config {
+    language: string;
+    topLevels: TopLevelConfig[];     
 }

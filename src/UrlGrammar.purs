@@ -7,14 +7,16 @@ module UrlGrammar
 import Prelude
 
 import Data.Argonaut.Core (Json, JObject, foldJson, toArray, toObject)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
+import Data.Array (fold)
 import Data.Array as A
 import Data.Either (Either(..))
 import Data.List (List, (:))
 import Data.List as L
+import Data.Map (Map)
+import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.StrMap (StrMap)
-import Data.StrMap as SM
 import Data.Traversable (class Foldable, traverse)
 import Data.Tuple (Tuple(..))
 import Utils (mapM, mapStrMapM)
@@ -43,19 +45,11 @@ generateAll (Choice l) = do
 generate :: Grammar -> Array String
 generate g =
     let all = A.fromFoldable $ generateAll g
-    in
-        map (A.foldl (<>) "") all
+    in map fold all
 
-decodeObject :: StrMap Json -> Either String Grammar
-decodeObject obj =
-    case SM.lookup "oneOf" obj of
-    Nothing -> Left "Object must have a 'oneOf' field"
-    Just x ->
-        case toArray x of
-        Nothing -> Left "'oneOf' value must be an array"
-        Just options -> do
-            mapped <- mapM decodeJson options
-            pure $ Choice $ L.fromFoldable mapped
+decodeObject :: JObject -> Either String Grammar
+decodeObject obj = Choice <$> (obj .? "oneOf")
+
 
 mkSequence :: forall f. Foldable f => f Grammar -> Grammar
 mkSequence = Sequence <<< L.fromFoldable
