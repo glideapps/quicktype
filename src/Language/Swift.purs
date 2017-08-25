@@ -141,32 +141,32 @@ func convertToAny<T>(dictionary: [String: T], converter: (T) -> Any) -> Any {
 }
 
 func convertDouble(_ v: Any) -> Double? {
-    guard let number = v as? NSNumber
-    else {
-        return nil
+    if let w = v as? Double {
+        return w
     }
-    return number.doubleValue
+    if let w = v as? Int {
+        return Double(w)
+    }
+    return nil
 }
+
+let falseType = NSNumber(value: false).objCType
+let trueNumber = NSNumber(value: true)
+let trueType = trueNumber.objCType
 
 func convertBool(_ v: Any?) -> Bool? {
     guard let number = v as? NSNumber
     else {
+        if let b = v as? Bool {
+            return b
+        }
         return nil
     }
     
-    if number.isEqual(to: NSNumber(value: 0) as NSValue) {
+    if number.objCType != falseType && number.objCType != trueType {
         return nil
     }
-    if number.isEqual(to: NSNumber(value: 1) as NSValue) {
-        return nil
-    }
-    if number.isEqual(to: NSNumber(value: 0)) {
-        return false
-    }
-    if number.isEqual(to: NSNumber(value: 1)) {
-        return true
-    }
-    return nil
+    return number.isEqual(trueNumber)
 }
 
 func removeNSNull(_ v: Any?) -> Any? {
