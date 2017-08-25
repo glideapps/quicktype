@@ -9,6 +9,14 @@ addons:
       - dotnet-dev-1.0.1
       - maven
       - default-jdk
+      - clang
+before_install:
+  - pushd $HOME
+  - curl -o swift.tar.gz https://swift.org/builds/swift-3.1.1-release/ubuntu1404/swift-3.1.1-RELEASE/swift-3.1.1-RELEASE-ubuntu14.04.tar.gz
+  - tar -zxf swift.tar.gz
+  - rm swift.tar.gz
+  - ln -s swift-3.1.1-RELEASE-ubuntu14.04 swift
+  - popd
 script:
   - test/test
 cache:
