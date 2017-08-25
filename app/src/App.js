@@ -168,9 +168,8 @@ class App extends Component {
     // a successful result, but the 'source code' is a JSON parse
     // error. If we cannot parse the source as JSON, let's indicate this.
     // TODO: fix this in Main.purs
-    let sampleObject = {};
     try {
-      sampleObject = JSON.parse(source);
+      JSON.parse(source);
     } catch (e) {
       this.displayRenderErrorDebounced(e);
       this.setState({ outputLoading: false });
@@ -178,7 +177,7 @@ class App extends Component {
     }
 
     let renderState = {
-      sampleObject,
+      json: source,
       language: this.getRenderer().name,
       topLevelName: this.state.topLevelName,
       receipt: this.getRenderStateReceipt()

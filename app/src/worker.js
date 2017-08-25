@@ -5,14 +5,14 @@ function getRenderer(name) {
     return _.find(Main.renderers, { name }) || Main.renderers[0];
 }
 
-function render({ sampleObject, language, topLevelName, receipt }) {
+function render({ json, language, topLevelName, receipt }) {
     let result = Main.main({
         outFile: "web",
         language,
         topLevels: [
             {
                 name: topLevelName,
-                sample: sampleObject
+                sample: json
             }
         ]
     });

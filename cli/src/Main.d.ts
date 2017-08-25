@@ -11,6 +11,7 @@ interface Main {
     renderers: Renderer[];
     main(config: Config): Either<ErrorMessage, SourceCode>;
     urlsFromJsonGrammar(json: object): Either<string, { [key: string]: string[] }>;
+    intSentinel: string;
 }
 
 type Json = object;
