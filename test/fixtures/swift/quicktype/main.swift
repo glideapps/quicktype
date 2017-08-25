@@ -9,12 +9,27 @@
 import Foundation
 
 let filename = CommandLine.arguments[1]
-guard
-    let data = FileHandle(forReadingAtPath: filename)?.readDataToEndOfFile(),
-    let obj = topLevel(fromJSONData: data),
-    let newData = jsonData(fromTopLevel: obj),
-    let jsonString = String(data: newData, encoding: String.Encoding.utf8)
+guard let data = FileHandle(forReadingAtPath: filename)?.readDataToEndOfFile()
 else {
+    print("Error: Could not read input file")
+    exit(1)
+}
+
+guard let obj = topLevel(fromJSONData: data)
+else {
+    print("Error: Could not deserialize")
+    exit(1)
+}
+
+guard let newData = jsonData(fromTopLevel: obj)
+else {
+    print("Error: Could not deserialize")
+    exit(1)
+}
+
+guard let jsonString = String(data: newData, encoding: String.Encoding.utf8)
+else {
+    print("Error: Could not stringify")
     exit(1)
 }
 
