@@ -15,10 +15,10 @@ interface Main {
 }
 
 type Json = object;
+type IRTypeable = Json | string;
 
 type TopLevelConfig = 
-       { name: string; sample: Json; }
-     | { name: string; samples: Json[]; }
+     | { name: string; samples: IRTypeable[]; }
      | { name: string; schema: Json; };
 
 interface Config {
