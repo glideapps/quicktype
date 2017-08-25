@@ -94,10 +94,6 @@
                     "type": "string",
                     "description": "An array containing hashes with the id and label of each parent term."
                 },
-                "annotations": {
-                    "type": "string",
-                    "description": "A hash containing key/value pairs of annotation properties."
-                },
                 "datatype_properties": {
                     "type": "string",
                     "description": "A hash containing key/array pairs of datatype properties. Each array contains id/label hashes."
