@@ -214,7 +214,7 @@ class Run {
       let assembler = new Assembler();
 
       let assemble = chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value);
-      let isInt = intString => +intString === parseInt(intString);
+      let isInt = intString => /^\d+$/.test(intString);
 
       let intSentinelChunks = intString => [
         { name: 'startObject' },
