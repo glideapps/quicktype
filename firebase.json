@@ -1,5 +1,16 @@
 {
     "hosting": {
-        "public": "app/build"
+        "public": "app/build",
+        "headers": [
+            {
+                "source": "index.html",
+                "headers": [
+                    {
+                        "key" : "Cache-Control",
+                        "value" : "private, max-age=0, no-cache"
+                    }
+                ]
+            }
+        ]
     }
 }
