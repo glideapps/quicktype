@@ -6,5 +6,9 @@ exports._singular = pluralize.singular;
 exports._plural = pluralize.plural;
 
 exports.isInt = function (s) {
-    return +s === parseInt(s);
+    // This returns false positive for "10.0"
+    // return +s === parseInt(s);
+
+    // This isn't ideal
+    return /^\d+$/.test(s);
 };
