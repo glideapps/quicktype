@@ -28,6 +28,7 @@ module Doc
     , forbidNamer
     , unionNameIntercalated
     , unionIsNotSimpleNullable
+    , getTopLevelPlural
     , string
     , line
     , blank
@@ -291,6 +292,9 @@ forEachUnion_ f = do
         let allTypes = unionToSet ur
         unionName <- lookupUnionName ur
         f unionName allTypes
+
+getTopLevelPlural :: Doc String
+getTopLevelPlural = getForSingleOrMultipleTopLevels "" "s"
 
 -- Given a potentially multi-line string, render each line at the current indent level
 line :: String -> Doc Unit

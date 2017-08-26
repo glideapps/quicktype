@@ -95,9 +95,6 @@ renderComment :: Maybe String -> String
 renderComment (Just s) = " -- " <> s
 renderComment Nothing = ""
 
-getTopLevelPlural :: Doc String
-getTopLevelPlural = getForSingleOrMultipleTopLevels "" "s"
-
 elmDoc :: Doc Unit
 elmDoc = do
     topLevels <- getTopLevels
