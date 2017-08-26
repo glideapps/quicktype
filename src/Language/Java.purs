@@ -14,7 +14,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
-import Data.String.Util (camelCase, capitalize, decapitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape)
+import Data.String.Util (camelCase, capitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..))
 import Utils (removeElement)
 
@@ -24,7 +24,19 @@ forbiddenNames =
     , "JsonProperty", "JsonDeserialize", "JsonDeserializer", "JsonSerialize", "JsonSerializer"
     , "JsonParser", "JsonProcessingException", "DeserializationContext", "SerializerProvider"
     , "Converter"
+    , "abstract", "continue", "for", "new", "switch"
+    , "assert", "default", "goto", "package", "synchronized"
+    , "boolean", "do", "if", "private", "this"
+    , "break", "double", "implements", "protected", "throw"
+    , "byte", "else", "import", "public", "throws"
+    , "case", "enum", "instanceof", "return", "transient"
+    , "catch", "extends", "int", "short", "try"
+    , "char", "final", "interface", "static", "void"
+    , "class", "finally", "long", "strictfp", "volatile"
+    , "const", "float", "native", "super", "while"
+    , "null"
     ]
+
 
 renderer :: Renderer
 renderer =
@@ -36,21 +48,21 @@ renderer =
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
         , forbiddenNames: forbiddenNames
-        , topLevelName: noForbidNamer javaNameStyle
+        , topLevelName: noForbidNamer (javaNameStyle true)
         , unions: Just
             { predicate: unionIsNotSimpleNullable
-            , properName: simpleNamer (javaNameStyle <<< combineNames)
-            , nameFromTypes: simpleNamer (unionNameIntercalated javaNameStyle "Or")
+            , properName: simpleNamer (javaNameStyle true <<< combineNames)
+            , nameFromTypes: simpleNamer (unionNameIntercalated (javaNameStyle true) "Or")
             }
         }
     }
 
 nameForClass :: IRClassData -> String
-nameForClass (IRClassData { names }) = javaNameStyle $ combineNames names
+nameForClass (IRClassData { names }) = javaNameStyle true $ combineNames names
 
-javaNameStyle :: String -> String
-javaNameStyle =
-    legalizeCharacters isPartCharacter >>> camelCase >>> startWithLetter isStartCharacter true
+javaNameStyle :: Boolean -> String -> String
+javaNameStyle upper =
+    legalizeCharacters isPartCharacter >>> camelCase >>> startWithLetter isStartCharacter upper
     where
         isStartCharacter :: Char -> Boolean
         isStartCharacter c =
@@ -182,7 +194,7 @@ renderConverter = do
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
     renderFileHeader className ["java.util.Map", "com.fasterxml.jackson.annotation.*"]
-    let propertyNames = transformPropertyNames (simpleNamer javaNameStyle) ("Other" <> _) ["Class"] properties
+    let propertyNames = transformPropertyNames (simpleNamer $ javaNameStyle false) (\n -> "other" <>  capitalize n) forbiddenNames properties
     when (M.isEmpty properties) do
         line "@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)"
     line $ "public class " <> className <> " {"
@@ -193,24 +205,21 @@ renderClassDefinition className properties = do
             blank
             line $ "@JsonProperty(\"" <> stringEscape pname <> "\")"
             line $ "public " <> rendered <> " get" <> javaName <> "() { return " <> fieldName <> "; }"
-            line $ "public void set" <> javaName <> "(" <> rendered <> " value) { " <> fieldName <> " = value; }"
+            line $ "public void set" <> javaName <> "(" <> rendered <> " value) { this." <> fieldName <> " = value; }"
     line "}"
     where
         forEachProperty_ :: Map String IRType -> Map String String -> (String -> String -> String -> String -> Doc Unit) -> Doc Unit
         forEachProperty_ properties propertyNames f =
             for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
-                let javaName = lookupName pname propertyNames
-                let fieldName = fieldNameForJavaName javaName
+                let fieldName = lookupName pname propertyNames
+                let javaName = capitalize fieldName
                 rendered <- renderType false ptype
                 f pname javaName fieldName rendered
-
-        fieldNameForJavaName :: String -> String
-        fieldNameForJavaName = decapitalize >>> ("_" <> _)
 
 renderUnionField :: IRType -> Doc { renderedType :: String, fieldName :: String }
 renderUnionField t = do
     renderedType <- renderType true t
-    fieldName <- decapitalize <$> javaNameStyle <$> (_ <> "_value") <$> getTypeNameForUnion t
+    fieldName <- javaNameStyle false <$> (_ <> "_value") <$> getTypeNameForUnion t
     pure { renderedType, fieldName }
 
 tokenCase :: String -> Doc Unit
