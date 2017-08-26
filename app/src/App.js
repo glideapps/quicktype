@@ -24,6 +24,7 @@ import 'brace/mode/typescript';
 import 'brace/mode/java';
 import 'brace/mode/json';
 import 'brace/mode/elm';
+import 'brace/mode/swift';
 import 'brace/mode/groovy';
 import 'brace/theme/chrome';
 import 'brace/theme/solarized_dark';
