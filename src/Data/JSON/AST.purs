@@ -76,17 +76,17 @@ instance decodeProperty :: DecodeJson Property where
         pure $ Property { label, node }
 
 instance decodeNode :: DecodeJson Node where
-  decodeJson j = do
-    obj <- decodeJson j
-    typ <- obj .? "type"
-    case typ of
-        "object" -> do
-            props <- obj .? "children"
-            pure $ Object props
-        "literal" -> do
-            literal <- decodeJson j
-            pure $ Literal literal
-        "array" -> do
-            children <- obj .? "children"
-            pure $ Array children
-        _ -> Left "Unsupported JSON value"
+    decodeJson j = do
+        obj <- decodeJson j
+        typ <- obj .? "type"
+        case typ of
+            "object" -> do
+                props <- obj .? "children"
+                pure $ Object props
+            "literal" -> do
+                literal <- decodeJson j
+                pure $ Literal literal
+            "array" -> do
+                children <- obj .? "children"
+                pure $ Array children
+            _ -> Left "Unsupported JSON value"
