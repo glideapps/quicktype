@@ -12,6 +12,7 @@ module Data.String.Util
     , isLetterOrUnderscoreOrDigit
     , isLetterOrLetterNumber
     , startWithLetter
+    , isInt
     ) where
 
 import Prelude
@@ -29,6 +30,7 @@ import Partial.Unsafe (unsafePartial)
 
 foreign import _plural :: String -> String
 foreign import _singular :: String -> String
+foreign import isInt :: String -> Boolean
 
 plural :: String -> String
 plural = _plural

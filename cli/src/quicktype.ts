@@ -213,8 +213,43 @@ class Run {
       let source = makeSource();
       let assembler = new Assembler();
 
+      let assemble = chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value);
+      let isInt = intString => /^\d+$/.test(intString);
+
+      let intSentinelChunks = intString => [
+        { name: 'startObject' },
+        { name: 'startKey' },
+        { name: 'stringChunk', value: Main.intSentinel },
+        { name: 'endKey' },
+        { name: 'keyValue', value: Main.intSentinel },
+        { name: 'startNumber' },
+        { name: 'numberChunk', value: intString },
+        { name: 'endNumber' },
+        { name: 'numberValue', value: intString },
+        { name: 'endObject' }        
+      ];
+
+      let queue = [];
       source.output.on("data", chunk => {
-        assembler[chunk.name] && assembler[chunk.name](chunk.value);
+        switch (chunk.name) {
+          case "startNumber":
+          case "numberChunk":
+          case "endNumber":
+            // We queue number chunks until we decide if they are int
+            queue.push(chunk);
+            break;
+          case "numberValue":
+            queue.push(chunk);
+            if (isInt(chunk.value)) {
+              intSentinelChunks(chunk.value).forEach(assemble);
+            } else {
+              queue.forEach(assemble);
+            }
+            queue = [];
+            break;
+          default:
+            assemble(chunk);
+        }
       });
 
       source.output.on("end", () => resolve(assembler.current));
