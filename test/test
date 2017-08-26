@@ -2,4 +2,7 @@
 
 export NODE_PATH=`pwd`/node_modules:`pwd`/cli/node_modules
 export PATH=`pwd`/node_modules/.bin:$PATH
+if [ -d "$HOME/swift" ] ; then
+    export PATH=$PATH:$HOME/swift/usr/bin
+fi
 ts-node --project test/tsconfig.json test/test.ts $@
