@@ -71,7 +71,15 @@ stringEscape =
 
 swiftDoc :: Doc Unit
 swiftDoc = do
+    line "// To decode the JSON data, add this file to your project and do"
+    line "//"
+    forEachTopLevel_ \topLevelName topLevelType -> do
+        line $ "//     guard let my" <> topLevelName <> " = " <> (decapitalize topLevelName) <> "(fromJSONData: myData)"
+    blank
     line "import Foundation"
+    blank
+    topLevelPlural <- getTopLevelPlural
+    line $ "// deserialization and serialization helper functions for top level type" <> topLevelPlural
     forEachTopLevel_ \topLevelName topLevelType -> do
         blank
         rendered <- renderType topLevelType
@@ -91,6 +99,8 @@ swiftDoc = do
             line $ "let json = " <> convertCode
             line "return try? JSONSerialization.data(withJSONObject: json, options: [])"
         line "}"
+    blank
+    line "// JSON types"
     forEachClass_ \className properties -> do
         blank
         renderClassDefinition className properties
@@ -98,7 +108,9 @@ swiftDoc = do
         blank
         renderUnionDefinition unionName unionTypes
     blank
-    line """func convertArray<T>(converter: (Any) -> T?, json: Any) -> [T]? {
+    line """// support functions
+
+fileprivate func convertArray<T>(converter: (Any) -> T?, json: Any) -> [T]? {
     guard let jsonArr = json as? [Any] else { return nil }
     var arr: [T] = []
     for v in jsonArr {
@@ -111,7 +123,7 @@ swiftDoc = do
     return arr
 }
 
-func convertOptional<T>(converter: (Any) -> T?, json: Any?) -> T?? {
+fileprivate func convertOptional<T>(converter: (Any) -> T?, json: Any?) -> T?? {
     guard let v = json
     else {
         return Optional.some(nil)
@@ -119,7 +131,7 @@ func convertOptional<T>(converter: (Any) -> T?, json: Any?) -> T?? {
     return converter(v)
 }
 
-func convertDict<T>(converter: (Any) -> T?, json: Any?) -> [String: T]? {
+fileprivate func convertDict<T>(converter: (Any) -> T?, json: Any?) -> [String: T]? {
     guard let jsonDict = json as? [String: Any] else { return nil }
     var dict: [String: T] = [:]
     for (k, v) in jsonDict {
@@ -132,7 +144,7 @@ func convertDict<T>(converter: (Any) -> T?, json: Any?) -> [String: T]? {
     return dict
 }
 
-func convertToAny<T>(dictionary: [String: T], converter: (T) -> Any) -> Any {
+fileprivate func convertToAny<T>(dictionary: [String: T], converter: (T) -> Any) -> Any {
     var result: [String: Any] = [:]
     for (k, v) in dictionary {
         result[k] = converter(v)
@@ -140,7 +152,7 @@ func convertToAny<T>(dictionary: [String: T], converter: (T) -> Any) -> Any {
     return result
 }
 
-func convertDouble(_ v: Any) -> Double? {
+fileprivate func convertDouble(_ v: Any) -> Double? {
     if let w = v as? Double {
         return w
     }
@@ -150,11 +162,11 @@ func convertDouble(_ v: Any) -> Double? {
     return nil
 }
 
-let falseType = NSNumber(value: false).objCType
-let trueNumber = NSNumber(value: true)
-let trueType = trueNumber.objCType
+fileprivate let falseType = NSNumber(value: false).objCType
+fileprivate let trueNumber = NSNumber(value: true)
+fileprivate let trueType = trueNumber.objCType
 
-func convertBool(_ v: Any?) -> Bool? {
+fileprivate func convertBool(_ v: Any?) -> Bool? {
     guard let number = v as? NSNumber
     else {
         if let b = v as? Bool {
@@ -169,7 +181,7 @@ func convertBool(_ v: Any?) -> Bool? {
     return number.isEqual(trueNumber)
 }
 
-func removeNSNull(_ v: Any?) -> Any? {
+fileprivate func removeNSNull(_ v: Any?) -> Any? {
     if let w = v {
         if w is NSNull {
             return nil
@@ -179,7 +191,7 @@ func removeNSNull(_ v: Any?) -> Any? {
     return nil
 }
 
-func checkNull(_ v: Any?) -> Any?? {
+fileprivate func checkNull(_ v: Any?) -> Any?? {
     if v != nil {
         return Optional.none
     }
