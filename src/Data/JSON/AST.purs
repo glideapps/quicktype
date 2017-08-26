@@ -68,11 +68,9 @@ instance decodeKey :: DecodeJson Key where
         pure $ Key (unescape label)
         where
             -- https://github.com/vtrushin/json-to-ast/issues/17
-            replace s (Tuple this that) = S.replaceAll (S.Pattern this) (S.Replacement that) s
-            unescape s = foldl replace s [
-                Tuple "\\\"" "\"",
-                Tuple "\\\\" "\\"
-            ]
+            unescape =
+                    S.replaceAll (S.Pattern "\\\"") (S.Replacement "\"")
+                <<< S.replaceAll (S.Pattern "\\\\") (S.Replacement "\\")
 
 instance decodeProperty :: DecodeJson Property where
     decodeJson :: Json -> Either String Property
