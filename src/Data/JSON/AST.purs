@@ -9,8 +9,10 @@ import Core
 
 import Data.Argonaut.Core (Json, isBoolean, isNull, isNumber, isString)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
+import Data.Foldable (foldl)
 import Data.String as S
 import Data.String.Util as S
+import Data.Tuple (Tuple(..))
 
 type MkEither a b =
     { success :: b -> Either a b
@@ -62,10 +64,15 @@ instance decodeLiteral:: DecodeJson Literal where
 instance decodeKey :: DecodeJson Key where
     decodeJson j = do
         obj <- decodeJson j
-        -- https://github.com/vtrushin/json-to-ast/issues/17
-        let deslash = S.replaceAll (S.Pattern "\\") (S.Replacement "")
-        label <- deslash <$> obj .? "value"
-        pure $ Key label
+        label <- obj .? "value"
+        pure $ Key (unescape label)
+        where
+            -- https://github.com/vtrushin/json-to-ast/issues/17
+            replace s (Tuple this that) = S.replaceAll (S.Pattern this) (S.Replacement that) s
+            unescape s = foldl replace s [
+                Tuple "\\\"" "\"",
+                Tuple "\\\\" "\\"
+            ]
 
 instance decodeProperty :: DecodeJson Property where
     decodeJson :: Json -> Either String Property
