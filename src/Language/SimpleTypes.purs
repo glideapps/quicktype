@@ -69,7 +69,7 @@ renderType :: IRType -> Doc String
 renderType = case _ of
     IRNothing -> pure "Any" -- we can have arrays of nothing
     IRNull -> pure "Null"
-    IRInteger -> pure "Double"
+    IRInteger -> pure "Integer"
     IRDouble -> pure "Double"
     IRBool -> pure "Boolean"
     IRString -> pure "String"
