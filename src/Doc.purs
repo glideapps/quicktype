@@ -37,6 +37,7 @@ module Doc
     , runDoc
     , runRenderer
     , getTypeNameForUnion
+    , renderRenderItems
     ) where
 
 import IR
@@ -56,7 +57,7 @@ import Data.Set as S
 import Data.String as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
-import Utils (sortByKeyM)
+import Utils (forEnumerated_, sortByKeyM)
 
 type Renderer =
     { name :: String
@@ -271,27 +272,43 @@ lookupTopLevelName n = do
     topLevelNames <- getTopLevelNames
     pure $ lookupName n topLevelNames
 
-forEachTopLevel_ :: (String -> IRType -> Doc Unit) -> Doc Unit
+type TopLevelIterator = String -> IRType -> Doc Unit
+type ClassIterator = String -> Map String IRType -> Doc Unit
+type UnionIterator = String -> Set IRType -> Doc Unit
+
+callTopLevelIterator :: TopLevelIterator -> String -> IRType -> Doc Unit
+callTopLevelIterator f topLevelNameGiven topLevelType = do
+    topLevelName <- lookupTopLevelName topLevelNameGiven
+    f topLevelName topLevelType
+
+forEachTopLevel_ :: TopLevelIterator -> Doc Unit
 forEachTopLevel_ f = do
     topLevels <- getTopLevels
-    for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) -> do
-        topLevelName <- lookupTopLevelName topLevelNameGiven
-        f topLevelName topLevelType
+    for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) ->
+        callTopLevelIterator f topLevelNameGiven topLevelType
 
-forEachClass_ :: (String -> Map String IRType -> Doc Unit) -> Doc Unit
+callClassIterator :: ClassIterator -> Int -> IRClassData -> Doc Unit
+callClassIterator f i (IRClassData { properties }) = do
+    className <- lookupClassName i
+    f className properties
+
+forEachClass_ :: ClassIterator -> Doc Unit
 forEachClass_ f = do
     classes <- getClasses
-    for_ classes \(Tuple i (IRClassData { properties })) -> do
-        className <- lookupClassName i
-        f className properties
+    for_ classes \(Tuple i cd) ->
+        callClassIterator f i cd
 
-forEachUnion_ :: (String -> Set IRType -> Doc Unit) -> Doc Unit
+callUnionIterator :: UnionIterator -> IRUnionRep -> Doc Unit
+callUnionIterator f ur = do
+    let allTypes = unionToSet ur
+    unionName <- lookupUnionName ur
+    f unionName allTypes
+
+forEachUnion_ :: UnionIterator -> Doc Unit
 forEachUnion_ f = do
     unions <- getUnions
-    for_ unions \ur -> do
-        let allTypes = unionToSet ur
-        unionName <- lookupUnionName ur
-        f unionName allTypes
+    for_ unions \ur ->
+        callUnionIterator f ur
 
 getTopLevelPlural :: Doc String
 getTopLevelPlural = getForSingleOrMultipleTopLevels "" "s"
@@ -349,3 +366,26 @@ prefixSuffixFolder { p, s } x =
         newP = commonPrefix p a
         newS = commonPrefix s (A.reverse a)
     in { p: newP, s: newS }
+
+data RenderItem
+    = RenderTopLevel String IRType
+    | RenderClass Int IRClassData
+    | RenderUnion IRUnionRep
+
+getRenderItems :: Doc (Array RenderItem)
+getRenderItems = do
+    topLevels <- map (\(Tuple n t) -> RenderTopLevel n t) <$> M.toUnfoldable <$> getTopLevels
+    classes <- A.fromFoldable <$> map (\(Tuple i cd) -> RenderClass i cd) <$> getClasses
+    unions <- A.fromFoldable <$> map RenderUnion <$> getUnions
+    pure $ A.concat [topLevels, classes, unions]
+
+renderRenderItems :: Doc Unit -> TopLevelIterator -> ClassIterator -> UnionIterator -> Doc Unit
+renderRenderItems inBetweener topLevelRenderer classRenderer unionRenderer = do
+    renderItems <- getRenderItems
+    forEnumerated_ (L.fromFoldable renderItems) \i ri -> do
+        case ri of
+            RenderTopLevel n t -> callTopLevelIterator topLevelRenderer n t
+            RenderClass i cd -> callClassIterator classRenderer i cd
+            RenderUnion ur -> callUnionIterator unionRenderer ur
+        let isLast = i == (A.length renderItems) - 1
+        unless isLast inBetweener
