@@ -112,7 +112,7 @@ supportFunctions :: Doc Unit
 supportFunctions = do
     line """// Helpers
 
-fileprivate func convertArray<T>(converter: (Any) -> T?, json: Any) -> [T]? {
+fileprivate func convertArray<T>(_ converter: (Any) -> T?, _ json: Any) -> [T]? {
     guard let jsonArr = json as? [Any] else { return nil }
     var arr: [T] = []
     for v in jsonArr {
@@ -125,7 +125,7 @@ fileprivate func convertArray<T>(converter: (Any) -> T?, json: Any) -> [T]? {
     return arr
 }
 
-fileprivate func convertOptional<T>(converter: (Any) -> T?, json: Any?) -> T?? {
+fileprivate func convertOptional<T>(_ converter: (Any) -> T?, _ json: Any?) -> T?? {
     guard let v = json
     else {
         return Optional.some(nil)
@@ -133,7 +133,7 @@ fileprivate func convertOptional<T>(converter: (Any) -> T?, json: Any?) -> T?? {
     return converter(v)
 }
 
-fileprivate func convertDict<T>(converter: (Any) -> T?, json: Any?) -> [String: T]? {
+fileprivate func convertDict<T>(_ converter: (Any) -> T?, _ json: Any?) -> [String: T]? {
     guard let jsonDict = json as? [String: Any] else { return nil }
     var dict: [String: T] = [:]
     for (k, v) in jsonDict {
@@ -146,7 +146,7 @@ fileprivate func convertDict<T>(converter: (Any) -> T?, json: Any?) -> [String: 
     return dict
 }
 
-fileprivate func convertToAny<T>(dictionary: [String: T], converter: (T) -> Any) -> Any {
+fileprivate func convertToAny<T>(_ dictionary: [String: T], _ converter: (T) -> Any) -> Any {
     var result: [String: Any] = [:]
     for (k, v) in dictionary {
         result[k] = converter(v)
@@ -228,15 +228,15 @@ renderType = case _ of
 convertAny :: IRType -> String -> Doc String
 convertAny (IRArray a) var = do
     converter <- convertAnyFunc a
-    pure $ "convertArray(converter: " <> converter <> ", json: " <> var <> ")"
+    pure $ "convertArray(" <> converter <> ", " <> var <> ")"
 convertAny (IRMap m) var = do
     converter <- convertAnyFunc m
-    pure $ "convertDict(converter: " <> converter <> ", json: " <> var <> ")"
+    pure $ "convertDict(" <> converter <> ", " <> var <> ")"
 convertAny (IRUnion ur) var =
     case nullableFromSet $ unionToSet ur of
     Just t -> do
         converter <- convertAnyFunc t
-        pure $ "convertOptional(converter: " <> converter <> ", json: " <> var <> ")"
+        pure $ "convertOptional(" <> converter <> ", " <> var <> ")"
     Nothing -> do
         name <- lookupUnionName ur
         pure $ name <> ".fromJson(" <> var <> ")"
@@ -257,12 +257,12 @@ convertAnyFunc = case _ of
     IRClass i -> do
         name <- lookupClassName i
         -- TODO make this look less alien
-        pure $ "({ (a: Any) in " <> name <> "(fromAny: a)})"
+        pure $ "{ " <> name <> "(fromAny: $0) }"
     IRUnion ur ->
         case nullableFromSet $ unionToSet ur of
         Just t -> do
             converter <- convertAnyFunc t
-            pure $ "{ (json: Any) in convertOptional(converter: " <> converter <> ", json: json) }"
+            pure $ "{ (json: Any) in convertOptional(" <> converter <> ", json) }"
         Nothing -> do
             name <- lookupUnionName ur
             pure $ name <> ".fromJson"
@@ -280,7 +280,7 @@ convertToAny (IRArray a) var = do
 convertToAny (IRMap m) var = do
     rendered <- renderType m
     convertCode <- convertToAny m "v"
-    pure $ "convertToAny(dictionary: " <> var <> ", converter: { (v: " <> rendered <> ") in " <> convertCode <> " })"
+    pure $ "convertToAny(" <> var <> ", { (v: " <> rendered <> ") in " <> convertCode <> " })"
 convertToAny (IRClass i) var =
     pure $ var <> ".any"
 convertToAny (IRUnion ur) var =
@@ -382,7 +382,7 @@ renderClassExtension className properties = do
             let forbiddenForUntyped = forbidden <> (A.fromFoldable $ M.keys propertyNames)
             let untypedNames = makePropertyNames properties "Untyped" forbiddenForUntyped
             let forbiddenForConverted = forbiddenForUntyped <> (A.fromFoldable $ M.keys untypedNames)
-            let convertedNames = makePropertyNames properties "Converted" forbiddenForConverted
+            let convertedNames = makePropertyNames properties "" forbidden
             forEachProperty_ properties untypedNames \pname ptype untypedName _ -> do
                 when (canBeNull ptype) do
                     line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"])"
