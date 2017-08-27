@@ -260,26 +260,23 @@ convertAnyFunc = case _ of
     IRDouble -> pure "convertDouble"
     IRNull -> pure "checkNull"
     t -> do
-        converted <- convertAny t "json"
-        pure $ "{ (json: Any) in " <> converted <> " }"
+        converted <- convertAny t "$0"
+        pure $ "{ " <> converted <> " }"
 
 convertToAny :: IRType -> String -> Doc String
 convertToAny (IRArray a) var = do
-    rendered <- renderType a
-    convertCode <- convertToAny a "v"
-    pure $ var <> ".map({ (v: " <> rendered <> ") in " <> convertCode <> " }) as Any"
+    convertCode <- convertToAny a "$0"
+    pure $ var <> ".map({ " <> convertCode <> " }) as Any"
 convertToAny (IRMap m) var = do
-    rendered <- renderType m
-    convertCode <- convertToAny m "v"
-    pure $ "convertToAny(" <> var <> ", { (v: " <> rendered <> ") in " <> convertCode <> " })"
+    convertCode <- convertToAny m "$0"
+    pure $ "convertToAny(" <> var <> ", { "<> convertCode <> " })"
 convertToAny (IRClass i) var =
     pure $ var <> ".any"
 convertToAny (IRUnion ur) var =
     case nullableFromSet $ unionToSet ur of
     Just t -> do
-        rendered <- renderType t
-        convertCode <- convertToAny t "v"
-        pure $ var <> ".map({ (v: " <> rendered <> ") in " <> convertCode  <> " }) ?? NSNull()"
+        convertCode <- convertToAny t "$0"
+        pure $ var <> ".map({ " <> convertCode  <> " }) ?? NSNull()"
     Nothing ->
         pure $ var <> ".any"
 convertToAny IRNothing var =
