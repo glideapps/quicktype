@@ -15,13 +15,13 @@ else {
     exit(1)
 }
 
-guard let obj = topLevel(fromJSONData: data)
+guard let obj = TopLevel(fromData: data)
 else {
     print("Error: Could not deserialize")
     exit(1)
 }
 
-guard let newData = jsonData(fromTopLevel: obj)
+guard let newData = obj.jsonData
 else {
     print("Error: Could not deserialize")
     exit(1)

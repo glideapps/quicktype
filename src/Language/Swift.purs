@@ -40,7 +40,7 @@ renderer =
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
         , forbiddenNames: keywords
-        , topLevelName: noForbidNamer (swiftNameStyle true)
+        , topLevelName: forbidNamer (swiftNameStyle true) (\n -> [swiftNameStyle true n])
         , unions: Just
             { predicate: unionIsNotSimpleNullable
             , properName: simpleNamer (swiftNameStyle true <<< combineNames)
@@ -71,44 +71,46 @@ stringEscape =
 
 swiftDoc :: Doc Unit
 swiftDoc = do
-    line "// To decode the JSON data, add this file to your project and do"
+    line "// To parse the JSON, add this file to your project and do:"
     line "//"
     forEachTopLevel_ \topLevelName topLevelType -> do
-        line $ "//     guard let my" <> topLevelName <> " = " <> (decapitalize topLevelName) <> "(fromJSONData: myData)"
+        typ <- renderType topLevelType
+        line $ "//   let " <> decapitalize topLevelName <> " = " <> topLevelName <> "(fromString: jsonString)!"
     blank
     line "import Foundation"
-    blank
-    topLevelPlural <- getTopLevelPlural
-    line $ "// deserialization and serialization helper functions for top level type" <> topLevelPlural
+
     forEachTopLevel_ \topLevelName topLevelType -> do
         blank
-        rendered <- renderType topLevelType
-        line $ "func " <> (decapitalize topLevelName) <> "(fromJSONData data: Data) -> " <> rendered <> "? {"
-        indent do
-            line "if let json = try? JSONSerialization.jsonObject(with: data, options: []) {"
-            indent do
-                convertCode <- convertAny topLevelType "json"
-                line $ "return " <> convertCode
-            line "}"
-            line "return nil"
-        line "}"
-        blank
-        line $ "func jsonData(from" <> topLevelName <> " x: " <> rendered <> ") -> Data? {"
-        indent do
-            convertCode <- convertToAny topLevelType "x"
-            line $ "let json = " <> convertCode
-            line "return try? JSONSerialization.data(withJSONObject: json, options: [])"
-        line "}"
-    blank
-    line "// JSON types"
+        top <- renderType topLevelType
+        line $ "typealias "<> topLevelName <> " = " <> top
+   
     forEachClass_ \className properties -> do
         blank
         renderClassDefinition className properties
+
     forEachUnion_ \unionName unionTypes -> do
         blank
         renderUnionDefinition unionName unionTypes
+
     blank
-    line """// support functions
+    line $ "// Serialization extensions"
+
+    forEachTopLevel_ renderTopLevelExtensions
+
+    forEachClass_ \className properties -> do
+        blank
+        renderClassExtension className properties
+
+    forEachUnion_ \unionName unionTypes -> do
+        blank
+        renderUnionExtension unionName unionTypes
+
+    blank
+    supportFunctions
+
+supportFunctions :: Doc Unit
+supportFunctions = do
+    line """// Helpers
 
 fileprivate func convertArray<T>(converter: (Any) -> T?, json: Any) -> [T]? {
     guard let jsonArr = json as? [Any] else { return nil }
@@ -223,26 +225,6 @@ renderType = case _ of
         pure $ "[String: " <> rendered <> "]"
     IRUnion ur -> renderUnion ur
 
-convertAnyFunc :: IRType -> Doc String
-convertAnyFunc (IRClass i) = do
-    name <- lookupClassName i
-    pure $ name <> ".init"
-convertAnyFunc (IRUnion ur) =
-    case nullableFromSet $ unionToSet ur of
-    Just t -> do
-        converter <- convertAnyFunc t
-        pure $ "{ (json: Any) in convertOptional(converter: " <> converter <> ", json: json) }"
-    Nothing -> do
-        name <- lookupUnionName ur
-        pure $ name <> ".fromJson"
-convertAnyFunc IRDouble =
-    pure "convertDouble"
-convertAnyFunc IRNull =
-    pure "checkNull"
-convertAnyFunc t = do
-    converted <- convertAny t "json"
-    pure $ "{ (json: Any) in " <> converted <> " }"
-
 convertAny :: IRType -> String -> Doc String
 convertAny (IRArray a) var = do
     converter <- convertAnyFunc a
@@ -270,6 +252,26 @@ convertAny t var = do
     converter <- convertAnyFunc t
     pure $ converter <> "(" <> var <> ")"
 
+convertAnyFunc :: IRType -> Doc String
+convertAnyFunc = case _ of
+    IRClass i -> do
+        name <- lookupClassName i
+        -- TODO make this look less alien
+        pure $ "({ (a: Any) in " <> name <> "(fromAny: a)})"
+    IRUnion ur ->
+        case nullableFromSet $ unionToSet ur of
+        Just t -> do
+            converter <- convertAnyFunc t
+            pure $ "{ (json: Any) in convertOptional(converter: " <> converter <> ", json: json) }"
+        Nothing -> do
+            name <- lookupUnionName ur
+            pure $ name <> ".fromJson"
+    IRDouble -> pure "convertDouble"
+    IRNull -> pure "checkNull"
+    t -> do
+        converted <- convertAny t "json"
+        pure $ "{ (json: Any) in " <> converted <> " }"
+
 convertToAny :: IRType -> String -> Doc String
 convertToAny (IRArray a) var = do
     rendered <- renderType a
@@ -280,7 +282,7 @@ convertToAny (IRMap m) var = do
     convertCode <- convertToAny m "v"
     pure $ "convertToAny(dictionary: " <> var <> ", converter: { (v: " <> rendered <> ") in " <> convertCode <> " })"
 convertToAny (IRClass i) var =
-    pure $ var <> ".toJSON()"
+    pure $ var <> ".asAny"
 convertToAny (IRUnion ur) var =
     case nullableFromSet $ unionToSet ur of
     Just t -> do
@@ -288,7 +290,7 @@ convertToAny (IRUnion ur) var =
         convertCode <- convertToAny t "v"
         pure $ var <> ".map({ (v: " <> rendered <> ") in " <> convertCode  <> " }) ?? NSNull()"
     Nothing ->
-        pure $ var <> ".toJSON()"
+        pure $ var <> ".asAny"
 convertToAny IRNothing var =
     pure $ var <> " ?? NSNull()"
 convertToAny IRNull var =
@@ -299,20 +301,88 @@ convertToAny _ var =
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
     let forbidden = keywords <> ["jsonUntyped", "json"]
-    let propertyNames = makePropertyNames "" forbidden
+    let propertyNames = makePropertyNames properties "" forbidden
     line $ "struct " <> className <> " {"
     indent do
         forEachProperty_ properties propertyNames \_ ptype fieldName _ -> do
             rendered <- renderType ptype
             line $ "let " <> fieldName <> ": " <> rendered
+    line "}"
+
+renderTopLevelExtensions :: String -> IRType -> Doc Unit
+renderTopLevelExtensions topLevelName topLevelType = do
+    blank
+
+    topLevelRendered <- renderType topLevelType
+    extensionType <- case topLevelType of
+        IRArray t -> ("Array where Element == " <> _) <$> renderType t
+        IRMap t -> ("Dictionary where Key == String, Value == " <> _) <$> renderType t
+        _ -> pure topLevelRendered
+
+    line $ "extension " <> extensionType <> " {"
+    indent do
+        line $ "init?(fromString json: String, using encoding: String.Encoding = .utf8) {"
+        indent do
+            line "guard let data = json.data(using: encoding) else { return nil }"
+            line "self.init(fromData: data)"
+        line "}"
         blank
-        line $ "init?(_ jsonUntyped: Any) {"
+        line $ "init?(fromData data: Data) {"
+        indent do
+            line "guard let json = try? JSONSerialization.jsonObject(with: data, options: []) else { return nil }"
+            line "self.init(fromAny: json)"
+        line "}"
+        
+        case topLevelType of
+            IRArray _ ->  do
+                blank
+                line $ "init?(fromAny untyped: Any) {"
+                indent do
+                    convertCode <- convertAny topLevelType "untyped"
+                    line $ "guard let elements = " <> convertCode <> " else { return nil }"
+                    line $ "self.init(elements)"
+                line "}"
+            IRMap _ -> do
+                blank
+                line $ "init?(fromAny untyped: Any) {"
+                indent do
+                    convertCode <- convertAny topLevelType "untyped"
+                    line $ "guard let elements = " <> convertCode <> " else { return nil }"
+                    line $ "self.init()"
+                    line $ "elements.forEach { self[$0.key] = $0.value }"
+                line "}"
+            _ -> pure unit
+
+        blank
+        line $ "var jsonData: Data? {"
+        indent do
+            convertCode <- convertToAny topLevelType "self"
+            line $ "let json = " <> convertCode
+            line "return try? JSONSerialization.data(withJSONObject: json, options: [])"
+        line "}"
+            
+        blank
+        line $ "var jsonString: String? {"
+        indent do
+            line $ "guard let data = self.jsonData else { return nil }"
+            line $ "return String(data: data, encoding: .utf8)"
+        line "}"
+
+    line "}"
+
+renderClassExtension :: String -> Map String IRType -> Doc Unit
+renderClassExtension className properties = do
+    let forbidden = keywords <> ["jsonUntyped", "json"]
+    let propertyNames = makePropertyNames properties "" forbidden
+    line $ "extension " <> className <> " {"
+    indent do
+        line $ "init?(fromAny jsonUntyped: Any) {"
         indent do
             line "guard let json = jsonUntyped as? [String: Any] else { return nil }"
             let forbiddenForUntyped = forbidden <> (A.fromFoldable $ M.keys propertyNames)
-            let untypedNames = makePropertyNames "Untyped" forbiddenForUntyped
+            let untypedNames = makePropertyNames properties "Untyped" forbiddenForUntyped
             let forbiddenForConverted = forbiddenForUntyped <> (A.fromFoldable $ M.keys untypedNames)
-            let convertedNames = makePropertyNames "Converted" forbiddenForConverted
+            let convertedNames = makePropertyNames properties "Converted" forbiddenForConverted
             forEachProperty_ properties untypedNames \pname ptype untypedName _ -> do
                 when (canBeNull ptype) do
                     line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"])"
@@ -325,65 +395,40 @@ renderClassDefinition className properties = do
                             line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"]),"
                         convertCode <- convertAny ptype untypedName
                         line $ "let " <> convertedName <> " = " <> convertCode <> (if isLast then "" else ",")
-                line "else {"
-                indent do
-                    line "return nil"
-                line "}"
+                    line "else { return nil }"
             forEachProperty_ properties propertyNames \pname _ fieldName _ -> do
                 let convertedName = lookupName pname convertedNames
                 line $ "self." <> fieldName <> " = " <> convertedName
         line "}"
         blank
-        line "func toJSON() -> Any {"
+        line "fileprivate var asAny: Any {"
         indent do
-            line "var dict: [String: Any] = [:]"
+            line "var dict = [String: Any]()"
             forEachProperty_ properties propertyNames \pname ptype fieldName _ -> do
                 convertCode <- convertToAny ptype ("self." <> fieldName)
                 line $ "dict[\"" <> stringEscape pname <> "\"] = " <> convertCode
             line "return dict"
         line "}"
     line "}"
+
+forEachProperty_ :: Map String IRType -> Map String String -> (String -> IRType -> String -> Boolean -> Doc Unit) -> Doc Unit
+forEachProperty_ properties propertyNames f =
+    let propertyArray = M.toUnfoldable properties :: Array _
+        lastIndex = A.length propertyArray - 1
+    in
+        forWithIndex_ propertyArray \i (Tuple pname ptype) -> do
+            let fieldName = lookupName pname propertyNames
+            f pname ptype fieldName (i == lastIndex)
+
+makePropertyNames :: Map String IRType -> String -> Array String -> Map String String
+makePropertyNames properties suffix forbidden =
+    transformPropertyNames (fieldNamer suffix) otherField forbidden properties
     where
-        isSimpleNullable :: IRType -> Boolean
-        isSimpleNullable (IRUnion ur) = not $ unionIsNotSimpleNullable ur
-        isSimpleNullable _ = false
-
-        maybeCast :: IRType -> String
-        maybeCast (IRArray _) = " as? [Any]"
-        maybeCast (IRClass _) = " as? [String: Any]"
-        maybeCast (IRMap _) = " as? [String: Any]"
-        maybeCast _ = ""
-
-        isBuiltInType :: IRType -> Boolean
-        isBuiltInType (IRArray a) = isBuiltInType a
-        isBuiltInType (IRMap m) = isBuiltInType m
-        isBuiltInType (IRClass _) = false
-        isBuiltInType (IRUnion ur) =
-            case nullableFromSet $ unionToSet ur of
-            Just t -> isBuiltInType t
-            Nothing -> false
-        isBuiltInType _ = true
-
-        forEachProperty_ :: Map String IRType -> Map String String -> (String -> IRType -> String -> Boolean -> Doc Unit) -> Doc Unit
-        forEachProperty_ properties propertyNames f =
-            let propertyArray = M.toUnfoldable properties :: Array _
-                lastIndex = (A.length propertyArray) - 1
-            in
-                forWithIndex_ propertyArray \i (Tuple pname ptype) -> do
-                    let fieldName = lookupName pname propertyNames
-                    f pname ptype fieldName (i == lastIndex)
-
-        makePropertyNames :: String -> Array String -> Map String String
-        makePropertyNames suffix forbidden =
-            transformPropertyNames (fieldNamer suffix) otherField forbidden properties
-
         fieldNamer :: String -> Namer String
-        fieldNamer suffix =
-            simpleNamer \name -> swiftNameStyle false name <> suffix
+        fieldNamer suffix = simpleNamer \name -> swiftNameStyle false name <> suffix
 
         otherField :: String -> String
-        otherField name =
-            "other" <> capitalize name
+        otherField name = "other" <> capitalize name
 
 renderUnionDefinition :: String -> Set IRType -> Doc Unit
 renderUnionDefinition unionName unionTypes = do
@@ -399,7 +444,13 @@ renderUnionDefinition unionName unionTypes = do
                 name <- caseName t
                 line $ "case " <> name                
             Nothing -> pure unit
-        blank
+    line "}"
+
+renderUnionExtension :: String -> Set IRType -> Doc Unit
+renderUnionExtension unionName unionTypes = do
+    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
+    line $ "extension " <> unionName <> " {"
+    indent do
         line $ "static func fromJson(_ v: Any) -> " <> unionName <> "? {"
         indent do
             case emptyOrNull of
@@ -420,7 +471,7 @@ renderUnionDefinition unionName unionTypes = do
             line "return nil"
         line "}"
         blank
-        line $ "func toJSON() -> Any {"
+        line $ "var asAny: Any {"
         indent do
             line $ "switch self {"
             for_ unionTypes \typ -> do
@@ -434,14 +485,14 @@ renderUnionDefinition unionName unionTypes = do
         line "}"
     line "}"
     where
-        caseName :: IRType -> Doc String
-        caseName t = swiftNameStyle false <$> getTypeNameForUnion t
+    renderCase :: IRType -> Doc Unit
+    renderCase t = do
+        convertCode <- convertAny t "v"
+        line $ "if let x = " <> convertCode <> " {"
+        indent do
+            name <- caseName t
+            line $ "return " <> unionName <> "." <> name <> "(x)"
+        line "}"
 
-        renderCase :: IRType -> Doc Unit
-        renderCase t = do
-            convertCode <- convertAny t "v"
-            line $ "if let x = " <> convertCode <> " {"
-            indent do
-                name <- caseName t
-                line $ "return " <> unionName <> "." <> name <> "(x)"
-            line "}"
+caseName :: IRType -> Doc String
+caseName t = swiftNameStyle false <$> getTypeNameForUnion t
