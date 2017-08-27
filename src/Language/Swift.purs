@@ -282,7 +282,7 @@ convertToAny (IRMap m) var = do
     convertCode <- convertToAny m "v"
     pure $ "convertToAny(dictionary: " <> var <> ", converter: { (v: " <> rendered <> ") in " <> convertCode <> " })"
 convertToAny (IRClass i) var =
-    pure $ var <> ".toJSON()"
+    pure $ var <> ".asAny"
 convertToAny (IRUnion ur) var =
     case nullableFromSet $ unionToSet ur of
     Just t -> do
@@ -290,7 +290,7 @@ convertToAny (IRUnion ur) var =
         convertCode <- convertToAny t "v"
         pure $ var <> ".map({ (v: " <> rendered <> ") in " <> convertCode  <> " }) ?? NSNull()"
     Nothing ->
-        pure $ var <> ".toJSON()"
+        pure $ var <> ".asAny"
 convertToAny IRNothing var =
     pure $ var <> " ?? NSNull()"
 convertToAny IRNull var =
@@ -401,7 +401,7 @@ renderClassExtension className properties = do
                 line $ "self." <> fieldName <> " = " <> convertedName
         line "}"
         blank
-        line "func toJSON() -> Any {"
+        line "fileprivate var asAny: Any {"
         indent do
             line "var dict = [String: Any]()"
             forEachProperty_ properties propertyNames \pname ptype fieldName _ -> do
@@ -471,7 +471,7 @@ renderUnionExtension unionName unionTypes = do
             line "return nil"
         line "}"
         blank
-        line $ "func toJSON() -> Any {"
+        line $ "var asAny: Any {"
         indent do
             line $ "switch self {"
             for_ unionTypes \typ -> do
