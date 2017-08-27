@@ -455,7 +455,7 @@ renderUnionExtension unionName unionTypes = do
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
     line $ "extension " <> unionName <> " {"
     indent do
-        line $ "static func fromJson(_ v: Any) -> " <> unionName <> "? {"
+        line $ "fileprivate static func fromJson(_ v: Any) -> " <> unionName <> "? {"
         indent do
             case emptyOrNull of
                 Just t -> do
@@ -475,7 +475,7 @@ renderUnionExtension unionName unionTypes = do
             line "return nil"
         line "}"
         blank
-        line $ "var any: Any {"
+        line $ "fileprivate var any: Any {"
         indent do
             line $ "switch self {"
             for_ unionTypes \typ -> do
