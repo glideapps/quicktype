@@ -8,7 +8,7 @@ import Prelude
 
 import Data.Array as A
 import Data.Char.Unicode (isAlphaNum, isDigit)
-import Data.Foldable (for_)
+import Data.Foldable (for_, null)
 import Data.FoldableWithIndex (forWithIndex_)
 import Data.Map (Map)
 import Data.Map as M
@@ -403,11 +403,15 @@ renderClassExtension className properties = do
         blank
         line "fileprivate var any: Any {"
         indent do
-            line "var dict = [String: Any]()"
-            forEachProperty_ properties propertyNames \pname ptype fieldName _ -> do
-                convertCode <- convertToAny ptype ("self." <> fieldName)
-                line $ "dict[\"" <> stringEscape pname <> "\"] = " <> convertCode
-            line "return dict"
+            if null properties
+                then line "return [String: Any]()"
+                else do
+                    line "return ["
+                    indent do
+                        forEachProperty_ properties propertyNames \pname ptype fieldName _ -> do
+                            convertCode <- convertToAny ptype ("self." <> fieldName)
+                            line $ "\"" <> stringEscape pname <> "\": " <> convertCode <> ","
+                    line "]"
         line "}"
     line "}"
 
