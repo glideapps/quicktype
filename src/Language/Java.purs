@@ -160,7 +160,7 @@ renderConverter = do
         decoderName <- getDecoderName topLevelName
         line $ "//     " <> topLevelTypeRendered <> " data = Converter." <> decoderName <> "(jsonString);"
     blank
-    renderPackageAndImports ["java.util.Map", "java.io.IOException", "com.fasterxml.jackson.databind.ObjectMapper", "com.fasterxml.jackson.core.JsonProcessingException"]
+    renderPackageAndImports ["java.util.Map", "java.io.IOException", "com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.core.JsonProcessingException"]
     blank
     line "public class Converter {"
     indent do
@@ -171,25 +171,59 @@ renderConverter = do
             decoderName <- getDecoderName topLevelName
             line $ "public static " <> topLevelTypeRendered <> " " <> decoderName <> "(String json) throws IOException {"
             indent do
-                line "ObjectMapper mapper = new ObjectMapper();"
-                renderedForClass <- renderTypeWithoutGenerics false topLevelType
-                line $ "return mapper.readValue(json, " <> renderedForClass <> ".class);"
+                getReaderName <- getReaderGetterName topLevelName
+                line $ "return " <> getReaderName <> "().readValue(json);"
             line "}"
             blank
             encoderName <- getEncoderName topLevelName
             line $ "public static String " <> encoderName <> "(" <> topLevelTypeRendered <> " obj) throws JsonProcessingException {"
             indent do
+                getWriterName <- getWriterGetterName topLevelName
+                line $ "return " <> getWriterName <> "().writeValueAsString(obj);"
+            line "}"
+        forEachTopLevel_ \topLevelName topLevelType -> do
+            readerName <- getFieldOrMethodName "reader" topLevelName
+            writerName <- getFieldOrMethodName "writer" topLevelName
+            instantiateName <- getMethodName "instantiate" "Mapper" topLevelName
+            getReaderName <- getReaderGetterName topLevelName
+            getWriterName <- getWriterGetterName topLevelName
+            blank
+            line $ "private static ObjectReader " <> readerName <> ";"
+            line $ "private static ObjectWriter " <> writerName <> ";"
+            blank
+            line $ "private static void " <> instantiateName <> "() {"
+            indent do
+                renderedForClass <- renderTypeWithoutGenerics false topLevelType
                 line "ObjectMapper mapper = new ObjectMapper();"
-                line "return mapper.writeValueAsString(obj);"
+                line $ readerName <> " = mapper.reader(" <> renderedForClass <> ".class);"
+                line $ writerName <> " = mapper.writerFor(" <> renderedForClass <> ".class);"
+            line "}"
+            blank
+            line $ "private static ObjectReader " <> getReaderName <> "() {"
+            indent do
+                line $ "if (" <> readerName <> " == null) instantiateMapper();"
+                line $ "return " <> readerName <> ";"
+            line "}"
+            blank
+            line $ "private static ObjectWriter " <> getWriterName <> "() {"
+            indent do
+                line $ "if (" <> writerName <> " == null) instantiateMapper();"
+                line $ "return " <> writerName <> ";"
             line "}"
     line "}"
     where
-        getDecoderName = getHelperMethodName "fromJsonString"
-        getEncoderName = getHelperMethodName "toJsonString"
+        getDecoderName = getFieldOrMethodName "fromJsonString"
+        getEncoderName = getFieldOrMethodName "toJsonString"
+        getReaderGetterName = getMethodName "get" "ObjectReader"
+        getWriterGetterName = getMethodName "get" "ObjectWriter"
 
-        getHelperMethodName :: String -> String -> Doc String
-        getHelperMethodName methodName topLevelName =
+        getFieldOrMethodName :: String -> String -> Doc String
+        getFieldOrMethodName methodName topLevelName =
             getForSingleOrMultipleTopLevels methodName (topLevelName <> capitalize methodName)
+        
+        getMethodName :: String -> String -> String -> Doc String
+        getMethodName prefix suffix topLevelName =
+            getForSingleOrMultipleTopLevels (prefix <> suffix) (prefix <> capitalize topLevelName <> suffix)
 
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
