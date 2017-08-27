@@ -114,7 +114,7 @@ supportFunctions = do
 
 fileprivate func convertArray<T>(_ converter: (Any) -> T?, _ json: Any) -> [T]? {
     guard let jsonArr = json as? [Any] else { return nil }
-    var arr: [T] = []
+    var arr = [T]()
     for v in jsonArr {
         if let converted = converter(v) {
             arr.append(converted)
@@ -126,16 +126,13 @@ fileprivate func convertArray<T>(_ converter: (Any) -> T?, _ json: Any) -> [T]? 
 }
 
 fileprivate func convertOptional<T>(_ converter: (Any) -> T?, _ json: Any?) -> T?? {
-    guard let v = json
-    else {
-        return Optional.some(nil)
-    }
+    guard let v = json else { return .some(nil) }
     return converter(v)
 }
 
 fileprivate func convertDict<T>(_ converter: (Any) -> T?, _ json: Any?) -> [String: T]? {
     guard let jsonDict = json as? [String: Any] else { return nil }
-    var dict: [String: T] = [:]
+    var dict = [String: T]()
     for (k, v) in jsonDict {
         if let converted = converter(v) {
             dict[k] = converted
@@ -147,7 +144,7 @@ fileprivate func convertDict<T>(_ converter: (Any) -> T?, _ json: Any?) -> [Stri
 }
 
 fileprivate func convertToAny<T>(_ dictionary: [String: T], _ converter: (T) -> Any) -> Any {
-    var result: [String: Any] = [:]
+    var result = [String: Any]()
     for (k, v) in dictionary {
         result[k] = converter(v)
     }
@@ -155,12 +152,8 @@ fileprivate func convertToAny<T>(_ dictionary: [String: T], _ converter: (T) -> 
 }
 
 fileprivate func convertDouble(_ v: Any) -> Double? {
-    if let w = v as? Double {
-        return w
-    }
-    if let w = v as? Int {
-        return Double(w)
-    }
+    if let w = v as? Double { return w }
+    if let w = v as? Int { return Double(w) }
     return nil
 }
 
@@ -194,10 +187,8 @@ fileprivate func removeNSNull(_ v: Any?) -> Any? {
 }
 
 fileprivate func checkNull(_ v: Any?) -> Any?? {
-    if v != nil {
-        return Optional.none
-    }
-    return Optional.some(nil)
+    if v != nil { return .none }
+    return .some(nil)
 }"""
 
 renderUnion :: IRUnionRep -> Doc String
@@ -481,10 +472,8 @@ renderUnionExtension unionName unionTypes = do
             for_ unionTypes \typ -> do
                 name <- caseName typ
                 let letString = if typ == IRNull then "" else "(let x)"
-                line $ "case ." <> name <> letString <> ":"
-                indent do
-                    convertCode <- convertToAny typ "x"
-                    line $ "return " <> convertCode
+                convertCode <- convertToAny typ "x"
+                line $ "case ." <> name <> letString <> ": return " <> convertCode
             line "}"
         line "}"
     line "}"
@@ -492,11 +481,8 @@ renderUnionExtension unionName unionTypes = do
     renderCase :: IRType -> Doc Unit
     renderCase t = do
         convertCode <- convertAny t "v"
-        line $ "if let x = " <> convertCode <> " {"
-        indent do
-            name <- caseName t
-            line $ "return ." <> name <> "(x)"
-        line "}"
+        name <- caseName t
+        line $ "if let x = " <> convertCode <> " { return ." <> name <> "(x) }"
 
 caseName :: IRType -> Doc String
 caseName t = swiftNameStyle false <$> getTypeNameForUnion t
