@@ -282,7 +282,7 @@ convertToAny (IRMap m) var = do
     convertCode <- convertToAny m "v"
     pure $ "convertToAny(dictionary: " <> var <> ", converter: { (v: " <> rendered <> ") in " <> convertCode <> " })"
 convertToAny (IRClass i) var =
-    pure $ var <> ".asAny"
+    pure $ var <> ".any"
 convertToAny (IRUnion ur) var =
     case nullableFromSet $ unionToSet ur of
     Just t -> do
@@ -290,7 +290,7 @@ convertToAny (IRUnion ur) var =
         convertCode <- convertToAny t "v"
         pure $ var <> ".map({ (v: " <> rendered <> ") in " <> convertCode  <> " }) ?? NSNull()"
     Nothing ->
-        pure $ var <> ".asAny"
+        pure $ var <> ".any"
 convertToAny IRNothing var =
     pure $ var <> " ?? NSNull()"
 convertToAny IRNull var =
@@ -376,9 +376,9 @@ renderClassExtension className properties = do
     let propertyNames = makePropertyNames properties "" forbidden
     line $ "extension " <> className <> " {"
     indent do
-        line $ "init?(fromAny jsonUntyped: Any) {"
+        line $ "fileprivate init?(fromAny any: Any) {"
         indent do
-            line "guard let json = jsonUntyped as? [String: Any] else { return nil }"
+            line "guard let json = any as? [String: Any] else { return nil }"
             let forbiddenForUntyped = forbidden <> (A.fromFoldable $ M.keys propertyNames)
             let untypedNames = makePropertyNames properties "Untyped" forbiddenForUntyped
             let forbiddenForConverted = forbiddenForUntyped <> (A.fromFoldable $ M.keys untypedNames)
@@ -401,7 +401,7 @@ renderClassExtension className properties = do
                 line $ "self." <> fieldName <> " = " <> convertedName
         line "}"
         blank
-        line "fileprivate var asAny: Any {"
+        line "fileprivate var any: Any {"
         indent do
             line "var dict = [String: Any]()"
             forEachProperty_ properties propertyNames \pname ptype fieldName _ -> do
@@ -471,7 +471,7 @@ renderUnionExtension unionName unionTypes = do
             line "return nil"
         line "}"
         blank
-        line $ "var asAny: Any {"
+        line $ "var any: Any {"
         indent do
             line $ "switch self {"
             for_ unionTypes \typ -> do
