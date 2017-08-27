@@ -463,7 +463,7 @@ renderUnionExtension unionName unionTypes = do
                     line "guard let v = removeNSNull(v)"
                     line "else {"
                     indent do
-                        line $ "return " <> unionName <> "." <> name
+                        line $ "return ." <> name
                     line "}"
                 Nothing -> pure unit
             when (S.member IRBool unionTypes) do
@@ -495,7 +495,7 @@ renderUnionExtension unionName unionTypes = do
         line $ "if let x = " <> convertCode <> " {"
         indent do
             name <- caseName t
-            line $ "return " <> unionName <> "." <> name <> "(x)"
+            line $ "return ." <> name <> "(x)"
         line "}"
 
 caseName :: IRType -> Doc String
