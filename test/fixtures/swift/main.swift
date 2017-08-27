@@ -21,7 +21,7 @@ else {
     exit(1)
 }
 
-guard let newData = obj.jsonData()
+guard let newData = obj.jsonData
 else {
     print("Error: Could not deserialize")
     exit(1)

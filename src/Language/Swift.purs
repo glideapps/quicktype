@@ -354,12 +354,20 @@ renderTopLevelExtensions topLevelName topLevelType = do
             _ -> pure unit
 
         blank
-        line $ "func jsonData() -> Data? {"
+        line $ "var jsonData: Data? {"
         indent do
             convertCode <- convertToAny topLevelType "self"
             line $ "let json = " <> convertCode
             line "return try? JSONSerialization.data(withJSONObject: json, options: [])"
         line "}"
+            
+        blank
+        line $ "var jsonString: String? {"
+        indent do
+            line $ "guard let data = self.jsonData else { return nil }"
+            line $ "return String(data: data, encoding: .utf8)"
+        line "}"
+
     line "}"
 
 renderClassExtension :: String -> Map String IRType -> Doc Unit
