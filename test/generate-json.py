@@ -3,8 +3,21 @@
 import argparse
 import random
 
+with open('/usr/share/dict/words') as f:
+    words = f.read().splitlines()
+
 def random_array_element():
     return random.choice(['123', 'true', 'false', 'null', '3.1415', '"foo"'])
+
+def random_word():
+    return random.choice(words)
+
+def print_object(size, indent, suffix):
+    print(indent + '{')
+    for i in range(size - 1):
+        print(indent + '  "%s": %s,' % (random_word(), random_array_element()))
+    print(indent + '  "%s": "no-comma"' % random_word())
+    print(indent + '}' + suffix)
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a large JSON document.")
@@ -12,14 +25,19 @@ def main():
     parser.add_argument('--array-type', choices=['int', 'array', 'object'], default='object')
     parser.add_argument('--array-elements', nargs=1, type=int, default=[3])
     parser.add_argument('--object-size', nargs=1, type=int, default=None)
+    parser.add_argument('--class-count', nargs=1, type=int, default=None)
     args = parser.parse_args()
 
-    if args.object_size:
+    if args.class_count:
         print('{')
-        for i in range(args.object_size[0] - 1):
-            print('  "x%d": %s,' % (i, random_array_element()))
-        print('  "no": "comma"')
+        for i in range(args.class_count[0] - 1):
+            print('  "class%d":' % i)
+            print_object(args.object_size[0], '  ', ',')
+        print('  "class%d":' % i)
+        print_object(args.object_size[0], '  ', '')
         print('}')
+    elif args.object_size:
+        print_object(args.object_size[0], '', '')
     else:
         n = args.array_size[0]
         type = args.array_type
