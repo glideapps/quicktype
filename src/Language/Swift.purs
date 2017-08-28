@@ -8,7 +8,7 @@ import Prelude
 
 import Data.Array as A
 import Data.Char.Unicode (isAlphaNum, isDigit)
-import Data.Foldable (for_)
+import Data.Foldable (for_, null)
 import Data.FoldableWithIndex (forWithIndex_)
 import Data.Map (Map)
 import Data.Map as M
@@ -112,9 +112,9 @@ supportFunctions :: Doc Unit
 supportFunctions = do
     line """// Helpers
 
-fileprivate func convertArray<T>(converter: (Any) -> T?, json: Any) -> [T]? {
+fileprivate func convertArray<T>(_ converter: (Any) -> T?, _ json: Any) -> [T]? {
     guard let jsonArr = json as? [Any] else { return nil }
-    var arr: [T] = []
+    var arr = [T]()
     for v in jsonArr {
         if let converted = converter(v) {
             arr.append(converted)
@@ -125,17 +125,14 @@ fileprivate func convertArray<T>(converter: (Any) -> T?, json: Any) -> [T]? {
     return arr
 }
 
-fileprivate func convertOptional<T>(converter: (Any) -> T?, json: Any?) -> T?? {
-    guard let v = json
-    else {
-        return Optional.some(nil)
-    }
+fileprivate func convertOptional<T>(_ converter: (Any) -> T?, _ json: Any?) -> T?? {
+    guard let v = json else { return .some(nil) }
     return converter(v)
 }
 
-fileprivate func convertDict<T>(converter: (Any) -> T?, json: Any?) -> [String: T]? {
+fileprivate func convertDict<T>(_ converter: (Any) -> T?, _ json: Any?) -> [String: T]? {
     guard let jsonDict = json as? [String: Any] else { return nil }
-    var dict: [String: T] = [:]
+    var dict = [String: T]()
     for (k, v) in jsonDict {
         if let converted = converter(v) {
             dict[k] = converted
@@ -146,8 +143,8 @@ fileprivate func convertDict<T>(converter: (Any) -> T?, json: Any?) -> [String: 
     return dict
 }
 
-fileprivate func convertToAny<T>(dictionary: [String: T], converter: (T) -> Any) -> Any {
-    var result: [String: Any] = [:]
+fileprivate func convertToAny<T>(_ dictionary: [String: T], _ converter: (T) -> Any) -> Any {
+    var result = [String: Any]()
     for (k, v) in dictionary {
         result[k] = converter(v)
     }
@@ -155,12 +152,8 @@ fileprivate func convertToAny<T>(dictionary: [String: T], converter: (T) -> Any)
 }
 
 fileprivate func convertDouble(_ v: Any) -> Double? {
-    if let w = v as? Double {
-        return w
-    }
-    if let w = v as? Int {
-        return Double(w)
-    }
+    if let w = v as? Double { return w }
+    if let w = v as? Int { return Double(w) }
     return nil
 }
 
@@ -194,10 +187,8 @@ fileprivate func removeNSNull(_ v: Any?) -> Any? {
 }
 
 fileprivate func checkNull(_ v: Any?) -> Any?? {
-    if v != nil {
-        return Optional.none
-    }
-    return Optional.some(nil)
+    if v != nil { return .none }
+    return .some(nil)
 }"""
 
 renderUnion :: IRUnionRep -> Doc String
@@ -228,15 +219,15 @@ renderType = case _ of
 convertAny :: IRType -> String -> Doc String
 convertAny (IRArray a) var = do
     converter <- convertAnyFunc a
-    pure $ "convertArray(converter: " <> converter <> ", json: " <> var <> ")"
+    pure $ "convertArray(" <> converter <> ", " <> var <> ")"
 convertAny (IRMap m) var = do
     converter <- convertAnyFunc m
-    pure $ "convertDict(converter: " <> converter <> ", json: " <> var <> ")"
+    pure $ "convertDict(" <> converter <> ", " <> var <> ")"
 convertAny (IRUnion ur) var =
     case nullableFromSet $ unionToSet ur of
     Just t -> do
         converter <- convertAnyFunc t
-        pure $ "convertOptional(converter: " <> converter <> ", json: " <> var <> ")"
+        pure $ "convertOptional(" <> converter <> ", " <> var <> ")"
     Nothing -> do
         name <- lookupUnionName ur
         pure $ name <> ".fromJson(" <> var <> ")"
@@ -257,40 +248,37 @@ convertAnyFunc = case _ of
     IRClass i -> do
         name <- lookupClassName i
         -- TODO make this look less alien
-        pure $ "({ (a: Any) in " <> name <> "(fromAny: a)})"
+        pure $ "{ " <> name <> "(fromAny: $0) }"
     IRUnion ur ->
         case nullableFromSet $ unionToSet ur of
         Just t -> do
             converter <- convertAnyFunc t
-            pure $ "{ (json: Any) in convertOptional(converter: " <> converter <> ", json: json) }"
+            pure $ "{ (json: Any) in convertOptional(" <> converter <> ", json) }"
         Nothing -> do
             name <- lookupUnionName ur
             pure $ name <> ".fromJson"
     IRDouble -> pure "convertDouble"
     IRNull -> pure "checkNull"
     t -> do
-        converted <- convertAny t "json"
-        pure $ "{ (json: Any) in " <> converted <> " }"
+        converted <- convertAny t "$0"
+        pure $ "{ " <> converted <> " }"
 
 convertToAny :: IRType -> String -> Doc String
 convertToAny (IRArray a) var = do
-    rendered <- renderType a
-    convertCode <- convertToAny a "v"
-    pure $ var <> ".map({ (v: " <> rendered <> ") in " <> convertCode <> " }) as Any"
+    convertCode <- convertToAny a "$0"
+    pure $ var <> ".map({ " <> convertCode <> " }) as Any"
 convertToAny (IRMap m) var = do
-    rendered <- renderType m
-    convertCode <- convertToAny m "v"
-    pure $ "convertToAny(dictionary: " <> var <> ", converter: { (v: " <> rendered <> ") in " <> convertCode <> " })"
+    convertCode <- convertToAny m "$0"
+    pure $ "convertToAny(" <> var <> ", { "<> convertCode <> " })"
 convertToAny (IRClass i) var =
-    pure $ var <> ".asAny"
+    pure $ var <> ".any"
 convertToAny (IRUnion ur) var =
     case nullableFromSet $ unionToSet ur of
     Just t -> do
-        rendered <- renderType t
-        convertCode <- convertToAny t "v"
-        pure $ var <> ".map({ (v: " <> rendered <> ") in " <> convertCode  <> " }) ?? NSNull()"
+        convertCode <- convertToAny t "$0"
+        pure $ var <> ".map({ " <> convertCode  <> " }) ?? NSNull()"
     Nothing ->
-        pure $ var <> ".asAny"
+        pure $ var <> ".any"
 convertToAny IRNothing var =
     pure $ var <> " ?? NSNull()"
 convertToAny IRNull var =
@@ -300,7 +288,7 @@ convertToAny _ var =
 
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
-    let forbidden = keywords <> ["jsonUntyped", "json"]
+    let forbidden = keywords <> ["json", "any"]
     let propertyNames = makePropertyNames properties "" forbidden
     line $ "struct " <> className <> " {"
     indent do
@@ -376,38 +364,40 @@ renderClassExtension className properties = do
     let propertyNames = makePropertyNames properties "" forbidden
     line $ "extension " <> className <> " {"
     indent do
-        line $ "init?(fromAny jsonUntyped: Any) {"
-        indent do
-            line "guard let json = jsonUntyped as? [String: Any] else { return nil }"
+        line $ "fileprivate init?(fromAny any: Any) {"
+        unless (M.isEmpty properties) $ indent do
+            line "guard let json = any as? [String: Any] else { return nil }"
             let forbiddenForUntyped = forbidden <> (A.fromFoldable $ M.keys propertyNames)
-            let untypedNames = makePropertyNames properties "Untyped" forbiddenForUntyped
+            let untypedNames = makePropertyNames properties "Any" forbiddenForUntyped
             let forbiddenForConverted = forbiddenForUntyped <> (A.fromFoldable $ M.keys untypedNames)
-            let convertedNames = makePropertyNames properties "Converted" forbiddenForConverted
             forEachProperty_ properties untypedNames \pname ptype untypedName _ -> do
                 when (canBeNull ptype) do
                     line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"])"
-            unless (M.isEmpty properties) do
-                line "guard"
-                indent do
-                    forEachProperty_ properties untypedNames \pname ptype untypedName isLast -> do
-                        let convertedName = lookupName pname convertedNames
-                        unless (canBeNull ptype) do
-                            line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"]),"
-                        convertCode <- convertAny ptype untypedName
-                        line $ "let " <> convertedName <> " = " <> convertCode <> (if isLast then "" else ",")
-                    line "else { return nil }"
+            line "guard"
+            indent do
+                forEachProperty_ properties untypedNames \pname ptype untypedName isLast -> do
+                    let convertedName = lookupName pname propertyNames
+                    unless (canBeNull ptype) do
+                        line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"]),"
+                    convertCode <- convertAny ptype untypedName
+                    line $ "let " <> convertedName <> " = " <> convertCode <> (if isLast then "" else ",")
+                line "else { return nil }"
             forEachProperty_ properties propertyNames \pname _ fieldName _ -> do
-                let convertedName = lookupName pname convertedNames
+                let convertedName = lookupName pname propertyNames
                 line $ "self." <> fieldName <> " = " <> convertedName
         line "}"
         blank
-        line "fileprivate var asAny: Any {"
+        line "fileprivate var any: Any {"
         indent do
-            line "var dict = [String: Any]()"
-            forEachProperty_ properties propertyNames \pname ptype fieldName _ -> do
-                convertCode <- convertToAny ptype ("self." <> fieldName)
-                line $ "dict[\"" <> stringEscape pname <> "\"] = " <> convertCode
-            line "return dict"
+            if null properties
+                then line "return [String: Any]()"
+                else do
+                    line "return ["
+                    indent do
+                        forEachProperty_ properties propertyNames \pname ptype fieldName _ -> do
+                            convertCode <- convertToAny ptype ("self." <> fieldName)
+                            line $ "\"" <> stringEscape pname <> "\": " <> convertCode <> ","
+                    line "]"
         line "}"
     line "}"
 
@@ -451,7 +441,7 @@ renderUnionExtension unionName unionTypes = do
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
     line $ "extension " <> unionName <> " {"
     indent do
-        line $ "static func fromJson(_ v: Any) -> " <> unionName <> "? {"
+        line $ "fileprivate static func fromJson(_ v: Any) -> " <> unionName <> "? {"
         indent do
             case emptyOrNull of
                 Just t -> do
@@ -459,7 +449,7 @@ renderUnionExtension unionName unionTypes = do
                     line "guard let v = removeNSNull(v)"
                     line "else {"
                     indent do
-                        line $ "return " <> unionName <> "." <> name
+                        line $ "return ." <> name
                     line "}"
                 Nothing -> pure unit
             when (S.member IRBool unionTypes) do
@@ -471,16 +461,14 @@ renderUnionExtension unionName unionTypes = do
             line "return nil"
         line "}"
         blank
-        line $ "var asAny: Any {"
+        line $ "fileprivate var any: Any {"
         indent do
             line $ "switch self {"
             for_ unionTypes \typ -> do
                 name <- caseName typ
                 let letString = if typ == IRNull then "" else "(let x)"
-                line $ "case ." <> name <> letString <> ":"
-                indent do
-                    convertCode <- convertToAny typ "x"
-                    line $ "return " <> convertCode
+                convertCode <- convertToAny typ "x"
+                line $ "case ." <> name <> letString <> ": return " <> convertCode
             line "}"
         line "}"
     line "}"
@@ -488,11 +476,8 @@ renderUnionExtension unionName unionTypes = do
     renderCase :: IRType -> Doc Unit
     renderCase t = do
         convertCode <- convertAny t "v"
-        line $ "if let x = " <> convertCode <> " {"
-        indent do
-            name <- caseName t
-            line $ "return " <> unionName <> "." <> name <> "(x)"
-        line "}"
+        name <- caseName t
+        line $ "if let x = " <> convertCode <> " { return ." <> name <> "(x) }"
 
 caseName :: IRType -> Doc String
 caseName t = swiftNameStyle false <$> getTypeNameForUnion t
