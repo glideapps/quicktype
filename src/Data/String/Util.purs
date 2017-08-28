@@ -25,7 +25,6 @@ import Data.Char.Unicode (GeneralCategory(..), generalCategory, isDigit, isLette
 import Data.Either as Either
 import Data.Int as Int
 import Data.Maybe (Maybe(..))
-import Data.Char as Char
 import Data.String as S
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
@@ -34,7 +33,7 @@ import Partial.Unsafe (unsafePartial)
 foreign import _plural :: String -> String
 foreign import _singular :: String -> String
 foreign import isInt :: String -> Boolean
-foreign import internalStringEscape :: (Char -> String) -> String -> String
+foreign import stringConcatMap :: (Char -> String) -> String -> String
 
 plural :: String -> String
 plural = _plural
@@ -78,14 +77,20 @@ standardUnicodeHexEscape i =
         "\\U" <> (S.fromCharArray $ intToHex 8 i)
 
 genericStringEscape :: (Int -> String) -> String -> String
-genericStringEscape f =
-    internalStringEscape mapper
+genericStringEscape escaper =
+    stringConcatMap mapper
     where
         mapper c =
-            if isPrint c then
-                S.fromCharArray [c]
-            else
-                f $ Char.toCharCode c
+            case c of
+            '\\' -> "\\\\"
+            '\"' -> "\\\""
+            '\n' -> "\\n"
+            '\t' -> "\\t"
+            _ ->
+                if isPrint c then
+                    S.fromCharArray [c]
+                else
+                    escaper $ toCharCode c
 
 stringEscape :: String -> String
 stringEscape = genericStringEscape standardUnicodeHexEscape
@@ -97,8 +102,14 @@ times s 1 = s
 times s n = s <> times s (n - 1)
 
 legalizeCharacters :: (Char -> Boolean) -> String -> String
-legalizeCharacters isLegal str =
-    S.fromCharArray $ map (\c -> if isLegal c then c else '_') $ S.toCharArray str
+legalizeCharacters isLegal =
+    stringConcatMap mapper
+    where
+        mapper c =
+            if isLegal c then
+                S.fromCharArray [c]
+            else
+                "_"
 
 isLetterOrLetterNumber :: Char -> Boolean
 isLetterOrLetterNumber c =
