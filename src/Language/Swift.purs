@@ -370,7 +370,6 @@ renderClassExtension className properties = do
             let forbiddenForUntyped = forbidden <> (A.fromFoldable $ M.keys propertyNames)
             let untypedNames = makePropertyNames properties "Any" forbiddenForUntyped
             let forbiddenForConverted = forbiddenForUntyped <> (A.fromFoldable $ M.keys untypedNames)
-            let convertedNames = makePropertyNames properties "" forbidden
             forEachProperty_ properties untypedNames \pname ptype untypedName _ -> do
                 when (canBeNull ptype) do
                     line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"])"
@@ -378,14 +377,14 @@ renderClassExtension className properties = do
                 line "guard"
                 indent do
                     forEachProperty_ properties untypedNames \pname ptype untypedName isLast -> do
-                        let convertedName = lookupName pname convertedNames
+                        let convertedName = lookupName pname propertyNames
                         unless (canBeNull ptype) do
                             line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"]),"
                         convertCode <- convertAny ptype untypedName
                         line $ "let " <> convertedName <> " = " <> convertCode <> (if isLast then "" else ",")
                     line "else { return nil }"
             forEachProperty_ properties propertyNames \pname _ fieldName _ -> do
-                let convertedName = lookupName pname convertedNames
+                let convertedName = lookupName pname propertyNames
                 line $ "self." <> fieldName <> " = " <> convertedName
         line "}"
         blank
