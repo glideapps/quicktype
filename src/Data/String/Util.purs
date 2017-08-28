@@ -25,6 +25,7 @@ import Data.Char.Unicode (GeneralCategory(..), generalCategory, isDigit, isLette
 import Data.Either as Either
 import Data.Int as Int
 import Data.Maybe (Maybe(..))
+import Data.Char as Char
 import Data.String as S
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
@@ -33,6 +34,7 @@ import Partial.Unsafe (unsafePartial)
 foreign import _plural :: String -> String
 foreign import _singular :: String -> String
 foreign import isInt :: String -> Boolean
+foreign import internalStringEscape :: (Char -> String) -> String -> String
 
 plural :: String -> String
 plural = _plural
@@ -68,28 +70,22 @@ intToHex width number =
         else
             arr
 
-standardUnicodeHexEscape :: Int -> Array Char
+standardUnicodeHexEscape :: Int -> String
 standardUnicodeHexEscape i =
     if i <= 0xffff then
-        ['\\', 'u'] <> intToHex 4 i
+        "\\u" <> (S.fromCharArray $ intToHex 4 i)
     else
-        ['\\', 'U'] <> intToHex 8 i
+        "\\U" <> (S.fromCharArray $ intToHex 8 i)
 
-genericStringEscape :: (Int -> Array Char) -> String -> String
-genericStringEscape unicodeEscape str =
-    S.fromCharArray $ A.concatMap charRep $ S.toCharArray str
+genericStringEscape :: (Int -> String) -> String -> String
+genericStringEscape f =
+    internalStringEscape mapper
     where
-        charRep c =
-            case c of
-            '\\' -> ['\\', '\\']
-            '\"' -> ['\\', '\"']
-            '\n' -> ['\\', 'n']
-            '\t' -> ['\\', 't']
-            _ ->
-                if isPrint c then
-                    [c]
-                else
-                    unicodeEscape $ toCharCode c
+        mapper c =
+            if isPrint c then
+                S.fromCharArray [c]
+            else
+                f $ Char.toCharCode c
 
 stringEscape :: String -> String
 stringEscape = genericStringEscape standardUnicodeHexEscape
