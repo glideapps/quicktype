@@ -368,7 +368,7 @@ renderClassExtension className properties = do
         indent do
             line "guard let json = any as? [String: Any] else { return nil }"
             let forbiddenForUntyped = forbidden <> (A.fromFoldable $ M.keys propertyNames)
-            let untypedNames = makePropertyNames properties "Untyped" forbiddenForUntyped
+            let untypedNames = makePropertyNames properties "Any" forbiddenForUntyped
             let forbiddenForConverted = forbiddenForUntyped <> (A.fromFoldable $ M.keys untypedNames)
             let convertedNames = makePropertyNames properties "" forbidden
             forEachProperty_ properties untypedNames \pname ptype untypedName _ -> do
