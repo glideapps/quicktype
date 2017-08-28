@@ -50,15 +50,18 @@ renderer =
         }
     }
 
+legalize :: String -> String
+legalize = legalizeCharacters isPartCharacter
+    where
+        isPartCharacter :: Char -> Boolean
+        isPartCharacter c = c == '_' || isAlphaNum c
+
 swiftNameStyle :: Boolean -> String -> String
 swiftNameStyle isUpper =
-    legalizeCharacters isPartCharacter >>> camelCase >>> startWithLetter isStartCharacter isUpper
+    legalize >>> camelCase >>> startWithLetter isStartCharacter isUpper
     where
         isStartCharacter :: Char -> Boolean
         isStartCharacter c = c == '_' || (isAlphaNum c && not (isDigit c))
-
-        isPartCharacter :: Char -> Boolean
-        isPartCharacter c = c == '_' || isAlphaNum c
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = swiftNameStyle true $ combineNames names
