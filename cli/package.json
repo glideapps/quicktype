@@ -14,7 +14,8 @@
   "scripts": {
     "prepare": "script/build.ts",
     "bundle": "cd .. && npm run bundle-cli && cd cli",
-    "deploy": "npm run bundle"
+    "deploy": "npm run bundle",
+    "prepublishOnly": "script/bump-npm-version-patch"
   },
   "files": [
     "dist"
