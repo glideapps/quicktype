@@ -95,8 +95,11 @@ renderType = case _ of
                 rendered <- renderType t
                 pure $ "Maybe<" <> rendered <> ">"
 
+legalize :: String -> String
+legalize = Str.legalizeCharacters isPartCharacter
+
 classNameStyle :: Boolean -> String -> String
-classNameStyle upper = Str.legalizeCharacters isPartCharacter >>> Str.camelCase >>> (Str.startWithLetter isStartCharacter upper)
+classNameStyle upper = legalize >>> Str.camelCase >>> (Str.startWithLetter isStartCharacter upper)
 
 upperNameStyle :: String -> String
 upperNameStyle = classNameStyle true

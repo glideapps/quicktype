@@ -96,8 +96,11 @@ renderComment :: Maybe String -> String
 renderComment (Just s) = " /* " <> s <> " */"
 renderComment Nothing = ""
 
+legalize :: String -> String
+legalize = legalizeCharacters isLetterOrUnderscoreOrDigit
+
 goNameStyle :: String -> String
-goNameStyle = legalizeCharacters isLetterOrUnderscoreOrDigit >>> camelCase >>> startWithLetter isLetterOrUnderscore true
+goNameStyle = legalize >>> camelCase >>> startWithLetter isLetterOrUnderscore true
 
 golangDoc :: Doc Unit
 golangDoc = do

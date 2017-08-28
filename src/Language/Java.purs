@@ -60,26 +60,29 @@ renderer =
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = javaNameStyle true $ combineNames names
 
+isStartCharacter :: Char -> Boolean
+isStartCharacter c =
+    case generalCategory c of
+    Just CurrencySymbol -> true
+    Just ConnectorPunctuation -> true
+    _ -> isLetterOrLetterNumber c
+
+isPartCharacter :: Char -> Boolean
+isPartCharacter c =
+    case generalCategory c of
+    Just DecimalNumber -> true
+    Just SpacingCombiningMark -> true
+    Just NonSpacingMark -> true
+    Just Format -> true
+    Just Control -> not $ isSpace c
+    _ -> isStartCharacter c
+
+legalize :: String -> String
+legalize = legalizeCharacters isPartCharacter
+
 javaNameStyle :: Boolean -> String -> String
 javaNameStyle upper =
-    legalizeCharacters isPartCharacter >>> camelCase >>> startWithLetter isStartCharacter upper
-    where
-        isStartCharacter :: Char -> Boolean
-        isStartCharacter c =
-            case generalCategory c of
-            Just CurrencySymbol -> true
-            Just ConnectorPunctuation -> true
-            _ -> isLetterOrLetterNumber c
-
-        isPartCharacter :: Char -> Boolean
-        isPartCharacter c =
-            case generalCategory c of
-            Just DecimalNumber -> true
-            Just SpacingCombiningMark -> true
-            Just NonSpacingMark -> true
-            Just Format -> true
-            Just Control -> not $ isSpace c
-            _ -> isStartCharacter c
+    legalize >>> camelCase >>> startWithLetter isStartCharacter upper
 
 javaDoc :: Doc Unit
 javaDoc = do
