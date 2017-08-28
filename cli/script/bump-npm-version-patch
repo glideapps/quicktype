@@ -1,0 +1,3 @@
+PUBLISHED=`npm view quicktype version`
+npm version --no-git-tag-version --allow-same-version $PUBLISHED
+npm version --no-git-tag-version patch
