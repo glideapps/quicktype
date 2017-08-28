@@ -4,7 +4,6 @@ import './index.scss';
 import App from './App';
 import { unregister } from './registerServiceWorker';
 import browser from "bowser";
-import ReactGA from 'react-ga';
 
 const metadataForHost = {
   "localhost": {
