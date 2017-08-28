@@ -15,6 +15,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as S
+import Data.String as String
 import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscape, intToHex, legalizeCharacters, startWithLetter)
 import Data.Tuple (Tuple(..))
 import Utils (removeElement)
@@ -67,7 +68,7 @@ stringEscape =
     genericStringEscape unicodeEscape
     where
         unicodeEscape i =
-            ['\\', 'u', '{'] <> intToHex 0 i <> ['}']
+            "\\u{" <> (String.fromCharArray $ intToHex 0 i) <> "}"
 
 swiftDoc :: Doc Unit
 swiftDoc = do

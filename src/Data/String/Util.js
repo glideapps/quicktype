@@ -12,3 +12,56 @@ exports.isInt = function (s) {
     // This isn't ideal
     return /^\d+$/.test(s);
 };
+
+var charStringMap = [];
+var charNoEscapeMap = [];
+
+for (var i = 0; i < 128; i++) {
+    var str = undefined;
+    var noEscape = 0;
+    if (i == "\\".charCodeAt(0) || i == "\"".charCodeAt(0)) {
+        str = "\\" + String.fromCharCode(i);
+    } else if (i == "\n".charCodeAt(0)) {
+        str = "\\n";
+    } else if (i == "\t".charCodeAt(0)) {
+        str = "\\t";
+    } else if (i >= 32) {
+        str = true;
+        noEscape = 1;
+    }
+    charStringMap.push(str);
+    charNoEscapeMap.push(noEscape);
+}
+
+exports.internalStringEscape = function internalStringEscape(mapper) {
+    return function internalStringEscape_inner(s) {
+        var cs = null;
+        var start = 0;
+        var i = 0;
+        while (i < s.length) {
+            var cc = s.charCodeAt(i);
+            if (!charNoEscapeMap[cc]) {
+                if (cs == null)
+                    cs = [];
+                cs.push(s.substring(start, i));
+        
+                var str = charStringMap[cc];
+                if (str === undefined) {
+                    cs.push(mapper(s.charAt(i)));
+                } else {
+                    cs.push(str);
+                }
+        
+                start = i + 1;
+            }
+            i++;
+        }
+    
+        if (cs === null)
+            return s;
+    
+        cs.push(s.substring(start, i));
+    
+        return cs.join("");    
+    }
+};
