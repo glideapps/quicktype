@@ -82,8 +82,11 @@ namesFromTopLevelNameGiven given =
     let name = typeNameForTopLevelNameGiven given
     in A.cons name $ alsoForbiddenForTypeName name
 
+legalize :: String -> String
+legalize = legalizeCharacters isLetterOrUnderscoreOrDigit
+
 elmNameStyle :: Boolean -> String -> String
-elmNameStyle upper = legalizeCharacters isLetterOrUnderscoreOrDigit >>> camelCase >>> (startWithLetter isLetterOrUnderscore upper)
+elmNameStyle upper = legalize >>> camelCase >>> (startWithLetter isLetterOrUnderscore upper)
 
 lowerNameStyle :: String -> String
 lowerNameStyle = elmNameStyle false
