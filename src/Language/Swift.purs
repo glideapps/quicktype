@@ -288,7 +288,7 @@ convertToAny _ var =
 
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
-    let forbidden = keywords <> ["jsonUntyped", "json"]
+    let forbidden = keywords <> ["json", "any"]
     let propertyNames = makePropertyNames properties "" forbidden
     line $ "struct " <> className <> " {"
     indent do
