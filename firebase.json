@@ -10,6 +10,15 @@
                         "value" : "private, max-age=0, no-cache"
                     }
                 ]
+            },
+            {
+                "source": "static/js/*.js",
+                "headers": [
+                    {
+                        "key" : "Cache-Control",
+                        "value" : "max-age=2592000"
+                    }
+                ]
             }
         ]
     }
