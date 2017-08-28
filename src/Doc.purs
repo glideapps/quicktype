@@ -54,10 +54,12 @@ import Data.Map as M
 import Data.Maybe (Maybe(..), fromMaybe, maybe, isNothing)
 import Data.Set (Set)
 import Data.Set as S
+import Data.Sequence (Seq)
+import Data.Sequence as Sq
 import Data.String as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
-import Utils (forEnumerated_, sortByKeyM)
+import Utils (forEnumerated_, sortByKeyM, mapM)
 
 type Renderer =
     { name :: String
@@ -89,7 +91,7 @@ type DocEnv =
     , classNames :: Map Int String
     , unionNames :: Map IRUnionRep String
     , topLevelNames :: Map String String
-    , unions :: Array IRUnionRep -- FIXME: we do we even keep this?
+    , unionSet :: Set IRUnionRep
     }
 
 newtype Doc a = Doc (RWS DocEnv String DocState a)
@@ -110,18 +112,18 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) =
         { names: topLevelNames, forbidden: forbiddenAfterTopLevels } = transformNames t.topLevelName t.nextName forbiddenFromStart topLevelTuples
         classes = classesInGraph graph
         { names: classNames, forbidden: forbiddenAfterClasses } = transformNames t.nameForClass t.nextName forbiddenAfterTopLevels classes
-        { unions, unionNames } = doUnions classNames forbiddenAfterClasses
+        { unionSet, unionNames } = doUnions classNames forbiddenAfterClasses
     in
-        evalRWS w { graph, classNames, unionNames, topLevelNames, unions } { indent: 0 } # snd
+        evalRWS w { graph, classNames, unionNames, topLevelNames, unionSet } { indent: 0 } # snd
     where
-        doUnions :: Map Int String -> Set String -> { unions :: Array IRUnionRep, unionNames :: Map IRUnionRep String }
+        doUnions :: Map Int String -> Set String -> { unionSet :: Set IRUnionRep, unionNames :: Map IRUnionRep String }
         doUnions classNames forbidden = case t.unions of
-            Nothing -> { unions: [], unionNames: M.empty }
+            Nothing -> { unionSet: S.empty, unionNames: M.empty }
             Just { predicate, properName, nameFromTypes } ->
-                let unions = A.fromFoldable $ filterTypes (unionPredicate predicate) graph
-                    unionNames = (transformNames (unionNamer nameFromTypes properName classNames) t.nextName forbidden $ L.fromFoldable $ map (\s -> Tuple s s) unions).names
+                let unionSet = filterTypes (unionPredicate predicate) graph
+                    unionNames = (transformNames (unionNamer nameFromTypes properName classNames) t.nextName forbidden $ map (\s -> Tuple s s) $ L.fromFoldable unionSet).names
                 in
-                    { unions, unionNames }
+                    { unionSet, unionNames }
 
         unionPredicate :: (IRUnionRep -> Boolean) -> IRType -> Maybe IRUnionRep
         unionPredicate p (IRUnion ur) = if p ur then Just ur else Nothing
@@ -239,6 +241,9 @@ getUnions = do
 
 getUnionNames :: Doc (Map IRUnionRep String)
 getUnionNames = Doc (asks _.unionNames)
+
+getUnionSet :: Doc (Set IRUnionRep)
+getUnionSet = Doc (asks _.unionSet)
 
 getTopLevelNames :: Doc (Map String String)
 getTopLevelNames = Doc (asks _.topLevelNames)
@@ -372,12 +377,71 @@ data RenderItem
     | RenderClass Int IRClassData
     | RenderUnion IRUnionRep
 
+derive instance eqRenderItem :: Eq RenderItem
+derive instance ordRenderItem :: Ord RenderItem
+
+sortRenderItems :: Array RenderItem -> Doc (Array RenderItem)
+sortRenderItems startItems = do
+    reversedSorted <- sortStep (Sq.fromFoldable startItems) L.Nil (S.fromFoldable startItems)
+    pure $ A.reverse $ A.fromFoldable reversedSorted
+    where
+        expandUnion :: IRUnionRep -> Doc (List RenderItem)
+        expandUnion ur = do
+            -- FIXME: the set order is semi-random
+            mapped <- mapM expandType $ L.fromFoldable $ unionToSet ur
+            pure $ L.concat mapped
+
+        expandType :: IRType -> Doc (List RenderItem)
+        expandType (IRClass i) = do
+            cd <- getClass i
+            pure $ L.singleton $ RenderClass i cd
+        expandType (IRUnion ur) = do
+            unionSet <- getUnionSet
+            if S.member ur unionSet
+                then
+                    pure $ L.singleton $ RenderUnion ur
+                else
+                    expandUnion ur
+
+        expandType (IRArray a) = expandType a
+        expandType (IRMap m) = expandType m
+        expandType _ = pure L.Nil
+
+        expand :: RenderItem -> Doc (List RenderItem)
+        expand (RenderTopLevel _ t) =
+            expandType t
+        expand (RenderClass _ (IRClassData { properties })) = do
+            -- FIXME: the map order is semi-random
+            mapped <- mapM expandType $ M.values properties
+            pure $ L.concat mapped
+        expand (RenderUnion ur) =
+            expandUnion ur
+
+        filterItems :: Set RenderItem -> List RenderItem -> Seq RenderItem -> { newItems :: Seq RenderItem, newExpandedSet :: Set RenderItem }
+        filterItems set L.Nil filtered =
+            { newItems: filtered, newExpandedSet: set }
+        filterItems set (item : otherItems) filtered =
+            if S.member item set then
+                filterItems set otherItems filtered
+            else
+                filterItems (S.insert item set) otherItems (Sq.snoc filtered item)
+
+        sortStep :: Seq RenderItem -> List RenderItem -> Set RenderItem -> Doc (List RenderItem)
+        sortStep queue soFar expandedSet =
+            case Sq.uncons queue of
+            Nothing ->
+                pure $ soFar
+            Just (Tuple item queueRest) -> do
+                expandedItems <- expand item
+                let { newItems, newExpandedSet } = filterItems expandedSet expandedItems Sq.empty
+                let newSoFar = item : soFar
+                let newQueue = Sq.append newItems queueRest
+                sortStep newQueue newSoFar newExpandedSet
+
 getRenderItems :: Doc (Array RenderItem)
 getRenderItems = do
     topLevels <- map (\(Tuple n t) -> RenderTopLevel n t) <$> M.toUnfoldable <$> getTopLevels
-    classes <- A.fromFoldable <$> map (\(Tuple i cd) -> RenderClass i cd) <$> getClasses
-    unions <- A.fromFoldable <$> map RenderUnion <$> getUnions
-    pure $ A.concat [topLevels, classes, unions]
+    sortRenderItems topLevels
 
 renderRenderItems :: Doc Unit -> TopLevelIterator -> ClassIterator -> UnionIterator -> Doc Unit
 renderRenderItems inBetweener topLevelRenderer classRenderer unionRenderer = do
