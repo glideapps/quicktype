@@ -46,14 +46,6 @@ function setMetadata() {
   window.document.querySelector('meta[name="description"]').setAttribute("content", description);
 }
 
-function startAnalytics() {
-  if (window.location.hostname === "localhost") {
-    window.ga = () => {};
-  } else {
-    ReactGA.initialize("UA-102732788-1");
-  }
-}
-
 function startIntercom() {
   if (browser.mobile || browser.tablet) {
   } else {
@@ -65,7 +57,6 @@ function startIntercom() {
 
 function main() {
   setMetadata();
-  startAnalytics();
   startIntercom();
 
   ReactDOM.render(<App />, document.getElementById('root'));
