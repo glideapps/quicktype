@@ -14,7 +14,7 @@ exports.isInt = function (s) {
 };
 
 var charStringMap = [];
-var charNoEscapeMap = new Int8Array(128);
+var charNoEscapeMap = [];
 
 for (var i = 0; i < 128; i++) {
     var str = undefined;
@@ -30,7 +30,7 @@ for (var i = 0; i < 128; i++) {
         noEscape = 1;
     }
     charStringMap.push(str);
-    charNoEscapeMap[i] = noEscape;
+    charNoEscapeMap.push(noEscape);
 }
 
 exports.internalStringEscape = function internalStringEscape(mapper) {
