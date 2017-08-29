@@ -6,6 +6,8 @@ function getRenderer(name) {
 }
 
 function render({ json, language, topLevelName, receipt }) {
+    const renderEventName = `Parse and render ${language}`;
+    console.time(renderEventName);
     let result = Main.main({
         outFile: "web",
         language,
@@ -16,6 +18,7 @@ function render({ json, language, topLevelName, receipt }) {
             }
         ]
     });
+    console.timeEnd(renderEventName);
     return { receipt, result };
 }
 
