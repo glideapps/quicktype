@@ -16,7 +16,6 @@ import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Set (Set)
 import Data.Set as S
 import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
-import Data.Tuple (Tuple(..))
 import Utils (removeElement)
 
 forbiddenNames :: Array String
@@ -304,13 +303,11 @@ renderCSharpClass :: String -> Map String IRType -> Doc Unit
 renderCSharpClass className properties = do
     let propertyNames = transformPropertyNames (simpleNamer csNameStyle) ("Other" <> _) [className] properties
     line $ "public class " <> className
-    -- TODO fix this manual indentation
-    string "    {"
+    line "{"
     indent do
-        for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
-            blank
+        forEachProperty_ properties propertyNames \pname ptype csPropName isLast -> do
             line $ "[JsonProperty(\"" <> stringEscape pname <> "\")]"
             rendered <- renderTypeToCSharp ptype
-            let csPropName = lookupName pname propertyNames
             line $ "public " <> rendered <> " " <> csPropName <> " { get; set; }"
+            unless isLast blank
     line "}"
