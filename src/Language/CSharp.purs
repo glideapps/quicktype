@@ -118,13 +118,9 @@ csharpDoc = do
 using System.Net;
 using System.Collections.Generic;
 
-using Newtonsoft.Json;"""
-        forEachClass_ \className properties -> do
-            blank
-            renderCSharpClass className properties
-        forEachUnion_ \unionName unionTypes -> do
-            blank
-            renderCSharpUnion unionName unionTypes
+using Newtonsoft.Json;
+"""
+        renderRenderItems blank Nothing renderCSharpClass renderCSharpUnion
         blank
         renderJsonConverter
     line "}"

@@ -52,14 +52,14 @@ import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromMaybe, maybe, isNothing)
-import Data.Set (Set)
-import Data.Set as S
 import Data.Sequence (Seq)
 import Data.Sequence as Sq
+import Data.Set (Set)
+import Data.Set as S
 import Data.String as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
-import Utils (forEnumerated_, sortByKeyM, mapM)
+import Utils (sortByKeyM, mapM)
 
 type Renderer =
     { name :: String
@@ -447,13 +447,27 @@ getRenderItems = do
     topLevels <- map (\(Tuple n t) -> RenderTopLevel n t) <$> M.toUnfoldable <$> getTopLevels
     sortRenderItems topLevels
 
-renderRenderItems :: Doc Unit -> TopLevelIterator -> ClassIterator -> UnionIterator -> Doc Unit
+renderRenderItems :: Doc Unit -> Maybe TopLevelIterator -> ClassIterator -> UnionIterator -> Doc Unit
 renderRenderItems inBetweener topLevelRenderer classRenderer unionRenderer = do
-    renderItems <- getRenderItems
-    forEnumerated_ (L.fromFoldable renderItems) \i ri -> do
-        case ri of
-            RenderTopLevel n t -> callTopLevelIterator topLevelRenderer n t
-            RenderClass i cd -> callClassIterator classRenderer i cd
-            RenderUnion ur -> callUnionIterator unionRenderer ur
-        let isLast = i == (A.length renderItems) - 1
-        unless isLast inBetweener
+    renderItems <- L.fromFoldable <$> getRenderItems
+    renderLoop false renderItems
+    where
+        renderLoop :: Boolean -> List RenderItem -> Doc Unit
+        renderLoop _ L.Nil = pure unit
+        renderLoop needInBetween (item : rest) =
+            case item of
+                RenderTopLevel n t ->
+                    case topLevelRenderer of
+                    Nothing -> renderLoop needInBetween rest
+                    Just f -> do
+                        when needInBetween inBetweener
+                        callTopLevelIterator f n t
+                        renderLoop true rest
+                RenderClass i cd -> do
+                    when needInBetween inBetweener
+                    callClassIterator classRenderer i cd
+                    renderLoop true rest
+                RenderUnion ur -> do
+                    when needInBetween inBetweener
+                    callUnionIterator unionRenderer ur
+                    renderLoop true rest
