@@ -387,7 +387,8 @@ sortRenderItems startItems = do
     where
         expandUnion :: IRUnionRep -> Doc (List RenderItem)
         expandUnion ur = do
-            -- FIXME: the set order is semi-random
+            -- `unionToSet` gives us the same order we use in `callUnionIterator`.
+            -- That's not always the same property language backends use, however.
             mapped <- mapM expandType $ L.fromFoldable $ unionToSet ur
             pure $ L.concat mapped
 
@@ -411,8 +412,11 @@ sortRenderItems startItems = do
         expand (RenderTopLevel _ t) =
             expandType t
         expand (RenderClass _ (IRClassData { properties })) = do
-            -- FIXME: the map order is semi-random
-            mapped <- mapM expandType $ M.values properties
+            -- We're using `toUnfoldable` instead of `values` because
+            -- that's the same order we iterate over in `forEachProperty_`.
+            -- It happens to be alphabetical, but we shouldn't rely on
+            -- that.
+            mapped <- mapM expandType $ map snd $ M.toUnfoldable properties
             pure $ L.concat mapped
         expand (RenderUnion ur) =
             expandUnion ur
