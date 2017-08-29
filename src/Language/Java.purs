@@ -231,19 +231,18 @@ renderClassDefinition className properties = do
         line "@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)"
     line $ "public class " <> className <> " {"
     indent do
-        forEachProperty_ properties propertyNames \_ javaName fieldName rendered -> do
+        forEachProp_ properties propertyNames \_ javaName fieldName rendered -> do
             line $ "private " <> rendered <> " " <> fieldName <> ";"
-        forEachProperty_ properties propertyNames \pname javaName fieldName rendered -> do
+        forEachProp_ properties propertyNames \pname javaName fieldName rendered -> do
             blank
             line $ "@JsonProperty(\"" <> stringEscape pname <> "\")"
             line $ "public " <> rendered <> " get" <> javaName <> "() { return " <> fieldName <> "; }"
             line $ "public void set" <> javaName <> "(" <> rendered <> " value) { this." <> fieldName <> " = value; }"
     line "}"
     where
-        forEachProperty_ :: Map String IRType -> Map String String -> (String -> String -> String -> String -> Doc Unit) -> Doc Unit
-        forEachProperty_ properties propertyNames f =
-            for_ (M.toUnfoldable properties :: Array _) \(Tuple pname ptype) -> do
-                let fieldName = lookupName pname propertyNames
+        forEachProp_ :: Map String IRType -> Map String String -> (String -> String -> String -> String -> Doc Unit) -> Doc Unit
+        forEachProp_ properties propertyNames f =
+            forEachProperty_ properties propertyNames \pname ptype fieldName _ -> do
                 let javaName = capitalize fieldName
                 rendered <- renderType false ptype
                 f pname javaName fieldName rendered

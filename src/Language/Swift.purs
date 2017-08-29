@@ -9,7 +9,6 @@ import Prelude
 import Data.Array as A
 import Data.Char.Unicode (isAlphaNum, isDigit)
 import Data.Foldable (for_, null)
-import Data.FoldableWithIndex (forWithIndex_)
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
@@ -241,8 +240,7 @@ convertAnyFunc :: IRType -> Doc String
 convertAnyFunc = case _ of
     IRClass i -> do
         name <- lookupClassName i
-        -- TODO make this look less alien
-        pure $ "{ " <> name <> "(fromAny: $0) }"
+        pure $ name <> ".init(fromAny:)"
     IRUnion ur ->
         case nullableFromSet $ unionToSet ur of
         Just t -> do
@@ -399,15 +397,6 @@ renderClassExtension className properties = do
                     line "]"
         line "}"
     line "}"
-
-forEachProperty_ :: Map String IRType -> Map String String -> (String -> IRType -> String -> Boolean -> Doc Unit) -> Doc Unit
-forEachProperty_ properties propertyNames f =
-    let propertyArray = M.toUnfoldable properties :: Array _
-        lastIndex = A.length propertyArray - 1
-    in
-        forWithIndex_ propertyArray \i (Tuple pname ptype) -> do
-            let fieldName = lookupName pname propertyNames
-            f pname ptype fieldName (i == lastIndex)
 
 makePropertyNames :: Map String IRType -> String -> Array String -> Map String String
 makePropertyNames properties suffix forbidden =
