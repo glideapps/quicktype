@@ -447,7 +447,7 @@ getRenderItems = do
     topLevels <- map (\(Tuple n t) -> RenderTopLevel n t) <$> M.toUnfoldable <$> getTopLevels
     sortRenderItems topLevels
 
-renderRenderItems :: Doc Unit -> Maybe TopLevelIterator -> ClassIterator -> UnionIterator -> Doc Unit
+renderRenderItems :: Doc Unit -> Maybe TopLevelIterator -> ClassIterator -> Maybe UnionIterator -> Doc Unit
 renderRenderItems inBetweener topLevelRenderer classRenderer unionRenderer = do
     renderItems <- L.fromFoldable <$> getRenderItems
     renderLoop false renderItems
@@ -467,7 +467,10 @@ renderRenderItems inBetweener topLevelRenderer classRenderer unionRenderer = do
                     when needInBetween inBetweener
                     callClassIterator classRenderer i cd
                     renderLoop true rest
-                RenderUnion ur -> do
-                    when needInBetween inBetweener
-                    callUnionIterator unionRenderer ur
-                    renderLoop true rest
+                RenderUnion ur ->
+                    case unionRenderer of
+                    Nothing -> renderLoop needInBetween rest
+                    Just f -> do
+                        when needInBetween inBetweener
+                        callUnionIterator f ur
+                        renderLoop true rest

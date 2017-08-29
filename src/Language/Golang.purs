@@ -116,7 +116,7 @@ golangDoc = do
         line "import \"bytes\""
         line "import \"errors\""
     line "import \"encoding/json\""
-    renderRenderItems blank (Just renderTopLevel) renderGolangType renderGolangUnion
+    renderRenderItems blank (Just renderTopLevel) renderGolangType (Just renderGolangUnion)
     unless (unions == L.Nil) do
         blank
         line """func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, nullable bool) (bool, error) {

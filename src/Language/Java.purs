@@ -87,7 +87,7 @@ javaDoc :: Doc Unit
 javaDoc = do
     renderConverter
     blank
-    renderRenderItems blank Nothing renderClassDefinition renderUnionDefinition
+    renderRenderItems blank Nothing renderClassDefinition (Just renderUnionDefinition)
 
 renderUnionWithTypeRenderer :: (Boolean -> IRType -> Doc String) -> IRUnionRep -> Doc String
 renderUnionWithTypeRenderer typeRenderer ur =
