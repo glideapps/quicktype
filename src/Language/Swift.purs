@@ -84,7 +84,7 @@ swiftDoc = do
     line "import Foundation"
     blank
 
-    renderRenderItems blank renderTopLevelAlias renderClassDefinition renderUnionDefinition
+    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition renderUnionDefinition
 
     blank
     line $ "// Serialization extensions"
