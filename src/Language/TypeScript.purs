@@ -163,8 +163,8 @@ typeScriptDoc = do
         line $ "//   let value: " <> topFull  <> " = Convert." <> deserializer <> "(json);"
     line "//"
     blank
-    forEachClass_ renderInterface
-
+    renderRenderItems blank Nothing renderInterface Nothing
+    blank
     line "//"
     line "// The Convert module parses JSON and asserts types"
     line "//"
@@ -188,7 +188,6 @@ renderInterface className properties = do
             rendered <- renderType ptype
             line $ pname <> ":" <> Str.times " " indent <> rendered <> ";"
     line "}"
-    blank
 
 -- If this is a nullable, add a '?'
 markNullable :: String -> IRType -> String

@@ -14,7 +14,6 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
-import Data.Set as S
 import Data.String.Util (camelCase, capitalize, decapitalize, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..), fst)
 import Utils (forEnumerated_, removeElement, sortByKey, sortByKeyM, mapM)
@@ -140,38 +139,11 @@ import Json.Encode as Jenc
 import Array exposing (Array, map)
 import Dict exposing (Dict, map, toList)
 """
-    topLevelPlural <- getTopLevelPlural
-    line $ "-- top level type" <> topLevelPlural
-    forEachTopLevel_ \topLevelName topLevel -> do
-        let topLevelDecoder = decoderNameFromTypeName topLevelName
-        let topLevelEncoder = encoderNameFromTypeName topLevelName
-        blank
-        { rendered: topLevelRendered } <- typeStringForType topLevel
-        line $ "type alias " <> topLevelName <> " = " <> topLevelRendered
-        blank
-        { rendered: rootDecoder } <- decoderNameForType topLevel
-        line $ topLevelDecoder <> " : Jdec.Decoder " <> topLevelName
-        line $ topLevelDecoder <> " = " <> rootDecoder
-        blank
-        { rendered: rootEncoder } <- encoderNameForType topLevel
-        line $ topLevelEncoder <> " : " <> topLevelName <> " -> String"
-        line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
-    blank
-    line "-- JSON types"
-    forEachClass_ \className properties -> do
-        blank
-        typeRenderer renderTypeDefinition className properties
-    forEachUnion_ \unionName unionTypes -> do
-        blank
-        renderUnionDefinition unionName unionTypes
+    renderRenderItems blank (Just renderTopLevelDefinition) (typeRenderer renderTypeDefinition) (Just renderUnionDefinition)
     blank
     line "-- decoders and encoders"
-    forEachClass_ \className properties -> do
-        blank
-        typeRenderer renderTypeFunctions className properties
-    forEachUnion_ \unionName unionTypes -> do
-        blank
-        renderUnionFunctions unionName unionTypes
+    blank
+    renderRenderItems blank (Just renderTopLevelFunctions) (typeRenderer renderTypeFunctions) (Just renderUnionFunctions)
     blank
     line """--- encoder helpers
 
@@ -188,6 +160,23 @@ makeNullableEncoder f m =
     case m of
     Just x -> f x
     Nothing -> Jenc.null"""
+
+renderTopLevelDefinition :: String -> IRType -> Doc Unit
+renderTopLevelDefinition topLevelName topLevel = do
+    { rendered: topLevelRendered } <- typeStringForType topLevel
+    line $ "type alias " <> topLevelName <> " = " <> topLevelRendered
+
+renderTopLevelFunctions :: String -> IRType -> Doc Unit
+renderTopLevelFunctions topLevelName topLevel = do
+    let topLevelDecoder = decoderNameFromTypeName topLevelName
+    let topLevelEncoder = encoderNameFromTypeName topLevelName
+    { rendered: rootDecoder } <- decoderNameForType topLevel
+    line $ topLevelDecoder <> " : Jdec.Decoder " <> topLevelName
+    line $ topLevelDecoder <> " = " <> rootDecoder
+    blank
+    { rendered: rootEncoder } <- encoderNameForType topLevel
+    line $ topLevelEncoder <> " : " <> topLevelName <> " -> String"
+    line $ topLevelEncoder <> " r = Jenc.encode 0 (" <> rootEncoder <> " r)"
 
 singleWord :: String -> Doc { rendered :: String, multiWord :: Boolean }
 singleWord w = pure { rendered: w, multiWord: false }

@@ -82,19 +82,9 @@ swiftDoc = do
         line $ "//   let " <> decapitalize topLevelName <> " = " <> topLevelName <> "(fromString: jsonString)!"
     blank
     line "import Foundation"
+    blank
 
-    forEachTopLevel_ \topLevelName topLevelType -> do
-        blank
-        top <- renderType topLevelType
-        line $ "typealias "<> topLevelName <> " = " <> top
-   
-    forEachClass_ \className properties -> do
-        blank
-        renderClassDefinition className properties
-
-    forEachUnion_ \unionName unionTypes -> do
-        blank
-        renderUnionDefinition unionName unionTypes
+    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition (Just renderUnionDefinition)
 
     blank
     line $ "// Serialization extensions"
@@ -289,6 +279,11 @@ convertToAny IRNull var =
     pure $ "NSNull() as Any"
 convertToAny _ var =
     pure $ var <> " as Any"
+
+renderTopLevelAlias :: String -> IRType -> Doc Unit
+renderTopLevelAlias topLevelName topLevelType = do
+    top <- renderType topLevelType
+    line $ "typealias "<> topLevelName <> " = " <> top
 
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do

@@ -37,6 +37,7 @@ module Doc
     , runDoc
     , runRenderer
     , getTypeNameForUnion
+    , renderRenderItems
     ) where
 
 import IR
@@ -51,12 +52,14 @@ import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromMaybe, maybe, isNothing)
+import Data.Sequence (Seq)
+import Data.Sequence as Sq
 import Data.Set (Set)
 import Data.Set as S
 import Data.String as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
-import Utils (sortByKeyM)
+import Utils (sortByKeyM, mapM)
 
 type Renderer =
     { name :: String
@@ -88,7 +91,7 @@ type DocEnv =
     , classNames :: Map Int String
     , unionNames :: Map IRUnionRep String
     , topLevelNames :: Map String String
-    , unions :: Array IRUnionRep -- FIXME: we do we even keep this?
+    , unionSet :: Set IRUnionRep
     }
 
 newtype Doc a = Doc (RWS DocEnv String DocState a)
@@ -109,18 +112,18 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) =
         { names: topLevelNames, forbidden: forbiddenAfterTopLevels } = transformNames t.topLevelName t.nextName forbiddenFromStart topLevelTuples
         classes = classesInGraph graph
         { names: classNames, forbidden: forbiddenAfterClasses } = transformNames t.nameForClass t.nextName forbiddenAfterTopLevels classes
-        { unions, unionNames } = doUnions classNames forbiddenAfterClasses
+        { unionSet, unionNames } = doUnions classNames forbiddenAfterClasses
     in
-        evalRWS w { graph, classNames, unionNames, topLevelNames, unions } { indent: 0 } # snd
+        evalRWS w { graph, classNames, unionNames, topLevelNames, unionSet } { indent: 0 } # snd
     where
-        doUnions :: Map Int String -> Set String -> { unions :: Array IRUnionRep, unionNames :: Map IRUnionRep String }
+        doUnions :: Map Int String -> Set String -> { unionSet :: Set IRUnionRep, unionNames :: Map IRUnionRep String }
         doUnions classNames forbidden = case t.unions of
-            Nothing -> { unions: [], unionNames: M.empty }
+            Nothing -> { unionSet: S.empty, unionNames: M.empty }
             Just { predicate, properName, nameFromTypes } ->
-                let unions = A.fromFoldable $ filterTypes (unionPredicate predicate) graph
-                    unionNames = (transformNames (unionNamer nameFromTypes properName classNames) t.nextName forbidden $ L.fromFoldable $ map (\s -> Tuple s s) unions).names
+                let unionSet = filterTypes (unionPredicate predicate) graph
+                    unionNames = (transformNames (unionNamer nameFromTypes properName classNames) t.nextName forbidden $ map (\s -> Tuple s s) $ L.fromFoldable unionSet).names
                 in
-                    { unions, unionNames }
+                    { unionSet, unionNames }
 
         unionPredicate :: (IRUnionRep -> Boolean) -> IRType -> Maybe IRUnionRep
         unionPredicate p (IRUnion ur) = if p ur then Just ur else Nothing
@@ -239,6 +242,9 @@ getUnions = do
 getUnionNames :: Doc (Map IRUnionRep String)
 getUnionNames = Doc (asks _.unionNames)
 
+getUnionSet :: Doc (Set IRUnionRep)
+getUnionSet = Doc (asks _.unionSet)
+
 getTopLevelNames :: Doc (Map String String)
 getTopLevelNames = Doc (asks _.topLevelNames)
 
@@ -271,27 +277,43 @@ lookupTopLevelName n = do
     topLevelNames <- getTopLevelNames
     pure $ lookupName n topLevelNames
 
-forEachTopLevel_ :: (String -> IRType -> Doc Unit) -> Doc Unit
+type TopLevelIterator = String -> IRType -> Doc Unit
+type ClassIterator = String -> Map String IRType -> Doc Unit
+type UnionIterator = String -> Set IRType -> Doc Unit
+
+callTopLevelIterator :: TopLevelIterator -> String -> IRType -> Doc Unit
+callTopLevelIterator f topLevelNameGiven topLevelType = do
+    topLevelName <- lookupTopLevelName topLevelNameGiven
+    f topLevelName topLevelType
+
+forEachTopLevel_ :: TopLevelIterator -> Doc Unit
 forEachTopLevel_ f = do
     topLevels <- getTopLevels
-    for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) -> do
-        topLevelName <- lookupTopLevelName topLevelNameGiven
-        f topLevelName topLevelType
+    for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) ->
+        callTopLevelIterator f topLevelNameGiven topLevelType
 
-forEachClass_ :: (String -> Map String IRType -> Doc Unit) -> Doc Unit
+callClassIterator :: ClassIterator -> Int -> IRClassData -> Doc Unit
+callClassIterator f i (IRClassData { properties }) = do
+    className <- lookupClassName i
+    f className properties
+
+forEachClass_ :: ClassIterator -> Doc Unit
 forEachClass_ f = do
     classes <- getClasses
-    for_ classes \(Tuple i (IRClassData { properties })) -> do
-        className <- lookupClassName i
-        f className properties
+    for_ classes \(Tuple i cd) ->
+        callClassIterator f i cd
 
-forEachUnion_ :: (String -> Set IRType -> Doc Unit) -> Doc Unit
+callUnionIterator :: UnionIterator -> IRUnionRep -> Doc Unit
+callUnionIterator f ur = do
+    let allTypes = unionToSet ur
+    unionName <- lookupUnionName ur
+    f unionName allTypes
+
+forEachUnion_ :: UnionIterator -> Doc Unit
 forEachUnion_ f = do
     unions <- getUnions
-    for_ unions \ur -> do
-        let allTypes = unionToSet ur
-        unionName <- lookupUnionName ur
-        f unionName allTypes
+    for_ unions \ur ->
+        callUnionIterator f ur
 
 getTopLevelPlural :: Doc String
 getTopLevelPlural = getForSingleOrMultipleTopLevels "" "s"
@@ -349,3 +371,106 @@ prefixSuffixFolder { p, s } x =
         newP = commonPrefix p a
         newS = commonPrefix s (A.reverse a)
     in { p: newP, s: newS }
+
+data RenderItem
+    = RenderTopLevel String IRType
+    | RenderClass Int IRClassData
+    | RenderUnion IRUnionRep
+
+derive instance eqRenderItem :: Eq RenderItem
+derive instance ordRenderItem :: Ord RenderItem
+
+sortRenderItems :: Array RenderItem -> Doc (Array RenderItem)
+sortRenderItems startItems = do
+    reversedSorted <- sortStep (Sq.fromFoldable startItems) L.Nil (S.fromFoldable startItems)
+    pure $ A.reverse $ A.fromFoldable reversedSorted
+    where
+        expandUnion :: IRUnionRep -> Doc (List RenderItem)
+        expandUnion ur = do
+            -- `unionToSet` gives us the same order we use in `callUnionIterator`.
+            -- That's not always the same property language backends use, however.
+            mapped <- mapM expandType $ L.fromFoldable $ unionToSet ur
+            pure $ L.concat mapped
+
+        expandType :: IRType -> Doc (List RenderItem)
+        expandType (IRClass i) = do
+            cd <- getClass i
+            pure $ L.singleton $ RenderClass i cd
+        expandType (IRUnion ur) = do
+            unionSet <- getUnionSet
+            if S.member ur unionSet
+                then
+                    pure $ L.singleton $ RenderUnion ur
+                else
+                    expandUnion ur
+
+        expandType (IRArray a) = expandType a
+        expandType (IRMap m) = expandType m
+        expandType _ = pure L.Nil
+
+        expand :: RenderItem -> Doc (List RenderItem)
+        expand (RenderTopLevel _ t) =
+            expandType t
+        expand (RenderClass _ (IRClassData { properties })) = do
+            -- We're using `toUnfoldable` instead of `values` because
+            -- that's the same order we iterate over in `forEachProperty_`.
+            -- It happens to be alphabetical, but we shouldn't rely on
+            -- that.
+            mapped <- mapM expandType $ map snd $ M.toUnfoldable properties
+            pure $ L.concat mapped
+        expand (RenderUnion ur) =
+            expandUnion ur
+
+        filterItems :: Set RenderItem -> List RenderItem -> Seq RenderItem -> { newItems :: Seq RenderItem, newExpandedSet :: Set RenderItem }
+        filterItems set L.Nil filtered =
+            { newItems: filtered, newExpandedSet: set }
+        filterItems set (item : otherItems) filtered =
+            if S.member item set then
+                filterItems set otherItems filtered
+            else
+                filterItems (S.insert item set) otherItems (Sq.snoc filtered item)
+
+        sortStep :: Seq RenderItem -> List RenderItem -> Set RenderItem -> Doc (List RenderItem)
+        sortStep queue soFar expandedSet =
+            case Sq.uncons queue of
+            Nothing ->
+                pure $ soFar
+            Just (Tuple item queueRest) -> do
+                expandedItems <- expand item
+                let { newItems, newExpandedSet } = filterItems expandedSet expandedItems Sq.empty
+                let newSoFar = item : soFar
+                let newQueue = Sq.append newItems queueRest
+                sortStep newQueue newSoFar newExpandedSet
+
+getRenderItems :: Doc (Array RenderItem)
+getRenderItems = do
+    topLevels <- map (\(Tuple n t) -> RenderTopLevel n t) <$> M.toUnfoldable <$> getTopLevels
+    sortRenderItems topLevels
+
+renderRenderItems :: Doc Unit -> Maybe TopLevelIterator -> ClassIterator -> Maybe UnionIterator -> Doc Unit
+renderRenderItems inBetweener topLevelRenderer classRenderer unionRenderer = do
+    renderItems <- L.fromFoldable <$> getRenderItems
+    renderLoop false renderItems
+    where
+        renderLoop :: Boolean -> List RenderItem -> Doc Unit
+        renderLoop _ L.Nil = pure unit
+        renderLoop needInBetween (item : rest) =
+            case item of
+                RenderTopLevel n t ->
+                    case topLevelRenderer of
+                    Nothing -> renderLoop needInBetween rest
+                    Just f -> do
+                        when needInBetween inBetweener
+                        callTopLevelIterator f n t
+                        renderLoop true rest
+                RenderClass i cd -> do
+                    when needInBetween inBetweener
+                    callClassIterator classRenderer i cd
+                    renderLoop true rest
+                RenderUnion ur ->
+                    case unionRenderer of
+                    Nothing -> renderLoop needInBetween rest
+                    Just f -> do
+                        when needInBetween inBetweener
+                        callUnionIterator f ur
+                        renderLoop true rest
