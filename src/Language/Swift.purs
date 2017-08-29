@@ -240,8 +240,7 @@ convertAnyFunc :: IRType -> Doc String
 convertAnyFunc = case _ of
     IRClass i -> do
         name <- lookupClassName i
-        -- TODO make this look less alien
-        pure $ "{ " <> name <> "(fromAny: $0) }"
+        pure $ name <> ".init(fromAny:)"
     IRUnion ur ->
         case nullableFromSet $ unionToSet ur of
         Just t -> do
