@@ -139,11 +139,11 @@ import Json.Encode as Jenc
 import Array exposing (Array, map)
 import Dict exposing (Dict, map, toList)
 """
-    renderRenderItems blank (Just renderTopLevelDefinition) (typeRenderer renderTypeDefinition) renderUnionDefinition
+    renderRenderItems blank (Just renderTopLevelDefinition) (typeRenderer renderTypeDefinition) (Just renderUnionDefinition)
     blank
     line "-- decoders and encoders"
     blank
-    renderRenderItems blank (Just renderTopLevelFunctions) (typeRenderer renderTypeFunctions) renderUnionFunctions
+    renderRenderItems blank (Just renderTopLevelFunctions) (typeRenderer renderTypeFunctions) (Just renderUnionFunctions)
     blank
     line """--- encoder helpers
 

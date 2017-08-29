@@ -120,7 +120,7 @@ using System.Collections.Generic;
 
 using Newtonsoft.Json;
 """
-        renderRenderItems blank Nothing renderCSharpClass renderCSharpUnion
+        renderRenderItems blank Nothing renderCSharpClass (Just renderCSharpUnion)
         blank
         renderJsonConverter
     line "}"
