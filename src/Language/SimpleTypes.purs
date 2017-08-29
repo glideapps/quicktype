@@ -110,8 +110,8 @@ propertyNameify = case _ of
     s | Str.contains (Str.Pattern " ") s -> "\"" <> s <> "\""
     s -> s
 
-pseudocodeDoc :: Doc Unit
-pseudocodeDoc = forEachClass_ \className properties -> do
+renderClass :: String -> Map String IRType -> Doc Unit
+renderClass className properties = do
     line $ "class " <> className <> " {"
     indent do
         let props = M.toUnfoldable properties :: Array _
@@ -122,4 +122,6 @@ pseudocodeDoc = forEachClass_ \className properties -> do
             rendered <- renderType ptype
             line $ pname <> ":" <> Str.times " " indent <> rendered
     line "}"
-    blank
+
+pseudocodeDoc :: Doc Unit
+pseudocodeDoc = renderRenderItems blank Nothing renderClass Nothing
