@@ -116,26 +116,9 @@ golangDoc = do
         line "import \"bytes\""
         line "import \"errors\""
     line "import \"encoding/json\""
-    forEachTopLevel_ \topLevelName topLevelType -> do
-        { rendered: renderedToplevel, comment: toplevelComment } <- renderTypeToGolang topLevelType
-        blank
-        line $ "type " <> topLevelName <> " " <> renderedToplevel <> (renderComment toplevelComment)
-        blank
-        line $ "func Unmarshal" <> topLevelName <> "(data []byte) (" <> topLevelName <> ", error) {"
-        line $ "    var r " <> topLevelName
-        line """    err := json.Unmarshal(data, &r)
-    return r, err
-}
-"""
-        line $ "func (r *" <> topLevelName <> ") Marshal() ([]byte, error) {"
-        indent do
-            line "return json.Marshal(r)"
-        line "}"
-    blank
-    forEachClass_ \className properties -> do
-        renderGolangType className properties
-        blank
+    renderRenderItems blank (Just renderTopLevel) renderGolangType renderGolangUnion
     unless (unions == L.Nil) do
+        blank
         line """func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, nullable bool) (bool, error) {
 	if pi != nil {
 		*pi = nil
@@ -243,9 +226,22 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
 	}
 	return nil, errors.New("Union must not be null")
 }"""
-    forEachUnion_ \unionName unionTypes -> do
-        blank
-        renderGolangUnion unionName unionTypes
+
+renderTopLevel :: String -> IRType -> Doc Unit
+renderTopLevel topLevelName topLevelType = do
+    { rendered: renderedToplevel, comment: toplevelComment } <- renderTypeToGolang topLevelType
+    line $ "type " <> topLevelName <> " " <> renderedToplevel <> (renderComment toplevelComment)
+    blank
+    line $ "func Unmarshal" <> topLevelName <> "(data []byte) (" <> topLevelName <> ", error) {"
+    line $ "    var r " <> topLevelName
+    line """    err := json.Unmarshal(data, &r)
+    return r, err
+}
+"""
+    line $ "func (r *" <> topLevelName <> ") Marshal() ([]byte, error) {"
+    indent do
+        line "return json.Marshal(r)"
+    line "}"
 
 pad :: Int -> String -> String
 pad n s = s <> Str.fromCharArray (A.replicate (n - (Str.length s)) ' ')
