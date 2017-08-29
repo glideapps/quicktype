@@ -37,7 +37,6 @@ forbiddenNames =
     , "null"
     ]
 
-
 renderer :: Renderer
 renderer =
     { name: "Java"
@@ -87,12 +86,8 @@ javaNameStyle upper =
 javaDoc :: Doc Unit
 javaDoc = do
     renderConverter
-    forEachClass_ \className properties -> do
-        blank
-        renderClassDefinition className properties
-    forEachUnion_ \unionName unionTypes -> do
-        blank
-        renderUnionDefinition unionName unionTypes
+    blank
+    renderRenderItems blank Nothing renderClassDefinition (Just renderUnionDefinition)
 
 renderUnionWithTypeRenderer :: (Boolean -> IRType -> Doc String) -> IRUnionRep -> Doc String
 renderUnionWithTypeRenderer typeRenderer ur =
