@@ -92,8 +92,11 @@ renderTypeToCSharp = case _ of
         pure $ "Dictionary<string, " <> rendered <> ">"
     IRUnion ur -> renderUnionToCSharp ur
 
+legalize :: String -> String
+legalize = legalizeCharacters isPartCharacter
+
 csNameStyle :: String -> String
-csNameStyle = legalizeCharacters isPartCharacter >>> camelCase >>> startWithLetter isStartCharacter true
+csNameStyle = legalize >>> camelCase >>> startWithLetter isStartCharacter true
 
 getDecoderHelperPrefix :: String -> Doc String
 getDecoderHelperPrefix topLevelName = getForSingleOrMultipleTopLevels "" topLevelName

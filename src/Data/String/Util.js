@@ -13,28 +13,22 @@ exports.isInt = function (s) {
     return /^\d+$/.test(s);
 };
 
-var charStringMap = [];
-var charNoEscapeMap = [];
+exports.stringConcatMap = function stringConcatMap(mapper) {
+    var charStringMap = [];
+    var charNoEscapeMap = [];
 
-for (var i = 0; i < 128; i++) {
-    var str = undefined;
-    var noEscape = 0;
-    if (i == "\\".charCodeAt(0) || i == "\"".charCodeAt(0)) {
-        str = "\\" + String.fromCharCode(i);
-    } else if (i == "\n".charCodeAt(0)) {
-        str = "\\n";
-    } else if (i == "\t".charCodeAt(0)) {
-        str = "\\t";
-    } else if (i >= 32) {
-        str = true;
-        noEscape = 1;
+    for (var i = 0; i < 128; i++) {
+        var noEscape = 0;
+        var input = String.fromCharCode(i);
+        var result = mapper(input);
+        if (result === input) {
+            noEscape = 1;
+        }
+        charStringMap.push(result);
+        charNoEscapeMap.push(noEscape);
     }
-    charStringMap.push(str);
-    charNoEscapeMap.push(noEscape);
-}
-
-exports.internalStringEscape = function internalStringEscape(mapper) {
-    return function internalStringEscape_inner(s) {
+    
+    return function stringConcatMap_inner(s) {
         var cs = null;
         var start = 0;
         var i = 0;
@@ -63,5 +57,5 @@ exports.internalStringEscape = function internalStringEscape(mapper) {
         cs.push(s.substring(start, i));
     
         return cs.join("");    
-    }
+    };
 };
