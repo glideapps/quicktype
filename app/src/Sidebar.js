@@ -7,7 +7,7 @@ import TabBar from './TabBar';
 import Main from "../../output/Main";
 import Samples from "../../output/Samples";
 
-const about_url = "http://blog.quicktype.io/2017/previewing-quicktype";
+const about_url = "http://blog.quicktype.io/first-look/";
 
 export default class Sidebar extends Component {
   sendEvent = (name, value) => window.ga("send", "event", "Sidebar", name, value);
