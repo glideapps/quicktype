@@ -58,7 +58,18 @@ data Entry
 
 newtype IRGraph = IRGraph { classes :: Seq.Seq Entry, toplevels :: Map String IRType }
 
--- Explicitly given names always take precedence over inferred ones.
+-- | Names for types are given or inferred.  Given names come from
+-- | command line options and JSON Schema `title` properties.  Names
+-- | are inferred from the property names for objects.  Given names
+-- | always have priority over inferred names.
+-- |
+-- | `Named` is usually instantiated with a `Set String`, because
+-- | classes can have more than one name.  With inferred names this is
+-- | common, since we unify identical classes, and they might come from
+-- | properties with different names.  It's also possible with given names:
+-- | when the input is JSON Schema, one name for the top-level class could
+-- | be given on the command line, the other could come from the `title`
+-- | property in the schema.
 data Named a
     = Given a
     | Inferred a
@@ -88,9 +99,25 @@ instance functorNamed :: Functor Named where
     map f (Given x) = Given $ f x
     map f (Inferred x) = Inferred $ f x
 
+-- | Classes have names and properties.  The choice of putting the names
+-- | in the class data as opposed to keeping track of it separately is questionable,
+-- | since names are subject to change, but properties aren't.  Also, we
+-- | want the order of properties to be the same as the order in the original
+-- | input, so we will have to switch from using `Map` to something else.  An
+-- | order-preserving map would be nice.
 newtype IRClassData = IRClassData { names :: Named (Set String), properties :: Map String IRType }
 
-newtype IRUnionRep = IRUnionRep { names :: Named (Set String), primitives :: Int, arrayType :: Maybe IRType, classRef :: Maybe Int, mapType :: Maybe IRType }
+-- | Unions have names and a set of constituent types.  The set is implemented
+-- | in a specialized way to make union operations more efficient.
+-- |
+-- | `primitives` is a bit set, with constants for elements defined below.
+newtype IRUnionRep = IRUnionRep
+    { names :: Named (Set String)
+    , primitives :: Int
+    , arrayType :: Maybe IRType
+    , classRef :: Maybe Int
+    , mapType :: Maybe IRType
+    }
 
 irUnion_Nothing = 1
 irUnion_Null = 2
@@ -99,8 +126,14 @@ irUnion_Double = 8
 irUnion_Bool = 16
 irUnion_String = 32
 
+-- | The representation of types.
+-- |
+-- | `IRClass` is an integer indexing `IRGraph`'s `classes`.  This has some issues,
+-- | and in any case is an implementation detail that should be hidden from
+-- | higher-level users like the language renderers.
+-- |
+-- | `IRNothing` was a bad design choice and will go away.  See issue #56.
 data IRType
-    -- FIXME: IRNothing should never appear in proper types
     = IRNothing
     | IRNull
     | IRInteger
