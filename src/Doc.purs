@@ -19,6 +19,7 @@ module Doc
     , forEachTopLevel_
     , forEachClass_
     , forEachUnion_
+    , forEachProperty_
     , combineNames
     , NamingResult
     , transformNames
@@ -47,6 +48,7 @@ import Prelude
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
 import Data.Array as A
 import Data.Foldable (for_, any, intercalate)
+import Data.FoldableWithIndex (forWithIndex_)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
@@ -314,6 +316,15 @@ forEachUnion_ f = do
     unions <- getUnions
     for_ unions \ur ->
         callUnionIterator f ur
+
+forEachProperty_ :: Map String IRType -> Map String String -> (String -> IRType -> String -> Boolean -> Doc Unit) -> Doc Unit
+forEachProperty_ properties propertyNames f =
+    let propertyArray = M.toUnfoldable properties :: Array _
+        lastIndex = A.length propertyArray - 1
+    in
+        forWithIndex_ propertyArray \i (Tuple pname ptype) -> do
+            let fieldName = lookupName pname propertyNames
+            f pname ptype fieldName (i == lastIndex)
 
 getTopLevelPlural :: Doc String
 getTopLevelPlural = getForSingleOrMultipleTopLevels "" "s"
