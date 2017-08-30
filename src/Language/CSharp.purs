@@ -202,12 +202,11 @@ tokenCase :: String -> Doc Unit
 tokenCase tokenType =
     line $ "case JsonToken." <> tokenType <> ":"
 
-renderNullDeserializer :: Set IRType -> Doc Unit
-renderNullDeserializer types =
-    when (S.member IRNull types) do
-        tokenCase "Null"
-        indent do
-            line "break;"
+renderNullDeserializer :: Doc Unit
+renderNullDeserializer = do
+    tokenCase "Null"
+    indent do
+        line "break;"
 
 unionFieldName :: IRType -> Doc String
 unionFieldName t = csNameStyle <$> getTypeNameForUnion t
@@ -251,8 +250,8 @@ renderGenericDeserializer predicate tokenType types =
 
 renderCSharpUnion :: String -> IRUnionRep -> Doc Unit
 renderCSharpUnion name unionRep = do
-    let allTypes = unionToSet unionRep
-    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
+    let nonNullTypes = unionToSet nonNullUnion
     line $ "public struct " <> name
     line "{"
     indent do
@@ -271,14 +270,14 @@ renderCSharpUnion name unionRep = do
             line "switch (reader.TokenType)"
             line "{"
             indent do
-                renderNullDeserializer allTypes
-                renderPrimitiveDeserializer (L.singleton "Integer") IRInteger allTypes
-                renderDoubleDeserializer allTypes
-                renderPrimitiveDeserializer (L.singleton "Boolean") IRBool allTypes
-                renderPrimitiveDeserializer ("String" : "Date" : L.Nil) IRString allTypes
-                renderGenericDeserializer isArray "StartArray" allTypes
-                renderGenericDeserializer isClass "StartObject" allTypes
-                renderGenericDeserializer isMap "StartObject" allTypes
+                when hasNull renderNullDeserializer
+                renderPrimitiveDeserializer (L.singleton "Integer") IRInteger nonNullTypes
+                renderDoubleDeserializer nonNullTypes
+                renderPrimitiveDeserializer (L.singleton "Boolean") IRBool nonNullTypes
+                renderPrimitiveDeserializer ("String" : "Date" : L.Nil) IRString nonNullTypes
+                renderGenericDeserializer isArray "StartArray" nonNullTypes
+                renderGenericDeserializer isClass "StartObject" nonNullTypes
+                renderGenericDeserializer isMap "StartObject" nonNullTypes
                 line $ "default: throw new Exception(\"Cannot convert " <> name <> "\");"
             line "}"
         line "}"
@@ -293,10 +292,11 @@ renderCSharpUnion name unionRep = do
                     line $ "serializer.Serialize(writer, " <> fieldName <> ");"
                     line "return;"
                 line "}"
-            when (isJust emptyOrNull) do
-                line "writer.WriteNull();"
-            when (isNothing emptyOrNull) do
-                line "throw new Exception(\"Union must not be null\");"
+            if hasNull
+                then
+                    line "writer.WriteNull();"
+                else
+                    line "throw new Exception(\"Union must not be null\");"
         line "}"
     line "}"
 

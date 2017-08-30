@@ -280,8 +280,9 @@ compoundPredicates = [isArray, isClass, isMap]
 
 renderGolangUnion :: String -> IRUnionRep -> Doc Unit
 renderGolangUnion name unionRep = do
-    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
-    let isNullableString = if isJust emptyOrNull then "true" else "false"
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
+    let nonNullTypes = unionToSet nonNullUnion
+    let isNullableString = if hasNull then "true" else "false"
     fields <- L.fromFoldable nonNullTypes # sortByKeyM unionFieldName
     columns <- fields # mapM \t -> do
         { rendered, comment } <- renderNullableToGolang t

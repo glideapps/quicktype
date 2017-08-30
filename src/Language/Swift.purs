@@ -410,38 +410,35 @@ makePropertyNames properties suffix forbidden =
 
 renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
 renderUnionDefinition unionName unionRep = do
-    let unionTypes = unionToSet unionRep
-    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
+    let nonNullTypes = unionToSet nonNullUnion
     line $ "enum " <> unionName <> " {"
     indent do
         for_ nonNullTypes \typ -> do
             name <- caseName typ
             rendered <- renderType typ
             line $ "case " <> name <> "(" <> rendered <> ")"
-        case emptyOrNull of
-            Just t -> do
-                name <- caseName t
-                line $ "case " <> name                
-            Nothing -> pure unit
+        when hasNull do
+            name <- caseName IRNull
+            line $ "case " <> name
     line "}"
 
 renderUnionExtension :: String -> IRUnionRep -> Doc Unit
 renderUnionExtension unionName unionRep = do
     let unionTypes = unionToSet unionRep
-    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
+    let nonNullTypes = unionToSet nonNullUnion
     line $ "extension " <> unionName <> " {"
     indent do
         line $ "fileprivate static func fromJson(_ v: Any) -> " <> unionName <> "? {"
         indent do
-            case emptyOrNull of
-                Just t -> do
-                    name <- caseName t
-                    line "guard let v = removeNSNull(v)"
-                    line "else {"
-                    indent do
-                        line $ "return ." <> name
-                    line "}"
-                Nothing -> pure unit
+            when hasNull do
+                name <- caseName IRNull
+                line "guard let v = removeNSNull(v)"
+                line "else {"
+                indent do
+                    line $ "return ." <> name
+                line "}"
             when (S.member IRBool unionTypes) do
                 renderCase IRBool
             when (S.member IRInteger unionTypes) do

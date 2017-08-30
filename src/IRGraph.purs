@@ -31,6 +31,7 @@ module IRGraph
     , regatherClassNames
     , regatherUnionNames
     , filterTypes
+    , removeNullFromUnion
     , emptyUnion
     ) where
 
@@ -346,6 +347,13 @@ unionToSet (IRUnionRep { primitives, arrayType, classRef, mapType }) =
             case m of
             Just x -> c x : l
             Nothing -> l
+
+removeNullFromUnion :: IRUnionRep -> { hasNull :: Boolean, nonNullUnion :: IRUnionRep }
+removeNullFromUnion (IRUnionRep union@{ primitives }) =
+    if (Bits.and irUnion_Null primitives) == 0 then
+        { hasNull: false, nonNullUnion: IRUnionRep union }
+    else
+        { hasNull: true, nonNullUnion: IRUnionRep $ union { primitives = Bits.xor irUnion_Null primitives }}
 
 filterTypes :: forall a. Ord a => (IRType -> Maybe a) -> IRGraph -> Set a
 filterTypes predicate graph@(IRGraph { classes, toplevels }) =

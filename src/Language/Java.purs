@@ -257,12 +257,11 @@ tokenCase :: String -> Doc Unit
 tokenCase tokenType =
     line $ "case " <> tokenType <> ":"
 
-renderNullCase :: Set IRType -> Doc Unit
-renderNullCase types =
-    when (S.member IRNull types) do
-        tokenCase "VALUE_NULL"
-        indent do
-            line "break;"
+renderNullCase :: Doc Unit
+renderNullCase = do
+    tokenCase "VALUE_NULL"
+    indent do
+        line "break;"
 
 deserializeType :: IRType -> Doc Unit
 deserializeType t = do
@@ -299,8 +298,8 @@ renderGenericCase predicate tokenType types =
 
 renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
 renderUnionDefinition unionName unionRep = do
-    let unionTypes = unionToSet unionRep
-    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
+    let nonNullTypes = unionToSet nonNullUnion
     renderFileHeader unionName ["java.io.IOException", "java.util.Map", "com.fasterxml.jackson.core.*", "com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.databind.annotation.*"]
     line $ "@JsonDeserialize(using = " <> unionName <> ".Deserializer.class)"
     line $ "@JsonSerialize(using = " <> unionName <> ".Serializer.class)"
@@ -317,14 +316,14 @@ renderUnionDefinition unionName unionRep = do
             indent do
                 line $ unionName <> " value = new " <> unionName <> "();"
                 line "switch (jsonParser.getCurrentToken()) {"
-                renderNullCase unionTypes
-                renderPrimitiveCase ["VALUE_NUMBER_INT"] IRInteger unionTypes
-                renderDoubleCase unionTypes
-                renderPrimitiveCase ["VALUE_TRUE", "VALUE_FALSE"] IRBool unionTypes
-                renderPrimitiveCase ["VALUE_STRING"] IRString unionTypes
-                renderGenericCase isArray "START_ARRAY" unionTypes
-                renderGenericCase isClass "START_OBJECT" unionTypes
-                renderGenericCase isMap "START_OBJECT" unionTypes
+                when hasNull renderNullCase
+                renderPrimitiveCase ["VALUE_NUMBER_INT"] IRInteger nonNullTypes
+                renderDoubleCase nonNullTypes
+                renderPrimitiveCase ["VALUE_TRUE", "VALUE_FALSE"] IRBool nonNullTypes
+                renderPrimitiveCase ["VALUE_STRING"] IRString nonNullTypes
+                renderGenericCase isArray "START_ARRAY" nonNullTypes
+                renderGenericCase isClass "START_OBJECT" nonNullTypes
+                renderGenericCase isMap "START_OBJECT" nonNullTypes
                 line $ "default: throw new IOException(\"Cannot deserialize " <> unionName <> "\");"
                 line "}"
                 line "return value;"
@@ -344,10 +343,11 @@ renderUnionDefinition unionName unionRep = do
                         line $ "jsonGenerator.writeObject(obj." <> fieldName <> ");"
                         line "return;"
                     line "}"
-                when (isJust emptyOrNull) do
-                    line "jsonGenerator.writeNull();"
-                when (isNothing emptyOrNull) do
-                    line $ "throw new IOException(\"" <> unionName <> " must not be null\");"
+                if hasNull
+                    then
+                        line "jsonGenerator.writeNull();"
+                    else
+                        line $ "throw new IOException(\"" <> unionName <> " must not be null\");"
             line "}"
         line "}"
     line "}"
