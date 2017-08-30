@@ -270,18 +270,18 @@ deserializeType t = do
     line $ "value." <> fieldName <> " = jsonParser.readValueAs(" <> renderedType <> ".class);"
     line "break;"
 
-renderPrimitiveCase :: Array String -> IRType -> Set IRType -> Doc Unit
-renderPrimitiveCase tokenTypes t types =
-    when (S.member t types) do
+renderPrimitiveCase :: Array String -> IRType -> IRUnionRep -> Doc Unit
+renderPrimitiveCase tokenTypes t union =
+    when (isUnionMember t union) do
         for_ tokenTypes \tokenType ->
             tokenCase tokenType
         indent do
             deserializeType t
 
-renderDoubleCase :: Set IRType -> Doc Unit
-renderDoubleCase types =
-    when (S.member IRDouble types) do
-        unless (S.member IRInteger types) do
+renderDoubleCase :: IRUnionRep -> Doc Unit
+renderDoubleCase union =
+    when (isUnionMember IRDouble union) do
+        unless (isUnionMember IRInteger union) do
             tokenCase "VALUE_NUMBER_INT"
         tokenCase "VALUE_NUMBER_FLOAT"
         indent do
@@ -317,10 +317,10 @@ renderUnionDefinition unionName unionRep = do
                 line $ unionName <> " value = new " <> unionName <> "();"
                 line "switch (jsonParser.getCurrentToken()) {"
                 when hasNull renderNullCase
-                renderPrimitiveCase ["VALUE_NUMBER_INT"] IRInteger nonNullTypes
-                renderDoubleCase nonNullTypes
-                renderPrimitiveCase ["VALUE_TRUE", "VALUE_FALSE"] IRBool nonNullTypes
-                renderPrimitiveCase ["VALUE_STRING"] IRString nonNullTypes
+                renderPrimitiveCase ["VALUE_NUMBER_INT"] IRInteger nonNullUnion
+                renderDoubleCase nonNullUnion
+                renderPrimitiveCase ["VALUE_TRUE", "VALUE_FALSE"] IRBool nonNullUnion
+                renderPrimitiveCase ["VALUE_STRING"] IRString nonNullUnion
                 renderGenericCase isArray "START_ARRAY" nonNullTypes
                 renderGenericCase isClass "START_OBJECT" nonNullTypes
                 renderGenericCase isMap "START_OBJECT" nonNullTypes

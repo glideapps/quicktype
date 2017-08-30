@@ -424,7 +424,6 @@ renderUnionDefinition unionName unionRep = do
 
 renderUnionExtension :: String -> IRUnionRep -> Doc Unit
 renderUnionExtension unionName unionRep = do
-    let unionTypes = unionToSet unionRep
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
     let nonNullTypes = unionToSet nonNullUnion
     line $ "extension " <> unionName <> " {"
@@ -438,9 +437,9 @@ renderUnionExtension unionName unionRep = do
                 indent do
                     line $ "return ." <> name
                 line "}"
-            when (S.member IRBool unionTypes) do
+            when (isUnionMember IRBool nonNullUnion) do
                 renderCase IRBool
-            when (S.member IRInteger unionTypes) do
+            when (isUnionMember IRInteger nonNullUnion) do
                 renderCase IRInteger
             for_ (S.difference nonNullTypes $ S.fromFoldable [IRBool, IRInteger]) \typ -> do
                 renderCase typ

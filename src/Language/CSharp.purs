@@ -222,18 +222,18 @@ deserializeType t = do
     renderedType <- renderTypeToCSharp t
     deserialize fieldName renderedType
 
-renderPrimitiveDeserializer :: List String -> IRType -> Set IRType -> Doc Unit
-renderPrimitiveDeserializer tokenTypes t types =
-    when (S.member t types) do
+renderPrimitiveDeserializer :: List String -> IRType -> IRUnionRep -> Doc Unit
+renderPrimitiveDeserializer tokenTypes t union =
+    when (isUnionMember t union) do
         for_ tokenTypes \tokenType -> do
             tokenCase tokenType
         indent do
             deserializeType t
 
-renderDoubleDeserializer :: Set IRType -> Doc Unit
-renderDoubleDeserializer types =
-    when (S.member IRDouble types) do
-        unless (S.member IRInteger types) do
+renderDoubleDeserializer :: IRUnionRep -> Doc Unit
+renderDoubleDeserializer union =
+    when (isUnionMember IRDouble union) do
+        unless (isUnionMember IRInteger union) do
             tokenCase "Integer"
         tokenCase "Float"
         indent do
@@ -271,10 +271,10 @@ renderCSharpUnion name unionRep = do
             line "{"
             indent do
                 when hasNull renderNullDeserializer
-                renderPrimitiveDeserializer (L.singleton "Integer") IRInteger nonNullTypes
-                renderDoubleDeserializer nonNullTypes
-                renderPrimitiveDeserializer (L.singleton "Boolean") IRBool nonNullTypes
-                renderPrimitiveDeserializer ("String" : "Date" : L.Nil) IRString nonNullTypes
+                renderPrimitiveDeserializer (L.singleton "Integer") IRInteger nonNullUnion
+                renderDoubleDeserializer nonNullUnion
+                renderPrimitiveDeserializer (L.singleton "Boolean") IRBool nonNullUnion
+                renderPrimitiveDeserializer ("String" : "Date" : L.Nil) IRString nonNullUnion
                 renderGenericDeserializer isArray "StartArray" nonNullTypes
                 renderGenericDeserializer isClass "StartObject" nonNullTypes
                 renderGenericDeserializer isMap "StartObject" nonNullTypes

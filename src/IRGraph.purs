@@ -32,6 +32,7 @@ module IRGraph
     , filterTypes
     , removeNullFromUnion
     , nullableFromUnion
+    , isUnionMember
     , forUnion_
     , emptyUnion
     ) where
@@ -362,8 +363,7 @@ nullableFromUnion union =
 
 forUnion_ :: forall m. Monad m => IRUnionRep -> (IRType -> m Unit) -> m Unit
 forUnion_ (IRUnionRep { primitives, arrayType, classRef, mapType }) f = do
-    when (inPrimitives irUnion_Nothing) do
-        f IRNothing
+    when (inPrimitives irUnion_Nothing) do f IRNothing
     when (inPrimitives irUnion_Null) do f IRNull
     when (inPrimitives irUnion_Integer) do f IRInteger
     when (inPrimitives irUnion_Double) do f IRDouble
@@ -378,6 +378,22 @@ forUnion_ (IRUnionRep { primitives, arrayType, classRef, mapType }) f = do
     case mapType of
         Just m -> do f $ IRMap m
         Nothing -> pure unit
+    where
+        inPrimitives bit = (Bits.and bit primitives) /= 0
+
+isUnionMember :: IRType -> IRUnionRep -> Boolean
+isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =
+    case t of
+    IRNothing -> inPrimitives irUnion_Nothing
+    IRNull -> inPrimitives irUnion_Null
+    IRInteger -> inPrimitives irUnion_Integer
+    IRDouble -> inPrimitives irUnion_Double
+    IRBool -> inPrimitives irUnion_Bool
+    IRString -> inPrimitives irUnion_String
+    IRArray a -> maybe false (eq a) arrayType
+    IRClass i -> maybe false (eq i) classRef
+    IRMap m -> maybe false (eq m) mapType
+    IRUnion _ -> false
     where
         inPrimitives bit = (Bits.and bit primitives) /= 0
 
