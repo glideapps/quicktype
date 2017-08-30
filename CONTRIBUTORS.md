@@ -45,16 +45,3 @@ $ code . # open in VSCode
 ```
 
 Install the `purescript-ide` extension in VSCode, then use the command pallete to start the `psc-ide` server for code completion, etc.
-
-## Play
-
-```shell
-$ npm start
-```
-
-The react app will live-reload when you edit any source.
-
-## Deploy
-
-* Commit to master to deploy `quicktype.io`.
-* The `quicktype` CLI will also deploy to NPM if it has a newer version number.
