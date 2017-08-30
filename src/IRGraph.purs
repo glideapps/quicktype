@@ -13,7 +13,7 @@ module IRGraph
     , irUnion_Double
     , irUnion_Bool
     , irUnion_String
-    , unionToSet
+    , unionToList
     , Entry(..)
     , makeClass
     , emptyGraph
@@ -35,12 +35,18 @@ module IRGraph
     , isUnionMember
     , forUnion_
     , mapUnionM
+    , mapUnion
+    , unionHasArray
+    , unionHasClass
+    , unionHasMap
     , emptyUnion
     ) where
 
 import Prelude
 
+import Control.Comonad (extract)
 import Data.Foldable (all)
+import Data.Identity (Identity(..))
 import Data.Int.Bits as Bits
 import Data.List (List, (:))
 import Data.List as L
@@ -322,28 +328,6 @@ regatherUnionNames graph@(IRGraph { classes, toplevels }) =
                     IRUnion $ IRUnionRep { names: newNames, primitives, arrayType: newArrayType, classRef, mapType: newMapType }
             _ -> t
 
-unionToSet :: IRUnionRep -> Set IRType
-unionToSet (IRUnionRep { primitives, arrayType, classRef, mapType }) =
-    let types1 = addIfSet irUnion_Nothing IRNothing L.Nil
-        types2 = addIfSet irUnion_Null IRNull types1
-        types3 = addIfSet irUnion_Integer IRInteger types2
-        types4 = addIfSet irUnion_Double IRDouble types3
-        types5 = addIfSet irUnion_Bool IRBool types4
-        types6 = addIfSet irUnion_String IRString types5
-        types7 = addIfJust IRArray arrayType types6
-        types8 = addIfJust IRClass classRef types7
-        types9 = addIfJust IRMap mapType types8
-    in
-        S.fromFoldable types9
-    where
-        addIfSet bit t l =
-            if (Bits.and bit primitives) == 0 then l else t : l
-        addIfJust :: forall a. (a -> IRType) -> Maybe a -> List IRType -> List IRType
-        addIfJust c m l =
-            case m of
-            Just x -> c x : l
-            Nothing -> l
-
 removeNullFromUnion :: IRUnionRep -> { hasNull :: Boolean, nonNullUnion :: IRUnionRep }
 removeNullFromUnion union@(IRUnionRep ur@{ primitives }) =
     if (Bits.and irUnion_Null primitives) == 0 then
@@ -351,12 +335,21 @@ removeNullFromUnion union@(IRUnionRep ur@{ primitives }) =
     else
         { hasNull: true, nonNullUnion: IRUnionRep $ ur { primitives = Bits.xor irUnion_Null primitives }}
 
+unionHasArray :: IRUnionRep -> Maybe IRType
+unionHasArray (IRUnionRep { arrayType }) = map IRArray arrayType
+
+unionHasClass :: IRUnionRep -> Maybe IRType
+unionHasClass (IRUnionRep { classRef }) = map IRClass classRef
+
+unionHasMap :: IRUnionRep -> Maybe IRType
+unionHasMap (IRUnionRep { mapType }) = map IRMap mapType
+
 nullableFromUnion :: IRUnionRep -> Maybe IRType
 nullableFromUnion union =
     let { hasNull, nonNullUnion } = removeNullFromUnion union
     in
         if hasNull then
-            case L.fromFoldable $ unionToSet nonNullUnion of
+            case unionToList nonNullUnion of
             x : L.Nil -> Just x
             _ -> Nothing
         else
@@ -410,6 +403,12 @@ mapUnionM f (IRUnionRep { primitives, arrayType, classRef, mapType }) = do
             result <- f $ convert x
             pure $ result : l
 
+mapUnion :: forall a. (IRType -> a) -> IRUnionRep -> List a
+mapUnion f = extract <<< mapUnionM (Identity <<< f)
+
+unionToList :: IRUnionRep -> List IRType
+unionToList = mapUnion id
+
 isUnionMember :: IRType -> IRUnionRep -> Boolean
 isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =
     case t of
@@ -441,7 +440,7 @@ filterTypes predicate graph@(IRGraph { classes, toplevels }) =
             IRArray t -> filterType t
             IRMap t -> filterType t
             IRUnion r ->
-                S.unions $ S.map filterType $ unionToSet r
+                S.unions $ mapUnion filterType r
             _ -> S.empty
         filterType :: IRType -> Set a
         filterType t =

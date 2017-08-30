@@ -7,16 +7,13 @@ import IRGraph
 import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory)
-import Data.Foldable (find, for_, intercalate)
+import Data.Foldable (for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
 import Data.Map (Map)
-import Data.Maybe (Maybe(..), isJust, isNothing)
-import Data.Set (Set)
-import Data.Set as S
+import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
-import Utils (removeElement)
 
 forbiddenNames :: Array String
 forbiddenNames = ["Convert", "JsonConverter", "Type"]
@@ -239,9 +236,9 @@ renderDoubleDeserializer union =
         indent do
             deserializeType IRDouble
 
-renderGenericDeserializer :: (IRType -> Boolean) -> String -> Set IRType -> Doc Unit
-renderGenericDeserializer predicate tokenType types =
-    case find predicate types of
+renderGenericDeserializer :: (IRUnionRep -> Maybe IRType) -> String -> IRUnionRep -> Doc Unit
+renderGenericDeserializer predicate tokenType union =
+    case predicate union of
     Nothing -> pure unit
     Just t -> do
         tokenCase tokenType
@@ -251,7 +248,6 @@ renderGenericDeserializer predicate tokenType types =
 renderCSharpUnion :: String -> IRUnionRep -> Doc Unit
 renderCSharpUnion name unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    let nonNullTypes = unionToSet nonNullUnion
     line $ "public struct " <> name
     line "{"
     indent do
@@ -275,9 +271,9 @@ renderCSharpUnion name unionRep = do
                 renderDoubleDeserializer nonNullUnion
                 renderPrimitiveDeserializer (L.singleton "Boolean") IRBool nonNullUnion
                 renderPrimitiveDeserializer ("String" : "Date" : L.Nil) IRString nonNullUnion
-                renderGenericDeserializer isArray "StartArray" nonNullTypes
-                renderGenericDeserializer isClass "StartObject" nonNullTypes
-                renderGenericDeserializer isMap "StartObject" nonNullTypes
+                renderGenericDeserializer unionHasArray "StartArray" nonNullUnion
+                renderGenericDeserializer unionHasClass "StartObject" nonNullUnion
+                renderGenericDeserializer unionHasMap "StartObject" nonNullUnion
                 line $ "default: throw new Exception(\"Cannot convert " <> name <> "\");"
             line "}"
         line "}"

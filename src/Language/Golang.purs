@@ -12,12 +12,11 @@ import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
 import Data.Map (Map)
-import Data.Maybe (Maybe(..), isJust, maybe)
-import Data.Set (Set)
+import Data.Maybe (Maybe(..), maybe)
 import Data.String as Str
 import Data.String.Util (camelCase, stringEscape, legalizeCharacters, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, startWithLetter)
 import Data.Tuple (Tuple(..), fst)
-import Utils (mapM, removeElement, sortByKeyM, sortByKey)
+import Utils (mapM, sortByKeyM, sortByKey)
 
 renderer :: Renderer
 renderer =
@@ -275,15 +274,14 @@ renderGolangType className properties = do
 unionFieldName :: IRType -> Doc String
 unionFieldName t = goNameStyle <$> getTypeNameForUnion t
 
-compoundPredicates :: Array (IRType -> Boolean)
-compoundPredicates = [isArray, isClass, isMap]
+compoundPredicates :: Array (IRUnionRep -> Maybe IRType)
+compoundPredicates = [unionHasArray, unionHasClass, unionHasMap]
 
 renderGolangUnion :: String -> IRUnionRep -> Doc Unit
 renderGolangUnion name unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    let nonNullTypes = unionToSet nonNullUnion
     let isNullableString = if hasNull then "true" else "false"
-    fields <- L.fromFoldable nonNullTypes # sortByKeyM unionFieldName
+    fields <- unionToList nonNullUnion # sortByKeyM unionFieldName
     columns <- fields # mapM \t -> do
         { rendered, comment } <- renderNullableToGolang t
         field <- unionFieldName t
@@ -315,11 +313,9 @@ renderGolangUnion name unionRep = do
         line $ "return marshalUnion(" <> args <> ", " <> isNullableString <> ")"
     line "}"
     where
-        allTypes = unionToSet unionRep
-
         ifClass :: (String -> String -> Doc Unit) -> Doc Unit
         ifClass f =
-            let { element } = removeElement isClass allTypes
+            let element = unionHasClass unionRep
             in
                 case element of
                 Just t -> do
@@ -328,34 +324,33 @@ renderGolangUnion name unionRep = do
                     f name rendered
                 Nothing -> pure unit
         maybeAssignNil p =
-            let { element } = removeElement p allTypes
-            in
-                case element of
-                Just t -> do
-                    name <- unionFieldName t
-                    line $ "x." <> name <> " = nil"
-                Nothing -> pure unit
-        makeArgs :: (IRType -> Doc String) -> ((IRType -> Boolean) -> Doc String) -> Doc String
+            case p unionRep of
+            Just t -> do
+                name <- unionFieldName t
+                line $ "x." <> name <> " = nil"
+            Nothing -> pure unit
+        predicateForType :: IRType -> IRUnionRep -> Maybe IRType
+        predicateForType t ur =
+            if isUnionMember t ur then Just t else Nothing
+        makeArgs :: ((IRUnionRep -> Maybe IRType) -> Doc String) -> ((IRUnionRep -> Maybe IRType) -> Doc String) -> Doc String
         makeArgs primitive compound = do
-            primitiveArgs <- mapM primitive $ L.fromFoldable [IRInteger, IRDouble, IRBool, IRString]
-            compoundArgs <- mapM compound $ L.fromFoldable compoundPredicates
-            pure $ intercalate ", " $ A.concat [A.fromFoldable primitiveArgs, A.fromFoldable compoundArgs]
-        memberArg :: String -> (IRType -> String -> String) -> (IRType -> Boolean) -> Doc String
+            primitiveArgs <- mapM primitive $ map predicateForType [IRInteger, IRDouble, IRBool, IRString]
+            compoundArgs <- mapM compound compoundPredicates
+            pure $ intercalate ", " $ A.concat [primitiveArgs, compoundArgs]
+        memberArg :: String -> (IRType -> String -> String) -> (IRUnionRep -> Maybe IRType) -> Doc String
         memberArg notPresentValue renderPresent p =
-            let { element } = removeElement p allTypes
-            in
-                case element of
-                Just t -> do
-                    name <- unionFieldName t
-                    pure $ renderPresent t name
-                Nothing -> pure notPresentValue
-        primitiveUnmarshalArg t =
-            memberArg "nil" (\_ n -> "&x." <> n) (eq t)
+            case p unionRep of
+            Just t -> do
+                name <- unionFieldName t
+                pure $ renderPresent t name
+            Nothing -> pure notPresentValue
+        primitiveUnmarshalArg p =
+            memberArg "nil" (\_ n -> "&x." <> n) p
         compoundUnmarshalArg p =
             memberArg "false, nil" (\t n -> if isClass t then "true, &c" else "true, &x." <> n) p
-        primitiveMarshalArg :: IRType -> Doc String
-        primitiveMarshalArg t =
-            memberArg "nil" (\_ n -> "x." <> n) (eq t)
-        compoundMarshalArg :: (IRType -> Boolean) -> Doc String
+        primitiveMarshalArg :: (IRUnionRep -> Maybe IRType) -> Doc String
+        primitiveMarshalArg p =
+            memberArg "nil" (\_ n -> "x." <> n) p
+        compoundMarshalArg :: (IRUnionRep -> Maybe IRType) -> Doc String
         compoundMarshalArg p =
             memberArg "false, nil" (\t n -> "x." <> n <> " != nil, x." <> n) p

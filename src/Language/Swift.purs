@@ -9,15 +9,12 @@ import Prelude
 import Data.Array as A
 import Data.Char.Unicode (isAlphaNum, isDigit)
 import Data.Foldable (for_, null)
+import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
-import Data.Set (Set)
-import Data.Set as S
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscape, intToHex, legalizeCharacters, startWithLetter)
-import Data.Tuple (Tuple(..))
-import Utils (removeElement)
 
 keywords :: Array String
 keywords =
@@ -425,7 +422,6 @@ renderUnionDefinition unionName unionRep = do
 renderUnionExtension :: String -> IRUnionRep -> Doc Unit
 renderUnionExtension unionName unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    let nonNullTypes = unionToSet nonNullUnion
     line $ "extension " <> unionName <> " {"
     indent do
         line $ "fileprivate static func fromJson(_ v: Any) -> " <> unionName <> "? {"
@@ -441,7 +437,8 @@ renderUnionExtension unionName unionRep = do
                 renderCase IRBool
             when (isUnionMember IRInteger nonNullUnion) do
                 renderCase IRInteger
-            for_ (S.difference nonNullTypes $ S.fromFoldable [IRBool, IRInteger]) \typ -> do
+            -- FIXME: this is ugly and inefficient
+            for_ (L.difference (unionToList nonNullUnion) $ L.fromFoldable [IRBool, IRInteger]) \typ -> do
                 renderCase typ
             line "return nil"
         line "}"

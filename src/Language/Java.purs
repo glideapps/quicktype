@@ -16,7 +16,6 @@ import Data.Set (Set)
 import Data.Set as S
 import Data.String.Util (camelCase, capitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..))
-import Utils (removeElement)
 
 forbiddenNames :: Array String
 forbiddenNames =
@@ -287,9 +286,9 @@ renderDoubleCase union =
         indent do
             deserializeType IRDouble
 
-renderGenericCase :: (IRType -> Boolean) -> String -> Set IRType -> Doc Unit
-renderGenericCase predicate tokenType types =
-    case find predicate types of
+renderGenericCase :: (IRUnionRep -> Maybe IRType) -> String -> IRUnionRep -> Doc Unit
+renderGenericCase predicate tokenType union =
+    case predicate union of
     Nothing -> pure unit
     Just t -> do
         tokenCase tokenType
@@ -299,7 +298,6 @@ renderGenericCase predicate tokenType types =
 renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
 renderUnionDefinition unionName unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    let nonNullTypes = unionToSet nonNullUnion
     renderFileHeader unionName ["java.io.IOException", "java.util.Map", "com.fasterxml.jackson.core.*", "com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.databind.annotation.*"]
     line $ "@JsonDeserialize(using = " <> unionName <> ".Deserializer.class)"
     line $ "@JsonSerialize(using = " <> unionName <> ".Serializer.class)"
@@ -321,9 +319,9 @@ renderUnionDefinition unionName unionRep = do
                 renderDoubleCase nonNullUnion
                 renderPrimitiveCase ["VALUE_TRUE", "VALUE_FALSE"] IRBool nonNullUnion
                 renderPrimitiveCase ["VALUE_STRING"] IRString nonNullUnion
-                renderGenericCase isArray "START_ARRAY" nonNullTypes
-                renderGenericCase isClass "START_OBJECT" nonNullTypes
-                renderGenericCase isMap "START_OBJECT" nonNullTypes
+                renderGenericCase unionHasArray "START_ARRAY" nonNullUnion
+                renderGenericCase unionHasClass "START_OBJECT" nonNullUnion
+                renderGenericCase unionHasMap "START_OBJECT" nonNullUnion
                 line $ "default: throw new IOException(\"Cannot deserialize " <> unionName <> "\");"
                 line "}"
                 line "return value;"

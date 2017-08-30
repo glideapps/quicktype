@@ -6,7 +6,6 @@ module Utils
     , sortByKeyM
     , sortByKey
     , lookupOrDefault
-    , removeElement
     , forEnumerated_
     , forStrMap_
     , forMapM
@@ -74,10 +73,6 @@ sortByKeyM keyF items = do
 
 lookupOrDefault :: forall k v. Ord k => v -> k -> Map k v -> v
 lookupOrDefault default key m = maybe default id $ M.lookup key m
-
-removeElement :: forall a. Ord a => (a -> Boolean) -> Set a -> { element :: Maybe a, rest :: Set a }
-removeElement p s = { element, rest: maybe s (\x -> S.delete x s) element }
-    where element = find p s 
 
 forEnumerated_ :: forall a b m. Applicative m => List a -> (Int -> a -> m b) -> m Unit
 forEnumerated_ l f =

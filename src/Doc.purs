@@ -134,7 +134,7 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) =
         unionNamer :: Namer (Array String) -> Namer (Named (Set String)) -> Map Int String -> Namer IRUnionRep
         unionNamer nameFromTypes properName classNames union@(IRUnionRep { names }) =
             if namedValue names == S.empty then
-                let typeStrings = map (typeNameForUnion graph classNames) $ A.sort $ A.fromFoldable $ unionToSet union
+                let typeStrings = map (typeNameForUnion graph classNames) $ A.sort $ A.fromFoldable $ unionToList union
                 in
                     nameFromTypes typeStrings
             else
