@@ -57,12 +57,12 @@ isPartCharacter c =
     Just Format -> true
     _ -> isStartCharacter c
 
-renderUnion :: Set IRType -> Doc String
-renderUnion s =
-    case nullableFromSet s of
+renderUnion :: IRUnionRep -> Doc String
+renderUnion ur =
+    case nullableFromUnion ur of
     Just x -> renderType x
     Nothing -> do
-        types <- mapM renderType $ L.fromFoldable s
+        types <- mapM renderType $ L.fromFoldable $ unionToSet ur
         pure $ intercalate " | " types
 
 renderType :: IRType -> Doc String
@@ -87,10 +87,9 @@ renderType = case _ of
         rendered <- renderType t
         pure $ "Map<String, " <> rendered <> ">"
 
-    IRUnion types -> do
-        let typeSet = unionToSet types
-        case nullableFromSet typeSet of
-            Nothing -> renderUnion typeSet
+    IRUnion ur ->
+        case nullableFromUnion ur of
+            Nothing -> renderUnion ur
             Just t -> do
                 rendered <- renderType t
                 pure $ "Maybe<" <> rendered <> ">"

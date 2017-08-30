@@ -60,12 +60,12 @@ isPartCharacter c =
     Just Format -> true
     _ -> isStartCharacter c
 
-renderUnion :: Set IRType -> Doc String
-renderUnion s =
-    case nullableFromSet s of
+renderUnion :: IRUnionRep -> Doc String
+renderUnion ur =
+    case nullableFromUnion ur of
     Just x -> renderType x
     Nothing -> do
-        types <- mapM renderType $ L.fromFoldable s
+        types <- mapM renderType $ L.fromFoldable $ unionToSet ur
         pure $ intercalate " | " types
 
 renderType :: IRType -> Doc String
@@ -86,7 +86,7 @@ renderType = case _ of
     IRMap t -> do
         rendered <- renderType t
         pure $ "{ [key: string]: " <> rendered <> " }"
-    IRUnion types -> renderUnion $ unionToSet types
+    IRUnion ur -> renderUnion ur
 
 getContainedClassName :: IRType -> Doc (Maybe String)
 getContainedClassName = case _ of
@@ -192,7 +192,7 @@ renderInterface className properties = do
 -- If this is a nullable, add a '?'
 markNullable :: String -> IRType -> String
 markNullable name (IRUnion unionRep) =
-    case nullableFromSet $ unionToSet unionRep of
+    case nullableFromUnion unionRep of
         Just _ -> name <> "?"
         _ -> name
 markNullable name _ = name

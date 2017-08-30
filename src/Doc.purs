@@ -200,7 +200,7 @@ unionNameIntercalated nameStyle orString names =
     # intercalate orString
 
 unionIsNotSimpleNullable :: IRUnionRep -> Boolean
-unionIsNotSimpleNullable ur = isNothing $ nullableFromSet $ unionToSet ur
+unionIsNotSimpleNullable ur = isNothing $ nullableFromUnion ur
 
 getTypeNameForUnion :: IRType -> Doc String
 getTypeNameForUnion typ = do

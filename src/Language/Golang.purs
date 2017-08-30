@@ -70,7 +70,7 @@ renderNullableToGolang x = do
 
 renderUnionToGolang :: IRUnionRep -> Doc { rendered :: String, comment :: Maybe String }
 renderUnionToGolang ur =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just x -> renderNullableToGolang x
     Nothing -> do
         noComment =<< lookupUnionName ur

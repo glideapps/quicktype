@@ -70,7 +70,7 @@ renderNullableToCSharp x = do
 
 renderUnionToCSharp :: IRUnionRep -> Doc String
 renderUnionToCSharp ur =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just x -> renderNullableToCSharp x
     Nothing -> lookupUnionName ur
 

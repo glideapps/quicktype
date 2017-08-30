@@ -204,8 +204,7 @@ typeStringForType = case _ of
         ts <- typeStringForType t
         multiWord "Dict String" $ parenIfNeeded ts
     IRUnion u ->
-        let s = unionToSet u
-        in case nullableFromSet s of
+        case nullableFromUnion u of
         Just x -> do
             ts <- typeStringForType x
             multiWord "Maybe" $ parenIfNeeded ts
@@ -233,8 +232,7 @@ decoderNameForType = case _ of
         dn <- decoderNameForType t
         multiWord "Jdec.dict" $ parenIfNeeded dn
     IRUnion u ->
-        let s = unionToSet u
-        in case nullableFromSet s of
+        case nullableFromUnion u of
         Just t -> do
             dn <- decoderNameForType t
             multiWord "Jdec.nullable" $ parenIfNeeded dn
@@ -257,8 +255,7 @@ encoderNameForType = case _ of
         rendered <- encoderNameForType t
         multiWord "makeDictEncoder" $ parenIfNeeded rendered
     IRUnion u ->
-        let s = unionToSet u
-        in case nullableFromSet s of
+        case nullableFromUnion u of
         Just t -> do
             rendered <- encoderNameForType t
             multiWord "makeNullableEncoder" $ parenIfNeeded rendered
@@ -271,12 +268,7 @@ forWithPrefix_ l firstPrefix restPrefix f =
 
 isOptional :: IRType -> Boolean
 isOptional = case _ of
-    IRUnion u ->
-        case nullableFromSet $ unionToSet u of
-        Just t -> true
-        Nothing -> false
-    -- IRNull -> true
-    -- IRUnion u -> S.member IRNull $ unionToSet u
+    IRUnion u -> not $ unionIsNotSimpleNullable u
     _ -> false
 
 renderTypeDefinition :: String -> Map String String -> List (Tuple String IRType) -> Doc Unit

@@ -20,7 +20,6 @@ module IRGraph
     , followIndex
     , getClassFromGraph
     , nullifyNothing
-    , nullableFromSet
     , canBeNull
     , isArray
     , isClass
@@ -32,6 +31,7 @@ module IRGraph
     , regatherUnionNames
     , filterTypes
     , removeNullFromUnion
+    , nullableFromUnion
     , emptyUnion
     ) where
 
@@ -207,19 +207,12 @@ nullifyNothing :: IRType -> IRType
 nullifyNothing IRNothing = IRNull
 nullifyNothing x = x
 
--- FIXME: This should take an IRUnionRep
-nullableFromSet :: Set IRType -> Maybe IRType
-nullableFromSet s =
-    case L.fromFoldable s of
-    IRNull : x : L.Nil -> Just x
-    x : IRNull : L.Nil -> Just x
-    _ -> Nothing
-
 canBeNull :: IRType -> Boolean
 canBeNull =
     case _ of
     IRNothing -> true
     IRNull -> true
+    -- FIXME: shouldn't we check for IRNothing in union, too?
     IRUnion (IRUnionRep { primitives }) -> (Bits.and primitives irUnion_Null) /= 0
     _ -> false
 
@@ -349,11 +342,22 @@ unionToSet (IRUnionRep { primitives, arrayType, classRef, mapType }) =
             Nothing -> l
 
 removeNullFromUnion :: IRUnionRep -> { hasNull :: Boolean, nonNullUnion :: IRUnionRep }
-removeNullFromUnion (IRUnionRep union@{ primitives }) =
+removeNullFromUnion union@(IRUnionRep ur@{ primitives }) =
     if (Bits.and irUnion_Null primitives) == 0 then
-        { hasNull: false, nonNullUnion: IRUnionRep union }
+        { hasNull: false, nonNullUnion: union }
     else
-        { hasNull: true, nonNullUnion: IRUnionRep $ union { primitives = Bits.xor irUnion_Null primitives }}
+        { hasNull: true, nonNullUnion: IRUnionRep $ ur { primitives = Bits.xor irUnion_Null primitives }}
+
+nullableFromUnion :: IRUnionRep -> Maybe IRType
+nullableFromUnion union =
+    let { hasNull, nonNullUnion } = removeNullFromUnion union
+    in
+        if hasNull then
+            case L.fromFoldable $ unionToSet nonNullUnion of
+            x : L.Nil -> Just x
+            _ -> Nothing
+        else
+            Nothing
 
 filterTypes :: forall a. Ord a => (IRType -> Maybe a) -> IRGraph -> Set a
 filterTypes predicate graph@(IRGraph { classes, toplevels }) =

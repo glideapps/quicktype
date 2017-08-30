@@ -91,7 +91,7 @@ javaDoc = do
 
 renderUnionWithTypeRenderer :: (Boolean -> IRType -> Doc String) -> IRUnionRep -> Doc String
 renderUnionWithTypeRenderer typeRenderer ur =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just x -> typeRenderer true x
     Nothing -> lookupUnionName ur
 

@@ -186,7 +186,7 @@ fileprivate func checkNull(_ v: Any?) -> Any?? {
 
 renderUnion :: IRUnionRep -> Doc String
 renderUnion ur =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just r -> do
         rendered <- renderType r
         pure $ rendered <> "?"
@@ -217,7 +217,7 @@ convertAny (IRMap m) var = do
     converter <- convertAnyFunc m
     pure $ "convertDict(" <> converter <> ", " <> var <> ")"
 convertAny (IRUnion ur) var =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just t -> do
         converter <- convertAnyFunc t
         pure $ "convertOptional(" <> converter <> ", " <> var <> ")"
@@ -242,7 +242,7 @@ convertAnyFunc = case _ of
         name <- lookupClassName i
         pure $ name <> ".init(fromAny:)"
     IRUnion ur ->
-        case nullableFromSet $ unionToSet ur of
+        case nullableFromUnion ur of
         Just t -> do
             converter <- convertAnyFunc t
             pure $ "{ (json: Any) in convertOptional(" <> converter <> ", json) }"
@@ -265,7 +265,7 @@ convertToAny (IRMap m) var = do
 convertToAny (IRClass i) var =
     pure $ var <> ".any"
 convertToAny (IRUnion ur) var =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just t -> do
         convertCode <- convertToAny t "$0"
         pure $ var <> ".map({ " <> convertCode  <> " }) ?? NSNull()"
