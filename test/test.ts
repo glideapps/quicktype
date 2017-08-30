@@ -488,7 +488,7 @@ async function main(sources: string[]) {
 
     let prioritySources = _.concat(
         testsInDir("test/inputs/json/priority"),
-        testsInDir("app/public/sample/json")
+        testsInDir("test/inputs/json/samples"),
     );
 
     let miscSources = testsInDir("test/inputs/json/misc");
