@@ -9,15 +9,12 @@ import Prelude
 import Data.Bifunctor (bimap)
 import Data.Char.Unicode (GeneralCategory(..), generalCategory)
 import Data.Foldable (for_, intercalate, maximum)
-import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(Nothing, Just), maybe)
-import Data.Set (Set)
 import Data.String as Str
 import Data.String.Util as Str
 import Data.Tuple (Tuple(..), fst)
-import Utils (mapM)
 
 renderer :: Renderer
 renderer =
@@ -57,12 +54,12 @@ isPartCharacter c =
     Just Format -> true
     _ -> isStartCharacter c
 
-renderUnion :: Set IRType -> Doc String
-renderUnion s =
-    case nullableFromSet s of
+renderUnion :: IRUnionRep -> Doc String
+renderUnion ur =
+    case nullableFromUnion ur of
     Just x -> renderType x
     Nothing -> do
-        types <- mapM renderType $ L.fromFoldable s
+        types <- mapUnionM renderType ur
         pure $ intercalate " | " types
 
 renderType :: IRType -> Doc String
@@ -87,10 +84,9 @@ renderType = case _ of
         rendered <- renderType t
         pure $ "Map<String, " <> rendered <> ">"
 
-    IRUnion types -> do
-        let typeSet = unionToSet types
-        case nullableFromSet typeSet of
-            Nothing -> renderUnion typeSet
+    IRUnion ur ->
+        case nullableFromUnion ur of
+            Nothing -> renderUnion ur
             Just t -> do
                 rendered <- renderType t
                 pure $ "Maybe<" <> rendered <> ">"

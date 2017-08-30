@@ -9,15 +9,12 @@ import Prelude
 import Data.Array as A
 import Data.Char.Unicode (isAlphaNum, isDigit)
 import Data.Foldable (for_, null)
+import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
-import Data.Set (Set)
-import Data.Set as S
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscape, intToHex, legalizeCharacters, startWithLetter)
-import Data.Tuple (Tuple(..))
-import Utils (removeElement)
 
 keywords :: Array String
 keywords =
@@ -94,9 +91,9 @@ swiftDoc = do
         blank
         renderClassExtension className properties
 
-    forEachUnion_ \unionName unionTypes -> do
+    forEachUnion_ \unionName unionRep -> do
         blank
-        renderUnionExtension unionName unionTypes
+        renderUnionExtension unionName unionRep
 
     blank
     supportFunctions
@@ -186,7 +183,7 @@ fileprivate func checkNull(_ v: Any?) -> Any?? {
 
 renderUnion :: IRUnionRep -> Doc String
 renderUnion ur =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just r -> do
         rendered <- renderType r
         pure $ rendered <> "?"
@@ -217,7 +214,7 @@ convertAny (IRMap m) var = do
     converter <- convertAnyFunc m
     pure $ "convertDict(" <> converter <> ", " <> var <> ")"
 convertAny (IRUnion ur) var =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just t -> do
         converter <- convertAnyFunc t
         pure $ "convertOptional(" <> converter <> ", " <> var <> ")"
@@ -242,7 +239,7 @@ convertAnyFunc = case _ of
         name <- lookupClassName i
         pure $ name <> ".init(fromAny:)"
     IRUnion ur ->
-        case nullableFromSet $ unionToSet ur of
+        case nullableFromUnion ur of
         Just t -> do
             converter <- convertAnyFunc t
             pure $ "{ (json: Any) in convertOptional(" <> converter <> ", json) }"
@@ -265,7 +262,7 @@ convertToAny (IRMap m) var = do
 convertToAny (IRClass i) var =
     pure $ var <> ".any"
 convertToAny (IRUnion ur) var =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just t -> do
         convertCode <- convertToAny t "$0"
         pure $ var <> ".map({ " <> convertCode  <> " }) ?? NSNull()"
@@ -408,43 +405,40 @@ makePropertyNames properties suffix forbidden =
         otherField :: String -> String
         otherField name = "other" <> capitalize name
 
-renderUnionDefinition :: String -> Set IRType -> Doc Unit
-renderUnionDefinition unionName unionTypes = do
-    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
+renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
+renderUnionDefinition unionName unionRep = do
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
     line $ "enum " <> unionName <> " {"
     indent do
-        for_ nonNullTypes \typ -> do
+        forUnion_ nonNullUnion \typ -> do
             name <- caseName typ
             rendered <- renderType typ
             line $ "case " <> name <> "(" <> rendered <> ")"
-        case emptyOrNull of
-            Just t -> do
-                name <- caseName t
-                line $ "case " <> name                
-            Nothing -> pure unit
+        when hasNull do
+            name <- caseName IRNull
+            line $ "case " <> name
     line "}"
 
-renderUnionExtension :: String -> Set IRType -> Doc Unit
-renderUnionExtension unionName unionTypes = do
-    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
+renderUnionExtension :: String -> IRUnionRep -> Doc Unit
+renderUnionExtension unionName unionRep = do
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
     line $ "extension " <> unionName <> " {"
     indent do
         line $ "fileprivate static func fromJson(_ v: Any) -> " <> unionName <> "? {"
         indent do
-            case emptyOrNull of
-                Just t -> do
-                    name <- caseName t
-                    line "guard let v = removeNSNull(v)"
-                    line "else {"
-                    indent do
-                        line $ "return ." <> name
-                    line "}"
-                Nothing -> pure unit
-            when (S.member IRBool unionTypes) do
+            when hasNull do
+                name <- caseName IRNull
+                line "guard let v = removeNSNull(v)"
+                line "else {"
+                indent do
+                    line $ "return ." <> name
+                line "}"
+            when (isUnionMember IRBool nonNullUnion) do
                 renderCase IRBool
-            when (S.member IRInteger unionTypes) do
+            when (isUnionMember IRInteger nonNullUnion) do
                 renderCase IRInteger
-            for_ (S.difference nonNullTypes $ S.fromFoldable [IRBool, IRInteger]) \typ -> do
+            -- FIXME: this is ugly and inefficient
+            for_ (L.difference (unionToList nonNullUnion) $ L.fromFoldable [IRBool, IRInteger]) \typ -> do
                 renderCase typ
             line "return nil"
         line "}"
@@ -452,7 +446,7 @@ renderUnionExtension unionName unionTypes = do
         line $ "fileprivate var any: Any {"
         indent do
             line $ "switch self {"
-            for_ unionTypes \typ -> do
+            forUnion_ unionRep \typ -> do
                 name <- caseName typ
                 let letString = if typ == IRNull then "" else "(let x)"
                 convertCode <- convertToAny typ "x"

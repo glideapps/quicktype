@@ -7,16 +7,13 @@ import IRGraph
 import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory)
-import Data.Foldable (find, for_, intercalate)
+import Data.Foldable (for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
 import Data.Map (Map)
-import Data.Maybe (Maybe(..), isJust, isNothing)
-import Data.Set (Set)
-import Data.Set as S
+import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
-import Utils (removeElement)
 
 forbiddenNames :: Array String
 forbiddenNames = ["Convert", "JsonConverter", "Type"]
@@ -70,7 +67,7 @@ renderNullableToCSharp x = do
 
 renderUnionToCSharp :: IRUnionRep -> Doc String
 renderUnionToCSharp ur =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just x -> renderNullableToCSharp x
     Nothing -> lookupUnionName ur
 
@@ -202,12 +199,11 @@ tokenCase :: String -> Doc Unit
 tokenCase tokenType =
     line $ "case JsonToken." <> tokenType <> ":"
 
-renderNullDeserializer :: Set IRType -> Doc Unit
-renderNullDeserializer types =
-    when (S.member IRNull types) do
-        tokenCase "Null"
-        indent do
-            line "break;"
+renderNullDeserializer :: Doc Unit
+renderNullDeserializer = do
+    tokenCase "Null"
+    indent do
+        line "break;"
 
 unionFieldName :: IRType -> Doc String
 unionFieldName t = csNameStyle <$> getTypeNameForUnion t
@@ -223,39 +219,39 @@ deserializeType t = do
     renderedType <- renderTypeToCSharp t
     deserialize fieldName renderedType
 
-renderPrimitiveDeserializer :: List String -> IRType -> Set IRType -> Doc Unit
-renderPrimitiveDeserializer tokenTypes t types =
-    when (S.member t types) do
+renderPrimitiveDeserializer :: List String -> IRType -> IRUnionRep -> Doc Unit
+renderPrimitiveDeserializer tokenTypes t union =
+    when (isUnionMember t union) do
         for_ tokenTypes \tokenType -> do
             tokenCase tokenType
         indent do
             deserializeType t
 
-renderDoubleDeserializer :: Set IRType -> Doc Unit
-renderDoubleDeserializer types =
-    when (S.member IRDouble types) do
-        unless (S.member IRInteger types) do
+renderDoubleDeserializer :: IRUnionRep -> Doc Unit
+renderDoubleDeserializer union =
+    when (isUnionMember IRDouble union) do
+        unless (isUnionMember IRInteger union) do
             tokenCase "Integer"
         tokenCase "Float"
         indent do
             deserializeType IRDouble
 
-renderGenericDeserializer :: (IRType -> Boolean) -> String -> Set IRType -> Doc Unit
-renderGenericDeserializer predicate tokenType types =
-    case find predicate types of
+renderGenericDeserializer :: (IRUnionRep -> Maybe IRType) -> String -> IRUnionRep -> Doc Unit
+renderGenericDeserializer predicate tokenType union =
+    case predicate union of
     Nothing -> pure unit
     Just t -> do
         tokenCase tokenType
         indent do
             deserializeType t
 
-renderCSharpUnion :: String -> Set IRType -> Doc Unit
-renderCSharpUnion name allTypes = do
-    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
+renderCSharpUnion :: String -> IRUnionRep -> Doc Unit
+renderCSharpUnion name unionRep = do
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
     line $ "public struct " <> name
     line "{"
     indent do
-        for_ nonNullTypes \t -> do
+        forUnion_ nonNullUnion \t -> do
             typeString <- renderNullableToCSharp t
             field <- unionFieldName t
             line $ "public " <> typeString <> " " <> field <> ";"
@@ -263,21 +259,21 @@ renderCSharpUnion name allTypes = do
         line $ "public " <> name <> "(JsonReader reader, JsonSerializer serializer)"
         line "{"
         indent do
-            for_ (L.fromFoldable nonNullTypes) \field -> do
+            forUnion_ nonNullUnion \field -> do
                 fieldName <- unionFieldName field
                 line $ fieldName <> " = null;"
             blank
             line "switch (reader.TokenType)"
             line "{"
             indent do
-                renderNullDeserializer allTypes
-                renderPrimitiveDeserializer (L.singleton "Integer") IRInteger allTypes
-                renderDoubleDeserializer allTypes
-                renderPrimitiveDeserializer (L.singleton "Boolean") IRBool allTypes
-                renderPrimitiveDeserializer ("String" : "Date" : L.Nil) IRString allTypes
-                renderGenericDeserializer isArray "StartArray" allTypes
-                renderGenericDeserializer isClass "StartObject" allTypes
-                renderGenericDeserializer isMap "StartObject" allTypes
+                when hasNull renderNullDeserializer
+                renderPrimitiveDeserializer (L.singleton "Integer") IRInteger nonNullUnion
+                renderDoubleDeserializer nonNullUnion
+                renderPrimitiveDeserializer (L.singleton "Boolean") IRBool nonNullUnion
+                renderPrimitiveDeserializer ("String" : "Date" : L.Nil) IRString nonNullUnion
+                renderGenericDeserializer unionHasArray "StartArray" nonNullUnion
+                renderGenericDeserializer unionHasClass "StartObject" nonNullUnion
+                renderGenericDeserializer unionHasMap "StartObject" nonNullUnion
                 line $ "default: throw new Exception(\"Cannot convert " <> name <> "\");"
             line "}"
         line "}"
@@ -285,17 +281,18 @@ renderCSharpUnion name allTypes = do
         line $ "public void WriteJson(JsonWriter writer, JsonSerializer serializer)"
         line "{"
         indent do
-            for_ (L.fromFoldable nonNullTypes) \field -> do
+            forUnion_ nonNullUnion \field -> do
                 fieldName <- unionFieldName field
                 line $ "if (" <> fieldName <> " != null) {"
                 indent do
                     line $ "serializer.Serialize(writer, " <> fieldName <> ");"
                     line "return;"
                 line "}"
-            when (isJust emptyOrNull) do
-                line "writer.WriteNull();"
-            when (isNothing emptyOrNull) do
-                line "throw new Exception(\"Union must not be null\");"
+            if hasNull
+                then
+                    line "writer.WriteNull();"
+                else
+                    line "throw new Exception(\"Union must not be null\");"
         line "}"
     line "}"
 

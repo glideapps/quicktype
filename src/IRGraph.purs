@@ -13,14 +13,13 @@ module IRGraph
     , irUnion_Double
     , irUnion_Bool
     , irUnion_String
-    , unionToSet
+    , unionToList
     , Entry(..)
     , makeClass
     , emptyGraph
     , followIndex
     , getClassFromGraph
     , nullifyNothing
-    , nullableFromSet
     , canBeNull
     , isArray
     , isClass
@@ -31,12 +30,23 @@ module IRGraph
     , regatherClassNames
     , regatherUnionNames
     , filterTypes
+    , removeNullFromUnion
+    , nullableFromUnion
+    , isUnionMember
+    , forUnion_
+    , mapUnionM
+    , mapUnion
+    , unionHasArray
+    , unionHasClass
+    , unionHasMap
     , emptyUnion
     ) where
 
 import Prelude
 
+import Control.Comonad (extract)
 import Data.Foldable (all)
+import Data.Identity (Identity(..))
 import Data.Int.Bits as Bits
 import Data.List (List, (:))
 import Data.List as L
@@ -206,19 +216,12 @@ nullifyNothing :: IRType -> IRType
 nullifyNothing IRNothing = IRNull
 nullifyNothing x = x
 
--- FIXME: This should take an IRUnionRep
-nullableFromSet :: Set IRType -> Maybe IRType
-nullableFromSet s =
-    case L.fromFoldable s of
-    IRNull : x : L.Nil -> Just x
-    x : IRNull : L.Nil -> Just x
-    _ -> Nothing
-
 canBeNull :: IRType -> Boolean
 canBeNull =
     case _ of
     IRNothing -> true
     IRNull -> true
+    -- FIXME: shouldn't we check for IRNothing in union, too?
     IRUnion (IRUnionRep { primitives }) -> (Bits.and primitives irUnion_Null) /= 0
     _ -> false
 
@@ -325,27 +328,102 @@ regatherUnionNames graph@(IRGraph { classes, toplevels }) =
                     IRUnion $ IRUnionRep { names: newNames, primitives, arrayType: newArrayType, classRef, mapType: newMapType }
             _ -> t
 
-unionToSet :: IRUnionRep -> Set IRType
-unionToSet (IRUnionRep { primitives, arrayType, classRef, mapType }) =
-    let types1 = addIfSet irUnion_Nothing IRNothing L.Nil
-        types2 = addIfSet irUnion_Null IRNull types1
-        types3 = addIfSet irUnion_Integer IRInteger types2
-        types4 = addIfSet irUnion_Double IRDouble types3
-        types5 = addIfSet irUnion_Bool IRBool types4
-        types6 = addIfSet irUnion_String IRString types5
-        types7 = addIfJust IRArray arrayType types6
-        types8 = addIfJust IRClass classRef types7
-        types9 = addIfJust IRMap mapType types8
+removeNullFromUnion :: IRUnionRep -> { hasNull :: Boolean, nonNullUnion :: IRUnionRep }
+removeNullFromUnion union@(IRUnionRep ur@{ primitives }) =
+    if (Bits.and irUnion_Null primitives) == 0 then
+        { hasNull: false, nonNullUnion: union }
+    else
+        { hasNull: true, nonNullUnion: IRUnionRep $ ur { primitives = Bits.xor irUnion_Null primitives }}
+
+unionHasArray :: IRUnionRep -> Maybe IRType
+unionHasArray (IRUnionRep { arrayType }) = map IRArray arrayType
+
+unionHasClass :: IRUnionRep -> Maybe IRType
+unionHasClass (IRUnionRep { classRef }) = map IRClass classRef
+
+unionHasMap :: IRUnionRep -> Maybe IRType
+unionHasMap (IRUnionRep { mapType }) = map IRMap mapType
+
+nullableFromUnion :: IRUnionRep -> Maybe IRType
+nullableFromUnion union =
+    let { hasNull, nonNullUnion } = removeNullFromUnion union
     in
-        S.fromFoldable types9
+        if hasNull then
+            case unionToList nonNullUnion of
+            x : L.Nil -> Just x
+            _ -> Nothing
+        else
+            Nothing
+
+forUnion_ :: forall m. Monad m => IRUnionRep -> (IRType -> m Unit) -> m Unit
+forUnion_ (IRUnionRep { primitives, arrayType, classRef, mapType }) f = do
+    when (inPrimitives irUnion_Nothing) do f IRNothing
+    when (inPrimitives irUnion_Null) do f IRNull
+    when (inPrimitives irUnion_Integer) do f IRInteger
+    when (inPrimitives irUnion_Double) do f IRDouble
+    when (inPrimitives irUnion_Bool) do f IRBool
+    when (inPrimitives irUnion_String) do f IRString
+    case arrayType of
+        Just a -> do f $ IRArray a
+        Nothing -> pure unit
+    case classRef of
+        Just i -> do f $ IRClass i
+        Nothing -> pure unit
+    case mapType of
+        Just m -> do f $ IRMap m
+        Nothing -> pure unit
     where
-        addIfSet bit t l =
-            if (Bits.and bit primitives) == 0 then l else t : l
-        addIfJust :: forall a. (a -> IRType) -> Maybe a -> List IRType -> List IRType
-        addIfJust c m l =
-            case m of
-            Just x -> c x : l
-            Nothing -> l
+        inPrimitives bit = (Bits.and bit primitives) /= 0
+
+mapUnionM :: forall a m. Monad m => (IRType -> m a) -> IRUnionRep -> m (List a)
+mapUnionM f (IRUnionRep { primitives, arrayType, classRef, mapType }) = do
+    let l = L.Nil
+    l <- mapGeneral l mapType IRMap
+    l <- mapGeneral l classRef IRClass
+    l <- mapGeneral l arrayType IRArray    
+    l <- mapPrimitive l irUnion_String IRString
+    l <- mapPrimitive l irUnion_Bool IRBool
+    l <- mapPrimitive l irUnion_Double IRDouble
+    l <- mapPrimitive l irUnion_Integer IRInteger
+    l <- mapPrimitive l irUnion_Null IRNull
+    l <- mapPrimitive l irUnion_Nothing IRNothing
+    pure l
+    where
+        mapPrimitive :: List a -> Int -> IRType -> m (List a)
+        mapPrimitive l bit t =
+            if (Bits.and bit primitives) /= 0 then do
+                result <- f t
+                pure $ result : l
+            else
+                pure l
+        
+        mapGeneral :: forall x. List a -> Maybe x -> (x -> IRType) -> m (List a)
+        mapGeneral l Nothing _ = pure l
+        mapGeneral l (Just x) convert = do
+            result <- f $ convert x
+            pure $ result : l
+
+mapUnion :: forall a. (IRType -> a) -> IRUnionRep -> List a
+mapUnion f = extract <<< mapUnionM (Identity <<< f)
+
+unionToList :: IRUnionRep -> List IRType
+unionToList = mapUnion id
+
+isUnionMember :: IRType -> IRUnionRep -> Boolean
+isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =
+    case t of
+    IRNothing -> inPrimitives irUnion_Nothing
+    IRNull -> inPrimitives irUnion_Null
+    IRInteger -> inPrimitives irUnion_Integer
+    IRDouble -> inPrimitives irUnion_Double
+    IRBool -> inPrimitives irUnion_Bool
+    IRString -> inPrimitives irUnion_String
+    IRArray a -> maybe false (eq a) arrayType
+    IRClass i -> maybe false (eq i) classRef
+    IRMap m -> maybe false (eq m) mapType
+    IRUnion _ -> false
+    where
+        inPrimitives bit = (Bits.and bit primitives) /= 0
 
 filterTypes :: forall a. Ord a => (IRType -> Maybe a) -> IRGraph -> Set a
 filterTypes predicate graph@(IRGraph { classes, toplevels }) =
@@ -362,7 +440,7 @@ filterTypes predicate graph@(IRGraph { classes, toplevels }) =
             IRArray t -> filterType t
             IRMap t -> filterType t
             IRUnion r ->
-                S.unions $ S.map filterType $ unionToSet r
+                S.unions $ mapUnion filterType r
             _ -> S.empty
         filterType :: IRType -> Set a
         filterType t =

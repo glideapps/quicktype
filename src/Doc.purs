@@ -134,7 +134,7 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) =
         unionNamer :: Namer (Array String) -> Namer (Named (Set String)) -> Map Int String -> Namer IRUnionRep
         unionNamer nameFromTypes properName classNames union@(IRUnionRep { names }) =
             if namedValue names == S.empty then
-                let typeStrings = map (typeNameForUnion graph classNames) $ A.sort $ A.fromFoldable $ unionToSet union
+                let typeStrings = map (typeNameForUnion graph classNames) $ A.sort $ A.fromFoldable $ unionToList union
                 in
                     nameFromTypes typeStrings
             else
@@ -200,7 +200,7 @@ unionNameIntercalated nameStyle orString names =
     # intercalate orString
 
 unionIsNotSimpleNullable :: IRUnionRep -> Boolean
-unionIsNotSimpleNullable ur = isNothing $ nullableFromSet $ unionToSet ur
+unionIsNotSimpleNullable ur = isNothing $ nullableFromUnion ur
 
 getTypeNameForUnion :: IRType -> Doc String
 getTypeNameForUnion typ = do
@@ -281,7 +281,7 @@ lookupTopLevelName n = do
 
 type TopLevelIterator = String -> IRType -> Doc Unit
 type ClassIterator = String -> Map String IRType -> Doc Unit
-type UnionIterator = String -> Set IRType -> Doc Unit
+type UnionIterator = String -> IRUnionRep -> Doc Unit
 
 callTopLevelIterator :: TopLevelIterator -> String -> IRType -> Doc Unit
 callTopLevelIterator f topLevelNameGiven topLevelType = do
@@ -307,9 +307,8 @@ forEachClass_ f = do
 
 callUnionIterator :: UnionIterator -> IRUnionRep -> Doc Unit
 callUnionIterator f ur = do
-    let allTypes = unionToSet ur
     unionName <- lookupUnionName ur
-    f unionName allTypes
+    f unionName ur
 
 forEachUnion_ :: UnionIterator -> Doc Unit
 forEachUnion_ f = do
@@ -398,9 +397,9 @@ sortRenderItems startItems = do
     where
         expandUnion :: IRUnionRep -> Doc (List RenderItem)
         expandUnion ur = do
-            -- `unionToSet` gives us the same order we use in `callUnionIterator`.
+            -- `mapUnionM` gives us the same order we use in `callUnionIterator`.
             -- That's not always the same property language backends use, however.
-            mapped <- mapM expandType $ L.fromFoldable $ unionToSet ur
+            mapped <- mapUnionM expandType ur
             pure $ L.concat mapped
 
         expandType :: IRType -> Doc (List RenderItem)

@@ -254,7 +254,7 @@ strMapForType t =
         sm <- typeStrMap "object"
         pure $ SM.insert "additionalProperties" propertyType sm
     IRUnion ur -> do
-        types <- mapM jsonForType $ L.fromFoldable $ unionToSet ur
+        types <- mapUnionM jsonForType ur
         let typesJson = fromArray $ A.fromFoldable types
         pure $ SM.insert "oneOf" typesJson SM.empty
 

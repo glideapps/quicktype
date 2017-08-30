@@ -16,7 +16,6 @@ import Data.Set (Set)
 import Data.Set as S
 import Data.String.Util (camelCase, capitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..))
-import Utils (removeElement)
 
 forbiddenNames :: Array String
 forbiddenNames =
@@ -91,7 +90,7 @@ javaDoc = do
 
 renderUnionWithTypeRenderer :: (Boolean -> IRType -> Doc String) -> IRUnionRep -> Doc String
 renderUnionWithTypeRenderer typeRenderer ur =
-    case nullableFromSet $ unionToSet ur of
+    case nullableFromUnion ur of
     Just x -> typeRenderer true x
     Nothing -> lookupUnionName ur
 
@@ -257,12 +256,11 @@ tokenCase :: String -> Doc Unit
 tokenCase tokenType =
     line $ "case " <> tokenType <> ":"
 
-renderNullCase :: Set IRType -> Doc Unit
-renderNullCase types =
-    when (S.member IRNull types) do
-        tokenCase "VALUE_NULL"
-        indent do
-            line "break;"
+renderNullCase :: Doc Unit
+renderNullCase = do
+    tokenCase "VALUE_NULL"
+    indent do
+        line "break;"
 
 deserializeType :: IRType -> Doc Unit
 deserializeType t = do
@@ -271,41 +269,41 @@ deserializeType t = do
     line $ "value." <> fieldName <> " = jsonParser.readValueAs(" <> renderedType <> ".class);"
     line "break;"
 
-renderPrimitiveCase :: Array String -> IRType -> Set IRType -> Doc Unit
-renderPrimitiveCase tokenTypes t types =
-    when (S.member t types) do
+renderPrimitiveCase :: Array String -> IRType -> IRUnionRep -> Doc Unit
+renderPrimitiveCase tokenTypes t union =
+    when (isUnionMember t union) do
         for_ tokenTypes \tokenType ->
             tokenCase tokenType
         indent do
             deserializeType t
 
-renderDoubleCase :: Set IRType -> Doc Unit
-renderDoubleCase types =
-    when (S.member IRDouble types) do
-        unless (S.member IRInteger types) do
+renderDoubleCase :: IRUnionRep -> Doc Unit
+renderDoubleCase union =
+    when (isUnionMember IRDouble union) do
+        unless (isUnionMember IRInteger union) do
             tokenCase "VALUE_NUMBER_INT"
         tokenCase "VALUE_NUMBER_FLOAT"
         indent do
             deserializeType IRDouble
 
-renderGenericCase :: (IRType -> Boolean) -> String -> Set IRType -> Doc Unit
-renderGenericCase predicate tokenType types =
-    case find predicate types of
+renderGenericCase :: (IRUnionRep -> Maybe IRType) -> String -> IRUnionRep -> Doc Unit
+renderGenericCase predicate tokenType union =
+    case predicate union of
     Nothing -> pure unit
     Just t -> do
         tokenCase tokenType
         indent do
             deserializeType t
 
-renderUnionDefinition :: String -> Set IRType -> Doc Unit
-renderUnionDefinition unionName unionTypes = do
-    let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
+renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
+renderUnionDefinition unionName unionRep = do
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
     renderFileHeader unionName ["java.io.IOException", "java.util.Map", "com.fasterxml.jackson.core.*", "com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.databind.annotation.*"]
     line $ "@JsonDeserialize(using = " <> unionName <> ".Deserializer.class)"
     line $ "@JsonSerialize(using = " <> unionName <> ".Serializer.class)"
     line $ "public class " <> unionName <> " {"
     indent do
-        for_ nonNullTypes \t -> do
+        forUnion_ nonNullUnion \t -> do
             { renderedType, fieldName } <- renderUnionField t
             line $ "public " <> renderedType <> " " <> fieldName <> ";"
         blank
@@ -316,14 +314,14 @@ renderUnionDefinition unionName unionTypes = do
             indent do
                 line $ unionName <> " value = new " <> unionName <> "();"
                 line "switch (jsonParser.getCurrentToken()) {"
-                renderNullCase unionTypes
-                renderPrimitiveCase ["VALUE_NUMBER_INT"] IRInteger unionTypes
-                renderDoubleCase unionTypes
-                renderPrimitiveCase ["VALUE_TRUE", "VALUE_FALSE"] IRBool unionTypes
-                renderPrimitiveCase ["VALUE_STRING"] IRString unionTypes
-                renderGenericCase isArray "START_ARRAY" unionTypes
-                renderGenericCase isClass "START_OBJECT" unionTypes
-                renderGenericCase isMap "START_OBJECT" unionTypes
+                when hasNull renderNullCase
+                renderPrimitiveCase ["VALUE_NUMBER_INT"] IRInteger nonNullUnion
+                renderDoubleCase nonNullUnion
+                renderPrimitiveCase ["VALUE_TRUE", "VALUE_FALSE"] IRBool nonNullUnion
+                renderPrimitiveCase ["VALUE_STRING"] IRString nonNullUnion
+                renderGenericCase unionHasArray "START_ARRAY" nonNullUnion
+                renderGenericCase unionHasClass "START_OBJECT" nonNullUnion
+                renderGenericCase unionHasMap "START_OBJECT" nonNullUnion
                 line $ "default: throw new IOException(\"Cannot deserialize " <> unionName <> "\");"
                 line "}"
                 line "return value;"
@@ -336,17 +334,18 @@ renderUnionDefinition unionName unionTypes = do
             line "@Override"
             line $ "public void serialize(" <> unionName <> " obj, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {"
             indent do
-                for_ (A.fromFoldable nonNullTypes) \field -> do
+                forUnion_ nonNullUnion \field -> do
                     { fieldName } <- renderUnionField field
                     line $ "if (obj." <> fieldName <> " != null) {"
                     indent do
                         line $ "jsonGenerator.writeObject(obj." <> fieldName <> ");"
                         line "return;"
                     line "}"
-                when (isJust emptyOrNull) do
-                    line "jsonGenerator.writeNull();"
-                when (isNothing emptyOrNull) do
-                    line $ "throw new IOException(\"" <> unionName <> " must not be null\");"
+                if hasNull
+                    then
+                        line "jsonGenerator.writeNull();"
+                    else
+                        line $ "throw new IOException(\"" <> unionName <> " must not be null\");"
             line "}"
         line "}"
     line "}"

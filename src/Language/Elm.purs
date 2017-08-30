@@ -12,11 +12,10 @@ import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), maybe)
-import Data.Set (Set)
+import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, decapitalize, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..), fst)
-import Utils (forEnumerated_, removeElement, sortByKey, sortByKeyM, mapM)
+import Utils (forEnumerated_, sortByKey, sortByKeyM, mapM)
 
 forbiddenNames :: Array String
 forbiddenNames =
@@ -204,8 +203,7 @@ typeStringForType = case _ of
         ts <- typeStringForType t
         multiWord "Dict String" $ parenIfNeeded ts
     IRUnion u ->
-        let s = unionToSet u
-        in case nullableFromSet s of
+        case nullableFromUnion u of
         Just x -> do
             ts <- typeStringForType x
             multiWord "Maybe" $ parenIfNeeded ts
@@ -233,8 +231,7 @@ decoderNameForType = case _ of
         dn <- decoderNameForType t
         multiWord "Jdec.dict" $ parenIfNeeded dn
     IRUnion u ->
-        let s = unionToSet u
-        in case nullableFromSet s of
+        case nullableFromUnion u of
         Just t -> do
             dn <- decoderNameForType t
             multiWord "Jdec.nullable" $ parenIfNeeded dn
@@ -257,8 +254,7 @@ encoderNameForType = case _ of
         rendered <- encoderNameForType t
         multiWord "makeDictEncoder" $ parenIfNeeded rendered
     IRUnion u ->
-        let s = unionToSet u
-        in case nullableFromSet s of
+        case nullableFromUnion u of
         Just t -> do
             rendered <- encoderNameForType t
             multiWord "makeNullableEncoder" $ parenIfNeeded rendered
@@ -271,12 +267,7 @@ forWithPrefix_ l firstPrefix restPrefix f =
 
 isOptional :: IRType -> Boolean
 isOptional = case _ of
-    IRUnion u ->
-        case nullableFromSet $ unionToSet u of
-        Just t -> true
-        Nothing -> false
-    -- IRNull -> true
-    -- IRUnion u -> S.member IRNull $ unionToSet u
+    IRUnion u -> not $ unionIsNotSimpleNullable u
     _ -> false
 
 renderTypeDefinition :: String -> Map String String -> List (Tuple String IRType) -> Doc Unit
@@ -324,9 +315,9 @@ typeRenderer renderer className properties = do
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     renderer className propertyNames propsList
 
-renderUnionDefinition :: String -> Set IRType -> Doc Unit
-renderUnionDefinition unionName allTypes = do
-    fields <- L.fromFoldable allTypes # sortByKeyM (unionConstructorName unionName)
+renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
+renderUnionDefinition unionName unionRep = do
+    fields <- unionToList unionRep # sortByKeyM (unionConstructorName unionName)
     line $ "type " <> unionName
     forWithPrefix_ fields "=" "|" \equalsOrPipe t -> do
         indent do
@@ -337,15 +328,13 @@ renderUnionDefinition unionName allTypes = do
                 ts <- typeStringForType t
                 line $ equalsOrPipe <> " " <> constructor <> " " <> (parenIfNeeded ts)
 
-renderUnionFunctions :: String -> Set IRType -> Doc Unit
-renderUnionFunctions unionName allTypes = do
+renderUnionFunctions :: String -> IRUnionRep -> Doc Unit
+renderUnionFunctions unionName unionRep = do
     let decoderName = decoderNameFromTypeName unionName
     line $ decoderName <> " : Jdec.Decoder " <> unionName
     line $ decoderName <> " ="
     indent do
-        let { element: maybeArray, rest: nonArrayFields } = removeElement isArray allTypes
-        nonArrayDecFields <- L.fromFoldable nonArrayFields # sortByKeyM (unionConstructorName unionName)
-        let decFields = maybe nonArrayDecFields (\f -> f : nonArrayDecFields) maybeArray
+        let decFields = L.sortBy arrayFirstOrder $ unionToList unionRep
         line "Jdec.oneOf"
         indent do
             forWithPrefix_ decFields "[" "," \bracketOrComma t -> do
@@ -361,7 +350,7 @@ renderUnionFunctions unionName allTypes = do
     line $ encoderName <> " : " <> unionName <> " -> Jenc.Value"
     line $ encoderName <> " x = case x of"
     indent do
-        fields <- L.fromFoldable allTypes # sortByKeyM (unionConstructorName unionName)
+        fields <- unionToList unionRep # sortByKeyM (unionConstructorName unionName)
         for_ fields \t -> do
             constructor <- unionConstructorName unionName t
             when (t == IRNull) do
@@ -369,3 +358,15 @@ renderUnionFunctions unionName allTypes = do
             unless (t == IRNull) do
                 { rendered: encoder } <- encoderNameForType t
                 line $ constructor <> " y -> " <> encoder <> " y"
+    where
+        arrayFirstOrder a b =
+            if isArray a then
+                if isArray b then
+                    compare a b
+                else
+                    LT
+            else
+                if isArray b then
+                    GT
+                else
+                    compare a b

@@ -10,11 +10,9 @@ import Data.Char.Unicode (GeneralCategory(..), generalCategory)
 import Data.Either as Either
 import Data.Foldable (any, for_, intercalate, maximum)
 import Data.List (List)
-import Data.List as L
 import Data.Map as M
 import Data.Map (Map)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
-import Data.Set (Set)
 import Data.String as Str
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
@@ -60,12 +58,12 @@ isPartCharacter c =
     Just Format -> true
     _ -> isStartCharacter c
 
-renderUnion :: Set IRType -> Doc String
-renderUnion s =
-    case nullableFromSet s of
+renderUnion :: IRUnionRep -> Doc String
+renderUnion ur =
+    case nullableFromUnion ur of
     Just x -> renderType x
     Nothing -> do
-        types <- mapM renderType $ L.fromFoldable s
+        types <- mapUnionM renderType ur
         pure $ intercalate " | " types
 
 renderType :: IRType -> Doc String
@@ -86,7 +84,7 @@ renderType = case _ of
     IRMap t -> do
         rendered <- renderType t
         pure $ "{ [key: string]: " <> rendered <> " }"
-    IRUnion types -> renderUnion $ unionToSet types
+    IRUnion ur -> renderUnion ur
 
 getContainedClassName :: IRType -> Doc (Maybe String)
 getContainedClassName = case _ of
@@ -192,7 +190,7 @@ renderInterface className properties = do
 -- If this is a nullable, add a '?'
 markNullable :: String -> IRType -> String
 markNullable name (IRUnion unionRep) =
-    case nullableFromSet $ unionToSet unionRep of
+    case nullableFromUnion unionRep of
         Just _ -> name <> "?"
         _ -> name
 markNullable name _ = name
@@ -215,7 +213,7 @@ renderTypeMapType = case _ of
         rendered <- renderTypeMapType t
         pure $ "map(" <> rendered <> ")"
     IRUnion types -> do
-        renderedTyps <- mapM renderTypeMapType $ L.fromFoldable $ unionToSet types
+        renderedTyps <- mapUnionM renderTypeMapType types
         pure $ "union(" <> intercalate ", " renderedTyps <> ")"
 
 renderTypeMapClass :: String -> Map String IRType -> Doc Unit
