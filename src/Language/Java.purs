@@ -305,7 +305,7 @@ renderUnionDefinition unionName unionRep = do
     line $ "@JsonSerialize(using = " <> unionName <> ".Serializer.class)"
     line $ "public class " <> unionName <> " {"
     indent do
-        for_ nonNullTypes \t -> do
+        forUnion_ nonNullUnion \t -> do
             { renderedType, fieldName } <- renderUnionField t
             line $ "public " <> renderedType <> " " <> fieldName <> ";"
         blank
@@ -336,7 +336,7 @@ renderUnionDefinition unionName unionRep = do
             line "@Override"
             line $ "public void serialize(" <> unionName <> " obj, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {"
             indent do
-                for_ (A.fromFoldable nonNullTypes) \field -> do
+                forUnion_ nonNullUnion \field -> do
                     { fieldName } <- renderUnionField field
                     line $ "if (obj." <> fieldName <> " != null) {"
                     indent do

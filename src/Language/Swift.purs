@@ -411,10 +411,9 @@ makePropertyNames properties suffix forbidden =
 renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
 renderUnionDefinition unionName unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    let nonNullTypes = unionToSet nonNullUnion
     line $ "enum " <> unionName <> " {"
     indent do
-        for_ nonNullTypes \typ -> do
+        forUnion_ nonNullUnion \typ -> do
             name <- caseName typ
             rendered <- renderType typ
             line $ "case " <> name <> "(" <> rendered <> ")"
@@ -451,7 +450,7 @@ renderUnionExtension unionName unionRep = do
         line $ "fileprivate var any: Any {"
         indent do
             line $ "switch self {"
-            for_ unionTypes \typ -> do
+            forUnion_ unionRep \typ -> do
                 name <- caseName typ
                 let letString = if typ == IRNull then "" else "(let x)"
                 convertCode <- convertToAny typ "x"

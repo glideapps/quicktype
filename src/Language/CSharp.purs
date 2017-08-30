@@ -255,7 +255,7 @@ renderCSharpUnion name unionRep = do
     line $ "public struct " <> name
     line "{"
     indent do
-        for_ nonNullTypes \t -> do
+        forUnion_ nonNullUnion \t -> do
             typeString <- renderNullableToCSharp t
             field <- unionFieldName t
             line $ "public " <> typeString <> " " <> field <> ";"
@@ -263,7 +263,7 @@ renderCSharpUnion name unionRep = do
         line $ "public " <> name <> "(JsonReader reader, JsonSerializer serializer)"
         line "{"
         indent do
-            for_ (L.fromFoldable nonNullTypes) \field -> do
+            forUnion_ nonNullUnion \field -> do
                 fieldName <- unionFieldName field
                 line $ fieldName <> " = null;"
             blank
@@ -285,7 +285,7 @@ renderCSharpUnion name unionRep = do
         line $ "public void WriteJson(JsonWriter writer, JsonSerializer serializer)"
         line "{"
         indent do
-            for_ (L.fromFoldable nonNullTypes) \field -> do
+            forUnion_ nonNullUnion \field -> do
                 fieldName <- unionFieldName field
                 line $ "if (" <> fieldName <> " != null) {"
                 indent do
