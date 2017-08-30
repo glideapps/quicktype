@@ -4,9 +4,12 @@
         "lib": [
             "es2015"
         ],
-        "outDir": "dist"
+        "outDir": "../output",
+        "typeRoots": [
+            "../node_modules/@types"
+        ]
     },
     "include": [
-        "src/*.ts"
+        "*.ts"
     ]
 }

@@ -1,60 +1,45 @@
-[![Build Status](https://travis-ci.com/dvdsgl/quicktype.svg?token=PSTj9tVyM1RDRiZ17Sgd&branch=master)](https://travis-ci.com/dvdsgl/quicktype)
-
-## Setup
+## Synopsis
 
 ```shell
-$ npm install
+$ quicktype [--lang ts|go|cs|elm|schema|swift] FILE|URL ... 
 ```
 
-## Build
+## Description
+
+Given JSON sample data, quicktype outputs code for working with that data in  
+TypeScript, Go, C#, Elm, and more.                                            
+
+## Options
+
+```
+-o, --out FILE                         The output file. Determines --lang and --top-level. 
+-t, --top-level NAME                   The name for the top level type.                    
+-l, --lang ts|go|cs|elm|schema|swift   The target language.                                
+-s, --src-lang json|schema             The source language (default is json).              
+--src FILE|URL                         The file or url to type.
+--src-urls FILE                        Tracery grammar describing URLs to crawl.                      
+-h, --help                             Get some help.                                      
+```
+
+## Examples
+
+### Generate C# to parse a Bitcoin API
+
+```shell                              
+$ quicktype -o LatestBlock.cs https://blockchain.info/latestblock 
+```
+
+### Generate Go code from a JSON file
 
 ```shell
-$ npm run build
+$ quicktype -l go user.json                                       
 ```
 
-## Test
+### Generate JSON Schema, then TypeScript
 
-```shell
-$ npm test
+```shell                         
+$ quicktype -o schema.json https://blockchain.info/latestblock    
+$ quicktype -o bitcoin.ts --src-lang schema schema.json           
 ```
 
-### Test only a specific fixture
-
-```shell
-$ FIXTURE=golang npm test
-```
-
-Fixtures are defined in `test/test.ts`.
-
-### Requirements
-
-#### C#
-
-[`dotnetcore`](https://www.microsoft.com/net/core#macos)
-
-#### Java
-
-[Maven](https://maven.apache.org/) (for example via [Homebrew](https://brew.sh))
-
-On MacOS that seems to be sufficient to run the tests with the system Java.
-
-## Edit
-
-```shell
-$ code . # open in VSCode
-```
-
-Install the `purescript-ide` extension in VSCode, then use the command pallete to start the `psc-ide` server for code completion, etc.
-
-## Play
-
-```shell
-$ npm start
-```
-
-The react app will live-reload when you edit any source.
-
-## Deploy
-
-* Commit to master to deploy `quicktype.io`.
-* The `quicktype` CLI will also deploy to NPM if it has a newer version number.
+Learn more at [quicktype.io](https://quicktype.io).

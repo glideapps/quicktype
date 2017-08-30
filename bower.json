@@ -23,8 +23,7 @@
     "purescript-filterable": "^2.2.0",
     "purescript-foldable-traversable": "^3.4.0",
     "purescript-transformers": "^3.4.0",
-    "purescript-unicode": "^3.0.1",
-    "pluralize": "^5.0.0"
+    "purescript-unicode": "^3.0.1"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",
