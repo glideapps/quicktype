@@ -1,5 +1,3 @@
-#!/usr/bin/env ts-node --project cli/tsconfig.json
-
 import * as fs from "fs";
 import * as path from "path";
 import * as process from "process";
@@ -7,7 +5,7 @@ import * as Either from "./either";
 import tryRequire from "./try-require"
 import * as _ from "lodash";
 
-const Main: Main = tryRequire("../../output/Main", "../dist/bundle", "./bundle");
+const Main: Main = tryRequire("../output/Main", "./Main");
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
 const commandLineArgs = require('command-line-args');

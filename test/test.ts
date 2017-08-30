@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
 
-import { main as quicktype_, Options } from "../cli/src/quicktype";
+import { main as quicktype_, Options } from "../cli/quicktype";
 
 import { inParallel } from "./lib/multicore";
 import deepEquals from "./lib/deepEquals";
@@ -443,10 +443,7 @@ async function testAll(samples: string[]) {
 
 function testCLI() {
     console.log(`* CLI sanity check`);
-
-    if (!IS_CI) exec(`cd cli && script/build.ts`);
-
-    const qt = "node cli/dist/quicktype.js";
+    const qt = "node output/quicktype.js";
     exec(`${qt} --help`);
 }
 

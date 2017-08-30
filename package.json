@@ -1,12 +1,21 @@
 {
   "name": "quicktype",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.9.8",
+  "repository": "https://github.com/quicktype/quicktype",
   "scripts": {
-    "build": "npm install --ignore-scripts && bower install && pulp build -- --source-maps --stash --censor-warnings && npm run bundle-cli",
-    "test": "npm run build && pulp test && test/test",
-    "postinstall": "npm run build && (cd cli && npm install)",
-    "bundle-cli": "mkdir -p cli/dist && pulp browserify --standalone --skip-entry-point > /tmp/bundle.js && uglifyjs --compress --mangle -- /tmp/bundle.js > cli/dist/bundle.js"
+    "prepare": "npm run build",
+    "build": "script/build.sh",
+    "test": "npm run build && pulp test && test/test"
+  },
+  "dependencies": {
+    "chalk": "^2.1.0",
+    "command-line-args": "^4.0.6",
+    "command-line-usage": "^4.0.0",
+    "json-to-ast": "^2.0.0-alpha1.2",
+    "lodash": "^4.17.4",
+    "node-fetch": "^1.7.1",
+    "pluralize": "^7.0.0",
+    "stream-json": "0.5.2"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.72",
@@ -24,7 +33,10 @@
     "shelljs": "^0.7.8",
     "ts-node": "^3.3.0",
     "typescript": "^2.4.2",
-    "uglify-js": "^3.0.26",
-    "json-to-ast": "^2.0.0-alpha1.2"
-  }
+    "uglify-js": "^3.0.26"
+  },
+  "files": [
+    "output"
+  ],
+  "bin": "output/quicktype.js"
 }
