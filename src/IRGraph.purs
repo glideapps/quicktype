@@ -34,6 +34,7 @@ module IRGraph
     , nullableFromUnion
     , isUnionMember
     , forUnion_
+    , mapUnionM
     , emptyUnion
     ) where
 
@@ -380,6 +381,34 @@ forUnion_ (IRUnionRep { primitives, arrayType, classRef, mapType }) f = do
         Nothing -> pure unit
     where
         inPrimitives bit = (Bits.and bit primitives) /= 0
+
+mapUnionM :: forall a m. Monad m => (IRType -> m a) -> IRUnionRep -> m (List a)
+mapUnionM f (IRUnionRep { primitives, arrayType, classRef, mapType }) = do
+    let l = L.Nil
+    l <- mapGeneral l mapType IRMap
+    l <- mapGeneral l classRef IRClass
+    l <- mapGeneral l arrayType IRArray    
+    l <- mapPrimitive l irUnion_String IRString
+    l <- mapPrimitive l irUnion_Bool IRBool
+    l <- mapPrimitive l irUnion_Double IRDouble
+    l <- mapPrimitive l irUnion_Integer IRInteger
+    l <- mapPrimitive l irUnion_Null IRNull
+    l <- mapPrimitive l irUnion_Nothing IRNothing
+    pure l
+    where
+        mapPrimitive :: List a -> Int -> IRType -> m (List a)
+        mapPrimitive l bit t =
+            if (Bits.and bit primitives) /= 0 then do
+                result <- f t
+                pure $ result : l
+            else
+                pure l
+        
+        mapGeneral :: forall x. List a -> Maybe x -> (x -> IRType) -> m (List a)
+        mapGeneral l Nothing _ = pure l
+        mapGeneral l (Just x) convert = do
+            result <- f $ convert x
+            pure $ result : l
 
 isUnionMember :: IRType -> IRUnionRep -> Boolean
 isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =

@@ -397,9 +397,9 @@ sortRenderItems startItems = do
     where
         expandUnion :: IRUnionRep -> Doc (List RenderItem)
         expandUnion ur = do
-            -- `unionToSet` gives us the same order we use in `callUnionIterator`.
+            -- `mapUnionM` gives us the same order we use in `callUnionIterator`.
             -- That's not always the same property language backends use, however.
-            mapped <- mapM expandType $ L.fromFoldable $ unionToSet ur
+            mapped <- mapUnionM expandType ur
             pure $ L.concat mapped
 
         expandType :: IRType -> Doc (List RenderItem)
