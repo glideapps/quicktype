@@ -25,8 +25,6 @@ cache:
     - bower_components
     - node_modules
     - output
-    - app/node_modules
-    - cli/node_modules
     - $HOME/.cache/bower
     - $HOME/.nuget/packages
 notifications:
@@ -34,32 +32,12 @@ notifications:
     on_success: never # default: change
   slack:
     secure: IeuuD+F4GlTrrm/AFPk30PbRN6iYpq2SO9ta9C40UGtWWTR4bmxZUb5WftrRbt4dBtBb5+NrOBgEIIb5PhHvJP93k38OJgybBDoLzs163O4WQHivA9OztDGoWeE3SLSfRaaH+GSU3IzWRaNPbf9KFPsi5ydQdw3R9jv61w4EUKXmSsGuArOpGP2wFpKD0gamhkzjdYlsVWL/TDEVly1BYkT/8JcYqLKtgrKm8/7G5sT6utzdDAINofvooUyKlxBGx6sgWzKgvmSPPp9GWAp5UZq9rp9xsXf/l6h6gWsyTWrM+6jV94GdUQRgb8SxsrVWtDvKuNPuCJ3M8z1kb9hHY8aSQvZSxmCBm84bQkDT0ifkq+Ij9t1fsXOlMPSLAXjTGY39gLLL71eK/1NgmnchgzkifOjfFGC8/5m/yNGFmeA0nBxHtmGslkgJUHUUZkhkO2o31NQub2a7XfFmLzi9jO145kZU/5D/pQ2oncCs+MUdc5PyCiaVRgiG+v6EYw56+CTO/lgEYdjoOeuoTVQaZJmwwmZRQOczkLCQrv2i6wsq76OBrJBE/IarjPdnNobYLduovRocOSPHdOgoCes0ZG4PKi9jLLCNwCRYJAd0vunHDh7lipJmbq56JJiq6xMu8RvL228BSF51PRs8Wv0YipzSnLJQkjuHrmYUGyGlxGs=
-before_deploy:
-  - cd $TRAVIS_BUILD_DIR
-  - . deploy.sh
-    
 deploy:
-  - provider: firebase
-    project: quicktype-174421
-    skip_cleanup: true
-    on:
-      repo: dvdsgl/quicktype
-      branch: master
-    token:
-      secure: XUx0qomXQykySucVQZvxpxJsq7AmikmUDk847CfTIBvqbKeWooA14ahR8OCAhjtXNAXlHged/5Qw3mHUIg89/673Xr1oXYj7CdAnkc/H4POZk43tbDEApMFT/4oUAs04S8JGavzmO7cOQZXRoiPGtsREWJpwiKgI33md4syJ5H9Aehj9GpZLytICpQtUeqHkmnluxh1wgx6ZTKZuRr1jyjgipalUJYW6n4j8k0dLBqX+q7s9BGVO3z+ExXoFx2o9j2ta9gmAAZPwfqQ6kdUBf4ti0e7EUok3jZYycd0mIs1n6EmuAFmnUczmSglXTnOq6EdWUo/OOUywUQB7vogg3kn/kWDGQiQmugmo/yMhJB2T9j3wV92EwvvjWIKrOobUiIwq0MTCJu8qgssolVdAlEIWpJru8WqqKcS5X+wC7wE6LAvcThpunjfS0kBl2U2UazADAKc3kK5yC6XlAOmfUzQO+VXEN5k89JEczmqR6YIwoKpsduT5P4x1JlI8181toRLVQ1N844uJRGK/X8eYU6GzEKZ7oc6RNPCBbu20pyGqaoYfOIfnoRSKJTEcklNFFlmpSVztFrt/cGpThzcd6FWtlW4lG8iUEeWPsmbFRxOl0pXeHPtRoPPflhIuvb7oUnfa6/4Stjz8M95BEFzK8eHrelU3b0VhpuiHFO7Ozv0=
-  - provider: firebase
-    project: quicktype-staging
-    skip_cleanup: true
-    on:
-      repo: dvdsgl/quicktype
-      branch: next
-    token:
-      secure: XUx0qomXQykySucVQZvxpxJsq7AmikmUDk847CfTIBvqbKeWooA14ahR8OCAhjtXNAXlHged/5Qw3mHUIg89/673Xr1oXYj7CdAnkc/H4POZk43tbDEApMFT/4oUAs04S8JGavzmO7cOQZXRoiPGtsREWJpwiKgI33md4syJ5H9Aehj9GpZLytICpQtUeqHkmnluxh1wgx6ZTKZuRr1jyjgipalUJYW6n4j8k0dLBqX+q7s9BGVO3z+ExXoFx2o9j2ta9gmAAZPwfqQ6kdUBf4ti0e7EUok3jZYycd0mIs1n6EmuAFmnUczmSglXTnOq6EdWUo/OOUywUQB7vogg3kn/kWDGQiQmugmo/yMhJB2T9j3wV92EwvvjWIKrOobUiIwq0MTCJu8qgssolVdAlEIWpJru8WqqKcS5X+wC7wE6LAvcThpunjfS0kBl2U2UazADAKc3kK5yC6XlAOmfUzQO+VXEN5k89JEczmqR6YIwoKpsduT5P4x1JlI8181toRLVQ1N844uJRGK/X8eYU6GzEKZ7oc6RNPCBbu20pyGqaoYfOIfnoRSKJTEcklNFFlmpSVztFrt/cGpThzcd6FWtlW4lG8iUEeWPsmbFRxOl0pXeHPtRoPPflhIuvb7oUnfa6/4Stjz8M95BEFzK8eHrelU3b0VhpuiHFO7Ozv0=
   - provider: npm
     email: djsiegel@gmail.com
     api_key:
       secure: GSAyOzM1iYwUrzIy5jeC09V+3c4DuiwljOG9EmnUslG6hZLmgRyeIIToK041HqQyTBrUt/QW3UbopBXjF+c/jOAVyA1Luwf2FKuKYQGcOXYuJp4GaPpcydT12jcT5G1XFL3FSQkxu7FWhWYV+uNUY5orHOKrgsLa4oRKITpVazKOKTIpEK1NxqWqdCVWvsdXgKO9FnbNiaapjsjW8ijG9sqn+INTG/78j6r1ug7Aafz/SBYXD6p37ccwSc/+yI7xa9D/cbB2Ot0gy87AM6/O35+Rp/Lkdod2gCuiCSIvKMAWqQdQ//L6NVyhzXEIf1z5XxCo2a0uJyYtLGb2Ts8C+B6nW9OSDV2lwekBl0yD8PU02TxUlcIq7TA5s0DVU0Af8RuSK+zLBvsJZWlZrivPsbEZXgq0aT1foXmThAEOrUNfEa5Uvgo9FBouCiy3EVIGQZP+oEWyrgtjMq9g1uE9P0QAum9zTpePO/3twpIjXRGtkmGTxqG0sfYPsdf7VeVPVJly08cjW1c5U9ObFwNcF6uIzTWF5XwFxD01rnjAS1PpfZYQHSC5FFLTMZW4rU7JP5reWdf5+OfbqJmjZQ/nRln9ez5yvAHxoAH17H1m5oJuw5oZccOXXKRwq39luj5w62OBS0R38BWTqLrdJPYs5FwKb4RdJt+1xF7oCwDgH1A=
     skip_cleanup: true
     on:
-      repo: dvdsgl/quicktype
+      repo: quicktype/quicktype
       branch: master
