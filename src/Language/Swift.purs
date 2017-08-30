@@ -94,9 +94,9 @@ swiftDoc = do
         blank
         renderClassExtension className properties
 
-    forEachUnion_ \unionName unionTypes -> do
+    forEachUnion_ \unionName unionRep -> do
         blank
-        renderUnionExtension unionName unionTypes
+        renderUnionExtension unionName unionRep
 
     blank
     supportFunctions
@@ -408,8 +408,9 @@ makePropertyNames properties suffix forbidden =
         otherField :: String -> String
         otherField name = "other" <> capitalize name
 
-renderUnionDefinition :: String -> Set IRType -> Doc Unit
-renderUnionDefinition unionName unionTypes = do
+renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
+renderUnionDefinition unionName unionRep = do
+    let unionTypes = unionToSet unionRep
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
     line $ "enum " <> unionName <> " {"
     indent do
@@ -424,8 +425,9 @@ renderUnionDefinition unionName unionTypes = do
             Nothing -> pure unit
     line "}"
 
-renderUnionExtension :: String -> Set IRType -> Doc Unit
-renderUnionExtension unionName unionTypes = do
+renderUnionExtension :: String -> IRUnionRep -> Doc Unit
+renderUnionExtension unionName unionRep = do
+    let unionTypes = unionToSet unionRep
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
     line $ "extension " <> unionName <> " {"
     indent do

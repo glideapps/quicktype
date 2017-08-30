@@ -278,8 +278,8 @@ unionFieldName t = goNameStyle <$> getTypeNameForUnion t
 compoundPredicates :: Array (IRType -> Boolean)
 compoundPredicates = [isArray, isClass, isMap]
 
-renderGolangUnion :: String -> Set IRType -> Doc Unit
-renderGolangUnion name allTypes = do
+renderGolangUnion :: String -> IRUnionRep -> Doc Unit
+renderGolangUnion name unionRep = do
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     let isNullableString = if isJust emptyOrNull then "true" else "false"
     fields <- L.fromFoldable nonNullTypes # sortByKeyM unionFieldName
@@ -314,6 +314,8 @@ renderGolangUnion name allTypes = do
         line $ "return marshalUnion(" <> args <> ", " <> isNullableString <> ")"
     line "}"
     where
+        allTypes = unionToSet unionRep
+
         ifClass :: (String -> String -> Doc Unit) -> Doc Unit
         ifClass f =
             let { element } = removeElement isClass allTypes

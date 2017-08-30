@@ -249,8 +249,9 @@ renderGenericDeserializer predicate tokenType types =
         indent do
             deserializeType t
 
-renderCSharpUnion :: String -> Set IRType -> Doc Unit
-renderCSharpUnion name allTypes = do
+renderCSharpUnion :: String -> IRUnionRep -> Doc Unit
+renderCSharpUnion name unionRep = do
+    let allTypes = unionToSet unionRep
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) allTypes
     line $ "public struct " <> name
     line "{"

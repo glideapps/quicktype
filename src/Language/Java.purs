@@ -297,8 +297,9 @@ renderGenericCase predicate tokenType types =
         indent do
             deserializeType t
 
-renderUnionDefinition :: String -> Set IRType -> Doc Unit
-renderUnionDefinition unionName unionTypes = do
+renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
+renderUnionDefinition unionName unionRep = do
+    let unionTypes = unionToSet unionRep
     let { element: emptyOrNull, rest: nonNullTypes } = removeElement (_ == IRNull) unionTypes
     renderFileHeader unionName ["java.io.IOException", "java.util.Map", "com.fasterxml.jackson.core.*", "com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.databind.annotation.*"]
     line $ "@JsonDeserialize(using = " <> unionName <> ".Deserializer.class)"

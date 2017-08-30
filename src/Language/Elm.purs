@@ -324,8 +324,9 @@ typeRenderer renderer className properties = do
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
     renderer className propertyNames propsList
 
-renderUnionDefinition :: String -> Set IRType -> Doc Unit
-renderUnionDefinition unionName allTypes = do
+renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
+renderUnionDefinition unionName unionRep = do
+    let allTypes = unionToSet unionRep
     fields <- L.fromFoldable allTypes # sortByKeyM (unionConstructorName unionName)
     line $ "type " <> unionName
     forWithPrefix_ fields "=" "|" \equalsOrPipe t -> do
@@ -337,8 +338,9 @@ renderUnionDefinition unionName allTypes = do
                 ts <- typeStringForType t
                 line $ equalsOrPipe <> " " <> constructor <> " " <> (parenIfNeeded ts)
 
-renderUnionFunctions :: String -> Set IRType -> Doc Unit
-renderUnionFunctions unionName allTypes = do
+renderUnionFunctions :: String -> IRUnionRep -> Doc Unit
+renderUnionFunctions unionName unionRep = do
+    let allTypes = unionToSet unionRep
     let decoderName = decoderNameFromTypeName unionName
     line $ decoderName <> " : Jdec.Decoder " <> unionName
     line $ decoderName <> " ="

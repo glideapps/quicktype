@@ -281,7 +281,7 @@ lookupTopLevelName n = do
 
 type TopLevelIterator = String -> IRType -> Doc Unit
 type ClassIterator = String -> Map String IRType -> Doc Unit
-type UnionIterator = String -> Set IRType -> Doc Unit
+type UnionIterator = String -> IRUnionRep -> Doc Unit
 
 callTopLevelIterator :: TopLevelIterator -> String -> IRType -> Doc Unit
 callTopLevelIterator f topLevelNameGiven topLevelType = do
@@ -307,9 +307,8 @@ forEachClass_ f = do
 
 callUnionIterator :: UnionIterator -> IRUnionRep -> Doc Unit
 callUnionIterator f ur = do
-    let allTypes = unionToSet ur
     unionName <- lookupUnionName ur
-    f unionName allTypes
+    f unionName ur
 
 forEachUnion_ :: UnionIterator -> Doc Unit
 forEachUnion_ f = do
