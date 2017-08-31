@@ -59,7 +59,8 @@ const FIXTURES: Fixture[] = [
     {
         name: "csharp",
         base: "test/fixtures/csharp",
-        setup: "dotnet restore",
+        // https://github.com/dotnet/cli/issues/1582
+        setup: "dotnet restore --no-cache",
         diffViaSchema: true,
         output: "QuickType.cs",
         topLevel: "QuickType",
@@ -119,6 +120,9 @@ const FIXTURES: Fixture[] = [
     {
         name: "swift",
         base: "test/fixtures/swift",
+        setup: IS_CI
+                ? "./setup-ci.sh"
+                : ":",
         diffViaSchema: false,
         output: "quicktype.swift",
         topLevel: "TopLevel",
@@ -139,7 +143,7 @@ const FIXTURES: Fixture[] = [
             "identifiers.json"
         ]
     }
-].filter(({name}) => !process.env.FIXTURE || name === process.env.FIXTURE);
+].filter(({name}) => !process.env.FIXTURE || process.env.FIXTURE.includes(name));
 
 //////////////////////////////////////
 // Go tests

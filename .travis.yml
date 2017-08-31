@@ -1,5 +1,24 @@
 language: node_js
 node_js: 'node' # latest stable node release
+env:
+  - FIXTURE=csharp,golang
+  - FIXTURE=java,schema,swift
+  - FIXTURE=elm,typescript
+jobs:
+  include:
+    - stage: deploy
+      script: true
+      env:
+        - FIXTURE=none
+      deploy:
+        provider: npm
+        email: djsiegel@gmail.com
+        api_key:
+          secure: GSAyOzM1iYwUrzIy5jeC09V+3c4DuiwljOG9EmnUslG6hZLmgRyeIIToK041HqQyTBrUt/QW3UbopBXjF+c/jOAVyA1Luwf2FKuKYQGcOXYuJp4GaPpcydT12jcT5G1XFL3FSQkxu7FWhWYV+uNUY5orHOKrgsLa4oRKITpVazKOKTIpEK1NxqWqdCVWvsdXgKO9FnbNiaapjsjW8ijG9sqn+INTG/78j6r1ug7Aafz/SBYXD6p37ccwSc/+yI7xa9D/cbB2Ot0gy87AM6/O35+Rp/Lkdod2gCuiCSIvKMAWqQdQ//L6NVyhzXEIf1z5XxCo2a0uJyYtLGb2Ts8C+B6nW9OSDV2lwekBl0yD8PU02TxUlcIq7TA5s0DVU0Af8RuSK+zLBvsJZWlZrivPsbEZXgq0aT1foXmThAEOrUNfEa5Uvgo9FBouCiy3EVIGQZP+oEWyrgtjMq9g1uE9P0QAum9zTpePO/3twpIjXRGtkmGTxqG0sfYPsdf7VeVPVJly08cjW1c5U9ObFwNcF6uIzTWF5XwFxD01rnjAS1PpfZYQHSC5FFLTMZW4rU7JP5reWdf5+OfbqJmjZQ/nRln9ez5yvAHxoAH17H1m5oJuw5oZccOXXKRwq39luj5w62OBS0R38BWTqLrdJPYs5FwKb4RdJt+1xF7oCwDgH1A=
+        skip_cleanup: true
+        on:
+          repo: quicktype/quicktype
+          branch: master  
 addons:
   apt:
     sources:
@@ -11,33 +30,21 @@ addons:
       - default-jdk
       - clang
 before_install:
-  - pushd $HOME
-  - curl -o swift.tar.gz https://swift.org/builds/swift-3.1.1-release/ubuntu1404/swift-3.1.1-RELEASE/swift-3.1.1-RELEASE-ubuntu14.04.tar.gz
-  - tar -zxf swift.tar.gz
-  - rm swift.tar.gz
-  - ln -s swift-3.1.1-RELEASE-ubuntu14.04 swift
-  - popd
+  - script/setup-ci.sh
+install:
+  - sysconfcpus/bin/sysconfcpus -n 2 npm install
 script:
   - test/test
 cache:
   directories:
-    - sysconfcpus/bin
     - bower_components
     - node_modules
     - output
     - $HOME/.cache/bower
     - $HOME/.nuget/packages
+    - $HOME/swift
 notifications:
   email:
     on_success: never # default: change
   slack:
     secure: IeuuD+F4GlTrrm/AFPk30PbRN6iYpq2SO9ta9C40UGtWWTR4bmxZUb5WftrRbt4dBtBb5+NrOBgEIIb5PhHvJP93k38OJgybBDoLzs163O4WQHivA9OztDGoWeE3SLSfRaaH+GSU3IzWRaNPbf9KFPsi5ydQdw3R9jv61w4EUKXmSsGuArOpGP2wFpKD0gamhkzjdYlsVWL/TDEVly1BYkT/8JcYqLKtgrKm8/7G5sT6utzdDAINofvooUyKlxBGx6sgWzKgvmSPPp9GWAp5UZq9rp9xsXf/l6h6gWsyTWrM+6jV94GdUQRgb8SxsrVWtDvKuNPuCJ3M8z1kb9hHY8aSQvZSxmCBm84bQkDT0ifkq+Ij9t1fsXOlMPSLAXjTGY39gLLL71eK/1NgmnchgzkifOjfFGC8/5m/yNGFmeA0nBxHtmGslkgJUHUUZkhkO2o31NQub2a7XfFmLzi9jO145kZU/5D/pQ2oncCs+MUdc5PyCiaVRgiG+v6EYw56+CTO/lgEYdjoOeuoTVQaZJmwwmZRQOczkLCQrv2i6wsq76OBrJBE/IarjPdnNobYLduovRocOSPHdOgoCes0ZG4PKi9jLLCNwCRYJAd0vunHDh7lipJmbq56JJiq6xMu8RvL228BSF51PRs8Wv0YipzSnLJQkjuHrmYUGyGlxGs=
-deploy:
-  - provider: npm
-    email: djsiegel@gmail.com
-    api_key:
-      secure: GSAyOzM1iYwUrzIy5jeC09V+3c4DuiwljOG9EmnUslG6hZLmgRyeIIToK041HqQyTBrUt/QW3UbopBXjF+c/jOAVyA1Luwf2FKuKYQGcOXYuJp4GaPpcydT12jcT5G1XFL3FSQkxu7FWhWYV+uNUY5orHOKrgsLa4oRKITpVazKOKTIpEK1NxqWqdCVWvsdXgKO9FnbNiaapjsjW8ijG9sqn+INTG/78j6r1ug7Aafz/SBYXD6p37ccwSc/+yI7xa9D/cbB2Ot0gy87AM6/O35+Rp/Lkdod2gCuiCSIvKMAWqQdQ//L6NVyhzXEIf1z5XxCo2a0uJyYtLGb2Ts8C+B6nW9OSDV2lwekBl0yD8PU02TxUlcIq7TA5s0DVU0Af8RuSK+zLBvsJZWlZrivPsbEZXgq0aT1foXmThAEOrUNfEa5Uvgo9FBouCiy3EVIGQZP+oEWyrgtjMq9g1uE9P0QAum9zTpePO/3twpIjXRGtkmGTxqG0sfYPsdf7VeVPVJly08cjW1c5U9ObFwNcF6uIzTWF5XwFxD01rnjAS1PpfZYQHSC5FFLTMZW4rU7JP5reWdf5+OfbqJmjZQ/nRln9ez5yvAHxoAH17H1m5oJuw5oZccOXXKRwq39luj5w62OBS0R38BWTqLrdJPYs5FwKb4RdJt+1xF7oCwDgH1A=
-    skip_cleanup: true
-    on:
-      repo: quicktype/quicktype
-      branch: master
