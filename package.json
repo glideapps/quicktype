@@ -6,7 +6,8 @@
   "scripts": {
     "prepare": "npm run build",
     "build": "script/build.sh",
-    "test": "npm run build && pulp test && test/test"
+    "test": "npm run build && pulp test && test/test",
+    "start": "script/start.sh"
   },
   "dependencies": {
     "chalk": "^2.1.0",
