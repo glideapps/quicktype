@@ -7,14 +7,16 @@ env:
 jobs:
   include:
     - stage: deploy
-      script: true
+      script:
+        - npm run pub
+        - cd output
       env:
         - FIXTURE=none
       deploy:
         provider: npm
         email: djsiegel@gmail.com
         api_key:
-          secure: GSAyOzM1iYwUrzIy5jeC09V+3c4DuiwljOG9EmnUslG6hZLmgRyeIIToK041HqQyTBrUt/QW3UbopBXjF+c/jOAVyA1Luwf2FKuKYQGcOXYuJp4GaPpcydT12jcT5G1XFL3FSQkxu7FWhWYV+uNUY5orHOKrgsLa4oRKITpVazKOKTIpEK1NxqWqdCVWvsdXgKO9FnbNiaapjsjW8ijG9sqn+INTG/78j6r1ug7Aafz/SBYXD6p37ccwSc/+yI7xa9D/cbB2Ot0gy87AM6/O35+Rp/Lkdod2gCuiCSIvKMAWqQdQ//L6NVyhzXEIf1z5XxCo2a0uJyYtLGb2Ts8C+B6nW9OSDV2lwekBl0yD8PU02TxUlcIq7TA5s0DVU0Af8RuSK+zLBvsJZWlZrivPsbEZXgq0aT1foXmThAEOrUNfEa5Uvgo9FBouCiy3EVIGQZP+oEWyrgtjMq9g1uE9P0QAum9zTpePO/3twpIjXRGtkmGTxqG0sfYPsdf7VeVPVJly08cjW1c5U9ObFwNcF6uIzTWF5XwFxD01rnjAS1PpfZYQHSC5FFLTMZW4rU7JP5reWdf5+OfbqJmjZQ/nRln9ez5yvAHxoAH17H1m5oJuw5oZccOXXKRwq39luj5w62OBS0R38BWTqLrdJPYs5FwKb4RdJt+1xF7oCwDgH1A=
+          secure: tYmFhDkXP+5QjWUkE7+ixF6S6yFynedzJQGWkZX0U6m4mFzOyp6XfjbOc2MGF0obQlZQpJ/agHIy8G3qFH8FsTNhMwybu1Uy8mQNnpm0KNJhgNabPLlyLNdG9KoBHHHntpD8212hKzy2KbOq9RTwyENLNIrq1GKiuQfAPGB5PY0BRKCz3aa740e6uXamkl/HG05ZVHoeKvW+PGjrNAZrRmoQfmjatkl88E4o0CrzY5NTDEB1/rGhKFxtIPQH3OieCTxXigzCWUiwia8XIyy44zNXjln9IKr8bLZjPTN6/s4xm6z/woqzY7ctqFXZ5SfIGLGnz16AJB36FCXFhPglggHJNlcCBIm+qUMkyIXA4EPZv7XNPV0vKXhoNdnxkKKafK+BfIrqobFw80ojIrUzW2+P8j+B4e8IrEK5sXv3alLzjld1JbzEyJj6YWVG8UrcJoVT1hz7y450Vb2j4MhGo0FxCh3CSjOXGAyibrM8BVLJ4gGCH7acQBm8W0Yk8X1knM3/bTlIRDu0g+CIV/IDIYlJ4d/1AW/ZWYja0BBz8EDjDAg/VICVk7yS+AYNkN6i+bZA7N6T12+LzTAJuYJjNN39smTHhnLotYYbI4WXmOa9O64E+Ps6NnQFoEpEqIpP3xyriu81ysE18pcZtoQkHuAwcbx/N7fb7k/0yJGCCsw=
         skip_cleanup: true
         on:
           repo: quicktype/quicktype
