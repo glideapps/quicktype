@@ -14,7 +14,7 @@ $ npm run build
 
 ## Live-reloading for quick feedback
 
-If you're working on a renderer, you often want quick feedback on renderer output as you work.
+If you're working on a renderer, you'll likely want quick feedback on renderer output as you edit.
 Use `npm start` to watch PureScript files for changes, and recompile and rerun `quicktype` for
 live feedback on changes. For example, if you're developing a new renderer for `fortran`, you
 could use the following command to rebuild and reinvoke `quicktype` as you implement your renderer:
