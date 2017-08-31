@@ -61,7 +61,7 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
             // We run everything on the master process if only one worker
             for (let { item, i } of items) {
                 let result = await map(item, i);
-                accumulator = await reduce(accumulator, result, item);
+                accumulator = reduce && await reduce(accumulator, result, item);
             }
             return done && done(accumulator);
         } else {
