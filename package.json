@@ -1,9 +1,10 @@
 {
   "name": "quicktype",
-  "version": "0.9.8",
+  "version": "0.9.11",
   "license": "Apache-2.0",
   "repository": "https://github.com/quicktype/quicktype",
   "scripts": {
+    "pub": "script/publish.sh",
     "prepare": "npm run build",
     "build": "script/build.sh",
     "test": "npm run build && pulp test && test/test",
@@ -36,7 +37,7 @@
     "uglify-js": "^3.0.26"
   },
   "files": [
-    "output"
+    "*"
   ],
-  "bin": "output/quicktype.js"
+  "bin": "quicktype.js"
 }

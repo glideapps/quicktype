@@ -1,45 +1,60 @@
-## Synopsis
+[![Build Status](https://travis-ci.com/dvdsgl/quicktype.svg?token=PSTj9tVyM1RDRiZ17Sgd&branch=master)](https://travis-ci.com/dvdsgl/quicktype)
+
+## Setup
 
 ```shell
-$ quicktype [--lang ts|go|cs|elm|schema|swift] FILE|URL ... 
+$ npm install
 ```
 
-## Description
-
-Given JSON sample data, quicktype outputs code for working with that data in  
-TypeScript, Go, C#, Elm, and more.                                            
-
-## Options
-
-```
--o, --out FILE                         The output file. Determines --lang and --top-level. 
--t, --top-level NAME                   The name for the top level type.                    
--l, --lang ts|go|cs|elm|schema|swift   The target language.                                
--s, --src-lang json|schema             The source language (default is json).              
---src FILE|URL                         The file or url to type.
---src-urls FILE                        Tracery grammar describing URLs to crawl.                      
--h, --help                             Get some help.                                      
-```
-
-## Examples
-
-### Generate C# to parse a Bitcoin API
-
-```shell                              
-$ quicktype -o LatestBlock.cs https://blockchain.info/latestblock 
-```
-
-### Generate Go code from a JSON file
+## Build
 
 ```shell
-$ quicktype -l go user.json                                       
+$ npm run build
 ```
 
-### Generate JSON Schema, then TypeScript
+## Live-reloading for quick feedback
 
-```shell                         
-$ quicktype -o schema.json https://blockchain.info/latestblock    
-$ quicktype -o bitcoin.ts --src-lang schema schema.json           
+If you're working on a renderer, you'll likely want quick feedback on renderer output as you edit.
+Use `npm start` to watch PureScript files for changes, and recompile and rerun `quicktype` for
+live feedback. For example, if you're developing a new renderer for `fortran`, you
+could use the following command to rebuild and reinvoke `quicktype` as you implement your renderer:
+
+```shell
+$ npm start -- "--lang fortran test/inputs/json/samples/bitcoin-block.json"
 ```
 
-Learn more at [quicktype.io](https://quicktype.io).
+The command in quotes is passed to `quicktype`, so you can render local `.json` files, URLs, or add other options.
+
+## Test
+
+```shell
+$ npm test
+```
+
+### Test only a specific fixture
+
+```shell
+$ FIXTURE=golang npm test
+```
+
+Fixtures are defined in `test/test.ts`.
+
+### Requirements
+
+#### C#
+
+[`dotnetcore`](https://www.microsoft.com/net/core#macos)
+
+#### Java
+
+[Maven](https://maven.apache.org/) (for example via [Homebrew](https://brew.sh))
+
+On MacOS that seems to be sufficient to run the tests with the system Java.
+
+## Edit
+
+```shell
+$ code . # open in VSCode
+```
+
+Install the `purescript-ide` extension in VSCode, then use the command pallete to start the `psc-ide` server for code completion, etc.
