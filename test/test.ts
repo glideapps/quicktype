@@ -32,7 +32,7 @@ const IS_PR = process.env.TRAVIS_PULL_REQUEST && process.env.TRAVIS_PULL_REQUEST
 const DEBUG = typeof process.env.DEBUG !== 'undefined';
 
 const CPUs = IS_CI
-    ? 2 /* Travis has only 2 but reports 8 */
+    ? 1 /* Travis has only 1.5 but reports 8 */
     : +process.env.CPUs || os.cpus().length;
 
 function debug<T>(x: T): T {

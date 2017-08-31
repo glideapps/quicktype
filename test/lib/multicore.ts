@@ -57,7 +57,7 @@ export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Res
         });
 
         console.error(`* Forking ${workers} workers ${guys(workers)}`);
-        if (workers === 0) {
+        if (workers < 2) {
             // We run everything on the master process if only one worker
             for (let { item, i } of items) {
                 let result = await map(item, i);
