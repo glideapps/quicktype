@@ -1,26 +1,5 @@
 language: node_js
 node_js: 'node' # latest stable node release
-env:
-  - FIXTURE=csharp,golang
-  - FIXTURE=java,schema,swift
-  - FIXTURE=elm,typescript
-jobs:
-  include:
-    - stage: deploy
-      script:
-        - npm run pub
-        - cd output
-      env:
-        - FIXTURE=none
-      deploy:
-        provider: npm
-        email: djsiegel@gmail.com
-        api_key:
-          secure: tYmFhDkXP+5QjWUkE7+ixF6S6yFynedzJQGWkZX0U6m4mFzOyp6XfjbOc2MGF0obQlZQpJ/agHIy8G3qFH8FsTNhMwybu1Uy8mQNnpm0KNJhgNabPLlyLNdG9KoBHHHntpD8212hKzy2KbOq9RTwyENLNIrq1GKiuQfAPGB5PY0BRKCz3aa740e6uXamkl/HG05ZVHoeKvW+PGjrNAZrRmoQfmjatkl88E4o0CrzY5NTDEB1/rGhKFxtIPQH3OieCTxXigzCWUiwia8XIyy44zNXjln9IKr8bLZjPTN6/s4xm6z/woqzY7ctqFXZ5SfIGLGnz16AJB36FCXFhPglggHJNlcCBIm+qUMkyIXA4EPZv7XNPV0vKXhoNdnxkKKafK+BfIrqobFw80ojIrUzW2+P8j+B4e8IrEK5sXv3alLzjld1JbzEyJj6YWVG8UrcJoVT1hz7y450Vb2j4MhGo0FxCh3CSjOXGAyibrM8BVLJ4gGCH7acQBm8W0Yk8X1knM3/bTlIRDu0g+CIV/IDIYlJ4d/1AW/ZWYja0BBz8EDjDAg/VICVk7yS+AYNkN6i+bZA7N6T12+LzTAJuYJjNN39smTHhnLotYYbI4WXmOa9O64E+Ps6NnQFoEpEqIpP3xyriu81ysE18pcZtoQkHuAwcbx/N7fb7k/0yJGCCsw=
-        skip_cleanup: true
-        on:
-          repo: quicktype/quicktype
-          branch: master  
 addons:
   apt:
     sources:
@@ -35,8 +14,7 @@ before_install:
   - script/setup-ci.sh
 install:
   - sysconfcpus/bin/sysconfcpus -n 2 npm install
-script:
-  - test/test
+script: test/test
 cache:
   directories:
     - bower_components
@@ -50,3 +28,14 @@ notifications:
     on_success: never # default: change
   slack:
     secure: IeuuD+F4GlTrrm/AFPk30PbRN6iYpq2SO9ta9C40UGtWWTR4bmxZUb5WftrRbt4dBtBb5+NrOBgEIIb5PhHvJP93k38OJgybBDoLzs163O4WQHivA9OztDGoWeE3SLSfRaaH+GSU3IzWRaNPbf9KFPsi5ydQdw3R9jv61w4EUKXmSsGuArOpGP2wFpKD0gamhkzjdYlsVWL/TDEVly1BYkT/8JcYqLKtgrKm8/7G5sT6utzdDAINofvooUyKlxBGx6sgWzKgvmSPPp9GWAp5UZq9rp9xsXf/l6h6gWsyTWrM+6jV94GdUQRgb8SxsrVWtDvKuNPuCJ3M8z1kb9hHY8aSQvZSxmCBm84bQkDT0ifkq+Ij9t1fsXOlMPSLAXjTGY39gLLL71eK/1NgmnchgzkifOjfFGC8/5m/yNGFmeA0nBxHtmGslkgJUHUUZkhkO2o31NQub2a7XfFmLzi9jO145kZU/5D/pQ2oncCs+MUdc5PyCiaVRgiG+v6EYw56+CTO/lgEYdjoOeuoTVQaZJmwwmZRQOczkLCQrv2i6wsq76OBrJBE/IarjPdnNobYLduovRocOSPHdOgoCes0ZG4PKi9jLLCNwCRYJAd0vunHDh7lipJmbq56JJiq6xMu8RvL228BSF51PRs8Wv0YipzSnLJQkjuHrmYUGyGlxGs=
+before_deploy:
+  - npm run pub
+  - cd output
+deploy:
+  - provider: npm
+    email: djsiegel@gmail.com
+    api_key:
+      secure: "UgerPs+Y8yH1zHlyQ4LsKk6KUruJvaLPtlVpwTp19/U49q6be9YXut0C9NFtTguOxKMKdXQiQwcLYRnVcPFVqdnbFj6ie45pmJNNcq6xjfNbV+M26Y7FCzXGNrG2rspA5gCaXGLgbDegT1gpH0NC99V/WPvAlAiGxGhVmZuweNXt6HAhMyuWkKfBsxoUU8i3mUJr72UyO/DiJJxGK7kn4n3Z5jyaooaXOgweroVvbrg0/DFEz2ghQgWSIlNoER2OR9JNxhS0RRCmbtbGdpVlbQ3+NjOpBVjk0AXd8y/Jsr9re7ngqqYyH4zl7oo4SfijuErvznwMu0vwLiAd/c1MvNF+FI+EyvaQzipoulk9VMAXt5oAIXEBk0ZM8huhUcQ/ny3DSg7fqcUbgfh1XLAbdPvieWvYakOtixMBYJuPdH4xLMurcfTIaM+O7nKOONlcPsT5E9EE7D6NH3NKI/UDl78CkTAMIqyygV7ZqUO5x8QtuGsL2n33xoVikRdB8giVcitZTQmRKVKkDhGPfPJkunu8Rl2hgWCiC2/NwOmX2KLFozy4RN1R32zTnz0U3tzAhC33x3p2zvTttus75xRxqZ2DV1ArzpqxGFIiX0/Q2eeyn/cLRTPIWFhIGguYTDmyMPyp9XoJUUG83tzG4wGJx/EiZ9GhuSjLJEu3dbO9aiE="
+    skip_cleanup: true
+    on:
+      branch: master
