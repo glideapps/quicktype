@@ -7,6 +7,7 @@ if [ -z "$CI" ]; then
 fi
 
 # Copy npm package files into output/
+mkdir -p output
 cp LICENSE* package*.json cli/README.md output/
 cd output
 

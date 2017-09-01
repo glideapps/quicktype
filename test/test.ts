@@ -31,9 +31,7 @@ const IS_PUSH = process.env.TRAVIS_EVENT_TYPE === "push";
 const IS_PR = process.env.TRAVIS_PULL_REQUEST && process.env.TRAVIS_PULL_REQUEST !== "false";
 const DEBUG = typeof process.env.DEBUG !== 'undefined';
 
-const CPUs = IS_CI
-    ? 1 /* Travis has only 1.5 but reports 8 */
-    : +process.env.CPUs || os.cpus().length;
+const CPUs = +process.env.CPUs || os.cpus().length;
 
 function debug<T>(x: T): T {
     if (DEBUG) console.log(x);
@@ -105,9 +103,7 @@ const FIXTURES: Fixture[] = [
     {
         name: "elm",
         base: "test/fixtures/elm",
-        setup: IS_CI
-                ? "./setup-ci.sh"
-                : "rm -rf elm-stuff/build-artifacts && elm-make --yes",
+        setup: "rm -rf elm-stuff/build-artifacts && elm-make --yes",
         diffViaSchema: true,
         output: "QuickType.elm",
         topLevel: "QuickType",
@@ -120,9 +116,6 @@ const FIXTURES: Fixture[] = [
     {
         name: "swift",
         base: "test/fixtures/swift",
-        setup: IS_CI
-                ? "./setup-ci.sh"
-                : ":",
         diffViaSchema: false,
         output: "quicktype.swift",
         topLevel: "TopLevel",
@@ -187,8 +180,7 @@ async function testJava(sample: string) {
 /////////////////////////////////////
 
 async function testElm(sample: string) {
-    let limit_cpus = IS_CI ? "$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2" : "";
-    exec(`${limit_cpus} elm-make Main.elm QuickType.elm --output elm.js`);
+    exec(`elm-make Main.elm QuickType.elm --output elm.js`);
 
     compareJsonFileToJson({
         expectedFile: sample,
@@ -455,41 +447,7 @@ function testsInDir(dir: string): string[] {
     return shell.ls(`${dir}/*.json`);
 }
 
-function changedFiles(): string[] {
-    let diff = exec("git diff --name-only $TRAVIS_COMMIT_RANGE").stdout;
-    return diff.trim().split("\n");
-}
-
-const testSkippingCriteria = {
-    "Only app/ paths changed"(changed: string[]) {
-        return _.every(changed, (file) => _.startsWith(file, "app/"));
-    },
-    "Only cli/README.json changed"(changed: string[]) {
-        return _.without(changed, "cli/README.md").length === 0;
-    }
-};
-
-function shouldSkipTests(): boolean {
-    try {
-        if (IS_CI && process.env.TRAVIS_COMMIT_RANGE) {
-            let changed = changedFiles();
-            for (let reason of Object.keys(testSkippingCriteria)) {
-                if (testSkippingCriteria[reason](changed)) {
-                    console.error(`* ${reason}; skipping tests.`);
-                    return true;
-                }
-            }            
-        }
-    } catch (e) {
-    }
-    return false;
-}
-
 async function main(sources: string[]) {
-    if (shouldSkipTests()) {
-        return;
-    }
-
     let prioritySources = _.concat(
         testsInDir("test/inputs/json/priority"),
         testsInDir("test/inputs/json/samples"),
