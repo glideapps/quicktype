@@ -12,7 +12,15 @@ $ npm install
 $ npm run build
 ```
 
-## Live-reloading for quick feedback
+## Edit
+
+```shell
+$ code . # open in VSCode
+```
+
+Install the `purescript-ide` extension in VSCode, then use the command pallete to start the `psc-ide` server for code completion, etc.
+
+### Live-reloading for quick feedback
 
 If you're working on a renderer, you'll likely want quick feedback on renderer output as you edit.
 Use `npm start` to watch PureScript files for changes, and recompile and rerun `quicktype` for
@@ -31,30 +39,24 @@ The command in quotes is passed to `quicktype`, so you can render local `.json` 
 $ npm test
 ```
 
+### Requirements
+
+* [`dotnetcore`](https://www.microsoft.com/net/core#macos)
+* [Maven](https://maven.apache.org/) (for example via [Homebrew](https://brew.sh))
+
+On macOS the system Java seems sufficient to run tests.
+
 ### Test only a specific fixture
 
 ```shell
 $ FIXTURE=golang npm test
 ```
 
-Fixtures are defined in `test/test.ts`.
-
-### Requirements
-
-#### C#
-
-[`dotnetcore`](https://www.microsoft.com/net/core#macos)
-
-#### Java
-
-[Maven](https://maven.apache.org/) (for example via [Homebrew](https://brew.sh))
-
-On MacOS that seems to be sufficient to run the tests with the system Java.
-
-## Edit
+### Using Docker
 
 ```shell
-$ code . # open in VSCode
+$ docker build --cache-from dvdsgl/quicktype -t quicktype .
+$ docker run -t quicktype test/test
+$ # run specific fixtures
+$ docker run -t quicktype sh -c "FIXTURE=golang,java test/test"
 ```
-
-Install the `purescript-ide` extension in VSCode, then use the command pallete to start the `psc-ide` server for code completion, etc.
