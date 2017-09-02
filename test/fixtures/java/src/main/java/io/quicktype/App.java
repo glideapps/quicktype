@@ -13,7 +13,8 @@ public class App
         try {
             String input = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(args[0])), "UTF-8");
             String output = Converter.toJsonString(Converter.fromJsonString(input));
-            System.out.println(output);
+            byte[] arr = output.getBytes("UTF-8");
+            System.out.write(arr, 0, arr.length);
         } catch (Exception exc) {
             System.err.printf("Error: %s\n", exc.getMessage());
             System.exit(1);
