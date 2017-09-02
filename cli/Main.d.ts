@@ -10,6 +10,7 @@ type ErrorMessage = string;
 interface Main {
     renderers: Renderer[];
     main(config: Config): Either<ErrorMessage, SourceCode>;
+    mainWithOptions(options: {[name: string]: string}): ((config: Config) => Either<ErrorMessage, SourceCode>);
     urlsFromJsonGrammar(json: object): Either<string, { [key: string]: string[] }>;
     intSentinel: string;
 }
@@ -23,5 +24,6 @@ type TopLevelConfig =
 
 interface Config {
     language: string;
-    topLevels: TopLevelConfig[];     
+    topLevels: TopLevelConfig[];
+    rendererOptions?: { [name: string]: string };
 }
