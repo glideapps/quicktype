@@ -22,6 +22,7 @@ renderer =
     , aceMode: "groovy"
     , extension: "types"
     , doc: pseudocodeDoc
+    , options: M.empty
     , transforms:
         { nameForClass: noForbidNamer nameForClass
         , nextName: \s -> "Other" <> s

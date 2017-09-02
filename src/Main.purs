@@ -14,6 +14,7 @@ import Control.Monad.State (modify)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson) as J
 import Data.StrMap as SM
+import Data.Map as M
 import Doc as Doc
 import IRTypeable (makeTypes)
 import IRTypeable (intSentinel) as IRTypeable
@@ -49,7 +50,8 @@ main json = do
         makeTypes schemas
         modify regatherUnionNames
 
-    pure $ Doc.runRenderer renderer graph
+    let defaultOptionValues = M.mapWithKey (\k v -> v.default) renderer.options
+    pure $ Doc.runRenderer renderer graph defaultOptionValues
 
 urlsFromJsonGrammar :: Json -> Either Error (SM.StrMap (Array String))
 urlsFromJsonGrammar json = do

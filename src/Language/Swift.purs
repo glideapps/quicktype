@@ -33,6 +33,7 @@ renderer =
     , aceMode: "swift"
     , extension: "swift"
     , doc: swiftDoc
+    , options: M.empty
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s

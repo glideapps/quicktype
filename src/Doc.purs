@@ -12,6 +12,7 @@ module Doc
     , getUnions
     , getUnionNames
     , getTopLevelNames
+    , getBooleanOptionValue
     , lookupName
     , lookupClassName
     , lookupUnionName
@@ -60,12 +61,14 @@ import Data.Set as S
 import Data.String (Pattern(..), fromCharArray, length, split, toCharArray) as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
+import Options (OptionValues, Options, booleanOptionValue)
 import Utils (sortByKeyM, mapM)
 
 type Renderer =
     { name :: String
     , extension :: String
     , aceMode :: String
+    , options :: Options
     , doc :: Doc Unit
     , transforms :: Transforms
     }
@@ -93,6 +96,7 @@ type DocEnv =
     , unionNames :: Map IRUnionRep String
     , topLevelNames :: Map String String
     , unionSet :: Set IRUnionRep
+    , optionValues :: OptionValues
     }
 
 newtype Doc a = Doc (RWS DocEnv String DocState a)
@@ -103,11 +107,11 @@ derive newtype instance applicativeDoc :: Applicative Doc
 derive newtype instance bindDoc :: Bind Doc
 derive newtype instance monadDoc :: Monad Doc
 
-runRenderer :: Renderer -> IRGraph -> String
+runRenderer :: Renderer -> IRGraph -> OptionValues -> String
 runRenderer { doc, transforms } = runDoc doc transforms
 
-runDoc :: forall a. Doc a -> Transforms -> IRGraph -> String
-runDoc (Doc w) t graph@(IRGraph { toplevels }) =
+runDoc :: forall a. Doc a -> Transforms -> IRGraph -> OptionValues -> String
+runDoc (Doc w) t graph@(IRGraph { toplevels }) optionValues =
     let topLevelTuples = map (\n -> Tuple n n) $ M.keys toplevels
         forbiddenFromStart = S.fromFoldable t.forbiddenNames
         { names: topLevelNames, forbidden: forbiddenAfterTopLevels } = transformNames t.topLevelName t.nextName forbiddenFromStart topLevelTuples
@@ -115,7 +119,7 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) =
         { names: classNames, forbidden: forbiddenAfterClasses } = transformNames t.nameForClass t.nextName forbiddenAfterTopLevels classes
         { unionSet, unionNames } = doUnions classNames forbiddenAfterClasses
     in
-        evalRWS w { graph, classNames, unionNames, topLevelNames, unionSet } { indent: 0 } # snd
+        evalRWS w { graph, classNames, unionNames, topLevelNames, unionSet, optionValues } { indent: 0 } # snd
     where
         doUnions :: Map Int String -> Set String -> { unionSet :: Set IRUnionRep, unionNames :: Map IRUnionRep String }
         doUnions classNames forbidden = case t.unions of
@@ -258,6 +262,13 @@ getClass :: Int -> Doc IRClassData
 getClass i = do
   graph <- getGraph
   pure $ getClassFromGraph graph i
+
+getOptionValues :: Doc OptionValues
+getOptionValues = Doc (asks _.optionValues)
+
+getBooleanOptionValue :: String -> Doc Boolean
+getBooleanOptionValue name =
+    booleanOptionValue name <$> getOptionValues
 
 lookupName :: forall a. Ord a => a -> Map a String -> String
 lookupName original nameMap =
