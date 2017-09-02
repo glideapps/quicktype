@@ -1,7 +1,7 @@
 #!/bin/sh
 
 npm install --ignore-scripts
-bower install
+bower install --allow-root
 pulp build -- --source-maps --stash --censor-warnings
 
 tsc --project cli/tsconfig.json
