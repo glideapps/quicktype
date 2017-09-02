@@ -38,7 +38,7 @@ jobs:
           secure: "UgerPs+Y8yH1zHlyQ4LsKk6KUruJvaLPtlVpwTp19/U49q6be9YXut0C9NFtTguOxKMKdXQiQwcLYRnVcPFVqdnbFj6ie45pmJNNcq6xjfNbV+M26Y7FCzXGNrG2rspA5gCaXGLgbDegT1gpH0NC99V/WPvAlAiGxGhVmZuweNXt6HAhMyuWkKfBsxoUU8i3mUJr72UyO/DiJJxGK7kn4n3Z5jyaooaXOgweroVvbrg0/DFEz2ghQgWSIlNoER2OR9JNxhS0RRCmbtbGdpVlbQ3+NjOpBVjk0AXd8y/Jsr9re7ngqqYyH4zl7oo4SfijuErvznwMu0vwLiAd/c1MvNF+FI+EyvaQzipoulk9VMAXt5oAIXEBk0ZM8huhUcQ/ny3DSg7fqcUbgfh1XLAbdPvieWvYakOtixMBYJuPdH4xLMurcfTIaM+O7nKOONlcPsT5E9EE7D6NH3NKI/UDl78CkTAMIqyygV7ZqUO5x8QtuGsL2n33xoVikRdB8giVcitZTQmRKVKkDhGPfPJkunu8Rl2hgWCiC2/NwOmX2KLFozy4RN1R32zTnz0U3tzAhC33x3p2zvTttus75xRxqZ2DV1ArzpqxGFIiX0/Q2eeyn/cLRTPIWFhIGguYTDmyMPyp9XoJUUG83tzG4wGJx/EiZ9GhuSjLJEu3dbO9aiE="
         skip_cleanup: true
         on:
-          branch: fix-npm-publish
+          branch: master
       cache:
         directories:
           - node_modules
