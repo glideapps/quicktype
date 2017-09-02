@@ -3,7 +3,7 @@ node_js: node # latest
 sudo: required
 env:
   - FIXTURE=csharp,golang
-  - FIXTURE=schema,swift
+  - FIXTURE=schema,swift,java
   - FIXTURE=elm,typescript
 services:
   - docker
