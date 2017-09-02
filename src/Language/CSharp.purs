@@ -13,6 +13,7 @@ import Data.List as L
 import Data.Map as M
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
+import Data.Set (Set)
 import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
 
 forbiddenNames :: Array String
@@ -31,14 +32,17 @@ renderer =
         , topLevelName: noForbidNamer csNameStyle
         , unions: Just
             { predicate: unionIsNotSimpleNullable
-            , properName: simpleNamer (csNameStyle <<< combineNames)
+            , properName: simpleNamer nameForType
             , nameFromTypes: simpleNamer (unionNameIntercalated csNameStyle "Or")
             }
         }
     }
 
+nameForType :: Named (Set String) -> String
+nameForType = csNameStyle <<< combineNames
+
 nameForClass :: IRClassData -> String
-nameForClass (IRClassData { names }) = csNameStyle $ combineNames names
+nameForClass (IRClassData { names }) = nameForType names
 
 isValueType :: IRType -> Boolean
 isValueType IRInteger = true
