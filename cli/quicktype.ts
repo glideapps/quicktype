@@ -80,7 +80,13 @@ const optionDefinitions: OptionDefinition[] = [
   }
 ];
 
-const sections = [
+interface UsageSection {
+  header?: string;
+  content?: string | string[];
+  optionList?: OptionDefinition[];
+}
+
+const sectionsBeforeRenderers: UsageSection[] = [
   {
     header: 'Synopsis',
     content: `$ quicktype [[bold]{--lang} ${langs}] FILE|URL ...`
@@ -92,7 +98,9 @@ const sections = [
   {
     header: 'Options',
     optionList: optionDefinitions
-  },
+  }
+];
+const sectionsAfterRenderers: UsageSection[] = [  
   {
     header: 'Examples',
     content: [
@@ -112,7 +120,32 @@ const sections = [
   }
 ];
 
+function optionDefinitionsForRenderer(renderer: Renderer): OptionDefinition[] {
+  return _.map(renderer.options, o => {
+    return {
+      name: o.name,
+      description: o.description,
+      typeLabel: o.typeLabel,
+      renderer: true,
+      type: String as any } as OptionDefinition;
+    });
+}
+
 function usage() {
+  const rendererSections: UsageSection[] = [];
+  
+  _.forEach(Main.renderers, renderer => {
+    if (renderer.options.length == 0)
+      return;
+
+    rendererSections.push({
+      header: `Options for ${renderer.name}`,
+      optionList: optionDefinitionsForRenderer(renderer)
+    });
+  });
+
+  const sections = _.concat(sectionsBeforeRenderers, rendererSections, sectionsAfterRenderers);
+
   console.log(getUsage(sections));
 }
 
@@ -138,14 +171,7 @@ class Run {
     if (_.isArray(argv)) {
       const incompleteOptions = this.getOptions(argv);
       const renderer = this.getRenderer(incompleteOptions.lang);
-      const rendererOptionDefinitions =
-        _.map(renderer.options, o => {
-          return {
-            name: o.name,
-            description: o.description,
-            renderer: true,
-            type: String as any } as OptionDefinition;
-          });
+      const rendererOptionDefinitions = optionDefinitionsForRenderer(renderer);
       const allOptionDefinitons = _.concat(optionDefinitions, rendererOptionDefinitions);
       const { options, renderer: rendererOptions } = this.parseOptions(allOptionDefinitons, argv, false);
       this.options = options;

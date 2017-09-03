@@ -28,6 +28,7 @@ data OptionValue
 type OptionSpecification =
     { name :: String
     , description :: String
+    , typeLabel :: String
     , default :: OptionValue
     }
 
@@ -56,7 +57,13 @@ makeOptionValues optionSpecifications optionStrings =
 
 booleanOption :: String -> String -> Boolean -> Option Boolean
 booleanOption name description default =
-    { specification: { name, description, default: BooleanValue default }, extractor }
+    { specification:
+        { name
+        , description
+        , typeLabel: "yes|no"
+        , default: BooleanValue default }
+    , extractor
+    }
     where
         extractor (BooleanValue v) = v
 
