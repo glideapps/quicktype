@@ -2,8 +2,8 @@ module Language.Swift
     ( renderer
     ) where
 
-import Doc
-import IRGraph
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, canBeNull, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionToList)
 import Prelude
 
 import Data.Array as A
@@ -400,7 +400,7 @@ makePropertyNames properties suffix forbidden =
     transformPropertyNames (fieldNamer suffix) otherField forbidden properties
     where
         fieldNamer :: String -> Namer String
-        fieldNamer suffix = simpleNamer \name -> swiftNameStyle false name <> suffix
+        fieldNamer suffix' = simpleNamer \name -> swiftNameStyle false name <> suffix'
 
         otherField :: String -> String
         otherField name = "other" <> capitalize name

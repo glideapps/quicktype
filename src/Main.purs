@@ -5,8 +5,8 @@ module Main
     , intSentinel
     ) where
 
-import Core
-import IR
+import Core (Either, Error, SourceCode, bind, discard, pure, ($), (<$>), (=<<))
+import IR (execIR, normalizeGraphOrder)
 import IRGraph
 
 import Config as Config
@@ -15,7 +15,7 @@ import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson) as J
 import Data.StrMap as SM
 import Doc as Doc
-import IRTypeable (class IRTypeable, makeTypes)
+import IRTypeable (makeTypes)
 import IRTypeable (intSentinel) as IRTypeable
 import Language.Renderers as Renderers
 import Transformations as T

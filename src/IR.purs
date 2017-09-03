@@ -13,11 +13,11 @@ module IR
     , runIR
     ) where
 
-import IRGraph
+import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, emptyGraph, emptyUnion, followIndex, getClassFromGraph, irUnion_Bool, irUnion_Double, irUnion_Integer, irUnion_Null, irUnion_String, nullifyNothing, unifyNamed)
 import Prelude
 
-import Control.Monad.Except (ExceptT(..), runExceptT)
-import Control.Monad.State (State, execState, runState)
+import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.State (State, runState)
 import Control.Monad.State.Class (get, put)
 import Data.Either (Either(..))
 import Data.Foldable (foldM, for_)

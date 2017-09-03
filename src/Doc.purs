@@ -41,8 +41,7 @@ module Doc
     , renderRenderItems
     ) where
 
-import IR
-import IRGraph
+import IRGraph (IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, classesInGraph, filterTypes, getClassFromGraph, mapUnionM, namedValue, nullableFromUnion, unionToList)
 import Prelude
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
@@ -58,7 +57,7 @@ import Data.Sequence (Seq)
 import Data.Sequence as Sq
 import Data.Set (Set)
 import Data.Set as S
-import Data.String as String
+import Data.String (Pattern(..), fromCharArray, length, split, toCharArray) as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
 import Utils (sortByKeyM, mapM)
@@ -219,7 +218,7 @@ getTopLevels = do
 getSingleTopLevel :: Doc (Maybe (Tuple String IRType))
 getSingleTopLevel = do
     topLevels <- getTopLevels
-    case M.toUnfoldable topLevels :: List _ of
+    case M.toUnfoldable topLevels :: List (Tuple String IRType) of
         t : L.Nil -> pure $ Just t
         _ -> pure Nothing
 
@@ -291,7 +290,7 @@ callTopLevelIterator f topLevelNameGiven topLevelType = do
 forEachTopLevel_ :: TopLevelIterator -> Doc Unit
 forEachTopLevel_ f = do
     topLevels <- getTopLevels
-    for_ (M.toUnfoldable topLevels :: List _) \(Tuple topLevelNameGiven topLevelType) ->
+    for_ (M.toUnfoldable topLevels :: List (Tuple String IRType)) \(Tuple topLevelNameGiven topLevelType) ->
         callTopLevelIterator f topLevelNameGiven topLevelType
 
 callClassIterator :: ClassIterator -> Int -> IRClassData -> Doc Unit
@@ -318,7 +317,7 @@ forEachUnion_ f = do
 
 forEachProperty_ :: Map String IRType -> Map String String -> (String -> IRType -> String -> Boolean -> Doc Unit) -> Doc Unit
 forEachProperty_ properties propertyNames f =
-    let propertyArray = M.toUnfoldable properties :: Array _
+    let propertyArray = M.toUnfoldable properties :: Array (Tuple String IRType)
         lastIndex = A.length propertyArray - 1
     in
         forWithIndex_ propertyArray \i (Tuple pname ptype) -> do
@@ -331,8 +330,8 @@ getTopLevelPlural = getForSingleOrMultipleTopLevels "" "s"
 -- Given a potentially multi-line string, render each line at the current indent level
 line :: String -> Doc Unit
 line s = do
-    indent <- Doc (gets _.indent)
-    let whitespace = String.times "    " indent
+    indent' <- Doc (gets _.indent)
+    let whitespace = String.times "    " indent'
     let lines = String.split (String.Pattern "\n") s
     for_ lines \l -> do
         string whitespace

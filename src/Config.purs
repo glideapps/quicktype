@@ -8,11 +8,11 @@ module Config
     , renderer
     ) where
 
-import Data.Argonaut.Decode
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?), (.??))
 import Prelude
 
 import Control.Alt ((<|>))
-import Data.Argonaut.Core (JObject, Json)
+import Data.Argonaut.Core (Json)
 import Data.Array as A
 import Data.Either (Either(Right, Left))
 import Data.Foldable (elem, find)
