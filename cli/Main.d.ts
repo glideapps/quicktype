@@ -1,15 +1,3 @@
-interface OptionSpecification {
-    name: string;
-    description: string;
-}
-
-interface Renderer {
-    name: string;
-    extension: string;
-    aceMode: string;
-    options: [OptionSpecification];
-}
-
 type SourceCode = string;
 type ErrorMessage = string;
 
