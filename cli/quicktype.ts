@@ -337,11 +337,12 @@ class Run {
       if (!(o.name in opts))
         return;
       const v = opts[o.name];
-      const k = _.lowerFirst(o.name.split('-').map(_.upperFirst).join(''));
       if (o.renderer)
-        renderer[k] = v;
-      else
+        renderer[o.name] = v;
+      else {
+        const k = _.lowerFirst(o.name.split('-').map(_.upperFirst).join(''));
         options[k] = v;
+      }
     });
     return { options, renderer };
   }
