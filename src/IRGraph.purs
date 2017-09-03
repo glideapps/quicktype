@@ -129,11 +129,17 @@ newtype IRUnionRep = IRUnionRep
     , mapType :: Maybe IRType
     }
 
+irUnion_Nothing :: Int
 irUnion_Nothing = 1
+irUnion_Null :: Int
 irUnion_Null = 2
+irUnion_Integer :: Int
 irUnion_Integer = 4
+irUnion_Double :: Int
 irUnion_Double = 8
+irUnion_Bool :: Int
 irUnion_Bool = 16
+irUnion_String :: Int
 irUnion_String = 32
 
 -- | The representation of types.
@@ -247,7 +253,7 @@ isSubclassOf graph ia ib =
     in propertiesAreSubset pa pb
     where
         propertiesAreSubset :: Map String IRType -> Map String IRType -> Boolean
-        propertiesAreSubset ma mb = all (isInB mb) (M.toUnfoldable ma :: List _)
+        propertiesAreSubset ma mb = all (isInB mb) (M.toUnfoldable ma :: List (Tuple String IRType))
         isInB mb (Tuple n ta) = maybe false (isSubtypeOf graph ta) (M.lookup n mb)
 
 -- FIXME: generalize with isMaybeSubtypeOfMaybe
@@ -283,7 +289,7 @@ regatherClassNames graph@(IRGraph { classes, toplevels }) =
             in IRClassData { names: newNamesForClass, properties}
         gatherFromClassData :: Int -> IRClassData -> Map Int (Set String)
         gatherFromClassData _ (IRClassData { properties }) =
-            combine $ map (\(Tuple n t) -> gatherFromType n t) (M.toUnfoldable properties :: List _)
+            combine $ map (\(Tuple n t) -> gatherFromType n t) (M.toUnfoldable properties :: List (Tuple String IRType))
         combine :: List (Map Int (Set String)) -> Map Int (Set String)
         combine =
             L.foldr (M.unionWith S.union) M.empty
@@ -377,29 +383,28 @@ forUnion_ (IRUnionRep { primitives, arrayType, classRef, mapType }) f = do
 
 mapUnionM :: forall a m. Monad m => (IRType -> m a) -> IRUnionRep -> m (List a)
 mapUnionM f (IRUnionRep { primitives, arrayType, classRef, mapType }) = do
-    let l = L.Nil
-    l <- mapGeneral l mapType IRMap
-    l <- mapGeneral l classRef IRClass
-    l <- mapGeneral l arrayType IRArray    
-    l <- mapPrimitive l irUnion_String IRString
-    l <- mapPrimitive l irUnion_Bool IRBool
-    l <- mapPrimitive l irUnion_Double IRDouble
-    l <- mapPrimitive l irUnion_Integer IRInteger
-    l <- mapPrimitive l irUnion_Null IRNull
-    l <- mapPrimitive l irUnion_Nothing IRNothing
-    pure l
+    pure L.Nil
+        >>= mapGeneral mapType IRMap
+        >>= mapGeneral classRef IRClass
+        >>= mapGeneral arrayType IRArray
+        >>= mapPrimitive irUnion_String IRString
+        >>= mapPrimitive irUnion_Bool IRBool
+        >>= mapPrimitive irUnion_Double IRDouble
+        >>= mapPrimitive irUnion_Integer IRInteger
+        >>= mapPrimitive irUnion_Null IRNull
+        >>= mapPrimitive irUnion_Nothing IRNothing
     where
-        mapPrimitive :: List a -> Int -> IRType -> m (List a)
-        mapPrimitive l bit t =
+        mapPrimitive :: Int -> IRType -> List a -> m (List a)
+        mapPrimitive bit t l =
             if (Bits.and bit primitives) /= 0 then do
                 result <- f t
                 pure $ result : l
             else
                 pure l
-        
-        mapGeneral :: forall x. List a -> Maybe x -> (x -> IRType) -> m (List a)
-        mapGeneral l Nothing _ = pure l
-        mapGeneral l (Just x) convert = do
+
+        mapGeneral :: forall x. Maybe x -> (x -> IRType) -> List a -> m (List a)
+        mapGeneral Nothing _ l = pure l
+        mapGeneral (Just x) convert l = do
             result <- f $ convert x
             pure $ result : l
 
@@ -437,8 +442,8 @@ filterTypes predicate graph@(IRGraph { classes, toplevels }) =
             S.unions $ map filterType $ M.values properties
         recurseType t =
             case t of
-            IRArray t -> filterType t
-            IRMap t -> filterType t
+            IRArray t' -> filterType t'
+            IRMap t' -> filterType t'
             IRUnion r ->
                 S.unions $ mapUnion filterType r
             _ -> S.empty

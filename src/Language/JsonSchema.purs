@@ -1,8 +1,8 @@
 module Language.JsonSchema where
 
-import Core
+import Core (class Eq, class Ord, Error, Unit, bind, const, map, not, otherwise, pure, ($), (&&), (/=), (<), (<$>), (<>), (=<<), (>=), (>>>))
 
-import Doc
+import Doc (Doc, Renderer, combineNames, getClasses, getTopLevels, line, lookupClassName, noForbidNamer, simpleNamer)
 import IRGraph
 import Control.Monad.Error.Class (throwError)
 
@@ -165,7 +165,7 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
     JSONObject ->
         case schema.properties of
         Just sm -> do
-            let propMap = M.fromFoldable $ SM.toUnfoldable sm :: Array _
+            let propMap = M.fromFoldable $ SM.toUnfoldable sm :: Array (Tuple String JSONSchema)
             props <- mapMapM (\n -> jsonSchemaToIR root $ Inferred n) propMap
             let required = maybe S.empty S.fromFoldable schema.required
             let title = maybe name Given schema.title
@@ -276,7 +276,7 @@ definitionForClass (Tuple i (IRClassData { names, properties })) = do
     let sm = SM.insert "additionalProperties" (fromBoolean false) $ SM.insert "type" (fromString "object") SM.empty
     propsMap <- mapMapM (const jsonForType) properties
     let requiredProps = A.fromFoldable $ map fromString $ M.keys $ M.filter (\t -> not $ canBeNull t) properties
-    let propsSM = SM.fromFoldable $ (M.toUnfoldable propsMap :: List _)
+    let propsSM = SM.fromFoldable $ (M.toUnfoldable propsMap :: List (Tuple String Json))
     let withProperties = SM.insert "properties" (fromObject propsSM) sm
     let withRequired = SM.insert "required" (fromArray requiredProps) withProperties
     let withTitle = SM.insert "title" (fromString $ combineNames names) withRequired

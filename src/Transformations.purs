@@ -4,8 +4,8 @@ module Transformations
     ) where
 
 import Prelude
-import IRGraph
-import IR
+import IRGraph (IRClassData(..), IRGraph, IRType(..), mapClasses, matchingProperties)
+import IR (IR, followRedirections, getClass, replaceClass, unifySetOfClasses, unifyTypes)
 
 import Control.Monad.State.Class (get)
 import Data.Filterable (filtered)

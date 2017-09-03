@@ -2,8 +2,8 @@ module Language.TypeScript
     ( renderer
     ) where
 
-import Doc
-import IRGraph
+import Doc (Doc, Renderer, blank, combineNames, forEachClass_, forEachTopLevel_, getModuleName, getSingleTopLevel, getTopLevels, indent, line, lookupClassName, lookupName, renderRenderItems, simpleNamer, transformPropertyNames)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, mapUnionM, nullableFromUnion)
 import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory)
@@ -13,10 +13,10 @@ import Data.List (List)
 import Data.Map as M
 import Data.Map (Map)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
-import Data.String as Str
+import Data.String (length, null, toCharArray) as Str
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
-import Data.String.Util as Str
+import Data.String.Util (camelCase, capitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape, times) as Str
 import Data.Tuple (Tuple(..), fst)
 import Partial.Unsafe (unsafePartial)
 import Utils (mapM)
@@ -178,7 +178,7 @@ renderInterface className properties = do
 
     line $ "export interface " <> className <> " {"
     indent do
-        let props = M.toUnfoldable properties :: Array _
+        let props = M.toUnfoldable properties :: Array (Tuple String IRType)
         let resolved = resolvePropertyNameWithType <$> props
         let maxWidth = resolved <#> fst <#> Str.length # maximum
         for_ resolved \(Tuple pname ptype) -> do
@@ -220,7 +220,7 @@ renderTypeMapClass :: String -> Map String IRType -> Doc Unit
 renderTypeMapClass className properties = do
     line $ className <> ": {"
     indent do
-        let props = M.toUnfoldable properties :: Array _
+        let props = M.toUnfoldable properties :: Array (Tuple String IRType)
         for_ props \(Tuple pname ptype) -> do
             rendered <- renderTypeMapType ptype
             line $ propertyNamify pname <> ": " <> rendered <> ","

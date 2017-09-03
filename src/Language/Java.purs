@@ -2,20 +2,16 @@ module Language.Java
     ( renderer
     ) where
 
-import Doc
-import IRGraph
+import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getTypeNameForUnion, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
 import Prelude
 
-import Data.Array as A
 import Data.Char.Unicode (GeneralCategory(..), generalCategory, isSpace)
-import Data.Foldable (find, for_)
+import Data.Foldable (for_)
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), isJust, isNothing)
-import Data.Set (Set)
-import Data.Set as S
+import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape)
-import Data.Tuple (Tuple(..))
 
 forbiddenNames :: Array String
 forbiddenNames =
@@ -240,8 +236,8 @@ renderClassDefinition className properties = do
     line "}"
     where
         forEachProp_ :: Map String IRType -> Map String String -> (String -> String -> String -> String -> Doc Unit) -> Doc Unit
-        forEachProp_ properties propertyNames f =
-            forEachProperty_ properties propertyNames \pname ptype fieldName _ -> do
+        forEachProp_ properties' propertyNames f =
+            forEachProperty_ properties' propertyNames \pname ptype fieldName _ -> do
                 let javaName = capitalize fieldName
                 rendered <- renderType false ptype
                 f pname javaName fieldName rendered

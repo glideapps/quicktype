@@ -2,8 +2,8 @@ module Language.Elm
     ( renderer
     ) where
 
-import Doc
-import IRGraph
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachTopLevel_, getClasses, getModuleName, getTopLevelNames, getTopLevels, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, isArray, nullableFromUnion, unionToList)
 import Prelude
 
 import Data.Array as A
@@ -310,10 +310,10 @@ renderTypeFunctions className propertyNames propsList = do
             line "]"
 
 typeRenderer :: (String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> String -> Map String IRType -> Doc Unit
-typeRenderer renderer className properties = do
+typeRenderer renderer' className properties = do
     let propertyNames = transformPropertyNames (simpleNamer lowerNameStyle) (\n -> "other" <> capitalize n) forbiddenNames properties
     let propsList = M.toUnfoldable properties # sortByKey (\t -> lookupName (fst t) propertyNames)
-    renderer className propertyNames propsList
+    renderer' className propertyNames propsList
 
 renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
 renderUnionDefinition unionName unionRep = do

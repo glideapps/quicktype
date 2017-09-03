@@ -9,10 +9,7 @@ import Core
 
 import Data.Argonaut.Core (Json, isBoolean, isNull, isNumber, isString)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
-import Data.Foldable (foldl)
 import Data.String as S
-import Data.String.Util as S
-import Data.Tuple (Tuple(..))
 
 type MkEither a b =
     { success :: b -> Either a b

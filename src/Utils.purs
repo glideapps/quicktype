@@ -14,19 +14,14 @@ module Utils
 
 import Prelude
 
-import Data.Array as A
-import Data.Either (Either(..), either)
-import Data.Foldable (find, foldr, traverse_)
-import Data.List (List, (:))
+import Data.List (List)
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
-import Data.Set (Set)
-import Data.Set as S
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
-import Data.Traversable (class Foldable, class Traversable, for_, traverse)
+import Data.Traversable (class Traversable, for_, traverse)
 import Data.Tuple (Tuple(..))
 
 mapM :: forall m a b t. Applicative m => Traversable t => (a -> m b) -> t a -> m (t b)
@@ -42,7 +37,7 @@ forMapM_ m f = do
 
 mapMapM :: forall m k v w. Monad m => Ord k  => (k -> v -> m w) -> Map k v -> m (Map k w)
 mapMapM f m = do
-    arr <- mapM mapper (M.toUnfoldable m :: Array _)
+    arr <- mapM mapper (M.toUnfoldable m :: Array (Tuple k v))
     pure $ M.fromFoldable arr
     where
         mapper (Tuple a b) = do
@@ -51,7 +46,7 @@ mapMapM f m = do
 
 mapStrMapM :: forall m v w. Monad m => (String -> v -> m w) -> StrMap v -> m (StrMap w)
 mapStrMapM f m = do
-    arr <- mapM mapper (SM.toUnfoldable m :: Array _)
+    arr <- mapM mapper (SM.toUnfoldable m :: Array (Tuple String v))
     pure $ SM.fromFoldable arr
     where
         mapper (Tuple a b) = do
@@ -67,7 +62,7 @@ sortByKey keyF = L.sortBy (\a b -> compare (keyF a) (keyF b))
 
 sortByKeyM :: forall a b m. Ord b => Monad m => (a -> m b) -> List a -> m (List a)
 sortByKeyM keyF items = do
-    itemsWithKeys :: List _ <- mapM (\item -> keyF item >>= (\key -> pure $ { item, key })) items
+    itemsWithKeys <- mapM (\item -> keyF item >>= (\key -> pure $ { item, key })) items
     let sortedItemsWithKeys = L.sortBy (\a b -> compare a.key b.key) itemsWithKeys
     pure $ map (_.item) sortedItemsWithKeys
 
@@ -82,6 +77,6 @@ forEnumerated_ l f =
 
 forStrMap_ :: forall a b m. Applicative m => StrMap a -> (String -> a -> m b) -> m Unit
 forStrMap_ sm f =
-    let arr = SM.toUnfoldable sm :: Array _
+    let arr = SM.toUnfoldable sm :: Array (Tuple String a)
     in
         for_ arr \(Tuple n v) -> f n v

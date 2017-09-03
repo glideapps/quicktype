@@ -1,10 +1,10 @@
 module IRTypeable where
 
-import Config
+import Config (TypeSource(..))
 import Core
 
 import Control.Monad.Except (except)
-import Data.Argonaut.Core (Json, JObject, foldJson)
+import Data.Argonaut.Core (Json, foldJson)
 import Data.JSON.AST as A
 import Data.List (fromFoldable)
 import Data.Map (Map)
@@ -16,8 +16,8 @@ import Data.Tuple (Tuple(..))
 import IR (IR, addClass, addTopLevel, unifyMultipleTypes)
 import IRGraph (IRType(..), Named(..), makeClass, namedValue)
 import Language.JsonSchema (JSONSchema, jsonSchemaListToIR)
-import Utils (forMapM_, mapM)
-  
+import Utils (forMapM_)
+
 -- | `IRTypeable` contains types that we can generate an `IRType` from
 class IRTypeable a where
     makeType :: Named String -> a -> IR IRType
@@ -61,12 +61,12 @@ instance typeableJson :: IRTypeable Json where
         (case _ of
             obj | isIntSentinel obj -> pure IRInteger
             obj -> do
-                let l1 = SM.toUnfoldable obj :: Array _
+                let l1 = SM.toUnfoldable obj :: Array (Tuple String Json)
                 l2 <- traverse toProperty l1
                 addClass $ makeClass name $ Map.fromFoldable l2)
         json
         where
-            toProperty (Tuple name json) = Tuple name <$> makeType (Inferred name) json
+            toProperty (Tuple name' json') = Tuple name' <$> makeType (Inferred name') json'
 
             isIntSentinel o
                 | SM.size o == 1, Just _ <- SM.lookup intSentinel o = true

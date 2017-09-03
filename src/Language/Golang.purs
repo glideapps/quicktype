@@ -2,8 +2,8 @@ module Language.Golang
     ( renderer
     ) where
 
-import Doc
-import IRGraph
+import Doc (Doc, Renderer, blank, combineNames, forEachTopLevel_, forbidNamer, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, isClass, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap, unionToList)
 import Prelude
 
 import Data.Array as A
@@ -300,9 +300,9 @@ renderGolangUnion name unionRep = do
     		line "return err"
         line "}"
         line "if object {"
-        ifClass \name _ -> do
+        ifClass \name' _ -> do
             indent do
-                line $ "x." <> name <> " = &c"
+                line $ "x." <> name' <> " = &c"
         line "}"
         line "return nil"
     line "}"
@@ -319,15 +319,15 @@ renderGolangUnion name unionRep = do
             in
                 case element of
                 Just t -> do
-                    name <- unionFieldName t
+                    name' <- unionFieldName t
                     { rendered } <- renderTypeToGolang t
-                    f name rendered
+                    f name' rendered
                 Nothing -> pure unit
         maybeAssignNil p =
             case p unionRep of
             Just t -> do
-                name <- unionFieldName t
-                line $ "x." <> name <> " = nil"
+                name' <- unionFieldName t
+                line $ "x." <> name' <> " = nil"
             Nothing -> pure unit
         predicateForType :: IRType -> IRUnionRep -> Maybe IRType
         predicateForType t ur =
@@ -341,8 +341,8 @@ renderGolangUnion name unionRep = do
         memberArg notPresentValue renderPresent p =
             case p unionRep of
             Just t -> do
-                name <- unionFieldName t
-                pure $ renderPresent t name
+                name' <- unionFieldName t
+                pure $ renderPresent t name'
             Nothing -> pure notPresentValue
         primitiveUnmarshalArg p =
             memberArg "nil" (\_ n -> "&x." <> n) p

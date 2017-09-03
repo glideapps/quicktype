@@ -6,20 +6,15 @@ module UrlGrammar
 
 import Prelude
 
-import Data.Argonaut.Core (Json, JObject, foldJson, toArray, toObject)
+import Data.Argonaut.Core (JObject, foldJson)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
 import Data.Array (fold)
 import Data.Array as A
 import Data.Either (Either(..))
 import Data.List (List, (:))
 import Data.List as L
-import Data.Map (Map)
-import Data.Map as Map
-import Data.Maybe (Maybe(..))
 import Data.StrMap (StrMap)
 import Data.Traversable (class Foldable, traverse)
-import Data.Tuple (Tuple(..))
-import Utils (mapM, mapStrMapM)
 
 data Grammar
     = Literal String
