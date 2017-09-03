@@ -5,7 +5,7 @@ import * as Either from "./either";
 import tryRequire from "./try-require"
 import * as _ from "lodash";
 
-const Main: Main = tryRequire("../output/Main", "./Main");
+const Main: Main = tryRequire("../output/purs/Main", "./Main");
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
 const commandLineArgs = require('command-line-args');
