@@ -8,6 +8,7 @@
     "prepare": "npm run build",
     "build": "script/build.sh",
     "test": "npm run build && pulp test && test/test",
+    "docs": "pulp docs",
     "start": "script/start.sh"
   },
   "dependencies": {
