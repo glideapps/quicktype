@@ -203,7 +203,7 @@ renderer =
     , aceMode: "json"
     , extension: "schema"
     , doc: jsonSchemaDoc
-    , options: M.empty
+    , options: SM.empty
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s

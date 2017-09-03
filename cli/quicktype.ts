@@ -16,7 +16,19 @@ const chalk = require("chalk");
 const langs = Main.renderers.map((r) => r.extension).join("|");
 const langNames = Main.renderers.map((r) => r.name).join(", ");
 
-const optionDefinitions = [
+interface OptionDefinition {
+  name: string;
+  type: any; // FIXME: this doesn't seem correct
+  renderer?: boolean;
+  alias?: string;
+  multiple?: boolean;
+  defaultOption?: boolean;
+  defaultValue?: any;
+  typeLabel?: string;
+  description?: string;
+}
+
+const optionDefinitions: OptionDefinition[] = [
   {
     name: 'out',
     alias: 'o',
@@ -120,15 +132,27 @@ interface SampleOrSchemaMap {
 
 class Run {
   options: Options;
+  rendererOptions: { [name: string]: string };
 
   constructor(argv: string[] | Options) {
-    this.options = _.isArray(argv)
-      ? this.getOptions(argv)
-      : this.inferOptions(argv);
+    if (_.isArray(argv)) {
+      const incompleteOptions = this.getOptions(argv);
+      const renderer = this.getRenderer(incompleteOptions.lang);
+      const rendererOptionDefinitions =
+        _.keys(renderer.options)
+        .map(v => { return { name: v, renderer: true, type: String as any } as OptionDefinition; });
+      const allOptionDefinitons = _.concat(optionDefinitions, rendererOptionDefinitions);
+      const { options, renderer: rendererOptions } = this.parseOptions(allOptionDefinitons, argv, false);
+      this.options = options;
+      this.rendererOptions = rendererOptions;
+    } else {
+      this.options = this.inferOptions(argv);
+      this.rendererOptions = {};
+    }
   }
 
-  getRenderer = () => {
-    let renderer = Main.renderers.find((r) => _.includes(<{}>r, this.options.lang));
+  getRenderer = (lang: string) => {
+    let renderer = Main.renderers.find((r) => _.includes(<{}>r, lang));
 
     if (!renderer) {
       console.error(`'${this.options.lang}' is not yet supported as an output language.`);
@@ -142,7 +166,7 @@ class Run {
     let areSchemas = this.options.srcLang === "schema";
 
     let config: Config = {
-      language: this.getRenderer().extension,
+      language: this.getRenderer(this.options.lang).extension,
       topLevels: Object.getOwnPropertyNames(samplesOrSchemas).map(name => {
         if (areSchemas) {
           // Only one schema per top-level is used right now
@@ -150,7 +174,8 @@ class Run {
         } else {
           return { name, samples: samplesOrSchemas[name]  };
         }
-      })
+      }),
+      rendererOptions: this.rendererOptions
     };
 
     return Either.fromRight(Main.main(config));    
@@ -298,13 +323,27 @@ class Run {
     }
   }
 
-  getOptions = (argv: string[]): Options => {
-    let opts: { [key: string]: any } = commandLineArgs(optionDefinitions, { argv });
-    let sane = _.mapKeys(opts, (v, k) => {
-      // Turn options like 'src-urls' into 'srcUrls'
-      return _.lowerFirst(k.split('-').map(_.upperFirst).join(''));
+  parseOptions = (optionDefinitions: OptionDefinition[], argv: string[], partial: boolean):
+      { options: { [name: string]: string }, renderer: { [name: string]: string } } => {
+    const opts: { [key: string]: any } = commandLineArgs(optionDefinitions, { argv, partial: partial });
+    const options = {};
+    const renderer = {};
+    optionDefinitions.forEach(o => {
+      if (!(o.name in opts))
+        return;
+      const v = opts[o.name];
+      const k = _.lowerFirst(o.name.split('-').map(_.upperFirst).join(''));
+      if (o.renderer)
+        renderer[k] = v;
+      else
+        options[k] = v;
     });
-    return this.inferOptions(sane);
+    return { options, renderer };
+  }
+
+  getOptions = (argv: string[]): Options => {
+    const options = this.parseOptions(optionDefinitions, argv, true).options;
+    return this.inferOptions(options);
   }
 
   inferOptions = (opts: Options): Options => {

@@ -12,6 +12,7 @@ import Data.Foldable (for_, null)
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
+import Data.StrMap as SM
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscape, intToHex, legalizeCharacters, startWithLetter)
@@ -33,7 +34,7 @@ renderer =
     , aceMode: "swift"
     , extension: "swift"
     , doc: swiftDoc
-    , options: M.empty
+    , options: SM.empty
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s

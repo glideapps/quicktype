@@ -2,6 +2,8 @@ interface Renderer {
     name: string;
     extension: string;
     aceMode: string;
+    // it's not really `any`, just not exposed to TS
+    options: {[name: string]: any};
 }
 
 type SourceCode = string;

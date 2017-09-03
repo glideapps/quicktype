@@ -13,6 +13,7 @@ import Data.List (List)
 import Data.Map as M
 import Data.Map (Map)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
+import Data.StrMap as SM
 import Data.String (length, null, toCharArray) as Str
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
@@ -27,7 +28,7 @@ renderer =
     , aceMode: "typescript"
     , extension: "ts"
     , doc: typeScriptDoc
-    , options: M.empty
+    , options: SM.empty
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> s <> "_"

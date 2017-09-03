@@ -8,9 +8,9 @@ module Options
 
 import Prelude
 
-import Data.Map (Map)
-import Data.Map as M
 import Data.Maybe (fromJust)
+import Data.StrMap (StrMap)
+import Data.StrMap as SM
 import Partial.Unsafe (unsafePartial)
 
 -- FIXME: all of this should be strongly typed and not require
@@ -24,10 +24,10 @@ type Option =
     , default :: OptionValue
     }
 
-type Options = Map String Option
-type OptionValues = Map String OptionValue
+type Options = StrMap Option
+type OptionValues = StrMap OptionValue
 
 booleanOptionValue :: String -> OptionValues -> Boolean
 booleanOptionValue name values =
-    extract $ unsafePartial $ fromJust $ M.lookup name values
+    extract $ unsafePartial $ fromJust $ SM.lookup name values
     where extract (BooleanValue v) = v

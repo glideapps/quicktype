@@ -12,6 +12,7 @@ import Data.List (List, (:))
 import Data.List as L
 import Data.Map as M
 import Data.Map (Map)
+import Data.StrMap as SM
 import Data.Maybe (Maybe(..), maybe)
 import Data.String as Str
 import Data.String.Util (camelCase, stringEscape, legalizeCharacters, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, startWithLetter)
@@ -24,7 +25,7 @@ renderer =
     , aceMode: "golang"
     , extension: "go"
     , doc: golangDoc
-    , options: M.empty
+    , options: SM.empty
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s

@@ -10,6 +10,7 @@ import Data.Char.Unicode (GeneralCategory(..), generalCategory, isSpace)
 import Data.Foldable (for_)
 import Data.Map (Map)
 import Data.Map as M
+import Data.StrMap as SM
 import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape)
 
@@ -38,7 +39,7 @@ renderer =
     , aceMode: "java"
     , extension: "java"
     , doc: javaDoc
-    , options: M.empty
+    , options: SM.empty
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s

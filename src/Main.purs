@@ -13,7 +13,6 @@ import Config as Config
 import Control.Monad.State (modify)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson) as J
-import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
@@ -36,7 +35,7 @@ renderers = Renderers.all
 -- FIXME: error handling!
 makeOptionValues :: Options -> StrMap String -> OptionValues
 makeOptionValues options optionStrings =
-    M.mapWithKey optionValueForOption options
+    SM.mapWithKey optionValueForOption options
     where
         optionValueForOption :: String -> Option -> OptionValue
         optionValueForOption name { default } =
