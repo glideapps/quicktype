@@ -21,7 +21,10 @@ forbiddenNames :: Array String
 forbiddenNames = ["Convert", "JsonConverter", "Type"]
 
 serializersOption :: Option Boolean
-serializersOption = booleanOption "serializers" "Generate serializers?" true
+serializersOption = booleanOption "serializers" "Generate serializers" true
+
+listOption :: Option Boolean
+listOption = booleanOption "use-list" "Use List<T> instead of T[]" false
 
 renderer :: Renderer
 renderer =
@@ -29,7 +32,7 @@ renderer =
     , aceMode: "csharp"
     , extension: "cs"
     , doc: csharpDoc
-    , options: [serializersOption.specification]
+    , options: [serializersOption.specification, listOption.specification]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -90,7 +93,12 @@ renderTypeToCSharp = case _ of
     IRString -> pure "string"
     IRArray a -> do
         rendered <- renderTypeToCSharp a
-        pure $ rendered <> "[]"
+        useList <- getOptionValue listOption
+        if useList
+            then
+                pure $ "List<" <> rendered <> ">"
+            else
+                pure $ rendered <> "[]"
     IRClass i -> lookupClassName i
     IRMap t -> do
         rendered <- renderTypeToCSharp t
