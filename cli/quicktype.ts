@@ -173,9 +173,18 @@ class Run {
       const renderer = this.getRenderer(incompleteOptions.lang);
       const rendererOptionDefinitions = optionDefinitionsForRenderer(renderer);
       const allOptionDefinitons = _.concat(optionDefinitions, rendererOptionDefinitions);
-      const { options, renderer: rendererOptions } = this.parseOptions(allOptionDefinitons, argv, false);
-      this.options = options;
-      this.rendererOptions = rendererOptions;
+      try {
+        const { options, renderer: rendererOptions } = this.parseOptions(allOptionDefinitons, argv, false);
+        this.options = options;
+        this.rendererOptions = rendererOptions;          
+      } catch (error) {
+        if (error.name === 'UNKNOWN_OPTION') {
+          console.error("Error: Unknown option");
+          usage();
+          process.exit(1);
+        }
+        throw error;
+      }
     } else {
       this.options = this.inferOptions(argv);
       this.rendererOptions = {};
