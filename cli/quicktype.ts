@@ -25,7 +25,7 @@ interface OptionDefinition {
   defaultOption?: boolean;
   defaultValue?: any;
   typeLabel?: string;
-  description?: string;
+  description: string;
 }
 
 const optionDefinitions: OptionDefinition[] = [
@@ -139,8 +139,13 @@ class Run {
       const incompleteOptions = this.getOptions(argv);
       const renderer = this.getRenderer(incompleteOptions.lang);
       const rendererOptionDefinitions =
-        _.keys(renderer.options)
-        .map(v => { return { name: v, renderer: true, type: String as any } as OptionDefinition; });
+        _.map(renderer.options, o => {
+          return {
+            name: o.name,
+            description: o.description,
+            renderer: true,
+            type: String as any } as OptionDefinition;
+          });
       const allOptionDefinitons = _.concat(optionDefinitions, rendererOptionDefinitions);
       const { options, renderer: rendererOptions } = this.parseOptions(allOptionDefinitons, argv, false);
       this.options = options;

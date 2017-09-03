@@ -2,24 +2,26 @@ module Language.CSharp
     ( renderer
     ) where
 
-import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getModuleName, getTypeNameForUnion, getUnionNames, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getBooleanOptionValue)
+import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getModuleName, getTypeNameForUnion, getUnionNames, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getOptionValue)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
-import Options (OptionValue(..))
 import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory)
 import Data.Foldable (for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
-import Data.Map as M
-import Data.StrMap as SM
 import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
+import Options (booleanOption, Option)
 
 forbiddenNames :: Array String
 forbiddenNames = ["Convert", "JsonConverter", "Type"]
+
+serializersOption :: Option Boolean
+serializersOption = booleanOption "serializers" "Generate serializers?" true
 
 renderer :: Renderer
 renderer =
@@ -27,8 +29,7 @@ renderer =
     , aceMode: "csharp"
     , extension: "cs"
     , doc: csharpDoc
-    , options: SM.singleton "serializers"
-        { description: "Generate serializers?", default: BooleanValue true }
+    , options: [serializersOption.specification]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -131,7 +132,7 @@ using Newtonsoft.Json;
 
 whenSerializers :: Doc Unit -> Doc Unit
 whenSerializers doc = do
-    serializers <- getBooleanOptionValue "serializers"
+    serializers <- getOptionValue serializersOption
     when serializers doc
 
 stringIfTrue :: Boolean -> String -> String

@@ -12,7 +12,7 @@ module Doc
     , getUnions
     , getUnionNames
     , getTopLevelNames
-    , getBooleanOptionValue
+    , getOptionValue
     , lookupName
     , lookupClassName
     , lookupUnionName
@@ -61,14 +61,14 @@ import Data.Set as S
 import Data.String (Pattern(..), fromCharArray, length, split, toCharArray) as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
-import Options (OptionValues, Options, booleanOptionValue)
+import Options (OptionSpecifications, OptionValues, lookupOptionValue, Option)
 import Utils (sortByKeyM, mapM)
 
 type Renderer =
     { name :: String
     , extension :: String
     , aceMode :: String
-    , options :: Options
+    , options :: OptionSpecifications
     , doc :: Doc Unit
     , transforms :: Transforms
     }
@@ -266,9 +266,10 @@ getClass i = do
 getOptionValues :: Doc OptionValues
 getOptionValues = Doc (asks _.optionValues)
 
-getBooleanOptionValue :: String -> Doc Boolean
-getBooleanOptionValue name =
-    booleanOptionValue name <$> getOptionValues
+getOptionValue :: forall a. Option a -> Doc a
+getOptionValue option = do
+    optionValues <- getOptionValues
+    pure $ lookupOptionValue option optionValues
 
 lookupName :: forall a. Ord a => a -> Map a String -> String
 lookupName original nameMap =

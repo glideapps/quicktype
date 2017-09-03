@@ -12,7 +12,6 @@ import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
-import Data.StrMap as SM
 import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, decapitalize, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..), fst)
@@ -41,7 +40,7 @@ renderer =
     , aceMode: "elm"
     , extension: "elm"
     , doc: elmDoc
-    , options: SM.empty
+    , options: []
     , transforms:
         { nameForClass: elmNamer nameForClass
         , nextName: \s -> "Other" <> s

@@ -11,7 +11,6 @@ import Data.Char.Unicode (GeneralCategory(..), generalCategory)
 import Data.Foldable (for_, intercalate, maximum)
 import Data.Map (Map)
 import Data.Map as M
-import Data.StrMap as SM
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.String (Pattern(Pattern), contains, length) as Str
 import Data.String.Util (camelCase, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, times) as Str
@@ -23,7 +22,7 @@ renderer =
     , aceMode: "groovy"
     , extension: "types"
     , doc: pseudocodeDoc
-    , options: SM.empty
+    , options: []
     , transforms:
         { nameForClass: noForbidNamer nameForClass
         , nextName: \s -> "Other" <> s

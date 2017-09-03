@@ -21,7 +21,7 @@ import Doc as Doc
 import IRTypeable (intSentinel) as IRTypeable
 import IRTypeable (makeTypes)
 import Language.Renderers as Renderers
-import Options (OptionValue(..), Option, OptionValues, Options)
+import Options (makeOptionValues)
 import Transformations as T
 import UrlGrammar (GrammarMap(..), generate)
 
@@ -31,19 +31,6 @@ intSentinel = IRTypeable.intSentinel
 
 renderers :: Array Doc.Renderer
 renderers = Renderers.all
-
--- FIXME: error handling!
-makeOptionValues :: Options -> StrMap String -> OptionValues
-makeOptionValues options optionStrings =
-    SM.mapWithKey optionValueForOption options
-    where
-        optionValueForOption :: String -> Option -> OptionValue
-        optionValueForOption name { default } =
-            case SM.lookup name optionStrings of
-            Nothing -> default
-            Just s ->
-                let l = String.toLower s
-                in BooleanValue $ l == "true" || l == "t" || l == "1"
 
 -- json is a Foreign object whose type is defined in /cli/src/Main.d.ts
 main :: Json -> Either Error SourceCode
