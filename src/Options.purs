@@ -6,17 +6,20 @@ module Options
     , Option
     , OptionValueExtractor
     , booleanOption
+    , enumOption
     , makeOptionValues
     , lookupOptionValue
     ) where
 
 import Prelude
 
+import Data.Foldable (intercalate)
+import Data.Array as A
 import Data.Maybe (Maybe(..), fromJust)
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
-import Data.Tuple (Tuple(..))
 import Data.String as String
+import Data.Tuple (Tuple(..), fst)
 import Partial.Unsafe (unsafePartial)
 
 -- FIXME: all of this should be strongly typed and not require
@@ -24,6 +27,7 @@ import Partial.Unsafe (unsafePartial)
 
 data OptionValue
     = BooleanValue Boolean
+    | EnumValue Int (Array String)
 
 type OptionSpecification =
     { name :: String
@@ -52,8 +56,14 @@ makeOptionValues optionSpecifications optionStrings =
             -- Error handling here - we assume the option has a spec
             let spec = unsafePartial $ fromJust $ SM.lookup name specMap
             in
-                let l = String.toLower optionString
-                in BooleanValue $ l == "true" || l == "t" || l == "yes" || l == "y" || l == "1"
+                case spec.default of
+                BooleanValue _ ->
+                    let l = String.toLower optionString
+                    in BooleanValue $ l == "true" || l == "t" || l == "yes" || l == "y" || l == "1"
+                EnumValue _ cases ->
+                    case A.findIndex (eq optionString) cases of
+                    Just i -> EnumValue i cases
+                    Nothing -> EnumValue 0 cases -- FIXME: handle error
 
 booleanOption :: String -> String -> Boolean -> Option Boolean
 booleanOption name description default =
@@ -61,11 +71,31 @@ booleanOption name description default =
         { name
         , description
         , typeLabel: "yes|no"
-        , default: BooleanValue default }
-    , extractor
+        , default: BooleanValue default
+        }
+    , extractor: \t -> unsafePartial $ extractor t
     }
     where
+        extractor :: Partial => OptionValueExtractor Boolean
         extractor (BooleanValue v) = v
+
+enumOption :: forall a. String -> String -> Array (Tuple String a) -> Option a
+enumOption name description cases =
+    { specification:
+        { name
+        , description
+        , typeLabel: intercalate "|" caseNames
+        , default: EnumValue 0 caseNames
+        }
+    , extractor: \t -> unsafePartial $ extractor t
+    }
+    where
+        caseNames = map fst cases
+        caseMap = SM.fromFoldable cases
+
+        extractor :: Partial => OptionValueExtractor a
+        extractor (EnumValue i _) =
+            fromJust $ SM.lookup (fromJust $ A.index caseNames i) caseMap
 
 lookupOptionValue :: forall a. Option a -> OptionValues -> a
 lookupOptionValue { specification: { name, default }, extractor } optionValues =

@@ -14,14 +14,15 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
+import Data.Tuple (Tuple(..))
 import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
-import Options (booleanOption, Option)
+import Options (enumOption, Option)
 
 forbiddenNames :: Array String
 forbiddenNames = ["Convert", "JsonConverter", "Type"]
 
 listOption :: Option Boolean
-listOption = booleanOption "use-list" "Use List<T> instead of T[]" false
+listOption = enumOption "array-type" "Select C# type to use for JSON arrays" [Tuple "array" false, Tuple "list" true]
 
 renderer :: Renderer
 renderer =
