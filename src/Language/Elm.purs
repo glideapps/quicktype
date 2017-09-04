@@ -40,6 +40,7 @@ renderer =
     , aceMode: "elm"
     , extension: "elm"
     , doc: elmDoc
+    , options: []
     , transforms:
         { nameForClass: elmNamer nameForClass
         , nextName: \s -> "Other" <> s

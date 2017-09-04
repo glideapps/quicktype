@@ -5,7 +5,7 @@ module Main
     , intSentinel
     ) where
 
-import Core (Either, Error, SourceCode, bind, discard, pure, ($), (<$>), (=<<))
+import Core (Either, Error, SourceCode, bind, discard, pure, ($), (<$>), (=<<), (==), (||))
 import IR (execIR, normalizeGraphOrder)
 import IRGraph
 
@@ -13,11 +13,15 @@ import Config as Config
 import Control.Monad.State (modify)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson) as J
+import Data.Maybe (Maybe(..))
+import Data.StrMap (StrMap)
 import Data.StrMap as SM
+import Data.String as String
 import Doc as Doc
-import IRTypeable (makeTypes)
 import IRTypeable (intSentinel) as IRTypeable
+import IRTypeable (makeTypes)
 import Language.Renderers as Renderers
+import Options (makeOptionValues)
 import Transformations as T
 import UrlGrammar (GrammarMap(..), generate)
 
@@ -35,6 +39,7 @@ main json = do
 
     let samples = Config.topLevelSamples config
     let schemas = Config.topLevelSchemas config
+    let optionStrings = Config.rendererOptions config
 
     renderer <- Config.renderer config
 
@@ -49,7 +54,8 @@ main json = do
         makeTypes schemas
         modify regatherUnionNames
 
-    pure $ Doc.runRenderer renderer graph
+    let optionValues = makeOptionValues renderer.options optionStrings
+    pure $ Doc.runRenderer renderer graph optionValues
 
 urlsFromJsonGrammar :: Json -> Either Error (SM.StrMap (Array String))
 urlsFromJsonGrammar json = do

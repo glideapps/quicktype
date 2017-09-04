@@ -2,7 +2,7 @@ module Language.CSharp
     ( renderer
     ) where
 
-import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getModuleName, getTypeNameForUnion, getUnionNames, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
+import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getModuleName, getTypeNameForUnion, getUnionNames, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getOptionValue)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
 import Prelude
 
@@ -10,14 +10,19 @@ import Data.Char.Unicode (GeneralCategory(..), generalCategory)
 import Data.Foldable (for_, intercalate)
 import Data.List (List, (:))
 import Data.List as L
-import Data.Map as M
 import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
+import Data.Tuple (Tuple(..))
 import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
+import Options (enumOption, Option)
 
 forbiddenNames :: Array String
 forbiddenNames = ["Convert", "JsonConverter", "Type"]
+
+listOption :: Option Boolean
+listOption = enumOption "array-type" "Select C# type to use for JSON arrays" [Tuple "array" false, Tuple "list" true]
 
 renderer :: Renderer
 renderer =
@@ -25,6 +30,7 @@ renderer =
     , aceMode: "csharp"
     , extension: "cs"
     , doc: csharpDoc
+    , options: [listOption.specification]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -85,7 +91,12 @@ renderTypeToCSharp = case _ of
     IRString -> pure "string"
     IRArray a -> do
         rendered <- renderTypeToCSharp a
-        pure $ rendered <> "[]"
+        useList <- getOptionValue listOption
+        if useList
+            then
+                pure $ "List<" <> rendered <> ">"
+            else
+                pure $ rendered <> "[]"
     IRClass i -> lookupClassName i
     IRMap t -> do
         rendered <- renderTypeToCSharp t
@@ -125,6 +136,9 @@ using Newtonsoft.Json;
         renderJsonConverter
     line "}"
 
+whenSerializers :: Doc Unit -> Doc Unit
+whenSerializers = id
+
 stringIfTrue :: Boolean -> String -> String
 stringIfTrue true s = s
 stringIfTrue false _ = ""
@@ -150,10 +164,11 @@ renderJsonConverter = do
                 <> "FromJson(string json) => JsonConvert.DeserializeObject<"
                 <> topLevelTypeRendered
                 <> ">(json, Settings);"
-            line
-                $ "public static string ToJson("
-                <> topLevelTypeRendered
-                <> " o) => JsonConvert.SerializeObject(o, Settings);"
+            whenSerializers do
+                line
+                    $ "public static string ToJson("
+                    <> topLevelTypeRendered
+                    <> " o) => JsonConvert.SerializeObject(o, Settings);"
 
         blank
         line "// JsonConverter stuff"
@@ -174,19 +189,21 @@ renderJsonConverter = do
                     indent $ line $ "return new " <> name <> "(reader, serializer);"
                 line "throw new Exception(\"Unknown type\");"
             line "}"
-            blank
-            line "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)"
-            line "{"
-            indent do
-                line "var t = value.GetType();"
-                for_ names \name -> do
-                    line $ "if (t == typeof(" <> name <> ")) {"
-                    indent do
-                        line $ "((" <> name <> ")value).WriteJson(writer, serializer);"
-                        line "return;"
-                    line "}"
-                line "throw new Exception(\"Unknown type\");"
-            line "}"
+
+            whenSerializers do
+                blank
+                line "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)"
+                line "{"
+                indent do
+                    line "var t = value.GetType();"
+                    for_ names \name -> do
+                        line $ "if (t == typeof(" <> name <> ")) {"
+                        indent do
+                            line $ "((" <> name <> ")value).WriteJson(writer, serializer);"
+                            line "return;"
+                        line "}"
+                    line "throw new Exception(\"Unknown type\");"
+                line "}"
 
         blank
         line "static JsonSerializerSettings Settings = new JsonSerializerSettings"
@@ -281,23 +298,25 @@ renderCSharpUnion name unionRep = do
                 line $ "default: throw new Exception(\"Cannot convert " <> name <> "\");"
             line "}"
         line "}"
-        blank
-        line $ "public void WriteJson(JsonWriter writer, JsonSerializer serializer)"
-        line "{"
-        indent do
-            forUnion_ nonNullUnion \field -> do
-                fieldName <- unionFieldName field
-                line $ "if (" <> fieldName <> " != null) {"
-                indent do
-                    line $ "serializer.Serialize(writer, " <> fieldName <> ");"
-                    line "return;"
-                line "}"
-            if hasNull
-                then
-                    line "writer.WriteNull();"
-                else
-                    line "throw new Exception(\"Union must not be null\");"
-        line "}"
+
+        whenSerializers do
+            blank
+            line $ "public void WriteJson(JsonWriter writer, JsonSerializer serializer)"
+            line "{"
+            indent do
+                forUnion_ nonNullUnion \field -> do
+                    fieldName <- unionFieldName field
+                    line $ "if (" <> fieldName <> " != null) {"
+                    indent do
+                        line $ "serializer.Serialize(writer, " <> fieldName <> ");"
+                        line "return;"
+                    line "}"
+                if hasNull
+                    then
+                        line "writer.WriteNull();"
+                    else
+                        line "throw new Exception(\"Union must not be null\");"
+            line "}"
     line "}"
 
 renderCSharpClass :: String -> Map String IRType -> Doc Unit

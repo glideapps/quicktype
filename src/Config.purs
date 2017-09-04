@@ -5,6 +5,7 @@ module Config
     , TopLevelConfig(..)
     , topLevelSamples
     , topLevelSchemas
+    , rendererOptions
     , renderer
     ) where
 
@@ -20,6 +21,8 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(Just), fromMaybe, maybe)
 import Data.Tuple (Tuple(..))
+import Data.StrMap (StrMap)
+import Data.StrMap as SM
 import Doc (Renderer)
 import Doc as Doc
 import Language.JsonSchema (JSONSchema)
@@ -38,6 +41,7 @@ data TopLevelConfig = TopLevelConfig
 newtype Config = Config
     { topLevels :: Array TopLevelConfig
     , language :: String
+    , rendererOptions :: StrMap String
     }
 
 instance decodeTypeSource :: DecodeJson TypeSource where
@@ -68,10 +72,12 @@ instance decodeConfig :: DecodeJson Config where
         obj <- decodeJson j
         topLevels <- obj .? "topLevels"
         language <- obj .? "language"
+        maybeOptions <- obj .?? "rendererOptions"
         pure $ Config
             { topLevels
             -- TODO derive from outFile
             , language
+            , rendererOptions: maybe SM.empty id maybeOptions
             }
 
 parseConfig :: Json -> Either String Config
@@ -111,3 +117,6 @@ topLevelSchemas (Config config) = withSchemas
       getNameAndSchema (TopLevelConfig { name, schema }) = do
         s <- schema
         pure $ Tuple name [s]
+
+rendererOptions :: Config -> StrMap String
+rendererOptions (Config { rendererOptions }) = rendererOptions

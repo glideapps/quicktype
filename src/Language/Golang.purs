@@ -24,6 +24,7 @@ renderer =
     , aceMode: "golang"
     , extension: "go"
     , doc: golangDoc
+    , options: []
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s

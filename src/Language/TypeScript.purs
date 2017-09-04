@@ -27,6 +27,7 @@ renderer =
     , aceMode: "typescript"
     , extension: "ts"
     , doc: typeScriptDoc
+    , options: []
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> s <> "_"
