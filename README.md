@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/dvdsgl/quicktype.svg?token=PSTj9tVyM1RDRiZ17Sgd&branch=master)](https://travis-ci.com/dvdsgl/quicktype)
+[![Build Status](https://travis-ci.com/quicktype/quicktype.io.svg?token=TTik7P52acceZs1pnRCU&branch=master)](https://travis-ci.com/quicktype/quicktype.io)
 
 ## Setup
 
