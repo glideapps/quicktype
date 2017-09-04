@@ -13,7 +13,7 @@ module Options
 
 import Prelude
 
-import Data.Foldable (intercalate)
+import Data.Foldable (intercalate, elem)
 import Data.Array as A
 import Data.Maybe (Maybe(..), fromJust)
 import Data.StrMap (StrMap)
@@ -59,7 +59,7 @@ makeOptionValues optionSpecifications optionStrings =
                 case spec.default of
                 BooleanValue _ ->
                     let l = String.toLower optionString
-                    in BooleanValue $ l == "true" || l == "t" || l == "yes" || l == "y" || l == "1"
+                    in BooleanValue $ l `elem` ["true", "t", "yes", "y", "1"]
                 EnumValue _ cases ->
                     case A.findIndex (eq optionString) cases of
                     Just i -> EnumValue i cases
