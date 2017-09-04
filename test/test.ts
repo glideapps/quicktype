@@ -14,8 +14,8 @@ const Ajv = require('ajv');
 const strictDeepEquals: (x: any, y: any) => boolean = require('deep-equal');
 const shell = require("shelljs");
 
-const Main = require("../output/Main");
-const Samples = require("../output/Samples");
+const Main = require("../output/purs/Main");
+const Samples = require("../output/purs/Samples");
 
 const exit = require('exit');
 const chalk = require("chalk");
