@@ -20,9 +20,6 @@ import Options (booleanOption, Option)
 forbiddenNames :: Array String
 forbiddenNames = ["Convert", "JsonConverter", "Type"]
 
-serializersOption :: Option Boolean
-serializersOption = booleanOption "serializers" "Generate serializers" true
-
 listOption :: Option Boolean
 listOption = booleanOption "use-list" "Use List<T> instead of T[]" false
 
@@ -32,7 +29,7 @@ renderer =
     , aceMode: "csharp"
     , extension: "cs"
     , doc: csharpDoc
-    , options: [serializersOption.specification, listOption.specification]
+    , options: [listOption.specification]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -139,9 +136,7 @@ using Newtonsoft.Json;
     line "}"
 
 whenSerializers :: Doc Unit -> Doc Unit
-whenSerializers doc = do
-    serializers <- getOptionValue serializersOption
-    when serializers doc
+whenSerializers = id
 
 stringIfTrue :: Boolean -> String -> String
 stringIfTrue true s = s
