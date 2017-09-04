@@ -169,12 +169,18 @@ class Run {
 
   constructor(argv: string[] | Options) {
     if (_.isArray(argv)) {
-      const incompleteOptions = this.getOptions(argv);
+      // We can only fully parse the options once we know which renderer is selected,
+      // because there are renderer-specific options.  But we only know which renderer
+      // is selected after we've parsed the options.  Hence, we parse the options
+      // twice.  This is the first parse to get the renderer:
+      const incompleteOptions = this.parseOptions(optionDefinitions, argv, true).options;
       const renderer = this.getRenderer(incompleteOptions.lang);
+      // Use the global options as well as the renderer options from now on:
       const rendererOptionDefinitions = optionDefinitionsForRenderer(renderer);
-      const allOptionDefinitons = _.concat(optionDefinitions, rendererOptionDefinitions);
+      const allOptionDefinitions = _.concat(optionDefinitions, rendererOptionDefinitions);
       try {
-        const { options, renderer: rendererOptions } = this.parseOptions(allOptionDefinitons, argv, false);
+        // This is the parse that counts:
+        const { options, renderer: rendererOptions } = this.parseOptions(allOptionDefinitions, argv, false);
         this.options = options;
         this.rendererOptions = rendererOptions;          
       } catch (error) {
@@ -363,8 +369,11 @@ class Run {
     }
   }
 
+  // Parse the options in argv and split them into global options and renderer options,
+  // according to each option definition's `renderer` field.  If `partial` is false this
+  // will throw if it encounters an unknown option.
   parseOptions = (optionDefinitions: OptionDefinition[], argv: string[], partial: boolean):
-      { options: { [name: string]: string }, renderer: { [name: string]: string } } => {
+      { options: Options, renderer: { [name: string]: string } } => {
     const opts: { [key: string]: any } = commandLineArgs(optionDefinitions, { argv, partial: partial });
     const options = {};
     const renderer = {};
@@ -379,12 +388,7 @@ class Run {
         options[k] = v;
       }
     });
-    return { options, renderer };
-  }
-
-  getOptions = (argv: string[]): Options => {
-    const options = this.parseOptions(optionDefinitions, argv, true).options;
-    return this.inferOptions(options);
+    return { options: this.inferOptions(options), renderer };
   }
 
   inferOptions = (opts: Options): Options => {
