@@ -73,7 +73,7 @@ replaceClassWithMap :: Int -> IR Unit
 replaceClassWithMap i = do
     IRClassData { names, properties } <- getClass i
     let types = M.values properties
-    t <- L.foldM unifyTypes IRNothing types
+    t <- L.foldM unifyTypes IRAnything types
     replaceClass i (IRMap t)
 
 makeMaps :: IR Unit

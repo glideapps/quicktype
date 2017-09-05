@@ -148,9 +148,9 @@ irUnion_String = 32
 -- | and in any case is an implementation detail that should be hidden from
 -- | higher-level users like the language renderers.
 -- |
--- | `IRNothing` was a bad design choice and will go away.  See issue #56.
+-- | `IRAnything` was a bad design choice and will go away.  See issue #56.
 data IRType
-    = IRNothing
+    = IRAnything
     | IRNull
     | IRInteger
     | IRDouble
@@ -219,15 +219,15 @@ isMap (IRMap _) = true
 isMap _ = false
 
 nullifyNothing :: IRType -> IRType
-nullifyNothing IRNothing = IRNull
+nullifyNothing IRAnything = IRNull
 nullifyNothing x = x
 
 canBeNull :: IRType -> Boolean
 canBeNull =
     case _ of
-    IRNothing -> true
+    IRAnything -> true
     IRNull -> true
-    -- FIXME: shouldn't we check for IRNothing in union, too?
+    -- FIXME: shouldn't we check for IRAnything in union, too?
     IRUnion (IRUnionRep { primitives }) -> (Bits.and primitives irUnion_Null) /= 0
     _ -> false
 
@@ -263,7 +263,7 @@ isMaybeSubclassOfMaybe graph (Just a) (Just b) = isSubclassOf graph a b
 isMaybeSubclassOfMaybe _ _ _ = false
 
 isSubtypeOf :: IRGraph ->  IRType -> IRType -> Boolean
-isSubtypeOf _ IRNothing _ = true
+isSubtypeOf _ IRAnything _ = true
 isSubtypeOf graph (IRUnion a) (IRUnion b) =
     let IRUnionRep { primitives: pa, arrayType: aa, classRef: ca, mapType: ma } = a
         IRUnionRep { primitives: pb, arrayType: ab, classRef: cb, mapType: mb } = a
@@ -363,7 +363,7 @@ nullableFromUnion union =
 
 forUnion_ :: forall m. Monad m => IRUnionRep -> (IRType -> m Unit) -> m Unit
 forUnion_ (IRUnionRep { primitives, arrayType, classRef, mapType }) f = do
-    when (inPrimitives irUnion_Nothing) do f IRNothing
+    when (inPrimitives irUnion_Nothing) do f IRAnything
     when (inPrimitives irUnion_Null) do f IRNull
     when (inPrimitives irUnion_Integer) do f IRInteger
     when (inPrimitives irUnion_Double) do f IRDouble
@@ -392,7 +392,7 @@ mapUnionM f (IRUnionRep { primitives, arrayType, classRef, mapType }) = do
         >>= mapPrimitive irUnion_Double IRDouble
         >>= mapPrimitive irUnion_Integer IRInteger
         >>= mapPrimitive irUnion_Null IRNull
-        >>= mapPrimitive irUnion_Nothing IRNothing
+        >>= mapPrimitive irUnion_Nothing IRAnything
     where
         mapPrimitive :: Int -> IRType -> List a -> m (List a)
         mapPrimitive bit t l =
@@ -417,7 +417,7 @@ unionToList = mapUnion id
 isUnionMember :: IRType -> IRUnionRep -> Boolean
 isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =
     case t of
-    IRNothing -> inPrimitives irUnion_Nothing
+    IRAnything -> inPrimitives irUnion_Nothing
     IRNull -> inPrimitives irUnion_Null
     IRInteger -> inPrimitives irUnion_Integer
     IRDouble -> inPrimitives irUnion_Double

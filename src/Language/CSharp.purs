@@ -83,7 +83,7 @@ renderUnionToCSharp ur =
 
 renderTypeToCSharp :: IRType -> Doc String
 renderTypeToCSharp = case _ of
-    IRNothing -> pure "object" -- we can have arrays of nothing
+    IRAnything -> pure "object" -- we can have arrays of nothing
     IRNull -> pure "object"
     IRInteger -> pure "long"
     IRDouble -> pure "double"

@@ -192,7 +192,7 @@ renderUnion ur =
 
 renderType :: IRType -> Doc String
 renderType = case _ of
-    IRNothing -> pure "Any?"
+    IRAnything -> pure "Any?"
     IRNull -> pure "Any?"
     IRInteger -> pure "Int"
     IRDouble -> pure "Double"
@@ -222,7 +222,7 @@ convertAny (IRUnion ur) var =
     Nothing -> do
         name <- lookupUnionName ur
         pure $ name <> ".fromJson(" <> var <> ")"
-convertAny IRNothing var =
+convertAny IRAnything var =
     pure var
 convertAny IRBool var =
     pure $ "convertBool(" <> var <> ")"
@@ -269,7 +269,7 @@ convertToAny (IRUnion ur) var =
         pure $ var <> ".map({ " <> convertCode  <> " }) ?? NSNull()"
     Nothing ->
         pure $ var <> ".any"
-convertToAny IRNothing var =
+convertToAny IRAnything var =
     pure $ var <> " ?? NSNull()"
 convertToAny IRNull var =
     pure $ "NSNull() as Any"

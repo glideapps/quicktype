@@ -137,7 +137,7 @@ lookupRef root ref local@(JSONSchema { definitions }) =
 toIRAndUnify :: forall a f. Foldable f => (a -> IR IRType) -> f a -> IR IRType
 toIRAndUnify toIR l = do
     irs <- mapM toIR $ L.fromFoldable l
-    foldM unifyTypes IRNothing irs
+    foldM unifyTypes IRAnything irs
 
 jsonSchemaToIR :: JSONSchema -> Named String -> JSONSchema -> IR IRType
 jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
@@ -152,12 +152,12 @@ jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, pr
     | Just jss <- oneOf =
         toIRAndUnify (jsonSchemaToIR root name) jss
     | otherwise =
-        pure IRNothing
+        pure IRAnything
 
 jsonSchemaListToIR :: forall t. Traversable t => Named String -> t JSONSchema -> IR IRType
 jsonSchemaListToIR name l = do
     irTypes <- mapM (\js -> jsonSchemaToIR js name js) l
-    foldM unifyTypes IRNothing irTypes
+    foldM unifyTypes IRAnything irTypes
 
 jsonTypeToIR :: JSONSchema -> Named String -> JSONType -> JSONSchema -> IR IRType
 jsonTypeToIR root name jsonType (JSONSchema schema) =
@@ -174,9 +174,9 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
         Nothing ->
             case schema.additionalProperties of
             Left true ->
-                pure $ IRMap IRNothing
+                pure $ IRMap IRAnything
             Left false ->
-                pure $ IRNothing
+                pure $ IRAnything
             Right js -> do
                 ir <- jsonSchemaToIR root singularName js
                 pure $ IRMap ir
@@ -185,7 +185,7 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
         Just js -> do
             ir <- (jsonSchemaToIR root singularName) js
             pure $ IRArray ir
-        Nothing -> pure $ IRArray IRNothing
+        Nothing -> pure $ IRArray IRAnything
     JSONBoolean -> pure IRBool
     JSONString -> pure IRString
     JSONNull -> pure IRNull
@@ -237,7 +237,7 @@ typeJson s = fromObject <$> typeStrMap s
 strMapForType :: IRType -> Doc (StrMap Json)
 strMapForType t =
     case t of
-    IRNothing -> pure $ SM.empty
+    IRAnything -> pure $ SM.empty
     IRNull -> typeStrMap "null"
     IRInteger -> typeStrMap "integer"
     IRDouble -> typeStrMap "number"

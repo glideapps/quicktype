@@ -93,7 +93,7 @@ renderUnionWithTypeRenderer typeRenderer ur =
 
 renderType :: Boolean -> IRType -> Doc String
 renderType reference = case _ of
-    IRNothing -> pure "Object"
+    IRAnything -> pure "Object"
     IRNull -> pure "Object"
     IRInteger -> pure $ if reference then "Long" else "long"
     IRDouble -> pure $ if reference then "Double" else "double"
