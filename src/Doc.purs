@@ -185,7 +185,7 @@ noForbidNamer namer = forbidNamer namer (const [])
 
 typeNameForUnion :: IRGraph -> Map Int String -> IRType -> String
 typeNameForUnion graph classNames = case _ of
-    IRNothing -> "anything"
+    IRAnything -> "anything"
     IRNull -> "null"
     IRInteger -> "int"
     IRDouble -> "double"

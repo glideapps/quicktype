@@ -65,7 +65,7 @@ renderUnion ur =
 
 renderType :: IRType -> Doc String
 renderType = case _ of
-    IRNothing -> pure "Any" -- we can have arrays of nothing
+    IRAnything -> pure "Any" -- we can have arrays of nothing
     IRNull -> pure "Null"
     IRInteger -> pure "Integer"
     IRDouble -> pure "Double"

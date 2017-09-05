@@ -69,7 +69,7 @@ renderUnion ur =
 
 renderType :: IRType -> Doc String
 renderType = case _ of
-    IRNothing -> pure "any" -- we can have arrays of nothing
+    IRAnything -> pure "any" -- we can have arrays of nothing
     IRNull -> pure "null"
     IRInteger -> pure "number"
     IRDouble -> pure "number"
@@ -198,7 +198,7 @@ markNullable name _ = name
 
 renderTypeMapType :: IRType -> Doc String
 renderTypeMapType = case _ of
-    IRNothing -> pure $ quote "undefined"
+    IRAnything -> pure $ quote "undefined"
     IRNull -> pure $ quote "undefined"
     IRInteger -> pure $ quote "number"
     IRDouble -> pure $ quote "number"

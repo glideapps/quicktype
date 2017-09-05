@@ -103,7 +103,7 @@ unionWithDefault unifier default m1 m2 =
 
 unifyClassDatas :: IRClassData -> IRClassData -> IR IRClassData
 unifyClassDatas (IRClassData { names: na, properties: pa }) (IRClassData { names: nb, properties: pb }) = do
-    properties <- unionWithDefault unifyTypesWithNull IRNothing pa pb
+    properties <- unionWithDefault unifyTypesWithNull IRAnything pa pb
     pure $ IRClassData { names: unifyNamed S.union na nb, properties }
 
 unifyClassRefs :: Int -> Int -> IR Int
@@ -117,14 +117,14 @@ unifyClassRefs ia ib =
         combineClasses ia ib unified
 
 unifyMaybes :: Maybe IRType -> Maybe IRType -> IR IRType
-unifyMaybes Nothing Nothing = pure IRNothing
+unifyMaybes Nothing Nothing = pure IRAnything
 unifyMaybes (Just a) Nothing = pure a
 unifyMaybes Nothing (Just b) = pure b
 unifyMaybes (Just a) (Just b) = unifyTypes a b
 
 unifyTypes :: IRType -> IRType -> IR IRType
-unifyTypes IRNothing x = pure x
-unifyTypes x IRNothing = pure x
+unifyTypes IRAnything x = pure x
+unifyTypes x IRAnything = pure x
 unifyTypes IRInteger IRDouble = pure IRDouble
 unifyTypes IRDouble IRInteger = pure IRDouble
 unifyTypes (IRArray a) (IRArray b) = IRArray <$> unifyTypes a b
@@ -141,10 +141,10 @@ unifyTypes a b | a == b = pure a
                     pure $ IRUnion u2
 
 unifyMultipleTypes :: List IRType -> IR IRType
-unifyMultipleTypes = L.foldM unifyTypes IRNothing
+unifyMultipleTypes = L.foldM unifyTypes IRAnything
 
 unifyTypesWithNull :: IRType -> IRType -> IR IRType
-unifyTypesWithNull IRNothing IRNothing = pure IRNothing
+unifyTypesWithNull IRAnything IRAnything = pure IRAnything
 unifyTypesWithNull a b = unifyTypes (nullifyNothing a) (nullifyNothing b)
 
 unifySetOfClasses :: Set Int -> IR Unit
@@ -181,7 +181,7 @@ updateClasses classUpdater typeUpdater = do
 unifyWithUnion :: IRUnionRep -> IRType -> IR IRUnionRep
 unifyWithUnion u@(IRUnionRep { names, primitives, arrayType, classRef, mapType }) t =
     case t of
-    IRNothing -> pure u
+    IRAnything -> pure u
     IRNull -> addBit irUnion_Null
     IRInteger -> addBit irUnion_Integer
     IRDouble -> addBit irUnion_Double

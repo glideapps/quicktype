@@ -77,7 +77,7 @@ renderUnionToGolang ur =
 
 renderTypeToGolang :: IRType -> Doc { rendered :: String, comment :: Maybe String }
 renderTypeToGolang = case _ of
-    IRNothing -> noComment "interface{}"
+    IRAnything -> noComment "interface{}"
     IRNull -> noComment "interface{}"
     IRInteger -> noComment "int64"
     IRDouble -> noComment "float64"

@@ -190,7 +190,7 @@ parenIfNeeded { rendered, multiWord: true } = "(" <> rendered <> ")"
 
 typeStringForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
 typeStringForType = case _ of
-    IRNothing -> singleWord "Jdec.Value"
+    IRAnything -> singleWord "Jdec.Value"
     IRNull -> singleWord "()"
     IRInteger -> singleWord "Int"
     IRDouble -> singleWord "Float"
@@ -218,7 +218,7 @@ unionConstructorName unionName t = do
 
 decoderNameForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
 decoderNameForType = case _ of
-    IRNothing -> singleWord "Jdec.value"
+    IRAnything -> singleWord "Jdec.value"
     IRNull -> multiWord "Jdec.null" "()"
     IRInteger -> singleWord "Jdec.int"
     IRDouble -> singleWord "Jdec.float"
@@ -241,7 +241,7 @@ decoderNameForType = case _ of
 
 encoderNameForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
 encoderNameForType = case _ of
-    IRNothing -> singleWord "identity"
+    IRAnything -> singleWord "identity"
     IRNull -> multiWord "always" "Jenc.null"
     IRInteger -> singleWord "Jenc.int"
     IRDouble -> singleWord "Jenc.float"
