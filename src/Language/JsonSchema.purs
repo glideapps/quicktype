@@ -4,7 +4,7 @@ module Language.JsonSchema
     , renderer
     ) where
 
-import Core (class Eq, class Ord, Error, Unit, unit, bind, const, map, not, otherwise, pure, ($), (&&), (/=), (<), (<$>), (<>), (=<<), (>=), (>>>))
+import Core (class Eq, class Ord, Error, Unit, unit, bind, const, map, not, otherwise, pure, id, ($), (&&), (/=), (<), (<$>), (<>), (=<<), (>=), (>>>))
 
 import Doc (Doc, Renderer, combineNames, getClasses, getTopLevels, line, lookupClassName, noForbidNamer, simpleNamer)
 import IRGraph
@@ -14,12 +14,13 @@ import Data.Argonaut.Core (Json, foldJson, fromArray, fromBoolean, fromObject, f
 import Data.Argonaut.Decode ((.??), decodeJson, class DecodeJson)
 import Data.Array as A
 import Data.Char as Char
-import Data.Either (Either(Right, Left))
+import Data.Either (Either(Right, Left), either)
 import Data.Foldable (class Foldable, foldM)
 import Data.List (List, (:))
 import Data.List as L
 import Data.List.NonEmpty as NEL
 import Control.Monad.State.Trans as StateT
+import Control.Bind ((>>=))
 import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
@@ -152,43 +153,21 @@ instance decodeJsonSchema :: DecodeJson JSONSchema where
         pure $ JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required, title }
 
 lookupRef :: JSONSchema -> List PathElement -> List PathElement -> JSONSchema -> Either Error (Tuple JSONSchema (List PathElement))
--- FIXME: don't deconstruct all the properties
-lookupRef root reversePath ref local@(JSONSchema { definitions, oneOf, properties, additionalProperties, items }) =
+lookupRef root reversePath ref local@(JSONSchema localProps) =
     case ref of
     L.Nil -> Right $ Tuple local reversePath
     Root : rest -> lookupRef root (L.singleton Root) rest root
-    Definition name : rest ->
-    -- FIXME: use >>= for all these maybes
-        case definitions of
-        Just sm ->
-            case SM.lookup name sm of
-            Just js -> recur (Definition name) rest js
-            Nothing -> Left "Reference not found"
-        Nothing -> Left "Definitions not found"
-    OneOf i : rest ->
-        case oneOf of
-        Just oo ->
-            case A.index oo i of
-            Just js -> recur (OneOf i) rest js
-            Nothing -> Left "Invalid OneOf index"
-        Nothing -> Left "OneOf not found"
-    Property name : rest ->
-        case properties of
-        Just props ->
-            case SM.lookup name props of
-            Just js -> recur (Property name) rest js
-            Nothing -> Left "Property not found"
-        Nothing -> Left "Properties not found"
-    AdditionalProperty : rest ->
-        case additionalProperties of
-        Right js -> recur AdditionalProperty rest js
-        _ -> Left "AdditionalProperties not found"
-    Items : rest ->
-        case items of
-        Just js -> recur Items rest js
-        Nothing -> Left "Items not found"
+    pathElement : rest -> do
+        js <- follow pathElement
+        lookupRef root (pathElement : reversePath) rest js
     where
-        recur pathElement rest js = lookupRef root (pathElement : reversePath) rest js
+        follow :: PathElement -> Either Error JSONSchema
+        follow (Definition name) = maybe (Left "Reference not found") Right $ localProps.definitions >>= SM.lookup name
+        follow (OneOf i) = maybe (Left "Invalid OneOf index") Right $ localProps.oneOf >>= (\oo -> A.index oo i)
+        follow (Property name) = maybe (Left "Property not found") Right $ localProps.properties >>= SM.lookup name
+        follow AdditionalProperty = either (const $ Left "AdditionalProperties not found") Right localProps.additionalProperties
+        follow Items = maybe (Left "Items not found") Right localProps.items
+        follow Root = Left "Cannot follow Root"
 
 jsonUnifyTypes :: IRType -> IRType -> JsonIR IRType
 jsonUnifyTypes a b = StateT.lift $ unifyTypes a b
@@ -199,17 +178,16 @@ toIRAndUnify toIR l = do
     foldM jsonUnifyTypes IRAnything irs
 
 jsonSchemaToIR :: JSONSchema -> List PathElement -> Named String -> JSONSchema -> JsonIR IRType
--- FIXME: don't deconstruct all the properties
-jsonSchemaToIR root reversePath name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
-    | Just (JSONSchemaRef { path, name }) <- ref =
+jsonSchemaToIR root reversePath name schema@(JSONSchema schemaProps)
+    | Just (JSONSchemaRef { path, name }) <- schemaProps.ref =
         case lookupRef root reversePath (NEL.toList path) schema of
         Left err -> throwError err
         Right (Tuple js jsReversePath) -> jsonSchemaToIR root jsReversePath (maybe (Inferred "Something") Given name) js
-    | Just (Left jt) <- types =
+    | Just (Left jt) <- schemaProps.types =
         jsonTypeToIR root reversePath name jt schema
-    | Just (Right jts) <- types =
+    | Just (Right jts) <- schemaProps.types =
         toIRAndUnify (\_ jt -> jsonTypeToIR root reversePath name jt schema) jts
-    | Just jss <- oneOf =
+    | Just jss <- schemaProps.oneOf =
         toIRAndUnify (\i -> jsonSchemaToIR root (OneOf i : reversePath) name) jss
     | otherwise =
         pure IRAnything
