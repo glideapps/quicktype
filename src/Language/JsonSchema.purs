@@ -1,6 +1,10 @@
-module Language.JsonSchema where
+module Language.JsonSchema
+    ( JSONSchema
+    , jsonSchemaListToIR
+    , renderer
+    ) where
 
-import Core (class Eq, class Ord, Error, Unit, bind, const, map, not, otherwise, pure, ($), (&&), (/=), (<), (<$>), (<>), (=<<), (>=), (>>>))
+import Core (class Eq, class Ord, Error, Unit, unit, bind, const, map, not, otherwise, pure, ($), (&&), (/=), (<), (<$>), (<>), (=<<), (>=), (>>>))
 
 import Doc (Doc, Renderer, combineNames, getClasses, getTopLevels, line, lookupClassName, noForbidNamer, simpleNamer)
 import IRGraph
@@ -15,7 +19,7 @@ import Data.Foldable (class Foldable, foldM)
 import Data.List (List, (:))
 import Data.List as L
 import Data.List.NonEmpty as NEL
-
+import Control.Monad.State.Trans as StateT
 import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
@@ -68,6 +72,8 @@ newtype JSONSchema = JSONSchema
     , required :: Maybe (Array String)
     , title :: Maybe String
     }
+
+type JsonIR = StateT.StateT Unit IR
 
 decodeEnum :: forall a. StrMap a -> Json -> Either Error a
 decodeEnum sm j = do
@@ -154,12 +160,15 @@ lookupRef root ref local@(JSONSchema { definitions }) =
             Nothing -> Left "Reference not found"
         Nothing -> Left "Definitions not found"
 
-toIRAndUnify :: forall a f. Foldable f => (a -> IR IRType) -> f a -> IR IRType
+jsonUnifyTypes :: IRType -> IRType -> JsonIR IRType
+jsonUnifyTypes a b = StateT.lift $ unifyTypes a b
+
+toIRAndUnify :: forall a f. Foldable f => (a -> JsonIR IRType) -> f a -> JsonIR IRType
 toIRAndUnify toIR l = do
     irs <- mapM toIR $ L.fromFoldable l
-    foldM unifyTypes IRAnything irs
+    foldM jsonUnifyTypes IRAnything irs
 
-jsonSchemaToIR :: JSONSchema -> Named String -> JSONSchema -> IR IRType
+jsonSchemaToIR :: JSONSchema -> Named String -> JSONSchema -> JsonIR IRType
 jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
     | Just (JSONSchemaRef { path, name }) <- ref =
         case lookupRef root (NEL.toList path) schema of
@@ -176,10 +185,10 @@ jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, pr
 
 jsonSchemaListToIR :: forall t. Traversable t => Named String -> t JSONSchema -> IR IRType
 jsonSchemaListToIR name l = do
-    irTypes <- mapM (\js -> jsonSchemaToIR js name js) l
+    irTypes <- StateT.evalStateT (mapM (\js -> jsonSchemaToIR js name js) l) unit
     foldM unifyTypes IRAnything irTypes
 
-jsonTypeToIR :: JSONSchema -> Named String -> JSONType -> JSONSchema -> IR IRType
+jsonTypeToIR :: JSONSchema -> Named String -> JSONType -> JSONSchema -> JsonIR IRType
 jsonTypeToIR root name jsonType (JSONSchema schema) =
     case jsonType of
     JSONObject ->
@@ -189,8 +198,8 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
             props <- mapMapM (\n -> jsonSchemaToIR root $ Inferred n) propMap
             let required = maybe S.empty S.fromFoldable schema.required
             let title = maybe name Given schema.title
-            nulled <- mapMapM (\n -> if S.member n required then pure else unifyTypes IRNull) props
-            addClass $ makeClass title nulled
+            nulled <- mapMapM (\n -> if S.member n required then pure else jsonUnifyTypes IRNull) props
+            StateT.lift $ addClass $ makeClass title nulled
         Nothing ->
             case schema.additionalProperties of
             Left true ->
@@ -203,7 +212,7 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
     JSONArray ->
         case schema.items of
         Just js -> do
-            ir <- (jsonSchemaToIR root singularName) js
+            ir <- jsonSchemaToIR root singularName js
             pure $ IRArray ir
         Nothing -> pure $ IRArray IRAnything
     JSONBoolean -> pure IRBool
