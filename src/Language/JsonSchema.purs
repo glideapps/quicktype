@@ -48,7 +48,14 @@ jsonTypeEnumMap = SM.fromFoldable [
     Tuple "number" JSONNumber
     ]
 
-newtype JSONSchemaRef = JSONSchemaRef (NEL.NonEmptyList String)
+data PathElement
+    = Root
+    | Definition String
+
+newtype JSONSchemaRef = JSONSchemaRef
+    { path :: NEL.NonEmptyList PathElement
+    , name :: Maybe String
+    }
 
 newtype JSONSchema = JSONSchema
     { definitions :: Maybe (StrMap JSONSchema)
@@ -72,10 +79,24 @@ instance decodeJsonType :: DecodeJson JSONType where
 
 instance decodeJsonSchemaRef :: DecodeJson JSONSchemaRef where
     decodeJson j = do
-        ref <- decodeJson j
-        case NEL.fromFoldable $ String.split (String.Pattern "/") ref of
-            Just nel -> pure $ JSONSchemaRef nel
-            Nothing -> Left "ERROR: String.split should return at least one element."
+        refString :: String <- decodeJson j
+        let pathElementsStrings = String.split (String.Pattern "/") refString
+        parsed <- parseJsonSchemaRef $ L.fromFoldable pathElementsStrings
+        case NEL.fromList parsed of
+            Nothing -> Left "Reference must contain at least one path element"
+            Just path -> pure $ JSONSchemaRef { path, name: A.last pathElementsStrings }
+
+parseJsonSchemaRef :: List String -> Either Error (List PathElement)
+parseJsonSchemaRef L.Nil =
+    pure L.Nil
+parseJsonSchemaRef ("#" : rest) = do
+    restParsed <- parseJsonSchemaRef rest
+    pure $ Root : restParsed
+parseJsonSchemaRef ("definitions" : name : rest) = do
+    restParsed <- parseJsonSchemaRef rest
+    pure $ Definition name : restParsed
+parseJsonSchemaRef _ =
+    Left "Could not parse JSON Schema reference"
 
 decodeTypes :: Json -> Either Error (Either JSONType (Set JSONType))
 decodeTypes j =
@@ -120,19 +141,18 @@ instance decodeJsonSchema :: DecodeJson JSONSchema where
         title <- obj .?? "title"
         pure $ JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required, title }
 
-lookupRef :: JSONSchema -> List String -> JSONSchema -> Either Error JSONSchema
+lookupRef :: JSONSchema -> List PathElement -> JSONSchema -> Either Error JSONSchema
 lookupRef root ref local@(JSONSchema { definitions }) =
     case ref of
     L.Nil -> Right local
-    "#" : rest -> lookupRef root rest root
-    "definitions" : name : rest ->
+    Root : rest -> lookupRef root rest root
+    Definition name : rest ->
         case definitions of
         Just sm ->
             case SM.lookup name sm of
             Just js -> lookupRef root rest js
             Nothing -> Left "Reference not found"
         Nothing -> Left "Definitions not found"
-    _ -> Left "Reference not supported"
 
 toIRAndUnify :: forall a f. Foldable f => (a -> IR IRType) -> f a -> IR IRType
 toIRAndUnify toIR l = do
@@ -141,10 +161,10 @@ toIRAndUnify toIR l = do
 
 jsonSchemaToIR :: JSONSchema -> Named String -> JSONSchema -> IR IRType
 jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
-    | Just (JSONSchemaRef r) <- ref =
-        case lookupRef root (NEL.toList r) schema of
+    | Just (JSONSchemaRef { path, name }) <- ref =
+        case lookupRef root (NEL.toList path) schema of
         Left err -> throwError err
-        Right js -> jsonSchemaToIR root (Given $ NEL.last r) js
+        Right js -> jsonSchemaToIR root (maybe (Inferred "Something") Given name) js
     | Just (Left jt) <- types =
         jsonTypeToIR root name jt schema
     | Just (Right jts) <- types =
