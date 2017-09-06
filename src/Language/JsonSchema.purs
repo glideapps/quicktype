@@ -31,7 +31,7 @@ import Data.String.Util (camelCase, capitalize, singular)
 import Data.Traversable (class Traversable, traverse)
 import Data.Tuple (Tuple(..))
 import IR (IR, addClass, unifyTypes)
-import Utils (mapM, mapMapM)
+import Utils (mapM, mapMapM, mapWithIndexM)
 
 data JSONType
     = JSONObject
@@ -55,6 +55,10 @@ jsonTypeEnumMap = SM.fromFoldable [
 data PathElement
     = Root
     | Definition String
+    | OneOf Int
+    | Property String
+    | AdditionalProperty
+    | Items
 
 newtype JSONSchemaRef = JSONSchemaRef
     { path :: NEL.NonEmptyList PathElement
@@ -147,55 +151,82 @@ instance decodeJsonSchema :: DecodeJson JSONSchema where
         title <- obj .?? "title"
         pure $ JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required, title }
 
-lookupRef :: JSONSchema -> List PathElement -> JSONSchema -> Either Error JSONSchema
-lookupRef root ref local@(JSONSchema { definitions }) =
+lookupRef :: JSONSchema -> List PathElement -> List PathElement -> JSONSchema -> Either Error (Tuple JSONSchema (List PathElement))
+-- FIXME: don't deconstruct all the properties
+lookupRef root reversePath ref local@(JSONSchema { definitions, oneOf, properties, additionalProperties, items }) =
     case ref of
-    L.Nil -> Right local
-    Root : rest -> lookupRef root rest root
+    L.Nil -> Right $ Tuple local reversePath
+    Root : rest -> lookupRef root (L.singleton Root) rest root
     Definition name : rest ->
+    -- FIXME: use >>= for all these maybes
         case definitions of
         Just sm ->
             case SM.lookup name sm of
-            Just js -> lookupRef root rest js
+            Just js -> recur (Definition name) rest js
             Nothing -> Left "Reference not found"
         Nothing -> Left "Definitions not found"
+    OneOf i : rest ->
+        case oneOf of
+        Just oo ->
+            case A.index oo i of
+            Just js -> recur (OneOf i) rest js
+            Nothing -> Left "Invalid OneOf index"
+        Nothing -> Left "OneOf not found"
+    Property name : rest ->
+        case properties of
+        Just props ->
+            case SM.lookup name props of
+            Just js -> recur (Property name) rest js
+            Nothing -> Left "Property not found"
+        Nothing -> Left "Properties not found"
+    AdditionalProperty : rest ->
+        case additionalProperties of
+        Right js -> recur AdditionalProperty rest js
+        _ -> Left "AdditionalProperties not found"
+    Items : rest ->
+        case items of
+        Just js -> recur Items rest js
+        Nothing -> Left "Items not found"
+    where
+        recur pathElement rest js = lookupRef root (pathElement : reversePath) rest js
 
 jsonUnifyTypes :: IRType -> IRType -> JsonIR IRType
 jsonUnifyTypes a b = StateT.lift $ unifyTypes a b
 
-toIRAndUnify :: forall a f. Foldable f => (a -> JsonIR IRType) -> f a -> JsonIR IRType
+toIRAndUnify :: forall a f. Foldable f => (Int -> a -> JsonIR IRType) -> f a -> JsonIR IRType
 toIRAndUnify toIR l = do
-    irs <- mapM toIR $ L.fromFoldable l
+    irs <- mapWithIndexM toIR $ A.fromFoldable l
     foldM jsonUnifyTypes IRAnything irs
 
-jsonSchemaToIR :: JSONSchema -> Named String -> JSONSchema -> JsonIR IRType
-jsonSchemaToIR root name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
+jsonSchemaToIR :: JSONSchema -> List PathElement -> Named String -> JSONSchema -> JsonIR IRType
+-- FIXME: don't deconstruct all the properties
+jsonSchemaToIR root reversePath name schema@(JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required })
     | Just (JSONSchemaRef { path, name }) <- ref =
-        case lookupRef root (NEL.toList path) schema of
+        case lookupRef root reversePath (NEL.toList path) schema of
         Left err -> throwError err
-        Right js -> jsonSchemaToIR root (maybe (Inferred "Something") Given name) js
+        Right (Tuple js jsReversePath) -> jsonSchemaToIR root jsReversePath (maybe (Inferred "Something") Given name) js
     | Just (Left jt) <- types =
-        jsonTypeToIR root name jt schema
+        jsonTypeToIR root reversePath name jt schema
     | Just (Right jts) <- types =
-        toIRAndUnify (\jt -> jsonTypeToIR root name jt schema) jts
+        toIRAndUnify (\_ jt -> jsonTypeToIR root reversePath name jt schema) jts
     | Just jss <- oneOf =
-        toIRAndUnify (jsonSchemaToIR root name) jss
+        toIRAndUnify (\i -> jsonSchemaToIR root (OneOf i : reversePath) name) jss
     | otherwise =
         pure IRAnything
 
 jsonSchemaListToIR :: forall t. Traversable t => Named String -> t JSONSchema -> IR IRType
 jsonSchemaListToIR name l = do
-    irTypes <- StateT.evalStateT (mapM (\js -> jsonSchemaToIR js name js) l) unit
+    irTypes <- StateT.evalStateT (mapM (\js -> jsonSchemaToIR js (L.singleton Root) name js) l) unit
     foldM unifyTypes IRAnything irTypes
 
-jsonTypeToIR :: JSONSchema -> Named String -> JSONType -> JSONSchema -> JsonIR IRType
-jsonTypeToIR root name jsonType (JSONSchema schema) =
+jsonTypeToIR :: JSONSchema -> List PathElement -> Named String -> JSONType -> JSONSchema -> JsonIR IRType
+jsonTypeToIR root reversePath name jsonType (JSONSchema schema) =
     case jsonType of
     JSONObject ->
         case schema.properties of
         Just sm -> do
             let propMap = M.fromFoldable $ SM.toUnfoldable sm :: Array (Tuple String JSONSchema)
-            props <- mapMapM (\n -> jsonSchemaToIR root $ Inferred n) propMap
+            props <- mapMapM (\n -> jsonSchemaToIR root (Property n : reversePath) $ Inferred n) propMap
             let required = maybe S.empty S.fromFoldable schema.required
             let title = maybe name Given schema.title
             nulled <- mapMapM (\n -> if S.member n required then pure else jsonUnifyTypes IRNull) props
@@ -207,12 +238,12 @@ jsonTypeToIR root name jsonType (JSONSchema schema) =
             Left false ->
                 pure $ IRAnything
             Right js -> do
-                ir <- jsonSchemaToIR root singularName js
+                ir <- jsonSchemaToIR root (AdditionalProperty : reversePath) singularName js
                 pure $ IRMap ir
     JSONArray ->
         case schema.items of
         Just js -> do
-            ir <- jsonSchemaToIR root singularName js
+            ir <- jsonSchemaToIR root (Items : reversePath) singularName js
             pure $ IRArray ir
         Nothing -> pure $ IRArray IRAnything
     JSONBoolean -> pure IRBool
