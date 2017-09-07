@@ -285,12 +285,17 @@ replaceClass from to = do
     replaceTypes $ (replaceClassesInType \i -> if i == from then Just to else Nothing)
     deleteClass from
 
+-- This maps from old class index to new class index and new class data
 type ClassMapper = State (Map Int (Tuple Int (Maybe IRClassData)))
 
 normalizeGraphOrder :: IRGraph -> IRGraph
 normalizeGraphOrder graph@(IRGraph { toplevels }) =
     evalState work M.empty
     where
+        -- When we encounter a class we first check whether we've seen
+        -- it before (Right), or whether it's new (Left).  In the Left
+        -- case, we get a new index for the class, and the index is added
+        -- to the map.
         registerClass :: Int -> ClassMapper (Either Int Int)
         registerClass oldIndex = do
             m <- get
@@ -301,6 +306,8 @@ normalizeGraphOrder graph@(IRGraph { toplevels }) =
                     put $ M.insert oldIndex (Tuple newIndex Nothing) m
                     pure $ Left newIndex
         
+        -- After we're done processing a new class, we update the
+        -- entry in the map with its IRClassData.
         setClass :: Int -> IRClassData -> ClassMapper Unit
         setClass oldIndex cd = do
             m <- get

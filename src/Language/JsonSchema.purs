@@ -84,6 +84,21 @@ newtype JSONSchema = JSONSchema
     , title :: Maybe String
     }
 
+-- For recursive JSON Schemas we must not reenter a class we've
+-- already begun processing.  The way we ensure this is to keep
+-- a map of the reference paths of all the classes we've encountered
+-- so far.  It maps to each class's index in the graph.
+--
+-- Of course we can only set the entry in the graph properly once
+-- we're done with processing the class, but we need to reserve
+-- the index when starting processing the class.  As a simple solution
+-- we just set the entry to `NoType`` when we start, then replace it
+-- with the finished `Class`` entry when we're done.
+--
+-- FIXME: We don't actually need the IR monad because the path map
+-- itself can keep track of the index of each class as well as the
+-- number of classes seen so far (which is also the index of the next
+-- class to be added).  Similar to `normalizeGraphOrder`.
 type JsonIR = StateT.StateT (Map ReversePath Int) IR
 
 decodeEnum :: forall a. StrMap a -> Json -> Either Error a
