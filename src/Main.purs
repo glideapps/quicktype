@@ -5,7 +5,7 @@ module Main
     , intSentinel
     ) where
 
-import Core (Either, Error, SourceCode, bind, discard, pure, ($), (<$>), (=<<), (==), (||))
+import Core (Either, Error, SourceCode, bind, discard, pure, ($), (<$>))
 import IR (execIR, normalizeGraphOrder)
 import IRGraph
 
@@ -13,10 +13,7 @@ import Config as Config
 import Control.Monad.State (modify)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson) as J
-import Data.Maybe (Maybe(..))
-import Data.StrMap (StrMap)
 import Data.StrMap as SM
-import Data.String as String
 import Doc as Doc
 import IRTypeable (intSentinel) as IRTypeable
 import IRTypeable (makeTypes)
@@ -43,7 +40,7 @@ main json = do
 
     renderer <- Config.renderer config
 
-    graph <- normalizeGraphOrder =<< execIR do
+    graph <- normalizeGraphOrder <$> execIR do
         makeTypes samples
         T.replaceSimilarClasses
         T.makeMaps

@@ -7,17 +7,18 @@ module IR
     , addClass
     , addTopLevel
     , replaceClass
+    , addPlaceholder
+    , replacePlaceholder
     , unifyTypes
     , unifyMultipleTypes
     , execIR
     , runIR
     ) where
 
-import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, emptyGraph, emptyUnion, followIndex, getClassFromGraph, irUnion_Bool, irUnion_Double, irUnion_Integer, irUnion_Null, irUnion_String, nullifyNothing, unifyNamed)
 import Prelude
 
 import Control.Monad.Except (ExceptT, runExceptT)
-import Control.Monad.State (State, runState)
+import Control.Monad.State (State, runState, evalState)
 import Control.Monad.State.Class (get, put)
 import Data.Either (Either(..))
 import Data.Foldable (foldM, for_)
@@ -26,12 +27,14 @@ import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, fromJust)
 import Data.Sequence as Seq
 import Data.Set (Set)
 import Data.Set as S
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Tuple as T
+import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, emptyGraph, emptyUnion, followIndex, getClassFromGraph, irUnion_Bool, irUnion_Double, irUnion_Integer, irUnion_Null, irUnion_String, nullifyNothing, unifyNamed)
+import Partial.Unsafe (unsafePartial)
 import Utils (lookupOrDefault, mapM, mapMapM, mapMaybeM, sortByKey)
 
 type IR = ExceptT String (State IRGraph)
@@ -60,6 +63,20 @@ addClassWithIndex classData = do
             put $ IRGraph { classes: Seq.snoc classes (Class classData), toplevels }
             pure $ Tuple index (IRClass index)
         Just index -> pure $ Tuple index (IRClass index)
+
+addPlaceholder :: IR Int
+addPlaceholder = do
+    IRGraph { classes, toplevels } <- get
+    let index = Seq.length classes
+    put $ IRGraph { classes: Seq.snoc classes NoType, toplevels }
+    pure index
+
+replacePlaceholder :: Int -> IRClassData -> IR Unit
+replacePlaceholder i classData = do
+    IRGraph { classes, toplevels } <- get
+    -- FIXME: assert it is a placeholder!
+    let newClasses = Seq.replace (Class classData) i classes
+    put $ IRGraph { classes: newClasses, toplevels}
 
 addClass :: IRClassData -> IR IRType
 addClass classData = T.snd <$> addClassWithIndex classData
@@ -268,23 +285,45 @@ replaceClass from to = do
     replaceTypes $ (replaceClassesInType \i -> if i == from then Just to else Nothing)
     deleteClass from
 
-normalizeGraphOrder :: IRGraph -> Either String IRGraph
+type ClassMapper = State (Map Int (Tuple Int (Maybe IRClassData)))
+
+normalizeGraphOrder :: IRGraph -> IRGraph
 normalizeGraphOrder graph@(IRGraph { toplevels }) =
-    execIR work
+    evalState work M.empty
     where
+        registerClass :: Int -> ClassMapper (Either Int Int)
+        registerClass oldIndex = do
+            m <- get
+            case M.lookup oldIndex m of
+                Just (Tuple newIndex _) -> pure $ Right newIndex
+                Nothing -> do
+                    let newIndex = M.size m
+                    put $ M.insert oldIndex (Tuple newIndex Nothing) m
+                    pure $ Left newIndex
+        
+        setClass :: Int -> IRClassData -> ClassMapper Unit
+        setClass oldIndex cd = do
+            m <- get
+            let Tuple newIndex _ = unsafePartial $ fromJust $ M.lookup oldIndex m
+            put $ M.insert oldIndex (Tuple newIndex $ Just cd) m
+
         sortMap :: Map String IRType -> List (Tuple String IRType)
         sortMap m = sortByKey fst $ M.toUnfoldable m
 
-        addClassesFromClass :: Int -> IR Int
-        addClassesFromClass i =
-            let IRClassData { names, properties } = getClassFromGraph graph i
-            in do
-                let sorted = sortMap properties
-                newProperties <- M.fromFoldable <$> mapM (\(Tuple n t) -> Tuple n <$> addClasses t) sorted
-                let cd = IRClassData { names, properties: newProperties }
-                fst <$> addClassWithIndex cd
+        addClassesFromClass :: Int -> ClassMapper Int
+        addClassesFromClass oldIndex = do
+            reg <- registerClass oldIndex
+            case reg of
+                Left newIndex -> do
+                    let IRClassData { names, properties } = getClassFromGraph graph oldIndex
+                    let sorted = sortMap properties
+                    newProperties <- M.fromFoldable <$> mapM (\(Tuple n t) -> Tuple n <$> addClasses t) sorted
+                    let cd = IRClassData { names, properties: newProperties }
+                    setClass oldIndex cd
+                    pure newIndex
+                Right newIndex -> pure newIndex
 
-        addClasses :: IRType -> IR IRType
+        addClasses :: IRType -> ClassMapper IRType
         addClasses (IRClass i) = IRClass <$> addClassesFromClass i
         addClasses (IRArray t) = IRArray <$> addClasses t
         addClasses (IRMap m) = IRMap <$> addClasses m
@@ -295,8 +334,15 @@ normalizeGraphOrder graph@(IRGraph { toplevels }) =
             pure $ IRUnion $ IRUnionRep { names, primitives, arrayType: newArrayType, classRef: newClassRef, mapType: newMapType }
         addClasses t = pure t
 
-        work :: IR Unit
+        dejustifyClassMapEntry (Tuple i mcd) = Tuple i $ unsafePartial $ fromJust mcd
+
+        work :: ClassMapper IRGraph
         work = do
-            for_ (sortMap toplevels) \(Tuple name t) -> do
-                newT <- addClasses t
-                addTopLevel name newT
+            let sortedToplevels = sortMap toplevels
+            newToplevels <- mapM (\(Tuple name t) -> Tuple name <$> addClasses t) sortedToplevels
+            classMap <- get
+            let reverseClassMap = M.fromFoldable $ map dejustifyClassMapEntry $ M.values classMap
+            let numClasses = M.size reverseClassMap
+            let classIndexRange = if numClasses == 0 then L.Nil else L.range 0 (numClasses - 1)
+            let newClasses = map (\i -> Class $ unsafePartial $ fromJust $ M.lookup i reverseClassMap) classIndexRange
+            pure $ IRGraph { classes: Seq.fromFoldable newClasses, toplevels: M.fromFoldable newToplevels }

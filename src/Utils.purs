@@ -1,5 +1,6 @@
 module Utils
     ( mapM
+    , mapWithIndexM
     , mapMapM
     , mapStrMapM
     , mapMaybeM
@@ -23,9 +24,14 @@ import Data.StrMap (StrMap)
 import Data.StrMap as SM
 import Data.Traversable (class Traversable, for_, traverse)
 import Data.Tuple (Tuple(..))
+import Data.FunctorWithIndex (class FunctorWithIndex, mapWithIndex)
 
 mapM :: forall m a b t. Applicative m => Traversable t => (a -> m b) -> t a -> m (t b)
 mapM = traverse
+
+mapWithIndexM :: forall m a b f i. Applicative m => FunctorWithIndex i f => Traversable f => (i -> a -> m b) -> f a -> m (f b)
+mapWithIndexM f l =
+    mapM (\(Tuple i x) -> f i x) $ mapWithIndex Tuple l
 
 forMapM :: forall a v k m. Monad m => Ord k => Map k v -> (k -> v -> m a) -> m (Map k a)
 forMapM = flip mapMapM
