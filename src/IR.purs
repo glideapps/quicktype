@@ -7,13 +7,14 @@ module IR
     , addClass
     , addTopLevel
     , replaceClass
+    , addPlaceholder
+    , replacePlaceholder
     , unifyTypes
     , unifyMultipleTypes
     , execIR
     , runIR
     ) where
 
-import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, emptyGraph, emptyUnion, followIndex, getClassFromGraph, irUnion_Bool, irUnion_Double, irUnion_Integer, irUnion_Null, irUnion_String, nullifyNothing, unifyNamed)
 import Prelude
 
 import Control.Monad.Except (ExceptT, runExceptT)
@@ -32,6 +33,7 @@ import Data.Set (Set)
 import Data.Set as S
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Tuple as T
+import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, emptyGraph, emptyUnion, followIndex, getClassFromGraph, irUnion_Bool, irUnion_Double, irUnion_Integer, irUnion_Null, irUnion_String, nullifyNothing, unifyNamed)
 import Utils (lookupOrDefault, mapM, mapMapM, mapMaybeM, sortByKey)
 
 type IR = ExceptT String (State IRGraph)
@@ -60,6 +62,20 @@ addClassWithIndex classData = do
             put $ IRGraph { classes: Seq.snoc classes (Class classData), toplevels }
             pure $ Tuple index (IRClass index)
         Just index -> pure $ Tuple index (IRClass index)
+
+addPlaceholder :: IR Int
+addPlaceholder = do
+    IRGraph { classes, toplevels } <- get
+    let index = Seq.length classes
+    put $ IRGraph { classes: Seq.snoc classes NoType, toplevels }
+    pure index
+
+replacePlaceholder :: Int -> IRClassData -> IR Unit
+replacePlaceholder i classData = do
+    IRGraph { classes, toplevels } <- get
+    -- FIXME: assert it is a placeholder!
+    let newClasses = Seq.replace (Class classData) i classes
+    put $ IRGraph { classes: newClasses, toplevels}
 
 addClass :: IRClassData -> IR IRType
 addClass classData = T.snd <$> addClassWithIndex classData
