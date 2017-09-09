@@ -2,16 +2,16 @@ module Language.Java
     ( renderer
     ) where
 
-import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getTypeNameForUnion, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
-import IRGraph (IRClassData(..), IRType(..), IRUnionRep, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
 import Prelude
 
-import Data.Char.Unicode (GeneralCategory(..), generalCategory, isSpace)
+import Data.Char.Unicode (isAscii, isDigit, isLetter)
 import Data.Foldable (for_)
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
-import Data.String.Util (camelCase, capitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape)
+import Data.String.Util (camelCase, capitalize, legalizeCharacters, startWithLetter, stringEscape)
+import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getTypeNameForUnion, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
 
 forbiddenNames :: Array String
 forbiddenNames =
@@ -57,20 +57,11 @@ nameForClass (IRClassData { names }) = javaNameStyle true $ combineNames names
 
 isStartCharacter :: Char -> Boolean
 isStartCharacter c =
-    case generalCategory c of
-    Just CurrencySymbol -> true
-    Just ConnectorPunctuation -> true
-    _ -> isLetterOrLetterNumber c
+    (isAscii c && isLetter c) || c == '_'
 
 isPartCharacter :: Char -> Boolean
 isPartCharacter c =
-    case generalCategory c of
-    Just DecimalNumber -> true
-    Just SpacingCombiningMark -> true
-    Just NonSpacingMark -> true
-    Just Format -> true
-    Just Control -> not $ isSpace c
-    _ -> isStartCharacter c
+    isStartCharacter c || (isAscii c && isDigit c)
 
 legalize :: String -> String
 legalize = legalizeCharacters isPartCharacter
