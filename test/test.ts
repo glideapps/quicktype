@@ -297,6 +297,14 @@ function exec(
     return result;
 }
 
+function callAndReportFailure<T>(message: string, f: () => T): T {
+    try {
+        return f();
+    } catch (e) {
+        failWith(message, { error: e });
+    }
+}
+
 type ComparisonArgs = {
     expectedFile: string;
     jsonFile?: string;
@@ -309,16 +317,17 @@ function compareJsonFileToJson(args: ComparisonArgs) {
 
     let { expectedFile, jsonFile, jsonCommand, strict } = args;
 
-    let jsonString = jsonFile
-        ? fs.readFileSync(jsonFile, "utf8")
-        : exec(jsonCommand).stdout;
+    const jsonString =  jsonFile
+            ? callAndReportFailure("Could not read JSON output file", () => fs.readFileSync(jsonFile, "utf8"))
+            : callAndReportFailure("Could not run command for JSON output", () => exec(jsonCommand).stdout);
 
-    let givenJSON = JSON.parse(jsonString);
-    let expectedJSON = JSON.parse(fs.readFileSync(expectedFile, "utf8"));
+    const givenJSON = callAndReportFailure("Could not parse output JSON", () => JSON.parse(jsonString));
+    const expectedJSON = callAndReportFailure("Could not read or parse expected JSON file",
+        () => JSON.parse(fs.readFileSync(expectedFile, "utf8")));
     
     let jsonAreEqual = strict
-        ? strictDeepEquals(givenJSON, expectedJSON)
-        : deepEquals(expectedJSON, givenJSON);
+        ? callAndReportFailure("Failed to strictly compare objects", () => strictDeepEquals(givenJSON, expectedJSON))
+        : callAndReportFailure("Failed to compare objects.", () => deepEquals(expectedJSON, givenJSON));
 
     if (!jsonAreEqual) {
         failWith("Error: Output is not equivalent to input.", {
@@ -372,7 +381,11 @@ async function runFixtureWithSample(fixture: Fixture, sample: string, index: num
         // Generate code from the sample
         await quicktype({ src: [sampleFile], out: fixture.output, topLevel: fixture.topLevel});
 
-        await fixture.test(sampleFile);
+        try {
+            await fixture.test(sampleFile);            
+        } catch (e) {
+            failWith("Fixture threw an exception", { error: e });
+        }
 
         if (fixture.diffViaSchema) {
             debug("* Diffing with code generated via JSON Schema");
