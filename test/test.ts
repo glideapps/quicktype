@@ -73,7 +73,8 @@ const FIXTURES: Fixture[] = [
         test: testJava,
         skip: [
             "identifiers.json",
-            "simple-identifiers.json"
+            "simple-identifiers.json",
+            "blns-object.json"
         ]
     },
     {
@@ -85,7 +86,8 @@ const FIXTURES: Fixture[] = [
         test: testGo,
         skip: [
             "identifiers.json",
-            "simple-identifiers.json"
+            "simple-identifiers.json",
+            "blns-object.json"
         ]
     },
     {
@@ -97,7 +99,8 @@ const FIXTURES: Fixture[] = [
         test: testJsonSchema,
         skip: [
             "identifiers.json",
-            "simple-identifiers.json"
+            "simple-identifiers.json",
+            "blns-object.json"
         ]
     },
     {
@@ -110,7 +113,8 @@ const FIXTURES: Fixture[] = [
         test: testElm,
         skip: [
             "identifiers.json",
-            "simple-identifiers.json"
+            "simple-identifiers.json",
+            "blns-object.json"
         ]
     },
     {
@@ -122,7 +126,8 @@ const FIXTURES: Fixture[] = [
         test: testSwift,
         skip: [
             "identifiers.json",
-            "no-classes.json"
+            "no-classes.json",
+            "blns-object.json"
         ]
     },
     {
