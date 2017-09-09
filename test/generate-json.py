@@ -2,6 +2,8 @@
 
 import argparse
 import random
+import json
+import sys
 
 with open('/usr/share/dict/words') as f:
     words = f.read().splitlines()
@@ -26,9 +28,18 @@ def main():
     parser.add_argument('--array-elements', nargs=1, type=int, default=[3])
     parser.add_argument('--object-size', nargs=1, type=int, default=None)
     parser.add_argument('--class-count', nargs=1, type=int, default=None)
+    parser.add_argument('--with-string-list', nargs=1, default=None)
     args = parser.parse_args()
 
-    if args.class_count:
+    if args.with_string_list:
+        with open(args.with_string_list[0]) as f:
+            strings = [x[:-1] for x in f.readlines()]
+        obj = {}
+        for s in strings:
+            obj[s] = s
+        obj["dontMakeAMap"] = True
+        json.dump(obj, sys.stdout)
+    elif args.class_count:
         print('{')
         for i in range(args.class_count[0] - 1):
             print('  "class%d":' % i)
