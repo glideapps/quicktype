@@ -29,7 +29,7 @@ forbiddenNames =
     , "char", "final", "interface", "static", "void"
     , "class", "finally", "long", "strictfp", "volatile"
     , "const", "float", "native", "super", "while"
-    , "null"
+    , "null", "false", "true"
     ]
 
 renderer :: Renderer
