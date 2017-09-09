@@ -67,7 +67,6 @@ isPartCharacter c =
     Just ConnectorPunctuation -> true
     Just NonSpacingMark -> true
     Just SpacingCombiningMark -> true
-    Just Format -> true
     _ -> isStartCharacter c
 
 renderNullableToCSharp :: IRType -> Doc String
