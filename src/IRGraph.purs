@@ -45,7 +45,6 @@ module IRGraph
 import Prelude
 
 import Control.Comonad (extract)
-import Data.Foldable (all)
 import Data.Identity (Identity(..))
 import Data.Int.Bits as Bits
 import Data.List (List, (:))
@@ -239,43 +238,6 @@ matchingProperties ma mb = M.fromFoldable $ L.concatMap getFromB (M.toUnfoldable
             Just vb | va == vb -> Tuple k vb : L.Nil
                     | otherwise -> L.Nil
             Nothing -> L.Nil
-
-
-isMaybeSubtypeOfMaybe :: IRGraph -> Maybe IRType -> Maybe IRType -> Boolean
-isMaybeSubtypeOfMaybe _ Nothing Nothing = true
-isMaybeSubtypeOfMaybe graph (Just a) (Just b) = isSubtypeOf graph a b
-isMaybeSubtypeOfMaybe _ _ _ = false
-
-isSubclassOf :: IRGraph -> Int -> Int -> Boolean
-isSubclassOf graph ia ib =
-    let IRClassData { properties: pa } = getClassFromGraph graph ia
-        IRClassData { properties: pb } = getClassFromGraph graph ib
-    in propertiesAreSubset pa pb
-    where
-        propertiesAreSubset :: Map String IRType -> Map String IRType -> Boolean
-        propertiesAreSubset ma mb = all (isInB mb) (M.toUnfoldable ma :: List (Tuple String IRType))
-        isInB mb (Tuple n ta) = maybe false (isSubtypeOf graph ta) (M.lookup n mb)
-
--- FIXME: generalize with isMaybeSubtypeOfMaybe
-isMaybeSubclassOfMaybe :: IRGraph -> Maybe Int -> Maybe Int -> Boolean
-isMaybeSubclassOfMaybe _ Nothing Nothing = true
-isMaybeSubclassOfMaybe graph (Just a) (Just b) = isSubclassOf graph a b
-isMaybeSubclassOfMaybe _ _ _ = false
-
-isSubtypeOf :: IRGraph ->  IRType -> IRType -> Boolean
-isSubtypeOf _ IRAnything _ = true
-isSubtypeOf graph (IRUnion a) (IRUnion b) =
-    let IRUnionRep { primitives: pa, arrayType: aa, classRef: ca, mapType: ma } = a
-        IRUnionRep { primitives: pb, arrayType: ab, classRef: cb, mapType: mb } = a
-    in
-        (Bits.and pa pb) == pa &&
-        isMaybeSubtypeOfMaybe graph aa ab &&
-        isMaybeSubtypeOfMaybe graph ma mb &&
-        isMaybeSubclassOfMaybe graph ca cb
-isSubtypeOf graph (IRArray a) (IRArray b) = isSubtypeOf graph a b
-isSubtypeOf graph (IRMap a) (IRMap b) = isSubtypeOf graph a b
-isSubtypeOf graph (IRClass ia) (IRClass ib) = isSubclassOf graph ia ib
-isSubtypeOf _ a b = a == b
 
 regatherClassNames :: IRGraph -> IRGraph
 regatherClassNames graph@(IRGraph { classes, toplevels }) =
