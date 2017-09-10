@@ -45,14 +45,32 @@ function debug<T>(x: T): T {
 abstract class Fixture {
     abstract name: string;
 
+    async setup(): Promise<void> { }
+    abstract getSamples(sources: string[]): { priority: string[], others: string[] };
+    abstract runWithSample(sample: string, index: number, total: number): Promise<void>;
+}
+
+abstract class JSONFixture extends Fixture {
     protected abstract base: string;
-    protected setup: string = null;
+    protected setupCommand: string = null;
     protected abstract diffViaSchema: boolean;
     protected abstract output: string;
     protected abstract topLevel: string;
     protected skip: string[] = [];
 
     protected abstract test(sample: string): Promise<void>;
+
+    async setup() {
+        if (!this.setupCommand)
+            return;
+
+        console.error(
+            `* Setting up`,
+            chalk.magenta(this.name),
+            `fixture`);
+
+        await inDir(this.base, async () => { exec(this.setupCommand); });
+    }
 
     private shouldSkipTest(sample: string): boolean {
         if (fs.statSync(sample).size > 32 * 1024 * 1024) {
@@ -150,11 +168,11 @@ abstract class Fixture {
 // C# tests
 /////////////////////////////////////
 
-class CSharpFixture extends Fixture {
+class CSharpJSONFixture extends JSONFixture {
     name = "csharp";
     base = "test/fixtures/csharp";
     // https://github.com/dotnet/cli/issues/1582
-    setup = "dotnet restore --no-cache";
+    setupCommand = "dotnet restore --no-cache";
     diffViaSchema = true;
     output = "QuickType.cs";
     topLevel = "QuickType";
@@ -172,7 +190,7 @@ class CSharpFixture extends Fixture {
 // Java tests
 /////////////////////////////////////
 
-class JavaFixture extends Fixture {
+class JavaJSONFixture extends JSONFixture {
     name = "java";
     base = "test/fixtures/java";
     diffViaSchema = false;
@@ -198,7 +216,7 @@ class JavaFixture extends Fixture {
 // Go tests
 /////////////////////////////////////
 
-class GoFixture extends Fixture {
+class GoJSONFixture extends JSONFixture {
     name = "golang";
     base = "test/fixtures/golang";
     diffViaSchema = true;
@@ -223,7 +241,7 @@ class GoFixture extends Fixture {
 // JSON Schema tests
 /////////////////////////////////////
 
-class JSONSchemaFixture extends Fixture {
+class JSONSchemaJSONFixture extends JSONFixture {
     name = "schema";
     base = "test/fixtures/golang";
     diffViaSchema = false;
@@ -272,10 +290,10 @@ class JSONSchemaFixture extends Fixture {
 // Elm tests
 /////////////////////////////////////
 
-class ElmFixture extends Fixture {
+class ElmJSONFixture extends JSONFixture {
     name = "elm";
     base = "test/fixtures/elm";
-    setup = "rm -rf elm-stuff/build-artifacts && elm-make --yes";
+    setupCommand = "rm -rf elm-stuff/build-artifacts && elm-make --yes";
     diffViaSchema = true;
     output = "QuickType.elm";
     topLevel = "QuickType";
@@ -300,7 +318,7 @@ class ElmFixture extends Fixture {
 // Swift tests
 /////////////////////////////////////
 
-class SwiftFixture extends Fixture {
+class SwiftJSONFixture extends JSONFixture {
     name = "swift";
     base = "test/fixtures/swift";
     diffViaSchema = false;
@@ -326,7 +344,7 @@ class SwiftFixture extends Fixture {
 // TypeScript test
 /////////////////////////////////////
 
-class TypeScriptFixture extends Fixture {
+class TypeScriptJSONFixture extends JSONFixture {
     name = "typescript";
     base = "test/fixtures/typescript";
     diffViaSchema = true;
@@ -347,14 +365,14 @@ class TypeScriptFixture extends Fixture {
     }
 }
 
-const FIXTURES: Fixture[] = [
-    new CSharpFixture(),
-    new JavaFixture(),
-    new GoFixture(),
-    new JSONSchemaFixture(),
-    new ElmFixture(),
-    new SwiftFixture(),
-    new TypeScriptFixture()
+const JSON_FIXTURES: Fixture[] = [
+    new CSharpJSONFixture(),
+    new JavaJSONFixture(),
+    new GoJSONFixture(),
+    new JSONSchemaJSONFixture(),
+    new ElmJSONFixture(),
+    new SwiftJSONFixture(),
+    new TypeScriptJSONFixture()
 ].filter(({name}) => !process.env.FIXTURE || process.env.FIXTURE.includes(name));
 
 //////////////////////////////////////
@@ -457,7 +475,7 @@ type WorkItem = { sample: string; fixtureName: string; }
 
 async function main(sources: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run
-    const samples = _.map(FIXTURES, fixture => ({ fixtureName: fixture.name, samples: fixture.getSamples(sources) }));
+    const samples = _.map(JSON_FIXTURES, fixture => ({ fixtureName: fixture.name, samples: fixture.getSamples(sources) }));
     const priority = _.flatMap(samples, x => _.map(x.samples.priority, s => ({ fixtureName: x.fixtureName, sample: s })));
     const others = _.flatMap(samples, x => _.map(x.samples.others, s => ({ fixtureName: x.fixtureName, sample: s })));
 
@@ -470,25 +488,18 @@ async function main(sources: string[]) {
         setup: async () => {
             testCLI();
 
-            console.error(`* Running ${tests.length} tests between ${FIXTURES.length} fixtures`);
+            console.error(`* Running ${tests.length} tests between ${JSON_FIXTURES.length} fixtures`);
 
-            for (let { name, base, setup } of FIXTURES) {
+            for (const fixture of JSON_FIXTURES) {
                 exec(`rm -rf test/runs`);
                 exec(`mkdir -p test/runs`);
 
-                if (setup) {
-                    console.error(
-                        `* Setting up`,
-                        chalk.magenta(name),
-                        `fixture`);
-
-                    await inDir(base, async () => { exec(setup); });
-                }
+                await fixture.setup();
             }
         },
 
         map: async ({ sample, fixtureName }: WorkItem, index) => {
-            let fixture = _.find(FIXTURES, { name: fixtureName });
+            let fixture = _.find(JSON_FIXTURES, { name: fixtureName });
             try {
                 await fixture.runWithSample(sample, index, tests.length);
             } catch (e) {
