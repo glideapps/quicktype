@@ -111,11 +111,13 @@ golangDoc = do
         line $ "//    bytes, err = r.Marshal()"
     blank
     line "package main"
+    blank
     unions <- getUnions
     unless (unions == L.Nil) do
         line "import \"bytes\""
         line "import \"errors\""
     line "import \"encoding/json\""
+    blank
     renderRenderItems blank (Just renderTopLevel) renderGolangType (Just renderGolangUnion)
     unless (unions == L.Nil) do
         blank
