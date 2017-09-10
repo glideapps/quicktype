@@ -7,7 +7,6 @@ module IRGraph
     , IRClassData(..)
     , IRType(..)
     , IRUnionRep(..)
-    , irUnion_Nothing 
     , irUnion_Null
     , irUnion_Integer
     , irUnion_Double
@@ -19,7 +18,6 @@ module IRGraph
     , emptyGraph
     , followIndex
     , getClassFromGraph
-    , nullifyNothing
     , canBeNull
     , isArray
     , isClass
@@ -128,8 +126,6 @@ newtype IRUnionRep = IRUnionRep
     , mapType :: Maybe IRType
     }
 
-irUnion_Nothing :: Int
-irUnion_Nothing = 1
 irUnion_Null :: Int
 irUnion_Null = 2
 irUnion_Integer :: Int
@@ -146,10 +142,9 @@ irUnion_String = 32
 -- | `IRClass` is an integer indexing `IRGraph`'s `classes`.  This has some issues,
 -- | and in any case is an implementation detail that should be hidden from
 -- | higher-level users like the language renderers.
--- |
--- | `IRAnything` was a bad design choice and will go away.  See issue #56.
 data IRType
-    = IRAnything
+    = IRNoInformation
+    | IRAnyType
     | IRNull
     | IRInteger
     | IRDouble
@@ -217,17 +212,15 @@ isMap :: IRType -> Boolean
 isMap (IRMap _) = true
 isMap _ = false
 
-nullifyNothing :: IRType -> IRType
-nullifyNothing IRAnything = IRNull
-nullifyNothing x = x
-
 canBeNull :: IRType -> Boolean
 canBeNull =
     case _ of
-    IRAnything -> true
+    IRAnyType -> true
     IRNull -> true
-    -- FIXME: shouldn't we check for IRAnything in union, too?
     IRUnion (IRUnionRep { primitives }) -> (Bits.and primitives irUnion_Null) /= 0
+    -- FIXME: this case should not occur!  Only renderers call this function,
+    -- and by that time there must not be any IRNoInformation in the graph anymore.
+    IRNoInformation -> true
     _ -> false
 
 matchingProperties :: forall v. Eq v => Map String v -> Map String v -> Map String v
@@ -325,7 +318,6 @@ nullableFromUnion union =
 
 forUnion_ :: forall m. Monad m => IRUnionRep -> (IRType -> m Unit) -> m Unit
 forUnion_ (IRUnionRep { primitives, arrayType, classRef, mapType }) f = do
-    when (inPrimitives irUnion_Nothing) do f IRAnything
     when (inPrimitives irUnion_Null) do f IRNull
     when (inPrimitives irUnion_Integer) do f IRInteger
     when (inPrimitives irUnion_Double) do f IRDouble
@@ -354,7 +346,6 @@ mapUnionM f (IRUnionRep { primitives, arrayType, classRef, mapType }) = do
         >>= mapPrimitive irUnion_Double IRDouble
         >>= mapPrimitive irUnion_Integer IRInteger
         >>= mapPrimitive irUnion_Null IRNull
-        >>= mapPrimitive irUnion_Nothing IRAnything
     where
         mapPrimitive :: Int -> IRType -> List a -> m (List a)
         mapPrimitive bit t l =
@@ -379,7 +370,6 @@ unionToList = mapUnion id
 isUnionMember :: IRType -> IRUnionRep -> Boolean
 isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =
     case t of
-    IRAnything -> inPrimitives irUnion_Nothing
     IRNull -> inPrimitives irUnion_Null
     IRInteger -> inPrimitives irUnion_Integer
     IRDouble -> inPrimitives irUnion_Double
@@ -389,6 +379,8 @@ isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =
     IRClass i -> maybe false (eq i) classRef
     IRMap m -> maybe false (eq m) mapType
     IRUnion _ -> false
+    IRAnyType -> false
+    IRNoInformation -> false
     where
         inPrimitives bit = (Bits.and bit primitives) /= 0
 

@@ -5,16 +5,16 @@ module Main
     , intSentinel
     ) where
 
-import Core (Either, Error, SourceCode, bind, discard, pure, ($), (<$>))
-import IR (execIR, normalizeGraphOrder)
 import IRGraph
 
 import Config as Config
 import Control.Monad.State (modify)
+import Core (Either, Error, SourceCode, bind, discard, pure, ($), (<$>))
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson) as J
 import Data.StrMap as SM
 import Doc as Doc
+import IR (execIR, normalizeGraphOrder, replaceNoInformationWithAnyType)
 import IRTypeable (intSentinel) as IRTypeable
 import IRTypeable (makeTypes)
 import Language.Renderers as Renderers
@@ -50,6 +50,7 @@ main json = do
         -- TODO Mark, why not? Tests fail if we do.
         makeTypes schemas
         modify regatherUnionNames
+        replaceNoInformationWithAnyType
 
     let optionValues = makeOptionValues renderer.options optionStrings
     pure $ Doc.runRenderer renderer graph optionValues

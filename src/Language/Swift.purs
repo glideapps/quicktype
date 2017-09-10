@@ -2,8 +2,6 @@ module Language.Swift
     ( renderer
     ) where
 
-import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
-import IRGraph (IRClassData(..), IRType(..), IRUnionRep, canBeNull, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionToList)
 import Prelude
 
 import Data.Array as A
@@ -15,6 +13,8 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscape, intToHex, legalizeCharacters, startWithLetter)
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, canBeNull, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionToList)
 
 keywords :: Array String
 keywords =
@@ -192,7 +192,8 @@ renderUnion ur =
 
 renderType :: IRType -> Doc String
 renderType = case _ of
-    IRAnything -> pure "Any?"
+    IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
+    IRAnyType -> pure "Any?"
     IRNull -> pure "Any?"
     IRInteger -> pure "Int"
     IRDouble -> pure "Double"
@@ -222,7 +223,7 @@ convertAny (IRUnion ur) var =
     Nothing -> do
         name <- lookupUnionName ur
         pure $ name <> ".fromJson(" <> var <> ")"
-convertAny IRAnything var =
+convertAny IRAnyType var =
     pure var
 convertAny IRBool var =
     pure $ "convertBool(" <> var <> ")"
@@ -269,7 +270,7 @@ convertToAny (IRUnion ur) var =
         pure $ var <> ".map({ " <> convertCode  <> " }) ?? NSNull()"
     Nothing ->
         pure $ var <> ".any"
-convertToAny IRAnything var =
+convertToAny IRAnyType var =
     pure $ var <> " ?? NSNull()"
 convertToAny IRNull var =
     pure $ "NSNull() as Any"

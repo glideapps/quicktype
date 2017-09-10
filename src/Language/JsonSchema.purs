@@ -4,25 +4,23 @@ module Language.JsonSchema
     , renderer
     ) where
 
-import Core (class Eq, class Ord, Error, Unit, bind, const, map, not, otherwise, pure, discard, ($), (&&), (/=), (<), (<$>), (<>), (=<<), (>=), (>>>))
-
-import Doc (Doc, Renderer, combineNames, getClasses, getTopLevels, line, lookupClassName, noForbidNamer, simpleNamer)
 import IRGraph
-import Control.Monad.Error.Class (throwError)
 
+import Control.Bind ((>>=))
+import Control.Monad.Error.Class (throwError)
+import Control.Monad.State.Trans as StateT
+import Core (class Eq, class Ord, Error, Unit, unit, bind, const, map, not, otherwise, pure, discard, ($), (&&), (/=), (<), (<$>), (<>), (=<<), (>=), (>>>))
 import Data.Argonaut.Core (Json, foldJson, fromArray, fromBoolean, fromObject, fromString, isBoolean, stringifyWithSpace)
 import Data.Argonaut.Decode ((.??), decodeJson, class DecodeJson)
 import Data.Array as A
 import Data.Char as Char
 import Data.Either (Either(Right, Left), either)
-import Data.Foldable (class Foldable, foldM)
+import Data.Foldable (class Foldable)
 import Data.List (List, (:))
 import Data.List as L
 import Data.List.NonEmpty as NEL
-import Control.Monad.State.Trans as StateT
-import Control.Bind ((>>=))
-import Data.Map as M
 import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
 import Data.Set as S
@@ -32,7 +30,8 @@ import Data.String as String
 import Data.String.Util (camelCase, capitalize, singular)
 import Data.Traversable (class Traversable, traverse)
 import Data.Tuple (Tuple(..))
-import IR (IR, unifyTypes, addPlaceholder, replacePlaceholder)
+import Doc (Doc, Renderer, combineNames, getClasses, getTopLevels, line, lookupClassName, noForbidNamer, simpleNamer)
+import IR (IR, addPlaceholder, replacePlaceholder, unifyMultipleTypes, unifyTypes)
 import Utils (mapM, mapMapM, mapWithIndexM)
 
 data JSONType
@@ -190,13 +189,10 @@ lookupRef root reversePath ref local@(JSONSchema localProps) =
         follow Items = maybe (Left "Items not found") Right localProps.items
         follow Root = Left "Cannot follow Root"
 
-jsonUnifyTypes :: IRType -> IRType -> JsonIR IRType
-jsonUnifyTypes a b = StateT.lift $ unifyTypes a b
-
 toIRAndUnify :: forall a f. Foldable f => (Int -> a -> JsonIR IRType) -> f a -> JsonIR IRType
 toIRAndUnify toIR l = do
     irs <- mapWithIndexM toIR $ A.fromFoldable l
-    foldM jsonUnifyTypes IRAnything irs
+    StateT.lift $ unifyMultipleTypes $ L.fromFoldable irs
 
 jsonSchemaToIR :: JSONSchema -> ReversePath -> Named String -> JSONSchema -> JsonIR IRType
 jsonSchemaToIR root reversePath name schema@(JSONSchema schemaProps)
@@ -211,38 +207,27 @@ jsonSchemaToIR root reversePath name schema@(JSONSchema schemaProps)
     | Just jss <- schemaProps.oneOf =
         toIRAndUnify (\i -> jsonSchemaToIR root (OneOf i : reversePath) name) jss
     | otherwise =
-        pure IRAnything
+        pure IRAnyType
 
 jsonSchemaListToIR :: forall t. Traversable t => Named String -> t JSONSchema -> IR IRType
 jsonSchemaListToIR name l = do
     irTypes <- StateT.evalStateT (mapM (\js -> jsonSchemaToIR js (L.singleton Root) name js) l) M.empty
-    foldM unifyTypes IRAnything irTypes
+    unifyMultipleTypes irTypes
 
 jsonTypeToIR :: JSONSchema -> List PathElement -> Named String -> JSONType -> JSONSchema -> JsonIR IRType
 jsonTypeToIR root reversePath name jsonType (JSONSchema schema) =
     case jsonType of
     JSONObject ->
         case schema.properties of
-        Just sm -> do
-            maybeClassInt <- StateT.gets (M.lookup reversePath)
-            case maybeClassInt of
-                Just classIndex -> pure $ IRClass classIndex
-                Nothing -> do
-                    classIndex <- StateT.lift addPlaceholder
-                    StateT.modify (M.insert reversePath classIndex)
-                    let propMap = M.fromFoldable $ SM.toUnfoldable sm :: Array (Tuple String JSONSchema)
-                    props <- mapMapM (\n -> jsonSchemaToIR root (Property n : reversePath) $ Inferred n) propMap
-                    let required = maybe S.empty S.fromFoldable schema.required
-                    let title = maybe name Given schema.title
-                    nulled <- mapMapM (\n -> if S.member n required then pure else jsonUnifyTypes IRNull) props
-                    StateT.lift $ replacePlaceholder classIndex $ makeClass title nulled
-                    pure $ IRClass classIndex
+        Just sm ->
+            processClass \_ ->
+                M.fromFoldable $ SM.toUnfoldable sm :: Array (Tuple String JSONSchema)
         Nothing ->
             case schema.additionalProperties of
             Left true ->
-                pure $ IRMap IRAnything
+                pure $ IRMap IRAnyType
             Left false ->
-                pure $ IRAnything
+                processClass \_ -> M.empty
             Right js -> do
                 ir <- jsonSchemaToIR root (AdditionalProperty : reversePath) singularName js
                 pure $ IRMap ir
@@ -251,7 +236,7 @@ jsonTypeToIR root reversePath name jsonType (JSONSchema schema) =
         Just js -> do
             ir <- jsonSchemaToIR root (Items : reversePath) singularName js
             pure $ IRArray ir
-        Nothing -> pure $ IRArray IRAnything
+        Nothing -> pure $ IRArray IRAnyType
     JSONBoolean -> pure IRBool
     JSONString -> pure IRString
     JSONNull -> pure IRNull
@@ -259,6 +244,25 @@ jsonTypeToIR root reversePath name jsonType (JSONSchema schema) =
     JSONNumber -> pure IRDouble
     where
         singularName = Inferred $ singular $ namedValue name
+
+        jsonUnifyTypes :: IRType -> IRType -> JsonIR IRType
+        jsonUnifyTypes a b = StateT.lift $ unifyTypes a b
+
+        processClass :: (Unit -> Map String JSONSchema) -> JsonIR IRType
+        processClass makePropMap = do
+            maybeClassInt <- StateT.gets (M.lookup reversePath)
+            case maybeClassInt of
+                Just classIndex -> pure $ IRClass classIndex
+                Nothing -> do
+                    classIndex <- StateT.lift addPlaceholder
+                    StateT.modify (M.insert reversePath classIndex)
+                    let propMap = makePropMap unit
+                    props <- mapMapM (\n -> jsonSchemaToIR root (Property n : reversePath) $ Inferred n) propMap
+                    let required = maybe S.empty S.fromFoldable schema.required
+                    let title = maybe name Given schema.title
+                    nulled <- mapMapM (\n -> if S.member n required then pure else jsonUnifyTypes IRNull) props
+                    StateT.lift $ replacePlaceholder classIndex $ makeClass title nulled
+                    pure $ IRClass classIndex
 
 forbiddenNames :: Array String
 forbiddenNames = []
@@ -303,7 +307,8 @@ typeJson s = fromObject <$> typeStrMap s
 strMapForType :: IRType -> Doc (StrMap Json)
 strMapForType t =
     case t of
-    IRAnything -> pure $ SM.empty
+    IRNoInformation -> typeStrMap "FIXME_THIS_SHOULD_NOT_HAPPEN"
+    IRAnyType -> pure $ SM.empty
     IRNull -> typeStrMap "null"
     IRInteger -> typeStrMap "integer"
     IRDouble -> typeStrMap "number"

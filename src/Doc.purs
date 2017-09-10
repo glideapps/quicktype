@@ -42,7 +42,6 @@ module Doc
     , renderRenderItems
     ) where
 
-import IRGraph (IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, classesInGraph, filterTypes, getClassFromGraph, mapUnionM, namedValue, nullableFromUnion, unionToList)
 import Prelude
 
 import Control.Monad.RWS (RWS, evalRWS, asks, gets, modify, tell)
@@ -61,6 +60,7 @@ import Data.Set as S
 import Data.String (Pattern(..), fromCharArray, length, split, toCharArray) as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
+import IRGraph (IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, classesInGraph, filterTypes, getClassFromGraph, mapUnionM, namedValue, nullableFromUnion, unionToList)
 import Options (OptionSpecifications, OptionValues, lookupOptionValue, Option)
 import Utils (sortByKeyM, mapM)
 
@@ -185,7 +185,8 @@ noForbidNamer namer = forbidNamer namer (const [])
 
 typeNameForUnion :: IRGraph -> Map Int String -> IRType -> String
 typeNameForUnion graph classNames = case _ of
-    IRAnything -> "anything"
+    IRNoInformation -> "FIXME_THIS_SHOULD_NOT_HAPPEN"
+    IRAnyType -> "anything"
     IRNull -> "null"
     IRInteger -> "int"
     IRDouble -> "double"

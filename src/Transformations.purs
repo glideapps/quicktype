@@ -4,8 +4,6 @@ module Transformations
     ) where
 
 import Prelude
-import IRGraph (IRClassData(..), IRGraph, IRType(..), mapClasses, matchingProperties)
-import IR (IR, followRedirections, getClass, replaceClass, unifySetOfClasses, unifyTypes)
 
 import Control.Monad.State.Class (get)
 import Data.Filterable (filtered)
@@ -19,6 +17,8 @@ import Data.Set (Set)
 import Data.Set as S
 import Data.Tuple (Tuple(..))
 import Data.Tuple as T
+import IR (IR, followRedirections, getClass, replaceClass, unifyMultipleTypes, unifySetOfClasses)
+import IRGraph (IRClassData(..), IRGraph, IRType(..), mapClasses, matchingProperties)
 
 classesSimilar :: IRGraph -> IRClassData -> IRClassData -> Boolean
 classesSimilar graph (IRClassData { properties: pa }) (IRClassData { properties: pb }) =
@@ -73,7 +73,7 @@ replaceClassWithMap :: Int -> IR Unit
 replaceClassWithMap i = do
     IRClassData { names, properties } <- getClass i
     let types = M.values properties
-    t <- L.foldM unifyTypes IRAnything types
+    t <- unifyMultipleTypes types
     replaceClass i (IRMap t)
 
 makeMaps :: IR Unit
