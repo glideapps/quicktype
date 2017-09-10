@@ -38,6 +38,17 @@ function debug<T>(x: T): T {
     return x;
 }
 
+function samplesFromSources(sources: string[], prioritySamples: string[], miscSamples: string[], extension: string)
+        : { priority: string[], others: string[] } {
+    if (sources.length == 0) {
+        return { priority: prioritySamples, others: miscSamples };
+    } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
+        return { priority: testsInDir(sources[0], extension), others: [] };
+    } else {
+        return { priority: sources, others: [] };
+    }
+}
+
 //////////////////////////////////////
 // Fixtures
 /////////////////////////////////////
@@ -48,6 +59,23 @@ abstract class Fixture {
     async setup(): Promise<void> { }
     abstract getSamples(sources: string[]): { priority: string[], others: string[] };
     abstract runWithSample(sample: string, index: number, total: number): Promise<void>;
+
+    getRunDirectory(): string {
+        return `test/runs/${this.name}-${randomBytes(3).toString('hex')}`;
+    }
+
+    printRunMessage(sample: string, index: number, total: number, cwd: string, shouldSkip: boolean): void {
+        console.error(
+            `*`,
+            chalk.dim(`[${index+1}/${total}]`),
+            chalk.magenta(this.name),
+            path.join(
+                cwd,
+                chalk.cyan(path.basename(sample))),
+            shouldSkip
+                ? chalk.red("SKIP")
+                : '');
+    }
 }
 
 abstract class JSONFixture extends Fixture {
@@ -83,22 +111,13 @@ abstract class JSONFixture extends Fixture {
     getSamples(sources: string[]): { priority: string[], others: string[] } {
         // FIXME: this should only run once
         const prioritySamples = _.concat(
-            testsInDir("test/inputs/json/priority"),
-            testsInDir("test/inputs/json/samples"),
+            testsInDir("test/inputs/json/priority", "json"),
+            testsInDir("test/inputs/json/samples", "json"),
         );
 
-        const miscSamples = testsInDir("test/inputs/json/misc");
+        const miscSamples = testsInDir("test/inputs/json/misc", "json");
 
-        let priority: string[];
-        let others: string[];
-
-        if (sources.length == 0) {
-            priority = prioritySamples;
-            others = miscSamples;
-        } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
-            priority = testsInDir(sources[0]);
-            others = [];
-        }
+        let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
 
         if (IS_CI && !IS_PR && !IS_BLESSED) {
             // Run only priority sources on low-priority CI branches
@@ -117,20 +136,11 @@ abstract class JSONFixture extends Fixture {
     }
 
     async runWithSample(sample: string, index: number, total: number) {
-        let cwd = `test/runs/${this.name}-${randomBytes(3).toString('hex')}`;
+        const cwd = this.getRunDirectory();
         let sampleFile = path.basename(sample);
         let shouldSkip = this.shouldSkipTest(sample);
-    
-        console.error(
-            `*`,
-            chalk.dim(`[${index+1}/${total}]`),
-            chalk.magenta(this.name),
-            path.join(
-                cwd,
-                chalk.cyan(path.basename(sample))),
-            shouldSkip
-                ? chalk.red("SKIP")
-                : '');
+
+        this.printRunMessage(sample, index, total, cwd, shouldSkip);
     
         if (shouldSkip) return;
     
@@ -242,7 +252,7 @@ class GoJSONFixture extends JSONFixture {
 /////////////////////////////////////
 
 class JSONSchemaJSONFixture extends JSONFixture {
-    name = "schema";
+    name = "schema-json";
     base = "test/fixtures/golang";
     diffViaSchema = false;
     output = "schema.json";
@@ -365,22 +375,79 @@ class TypeScriptJSONFixture extends JSONFixture {
     }
 }
 
-const JSON_FIXTURES: Fixture[] = [
+//////////////////////////////////////
+// JSON Schema fixture
+/////////////////////////////////////
+
+class JSONSchemaFixture extends Fixture {
+    name = "schema";
+
+    getSamples(sources: string[]) {
+        const prioritySamples = testsInDir("test/inputs/schema/", "schema");
+
+        return samplesFromSources(sources, prioritySamples, [], "schema");
+    }
+
+    async runWithSample(sample: string, index: number, total: number) {
+        const cwd = this.getRunDirectory();
+        let sampleFile = path.basename(sample);
+
+        this.printRunMessage(sample, index, total, cwd, false);
+        
+        const base = path.join(path.dirname(sample), path.basename(sample, ".schema"));
+        const jsonFiles = [];
+        let fn = `${base}.json`;
+        if (fs.existsSync(fn))
+            jsonFiles.push(fn);
+        let i = 1;
+        for(;;) {
+            fn = `${base}.${i.toString()}.json`;
+            if (fs.existsSync(fn))
+                jsonFiles.push(fn);
+            else
+                break;
+            i++;
+        }
+
+        if (jsonFiles.length == 0)
+            failWith("No JSON input files", { base });
+
+        shell.cp("-R", "test/fixtures/golang", cwd);
+        shell.cp.apply(null, _.concat(sample, jsonFiles, cwd));
+
+        await inDir(cwd, async () => {
+            await quicktype({ srcLang: "schema", src: [sampleFile], topLevel: "TopLevel", out: "quicktype.go" });
+            for (const json of jsonFiles) {
+                const jsonBase = path.basename(json);
+                compareJsonFileToJson({
+                    expectedFile: jsonBase,
+                    jsonCommand: `go run main.go quicktype.go < "${jsonBase}"`,
+                    strict: false
+                });
+            }
+    
+            shell.rm("-rf", cwd);
+        });
+    }
+}
+
+const FIXTURES: Fixture[] = [
     new CSharpJSONFixture(),
     new JavaJSONFixture(),
     new GoJSONFixture(),
     new JSONSchemaJSONFixture(),
     new ElmJSONFixture(),
     new SwiftJSONFixture(),
-    new TypeScriptJSONFixture()
+    new TypeScriptJSONFixture(),
+    new JSONSchemaFixture()
 ].filter(({name}) => !process.env.FIXTURE || process.env.FIXTURE.includes(name));
 
 //////////////////////////////////////
 // Test driver
 /////////////////////////////////////
 
-function failWith(message: string, obj: any) {
-    obj.cwd = process.cwd();
+function failWith(message: string, obj: object) {
+    obj["cwd"] = process.cwd();
     console.error(chalk.red(message));
     console.error(chalk.red(JSON.stringify(obj, null, "  ")));
     throw obj;
@@ -475,7 +542,7 @@ type WorkItem = { sample: string; fixtureName: string; }
 
 async function main(sources: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run
-    const samples = _.map(JSON_FIXTURES, fixture => ({ fixtureName: fixture.name, samples: fixture.getSamples(sources) }));
+    const samples = _.map(FIXTURES, fixture => ({ fixtureName: fixture.name, samples: fixture.getSamples(sources) }));
     const priority = _.flatMap(samples, x => _.map(x.samples.priority, s => ({ fixtureName: x.fixtureName, sample: s })));
     const others = _.flatMap(samples, x => _.map(x.samples.others, s => ({ fixtureName: x.fixtureName, sample: s })));
 
@@ -488,9 +555,9 @@ async function main(sources: string[]) {
         setup: async () => {
             testCLI();
 
-            console.error(`* Running ${tests.length} tests between ${JSON_FIXTURES.length} fixtures`);
+            console.error(`* Running ${tests.length} tests between ${FIXTURES.length} fixtures`);
 
-            for (const fixture of JSON_FIXTURES) {
+            for (const fixture of FIXTURES) {
                 exec(`rm -rf test/runs`);
                 exec(`mkdir -p test/runs`);
 
@@ -499,7 +566,7 @@ async function main(sources: string[]) {
         },
 
         map: async ({ sample, fixtureName }: WorkItem, index) => {
-            let fixture = _.find(JSON_FIXTURES, { name: fixtureName });
+            let fixture = _.find(FIXTURES, { name: fixtureName });
             try {
                 await fixture.runWithSample(sample, index, tests.length);
             } catch (e) {
@@ -516,8 +583,8 @@ function testCLI() {
     exec(`${qt} --help`);
 }
 
-function testsInDir(dir: string): string[] {
-    return shell.ls(`${dir}/*.json`);
+function testsInDir(dir: string, extension: string): string[] {
+    return shell.ls(`${dir}/*.${extension}`);
 }
 
 // skip 2 `node` args
