@@ -42,220 +42,228 @@ function debug<T>(x: T): T {
 // Fixtures
 /////////////////////////////////////
 
-interface Fixture {
-    name: string;
-    base: string;
-    setup?: string;
-    diffViaSchema: boolean;
-    output: string;
-    topLevel: string;
-    skip?: string[]
-    test(sample: string): Promise<void>;
-}
+abstract class Fixture {
+    abstract name: string;
+    abstract base: string;
+    setup: string = null;
+    abstract diffViaSchema: boolean;
+    abstract output: string;
+    abstract topLevel: string;
+    skip: string[] = null;
 
-const FIXTURES: Fixture[] = [
-    {
-        name: "csharp",
-        base: "test/fixtures/csharp",
-        // https://github.com/dotnet/cli/issues/1582
-        setup: "dotnet restore --no-cache",
-        diffViaSchema: true,
-        output: "QuickType.cs",
-        topLevel: "QuickType",
-        test: testCSharp
-    },
-    {
-        name: "java",
-        base: "test/fixtures/java",
-        diffViaSchema: false,
-        output: "src/main/java/io/quicktype/TopLevel.java",
-        topLevel: "TopLevel",
-        test: testJava,
-        skip: [
-            "identifiers.json",
-            "simple-identifiers.json",
-            "blns-object.json"
-        ]
-    },
-    {
-        name: "golang",
-        base: "test/fixtures/golang",
-        diffViaSchema: true,
-        output: "quicktype.go",
-        topLevel: "TopLevel",
-        test: testGo,
-        skip: [
-            "identifiers.json",
-            "simple-identifiers.json",
-            "blns-object.json"
-        ]
-    },
-    {
-        name: "schema",
-        base: "test/fixtures/golang",
-        diffViaSchema: false,
-        output: "schema.json",
-        topLevel: "schema",
-        test: testJsonSchema,
-        skip: [
-            "identifiers.json",
-            "simple-identifiers.json",
-            "blns-object.json"
-        ]
-    },
-    {
-        name: "elm",
-        base: "test/fixtures/elm",
-        setup: "rm -rf elm-stuff/build-artifacts && elm-make --yes",
-        diffViaSchema: true,
-        output: "QuickType.elm",
-        topLevel: "QuickType",
-        test: testElm,
-        skip: [
-            "identifiers.json",
-            "simple-identifiers.json",
-            "blns-object.json"
-        ]
-    },
-    {
-        name: "swift",
-        base: "test/fixtures/swift",
-        diffViaSchema: false,
-        output: "quicktype.swift",
-        topLevel: "TopLevel",
-        test: testSwift,
-        skip: [
-            "identifiers.json",
-            "no-classes.json",
-            "blns-object.json"
-        ]
-    },
-    {
-        name: "typescript",
-        base: "test/fixtures/typescript",
-        diffViaSchema: true,
-        output: "TopLevel.ts",
-        topLevel: "TopLevel",
-        test: testTypeScript,
-        skip: [
-            "identifiers.json"
-        ]
-    }
-].filter(({name}) => !process.env.FIXTURE || process.env.FIXTURE.includes(name));
-
-//////////////////////////////////////
-// Go tests
-/////////////////////////////////////
-
-async function testGo(sample: string) {
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `go run main.go quicktype.go < "${sample}"`,
-        strict: false
-    });
+    abstract test(sample: string): Promise<void>;
 }
 
 //////////////////////////////////////
 // C# tests
 /////////////////////////////////////
 
-async function testCSharp(sample: string) {
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `dotnet run "${sample}"`,
-        strict: false
-    });
+class CSharpFixture extends Fixture {
+    name = "csharp";
+    base = "test/fixtures/csharp";
+    // https://github.com/dotnet/cli/issues/1582
+    setup = "dotnet restore --no-cache";
+    diffViaSchema = true;
+    output = "QuickType.cs";
+    topLevel = "QuickType";
+
+    async test(sample: string) {
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `dotnet run "${sample}"`,
+            strict: false
+        });
+    }
 }
 
 //////////////////////////////////////
 // Java tests
 /////////////////////////////////////
 
-async function testJava(sample: string) {
-    exec(`mvn package`);
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`,
-        strict: false
-    });
+class JavaFixture extends Fixture {
+    name = "java";
+    base = "test/fixtures/java";
+    diffViaSchema = false;
+    output = "src/main/java/io/quicktype/TopLevel.java";
+    topLevel = "TopLevel";
+    skip = [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "blns-object.json"
+    ];
+
+    async test(sample: string) {
+        exec(`mvn package`);
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`,
+            strict: false
+        });
+    }
 }
 
 //////////////////////////////////////
-// Elm tests
+// Go tests
 /////////////////////////////////////
 
-async function testElm(sample: string) {
-    exec(`elm-make Main.elm QuickType.elm --output elm.js`);
+class GoFixture extends Fixture {
+    name = "golang";
+    base = "test/fixtures/golang";
+    diffViaSchema = true;
+    output = "quicktype.go";
+    topLevel = "TopLevel";
+    skip = [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "blns-object.json"
+    ];
 
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `node ./runner.js "${sample}"`,
-        strict: false
-    });
-}
-
-//////////////////////////////////////
-// Swift tests
-/////////////////////////////////////
-
-async function testSwift(sample: string) {
-    exec(`swiftc -o quicktype main.swift quicktype.swift`);
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `./quicktype "${sample}"`,
-        strict: false
-    });
+    async test(sample: string) {
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `go run main.go quicktype.go < "${sample}"`,
+            strict: false
+        });
+    }
 }
 
 //////////////////////////////////////
 // JSON Schema tests
 /////////////////////////////////////
 
-async function testJsonSchema(sample: string) {
-    let input = JSON.parse(fs.readFileSync(sample, "utf8"));
-    let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
+class JSONSchemaFixture extends Fixture {
+    name = "schema";
+    base = "test/fixtures/golang";
+    diffViaSchema = false;
+    output = "schema.json";
+    topLevel = "schema";
+    skip = [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "blns-object.json"
+    ];
+
+    async test(sample: string) {
+        let input = JSON.parse(fs.readFileSync(sample, "utf8"));
+        let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
+        
+        let ajv = new Ajv();
+        let valid = ajv.validate(schema, input);
+        if (!valid) {
+            failWith("Generated schema does not validate input JSON.", {
+                sample
+            });
+        }
     
-    let ajv = new Ajv();
-    let valid = ajv.validate(schema, input);
-    if (!valid) {
-        failWith("Generated schema does not validate input JSON.", {
-            sample
+        // Generate Go from the schema
+        await quicktype({ src: ["schema.json"], srcLang: "schema", out: "quicktype.go", topLevel: "TopLevel" });
+    
+        // Parse the sample with Go generated from its schema, and compare to the sample
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `go run main.go quicktype.go < "${sample}"`,
+            strict: false
+        });
+        
+        // Generate a schema from the schema, making sure the schemas are the same
+        let schemaSchema = "schema-from-schema.json";
+        await quicktype({ src: ["schema.json"], srcLang: "schema", lang: "schema", out: schemaSchema });
+        compareJsonFileToJson({
+            expectedFile: "schema.json",
+            jsonFile: schemaSchema,
+            strict: true
+        });
+    }    
+}
+
+//////////////////////////////////////
+// Elm tests
+/////////////////////////////////////
+
+class ElmFixture extends Fixture {
+    name = "elm";
+    base = "test/fixtures/elm";
+    setup = "rm -rf elm-stuff/build-artifacts && elm-make --yes";
+    diffViaSchema = true;
+    output = "QuickType.elm";
+    topLevel = "QuickType";
+    skip = [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "blns-object.json"
+    ];
+
+    async test(sample: string) {
+        exec(`elm-make Main.elm QuickType.elm --output elm.js`);
+    
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `node ./runner.js "${sample}"`,
+            strict: false
         });
     }
+}
 
-    // Generate Go from the schema
-    await quicktype({ src: ["schema.json"], srcLang: "schema", out: "quicktype.go", topLevel: "TopLevel" });
+//////////////////////////////////////
+// Swift tests
+/////////////////////////////////////
 
-    // Parse the sample with Go generated from its schema, and compare to the sample
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `go run main.go quicktype.go < "${sample}"`,
-        strict: false
-    });
-    
-    // Generate a schema from the schema, making sure the schemas are the same
-    let schemaSchema = "schema-from-schema.json";
-    await quicktype({ src: ["schema.json"], srcLang: "schema", lang: "schema", out: schemaSchema });
-    compareJsonFileToJson({
-        expectedFile: "schema.json",
-        jsonFile: schemaSchema,
-        strict: true
-    });
+class SwiftFixture extends Fixture {
+    name = "swift";
+    base = "test/fixtures/swift";
+    diffViaSchema = false;
+    output = "quicktype.swift";
+    topLevel = "TopLevel";
+    skip = [
+        "identifiers.json",
+        "no-classes.json",
+        "blns-object.json"
+    ];
+
+    async test(sample: string) {
+        exec(`swiftc -o quicktype main.swift quicktype.swift`);
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `./quicktype "${sample}"`,
+            strict: false
+        });
+    }    
 }
 
 //////////////////////////////////////
 // TypeScript test
 /////////////////////////////////////
 
-async function testTypeScript(sample) {
-    compareJsonFileToJson({
-        expectedFile: sample,
-        // We have to unset TS_NODE_PROJECT because it gets set on the workers
-        // to the root test/tsconfig.json
-        jsonCommand: `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`,
-        strict: false
-    });
+class TypeScriptFixture extends Fixture {
+    name = "typescript";
+    base = "test/fixtures/typescript";
+    diffViaSchema = true;
+    output = "TopLevel.ts";
+    topLevel = "TopLevel";
+    skip = [
+        "identifiers.json"
+    ];
+
+    async test(sample: string) {
+        compareJsonFileToJson({
+            expectedFile: sample,
+            // We have to unset TS_NODE_PROJECT because it gets set on the workers
+            // to the root test/tsconfig.json
+            jsonCommand: `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`,
+            strict: false
+        });
+    }
 }
+
+const FIXTURES: Fixture[] = [
+    new CSharpFixture(),
+    new JavaFixture(),
+    new GoFixture(),
+    new JSONSchemaFixture(),
+    new ElmFixture(),
+    new SwiftFixture(),
+    new TypeScriptFixture()
+].filter(({name}) => !process.env.FIXTURE || process.env.FIXTURE.includes(name));
 
 //////////////////////////////////////
 // Test driver
