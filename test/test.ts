@@ -44,14 +44,106 @@ function debug<T>(x: T): T {
 
 abstract class Fixture {
     abstract name: string;
-    abstract base: string;
-    setup: string = null;
-    abstract diffViaSchema: boolean;
-    abstract output: string;
-    abstract topLevel: string;
-    skip: string[] = null;
 
-    abstract test(sample: string): Promise<void>;
+    protected abstract base: string;
+    protected setup: string = null;
+    protected abstract diffViaSchema: boolean;
+    protected abstract output: string;
+    protected abstract topLevel: string;
+    protected skip: string[] = [];
+
+    protected abstract test(sample: string): Promise<void>;
+
+    private shouldSkipTest(sample: string): boolean {
+        if (fs.statSync(sample).size > 32 * 1024 * 1024) {
+            return true;
+        }
+        let skips = this.skip;
+        return _.includes(skips, path.basename(sample));
+    }
+
+    getSamples(sources: string[]): { priority: string[], others: string[] } {
+        // FIXME: this should only run once
+        const prioritySamples = _.concat(
+            testsInDir("test/inputs/json/priority"),
+            testsInDir("test/inputs/json/samples"),
+        );
+
+        const miscSamples = testsInDir("test/inputs/json/misc");
+
+        let priority: string[];
+        let others: string[];
+
+        if (sources.length == 0) {
+            priority = prioritySamples;
+            others = miscSamples;
+        } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
+            priority = testsInDir(sources[0]);
+            others = [];
+        }
+
+        if (IS_CI && !IS_PR && !IS_BLESSED) {
+            // Run only priority sources on low-priority CI branches
+            priority = prioritySamples;
+            others = [];
+        } else if (IS_CI) {
+            // On CI, we run a maximum number of test samples. First we test
+            // the priority samples to fail faster, then we continue testing
+            // until testMax with random sources.
+            const testMax = 100;
+            priority = prioritySamples;
+            others = _.chain(miscSamples).shuffle().take(testMax - prioritySamples.length).value();
+        }
+
+        return { priority, others };
+    }
+
+    async runWithSample(sample: string, index: number, total: number) {
+        let cwd = `test/runs/${this.name}-${randomBytes(3).toString('hex')}`;
+        let sampleFile = path.basename(sample);
+        let shouldSkip = this.shouldSkipTest(sample);
+    
+        console.error(
+            `*`,
+            chalk.dim(`[${index+1}/${total}]`),
+            chalk.magenta(this.name),
+            path.join(
+                cwd,
+                chalk.cyan(path.basename(sample))),
+            shouldSkip
+                ? chalk.red("SKIP")
+                : '');
+    
+        if (shouldSkip) return;
+    
+        shell.cp("-R", this.base, cwd);
+        shell.cp(sample, cwd);
+    
+        await inDir(cwd, async () => {
+            // Generate code from the sample
+            await quicktype({ src: [sampleFile], out: this.output, topLevel: this.topLevel});
+    
+            try {
+                await this.test(sampleFile);
+            } catch (e) {
+                failWith("Fixture threw an exception", { error: e });
+            }
+    
+            if (this.diffViaSchema) {
+                debug("* Diffing with code generated via JSON Schema");
+                // Make a schema
+                await quicktype({ src: [sampleFile], out: "schema.json", topLevel: this.topLevel});
+                // Quicktype from the schema and compare to expected code
+                shell.mv(this.output, `${this.output}.expected`);
+                await quicktype({ src: ["schema.json"], srcLang: "schema", out: this.output, topLevel: this.topLevel});
+    
+                // Compare fixture.output to fixture.output.expected
+                exec(`diff -Naur ${this.output}.expected ${this.output} > /dev/null 2>&1`);
+            }
+        });
+    
+        shell.rm("-rf", cwd);
+    }
 }
 
 //////////////////////////////////////
@@ -361,72 +453,16 @@ async function inDir(dir: string, work: () => Promise<void>) {
     process.chdir(origin);
 }
 
-function shouldSkipTest(fixture: Fixture, sample: string): boolean {
-    if (fs.statSync(sample).size > 32 * 1024 * 1024) {
-        return true;
-    }
-    let skips = fixture.skip || [];
-    return _.includes(skips, path.basename(sample));
-}
-
-async function runFixtureWithSample(fixture: Fixture, sample: string, index: number, total: number) {          
-    let cwd = `test/runs/${fixture.name}-${randomBytes(3).toString('hex')}`;
-    let sampleFile = path.basename(sample);
-    let shouldSkip = shouldSkipTest(fixture, sample);
-
-    console.error(
-        `*`,
-        chalk.dim(`[${index+1}/${total}]`),
-        chalk.magenta(fixture.name),
-        path.join(
-            cwd,
-            chalk.cyan(path.basename(sample))),
-        shouldSkip
-            ? chalk.red("SKIP")
-            : '');
-
-    if (shouldSkip) return;
-
-    shell.cp("-R", fixture.base, cwd);
-    shell.cp(sample, cwd);
-
-    await inDir(cwd, async () => {
-        // Generate code from the sample
-        await quicktype({ src: [sampleFile], out: fixture.output, topLevel: fixture.topLevel});
-
-        try {
-            await fixture.test(sampleFile);            
-        } catch (e) {
-            failWith("Fixture threw an exception", { error: e });
-        }
-
-        if (fixture.diffViaSchema) {
-            debug("* Diffing with code generated via JSON Schema");
-            // Make a schema
-            await quicktype({ src: [sampleFile], out: "schema.json", topLevel: fixture.topLevel});
-            // Quicktype from the schema and compare to expected code
-            shell.mv(fixture.output, `${fixture.output}.expected`);
-            await quicktype({ src: ["schema.json"], srcLang: "schema", out: fixture.output, topLevel: fixture.topLevel});
-
-            // Compare fixture.output to fixture.output.expected
-            exec(`diff -Naur ${fixture.output}.expected ${fixture.output} > /dev/null 2>&1`);
-        }
-    });
-
-    shell.rm("-rf", cwd);
-}
-
 type WorkItem = { sample: string; fixtureName: string; }
 
-async function testAll(samples: string[]) {
+async function main(sources: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run
-    let tests =  _
-        .chain(samples)
-        .flatMap(sample => FIXTURES.map(fixture => { 
-            return { sample, fixtureName: fixture.name };
-        }))
-        .value();
-    
+    const samples = _.map(FIXTURES, fixture => ({ fixtureName: fixture.name, samples: fixture.getSamples(sources) }));
+    const priority = _.flatMap(samples, x => _.map(x.samples.priority, s => ({ fixtureName: x.fixtureName, sample: s })));
+    const others = _.flatMap(samples, x => _.map(x.samples.others, s => ({ fixtureName: x.fixtureName, sample: s })));
+
+    const tests = _.concat(_.shuffle(priority), _.shuffle(others));
+
     await inParallel({
         queue: tests,
         workers: CPUs,
@@ -434,7 +470,7 @@ async function testAll(samples: string[]) {
         setup: async () => {
             testCLI();
 
-            console.error(`* Running ${samples.length} tests on ${FIXTURES.length} fixtures`);
+            console.error(`* Running ${tests.length} tests between ${FIXTURES.length} fixtures`);
 
             for (let { name, base, setup } of FIXTURES) {
                 exec(`rm -rf test/runs`);
@@ -454,7 +490,7 @@ async function testAll(samples: string[]) {
         map: async ({ sample, fixtureName }: WorkItem, index) => {
             let fixture = _.find(FIXTURES, { name: fixtureName });
             try {
-                await runFixtureWithSample(fixture, sample, index, tests.length);
+                await fixture.runWithSample(sample, index, tests.length);
             } catch (e) {
                 console.trace(e);
                 exit(1);
@@ -471,40 +507,6 @@ function testCLI() {
 
 function testsInDir(dir: string): string[] {
     return shell.ls(`${dir}/*.json`);
-}
-
-async function main(sources: string[]) {
-    let prioritySources = _.concat(
-        testsInDir("test/inputs/json/priority"),
-        testsInDir("test/inputs/json/samples"),
-    );
-
-    let miscSources = testsInDir("test/inputs/json/misc");
-
-    if (sources.length == 0) {
-        sources = _.concat(
-            prioritySources,
-            _.shuffle(miscSources)
-        );
-    } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
-        sources = testsInDir(sources[0]);
-    }
-
-    if (IS_CI && !IS_PR && !IS_BLESSED) {
-        // Run only priority sources on low-priority CI branches
-        sources = prioritySources;
-    } else if (IS_CI) {
-        // On CI, we run a maximum number of test samples. First we test
-        // the priority samples to fail faster, then we continue testing
-        // until testMax with random sources.
-        let testMax = 100;
-        sources = _.concat(
-            prioritySources,
-            _.chain(miscSources).shuffle().take(testMax - prioritySources.length).value()
-        );
-    }
-
-    await testAll(sources);
 }
 
 // skip 2 `node` args
