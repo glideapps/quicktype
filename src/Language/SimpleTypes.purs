@@ -2,8 +2,6 @@ module Language.SimpleTypes
     ( renderer
     ) where
 
-import Doc (Doc, Renderer, blank, combineNames, indent, line, lookupClassName, noForbidNamer, renderRenderItems, simpleNamer)
-import IRGraph (IRClassData(..), IRType(..), IRUnionRep, mapUnionM, nullableFromUnion)
 import Prelude
 
 import Data.Bifunctor (bimap)
@@ -15,6 +13,8 @@ import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.String (Pattern(Pattern), contains, length) as Str
 import Data.String.Util (camelCase, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, times) as Str
 import Data.Tuple (Tuple(..), fst)
+import Doc (Doc, Renderer, blank, combineNames, indent, line, lookupClassName, noForbidNamer, renderRenderItems, simpleNamer)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, mapUnionM, nullableFromUnion)
 
 renderer :: Renderer
 renderer =
@@ -65,7 +65,8 @@ renderUnion ur =
 
 renderType :: IRType -> Doc String
 renderType = case _ of
-    IRAnything -> pure "Any" -- we can have arrays of nothing
+    IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
+    IRAnyType -> pure "Any" -- we can have arrays of nothing
     IRNull -> pure "Null"
     IRInteger -> pure "Integer"
     IRDouble -> pure "Double"

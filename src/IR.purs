@@ -9,6 +9,7 @@ module IR
     , replaceClass
     , addPlaceholder
     , replacePlaceholder
+    , replaceNoInformationWithAnyType
     , unifyTypes
     , unifyMultipleTypes
     , execIR
@@ -21,7 +22,7 @@ import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.State (State, runState, evalState)
 import Control.Monad.State.Class (get, put)
 import Data.Either (Either(..))
-import Data.Foldable (foldM, for_)
+import Data.Foldable (class Foldable, foldM, for_)
 import Data.Int.Bits as Bits
 import Data.List (List, (:))
 import Data.List as L
@@ -33,7 +34,7 @@ import Data.Set (Set)
 import Data.Set as S
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Tuple as T
-import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, emptyGraph, emptyUnion, followIndex, getClassFromGraph, irUnion_Bool, irUnion_Double, irUnion_Integer, irUnion_Null, irUnion_String, nullifyNothing, unifyNamed)
+import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, emptyGraph, emptyUnion, followIndex, getClassFromGraph, irUnion_Bool, irUnion_Double, irUnion_Integer, irUnion_Null, irUnion_String, unifyNamed)
 import Partial.Unsafe (unsafePartial)
 import Utils (lookupOrDefault, mapM, mapMapM, mapMaybeM, sortByKey)
 
@@ -120,8 +121,16 @@ unionWithDefault unifier default m1 m2 =
 
 unifyClassDatas :: IRClassData -> IRClassData -> IR IRClassData
 unifyClassDatas (IRClassData { names: na, properties: pa }) (IRClassData { names: nb, properties: pb }) = do
-    properties <- unionWithDefault unifyTypesWithNull IRAnything pa pb
+    properties <- unionWithDefault unifyTypesWithNull IRNoInformation pa pb
     pure $ IRClassData { names: unifyNamed S.union na nb, properties }
+    where
+        unifyTypesWithNull :: IRType -> IRType -> IR IRType
+        unifyTypesWithNull IRNoInformation IRNoInformation = pure IRNoInformation
+        unifyTypesWithNull a b = unifyTypes (nullifyNoInformation a) (nullifyNoInformation b)
+
+        nullifyNoInformation :: IRType -> IRType
+        nullifyNoInformation IRNoInformation = IRNull
+        nullifyNoInformation x = x
 
 unifyClassRefs :: Int -> Int -> IR Int
 unifyClassRefs ia ib =
@@ -134,14 +143,16 @@ unifyClassRefs ia ib =
         combineClasses ia ib unified
 
 unifyMaybes :: Maybe IRType -> Maybe IRType -> IR IRType
-unifyMaybes Nothing Nothing = pure IRAnything
+unifyMaybes Nothing Nothing = pure IRNoInformation
 unifyMaybes (Just a) Nothing = pure a
 unifyMaybes Nothing (Just b) = pure b
 unifyMaybes (Just a) (Just b) = unifyTypes a b
 
 unifyTypes :: IRType -> IRType -> IR IRType
-unifyTypes IRAnything x = pure x
-unifyTypes x IRAnything = pure x
+unifyTypes IRNoInformation x = pure x
+unifyTypes x IRNoInformation = pure x
+unifyTypes IRAnyType x = pure IRAnyType
+unifyTypes x IRAnyType = pure IRAnyType
 unifyTypes IRInteger IRDouble = pure IRDouble
 unifyTypes IRDouble IRInteger = pure IRDouble
 unifyTypes (IRArray a) (IRArray b) = IRArray <$> unifyTypes a b
@@ -149,20 +160,15 @@ unifyTypes a@(IRClass ia) (IRClass ib) = do
     unified <- unifyClassRefs ia ib
     pure $ IRClass unified
 unifyTypes (IRMap a) (IRMap b) = IRMap <$> unifyTypes a b
-unifyTypes (IRUnion a) b = IRUnion <$> unifyWithUnion a b
-unifyTypes a (IRUnion b) = IRUnion <$> unifyWithUnion b a
+unifyTypes (IRUnion a) b = unifyWithUnion a b
+unifyTypes a (IRUnion b) = unifyWithUnion b a
 unifyTypes a b | a == b = pure a
                | otherwise = do
                     u1 <- unifyWithUnion emptyUnion a
-                    u2 <- unifyWithUnion u1 b
-                    pure $ IRUnion u2
+                    unifyTypes u1 b
 
-unifyMultipleTypes :: List IRType -> IR IRType
-unifyMultipleTypes = L.foldM unifyTypes IRAnything
-
-unifyTypesWithNull :: IRType -> IRType -> IR IRType
-unifyTypesWithNull IRAnything IRAnything = pure IRAnything
-unifyTypesWithNull a b = unifyTypes (nullifyNothing a) (nullifyNothing b)
+unifyMultipleTypes :: forall f. Foldable f => f IRType -> IR IRType
+unifyMultipleTypes = foldM unifyTypes IRNoInformation
 
 unifySetOfClasses :: Set Int -> IR Unit
 unifySetOfClasses indexes =
@@ -195,10 +201,11 @@ updateClasses classUpdater typeUpdater = do
             Class cd -> Class <$> classUpdater cd
             _ -> pure entry
 
-unifyWithUnion :: IRUnionRep -> IRType -> IR IRUnionRep
+unifyWithUnion :: IRUnionRep -> IRType -> IR IRType
 unifyWithUnion u@(IRUnionRep { names, primitives, arrayType, classRef, mapType }) t =
     case t of
-    IRAnything -> pure u
+    IRNoInformation -> pure  $ IRUnion u
+    IRAnyType -> pure IRAnyType
     IRNull -> addBit irUnion_Null
     IRInteger -> addBit irUnion_Integer
     IRDouble -> addBit irUnion_Double
@@ -206,22 +213,22 @@ unifyWithUnion u@(IRUnionRep { names, primitives, arrayType, classRef, mapType }
     IRString -> addBit irUnion_String
     IRArray ta -> do
         unified <- doTypes ta arrayType
-        pure $ IRUnionRep { names, primitives, arrayType: unified, classRef, mapType }
+        pure $ IRUnion $ IRUnionRep { names, primitives, arrayType: unified, classRef, mapType }
     IRClass ti -> do
         unified <- doClasses ti classRef
-        pure $ IRUnionRep { names, primitives, arrayType, classRef: unified, mapType }
+        pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef: unified, mapType }
     IRMap tm -> do
         unified <- doTypes tm mapType
-        pure $ IRUnionRep { names, primitives, arrayType, classRef, mapType: unified }
+        pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType: unified }
     IRUnion (IRUnionRep { names: na, primitives: pb, arrayType: ab, classRef: cb, mapType: mb }) -> do
         let p = Bits.or primitives pb
         a <- doMaybeTypes arrayType ab
         c <- doMaybeClasses classRef cb
         m <- doMaybeTypes mapType mb
-        pure $ IRUnionRep { names: unifyNamed S.union names na, primitives: p, arrayType: a, classRef: c, mapType: m }
+        pure $ IRUnion $ IRUnionRep { names: unifyNamed S.union names na, primitives: p, arrayType: a, classRef: c, mapType: m }
     where
         addBit b =
-            pure $ IRUnionRep { names, primitives: Bits.or b primitives, arrayType, classRef, mapType }
+            pure $ IRUnion $ IRUnionRep { names, primitives: Bits.or b primitives, arrayType, classRef, mapType }
         doWithUnifier :: forall a. (a -> a -> IR a) -> a -> Maybe a -> IR (Maybe a)
         doWithUnifier unify a mb =
             case mb of
@@ -253,7 +260,7 @@ replaceClassesInType replacer t =
     IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType }) -> do
         a <- replaceInMaybe arrayType
         m <- replaceInMaybe mapType
-        IRUnion <$> doClassRef names primitives a classRef m
+        doClassRef names primitives a classRef m
     _ -> pure t
     where
         replace = replaceClassesInType replacer
@@ -262,15 +269,15 @@ replaceClassesInType replacer t =
             case m of
             Just x -> Just <$> replace x
             Nothing -> pure Nothing
-        doClassRef :: Named (Set String) -> Int -> Maybe IRType -> Maybe Int -> Maybe IRType -> IR IRUnionRep
+        doClassRef :: Named (Set String) -> Int -> Maybe IRType -> Maybe Int -> Maybe IRType -> IR IRType
         doClassRef names primitives arrayType classRef mapType =
             case classRef of
             Just i ->
                 case replacer i of
                 Just replacement ->
                     unifyWithUnion (IRUnionRep { names, primitives, arrayType, classRef: Nothing, mapType }) replacement
-                Nothing -> pure $ IRUnionRep { names, primitives, arrayType, classRef, mapType }
-            _ -> pure $ IRUnionRep { names, primitives, arrayType, classRef, mapType }
+                Nothing -> pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType }
+            _ -> pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType }
 
 replaceTypes :: (IRType -> IR IRType) -> IR Unit
 replaceTypes typeUpdater =
@@ -284,6 +291,20 @@ replaceClass :: Int -> IRType -> IR Unit
 replaceClass from to = do
     replaceTypes $ (replaceClassesInType \i -> if i == from then Just to else Nothing)
     deleteClass from
+
+replaceNoInformationWithAnyType :: IR Unit
+replaceNoInformationWithAnyType = do
+    replaceTypes replacer
+    where
+        replacer :: IRType -> IR IRType
+        replacer IRNoInformation = pure IRAnyType
+        replacer (IRArray a) = IRArray <$> replacer a
+        replacer (IRMap m) = IRMap <$> replacer m
+        replacer (IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType })) = do
+            arrayType <- mapM replacer arrayType
+            mapType <- mapM replacer mapType
+            pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType }
+        replacer t = pure t
 
 -- This maps from old class index to new class index and new class data
 type ClassMapper = State (Map Int (Tuple Int (Maybe IRClassData)))

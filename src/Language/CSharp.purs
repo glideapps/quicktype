@@ -2,8 +2,6 @@ module Language.CSharp
     ( renderer
     ) where
 
-import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getModuleName, getTypeNameForUnion, getUnionNames, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getOptionValue)
-import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
 import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory)
@@ -14,8 +12,10 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
-import Data.Tuple (Tuple(..))
 import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
+import Data.Tuple (Tuple(..))
+import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getModuleName, getTypeNameForUnion, getUnionNames, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getOptionValue)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
 import Options (enumOption, Option)
 
 forbiddenNames :: Array String
@@ -82,7 +82,8 @@ renderUnionToCSharp ur =
 
 renderTypeToCSharp :: IRType -> Doc String
 renderTypeToCSharp = case _ of
-    IRAnything -> pure "object" -- we can have arrays of nothing
+    IRNoInformation -> pure "FIXME"
+    IRAnyType -> pure "object" -- we can have arrays of nothing
     IRNull -> pure "object"
     IRInteger -> pure "long"
     IRDouble -> pure "double"

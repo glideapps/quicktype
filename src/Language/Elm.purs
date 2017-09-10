@@ -2,8 +2,6 @@ module Language.Elm
     ( renderer
     ) where
 
-import Doc (Doc, Namer, Renderer, blank, combineNames, forEachTopLevel_, getClasses, getModuleName, getTopLevelNames, getTopLevels, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
-import IRGraph (IRClassData(..), IRType(..), IRUnionRep, isArray, nullableFromUnion, unionToList)
 import Prelude
 
 import Data.Array as A
@@ -15,6 +13,8 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, decapitalize, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..), fst)
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachTopLevel_, getClasses, getModuleName, getTopLevelNames, getTopLevels, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, isArray, nullableFromUnion, unionToList)
 import Utils (forEnumerated_, sortByKey, sortByKeyM, mapM)
 
 forbiddenNames :: Array String
@@ -190,7 +190,8 @@ parenIfNeeded { rendered, multiWord: true } = "(" <> rendered <> ")"
 
 typeStringForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
 typeStringForType = case _ of
-    IRAnything -> singleWord "Jdec.Value"
+    IRNoInformation -> singleWord "FIXME_THIS_SHOULD_NOT_HAPPEN"
+    IRAnyType -> singleWord "Jdec.Value"
     IRNull -> singleWord "()"
     IRInteger -> singleWord "Int"
     IRDouble -> singleWord "Float"
@@ -218,7 +219,8 @@ unionConstructorName unionName t = do
 
 decoderNameForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
 decoderNameForType = case _ of
-    IRAnything -> singleWord "Jdec.value"
+    IRNoInformation -> singleWord "FIXME_THIS_SHOULD_NOT_HAPPEN"
+    IRAnyType -> singleWord "Jdec.value"
     IRNull -> multiWord "Jdec.null" "()"
     IRInteger -> singleWord "Jdec.int"
     IRDouble -> singleWord "Jdec.float"
@@ -241,7 +243,8 @@ decoderNameForType = case _ of
 
 encoderNameForType :: IRType -> Doc { rendered :: String, multiWord :: Boolean }
 encoderNameForType = case _ of
-    IRAnything -> singleWord "identity"
+    IRNoInformation -> singleWord "FIXME_THIS_SHOULD_NOT_HAPPEN"
+    IRAnyType -> singleWord "identity"
     IRNull -> multiWord "always" "Jenc.null"
     IRInteger -> singleWord "Jenc.int"
     IRDouble -> singleWord "Jenc.float"

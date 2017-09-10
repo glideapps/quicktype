@@ -2,22 +2,22 @@ module Language.TypeScript
     ( renderer
     ) where
 
-import Doc (Doc, Renderer, blank, combineNames, forEachClass_, forEachTopLevel_, getModuleName, getSingleTopLevel, getTopLevels, indent, line, lookupClassName, lookupName, renderRenderItems, simpleNamer, transformPropertyNames)
-import IRGraph (IRClassData(..), IRType(..), IRUnionRep, mapUnionM, nullableFromUnion)
 import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory)
 import Data.Either as Either
 import Data.Foldable (any, for_, intercalate, maximum)
 import Data.List (List)
-import Data.Map as M
 import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.String (length, null, toCharArray) as Str
 import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
 import Data.String.Util (camelCase, capitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape, times) as Str
 import Data.Tuple (Tuple(..), fst)
+import Doc (Doc, Renderer, blank, combineNames, forEachClass_, forEachTopLevel_, getModuleName, getSingleTopLevel, getTopLevels, indent, line, lookupClassName, lookupName, renderRenderItems, simpleNamer, transformPropertyNames)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, mapUnionM, nullableFromUnion)
 import Partial.Unsafe (unsafePartial)
 import Utils (mapM)
 
@@ -69,7 +69,8 @@ renderUnion ur =
 
 renderType :: IRType -> Doc String
 renderType = case _ of
-    IRAnything -> pure "any" -- we can have arrays of nothing
+    IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
+    IRAnyType -> pure "any" -- we can have arrays of nothing
     IRNull -> pure "null"
     IRInteger -> pure "number"
     IRDouble -> pure "number"
@@ -198,7 +199,8 @@ markNullable name _ = name
 
 renderTypeMapType :: IRType -> Doc String
 renderTypeMapType = case _ of
-    IRAnything -> pure $ quote "undefined"
+    IRNoInformation -> pure $ quote "FIXME_THIS_SHOULD_NOT_HAPPEN"
+    IRAnyType -> pure $ quote "undefined"
     IRNull -> pure $ quote "undefined"
     IRInteger -> pure $ quote "number"
     IRDouble -> pure $ quote "number"

@@ -2,20 +2,20 @@ module Language.Golang
     ( renderer
     ) where
 
-import Doc (Doc, Renderer, blank, combineNames, forEachTopLevel_, forbidNamer, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable)
-import IRGraph (IRClassData(..), IRType(..), IRUnionRep, isClass, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap, unionToList)
 import Prelude
 
 import Data.Array as A
 import Data.Foldable (for_, intercalate, foldl)
 import Data.List (List, (:))
 import Data.List as L
-import Data.Map as M
 import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.String as Str
 import Data.String.Util (camelCase, stringEscape, legalizeCharacters, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, startWithLetter)
 import Data.Tuple (Tuple(..), fst)
+import Doc (Doc, Renderer, blank, combineNames, forEachTopLevel_, forbidNamer, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, isClass, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap, unionToList)
 import Utils (mapM, sortByKeyM, sortByKey)
 
 renderer :: Renderer
@@ -77,7 +77,8 @@ renderUnionToGolang ur =
 
 renderTypeToGolang :: IRType -> Doc { rendered :: String, comment :: Maybe String }
 renderTypeToGolang = case _ of
-    IRAnything -> noComment "interface{}"
+    IRNoInformation -> noComment "FIXME_THIS_SHOULD_NOT_HAPPEN"
+    IRAnyType -> noComment "interface{}"
     IRNull -> noComment "interface{}"
     IRInteger -> noComment "int64"
     IRDouble -> noComment "float64"
