@@ -34,6 +34,7 @@
     "purescript-psa": "^0.5.1",
     "shelljs": "^0.7.8",
     "ts-node": "^3.3.0",
+    "tslint": "^5.7.0",
     "typescript": "^2.4.2",
     "uglify-js": "^3.0.26"
   },

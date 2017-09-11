@@ -14,11 +14,12 @@ $ npm run build
 
 ## Edit
 
+Install [Visual Studio Code](https://code.visualstudio.com/), open this workspace,
+and install the recommended extensions.
+
 ```shell
 $ code . # open in VSCode
 ```
-
-Install the `purescript-ide` extension in VSCode, then use the command pallete to start the `psc-ide` server for code completion, etc.
 
 ### Live-reloading for quick feedback
 
