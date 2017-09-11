@@ -38,231 +38,416 @@ function debug<T>(x: T): T {
     return x;
 }
 
+function samplesFromSources(sources: string[], prioritySamples: string[], miscSamples: string[], extension: string)
+        : { priority: string[], others: string[] } {
+    if (sources.length == 0) {
+        return { priority: prioritySamples, others: miscSamples };
+    } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
+        return { priority: testsInDir(sources[0], extension), others: [] };
+    } else {
+        return { priority: sources, others: [] };
+    }
+}
+
 //////////////////////////////////////
 // Fixtures
 /////////////////////////////////////
 
-interface Fixture {
-    name: string;
-    base: string;
-    setup?: string;
-    diffViaSchema: boolean;
-    output: string;
-    topLevel: string;
-    skip?: string[]
-    test(sample: string): Promise<void>;
+abstract class Fixture {
+    abstract name: string;
+
+    async setup(): Promise<void> { }
+    abstract getSamples(sources: string[]): { priority: string[], others: string[] };
+    abstract runWithSample(sample: string, index: number, total: number): Promise<void>;
+
+    getRunDirectory(): string {
+        return `test/runs/${this.name}-${randomBytes(3).toString('hex')}`;
+    }
+
+    printRunMessage(sample: string, index: number, total: number, cwd: string, shouldSkip: boolean): void {
+        console.error(
+            `*`,
+            chalk.dim(`[${index+1}/${total}]`),
+            chalk.magenta(this.name),
+            path.join(
+                cwd,
+                chalk.cyan(path.basename(sample))),
+            shouldSkip
+                ? chalk.red("SKIP")
+                : '');
+    }
 }
 
-const FIXTURES: Fixture[] = [
-    {
-        name: "csharp",
-        base: "test/fixtures/csharp",
-        // https://github.com/dotnet/cli/issues/1582
-        setup: "dotnet restore --no-cache",
-        diffViaSchema: true,
-        output: "QuickType.cs",
-        topLevel: "QuickType",
-        test: testCSharp
-    },
-    {
-        name: "java",
-        base: "test/fixtures/java",
-        diffViaSchema: false,
-        output: "src/main/java/io/quicktype/TopLevel.java",
-        topLevel: "TopLevel",
-        test: testJava,
-        skip: [
-            "identifiers.json",
-            "simple-identifiers.json",
-            "blns-object.json"
-        ]
-    },
-    {
-        name: "golang",
-        base: "test/fixtures/golang",
-        diffViaSchema: true,
-        output: "quicktype.go",
-        topLevel: "TopLevel",
-        test: testGo,
-        skip: [
-            "identifiers.json",
-            "simple-identifiers.json",
-            "blns-object.json"
-        ]
-    },
-    {
-        name: "schema",
-        base: "test/fixtures/golang",
-        diffViaSchema: false,
-        output: "schema.json",
-        topLevel: "schema",
-        test: testJsonSchema,
-        skip: [
-            "identifiers.json",
-            "simple-identifiers.json",
-            "blns-object.json"
-        ]
-    },
-    {
-        name: "elm",
-        base: "test/fixtures/elm",
-        setup: "rm -rf elm-stuff/build-artifacts && elm-make --yes",
-        diffViaSchema: true,
-        output: "QuickType.elm",
-        topLevel: "QuickType",
-        test: testElm,
-        skip: [
-            "identifiers.json",
-            "simple-identifiers.json",
-            "blns-object.json"
-        ]
-    },
-    {
-        name: "swift",
-        base: "test/fixtures/swift",
-        diffViaSchema: false,
-        output: "quicktype.swift",
-        topLevel: "TopLevel",
-        test: testSwift,
-        skip: [
-            "identifiers.json",
-            "no-classes.json",
-            "blns-object.json"
-        ]
-    },
-    {
-        name: "typescript",
-        base: "test/fixtures/typescript",
-        diffViaSchema: true,
-        output: "TopLevel.ts",
-        topLevel: "TopLevel",
-        test: testTypeScript,
-        skip: [
-            "identifiers.json"
-        ]
+abstract class JSONFixture extends Fixture {
+    protected abstract base: string;
+    protected setupCommand: string = null;
+    protected abstract diffViaSchema: boolean;
+    protected abstract output: string;
+    protected abstract topLevel: string;
+    protected skip: string[] = [];
+
+    protected abstract test(sample: string): Promise<void>;
+
+    async setup() {
+        if (!this.setupCommand)
+            return;
+
+        console.error(
+            `* Setting up`,
+            chalk.magenta(this.name),
+            `fixture`);
+
+        await inDir(this.base, async () => { exec(this.setupCommand); });
     }
-].filter(({name}) => !process.env.FIXTURE || process.env.FIXTURE.includes(name));
 
-//////////////////////////////////////
-// Go tests
-/////////////////////////////////////
+    private shouldSkipTest(sample: string): boolean {
+        if (fs.statSync(sample).size > 32 * 1024 * 1024) {
+            return true;
+        }
+        let skips = this.skip;
+        return _.includes(skips, path.basename(sample));
+    }
 
-async function testGo(sample: string) {
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `go run main.go quicktype.go < "${sample}"`,
-        strict: false
-    });
+    getSamples(sources: string[]): { priority: string[], others: string[] } {
+        // FIXME: this should only run once
+        const prioritySamples = _.concat(
+            testsInDir("test/inputs/json/priority", "json"),
+            testsInDir("test/inputs/json/samples", "json"),
+        );
+
+        const miscSamples = testsInDir("test/inputs/json/misc", "json");
+
+        let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
+
+        if (IS_CI && !IS_PR && !IS_BLESSED) {
+            // Run only priority sources on low-priority CI branches
+            priority = prioritySamples;
+            others = [];
+        } else if (IS_CI) {
+            // On CI, we run a maximum number of test samples. First we test
+            // the priority samples to fail faster, then we continue testing
+            // until testMax with random sources.
+            const testMax = 100;
+            priority = prioritySamples;
+            others = _.chain(miscSamples).shuffle().take(testMax - prioritySamples.length).value();
+        }
+
+        return { priority, others };
+    }
+
+    async runWithSample(sample: string, index: number, total: number) {
+        const cwd = this.getRunDirectory();
+        let sampleFile = path.basename(sample);
+        let shouldSkip = this.shouldSkipTest(sample);
+
+        this.printRunMessage(sample, index, total, cwd, shouldSkip);
+    
+        if (shouldSkip) return;
+    
+        shell.cp("-R", this.base, cwd);
+        shell.cp(sample, cwd);
+    
+        await inDir(cwd, async () => {
+            // Generate code from the sample
+            await quicktype({ src: [sampleFile], out: this.output, topLevel: this.topLevel});
+    
+            try {
+                await this.test(sampleFile);
+            } catch (e) {
+                failWith("Fixture threw an exception", { error: e });
+            }
+    
+            if (this.diffViaSchema) {
+                debug("* Diffing with code generated via JSON Schema");
+                // Make a schema
+                await quicktype({ src: [sampleFile], out: "schema.json", topLevel: this.topLevel});
+                // Quicktype from the schema and compare to expected code
+                shell.mv(this.output, `${this.output}.expected`);
+                await quicktype({ src: ["schema.json"], srcLang: "schema", out: this.output, topLevel: this.topLevel});
+    
+                // Compare fixture.output to fixture.output.expected
+                exec(`diff -Naur ${this.output}.expected ${this.output} > /dev/null 2>&1`);
+            }
+        });
+    
+        shell.rm("-rf", cwd);
+    }
 }
 
 //////////////////////////////////////
 // C# tests
 /////////////////////////////////////
 
-async function testCSharp(sample: string) {
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `dotnet run "${sample}"`,
-        strict: false
-    });
+class CSharpJSONFixture extends JSONFixture {
+    name = "csharp";
+    base = "test/fixtures/csharp";
+    // https://github.com/dotnet/cli/issues/1582
+    setupCommand = "dotnet restore --no-cache";
+    diffViaSchema = true;
+    output = "QuickType.cs";
+    topLevel = "QuickType";
+
+    async test(sample: string) {
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `dotnet run "${sample}"`,
+            strict: false
+        });
+    }
 }
 
 //////////////////////////////////////
 // Java tests
 /////////////////////////////////////
 
-async function testJava(sample: string) {
-    exec(`mvn package`);
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`,
-        strict: false
-    });
+class JavaJSONFixture extends JSONFixture {
+    name = "java";
+    base = "test/fixtures/java";
+    diffViaSchema = false;
+    output = "src/main/java/io/quicktype/TopLevel.java";
+    topLevel = "TopLevel";
+    skip = [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "blns-object.json"
+    ];
+
+    async test(sample: string) {
+        exec(`mvn package`);
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`,
+            strict: false
+        });
+    }
 }
 
 //////////////////////////////////////
-// Elm tests
+// Go tests
 /////////////////////////////////////
 
-async function testElm(sample: string) {
-    exec(`elm-make Main.elm QuickType.elm --output elm.js`);
+class GoJSONFixture extends JSONFixture {
+    name = "golang";
+    base = "test/fixtures/golang";
+    diffViaSchema = true;
+    output = "quicktype.go";
+    topLevel = "TopLevel";
+    skip = [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "blns-object.json"
+    ];
 
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `node ./runner.js "${sample}"`,
-        strict: false
-    });
-}
-
-//////////////////////////////////////
-// Swift tests
-/////////////////////////////////////
-
-async function testSwift(sample: string) {
-    exec(`swiftc -o quicktype main.swift quicktype.swift`);
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `./quicktype "${sample}"`,
-        strict: false
-    });
+    async test(sample: string) {
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `go run main.go quicktype.go < "${sample}"`,
+            strict: false
+        });
+    }
 }
 
 //////////////////////////////////////
 // JSON Schema tests
 /////////////////////////////////////
 
-async function testJsonSchema(sample: string) {
-    let input = JSON.parse(fs.readFileSync(sample, "utf8"));
-    let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
+class JSONSchemaJSONFixture extends JSONFixture {
+    name = "schema-json";
+    base = "test/fixtures/golang";
+    diffViaSchema = false;
+    output = "schema.json";
+    topLevel = "schema";
+    skip = [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "blns-object.json"
+    ];
+
+    async test(sample: string) {
+        let input = JSON.parse(fs.readFileSync(sample, "utf8"));
+        let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
+        
+        let ajv = new Ajv();
+        let valid = ajv.validate(schema, input);
+        if (!valid) {
+            failWith("Generated schema does not validate input JSON.", {
+                sample
+            });
+        }
     
-    let ajv = new Ajv();
-    let valid = ajv.validate(schema, input);
-    if (!valid) {
-        failWith("Generated schema does not validate input JSON.", {
-            sample
+        // Generate Go from the schema
+        await quicktype({ src: ["schema.json"], srcLang: "schema", out: "quicktype.go", topLevel: "TopLevel" });
+    
+        // Parse the sample with Go generated from its schema, and compare to the sample
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `go run main.go quicktype.go < "${sample}"`,
+            strict: false
+        });
+        
+        // Generate a schema from the schema, making sure the schemas are the same
+        let schemaSchema = "schema-from-schema.json";
+        await quicktype({ src: ["schema.json"], srcLang: "schema", lang: "schema", out: schemaSchema });
+        compareJsonFileToJson({
+            expectedFile: "schema.json",
+            jsonFile: schemaSchema,
+            strict: true
+        });
+    }    
+}
+
+//////////////////////////////////////
+// Elm tests
+/////////////////////////////////////
+
+class ElmJSONFixture extends JSONFixture {
+    name = "elm";
+    base = "test/fixtures/elm";
+    setupCommand = "rm -rf elm-stuff/build-artifacts && elm-make --yes";
+    diffViaSchema = true;
+    output = "QuickType.elm";
+    topLevel = "QuickType";
+    skip = [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "blns-object.json"
+    ];
+
+    async test(sample: string) {
+        exec(`elm-make Main.elm QuickType.elm --output elm.js`);
+    
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `node ./runner.js "${sample}"`,
+            strict: false
         });
     }
+}
 
-    // Generate Go from the schema
-    await quicktype({ src: ["schema.json"], srcLang: "schema", out: "quicktype.go", topLevel: "TopLevel" });
+//////////////////////////////////////
+// Swift tests
+/////////////////////////////////////
 
-    // Parse the sample with Go generated from its schema, and compare to the sample
-    compareJsonFileToJson({
-        expectedFile: sample,
-        jsonCommand: `go run main.go quicktype.go < "${sample}"`,
-        strict: false
-    });
-    
-    // Generate a schema from the schema, making sure the schemas are the same
-    let schemaSchema = "schema-from-schema.json";
-    await quicktype({ src: ["schema.json"], srcLang: "schema", lang: "schema", out: schemaSchema });
-    compareJsonFileToJson({
-        expectedFile: "schema.json",
-        jsonFile: schemaSchema,
-        strict: true
-    });
+class SwiftJSONFixture extends JSONFixture {
+    name = "swift";
+    base = "test/fixtures/swift";
+    diffViaSchema = false;
+    output = "quicktype.swift";
+    topLevel = "TopLevel";
+    skip = [
+        "identifiers.json",
+        "no-classes.json",
+        "blns-object.json"
+    ];
+
+    async test(sample: string) {
+        exec(`swiftc -o quicktype main.swift quicktype.swift`);
+        compareJsonFileToJson({
+            expectedFile: sample,
+            jsonCommand: `./quicktype "${sample}"`,
+            strict: false
+        });
+    }    
 }
 
 //////////////////////////////////////
 // TypeScript test
 /////////////////////////////////////
 
-async function testTypeScript(sample) {
-    compareJsonFileToJson({
-        expectedFile: sample,
-        // We have to unset TS_NODE_PROJECT because it gets set on the workers
-        // to the root test/tsconfig.json
-        jsonCommand: `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`,
-        strict: false
-    });
+class TypeScriptJSONFixture extends JSONFixture {
+    name = "typescript";
+    base = "test/fixtures/typescript";
+    diffViaSchema = true;
+    output = "TopLevel.ts";
+    topLevel = "TopLevel";
+    skip = [
+        "identifiers.json"
+    ];
+
+    async test(sample: string) {
+        compareJsonFileToJson({
+            expectedFile: sample,
+            // We have to unset TS_NODE_PROJECT because it gets set on the workers
+            // to the root test/tsconfig.json
+            jsonCommand: `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`,
+            strict: false
+        });
+    }
 }
+
+//////////////////////////////////////
+// JSON Schema fixture
+/////////////////////////////////////
+
+class JSONSchemaFixture extends Fixture {
+    name = "schema";
+
+    getSamples(sources: string[]) {
+        const prioritySamples = testsInDir("test/inputs/schema/", "schema");
+
+        return samplesFromSources(sources, prioritySamples, [], "schema");
+    }
+
+    async runWithSample(sample: string, index: number, total: number) {
+        const cwd = this.getRunDirectory();
+        let sampleFile = path.basename(sample);
+
+        this.printRunMessage(sample, index, total, cwd, false);
+        
+        const base = path.join(path.dirname(sample), path.basename(sample, ".schema"));
+        const jsonFiles = [];
+        let fn = `${base}.json`;
+        if (fs.existsSync(fn))
+            jsonFiles.push(fn);
+        let i = 1;
+        for(;;) {
+            fn = `${base}.${i.toString()}.json`;
+            if (fs.existsSync(fn))
+                jsonFiles.push(fn);
+            else
+                break;
+            i++;
+        }
+
+        if (jsonFiles.length == 0)
+            failWith("No JSON input files", { base });
+
+        shell.cp("-R", "test/fixtures/golang", cwd);
+        shell.cp.apply(null, _.concat(sample, jsonFiles, cwd));
+
+        await inDir(cwd, async () => {
+            await quicktype({ srcLang: "schema", src: [sampleFile], topLevel: "TopLevel", out: "quicktype.go" });
+            for (const json of jsonFiles) {
+                const jsonBase = path.basename(json);
+                compareJsonFileToJson({
+                    expectedFile: jsonBase,
+                    jsonCommand: `go run main.go quicktype.go < "${jsonBase}"`,
+                    strict: false
+                });
+            }
+    
+            shell.rm("-rf", cwd);
+        });
+    }
+}
+
+const FIXTURES: Fixture[] = [
+    new CSharpJSONFixture(),
+    new JavaJSONFixture(),
+    new GoJSONFixture(),
+    new JSONSchemaJSONFixture(),
+    new ElmJSONFixture(),
+    new SwiftJSONFixture(),
+    new TypeScriptJSONFixture(),
+    new JSONSchemaFixture()
+].filter(({name}) => !process.env.FIXTURE || process.env.FIXTURE.includes(name));
 
 //////////////////////////////////////
 // Test driver
 /////////////////////////////////////
 
-function failWith(message: string, obj: any) {
-    obj.cwd = process.cwd();
+function failWith(message: string, obj: object) {
+    obj["cwd"] = process.cwd();
     console.error(chalk.red(message));
     console.error(chalk.red(JSON.stringify(obj, null, "  ")));
     throw obj;
@@ -353,72 +538,16 @@ async function inDir(dir: string, work: () => Promise<void>) {
     process.chdir(origin);
 }
 
-function shouldSkipTest(fixture: Fixture, sample: string): boolean {
-    if (fs.statSync(sample).size > 32 * 1024 * 1024) {
-        return true;
-    }
-    let skips = fixture.skip || [];
-    return _.includes(skips, path.basename(sample));
-}
-
-async function runFixtureWithSample(fixture: Fixture, sample: string, index: number, total: number) {          
-    let cwd = `test/runs/${fixture.name}-${randomBytes(3).toString('hex')}`;
-    let sampleFile = path.basename(sample);
-    let shouldSkip = shouldSkipTest(fixture, sample);
-
-    console.error(
-        `*`,
-        chalk.dim(`[${index+1}/${total}]`),
-        chalk.magenta(fixture.name),
-        path.join(
-            cwd,
-            chalk.cyan(path.basename(sample))),
-        shouldSkip
-            ? chalk.red("SKIP")
-            : '');
-
-    if (shouldSkip) return;
-
-    shell.cp("-R", fixture.base, cwd);
-    shell.cp(sample, cwd);
-
-    await inDir(cwd, async () => {
-        // Generate code from the sample
-        await quicktype({ src: [sampleFile], out: fixture.output, topLevel: fixture.topLevel});
-
-        try {
-            await fixture.test(sampleFile);            
-        } catch (e) {
-            failWith("Fixture threw an exception", { error: e });
-        }
-
-        if (fixture.diffViaSchema) {
-            debug("* Diffing with code generated via JSON Schema");
-            // Make a schema
-            await quicktype({ src: [sampleFile], out: "schema.json", topLevel: fixture.topLevel});
-            // Quicktype from the schema and compare to expected code
-            shell.mv(fixture.output, `${fixture.output}.expected`);
-            await quicktype({ src: ["schema.json"], srcLang: "schema", out: fixture.output, topLevel: fixture.topLevel});
-
-            // Compare fixture.output to fixture.output.expected
-            exec(`diff -Naur ${fixture.output}.expected ${fixture.output} > /dev/null 2>&1`);
-        }
-    });
-
-    shell.rm("-rf", cwd);
-}
-
 type WorkItem = { sample: string; fixtureName: string; }
 
-async function testAll(samples: string[]) {
+async function main(sources: string[]) {
     // Get an array of all { sample, fixtureName } objects we'll run
-    let tests =  _
-        .chain(samples)
-        .flatMap(sample => FIXTURES.map(fixture => { 
-            return { sample, fixtureName: fixture.name };
-        }))
-        .value();
-    
+    const samples = _.map(FIXTURES, fixture => ({ fixtureName: fixture.name, samples: fixture.getSamples(sources) }));
+    const priority = _.flatMap(samples, x => _.map(x.samples.priority, s => ({ fixtureName: x.fixtureName, sample: s })));
+    const others = _.flatMap(samples, x => _.map(x.samples.others, s => ({ fixtureName: x.fixtureName, sample: s })));
+
+    const tests = _.concat(_.shuffle(priority), _.shuffle(others));
+
     await inParallel({
         queue: tests,
         workers: CPUs,
@@ -426,27 +555,20 @@ async function testAll(samples: string[]) {
         setup: async () => {
             testCLI();
 
-            console.error(`* Running ${samples.length} tests on ${FIXTURES.length} fixtures`);
+            console.error(`* Running ${tests.length} tests between ${FIXTURES.length} fixtures`);
 
-            for (let { name, base, setup } of FIXTURES) {
+            for (const fixture of FIXTURES) {
                 exec(`rm -rf test/runs`);
                 exec(`mkdir -p test/runs`);
 
-                if (setup) {
-                    console.error(
-                        `* Setting up`,
-                        chalk.magenta(name),
-                        `fixture`);
-
-                    await inDir(base, async () => { exec(setup); });
-                }
+                await fixture.setup();
             }
         },
 
         map: async ({ sample, fixtureName }: WorkItem, index) => {
             let fixture = _.find(FIXTURES, { name: fixtureName });
             try {
-                await runFixtureWithSample(fixture, sample, index, tests.length);
+                await fixture.runWithSample(sample, index, tests.length);
             } catch (e) {
                 console.trace(e);
                 exit(1);
@@ -461,42 +583,8 @@ function testCLI() {
     exec(`${qt} --help`);
 }
 
-function testsInDir(dir: string): string[] {
-    return shell.ls(`${dir}/*.json`);
-}
-
-async function main(sources: string[]) {
-    let prioritySources = _.concat(
-        testsInDir("test/inputs/json/priority"),
-        testsInDir("test/inputs/json/samples"),
-    );
-
-    let miscSources = testsInDir("test/inputs/json/misc");
-
-    if (sources.length == 0) {
-        sources = _.concat(
-            prioritySources,
-            _.shuffle(miscSources)
-        );
-    } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
-        sources = testsInDir(sources[0]);
-    }
-
-    if (IS_CI && !IS_PR && !IS_BLESSED) {
-        // Run only priority sources on low-priority CI branches
-        sources = prioritySources;
-    } else if (IS_CI) {
-        // On CI, we run a maximum number of test samples. First we test
-        // the priority samples to fail faster, then we continue testing
-        // until testMax with random sources.
-        let testMax = 100;
-        sources = _.concat(
-            prioritySources,
-            _.chain(miscSources).shuffle().take(testMax - prioritySources.length).value()
-        );
-    }
-
-    await testAll(sources);
+function testsInDir(dir: string, extension: string): string[] {
+    return shell.ls(`${dir}/*.${extension}`);
 }
 
 // skip 2 `node` args

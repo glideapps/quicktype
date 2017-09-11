@@ -1,0 +1,14 @@
+{
+    "$ref": "#/definitions/List",
+    "definitions": {
+        "List": {
+            "type": "object",
+            "properties": {
+                "next": {
+                    "$ref": "#/definitions/List"
+                }
+            },
+            "title": "List"
+        }
+    }
+}
