@@ -36,7 +36,9 @@ const DEBUG = typeof process.env.DEBUG !== "undefined";
 const CPUs = +process.env.CPUs || os.cpus().length;
 
 function debug<T>(x: T): T {
-  if (DEBUG) console.log(x);
+  if (DEBUG) {
+    console.log(x);
+  }
   return x;
 }
 
@@ -46,9 +48,9 @@ function samplesFromSources(
   miscSamples: string[],
   extension: string
 ): { priority: string[]; others: string[] } {
-  if (sources.length == 0) {
+  if (sources.length === 0) {
     return { priority: prioritySamples, others: miscSamples };
-  } else if (sources.length == 1 && fs.lstatSync(sources[0]).isDirectory()) {
+  } else if (sources.length === 1 && fs.lstatSync(sources[0]).isDirectory()) {
     return { priority: testsInDir(sources[0], extension), others: [] };
   } else {
     return { priority: sources, others: [] };
@@ -62,10 +64,14 @@ function samplesFromSources(
 abstract class Fixture {
   abstract name: string;
 
-  async setup(): Promise<void> {}
+  async setup(): Promise<void> {
+    return;
+  }
+
   abstract getSamples(
     sources: string[]
   ): { priority: string[]; others: string[] };
+
   abstract runWithSample(
     sample: string,
     index: number,
@@ -104,7 +110,9 @@ abstract class JSONFixture extends Fixture {
   protected abstract test(sample: string): Promise<void>;
 
   async setup() {
-    if (!this.setupCommand) return;
+    if (!this.setupCommand) {
+      return;
+    }
 
     console.error(`* Setting up`, chalk.magenta(this.name), `fixture`);
 
@@ -163,7 +171,9 @@ abstract class JSONFixture extends Fixture {
 
     this.printRunMessage(sample, index, total, cwd, shouldSkip);
 
-    if (shouldSkip) return;
+    if (shouldSkip) {
+      return;
+    }
 
     shell.cp("-R", this.base, cwd);
     shell.cp(sample, cwd);
@@ -424,16 +434,23 @@ class JSONSchemaFixture extends Fixture {
     );
     const jsonFiles = [];
     let fn = `${base}.json`;
-    if (fs.existsSync(fn)) jsonFiles.push(fn);
+    if (fs.existsSync(fn)) {
+      jsonFiles.push(fn);
+    }
     let i = 1;
     for (;;) {
       fn = `${base}.${i.toString()}.json`;
-      if (fs.existsSync(fn)) jsonFiles.push(fn);
-      else break;
+      if (fs.existsSync(fn)) {
+        jsonFiles.push(fn);
+      } else {
+        break;
+      }
       i++;
     }
 
-    if (jsonFiles.length == 0) failWith("No JSON input files", { base });
+    if (jsonFiles.length === 0) {
+      failWith("No JSON input files", { base });
+    }
 
     shell.cp("-R", "test/fixtures/golang", cwd);
     shell.cp.apply(null, _.concat(sample, jsonFiles, cwd));
@@ -476,8 +493,8 @@ const FIXTURES: Fixture[] = [
 // Test driver
 /////////////////////////////////////
 
-function failWith(message: string, obj: object) {
-  obj["cwd"] = process.cwd();
+function failWith(message: string, obj: any) {
+  obj.cwd = process.cwd();
   console.error(chalk.red(message));
   console.error(chalk.red(JSON.stringify(obj, null, "  ")));
   throw obj;
@@ -491,7 +508,7 @@ async function time<T>(work: () => Promise<T>): Promise<[T, number]> {
 }
 
 async function quicktype(opts: Options) {
-  let [_, duration] = await time(async () => {
+  let [result, duration] = await time(async () => {
     await quicktype_(opts);
   });
 }
