@@ -19,7 +19,7 @@ import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUni
 import Options (enumOption, Option)
 
 forbiddenNames :: Array String
-forbiddenNames = ["Convert", "JsonConverter", "Type"]
+forbiddenNames = ["Converter", "JsonConverter", "Type", "QuickTypeToJsonExtensions"]
 
 listOption :: Option Boolean
 listOption = enumOption "array-type" "Select C# type to use for JSON arrays" [Tuple "array" false, Tuple "list" true]
@@ -109,18 +109,16 @@ legalize = legalizeCharacters isPartCharacter
 csNameStyle :: String -> String
 csNameStyle = legalize >>> camelCase >>> startWithLetter isStartCharacter true
 
-getDecoderHelperPrefix :: String -> Doc String
-getDecoderHelperPrefix topLevelName = getForSingleOrMultipleTopLevels "" topLevelName
-
 csharpDoc :: Doc Unit
 csharpDoc = do
     module_ <- getModuleName csNameStyle
     oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
     line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
+    line "//"
+    line $ "//    using " <> module_ <> ";"
     forEachTopLevel_ \topLevelName topLevelType -> do
-        prefix <- getDecoderHelperPrefix topLevelName
         line "//"
-        line $ "//    var data = " <> module_ <> ".Convert." <> prefix <> "FromJson(jsonString);"
+        line $ "//    var data = " <> module_ <> ".FromJson(jsonString);"
     line "//"
     line $ "namespace " <> module_
     line "{"
@@ -132,7 +130,8 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 """
         renderRenderItems blank Nothing renderCSharpClass (Just renderCSharpUnion)
-        blank
+        renderCSharpClassJSONPartials
+        renderRenderItems (pure unit) Nothing (\_ _ -> pure unit) (Just renderCSharpUnionReadWritePartial)
         renderJsonConverter
     line "}"
 
@@ -143,38 +142,46 @@ stringIfTrue :: Boolean -> String -> String
 stringIfTrue true s = s
 stringIfTrue false _ = ""
 
-renderJsonConverter :: Doc Unit
-renderJsonConverter = do
-    unionNames <- getUnionNames
-    let haveUnions = not $ M.isEmpty unionNames
-    let names = M.values unionNames
-    line $ "public class Convert" <> stringIfTrue haveUnions " : JsonConverter"
-    line "{"
-    indent do
-        line "// Serialize/deserialize helpers"
-        forEachTopLevel_ \topLevelName topLevelType -> do
-            blank
-            topLevelTypeRendered <- renderTypeToCSharp topLevelType
-            fromJsonPrefix <- getDecoderHelperPrefix topLevelName
+renderCSharpClassJSONPartials :: Doc Unit
+renderCSharpClassJSONPartials = do
+    forEachTopLevel_ \topLevelName topLevelType -> do
+        blank
+        topLevelTypeRendered <- renderTypeToCSharp topLevelType
+        line $ "public partial class " <> topLevelName
+        line "{"
+        indent do
             line
                 $ "public static "
                 <> topLevelTypeRendered 
                 <> " "
-                <> fromJsonPrefix
                 <> "FromJson(string json) => JsonConvert.DeserializeObject<"
                 <> topLevelTypeRendered
-                <> ">(json, Settings);"
-            whenSerializers do
-                line
-                    $ "public static string ToJson("
-                    <> topLevelTypeRendered
-                    <> " o) => JsonConvert.SerializeObject(o, Settings);"
+                <> ">(json, Converter.Settings);"
+        line "}"
 
+    whenSerializers do
         blank
-        line "// JsonConverter stuff"
+        line $ "public static class QuickTypeToJsonExtensions"
+        line "{"
+        indent do
+            forEachTopLevel_ \topLevelName topLevelType -> do
+                topLevelTypeRendered <- renderTypeToCSharp topLevelType
+                line $
+                    "public static string ToJson(this "
+                    <> topLevelTypeRendered
+                    <> " self) => JsonConvert.SerializeObject(self, Converter.Settings);"
+    line "}"
 
+renderJsonConverter :: Doc Unit
+renderJsonConverter = do
+    blank
+    unionNames <- getUnionNames
+    let haveUnions = not $ M.isEmpty unionNames
+    let names = M.values unionNames
+    line $ "public class Converter" <> stringIfTrue haveUnions ": JsonConverter"
+    line "{"
+    indent do
         when haveUnions do
-            blank
             line "public override bool CanConvert(Type t)"
             line "{"
             indent $ line $ "return " <> intercalate " || " (map (\n -> "t == typeof(" <> n <> ")") names) <> ";"
@@ -204,15 +211,15 @@ renderJsonConverter = do
                         line "}"
                     line "throw new Exception(\"Unknown type\");"
                 line "}"
+            blank
 
-        blank
-        line "static JsonSerializerSettings Settings = new JsonSerializerSettings"
+        line "public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings"
         line "{"
         indent do
             line "MetadataPropertyHandling = MetadataPropertyHandling.Ignore,"
             line "DateParseHandling = DateParseHandling.None,"
             when haveUnions do
-                line "Converters = { new Convert() },"
+                line "Converters = { new Converter() },"
         line "};"
     line "}"
 
@@ -269,14 +276,23 @@ renderGenericDeserializer predicate tokenType union =
 renderCSharpUnion :: String -> IRUnionRep -> Doc Unit
 renderCSharpUnion name unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    line $ "public struct " <> name
+    line $ "public partial struct " <> name
     line "{"
     indent do
         forUnion_ nonNullUnion \t -> do
             typeString <- renderNullableToCSharp t
             field <- unionFieldName t
             line $ "public " <> typeString <> " " <> field <> ";"
-        blank
+    line "}"
+
+renderCSharpUnionReadWritePartial :: String -> IRUnionRep -> Doc Unit
+renderCSharpUnionReadWritePartial name unionRep = do
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
+
+    blank
+    line $ "public partial struct " <> name
+    line "{"
+    indent do
         line $ "public " <> name <> "(JsonReader reader, JsonSerializer serializer)"
         line "{"
         indent do
@@ -322,7 +338,7 @@ renderCSharpUnion name unionRep = do
 renderCSharpClass :: String -> Map String IRType -> Doc Unit
 renderCSharpClass className properties = do
     let propertyNames = transformPropertyNames (simpleNamer csNameStyle) ("Other" <> _) [className] properties
-    line $ "public class " <> className
+    line $ "public partial class " <> className
     line "{"
     indent do
         forEachProperty_ properties propertyNames \pname ptype csPropName isLast -> do
