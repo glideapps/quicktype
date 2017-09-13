@@ -124,6 +124,8 @@ csharpDoc = do
             line "//"
             line $ "//    var data = " <> module_ <> ".FromJson(jsonString);"
         line "//"
+        line "// For POCOs visit quicktype.io?poco"
+        line "//"
     
     line $ "namespace " <> module_
     line "{"
