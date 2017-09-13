@@ -231,7 +231,7 @@ class CSharpJSONFixture extends JSONFixture {
   setupCommand = "dotnet restore --no-cache";
   diffViaSchema = true;
   output = "QuickType.cs";
-  topLevel = "QuickType";
+  topLevel = "TopLevel";
 
   async test(sample: string) {
     compareJsonFileToJson({

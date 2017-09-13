@@ -19,7 +19,7 @@ import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUni
 import Options (Option, booleanOption, enumOption)
 
 forbiddenNames :: Array String
-forbiddenNames = ["Converter", "JsonConverter", "Type", "Serialize"]
+forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"]
 
 listOption :: Option Boolean
 listOption = enumOption "array-type" "Select C# type to use for JSON arrays" [Tuple "array" false, Tuple "list" true]
@@ -119,7 +119,7 @@ csharpDoc = do
         oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
         line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
         line "//"
-        line $ "//    using " <> module_ <> ";"
+        line $ "//    using QuickType;"
         forEachTopLevel_ \topLevelName topLevelType -> do
             line "//"
             line $ "//    var data = " <> module_ <> ".FromJson(jsonString);"
@@ -127,7 +127,7 @@ csharpDoc = do
         line "// For POCOs visit quicktype.io?poco"
         line "//"
     
-    line $ "namespace " <> module_
+    line "namespace QuickType"
     line "{"
     indent do
         let using s = line $ "using " <> s <> ";"
