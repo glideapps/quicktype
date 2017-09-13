@@ -13,8 +13,9 @@ module Options
 
 import Prelude
 
-import Data.Foldable (intercalate, elem)
 import Data.Array as A
+import Data.Foldable (any, elem, intercalate)
+import Data.JSON.AST (Literal(..))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
@@ -46,10 +47,16 @@ type Option a = { specification :: OptionSpecification, extractor :: OptionValue
 -- FIXME: error handling!
 makeOptionValues :: OptionSpecifications -> StrMap String -> OptionValues
 makeOptionValues optionSpecifications optionStrings =
-    SM.mapWithKey makeOptionValue optionStrings
+    SM.mapWithKey makeOptionValue validOptions
     where
         specMap :: StrMap OptionSpecification
-        specMap = SM.fromFoldable $ map (\spec -> Tuple spec.name spec ) optionSpecifications
+        specMap = SM.fromFoldable $ map (\spec -> Tuple spec.name spec) optionSpecifications
+
+        validOptions :: StrMap String
+        validOptions = SM.filterWithKey isValidOption optionStrings
+
+        isValidOption :: String -> String -> Boolean
+        isValidOption optionName value = SM.member optionName specMap
 
         makeOptionValue :: String -> String -> OptionValue
         makeOptionValue name optionString =
