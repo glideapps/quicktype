@@ -19,7 +19,7 @@ import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUni
 import Options (enumOption, Option)
 
 forbiddenNames :: Array String
-forbiddenNames = ["Converter", "JsonConverter", "Type", "QuickTypeToJsonExtensions"]
+forbiddenNames = ["Converter", "JsonConverter", "Type", "Serialize"]
 
 listOption :: Option Boolean
 listOption = enumOption "array-type" "Select C# type to use for JSON arrays" [Tuple "array" false, Tuple "list" true]
@@ -161,7 +161,7 @@ renderCSharpClassJSONPartials = do
 
     whenSerializers do
         blank
-        line $ "public static class QuickTypeToJsonExtensions"
+        line $ "public static class Serialize"
         line "{"
         indent do
             forEachTopLevel_ \topLevelName topLevelType -> do
