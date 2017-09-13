@@ -66,7 +66,7 @@ makeOptionValues optionSpecifications optionStrings =
                 case spec.default of
                 BooleanValue _ ->
                     let l = String.toLower optionString
-                    in BooleanValue $ l `elem` ["true", "t", "yes", "y", "1"]
+                    in BooleanValue $ not $ l `elem` ["false", "f", "no", "n", "0"]
                 EnumValue _ cases ->
                     case A.findIndex (eq optionString) cases of
                     Just i -> EnumValue i cases

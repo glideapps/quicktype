@@ -16,7 +16,7 @@ import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringE
 import Data.Tuple (Tuple(..))
 import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getModuleName, getTypeNameForUnion, getUnionNames, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getOptionValue)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
-import Options (enumOption, Option)
+import Options (Option, booleanOption, enumOption)
 
 forbiddenNames :: Array String
 forbiddenNames = ["Converter", "JsonConverter", "Type", "Serialize"]
@@ -24,13 +24,16 @@ forbiddenNames = ["Converter", "JsonConverter", "Type", "Serialize"]
 listOption :: Option Boolean
 listOption = enumOption "array-type" "Select C# type to use for JSON arrays" [Tuple "array" false, Tuple "list" true]
 
+pocoOption :: Option Boolean
+pocoOption = booleanOption "poco" "[EXPERIMENTAL] Generate 'Plain Old C# Objects' only" false
+
 renderer :: Renderer
 renderer =
     { name: "C#"
     , aceMode: "csharp"
     , extension: "cs"
     , doc: csharpDoc
-    , options: [listOption.specification]
+    , options: [listOption.specification, pocoOption.specification]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -112,31 +115,41 @@ csNameStyle = legalize >>> camelCase >>> startWithLetter isStartCharacter true
 csharpDoc :: Doc Unit
 csharpDoc = do
     module_ <- getModuleName csNameStyle
-    oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
-    line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
-    line "//"
-    line $ "//    using " <> module_ <> ";"
-    forEachTopLevel_ \topLevelName topLevelType -> do
+    whenSerializers do
+        oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
+        line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
         line "//"
-        line $ "//    var data = " <> module_ <> ".FromJson(jsonString);"
-    line "//"
+        line $ "//    using " <> module_ <> ";"
+        forEachTopLevel_ \topLevelName topLevelType -> do
+            line "//"
+            line $ "//    var data = " <> module_ <> ".FromJson(jsonString);"
+        line "//"
+        line "// For POCOs visit quicktype.io?poco"
+        line "//"
+    
     line $ "namespace " <> module_
     line "{"
     indent do
-        line """using System;
-using System.Net;
-using System.Collections.Generic;
-
-using Newtonsoft.Json;
-"""
+        let using s = line $ "using " <> s <> ";"
+        using "System"
+        using "System.Net"
+        using "System.Collections.Generic"
+        whenSerializers do
+            blank
+            using "Newtonsoft.Json"
+        blank
         renderRenderItems blank Nothing renderCSharpClass (Just renderCSharpUnion)
-        renderCSharpClassJSONPartials
-        renderRenderItems (pure unit) Nothing (\_ _ -> pure unit) (Just renderCSharpUnionReadWritePartial)
-        renderJsonConverter
+        whenSerializers do
+            blank
+            renderCSharpClassJSONPartials
+            renderRenderItems (pure unit) Nothing (\_ _ -> pure unit) (Just renderCSharpUnionReadWritePartial)
+            renderJsonConverter
     line "}"
 
 whenSerializers :: Doc Unit -> Doc Unit
-whenSerializers = id
+whenSerializers doc = do
+    poco <- getOptionValue pocoOption
+    unless poco doc
 
 stringIfTrue :: Boolean -> String -> String
 stringIfTrue true s = s
@@ -276,7 +289,8 @@ renderGenericDeserializer predicate tokenType union =
 renderCSharpUnion :: String -> IRUnionRep -> Doc Unit
 renderCSharpUnion name unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    line $ "public partial struct " <> name
+    poco <- getOptionValue pocoOption
+    line $ "public" <> (if poco then "" else " partial") <> " struct " <> name
     line "{"
     indent do
         forUnion_ nonNullUnion \t -> do
@@ -315,35 +329,37 @@ renderCSharpUnionReadWritePartial name unionRep = do
             line "}"
         line "}"
 
-        whenSerializers do
-            blank
-            line $ "public void WriteJson(JsonWriter writer, JsonSerializer serializer)"
-            line "{"
-            indent do
-                forUnion_ nonNullUnion \field -> do
-                    fieldName <- unionFieldName field
-                    line $ "if (" <> fieldName <> " != null) {"
-                    indent do
-                        line $ "serializer.Serialize(writer, " <> fieldName <> ");"
-                        line "return;"
-                    line "}"
-                if hasNull
-                    then
-                        line "writer.WriteNull();"
-                    else
-                        line "throw new Exception(\"Union must not be null\");"
-            line "}"
+        blank
+        line $ "public void WriteJson(JsonWriter writer, JsonSerializer serializer)"
+        line "{"
+        indent do
+            forUnion_ nonNullUnion \field -> do
+                fieldName <- unionFieldName field
+                line $ "if (" <> fieldName <> " != null) {"
+                indent do
+                    line $ "serializer.Serialize(writer, " <> fieldName <> ");"
+                    line "return;"
+                line "}"
+            if hasNull
+                then
+                    line "writer.WriteNull();"
+                else
+                    line "throw new Exception(\"Union must not be null\");"
+        line "}"
     line "}"
 
 renderCSharpClass :: String -> Map String IRType -> Doc Unit
 renderCSharpClass className properties = do
     let propertyNames = transformPropertyNames (simpleNamer csNameStyle) ("Other" <> _) [className] properties
-    line $ "public partial class " <> className
+    poco <- getOptionValue pocoOption
+    line $ "public" <> (if poco then "" else " partial") <> " class " <> className
     line "{"
     indent do
         forEachProperty_ properties propertyNames \pname ptype csPropName isLast -> do
-            line $ "[JsonProperty(\"" <> stringEscape pname <> "\")]"
+            whenSerializers do
+                line $ "[JsonProperty(\"" <> stringEscape pname <> "\")]"
             rendered <- renderTypeToCSharp ptype
             line $ "public " <> rendered <> " " <> csPropName <> " { get; set; }"
-            unless isLast blank
+            whenSerializers do
+                unless isLast blank
     line "}"
