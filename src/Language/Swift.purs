@@ -1,5 +1,6 @@
 module Language.Swift
-    ( renderer
+    ( swift3Renderer
+    , swift4Renderer
     ) where
 
 import Prelude
@@ -13,6 +14,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscape, intToHex, legalizeCharacters, startWithLetter)
+import Data.Tuple (Tuple(..))
 import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, canBeNull, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionToList)
 
@@ -27,13 +29,36 @@ keywords =
     , "checkNull", "removeNSNull", "nilToNSNull", "convertArray", "convertOptional", "convertDict", "convertDouble"
     ]
 
-renderer :: Renderer
-renderer =
-    { displayName: "Swift"
-    , names: [ "swift", "swift3" ]
+data Variant = Swift3 | Swift4
+
+swift3Renderer :: Renderer
+swift3Renderer =
+    { displayName: "Swift 3"
+    , names: [ "swift3" ]
     , aceMode: "swift"
     , extension: "swift"
-    , doc: swiftDoc
+    , doc: swift3Doc
+    , options: []
+    , transforms:
+        { nameForClass: simpleNamer nameForClass
+        , nextName: \s -> "Other" <> s
+        , forbiddenNames: keywords
+        , topLevelName: forbidNamer (swiftNameStyle true) (\n -> [swiftNameStyle true n])
+        , unions: Just
+            { predicate: unionIsNotSimpleNullable
+            , properName: simpleNamer (swiftNameStyle true <<< combineNames)
+            , nameFromTypes: simpleNamer (unionNameIntercalated (swiftNameStyle true) "Or")
+            }
+        }
+    }
+
+swift4Renderer :: Renderer
+swift4Renderer =
+    { displayName: "Swift 4"
+    , names: [ "swift4" ]
+    , aceMode: "swift"
+    , extension: "swift"
+    , doc: swift4Doc
     , options: []
     , transforms:
         { nameForClass: simpleNamer nameForClass
@@ -71,37 +96,63 @@ stringEscape =
         unicodeEscape i =
             "\\u{" <> (String.fromCharArray $ intToHex 0 i) <> "}"
 
-swiftDoc :: Doc Unit
-swiftDoc = do
+renderHeader :: Doc Unit
+renderHeader = do
     line "// To parse the JSON, add this file to your project and do:"
     line "//"
     forEachTopLevel_ \topLevelName topLevelType -> do
-        typ <- renderType topLevelType
+        typ <- renderType Swift3 topLevelType
         line $ "//   let " <> decapitalize topLevelName <> " = " <> topLevelName <> "(fromString: jsonString)!"
     blank
     line "import Foundation"
     blank
 
-    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition (Just renderUnionDefinition)
+swift3Doc :: Doc Unit
+swift3Doc = do
+    renderHeader
+
+    renderRenderItems blank (Just $ renderTopLevelAlias Swift3) (renderClassDefinition Swift3 false) (Just $ renderUnionDefinition Swift3 false)
 
     blank
     line $ "// Serialization extensions"
 
-    forEachTopLevel_ renderTopLevelExtensions
+    forEachTopLevel_ renderTopLevelExtensions3
 
     forEachClass_ \className properties -> do
         blank
-        renderClassExtension className properties
+        renderClassExtension3 className properties
 
     forEachUnion_ \unionName unionRep -> do
         blank
-        renderUnionExtension unionName unionRep
+        renderUnionExtension3 unionName unionRep
 
     blank
-    supportFunctions
+    supportFunctions3
 
-supportFunctions :: Doc Unit
-supportFunctions = do
+swift4Doc :: Doc Unit
+swift4Doc = do
+    renderHeader
+
+    renderRenderItems blank (Just $ renderTopLevelAlias Swift4) (renderClassDefinition Swift4 true) (Just $ renderUnionDefinition Swift4 true)
+
+    blank
+    line $ "// Serialization extensions"
+
+    forEachTopLevel_ renderTopLevelExtensions4
+
+    forEachClass_ \className properties -> do
+        blank
+        renderClassExtension4 className properties
+
+    forEachUnion_ \unionName unionRep -> do
+        blank
+        renderUnionExtension4 unionName unionRep
+    
+    blank
+    supportFunctions4
+
+supportFunctions3 :: Doc Unit
+supportFunctions3 = do
     line """// Helpers
 
 fileprivate func convertArray<T>(_ converter: (Any) -> T?, _ json: Any) -> [T]? {
@@ -183,31 +234,272 @@ fileprivate func checkNull(_ v: Any?) -> NSNull? {
     return .some(NSNull())
 }"""
 
-renderUnion :: IRUnionRep -> Doc String
-renderUnion ur =
+supportFunctions4 :: Doc Unit
+supportFunctions4 = do
+    line """// Helpers
+
+class JSONNull: Codable {
+    public init() {
+    }
+    
+    public required init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if !container.decodeNil() {
+            throw DecodingError.typeMismatch(JSONNull.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Wrong type for JSONNull"))
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encodeNil()
+    }
+}
+
+class JSONCodingKey : CodingKey {
+    let key: String
+    
+    required init?(intValue: Int) {
+        return nil
+    }
+    
+    required init?(stringValue: String) {
+        key = stringValue
+    }
+    
+    var intValue: Int? {
+        return nil
+    }
+    
+    var stringValue: String {
+        return key
+    }
+}
+
+class JSONAny: Codable {
+    public let value: Any
+    
+    static func decodingError(forCodingPath codingPath: [CodingKey]) -> DecodingError {
+        let context = DecodingError.Context(codingPath: codingPath, debugDescription: "Cannot decode JSONAny")
+        return DecodingError.typeMismatch(JSONAny.self, context)
+    }
+    
+    static func encodingError(forValue value: Any, codingPath: [CodingKey]) -> EncodingError {
+        let context = EncodingError.Context(codingPath: codingPath, debugDescription: "Cannot encode JSONAny")
+        return EncodingError.invalidValue(value, context)
+    }
+
+    static func decode(from container: SingleValueDecodingContainer) throws -> Any {
+        if let value = try? container.decode(Bool.self) {
+            return value
+        }
+        if let value = try? container.decode(Int64.self) {
+            return value
+        }
+        if let value = try? container.decode(Double.self) {
+            return value
+        }
+        if let value = try? container.decode(String.self) {
+            return value
+        }
+        if container.decodeNil() {
+            return JSONNull()
+        }
+        throw decodingError(forCodingPath: container.codingPath)
+    }
+    
+    static func decode(from container: inout UnkeyedDecodingContainer) throws -> Any {
+        if let value = try? container.decode(Bool.self) {
+            return value
+        }
+        if let value = try? container.decode(Int64.self) {
+            return value
+        }
+        if let value = try? container.decode(Double.self) {
+            return value
+        }
+        if let value = try? container.decode(String.self) {
+            return value
+        }
+        if let value = try? container.decodeNil() {
+            if value {
+                return JSONNull()
+            }
+        }
+        if var container = try? container.nestedUnkeyedContainer() {
+            return try decodeArray(from: &container)
+        }
+        if var container = try? container.nestedContainer(keyedBy: JSONCodingKey.self) {
+            return try decodeDictionary(from: &container)
+        }
+        throw decodingError(forCodingPath: container.codingPath)
+    }
+    
+    static func decode(from container: inout KeyedDecodingContainer<JSONCodingKey>, forKey key: JSONCodingKey) throws -> Any {
+        if let value = try? container.decode(Bool.self, forKey: key) {
+            return value
+        }
+        if let value = try? container.decode(Int64.self, forKey: key) {
+            return value
+        }
+        if let value = try? container.decode(Double.self, forKey: key) {
+            return value
+        }
+        if let value = try? container.decode(String.self, forKey: key) {
+            return value
+        }
+        if let value = try? container.decodeNil(forKey: key) {
+            if value {
+                return JSONNull()
+            }
+        }
+        if var container = try? container.nestedUnkeyedContainer(forKey: key) {
+            return try decodeArray(from: &container)
+        }
+        if var container = try? container.nestedContainer(keyedBy: JSONCodingKey.self, forKey: key) {
+            return try decodeDictionary(from: &container)
+        }
+        throw decodingError(forCodingPath: container.codingPath)
+    }
+    
+    static func decodeArray(from container: inout UnkeyedDecodingContainer) throws -> [Any] {
+        var arr: [Any] = []
+        while !container.isAtEnd {
+            let value = try decode(from: &container)
+            arr.append(value)
+        }
+        return arr
+    }
+
+    static func decodeDictionary(from container: inout KeyedDecodingContainer<JSONCodingKey>) throws -> [String: Any] {
+        var dict = [String: Any]()
+        for key in container.allKeys {
+            let value = try decode(from: &container, forKey: key)
+            dict[key.stringValue] = value
+        }
+        return dict
+    }
+    
+    static func encode(to container: inout UnkeyedEncodingContainer, array: [Any]) throws {
+        for value in array {
+            if let value = value as? Bool {
+                try container.encode(value)
+            } else if let value = value as? Int64 {
+                try container.encode(value)
+            } else if let value = value as? Double {
+                try container.encode(value)
+            } else if let value = value as? String {
+                try container.encode(value)
+            } else if value is JSONNull {
+                try container.encodeNil()
+            } else if let value = value as? [Any] {
+                var container = container.nestedUnkeyedContainer()
+                try encode(to: &container, array: value)
+            } else if let value = value as? [String: Any] {
+                var container = container.nestedContainer(keyedBy: JSONCodingKey.self)
+                try encode(to: &container, dictionary: value)
+            } else {
+                throw encodingError(forValue: value, codingPath: container.codingPath)
+            }
+        }
+    }
+    
+    static func encode(to container: inout KeyedEncodingContainer<JSONCodingKey>, dictionary: [String: Any]) throws {
+        for (key, value) in dictionary {
+            let key = JSONCodingKey(stringValue: key)!
+            if let value = value as? Bool {
+                try container.encode(value, forKey: key)
+            } else if let value = value as? Int64 {
+                try container.encode(value, forKey: key)
+            } else if let value = value as? Double {
+                try container.encode(value, forKey: key)
+            } else if let value = value as? String {
+                try container.encode(value, forKey: key)
+            } else if value is JSONNull {
+                try container.encodeNil(forKey: key)
+            } else if let value = value as? [Any] {
+                var container = container.nestedUnkeyedContainer(forKey: key)
+                try encode(to: &container, array: value)
+            } else if let value = value as? [String: Any] {
+                var container = container.nestedContainer(keyedBy: JSONCodingKey.self, forKey: key)
+                try encode(to: &container, dictionary: value)
+            } else {
+                throw encodingError(forValue: value, codingPath: container.codingPath)
+            }
+        }
+    }
+
+    static func encode(to container: inout SingleValueEncodingContainer, value: Any) throws {
+        if let value = value as? Bool {
+            try container.encode(value)
+        } else if let value = value as? Int64 {
+            try container.encode(value)
+        } else if let value = value as? Double {
+            try container.encode(value)
+        } else if let value = value as? String {
+            try container.encode(value)
+        } else if value is JSONNull {
+            try container.encodeNil()
+        } else {
+            throw encodingError(forValue: value, codingPath: container.codingPath)
+        }
+    }
+    
+    public required init(from decoder: Decoder) throws {
+        if var arrayContainer = try? decoder.unkeyedContainer() {
+            self.value = try JSONAny.decodeArray(from: &arrayContainer)
+        } else if var container = try? decoder.container(keyedBy: JSONCodingKey.self) {
+            self.value = try JSONAny.decodeDictionary(from: &container)
+        } else {
+            let container = try decoder.singleValueContainer()
+            self.value = try JSONAny.decode(from: container)
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        if let arr = self.value as? [Any] {
+            var container = encoder.unkeyedContainer()
+            try JSONAny.encode(to: &container, array: arr)
+        } else if let dict = self.value as? [String: Any] {
+            var container = encoder.container(keyedBy: JSONCodingKey.self)
+            try JSONAny.encode(to: &container, dictionary: dict)
+        } else {
+            var container = encoder.singleValueContainer()
+            try JSONAny.encode(to: &container, value: self.value)
+        }
+    }
+}"""
+
+renderUnion :: Variant -> IRUnionRep -> Doc String
+renderUnion variant ur =
     case nullableFromUnion ur of
     Just r -> do
-        rendered <- renderType r
+        rendered <- renderType variant r
         pure $ rendered <> "?"
     Nothing -> lookupUnionName ur
 
-renderType :: IRType -> Doc String
-renderType = case _ of
+renderType :: Variant -> IRType -> Doc String
+renderType variant = case _ of
     IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
-    IRAnyType -> pure "Any?"
-    IRNull -> pure "NSNull"
+    IRAnyType ->
+        case variant of
+        Swift4 -> pure "JSONAny"
+        Swift3 -> pure "Any?"
+    IRNull ->
+        case variant of
+        Swift4 -> pure "JSONNull"
+        Swift3 -> pure "NSNull"
     IRInteger -> pure "Int"
     IRDouble -> pure "Double"
     IRBool -> pure "Bool"
     IRString -> pure "String"
     IRArray a -> do
-        rendered <- renderType a
+        rendered <- renderType variant a
         pure $ "[" <> rendered <> "]"
     IRClass i -> lookupClassName i
     IRMap t -> do
-        rendered <- renderType t
+        rendered <- renderType variant t
         pure $ "[String: " <> rendered <> "]"
-    IRUnion ur -> renderUnion ur
+    IRUnion ur -> renderUnion variant ur
 
 convertAny :: IRType -> String -> Doc String
 convertAny (IRArray a) var = do
@@ -278,31 +570,38 @@ convertToAny IRNull var =
 convertToAny _ var =
     pure $ var <> " as Any"
 
-renderTopLevelAlias :: String -> IRType -> Doc Unit
-renderTopLevelAlias topLevelName topLevelType = do
-    top <- renderType topLevelType
+renderTopLevelAlias :: Variant -> String -> IRType -> Doc Unit
+renderTopLevelAlias variant topLevelName topLevelType = do
+    top <- renderType variant topLevelType
     line $ "typealias "<> topLevelName <> " = " <> top
 
-renderClassDefinition :: String -> Map String IRType -> Doc Unit
-renderClassDefinition className properties = do
+codableString :: Boolean -> String
+codableString true = " : Codable"
+codableString false = ""
+
+renderClassDefinition :: Variant -> Boolean -> String -> Map String IRType -> Doc Unit
+renderClassDefinition variant codable className properties = do
     let forbidden = keywords <> ["json", "any"]
+    -- FIXME: we compute these here, and later again when rendering the extension
     let propertyNames = makePropertyNames properties "" forbidden
-    line $ "struct " <> className <> " {"
+    line $ "struct " <> className <> codableString codable <> " {"
     indent do
         forEachProperty_ properties propertyNames \_ ptype fieldName _ -> do
-            rendered <- renderType ptype
+            rendered <- renderType variant ptype
             line $ "let " <> fieldName <> ": " <> rendered
     line "}"
 
-renderTopLevelExtensions :: String -> IRType -> Doc Unit
-renderTopLevelExtensions topLevelName topLevelType = do
+renderExtensionType :: Variant -> IRType -> Doc String
+renderExtensionType variant (IRArray t) = ("Array where Element == " <> _) <$> renderType variant t
+renderExtensionType variant (IRMap t) = ("Dictionary where Key == String, Value == " <> _) <$> renderType variant t
+renderExtensionType variant t = renderType variant t
+
+renderTopLevelExtensions3 :: String -> IRType -> Doc Unit
+renderTopLevelExtensions3 topLevelName topLevelType = do
     blank
 
-    topLevelRendered <- renderType topLevelType
-    extensionType <- case topLevelType of
-        IRArray t -> ("Array where Element == " <> _) <$> renderType t
-        IRMap t -> ("Dictionary where Key == String, Value == " <> _) <$> renderType t
-        _ -> pure topLevelRendered
+    topLevelRendered <- renderType Swift3 topLevelType
+    extensionType <- renderExtensionType Swift3 topLevelType
 
     line $ "extension " <> extensionType <> " {"
     indent do
@@ -355,8 +654,46 @@ renderTopLevelExtensions topLevelName topLevelType = do
 
     line "}"
 
-renderClassExtension :: String -> Map String IRType -> Doc Unit
-renderClassExtension className properties = do
+renderTopLevelExtensions4 :: String -> IRType -> Doc Unit
+renderTopLevelExtensions4 topLevelName topLevelType = do
+    blank
+
+    topLevelRendered <- renderType Swift4 topLevelType
+    extensionType <- renderExtensionType Swift4 topLevelType
+
+    line $ "extension " <> extensionType <> " {"
+    indent do
+        line $ "init?(fromString json: String, using encoding: String.Encoding = .utf8) {"
+        indent do
+            line "guard let data = json.data(using: encoding) else { return nil }"
+            line "self.init(fromData: data)"
+        line "}"
+        blank
+        line $ "init?(fromData data: Data) {"
+        indent do
+            line "let decoder = JSONDecoder()"
+            line $ "guard let result = try? decoder.decode(" <> topLevelRendered <> ".self, from: data) else { return nil }"
+            line "self = result"
+        line "}"
+
+        blank
+        line $ "var jsonData: Data? {"
+        indent do
+            line "let encoder = JSONEncoder()"
+            line "return try? encoder.encode(self)"
+        line "}"
+            
+        blank
+        line $ "var jsonString: String? {"
+        indent do
+            line $ "guard let data = self.jsonData else { return nil }"
+            line $ "return String(data: data, encoding: .utf8)"
+        line "}"
+    line "}"
+
+
+renderClassExtension3 :: String -> Map String IRType -> Doc Unit
+renderClassExtension3 className properties = do
     let forbidden = keywords <> ["jsonUntyped", "json"]
     let propertyNames = makePropertyNames properties "" forbidden
     line $ "extension " <> className <> " {"
@@ -398,6 +735,19 @@ renderClassExtension className properties = do
         line "}"
     line "}"
 
+renderClassExtension4 :: String -> Map String IRType -> Doc Unit
+renderClassExtension4 className properties = do
+    let propertyNames = makePropertyNames properties "" keywords
+    when (M.size propertyNames > 0) do
+        line $ "extension " <> className <> " {"
+        indent do
+            line "enum CodingKeys : String, CodingKey {"
+            indent do
+                for_ (M.toUnfoldable propertyNames :: Array (Tuple String String)) \(Tuple jsonName swiftName) -> do
+                    line $ "case " <> swiftName <> " = \"" <> stringEscape jsonName <> "\""
+            line "}"
+        line "}"
+
 makePropertyNames :: Map String IRType -> String -> Array String -> Map String String
 makePropertyNames properties suffix forbidden =
     transformPropertyNames (fieldNamer suffix) otherField forbidden properties
@@ -408,22 +758,22 @@ makePropertyNames properties suffix forbidden =
         otherField :: String -> String
         otherField name = "other" <> capitalize name
 
-renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
-renderUnionDefinition unionName unionRep = do
+renderUnionDefinition :: Variant -> Boolean -> String -> IRUnionRep -> Doc Unit
+renderUnionDefinition variant codable unionName unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    line $ "enum " <> unionName <> " {"
+    line $ "enum " <> unionName <> codableString codable <> " {"
     indent do
         forUnion_ nonNullUnion \typ -> do
             name <- caseName typ
-            rendered <- renderType typ
+            rendered <- renderType variant typ
             line $ "case " <> name <> "(" <> rendered <> ")"
         when hasNull do
             name <- caseName IRNull
             line $ "case " <> name
     line "}"
 
-renderUnionExtension :: String -> IRUnionRep -> Doc Unit
-renderUnionExtension unionName unionRep = do
+renderUnionExtension3 :: String -> IRUnionRep -> Doc Unit
+renderUnionExtension3 unionName unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
     line $ "extension " <> unionName <> " {"
     indent do
@@ -463,6 +813,59 @@ renderUnionExtension unionName unionRep = do
         convertCode <- convertAny t "v"
         name <- caseName t
         line $ "if let x = " <> convertCode <> " { return ." <> name <> "(x) }"
+
+renderUnionExtension4 :: String -> IRUnionRep -> Doc Unit
+renderUnionExtension4 unionName unionRep = do
+    let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
+    line $ "extension " <> unionName <> " {"
+    indent do
+        line "init(from decoder: Decoder) throws {"
+        indent do
+            line "let container = try decoder.singleValueContainer()"
+            when (isUnionMember IRBool nonNullUnion) do
+                renderCase IRBool
+            when (isUnionMember IRInteger nonNullUnion) do
+                renderCase IRInteger
+            -- FIXME: this is ugly and inefficient
+            for_ (L.difference (unionToList nonNullUnion) $ L.fromFoldable [IRBool, IRInteger]) \typ -> do
+                renderCase typ
+            when hasNull do
+                name <- caseName IRNull
+                line "if container.decodeNil() {"
+                indent do
+                    line $ "self = ." <> name
+                    line "return"
+                line "}"
+            line $ "throw DecodingError.typeMismatch(" <> unionName <> ".self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: \"Wrong type for " <> unionName <> "\"))"
+        line "}"
+        blank
+        line "func encode(to encoder: Encoder) throws {"
+        indent do
+            line "var container = encoder.singleValueContainer()"
+            line "switch self {"
+            for_ (unionToList nonNullUnion) \t -> do
+                name <- caseName t
+                line $ "case ." <> name <> "(let x):"
+                indent do
+                    line "try container.encode(x)"
+            when hasNull do
+                name <- caseName IRNull
+                line $ "case ." <> name <> ":"
+                indent do
+                    line "try container.encodeNil()"
+            line "}"
+        line "}"
+    line "}"
+    where
+        renderCase :: IRType -> Doc Unit
+        renderCase t = do
+            name <- caseName t
+            typeName <- renderType Swift4 t
+            line $ "if let x = try? container.decode(" <> typeName <> ".self) {"
+            indent do
+                line $ "self = ." <> name <> "(x)"
+                line "return"
+            line "}"
 
 caseName :: IRType -> Doc String
 caseName t = swiftNameStyle false <$> getTypeNameForUnion t

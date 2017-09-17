@@ -100,6 +100,7 @@ abstract class Fixture {
 }
 
 abstract class JSONFixture extends Fixture {
+  protected abstract language: string;
   protected abstract base: string;
   protected setupCommand: string = null;
   protected abstract diffViaSchema: boolean;
@@ -164,6 +165,21 @@ abstract class JSONFixture extends Fixture {
     return { priority, others };
   }
 
+  async generateOutput(
+    sourceFile: string,
+    sourceLanguage: string,
+    language: string
+  ) {
+    // Generate code from the sample
+    await quicktype({
+      srcLang: sourceLanguage,
+      lang: language,
+      src: [sourceFile],
+      out: this.output,
+      topLevel: this.topLevel
+    });
+  }
+
   async runWithSample(sample: string, index: number, total: number) {
     const cwd = this.getRunDirectory();
     let sampleFile = path.basename(sample);
@@ -179,12 +195,7 @@ abstract class JSONFixture extends Fixture {
     shell.cp(sample, cwd);
 
     await inDir(cwd, async () => {
-      // Generate code from the sample
-      await quicktype({
-        src: [sampleFile],
-        out: this.output,
-        topLevel: this.topLevel
-      });
+      await this.generateOutput(sampleFile, "json", this.language);
 
       try {
         await this.test(sampleFile);
@@ -203,12 +214,7 @@ abstract class JSONFixture extends Fixture {
         });
         // Quicktype from the schema and compare to expected code
         shell.mv(this.output, `${this.output}.expected`);
-        await quicktype({
-          src: ["schema.json"],
-          srcLang: "schema",
-          out: this.output,
-          topLevel: this.topLevel
-        });
+        await this.generateOutput("schema.json", "schema", this.language);
 
         // Compare fixture.output to fixture.output.expected
         exec(
@@ -227,6 +233,7 @@ abstract class JSONFixture extends Fixture {
 
 class CSharpJSONFixture extends JSONFixture {
   name = "csharp";
+  language = "csharp";
   base = "test/fixtures/csharp";
   // https://github.com/dotnet/cli/issues/1582
   setupCommand = "dotnet restore --no-cache";
@@ -249,6 +256,7 @@ class CSharpJSONFixture extends JSONFixture {
 
 class JavaJSONFixture extends JSONFixture {
   name = "java";
+  language = "java";
   base = "test/fixtures/java";
   diffViaSchema = false;
   output = "src/main/java/io/quicktype/TopLevel.java";
@@ -271,6 +279,7 @@ class JavaJSONFixture extends JSONFixture {
 
 class GoJSONFixture extends JSONFixture {
   name = "golang";
+  language = "go";
   base = "test/fixtures/golang";
   diffViaSchema = true;
   output = "quicktype.go";
@@ -292,6 +301,7 @@ class GoJSONFixture extends JSONFixture {
 
 class JSONSchemaJSONFixture extends JSONFixture {
   name = "schema-json";
+  language = "schema";
   base = "test/fixtures/golang";
   diffViaSchema = false;
   output = "schema.json";
@@ -347,6 +357,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
 
 class ElmJSONFixture extends JSONFixture {
   name = "elm";
+  language = "elm";
   base = "test/fixtures/elm";
   setupCommand = "rm -rf elm-stuff/build-artifacts && elm-make --yes";
   diffViaSchema = true;
@@ -369,8 +380,9 @@ class ElmJSONFixture extends JSONFixture {
 // Swift tests
 /////////////////////////////////////
 
-class SwiftJSONFixture extends JSONFixture {
-  name = "swift";
+class Swift3JSONFixture extends JSONFixture {
+  name = "swift3";
+  language = "swift3";
   base = "test/fixtures/swift";
   diffViaSchema = false;
   output = "quicktype.swift";
@@ -378,11 +390,31 @@ class SwiftJSONFixture extends JSONFixture {
   skip = ["identifiers.json", "no-classes.json", "blns-object.json"];
 
   async test(sample: string) {
-    exec(`swiftc -o quicktype main.swift quicktype.swift`);
+    exec(`swiftc -o quicktype main.swift ${this.output}`);
     compareJsonFileToJson({
       expectedFile: sample,
       jsonCommand: `./quicktype "${sample}"`,
       strict: false
+    });
+  }
+}
+
+class Swift4JSONFixture extends JSONFixture {
+  name = "swift4";
+  language = "swift4";
+  base = "test/fixtures/swift";
+  diffViaSchema = false;
+  output = "quicktype.swift";
+  topLevel = "TopLevel";
+  skip = ["identifiers.json", "no-classes.json", "blns-object.json"];
+
+  async test(sample: string) {
+    exec(`swiftc -o quicktype main.swift ${this.output}`);
+    compareJsonFileToJson({
+      expectedFile: sample,
+      jsonCommand: `./quicktype "${sample}"`,
+      strict: false,
+      allowMissingNull: true
     });
   }
 }
@@ -393,6 +425,7 @@ class SwiftJSONFixture extends JSONFixture {
 
 class TypeScriptJSONFixture extends JSONFixture {
   name = "typescript";
+  language = "typescript";
   base = "test/fixtures/typescript";
   diffViaSchema = true;
   output = "TopLevel.ts";
@@ -483,7 +516,8 @@ const FIXTURES: Fixture[] = [
   new GoJSONFixture(),
   new JSONSchemaJSONFixture(),
   new ElmJSONFixture(),
-  new SwiftJSONFixture(),
+  new Swift3JSONFixture(),
+  new Swift4JSONFixture(),
   new TypeScriptJSONFixture(),
   new JSONSchemaFixture()
 ].filter(
@@ -547,6 +581,7 @@ type ComparisonArgs = {
   jsonFile?: string;
   jsonCommand?: string;
   strict: boolean;
+  allowMissingNull?: boolean;
 };
 
 function compareJsonFileToJson(args: ComparisonArgs) {
@@ -571,12 +606,14 @@ function compareJsonFileToJson(args: ComparisonArgs) {
     () => JSON.parse(fs.readFileSync(expectedFile, "utf8"))
   );
 
+  const allowMissingNull =
+    args.allowMissingNull === undefined ? false : args.allowMissingNull;
   let jsonAreEqual = strict
     ? callAndReportFailure("Failed to strictly compare objects", () =>
         strictDeepEquals(givenJSON, expectedJSON)
       )
     : callAndReportFailure("Failed to compare objects.", () =>
-        deepEquals(expectedJSON, givenJSON)
+        deepEquals(expectedJSON, givenJSON, allowMissingNull)
       );
 
   if (!jsonAreEqual) {
