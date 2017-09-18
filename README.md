@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/quicktype/quicktype.svg?branch=master)](https://travis-ci.org/quicktype/quicktype) [![Join us in Slack](https://slackin-knsbmtpweu.now.sh/badge.svg)](https://slackin-knsbmtpweu.now.sh/)
+[![Build Status](https://travis-ci.org/quicktype/quicktype.svg?branch=master)](https://travis-ci.org/quicktype/quicktype) [![Join us in Slack](http://slack.quicktype.io/badge.svg)](http://slack.quicktype.io/)
 
 ## Setup
 
