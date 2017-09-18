@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "0.9.17",
+  "version": "0.9.18",
   "license": "Apache-2.0",
   "repository": "https://github.com/quicktype/quicktype",
   "scripts": {
