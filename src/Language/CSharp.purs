@@ -167,9 +167,14 @@ renderCSharpClassJSONPartials = do
                 $ "public static "
                 <> topLevelTypeRendered 
                 <> " "
-                <> "FromJson(string json) => JsonConvert.DeserializeObject<"
-                <> topLevelTypeRendered
-                <> ">(json, Converter.Settings);"
+                <> "FromJson(string json)"
+            line "{"
+            indent do
+                 line
+                    $ "return JsonConvert.DeserializeObject<"
+                    <> topLevelTypeRendered
+                    <> ">(json, Converter.Settings);"
+            line "}"
         line "}"
 
     whenSerializers do
@@ -182,7 +187,11 @@ renderCSharpClassJSONPartials = do
                 line $
                     "public static string ToJson(this "
                     <> topLevelTypeRendered
-                    <> " self) => JsonConvert.SerializeObject(self, Converter.Settings);"
+                    <> " self)"
+                line "{"
+                indent do
+                    line "return JsonConvert.SerializeObject(self, Converter.Settings);"
+                line "}"
     line "}"
 
 renderJsonConverter :: Doc Unit
