@@ -30,6 +30,7 @@ pocoOption = booleanOption "poco" "[EXPERIMENTAL] Generate 'Plain Old C# Objects
 renderer :: Renderer
 renderer =
     { displayName: "C#"
+    , names: [ "csharp", "cs" ]
     , aceMode: "csharp"
     , extension: "cs"
     , doc: csharpDoc

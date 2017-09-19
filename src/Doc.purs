@@ -66,6 +66,7 @@ import Utils (sortByKeyM, mapM)
 
 type Renderer =
     { displayName :: String
+    , names :: Array String
     , extension :: String
     , aceMode :: String
     , options :: OptionSpecifications

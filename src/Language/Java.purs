@@ -35,6 +35,7 @@ forbiddenNames =
 renderer :: Renderer
 renderer =
     { displayName: "Java"
+    , names: [ "java" ]
     , aceMode: "java"
     , extension: "java"
     , doc: javaDoc

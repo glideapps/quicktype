@@ -13,7 +13,7 @@ const getUsage = require("command-line-usage");
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-const langs = Main.renderers.map(r => r.extension).join("|");
+const langs = Main.renderers.map(r => r.names[0]).join("|");
 const langDisplayNames = Main.renderers.map(r => r.displayName).join(", ");
 
 interface OptionDefinition {
@@ -210,7 +210,7 @@ class Run {
   }
 
   getRenderer = (lang: string) => {
-    let renderer = Main.renderers.find(r => _.includes(<{}>r, lang));
+    let renderer = Main.renderers.find(r => _.includes(r.names, lang));
 
     if (!renderer) {
       console.error(
@@ -228,7 +228,7 @@ class Run {
     let areSchemas = this.options.srcLang === "schema";
 
     let config: Config = {
-      language: this.getRenderer(this.options.lang).extension,
+      language: this.getRenderer(this.options.lang).names[0],
       topLevels: Object.getOwnPropertyNames(samplesOrSchemas).map(name => {
         if (areSchemas) {
           // Only one schema per top-level is used right now
