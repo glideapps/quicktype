@@ -2,19 +2,19 @@ import * as fs from "fs";
 import * as path from "path";
 import * as process from "process";
 import * as Either from "./either";
-import tryRequire from "./try-require"
+import tryRequire from "./try-require";
 import * as _ from "lodash";
 
 const Main: Main = tryRequire("../output/Main", "./Main");
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
-const commandLineArgs = require('command-line-args');
-const getUsage = require('command-line-usage');
+const commandLineArgs = require("command-line-args");
+const getUsage = require("command-line-usage");
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-const langs = Main.renderers.map((r) => r.extension).join("|");
-const langNames = Main.renderers.map((r) => r.name).join(", ");
+const langs = Main.renderers.map(r => r.extension).join("|");
+const langNames = Main.renderers.map(r => r.name).join(", ");
 
 interface OptionDefinition {
   name: string;
@@ -30,53 +30,53 @@ interface OptionDefinition {
 
 const optionDefinitions: OptionDefinition[] = [
   {
-    name: 'out',
-    alias: 'o',
+    name: "out",
+    alias: "o",
     type: String,
     typeLabel: `FILE`,
-    description: 'The output file. Determines --lang and --top-level.'
+    description: "The output file. Determines --lang and --top-level."
   },
   {
-    name: 'top-level',
-    alias: 't',
+    name: "top-level",
+    alias: "t",
     type: String,
-    typeLabel: 'NAME',
-    description: 'The name for the top level type.'
+    typeLabel: "NAME",
+    description: "The name for the top level type."
   },
   {
-    name: 'lang',
-    alias: 'l',
+    name: "lang",
+    alias: "l",
     type: String,
     typeLabel: langs,
-    description: 'The target language.'
+    description: "The target language."
   },
   {
-    name: 'src-lang',
-    alias: 's',
+    name: "src-lang",
+    alias: "s",
     type: String,
-    defaultValue: 'json',
-    typeLabel: 'json|schema',
-    description: 'The source language (default is json).'
+    defaultValue: "json",
+    typeLabel: "json|schema",
+    description: "The source language (default is json)."
   },
   {
-    name: 'src',
+    name: "src",
     type: String,
     multiple: true,
     defaultOption: true,
-    typeLabel: 'FILE|URL',
-    description: 'The file or url to type.'
+    typeLabel: "FILE|URL",
+    description: "The file or url to type."
   },
   {
-    name: 'src-urls',
+    name: "src-urls",
     type: String,
-    typeLabel: 'FILE',
-    description: 'Tracery grammar describing URLs to crawl.'
+    typeLabel: "FILE",
+    description: "Tracery grammar describing URLs to crawl."
   },
   {
-    name: 'help',
-    alias: 'h',
+    name: "help",
+    alias: "h",
     type: Boolean,
-    description: 'Get some help.'
+    description: "Get some help."
   }
 ];
 
@@ -88,35 +88,35 @@ interface UsageSection {
 
 const sectionsBeforeRenderers: UsageSection[] = [
   {
-    header: 'Synopsis',
+    header: "Synopsis",
     content: `$ quicktype [[bold]{--lang} ${langs}] FILE|URL ...`
   },
   {
-    header: 'Description',
+    header: "Description",
     content: `Given JSON sample data, quicktype outputs code for working with that data in ${langNames}.`
   },
   {
-    header: 'Options',
+    header: "Options",
     optionList: optionDefinitions
   }
 ];
-const sectionsAfterRenderers: UsageSection[] = [  
+const sectionsAfterRenderers: UsageSection[] = [
   {
-    header: 'Examples',
+    header: "Examples",
     content: [
-      chalk.dim('Generate C# to parse a Bitcoin API'),
-      '$ quicktype -o LatestBlock.cs https://blockchain.info/latestblock',
-      '',
-      chalk.dim('Generate Go code from a JSON file'),
-      '$ quicktype -l go user.json',
-      '',
-      chalk.dim('Generate JSON Schema, then TypeScript'),
-      '$ quicktype -o schema.json https://blockchain.info/latestblock',
-      '$ quicktype -o bitcoin.ts --src-lang schema schema.json'
+      chalk.dim("Generate C# to parse a Bitcoin API"),
+      "$ quicktype -o LatestBlock.cs https://blockchain.info/latestblock",
+      "",
+      chalk.dim("Generate Go code from a JSON file"),
+      "$ quicktype -l go user.json",
+      "",
+      chalk.dim("Generate JSON Schema, then TypeScript"),
+      "$ quicktype -o schema.json https://blockchain.info/latestblock",
+      "$ quicktype -o bitcoin.ts --src-lang schema schema.json"
     ]
   },
   {
-    content: 'Learn more at [bold]{quicktype.io}'
+    content: "Learn more at [bold]{quicktype.io}"
   }
 ];
 
@@ -127,16 +127,16 @@ function optionDefinitionsForRenderer(renderer: Renderer): OptionDefinition[] {
       description: o.description,
       typeLabel: o.typeLabel,
       renderer: true,
-      type: String as any } as OptionDefinition;
-    });
+      type: String as any
+    } as OptionDefinition;
+  });
 }
 
 function usage() {
   const rendererSections: UsageSection[] = [];
-  
+
   _.forEach(Main.renderers, renderer => {
-    if (renderer.options.length == 0)
-      return;
+    if (renderer.options.length == 0) return;
 
     rendererSections.push({
       header: `Options for ${renderer.name}`,
@@ -144,12 +144,16 @@ function usage() {
     });
   });
 
-  const sections = _.concat(sectionsBeforeRenderers, rendererSections, sectionsAfterRenderers);
+  const sections = _.concat(
+    sectionsBeforeRenderers,
+    rendererSections,
+    sectionsAfterRenderers
+  );
 
   console.log(getUsage(sections));
 }
 
-export interface Options {  
+export interface Options {
   lang?: string;
   src?: string[];
   topLevel?: string;
@@ -173,18 +177,26 @@ class Run {
       // because there are renderer-specific options.  But we only know which renderer
       // is selected after we've parsed the options.  Hence, we parse the options
       // twice.  This is the first parse to get the renderer:
-      const incompleteOptions = this.parseOptions(optionDefinitions, argv, true).options;
+      const incompleteOptions = this.parseOptions(optionDefinitions, argv, true)
+        .options;
       const renderer = this.getRenderer(incompleteOptions.lang);
       // Use the global options as well as the renderer options from now on:
       const rendererOptionDefinitions = optionDefinitionsForRenderer(renderer);
-      const allOptionDefinitions = _.concat(optionDefinitions, rendererOptionDefinitions);
+      const allOptionDefinitions = _.concat(
+        optionDefinitions,
+        rendererOptionDefinitions
+      );
       try {
         // This is the parse that counts:
-        const { options, renderer: rendererOptions } = this.parseOptions(allOptionDefinitions, argv, false);
+        const { options, renderer: rendererOptions } = this.parseOptions(
+          allOptionDefinitions,
+          argv,
+          false
+        );
         this.options = options;
-        this.rendererOptions = rendererOptions;          
+        this.rendererOptions = rendererOptions;
       } catch (error) {
-        if (error.name === 'UNKNOWN_OPTION') {
+        if (error.name === "UNKNOWN_OPTION") {
           console.error("Error: Unknown option");
           usage();
           process.exit(1);
@@ -198,17 +210,21 @@ class Run {
   }
 
   getRenderer = (lang: string) => {
-    let renderer = Main.renderers.find((r) => _.includes(<{}>r, lang));
+    let renderer = Main.renderers.find(r => _.includes(<{}>r, lang));
 
     if (!renderer) {
-      console.error(`'${this.options.lang}' is not yet supported as an output language.`);
+      console.error(
+        `'${this.options.lang}' is not yet supported as an output language.`
+      );
       process.exit(1);
     }
 
     return renderer;
-  }
+  };
 
-  renderSamplesOrSchemas = (samplesOrSchemas: SampleOrSchemaMap): SourceCode => {
+  renderSamplesOrSchemas = (
+    samplesOrSchemas: SampleOrSchemaMap
+  ): SourceCode => {
     let areSchemas = this.options.srcLang === "schema";
 
     let config: Config = {
@@ -218,26 +234,26 @@ class Run {
           // Only one schema per top-level is used right now
           return { name, schema: samplesOrSchemas[name][0] };
         } else {
-          return { name, samples: samplesOrSchemas[name]  };
+          return { name, samples: samplesOrSchemas[name] };
         }
       }),
       rendererOptions: this.rendererOptions
     };
 
-    return Either.fromRight(Main.main(config));    
-  }
+    return Either.fromRight(Main.main(config));
+  };
 
   splitAndWriteJava = (dir: string, str: string) => {
     const lines = str.split("\n");
-    let filename : string | null = null;
-    let currentFileContents : string = "";
+    let filename: string | null = null;
+    let currentFileContents: string = "";
 
     const writeFile = () => {
       if (filename != null) {
         fs.writeFileSync(path.join(dir, filename), currentFileContents);
       }
       filename = null;
-      currentFileContents = "";      
+      currentFileContents = "";
     };
 
     let i = 0;
@@ -251,12 +267,11 @@ class Run {
       } else {
         writeFile();
         filename = results[1];
-        while (lines[i] == "")
-          i++;
+        while (lines[i] == "") i++;
       }
     }
     writeFile();
-  }
+  };
 
   renderAndOutput = (samplesOrSchemas: SampleOrSchemaMap) => {
     let output = this.renderSamplesOrSchemas(samplesOrSchemas);
@@ -269,33 +284,36 @@ class Run {
     } else {
       process.stdout.write(output);
     }
-  }
+  };
 
   workFromJsonArray = (jsonArray: object[]) => {
     let map = <SampleOrSchemaMap>{};
     map[this.options.topLevel] = jsonArray;
     this.renderAndOutput(map);
-  }
+  };
 
-  parseJsonFromStream = (stream: fs.ReadStream | NodeJS.Socket): Promise<object> => {
+  parseJsonFromStream = (
+    stream: fs.ReadStream | NodeJS.Socket
+  ): Promise<object> => {
     return new Promise<object>(resolve => {
       let source = makeSource();
       let assembler = new Assembler();
 
-      let assemble = chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value);
+      let assemble = chunk =>
+        assembler[chunk.name] && assembler[chunk.name](chunk.value);
       let isInt = intString => /^\d+$/.test(intString);
 
       let intSentinelChunks = intString => [
-        { name: 'startObject' },
-        { name: 'startKey' },
-        { name: 'stringChunk', value: Main.intSentinel },
-        { name: 'endKey' },
-        { name: 'keyValue', value: Main.intSentinel },
-        { name: 'startNumber' },
-        { name: 'numberChunk', value: intString },
-        { name: 'endNumber' },
-        { name: 'numberValue', value: intString },
-        { name: 'endObject' }        
+        { name: "startObject" },
+        { name: "startKey" },
+        { name: "stringChunk", value: Main.intSentinel },
+        { name: "endKey" },
+        { name: "keyValue", value: Main.intSentinel },
+        { name: "startNumber" },
+        { name: "numberChunk", value: intString },
+        { name: "endNumber" },
+        { name: "numberValue", value: intString },
+        { name: "endObject" }
       ];
 
       let queue = [];
@@ -323,19 +341,22 @@ class Run {
 
       source.output.on("end", () => resolve(assembler.current));
 
-      stream.setEncoding('utf8');
+      stream.setEncoding("utf8");
       stream.pipe(source.input);
       stream.resume();
     });
-  }
+  };
 
-  mapValues = async (obj: object, f: (val: any) => Promise<any>): Promise<any> => {
+  mapValues = async (
+    obj: object,
+    f: (val: any) => Promise<any>
+  ): Promise<any> => {
     let result = {};
     for (let key of Object.keys(obj)) {
       result[key] = await f(obj[key]);
     }
     return result;
-  }
+  };
 
   parseFileOrUrl = async (fileOrUrl: string): Promise<object> => {
     if (fs.existsSync(fileOrUrl)) {
@@ -344,11 +365,11 @@ class Run {
       let res = await fetch(fileOrUrl);
       return this.parseJsonFromStream(res.body);
     }
-  }
+  };
 
   parseFileOrUrlArray = (filesOrUrls: string[]): Promise<object[]> => {
     return Promise.all(filesOrUrls.map(this.parseFileOrUrl));
-  }
+  };
 
   main = async () => {
     if (this.options.help) {
@@ -356,7 +377,9 @@ class Run {
     } else if (this.options.srcUrls) {
       let json = JSON.parse(fs.readFileSync(this.options.srcUrls, "utf8"));
       let jsonMap = Either.fromRight(Main.urlsFromJsonGrammar(json));
-      this.renderAndOutput(await this.mapValues(jsonMap, this.parseFileOrUrlArray));
+      this.renderAndOutput(
+        await this.mapValues(jsonMap, this.parseFileOrUrlArray)
+      );
     } else if (this.options.src.length == 0) {
       let json = await this.parseJsonFromStream(process.stdin);
       this.workFromJsonArray([json]);
@@ -367,29 +390,38 @@ class Run {
       usage();
       process.exit(1);
     }
-  }
+  };
 
   // Parse the options in argv and split them into global options and renderer options,
   // according to each option definition's `renderer` field.  If `partial` is false this
   // will throw if it encounters an unknown option.
-  parseOptions = (optionDefinitions: OptionDefinition[], argv: string[], partial: boolean):
-      { options: Options, renderer: { [name: string]: string } } => {
-    const opts: { [key: string]: any } = commandLineArgs(optionDefinitions, { argv, partial: partial });
+  parseOptions = (
+    optionDefinitions: OptionDefinition[],
+    argv: string[],
+    partial: boolean
+  ): { options: Options; renderer: { [name: string]: string } } => {
+    const opts: { [key: string]: any } = commandLineArgs(optionDefinitions, {
+      argv,
+      partial: partial
+    });
     const options = {};
     const renderer = {};
     optionDefinitions.forEach(o => {
-      if (!(o.name in opts))
-        return;
+      if (!(o.name in opts)) return;
       const v = opts[o.name];
-      if (o.renderer)
-        renderer[o.name] = v;
+      if (o.renderer) renderer[o.name] = v;
       else {
-        const k = _.lowerFirst(o.name.split('-').map(_.upperFirst).join(''));
+        const k = _.lowerFirst(
+          o.name
+            .split("-")
+            .map(_.upperFirst)
+            .join("")
+        );
         options[k] = v;
       }
     });
     return { options: this.inferOptions(options), renderer };
-  }
+  };
 
   inferOptions = (opts: Options): Options => {
     opts.src = opts.src || [];
@@ -397,21 +429,23 @@ class Run {
     opts.lang = opts.lang || this.inferLang(opts);
     opts.topLevel = opts.topLevel || this.inferTopLevel(opts);
     return opts;
-  }
+  };
 
   inferLang = (options: Options): string => {
     // Output file extension determines the language if language is undefined
     if (options.out) {
       let extension = path.extname(options.out);
       if (extension == "") {
-        console.error("Please specify a language (--lang) or an output file extension.");
+        console.error(
+          "Please specify a language (--lang) or an output file extension."
+        );
         process.exit(1);
       }
       return extension.substr(1);
     }
 
     return "go";
-  }
+  };
 
   inferTopLevel = (options: Options): string => {
     // Output file name determines the top-level if undefined
@@ -430,7 +464,7 @@ class Run {
     }
 
     return "TopLevel";
-  }
+  };
 }
 
 export async function main(args: string[] | Options) {

@@ -1,6 +1,6 @@
 interface Renderer {
-    name: string;
-    extension: string;
-    aceMode: string;
-    options: [OptionSpecification];
+  name: string;
+  extension: string;
+  aceMode: string;
+  options: [OptionSpecification];
 }
