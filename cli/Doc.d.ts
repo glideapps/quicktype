@@ -1,5 +1,5 @@
 interface Renderer {
-  name: string;
+  displayName: string;
   extension: string;
   aceMode: string;
   options: [OptionSpecification];

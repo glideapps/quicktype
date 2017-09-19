@@ -65,7 +65,7 @@ import Options (OptionSpecifications, OptionValues, lookupOptionValue, Option)
 import Utils (sortByKeyM, mapM)
 
 type Renderer =
-    { name :: String
+    { displayName :: String
     , extension :: String
     , aceMode :: String
     , options :: OptionSpecifications

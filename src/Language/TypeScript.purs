@@ -23,7 +23,7 @@ import Utils (mapM)
 
 renderer :: Renderer
 renderer =
-    { name: "TypeScript"
+    { displayName: "TypeScript"
     , aceMode: "typescript"
     , extension: "ts"
     , doc: typeScriptDoc

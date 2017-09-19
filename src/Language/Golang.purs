@@ -20,7 +20,7 @@ import Utils (mapM, sortByKeyM, sortByKey)
 
 renderer :: Renderer
 renderer =
-    { name: "Go"
+    { displayName: "Go"
     , aceMode: "golang"
     , extension: "go"
     , doc: golangDoc

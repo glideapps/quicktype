@@ -14,7 +14,7 @@ const fetch = require("node-fetch");
 const chalk = require("chalk");
 
 const langs = Main.renderers.map(r => r.extension).join("|");
-const langNames = Main.renderers.map(r => r.name).join(", ");
+const langDisplayNames = Main.renderers.map(r => r.displayName).join(", ");
 
 interface OptionDefinition {
   name: string;
@@ -93,7 +93,7 @@ const sectionsBeforeRenderers: UsageSection[] = [
   },
   {
     header: "Description",
-    content: `Given JSON sample data, quicktype outputs code for working with that data in ${langNames}.`
+    content: `Given JSON sample data, quicktype outputs code for working with that data in ${langDisplayNames}.`
   },
   {
     header: "Options",
@@ -139,7 +139,7 @@ function usage() {
     if (renderer.options.length == 0) return;
 
     rendererSections.push({
-      header: `Options for ${renderer.name}`,
+      header: `Options for ${renderer.displayName}`,
       optionList: optionDefinitionsForRenderer(renderer)
     });
   });

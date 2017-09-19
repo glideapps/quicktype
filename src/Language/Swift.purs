@@ -29,7 +29,7 @@ keywords =
 
 renderer :: Renderer
 renderer =
-    { name: "Swift"
+    { displayName: "Swift"
     , aceMode: "swift"
     , extension: "swift"
     , doc: swiftDoc
