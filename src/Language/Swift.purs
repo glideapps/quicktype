@@ -177,9 +177,9 @@ fileprivate func removeNSNull(_ v: Any?) -> Any? {
     return nil
 }
 
-fileprivate func checkNull(_ v: Any?) -> Any?? {
+fileprivate func checkNull(_ v: Any?) -> NSNull? {
     if v != nil { return .none }
-    return .some(nil)
+    return .some(NSNull())
 }"""
 
 renderUnion :: IRUnionRep -> Doc String
@@ -194,7 +194,7 @@ renderType :: IRType -> Doc String
 renderType = case _ of
     IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
     IRAnyType -> pure "Any?"
-    IRNull -> pure "Any?"
+    IRNull -> pure "NSNull"
     IRInteger -> pure "Int"
     IRDouble -> pure "Double"
     IRBool -> pure "Bool"
@@ -273,7 +273,7 @@ convertToAny (IRUnion ur) var =
 convertToAny IRAnyType var =
     pure $ var <> " ?? NSNull()"
 convertToAny IRNull var =
-    pure $ "NSNull() as Any"
+    pure $ "NSNull()"
 convertToAny _ var =
     pure $ var <> " as Any"
 
