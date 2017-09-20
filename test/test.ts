@@ -197,6 +197,7 @@ abstract class JSONFixture extends Fixture {
         // Make a schema
         await quicktype({
           src: [sampleFile],
+          lang: "schema",
           out: "schema.json",
           topLevel: this.topLevel
         });

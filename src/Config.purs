@@ -91,7 +91,7 @@ renderer (Config { language }) =
     (find match Renderers.all)
     where
         match :: Renderer -> Boolean
-        match ({ aceMode, name, extension }) = elem language [aceMode, name, extension]
+        match ({ aceMode, displayName, extension }) = elem language [aceMode, displayName, extension]
 
 topLevelsMap :: Config -> Map String TopLevelConfig
 topLevelsMap (Config { topLevels }) =

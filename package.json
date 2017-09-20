@@ -38,6 +38,8 @@
     "typescript": "^2.4.2",
     "uglify-js": "^3.0.26"
   },
-  "files": ["*"],
+  "files": [
+    "*"
+  ],
   "bin": "quicktype.js"
 }

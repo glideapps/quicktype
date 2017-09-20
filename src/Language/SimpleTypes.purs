@@ -18,7 +18,8 @@ import IRGraph (IRClassData(..), IRType(..), IRUnionRep, mapUnionM, nullableFrom
 
 renderer :: Renderer
 renderer =
-    { name: "Simple Types"
+    { displayName: "Simple Types"
+    , names: [ "types" ]
     , aceMode: "groovy"
     , extension: "types"
     , doc: pseudocodeDoc

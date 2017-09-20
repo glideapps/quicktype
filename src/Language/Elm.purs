@@ -36,7 +36,8 @@ forbiddenNames =
 
 renderer :: Renderer
 renderer =
-    { name: "Elm"
+    { displayName: "Elm"
+    , names: [ "elm" ]
     , aceMode: "elm"
     , extension: "elm"
     , doc: elmDoc

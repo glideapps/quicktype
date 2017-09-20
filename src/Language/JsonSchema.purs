@@ -269,7 +269,8 @@ forbiddenNames = []
 
 renderer :: Renderer
 renderer =
-    { name: "Schema"
+    { displayName: "Schema"
+    , names: [ "schema", "json-schema" ]
     , aceMode: "json"
     , extension: "schema"
     , doc: jsonSchemaDoc

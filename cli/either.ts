@@ -11,11 +11,11 @@ export function get<T, U>(either: Either<T, U>): T | U {
 }
 
 export function fromRight<T>(either: Either<string, T>): T {
-    let result = get(either);
-    if (isLeft(either)) {
-      console.error(result);
-      process.exit(1);
-    } else {
-      return <T>result;
-    }
+  let result = get(either);
+  if (isLeft(either)) {
+    console.error(result);
+    process.exit(1);
+  } else {
+    return <T>result;
+  }
 }
