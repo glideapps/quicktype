@@ -123,7 +123,7 @@ csharpDoc = do
         line $ "//    using QuickType;"
         forEachTopLevel_ \topLevelName topLevelType -> do
             line "//"
-            line $ "//    var data = " <> module_ <> ".FromJson(jsonString);"
+            line $ "//    var data = " <> topLevelName <> ".FromJson(jsonString);"
         line "//"
         line "// For POCOs visit quicktype.io?poco"
         line "//"
