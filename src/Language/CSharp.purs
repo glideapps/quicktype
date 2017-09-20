@@ -115,12 +115,12 @@ csNameStyle = legalize >>> camelCase >>> startWithLetter isStartCharacter true
 
 csharpDoc :: Doc Unit
 csharpDoc = do
-    module_ <- getModuleName csNameStyle
+    moduleName <- getModuleName csNameStyle
     whenSerializers do
         oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
         line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
         line "//"
-        line $ "//    using QuickType;"
+        line $ "//    using " <> moduleName <> ";"
         forEachTopLevel_ \topLevelName topLevelType -> do
             line "//"
             line $ "//    var data = " <> topLevelName <> ".FromJson(jsonString);"
@@ -128,7 +128,7 @@ csharpDoc = do
         line "// For POCOs visit quicktype.io?poco"
         line "//"
     
-    line "namespace QuickType"
+    line $ "namespace " <> moduleName
     line "{"
     indent do
         let using s = line $ "using " <> s <> ";"
