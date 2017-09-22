@@ -2,10 +2,15 @@ import * as fs from "fs";
 import * as path from "path";
 import * as process from "process";
 import * as Either from "./either";
+import * as Maybe from "./maybe";
 import tryRequire from "./try-require";
 import * as _ from "lodash";
 
 const Main: Main = tryRequire("../output/Main", "./Main");
+const Renderers: Renderers = tryRequire(
+  "../output/Language.Renderers",
+  "./Renderers"
+);
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
 const commandLineArgs = require("command-line-args");
@@ -13,8 +18,8 @@ const getUsage = require("command-line-usage");
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-const langs = Main.renderers.map(r => r.names[0]).join("|");
-const langDisplayNames = Main.renderers.map(r => r.displayName).join(", ");
+const langs = Renderers.all.map(r => r.names[0]).join("|");
+const langDisplayNames = Renderers.all.map(r => r.displayName).join(", ");
 
 interface OptionDefinition {
   name: string;
@@ -135,7 +140,7 @@ function optionDefinitionsForRenderer(renderer: Renderer): OptionDefinition[] {
 function usage() {
   const rendererSections: UsageSection[] = [];
 
-  _.forEach(Main.renderers, renderer => {
+  _.forEach(Renderers.all, renderer => {
     if (renderer.options.length == 0) return;
 
     rendererSections.push({
@@ -209,17 +214,13 @@ class Run {
     }
   }
 
-  getRenderer = (lang: string) => {
-    let renderer = Main.renderers.find(r => _.includes(r.names, lang));
-
-    if (!renderer) {
-      console.error(
-        `'${this.options.lang}' is not yet supported as an output language.`
-      );
+  getRenderer = (lang: string): Renderer => {
+    let maybe = Renderers.rendererForLanguage(lang);
+    if (!Maybe.isJust(maybe)) {
+      console.error(`'${lang}' is not yet supported as an output language.`);
       process.exit(1);
     }
-
-    return renderer;
+    return Maybe.fromJust(maybe);
   };
 
   renderSamplesOrSchemas = (

@@ -1,4 +1,7 @@
-module Language.Renderers (all) where
+module Language.Renderers
+    ( all
+    , rendererForLanguage
+    ) where
 
 import Language.Elm as Elm
 import Language.Java as Java
@@ -11,6 +14,9 @@ import Language.SimpleTypes as SimpleTypes
 
 import Doc as Doc
 
+import Data.Maybe (Maybe)
+import Data.Foldable (elem, find)
+
 all :: Array Doc.Renderer
 all = 
     [ TypeScript.renderer
@@ -22,3 +28,10 @@ all =
     , SimpleTypes.renderer
     , JsonSchema.renderer
     ]
+
+rendererForLanguage :: String -> Maybe Doc.Renderer
+rendererForLanguage language =
+    find match all
+    where
+        match :: Doc.Renderer -> Boolean
+        match { names } = elem language names

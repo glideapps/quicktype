@@ -88,10 +88,7 @@ renderer (Config { language }) =
     maybe
     (Left $ language <> " not supported")
     Right
-    (find match Renderers.all)
-    where
-        match :: Renderer -> Boolean
-        match ({ aceMode, displayName, extension }) = elem language [aceMode, displayName, extension]
+    (Renderers.rendererForLanguage language)
 
 topLevelsMap :: Config -> Map String TopLevelConfig
 topLevelsMap (Config { topLevels }) =

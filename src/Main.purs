@@ -1,6 +1,5 @@
 module Main
     ( main
-    , renderers
     , urlsFromJsonGrammar
     , intSentinel
     ) where
@@ -17,7 +16,6 @@ import Doc as Doc
 import IR (execIR, normalizeGraphOrder, replaceNoInformationWithAnyType)
 import IRTypeable (intSentinel) as IRTypeable
 import IRTypeable (makeTypes)
-import Language.Renderers as Renderers
 import Options (makeOptionValues)
 import Transformations as T
 import UrlGrammar (GrammarMap(..), generate)
@@ -25,9 +23,6 @@ import UrlGrammar (GrammarMap(..), generate)
 -- TODO find a better way to rexport these
 intSentinel :: String
 intSentinel = IRTypeable.intSentinel
-
-renderers :: Array Doc.Renderer
-renderers = Renderers.all
 
 -- json is a Foreign object whose type is defined in /cli/src/Main.d.ts
 main :: Json -> Either Error SourceCode

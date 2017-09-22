@@ -2,7 +2,6 @@ type SourceCode = string;
 type ErrorMessage = string;
 
 interface Main {
-  renderers: Renderer[];
   main(config: Config): Either<ErrorMessage, SourceCode>;
   mainWithOptions(options: {
     [name: string]: string;
