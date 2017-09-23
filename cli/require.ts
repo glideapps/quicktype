@@ -10,5 +10,5 @@ export function tryRequire(...paths: string[]): any {
 }
 
 export function psRequire<T>(path: string): T {
-  return tryRequire(`../output/${path}`, path);
+  return tryRequire(`../output/${path}`, `./${path}`);
 }
