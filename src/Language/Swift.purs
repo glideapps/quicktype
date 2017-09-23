@@ -12,11 +12,12 @@ import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
+import Data.Set as S
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscape, intToHex, legalizeCharacters, startWithLetter)
 import Data.Tuple (Tuple(..))
-import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
-import IRGraph (IRClassData(..), IRType(..), IRUnionRep, canBeNull, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionToList)
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getGraph)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, canBeNull, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionToList, filterTypes)
 
 keywords :: Array String
 keywords =
@@ -234,11 +235,24 @@ fileprivate func checkNull(_ v: Any?) -> NSNull? {
     return .some(NSNull())
 }"""
 
+anyAndNullPredicate :: IRType -> Maybe IRType
+anyAndNullPredicate IRNull = Just IRNull
+anyAndNullPredicate IRAnyType = Just IRAnyType
+anyAndNullPredicate _ = Nothing
+
 supportFunctions4 :: Doc Unit
 supportFunctions4 = do
-    line """// Helpers
+    graph <- getGraph
+    let anyAndNullSet = filterTypes anyAndNullPredicate graph
+    let needAny = S.member IRAnyType anyAndNullSet
+    let needNull = needAny || S.member IRNull anyAndNullSet
 
-class JSONNull: Codable {
+    when (needAny || needNull) do
+        line "// Helpers"
+        blank
+    
+    when needNull do
+        line """class JSONNull: Codable {
     public init() {
     }
     
@@ -253,9 +267,11 @@ class JSONNull: Codable {
         var container = encoder.singleValueContainer()
         try container.encodeNil()
     }
-}
+}"""
 
-class JSONCodingKey : CodingKey {
+    when needAny do
+        blank
+        line """class JSONCodingKey : CodingKey {
     let key: String
     
     required init?(intValue: Int) {
