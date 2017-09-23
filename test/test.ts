@@ -99,35 +99,72 @@ abstract class Fixture {
   }
 }
 
-abstract class JSONFixture extends Fixture {
-  protected abstract language: string;
-  protected abstract base: string;
-  protected setupCommand: string = null;
-  protected abstract diffViaSchema: boolean;
-  protected abstract output: string;
-  protected abstract topLevel: string;
-  protected skip: string[] = [];
+interface Language {
+  name: string;
+  base: string;
+  setupCommand: string;
+  compileCommand: string;
+  runCommand(sample: string): string;
+  diffViaSchema: boolean;
+  allowMissingNull: boolean;
+  output: string;
+  topLevel: string;
+  skipJSON: string[];
+}
 
-  protected abstract test(sample: string): Promise<void>;
+async function quicktypeForLanguage(
+  language: Language,
+  sourceFile: string,
+  sourceLanguage: string
+) {
+  await quicktype({
+    srcLang: sourceLanguage,
+    lang: language.name,
+    src: [sourceFile],
+    out: language.output,
+    topLevel: language.topLevel
+  });
+}
+
+class JSONFixture extends Fixture {
+  private language: Language;
+  public name: string;
+
+  public constructor(language: Language) {
+    super();
+    this.language = language;
+    this.name = language.name;
+  }
+
+  async test(sample: string): Promise<void> {
+    if (this.language.compileCommand) {
+      exec(this.language.compileCommand);
+    }
+    compareJsonFileToJson({
+      expectedFile: sample,
+      jsonCommand: this.language.runCommand(sample),
+      strict: false,
+      allowMissingNull: this.language.allowMissingNull
+    });
+  }
 
   async setup() {
-    if (!this.setupCommand) {
+    if (!this.language.setupCommand) {
       return;
     }
 
     console.error(`* Setting up`, chalk.magenta(this.name), `fixture`);
 
-    await inDir(this.base, async () => {
-      exec(this.setupCommand);
+    await inDir(this.language.base, async () => {
+      exec(this.language.setupCommand);
     });
   }
 
-  private shouldSkipTest(sample: string): boolean {
+  shouldSkipTest(sample: string): boolean {
     if (fs.statSync(sample).size > 32 * 1024 * 1024) {
       return true;
     }
-    let skips = this.skip;
-    return _.includes(skips, path.basename(sample));
+    return _.includes(this.language.skipJSON, path.basename(sample));
   }
 
   getSamples(sources: string[]): { priority: string[]; others: string[] } {
@@ -165,21 +202,6 @@ abstract class JSONFixture extends Fixture {
     return { priority, others };
   }
 
-  async generateOutput(
-    sourceFile: string,
-    sourceLanguage: string,
-    language: string
-  ) {
-    // Generate code from the sample
-    await quicktype({
-      srcLang: sourceLanguage,
-      lang: language,
-      src: [sourceFile],
-      out: this.output,
-      topLevel: this.topLevel
-    });
-  }
-
   async runWithSample(sample: string, index: number, total: number) {
     const cwd = this.getRunDirectory();
     let sampleFile = path.basename(sample);
@@ -191,11 +213,11 @@ abstract class JSONFixture extends Fixture {
       return;
     }
 
-    shell.cp("-R", this.base, cwd);
+    shell.cp("-R", this.language.base, cwd);
     shell.cp(sample, cwd);
 
     await inDir(cwd, async () => {
-      await this.generateOutput(sampleFile, "json", this.language);
+      await quicktypeForLanguage(this.language, sampleFile, "json");
 
       try {
         await this.test(sampleFile);
@@ -203,22 +225,23 @@ abstract class JSONFixture extends Fixture {
         failWith("Fixture threw an exception", { error: e });
       }
 
-      if (this.diffViaSchema) {
+      if (this.language.diffViaSchema) {
         debug("* Diffing with code generated via JSON Schema");
         // Make a schema
         await quicktype({
           src: [sampleFile],
           lang: "schema",
           out: "schema.json",
-          topLevel: this.topLevel
+          topLevel: this.language.topLevel
         });
         // Quicktype from the schema and compare to expected code
-        shell.mv(this.output, `${this.output}.expected`);
-        await this.generateOutput("schema.json", "schema", this.language);
+        shell.mv(this.language.output, `${this.language.output}.expected`);
+        await quicktypeForLanguage(this.language, "schema.json", "schema");
 
         // Compare fixture.output to fixture.output.expected
         exec(
-          `diff -Naur ${this.output}.expected ${this.output} > /dev/null 2>&1`
+          `diff -Naur ${this.language.output}.expected ${this.language
+            .output} > /dev/null 2>&1`
         );
       }
     });
@@ -231,82 +254,90 @@ abstract class JSONFixture extends Fixture {
 // C# tests
 /////////////////////////////////////
 
-class CSharpJSONFixture extends JSONFixture {
-  name = "csharp";
-  language = "csharp";
-  base = "test/fixtures/csharp";
+const CSharpLanguage: Language = {
+  name: "csharp",
+  base: "test/fixtures/csharp",
   // https://github.com/dotnet/cli/issues/1582
-  setupCommand = "dotnet restore --no-cache";
-  diffViaSchema = true;
-  output = "QuickType.cs";
-  topLevel = "TopLevel";
-
-  async test(sample: string) {
-    compareJsonFileToJson({
-      expectedFile: sample,
-      jsonCommand: `dotnet run "${sample}"`,
-      strict: false
-    });
-  }
-}
+  setupCommand: "dotnet restore --no-cache",
+  compileCommand: null,
+  runCommand(sample: string) {
+    return `dotnet run "${sample}"`;
+  },
+  diffViaSchema: true,
+  allowMissingNull: false,
+  output: "QuickType.cs",
+  topLevel: "TopLevel",
+  skipJSON: []
+};
 
 //////////////////////////////////////
 // Java tests
 /////////////////////////////////////
 
-class JavaJSONFixture extends JSONFixture {
-  name = "java";
-  language = "java";
-  base = "test/fixtures/java";
-  diffViaSchema = false;
-  output = "src/main/java/io/quicktype/TopLevel.java";
-  topLevel = "TopLevel";
-  skip = ["identifiers.json", "simple-identifiers.json", "blns-object.json"];
-
-  async test(sample: string) {
-    exec(`mvn package`);
-    compareJsonFileToJson({
-      expectedFile: sample,
-      jsonCommand: `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`,
-      strict: false
-    });
-  }
-}
+const JavaLanguage: Language = {
+  name: "java",
+  base: "test/fixtures/java",
+  setupCommand: null,
+  compileCommand: "mvn package",
+  runCommand(sample: string) {
+    return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`;
+  },
+  diffViaSchema: false,
+  allowMissingNull: false,
+  output: "src/main/java/io/quicktype/TopLevel.java",
+  topLevel: "TopLevel",
+  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"]
+};
 
 //////////////////////////////////////
 // Go tests
 /////////////////////////////////////
 
-class GoJSONFixture extends JSONFixture {
-  name = "golang";
-  language = "go";
-  base = "test/fixtures/golang";
-  diffViaSchema = true;
-  output = "quicktype.go";
-  topLevel = "TopLevel";
-  skip = ["identifiers.json", "simple-identifiers.json", "blns-object.json"];
-
-  async test(sample: string) {
-    compareJsonFileToJson({
-      expectedFile: sample,
-      jsonCommand: `go run main.go quicktype.go < "${sample}"`,
-      strict: false
-    });
-  }
-}
+const GoLanguage: Language = {
+  name: "golang",
+  base: "test/fixtures/golang",
+  setupCommand: null,
+  compileCommand: null,
+  runCommand(sample: string) {
+    return `go run main.go quicktype.go < "${sample}"`;
+  },
+  diffViaSchema: true,
+  allowMissingNull: false,
+  output: "quicktype.go",
+  topLevel: "TopLevel",
+  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"]
+};
 
 //////////////////////////////////////
 // JSON Schema tests
 /////////////////////////////////////
 
 class JSONSchemaJSONFixture extends JSONFixture {
-  name = "schema-json";
-  language = "schema";
-  base = "test/fixtures/golang";
-  diffViaSchema = false;
-  output = "schema.json";
-  topLevel = "schema";
-  skip = ["identifiers.json", "simple-identifiers.json", "blns-object.json"];
+  private runLanguage: Language;
+
+  constructor(language: Language) {
+    const schemaLanguage: Language = {
+      name: "schema",
+      base: language.base,
+      setupCommand: language.setupCommand,
+      compileCommand: null,
+      runCommand: (sample: string) => {
+        throw "This must not be called!";
+      },
+      diffViaSchema: false,
+      allowMissingNull: language.allowMissingNull,
+      output: "schema.json",
+      topLevel: "schema",
+      skipJSON: [
+        "identifiers.json",
+        "simple-identifiers.json",
+        "blns-object.json"
+      ]
+    };
+    super(schemaLanguage);
+    this.runLanguage = language;
+    this.name = `schema-json-${language.name}`;
+  }
 
   async test(sample: string) {
     let input = JSON.parse(fs.readFileSync(sample, "utf8"));
@@ -320,19 +351,15 @@ class JSONSchemaJSONFixture extends JSONFixture {
       });
     }
 
-    // Generate Go from the schema
-    await quicktype({
-      src: ["schema.json"],
-      srcLang: "schema",
-      out: "quicktype.go",
-      topLevel: "TopLevel"
-    });
+    // Generate code from the schema
+    await quicktypeForLanguage(this.runLanguage, "schema.json", "schema");
 
-    // Parse the sample with Go generated from its schema, and compare to the sample
+    // Parse the sample with the code generated from its schema, and compare to the sample
     compareJsonFileToJson({
       expectedFile: sample,
-      jsonCommand: `go run main.go quicktype.go < "${sample}"`,
-      strict: false
+      jsonCommand: this.runLanguage.runCommand(sample),
+      strict: false,
+      allowMissingNull: this.runLanguage.allowMissingNull
     });
 
     // Generate a schema from the schema, making sure the schemas are the same
@@ -355,93 +382,65 @@ class JSONSchemaJSONFixture extends JSONFixture {
 // Elm tests
 /////////////////////////////////////
 
-class ElmJSONFixture extends JSONFixture {
-  name = "elm";
-  language = "elm";
-  base = "test/fixtures/elm";
-  setupCommand = "rm -rf elm-stuff/build-artifacts && elm-make --yes";
-  diffViaSchema = true;
-  output = "QuickType.elm";
-  topLevel = "QuickType";
-  skip = ["identifiers.json", "simple-identifiers.json", "blns-object.json"];
-
-  async test(sample: string) {
-    exec(`elm-make Main.elm QuickType.elm --output elm.js`);
-
-    compareJsonFileToJson({
-      expectedFile: sample,
-      jsonCommand: `node ./runner.js "${sample}"`,
-      strict: false
-    });
-  }
-}
+const ElmLanguage: Language = {
+  name: "elm",
+  base: "test/fixtures/elm",
+  setupCommand: "rm -rf elm-stuff/build-artifacts && elm-make --yes",
+  compileCommand: "elm-make Main.elm QuickType.elm --output elm.js",
+  runCommand(sample: string) {
+    return `node ./runner.js "${sample}"`;
+  },
+  diffViaSchema: true,
+  allowMissingNull: false,
+  output: "QuickType.elm",
+  topLevel: "QuickType",
+  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"]
+};
 
 //////////////////////////////////////
 // Swift tests
 /////////////////////////////////////
 
-class Swift3JSONFixture extends JSONFixture {
-  name = "swift3";
-  language = "swift3";
-  base = "test/fixtures/swift";
-  diffViaSchema = false;
-  output = "quicktype.swift";
-  topLevel = "TopLevel";
-  skip = ["identifiers.json", "no-classes.json", "blns-object.json"];
-
-  async test(sample: string) {
-    exec(`swiftc -o quicktype main.swift ${this.output}`);
-    compareJsonFileToJson({
-      expectedFile: sample,
-      jsonCommand: `./quicktype "${sample}"`,
-      strict: false
-    });
-  }
+function makeSwiftLanguage(name: string): Language {
+  return {
+    name: name,
+    base: "test/fixtures/swift",
+    setupCommand: null,
+    compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
+    runCommand(sample: string) {
+      return `./quicktype "${sample}"`;
+    },
+    diffViaSchema: false,
+    allowMissingNull: true,
+    output: "quicktype.swift",
+    topLevel: "TopLevel",
+    skipJSON: ["identifiers.json", "no-classes.json", "blns-object.json"]
+  };
 }
 
-class Swift4JSONFixture extends JSONFixture {
-  name = "swift4";
-  language = "swift4";
-  base = "test/fixtures/swift";
-  diffViaSchema = false;
-  output = "quicktype.swift";
-  topLevel = "TopLevel";
-  skip = ["identifiers.json", "no-classes.json", "blns-object.json"];
-
-  async test(sample: string) {
-    exec(`swiftc -o quicktype main.swift ${this.output}`);
-    compareJsonFileToJson({
-      expectedFile: sample,
-      jsonCommand: `./quicktype "${sample}"`,
-      strict: false,
-      allowMissingNull: true
-    });
-  }
-}
+const Swift3Language: Language = makeSwiftLanguage("swift3");
+const Swift4Language: Language = makeSwiftLanguage("swift4");
 
 //////////////////////////////////////
 // TypeScript test
 /////////////////////////////////////
 
-class TypeScriptJSONFixture extends JSONFixture {
-  name = "typescript";
-  language = "typescript";
-  base = "test/fixtures/typescript";
-  diffViaSchema = true;
-  output = "TopLevel.ts";
-  topLevel = "TopLevel";
-  skip = ["identifiers.json"];
-
-  async test(sample: string) {
-    compareJsonFileToJson({
-      expectedFile: sample,
-      // We have to unset TS_NODE_PROJECT because it gets set on the workers
-      // to the root test/tsconfig.json
-      jsonCommand: `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`,
-      strict: false
-    });
-  }
-}
+const TypeScriptLanguage: Language = {
+  name: "typescript",
+  base: "test/fixtures/typescript",
+  setupCommand: null,
+  compileCommand: null,
+  runCommand(sample: string) {
+    // We have to unset TS_NODE_PROJECT because it gets set on the workers
+    // to the root test/tsconfig.json
+    return `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`;
+  },
+  diffViaSchema: true,
+  allowMissingNull: false,
+  output: "TopLevel.ts",
+  topLevel: "TopLevel",
+  skipJSON: ["identifiers.json"]
+};
 
 //////////////////////////////////////
 // JSON Schema fixture
@@ -511,14 +510,14 @@ class JSONSchemaFixture extends Fixture {
 }
 
 const FIXTURES: Fixture[] = [
-  new CSharpJSONFixture(),
-  new JavaJSONFixture(),
-  new GoJSONFixture(),
-  new JSONSchemaJSONFixture(),
-  new ElmJSONFixture(),
-  new Swift3JSONFixture(),
-  new Swift4JSONFixture(),
-  new TypeScriptJSONFixture(),
+  new JSONFixture(CSharpLanguage),
+  new JSONFixture(JavaLanguage),
+  new JSONFixture(GoLanguage),
+  new JSONSchemaJSONFixture(GoLanguage),
+  new JSONFixture(ElmLanguage),
+  new JSONFixture(Swift3Language),
+  new JSONFixture(Swift4Language),
+  new JSONFixture(TypeScriptLanguage),
   new JSONSchemaFixture()
 ].filter(
   ({ name }) => !process.env.FIXTURE || process.env.FIXTURE.includes(name)
