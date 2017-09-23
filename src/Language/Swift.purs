@@ -56,7 +56,7 @@ swift3Renderer =
 swift4Renderer :: Renderer
 swift4Renderer =
     { displayName: "Swift 4"
-    , names: [ "swift4" ]
+    , names: [ "swift4", "swift" ]
     , aceMode: "swift"
     , extension: "swift"
     , doc: swift4Doc
