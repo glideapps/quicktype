@@ -3,6 +3,7 @@ module Doc
     , Renderer
     , Transforms
     , Namer
+    , getGraph
     , getTopLevels
     , getSingleTopLevel
     , getModuleName

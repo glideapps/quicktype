@@ -11,6 +11,7 @@ declare namespace Math {
 export default function deepEquals(
   x: any,
   y: any,
+  allowMissingNull: boolean,
   path: string[] = []
 ): boolean {
   // remember that NaN === NaN returns false
@@ -69,7 +70,7 @@ export default function deepEquals(
     }
     for (let i = 0; i < x.length; i++) {
       path.push(i.toString());
-      if (!deepEquals(x[i], y[i], path)) {
+      if (!deepEquals(x[i], y[i], allowMissingNull, path)) {
         return false;
       }
       path.pop();
@@ -108,6 +109,9 @@ export default function deepEquals(
 
   for (const p of xKeys) {
     if (yKeys.indexOf(p) < 0) {
+      if (allowMissingNull && x[p] === null) {
+        continue;
+      }
       console.error(
         `Expected property ${p} not found at path ${pathToString(path)}.`
       );
@@ -125,7 +129,7 @@ export default function deepEquals(
     switch (typeof x[p]) {
       case "object":
         path.push(p);
-        if (!deepEquals(x[p], y[p], path)) {
+        if (!deepEquals(x[p], y[p], allowMissingNull, path)) {
           return false;
         }
         path.pop();
