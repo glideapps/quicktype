@@ -3,14 +3,12 @@ import * as path from "path";
 import * as process from "process";
 import * as Either from "./either";
 import * as Maybe from "./maybe";
-import tryRequire from "./try-require";
+import { psRequire } from "./require";
 import * as _ from "lodash";
 
-const Main: Main = tryRequire("../output/Main", "./Main");
-const Renderers: Renderers = tryRequire(
-  "../output/Language.Renderers",
-  "./Renderers"
-);
+const Main: Main = psRequire("Main");
+const Renderers: Renderers = psRequire("Language.Renderers");
+
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
 const commandLineArgs = require("command-line-args");
