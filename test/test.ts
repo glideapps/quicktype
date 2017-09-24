@@ -555,6 +555,8 @@ const allFixtures: Fixture[] = [
   new JSONSchemaFixture(CSharpLanguage),
   new JSONSchemaFixture(JavaLanguage),
   new JSONSchemaFixture(GoLanguage),
+  new JSONSchemaFixture(Swift3Language),
+  new JSONSchemaFixture(Swift4Language),
   new JSONSchemaFixture(TypeScriptLanguage)
 ];
 
