@@ -544,12 +544,14 @@ const allFixtures: Fixture[] = [
   new JSONFixture(CSharpLanguage),
   new JSONFixture(JavaLanguage),
   new JSONFixture(GoLanguage),
-  new JSONSchemaJSONFixture(GoLanguage),
   new JSONFixture(ElmLanguage),
   new JSONFixture(Swift3Language),
   new JSONFixture(Swift4Language),
   new JSONFixture(TypeScriptLanguage),
-  new JSONSchemaFixture(GoLanguage)
+  new JSONSchemaJSONFixture(GoLanguage),
+  new JSONSchemaFixture(CSharpLanguage),
+  new JSONSchemaFixture(GoLanguage),
+  new JSONSchemaFixture(TypeScriptLanguage)
 ];
 
 //////////////////////////////////////
