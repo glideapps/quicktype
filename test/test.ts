@@ -126,26 +126,12 @@ async function quicktypeForLanguage(
   });
 }
 
-class JSONFixture extends Fixture {
-  private language: Language;
-  public name: string;
+abstract class LanguageFixture extends Fixture {
+  protected language: Language;
 
   public constructor(language: Language) {
     super();
     this.language = language;
-    this.name = language.name;
-  }
-
-  async test(sample: string): Promise<void> {
-    if (this.language.compileCommand) {
-      exec(this.language.compileCommand);
-    }
-    compareJsonFileToJson({
-      expectedFile: sample,
-      jsonCommand: this.language.runCommand(sample),
-      strict: false,
-      allowMissingNull: this.language.allowMissingNull
-    });
   }
 
   async setup() {
@@ -158,6 +144,82 @@ class JSONFixture extends Fixture {
     await inDir(this.language.base, async () => {
       exec(this.language.setupCommand);
     });
+  }
+
+  abstract shouldSkipTest(sample: string): boolean;
+  abstract async runQuicktype(sample: string): Promise<void>;
+  abstract async test(sample: string): Promise<void>;
+
+  async runWithSample(sample: string, index: number, total: number) {
+    const cwd = this.getRunDirectory();
+    let sampleFile = path.basename(sample);
+    let shouldSkip = this.shouldSkipTest(sample);
+
+    this.printRunMessage(sample, index, total, cwd, shouldSkip);
+
+    if (shouldSkip) {
+      return;
+    }
+
+    shell.cp("-R", this.language.base, cwd);
+    shell.cp(sample, cwd);
+
+    await inDir(cwd, async () => {
+      await this.runQuicktype(sampleFile);
+
+      try {
+        await this.test(sampleFile);
+      } catch (e) {
+        failWith("Fixture threw an exception", { error: e });
+      }
+    });
+
+    shell.rm("-rf", cwd);
+  }
+}
+
+class JSONFixture extends LanguageFixture {
+  public name: string;
+
+  public constructor(language: Language) {
+    super(language);
+    this.name = language.name;
+  }
+
+  async runQuicktype(sample: string): Promise<void> {
+    await quicktypeForLanguage(this.language, sample, "json");
+  }
+
+  async test(sample: string): Promise<void> {
+    if (this.language.compileCommand) {
+      exec(this.language.compileCommand);
+    }
+    compareJsonFileToJson({
+      expectedFile: sample,
+      jsonCommand: this.language.runCommand(sample),
+      strict: false,
+      allowMissingNull: this.language.allowMissingNull
+    });
+
+    if (this.language.diffViaSchema) {
+      debug("* Diffing with code generated via JSON Schema");
+      // Make a schema
+      await quicktype({
+        src: [sample],
+        lang: "schema",
+        out: "schema.json",
+        topLevel: this.language.topLevel
+      });
+      // Quicktype from the schema and compare to expected code
+      shell.mv(this.language.output, `${this.language.output}.expected`);
+      await quicktypeForLanguage(this.language, "schema.json", "schema");
+
+      // Compare fixture.output to fixture.output.expected
+      exec(
+        `diff -Naur ${this.language.output}.expected ${this.language
+          .output} > /dev/null 2>&1`
+      );
+    }
   }
 
   shouldSkipTest(sample: string): boolean {
@@ -200,53 +262,6 @@ class JSONFixture extends Fixture {
     }
 
     return { priority, others };
-  }
-
-  async runWithSample(sample: string, index: number, total: number) {
-    const cwd = this.getRunDirectory();
-    let sampleFile = path.basename(sample);
-    let shouldSkip = this.shouldSkipTest(sample);
-
-    this.printRunMessage(sample, index, total, cwd, shouldSkip);
-
-    if (shouldSkip) {
-      return;
-    }
-
-    shell.cp("-R", this.language.base, cwd);
-    shell.cp(sample, cwd);
-
-    await inDir(cwd, async () => {
-      await quicktypeForLanguage(this.language, sampleFile, "json");
-
-      try {
-        await this.test(sampleFile);
-      } catch (e) {
-        failWith("Fixture threw an exception", { error: e });
-      }
-
-      if (this.language.diffViaSchema) {
-        debug("* Diffing with code generated via JSON Schema");
-        // Make a schema
-        await quicktype({
-          src: [sampleFile],
-          lang: "schema",
-          out: "schema.json",
-          topLevel: this.language.topLevel
-        });
-        // Quicktype from the schema and compare to expected code
-        shell.mv(this.language.output, `${this.language.output}.expected`);
-        await quicktypeForLanguage(this.language, "schema.json", "schema");
-
-        // Compare fixture.output to fixture.output.expected
-        exec(
-          `diff -Naur ${this.language.output}.expected ${this.language
-            .output} > /dev/null 2>&1`
-        );
-      }
-    });
-
-    shell.rm("-rf", cwd);
   }
 }
 
