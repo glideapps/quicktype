@@ -64,6 +64,10 @@ function samplesFromSources(
 abstract class Fixture {
   abstract name: string;
 
+  runForName(name: string): boolean {
+    return this.name === name;
+  }
+
   async setup(): Promise<void> {
     return;
   }
@@ -359,6 +363,10 @@ class JSONSchemaJSONFixture extends JSONFixture {
     this.name = `schema-json-${language.name}`;
   }
 
+  runForName(name: string): boolean {
+    return this.name === name || name === "schema-json";
+  }
+
   async test(sample: string, additionalFiles: string[]) {
     let input = JSON.parse(fs.readFileSync(sample, "utf8"));
     let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
@@ -472,6 +480,10 @@ class JSONSchemaFixture extends LanguageFixture {
   constructor(language: Language) {
     super(language);
     this.name = `schema-${language.name}`;
+  }
+
+  runForName(name: string): boolean {
+    return this.name === name || name === "schema";
   }
 
   getSamples(sources: string[]) {
@@ -657,7 +669,9 @@ async function main(sources: string[]) {
   let fixtures = allFixtures;
   if (process.env.FIXTURE) {
     const fixtureNames = process.env.FIXTURE.split(",");
-    fixtures = _.filter(fixtures, ({ name }) => _.includes(fixtureNames, name));
+    fixtures = _.filter(fixtures, fixture =>
+      _.some(fixtureNames, name => fixture.runForName(name))
+    );
   }
   // Get an array of all { sample, fixtureName } objects we'll run
   const samples = _.map(fixtures, fixture => ({
