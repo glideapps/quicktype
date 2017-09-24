@@ -528,6 +528,9 @@ class JSONSchemaFixture extends LanguageFixture {
   }
 
   async test(sample: string, jsonFiles: string[]): Promise<void> {
+    if (this.language.compileCommand) {
+      exec(this.language.compileCommand);
+    }
     for (const json of jsonFiles) {
       const jsonBase = path.basename(json);
       compareJsonFileToJson({
@@ -550,6 +553,7 @@ const allFixtures: Fixture[] = [
   new JSONFixture(TypeScriptLanguage),
   new JSONSchemaJSONFixture(GoLanguage),
   new JSONSchemaFixture(CSharpLanguage),
+  new JSONSchemaFixture(JavaLanguage),
   new JSONSchemaFixture(GoLanguage),
   new JSONSchemaFixture(TypeScriptLanguage)
 ];
