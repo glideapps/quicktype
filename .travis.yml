@@ -2,7 +2,7 @@ language: node_js
 node_js: node # latest
 sudo: required
 env:
-  - FIXTURE=csharp,schema-json-golang # this will also run golang, because we're just substring matching
+  - FIXTURE=csharp,golang,schema-golang,schema-json-golang
   - FIXTURE=schema,swift3,swift4,java
   - FIXTURE=elm,typescript
 services:

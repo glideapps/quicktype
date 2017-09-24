@@ -528,7 +528,7 @@ class JSONSchemaFixture extends LanguageFixture {
   }
 }
 
-const FIXTURES: Fixture[] = [
+const allFixtures: Fixture[] = [
   new JSONFixture(CSharpLanguage),
   new JSONFixture(JavaLanguage),
   new JSONFixture(GoLanguage),
@@ -538,9 +538,7 @@ const FIXTURES: Fixture[] = [
   new JSONFixture(Swift4Language),
   new JSONFixture(TypeScriptLanguage),
   new JSONSchemaFixture(GoLanguage)
-].filter(
-  ({ name }) => !process.env.FIXTURE || process.env.FIXTURE.includes(name)
-);
+];
 
 //////////////////////////////////////
 // Test driver
@@ -656,8 +654,13 @@ async function inDir(dir: string, work: () => Promise<void>) {
 type WorkItem = { sample: string; fixtureName: string };
 
 async function main(sources: string[]) {
+  let fixtures = allFixtures;
+  if (process.env.FIXTURE) {
+    const fixtureNames = process.env.FIXTURE.split(",");
+    fixtures = _.filter(fixtures, ({ name }) => _.includes(fixtureNames, name));
+  }
   // Get an array of all { sample, fixtureName } objects we'll run
-  const samples = _.map(FIXTURES, fixture => ({
+  const samples = _.map(fixtures, fixture => ({
     fixtureName: fixture.name,
     samples: fixture.getSamples(sources)
   }));
@@ -678,10 +681,10 @@ async function main(sources: string[]) {
       testCLI();
 
       console.error(
-        `* Running ${tests.length} tests between ${FIXTURES.length} fixtures`
+        `* Running ${tests.length} tests between ${fixtures.length} fixtures`
       );
 
-      for (const fixture of FIXTURES) {
+      for (const fixture of fixtures) {
         exec(`rm -rf test/runs`);
         exec(`mkdir -p test/runs`);
 
@@ -690,7 +693,7 @@ async function main(sources: string[]) {
     },
 
     map: async ({ sample, fixtureName }: WorkItem, index) => {
-      let fixture = _.find(FIXTURES, { name: fixtureName });
+      let fixture = _.find(fixtures, { name: fixtureName });
       try {
         await fixture.runWithSample(sample, index, tests.length);
       } catch (e) {
