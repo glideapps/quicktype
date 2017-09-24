@@ -148,12 +148,17 @@ abstract class LanguageFixture extends Fixture {
 
   abstract shouldSkipTest(sample: string): boolean;
   abstract async runQuicktype(sample: string): Promise<void>;
-  abstract async test(sample: string): Promise<void>;
+  abstract async test(sample: string, additionalFiles: string[]): Promise<void>;
+
+  additionalFiles(sample: string): string[] {
+    return [];
+  }
 
   async runWithSample(sample: string, index: number, total: number) {
     const cwd = this.getRunDirectory();
     let sampleFile = path.basename(sample);
     let shouldSkip = this.shouldSkipTest(sample);
+    const additionalFiles = this.additionalFiles(sample);
 
     this.printRunMessage(sample, index, total, cwd, shouldSkip);
 
@@ -162,13 +167,13 @@ abstract class LanguageFixture extends Fixture {
     }
 
     shell.cp("-R", this.language.base, cwd);
-    shell.cp(sample, cwd);
+    shell.cp.apply(null, _.concat(sample, additionalFiles, cwd));
 
     await inDir(cwd, async () => {
       await this.runQuicktype(sampleFile);
 
       try {
-        await this.test(sampleFile);
+        await this.test(sampleFile, additionalFiles);
       } catch (e) {
         failWith("Fixture threw an exception", { error: e });
       }
@@ -190,7 +195,7 @@ class JSONFixture extends LanguageFixture {
     await quicktypeForLanguage(this.language, sample, "json");
   }
 
-  async test(sample: string): Promise<void> {
+  async test(sample: string, additionalFiles: string[]): Promise<void> {
     if (this.language.compileCommand) {
       exec(this.language.compileCommand);
     }
@@ -354,7 +359,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
     this.name = `schema-json-${language.name}`;
   }
 
-  async test(sample: string) {
+  async test(sample: string, additionalFiles: string[]) {
     let input = JSON.parse(fs.readFileSync(sample, "utf8"));
     let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
 
@@ -461,8 +466,13 @@ const TypeScriptLanguage: Language = {
 // JSON Schema fixture
 /////////////////////////////////////
 
-class JSONSchemaFixture extends Fixture {
-  name = "schema";
+class JSONSchemaFixture extends LanguageFixture {
+  name: string;
+
+  constructor(language: Language) {
+    super(language);
+    this.name = `schema-${language.name}`;
+  }
 
   getSamples(sources: string[]) {
     const prioritySamples = testsInDir("test/inputs/schema/", "schema");
@@ -470,17 +480,20 @@ class JSONSchemaFixture extends Fixture {
     return samplesFromSources(sources, prioritySamples, [], "schema");
   }
 
-  async runWithSample(sample: string, index: number, total: number) {
-    const cwd = this.getRunDirectory();
-    let sampleFile = path.basename(sample);
+  shouldSkipTest(sample: string): boolean {
+    return false;
+  }
 
-    this.printRunMessage(sample, index, total, cwd, false);
+  async runQuicktype(sample: string): Promise<void> {
+    await quicktypeForLanguage(this.language, sample, "schema");
+  }
 
+  additionalFiles(sample: string): string[] {
     const base = path.join(
       path.dirname(sample),
       path.basename(sample, ".schema")
     );
-    const jsonFiles = [];
+    const jsonFiles: string[] = [];
     let fn = `${base}.json`;
     if (fs.existsSync(fn)) {
       jsonFiles.push(fn);
@@ -499,28 +512,19 @@ class JSONSchemaFixture extends Fixture {
     if (jsonFiles.length === 0) {
       failWith("No JSON input files", { base });
     }
+    return jsonFiles;
+  }
 
-    shell.cp("-R", "test/fixtures/golang", cwd);
-    shell.cp.apply(null, _.concat(sample, jsonFiles, cwd));
-
-    await inDir(cwd, async () => {
-      await quicktype({
-        srcLang: "schema",
-        src: [sampleFile],
-        topLevel: "TopLevel",
-        out: "quicktype.go"
+  async test(sample: string, jsonFiles: string[]): Promise<void> {
+    for (const json of jsonFiles) {
+      const jsonBase = path.basename(json);
+      compareJsonFileToJson({
+        expectedFile: jsonBase,
+        jsonCommand: this.language.runCommand(jsonBase),
+        strict: false,
+        allowMissingNull: this.language.allowMissingNull
       });
-      for (const json of jsonFiles) {
-        const jsonBase = path.basename(json);
-        compareJsonFileToJson({
-          expectedFile: jsonBase,
-          jsonCommand: `go run main.go quicktype.go < "${jsonBase}"`,
-          strict: false
-        });
-      }
-
-      shell.rm("-rf", cwd);
-    });
+    }
   }
 }
 
@@ -533,7 +537,7 @@ const FIXTURES: Fixture[] = [
   new JSONFixture(Swift3Language),
   new JSONFixture(Swift4Language),
   new JSONFixture(TypeScriptLanguage),
-  new JSONSchemaFixture()
+  new JSONSchemaFixture(GoLanguage)
 ].filter(
   ({ name }) => !process.env.FIXTURE || process.env.FIXTURE.includes(name)
 );
