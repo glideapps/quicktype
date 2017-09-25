@@ -105,7 +105,7 @@ renderHeader = do
     line "//"
     forEachTopLevel_ \topLevelName topLevelType -> do
         typ <- renderType Swift3 topLevelType
-        line $ "//   let " <> decapitalize topLevelName <> " = " <> topLevelName <> "(fromString: jsonString)!"
+        line $ "//   let " <> decapitalize topLevelName <> " = " <> topLevelName <> ".from(json: jsonString)!"
     blank
     line "import Foundation"
     blank
@@ -647,13 +647,13 @@ renderTopLevelExtensions3 topLevelName topLevelType = do
 
     line $ "extension " <> extensionType <> " {"
     indent do
-        line $ "static func from(string json: String, using encoding: String.Encoding = .utf8) -> " <> topLevelRendered <> "? {"
+        line $ "static func from(json json: String, using encoding: String.Encoding = .utf8) -> " <> topLevelRendered <> "? {"
         indent do
             line "guard let data = json.data(using: encoding) else { return nil }"
             line $ "return " <> topLevelRendered <> ".from(data: data)"
         line "}"
         blank
-        line $ "static func from(data: Data) -> " <> topLevelRendered <> "? {"
+        line $ "static func from(data data: Data) -> " <> topLevelRendered <> "? {"
         indent do
             line "guard let json = try? JSONSerialization.jsonObject(with: data, options: []) else { return nil }"
             line $ "return " <> topLevelRendered <> ".from(any: json)"
@@ -712,13 +712,13 @@ renderTopLevelExtensions4 topLevelName topLevelType = do
 
     line $ "extension " <> extensionType <> " {"
     indent do
-        line $ "static func from(string json: String, using encoding: String.Encoding = .utf8) -> " <> topLevelRendered <> "? {"
+        line $ "static func from(json json: String, using encoding: String.Encoding = .utf8) -> " <> topLevelRendered <> "? {"
         indent do
             line "guard let data = json.data(using: encoding) else { return nil }"
             line $ "return " <> topLevelRendered <> ".from(data: data)"
         line "}"
         blank
-        line $ "static func from(data: Data) -> " <> topLevelRendered <> "? {"
+        line $ "static func from(data data: Data) -> " <> topLevelRendered <> "? {"
         indent do
             line "let decoder = JSONDecoder()"
             line $ "return try? decoder.decode(" <> topLevelRendered <> ".self, from: data)"
