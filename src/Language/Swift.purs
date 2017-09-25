@@ -594,7 +594,7 @@ renderTopLevelAlias variant topLevelName topLevelType = do
     line $ "typealias "<> topLevelName <> " = " <> top
 
 codableString :: Boolean -> String
-codableString true = " : Codable"
+codableString true = ": Codable"
 codableString false = ""
 
 renderClassDefinition :: Variant -> Boolean -> String -> Map String IRType -> Doc Unit
@@ -765,7 +765,7 @@ renderClassExtension4 className properties = do
     when (M.size propertyNames > 0) do
         line $ "extension " <> className <> " {"
         indent do
-            line "enum CodingKeys : String, CodingKey {"
+            line "enum CodingKeys: String, CodingKey {"
             indent do
                 for_ (M.toUnfoldable propertyNames :: Array (Tuple String String)) \(Tuple jsonName swiftName) -> do
                     line $ "case " <> swiftName <> " = \"" <> stringEscape jsonName <> "\""
