@@ -77,9 +77,14 @@ renderType = case _ of
     IRDouble -> pure "number"
     IRBool -> pure "boolean"
     IRString -> pure "string"
-    IRArray a@(IRUnion _) -> do
-        rendered <- renderType a
-        pure $ "Array<" <> rendered <> ">"
+    IRArray a@(IRUnion ur) ->
+        case nullableFromUnion ur of
+        Just x -> do
+            rendered <- renderType x
+            pure $ rendered <> "[]"
+        Nothing -> do
+            rendered <- renderUnion ur
+            pure $ "Array<" <> rendered <> ">"
     IRArray a -> do
         rendered <- renderType a
         pure $ rendered <> "[]"
