@@ -768,7 +768,9 @@ renderClassExtension4 className properties = do
             line "enum CodingKeys: String, CodingKey {"
             indent do
                 for_ (M.toUnfoldable propertyNames :: Array (Tuple String String)) \(Tuple jsonName swiftName) -> do
-                    line $ "case " <> swiftName <> " = \"" <> stringEscape jsonName <> "\""
+                    if jsonName == swiftName
+                        then line $ "case " <> swiftName
+                        else line $ "case " <> swiftName <> " = \"" <> stringEscape jsonName <> "\""
             line "}"
         line "}"
 
