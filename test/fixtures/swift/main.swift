@@ -15,7 +15,7 @@ else {
     exit(1)
 }
 
-guard let obj = TopLevel(fromData: data)
+guard let obj = TopLevel.from(data: data)
 else {
     print("Error: Could not deserialize")
     exit(1)

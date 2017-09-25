@@ -32,6 +32,8 @@ keywords =
 
 data Variant = Swift3 | Swift4
 
+derive instance eqVariant :: Eq Variant
+
 swift3Renderer :: Renderer
 swift3Renderer =
     { displayName: "Swift 3"
@@ -600,11 +602,35 @@ renderClassDefinition variant codable className properties = do
     let forbidden = keywords <> ["json", "any"]
     -- FIXME: we compute these here, and later again when rendering the extension
     let propertyNames = makePropertyNames properties "" forbidden
-    line $ "struct " <> className <> codableString codable <> " {"
+    line $ "class " <> className <> codableString codable <> " {"
     indent do
         forEachProperty_ properties propertyNames \_ ptype fieldName _ -> do
             rendered <- renderType variant ptype
             line $ "let " <> fieldName <> ": " <> rendered
+        when (variant == Swift3) do
+            blank
+            line $ "fileprivate init?(fromAny any: Any) {"
+            unless (M.isEmpty properties) $ indent do
+                line "guard let json = any as? [String: Any] else { return nil }"
+                let forbiddenForUntyped = forbidden <> (A.fromFoldable $ M.keys propertyNames)
+                let untypedNames = makePropertyNames properties "Any" forbiddenForUntyped
+                let forbiddenForConverted = forbiddenForUntyped <> (A.fromFoldable $ M.keys untypedNames)
+                forEachProperty_ properties untypedNames \pname ptype untypedName _ -> do
+                    when (canBeNull ptype) do
+                        line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"])"
+                line "guard"
+                indent do
+                    forEachProperty_ properties untypedNames \pname ptype untypedName isLast -> do
+                        let convertedName = lookupName pname propertyNames
+                        unless (canBeNull ptype) do
+                            line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"]),"
+                        convertCode <- convertAny ptype untypedName
+                        line $ "let " <> convertedName <> " = " <> convertCode <> (if isLast then "" else ",")
+                    line "else { return nil }"
+                forEachProperty_ properties propertyNames \pname _ fieldName _ -> do
+                    let convertedName = lookupName pname propertyNames
+                    line $ "self." <> fieldName <> " = " <> convertedName
+            line "}"
     line "}"
 
 renderExtensionType :: Variant -> IRType -> Doc String
@@ -621,35 +647,42 @@ renderTopLevelExtensions3 topLevelName topLevelType = do
 
     line $ "extension " <> extensionType <> " {"
     indent do
-        line $ "init?(fromString json: String, using encoding: String.Encoding = .utf8) {"
+        line $ "static func from(string json: String, using encoding: String.Encoding = .utf8) -> " <> topLevelRendered <> "? {"
         indent do
             line "guard let data = json.data(using: encoding) else { return nil }"
-            line "self.init(fromData: data)"
+            line $ "return " <> topLevelRendered <> ".from(data: data)"
         line "}"
         blank
-        line $ "init?(fromData data: Data) {"
+        line $ "static func from(data: Data) -> " <> topLevelRendered <> "? {"
         indent do
             line "guard let json = try? JSONSerialization.jsonObject(with: data, options: []) else { return nil }"
-            line "self.init(fromAny: json)"
+            line $ "return " <> topLevelRendered <> ".from(any: json)"
         line "}"
         
         case topLevelType of
             IRArray _ ->  do
                 blank
-                line $ "init?(fromAny untyped: Any) {"
+                line $ "static func from(any untyped: Any) -> " <> topLevelRendered <> "? {"
                 indent do
                     convertCode <- convertAny topLevelType "untyped"
                     line $ "guard let elements = " <> convertCode <> " else { return nil }"
-                    line $ "self.init(elements)"
+                    line $ "return " <> topLevelRendered <> "(elements)"
                 line "}"
             IRMap _ -> do
                 blank
-                line $ "init?(fromAny untyped: Any) {"
+                line $ "static func from(any untyped: Any) -> " <> topLevelRendered <> "? {"
                 indent do
                     convertCode <- convertAny topLevelType "untyped"
                     line $ "guard let elements = " <> convertCode <> " else { return nil }"
-                    line $ "self.init()"
-                    line $ "elements.forEach { self[$0.key] = $0.value }"
+                    line $ "var result = " <> topLevelRendered <> "()"
+                    line "elements.forEach { result[$0.key] = $0.value }"
+                    line "return result"
+                line "}"
+            IRClass _ -> do
+                blank
+                line $ "static func from(any untyped: Any) -> " <> topLevelRendered <> "? {"
+                indent do
+                    line $ "return " <> topLevelRendered <> "(fromAny: untyped)"
                 line "}"
             _ -> pure unit
 
@@ -679,17 +712,16 @@ renderTopLevelExtensions4 topLevelName topLevelType = do
 
     line $ "extension " <> extensionType <> " {"
     indent do
-        line $ "init?(fromString json: String, using encoding: String.Encoding = .utf8) {"
+        line $ "static func from(string json: String, using encoding: String.Encoding = .utf8) -> " <> topLevelRendered <> "? {"
         indent do
             line "guard let data = json.data(using: encoding) else { return nil }"
-            line "self.init(fromData: data)"
+            line $ "return " <> topLevelRendered <> ".from(data: data)"
         line "}"
         blank
-        line $ "init?(fromData data: Data) {"
+        line $ "static func from(data: Data) -> " <> topLevelRendered <> "? {"
         indent do
             line "let decoder = JSONDecoder()"
-            line $ "guard let result = try? decoder.decode(" <> topLevelRendered <> ".self, from: data) else { return nil }"
-            line "self = result"
+            line $ "return try? decoder.decode(" <> topLevelRendered <> ".self, from: data)"
         line "}"
 
         blank
@@ -707,36 +739,12 @@ renderTopLevelExtensions4 topLevelName topLevelType = do
         line "}"
     line "}"
 
-
 renderClassExtension3 :: String -> Map String IRType -> Doc Unit
 renderClassExtension3 className properties = do
     let forbidden = keywords <> ["jsonUntyped", "json"]
     let propertyNames = makePropertyNames properties "" forbidden
     line $ "extension " <> className <> " {"
     indent do
-        line $ "fileprivate init?(fromAny any: Any) {"
-        unless (M.isEmpty properties) $ indent do
-            line "guard let json = any as? [String: Any] else { return nil }"
-            let forbiddenForUntyped = forbidden <> (A.fromFoldable $ M.keys propertyNames)
-            let untypedNames = makePropertyNames properties "Any" forbiddenForUntyped
-            let forbiddenForConverted = forbiddenForUntyped <> (A.fromFoldable $ M.keys untypedNames)
-            forEachProperty_ properties untypedNames \pname ptype untypedName _ -> do
-                when (canBeNull ptype) do
-                    line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"])"
-            line "guard"
-            indent do
-                forEachProperty_ properties untypedNames \pname ptype untypedName isLast -> do
-                    let convertedName = lookupName pname propertyNames
-                    unless (canBeNull ptype) do
-                        line $ "let " <> untypedName <> " = removeNSNull(json[\"" <> stringEscape pname <> "\"]),"
-                    convertCode <- convertAny ptype untypedName
-                    line $ "let " <> convertedName <> " = " <> convertCode <> (if isLast then "" else ",")
-                line "else { return nil }"
-            forEachProperty_ properties propertyNames \pname _ fieldName _ -> do
-                let convertedName = lookupName pname propertyNames
-                line $ "self." <> fieldName <> " = " <> convertedName
-        line "}"
-        blank
         line "fileprivate var any: Any {"
         indent do
             if null properties

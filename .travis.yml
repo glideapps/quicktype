@@ -2,7 +2,7 @@ language: node_js
 node_js: node # latest
 sudo: required
 env:
-  - FIXTURE=csharp,golang
+  - FIXTURE=csharp,golang,schema,schema-json-golang
   - FIXTURE=schema,swift3,swift4,java
   - FIXTURE=elm,typescript
 services:
