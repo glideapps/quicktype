@@ -97,7 +97,7 @@ renderHeader = do
         line "// To parse the JSON, add this file to your project and do:"
         line "//"
         forEachTopLevel_ \topLevelName topLevelType -> do
-            typ <- renderType Swift3 topLevelType
+            typ <- renderType topLevelType
             line $ "//   let " <> decapitalize topLevelName <> " = " <> topLevelName <> ".from(json: jsonString)!"
         blank
     line "import Foundation"
@@ -114,7 +114,7 @@ swift3Doc :: Doc Unit
 swift3Doc = do
     renderHeader
 
-    renderRenderItems blank (Just $ renderTopLevelAlias Swift3) (renderClassDefinition Swift3 false) (Just $ renderUnionDefinition Swift3 false)
+    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition (Just renderUnionDefinition)
 
     unlessOption justTypesOption do
         blank
@@ -137,7 +137,7 @@ swift4Doc :: Doc Unit
 swift4Doc = do
     renderHeader
 
-    renderRenderItems blank (Just $ renderTopLevelAlias Swift4) (renderClassDefinition Swift4 true) (Just $ renderUnionDefinition Swift4 true)
+    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition (Just renderUnionDefinition)
 
     unlessOption justTypesOption do
         blank
@@ -489,16 +489,17 @@ class JSONAny: Codable {
     }
 }"""
 
-renderUnion :: Variant -> IRUnionRep -> Doc String
-renderUnion variant ur =
+renderUnion :: IRUnionRep -> Doc String
+renderUnion ur =
     case nullableFromUnion ur of
     Just r -> do
-        rendered <- renderType variant r
+        rendered <- renderType r
         pure $ rendered <> "?"
     Nothing -> lookupUnionName ur
 
-swift3OrPlainCase :: forall a. Variant -> a -> a -> Doc a
-swift3OrPlainCase variant swift3OrPlain swift4NonPlain = do
+swift3OrPlainCase :: forall a. a -> a -> Doc a
+swift3OrPlainCase swift3OrPlain swift4NonPlain = do
+    variant <- getOptionValue swiftVersionOption
     justTypes <- getOptionValue justTypesOption
     if (justTypes || variant == Swift3)
         then
@@ -506,23 +507,23 @@ swift3OrPlainCase variant swift3OrPlain swift4NonPlain = do
         else
             pure swift4NonPlain
 
-renderType :: Variant -> IRType -> Doc String
-renderType variant = case _ of
+renderType :: IRType -> Doc String
+renderType = case _ of
     IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
-    IRAnyType -> swift3OrPlainCase variant "Any?" "JSONAny"
-    IRNull -> swift3OrPlainCase variant "NSNull" "JSONNull"
+    IRAnyType -> swift3OrPlainCase "Any?" "JSONAny"
+    IRNull -> swift3OrPlainCase "NSNull" "JSONNull"
     IRInteger -> pure "Int"
     IRDouble -> pure "Double"
     IRBool -> pure "Bool"
     IRString -> pure "String"
     IRArray a -> do
-        rendered <- renderType variant a
+        rendered <- renderType a
         pure $ "[" <> rendered <> "]"
     IRClass i -> lookupClassName i
     IRMap t -> do
-        rendered <- renderType variant t
+        rendered <- renderType t
         pure $ "[String: " <> rendered <> "]"
-    IRUnion ur -> renderUnion variant ur
+    IRUnion ur -> renderUnion ur
 
 convertAny :: IRType -> String -> Doc String
 convertAny (IRArray a) var = do
@@ -593,27 +594,30 @@ convertToAny IRNull var =
 convertToAny _ var =
     pure $ var <> " as Any"
 
-renderTopLevelAlias :: Variant -> String -> IRType -> Doc Unit
-renderTopLevelAlias variant topLevelName topLevelType = do
-    top <- renderType variant topLevelType
+renderTopLevelAlias :: String -> IRType -> Doc Unit
+renderTopLevelAlias topLevelName topLevelType = do
+    top <- renderType topLevelType
     line $ "typealias "<> topLevelName <> " = " <> top
 
-codableString :: Boolean -> String
-codableString true = ": Codable"
-codableString false = ""
+getCodableString :: Doc String
+getCodableString = do
+    variant <- getOptionValue swiftVersionOption
+    pure $ if variant == Swift4 then ": Codable" else ""
 
-renderClassDefinition :: Variant -> Boolean -> String -> Map String IRType -> Doc Unit
-renderClassDefinition variant codable className properties = do
+renderClassDefinition :: String -> Map String IRType -> Doc Unit
+renderClassDefinition className properties = do
     let forbidden = keywords <> ["json", "any"]
     -- FIXME: we compute these here, and later again when rendering the extension
     let propertyNames = makePropertyNames properties "" forbidden
     useClass <- getOptionValue classOption
     let structOrClass = if useClass then "class " else "struct "
-    line $ structOrClass <> className <> codableString codable <> " {"
+    codableString <- getCodableString
+    line $ structOrClass <> className <> codableString <> " {"
     indent do
         forEachProperty_ properties propertyNames \_ ptype fieldName _ -> do
-            rendered <- renderType variant ptype
+            rendered <- renderType ptype
             line $ "let " <> fieldName <> ": " <> rendered
+        variant <- getOptionValue swiftVersionOption
         justTypes <- getOptionValue justTypesOption
         when ((variant == Swift3) && (not justTypes)) do
             blank
@@ -641,17 +645,17 @@ renderClassDefinition variant codable className properties = do
             line "}"
     line "}"
 
-renderExtensionType :: Variant -> IRType -> Doc String
-renderExtensionType variant (IRArray t) = ("Array where Element == " <> _) <$> renderType variant t
-renderExtensionType variant (IRMap t) = ("Dictionary where Key == String, Value == " <> _) <$> renderType variant t
-renderExtensionType variant t = renderType variant t
+renderExtensionType :: IRType -> Doc String
+renderExtensionType (IRArray t) = ("Array where Element == " <> _) <$> renderType t
+renderExtensionType (IRMap t) = ("Dictionary where Key == String, Value == " <> _) <$> renderType t
+renderExtensionType t = renderType t
 
 renderTopLevelExtensions3 :: String -> IRType -> Doc Unit
 renderTopLevelExtensions3 topLevelName topLevelType = do
     blank
 
-    topLevelRendered <- renderType Swift3 topLevelType
-    extensionType <- renderExtensionType Swift3 topLevelType
+    topLevelRendered <- renderType topLevelType
+    extensionType <- renderExtensionType topLevelType
 
     line $ "extension " <> extensionType <> " {"
     indent do
@@ -715,8 +719,8 @@ renderTopLevelExtensions4 :: String -> IRType -> Doc Unit
 renderTopLevelExtensions4 topLevelName topLevelType = do
     blank
 
-    topLevelRendered <- renderType Swift4 topLevelType
-    extensionType <- renderExtensionType Swift4 topLevelType
+    topLevelRendered <- renderType topLevelType
+    extensionType <- renderExtensionType topLevelType
 
     line $ "extension " <> extensionType <> " {"
     indent do
@@ -792,14 +796,15 @@ makePropertyNames properties suffix forbidden =
         otherField :: String -> String
         otherField name = "other" <> capitalize name
 
-renderUnionDefinition :: Variant -> Boolean -> String -> IRUnionRep -> Doc Unit
-renderUnionDefinition variant codable unionName unionRep = do
+renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
+renderUnionDefinition unionName unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    line $ "enum " <> unionName <> codableString codable <> " {"
+    codableString <- getCodableString
+    line $ "enum " <> unionName <> codableString <> " {"
     indent do
         forUnion_ nonNullUnion \typ -> do
             name <- caseName typ
-            rendered <- renderType variant typ
+            rendered <- renderType typ
             line $ "case " <> name <> "(" <> rendered <> ")"
         when hasNull do
             name <- caseName IRNull
@@ -894,7 +899,7 @@ renderUnionExtension4 unionName unionRep = do
         renderCase :: IRType -> Doc Unit
         renderCase t = do
             name <- caseName t
-            typeName <- renderType Swift4 t
+            typeName <- renderType t
             line $ "if let x = try? container.decode(" <> typeName <> ".self) {"
             indent do
                 line $ "self = ." <> name <> "(x)"
