@@ -8,6 +8,7 @@ import { main as quicktype_, Options } from "../cli/quicktype";
 
 import { inParallel } from "./lib/multicore";
 import deepEquals from "./lib/deepEquals";
+import * as languages from "./languages";
 import { randomBytes } from "crypto";
 
 const Ajv = require("ajv");
@@ -103,22 +104,8 @@ abstract class Fixture {
   }
 }
 
-interface Language {
-  name: string;
-  base: string;
-  setupCommand: string;
-  compileCommand: string;
-  runCommand(sample: string): string;
-  diffViaSchema: boolean;
-  allowMissingNull: boolean;
-  output: string;
-  topLevel: string;
-  skipJSON: string[];
-  rendererOptions: { [name: string]: string };
-}
-
 async function quicktypeForLanguage(
-  language: Language,
+  language: languages.Language,
   sourceFile: string,
   sourceLanguage: string
 ) {
@@ -133,9 +120,9 @@ async function quicktypeForLanguage(
 }
 
 abstract class LanguageFixture extends Fixture {
-  protected language: Language;
+  protected language: languages.Language;
 
-  public constructor(language: Language) {
+  public constructor(language: languages.Language) {
     super();
     this.language = language;
   }
@@ -192,7 +179,10 @@ abstract class LanguageFixture extends Fixture {
 class JSONFixture extends LanguageFixture {
   public name: string;
 
-  public constructor(language: Language, name: string = language.name) {
+  public constructor(
+    language: languages.Language,
+    name: string = language.name
+  ) {
     super(language);
     this.name = name;
   }
@@ -277,76 +267,16 @@ class JSONFixture extends LanguageFixture {
   }
 }
 
-//////////////////////////////////////
-// C# tests
-/////////////////////////////////////
-
-const CSharpLanguage: Language = {
-  name: "csharp",
-  base: "test/fixtures/csharp",
-  // https://github.com/dotnet/cli/issues/1582
-  setupCommand: "dotnet restore --no-cache",
-  compileCommand: null,
-  runCommand(sample: string) {
-    return `dotnet run "${sample}"`;
-  },
-  diffViaSchema: true,
-  allowMissingNull: false,
-  output: "QuickType.cs",
-  topLevel: "TopLevel",
-  skipJSON: [],
-  rendererOptions: {}
-};
-
-//////////////////////////////////////
-// Java tests
-/////////////////////////////////////
-
-const JavaLanguage: Language = {
-  name: "java",
-  base: "test/fixtures/java",
-  setupCommand: null,
-  compileCommand: "mvn package",
-  runCommand(sample: string) {
-    return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`;
-  },
-  diffViaSchema: false,
-  allowMissingNull: false,
-  output: "src/main/java/io/quicktype/TopLevel.java",
-  topLevel: "TopLevel",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
-  rendererOptions: {}
-};
-
-//////////////////////////////////////
-// Go tests
-/////////////////////////////////////
-
-const GoLanguage: Language = {
-  name: "golang",
-  base: "test/fixtures/golang",
-  setupCommand: null,
-  compileCommand: null,
-  runCommand(sample: string) {
-    return `go run main.go quicktype.go < "${sample}"`;
-  },
-  diffViaSchema: true,
-  allowMissingNull: false,
-  output: "quicktype.go",
-  topLevel: "TopLevel",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
-  rendererOptions: {}
-};
-
-//////////////////////////////////////
-// JSON Schema tests
-/////////////////////////////////////
-
+// This fixture tests generating Schemas from JSON, then
+// making sure that they accept the JSON by generating code from
+// the Schema and running the code on the original JSON.  Also
+// generating a Schema from the Schema and testing that it's
+// the same as the original Schema.
 class JSONSchemaJSONFixture extends JSONFixture {
-  private runLanguage: Language;
+  private runLanguage: languages.Language;
 
-  constructor(language: Language) {
-    const schemaLanguage: Language = {
+  constructor(language: languages.Language) {
+    const schemaLanguage: languages.Language = {
       name: "schema",
       base: language.base,
       setupCommand: language.setupCommand,
@@ -414,91 +344,16 @@ class JSONSchemaJSONFixture extends JSONFixture {
   }
 }
 
-//////////////////////////////////////
-// Elm tests
-/////////////////////////////////////
-
-const ElmLanguage: Language = {
-  name: "elm",
-  base: "test/fixtures/elm",
-  setupCommand: "rm -rf elm-stuff/build-artifacts && elm-make --yes",
-  compileCommand: "elm-make Main.elm QuickType.elm --output elm.js",
-  runCommand(sample: string) {
-    return `node ./runner.js "${sample}"`;
-  },
-  diffViaSchema: true,
-  allowMissingNull: false,
-  output: "QuickType.elm",
-  topLevel: "QuickType",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
-  rendererOptions: {}
-};
-
-//////////////////////////////////////
-// Swift tests
-/////////////////////////////////////
-
-function makeSwiftLanguage(rendererOptions: {
-  [name: string]: string;
-}): Language {
-  return {
-    name: "swift",
-    base: "test/fixtures/swift",
-    setupCommand: null,
-    compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
-    runCommand(sample: string) {
-      return `./quicktype "${sample}"`;
-    },
-    diffViaSchema: false,
-    allowMissingNull: true,
-    output: "quicktype.swift",
-    topLevel: "TopLevel",
-    skipJSON: ["identifiers.json", "no-classes.json", "blns-object.json"],
-    rendererOptions: rendererOptions
-  };
-}
-
-const Swift3Language: Language = makeSwiftLanguage({ "swift-version": "3" });
-const Swift3ClassesLanguage: Language = makeSwiftLanguage({
-  "swift-version": "3",
-  "struct-or-class": "class"
-});
-const Swift4Language: Language = makeSwiftLanguage({ "swift-version": "4" });
-const Swift4ClassesLanguage: Language = makeSwiftLanguage({
-  "swift-version": "4",
-  "struct-or-class": "class"
-});
-
-//////////////////////////////////////
-// TypeScript test
-/////////////////////////////////////
-
-const TypeScriptLanguage: Language = {
-  name: "typescript",
-  base: "test/fixtures/typescript",
-  setupCommand: null,
-  compileCommand: null,
-  runCommand(sample: string) {
-    // We have to unset TS_NODE_PROJECT because it gets set on the workers
-    // to the root test/tsconfig.json
-    return `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`;
-  },
-  diffViaSchema: true,
-  allowMissingNull: false,
-  output: "TopLevel.ts",
-  topLevel: "TopLevel",
-  skipJSON: ["identifiers.json"],
-  rendererOptions: {}
-};
-
-//////////////////////////////////////
-// JSON Schema fixture
-/////////////////////////////////////
-
+// This fixture tests generating code from Schema with features
+// that we can't (yet) get from JSON.  Right now that's only
+// recursive types.
 class JSONSchemaFixture extends LanguageFixture {
   name: string;
 
-  constructor(language: Language, name: string = `schema-${language.name}`) {
+  constructor(
+    language: languages.Language,
+    name: string = `schema-${language.name}`
+  ) {
     super(language);
     this.name = name;
   }
@@ -565,20 +420,20 @@ class JSONSchemaFixture extends LanguageFixture {
 }
 
 const allFixtures: Fixture[] = [
-  new JSONFixture(CSharpLanguage),
-  new JSONFixture(JavaLanguage),
-  new JSONFixture(GoLanguage),
-  new JSONFixture(ElmLanguage),
-  new JSONFixture(Swift3Language, "swift3"),
-  new JSONFixture(Swift4Language, "swift4"),
-  new JSONFixture(TypeScriptLanguage),
-  new JSONSchemaJSONFixture(GoLanguage),
-  new JSONSchemaFixture(CSharpLanguage),
-  new JSONSchemaFixture(JavaLanguage),
-  new JSONSchemaFixture(GoLanguage),
-  new JSONSchemaFixture(Swift3ClassesLanguage, "schema-swift3"),
-  new JSONSchemaFixture(Swift4ClassesLanguage, "schema-swift4"),
-  new JSONSchemaFixture(TypeScriptLanguage)
+  new JSONFixture(languages.CSharpLanguage),
+  new JSONFixture(languages.JavaLanguage),
+  new JSONFixture(languages.GoLanguage),
+  new JSONFixture(languages.ElmLanguage),
+  new JSONFixture(languages.Swift3Language, "swift3"),
+  new JSONFixture(languages.Swift4Language, "swift4"),
+  new JSONFixture(languages.TypeScriptLanguage),
+  new JSONSchemaJSONFixture(languages.GoLanguage),
+  new JSONSchemaFixture(languages.CSharpLanguage),
+  new JSONSchemaFixture(languages.JavaLanguage),
+  new JSONSchemaFixture(languages.GoLanguage),
+  new JSONSchemaFixture(languages.Swift3ClassesLanguage, "schema-swift3"),
+  new JSONSchemaFixture(languages.Swift4ClassesLanguage, "schema-swift4"),
+  new JSONSchemaFixture(languages.TypeScriptLanguage)
 ];
 
 //////////////////////////////////////
