@@ -192,9 +192,9 @@ abstract class LanguageFixture extends Fixture {
 class JSONFixture extends LanguageFixture {
   public name: string;
 
-  public constructor(language: Language) {
+  public constructor(language: Language, name: string = language.name) {
     super(language);
-    this.name = language.name;
+    this.name = name;
   }
 
   async runQuicktype(sample: string): Promise<void> {
@@ -438,12 +438,11 @@ const ElmLanguage: Language = {
 // Swift tests
 /////////////////////////////////////
 
-function makeSwiftLanguage(
-  name: string,
-  rendererOptions: { [name: string]: string }
-): Language {
+function makeSwiftLanguage(rendererOptions: {
+  [name: string]: string;
+}): Language {
   return {
-    name: name,
+    name: "swift",
     base: "test/fixtures/swift",
     setupCommand: null,
     compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
@@ -459,12 +458,14 @@ function makeSwiftLanguage(
   };
 }
 
-const Swift3Language: Language = makeSwiftLanguage("swift3", {});
-const Swift3ClassesLanguage: Language = makeSwiftLanguage("swift3", {
+const Swift3Language: Language = makeSwiftLanguage({ "swift-version": "3" });
+const Swift3ClassesLanguage: Language = makeSwiftLanguage({
+  "swift-version": "3",
   "struct-or-class": "class"
 });
-const Swift4Language: Language = makeSwiftLanguage("swift4", {});
-const Swift4ClassesLanguage: Language = makeSwiftLanguage("swift4", {
+const Swift4Language: Language = makeSwiftLanguage({ "swift-version": "4" });
+const Swift4ClassesLanguage: Language = makeSwiftLanguage({
+  "swift-version": "4",
   "struct-or-class": "class"
 });
 
@@ -497,9 +498,9 @@ const TypeScriptLanguage: Language = {
 class JSONSchemaFixture extends LanguageFixture {
   name: string;
 
-  constructor(language: Language) {
+  constructor(language: Language, name: string = `schema-${language.name}`) {
     super(language);
-    this.name = `schema-${language.name}`;
+    this.name = name;
   }
 
   runForName(name: string): boolean {
@@ -568,15 +569,15 @@ const allFixtures: Fixture[] = [
   new JSONFixture(JavaLanguage),
   new JSONFixture(GoLanguage),
   new JSONFixture(ElmLanguage),
-  new JSONFixture(Swift3Language),
-  new JSONFixture(Swift4Language),
+  new JSONFixture(Swift3Language, "swift3"),
+  new JSONFixture(Swift4Language, "swift4"),
   new JSONFixture(TypeScriptLanguage),
   new JSONSchemaJSONFixture(GoLanguage),
   new JSONSchemaFixture(CSharpLanguage),
   new JSONSchemaFixture(JavaLanguage),
   new JSONSchemaFixture(GoLanguage),
-  new JSONSchemaFixture(Swift3ClassesLanguage),
-  new JSONSchemaFixture(Swift4ClassesLanguage),
+  new JSONSchemaFixture(Swift3ClassesLanguage, "schema-swift3"),
+  new JSONSchemaFixture(Swift4ClassesLanguage, "schema-swift4"),
   new JSONSchemaFixture(TypeScriptLanguage)
 ];
 

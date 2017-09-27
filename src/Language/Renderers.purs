@@ -24,8 +24,7 @@ all =
     , CSharp.renderer
     , Java.renderer
     , Elm.renderer
-    , Swift.swift3Renderer
-    , Swift.swift4Renderer
+    , Swift.renderer
     , SimpleTypes.renderer
     , JsonSchema.renderer
     ]

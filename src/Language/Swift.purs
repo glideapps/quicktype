@@ -1,6 +1,5 @@
 module Language.Swift
-    ( swift3Renderer
-    , swift4Renderer
+    ( renderer
     ) where
 
 import Prelude
@@ -41,40 +40,20 @@ justTypesOption = booleanOption "just-types" "Plain types only" false
 classOption :: Option Boolean
 classOption = enumOption "struct-or-class" "Use struct or class for types" [Tuple "struct" false, Tuple "class" true]
 
-swift3Renderer :: Renderer
-swift3Renderer =
-    { displayName: "Swift 3"
-    , names: [ "swift3" ]
-    , aceMode: "swift"
-    , extension: "swift"
-    , doc: swift3Doc
-    , options:
-        [ classOption.specification
-        , justTypesOption.specification
-        ]
-    , transforms:
-        { nameForClass: simpleNamer nameForClass
-        , nextName: \s -> "Other" <> s
-        , forbiddenNames: keywords
-        , topLevelName: forbidNamer (swiftNameStyle true) (\n -> [swiftNameStyle true n])
-        , unions: Just
-            { predicate: unionIsNotSimpleNullable
-            , properName: simpleNamer (swiftNameStyle true <<< combineNames)
-            , nameFromTypes: simpleNamer (unionNameIntercalated (swiftNameStyle true) "Or")
-            }
-        }
-    }
+swiftVersionOption :: Option Variant
+swiftVersionOption = enumOption "swift-version" "Which Swift version to target" [Tuple "4" Swift4, Tuple "3" Swift3]
 
-swift4Renderer :: Renderer
-swift4Renderer =
-    { displayName: "Swift 4"
-    , names: [ "swift4", "swift" ]
+renderer :: Renderer
+renderer =
+    { displayName: "Swift"
+    , names: [ "swift" ]
     , aceMode: "swift"
     , extension: "swift"
-    , doc: swift4Doc
+    , doc: swiftDoc
     , options:
         [ classOption.specification
         , justTypesOption.specification
+        , swiftVersionOption.specification
         ]
     , transforms:
         { nameForClass: simpleNamer nameForClass
@@ -123,6 +102,13 @@ renderHeader = do
         blank
     line "import Foundation"
     blank
+
+swiftDoc :: Doc Unit
+swiftDoc = do
+    variant <- getOptionValue swiftVersionOption
+    case variant of
+        Swift3 -> swift3Doc
+        Swift4 -> swift4Doc
 
 swift3Doc :: Doc Unit
 swift3Doc = do
