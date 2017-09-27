@@ -22,10 +22,10 @@ forbiddenNames :: Array String
 forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"]
 
 listOption :: Option Boolean
-listOption = enumOption "array-type" "Select C# type to use for JSON arrays" [Tuple "array" false, Tuple "list" true]
+listOption = enumOption "array-type" "Use T[] or List<T>" [Tuple "array" false, Tuple "list" true]
 
 pocoOption :: Option Boolean
-pocoOption = booleanOption "poco" "[EXPERIMENTAL] Generate 'Plain Old C# Objects' only" false
+pocoOption = booleanOption "poco" "Plain C# objects only" false
 
 renderer :: Renderer
 renderer =
@@ -124,8 +124,6 @@ csharpDoc = do
         forEachTopLevel_ \topLevelName topLevelType -> do
             line "//"
             line $ "//    var data = " <> topLevelName <> ".FromJson(jsonString);"
-        line "//"
-        line "// For POCOs visit quicktype.io?poco"
         line "//"
     
     line "namespace QuickType"
