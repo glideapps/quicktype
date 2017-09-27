@@ -159,7 +159,6 @@ csharpDoc = do
         blank
         renderRenderItems blank Nothing renderCSharpClass (Just renderCSharpUnion)
         whenSerializers do
-            blank
             renderCSharpClassJSONPartials
             renderRenderItems (pure unit) Nothing (\_ _ -> pure unit) (Just renderCSharpUnionReadWritePartial)
             renderJsonConverter
