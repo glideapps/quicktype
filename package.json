@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "0.10.4",
+  "version": "0.10.5",
   "license": "Apache-2.0",
   "repository": "https://github.com/quicktype/quicktype",
   "scripts": {
@@ -38,8 +38,6 @@
     "typescript": "^2.4.2",
     "uglify-js": "^3.0.26"
   },
-  "files": [
-    "*"
-  ],
+  "files": ["*"],
   "bin": "quicktype.js"
 }

@@ -5,24 +5,36 @@ module Language.CSharp
 import Prelude
 
 import Data.Char.Unicode (GeneralCategory(..), generalCategory)
-import Data.Foldable (for_, intercalate)
+import Data.Foldable (for_, intercalate, maximum)
 import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set (Set)
-import Data.String.Util (camelCase, legalizeCharacters, startWithLetter, stringEscape, isLetterOrLetterNumber)
-import Data.Tuple (Tuple(..))
+import Data.String as Str
+import Data.String.Util as Str
+import Data.Tuple (Tuple(Tuple), fst)
 import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getModuleName, getTypeNameForUnion, getUnionNames, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getOptionValue)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
 import Options (Option, booleanOption, enumOption)
 
 forbiddenNames :: Array String
-forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"]
+forbiddenNames =
+    [ "QuickType"
+    , "Converter"
+    , "JsonConverter"
+    , "Type"
+    , "Serialize"
+    -- We really only need this in dense mode
+    , denseJsonPropertyName
+    ]
 
 listOption :: Option Boolean
 listOption = enumOption "array-type" "Use T[] or List<T>" [Tuple "array" false, Tuple "list" true]
+
+denseOption :: Option Boolean
+denseOption = enumOption "density" "Property density" [Tuple "normal" false, Tuple "dense" true]
 
 pocoOption :: Option Boolean
 pocoOption = booleanOption "poco" "Plain C# objects only" false
@@ -34,7 +46,11 @@ renderer =
     , aceMode: "csharp"
     , extension: "cs"
     , doc: csharpDoc
-    , options: [listOption.specification, pocoOption.specification]
+    , options:
+        [ denseOption.specification
+        , listOption.specification
+        , pocoOption.specification
+        ]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -47,6 +63,9 @@ renderer =
             }
         }
     }
+
+denseJsonPropertyName :: String
+denseJsonPropertyName = "J"
 
 nameForType :: Named (Set String) -> String
 nameForType = csNameStyle <<< combineNames
@@ -62,7 +81,7 @@ isValueType _ = false
 
 isStartCharacter :: Char -> Boolean
 isStartCharacter c =
-    isLetterOrLetterNumber c || c == '_'
+    Str.isLetterOrLetterNumber c || c == '_'
 
 isPartCharacter :: Char -> Boolean
 isPartCharacter c =
@@ -108,10 +127,10 @@ renderTypeToCSharp = case _ of
     IRUnion ur -> renderUnionToCSharp ur
 
 legalize :: String -> String
-legalize = legalizeCharacters isPartCharacter
+legalize = Str.legalizeCharacters isPartCharacter
 
 csNameStyle :: String -> String
-csNameStyle = legalize >>> camelCase >>> startWithLetter isStartCharacter true
+csNameStyle = legalize >>> Str.camelCase >>> Str.startWithLetter isStartCharacter true
 
 csharpDoc :: Doc Unit
 csharpDoc = do
@@ -136,10 +155,10 @@ csharpDoc = do
         whenSerializers do
             blank
             using "Newtonsoft.Json"
+            whenDense $ using $ denseJsonPropertyName <> " = Newtonsoft.Json.JsonPropertyAttribute"
         blank
         renderRenderItems blank Nothing renderCSharpClass (Just renderCSharpUnion)
         whenSerializers do
-            blank
             renderCSharpClassJSONPartials
             renderRenderItems (pure unit) Nothing (\_ _ -> pure unit) (Just renderCSharpUnionReadWritePartial)
             renderJsonConverter
@@ -149,6 +168,11 @@ whenSerializers :: Doc Unit -> Doc Unit
 whenSerializers doc = do
     poco <- getOptionValue pocoOption
     unless poco doc
+
+whenDense :: Doc Unit -> Doc Unit
+whenDense doc = do
+    dense <- getOptionValue denseOption
+    when dense doc
 
 stringIfTrue :: Boolean -> String -> String
 stringIfTrue true s = s
@@ -359,15 +383,34 @@ renderCSharpUnionReadWritePartial name unionRep = do
 renderCSharpClass :: String -> Map String IRType -> Doc Unit
 renderCSharpClass className properties = do
     let propertyNames = transformPropertyNames (simpleNamer csNameStyle) ("Other" <> _) [className] properties
+
+    let props = M.toUnfoldable propertyNames :: Array _
+    let maxWidth = props <#> fst <#> Str.stringEscape <#> Str.length # maximum # fromMaybe 0
+
     poco <- getOptionValue pocoOption
+    dense <- getOptionValue denseOption
+
     line $ "public" <> (if poco then "" else " partial") <> " class " <> className
     line "{"
     indent do
         forEachProperty_ properties propertyNames \pname ptype csPropName isLast -> do
-            whenSerializers do
-                line $ "[JsonProperty(\"" <> stringEscape pname <> "\")]"
             rendered <- renderTypeToCSharp ptype
-            line $ "public " <> rendered <> " " <> csPropName <> " { get; set; }"
-            whenSerializers do
-                unless isLast blank
+
+            let jsonProperty = if dense then denseJsonPropertyName else "JsonProperty"
+            let attribute = "[" <> jsonProperty <> "(\"" <> Str.stringEscape pname <> "\")]"
+                
+            let property = "public " <> rendered <> " " <> csPropName <> " { get; set; }"
+
+            case poco, dense of
+                true, _ -> line property
+                _, true -> do
+                    let indent = maxWidth - Str.length (Str.stringEscape pname) + 1
+                    let whitespace = Str.times " " indent
+                    line $ attribute <> whitespace <> property
+                _, false -> do 
+                    line attribute
+                    line property
+            
+            unless (poco || dense || isLast) blank
+
     line "}"
