@@ -16,8 +16,9 @@ import Data.Set as S
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscape, intToHex, legalizeCharacters, startWithLetter)
 import Data.Tuple (Tuple(..))
-import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getGraph)
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getGraph, getOptionValue, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, canBeNull, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionToList, filterTypes)
+import Options (Option, booleanOption)
 
 keywords :: Array String
 keywords =
@@ -34,6 +35,9 @@ data Variant = Swift3 | Swift4
 
 derive instance eqVariant :: Eq Variant
 
+justTypesOption :: Option Boolean
+justTypesOption = booleanOption "just-types" "Plain types only" false
+
 swift3Renderer :: Renderer
 swift3Renderer =
     { displayName: "Swift 3"
@@ -41,7 +45,7 @@ swift3Renderer =
     , aceMode: "swift"
     , extension: "swift"
     , doc: swift3Doc
-    , options: []
+    , options: [justTypesOption.specification]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -62,7 +66,7 @@ swift4Renderer =
     , aceMode: "swift"
     , extension: "swift"
     , doc: swift4Doc
-    , options: []
+    , options: [justTypesOption.specification]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -101,12 +105,13 @@ stringEscape =
 
 renderHeader :: Doc Unit
 renderHeader = do
-    line "// To parse the JSON, add this file to your project and do:"
-    line "//"
-    forEachTopLevel_ \topLevelName topLevelType -> do
-        typ <- renderType Swift3 topLevelType
-        line $ "//   let " <> decapitalize topLevelName <> " = " <> topLevelName <> ".from(json: jsonString)!"
-    blank
+    unlessOption justTypesOption do
+        line "// To parse the JSON, add this file to your project and do:"
+        line "//"
+        forEachTopLevel_ \topLevelName topLevelType -> do
+            typ <- renderType Swift3 topLevelType
+            line $ "//   let " <> decapitalize topLevelName <> " = " <> topLevelName <> ".from(json: jsonString)!"
+        blank
     line "import Foundation"
     blank
 
@@ -116,21 +121,22 @@ swift3Doc = do
 
     renderRenderItems blank (Just $ renderTopLevelAlias Swift3) (renderClassDefinition Swift3 false) (Just $ renderUnionDefinition Swift3 false)
 
-    blank
-    line $ "// Serialization extensions"
-
-    forEachTopLevel_ renderTopLevelExtensions3
-
-    forEachClass_ \className properties -> do
+    unlessOption justTypesOption do
         blank
-        renderClassExtension3 className properties
+        line $ "// Serialization extensions"
 
-    forEachUnion_ \unionName unionRep -> do
+        forEachTopLevel_ renderTopLevelExtensions3
+
+        forEachClass_ \className properties -> do
+            blank
+            renderClassExtension3 className properties
+
+        forEachUnion_ \unionName unionRep -> do
+            blank
+            renderUnionExtension3 unionName unionRep
+
         blank
-        renderUnionExtension3 unionName unionRep
-
-    blank
-    supportFunctions3
+        supportFunctions3
 
 swift4Doc :: Doc Unit
 swift4Doc = do
@@ -138,21 +144,22 @@ swift4Doc = do
 
     renderRenderItems blank (Just $ renderTopLevelAlias Swift4) (renderClassDefinition Swift4 true) (Just $ renderUnionDefinition Swift4 true)
 
-    blank
-    line $ "// Serialization extensions"
-
-    forEachTopLevel_ renderTopLevelExtensions4
-
-    forEachClass_ \className properties -> do
+    unlessOption justTypesOption do
         blank
-        renderClassExtension4 className properties
+        line $ "// Serialization extensions"
 
-    forEachUnion_ \unionName unionRep -> do
+        forEachTopLevel_ renderTopLevelExtensions4
+
+        forEachClass_ \className properties -> do
+            blank
+            renderClassExtension4 className properties
+
+        forEachUnion_ \unionName unionRep -> do
+            blank
+            renderUnionExtension4 unionName unionRep
+        
         blank
-        renderUnionExtension4 unionName unionRep
-    
-    blank
-    supportFunctions4
+        supportFunctions4
 
 supportFunctions3 :: Doc Unit
 supportFunctions3 = do
@@ -495,17 +502,20 @@ renderUnion variant ur =
         pure $ rendered <> "?"
     Nothing -> lookupUnionName ur
 
+swift3OrPlainCase :: forall a. Variant -> a -> a -> Doc a
+swift3OrPlainCase variant swift3OrPlain swift4NonPlain = do
+    justTypes <- getOptionValue justTypesOption
+    if (justTypes || variant == Swift3)
+        then
+            pure swift3OrPlain
+        else
+            pure swift4NonPlain
+
 renderType :: Variant -> IRType -> Doc String
 renderType variant = case _ of
     IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
-    IRAnyType ->
-        case variant of
-        Swift4 -> pure "JSONAny"
-        Swift3 -> pure "Any?"
-    IRNull ->
-        case variant of
-        Swift4 -> pure "JSONNull"
-        Swift3 -> pure "NSNull"
+    IRAnyType -> swift3OrPlainCase variant "Any?" "JSONAny"
+    IRNull -> swift3OrPlainCase variant "NSNull" "JSONNull"
     IRInteger -> pure "Int"
     IRDouble -> pure "Double"
     IRBool -> pure "Bool"
@@ -607,7 +617,8 @@ renderClassDefinition variant codable className properties = do
         forEachProperty_ properties propertyNames \_ ptype fieldName _ -> do
             rendered <- renderType variant ptype
             line $ "let " <> fieldName <> ": " <> rendered
-        when (variant == Swift3) do
+        justTypes <- getOptionValue justTypesOption
+        when ((variant == Swift3) && (not justTypes)) do
             blank
             line $ "fileprivate init?(fromAny any: Any) {"
             unless (M.isEmpty properties) $ indent do
