@@ -18,7 +18,7 @@ import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscap
 import Data.Tuple (Tuple(..))
 import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getGraph, getOptionValue, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, canBeNull, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionToList, filterTypes)
-import Options (Option, booleanOption)
+import Options (Option, booleanOption, enumOption)
 
 keywords :: Array String
 keywords =
@@ -38,6 +38,9 @@ derive instance eqVariant :: Eq Variant
 justTypesOption :: Option Boolean
 justTypesOption = booleanOption "just-types" "Plain types only" false
 
+classOption :: Option Boolean
+classOption = enumOption "struct-or-class" "Use struct or class for types" [Tuple "struct" false, Tuple "class" true]
+
 swift3Renderer :: Renderer
 swift3Renderer =
     { displayName: "Swift 3"
@@ -45,7 +48,10 @@ swift3Renderer =
     , aceMode: "swift"
     , extension: "swift"
     , doc: swift3Doc
-    , options: [justTypesOption.specification]
+    , options:
+        [ classOption.specification
+        , justTypesOption.specification
+        ]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -66,7 +72,10 @@ swift4Renderer =
     , aceMode: "swift"
     , extension: "swift"
     , doc: swift4Doc
-    , options: [justTypesOption.specification]
+    , options:
+        [ classOption.specification
+        , justTypesOption.specification
+        ]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -612,7 +621,9 @@ renderClassDefinition variant codable className properties = do
     let forbidden = keywords <> ["json", "any"]
     -- FIXME: we compute these here, and later again when rendering the extension
     let propertyNames = makePropertyNames properties "" forbidden
-    line $ "class " <> className <> codableString codable <> " {"
+    useClass <- getOptionValue classOption
+    let structOrClass = if useClass then "class " else "struct "
+    line $ structOrClass <> className <> codableString codable <> " {"
     indent do
         forEachProperty_ properties propertyNames \_ ptype fieldName _ -> do
             rendered <- renderType variant ptype

@@ -164,6 +164,7 @@ export interface Options {
   srcUrls?: string;
   out?: string;
   help?: boolean;
+  rendererOptions: { [name: string]: string };
 }
 
 interface SampleOrSchemaMap {
@@ -172,7 +173,6 @@ interface SampleOrSchemaMap {
 
 class Run {
   options: Options;
-  rendererOptions: { [name: string]: string };
 
   constructor(argv: string[] | Options) {
     if (_.isArray(argv)) {
@@ -180,8 +180,11 @@ class Run {
       // because there are renderer-specific options.  But we only know which renderer
       // is selected after we've parsed the options.  Hence, we parse the options
       // twice.  This is the first parse to get the renderer:
-      const incompleteOptions = this.parseOptions(optionDefinitions, argv, true)
-        .options;
+      const incompleteOptions = this.parseOptions(
+        optionDefinitions,
+        argv,
+        true
+      );
       const renderer = this.getRenderer(incompleteOptions.lang);
       // Use the global options as well as the renderer options from now on:
       const rendererOptionDefinitions = optionDefinitionsForRenderer(renderer);
@@ -191,13 +194,7 @@ class Run {
       );
       try {
         // This is the parse that counts:
-        const { options, renderer: rendererOptions } = this.parseOptions(
-          allOptionDefinitions,
-          argv,
-          false
-        );
-        this.options = options;
-        this.rendererOptions = rendererOptions;
+        this.options = this.parseOptions(allOptionDefinitions, argv, false);
       } catch (error) {
         if (error.name === "UNKNOWN_OPTION") {
           console.error("Error: Unknown option");
@@ -208,7 +205,6 @@ class Run {
       }
     } else {
       this.options = this.inferOptions(argv);
-      this.rendererOptions = {};
     }
   }
 
@@ -236,7 +232,7 @@ class Run {
           return { name, samples: samplesOrSchemas[name] };
         }
       }),
-      rendererOptions: this.rendererOptions
+      rendererOptions: this.options.rendererOptions
     };
 
     return Either.fromRight(Main.main(config));
@@ -398,17 +394,16 @@ class Run {
     optionDefinitions: OptionDefinition[],
     argv: string[],
     partial: boolean
-  ): { options: Options; renderer: { [name: string]: string } } => {
+  ): Options => {
     const opts: { [key: string]: any } = commandLineArgs(optionDefinitions, {
       argv,
       partial: partial
     });
-    const options = {};
-    const renderer = {};
+    const options: Options = { rendererOptions: {} };
     optionDefinitions.forEach(o => {
       if (!(o.name in opts)) return;
       const v = opts[o.name];
-      if (o.renderer) renderer[o.name] = v;
+      if (o.renderer) options.rendererOptions[o.name] = v;
       else {
         const k = _.lowerFirst(
           o.name
@@ -419,7 +414,7 @@ class Run {
         options[k] = v;
       }
     });
-    return { options: this.inferOptions(options), renderer };
+    return this.inferOptions(options);
   };
 
   inferOptions = (opts: Options): Options => {

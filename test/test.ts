@@ -114,6 +114,7 @@ interface Language {
   output: string;
   topLevel: string;
   skipJSON: string[];
+  rendererOptions: { [name: string]: string };
 }
 
 async function quicktypeForLanguage(
@@ -126,7 +127,8 @@ async function quicktypeForLanguage(
     lang: language.name,
     src: [sourceFile],
     out: language.output,
-    topLevel: language.topLevel
+    topLevel: language.topLevel,
+    rendererOptions: language.rendererOptions
   });
 }
 
@@ -217,7 +219,8 @@ class JSONFixture extends LanguageFixture {
         src: [sample],
         lang: "schema",
         out: "schema.json",
-        topLevel: this.language.topLevel
+        topLevel: this.language.topLevel,
+        rendererOptions: {}
       });
       // Quicktype from the schema and compare to expected code
       shell.mv(this.language.output, `${this.language.output}.expected`);
@@ -291,7 +294,8 @@ const CSharpLanguage: Language = {
   allowMissingNull: false,
   output: "QuickType.cs",
   topLevel: "TopLevel",
-  skipJSON: []
+  skipJSON: [],
+  rendererOptions: {}
 };
 
 //////////////////////////////////////
@@ -310,7 +314,8 @@ const JavaLanguage: Language = {
   allowMissingNull: false,
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"]
+  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
+  rendererOptions: {}
 };
 
 //////////////////////////////////////
@@ -329,7 +334,8 @@ const GoLanguage: Language = {
   allowMissingNull: false,
   output: "quicktype.go",
   topLevel: "TopLevel",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"]
+  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
+  rendererOptions: {}
 };
 
 //////////////////////////////////////
@@ -356,7 +362,8 @@ class JSONSchemaJSONFixture extends JSONFixture {
         "identifiers.json",
         "simple-identifiers.json",
         "blns-object.json"
-      ]
+      ],
+      rendererOptions: {}
     };
     super(schemaLanguage);
     this.runLanguage = language;
@@ -396,7 +403,8 @@ class JSONSchemaJSONFixture extends JSONFixture {
       src: ["schema.json"],
       srcLang: "schema",
       lang: "schema",
-      out: schemaSchema
+      out: schemaSchema,
+      rendererOptions: {}
     });
     compareJsonFileToJson({
       expectedFile: "schema.json",
@@ -422,14 +430,18 @@ const ElmLanguage: Language = {
   allowMissingNull: false,
   output: "QuickType.elm",
   topLevel: "QuickType",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"]
+  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
+  rendererOptions: {}
 };
 
 //////////////////////////////////////
 // Swift tests
 /////////////////////////////////////
 
-function makeSwiftLanguage(name: string): Language {
+function makeSwiftLanguage(
+  name: string,
+  rendererOptions: { [name: string]: string }
+): Language {
   return {
     name: name,
     base: "test/fixtures/swift",
@@ -442,12 +454,19 @@ function makeSwiftLanguage(name: string): Language {
     allowMissingNull: true,
     output: "quicktype.swift",
     topLevel: "TopLevel",
-    skipJSON: ["identifiers.json", "no-classes.json", "blns-object.json"]
+    skipJSON: ["identifiers.json", "no-classes.json", "blns-object.json"],
+    rendererOptions: rendererOptions
   };
 }
 
-const Swift3Language: Language = makeSwiftLanguage("swift3");
-const Swift4Language: Language = makeSwiftLanguage("swift4");
+const Swift3Language: Language = makeSwiftLanguage("swift3", {});
+const Swift3ClassesLanguage: Language = makeSwiftLanguage("swift3", {
+  "struct-or-class": "class"
+});
+const Swift4Language: Language = makeSwiftLanguage("swift4", {});
+const Swift4ClassesLanguage: Language = makeSwiftLanguage("swift4", {
+  "struct-or-class": "class"
+});
 
 //////////////////////////////////////
 // TypeScript test
@@ -467,7 +486,8 @@ const TypeScriptLanguage: Language = {
   allowMissingNull: false,
   output: "TopLevel.ts",
   topLevel: "TopLevel",
-  skipJSON: ["identifiers.json"]
+  skipJSON: ["identifiers.json"],
+  rendererOptions: {}
 };
 
 //////////////////////////////////////
@@ -555,8 +575,8 @@ const allFixtures: Fixture[] = [
   new JSONSchemaFixture(CSharpLanguage),
   new JSONSchemaFixture(JavaLanguage),
   new JSONSchemaFixture(GoLanguage),
-  new JSONSchemaFixture(Swift3Language),
-  new JSONSchemaFixture(Swift4Language),
+  new JSONSchemaFixture(Swift3ClassesLanguage),
+  new JSONSchemaFixture(Swift4ClassesLanguage),
   new JSONSchemaFixture(TypeScriptLanguage)
 ];
 
