@@ -12,7 +12,7 @@ import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, legalizeCharacters, startWithLetter, stringEscape)
 import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getOptionValue, getTypeNameForUnion, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
-import Options (Option, booleanOption)
+import Options (Option, booleanOption, stringOption)
 
 forbiddenNames :: Array String
 forbiddenNames =
@@ -36,6 +36,9 @@ forbiddenNames =
 pojoOption :: Option Boolean
 pojoOption = booleanOption "just-types" "Plain Java objects only" false
 
+packageOption :: Option String
+packageOption = stringOption "package" "The package name for the classes" "NAME" "io.quicktype"
+
 renderer :: Renderer
 renderer =
     { displayName: "Java"
@@ -43,7 +46,10 @@ renderer =
     , aceMode: "java"
     , extension: "java"
     , doc: javaDoc
-    , options: [pojoOption.specification]
+    , options:
+        [ pojoOption.specification
+        , packageOption.specification
+        ]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -123,7 +129,8 @@ renderPackageAndImports :: Array String -> Doc Unit
 renderPackageAndImports imports = do
     pojo <- getOptionValue pojoOption
     let allImports = ["java.util.Map"] <> if pojo then [] else imports
-    line "package io.quicktype;"
+    packageName <- getOptionValue packageOption
+    line $ "package " <> packageName <> ";"
     blank
     for_ allImports \package -> do
         line $ "import " <> package <> ";"
@@ -144,9 +151,10 @@ renderConverter = do
 //     com.fasterxml.jackson.core : jackson-databind : 2.9.0
 //
 // Import this package:
-//
-//     import io.quicktype.Converter;
-//
+//"""
+    packageName <- getOptionValue packageOption
+    line $ "//     import " <> packageName <> ".Converter;"
+    line """//
 // Then you can deserialize a JSON string with
 //"""
     forEachTopLevel_ \topLevelName topLevelType -> do
