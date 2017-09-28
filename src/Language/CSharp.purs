@@ -12,12 +12,12 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set (Set)
-import Data.String as Str
+import Data.String as String
 import Data.String.Util as Str
 import Data.Tuple (Tuple(Tuple), fst)
-import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getModuleName, getTypeNameForUnion, getUnionNames, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getOptionValue)
+import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getTypeNameForUnion, getUnionNames, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getOptionValue)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
-import Options (Option, booleanOption, enumOption)
+import Options (Option, booleanOption, enumOption, stringOption)
 
 forbiddenNames :: Array String
 forbiddenNames =
@@ -39,6 +39,9 @@ denseOption = enumOption "density" "Property density" [Tuple "normal" false, Tup
 pocoOption :: Option Boolean
 pocoOption = booleanOption "just-types" "Plain C# objects only" false
 
+namespaceOption :: Option String
+namespaceOption = stringOption "namespace" "The namespace for the classes" "NAME" "QuickType"
+
 renderer :: Renderer
 renderer =
     { displayName: "C#"
@@ -50,6 +53,7 @@ renderer =
         [ denseOption.specification
         , listOption.specification
         , pocoOption.specification
+        , namespaceOption.specification
         ]
     , transforms:
         { nameForClass: simpleNamer nameForClass
@@ -134,18 +138,18 @@ csNameStyle = legalize >>> Str.camelCase >>> Str.startWithLetter isStartCharacte
 
 csharpDoc :: Doc Unit
 csharpDoc = do
-    module_ <- getModuleName csNameStyle
+    namespace <- getOptionValue namespaceOption
     whenSerializers do
         oneOfThese <- getForSingleOrMultipleTopLevels "" " one of these"
         line $ "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do" <> oneOfThese <> ":"
         line "//"
-        line $ "//    using QuickType;"
+        line $ "//    using " <> namespace <> ";"
         forEachTopLevel_ \topLevelName topLevelType -> do
             line "//"
             line $ "//    var data = " <> topLevelName <> ".FromJson(jsonString);"
         line "//"
     
-    line "namespace QuickType"
+    line $ "namespace " <> namespace
     line "{"
     indent do
         let using s = line $ "using " <> s <> ";"
@@ -385,7 +389,7 @@ renderCSharpClass className properties = do
     let propertyNames = transformPropertyNames (simpleNamer csNameStyle) ("Other" <> _) [className] properties
 
     let props = M.toUnfoldable propertyNames :: Array _
-    let maxWidth = props <#> fst <#> Str.stringEscape <#> Str.length # maximum # fromMaybe 0
+    let maxWidth = props <#> fst <#> Str.stringEscape <#> String.length # maximum # fromMaybe 0
 
     poco <- getOptionValue pocoOption
     dense <- getOptionValue denseOption
@@ -404,7 +408,7 @@ renderCSharpClass className properties = do
             case poco, dense of
                 true, _ -> line property
                 _, true -> do
-                    let indent = maxWidth - Str.length (Str.stringEscape pname) + 1
+                    let indent = maxWidth - String.length (Str.stringEscape pname) + 1
                     let whitespace = Str.times " " indent
                     line $ attribute <> whitespace <> property
                 _, false -> do 
