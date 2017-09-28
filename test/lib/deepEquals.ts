@@ -1,5 +1,5 @@
 function pathToString(path: string[]): string {
-  return path.join(".");
+  return "." + path.join(".");
 }
 
 declare namespace Math {
@@ -51,8 +51,14 @@ export default function deepEquals(
     return false;
   }
 
-  if (x.constructor !== y.constructor) {
-    console.error(`Not the same constructor at path ${pathToString(path)}.`);
+  // If the objects have an own property "constructor" then we need to
+  // compare it regularly.
+  if (x.constructor instanceof String && x.constructor !== y.constructor) {
+    console.error(
+      `Not the same constructor at path ${pathToString(
+        path
+      )}: should be ${x.constructor} but is ${y.constructor}.`
+    );
     return false;
   }
 
