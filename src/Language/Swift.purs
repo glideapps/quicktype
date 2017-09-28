@@ -527,10 +527,10 @@ renderType = case _ of
 
 convertAny :: IRType -> String -> Doc String
 convertAny (IRArray a) var = do
-    converter <- convertAnyFunc a
+    converter <- convertAnyCheckedFunc a
     pure $ "convertArray(" <> converter <> ", " <> var <> ")"
 convertAny (IRMap m) var = do
-    converter <- convertAnyFunc m
+    converter <- convertAnyCheckedFunc m
     pure $ "convertDict(" <> converter <> ", " <> var <> ")"
 convertAny (IRUnion ur) var =
     case nullableFromUnion ur of
@@ -551,6 +551,12 @@ convertAny IRString var =
 convertAny t var = do
     converter <- convertAnyFunc t
     pure $ converter <> "(" <> var <> ")"
+
+convertAnyCheckedFunc :: IRType -> Doc String
+convertAnyCheckedFunc IRNull = do
+    converter <- convertAny IRNull "removeNSNull(v)"
+    pure $ "{ v in " <> converter <> " }"
+convertAnyCheckedFunc t = convertAnyFunc t
 
 convertAnyFunc :: IRType -> Doc String
 convertAnyFunc = case _ of
