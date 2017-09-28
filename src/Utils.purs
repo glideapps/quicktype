@@ -7,6 +7,7 @@ module Utils
     , sortByKeyM
     , sortByKey
     , lookupOrDefault
+    , bisectFor_
     , forEnumerated_
     , forStrMap_
     , forMapM
@@ -15,6 +16,7 @@ module Utils
 
 import Prelude
 
+import Data.Array as A
 import Data.List (List)
 import Data.List as L
 import Data.Map (Map)
@@ -32,6 +34,19 @@ mapM = traverse
 mapWithIndexM :: forall m a b f i. Applicative m => FunctorWithIndex i f => Traversable f => (i -> a -> m b) -> f a -> m (f b)
 mapWithIndexM f l =
     mapM (\(Tuple i x) -> f i x) $ mapWithIndex Tuple l
+
+bisectFor_ :: forall m a. Monad m => Array a -> (a -> m Unit) -> m Unit
+bisectFor_ arr f =
+    let l = A.length arr
+    in if l < 100 then
+        for_ arr f
+    else
+        let n = l / 2
+            firstHalf = A.take n arr
+            secondHalf = A.drop n arr
+        in do
+            bisectFor_ firstHalf f
+            bisectFor_ secondHalf f
 
 forMapM :: forall a v k m. Monad m => Ord k => Map k v -> (k -> v -> m a) -> m (Map k a)
 forMapM = flip mapMapM

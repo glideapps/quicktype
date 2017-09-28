@@ -65,7 +65,7 @@ import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
 import IRGraph (IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, classesInGraph, filterTypes, getClassFromGraph, mapUnionM, namedValue, nullableFromUnion, unionToList)
 import Options (OptionSpecifications, OptionValues, lookupOptionValue, Option)
-import Utils (sortByKeyM, mapM)
+import Utils (sortByKeyM, mapM, bisectFor_)
 
 type Renderer =
     { displayName :: String
@@ -360,7 +360,7 @@ line s = do
     indent' <- Doc (gets _.indent)
     let whitespace = String.times "    " indent'
     let lines = String.split (String.Pattern "\n") s
-    for_ lines \l -> do
+    bisectFor_ lines \l -> do
         string whitespace
         string l
         string "\n"  
