@@ -293,11 +293,6 @@ forWithPrefix_ :: forall a b p m. Applicative m => List a -> p -> p -> (p -> a -
 forWithPrefix_ l firstPrefix restPrefix f =
     forEnumerated_ l (\i -> f $ if i == 0 then firstPrefix else restPrefix)
 
-isOptional :: IRType -> Boolean
-isOptional = case _ of
-    IRUnion u -> not $ unionIsNotSimpleNullable u
-    _ -> false
-
 renderTypeDefinition :: String -> Map String String -> List (Tuple String IRType) -> Doc Unit
 renderTypeDefinition className propertyNames propsList = do
     line $ "type alias " <> className <> " ="
@@ -320,7 +315,7 @@ renderTypeFunctions className propertyNames propsList = do
         for_ propsList \(Tuple pname ptype) -> do
             indent do
                 propDecoder <- decoderNameForType ptype
-                let { reqOrOpt, fallback } = if isOptional ptype then { reqOrOpt: "Jpipe.optional", fallback: " Nothing" } else { reqOrOpt: "Jpipe.required", fallback: "" }
+                let { reqOrOpt, fallback } = requiredOrOptional ptype
                 line $ "|> " <> reqOrOpt <> " \"" <> stringEscape pname <> "\" " <> (parenIfNeeded propDecoder) <> fallback
     blank
     let encoderName = encoderNameFromTypeName className
@@ -336,6 +331,20 @@ renderTypeFunctions className propertyNames propsList = do
             when (propsList == L.Nil) do
                 line "["
             line "]"
+    where
+        requiredOrOptional :: IRType -> { reqOrOpt :: String, fallback :: String }
+        requiredOrOptional = case _ of
+            IRNull -> optional " ()"
+            IRUnion u ->
+                if not $ unionIsNotSimpleNullable u then
+                    optional " Nothing"
+                else
+                    required
+            _ -> required
+        required =
+            { reqOrOpt: "Jpipe.required", fallback: "" }
+        optional fallback =
+            { reqOrOpt: "Jpipe.optional", fallback }
 
 typeRenderer :: (String -> Map String String -> List (Tuple String IRType) -> Doc Unit) -> String -> Map String IRType -> Doc Unit
 typeRenderer renderer' className properties = do

@@ -511,7 +511,7 @@ renderType :: IRType -> Doc String
 renderType = case _ of
     IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
     IRAnyType -> swift3OrPlainCase "Any?" "JSONAny"
-    IRNull -> swift3OrPlainCase "NSNull" "JSONNull"
+    IRNull -> swift3OrPlainCase "NSNull" "JSONNull?"
     IRInteger -> pure "Int"
     IRDouble -> pure "Double"
     IRBool -> pure "Bool"
@@ -527,10 +527,10 @@ renderType = case _ of
 
 convertAny :: IRType -> String -> Doc String
 convertAny (IRArray a) var = do
-    converter <- convertAnyFunc a
+    converter <- convertAnyCheckedFunc a
     pure $ "convertArray(" <> converter <> ", " <> var <> ")"
 convertAny (IRMap m) var = do
-    converter <- convertAnyFunc m
+    converter <- convertAnyCheckedFunc m
     pure $ "convertDict(" <> converter <> ", " <> var <> ")"
 convertAny (IRUnion ur) var =
     case nullableFromUnion ur of
@@ -552,6 +552,12 @@ convertAny t var = do
     converter <- convertAnyFunc t
     pure $ converter <> "(" <> var <> ")"
 
+convertAnyCheckedFunc :: IRType -> Doc String
+convertAnyCheckedFunc IRNull = do
+    converter <- convertAny IRNull "removeNSNull(v)"
+    pure $ "{ v in " <> converter <> " }"
+convertAnyCheckedFunc t = convertAnyFunc t
+
 convertAnyFunc :: IRType -> Doc String
 convertAnyFunc = case _ of
     IRClass i -> do
@@ -568,23 +574,23 @@ convertAnyFunc = case _ of
     IRDouble -> pure "convertDouble"
     IRNull -> pure "checkNull"
     t -> do
-        converted <- convertAny t "$0"
-        pure $ "{ " <> converted <> " }"
+        converted <- convertAny t "v"
+        pure $ "{ v in " <> converted <> " }"
 
 convertToAny :: IRType -> String -> Doc String
 convertToAny (IRArray a) var = do
-    convertCode <- convertToAny a "$0"
-    pure $ var <> ".map({ " <> convertCode <> " }) as Any"
+    convertCode <- convertToAny a "v"
+    pure $ var <> ".map({ v in " <> convertCode <> " }) as Any"
 convertToAny (IRMap m) var = do
-    convertCode <- convertToAny m "$0"
-    pure $ "convertToAny(" <> var <> ", { "<> convertCode <> " })"
+    convertCode <- convertToAny m "v"
+    pure $ "convertToAny(" <> var <> ", { v in "<> convertCode <> " })"
 convertToAny (IRClass i) var =
     pure $ var <> ".any"
 convertToAny (IRUnion ur) var =
     case nullableFromUnion ur of
     Just t -> do
-        convertCode <- convertToAny t "$0"
-        pure $ var <> ".map({ " <> convertCode  <> " }) ?? NSNull()"
+        convertCode <- convertToAny t "v"
+        pure $ var <> ".map({ v in " <> convertCode  <> " }) ?? NSNull()"
     Nothing ->
         pure $ var <> ".any"
 convertToAny IRAnyType var =

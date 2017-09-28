@@ -23,7 +23,7 @@ else {
 
 guard let newData = obj.jsonData
 else {
-    print("Error: Could not deserialize")
+    print("Error: Could not serialize")
     exit(1)
 }
 
