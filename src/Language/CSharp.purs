@@ -37,7 +37,7 @@ denseOption :: Option Boolean
 denseOption = enumOption "density" "Property density" [Tuple "normal" false, Tuple "dense" true]
 
 pocoOption :: Option Boolean
-pocoOption = booleanOption "just-types" "Plain C# objects only" false
+pocoOption = booleanOption "just-types" "Plain objects only" false
 
 namespaceOption :: Option String
 namespaceOption = stringOption "namespace" "The namespace for the classes" "NAME" "QuickType"

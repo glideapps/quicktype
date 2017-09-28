@@ -34,7 +34,7 @@ forbiddenNames =
     ]
 
 pojoOption :: Option Boolean
-pojoOption = booleanOption "just-types" "Plain Java objects only" false
+pojoOption = booleanOption "just-types" "Plain objects only" false
 
 packageOption :: Option String
 packageOption = stringOption "package" "The package name for the classes" "NAME" "io.quicktype"
