@@ -568,23 +568,23 @@ convertAnyFunc = case _ of
     IRDouble -> pure "convertDouble"
     IRNull -> pure "checkNull"
     t -> do
-        converted <- convertAny t "$0"
-        pure $ "{ " <> converted <> " }"
+        converted <- convertAny t "v"
+        pure $ "{ v in " <> converted <> " }"
 
 convertToAny :: IRType -> String -> Doc String
 convertToAny (IRArray a) var = do
-    convertCode <- convertToAny a "$0"
-    pure $ var <> ".map({ " <> convertCode <> " }) as Any"
+    convertCode <- convertToAny a "v"
+    pure $ var <> ".map({ v in " <> convertCode <> " }) as Any"
 convertToAny (IRMap m) var = do
-    convertCode <- convertToAny m "$0"
-    pure $ "convertToAny(" <> var <> ", { "<> convertCode <> " })"
+    convertCode <- convertToAny m "v"
+    pure $ "convertToAny(" <> var <> ", { v in "<> convertCode <> " })"
 convertToAny (IRClass i) var =
     pure $ var <> ".any"
 convertToAny (IRUnion ur) var =
     case nullableFromUnion ur of
     Just t -> do
-        convertCode <- convertToAny t "$0"
-        pure $ var <> ".map({ " <> convertCode  <> " }) ?? NSNull()"
+        convertCode <- convertToAny t "v"
+        pure $ var <> ".map({ v in " <> convertCode  <> " }) ?? NSNull()"
     Nothing ->
         pure $ var <> ".any"
 convertToAny IRAnyType var =
