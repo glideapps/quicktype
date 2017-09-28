@@ -131,7 +131,9 @@ irUnion_Null = 2
 irUnion_Integer :: Int
 irUnion_Integer = 4
 irUnion_Double :: Int
-irUnion_Double = 8
+irUnion_Double = irUnion_Integer + 8
+irUnion_Number :: Int
+irUnion_Number = irUnion_Double
 irUnion_Bool :: Int
 irUnion_Bool = 16
 irUnion_String :: Int
@@ -316,11 +318,17 @@ nullableFromUnion union =
         else
             Nothing
 
+isInPrimitives :: Int -> Int -> Boolean
+isInPrimitives primitives bit = (Bits.and bit primitives) /= 0
+
+isInNumber :: Int -> Int -> Boolean
+isInNumber primitives bits = (Bits.and irUnion_Number primitives) == bits
+
 forUnion_ :: forall m. Monad m => IRUnionRep -> (IRType -> m Unit) -> m Unit
 forUnion_ (IRUnionRep { primitives, arrayType, classRef, mapType }) f = do
     when (inPrimitives irUnion_Null) do f IRNull
-    when (inPrimitives irUnion_Integer) do f IRInteger
-    when (inPrimitives irUnion_Double) do f IRDouble
+    when (inNumber irUnion_Integer) do f IRInteger
+    when (inNumber irUnion_Double) do f IRDouble
     when (inPrimitives irUnion_Bool) do f IRBool
     when (inPrimitives irUnion_String) do f IRString
     case arrayType of
@@ -333,7 +341,8 @@ forUnion_ (IRUnionRep { primitives, arrayType, classRef, mapType }) f = do
         Just m -> do f $ IRMap m
         Nothing -> pure unit
     where
-        inPrimitives bit = (Bits.and bit primitives) /= 0
+        inPrimitives = isInPrimitives primitives
+        inNumber = isInNumber primitives
 
 mapUnionM :: forall a m. Monad m => (IRType -> m a) -> IRUnionRep -> m (List a)
 mapUnionM f (IRUnionRep { primitives, arrayType, classRef, mapType }) = do
@@ -341,15 +350,15 @@ mapUnionM f (IRUnionRep { primitives, arrayType, classRef, mapType }) = do
         >>= mapGeneral mapType IRMap
         >>= mapGeneral classRef IRClass
         >>= mapGeneral arrayType IRArray
-        >>= mapPrimitive irUnion_String IRString
-        >>= mapPrimitive irUnion_Bool IRBool
-        >>= mapPrimitive irUnion_Double IRDouble
-        >>= mapPrimitive irUnion_Integer IRInteger
-        >>= mapPrimitive irUnion_Null IRNull
+        >>= mapPrimitive isInPrimitives irUnion_String IRString
+        >>= mapPrimitive isInPrimitives irUnion_Bool IRBool
+        >>= mapPrimitive isInNumber irUnion_Double IRDouble
+        >>= mapPrimitive isInNumber irUnion_Integer IRInteger
+        >>= mapPrimitive isInPrimitives irUnion_Null IRNull
     where
-        mapPrimitive :: Int -> IRType -> List a -> m (List a)
-        mapPrimitive bit t l =
-            if (Bits.and bit primitives) /= 0 then do
+        mapPrimitive :: (Int -> Int -> Boolean) -> Int -> IRType -> List a -> m (List a)
+        mapPrimitive predicate bit t l =
+            if predicate primitives bit then do
                 result <- f t
                 pure $ result : l
             else
@@ -371,8 +380,8 @@ isUnionMember :: IRType -> IRUnionRep -> Boolean
 isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =
     case t of
     IRNull -> inPrimitives irUnion_Null
-    IRInteger -> inPrimitives irUnion_Integer
-    IRDouble -> inPrimitives irUnion_Double
+    IRInteger -> inNumber irUnion_Integer
+    IRDouble -> inNumber irUnion_Double
     IRBool -> inPrimitives irUnion_Bool
     IRString -> inPrimitives irUnion_String
     IRArray a -> maybe false (eq a) arrayType
@@ -382,7 +391,8 @@ isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =
     IRAnyType -> false
     IRNoInformation -> false
     where
-        inPrimitives bit = (Bits.and bit primitives) /= 0
+        inPrimitives = isInPrimitives primitives
+        inNumber = isInNumber primitives
 
 filterTypes :: forall a. Ord a => (IRType -> Maybe a) -> IRGraph -> Set a
 filterTypes predicate graph@(IRGraph { classes, toplevels }) =
