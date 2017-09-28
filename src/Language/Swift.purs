@@ -602,7 +602,8 @@ renderTopLevelAlias topLevelName topLevelType = do
 getCodableString :: Doc String
 getCodableString = do
     variant <- getOptionValue swiftVersionOption
-    pure $ if variant == Swift4 then ": Codable" else ""
+    justTypes <- getOptionValue justTypesOption
+    pure $ if variant == Swift3 || justTypes then "" else ": Codable"
 
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
