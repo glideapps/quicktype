@@ -34,7 +34,7 @@ forbiddenNames =
     ]
 
 pojoOption :: Option Boolean
-pojoOption = booleanOption "pojo" "Plain Java objects only" false
+pojoOption = booleanOption "just-types" "Plain Java objects only" false
 
 renderer :: Renderer
 renderer =
