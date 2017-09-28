@@ -511,7 +511,7 @@ renderType :: IRType -> Doc String
 renderType = case _ of
     IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
     IRAnyType -> swift3OrPlainCase "Any?" "JSONAny"
-    IRNull -> swift3OrPlainCase "NSNull" "JSONNull"
+    IRNull -> swift3OrPlainCase "NSNull" "JSONNull?"
     IRInteger -> pure "Int"
     IRDouble -> pure "Double"
     IRBool -> pure "Bool"
