@@ -1,6 +1,5 @@
 module Language.Swift
-    ( swift3Renderer
-    , swift4Renderer
+    ( renderer
     ) where
 
 import Prelude
@@ -16,8 +15,9 @@ import Data.Set as S
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscape, intToHex, legalizeCharacters, startWithLetter)
 import Data.Tuple (Tuple(..))
-import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, getGraph)
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getGraph, getOptionValue, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, canBeNull, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionToList, filterTypes)
+import Options (Option, booleanOption, enumOption)
 
 keywords :: Array String
 keywords =
@@ -34,35 +34,27 @@ data Variant = Swift3 | Swift4
 
 derive instance eqVariant :: Eq Variant
 
-swift3Renderer :: Renderer
-swift3Renderer =
-    { displayName: "Swift 3"
-    , names: [ "swift3" ]
-    , aceMode: "swift"
-    , extension: "swift"
-    , doc: swift3Doc
-    , options: []
-    , transforms:
-        { nameForClass: simpleNamer nameForClass
-        , nextName: \s -> "Other" <> s
-        , forbiddenNames: keywords
-        , topLevelName: forbidNamer (swiftNameStyle true) (\n -> [swiftNameStyle true n])
-        , unions: Just
-            { predicate: unionIsNotSimpleNullable
-            , properName: simpleNamer (swiftNameStyle true <<< combineNames)
-            , nameFromTypes: simpleNamer (unionNameIntercalated (swiftNameStyle true) "Or")
-            }
-        }
-    }
+justTypesOption :: Option Boolean
+justTypesOption = booleanOption "just-types" "Plain types only" false
 
-swift4Renderer :: Renderer
-swift4Renderer =
-    { displayName: "Swift 4"
-    , names: [ "swift4", "swift" ]
+classOption :: Option Boolean
+classOption = enumOption "struct-or-class" "Use struct or class for types" [Tuple "struct" false, Tuple "class" true]
+
+swiftVersionOption :: Option Variant
+swiftVersionOption = enumOption "swift-version" "Which Swift version to target" [Tuple "4" Swift4, Tuple "3" Swift3]
+
+renderer :: Renderer
+renderer =
+    { displayName: "Swift"
+    , names: [ "swift" ]
     , aceMode: "swift"
     , extension: "swift"
-    , doc: swift4Doc
-    , options: []
+    , doc: swiftDoc
+    , options:
+        [ classOption.specification
+        , justTypesOption.specification
+        , swiftVersionOption.specification
+        ]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -101,58 +93,68 @@ stringEscape =
 
 renderHeader :: Doc Unit
 renderHeader = do
-    line "// To parse the JSON, add this file to your project and do:"
-    line "//"
-    forEachTopLevel_ \topLevelName topLevelType -> do
-        typ <- renderType Swift3 topLevelType
-        line $ "//   let " <> decapitalize topLevelName <> " = " <> topLevelName <> ".from(json: jsonString)!"
-    blank
+    unlessOption justTypesOption do
+        line "// To parse the JSON, add this file to your project and do:"
+        line "//"
+        forEachTopLevel_ \topLevelName topLevelType -> do
+            typ <- renderType topLevelType
+            line $ "//   let " <> decapitalize topLevelName <> " = " <> topLevelName <> ".from(json: jsonString)!"
+        blank
     line "import Foundation"
     blank
+
+swiftDoc :: Doc Unit
+swiftDoc = do
+    variant <- getOptionValue swiftVersionOption
+    case variant of
+        Swift3 -> swift3Doc
+        Swift4 -> swift4Doc
 
 swift3Doc :: Doc Unit
 swift3Doc = do
     renderHeader
 
-    renderRenderItems blank (Just $ renderTopLevelAlias Swift3) (renderClassDefinition Swift3 false) (Just $ renderUnionDefinition Swift3 false)
+    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition (Just renderUnionDefinition)
 
-    blank
-    line $ "// Serialization extensions"
-
-    forEachTopLevel_ renderTopLevelExtensions3
-
-    forEachClass_ \className properties -> do
+    unlessOption justTypesOption do
         blank
-        renderClassExtension3 className properties
+        line $ "// Serialization extensions"
 
-    forEachUnion_ \unionName unionRep -> do
+        forEachTopLevel_ renderTopLevelExtensions3
+
+        forEachClass_ \className properties -> do
+            blank
+            renderClassExtension3 className properties
+
+        forEachUnion_ \unionName unionRep -> do
+            blank
+            renderUnionExtension3 unionName unionRep
+
         blank
-        renderUnionExtension3 unionName unionRep
-
-    blank
-    supportFunctions3
+        supportFunctions3
 
 swift4Doc :: Doc Unit
 swift4Doc = do
     renderHeader
 
-    renderRenderItems blank (Just $ renderTopLevelAlias Swift4) (renderClassDefinition Swift4 true) (Just $ renderUnionDefinition Swift4 true)
+    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition (Just renderUnionDefinition)
 
-    blank
-    line $ "// Serialization extensions"
-
-    forEachTopLevel_ renderTopLevelExtensions4
-
-    forEachClass_ \className properties -> do
+    unlessOption justTypesOption do
         blank
-        renderClassExtension4 className properties
+        line $ "// Serialization extensions"
 
-    forEachUnion_ \unionName unionRep -> do
+        forEachTopLevel_ renderTopLevelExtensions4
+
+        forEachClass_ \className properties -> do
+            blank
+            renderClassExtension4 className properties
+
+        forEachUnion_ \unionName unionRep -> do
+            blank
+            renderUnionExtension4 unionName unionRep
+        
         blank
-        renderUnionExtension4 unionName unionRep
-    
-    blank
-    supportFunctions4
+        supportFunctions4
 
 supportFunctions3 :: Doc Unit
 supportFunctions3 = do
@@ -487,37 +489,41 @@ class JSONAny: Codable {
     }
 }"""
 
-renderUnion :: Variant -> IRUnionRep -> Doc String
-renderUnion variant ur =
+renderUnion :: IRUnionRep -> Doc String
+renderUnion ur =
     case nullableFromUnion ur of
     Just r -> do
-        rendered <- renderType variant r
+        rendered <- renderType r
         pure $ rendered <> "?"
     Nothing -> lookupUnionName ur
 
-renderType :: Variant -> IRType -> Doc String
-renderType variant = case _ of
+swift3OrPlainCase :: forall a. a -> a -> Doc a
+swift3OrPlainCase swift3OrPlain swift4NonPlain = do
+    variant <- getOptionValue swiftVersionOption
+    justTypes <- getOptionValue justTypesOption
+    if (justTypes || variant == Swift3)
+        then
+            pure swift3OrPlain
+        else
+            pure swift4NonPlain
+
+renderType :: IRType -> Doc String
+renderType = case _ of
     IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
-    IRAnyType ->
-        case variant of
-        Swift4 -> pure "JSONAny"
-        Swift3 -> pure "Any?"
-    IRNull ->
-        case variant of
-        Swift4 -> pure "JSONNull"
-        Swift3 -> pure "NSNull"
+    IRAnyType -> swift3OrPlainCase "Any?" "JSONAny"
+    IRNull -> swift3OrPlainCase "NSNull" "JSONNull"
     IRInteger -> pure "Int"
     IRDouble -> pure "Double"
     IRBool -> pure "Bool"
     IRString -> pure "String"
     IRArray a -> do
-        rendered <- renderType variant a
+        rendered <- renderType a
         pure $ "[" <> rendered <> "]"
     IRClass i -> lookupClassName i
     IRMap t -> do
-        rendered <- renderType variant t
+        rendered <- renderType t
         pure $ "[String: " <> rendered <> "]"
-    IRUnion ur -> renderUnion variant ur
+    IRUnion ur -> renderUnion ur
 
 convertAny :: IRType -> String -> Doc String
 convertAny (IRArray a) var = do
@@ -588,26 +594,32 @@ convertToAny IRNull var =
 convertToAny _ var =
     pure $ var <> " as Any"
 
-renderTopLevelAlias :: Variant -> String -> IRType -> Doc Unit
-renderTopLevelAlias variant topLevelName topLevelType = do
-    top <- renderType variant topLevelType
+renderTopLevelAlias :: String -> IRType -> Doc Unit
+renderTopLevelAlias topLevelName topLevelType = do
+    top <- renderType topLevelType
     line $ "typealias "<> topLevelName <> " = " <> top
 
-codableString :: Boolean -> String
-codableString true = ": Codable"
-codableString false = ""
+getCodableString :: Doc String
+getCodableString = do
+    variant <- getOptionValue swiftVersionOption
+    pure $ if variant == Swift4 then ": Codable" else ""
 
-renderClassDefinition :: Variant -> Boolean -> String -> Map String IRType -> Doc Unit
-renderClassDefinition variant codable className properties = do
+renderClassDefinition :: String -> Map String IRType -> Doc Unit
+renderClassDefinition className properties = do
     let forbidden = keywords <> ["json", "any"]
     -- FIXME: we compute these here, and later again when rendering the extension
     let propertyNames = makePropertyNames properties "" forbidden
-    line $ "class " <> className <> codableString codable <> " {"
+    useClass <- getOptionValue classOption
+    let structOrClass = if useClass then "class " else "struct "
+    codableString <- getCodableString
+    line $ structOrClass <> className <> codableString <> " {"
     indent do
         forEachProperty_ properties propertyNames \_ ptype fieldName _ -> do
-            rendered <- renderType variant ptype
+            rendered <- renderType ptype
             line $ "let " <> fieldName <> ": " <> rendered
-        when (variant == Swift3) do
+        variant <- getOptionValue swiftVersionOption
+        justTypes <- getOptionValue justTypesOption
+        when ((variant == Swift3) && (not justTypes)) do
             blank
             line $ "fileprivate init?(fromAny any: Any) {"
             unless (M.isEmpty properties) $ indent do
@@ -633,17 +645,17 @@ renderClassDefinition variant codable className properties = do
             line "}"
     line "}"
 
-renderExtensionType :: Variant -> IRType -> Doc String
-renderExtensionType variant (IRArray t) = ("Array where Element == " <> _) <$> renderType variant t
-renderExtensionType variant (IRMap t) = ("Dictionary where Key == String, Value == " <> _) <$> renderType variant t
-renderExtensionType variant t = renderType variant t
+renderExtensionType :: IRType -> Doc String
+renderExtensionType (IRArray t) = ("Array where Element == " <> _) <$> renderType t
+renderExtensionType (IRMap t) = ("Dictionary where Key == String, Value == " <> _) <$> renderType t
+renderExtensionType t = renderType t
 
 renderTopLevelExtensions3 :: String -> IRType -> Doc Unit
 renderTopLevelExtensions3 topLevelName topLevelType = do
     blank
 
-    topLevelRendered <- renderType Swift3 topLevelType
-    extensionType <- renderExtensionType Swift3 topLevelType
+    topLevelRendered <- renderType topLevelType
+    extensionType <- renderExtensionType topLevelType
 
     line $ "extension " <> extensionType <> " {"
     indent do
@@ -707,8 +719,8 @@ renderTopLevelExtensions4 :: String -> IRType -> Doc Unit
 renderTopLevelExtensions4 topLevelName topLevelType = do
     blank
 
-    topLevelRendered <- renderType Swift4 topLevelType
-    extensionType <- renderExtensionType Swift4 topLevelType
+    topLevelRendered <- renderType topLevelType
+    extensionType <- renderExtensionType topLevelType
 
     line $ "extension " <> extensionType <> " {"
     indent do
@@ -784,14 +796,15 @@ makePropertyNames properties suffix forbidden =
         otherField :: String -> String
         otherField name = "other" <> capitalize name
 
-renderUnionDefinition :: Variant -> Boolean -> String -> IRUnionRep -> Doc Unit
-renderUnionDefinition variant codable unionName unionRep = do
+renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
+renderUnionDefinition unionName unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    line $ "enum " <> unionName <> codableString codable <> " {"
+    codableString <- getCodableString
+    line $ "enum " <> unionName <> codableString <> " {"
     indent do
         forUnion_ nonNullUnion \typ -> do
             name <- caseName typ
-            rendered <- renderType variant typ
+            rendered <- renderType typ
             line $ "case " <> name <> "(" <> rendered <> ")"
         when hasNull do
             name <- caseName IRNull
@@ -886,7 +899,7 @@ renderUnionExtension4 unionName unionRep = do
         renderCase :: IRType -> Doc Unit
         renderCase t = do
             name <- caseName t
-            typeName <- renderType Swift4 t
+            typeName <- renderType t
             line $ "if let x = try? container.decode(" <> typeName <> ".self) {"
             indent do
                 line $ "self = ." <> name <> "(x)"

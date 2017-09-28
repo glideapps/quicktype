@@ -13,8 +13,9 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, decapitalize, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..), fst)
-import Doc (Doc, Namer, Renderer, blank, combineNames, forEachTopLevel_, getClasses, getModuleName, getTopLevelNames, getTopLevels, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachTopLevel_, getClasses, getOptionValue, getTopLevelNames, getTopLevels, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption, whenOption)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, isArray, nullableFromUnion, unionToList)
+import Options (Option, enumOption, stringOption)
 import Utils (forEnumerated_, sortByKey, sortByKeyM, mapM)
 
 forbiddenNames :: Array String
@@ -34,6 +35,12 @@ forbiddenNames =
     , "makeArrayEncoder", "makeDictEncoder", "makeNullableEncoder"
     ]
 
+listOption :: Option Boolean
+listOption = enumOption "array-type" "Use Array or List" [Tuple "array" false, Tuple "list" true]
+
+moduleOption :: Option String
+moduleOption = stringOption "module" "The module name for the classes" "NAME" "QuickType"
+
 renderer :: Renderer
 renderer =
     { displayName: "Elm"
@@ -41,7 +48,10 @@ renderer =
     , aceMode: "elm"
     , extension: "elm"
     , doc: elmDoc
-    , options: []
+    , options:
+        [ listOption.specification
+        , moduleOption.specification
+        ]
     , transforms:
         { nameForClass: elmNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -98,6 +108,11 @@ renderComment :: Maybe String -> String
 renderComment (Just s) = " -- " <> s
 renderComment Nothing = ""
 
+renderArrayType :: Doc String
+renderArrayType = do
+    useList <- getOptionValue listOption
+    pure $ if useList then "List" else "Array"
+
 elmDoc :: Doc Unit
 elmDoc = do
     topLevels <- getTopLevels
@@ -112,7 +127,7 @@ elmDoc = do
     let topLevelDecoders = map decoderNameFromTypeName topLevelNames
     let alsoTopLevelExports = L.concat $ map (alsoForbiddenForTypeName >>> L.fromFoldable) topLevelNames
     let exports = L.concat $ topLevelNames : alsoTopLevelExports : classNames : unionNames : L.Nil
-    moduleName <- getModuleName upperNameStyle
+    moduleName <- getOptionValue moduleOption
     line """-- To decode the JSON data, add this file to your project, run
 --
 --     elm-package install NoRedInk/elm-decode-pipeline
@@ -137,22 +152,27 @@ elmDoc = do
     line """import Json.Decode as Jdec
 import Json.Decode.Pipeline as Jpipe
 import Json.Encode as Jenc
-import Array exposing (Array, map)
-import Dict exposing (Dict, map, toList)
-"""
+import Dict exposing (Dict, map, toList)"""
+    arrayType <- renderArrayType
+    whenOption listOption do
+        line $ "import List exposing (map)"
+    unlessOption listOption do
+        line $ "import Array exposing (Array, map)"
+    blank
     renderRenderItems blank (Just renderTopLevelDefinition) (typeRenderer renderTypeDefinition) (Just renderUnionDefinition)
     blank
     line "-- decoders and encoders"
     blank
     renderRenderItems blank (Just renderTopLevelFunctions) (typeRenderer renderTypeFunctions) (Just renderUnionFunctions)
     blank
-    line """--- encoder helpers
-
-makeArrayEncoder : (a -> Jenc.Value) -> Array a -> Jenc.Value
-makeArrayEncoder f arr =
-    Jenc.array (Array.map f arr)
-
-makeDictEncoder : (a -> Jenc.Value) -> Dict String a -> Jenc.Value
+    line "--- encoder helpers"
+    blank
+    line $ "make" <> arrayType <> "Encoder : (a -> Jenc.Value) -> " <> arrayType <> " a -> Jenc.Value"
+    line $ "make" <> arrayType <> "Encoder f arr ="
+    indent do
+        line $ "Jenc." <> decapitalize arrayType <> " (" <> arrayType <> ".map f arr)"
+    blank
+    line """makeDictEncoder : (a -> Jenc.Value) -> Dict String a -> Jenc.Value
 makeDictEncoder f dict =
     Jenc.object (toList (Dict.map (\k -> f) dict))
 
@@ -200,7 +220,8 @@ typeStringForType = case _ of
     IRString -> singleWord "String"
     IRArray a -> do
         ts <- typeStringForType a
-        multiWord "Array" $ parenIfNeeded ts
+        arrayType <- renderArrayType
+        multiWord arrayType $ parenIfNeeded ts
     IRClass i -> singleWord =<< lookupClassName i
     IRMap t -> do
         ts <- typeStringForType t
@@ -229,7 +250,8 @@ decoderNameForType = case _ of
     IRString -> singleWord "Jdec.string"
     IRArray a -> do
         dn <- decoderNameForType a
-        multiWord "Jdec.array" $ parenIfNeeded dn
+        arrayType <- renderArrayType
+        multiWord ("Jdec." <> decapitalize arrayType) $ parenIfNeeded dn
     IRClass i -> singleWord =<< decoderNameFromTypeName <$> lookupClassName i
     IRMap t -> do
         dn <- decoderNameForType t
@@ -253,7 +275,8 @@ encoderNameForType = case _ of
     IRString -> singleWord "Jenc.string"
     IRArray a -> do
         rendered <- encoderNameForType a
-        multiWord "makeArrayEncoder" $ parenIfNeeded rendered
+        arrayType <- renderArrayType
+        multiWord ("make" <> arrayType <> "Encoder") $ parenIfNeeded rendered
     IRClass i -> singleWord =<< encoderNameFromTypeName <$> lookupClassName i
     IRMap t -> do
         rendered <- encoderNameForType t

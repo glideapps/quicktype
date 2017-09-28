@@ -14,6 +14,8 @@ module Doc
     , getUnionNames
     , getTopLevelNames
     , getOptionValue
+    , whenOption
+    , unlessOption
     , lookupName
     , lookupClassName
     , lookupUnionName
@@ -273,6 +275,16 @@ getOptionValue :: forall a. Option a -> Doc a
 getOptionValue option = do
     optionValues <- getOptionValues
     pure $ lookupOptionValue option optionValues
+
+whenOption :: Option Boolean -> Doc Unit -> Doc Unit
+whenOption option doc = do
+    value <- getOptionValue option
+    when value doc
+
+unlessOption :: Option Boolean -> Doc Unit -> Doc Unit
+unlessOption option doc = do
+    value <- getOptionValue option
+    unless value doc
 
 lookupName :: forall a. Ord a => a -> Map a String -> String
 lookupName original nameMap =

@@ -10,8 +10,9 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, legalizeCharacters, startWithLetter, stringEscape)
-import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getTypeNameForUnion, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated)
+import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getOptionValue, getTypeNameForUnion, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
+import Options (Option, booleanOption, stringOption)
 
 forbiddenNames :: Array String
 forbiddenNames =
@@ -32,6 +33,12 @@ forbiddenNames =
     , "null", "false", "true"
     ]
 
+pojoOption :: Option Boolean
+pojoOption = booleanOption "just-types" "Plain objects only" false
+
+packageOption :: Option String
+packageOption = stringOption "package" "The package name for the classes" "NAME" "io.quicktype"
+
 renderer :: Renderer
 renderer =
     { displayName: "Java"
@@ -39,7 +46,10 @@ renderer =
     , aceMode: "java"
     , extension: "java"
     , doc: javaDoc
-    , options: []
+    , options:
+        [ pojoOption.specification
+        , packageOption.specification
+        ]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -73,8 +83,9 @@ javaNameStyle upper =
 
 javaDoc :: Doc Unit
 javaDoc = do
-    renderConverter
-    blank
+    unlessOption pojoOption do
+        renderConverter
+        blank
     renderRenderItems blank Nothing renderClassDefinition (Just renderUnionDefinition)
 
 renderUnionWithTypeRenderer :: (Boolean -> IRType -> Doc String) -> IRUnionRep -> Doc String
@@ -116,9 +127,12 @@ renderFileComment fileName = do
 
 renderPackageAndImports :: Array String -> Doc Unit
 renderPackageAndImports imports = do
-    line "package io.quicktype;"
+    pojo <- getOptionValue pojoOption
+    let allImports = ["java.util.Map"] <> if pojo then [] else imports
+    packageName <- getOptionValue packageOption
+    line $ "package " <> packageName <> ";"
     blank
-    for_ imports \package -> do
+    for_ allImports \package -> do
         line $ "import " <> package <> ";"
 
 renderFileHeader :: String -> Array String -> Doc Unit
@@ -137,9 +151,10 @@ renderConverter = do
 //     com.fasterxml.jackson.core : jackson-databind : 2.9.0
 //
 // Import this package:
-//
-//     import io.quicktype.Converter;
-//
+//"""
+    packageName <- getOptionValue packageOption
+    line $ "//     import " <> packageName <> ".Converter;"
+    line """//
 // Then you can deserialize a JSON string with
 //"""
     forEachTopLevel_ \topLevelName topLevelType -> do
@@ -147,7 +162,7 @@ renderConverter = do
         decoderName <- getDecoderName topLevelName
         line $ "//     " <> topLevelTypeRendered <> " data = Converter." <> decoderName <> "(jsonString);"
     blank
-    renderPackageAndImports ["java.util.Map", "java.io.IOException", "com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.core.JsonProcessingException"]
+    renderPackageAndImports ["java.io.IOException", "com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.core.JsonProcessingException"]
     blank
     line "public class Converter {"
     indent do
@@ -214,9 +229,10 @@ renderConverter = do
 
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
-    renderFileHeader className ["java.util.Map", "com.fasterxml.jackson.annotation.*"]
+    renderFileHeader className ["com.fasterxml.jackson.annotation.*"]
     let propertyNames = transformPropertyNames (simpleNamer $ javaNameStyle false) (\n -> "other" <>  capitalize n) forbiddenNames properties
-    when (M.isEmpty properties) do
+    pojo <- getOptionValue pojoOption
+    when (M.isEmpty properties && not pojo) do
         line "@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)"
     line $ "public class " <> className <> " {"
     indent do
@@ -224,7 +240,8 @@ renderClassDefinition className properties = do
             line $ "private " <> rendered <> " " <> fieldName <> ";"
         forEachProp_ properties propertyNames \pname javaName fieldName rendered -> do
             blank
-            line $ "@JsonProperty(\"" <> stringEscape pname <> "\")"
+            unless pojo do
+                line $ "@JsonProperty(\"" <> stringEscape pname <> "\")"
             line $ "public " <> rendered <> " get" <> javaName <> "() { return " <> fieldName <> "; }"
             line $ "public void set" <> javaName <> "(" <> rendered <> " value) { this." <> fieldName <> " = value; }"
     line "}"
@@ -288,54 +305,58 @@ renderGenericCase predicate tokenType union =
 renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
 renderUnionDefinition unionName unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    renderFileHeader unionName ["java.io.IOException", "java.util.Map", "com.fasterxml.jackson.core.*", "com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.databind.annotation.*"]
-    line $ "@JsonDeserialize(using = " <> unionName <> ".Deserializer.class)"
-    line $ "@JsonSerialize(using = " <> unionName <> ".Serializer.class)"
+    renderFileHeader unionName ["java.io.IOException", "com.fasterxml.jackson.core.*", "com.fasterxml.jackson.databind.*", "com.fasterxml.jackson.databind.annotation.*"]
+    pojo <- getOptionValue pojoOption
+    unless pojo do
+        line $ "@JsonDeserialize(using = " <> unionName <> ".Deserializer.class)"
+        line $ "@JsonSerialize(using = " <> unionName <> ".Serializer.class)"
     line $ "public class " <> unionName <> " {"
     indent do
         forUnion_ nonNullUnion \t -> do
             { renderedType, fieldName } <- renderUnionField t
             line $ "public " <> renderedType <> " " <> fieldName <> ";"
-        blank
-        line $ "static class Deserializer extends JsonDeserializer<" <> unionName <> "> {"
-        indent do
-            line "@Override"
-            line $ "public " <> unionName <> " deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {"
+        
+        unless pojo do
+            blank
+            line $ "static class Deserializer extends JsonDeserializer<" <> unionName <> "> {"
             indent do
-                line $ unionName <> " value = new " <> unionName <> "();"
-                line "switch (jsonParser.getCurrentToken()) {"
-                when hasNull renderNullCase
-                renderPrimitiveCase ["VALUE_NUMBER_INT"] IRInteger nonNullUnion
-                renderDoubleCase nonNullUnion
-                renderPrimitiveCase ["VALUE_TRUE", "VALUE_FALSE"] IRBool nonNullUnion
-                renderPrimitiveCase ["VALUE_STRING"] IRString nonNullUnion
-                renderGenericCase unionHasArray "START_ARRAY" nonNullUnion
-                renderGenericCase unionHasClass "START_OBJECT" nonNullUnion
-                renderGenericCase unionHasMap "START_OBJECT" nonNullUnion
-                line $ "default: throw new IOException(\"Cannot deserialize " <> unionName <> "\");"
-                line "}"
-                line "return value;"
-            line "}"
-        line "}"
-        blank
-
-        line $ "static class Serializer extends JsonSerializer<" <> unionName <> "> {"
-        indent do
-            line "@Override"
-            line $ "public void serialize(" <> unionName <> " obj, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {"
-            indent do
-                forUnion_ nonNullUnion \field -> do
-                    { fieldName } <- renderUnionField field
-                    line $ "if (obj." <> fieldName <> " != null) {"
-                    indent do
-                        line $ "jsonGenerator.writeObject(obj." <> fieldName <> ");"
-                        line "return;"
+                line "@Override"
+                line $ "public " <> unionName <> " deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {"
+                indent do
+                    line $ unionName <> " value = new " <> unionName <> "();"
+                    line "switch (jsonParser.getCurrentToken()) {"
+                    when hasNull renderNullCase
+                    renderPrimitiveCase ["VALUE_NUMBER_INT"] IRInteger nonNullUnion
+                    renderDoubleCase nonNullUnion
+                    renderPrimitiveCase ["VALUE_TRUE", "VALUE_FALSE"] IRBool nonNullUnion
+                    renderPrimitiveCase ["VALUE_STRING"] IRString nonNullUnion
+                    renderGenericCase unionHasArray "START_ARRAY" nonNullUnion
+                    renderGenericCase unionHasClass "START_OBJECT" nonNullUnion
+                    renderGenericCase unionHasMap "START_OBJECT" nonNullUnion
+                    line $ "default: throw new IOException(\"Cannot deserialize " <> unionName <> "\");"
                     line "}"
-                if hasNull
-                    then
-                        line "jsonGenerator.writeNull();"
-                    else
-                        line $ "throw new IOException(\"" <> unionName <> " must not be null\");"
+                    line "return value;"
+                line "}"
             line "}"
-        line "}"
+            blank
+
+            line $ "static class Serializer extends JsonSerializer<" <> unionName <> "> {"
+            indent do
+                line "@Override"
+                line $ "public void serialize(" <> unionName <> " obj, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {"
+                indent do
+                    forUnion_ nonNullUnion \field -> do
+                        { fieldName } <- renderUnionField field
+                        line $ "if (obj." <> fieldName <> " != null) {"
+                        indent do
+                            line $ "jsonGenerator.writeObject(obj." <> fieldName <> ");"
+                            line "return;"
+                        line "}"
+                    if hasNull
+                        then
+                            line "jsonGenerator.writeNull();"
+                        else
+                            line $ "throw new IOException(\"" <> unionName <> " must not be null\");"
+                line "}"
+            line "}"
     line "}"

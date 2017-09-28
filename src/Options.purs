@@ -6,6 +6,7 @@ module Options
     , Option
     , OptionValueExtractor
     , booleanOption
+    , stringOption
     , enumOption
     , makeOptionValues
     , lookupOptionValue
@@ -14,8 +15,7 @@ module Options
 import Prelude
 
 import Data.Array as A
-import Data.Foldable (any, elem, intercalate)
-import Data.JSON.AST (Literal(..))
+import Data.Foldable (elem, intercalate)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
@@ -28,6 +28,7 @@ import Partial.Unsafe (unsafePartial)
 
 data OptionValue
     = BooleanValue Boolean
+    | StringValue String
     | EnumValue Int (Array String)
 
 type OptionSpecification =
@@ -67,6 +68,8 @@ makeOptionValues optionSpecifications optionStrings =
                 BooleanValue _ ->
                     let l = String.toLower optionString
                     in BooleanValue $ not $ l `elem` ["false", "f", "no", "n", "0"]
+                StringValue _ ->
+                    StringValue optionString
                 EnumValue _ cases ->
                     case A.findIndex (eq optionString) cases of
                     Just i -> EnumValue i cases
@@ -85,6 +88,20 @@ booleanOption name description default =
     where
         extractor :: Partial => OptionValueExtractor Boolean
         extractor (BooleanValue v) = v
+
+stringOption :: String -> String -> String -> String -> Option String
+stringOption name description typeLabel default =
+    { specification:
+        { name
+        , description
+        , typeLabel
+        , default: StringValue default
+        }
+    , extractor: \t -> unsafePartial $ extractor t
+    }
+    where
+        extractor :: Partial => OptionValueExtractor String
+        extractor (StringValue v) = v
 
 enumOption :: forall a. String -> String -> Array (Tuple String a) -> Option a
 enumOption name description cases =

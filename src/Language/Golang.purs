@@ -14,9 +14,13 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.String as Str
 import Data.String.Util (camelCase, stringEscape, legalizeCharacters, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, startWithLetter)
 import Data.Tuple (Tuple(..), fst)
-import Doc (Doc, Renderer, blank, combineNames, forEachTopLevel_, forbidNamer, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable)
+import Doc (Doc, Renderer, blank, combineNames, forEachTopLevel_, forbidNamer, getOptionValue, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, isClass, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap, unionToList)
+import Options (Option, stringOption)
 import Utils (mapM, sortByKeyM, sortByKey)
+
+packageOption :: Option String
+packageOption = stringOption "package" "The name for the generated package" "NAME" "main"
 
 renderer :: Renderer
 renderer =
@@ -25,7 +29,7 @@ renderer =
     , aceMode: "golang"
     , extension: "go"
     , doc: golangDoc
-    , options: []
+    , options: [packageOption.specification]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -112,7 +116,8 @@ golangDoc = do
         line $ "//    r, err := Unmarshal" <> topLevelName <> "(bytes)"
         line $ "//    bytes, err = r.Marshal()"
     blank
-    line "package main"
+    packageName <- getOptionValue packageOption
+    line $ "package " <> packageName
     blank
     unions <- getUnions
     unless (unions == L.Nil) do
