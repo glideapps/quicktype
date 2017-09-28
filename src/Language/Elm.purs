@@ -13,9 +13,9 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, decapitalize, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..), fst)
-import Doc (Doc, Namer, Renderer, blank, combineNames, forEachTopLevel_, getClasses, getModuleName, getOptionValue, getTopLevelNames, getTopLevels, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption, whenOption)
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachTopLevel_, getClasses, getOptionValue, getTopLevelNames, getTopLevels, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption, whenOption)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, isArray, nullableFromUnion, unionToList)
-import Options (Option, enumOption)
+import Options (Option, enumOption, stringOption)
 import Utils (forEnumerated_, sortByKey, sortByKeyM, mapM)
 
 forbiddenNames :: Array String
@@ -38,6 +38,9 @@ forbiddenNames =
 listOption :: Option Boolean
 listOption = enumOption "array-type" "Use Array or List" [Tuple "array" false, Tuple "list" true]
 
+moduleOption :: Option String
+moduleOption = stringOption "module" "The module name for the classes" "NAME" "QuickType"
+
 renderer :: Renderer
 renderer =
     { displayName: "Elm"
@@ -45,7 +48,10 @@ renderer =
     , aceMode: "elm"
     , extension: "elm"
     , doc: elmDoc
-    , options: [listOption.specification]
+    , options:
+        [ listOption.specification
+        , moduleOption.specification
+        ]
     , transforms:
         { nameForClass: elmNamer nameForClass
         , nextName: \s -> "Other" <> s
@@ -121,7 +127,7 @@ elmDoc = do
     let topLevelDecoders = map decoderNameFromTypeName topLevelNames
     let alsoTopLevelExports = L.concat $ map (alsoForbiddenForTypeName >>> L.fromFoldable) topLevelNames
     let exports = L.concat $ topLevelNames : alsoTopLevelExports : classNames : unionNames : L.Nil
-    moduleName <- getModuleName upperNameStyle
+    moduleName <- getOptionValue moduleOption
     line """-- To decode the JSON data, add this file to your project, run
 --
 --     elm-package install NoRedInk/elm-decode-pipeline
