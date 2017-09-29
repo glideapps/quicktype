@@ -37,7 +37,7 @@ pojoOption :: Option Boolean
 pojoOption = booleanOption "just-types" "Plain objects only" false
 
 packageOption :: Option String
-packageOption = stringOption "package" "The package name for the classes" "NAME" "io.quicktype"
+packageOption = stringOption "package" "Generated package name" "NAME" "io.quicktype"
 
 renderer :: Renderer
 renderer =
@@ -47,8 +47,8 @@ renderer =
     , extension: "java"
     , doc: javaDoc
     , options:
-        [ pojoOption.specification
-        , packageOption.specification
+        [ packageOption.specification
+        , pojoOption.specification
         ]
     , transforms:
         { nameForClass: simpleNamer nameForClass

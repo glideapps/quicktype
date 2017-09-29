@@ -38,10 +38,10 @@ justTypesOption :: Option Boolean
 justTypesOption = booleanOption "just-types" "Plain types only" false
 
 classOption :: Option Boolean
-classOption = enumOption "struct-or-class" "Use struct or class for types" [Tuple "struct" false, Tuple "class" true]
+classOption = enumOption "struct-or-class" "Generate structs or classes" [Tuple "struct" false, Tuple "class" true]
 
 swiftVersionOption :: Option Variant
-swiftVersionOption = enumOption "swift-version" "Which Swift version to target" [Tuple "4" Swift4, Tuple "3" Swift3]
+swiftVersionOption = enumOption "swift-version" "Swift version" [Tuple "4" Swift4, Tuple "3" Swift3]
 
 renderer :: Renderer
 renderer =
@@ -51,9 +51,9 @@ renderer =
     , extension: "swift"
     , doc: swiftDoc
     , options:
-        [ classOption.specification
+        [ swiftVersionOption.specification
+        , classOption.specification
         , justTypesOption.specification
-        , swiftVersionOption.specification
         ]
     , transforms:
         { nameForClass: simpleNamer nameForClass

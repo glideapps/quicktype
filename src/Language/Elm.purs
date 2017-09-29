@@ -39,7 +39,7 @@ listOption :: Option Boolean
 listOption = enumOption "array-type" "Use Array or List" [Tuple "array" false, Tuple "list" true]
 
 moduleOption :: Option String
-moduleOption = stringOption "module" "The module name for the classes" "NAME" "QuickType"
+moduleOption = stringOption "module" "Generated module name" "NAME" "QuickType"
 
 renderer :: Renderer
 renderer =
@@ -49,8 +49,8 @@ renderer =
     , extension: "elm"
     , doc: elmDoc
     , options:
-        [ listOption.specification
-        , moduleOption.specification
+        [ moduleOption.specification
+        , listOption.specification
         ]
     , transforms:
         { nameForClass: elmNamer nameForClass

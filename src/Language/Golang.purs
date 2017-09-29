@@ -20,7 +20,7 @@ import Options (Option, stringOption)
 import Utils (mapM, sortByKeyM, sortByKey)
 
 packageOption :: Option String
-packageOption = stringOption "package" "The name for the generated package" "NAME" "main"
+packageOption = stringOption "package" "Generated package name" "NAME" "main"
 
 renderer :: Renderer
 renderer =

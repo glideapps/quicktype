@@ -40,7 +40,7 @@ pocoOption :: Option Boolean
 pocoOption = booleanOption "just-types" "Plain objects only" false
 
 namespaceOption :: Option String
-namespaceOption = stringOption "namespace" "The namespace for the classes" "NAME" "QuickType"
+namespaceOption = stringOption "namespace" "Generated namespace" "NAME" "QuickType"
 
 renderer :: Renderer
 renderer =
@@ -50,10 +50,10 @@ renderer =
     , extension: "cs"
     , doc: csharpDoc
     , options:
-        [ denseOption.specification
+        [ namespaceOption.specification
+        , denseOption.specification
         , listOption.specification
         , pocoOption.specification
-        , namespaceOption.specification
         ]
     , transforms:
         { nameForClass: simpleNamer nameForClass
