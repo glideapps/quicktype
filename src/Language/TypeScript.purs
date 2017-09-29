@@ -16,8 +16,9 @@ import Data.String.Regex as Rx
 import Data.String.Regex.Flags as RxFlags
 import Data.String.Util (camelCase, capitalize, isLetterOrLetterNumber, legalizeCharacters, startWithLetter, stringEscape, times) as Str
 import Data.Tuple (Tuple(..), fst)
-import Doc (Doc, Renderer, blank, combineNames, forEachClass_, forEachTopLevel_, getModuleName, getSingleTopLevel, getTopLevels, indent, line, lookupClassName, lookupName, renderRenderItems, simpleNamer, transformPropertyNames)
+import Doc (Doc, Renderer, blank, combineNames, forEachClass_, forEachTopLevel_, getModuleName, getSingleTopLevel, getTopLevels, indent, line, lookupClassName, lookupName, renderRenderItems, simpleNamer, transformPropertyNames, unlessOption)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, mapUnionM, nullableFromUnion)
+import Options as Options
 import Partial.Unsafe (unsafePartial)
 import Utils (mapM)
 
@@ -28,7 +29,7 @@ renderer =
     , aceMode: "typescript"
     , extension: "ts"
     , doc: typeScriptDoc
-    , options: []
+    , options: [justInterfacesOption.specification]
     , transforms:
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> s <> "_"
@@ -37,6 +38,9 @@ renderer =
         , unions: Nothing
         }
     }
+
+justInterfacesOption :: Options.Option Boolean
+justInterfacesOption = Options.booleanOption "just-types" "Plain interfaces only" false
 
 nameForClass :: IRClassData -> String
 nameForClass (IRClassData { names }) = upperNameStyle $ combineNames names
@@ -159,23 +163,25 @@ typeScriptDoc = do
     forEachTopLevel_ \topLevelName topLevelType -> do
         topFull <- renderType topLevelType
         line $ "//   let value: " <> topFull  <> " = JSON.parse(json);"
-    line $ """//
-// Or use Convert.fromJson to perform a type-checking conversion:
-//
-//   import """ <> imports.advanced  <> """ from "./""" <> moduleName  <> ";"
-    forEachTopLevel_ \topLevelName topLevelType -> do
-        topFull <- renderType topLevelType
-        deserializer <- deserializerName topLevelName
-        line $ "//   let value: " <> topFull  <> " = Convert." <> deserializer <> "(json);"
-    line "//"
+
+    unlessOption justInterfacesOption do
+        line "//"
+        line "// Or use Convert.fromJson to perform a type-checking conversion:"
+        line "//"
+        line $ "//   import " <> imports.advanced  <> """ from "./""" <> moduleName  <> ";"
+        forEachTopLevel_ \topLevelName topLevelType -> do
+            topFull <- renderType topLevelType
+            deserializer <- deserializerName topLevelName
+            line $ "//   let value: " <> topFull  <> " = Convert." <> deserializer <> "(json);"
     blank
     renderRenderItems blank Nothing renderInterface Nothing
-    blank
-    line "//"
-    line "// The Convert module parses JSON and asserts types"
-    line "//"
-    blank
-    converter
+    unlessOption justInterfacesOption do
+        blank
+        line "//"
+        line "// The Convert module parses JSON and asserts types"
+        line "//"
+        blank
+        converter
 
 renderInterface :: String -> Map String IRType -> Doc Unit
 renderInterface className properties = do
