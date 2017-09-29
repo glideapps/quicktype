@@ -4,11 +4,12 @@ module Main
     , intSentinel
     ) where
 
-import IRGraph
+import Prelude
 
+import IRGraph (regatherClassNames, regatherUnionNames)
 import Config as Config
 import Control.Monad.State (modify)
-import Core (Either, Error, SourceCode, bind, discard, pure, ($), (<$>))
+import Core (Either, Error, SourceCode)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson) as J
 import Data.StrMap as SM
@@ -38,7 +39,7 @@ main json = do
     graph <- normalizeGraphOrder <$> execIR do
         makeTypes samples
         T.replaceSimilarClasses
-        T.makeMaps
+        if Config.inferMaps config then T.makeMaps else pure unit
         modify regatherClassNames
 
         -- We don't regatherClassNames for schemas

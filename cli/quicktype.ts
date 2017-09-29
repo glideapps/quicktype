@@ -76,6 +76,11 @@ const optionDefinitions: OptionDefinition[] = [
     description: "Tracery grammar describing URLs to crawl."
   },
   {
+    name: "no-maps",
+    type: Boolean,
+    description: "Don't infer maps, always use classes."
+  },
+  {
     name: "help",
     alias: "h",
     type: Boolean,
@@ -163,6 +168,7 @@ export interface Options {
   srcLang?: string;
   srcUrls?: string;
   out?: string;
+  noMaps?: boolean;
   help?: boolean;
   rendererOptions: { [name: string]: string };
 }
@@ -232,6 +238,7 @@ class Run {
           return { name, samples: samplesOrSchemas[name] };
         }
       }),
+      inferMaps: !this.options.noMaps,
       rendererOptions: this.options.rendererOptions
     };
 

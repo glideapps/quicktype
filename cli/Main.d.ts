@@ -22,5 +22,6 @@ type TopLevelConfig =
 interface Config {
   language: string;
   topLevels: TopLevelConfig[];
+  inferMaps?: boolean;
   rendererOptions?: { [name: string]: string };
 }

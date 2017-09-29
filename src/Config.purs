@@ -6,24 +6,23 @@ module Config
     , topLevelSamples
     , topLevelSchemas
     , rendererOptions
+    , inferMaps
     , renderer
     ) where
 
-import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?), (.??))
 import Prelude
 
 import Control.Alt ((<|>))
 import Data.Argonaut.Core (Json)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?), (.??))
 import Data.Array as A
 import Data.Either (Either(Right, Left))
-import Data.Foldable (elem, find)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(Just), fromMaybe, maybe)
-import Data.Tuple (Tuple(..))
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
-import Doc (Renderer)
+import Data.Tuple (Tuple(..))
 import Doc as Doc
 import Language.JsonSchema (JSONSchema)
 import Language.Renderers as Renderers
@@ -41,6 +40,7 @@ data TopLevelConfig = TopLevelConfig
 newtype Config = Config
     { topLevels :: Array TopLevelConfig
     , language :: String
+    , inferMaps :: Boolean
     , rendererOptions :: StrMap String
     }
 
@@ -72,11 +72,13 @@ instance decodeConfig :: DecodeJson Config where
         obj <- decodeJson j
         topLevels <- obj .? "topLevels"
         language <- obj .? "language"
+        maybeInferMaps <- obj .?? "inferMaps"
         maybeOptions <- obj .?? "rendererOptions"
         pure $ Config
             { topLevels
             -- TODO derive from outFile
             , language
+            , inferMaps: maybe true id maybeInferMaps
             , rendererOptions: maybe SM.empty id maybeOptions
             }
 
@@ -117,3 +119,6 @@ topLevelSchemas (Config config) = withSchemas
 
 rendererOptions :: Config -> StrMap String
 rendererOptions (Config { rendererOptions }) = rendererOptions
+
+inferMaps :: Config -> Boolean
+inferMaps (Config { inferMaps }) = inferMaps
