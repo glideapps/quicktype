@@ -19,18 +19,18 @@ export function debug<T>(x: T): T {
   return x;
 }
 
-export function failWith(message: string, obj: any) {
+export function failWith(message: string, obj: any): never {
   obj.cwd = process.cwd();
   console.error(chalk.red(message));
   console.error(chalk.red(JSON.stringify(obj, null, "  ")));
   throw obj;
 }
 
-function callAndReportFailure<T>(message: string, f: () => T): T {
+function callAndReportFailure<T>(message: string, f: () => T): T | never {
   try {
     return f();
   } catch (e) {
-    failWith(message, { error: e });
+    return failWith(message, { error: e });
   }
 }
 
@@ -113,8 +113,7 @@ export function samplesFromSources(
 
 type ComparisonArgs = {
   expectedFile: string;
-  jsonFile?: string;
-  jsonCommand?: string;
+  given: { file: string } | { command: string };
   strict: boolean;
   allowMissingNull?: boolean;
 };
@@ -122,15 +121,16 @@ type ComparisonArgs = {
 export function compareJsonFileToJson(args: ComparisonArgs) {
   debug(args);
 
-  let { expectedFile, jsonFile, jsonCommand, strict } = args;
+  const { expectedFile, strict } = args;
+  const given: any = args.given;
 
-  const jsonString = jsonFile
+  const jsonString = given.file
     ? callAndReportFailure("Could not read JSON output file", () =>
-        fs.readFileSync(jsonFile, "utf8")
+        fs.readFileSync(given.file, "utf8")
       )
     : callAndReportFailure(
         "Could not run command for JSON output",
-        () => exec(jsonCommand).stdout
+        () => exec(given.command).stdout
       );
 
   const givenJSON = callAndReportFailure("Could not parse output JSON", () =>
@@ -141,8 +141,7 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
     () => JSON.parse(fs.readFileSync(expectedFile, "utf8"))
   );
 
-  const allowMissingNull =
-    args.allowMissingNull === undefined ? false : args.allowMissingNull;
+  const allowMissingNull = !!args.allowMissingNull;
   let jsonAreEqual = strict
     ? callAndReportFailure("Failed to strictly compare objects", () =>
         strictDeepEquals(givenJSON, expectedJSON)
@@ -154,8 +153,7 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
   if (!jsonAreEqual) {
     failWith("Error: Output is not equivalent to input.", {
       expectedFile,
-      jsonCommand,
-      jsonFile
+      given
     });
   }
 }

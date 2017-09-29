@@ -5,7 +5,7 @@ import * as _ from "lodash";
 
 import { inParallel } from "./lib/multicore";
 import { exec } from "./utils";
-import { allFixtures } from "./fixtures";
+import { Fixture, allFixtures } from "./fixtures";
 
 const exit = require("exit");
 
@@ -13,7 +13,7 @@ const exit = require("exit");
 // Constants
 /////////////////////////////////////
 
-const CPUs = +process.env.CPUs || os.cpus().length;
+const CPUs = parseInt(process.env.CPUs || "0", 10) || os.cpus().length;
 
 //////////////////////////////////////
 // Test driver
@@ -23,13 +23,16 @@ type WorkItem = { sample: string; fixtureName: string };
 
 async function main(sources: string[]) {
   let fixtures = allFixtures;
-  if (process.env.FIXTURE) {
-    const fixtureNames = process.env.FIXTURE.split(",");
+  const fixturesFromCmdline = process.env.FIXTURE;
+  if (fixturesFromCmdline) {
+    const fixtureNames = fixturesFromCmdline.split(",");
     fixtures = _.filter(fixtures, fixture =>
       _.some(fixtureNames, name => fixture.runForName(name))
     );
   }
-  // Get an array of all { sample, fixtureName } objects we'll run
+  // Get an array of all { sample, fixtureName } objects we'll run.
+  // We can't just put the fixture in there because these WorkItems
+  // will be sent in a message, removing all code.
   const samples = _.map(fixtures, fixture => ({
     fixtureName: fixture.name,
     samples: fixture.getSamples(sources)
@@ -63,7 +66,7 @@ async function main(sources: string[]) {
     },
 
     map: async ({ sample, fixtureName }: WorkItem, index) => {
-      let fixture = _.find(fixtures, { name: fixtureName });
+      let fixture = _.find(fixtures, { name: fixtureName }) as Fixture;
       try {
         await fixture.runWithSample(sample, index, tests.length);
       } catch (e) {

@@ -25,12 +25,12 @@ const shell = require("shelljs");
 
 const IS_CI = process.env.CI === "true";
 const BRANCH = process.env.TRAVIS_BRANCH;
-const IS_BLESSED = ["master"].indexOf(BRANCH) !== -1;
+const IS_BLESSED = BRANCH === "master";
 const IS_PR =
   process.env.TRAVIS_PULL_REQUEST &&
   process.env.TRAVIS_PULL_REQUEST !== "false";
 
-abstract class Fixture {
+export abstract class Fixture {
   abstract name: string;
 
   runForName(name: string): boolean {
@@ -81,14 +81,15 @@ abstract class LanguageFixture extends Fixture {
   }
 
   async setup() {
-    if (!this.language.setupCommand) {
+    const setupCommand = this.language.setupCommand;
+    if (!setupCommand) {
       return;
     }
 
     console.error(`* Setting up`, chalk.magenta(this.name), `fixture`);
 
     await inDir(this.language.base, async () => {
-      exec(this.language.setupCommand);
+      exec(setupCommand);
     });
   }
 
@@ -150,7 +151,7 @@ class JSONFixture extends LanguageFixture {
     }
     compareJsonFileToJson({
       expectedFile: sample,
-      jsonCommand: this.language.runCommand(sample),
+      given: { command: this.language.runCommand(sample) },
       strict: false,
       allowMissingNull: this.language.allowMissingNull
     });
@@ -233,7 +234,6 @@ class JSONSchemaJSONFixture extends JSONFixture {
       name: "schema",
       base: language.base,
       setupCommand: language.setupCommand,
-      compileCommand: null,
       runCommand: (sample: string) => {
         throw "This must not be called!";
       },
@@ -275,7 +275,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
     // Parse the sample with the code generated from its schema, and compare to the sample
     compareJsonFileToJson({
       expectedFile: sample,
-      jsonCommand: this.runLanguage.runCommand(sample),
+      given: { command: this.runLanguage.runCommand(sample) },
       strict: false,
       allowMissingNull: this.runLanguage.allowMissingNull
     });
@@ -291,7 +291,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
     });
     compareJsonFileToJson({
       expectedFile: "schema.json",
-      jsonFile: schemaSchema,
+      given: { file: schemaSchema },
       strict: true
     });
   }
@@ -364,7 +364,7 @@ class JSONSchemaFixture extends LanguageFixture {
       const jsonBase = path.basename(json);
       compareJsonFileToJson({
         expectedFile: jsonBase,
-        jsonCommand: this.language.runCommand(jsonBase),
+        given: { command: this.language.runCommand(jsonBase) },
         strict: false,
         allowMissingNull: this.language.allowMissingNull
       });

@@ -173,12 +173,24 @@ export interface Options {
   rendererOptions: { [name: string]: string };
 }
 
+interface CompleteOptions {
+  lang: string;
+  src: string[];
+  topLevel: string;
+  srcLang: string;
+  srcUrls?: string;
+  out?: string;
+  noMaps: boolean;
+  help?: boolean;
+  rendererOptions: { [name: string]: string };
+}
+
 interface SampleOrSchemaMap {
   [key: string]: object[];
 }
 
 class Run {
-  options: Options;
+  options: CompleteOptions;
 
   constructor(argv: string[] | Options) {
     if (_.isArray(argv)) {
@@ -318,7 +330,8 @@ class Run {
         { name: "endObject" }
       ];
 
-      let queue = [];
+      // FIXME: this is all completely untyped
+      let queue: any[] = [];
       source.output.on("data", chunk => {
         switch (chunk.name) {
           case "startNumber":
@@ -401,7 +414,7 @@ class Run {
     optionDefinitions: OptionDefinition[],
     argv: string[],
     partial: boolean
-  ): Options => {
+  ): CompleteOptions => {
     const opts: { [key: string]: any } = commandLineArgs(optionDefinitions, {
       argv,
       partial: partial
@@ -424,12 +437,15 @@ class Run {
     return this.inferOptions(options);
   };
 
-  inferOptions = (opts: Options): Options => {
-    opts.src = opts.src || [];
-    opts.srcLang = opts.srcLang || "json";
-    opts.lang = opts.lang || this.inferLang(opts);
-    opts.topLevel = opts.topLevel || this.inferTopLevel(opts);
-    return opts;
+  inferOptions = (opts: Options): CompleteOptions => {
+    return {
+      src: opts.src || [],
+      srcLang: opts.srcLang || "json",
+      lang: opts.lang || this.inferLang(opts),
+      topLevel: opts.topLevel || this.inferTopLevel(opts),
+      noMaps: !!opts.noMaps,
+      ...opts
+    };
   };
 
   inferLang = (options: Options): string => {
@@ -457,7 +473,7 @@ class Run {
     }
 
     // Source determines the top-level if undefined
-    if (options.src.length == 1) {
+    if (options.src && options.src.length == 1) {
       let src = options.src[0];
       let extension = path.extname(src);
       let without = path.basename(src).replace(extension, "");

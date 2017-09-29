@@ -1,12 +1,8 @@
 {
-    "compilerOptions": {
-        "target": "es5",
-        "lib": [
-            "es2015"
-        ]
-    },
-    "include": [
-        "*.ts",
-        "../cli/*.ts"
-    ]
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["es2015"],
+    "strictNullChecks": true
+  },
+  "include": ["*.ts", "../cli/*.ts"]
 }

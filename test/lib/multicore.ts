@@ -11,8 +11,6 @@ export interface ParallelArgs<Item, Result, Acc> {
   workers: number;
   setup(): Promise<Acc>;
   map(item: Item, index: number): Promise<Result>;
-  reduce?(accum: Acc, result: Result, item: Item): Promise<Acc>;
-  done?(accum: Acc);
 }
 
 function randomPick<T>(arr: T[]): T {
@@ -35,31 +33,25 @@ export async function inParallel<Item, Result, Acc>(
   });
 
   if (cluster.isMaster) {
-    let { setup, reduce, workers, done, map } = args;
+    let { setup, workers, map } = args;
     let accumulator = await setup();
 
     cluster.on("message", (worker, { result, item }) => {
-      if (result && reduce) {
-        reduce(accumulator, result, item);
-      }
-
       if (items.length) {
         worker.send(items.shift());
       } else {
         worker.kill();
-
-        if (_.isEmpty(cluster.workers)) {
-          if (done) {
-            done(accumulator);
-          }
-        }
       }
     });
 
     cluster.on("exit", (worker, code, signal) => {
       if (code && code !== 0) {
         // Kill workers and exit if any worker dies
-        _.forIn(cluster.workers, w => w.kill());
+        _.forIn(cluster.workers, w => {
+          if (w) {
+            w.kill();
+          }
+        });
         exit(code);
       }
     });
@@ -69,9 +61,7 @@ export async function inParallel<Item, Result, Acc>(
       // We run everything on the master process if only one worker
       for (let { item, i } of items) {
         let result = await map(item, i);
-        accumulator = reduce && (await reduce(accumulator, result, item));
       }
-      return done && done(accumulator);
     } else {
       _.range(workers).forEach(i =>
         cluster.fork({
@@ -87,12 +77,12 @@ export async function inParallel<Item, Result, Acc>(
 
     // master sends a { fixtureName, sample } to run
     process.on("message", async ({ item, i }) => {
-      process.send({
+      (process.send as any)({
         result: await map(item, i)
       });
     });
 
     // Ask master for work
-    process.send("ready");
+    (process.send as any)("ready");
   }
 }
