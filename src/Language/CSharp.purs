@@ -19,6 +19,8 @@ import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLeve
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, Named, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
 import Options (Option, booleanOption, enumOption, stringOption)
 
+data Version = CSharp5 | CSharp6
+
 forbiddenNames :: Array String
 forbiddenNames =
     [ "QuickType"
@@ -42,6 +44,9 @@ pocoOption = booleanOption "just-types" "Plain objects only" false
 namespaceOption :: Option String
 namespaceOption = stringOption "namespace" "Generated namespace" "NAME" "QuickType"
 
+versionOption :: Option Version
+versionOption = enumOption "csharp-version" "C# version" [Tuple "6" CSharp6, Tuple "5" CSharp5]
+
 renderer :: Renderer
 renderer =
     { displayName: "C#"
@@ -51,6 +56,7 @@ renderer =
     , doc: csharpDoc
     , options:
         [ namespaceOption.specification
+        , versionOption.specification
         , denseOption.specification
         , listOption.specification
         , pocoOption.specification
@@ -182,6 +188,19 @@ stringIfTrue :: Boolean -> String -> String
 stringIfTrue true s = s
 stringIfTrue false _ = ""
 
+expressionMember :: String -> String -> Doc Unit
+expressionMember declare define = do
+    version <- getOptionValue versionOption
+    case version of
+        CSharp5 -> do
+            line declare
+            line "{"
+            indent do
+                line $ "return " <> define <> ";"
+            line "}"
+        _ -> do
+            line $ declare <> " => " <> define <> ";"
+
 renderCSharpClassJSONPartials :: Doc Unit
 renderCSharpClassJSONPartials = do
     forEachTopLevel_ \topLevelName topLevelType -> do
@@ -190,18 +209,14 @@ renderCSharpClassJSONPartials = do
         line $ "public partial class " <> topLevelName
         line "{"
         indent do
-            line
-                $ "public static "
+            expressionMember
+                ("public static "
                 <> topLevelTypeRendered 
                 <> " "
-                <> "FromJson(string json)"
-            line "{"
-            indent do
-                 line
-                    $ "return JsonConvert.DeserializeObject<"
+                <> "FromJson(string json)")
+                ("JsonConvert.DeserializeObject<"
                     <> topLevelTypeRendered
-                    <> ">(json, Converter.Settings);"
-            line "}"
+                    <> ">(json, Converter.Settings)")
         line "}"
 
     whenSerializers do
@@ -211,14 +226,11 @@ renderCSharpClassJSONPartials = do
         indent do
             forEachTopLevel_ \topLevelName topLevelType -> do
                 topLevelTypeRendered <- renderTypeToCSharp topLevelType
-                line $
-                    "public static string ToJson(this "
+                expressionMember
+                    ("public static string ToJson(this "
                     <> topLevelTypeRendered
-                    <> " self)"
-                line "{"
-                indent do
-                    line "return JsonConvert.SerializeObject(self, Converter.Settings);"
-                line "}"
+                    <> " self)")
+                    "JsonConvert.SerializeObject(self, Converter.Settings)"
     line "}"
 
 renderJsonConverter :: Doc Unit
@@ -231,10 +243,9 @@ renderJsonConverter = do
     line "{"
     indent do
         when haveUnions do
-            line "public override bool CanConvert(Type t)"
-            line "{"
-            indent $ line $ "return " <> intercalate " || " (map (\n -> "t == typeof(" <> n <> ")") names) <> ";"
-            line "}"
+            expressionMember
+                "public override bool CanConvert(Type t)"
+                (intercalate " || " (map (\n -> "t == typeof(" <> n <> ")") names))
             blank
             line "public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)"
             line "{"
