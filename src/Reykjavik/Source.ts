@@ -1,6 +1,6 @@
 "use strict";
 
-import { List } from "immutable";
+import { List, Map } from "immutable";
 
 import { Annotation } from "./Annotation";
 import { Named } from "./Naming";
@@ -71,4 +71,45 @@ function annotated(annotation: Annotation, sl: Sourcelike): Source {
         annotation,
         source: sourcelikeToSource(sl)
     };
+}
+
+function assertNever(x: never): never {
+    throw new Error("Unexpected object: " + x);
+}
+
+function serializeToStringArray(
+    source: Source,
+    names: Map<Named, string>,
+    array: string[]
+): void {
+    switch (source.kind) {
+        case "text":
+            array.push(source.text);
+            break;
+        case "newline":
+            array.push("\n");
+            break;
+        case "sequence":
+            source.sequence.forEach(s =>
+                serializeToStringArray(s, names, array)
+            );
+            break;
+        case "annotated":
+            serializeToStringArray(source.source, names, array);
+            break;
+        case "name":
+            if (!names.has(source.named)) {
+                throw "No name for Named";
+            }
+            array.push(names.get(source.named));
+            break;
+        default:
+            return assertNever(source);
+    }
+}
+
+function serializeSource(source: Source, names: Map<Named, string>): string {
+    const array: string[] = [];
+    serializeToStringArray(source, names, array);
+    return array.join("");
 }

@@ -1,35 +1,47 @@
 "use strict";
 
-import { OrderedSet, List } from "immutable";
+import { Set, OrderedSet, List, Map } from "immutable";
 import stringHash = require("string-hash");
 
-class Namespace {
-    readonly name: string;
-    readonly parent?: Namespace;
-    children: OrderedSet<Namespace>;
-    readonly forbidden: OrderedSet<Namespace>;
-    members: OrderedSet<Named>;
+import { Renderer } from "./Renderer";
+
+export class Namespace {
+    private readonly _name: string;
+    private readonly _parent?: Namespace;
+    private _children: OrderedSet<Namespace>;
+    private readonly _forbidden: Set<Namespace>;
+    private _members: OrderedSet<Named>;
 
     constructor(
         name: string,
+        renderer: Renderer,
         parent: Namespace | undefined,
-        forbidden: OrderedSet<Namespace>
+        forbidden: Set<Namespace>
     ) {
-        this.name = name;
-        this.forbidden = forbidden;
-        this.members = OrderedSet();
+        this._name = name;
+        this._forbidden = forbidden;
+        this._children = OrderedSet();
+        this._members = OrderedSet();
         if (parent) {
-            this.parent = parent;
+            this._parent = parent;
             parent.addChild(this);
         }
     }
 
-    addChild(ns: Namespace): void {
-        this.children = this.children.add(ns);
+    private addChild(child: Namespace): void {
+        this._children = this._children.add(child);
+    }
+
+    get children(): OrderedSet<Namespace> {
+        return this._children;
+    }
+
+    get members(): OrderedSet<Named> {
+        return this._members;
     }
 
     add(named: Named): void {
-        this.members = this.members.add(named);
+        this._members = this._members.add(named);
     }
 
     equals(other: any): boolean {
@@ -37,9 +49,9 @@ class Namespace {
     }
 
     hashCode(): number {
-        let hash = stringHash(this.name);
-        if (this.parent) {
-            hash += this.parent.hashCode();
+        let hash = stringHash(this._name);
+        if (this._parent) {
+            hash += this._parent.hashCode();
         }
         return hash | 0;
     }
@@ -57,12 +69,12 @@ class Namespace {
 // the requested name, and the number of names to generate.
 
 export abstract class Named {
-    readonly namespace: Namespace;
-    readonly name: string;
+    private readonly _namespace: Namespace;
+    private readonly _name: string;
 
     constructor(namespace: Namespace, name: string) {
-        this.namespace = namespace;
-        this.name = name;
+        this._namespace = namespace;
+        this._name = name;
         namespace.add(this);
     }
 
@@ -71,11 +83,17 @@ export abstract class Named {
     }
 
     hashCode(): number {
-        return (stringHash(this.name) + this.namespace.hashCode()) | 0;
+        return (stringHash(this._name) + this._namespace.hashCode()) | 0;
     }
+
+    abstract get dependencies(): List<Named>;
 }
 
-export class FixedNamed extends Named {}
+export class FixedNamed extends Named {
+    get dependencies(): List<Named> {
+        return List();
+    }
+}
 
 export class SimpleNamed extends Named {
     // It makes sense for this to be different from the name.  For example, the
@@ -84,11 +102,15 @@ export class SimpleNamed extends Named {
     // users to override names, the overridden name will be the preferred.  We
     // need to ensure no collisions, so we can't just hard override (unless we
     // still check for collisions and just error if there are any).
-    readonly preferred: string;
+    private readonly _preferred: string;
 
     constructor(namespace: Namespace, name: string, preferred: string) {
         super(namespace, name);
-        this.preferred = preferred;
+        this._preferred = preferred;
+    }
+
+    get dependencies(): List<Named> {
+        return List();
     }
 }
 
@@ -96,11 +118,11 @@ export class DependencyNamed extends Named {
     // This is a List as opposed to a set because it might contain the same
     // name more than once, and we don't want to put the burden of checking
     // on the renderer.
-    readonly dependencies: List<Named>;
+    private readonly _dependencies: List<Named>;
     // The `names` parameter will contain the names of all `dependencies` in
     // the same order as the latter.  If some of them are the same, `names`
     // will contain their names multiple times.
-    readonly proposeName: (names: List<string>) => string;
+    private readonly _proposeName: (names: List<string>) => string;
 
     constructor(
         namespace: Namespace,
@@ -109,21 +131,67 @@ export class DependencyNamed extends Named {
         proposeName: (names: List<string>) => string
     ) {
         super(namespace, name);
-        this.dependencies = dependencies;
-        this.proposeName = proposeName;
+        this._dependencies = dependencies;
+        this._proposeName = proposeName;
+    }
+
+    get dependencies(): List<Named> {
+        return this._dependencies;
     }
 }
 
-// Naming algorithm:
-//
-// 1. Find a namespace whose fobiddens are all fully named, and that has
-//    at least one unnamed Named that has all its dependencies satisfied.
-//    If no such namespace exists we're either done, or there's an unallowed
-//    cycle.
-//
-// 2. Sort those names into sets where all members of a set propose the same
-//    name and have the same naming function.
-//
-// 3. Use each set's naming function to name its members.
-//
-// 4. Goto 1.
+function allNamespacesRecursively(
+    namespaces: OrderedSet<Namespace>
+): OrderedSet<Namespace> {
+    return namespaces.union(
+        ...namespaces.map(ns => allNamespacesRecursively(ns.children)).toArray()
+    );
+}
+
+function isFullyNamed(
+    namespace: Namespace,
+    names: Map<Named, string>
+): boolean {
+    return namespace.members.every(n => names.has(n));
+}
+
+function isReadyToBeNamed(named: Named, names: Map<Named, string>): boolean {
+    if (names.has(named)) return false;
+    return named.dependencies.every(n => names.has(n));
+}
+
+// Naming algorithm
+function assignNames(
+    rootNamespaces: OrderedSet<Namespace>
+): Map<Named, string> {
+    const namespaces = allNamespacesRecursively(rootNamespaces);
+    let names: Map<Named, string> = Map();
+
+    for (;;) {
+        // 1. Find a namespace whose forbiddens are all fully named, and that has
+        //    at least one unnamed Named that has all its dependencies satisfied.
+        //    If no such namespace exists we're either done, or there's an unallowed
+        //    cycle.
+
+        const unfinishedNamespaces = namespaces.filter(
+            ns => !isFullyNamed(ns, names)
+        );
+        const readyNamespace = unfinishedNamespaces.find(ns =>
+            ns.members.some(n => isReadyToBeNamed(n, names))
+        );
+
+        if (!readyNamespace) {
+            // FIXME: Check for cycles?
+            return names;
+        }
+
+        // 2. Sort those names into sets where all members of a set propose the same
+        //    name and have the same naming function.
+
+        const readyNames = readyNamespace.members.filter(n =>
+            isReadyToBeNamed(n, names)
+        );
+
+        // 3. Use each set's naming function to name its members.
+    }
+}
