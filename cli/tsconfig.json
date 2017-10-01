@@ -1,15 +1,10 @@
 {
-    "compilerOptions": {
-        "target": "es5",
-        "lib": [
-            "es2015"
-        ],
-        "outDir": "../output",
-        "typeRoots": [
-            "../node_modules/@types"
-        ]
-    },
-    "include": [
-        "*.ts"
-    ]
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["es2015"],
+    "outDir": "../output",
+    "typeRoots": ["../node_modules/@types"],
+    "strictNullChecks": true
+  },
+  "include": ["*.ts"]
 }

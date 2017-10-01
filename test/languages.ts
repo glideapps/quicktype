@@ -3,8 +3,8 @@
 export interface Language {
   name: string;
   base: string;
-  setupCommand: string;
-  compileCommand: string;
+  setupCommand?: string;
+  compileCommand?: string;
   runCommand(sample: string): string;
   diffViaSchema: boolean;
   allowMissingNull: boolean;
@@ -19,7 +19,6 @@ export const CSharpLanguage: Language = {
   base: "test/fixtures/csharp",
   // https://github.com/dotnet/cli/issues/1582
   setupCommand: "dotnet restore --no-cache",
-  compileCommand: null,
   runCommand(sample: string) {
     return `dotnet run "${sample}"`;
   },
@@ -34,7 +33,6 @@ export const CSharpLanguage: Language = {
 export const JavaLanguage: Language = {
   name: "java",
   base: "test/fixtures/java",
-  setupCommand: null,
   compileCommand: "mvn package",
   runCommand(sample: string) {
     return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`;
@@ -50,8 +48,6 @@ export const JavaLanguage: Language = {
 export const GoLanguage: Language = {
   name: "golang",
   base: "test/fixtures/golang",
-  setupCommand: null,
-  compileCommand: null,
   runCommand(sample: string) {
     return `go run main.go quicktype.go < "${sample}"`;
   },
@@ -85,7 +81,6 @@ function makeSwiftLanguage(rendererOptions: {
   return {
     name: "swift",
     base: "test/fixtures/swift",
-    setupCommand: null,
     compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
     runCommand(sample: string) {
       return `./quicktype "${sample}"`;
@@ -117,8 +112,6 @@ export const Swift4ClassesLanguage: Language = makeSwiftLanguage({
 export const TypeScriptLanguage: Language = {
   name: "typescript",
   base: "test/fixtures/typescript",
-  setupCommand: null,
-  compileCommand: null,
   runCommand(sample: string) {
     // We have to unset TS_NODE_PROJECT because it gets set on the workers
     // to the root test/tsconfig.json
