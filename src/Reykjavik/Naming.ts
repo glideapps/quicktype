@@ -67,14 +67,32 @@ export class Namespace {
 //
 // The naming function is invoked with the set of all assigned, forbidden names,
 // the requested name, and the number of names to generate.
+//
+// NamingFunction is a class so that we can compare naming functions and put
+// them into immutable collections.
+
+abstract class NamingFunction {
+    abstract name(
+        proposedName: string,
+        forbiddenNames: Set<string>,
+        numberOfNames: number
+    ): OrderedSet<string>;
+}
 
 export abstract class Named {
     private readonly _namespace: Namespace;
     private readonly _name: string;
+    // If a Named is fixed, this is null.
+    readonly namingFunction: NamingFunction | null;
 
-    constructor(namespace: Namespace, name: string) {
+    constructor(
+        namespace: Namespace,
+        name: string,
+        namingFunction: NamingFunction | null
+    ) {
         this._namespace = namespace;
         this._name = name;
+        this.namingFunction = namingFunction;
         namespace.add(this);
     }
 
@@ -87,9 +105,17 @@ export abstract class Named {
     }
 
     abstract get dependencies(): List<Named>;
+
+    get isFixed(): boolean {
+        return this.namingFunction === null;
+    }
 }
 
 export class FixedNamed extends Named {
+    constructor(namespace: Namespace, name: string) {
+        super(namespace, name, null);
+    }
+
     get dependencies(): List<Named> {
         return List();
     }
@@ -104,8 +130,13 @@ export class SimpleNamed extends Named {
     // still check for collisions and just error if there are any).
     private readonly _preferred: string;
 
-    constructor(namespace: Namespace, name: string, preferred: string) {
-        super(namespace, name);
+    constructor(
+        namespace: Namespace,
+        name: string,
+        namingFunction: NamingFunction,
+        preferred: string
+    ) {
+        super(namespace, name, namingFunction);
         this._preferred = preferred;
     }
 
@@ -127,10 +158,11 @@ export class DependencyNamed extends Named {
     constructor(
         namespace: Namespace,
         name: string,
+        namingFunction: NamingFunction,
         dependencies: List<Named>,
         proposeName: (names: List<string>) => string
     ) {
-        super(namespace, name);
+        super(namespace, name, namingFunction);
         this._dependencies = dependencies;
         this._proposeName = proposeName;
     }
@@ -166,6 +198,11 @@ function assignNames(
 ): Map<Named, string> {
     const namespaces = allNamespacesRecursively(rootNamespaces);
     let names: Map<Named, string> = Map();
+
+    // Assign all the fixed names.
+    const fixedNames = namespaces.flatMap(ns =>
+        ns.members.filter(n => n.isFixed)
+    );
 
     for (;;) {
         // 1. Find a namespace whose forbiddens are all fully named, and that has
