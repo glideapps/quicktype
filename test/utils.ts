@@ -2,7 +2,7 @@
 
 import * as fs from "fs";
 
-import { main as quicktype_, Options } from "../cli/quicktype";
+import { main as quicktype_, Options } from "../dist/quicktype";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 

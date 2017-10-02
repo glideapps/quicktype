@@ -1,13 +1,20 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as process from "process";
-import * as Either from "./either";
-import * as Maybe from "./maybe";
-import { psRequire } from "./require";
+
+import * as Either from "Data.Either";
+import * as Maybe from "Data.Maybe";
+
+// These are simplified, uncurried versions of Either.fromRight, etc.
+import { fromRight, fromJust } from "./purescript";
+
 import * as _ from "lodash";
 
-const Main: Main = psRequire("Main");
-const Renderers: Renderers = psRequire("Language.Renderers");
+import * as Main from "Main";
+import { Config } from "Config";
+import { Renderer } from "Doc";
+import * as Renderers from "Language.Renderers";
+import { ErrorMessage, SourceCode } from "Core";
 
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
@@ -232,7 +239,7 @@ class Run {
       console.error(`'${lang}' is not yet supported as an output language.`);
       process.exit(1);
     }
-    return Maybe.fromJust(maybe);
+    return fromJust(maybe);
   };
 
   renderSamplesOrSchemas = (
@@ -254,7 +261,7 @@ class Run {
       rendererOptions: this.options.rendererOptions
     };
 
-    return Either.fromRight(Main.main(config));
+    return fromRight(Main.main(config));
   };
 
   splitAndWriteJava = (dir: string, str: string) => {
@@ -391,7 +398,7 @@ class Run {
       usage();
     } else if (this.options.srcUrls) {
       let json = JSON.parse(fs.readFileSync(this.options.srcUrls, "utf8"));
-      let jsonMap = Either.fromRight(Main.urlsFromJsonGrammar(json));
+      let jsonMap = fromRight(Main.urlsFromJsonGrammar(json));
       this.renderAndOutput(
         await this.mapValues(jsonMap, this.parseFileOrUrlArray)
       );

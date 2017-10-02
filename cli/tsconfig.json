@@ -1,10 +1,15 @@
 {
   "compilerOptions": {
     "target": "es5",
+    "module": "commonjs",
     "lib": ["es2015"],
-    "outDir": "../output",
+    "baseUrl": ".",
+    "allowJs": false,
+    "declaration": true,
     "typeRoots": ["../node_modules/@types"],
-    "strictNullChecks": true
-  },
-  "include": ["*.ts"]
+    "strictNullChecks": true,
+    "paths": {
+      "*": ["../dist/*"]
+    }
+  }
 }
