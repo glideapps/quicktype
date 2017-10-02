@@ -26,13 +26,7 @@ RUN apt-get update
 RUN apt-get install nodejs maven default-jdk clang binutils golang-go --assume-yes
 RUN apt-get install dotnet-sdk-2.0.0 --assume-yes
 
-# Cache node_modules
-ADD package.json package-lock.json ./
-RUN npm install
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
-
-ADD bower.json ./
-RUN bower install --allow-root
 
 COPY . .
 

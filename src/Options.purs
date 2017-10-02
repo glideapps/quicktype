@@ -10,10 +10,13 @@ module Options
     , enumOption
     , makeOptionValues
     , lookupOptionValue
+    , valueType
+    , stringValue
     ) where
 
 import Prelude
 
+import Data.Array ((!!))
 import Data.Array as A
 import Data.Foldable (elem, intercalate)
 import Data.Maybe (Maybe(..), fromJust)
@@ -44,6 +47,18 @@ type OptionValues = StrMap OptionValue
 type OptionValueExtractor a = OptionValue -> a
 
 type Option a = { specification :: OptionSpecification, extractor :: OptionValueExtractor a }
+
+valueType :: OptionValue -> String
+valueType = case _ of
+    BooleanValue _ -> "BooleanValue"
+    StringValue _ -> "StringValue"
+    EnumValue _ _ -> "EnumValue"
+
+stringValue :: OptionValue -> Maybe String
+stringValue = case _ of
+    BooleanValue b -> Just $ show b
+    StringValue s -> Just s
+    EnumValue i xs -> xs !! i
 
 -- FIXME: error handling!
 makeOptionValues :: OptionSpecifications -> StrMap String -> OptionValues

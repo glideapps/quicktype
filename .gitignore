@@ -19,3 +19,4 @@ test/elm/QuickType.elm
 *.log
 /test/elm/libsysconfcpus/
 /test/runs
+/dist

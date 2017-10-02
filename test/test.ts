@@ -79,7 +79,7 @@ async function main(sources: string[]) {
 
 function testCLI() {
   console.log(`* CLI sanity check`);
-  const qt = "node output/quicktype.js";
+  const qt = "node dist/quicktype.js";
   exec(`${qt} --help`);
 }
 

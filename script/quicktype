@@ -1,3 +1,10 @@
 #!/bin/bash
 
-npx ts-node --project cli/tsconfig.json cli/quicktype.ts $@
+err() {
+    echo "$@" 1>&2
+}
+
+err "Building quicktype..."
+npm run build &>/dev/null
+
+node dist/quicktype.js $@

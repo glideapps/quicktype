@@ -1,22 +1,20 @@
 #!/bin/bash
 
+OUTDIR=dist
+
 # If not on CI, do a clean build
 if [ -z "$CI" ]; then
-    rm -rf output
+    rm -rf $OUTDIR
     npm run build
 fi
 
 # Copy npm package files into output/
 mkdir -p output
-cp LICENSE* package*.json cli/README.md output/
-cd output
+cp -r LICENSE* package*.json cli/README.md $OUTDIR/
 
-# This is pretty silly, but we do it to make Travis deploy work
-mkdir script
-echo "#\!/bin/bash" > script/build.sh
-chmod +x script/build.sh
-
+cd $OUTDIR
 # If not on CI, publish directly
 if [ -z "$CI" ]; then
-   npm publish
+   npm publish \
+    --ignore-scripts # Don't rebuild
 fi

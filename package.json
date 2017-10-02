@@ -1,7 +1,9 @@
 {
   "name": "quicktype",
-  "version": "0.10.8",
+  "version": "1.0.0",
   "license": "Apache-2.0",
+  "main": "quicktype.js",
+  "types": "quicktype.d.ts",
   "repository": "https://github.com/quicktype/quicktype",
   "scripts": {
     "pub": "script/publish.sh",
