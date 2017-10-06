@@ -1,18 +1,23 @@
 "use strict";
 
-import { List } from "immutable";
+import { List, Map } from "immutable";
 
-type Type =
+type NativeTypes = ClassType | UnionType;
+
+type GlueTypes = GlueClassType | GlueUnionType;
+
+type GenericType<T> =
     | AnyType
     | NullType
     | BoolType
     | IntegerType
-    | FloatType
+    | DoubleType
     | StringType
     | ArrayType
-    | ClassType
     | MapType
-    | UnionType;
+    | T;
+
+type Type = GenericType<NativeTypes>;
 
 interface AnyType {
     kind: "any";
@@ -30,8 +35,8 @@ interface IntegerType {
     kind: "integer";
 }
 
-interface FloatType {
-    kind: "float";
+interface DoubleType {
+    kind: "double";
 }
 
 interface StringType {
@@ -45,6 +50,11 @@ interface ArrayType {
 
 interface ClassType {
     kind: "class";
+    properties: Map<string, Type>;
+}
+
+interface GlueClassType {
+    kind: "class";
     properties: { [name: string]: Type };
 }
 
@@ -55,5 +65,12 @@ interface MapType {
 
 interface UnionType {
     kind: "union";
+    // FIXME: ordered set?  Then we'd have to have classes
+    // and implement hash and equals.
     members: List<Type>;
+}
+
+interface GlueUnionType {
+    kind: "union";
+    members: Type[];
 }
