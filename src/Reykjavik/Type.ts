@@ -3,59 +3,22 @@
 import { OrderedSet, Map, Set } from "immutable";
 import stringHash = require("string-hash");
 
-type PrimitiveKind = "any" | "null" | "bool" | "integer" | "double" | "string";
+export type PrimitiveKind =
+    | "any"
+    | "null"
+    | "bool"
+    | "integer"
+    | "double"
+    | "string";
 type Kind = PrimitiveKind | "class" | "array" | "map" | "union";
 
-type GlueType =
-    | GluePrimitiveType
-    | GlueClassType
-    | GlueArrayType
-    | GlueMapType
-    | GlueUnionType;
-
-interface GlueGraph {
-    classes: GlueClassEntry[];
-    toplevels: { [name: string]: GlueType };
-}
-
 type TypeNames = Set<string>;
-type GlueTypeNames = string[];
 
 // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
 // and maybe even earlier in the TypeScript driver.
-type Graph = Map<string, Type>;
+export type Graph = Map<string, Type>;
 
-interface GluePrimitiveType {
-    kind: PrimitiveKind;
-}
-
-interface GlueArrayType {
-    kind: "array";
-    items: GlueType;
-}
-
-interface GlueClassType {
-    kind: "class";
-    index: number;
-}
-
-interface GlueClassEntry {
-    properties: { [name: string]: GlueType };
-    names: GlueTypeNames;
-}
-
-interface GlueMapType {
-    kind: "map";
-    values: GlueType;
-}
-
-interface GlueUnionType {
-    kind: "union";
-    names: GlueTypeNames;
-    members: GlueType[];
-}
-
-abstract class Type {
+export abstract class Type {
     abstract kind: Kind;
 
     constructor(kind: Kind) {
@@ -66,7 +29,7 @@ abstract class Type {
     abstract hashCode(): number;
 }
 
-class PrimitiveType extends Type {
+export class PrimitiveType extends Type {
     kind: PrimitiveKind;
 
     constructor(kind: PrimitiveKind) {
@@ -83,7 +46,7 @@ class PrimitiveType extends Type {
     }
 }
 
-class ClassType extends Type {
+export class ClassType extends Type {
     kind: "class";
     names: TypeNames;
     properties: Map<string, Type>;
@@ -112,7 +75,7 @@ class ClassType extends Type {
     }
 }
 
-class ArrayType extends Type {
+export class ArrayType extends Type {
     kind: "array";
     items: Type;
 
@@ -131,7 +94,7 @@ class ArrayType extends Type {
     }
 }
 
-class MapType extends Type {
+export class MapType extends Type {
     kind: "map";
     values: Type;
 
@@ -150,7 +113,7 @@ class MapType extends Type {
     }
 }
 
-class UnionType extends Type {
+export class UnionType extends Type {
     kind: "union";
     names: TypeNames;
     members: OrderedSet<Type>;
@@ -176,61 +139,4 @@ class UnionType extends Type {
             0
         );
     }
-}
-
-function glueTypeToNative(type: GlueType, classes: Type[]): Type {
-    switch (type.kind) {
-        case "array": {
-            const items = glueTypeToNative(type.items, classes);
-            return new ArrayType(items);
-        }
-        case "class": {
-            const c = classes[type.index];
-            if (c === null) {
-                throw "Expected class is not in graph array";
-            }
-            return c;
-        }
-        case "map": {
-            const values = glueTypeToNative(type.values, classes);
-            return new MapType(values);
-        }
-        case "union": {
-            const members = type.members.map(t => glueTypeToNative(t, classes));
-            return new UnionType(Set(type.names), OrderedSet(members));
-        }
-        default:
-            return new PrimitiveType(type.kind);
-    }
-}
-
-function glueTypesToNative(glueEntries: GlueClassEntry[]): Type[] {
-    const classes: ClassType[] = [];
-    for (const c of glueEntries) {
-        if (c === null) {
-            classes.push(null);
-        } else {
-            classes.push(new ClassType(Set(c.names), Map()));
-        }
-    }
-
-    for (let i = 0; i < classes.length; i++) {
-        const c = classes[i];
-        if (c === null) {
-            continue;
-        }
-        const glueProperties = Map(glueEntries[i].properties);
-        c.properties = glueProperties
-            .map(t => glueTypeToNative(t, classes))
-            .toMap();
-    }
-
-    return classes;
-}
-
-function glueGraphToNative(glueGraph: GlueGraph): Graph {
-    const classes = glueTypesToNative(glueGraph.classes);
-    return Map(glueGraph.toplevels)
-        .map(t => glueTypeToNative(t, classes))
-        .toMap();
 }
