@@ -1,5 +1,6 @@
 module Reykjavik
-    where
+    ( irGraphToGlue
+    ) where
 
 import Prelude
 
@@ -11,6 +12,11 @@ import Data.Sequence as Seq
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
 import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), unionToList)
+
+type GlueGraph =
+    { classes :: Array Json
+    , toplevels :: StrMap Json
+    }
 
 typeJSObject :: String -> StrMap Json -> Json
 typeJSObject kind sm =
@@ -37,7 +43,6 @@ typeToJS (IRUnion union) = typeJSObject "union" $
     SM.insert "members" (fromArray $ A.fromFoldable $ map typeToJS $ unionToList union) $
     SM.empty
 
-
 entryToJS :: Entry -> Json
 entryToJS (Class (IRClassData { names, properties })) =
     let propertiesStrMap = SM.fromFoldable $ (M.toUnfoldable properties :: Array _)
@@ -48,6 +53,10 @@ entryToJS (Class (IRClassData { names, properties })) =
 
 entryToJS _ = jsonNull
 
-irGraphToJS :: IRGraph -> Json
-irGraphToJS (IRGraph { classes }) =
-    fromArray $ map entryToJS $ Seq.toUnfoldable classes
+irGraphToGlue :: IRGraph -> GlueGraph
+irGraphToGlue (IRGraph { classes, toplevels }) =
+    let toplevelsStrMap = SM.fromFoldable $ (M.toUnfoldable toplevels :: Array _)
+    in
+        { classes: map entryToJS $ Seq.toUnfoldable classes
+        , toplevels: SM.mapWithKey (const typeToJS) toplevelsStrMap
+        }
