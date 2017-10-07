@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, Map, Set } from "immutable";
+import { OrderedSet, Map, Set, Iterable, List } from "immutable";
 import stringHash = require("string-hash");
 
 export type PrimitiveKind =
@@ -25,6 +25,8 @@ export abstract class Type {
         this.kind = kind;
     }
 
+    abstract get children(): Set<Type>;
+
     abstract equals(other: any): boolean;
     abstract hashCode(): number;
 }
@@ -34,6 +36,10 @@ export class PrimitiveType extends Type {
 
     constructor(kind: PrimitiveKind) {
         super(kind);
+    }
+
+    get children(): Set<Type> {
+        return Set();
     }
 
     equals(other: any): boolean {
@@ -55,6 +61,10 @@ export class ClassType extends Type {
         super("class");
         this.names = names;
         this.properties = properties;
+    }
+
+    get children(): Set<Type> {
+        return this.properties.toSet();
     }
 
     equals(other: any): boolean {
@@ -84,6 +94,10 @@ export class ArrayType extends Type {
         this.items = items;
     }
 
+    get children(): Set<Type> {
+        return Set(this.items);
+    }
+
     equals(other: any): boolean {
         if (!(other instanceof ArrayType)) return false;
         return this.items.equals(other.items);
@@ -101,6 +115,10 @@ export class MapType extends Type {
     constructor(values: Type) {
         super("map");
         this.values = values;
+    }
+
+    get children(): Set<Type> {
+        return Set(this.values);
     }
 
     equals(other: any): boolean {
@@ -124,6 +142,10 @@ export class UnionType extends Type {
         this.members = members;
     }
 
+    get children(): Set<Type> {
+        return this.members.toSet();
+    }
+
     equals(other: any): boolean {
         if (!(other instanceof UnionType)) return false;
         return (
@@ -139,4 +161,37 @@ export class UnionType extends Type {
             0
         );
     }
+}
+
+function setUnion<T>(sets: Iterable<any, Set<T>>): Set<T> {
+    const setArray = sets.toArray();
+    if (setArray.length === 0) return OrderedSet();
+    if (setArray.length === 1) return setArray[0];
+    return setArray[0].union(...setArray.slice(1));
+}
+
+type ClassesAndUnions = { classes: Set<ClassType>; unions: Set<UnionType> };
+
+function combineClassesAndUnion(
+    classesAndUnions: Iterable<any, ClassesAndUnions>
+): ClassesAndUnions {
+    let classes = setUnion(classesAndUnions.map(cau => cau.classes));
+    let unions = setUnion(classesAndUnions.map(cau => cau.unions));
+    return { classes, unions };
+}
+
+function classesAndUnionsInType(t: Type): ClassesAndUnions {
+    let { classes, unions } = combineClassesAndUnion(
+        t.children.map(classesAndUnionsInType)
+    );
+    if (t instanceof ClassType) {
+        classes = classes.add(t);
+    } else if (t instanceof UnionType) {
+        unions = unions.add(t);
+    }
+    return { classes, unions };
+}
+
+export function allClassesAndUnions(graph: Graph): ClassesAndUnions {
+    return combineClassesAndUnion(graph.map(classesAndUnionsInType));
 }
