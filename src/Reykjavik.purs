@@ -9,9 +9,11 @@ import Data.Array as A
 import Data.Int as Int
 import Data.Map as M
 import Data.Sequence as Seq
+import Data.Set (Set)
+import Data.Set as S
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
-import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), unionToList)
+import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, namedValue, unionToList)
 
 type GlueGraph =
     { classes :: Array Json
@@ -19,8 +21,12 @@ type GlueGraph =
     }
 
 typeJSObject :: String -> StrMap Json -> Json
-typeJSObject kind sm =
-    fromObject $ SM.insert "kind" (fromString kind) sm
+typeJSObject kind =
+    fromObject <<< SM.insert "kind" (fromString kind)
+
+namedToJS :: Named (Set String) -> Json
+namedToJS =
+    fromArray <<< map fromString <<< S.toUnfoldable <<< namedValue
 
 typeToJS :: IRType -> Json
 typeToJS IRNoInformation = jsonNull
@@ -39,8 +45,9 @@ typeToJS (IRClass i) = typeJSObject "class" $
 typeToJS (IRMap t) = typeJSObject "map" $
     SM.insert "values" (typeToJS t) $
     SM.empty
-typeToJS (IRUnion union) = typeJSObject "union" $
-    SM.insert "members" (fromArray $ A.fromFoldable $ map typeToJS $ unionToList union) $
+typeToJS (IRUnion ur@(IRUnionRep { names })) = typeJSObject "union" $
+    SM.insert "names" (namedToJS names) $
+    SM.insert "members" (fromArray $ A.fromFoldable $ map typeToJS $ unionToList ur) $
     SM.empty
 
 entryToJS :: Entry -> Json
@@ -48,9 +55,9 @@ entryToJS (Class (IRClassData { names, properties })) =
     let propertiesStrMap = SM.fromFoldable $ (M.toUnfoldable properties :: Array _)
     in
         typeJSObject "class" $
+        SM.insert "names" (namedToJS names) $
         SM.insert "properties" (fromObject $ SM.mapWithKey (const typeToJS) propertiesStrMap) $
         SM.empty
-
 entryToJS _ = jsonNull
 
 irGraphToGlue :: IRGraph -> GlueGraph

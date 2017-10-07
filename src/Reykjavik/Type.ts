@@ -1,6 +1,6 @@
 "use strict";
 
-import { List, Map } from "immutable";
+import { List, Map, Set } from "immutable";
 
 type GenericType<T> =
     | AnyType
@@ -21,6 +21,9 @@ interface GlueGraph {
     classes: GlueClassEntry[];
     toplevels: { [name: string]: GlueType };
 }
+
+type TypeNames = Set<string>;
+type GlueTypeNames = string[];
 
 // FIXME: OrderedMap?  We lose the order in PureScript right now, though.
 type Graph = Map<string, Type>;
@@ -61,6 +64,7 @@ interface GlueArrayType {
 
 interface ClassType {
     kind: "class";
+    names: TypeNames;
     properties: Map<string, Type>;
 }
 
@@ -71,6 +75,7 @@ interface GlueClassType {
 
 interface GlueClassEntry {
     properties: { [name: string]: GlueType };
+    names: GlueTypeNames;
 }
 
 interface MapType {
@@ -85,6 +90,7 @@ interface GlueMapType {
 
 interface UnionType {
     kind: "union";
+    names: TypeNames;
     // FIXME: ordered set?  Then we'd have to have classes
     // and implement hash and equals.
     members: List<Type>;
@@ -92,6 +98,7 @@ interface UnionType {
 
 interface GlueUnionType {
     kind: "union";
+    names: GlueTypeNames;
     // FIXME: ordered set?  Then we'd have to have classes
     // and implement hash and equals.
     members: List<GlueType>;
@@ -116,7 +123,11 @@ function glueTypeToNative(type: GlueType, classes: Type[]): Type {
         }
         case "union": {
             const members = type.members.map(t => glueTypeToNative(t, classes));
-            return { kind: "union", members: List(members) };
+            return {
+                kind: "union",
+                names: Set(type.names),
+                members: List(members)
+            };
         }
         default:
             return type;
@@ -129,7 +140,11 @@ function glueTypesToNative(glueEntries: GlueClassEntry[]): Type[] {
         if (c === null) {
             classes.push(null);
         } else {
-            classes.push({ kind: "class", properties: Map() });
+            classes.push({
+                kind: "class",
+                names: Set(c.names),
+                properties: Map()
+            });
         }
     }
 
