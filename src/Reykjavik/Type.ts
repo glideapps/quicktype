@@ -1,21 +1,17 @@
 "use strict";
 
-import { List, Map, Set } from "immutable";
+import { OrderedSet, Map, Set } from "immutable";
+import stringHash = require("string-hash");
 
-type GenericType<T> =
-    | AnyType
-    | NullType
-    | BoolType
-    | IntegerType
-    | DoubleType
-    | StringType
-    | T;
+type PrimitiveKind = "any" | "null" | "bool" | "integer" | "double" | "string";
+type Kind = PrimitiveKind | "class" | "array" | "map" | "union";
 
-type NativeTypes = ClassType | ArrayType | MapType | UnionType;
-type GlueTypes = GlueClassType | GlueArrayType | GlueMapType | GlueUnionType;
-
-type Type = GenericType<NativeTypes>;
-type GlueType = GenericType<GlueTypes>;
+type GlueType =
+    | GluePrimitiveType
+    | GlueClassType
+    | GlueArrayType
+    | GlueMapType
+    | GlueUnionType;
 
 interface GlueGraph {
     classes: GlueClassEntry[];
@@ -25,47 +21,17 @@ interface GlueGraph {
 type TypeNames = Set<string>;
 type GlueTypeNames = string[];
 
-// FIXME: OrderedMap?  We lose the order in PureScript right now, though.
+// FIXME: OrderedMap?  We lose the order in PureScript right now, though,
+// and maybe even earlier in the TypeScript driver.
 type Graph = Map<string, Type>;
 
-interface AnyType {
-    kind: "any";
-}
-
-interface NullType {
-    kind: "null";
-}
-
-interface BoolType {
-    kind: "bool";
-}
-
-interface IntegerType {
-    kind: "integer";
-}
-
-interface DoubleType {
-    kind: "double";
-}
-
-interface StringType {
-    kind: "string";
-}
-
-interface ArrayType {
-    kind: "array";
-    items: Type;
+interface GluePrimitiveType {
+    kind: PrimitiveKind;
 }
 
 interface GlueArrayType {
     kind: "array";
     items: GlueType;
-}
-
-interface ClassType {
-    kind: "class";
-    names: TypeNames;
-    properties: Map<string, Type>;
 }
 
 interface GlueClassType {
@@ -78,37 +44,145 @@ interface GlueClassEntry {
     names: GlueTypeNames;
 }
 
-interface MapType {
-    kind: "map";
-    values: Type;
-}
-
 interface GlueMapType {
     kind: "map";
     values: GlueType;
 }
 
-interface UnionType {
-    kind: "union";
-    names: TypeNames;
-    // FIXME: ordered set?  Then we'd have to have classes
-    // and implement hash and equals.
-    members: List<Type>;
-}
-
 interface GlueUnionType {
     kind: "union";
     names: GlueTypeNames;
-    // FIXME: ordered set?  Then we'd have to have classes
-    // and implement hash and equals.
-    members: List<GlueType>;
+    members: GlueType[];
+}
+
+abstract class Type {
+    abstract kind: Kind;
+
+    constructor(kind: Kind) {
+        this.kind = kind;
+    }
+
+    abstract equals(other: any): boolean;
+    abstract hashCode(): number;
+}
+
+class PrimitiveType extends Type {
+    kind: PrimitiveKind;
+
+    constructor(kind: PrimitiveKind) {
+        super(kind);
+    }
+
+    equals(other: any): boolean {
+        if (!(other instanceof PrimitiveType)) return false;
+        return this.kind === other.kind;
+    }
+
+    hashCode(): number {
+        return stringHash(this.kind) | 0;
+    }
+}
+
+class ClassType extends Type {
+    kind: "class";
+    names: TypeNames;
+    properties: Map<string, Type>;
+
+    constructor(names: TypeNames, properties: Map<string, Type>) {
+        super("class");
+        this.names = names;
+        this.properties = properties;
+    }
+
+    equals(other: any): boolean {
+        if (!(other instanceof ClassType)) return false;
+        return (
+            this.names.equals(other.names) &&
+            this.properties.equals(other.properties)
+        );
+    }
+
+    hashCode(): number {
+        return (
+            (stringHash(this.kind) +
+                this.names.hashCode() +
+                this.properties.hashCode()) |
+            0
+        );
+    }
+}
+
+class ArrayType extends Type {
+    kind: "array";
+    items: Type;
+
+    constructor(items: Type) {
+        super("array");
+        this.items = items;
+    }
+
+    equals(other: any): boolean {
+        if (!(other instanceof ArrayType)) return false;
+        return this.items.equals(other.items);
+    }
+
+    hashCode(): number {
+        return (stringHash(this.kind) + this.items.hashCode()) | 0;
+    }
+}
+
+class MapType extends Type {
+    kind: "map";
+    values: Type;
+
+    constructor(values: Type) {
+        super("map");
+        this.values = values;
+    }
+
+    equals(other: any): boolean {
+        if (!(other instanceof MapType)) return false;
+        return this.values.equals(other.values);
+    }
+
+    hashCode(): number {
+        return (stringHash(this.kind) + this.values.hashCode()) | 0;
+    }
+}
+
+class UnionType extends Type {
+    kind: "union";
+    names: TypeNames;
+    members: OrderedSet<Type>;
+
+    constructor(names: TypeNames, members: OrderedSet<Type>) {
+        super("union");
+        this.names = names;
+        this.members = members;
+    }
+
+    equals(other: any): boolean {
+        if (!(other instanceof UnionType)) return false;
+        return (
+            this.names.equals(other.names) && this.members.equals(other.members)
+        );
+    }
+
+    hashCode(): number {
+        return (
+            (stringHash(this.kind) +
+                this.names.hashCode() +
+                this.members.hashCode()) |
+            0
+        );
+    }
 }
 
 function glueTypeToNative(type: GlueType, classes: Type[]): Type {
     switch (type.kind) {
         case "array": {
             const items = glueTypeToNative(type.items, classes);
-            return { kind: "array", items };
+            return new ArrayType(items);
         }
         case "class": {
             const c = classes[type.index];
@@ -119,18 +193,14 @@ function glueTypeToNative(type: GlueType, classes: Type[]): Type {
         }
         case "map": {
             const values = glueTypeToNative(type.values, classes);
-            return { kind: "map", values };
+            return new MapType(values);
         }
         case "union": {
             const members = type.members.map(t => glueTypeToNative(t, classes));
-            return {
-                kind: "union",
-                names: Set(type.names),
-                members: List(members)
-            };
+            return new UnionType(Set(type.names), OrderedSet(members));
         }
         default:
-            return type;
+            return new PrimitiveType(type.kind);
     }
 }
 
@@ -140,11 +210,7 @@ function glueTypesToNative(glueEntries: GlueClassEntry[]): Type[] {
         if (c === null) {
             classes.push(null);
         } else {
-            classes.push({
-                kind: "class",
-                names: Set(c.names),
-                properties: Map()
-            });
+            classes.push(new ClassType(Set(c.names), Map()));
         }
     }
 
