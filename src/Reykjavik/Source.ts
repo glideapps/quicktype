@@ -43,6 +43,10 @@ export interface NameSource {
     named: Named;
 }
 
+export function newline(): NewlineSource {
+    return { kind: "newline", indentationChange: 0 };
+}
+
 export type Sourcelike =
     | Source
     | string
@@ -52,6 +56,7 @@ export type Sourcelike =
     | (() => Sourcelike);
 export interface SourcelikeArray extends Array<Sourcelike> {}
 
+// FIXME: indentation
 export function sourcelikeToSource(sl: Sourcelike): Source {
     if (sl instanceof Array) {
         return {

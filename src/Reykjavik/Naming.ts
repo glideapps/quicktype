@@ -227,6 +227,10 @@ class NamingContext {
         return namespace.members.every((n: Named) => this.names.has(n));
     };
 
+    areForbiddensFullyNamed = (namespace: Namespace): boolean => {
+        return namespace.forbidden.every(this.isFullyNamed);
+    };
+
     isConflicting = (named: Named, proposed: string): boolean => {
         if (!this.namedsForName.has(proposed)) return false;
         let conflicting: Named | undefined;
@@ -287,7 +291,9 @@ export function assignNames(
         //    If no such namespace exists we're either done, or there's an unallowed
         //    cycle.
 
-        const unfinishedNamespaces = ctx.namespaces.filter(ctx.isFullyNamed);
+        const unfinishedNamespaces = ctx.namespaces.filter(
+            ctx.areForbiddensFullyNamed
+        );
         const readyNamespace = unfinishedNamespaces.find((ns: Namespace) =>
             ns.members.some(ctx.isReadyToBeNamed)
         );
