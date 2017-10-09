@@ -9,7 +9,7 @@ import {
     UnionType,
     allClassesAndUnions
 } from "../Type";
-import { Sourcelike } from "../Source";
+import { Sourcelike, newline } from "../Source";
 import { legalizeCharacters } from "../Utils";
 import {
     Namespace,
@@ -38,7 +38,7 @@ class CountingNamingFunction extends NamingFunction {
         forbiddenNames: Set<string>,
         numberOfNames: number
     ): OrderedSet<string> {
-        if (numberOfNames <= 1) {
+        if (numberOfNames < 1) {
             throw "Number of names can't be less than 1";
         }
 
@@ -47,14 +47,16 @@ class CountingNamingFunction extends NamingFunction {
         for (;;) {
             let names: OrderedSet<string>;
             if (numberOfNames === 1) {
-                names = OrderedSet(proposedName + underscores);
+                names = OrderedSet([proposedName + underscores]);
             } else {
                 names = range
                     .map(i => proposedName + underscores + i)
                     .toOrderedSet();
             }
-            if (names.some((n: string) => forbiddenNames.has(n))) continue;
+            if (names.some((n: string) => forbiddenNames.has(n))) {
             underscores += "_";
+                continue;
+            }
             return names;
         }
     }
@@ -72,7 +74,7 @@ const countingNamingFunction = new CountingNamingFunction();
 
 function proposeTopLevelDependencyName(names: List<string>): string {
     if (names.size !== 1) throw "Cannot deal with more than one dependency";
-    return names[0];
+    return names.first();
 }
 
 function isStartCharacter(c: string): boolean {
@@ -113,6 +115,7 @@ export class CSharpRenderer extends Renderer {
         this.topLevelNameds = topLevels.map(this.namedFromTopLevel).toMap();
         classes.forEach((c: ClassType) => this.addClassOrUnionNamed(c));
         unions.forEach((c: UnionType) => this.addClassOrUnionNamed(c));
+        this.globalNamespace.members.forEach((n: Named) => console.log(n.name));
         this.names = assignNames(OrderedSet([this.globalNamespace]));
     }
 
@@ -155,6 +158,15 @@ export class CSharpRenderer extends Renderer {
     };
 
     render(): Sourcelike {
-        return ["FIXME"];
+        return this.names
+            .map((name: string, named: Named) => [
+                named.name,
+                ": ",
+                name,
+                " - ",
+                named,
+                newline()
+            ])
+            .toArray();
     }
 }
