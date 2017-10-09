@@ -2,26 +2,23 @@
 
 import { OrderedSet, Map, Set, Iterable, List } from "immutable";
 import stringHash = require("string-hash");
+import { TypeKind, PrimitiveTypeKind, NamedTypeKind } from "Reykjavik";
 
-export type PrimitiveKind =
-    | "any"
-    | "null"
-    | "bool"
-    | "integer"
-    | "double"
-    | "string";
-type Kind = PrimitiveKind | "class" | "array" | "map" | "union";
-
-type TypeNames = Set<string>;
+export type TypeNames = {
+    names: Set<string>;
+    // FIXME: this is here until we have combineNames in TypeScript.
+    combined: string;
+};
 
 // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
 // and maybe even earlier in the TypeScript driver.
+// FIXME: Rename to TopLevels?
 export type Graph = Map<string, Type>;
 
 export abstract class Type {
-    abstract kind: Kind;
+    abstract kind: TypeKind;
 
-    constructor(kind: Kind) {
+    constructor(kind: TypeKind) {
         this.kind = kind;
     }
 
@@ -32,9 +29,9 @@ export abstract class Type {
 }
 
 export class PrimitiveType extends Type {
-    kind: PrimitiveKind;
+    kind: PrimitiveTypeKind;
 
-    constructor(kind: PrimitiveKind) {
+    constructor(kind: PrimitiveTypeKind) {
         super(kind);
     }
 
@@ -52,39 +49,6 @@ export class PrimitiveType extends Type {
     }
 }
 
-export class ClassType extends Type {
-    kind: "class";
-    names: TypeNames;
-    properties: Map<string, Type>;
-
-    constructor(names: TypeNames, properties: Map<string, Type>) {
-        super("class");
-        this.names = names;
-        this.properties = properties;
-    }
-
-    get children(): Set<Type> {
-        return this.properties.toSet();
-    }
-
-    equals(other: any): boolean {
-        if (!(other instanceof ClassType)) return false;
-        return (
-            this.names.equals(other.names) &&
-            this.properties.equals(other.properties)
-        );
-    }
-
-    hashCode(): number {
-        return (
-            (stringHash(this.kind) +
-                this.names.hashCode() +
-                this.properties.hashCode()) |
-            0
-        );
-    }
-}
-
 export class ArrayType extends Type {
     kind: "array";
     items: Type;
@@ -95,7 +59,7 @@ export class ArrayType extends Type {
     }
 
     get children(): Set<Type> {
-        return Set(this.items);
+        return Set([this.items]);
     }
 
     equals(other: any): boolean {
@@ -118,7 +82,7 @@ export class MapType extends Type {
     }
 
     get children(): Set<Type> {
-        return Set(this.values);
+        return Set([this.values]);
     }
 
     equals(other: any): boolean {
@@ -131,13 +95,53 @@ export class MapType extends Type {
     }
 }
 
-export class UnionType extends Type {
-    kind: "union";
+export abstract class NamedType extends Type {
     names: TypeNames;
+
+    constructor(kind: NamedTypeKind, names: TypeNames) {
+        super(kind);
+        this.names = names;
+    }
+}
+
+export class ClassType extends NamedType {
+    kind: "class";
+    properties: Map<string, Type>;
+
+    constructor(names: TypeNames, properties: Map<string, Type>) {
+        super("class", names);
+        this.names = names;
+        this.properties = properties;
+    }
+
+    get children(): Set<Type> {
+        return this.properties.toSet();
+    }
+
+    equals(other: any): boolean {
+        if (!(other instanceof ClassType)) return false;
+        return (
+            this.names.names.equals(other.names.names) &&
+            this.properties.equals(other.properties)
+        );
+    }
+
+    hashCode(): number {
+        return (
+            (stringHash(this.kind) +
+                this.names.names.hashCode() +
+                this.properties.hashCode()) |
+            0
+        );
+    }
+}
+
+export class UnionType extends NamedType {
+    kind: "union";
     members: OrderedSet<Type>;
 
     constructor(names: TypeNames, members: OrderedSet<Type>) {
-        super("union");
+        super("union", names);
         this.names = names;
         this.members = members;
     }
@@ -149,14 +153,15 @@ export class UnionType extends Type {
     equals(other: any): boolean {
         if (!(other instanceof UnionType)) return false;
         return (
-            this.names.equals(other.names) && this.members.equals(other.members)
+            this.names.names.equals(other.names.names) &&
+            this.members.equals(other.members)
         );
     }
 
     hashCode(): number {
         return (
             (stringHash(this.kind) +
-                this.names.hashCode() +
+                this.names.names.hashCode() +
                 this.members.hashCode()) |
             0
         );
@@ -170,13 +175,20 @@ function setUnion<T>(sets: Iterable<any, Set<T>>): Set<T> {
     return setArray[0].union(...setArray.slice(1));
 }
 
-type ClassesAndUnions = { classes: Set<ClassType>; unions: Set<UnionType> };
+export type ClassesAndUnions = {
+    classes: Set<ClassType>;
+    unions: Set<UnionType>;
+};
 
 function combineClassesAndUnion(
     classesAndUnions: Iterable<any, ClassesAndUnions>
 ): ClassesAndUnions {
-    let classes = setUnion(classesAndUnions.map(cau => cau.classes));
-    let unions = setUnion(classesAndUnions.map(cau => cau.unions));
+    let classes = setUnion(
+        classesAndUnions.map((cau: ClassesAndUnions) => cau.classes)
+    );
+    let unions = setUnion(
+        classesAndUnions.map((cau: ClassesAndUnions) => cau.unions)
+    );
     return { classes, unions };
 }
 

@@ -5,47 +5,54 @@ import { List, Map } from "immutable";
 import { Annotation } from "./Annotation";
 import { Named } from "./Naming";
 
-type Source =
+export type Source =
     | TextSource
     | NewlineSource
     | SequenceSource
     | AnnotatedSource
     | NameSource;
 
-interface TextSource {
+export interface TextSource {
     kind: "text";
     text: string;
 }
 
-interface NewlineSource {
+export interface NewlineSource {
     kind: "newline";
+    // Number of indentation levels (not spaces!) to change
+    // the rest of the source by.  Positive numbers mean
+    // indent more, negative mean indent less.  The most
+    // common value will be zero, for no change in
+    // indentation.
+    indentationChange: number;
 }
 
-interface SequenceSource {
+export interface SequenceSource {
     kind: "sequence";
     sequence: List<Source>;
 }
 
-interface AnnotatedSource {
+export interface AnnotatedSource {
     kind: "annotated";
     annotation: Annotation;
     source: Source;
 }
 
-interface NameSource {
+export interface NameSource {
     kind: "name";
     named: Named;
 }
 
-type Sourcelike =
+export type Sourcelike =
     | Source
     | string
     | Named
     | SourcelikeArray
+    // FIXME: Do we need this?
     | (() => Sourcelike);
-interface SourcelikeArray extends Array<Sourcelike> {}
+export interface SourcelikeArray extends Array<Sourcelike> {}
 
-function sourcelikeToSource(sl: Sourcelike): Source {
+export function sourcelikeToSource(sl: Sourcelike): Source {
     if (sl instanceof Array) {
         return {
             kind: "sequence",
@@ -90,7 +97,7 @@ function serializeToStringArray(
             array.push("\n");
             break;
         case "sequence":
-            source.sequence.forEach(s =>
+            source.sequence.forEach((s: Source) =>
                 serializeToStringArray(s, names, array)
             );
             break;
@@ -108,7 +115,10 @@ function serializeToStringArray(
     }
 }
 
-function serializeSource(source: Source, names: Map<Named, string>): string {
+export function serializeSource(
+    source: Source,
+    names: Map<Named, string>
+): string {
     const array: string[] = [];
     serializeToStringArray(source, names, array);
     return array.join("");

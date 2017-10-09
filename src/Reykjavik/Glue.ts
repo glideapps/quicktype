@@ -2,61 +2,22 @@
 
 import { OrderedSet, Map, Set } from "immutable";
 import {
-    PrimitiveKind,
     Type,
     PrimitiveType,
     ClassType,
     ArrayType,
     MapType,
     UnionType,
+    TypeNames,
     Graph
 } from "./Type";
+import { GlueClassEntry, GlueGraph, GlueType, GlueTypeNames } from "Reykjavik";
 
-type GlueType =
-    | GluePrimitiveType
-    | GlueClassType
-    | GlueArrayType
-    | GlueMapType
-    | GlueUnionType;
-
-interface GlueGraph {
-    classes: GlueClassEntry[];
-    toplevels: { [name: string]: GlueType };
+function glueTypeNamesToNative({ names, combined }: GlueTypeNames): TypeNames {
+    return { names: Set(names), combined };
 }
 
-type GlueTypeNames = string[];
-
-interface GluePrimitiveType {
-    kind: PrimitiveKind;
-}
-
-interface GlueArrayType {
-    kind: "array";
-    items: GlueType;
-}
-
-interface GlueClassType {
-    kind: "class";
-    index: number;
-}
-
-interface GlueClassEntry {
-    properties: { [name: string]: GlueType };
-    names: GlueTypeNames;
-}
-
-interface GlueMapType {
-    kind: "map";
-    values: GlueType;
-}
-
-interface GlueUnionType {
-    kind: "union";
-    names: GlueTypeNames;
-    members: GlueType[];
-}
-
-function glueTypeToNative(type: GlueType, classes: Type[]): Type {
+function glueTypeToNative(type: GlueType, classes: (Type | null)[]): Type {
     switch (type.kind) {
         case "array": {
             const items = glueTypeToNative(type.items, classes);
@@ -75,20 +36,23 @@ function glueTypeToNative(type: GlueType, classes: Type[]): Type {
         }
         case "union": {
             const members = type.members.map(t => glueTypeToNative(t, classes));
-            return new UnionType(Set(type.names), OrderedSet(members));
+            return new UnionType(
+                glueTypeNamesToNative(type.names),
+                OrderedSet(members)
+            );
         }
         default:
             return new PrimitiveType(type.kind);
     }
 }
 
-function glueTypesToNative(glueEntries: GlueClassEntry[]): Type[] {
-    const classes: ClassType[] = [];
+function glueTypesToNative(glueEntries: GlueClassEntry[]): (Type | null)[] {
+    const classes: (ClassType | null)[] = [];
     for (const c of glueEntries) {
         if (c === null) {
             classes.push(null);
         } else {
-            classes.push(new ClassType(Set(c.names), Map()));
+            classes.push(new ClassType(glueTypeNamesToNative(c.names), Map()));
         }
     }
 
@@ -99,16 +63,16 @@ function glueTypesToNative(glueEntries: GlueClassEntry[]): Type[] {
         }
         const glueProperties = Map(glueEntries[i].properties);
         c.properties = glueProperties
-            .map(t => glueTypeToNative(t, classes))
+            .map((t: GlueType) => glueTypeToNative(t, classes))
             .toMap();
     }
 
     return classes;
 }
 
-function glueGraphToNative(glueGraph: GlueGraph): Graph {
+export function glueGraphToNative(glueGraph: GlueGraph): Graph {
     const classes = glueTypesToNative(glueGraph.classes);
     return Map(glueGraph.toplevels)
-        .map(t => glueTypeToNative(t, classes))
+        .map((t: GlueType) => glueTypeToNative(t, classes))
         .toMap();
 }

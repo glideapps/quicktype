@@ -65,6 +65,7 @@ renderer =
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
         , forbiddenNames
+        -- FIXME: why is this a noForbidNamer?  What if a TopLevel is called `Converter`?
         , topLevelName: noForbidNamer csNameStyle
         , unions: Just
             { predicate: unionIsNotSimpleNullable

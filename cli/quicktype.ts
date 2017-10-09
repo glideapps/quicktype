@@ -15,6 +15,9 @@ import { Config } from "Config";
 import { Renderer } from "Doc";
 import * as Renderers from "Language.Renderers";
 import { ErrorMessage, SourceCode } from "Core";
+import { glueGraphToNative } from "../src/Reykjavik/Glue";
+import { CSharpRenderer } from "../src/Reykjavik/Language/CSharp";
+import { serializeSource, sourcelikeToSource } from "../src/Reykjavik/Source";
 
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
@@ -86,6 +89,11 @@ const optionDefinitions: OptionDefinition[] = [
     name: "no-maps",
     type: Boolean,
     description: "Don't infer maps, always use classes."
+  },
+  {
+    name: "reykjavik",
+    type: Boolean,
+    description: "Use the Reykjavik C# renderer."
   },
   {
     name: "help",
@@ -176,6 +184,7 @@ export interface Options {
   srcUrls?: string;
   out?: string;
   noMaps?: boolean;
+  reykjavik?: boolean;
   help?: boolean;
   rendererOptions: { [name: string]: string };
 }
@@ -188,6 +197,7 @@ interface CompleteOptions {
   srcUrls?: string;
   out?: string;
   noMaps: boolean;
+  reykjavik: boolean;
   help?: boolean;
   rendererOptions: { [name: string]: string };
 }
@@ -261,7 +271,14 @@ class Run {
       rendererOptions: this.options.rendererOptions
     };
 
-    return fromRight(Main.main(config));
+    if (this.options.reykjavik) {
+      const glueGraph = fromRight(Main.glueGraphFromJsonConfig(config));
+      const graph = glueGraphToNative(glueGraph);
+      const renderer = new CSharpRenderer(graph);
+      return renderer.serializedSource;
+    } else {
+      return fromRight(Main.main(config));
+    }
   };
 
   splitAndWriteJava = (dir: string, str: string) => {
@@ -451,6 +468,7 @@ class Run {
       lang: opts.lang || this.inferLang(opts),
       topLevel: opts.topLevel || this.inferTopLevel(opts),
       noMaps: !!opts.noMaps,
+      reykjavik: !!opts.reykjavik,
       ...opts
     };
   };

@@ -1,5 +1,6 @@
 module Reykjavik
-    ( irGraphToGlue
+    ( GlueGraph
+    , irGraphToGlue
     ) where
 
 import Prelude
@@ -13,6 +14,7 @@ import Data.Set (Set)
 import Data.Set as S
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
+import Doc (combineNames)
 import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, namedValue, unionToList)
 
 type GlueGraph =
@@ -25,8 +27,13 @@ typeJSObject kind =
     fromObject <<< SM.insert "kind" (fromString kind)
 
 namedToJS :: Named (Set String) -> Json
-namedToJS =
-    fromArray <<< map fromString <<< S.toUnfoldable <<< namedValue
+namedToJS named =
+    let combined = combineNames named
+    in
+        fromObject $
+        SM.insert "names" (fromArray $ map fromString $ S.toUnfoldable $ namedValue named) $
+        SM.insert "combined" (fromString combined) $
+        SM.empty
 
 typeToJS :: IRType -> Json
 typeToJS IRNoInformation = jsonNull
