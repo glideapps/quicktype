@@ -56,7 +56,6 @@ export type Sourcelike =
     | (() => Sourcelike);
 export interface SourcelikeArray extends Array<Sourcelike> {}
 
-// FIXME: indentation
 export function sourcelikeToSource(sl: Sourcelike): Source {
     if (sl instanceof Array) {
         return {
@@ -89,41 +88,44 @@ function assertNever(x: never): never {
     throw new Error("Unexpected object: " + x);
 }
 
-function serializeToStringArray(
-    source: Source,
-    names: Map<Named, string>,
-    array: string[]
-): void {
-    switch (source.kind) {
-        case "text":
-            array.push(source.text);
-            break;
-        case "newline":
-            array.push("\n");
-            break;
-        case "sequence":
-            source.sequence.forEach((s: Source) =>
-                serializeToStringArray(s, names, array)
-            );
-            break;
-        case "annotated":
-            serializeToStringArray(source.source, names, array);
-            break;
-        case "name":
-            if (!names.has(source.named)) {
-                throw "No name for Named";
-            }
-            array.push(names.get(source.named));
-            break;
-        default:
-            return assertNever(source);
-    }
-}
-
 export function serializeSource(
     source: Source,
     names: Map<Named, string>
 ): string {
+    let indent = 0;
+
+    function serializeToStringArray(
+        source: Source,
+        names: Map<Named, string>,
+        array: string[]
+    ): void {
+        switch (source.kind) {
+            case "text":
+                array.push(source.text);
+                break;
+            case "newline":
+                indent += source.indentationChange;
+                array.push("\n" + "    ".repeat(indent));
+                break;
+            case "sequence":
+                source.sequence.forEach((s: Source) =>
+                    serializeToStringArray(s, names, array)
+                );
+                break;
+            case "annotated":
+                serializeToStringArray(source.source, names, array);
+                break;
+            case "name":
+                if (!names.has(source.named)) {
+                    throw "No name for Named";
+                }
+                array.push(names.get(source.named));
+                break;
+            default:
+                return assertNever(source);
+        }
+    }
+
     const array: string[] = [];
     serializeToStringArray(source, names, array);
     return array.join("");
