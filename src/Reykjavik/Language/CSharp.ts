@@ -4,9 +4,13 @@ import { Set, List, Map, OrderedSet, Range } from "immutable";
 import {
     Graph,
     Type,
+    PrimitiveType,
+    ArrayType,
+    MapType,
+    UnionType,
     NamedType,
     ClassType,
-    UnionType,
+    isNull,
     allClassesAndUnions
 } from "../Type";
 import { Source, Sourcelike, newline } from "../Source";
@@ -101,6 +105,13 @@ function csNameStyle(original: string): string {
     return startWithLetter(isStartCharacter, true, cameled);
 }
 
+function isValueType(t: Type): boolean {
+    if (t instanceof PrimitiveType) {
+        return ["integer", "double", "bool"].indexOf(t.kind) >= 0;
+    }
+    return false;
+}
+
 export class CSharpRenderer extends Renderer {
     readonly globalNamespace: Namespace;
     readonly topLevelNameds: Map<string, Named>;
@@ -123,6 +134,7 @@ export class CSharpRenderer extends Renderer {
             this.addClassOrUnionNamed(c);
             this.addPropertyNameds(c);
         });
+        // FIXME: only non-nullable unions!
         unions.forEach((c: UnionType) => this.addClassOrUnionNamed(c));
         this.globalNamespace.members.forEach((n: Named) => console.log(n.name));
         this.names = assignNames(OrderedSet([this.globalNamespace]));
@@ -187,13 +199,53 @@ export class CSharpRenderer extends Renderer {
         this.emitLine("}");
     };
 
+    csType = (t: Type): Sourcelike => {
+        if (t instanceof PrimitiveType) {
+            switch (t.kind) {
+                case "any":
+                    return "object"; // FIXME: add issue annotation
+                case "null":
+                    return "object"; // FIXME: add issue annotation
+                case "bool":
+                    return "bool";
+                case "integer":
+                    return "long";
+                case "double":
+                    return "double";
+                case "string":
+                    return "string";
+            }
+        } else if (t instanceof ArrayType) {
+            return [this.csType(t.items), "[]"];
+        } else if (t instanceof ClassType) {
+            return this.classAndUnionNameds.get(t);
+        } else if (t instanceof MapType) {
+            return ["Dictionary<string, ", this.csType(t.values), ">"];
+        } else if (t instanceof UnionType) {
+            if (t.members.some(isNull)) {
+                const nonNulls = t.members.filterNot(isNull);
+                if (nonNulls.size === 1) {
+                    const nonNull = nonNulls.first();
+                    const nonNullSrc = this.csType(nonNull);
+                    if (isValueType(nonNull)) {
+                        return [nonNullSrc, "?"];
+                    } else {
+                        return nonNullSrc;
+                    }
+                }
+            }
+            return this.classAndUnionNameds.get(t);
+        }
+        throw "Unknown type";
+    };
+
     emitClass = (c: ClassType): void => {
         const propertyNameds = this.propertyNameds.get(c);
         this.emitLine(["public class ", this.classAndUnionNameds.get(c)]);
         this.emitBlock(() => {
             c.properties.forEach((t: Type, name: string) => {
                 const named = propertyNameds.get(name);
-                this.emitLine(named);
+                this.emitLine([this.csType(t), " ", named]);
             });
         });
     };
