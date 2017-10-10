@@ -1,5 +1,7 @@
 "use strict";
 
+const unicode = require("unicode-properties");
+
 // FIXME: This is a copy of code in src/Data/String/Util.js
 export function stringConcatMap(
     mapper: (char: string) => string
@@ -52,6 +54,77 @@ export function legalizeCharacters(
     isLegal: (c: string) => boolean
 ): (s: string) => string {
     return stringConcatMap(c => (isLegal(c) ? c : "_"));
+}
+
+function intToHex(i: number, width: number): string {
+    let str = i.toString(16);
+    if (str.length >= width) return str;
+    return "0".repeat(width - str.length) + str;
+}
+
+export function standardUnicodeHexEscape(c: string): string {
+    const i = c.charCodeAt(0);
+    if (i <= 0xffff) {
+        return "\\u" + intToHex(i, 4);
+    } else {
+        return "\\U" + intToHex(i, 8);
+    }
+}
+
+function genericStringEscape(
+    escaper: (c: string) => string
+): (s: string) => string {
+    function mapper(c: string): string {
+        switch (c) {
+            case "\\":
+                return "\\\\";
+            case '"':
+                return '\\"';
+            case "\n":
+                return "\\n";
+            case "\t":
+                return "\\t";
+            default:
+                if (isPrintable(c)) {
+                    return c;
+                }
+                return escaper(c);
+        }
+    }
+    return stringConcatMap(mapper);
+}
+
+export const stringEscape = genericStringEscape(standardUnicodeHexEscape);
+
+function isPrintable(c: string): boolean {
+    const category = unicode.getCategory(c.charCodeAt(0));
+    return (
+        [
+            "Mc",
+            "No",
+            "Sk",
+            "Me",
+            "Nd",
+            "Po",
+            "Lt",
+            "Pc",
+            "Sm",
+            "Zs",
+            "Lu",
+            "Pd",
+            "So",
+            "Pe",
+            "Pf",
+            "Ps",
+            "Sc",
+            "Ll",
+            "Lm",
+            "Pi",
+            "Nl",
+            "Mn",
+            "Lo"
+        ].indexOf(category) >= 0
+    );
 }
 
 function modifyFirstChar(f: (c: string) => string, s: string): string {
