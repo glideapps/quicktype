@@ -54,7 +54,7 @@ class CountingNamingFunction extends NamingFunction {
                     .toOrderedSet();
             }
             if (names.some((n: string) => forbiddenNames.has(n))) {
-            underscores += "_";
+                underscores += "_";
                 continue;
             }
             return names;
@@ -95,10 +95,10 @@ function isPartCharacter(c: string): boolean {
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function csNameStyle(original: string, upper: boolean = true): string {
+function csNameStyle(original: string): string {
     const legalized = legalizeName(original);
     const cameled = camelCase(legalized);
-    return startWithLetter(isStartCharacter, upper, cameled);
+    return startWithLetter(isStartCharacter, true, cameled);
 }
 
 export class CSharpRenderer extends Renderer {
@@ -173,9 +173,9 @@ export class CSharpRenderer extends Renderer {
                 return new SimpleNamed(
                     ns,
                     name,
-            countingNamingFunction,
-                    csNameStyle(name, false)
-        );
+                    countingNamingFunction,
+                    csNameStyle(name)
+                );
             })
             .toMap();
         this.propertyNameds = this.propertyNameds.set(c, nameds);
