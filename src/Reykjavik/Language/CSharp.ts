@@ -112,6 +112,15 @@ function isValueType(t: Type): boolean {
     return false;
 }
 
+function nullableFromUnion(t: UnionType): Type | null {
+    if (!t.members.some(isNull)) return null;
+
+    const nonNulls = t.members.filterNot(isNull);
+    if (nonNulls.size !== 1) return null;
+
+    return nonNulls.first();
+}
+
 export class CSharpRenderer extends Renderer {
     readonly globalNamespace: Namespace;
     readonly topLevelNameds: Map<string, Named>;
@@ -135,7 +144,10 @@ export class CSharpRenderer extends Renderer {
             this.addPropertyNameds(c);
         });
         // FIXME: only non-nullable unions!
-        unions.forEach((c: UnionType) => this.addClassOrUnionNamed(c));
+        unions.forEach((u: UnionType) => {
+            if (nullableFromUnion(u)) return;
+            this.addClassOrUnionNamed(u);
+        });
         this.globalNamespace.members.forEach((n: Named) => console.log(n.name));
         this.names = assignNames(OrderedSet([this.globalNamespace]));
     }
@@ -222,16 +234,13 @@ export class CSharpRenderer extends Renderer {
         } else if (t instanceof MapType) {
             return ["Dictionary<string, ", this.csType(t.values), ">"];
         } else if (t instanceof UnionType) {
-            if (t.members.some(isNull)) {
-                const nonNulls = t.members.filterNot(isNull);
-                if (nonNulls.size === 1) {
-                    const nonNull = nonNulls.first();
-                    const nonNullSrc = this.csType(nonNull);
-                    if (isValueType(nonNull)) {
-                        return [nonNullSrc, "?"];
-                    } else {
-                        return nonNullSrc;
-                    }
+            const nonNull = nullableFromUnion(t);
+            if (nonNull) {
+                const nonNullSrc = this.csType(nonNull);
+                if (isValueType(nonNull)) {
+                    return [nonNullSrc, "?"];
+                } else {
+                    return nonNullSrc;
                 }
             }
             return this.classAndUnionNameds.get(t);
@@ -256,17 +265,5 @@ export class CSharpRenderer extends Renderer {
             this.classes.forEach((c: ClassType) => this.emitClass(c));
         });
         return this.finishedSource();
-        /*
-        return this.names
-            .map((name: string, named: Named) => [
-                named.name,
-                ": ",
-                name,
-                " - ",
-                named,
-                newline()
-            ])
-            .toArray();
-            */
     }
 }
