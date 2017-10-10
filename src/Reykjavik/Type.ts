@@ -49,6 +49,10 @@ export class PrimitiveType extends Type {
     }
 }
 
+export function isNull(t: Type): boolean {
+    return t.kind === "null";
+}
+
 export class ArrayType extends Type {
     kind: "array";
     items: Type;
