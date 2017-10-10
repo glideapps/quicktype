@@ -53,3 +53,34 @@ export function legalizeCharacters(
 ): (s: string) => string {
     return stringConcatMap(c => (isLegal(c) ? c : "_"));
 }
+
+function modifyFirstChar(f: (c: string) => string, s: string): string {
+    if (s === "") return s;
+    return f(s[0]) + s.slice(1);
+}
+
+export function capitalize(str: string): string {
+    return modifyFirstChar(c => c.toUpperCase(), str);
+}
+
+export function decapitalize(str: string): string {
+    return modifyFirstChar(c => c.toLowerCase(), str);
+}
+
+const wordSeparatorRegex = RegExp("[-_. ]");
+
+export function camelCase(str: string): string {
+    const words = str.split(wordSeparatorRegex).map(capitalize);
+    return words.join("");
+}
+
+export function startWithLetter(
+    isLetter: (c: string) => boolean,
+    upper: boolean,
+    str: string
+): string {
+    const modify = upper ? capitalize : decapitalize;
+    if (str === "") return modify("empty");
+    if (isLetter(str[0])) return modify(str);
+    return modify("the" + str);
+}

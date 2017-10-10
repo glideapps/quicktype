@@ -9,8 +9,8 @@ import {
     UnionType,
     allClassesAndUnions
 } from "../Type";
-import { Sourcelike, newline } from "../Source";
-import { legalizeCharacters } from "../Utils";
+import { Source, Sourcelike, newline } from "../Source";
+import { legalizeCharacters, camelCase, startWithLetter } from "../Utils";
 import {
     Namespace,
     Named,
@@ -95,25 +95,34 @@ function isPartCharacter(c: string): boolean {
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function csNameStyle(original: string): string {
+function csNameStyle(original: string, upper: boolean = true): string {
     const legalized = legalizeName(original);
-
-    return legalized;
+    const cameled = camelCase(legalized);
+    return startWithLetter(isStartCharacter, upper, cameled);
 }
 
 export class CSharpRenderer extends Renderer {
     readonly globalNamespace: Namespace;
     readonly topLevelNameds: Map<string, Named>;
+    readonly classes: Set<ClassType>;
+    readonly unions: Set<UnionType>;
     classAndUnionNameds: Map<NamedType, Named>;
+    propertyNameds: Map<ClassType, Map<string, Named>>;
     readonly names: Map<Named, string>;
 
     constructor(topLevels: Graph) {
         super(topLevels);
         this.globalNamespace = keywordNamespace("global", forbiddenNames);
         const { classes, unions } = allClassesAndUnions(topLevels);
+        this.classes = classes;
+        this.unions = unions;
         this.classAndUnionNameds = Map();
+        this.propertyNameds = Map();
         this.topLevelNameds = topLevels.map(this.namedFromTopLevel).toMap();
-        classes.forEach((c: ClassType) => this.addClassOrUnionNamed(c));
+        classes.forEach((c: ClassType) => {
+            this.addClassOrUnionNamed(c);
+            this.addPropertyNameds(c);
+        });
         unions.forEach((c: UnionType) => this.addClassOrUnionNamed(c));
         this.globalNamespace.members.forEach((n: Named) => console.log(n.name));
         this.names = assignNames(OrderedSet([this.globalNamespace]));
@@ -147,17 +156,55 @@ export class CSharpRenderer extends Renderer {
         if (this.classAndUnionNameds.has(type)) {
             return;
         }
-        const proposed = type.names.combined;
+        const name = type.names.combined;
         const named = new SimpleNamed(
             this.globalNamespace,
-            proposed,
+            name,
             countingNamingFunction,
-            proposed
+            csNameStyle(name)
         );
-        this.classAndUnionNameds.set(type, named);
+        this.classAndUnionNameds = this.classAndUnionNameds.set(type, named);
     };
 
-    render(): Sourcelike {
+    addPropertyNameds = (c: ClassType): void => {
+        const ns = new Namespace(c.names.combined, this.globalNamespace, Set());
+        const nameds = c.properties
+            .map((t: Type, name: string) => {
+                return new SimpleNamed(
+                    ns,
+                    name,
+            countingNamingFunction,
+                    csNameStyle(name, false)
+        );
+            })
+            .toMap();
+        this.propertyNameds = this.propertyNameds.set(c, nameds);
+    };
+
+    emitBlock = (f: () => void): void => {
+        this.emitLine("{");
+        this.indent(f);
+        this.emitLine("}");
+    };
+
+    emitClass = (c: ClassType): void => {
+        const propertyNameds = this.propertyNameds.get(c);
+        this.emitLine(["public class ", this.classAndUnionNameds.get(c)]);
+        this.emitBlock(() => {
+            c.properties.forEach((t: Type, name: string) => {
+                const named = propertyNameds.get(name);
+                this.emitLine(named);
+            });
+        });
+    };
+
+    render(): Source {
+        this.emitLine("namespace QuickType");
+        this.emitBlock(() => {
+            this.classes.forEach((c: ClassType) => this.emitClass(c));
+        });
+        return this.finishedSource();
+        /*
         return this.names
             .map((name: string, named: Named) => [
                 named.name,
@@ -168,5 +215,6 @@ export class CSharpRenderer extends Renderer {
                 newline()
             ])
             .toArray();
+            */
     }
 }

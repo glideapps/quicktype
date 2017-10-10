@@ -275,7 +275,7 @@ class Run {
       const glueGraph = fromRight(Main.glueGraphFromJsonConfig(config));
       const graph = glueGraphToNative(glueGraph);
       const renderer = new CSharpRenderer(graph);
-      return renderer.serializedSource;
+      return renderer.serializedSource();
     } else {
       return fromRight(Main.main(config));
     }
