@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, List, Map, OrderedSet, Range } from "immutable";
+import { Set, List, Map, OrderedSet, Range, Iterable } from "immutable";
 import {
     Graph,
     Type,
@@ -14,7 +14,12 @@ import {
     allClassesAndUnions
 } from "../Type";
 import { Source, Sourcelike, newline } from "../Source";
-import { legalizeCharacters, camelCase, startWithLetter } from "../Utils";
+import {
+    legalizeCharacters,
+    camelCase,
+    startWithLetter,
+    stringEscape
+} from "../Utils";
 import {
     Namespace,
     Named,
@@ -211,6 +216,21 @@ export class CSharpRenderer extends Renderer {
         this.emitLine("}");
     };
 
+    forEachWithBlankLines<K, V>(
+        iterable: Iterable<K, V>,
+        emitter: (v: V, k: K) => void
+    ): void {
+        const keys = iterable.keySeq().toArray();
+        const vals = iterable.toArray();
+        const n = keys.length;
+        for (let i = 0; i < n; i++) {
+            if (i !== 0) {
+                this.emitNewline();
+            }
+            emitter(vals[i], keys[i]);
+        }
+    }
+
     csType = (t: Type): Sourcelike => {
         if (t instanceof PrimitiveType) {
             switch (t.kind) {
@@ -250,19 +270,38 @@ export class CSharpRenderer extends Renderer {
 
     emitClass = (c: ClassType): void => {
         const propertyNameds = this.propertyNameds.get(c);
-        this.emitLine(["public class ", this.classAndUnionNameds.get(c)]);
+        this.emitLine([
+            "public partial class ",
+            this.classAndUnionNameds.get(c)
+        ]);
         this.emitBlock(() => {
-            c.properties.forEach((t: Type, name: string) => {
-                const named = propertyNameds.get(name);
-                this.emitLine([this.csType(t), " ", named]);
-            });
+            this.forEachWithBlankLines(
+                c.properties,
+                (t: Type, name: string) => {
+                    const named = propertyNameds.get(name);
+                    this.emitLine([
+                        '[JsonProperty("',
+                        stringEscape(name),
+                        '")]'
+                    ]);
+                    this.emitLine([
+                        "public ",
+                        this.csType(t),
+                        " ",
+                        named,
+                        " { get; set; }"
+                    ]);
+                }
+            );
         });
     };
 
     render(): Source {
         this.emitLine("namespace QuickType");
         this.emitBlock(() => {
-            this.classes.forEach((c: ClassType) => this.emitClass(c));
+            this.forEachWithBlankLines(this.classes, (c: ClassType) =>
+                this.emitClass(c)
+            );
         });
         return this.finishedSource();
     }
