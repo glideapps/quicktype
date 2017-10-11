@@ -49,7 +49,7 @@ export class PrimitiveType extends Type {
     }
 }
 
-export function isNull(t: Type): boolean {
+function isNull(t: Type): boolean {
     return t.kind === "null";
 }
 
@@ -125,17 +125,13 @@ export class ClassType extends NamedType {
     equals(other: any): boolean {
         if (!(other instanceof ClassType)) return false;
         return (
-            this.names.names.equals(other.names.names) &&
-            this.properties.equals(other.properties)
+            this.names.names.equals(other.names.names) && this.properties.equals(other.properties)
         );
     }
 
     hashCode(): number {
         return (
-            (stringHash(this.kind) +
-                this.names.names.hashCode() +
-                this.properties.hashCode()) |
-            0
+            (stringHash(this.kind) + this.names.names.hashCode() + this.properties.hashCode()) | 0
         );
     }
 }
@@ -156,25 +152,31 @@ export class UnionType extends NamedType {
 
     equals(other: any): boolean {
         if (!(other instanceof UnionType)) return false;
-        return (
-            this.names.names.equals(other.names.names) &&
-            this.members.equals(other.members)
-        );
+        return this.names.names.equals(other.names.names) && this.members.equals(other.members);
     }
 
     hashCode(): number {
-        return (
-            (stringHash(this.kind) +
-                this.names.names.hashCode() +
-                this.members.hashCode()) |
-            0
-        );
+        return (stringHash(this.kind) + this.names.names.hashCode() + this.members.hashCode()) | 0;
     }
+}
+
+export function removeNullFromUnion(t: UnionType): [boolean, OrderedSet<Type>] {
+    if (!t.members.some(isNull)) {
+        return [false, t.members];
+    }
+    return [true, t.members.filterNot(isNull).toOrderedSet()];
+}
+
+export function nullableFromUnion(t: UnionType): Type | null {
+    const [hasNull, nonNulls] = removeNullFromUnion(t);
+    if (!hasNull) return null;
+    if (nonNulls.size !== 1) return null;
+    return nonNulls.first();
 }
 
 function setUnion<T>(sets: Iterable<any, Set<T>>): Set<T> {
     const setArray = sets.toArray();
-    if (setArray.length === 0) return OrderedSet();
+    if (setArray.length === 0) return Set();
     if (setArray.length === 1) return setArray[0];
     return setArray[0].union(...setArray.slice(1));
 }
@@ -187,19 +189,13 @@ export type ClassesAndUnions = {
 function combineClassesAndUnion(
     classesAndUnions: Iterable<any, ClassesAndUnions>
 ): ClassesAndUnions {
-    let classes = setUnion(
-        classesAndUnions.map((cau: ClassesAndUnions) => cau.classes)
-    );
-    let unions = setUnion(
-        classesAndUnions.map((cau: ClassesAndUnions) => cau.unions)
-    );
+    let classes = setUnion(classesAndUnions.map((cau: ClassesAndUnions) => cau.classes));
+    let unions = setUnion(classesAndUnions.map((cau: ClassesAndUnions) => cau.unions));
     return { classes, unions };
 }
 
 function classesAndUnionsInType(t: Type): ClassesAndUnions {
-    let { classes, unions } = combineClassesAndUnion(
-        t.children.map(classesAndUnionsInType)
-    );
+    let { classes, unions } = combineClassesAndUnion(t.children.map(classesAndUnionsInType));
     if (t instanceof ClassType) {
         classes = classes.add(t);
     } else if (t instanceof UnionType) {
