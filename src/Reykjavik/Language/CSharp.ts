@@ -10,7 +10,8 @@ import {
     UnionType,
     NamedType,
     ClassType,
-    isNull,
+    nullableFromUnion,
+    removeNullFromUnion,
     allClassesAndUnions
 } from "../Type";
 import { Source, Sourcelike, newline } from "../Source";
@@ -102,15 +103,6 @@ function isValueType(t: Type): boolean {
         return ["integer", "double", "bool"].indexOf(t.kind) >= 0;
     }
     return false;
-}
-
-function nullableFromUnion(t: UnionType): Type | null {
-    if (!t.members.some(isNull)) return null;
-
-    const nonNulls = t.members.filterNot(isNull);
-    if (nonNulls.size !== 1) return null;
-
-    return nonNulls.first();
 }
 
 export class CSharpRenderer extends Renderer {
@@ -225,32 +217,76 @@ export class CSharpRenderer extends Renderer {
             return ["Dictionary<string, ", this.csType(t.values), ">"];
         } else if (t instanceof UnionType) {
             const nonNull = nullableFromUnion(t);
-            if (nonNull) {
-                const nonNullSrc = this.csType(nonNull);
-                if (isValueType(nonNull)) {
-                    return [nonNullSrc, "?"];
-                } else {
-                    return nonNullSrc;
-                }
-            }
+            if (nonNull) return this.nullableCSType(nonNull);
             return this.classAndUnionNameds.get(t);
         }
         throw "Unknown type";
     };
 
-    emitClass = (modifiers: Sourcelike, name: Sourcelike, emitter: () => void): void => {
-        const space = modifiers === "" ? "" : " ";
-        this.emitLine(["public ", modifiers, space, "class ", name]);
+    typeNameForUnionMember = (t: Type): string => {
+        if (t instanceof PrimitiveType) {
+            switch (t.kind) {
+                case "any":
+                    return "anything";
+                case "null":
+                    return "null";
+                case "bool":
+                    return "bool";
+                case "integer":
+                    return "long";
+                case "double":
+                    return "double";
+                case "string":
+                    return "string";
+            }
+        } else if (t instanceof ArrayType) {
+            return this.typeNameForUnionMember(t.items) + "_array";
+        } else if (t instanceof ClassType) {
+            return this.names.get(this.classAndUnionNameds.get(t));
+        } else if (t instanceof MapType) {
+            return this.typeNameForUnionMember(t.values), "_map";
+        } else if (t instanceof UnionType) {
+            return "union";
+        }
+        throw "Unknown type";
+    };
+
+    nullableCSType = (t: Type): Sourcelike => {
+        const csType = this.csType(t);
+        if (isValueType(t)) {
+            return [csType, "?"];
+        } else {
+            return csType;
+        }
+    };
+
+    emitClass = (declaration: Sourcelike, name: Sourcelike, emitter: () => void): void => {
+        this.emitLine(["public ", declaration, " ", name]);
         this.emitBlock(emitter);
     };
 
     emitClassDefinition = (c: ClassType): void => {
         const propertyNameds = this.propertyNameds.get(c);
-        this.emitClass("partial", this.classAndUnionNameds.get(c), () => {
+        this.emitClass("partial class", this.classAndUnionNameds.get(c), () => {
             this.forEachWithBlankLines(c.properties, (t: Type, name: string) => {
                 const named = propertyNameds.get(name);
                 this.emitLine(['[JsonProperty("', stringEscape(name), '")]']);
                 this.emitLine(["public ", this.csType(t), " ", named, " { get; set; }"]);
+            });
+        });
+    };
+
+    unionFieldName = (t: Type): string => {
+        return csNameStyle(this.typeNameForUnionMember(t));
+    };
+
+    emitUnionDefinition = (c: UnionType): void => {
+        const [_, nonNulls] = removeNullFromUnion(c);
+        this.emitClass("partial struct", this.classAndUnionNameds.get(c), () => {
+            nonNulls.forEach((t: Type) => {
+                const csType = this.nullableCSType(t);
+                const field = this.unionFieldName(t);
+                this.emitLine(["public ", csType, " ", field, ";"]);
             });
         });
     };
@@ -261,7 +297,7 @@ export class CSharpRenderer extends Renderer {
 
     emitTopLevelJSONPartial = (t: Type, name: string): void => {
         const csType = this.csType(t);
-        this.emitClass("partial", this.topLevelNameds.get(name), () => {
+        this.emitClass("partial class", this.topLevelNameds.get(name), () => {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
@@ -272,7 +308,7 @@ export class CSharpRenderer extends Renderer {
 
     emitSerializeClass = (): void => {
         // FIXME: Make Serialize a Named
-        this.emitClass("static", "Serialize", () => {
+        this.emitClass("static class", "Serialize", () => {
             this.topLevels.forEach((t: Type, name: string) => {
                 // FIXME: Make ToJson a Named
                 this.emitExpressionMember(
@@ -284,7 +320,7 @@ export class CSharpRenderer extends Renderer {
     };
 
     emitConverterClass = (): void => {
-        this.emitClass("", "Converter", () => {
+        this.emitClass("class", "Converter", () => {
             this.emitLine(
                 "public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings"
             );
@@ -300,6 +336,11 @@ export class CSharpRenderer extends Renderer {
         this.emitLine("namespace QuickType");
         this.emitBlock(() => {
             this.forEachWithBlankLines(this.classes, this.emitClassDefinition);
+            this.emitNewline();
+            this.forEachWithBlankLines(this.unions, (u: UnionType): void => {
+                if (nullableFromUnion(u)) return;
+                this.emitUnionDefinition(u);
+            });
             this.emitNewline();
             this.topLevels.forEach(this.emitTopLevelJSONPartial);
             this.emitNewline();
