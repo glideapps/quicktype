@@ -36,10 +36,7 @@ function glueTypeToNative(type: GlueType, classes: (Type | null)[]): Type {
         }
         case "union": {
             const members = type.members.map(t => glueTypeToNative(t, classes));
-            return new UnionType(
-                glueTypeNamesToNative(type.names),
-                OrderedSet(members)
-            );
+            return new UnionType(glueTypeNamesToNative(type.names), OrderedSet(members));
         }
         default:
             return new PrimitiveType(type.kind);
@@ -62,9 +59,7 @@ function glueTypesToNative(glueEntries: GlueClassEntry[]): (Type | null)[] {
             continue;
         }
         const glueProperties = Map(glueEntries[i].properties);
-        c.properties = glueProperties
-            .map((t: GlueType) => glueTypeToNative(t, classes))
-            .toMap();
+        c.properties = glueProperties.map((t: GlueType) => glueTypeToNative(t, classes)).toMap();
     }
 
     return classes;
