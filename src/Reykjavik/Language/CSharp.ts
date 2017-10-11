@@ -184,10 +184,10 @@ export class CSharpRenderer extends Renderer {
         this.propertyNameds = this.propertyNameds.set(c, nameds);
     };
 
-    emitBlock = (f: () => void): void => {
+    emitBlock = (f: () => void, semicolon: boolean = false): void => {
         this.emitLine("{");
         this.indent(f);
-        this.emitLine("}");
+        this.emitLine(["}", semicolon ? ";" : ""]);
     };
 
     forEachWithBlankLines<K, V>(iterable: Iterable<K, V>, emitter: (v: V, k: K) => void): void {
@@ -239,7 +239,8 @@ export class CSharpRenderer extends Renderer {
     };
 
     emitClass = (modifiers: Sourcelike, name: Sourcelike, emitter: () => void): void => {
-        this.emitLine(["public ", modifiers, " class ", name]);
+        const space = modifiers === "" ? "" : " ";
+        this.emitLine(["public ", modifiers, space, "class ", name]);
         this.emitBlock(emitter);
     };
 
@@ -282,6 +283,18 @@ export class CSharpRenderer extends Renderer {
         });
     };
 
+    emitConverterClass = (): void => {
+        this.emitClass("", "Converter", () => {
+            this.emitLine(
+                "public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings"
+            );
+            this.emitBlock(() => {
+                this.emitLine("MetadataPropertyHandling = MetadataPropertyHandling.Ignore,");
+                this.emitLine("DateParseHandling = DateParseHandling.None,");
+            }, true);
+        });
+    };
+
     render(): Source {
         // FIXME: Use configurable namespace
         this.emitLine("namespace QuickType");
@@ -291,6 +304,8 @@ export class CSharpRenderer extends Renderer {
             this.topLevels.forEach(this.emitTopLevelJSONPartial);
             this.emitNewline();
             this.emitSerializeClass();
+            this.emitNewline();
+            this.emitConverterClass();
         });
         return this.finishedSource();
     }
