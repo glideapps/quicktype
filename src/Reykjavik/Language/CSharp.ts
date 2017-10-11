@@ -14,12 +14,7 @@ import {
     allClassesAndUnions
 } from "../Type";
 import { Source, Sourcelike, newline } from "../Source";
-import {
-    legalizeCharacters,
-    camelCase,
-    startWithLetter,
-    stringEscape
-} from "../Utils";
+import { legalizeCharacters, camelCase, startWithLetter, stringEscape } from "../Utils";
 import {
     Namespace,
     Named,
@@ -33,13 +28,7 @@ import { Renderer } from "../Renderer";
 
 const unicode = require("unicode-properties");
 
-const forbiddenNames = [
-    "QuickType",
-    "Converter",
-    "JsonConverter",
-    "Type",
-    "Serialize"
-];
+const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 
 class CountingNamingFunction extends NamingFunction {
     name(
@@ -51,16 +40,14 @@ class CountingNamingFunction extends NamingFunction {
             throw "Number of names can't be less than 1";
         }
 
-        const range = Range(0, numberOfNames);
+        const range = Range(1, numberOfNames + 1);
         let underscores = "";
         for (;;) {
             let names: OrderedSet<string>;
             if (numberOfNames === 1) {
                 names = OrderedSet([proposedName + underscores]);
             } else {
-                names = range
-                    .map(i => proposedName + underscores + i)
-                    .toOrderedSet();
+                names = range.map(i => proposedName + underscores + i).toOrderedSet();
             }
             if (names.some((n: string) => forbiddenNames.has(n))) {
                 underscores += "_";
@@ -159,12 +146,7 @@ export class CSharpRenderer extends Renderer {
 
     namedFromTopLevel = (type: Type, name: string): SimpleNamed => {
         const proposed = csNameStyle(name);
-        const named = new SimpleNamed(
-            this.globalNamespace,
-            name,
-            countingNamingFunction,
-            proposed
-        );
+        const named = new SimpleNamed(this.globalNamespace, name, countingNamingFunction, proposed);
         if (type instanceof NamedType) {
             const typeNamed = new DependencyNamed(
                 this.globalNamespace,
@@ -173,10 +155,7 @@ export class CSharpRenderer extends Renderer {
                 List([named]),
                 proposeTopLevelDependencyName
             );
-            this.classAndUnionNameds = this.classAndUnionNameds.set(
-                type,
-                typeNamed
-            );
+            this.classAndUnionNameds = this.classAndUnionNameds.set(type, typeNamed);
         }
         return named;
     };
@@ -199,12 +178,7 @@ export class CSharpRenderer extends Renderer {
         const ns = new Namespace(c.names.combined, this.globalNamespace, Set());
         const nameds = c.properties
             .map((t: Type, name: string) => {
-                return new SimpleNamed(
-                    ns,
-                    name,
-                    countingNamingFunction,
-                    csNameStyle(name)
-                );
+                return new SimpleNamed(ns, name, countingNamingFunction, csNameStyle(name));
             })
             .toMap();
         this.propertyNameds = this.propertyNameds.set(c, nameds);
@@ -216,19 +190,15 @@ export class CSharpRenderer extends Renderer {
         this.emitLine("}");
     };
 
-    forEachWithBlankLines<K, V>(
-        iterable: Iterable<K, V>,
-        emitter: (v: V, k: K) => void
-    ): void {
-        const keys = iterable.keySeq().toArray();
-        const vals = iterable.toArray();
-        const n = keys.length;
-        for (let i = 0; i < n; i++) {
-            if (i !== 0) {
+    forEachWithBlankLines<K, V>(iterable: Iterable<K, V>, emitter: (v: V, k: K) => void): void {
+        let needBlank = false;
+        iterable.forEach((v: V, k: K) => {
+            if (needBlank) {
                 this.emitNewline();
             }
-            emitter(vals[i], keys[i]);
-        }
+            emitter(v, k);
+            needBlank = true;
+        });
     }
 
     csType = (t: Type): Sourcelike => {
@@ -268,40 +238,59 @@ export class CSharpRenderer extends Renderer {
         throw "Unknown type";
     };
 
-    emitClass = (c: ClassType): void => {
+    emitClass = (modifiers: Sourcelike, name: Sourcelike, emitter: () => void): void => {
+        this.emitLine(["public ", modifiers, " class ", name]);
+        this.emitBlock(emitter);
+    };
+
+    emitClassDefinition = (c: ClassType): void => {
         const propertyNameds = this.propertyNameds.get(c);
-        this.emitLine([
-            "public partial class ",
-            this.classAndUnionNameds.get(c)
-        ]);
-        this.emitBlock(() => {
-            this.forEachWithBlankLines(
-                c.properties,
-                (t: Type, name: string) => {
-                    const named = propertyNameds.get(name);
-                    this.emitLine([
-                        '[JsonProperty("',
-                        stringEscape(name),
-                        '")]'
-                    ]);
-                    this.emitLine([
-                        "public ",
-                        this.csType(t),
-                        " ",
-                        named,
-                        " { get; set; }"
-                    ]);
-                }
+        this.emitClass("partial", this.classAndUnionNameds.get(c), () => {
+            this.forEachWithBlankLines(c.properties, (t: Type, name: string) => {
+                const named = propertyNameds.get(name);
+                this.emitLine(['[JsonProperty("', stringEscape(name), '")]']);
+                this.emitLine(["public ", this.csType(t), " ", named, " { get; set; }"]);
+            });
+        });
+    };
+
+    emitExpressionMember(declare: Sourcelike, define: Sourcelike): void {
+        this.emitLine([declare, " => ", define, ";"]);
+    }
+
+    emitTopLevelJSONPartial = (t: Type, name: string): void => {
+        const csType = this.csType(t);
+        this.emitClass("partial", this.topLevelNameds.get(name), () => {
+            // FIXME: Make FromJson a Named
+            this.emitExpressionMember(
+                ["public static ", csType, " FromJson(string json)"],
+                ["JsonConvert.DeserializeObject<", csType, ">(json, Converter.Settings)"]
             );
         });
     };
 
+    emitSerializeClass = (): void => {
+        // FIXME: Make Serialize a Named
+        this.emitClass("static", "Serialize", () => {
+            this.topLevels.forEach((t: Type, name: string) => {
+                // FIXME: Make ToJson a Named
+                this.emitExpressionMember(
+                    ["public static string ToJson(this ", this.csType(t), " self)"],
+                    "JsonConvert.SerializeObject(self, Converter.Settings)"
+                );
+            });
+        });
+    };
+
     render(): Source {
+        // FIXME: Use configurable namespace
         this.emitLine("namespace QuickType");
         this.emitBlock(() => {
-            this.forEachWithBlankLines(this.classes, (c: ClassType) =>
-                this.emitClass(c)
-            );
+            this.forEachWithBlankLines(this.classes, this.emitClassDefinition);
+            this.emitNewline();
+            this.topLevels.forEach(this.emitTopLevelJSONPartial);
+            this.emitNewline();
+            this.emitSerializeClass();
         });
         return this.finishedSource();
     }
