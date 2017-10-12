@@ -25,6 +25,7 @@ import {
     keywordNamespace,
     assignNames
 } from "../Naming";
+import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer } from "../Renderer";
 
 const unicode = require("unicode-properties");
@@ -119,7 +120,7 @@ export class CSharpRenderer extends Renderer {
         this.globalNamespace = keywordNamespace("global", forbiddenNames);
         const { classes, unions } = allClassesAndUnions(topLevels);
         this.classes = classes;
-        this.unions = unions;
+        this.unions = unions.filter(u => !nullableFromUnion(u)).toSet();
         this.classAndUnionNameds = Map();
         this.propertyNameds = Map();
         this.topLevelNameds = topLevels.map(this.namedFromTopLevel).toMap();
@@ -128,10 +129,7 @@ export class CSharpRenderer extends Renderer {
             this.addPropertyNameds(c);
         });
         // FIXME: only non-nullable unions!
-        unions.forEach((u: UnionType) => {
-            if (nullableFromUnion(u)) return;
-            this.addClassOrUnionNamed(u);
-        });
+        unions.forEach(this.addClassOrUnionNamed);
         this.globalNamespace.members.forEach((n: Named) => console.log(n.name));
         this.names = assignNames(OrderedSet([this.globalNamespace]));
     }
@@ -306,6 +304,95 @@ export class CSharpRenderer extends Renderer {
         });
     };
 
+    emitUnionJSONPartial = (u: UnionType): void => {
+        const tokenCase = (tokenType: string): void => {
+            this.emitLine(["case JsonToken.", tokenType, ";"]);
+        };
+
+        const emitNullDeserializer = (): void => {
+            tokenCase("Null");
+            this.indent(() => this.emitLine("break;"));
+        };
+
+        const emitDeserializeType = (t: Type): void => {
+            this.emitLine([
+                this.unionFieldName(t),
+                " = serializer.Deserialize<",
+                this.csType(t),
+                ">(reader);"
+            ]);
+            this.emitLine("break;");
+        };
+
+        const emitPrimitiveDeserializer = (tokenTypes: string[], kind: PrimitiveTypeKind): void => {
+            const t = u.findMember(kind);
+            if (!t) return;
+
+            for (const tokenType of tokenTypes) {
+                tokenCase(tokenType);
+            }
+            this.indent(() => emitDeserializeType(t));
+        };
+
+        const emitDoubleSerializer = (): void => {
+            const t = u.findMember("double");
+            if (!t) return;
+
+            if (!u.findMember("integer")) tokenCase("Integer");
+            tokenCase("Float");
+            this.indent(() => emitDeserializeType(t));
+        };
+
+        const emitGenericDeserializer = (kind: TypeKind, tokenType: string): void => {
+            const t = u.findMember(kind);
+            if (!t) return;
+
+            tokenCase(tokenType);
+            this.indent(() => emitDeserializeType(t));
+        };
+
+        const [hasNull, nonNulls] = removeNullFromUnion(u);
+        const named = this.classAndUnionNameds.get(u);
+        this.emitClass("partial struct", named, () => {
+            this.emitLine(["public ", named, "(JsonReader reader, JsonSerializer serializer)"]);
+            this.emitBlock(() => {
+                nonNulls.forEach((t: Type) => {
+                    this.emitLine([this.unionFieldName(t), " = null;"]);
+                });
+                this.emitNewline();
+                this.emitLine("switch (reader.TokenType)");
+                this.emitBlock(() => {
+                    if (hasNull) emitNullDeserializer();
+                    emitPrimitiveDeserializer(["Integer"], "integer");
+                    emitDoubleSerializer();
+                    emitPrimitiveDeserializer(["Boolean"], "bool");
+                    emitPrimitiveDeserializer(["String", "Date"], "string");
+                    emitGenericDeserializer("array", "StartArray");
+                    emitGenericDeserializer("class", "StartObject");
+                    emitGenericDeserializer("map", "StartObject");
+                    this.emitLine(['default: throw new Exception("Cannot convert ', named, '");']);
+                });
+            });
+            this.emitNewline();
+            this.emitLine("public void WriteJson(JsonWriter writer, JsonSerializer serializer)");
+            this.emitBlock(() => {
+                nonNulls.forEach((t: Type) => {
+                    const fieldName = this.unionFieldName(t);
+                    this.emitLine(["if (", fieldName, " != null)"]);
+                    this.emitBlock(() => {
+                        this.emitLine(["serializer.Serialize(writer, ", fieldName, ");"]);
+                        this.emitLine("return;");
+                    });
+                });
+                if (hasNull) {
+                    this.emitLine("writer.WriteNull();");
+                } else {
+                    this.emitLine('throw new Exception("Union must not be null");');
+                }
+            });
+        });
+    };
+
     emitSerializeClass = (): void => {
         // FIXME: Make Serialize a Named
         this.emitClass("static class", "Serialize", () => {
@@ -337,12 +424,11 @@ export class CSharpRenderer extends Renderer {
         this.emitBlock(() => {
             this.forEachWithBlankLines(this.classes, this.emitClassDefinition);
             this.emitNewline();
-            this.forEachWithBlankLines(this.unions, (u: UnionType): void => {
-                if (nullableFromUnion(u)) return;
-                this.emitUnionDefinition(u);
-            });
+            this.forEachWithBlankLines(this.unions, this.emitUnionDefinition);
             this.emitNewline();
             this.topLevels.forEach(this.emitTopLevelJSONPartial);
+            this.emitNewline();
+            this.unions.forEach(this.emitUnionJSONPartial);
             this.emitNewline();
             this.emitSerializeClass();
             this.emitNewline();
