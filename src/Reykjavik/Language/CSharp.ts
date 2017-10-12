@@ -97,7 +97,6 @@ export class CSharpRenderer extends Renderer {
             this.addClassOrUnionNamed(c);
             this.addPropertyNameds(c);
         });
-        // FIXME: only non-nullable unions!
         unions.forEach(this.addClassOrUnionNamed);
         this.globalNamespace.members.forEach((n: Named) => console.log(n.name));
         this.names = assignNames(OrderedSet([this.globalNamespace]));
