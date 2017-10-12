@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, List, Map, OrderedSet, Range, Iterable } from "immutable";
+import { Set, List, Map, OrderedSet, Iterable } from "immutable";
 import {
     Graph,
     Type,
@@ -29,7 +29,8 @@ import {
     DependencyNamed,
     NamingFunction,
     keywordNamespace,
-    assignNames
+    assignNames,
+    countingNamingFunction
 } from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer } from "../Renderer";
@@ -37,44 +38,6 @@ import { Renderer } from "../Renderer";
 const unicode = require("unicode-properties");
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
-
-class CountingNamingFunction extends NamingFunction {
-    name(
-        proposedName: string,
-        forbiddenNames: Set<string>,
-        numberOfNames: number
-    ): OrderedSet<string> {
-        if (numberOfNames < 1) {
-            throw "Number of names can't be less than 1";
-        }
-
-        const range = Range(1, numberOfNames + 1);
-        let underscores = "";
-        for (;;) {
-            let names: OrderedSet<string>;
-            if (numberOfNames === 1) {
-                names = OrderedSet([proposedName + underscores]);
-            } else {
-                names = range.map(i => proposedName + underscores + i).toOrderedSet();
-            }
-            if (names.some((n: string) => forbiddenNames.has(n))) {
-                underscores += "_";
-                continue;
-            }
-            return names;
-        }
-    }
-
-    equals(other: any): boolean {
-        return other instanceof CountingNamingFunction;
-    }
-
-    hashCode(): number {
-        return 31415;
-    }
-}
-
-const countingNamingFunction = new CountingNamingFunction();
 
 function proposeTopLevelDependencyName(names: List<string>): string {
     if (names.size !== 1) throw "Cannot deal with more than one dependency";

@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, OrderedSet, List, Map, Iterable } from "immutable";
+import { Set, OrderedSet, List, Map, Iterable, Range } from "immutable";
 import stringHash = require("string-hash");
 
 import { Renderer } from "./Renderer";
@@ -318,3 +318,41 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Named, s
         );
     }
 }
+
+class CountingNamingFunction extends NamingFunction {
+    name(
+        proposedName: string,
+        forbiddenNames: Set<string>,
+        numberOfNames: number
+    ): OrderedSet<string> {
+        if (numberOfNames < 1) {
+            throw "Number of names can't be less than 1";
+        }
+
+        const range = Range(1, numberOfNames + 1);
+        let underscores = "";
+        for (;;) {
+            let names: OrderedSet<string>;
+            if (numberOfNames === 1) {
+                names = OrderedSet([proposedName + underscores]);
+            } else {
+                names = range.map(i => proposedName + underscores + i).toOrderedSet();
+            }
+            if (names.some((n: string) => forbiddenNames.has(n))) {
+                underscores += "_";
+                continue;
+            }
+            return names;
+        }
+    }
+
+    equals(other: any): boolean {
+        return other instanceof CountingNamingFunction;
+    }
+
+    hashCode(): number {
+        return 31415;
+    }
+}
+
+export const countingNamingFunction = new CountingNamingFunction();
