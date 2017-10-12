@@ -146,6 +146,10 @@ export class UnionType extends NamedType {
         this.members = members;
     }
 
+    findMember = (kind: TypeKind): Type | undefined => {
+        return this.members.find(t => t.kind === kind);
+    };
+
     get children(): Set<Type> {
         return this.members.toSet();
     }
