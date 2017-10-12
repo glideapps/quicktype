@@ -98,7 +98,6 @@ export class CSharpRenderer extends Renderer {
             this.addPropertyNameds(c);
         });
         unions.forEach(this.addClassOrUnionNamed);
-        this.globalNamespace.members.forEach((n: Named) => console.log(n.name));
         this.names = assignNames(OrderedSet([this.globalNamespace]));
     }
 
@@ -274,7 +273,7 @@ export class CSharpRenderer extends Renderer {
 
     emitUnionJSONPartial = (u: UnionType): void => {
         const tokenCase = (tokenType: string): void => {
-            this.emitLine(["case JsonToken.", tokenType, ";"]);
+            this.emitLine(["case JsonToken.", tokenType, ":"]);
         };
 
         const emitNullDeserializer = (): void => {
@@ -435,9 +434,18 @@ export class CSharpRenderer extends Renderer {
     };
 
     render(): Source {
+        const using = (ns: string): void => {
+            this.emitLine(["using ", ns, ";"]);
+        };
         // FIXME: Use configurable namespace
         this.emitLine("namespace QuickType");
         this.emitBlock(() => {
+            for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
+                using(ns);
+            }
+            this.emitNewline();
+            using("Newtonsoft.Json");
+            this.emitNewline();
             this.forEachWithBlankLines(this.classes, this.emitClassDefinition);
             this.emitNewline();
             this.forEachWithBlankLines(this.unions, this.emitUnionDefinition);
