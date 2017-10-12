@@ -1,11 +1,11 @@
 "use strict";
 
+import { Iterable, List } from "immutable";
+
 const unicode = require("unicode-properties");
 
 // FIXME: This is a copy of code in src/Data/String/Util.js
-export function stringConcatMap(
-    mapper: (char: string) => string
-): (s: string) => string {
+export function stringConcatMap(mapper: (char: string) => string): (s: string) => string {
     const charStringMap: string[] = [];
     const charNoEscapeMap: number[] = [];
 
@@ -50,9 +50,7 @@ export function stringConcatMap(
     };
 }
 
-export function legalizeCharacters(
-    isLegal: (c: string) => boolean
-): (s: string) => string {
+export function legalizeCharacters(isLegal: (c: string) => boolean): (s: string) => string {
     return stringConcatMap(c => (isLegal(c) ? c : "_"));
 }
 
@@ -71,9 +69,7 @@ export function standardUnicodeHexEscape(c: string): string {
     }
 }
 
-function genericStringEscape(
-    escaper: (c: string) => string
-): (s: string) => string {
+function genericStringEscape(escaper: (c: string) => string): (s: string) => string {
     function mapper(c: string): string {
         switch (c) {
             case "\\":
@@ -156,4 +152,13 @@ export function startWithLetter(
     if (str === "") return modify("empty");
     if (isLetter(str[0])) return modify(str);
     return modify("the" + str);
+}
+
+export function intercalate<T>(separator: T, items: Iterable<any, T>): List<T> {
+    const acc: T[] = [];
+    items.forEach((x: T) => {
+        if (acc.length > 0) acc.push(separator);
+        acc.push(x);
+    });
+    return List(acc);
 }
