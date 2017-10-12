@@ -15,7 +15,13 @@ import {
     allClassesAndUnions
 } from "../Type";
 import { Source, Sourcelike, newline } from "../Source";
-import { legalizeCharacters, camelCase, startWithLetter, stringEscape } from "../Utils";
+import {
+    legalizeCharacters,
+    camelCase,
+    startWithLetter,
+    stringEscape,
+    intercalate
+} from "../Utils";
 import {
     Namespace,
     Named,
@@ -406,8 +412,56 @@ export class CSharpRenderer extends Renderer {
         });
     };
 
+    emitUnionConverterMembers = (): void => {
+        const nameds = this.unions.map((u: UnionType) => this.classAndUnionNameds.get(u)).toSet();
+        const canConvertExpr = intercalate(
+            " || ",
+            nameds.map((n: Named): Sourcelike => ["t == typeof(", n, ")"])
+        );
+        // FIXME: make Iterable<any, Sourcelike> a Sourcelike, too?
+        this.emitExpressionMember(
+            "public override bool CanConvert(Type t)",
+            canConvertExpr.toArray()
+        );
+        this.emitNewline();
+        this.emitLine(
+            "public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)"
+        );
+        this.emitBlock(() => {
+            // FIXME: call the constructor via reflection?
+            nameds.forEach((n: Named) => {
+                this.emitLine(["if (t == typeof(", n, "))"]);
+                this.indent(() => this.emitLine(["return new ", n, "(reader, serializer);"]));
+            });
+            this.emitLine('throw new Exception("Unknown type");');
+        });
+        this.emitNewline();
+        this.emitLine(
+            "public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)"
+        );
+        this.emitBlock(() => {
+            this.emitLine("var t = value.GetType();");
+            nameds.forEach((n: Named) => {
+                this.emitLine(["if (t == typeof(", n, "))"]);
+                this.emitBlock(() => {
+                    this.emitLine(["((", n, ")value).WriteJson(writer, serializer);"]);
+                    this.emitLine("return;");
+                });
+            });
+            this.emitLine('throw new Exception("Unknown type");');
+        });
+    };
+
     emitConverterClass = (): void => {
-        this.emitClass("class", "Converter", () => {
+        const haveUnions = this.unions.size > 0;
+        // FIXME: Make Converter a Named
+        let converterName: Sourcelike = ["Converter"];
+        if (haveUnions) converterName = converterName.concat([": JsonConverter"]);
+        this.emitClass("class", converterName, () => {
+            if (haveUnions) {
+                this.emitUnionConverterMembers();
+                this.emitNewline();
+            }
             this.emitLine(
                 "public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings"
             );
