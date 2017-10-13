@@ -89,7 +89,7 @@ export class CSharpRenderer extends Renderer {
         this.globalNamespace = keywordNamespace("global", forbiddenNames);
         const { classes, unions } = allClassesAndUnions(topLevels);
         this.classes = classes;
-        this.unions = unions.filter(u => !nullableFromUnion(u)).toSet();
+        this.unions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toSet();
         this.classAndUnionNameds = Map();
         this.propertyNameds = Map();
         this.topLevelNameds = topLevels.map(this.namedFromTopLevel).toMap();
@@ -97,7 +97,7 @@ export class CSharpRenderer extends Renderer {
             this.addClassOrUnionNamed(c);
             this.addPropertyNameds(c);
         });
-        unions.forEach(this.addClassOrUnionNamed);
+        unions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
         this.names = assignNames(OrderedSet([this.globalNamespace]));
     }
 
@@ -429,6 +429,9 @@ export class CSharpRenderer extends Renderer {
             this.emitBlock(() => {
                 this.emitLine("MetadataPropertyHandling = MetadataPropertyHandling.Ignore,");
                 this.emitLine("DateParseHandling = DateParseHandling.None,");
+                if (haveUnions) {
+                    this.emitLine("Converters = { new Converter() },");
+                }
             }, true);
         });
     };

@@ -319,7 +319,7 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Named, s
     }
 }
 
-class CountingNamingFunction extends NamingFunction {
+export class CountingNamingFunction extends NamingFunction {
     name(
         proposedName: string,
         forbiddenNames: Set<string>,
