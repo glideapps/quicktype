@@ -23,7 +23,7 @@ data Version = CSharp5 | CSharp6
 
 forbiddenNames :: Array String
 forbiddenNames =
-    [ "QuickType"
+    [ "QuickType" -- FIXME: Are we forbidding the namespace here? If so, we need to use the option value.
     , "Converter"
     , "JsonConverter"
     , "Type"

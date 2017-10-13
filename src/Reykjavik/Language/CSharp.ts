@@ -35,22 +35,34 @@ import {
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer } from "../Renderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { BooleanRendererOption } from "../Options";
+import { BooleanRendererOption, StringRendererOption } from "../Options";
 
 const unicode = require("unicode-properties");
 
 class CSharpTargetLanguage extends TargetLanguage {
     readonly pocoOption: BooleanRendererOption;
+    readonly namespaceOption: StringRendererOption;
 
     constructor() {
         const pocoOption = new BooleanRendererOption("just-types", "Plain objects only", false);
-        super([pocoOption]);
+        // FIXME: Do this via a configurable named eventually.
+        const namespaceOption = new StringRendererOption(
+            "namespace",
+            "Generated namespace",
+            "NAME",
+            "QuickType"
+        );
+        super([pocoOption, namespaceOption]);
         this.pocoOption = pocoOption;
+        this.namespaceOption = namespaceOption;
     }
 
     getRenderer(topLevels: Graph, optionValues: { [name: string]: any }): Renderer {
-        console.log("options", JSON.stringify(optionValues));
-        return new CSharpRenderer(topLevels, this.pocoOption.getValue(optionValues));
+        return new CSharpRenderer(
+            topLevels,
+            this.pocoOption.getValue(optionValues),
+            this.namespaceOption.getValue(optionValues)
+        );
     }
 }
 
@@ -96,6 +108,7 @@ function isValueType(t: Type): boolean {
 
 class CSharpRenderer extends Renderer {
     readonly poco: boolean;
+    readonly namespaceName: string;
 
     readonly globalNamespace: Namespace;
     readonly topLevelNameds: Map<string, Named>;
@@ -105,10 +118,11 @@ class CSharpRenderer extends Renderer {
     propertyNameds: Map<ClassType, Map<string, Named>>;
     readonly names: Map<Named, string>;
 
-    constructor(topLevels: Graph, poco: boolean) {
+    constructor(topLevels: Graph, poco: boolean, namespaceName: string) {
         super(topLevels);
 
         this.poco = poco;
+        this.namespaceName = namespaceName;
 
         this.globalNamespace = keywordNamespace("global", forbiddenNames);
         const { classes, unions } = allClassesAndUnions(topLevels);
@@ -469,7 +483,7 @@ class CSharpRenderer extends Renderer {
             this.emitLine(["using ", ns, ";"]);
         };
         // FIXME: Use configurable namespace
-        this.emitLine("namespace QuickType");
+        this.emitLine(["namespace ", this.namespaceName]);
         this.emitBlock(() => {
             for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
                 using(ns);
