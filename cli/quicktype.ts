@@ -6,7 +6,7 @@ import * as Either from "Data.Either";
 import * as Maybe from "Data.Maybe";
 
 // These are simplified, uncurried versions of Either.fromRight, etc.
-import { fromRight, fromJust } from "./purescript";
+import { fromLeft, fromRight, fromJust } from "./purescript";
 
 import * as _ from "lodash";
 
@@ -16,8 +16,9 @@ import { Renderer } from "Doc";
 import * as Renderers from "Language.Renderers";
 import { ErrorMessage, SourceCode } from "Core";
 import { glueGraphToNative } from "../src/Reykjavik/Glue";
-import { CSharpRenderer } from "../src/Reykjavik/Language/CSharp";
+import { cSharpTargetLanguage } from "../src/Reykjavik/Language/CSharp";
 import { serializeSource, sourcelikeToSource } from "../src/Reykjavik/Source";
+import { OptionDefinition } from "../src/Reykjavik/Options";
 
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
@@ -28,18 +29,6 @@ const chalk = require("chalk");
 
 const langs = Renderers.all.map(r => r.names[0]).join("|");
 const langDisplayNames = Renderers.all.map(r => r.displayName).join(", ");
-
-interface OptionDefinition {
-  name: string;
-  type: any; // FIXME: this doesn't seem correct
-  renderer?: boolean;
-  alias?: string;
-  multiple?: boolean;
-  defaultOption?: boolean;
-  defaultValue?: any;
-  typeLabel?: string;
-  description: string;
-}
 
 const optionDefinitions: OptionDefinition[] = [
   {
@@ -199,7 +188,7 @@ interface CompleteOptions {
   noMaps: boolean;
   reykjavik: boolean;
   help?: boolean;
-  rendererOptions: { [name: string]: string };
+  rendererOptions: { [name: string]: any };
 }
 
 interface SampleOrSchemaMap {
@@ -220,9 +209,10 @@ class Run {
         argv,
         true
       );
-      const renderer = this.getRenderer(incompleteOptions.lang);
+      const rendererOptionDefinitions = this.getOptionDefinitions(
+        incompleteOptions
+      );
       // Use the global options as well as the renderer options from now on:
-      const rendererOptionDefinitions = optionDefinitionsForRenderer(renderer);
       const allOptionDefinitions = _.concat(
         optionDefinitions,
         rendererOptionDefinitions
@@ -242,6 +232,14 @@ class Run {
       this.options = this.inferOptions(argv);
     }
   }
+
+  getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
+    if (opts.reykjavik) {
+      return cSharpTargetLanguage.optionDefinitions;
+    }
+    const renderer = this.getRenderer(opts.lang);
+    return optionDefinitionsForRenderer(renderer);
+  };
 
   getRenderer = (lang: string): Renderer => {
     let maybe = Renderers.rendererForLanguage(lang);
@@ -272,9 +270,17 @@ class Run {
     };
 
     if (this.options.reykjavik) {
-      const glueGraph = fromRight(Main.glueGraphFromJsonConfig(config));
+      const glueGraphOrError = Main.glueGraphFromJsonConfig(config);
+      if (Either.isLeft(glueGraphOrError)) {
+        console.error(`Error processing JSON: ${fromLeft(glueGraphOrError)}`);
+        process.exit(1);
+      }
+      const glueGraph = fromRight(glueGraphOrError);
       const graph = glueGraphToNative(glueGraph);
-      const renderer = new CSharpRenderer(graph);
+      const renderer = cSharpTargetLanguage.getRenderer(
+        graph,
+        this.options.rendererOptions
+      );
       return renderer.serializedSource();
     } else {
       return fromRight(Main.main(config));

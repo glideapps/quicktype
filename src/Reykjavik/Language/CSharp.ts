@@ -34,8 +34,27 @@ import {
 } from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import { BooleanRendererOption } from "../Options";
 
 const unicode = require("unicode-properties");
+
+class CSharpTargetLanguage extends TargetLanguage {
+    readonly pocoOption: BooleanRendererOption;
+
+    constructor() {
+        const pocoOption = new BooleanRendererOption("just-types", "Plain objects only", false);
+        super([pocoOption]);
+        this.pocoOption = pocoOption;
+    }
+
+    getRenderer(topLevels: Graph, optionValues: { [name: string]: any }): Renderer {
+        console.log("options", JSON.stringify(optionValues));
+        return new CSharpRenderer(topLevels, this.pocoOption.getValue(optionValues));
+    }
+}
+
+export const cSharpTargetLanguage: TargetLanguage = new CSharpTargetLanguage();
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 
@@ -75,7 +94,9 @@ function isValueType(t: Type): boolean {
     return false;
 }
 
-export class CSharpRenderer extends Renderer {
+class CSharpRenderer extends Renderer {
+    readonly poco: boolean;
+
     readonly globalNamespace: Namespace;
     readonly topLevelNameds: Map<string, Named>;
     readonly classes: Set<ClassType>;
@@ -84,8 +105,11 @@ export class CSharpRenderer extends Renderer {
     propertyNameds: Map<ClassType, Map<string, Named>>;
     readonly names: Map<Named, string>;
 
-    constructor(topLevels: Graph) {
+    constructor(topLevels: Graph, poco: boolean) {
         super(topLevels);
+
+        this.poco = poco;
+
         this.globalNamespace = keywordNamespace("global", forbiddenNames);
         const { classes, unions } = allClassesAndUnions(topLevels);
         this.classes = classes;
@@ -230,9 +254,13 @@ export class CSharpRenderer extends Renderer {
         this.emitBlock(emitter);
     };
 
+    get partialString(): string {
+        return this.poco ? "" : "partial ";
+    }
+
     emitClassDefinition = (c: ClassType): void => {
         const propertyNameds = this.propertyNameds.get(c);
-        this.emitClass("partial class", this.classAndUnionNameds.get(c), () => {
+        this.emitClass([this.partialString, "class"], this.classAndUnionNameds.get(c), () => {
             this.forEachWithBlankLines(c.properties, (t: Type, name: string) => {
                 const named = propertyNameds.get(name);
                 this.emitLine(['[JsonProperty("', stringEscape(name), '")]']);
@@ -247,7 +275,7 @@ export class CSharpRenderer extends Renderer {
 
     emitUnionDefinition = (c: UnionType): void => {
         const [_, nonNulls] = removeNullFromUnion(c);
-        this.emitClass("partial struct", this.classAndUnionNameds.get(c), () => {
+        this.emitClass([this.partialString, "struct"], this.classAndUnionNameds.get(c), () => {
             nonNulls.forEach((t: Type) => {
                 const csType = this.nullableCSType(t);
                 const field = this.unionFieldName(t);
@@ -446,20 +474,24 @@ export class CSharpRenderer extends Renderer {
             for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
                 using(ns);
             }
-            this.emitNewline();
-            using("Newtonsoft.Json");
+            if (!this.poco) {
+                this.emitNewline();
+                using("Newtonsoft.Json");
+            }
             this.emitNewline();
             this.forEachWithBlankLines(this.classes, this.emitClassDefinition);
             this.emitNewline();
             this.forEachWithBlankLines(this.unions, this.emitUnionDefinition);
-            this.emitNewline();
-            this.topLevels.forEach(this.emitTopLevelJSONPartial);
-            this.emitNewline();
-            this.unions.forEach(this.emitUnionJSONPartial);
-            this.emitNewline();
-            this.emitSerializeClass();
-            this.emitNewline();
-            this.emitConverterClass();
+            if (!this.poco) {
+                this.emitNewline();
+                this.topLevels.forEach(this.emitTopLevelJSONPartial);
+                this.emitNewline();
+                this.unions.forEach(this.emitUnionJSONPartial);
+                this.emitNewline();
+                this.emitSerializeClass();
+                this.emitNewline();
+                this.emitConverterClass();
+            }
         });
         return this.finishedSource();
     }
