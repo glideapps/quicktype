@@ -42,3 +42,16 @@ export class BooleanRendererOption extends TypedRendererOption<boolean> {
         super(definition);
     }
 }
+
+export class StringRendererOption extends TypedRendererOption<string> {
+    constructor(name: string, description: string, typeLabel: string, defaultValue: string) {
+        const definition = {
+            name,
+            type: String,
+            description,
+            typeLabel,
+            defaultValue
+        };
+        super(definition);
+    }
+}
