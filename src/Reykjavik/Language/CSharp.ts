@@ -39,10 +39,13 @@ import { BooleanRendererOption, StringRendererOption, EnumRendererOption } from 
 
 const unicode = require("unicode-properties");
 
+type Version = 5 | 6;
+
 class CSharpTargetLanguage extends TargetLanguage {
     readonly listOption: EnumRendererOption<boolean>;
     readonly pocoOption: BooleanRendererOption;
     readonly namespaceOption: StringRendererOption;
+    readonly versionOption: EnumRendererOption<Version>;
 
     constructor() {
         const listOption = new EnumRendererOption("array-type", "Use T[] or List<T>", [
@@ -57,10 +60,15 @@ class CSharpTargetLanguage extends TargetLanguage {
             "NAME",
             "QuickType"
         );
-        super([listOption, pocoOption, namespaceOption]);
+        const versionOption = new EnumRendererOption<Version>("csharp-version", "C# version", [
+            ["6", 6],
+            ["5", 5]
+        ]);
+        super([listOption, pocoOption, namespaceOption, versionOption]);
         this.listOption = listOption;
         this.pocoOption = pocoOption;
         this.namespaceOption = namespaceOption;
+        this.versionOption = versionOption;
     }
 
     getRenderer(topLevels: Graph, optionValues: { [name: string]: any }): Renderer {
@@ -68,7 +76,8 @@ class CSharpTargetLanguage extends TargetLanguage {
             topLevels,
             this.listOption.getValue(optionValues),
             this.pocoOption.getValue(optionValues),
-            this.namespaceOption.getValue(optionValues)
+            this.namespaceOption.getValue(optionValues),
+            this.versionOption.getValue(optionValues)
         );
     }
 }
@@ -117,6 +126,7 @@ class CSharpRenderer extends Renderer {
     readonly useList: boolean;
     readonly poco: boolean;
     readonly namespaceName: string;
+    readonly version: Version;
 
     readonly globalNamespace: Namespace;
     readonly topLevelNameds: Map<string, Named>;
@@ -126,12 +136,19 @@ class CSharpRenderer extends Renderer {
     propertyNameds: Map<ClassType, Map<string, Named>>;
     readonly names: Map<Named, string>;
 
-    constructor(topLevels: Graph, useList: boolean, poco: boolean, namespaceName: string) {
+    constructor(
+        topLevels: Graph,
+        useList: boolean,
+        poco: boolean,
+        namespaceName: string,
+        version: Version
+    ) {
         super(topLevels);
 
         this.useList = useList;
         this.poco = poco;
         this.namespaceName = namespaceName;
+        this.version = version;
 
         this.globalNamespace = keywordNamespace("global", forbiddenNames);
         const { classes, unions } = allClassesAndUnions(topLevels);
@@ -313,7 +330,14 @@ class CSharpRenderer extends Renderer {
     };
 
     emitExpressionMember(declare: Sourcelike, define: Sourcelike): void {
-        this.emitLine([declare, " => ", define, ";"]);
+        if (this.version === 5) {
+            this.emitLine(declare);
+            this.emitBlock(() => {
+                this.emitLine(["return ", define, ";"]);
+            });
+        } else {
+            this.emitLine([declare, " => ", define, ";"]);
+        }
     }
 
     emitTopLevelJSONPartial = (t: Type, name: string): void => {
