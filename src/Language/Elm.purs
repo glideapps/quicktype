@@ -122,11 +122,11 @@ elmDoc = do
     classes <- getClasses
     unions <- getUnions
     classNames <- mapM (\t -> lookupClassName $ fst t) classes
-    unionNames <- mapM lookupUnionName unions
+    unionExports <- map (\n -> n <> "(..)") <$> mapM lookupUnionName unions
     topLevelNames <- M.values <$> getTopLevelNames
     let topLevelDecoders = map decoderNameFromTypeName topLevelNames
     let alsoTopLevelExports = L.concat $ map (alsoForbiddenForTypeName >>> L.fromFoldable) topLevelNames
-    let exports = L.concat $ topLevelNames : alsoTopLevelExports : classNames : unionNames : L.Nil
+    let exports = L.concat $ topLevelNames : alsoTopLevelExports : classNames : unionExports : L.Nil
     moduleName <- getOptionValue moduleOption
     line """-- To decode the JSON data, add this file to your project, run
 --
