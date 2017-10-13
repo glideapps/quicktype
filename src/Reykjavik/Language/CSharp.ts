@@ -35,15 +35,20 @@ import {
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer } from "../Renderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { BooleanRendererOption, StringRendererOption } from "../Options";
+import { BooleanRendererOption, StringRendererOption, EnumRendererOption } from "../Options";
 
 const unicode = require("unicode-properties");
 
 class CSharpTargetLanguage extends TargetLanguage {
+    readonly listOption: EnumRendererOption<boolean>;
     readonly pocoOption: BooleanRendererOption;
     readonly namespaceOption: StringRendererOption;
 
     constructor() {
+        const listOption = new EnumRendererOption("array-type", "Use T[] or List<T>", [
+            ["array", false],
+            ["list", true]
+        ]);
         const pocoOption = new BooleanRendererOption("just-types", "Plain objects only", false);
         // FIXME: Do this via a configurable named eventually.
         const namespaceOption = new StringRendererOption(
@@ -52,7 +57,8 @@ class CSharpTargetLanguage extends TargetLanguage {
             "NAME",
             "QuickType"
         );
-        super([pocoOption, namespaceOption]);
+        super([listOption, pocoOption, namespaceOption]);
+        this.listOption = listOption;
         this.pocoOption = pocoOption;
         this.namespaceOption = namespaceOption;
     }
@@ -60,6 +66,7 @@ class CSharpTargetLanguage extends TargetLanguage {
     getRenderer(topLevels: Graph, optionValues: { [name: string]: any }): Renderer {
         return new CSharpRenderer(
             topLevels,
+            this.listOption.getValue(optionValues),
             this.pocoOption.getValue(optionValues),
             this.namespaceOption.getValue(optionValues)
         );
@@ -107,6 +114,7 @@ function isValueType(t: Type): boolean {
 }
 
 class CSharpRenderer extends Renderer {
+    readonly useList: boolean;
     readonly poco: boolean;
     readonly namespaceName: string;
 
@@ -118,9 +126,10 @@ class CSharpRenderer extends Renderer {
     propertyNameds: Map<ClassType, Map<string, Named>>;
     readonly names: Map<Named, string>;
 
-    constructor(topLevels: Graph, poco: boolean, namespaceName: string) {
+    constructor(topLevels: Graph, useList: boolean, poco: boolean, namespaceName: string) {
         super(topLevels);
 
+        this.useList = useList;
         this.poco = poco;
         this.namespaceName = namespaceName;
 
@@ -213,7 +222,12 @@ class CSharpRenderer extends Renderer {
                     return "string";
             }
         } else if (t instanceof ArrayType) {
-            return [this.csType(t.items), "[]"];
+            const itemsType = this.csType(t.items);
+            if (this.useList) {
+                return ["List<", itemsType, ">"];
+            } else {
+                return [itemsType, "[]"];
+            }
         } else if (t instanceof ClassType) {
             return this.classAndUnionNameds.get(t);
         } else if (t instanceof MapType) {
