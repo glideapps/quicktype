@@ -43,6 +43,7 @@ type Version = 5 | 6;
 
 class CSharpTargetLanguage extends TargetLanguage {
     readonly listOption: EnumRendererOption<boolean>;
+    readonly denseOption: EnumRendererOption<boolean>;
     readonly pocoOption: BooleanRendererOption;
     readonly namespaceOption: StringRendererOption;
     readonly versionOption: EnumRendererOption<Version>;
@@ -51,6 +52,10 @@ class CSharpTargetLanguage extends TargetLanguage {
         const listOption = new EnumRendererOption("array-type", "Use T[] or List<T>", [
             ["array", false],
             ["list", true]
+        ]);
+        const denseOption = new EnumRendererOption("density", "Property density", [
+            ["normal", false],
+            ["dense", true]
         ]);
         const pocoOption = new BooleanRendererOption("just-types", "Plain objects only", false);
         // FIXME: Do this via a configurable named eventually.
@@ -64,8 +69,9 @@ class CSharpTargetLanguage extends TargetLanguage {
             ["6", 6],
             ["5", 5]
         ]);
-        super([listOption, pocoOption, namespaceOption, versionOption]);
+        super([listOption, denseOption, pocoOption, namespaceOption, versionOption]);
         this.listOption = listOption;
+        this.denseOption = denseOption;
         this.pocoOption = pocoOption;
         this.namespaceOption = namespaceOption;
         this.versionOption = versionOption;
@@ -75,6 +81,7 @@ class CSharpTargetLanguage extends TargetLanguage {
         return new CSharpRenderer(
             topLevels,
             this.listOption.getValue(optionValues),
+            this.denseOption.getValue(optionValues),
             this.pocoOption.getValue(optionValues),
             this.namespaceOption.getValue(optionValues),
             this.versionOption.getValue(optionValues)
@@ -85,6 +92,8 @@ class CSharpTargetLanguage extends TargetLanguage {
 export const cSharpTargetLanguage: TargetLanguage = new CSharpTargetLanguage();
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
+
+const denseJsonPropertyName = "J";
 
 function proposeTopLevelDependencyName(names: List<string>): string {
     if (names.size !== 1) throw "Cannot deal with more than one dependency";
@@ -124,6 +133,7 @@ function isValueType(t: Type): boolean {
 
 class CSharpRenderer extends Renderer {
     readonly useList: boolean;
+    readonly dense: boolean;
     readonly poco: boolean;
     readonly namespaceName: string;
     readonly version: Version;
@@ -139,6 +149,7 @@ class CSharpRenderer extends Renderer {
     constructor(
         topLevels: Graph,
         useList: boolean,
+        dense: boolean,
         poco: boolean,
         namespaceName: string,
         version: Version
@@ -146,6 +157,7 @@ class CSharpRenderer extends Renderer {
         super(topLevels);
 
         this.useList = useList;
+        this.dense = dense;
         this.poco = poco;
         this.namespaceName = namespaceName;
         this.version = version;
@@ -211,15 +223,23 @@ class CSharpRenderer extends Renderer {
         this.emitLine(["}", semicolon ? ";" : ""]);
     };
 
-    forEachWithBlankLines<K, V>(iterable: Iterable<K, V>, emitter: (v: V, k: K) => void): void {
+    forEach<K, V>(
+        iterable: Iterable<K, V>,
+        withBlankLines: boolean,
+        emitter: (v: V, k: K) => void
+    ): void {
         let needBlank = false;
         iterable.forEach((v: V, k: K) => {
-            if (needBlank) {
+            if (withBlankLines && needBlank) {
                 this.emitNewline();
             }
             emitter(v, k);
             needBlank = true;
         });
+    }
+
+    forEachWithBlankLines<K, V>(iterable: Iterable<K, V>, emitter: (v: V, k: K) => void): void {
+        this.forEach(iterable, true, emitter);
     }
 
     csType = (t: Type): Sourcelike => {
@@ -304,12 +324,26 @@ class CSharpRenderer extends Renderer {
     }
 
     emitClassDefinition = (c: ClassType): void => {
+        const jsonProperty = this.dense ? denseJsonPropertyName : "JsonProperty";
         const propertyNameds = this.propertyNameds.get(c);
         this.emitClass([this.partialString, "class"], this.classAndUnionNameds.get(c), () => {
-            this.forEachWithBlankLines(c.properties, (t: Type, name: string) => {
+            const maxWidth = c.properties.map((_, name: string) => stringEscape(name).length).max();
+            const withBlankLines = !this.poco && !this.dense;
+            this.forEach(c.properties, withBlankLines, (t: Type, name: string) => {
                 const named = propertyNameds.get(name);
-                this.emitLine(['[JsonProperty("', stringEscape(name), '")]']);
-                this.emitLine(["public ", this.csType(t), " ", named, " { get; set; }"]);
+                const escapedName = stringEscape(name);
+                const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
+                const property = ["public ", this.csType(t), " ", named, " { get; set; }"];
+                if (this.poco) {
+                    this.emitLine(property);
+                } else if (this.dense) {
+                    const indent = maxWidth - escapedName.length + 1;
+                    const whitespace = " ".repeat(indent);
+                    this.emitLine([attribute, whitespace, property]);
+                } else {
+                    this.emitLine(attribute);
+                    this.emitLine(property);
+                }
             });
         });
     };
@@ -517,7 +551,7 @@ class CSharpRenderer extends Renderer {
     };
 
     render(): Source {
-        const using = (ns: string): void => {
+        const using = (ns: Sourcelike): void => {
             this.emitLine(["using ", ns, ";"]);
         };
         // FIXME: Use configurable namespace
@@ -529,6 +563,9 @@ class CSharpRenderer extends Renderer {
             if (!this.poco) {
                 this.emitNewline();
                 using("Newtonsoft.Json");
+                if (this.dense) {
+                    using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
+                }
             }
             this.emitNewline();
             this.forEachWithBlankLines(this.classes, this.emitClassDefinition);
