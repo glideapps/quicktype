@@ -5,12 +5,7 @@ import { List, Map } from "immutable";
 import { Annotation } from "./Annotation";
 import { Named } from "./Naming";
 
-export type Source =
-    | TextSource
-    | NewlineSource
-    | SequenceSource
-    | AnnotatedSource
-    | NameSource;
+export type Source = TextSource | NewlineSource | SequenceSource | AnnotatedSource | NameSource;
 
 export interface TextSource {
     kind: "text";
@@ -47,13 +42,7 @@ export function newline(): NewlineSource {
     return { kind: "newline", indentationChange: 0 };
 }
 
-export type Sourcelike =
-    | Source
-    | string
-    | Named
-    | SourcelikeArray
-    // FIXME: Do we need this?
-    | (() => Sourcelike);
+export type Sourcelike = Source | string | Named | SourcelikeArray;
 export interface SourcelikeArray extends Array<Sourcelike> {}
 
 export function sourcelikeToSource(sl: Sourcelike): Source {
@@ -62,9 +51,6 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
             kind: "sequence",
             sequence: List(sl.map(sourcelikeToSource))
         };
-    }
-    if (sl instanceof Function) {
-        return sourcelikeToSource(sl());
     }
     if (typeof sl === "string") {
         // FIXME: newlines!
@@ -88,10 +74,7 @@ function assertNever(x: never): never {
     throw new Error("Unexpected object: " + x);
 }
 
-export function serializeSource(
-    source: Source,
-    names: Map<Named, string>
-): string {
+export function serializeSource(source: Source, names: Map<Named, string>): string {
     let indent = 0;
 
     function serializeToStringArray(
@@ -108,9 +91,7 @@ export function serializeSource(
                 array.push("\n" + "    ".repeat(indent));
                 break;
             case "sequence":
-                source.sequence.forEach((s: Source) =>
-                    serializeToStringArray(s, names, array)
-                );
+                source.sequence.forEach((s: Source) => serializeToStringArray(s, names, array));
                 break;
             case "annotated":
                 serializeToStringArray(source.source, names, array);
