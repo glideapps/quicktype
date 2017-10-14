@@ -69,7 +69,8 @@ class CSharpTargetLanguage extends TargetLanguage {
             ["6", 6],
             ["5", 5]
         ]);
-        super([listOption, denseOption, pocoOption, namespaceOption, versionOption]);
+        const options = [namespaceOption, versionOption, denseOption, listOption, pocoOption];
+        super("new C#", ["newcs"], "ncs", "csharp", options);
         this.listOption = listOption;
         this.denseOption = denseOption;
         this.pocoOption = pocoOption;

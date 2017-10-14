@@ -19,6 +19,7 @@ import { glueGraphToNative } from "../src/Reykjavik/Glue";
 import { cSharpTargetLanguage } from "../src/Reykjavik/Language/CSharp";
 import { serializeSource, sourcelikeToSource } from "../src/Reykjavik/Source";
 import { OptionDefinition } from "../src/Reykjavik/Options";
+import { TargetLanguage } from "../src/Reykjavik/TargetLanguage";
 
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
@@ -27,8 +28,12 @@ const getUsage = require("command-line-usage");
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-const langs = Renderers.all.map(r => r.names[0]).join("|");
-const langDisplayNames = Renderers.all.map(r => r.displayName).join(", ");
+const targetLanguages: (Renderer | TargetLanguage)[] = (Renderers.all as (
+  | Renderer
+  | TargetLanguage)[]).concat([cSharpTargetLanguage]);
+
+const langs = targetLanguages.map(r => r.names[0]).join("|");
+const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
 
 const optionDefinitions: OptionDefinition[] = [
   {
@@ -80,11 +85,6 @@ const optionDefinitions: OptionDefinition[] = [
     description: "Don't infer maps, always use classes."
   },
   {
-    name: "reykjavik",
-    type: Boolean,
-    description: "Use the Reykjavik C# renderer."
-  },
-  {
     name: "help",
     alias: "h",
     type: Boolean,
@@ -132,8 +132,27 @@ const sectionsAfterRenderers: UsageSection[] = [
   }
 ];
 
-function optionDefinitionsForRenderer(renderer: Renderer): OptionDefinition[] {
-  return _.map(renderer.options, o => {
+function getTargetLanguage(name: string): Renderer | TargetLanguage {
+  for (const language of targetLanguages) {
+    if (language.names.indexOf(name) >= 0) {
+      return language;
+    }
+  }
+  console.error(`'${name}' is not yet supported as an output language.`);
+  return process.exit(1);
+}
+
+function isTargetLanguage(tl: Renderer | TargetLanguage): tl is TargetLanguage {
+  return (tl as TargetLanguage).optionDefinitions !== undefined;
+}
+
+function optionDefinitionsForTargetLanguage(
+  tl: Renderer | TargetLanguage
+): OptionDefinition[] {
+  if (isTargetLanguage(tl)) {
+    return tl.optionDefinitions;
+  }
+  return _.map(tl.options, o => {
     return {
       name: o.name,
       description: o.description,
@@ -147,12 +166,13 @@ function optionDefinitionsForRenderer(renderer: Renderer): OptionDefinition[] {
 function usage() {
   const rendererSections: UsageSection[] = [];
 
-  _.forEach(Renderers.all, renderer => {
-    if (renderer.options.length == 0) return;
+  _.forEach(targetLanguages, renderer => {
+    const definitions = optionDefinitionsForTargetLanguage(renderer);
+    if (definitions.length === 0) return;
 
     rendererSections.push({
       header: `Options for ${renderer.displayName}`,
-      optionList: optionDefinitionsForRenderer(renderer)
+      optionList: definitions
     });
   });
 
@@ -173,7 +193,6 @@ export interface Options {
   srcUrls?: string;
   out?: string;
   noMaps?: boolean;
-  reykjavik?: boolean;
   help?: boolean;
   rendererOptions: { [name: string]: string };
 }
@@ -186,7 +205,6 @@ interface CompleteOptions {
   srcUrls?: string;
   out?: string;
   noMaps: boolean;
-  reykjavik: boolean;
   help?: boolean;
   rendererOptions: { [name: string]: any };
 }
@@ -234,29 +252,18 @@ class Run {
   }
 
   getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
-    if (opts.reykjavik) {
-      return cSharpTargetLanguage.optionDefinitions;
-    }
-    const renderer = this.getRenderer(opts.lang);
-    return optionDefinitionsForRenderer(renderer);
-  };
-
-  getRenderer = (lang: string): Renderer => {
-    let maybe = Renderers.rendererForLanguage(lang);
-    if (!Maybe.isJust(maybe)) {
-      console.error(`'${lang}' is not yet supported as an output language.`);
-      process.exit(1);
-    }
-    return fromJust(maybe);
+    const tl = getTargetLanguage(opts.lang);
+    return optionDefinitionsForTargetLanguage(tl);
   };
 
   renderSamplesOrSchemas = (
     samplesOrSchemas: SampleOrSchemaMap
   ): SourceCode => {
-    let areSchemas = this.options.srcLang === "schema";
+    const areSchemas = this.options.srcLang === "schema";
+    const targetLanguage = getTargetLanguage(this.options.lang);
 
     let config: Config = {
-      language: this.getRenderer(this.options.lang).names[0],
+      language: targetLanguage.names[0],
       topLevels: Object.getOwnPropertyNames(samplesOrSchemas).map(name => {
         if (areSchemas) {
           // Only one schema per top-level is used right now
@@ -269,7 +276,7 @@ class Run {
       rendererOptions: this.options.rendererOptions
     };
 
-    if (this.options.reykjavik) {
+    if (isTargetLanguage(targetLanguage)) {
       const glueGraphOrError = Main.glueGraphFromJsonConfig(config);
       if (Either.isLeft(glueGraphOrError)) {
         console.error(`Error processing JSON: ${fromLeft(glueGraphOrError)}`);
@@ -277,7 +284,7 @@ class Run {
       }
       const glueGraph = fromRight(glueGraphOrError);
       const graph = glueGraphToNative(glueGraph);
-      const { source, names } = cSharpTargetLanguage.renderGraph(
+      const { source, names } = targetLanguage.renderGraph(
         graph,
         this.options.rendererOptions
       );
@@ -474,7 +481,6 @@ class Run {
       lang: opts.lang || this.inferLang(opts),
       topLevel: opts.topLevel || this.inferTopLevel(opts),
       noMaps: !!opts.noMaps,
-      reykjavik: !!opts.reykjavik,
       ...opts
     };
   };
