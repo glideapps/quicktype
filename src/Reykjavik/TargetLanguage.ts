@@ -3,7 +3,7 @@
 import { List } from "immutable";
 
 import { Graph } from "./Type";
-import { Renderer } from "./Renderer";
+import { Renderer, RenderResult } from "./Renderer";
 import { OptionDefinition, RendererOption, TypedRendererOption } from "./Options";
 
 export abstract class TargetLanguage {
@@ -13,7 +13,7 @@ export abstract class TargetLanguage {
         this.options = List(options);
     }
 
-    abstract getRenderer(topLevels: Graph, optionValues: { [name: string]: any }): Renderer;
+    abstract renderGraph(topLevels: Graph, optionValues: { [name: string]: any }): RenderResult;
 
     get optionDefinitions(): OptionDefinition[] {
         return this.options.map((o: RendererOption) => o.definition).toArray();

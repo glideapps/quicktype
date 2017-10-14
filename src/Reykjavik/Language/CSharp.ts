@@ -33,7 +33,7 @@ import {
     countingNamingFunction
 } from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
-import { Renderer } from "../Renderer";
+import { Renderer, RenderResult } from "../Renderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanRendererOption, StringRendererOption, EnumRendererOption } from "../Options";
 
@@ -77,8 +77,8 @@ class CSharpTargetLanguage extends TargetLanguage {
         this.versionOption = versionOption;
     }
 
-    getRenderer(topLevels: Graph, optionValues: { [name: string]: any }): Renderer {
-        return new CSharpRenderer(
+    renderGraph(topLevels: Graph, optionValues: { [name: string]: any }): RenderResult {
+        const renderer = new CSharpRenderer(
             topLevels,
             this.listOption.getValue(optionValues),
             this.denseOption.getValue(optionValues),
@@ -86,6 +86,7 @@ class CSharpTargetLanguage extends TargetLanguage {
             this.namespaceOption.getValue(optionValues),
             this.versionOption.getValue(optionValues)
         );
+        return renderer.render();
     }
 }
 
@@ -531,7 +532,7 @@ class CSharpRenderer extends Renderer {
         });
     };
 
-    render(): Source {
+    render(): RenderResult {
         const using = (ns: Sourcelike): void => {
             this.emitLine(["using ", ns, ";"]);
         };
@@ -563,6 +564,6 @@ class CSharpRenderer extends Renderer {
                 this.emitConverterClass();
             }
         });
-        return this.finishedSource();
+        return { source: this.finishedSource(), names: this.names };
     }
 }
