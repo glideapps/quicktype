@@ -277,11 +277,11 @@ class Run {
       }
       const glueGraph = fromRight(glueGraphOrError);
       const graph = glueGraphToNative(glueGraph);
-      const renderer = cSharpTargetLanguage.getRenderer(
+      const { source, names } = cSharpTargetLanguage.renderGraph(
         graph,
         this.options.rendererOptions
       );
-      return renderer.serializedSource();
+      return serializeSource(source, names);
     } else {
       return fromRight(Main.main(config));
     }

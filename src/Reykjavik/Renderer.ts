@@ -12,6 +12,8 @@ import {
     newline
 } from "./Source";
 
+export type RenderResult = { source: Source; names: Map<Named, string> };
+
 export abstract class Renderer {
     protected readonly topLevels: Graph;
     private source?: Source;
@@ -72,15 +74,5 @@ export abstract class Renderer {
         return sourcelikeToSource(this.emitted);
     };
 
-    protected abstract render(): Source;
-
-    serializedSource(): string {
-        if (!this.source) {
-            this.source = this.render();
-        }
-        if (!this.names) {
-            throw "Renderer did not assign names";
-        }
-        return serializeSource(this.source, this.names);
-    }
+    abstract render(): RenderResult;
 }
