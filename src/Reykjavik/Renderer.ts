@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map } from "immutable";
+import { Map, Iterable } from "immutable";
 import { Graph } from "./Type";
 import { Named } from "./Naming";
 import {
@@ -41,6 +41,25 @@ export abstract class Renderer {
             throw "Cannot change indent for the first line";
         }
         this.lastNewline.indentationChange += offset;
+    }
+
+    forEach<K, V>(
+        iterable: Iterable<K, V>,
+        withBlankLines: boolean,
+        emitter: (v: V, k: K) => void
+    ): void {
+        let needBlank = false;
+        iterable.forEach((v: V, k: K) => {
+            if (withBlankLines && needBlank) {
+                this.emitNewline();
+            }
+            emitter(v, k);
+            needBlank = true;
+        });
+    }
+
+    forEachWithBlankLines<K, V>(iterable: Iterable<K, V>, emitter: (v: V, k: K) => void): void {
+        this.forEach(iterable, true, emitter);
     }
 
     indent(fn: () => void): void {

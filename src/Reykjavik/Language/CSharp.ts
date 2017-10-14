@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, List, Map, OrderedSet, Iterable } from "immutable";
+import { Set, List, Map, OrderedSet } from "immutable";
 import {
     Graph,
     Type,
@@ -222,25 +222,6 @@ class CSharpRenderer extends Renderer {
         this.indent(f);
         this.emitLine(["}", semicolon ? ";" : ""]);
     };
-
-    forEach<K, V>(
-        iterable: Iterable<K, V>,
-        withBlankLines: boolean,
-        emitter: (v: V, k: K) => void
-    ): void {
-        let needBlank = false;
-        iterable.forEach((v: V, k: K) => {
-            if (withBlankLines && needBlank) {
-                this.emitNewline();
-            }
-            emitter(v, k);
-            needBlank = true;
-        });
-    }
-
-    forEachWithBlankLines<K, V>(iterable: Iterable<K, V>, emitter: (v: V, k: K) => void): void {
-        this.forEach(iterable, true, emitter);
-    }
 
     csType = (t: Type): Sourcelike => {
         if (t instanceof PrimitiveType) {
