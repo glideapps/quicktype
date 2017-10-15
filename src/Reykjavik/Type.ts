@@ -199,28 +199,25 @@ function setUnion<T>(sets: Iterable<any, Set<T>>): Set<T> {
 }
 
 export type ClassesAndUnions = {
-    classes: Set<ClassType>;
-    unions: Set<UnionType>;
+    classes: OrderedSet<ClassType>;
+    unions: OrderedSet<UnionType>;
 };
 
-function combineClassesAndUnion(
-    classesAndUnions: Iterable<any, ClassesAndUnions>
-): ClassesAndUnions {
-    let classes = setUnion(classesAndUnions.map((cau: ClassesAndUnions) => cau.classes));
-    let unions = setUnion(classesAndUnions.map((cau: ClassesAndUnions) => cau.unions));
-    return { classes, unions };
-}
-
-function classesAndUnionsInType(t: Type): ClassesAndUnions {
-    let { classes, unions } = combineClassesAndUnion(t.children.map(classesAndUnionsInType));
-    if (t instanceof ClassType) {
-        classes = classes.add(t);
-    } else if (t instanceof UnionType) {
-        unions = unions.add(t);
-    }
-    return { classes, unions };
-}
-
 export function allClassesAndUnions(graph: Graph): ClassesAndUnions {
-    return combineClassesAndUnion(graph.map(classesAndUnionsInType));
+    let classes = OrderedSet<ClassType>();
+    let unions = OrderedSet<UnionType>();
+
+    function addFromType(t: Type): void {
+        if (t instanceof ClassType) {
+            if (classes.has(t)) return;
+            classes = classes.add(t);
+        } else if (t instanceof UnionType) {
+            if (unions.has(t)) return;
+            unions = unions.add(t);
+        }
+        t.children.forEach(addFromType);
+    }
+
+    graph.forEach(addFromType);
+    return { classes, unions };
 }
