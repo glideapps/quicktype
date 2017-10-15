@@ -76,6 +76,13 @@ function assertNever(x: never): never {
 
 export function serializeSource(source: Source, names: Map<Named, string>): string {
     let indent = 0;
+    let indentNeeded = 0;
+
+    function indentIfNeeded(): void {
+        if (indentNeeded === 0) return;
+        array.push("    ".repeat(indentNeeded));
+        indentNeeded = 0;
+    }
 
     function serializeToStringArray(
         source: Source,
@@ -84,11 +91,13 @@ export function serializeSource(source: Source, names: Map<Named, string>): stri
     ): void {
         switch (source.kind) {
             case "text":
+                indentIfNeeded();
                 array.push(source.text);
                 break;
             case "newline":
+                array.push("\n");
                 indent += source.indentationChange;
-                array.push("\n" + "    ".repeat(indent));
+                indentNeeded = indent;
                 break;
             case "sequence":
                 source.sequence.forEach((s: Source) => serializeToStringArray(s, names, array));
@@ -100,6 +109,7 @@ export function serializeSource(source: Source, names: Map<Named, string>): stri
                 if (!names.has(source.named)) {
                     throw "No name for Named";
                 }
+                indentIfNeeded();
                 array.push(names.get(source.named));
                 break;
             default:
