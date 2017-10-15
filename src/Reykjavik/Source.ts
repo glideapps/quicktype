@@ -4,6 +4,7 @@ import { List, Map } from "immutable";
 
 import { Annotation } from "./Annotation";
 import { Named } from "./Naming";
+import { intercalate } from "./Utils";
 
 export type Source = TextSource | NewlineSource | SequenceSource | AnnotatedSource | NameSource;
 
@@ -39,6 +40,7 @@ export interface NameSource {
 }
 
 export function newline(): NewlineSource {
+    // FIXME: use singleton?
     return { kind: "newline", indentationChange: 0 };
 }
 
@@ -53,8 +55,17 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
         };
     }
     if (typeof sl === "string") {
-        // FIXME: newlines!
-        return { kind: "text", text: sl };
+        const lines = sl.split("\n");
+        if (lines.length === 1) {
+            return { kind: "text", text: sl };
+        }
+        return {
+            kind: "sequence",
+            sequence: intercalate(
+                newline(),
+                List(lines).map((l: string) => ({ kind: "text", text: l } as Source))
+            ).toList()
+        };
     }
     if (sl instanceof Named) {
         return { kind: "name", named: sl };

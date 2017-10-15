@@ -114,7 +114,7 @@ export abstract class Named {
 
     abstract get dependencies(): List<Named>;
 
-    get isFixed(): boolean {
+    isFixed(): this is FixedNamed {
         return this.namingFunction === null;
     }
 
@@ -131,7 +131,7 @@ export class FixedNamed extends Named {
         return List();
     }
 
-    proposeName(names: Map<Named, string>): string {
+    proposeName(names?: Map<Named, string>): string {
         return this.name;
     }
 }
@@ -267,14 +267,9 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Named, s
 
     // Assign all fixed names.
     const fixedNames = ctx.namespaces.flatMap((ns: Namespace) =>
-        ns.members.filter((n: Named) => n.isFixed)
+        ns.members.filter((n: Named) => n.isFixed())
     );
-    fixedNames.forEach((n: Named) => {
-        // FIXME: We should be able to pass null here, or
-        // omit the argument.
-        const name = n.proposeName(Map());
-        ctx.assign(n, name);
-    });
+    fixedNames.forEach((n: FixedNamed) => ctx.assign(n, n.proposeName()));
 
     for (;;) {
         // 1. Find a namespace whose forbiddens are all fully named, and which has
