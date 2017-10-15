@@ -142,8 +142,8 @@ class CSharpRenderer extends Renderer {
 
     readonly globalNamespace: Namespace;
     readonly topLevelNameds: Map<string, Named>;
-    readonly classes: Set<ClassType>;
-    readonly unions: Set<UnionType>;
+    readonly classes: OrderedSet<ClassType>;
+    readonly unions: OrderedSet<UnionType>;
     classAndUnionNameds: Map<NamedType, Named>;
     propertyNameds: Map<ClassType, Map<string, Named>>;
     readonly names: Map<Named, string>;
