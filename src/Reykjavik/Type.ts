@@ -15,11 +15,7 @@ export type TypeNames = {
 export type TopLevels = Map<string, Type>;
 
 export abstract class Type {
-    abstract kind: TypeKind;
-
-    constructor(kind: TypeKind) {
-        this.kind = kind;
-    }
+    constructor(readonly kind: TypeKind) {}
 
     isNamedType(): this is NamedType {
         return false;
@@ -37,7 +33,7 @@ export abstract class Type {
 }
 
 export class PrimitiveType extends Type {
-    kind: PrimitiveTypeKind;
+    readonly kind: PrimitiveTypeKind;
 
     constructor(kind: PrimitiveTypeKind) {
         super(kind);
@@ -62,12 +58,10 @@ function isNull(t: Type): boolean {
 }
 
 export class ArrayType extends Type {
-    kind: "array";
-    items: Type;
+    readonly kind: "array";
 
-    constructor(items: Type) {
+    constructor(readonly items: Type) {
         super("array");
-        this.items = items;
     }
 
     get children(): Set<Type> {
@@ -85,12 +79,10 @@ export class ArrayType extends Type {
 }
 
 export class MapType extends Type {
-    kind: "map";
-    values: Type;
+    readonly kind: "map";
 
-    constructor(values: Type) {
+    constructor(readonly values: Type) {
         super("map");
-        this.values = values;
     }
 
     get children(): Set<Type> {
@@ -108,11 +100,8 @@ export class MapType extends Type {
 }
 
 export abstract class NamedType extends Type {
-    names: TypeNames;
-
-    constructor(kind: NamedTypeKind, names: TypeNames) {
+    constructor(kind: NamedTypeKind, readonly names: TypeNames) {
         super(kind);
-        this.names = names;
     }
 
     isNamedType(): this is NamedType {
@@ -122,12 +111,24 @@ export abstract class NamedType extends Type {
 
 export class ClassType extends NamedType {
     kind: "class";
-    properties: Map<string, Type>;
+    private _properties: Map<string, Type> | undefined;
 
-    constructor(names: TypeNames, properties: Map<string, Type>) {
+    constructor(names: TypeNames) {
         super("class", names);
-        this.names = names;
-        this.properties = properties;
+    }
+
+    setProperties(properties: Map<string, Type>): void {
+        if (this._properties !== undefined) {
+            throw "Can only set class properties once";
+        }
+        this._properties = properties;
+    }
+
+    get properties(): Map<string, Type> {
+        if (this._properties === undefined) {
+            throw "Class properties accessed before they were set";
+        }
+        return this._properties;
     }
 
     get children(): Set<Type> {
@@ -150,12 +151,9 @@ export class ClassType extends NamedType {
 
 export class UnionType extends NamedType {
     kind: "union";
-    members: OrderedSet<Type>;
 
-    constructor(names: TypeNames, members: OrderedSet<Type>) {
+    constructor(names: TypeNames, readonly members: OrderedSet<Type>) {
         super("union", names);
-        this.names = names;
-        this.members = members;
     }
 
     findMember = (kind: TypeKind): Type | undefined => {

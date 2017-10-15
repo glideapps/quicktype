@@ -57,7 +57,7 @@ export class StringRendererOption extends TypedRendererOption<string> {
 }
 
 export class EnumRendererOption<T> extends TypedRendererOption<T> {
-    private readonly values: { [name: string]: T };
+    private readonly _values: { [name: string]: T };
 
     constructor(name: string, description: string, values: [string, T][]) {
         const definition = {
@@ -69,9 +69,9 @@ export class EnumRendererOption<T> extends TypedRendererOption<T> {
         };
         super(definition);
 
-        this.values = {};
+        this._values = {};
         for (const [n, v] of values) {
-            this.values[n] = v;
+            this._values[n] = v;
         }
     }
 
@@ -80,7 +80,7 @@ export class EnumRendererOption<T> extends TypedRendererOption<T> {
         if (name === undefined) {
             return this.definition.defaultValue;
         }
-        const value = this.values[name];
+        const value = this._values[name];
         if (value === undefined) {
             throw "Unknown option value.";
         }

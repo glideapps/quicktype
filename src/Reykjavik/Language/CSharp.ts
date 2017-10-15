@@ -42,11 +42,11 @@ const unicode = require("unicode-properties");
 type Version = 5 | 6;
 
 class CSharpTargetLanguage extends TargetLanguage {
-    readonly listOption: EnumRendererOption<boolean>;
-    readonly denseOption: EnumRendererOption<boolean>;
-    readonly pocoOption: BooleanRendererOption;
-    readonly namespaceOption: StringRendererOption;
-    readonly versionOption: EnumRendererOption<Version>;
+    private readonly _listOption: EnumRendererOption<boolean>;
+    private readonly _denseOption: EnumRendererOption<boolean>;
+    private readonly _pocoOption: BooleanRendererOption;
+    private readonly _namespaceOption: StringRendererOption;
+    private readonly _versionOption: EnumRendererOption<Version>;
 
     constructor() {
         const listOption = new EnumRendererOption("array-type", "Use T[] or List<T>", [
@@ -71,21 +71,21 @@ class CSharpTargetLanguage extends TargetLanguage {
         ]);
         const options = [namespaceOption, versionOption, denseOption, listOption, pocoOption];
         super("new C#", ["newcs"], "ncs", "csharp", options);
-        this.listOption = listOption;
-        this.denseOption = denseOption;
-        this.pocoOption = pocoOption;
-        this.namespaceOption = namespaceOption;
-        this.versionOption = versionOption;
+        this._listOption = listOption;
+        this._denseOption = denseOption;
+        this._pocoOption = pocoOption;
+        this._namespaceOption = namespaceOption;
+        this._versionOption = versionOption;
     }
 
     renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
         const renderer = new CSharpRenderer(
             topLevels,
-            this.listOption.getValue(optionValues),
-            this.denseOption.getValue(optionValues),
-            this.pocoOption.getValue(optionValues),
-            this.namespaceOption.getValue(optionValues),
-            this.versionOption.getValue(optionValues)
+            this._listOption.getValue(optionValues),
+            this._denseOption.getValue(optionValues),
+            this._pocoOption.getValue(optionValues),
+            this._namespaceOption.getValue(optionValues),
+            this._versionOption.getValue(optionValues)
         );
         return renderer.render();
     }
@@ -134,55 +134,43 @@ function isValueType(t: Type): boolean {
 }
 
 class CSharpRenderer extends Renderer {
-    readonly useList: boolean;
-    readonly dense: boolean;
-    readonly poco: boolean;
-    readonly namespaceName: string;
-    readonly version: Version;
-
-    readonly globalNamespace: Namespace;
-    readonly topLevelNameds: Map<string, Named>;
-    readonly classes: OrderedSet<ClassType>;
-    readonly unions: OrderedSet<UnionType>;
-    classAndUnionNameds: Map<NamedType, Named>;
-    propertyNameds: Map<ClassType, Map<string, Named>>;
-    readonly names: Map<Named, string>;
+    private readonly _globalNamespace: Namespace;
+    private readonly _topLevelNameds: Map<string, Named>;
+    private readonly _classes: OrderedSet<ClassType>;
+    private readonly _unions: OrderedSet<UnionType>;
+    private _classAndUnionNameds: Map<NamedType, Named>;
+    private _propertyNameds: Map<ClassType, Map<string, Named>>;
+    private readonly _names: Map<Named, string>;
 
     constructor(
         topLevels: TopLevels,
-        useList: boolean,
-        dense: boolean,
-        poco: boolean,
-        namespaceName: string,
-        version: Version
+        private readonly _useList: boolean,
+        private readonly _dense: boolean,
+        private readonly _poco: boolean,
+        private readonly _namespaceName: string,
+        private readonly _version: Version
     ) {
         super(topLevels);
 
-        this.useList = useList;
-        this.dense = dense;
-        this.poco = poco;
-        this.namespaceName = namespaceName;
-        this.version = version;
-
-        this.globalNamespace = keywordNamespace("global", forbiddenNames);
+        this._globalNamespace = keywordNamespace("global", forbiddenNames);
         const { classes, unions } = allClassesAndUnions(topLevels);
-        this.classes = classes;
-        this.unions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toSet();
-        this.classAndUnionNameds = Map();
-        this.propertyNameds = Map();
-        this.topLevelNameds = topLevels.map(this.namedFromTopLevel).toMap();
+        this._classes = classes;
+        this._unions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toSet();
+        this._classAndUnionNameds = Map();
+        this._propertyNameds = Map();
+        this._topLevelNameds = topLevels.map(this.namedFromTopLevel).toMap();
         classes.forEach((c: ClassType) => {
             const named = this.addClassOrUnionNamed(c);
             this.addPropertyNameds(c, named);
         });
-        this.unions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
-        this.names = assignNames(OrderedSet([this.globalNamespace]));
+        this._unions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
+        this._names = assignNames(OrderedSet([this._globalNamespace]));
     }
 
     namedFromTopLevel = (type: Type, name: string): FixedNamed => {
         // FIXME: leave the name as-is?
         const proposed = csNameStyle(name);
-        const named = new FixedNamed(this.globalNamespace, proposed);
+        const named = new FixedNamed(this._globalNamespace, proposed);
 
         const definedTypes = type.directlyReachableNamedTypes;
         if (definedTypes.size > 1) {
@@ -195,35 +183,35 @@ class CSharpRenderer extends Renderer {
 
         if (definedTypes.size === 1) {
             const definedType = definedTypes.first();
-            this.classAndUnionNameds = this.classAndUnionNameds.set(definedType, named);
+            this._classAndUnionNameds = this._classAndUnionNameds.set(definedType, named);
         }
 
         return named;
     };
 
     addClassOrUnionNamed = (type: NamedType): Named => {
-        if (this.classAndUnionNameds.has(type)) {
-            return this.classAndUnionNameds.get(type);
+        if (this._classAndUnionNameds.has(type)) {
+            return this._classAndUnionNameds.get(type);
         }
         const name = type.names.combined;
         const named = new SimpleNamed(
-            this.globalNamespace,
+            this._globalNamespace,
             name,
             countingNamingFunction,
             csNameStyle(name)
         );
-        this.classAndUnionNameds = this.classAndUnionNameds.set(type, named);
+        this._classAndUnionNameds = this._classAndUnionNameds.set(type, named);
         return named;
     };
 
     addPropertyNameds = (c: ClassType, classNamed: Named): void => {
-        const ns = new Namespace(c.names.combined, this.globalNamespace, Set(), Set([classNamed]));
+        const ns = new Namespace(c.names.combined, this._globalNamespace, Set(), Set([classNamed]));
         const nameds = c.properties
             .map((t: Type, name: string) => {
                 return new SimpleNamed(ns, name, countingNamingFunction, csNameStyle(name));
             })
             .toMap();
-        this.propertyNameds = this.propertyNameds.set(c, nameds);
+        this._propertyNameds = this._propertyNameds.set(c, nameds);
     };
 
     emitBlock = (f: () => void, semicolon: boolean = false): void => {
@@ -250,19 +238,19 @@ class CSharpRenderer extends Renderer {
             }
         } else if (t instanceof ArrayType) {
             const itemsType = this.csType(t.items);
-            if (this.useList) {
+            if (this._useList) {
                 return ["List<", itemsType, ">"];
             } else {
                 return [itemsType, "[]"];
             }
         } else if (t instanceof ClassType) {
-            return this.classAndUnionNameds.get(t);
+            return this._classAndUnionNameds.get(t);
         } else if (t instanceof MapType) {
             return ["Dictionary<string, ", this.csType(t.values), ">"];
         } else if (t instanceof UnionType) {
             const nonNull = nullableFromUnion(t);
             if (nonNull) return this.nullableCSType(nonNull);
-            return this.classAndUnionNameds.get(t);
+            return this._classAndUnionNameds.get(t);
         }
         throw "Unknown type";
     };
@@ -286,7 +274,7 @@ class CSharpRenderer extends Renderer {
         } else if (t instanceof ArrayType) {
             return this.typeNameForUnionMember(t.items) + "_array";
         } else if (t instanceof ClassType) {
-            return this.names.get(this.classAndUnionNameds.get(t));
+            return this._names.get(this._classAndUnionNameds.get(t));
         } else if (t instanceof MapType) {
             return this.typeNameForUnionMember(t.values), "_map";
         } else if (t instanceof UnionType) {
@@ -310,23 +298,23 @@ class CSharpRenderer extends Renderer {
     };
 
     get partialString(): string {
-        return this.poco ? "" : "partial ";
+        return this._poco ? "" : "partial ";
     }
 
     emitClassDefinition = (c: ClassType): void => {
-        const jsonProperty = this.dense ? denseJsonPropertyName : "JsonProperty";
-        const propertyNameds = this.propertyNameds.get(c);
-        this.emitClass([this.partialString, "class"], this.classAndUnionNameds.get(c), () => {
+        const jsonProperty = this._dense ? denseJsonPropertyName : "JsonProperty";
+        const propertyNameds = this._propertyNameds.get(c);
+        this.emitClass([this.partialString, "class"], this._classAndUnionNameds.get(c), () => {
             const maxWidth = c.properties.map((_, name: string) => stringEscape(name).length).max();
-            const withBlankLines = !this.poco && !this.dense;
+            const withBlankLines = !this._poco && !this._dense;
             this.forEach(c.properties, withBlankLines, false, (t: Type, name: string) => {
                 const named = propertyNameds.get(name);
                 const escapedName = stringEscape(name);
                 const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
                 const property = ["public ", this.csType(t), " ", named, " { get; set; }"];
-                if (this.poco) {
+                if (this._poco) {
                     this.emitLine(property);
-                } else if (this.dense) {
+                } else if (this._dense) {
                     const indent = maxWidth - escapedName.length + 1;
                     const whitespace = " ".repeat(indent);
                     this.emitLine([attribute, whitespace, property]);
@@ -344,7 +332,7 @@ class CSharpRenderer extends Renderer {
 
     emitUnionDefinition = (c: UnionType): void => {
         const [_, nonNulls] = removeNullFromUnion(c);
-        this.emitClass([this.partialString, "struct"], this.classAndUnionNameds.get(c), () => {
+        this.emitClass([this.partialString, "struct"], this._classAndUnionNameds.get(c), () => {
             nonNulls.forEach((t: Type) => {
                 const csType = this.nullableCSType(t);
                 const field = this.unionFieldName(t);
@@ -354,7 +342,7 @@ class CSharpRenderer extends Renderer {
     };
 
     emitExpressionMember(declare: Sourcelike, define: Sourcelike): void {
-        if (this.version === 5) {
+        if (this._version === 5) {
             this.emitLine(declare);
             this.emitBlock(() => {
                 this.emitLine(["return ", define, ";"]);
@@ -376,7 +364,7 @@ class CSharpRenderer extends Renderer {
             typeKind = definedTypes.first() instanceof ClassType ? "class" : "struct";
         }
         const csType = this.csType(t);
-        this.emitClass([partial, typeKind], this.topLevelNameds.get(name), () => {
+        this.emitClass([partial, typeKind], this._topLevelNameds.get(name), () => {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
@@ -433,7 +421,7 @@ class CSharpRenderer extends Renderer {
         };
 
         const [hasNull, nonNulls] = removeNullFromUnion(u);
-        const named = this.classAndUnionNameds.get(u);
+        const named = this._classAndUnionNameds.get(u);
         this.emitClass("partial struct", named, () => {
             this.emitLine(["public ", named, "(JsonReader reader, JsonSerializer serializer)"]);
             this.emitBlock(() => {
@@ -477,7 +465,7 @@ class CSharpRenderer extends Renderer {
     emitSerializeClass = (): void => {
         // FIXME: Make Serialize a Named
         this.emitClass("static class", "Serialize", () => {
-            this.topLevels.forEach((t: Type, name: string) => {
+            this._topLevels.forEach((t: Type, name: string) => {
                 // FIXME: Make ToJson a Named
                 this.emitExpressionMember(
                     ["public static string ToJson(this ", this.csType(t), " self)"],
@@ -488,7 +476,7 @@ class CSharpRenderer extends Renderer {
     };
 
     emitUnionConverterMembers = (): void => {
-        const nameds = this.unions.map((u: UnionType) => this.classAndUnionNameds.get(u)).toSet();
+        const nameds = this._unions.map((u: UnionType) => this._classAndUnionNameds.get(u)).toSet();
         const canConvertExpr = intercalate(
             " || ",
             nameds.map((n: Named): Sourcelike => ["t == typeof(", n, ")"])
@@ -528,7 +516,7 @@ class CSharpRenderer extends Renderer {
     };
 
     emitConverterClass = (): void => {
-        const haveUnions = this.unions.size > 0;
+        const haveUnions = this._unions.size > 0;
         // FIXME: Make Converter a Named
         let converterName: Sourcelike = ["Converter"];
         if (haveUnions) converterName = converterName.concat([": JsonConverter"]);
@@ -555,25 +543,25 @@ class CSharpRenderer extends Renderer {
             this.emitLine(["using ", ns, ";"]);
         };
         // FIXME: Use configurable namespace
-        this.emitLine(["namespace ", this.namespaceName]);
+        this.emitLine(["namespace ", this._namespaceName]);
         this.emitBlock(() => {
             for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
                 using(ns);
             }
-            if (!this.poco) {
+            if (!this._poco) {
                 this.emitNewline();
                 using("Newtonsoft.Json");
-                if (this.dense) {
+                if (this._dense) {
                     using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
                 }
             }
-            this.forEachWithLeadingAndInterposedBlankLines(this.classes, this.emitClassDefinition);
-            this.forEachWithLeadingAndInterposedBlankLines(this.unions, this.emitUnionDefinition);
-            if (!this.poco) {
+            this.forEachWithLeadingAndInterposedBlankLines(this._classes, this.emitClassDefinition);
+            this.forEachWithLeadingAndInterposedBlankLines(this._unions, this.emitUnionDefinition);
+            if (!this._poco) {
                 this.emitNewline();
-                this.topLevels.forEach(this.emitFromJsonForTopLevel);
+                this._topLevels.forEach(this.emitFromJsonForTopLevel);
                 this.forEachWithLeadingAndInterposedBlankLines(
-                    this.unions,
+                    this._unions,
                     this.emitUnionJSONPartial
                 );
                 this.emitNewline();
@@ -582,6 +570,6 @@ class CSharpRenderer extends Renderer {
                 this.emitConverterClass();
             }
         });
-        return { source: this.finishedSource(), names: this.names };
+        return { source: this.finishedSource(), names: this._names };
     }
 }

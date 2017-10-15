@@ -15,34 +15,32 @@ import {
 export type RenderResult = { source: Source; names: Map<Named, string> };
 
 export abstract class Renderer {
-    protected readonly topLevels: TopLevels;
-    private source?: Source;
-    protected names?: Map<Named, string>;
+    protected readonly _topLevels: TopLevels;
 
-    private lastNewline?: NewlineSource;
-    private emitted: Sourcelike[];
+    private _lastNewline?: NewlineSource;
+    private _emitted: Sourcelike[];
 
     constructor(topLevels: TopLevels) {
-        this.topLevels = topLevels;
-        this.emitted = [];
+        this._topLevels = topLevels;
+        this._emitted = [];
     }
 
     emitNewline(): void {
         const nl = newline();
-        this.emitted.push(nl);
-        this.lastNewline = nl;
+        this._emitted.push(nl);
+        this._lastNewline = nl;
     }
 
     emitLine(line: Sourcelike): void {
-        this.emitted.push(line);
+        this._emitted.push(line);
         this.emitNewline();
     }
 
     private changeIndent(offset: number): void {
-        if (!this.lastNewline) {
+        if (!this._lastNewline) {
             throw "Cannot change indent for the first line";
         }
-        this.lastNewline.indentationChange += offset;
+        this._lastNewline.indentationChange += offset;
     }
 
     forEach<K, V>(
@@ -75,7 +73,7 @@ export abstract class Renderer {
     }
 
     finishedSource = (): Source => {
-        return sourcelikeToSource(this.emitted);
+        return sourcelikeToSource(this._emitted);
     };
 
     abstract render(): RenderResult;

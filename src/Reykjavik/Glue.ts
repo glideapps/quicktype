@@ -49,7 +49,7 @@ function glueTypesToNative(glueEntries: GlueClassEntry[]): (Type | null)[] {
         if (c === null) {
             classes.push(null);
         } else {
-            classes.push(new ClassType(glueTypeNamesToNative(c.names), Map()));
+            classes.push(new ClassType(glueTypeNamesToNative(c.names)));
         }
     }
 
@@ -59,7 +59,7 @@ function glueTypesToNative(glueEntries: GlueClassEntry[]): (Type | null)[] {
             continue;
         }
         const glueProperties = Map(glueEntries[i].properties);
-        c.properties = glueProperties.map((t: GlueType) => glueTypeToNative(t, classes)).toMap();
+        c.setProperties(glueProperties.map((t: GlueType) => glueTypeToNative(t, classes)).toMap());
     }
 
     return classes;
