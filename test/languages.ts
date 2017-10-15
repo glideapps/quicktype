@@ -30,6 +30,23 @@ export const CSharpLanguage: Language = {
   rendererOptions: {}
 };
 
+export const NewCSharpLanguage: Language = {
+  name: "newcs",
+  base: "test/fixtures/csharp",
+  // https://github.com/dotnet/cli/issues/1582
+  setupCommand: "dotnet restore --no-cache",
+  runCommand(sample: string) {
+    return `dotnet run "${sample}"`;
+  },
+  // FIXME: Support this.
+  diffViaSchema: false,
+  allowMissingNull: false,
+  output: "QuickType.cs",
+  topLevel: "TopLevel",
+  skipJSON: [],
+  rendererOptions: {}
+};
+
 export const JavaLanguage: Language = {
   name: "java",
   base: "test/fixtures/java",

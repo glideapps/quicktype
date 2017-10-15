@@ -26,7 +26,7 @@ import {
     Namespace,
     Named,
     SimpleNamed,
-    DependencyNamed,
+    FixedNamed,
     NamingFunction,
     keywordNamespace,
     assignNames,
@@ -179,24 +179,25 @@ class CSharpRenderer extends Renderer {
         this.names = assignNames(OrderedSet([this.globalNamespace]));
     }
 
-    namedFromTopLevel = (type: Type, name: string): SimpleNamed => {
+    namedFromTopLevel = (type: Type, name: string): FixedNamed => {
+        // FIXME: leave the name as-is?
         const proposed = csNameStyle(name);
-        // FIXKE: FixedType?
-        const named = new SimpleNamed(this.globalNamespace, name, countingNamingFunction, proposed);
-        const classesAndUnions = type.directlyReachableNamedTypes;
-        if (classesAndUnions.size === 1) {
-            const typeNamed = new DependencyNamed(
-                this.globalNamespace,
-                name,
-                countingNamingFunction,
-                List([named]),
-                proposeTopLevelDependencyName
-            );
-            this.classAndUnionNameds = this.classAndUnionNameds.set(
-                classesAndUnions.first(),
-                typeNamed
-            );
+        const named = new FixedNamed(this.globalNamespace, proposed);
+
+        const definedTypes = type.directlyReachableNamedTypes;
+        if (definedTypes.size > 1) {
+            throw "Cannot have more than one defined type per top-level";
         }
+
+        // If the top-level type doesn't contain any classes or unions
+        // we have to define a class just for the `FromJson` method, in
+        // emitFromJsonForTopLevel.
+
+        if (definedTypes.size === 1) {
+            const definedType = definedTypes.first();
+            this.classAndUnionNameds = this.classAndUnionNameds.set(definedType, named);
+        }
+
         return named;
     };
 
@@ -363,9 +364,19 @@ class CSharpRenderer extends Renderer {
         }
     }
 
-    emitTopLevelJSONPartial = (t: Type, name: string): void => {
+    emitFromJsonForTopLevel = (t: Type, name: string): void => {
+        let partial: string;
+        let typeKind: string;
+        const definedTypes = t.directlyReachableNamedTypes;
+        if (definedTypes.isEmpty()) {
+            partial = "";
+            typeKind = "class";
+        } else {
+            partial = "partial ";
+            typeKind = definedTypes.first() instanceof ClassType ? "class" : "struct";
+        }
         const csType = this.csType(t);
-        this.emitClass("partial class", this.topLevelNameds.get(name), () => {
+        this.emitClass([partial, typeKind], this.topLevelNameds.get(name), () => {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
@@ -556,13 +567,14 @@ class CSharpRenderer extends Renderer {
                     using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
                 }
             }
+            // FIXME: Superfluous newlines when there are no classes or unions.
             this.emitNewline();
             this.forEachWithBlankLines(this.classes, this.emitClassDefinition);
             this.emitNewline();
             this.forEachWithBlankLines(this.unions, this.emitUnionDefinition);
             if (!this.poco) {
                 this.emitNewline();
-                this.topLevels.forEach(this.emitTopLevelJSONPartial);
+                this.topLevels.forEach(this.emitFromJsonForTopLevel);
                 this.emitNewline();
                 this.unions.forEach(this.emitUnionJSONPartial);
                 this.emitNewline();
