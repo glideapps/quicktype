@@ -319,7 +319,7 @@ class CSharpRenderer extends Renderer {
         this.emitClass([this.partialString, "class"], this.classAndUnionNameds.get(c), () => {
             const maxWidth = c.properties.map((_, name: string) => stringEscape(name).length).max();
             const withBlankLines = !this.poco && !this.dense;
-            this.forEach(c.properties, withBlankLines, (t: Type, name: string) => {
+            this.forEach(c.properties, withBlankLines, false, (t: Type, name: string) => {
                 const named = propertyNameds.get(name);
                 const escapedName = stringEscape(name);
                 const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
@@ -567,16 +567,15 @@ class CSharpRenderer extends Renderer {
                     using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
                 }
             }
-            // FIXME: Superfluous newlines when there are no classes or unions.
-            this.emitNewline();
-            this.forEachWithBlankLines(this.classes, this.emitClassDefinition);
-            this.emitNewline();
-            this.forEachWithBlankLines(this.unions, this.emitUnionDefinition);
+            this.forEachWithLeadingAndInterposedBlankLines(this.classes, this.emitClassDefinition);
+            this.forEachWithLeadingAndInterposedBlankLines(this.unions, this.emitUnionDefinition);
             if (!this.poco) {
                 this.emitNewline();
                 this.topLevels.forEach(this.emitFromJsonForTopLevel);
-                this.emitNewline();
-                this.unions.forEach(this.emitUnionJSONPartial);
+                this.forEachWithLeadingAndInterposedBlankLines(
+                    this.unions,
+                    this.emitUnionJSONPartial
+                );
                 this.emitNewline();
                 this.emitSerializeClass();
                 this.emitNewline();
