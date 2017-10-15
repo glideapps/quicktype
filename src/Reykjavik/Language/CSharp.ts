@@ -29,7 +29,6 @@ import {
     FixedNamed,
     NamingFunction,
     keywordNamespace,
-    assignNames,
     countingNamingFunction
 } from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
@@ -134,13 +133,12 @@ function isValueType(t: Type): boolean {
 }
 
 class CSharpRenderer extends Renderer {
-    private readonly _globalNamespace: Namespace;
-    private readonly _topLevelNameds: Map<string, Named>;
-    private readonly _classes: OrderedSet<ClassType>;
-    private readonly _unions: OrderedSet<UnionType>;
+    private _globalNamespace: Namespace;
+    private _topLevelNameds: Map<string, Named>;
+    private _classes: OrderedSet<ClassType>;
+    private _unions: OrderedSet<UnionType>;
     private _classAndUnionNameds: Map<NamedType, Named>;
     private _propertyNameds: Map<ClassType, Map<string, Named>>;
-    private readonly _names: Map<Named, string>;
 
     constructor(
         topLevels: TopLevels,
@@ -151,20 +149,22 @@ class CSharpRenderer extends Renderer {
         private readonly _version: Version
     ) {
         super(topLevels);
+    }
 
+    protected setUpNaming(): Namespace[] {
         this._globalNamespace = keywordNamespace("global", forbiddenNames);
-        const { classes, unions } = allClassesAndUnions(topLevels);
+        const { classes, unions } = allClassesAndUnions(this.topLevels);
         this._classes = classes;
         this._unions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toSet();
         this._classAndUnionNameds = Map();
         this._propertyNameds = Map();
-        this._topLevelNameds = topLevels.map(this.namedFromTopLevel).toMap();
+        this._topLevelNameds = this.topLevels.map(this.namedFromTopLevel).toMap();
         classes.forEach((c: ClassType) => {
             const named = this.addClassOrUnionNamed(c);
             this.addPropertyNameds(c, named);
         });
         this._unions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
-        this._names = assignNames(OrderedSet([this._globalNamespace]));
+        return [this._globalNamespace];
     }
 
     namedFromTopLevel = (type: Type, name: string): FixedNamed => {
@@ -274,7 +274,7 @@ class CSharpRenderer extends Renderer {
         } else if (t instanceof ArrayType) {
             return this.typeNameForUnionMember(t.items) + "_array";
         } else if (t instanceof ClassType) {
-            return this._names.get(this._classAndUnionNameds.get(t));
+            return this.names.get(this._classAndUnionNameds.get(t));
         } else if (t instanceof MapType) {
             return this.typeNameForUnionMember(t.values), "_map";
         } else if (t instanceof UnionType) {
@@ -465,7 +465,7 @@ class CSharpRenderer extends Renderer {
     emitSerializeClass = (): void => {
         // FIXME: Make Serialize a Named
         this.emitClass("static class", "Serialize", () => {
-            this._topLevels.forEach((t: Type, name: string) => {
+            this.topLevels.forEach((t: Type, name: string) => {
                 // FIXME: Make ToJson a Named
                 this.emitExpressionMember(
                     ["public static string ToJson(this ", this.csType(t), " self)"],
@@ -538,7 +538,7 @@ class CSharpRenderer extends Renderer {
         });
     };
 
-    render(): RenderResult {
+    protected emitSource(): void {
         const using = (ns: Sourcelike): void => {
             this.emitLine(["using ", ns, ";"]);
         };
@@ -559,7 +559,7 @@ class CSharpRenderer extends Renderer {
             this.forEachWithLeadingAndInterposedBlankLines(this._unions, this.emitUnionDefinition);
             if (!this._poco) {
                 this.emitNewline();
-                this._topLevels.forEach(this.emitFromJsonForTopLevel);
+                this.topLevels.forEach(this.emitFromJsonForTopLevel);
                 this.forEachWithLeadingAndInterposedBlankLines(
                     this._unions,
                     this.emitUnionJSONPartial
@@ -570,6 +570,5 @@ class CSharpRenderer extends Renderer {
                 this.emitConverterClass();
             }
         });
-        return { source: this.finishedSource(), names: this._names };
     }
 }

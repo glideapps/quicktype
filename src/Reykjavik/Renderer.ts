@@ -1,8 +1,8 @@
 "use strict";
 
-import { Map, Iterable } from "immutable";
+import { Map, Iterable, OrderedSet } from "immutable";
 import { TopLevels } from "./Type";
-import { Named } from "./Naming";
+import { Named, Namespace, assignNames } from "./Naming";
 import {
     Source,
     Sourcelike,
@@ -15,13 +15,14 @@ import {
 export type RenderResult = { source: Source; names: Map<Named, string> };
 
 export abstract class Renderer {
-    protected readonly _topLevels: TopLevels;
+    protected readonly topLevels: TopLevels;
+    private _names: Map<Named, string> | undefined;
 
     private _lastNewline?: NewlineSource;
     private _emitted: Sourcelike[];
 
     constructor(topLevels: TopLevels) {
-        this._topLevels = topLevels;
+        this.topLevels = topLevels;
         this._emitted = [];
     }
 
@@ -76,5 +77,19 @@ export abstract class Renderer {
         return sourcelikeToSource(this._emitted);
     };
 
-    abstract render(): RenderResult;
+    protected abstract setUpNaming(): Namespace[];
+    protected abstract emitSource(): void;
+
+    render = (): RenderResult => {
+        this._names = assignNames(OrderedSet(this.setUpNaming()));
+        this.emitSource();
+        return { source: this.finishedSource(), names: this._names };
+    };
+
+    get names(): Map<Named, string> {
+        if (this._names === undefined) {
+            throw "Names accessed before they were assigned";
+        }
+        return this._names;
+    }
 }
