@@ -1,7 +1,7 @@
 "use strict";
 
 import { Map, Iterable } from "immutable";
-import { Graph } from "./Type";
+import { TopLevels } from "./Type";
 import { Named } from "./Naming";
 import {
     Source,
@@ -15,14 +15,14 @@ import {
 export type RenderResult = { source: Source; names: Map<Named, string> };
 
 export abstract class Renderer {
-    protected readonly topLevels: Graph;
+    protected readonly topLevels: TopLevels;
     private source?: Source;
     protected names?: Map<Named, string>;
 
     private lastNewline?: NewlineSource;
     private emitted: Sourcelike[];
 
-    constructor(topLevels: Graph) {
+    constructor(topLevels: TopLevels) {
         this.topLevels = topLevels;
         this.emitted = [];
     }

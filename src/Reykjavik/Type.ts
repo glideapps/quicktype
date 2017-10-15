@@ -12,8 +12,7 @@ export type TypeNames = {
 
 // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
 // and maybe even earlier in the TypeScript driver.
-// FIXME: Rename to TopLevels?
-export type Graph = Map<string, Type>;
+export type TopLevels = Map<string, Type>;
 
 export abstract class Type {
     abstract kind: TypeKind;
@@ -203,7 +202,7 @@ export type ClassesAndUnions = {
     unions: OrderedSet<UnionType>;
 };
 
-export function allClassesAndUnions(graph: Graph): ClassesAndUnions {
+export function allClassesAndUnions(graph: TopLevels): ClassesAndUnions {
     let classes = OrderedSet<ClassType>();
     let unions = OrderedSet<UnionType>();
 
