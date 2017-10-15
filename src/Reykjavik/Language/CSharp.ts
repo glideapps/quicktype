@@ -2,7 +2,7 @@
 
 import { Set, List, Map, OrderedSet } from "immutable";
 import {
-    Graph,
+    TopLevels,
     Type,
     PrimitiveType,
     ArrayType,
@@ -78,7 +78,7 @@ class CSharpTargetLanguage extends TargetLanguage {
         this.versionOption = versionOption;
     }
 
-    renderGraph(topLevels: Graph, optionValues: { [name: string]: any }): RenderResult {
+    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
         const renderer = new CSharpRenderer(
             topLevels,
             this.listOption.getValue(optionValues),
@@ -149,7 +149,7 @@ class CSharpRenderer extends Renderer {
     readonly names: Map<Named, string>;
 
     constructor(
-        topLevels: Graph,
+        topLevels: TopLevels,
         useList: boolean,
         dense: boolean,
         poco: boolean,

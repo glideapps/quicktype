@@ -9,7 +9,7 @@ import {
     MapType,
     UnionType,
     TypeNames,
-    Graph
+    TopLevels
 } from "./Type";
 import { GlueClassEntry, GlueGraph, GlueType, GlueTypeNames } from "Reykjavik";
 
@@ -65,7 +65,7 @@ function glueTypesToNative(glueEntries: GlueClassEntry[]): (Type | null)[] {
     return classes;
 }
 
-export function glueGraphToNative(glueGraph: GlueGraph): Graph {
+export function glueGraphToNative(glueGraph: GlueGraph): TopLevels {
     const classes = glueTypesToNative(glueGraph.classes);
     return Map(glueGraph.toplevels)
         .map((t: GlueType) => glueTypeToNative(t, classes))
