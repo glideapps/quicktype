@@ -175,14 +175,16 @@ class CSharpRenderer extends Renderer {
             this.addClassOrUnionNamed(c);
             this.addPropertyNameds(c);
         });
-        unions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
+        this.unions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
         this.names = assignNames(OrderedSet([this.globalNamespace]));
     }
 
     namedFromTopLevel = (type: Type, name: string): SimpleNamed => {
         const proposed = csNameStyle(name);
+        // FIXKE: FixedType?
         const named = new SimpleNamed(this.globalNamespace, name, countingNamingFunction, proposed);
-        if (type instanceof NamedType) {
+        const classesAndUnions = type.directlyReachableNamedTypes;
+        if (classesAndUnions.size === 1) {
             const typeNamed = new DependencyNamed(
                 this.globalNamespace,
                 name,
@@ -190,7 +192,10 @@ class CSharpRenderer extends Renderer {
                 List([named]),
                 proposeTopLevelDependencyName
             );
-            this.classAndUnionNameds = this.classAndUnionNameds.set(type, typeNamed);
+            this.classAndUnionNameds = this.classAndUnionNameds.set(
+                classesAndUnions.first(),
+                typeNamed
+            );
         }
         return named;
     };
