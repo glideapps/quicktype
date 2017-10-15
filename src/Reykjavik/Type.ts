@@ -22,7 +22,16 @@ export abstract class Type {
         this.kind = kind;
     }
 
+    isNamedType(): this is NamedType {
+        return false;
+    }
+
     abstract get children(): Set<Type>;
+
+    get directlyReachableNamedTypes(): Set<NamedType> {
+        if (this.isNamedType()) return Set([this]);
+        return setUnion(this.children.map((t: Type) => t.directlyReachableNamedTypes));
+    }
 
     abstract equals(other: any): boolean;
     abstract hashCode(): number;
@@ -105,6 +114,10 @@ export abstract class NamedType extends Type {
     constructor(kind: NamedTypeKind, names: TypeNames) {
         super(kind);
         this.names = names;
+    }
+
+    isNamedType(): this is NamedType {
+        return true;
     }
 }
 
