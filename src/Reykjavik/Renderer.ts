@@ -47,12 +47,13 @@ export abstract class Renderer {
 
     forEach<K, V>(
         iterable: Iterable<K, V>,
-        withBlankLines: boolean,
+        interposedBlankLines: boolean,
+        leadingBlankLine: boolean,
         emitter: (v: V, k: K) => void
     ): void {
         let needBlank = false;
         iterable.forEach((v: V, k: K) => {
-            if (withBlankLines && needBlank) {
+            if (leadingBlankLine || (interposedBlankLines && needBlank)) {
                 this.emitNewline();
             }
             emitter(v, k);
@@ -60,8 +61,11 @@ export abstract class Renderer {
         });
     }
 
-    forEachWithBlankLines<K, V>(iterable: Iterable<K, V>, emitter: (v: V, k: K) => void): void {
-        this.forEach(iterable, true, emitter);
+    forEachWithLeadingAndInterposedBlankLines<K, V>(
+        iterable: Iterable<K, V>,
+        emitter: (v: V, k: K) => void
+    ): void {
+        this.forEach(iterable, true, true, emitter);
     }
 
     indent(fn: () => void): void {
