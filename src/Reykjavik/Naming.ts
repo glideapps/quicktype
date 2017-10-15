@@ -212,7 +212,7 @@ function allNamespacesRecursively(namespaces: OrderedSet<Namespace>): OrderedSet
 
 class NamingContext {
     names: Map<Named, string> = Map();
-    namedsForName: Map<string, Set<Named>> = Map();
+    private _namedsForName: Map<string, Set<Named>> = Map();
     readonly namespaces: OrderedSet<Namespace>;
 
     constructor(rootNamespaces: OrderedSet<Namespace>) {
@@ -230,10 +230,10 @@ class NamingContext {
 
     isConflicting = (named: Named, proposed: string): boolean => {
         // If the name is not assigned at all, there is no conflict.
-        if (!this.namedsForName.has(proposed)) return false;
+        if (!this._namedsForName.has(proposed)) return false;
         // The name is assigned, but it might still not be forbidden.
         let conflicting: Named | undefined;
-        this.namedsForName.get(proposed).forEach((n: Named) => {
+        this._namedsForName.get(proposed).forEach((n: Named) => {
             if (
                 named.namespace.equals(n.namespace) ||
                 named.namespace.forbiddenNamespaces.has(n.namespace) ||
@@ -254,10 +254,10 @@ class NamingContext {
             throw "Assigned name conflicts";
         }
         this.names = this.names.set(named, name);
-        if (!this.namedsForName.has(name)) {
-            this.namedsForName = this.namedsForName.set(name, Set());
+        if (!this._namedsForName.has(name)) {
+            this._namedsForName = this._namedsForName.set(name, Set());
         }
-        this.namedsForName.set(name, this.namedsForName.get(name).add(named));
+        this._namedsForName.set(name, this._namedsForName.get(name).add(named));
     };
 }
 
