@@ -172,8 +172,8 @@ class CSharpRenderer extends Renderer {
         this.propertyNameds = Map();
         this.topLevelNameds = topLevels.map(this.namedFromTopLevel).toMap();
         classes.forEach((c: ClassType) => {
-            this.addClassOrUnionNamed(c);
-            this.addPropertyNameds(c);
+            const named = this.addClassOrUnionNamed(c);
+            this.addPropertyNameds(c, named);
         });
         this.unions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
         this.names = assignNames(OrderedSet([this.globalNamespace]));
@@ -200,9 +200,9 @@ class CSharpRenderer extends Renderer {
         return named;
     };
 
-    addClassOrUnionNamed = (type: NamedType): void => {
+    addClassOrUnionNamed = (type: NamedType): Named => {
         if (this.classAndUnionNameds.has(type)) {
-            return;
+            return this.classAndUnionNameds.get(type);
         }
         const name = type.names.combined;
         const named = new SimpleNamed(
@@ -212,10 +212,11 @@ class CSharpRenderer extends Renderer {
             csNameStyle(name)
         );
         this.classAndUnionNameds = this.classAndUnionNameds.set(type, named);
+        return named;
     };
 
-    addPropertyNameds = (c: ClassType): void => {
-        const ns = new Namespace(c.names.combined, this.globalNamespace, Set());
+    addPropertyNameds = (c: ClassType, classNamed: Named): void => {
+        const ns = new Namespace(c.names.combined, this.globalNamespace, Set(), Set([classNamed]));
         const nameds = c.properties
             .map((t: Type, name: string) => {
                 return new SimpleNamed(ns, name, countingNamingFunction, csNameStyle(name));

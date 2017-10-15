@@ -9,12 +9,19 @@ export class Namespace {
     private readonly _name: string;
     private readonly _parent?: Namespace;
     private _children: OrderedSet<Namespace>;
-    readonly forbidden: Set<Namespace>;
+    readonly forbiddenNamespaces: Set<Namespace>;
+    readonly additionalForbidden: Set<Named>;
     private _members: OrderedSet<Named>;
 
-    constructor(name: string, parent: Namespace | undefined, forbidden: Set<Namespace>) {
+    constructor(
+        name: string,
+        parent: Namespace | undefined,
+        forbiddenNamespaces: Set<Namespace>,
+        additionalForbidden: Set<Named>
+    ) {
         this._name = name;
-        this.forbidden = forbidden;
+        this.forbiddenNamespaces = forbiddenNamespaces;
+        this.additionalForbidden = additionalForbidden;
         this._children = OrderedSet();
         this._members = OrderedSet();
         if (parent) {
@@ -33,6 +40,13 @@ export class Namespace {
 
     get members(): OrderedSet<Named> {
         return this._members;
+    }
+
+    get forbiddenNameds(): Set<Named> {
+        // FIXME: cache
+        return this.additionalForbidden.union(
+            ...this.forbiddenNamespaces.map((ns: Namespace) => ns.members.toSet()).toArray()
+        );
     }
 
     add(named: Named): void {
@@ -183,7 +197,7 @@ export class DependencyNamed extends Named {
 }
 
 export function keywordNamespace(name: string, keywords: string[]) {
-    const ns = new Namespace(name, undefined, Set());
+    const ns = new Namespace(name, undefined, Set(), Set());
     for (const name of keywords) {
         new FixedNamed(ns, name);
     }
@@ -210,19 +224,21 @@ class NamingContext {
         return named.dependencies.every((n: Named) => this.names.has(n));
     };
 
-    isFullyNamed = (namespace: Namespace): boolean => {
-        return namespace.members.every((n: Named) => this.names.has(n));
-    };
-
     areForbiddensFullyNamed = (namespace: Namespace): boolean => {
-        return namespace.forbidden.every(this.isFullyNamed);
+        return namespace.forbiddenNameds.every((n: Named) => this.names.has(n));
     };
 
     isConflicting = (named: Named, proposed: string): boolean => {
+        // If the name is not assigned at all, there is no conflict.
         if (!this.namedsForName.has(proposed)) return false;
+        // The name is assigned, but it might still not be forbidden.
         let conflicting: Named | undefined;
         this.namedsForName.get(proposed).forEach((n: Named) => {
-            if (named.namespace.equals(n.namespace) || named.namespace.forbidden.has(n.namespace)) {
+            if (
+                named.namespace.equals(n.namespace) ||
+                named.namespace.forbiddenNamespaces.has(n.namespace) ||
+                named.namespace.additionalForbidden.has(n)
+            ) {
                 conflicting = n;
                 return false;
             }
@@ -243,13 +259,6 @@ class NamingContext {
         }
         this.namedsForName.set(name, this.namedsForName.get(name).add(named));
     };
-}
-
-function orderedSetUnion<T>(sets: Iterable<any, OrderedSet<T>>): OrderedSet<T> {
-    const setArray = sets.toArray();
-    if (setArray.length === 0) return OrderedSet();
-    if (setArray.length === 1) return setArray[0];
-    return setArray[0].union(...setArray.slice(1));
 }
 
 // Naming algorithm
@@ -283,10 +292,9 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Named, s
             return ctx.names;
         }
 
-        const forbiddenNameds = orderedSetUnion(
-            readyNamespace.forbidden.map((ns: Namespace) => ns.members)
-        );
-        const forbiddenNames = forbiddenNameds.map((n: Named) => ctx.names.get(n)).toSet();
+        const forbiddenNames = readyNamespace.forbiddenNameds
+            .map((n: Named) => ctx.names.get(n))
+            .toSet();
 
         // 2. Sort those names into sets where all members of a set propose the same
         //    name and have the same naming function.
