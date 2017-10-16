@@ -76,9 +76,9 @@ export class EnumRendererOption<T> extends TypedRendererOption<T> {
     }
 
     getValue(values: { [name: string]: any }): T {
-        const name: string = values[this.definition.name];
+        let name: string = values[this.definition.name];
         if (name === undefined) {
-            return this.definition.defaultValue;
+            name = this.definition.defaultValue;
         }
         const value = this._values[name];
         if (value === undefined) {
