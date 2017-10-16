@@ -4,6 +4,9 @@ OUTDIR=dist
 
 npm install --ignore-scripts
 bower install --allow-root
+
+./script/build-reykjavik.ts
+
 pulp build --build-path $OUTDIR -- --source-maps --stash --censor-warnings
 
 # Move TypeScript typings next to PureScript JavaScript modules

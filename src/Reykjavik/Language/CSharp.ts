@@ -31,7 +31,7 @@ import {
     keywordNamespace,
     countingNamingFunction
 } from "../Naming";
-import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
+import { PrimitiveTypeKind, TypeKind } from "../Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanRendererOption, StringRendererOption, EnumRendererOption } from "../Options";
@@ -90,7 +90,7 @@ class CSharpTargetLanguage extends TargetLanguage {
     }
 }
 
-export const cSharpTargetLanguage: TargetLanguage = new CSharpTargetLanguage();
+export const targetLanguage: TargetLanguage = new CSharpTargetLanguage();
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 

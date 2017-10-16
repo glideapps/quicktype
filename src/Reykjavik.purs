@@ -74,3 +74,6 @@ irGraphToGlue (IRGraph { classes, toplevels }) =
         { classes: map entryToJS $ Seq.toUnfoldable classes
         , toplevels: SM.mapWithKey (const typeToJS) toplevelsStrMap
         }
+
+-- TODO turn Reykjavic TargetLanguages into Renderers
+-- targetLanguageToRenderer :: TargetLanguage -> Renderer
