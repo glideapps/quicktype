@@ -39,11 +39,12 @@ import { BooleanRendererOption, StringRendererOption, EnumRendererOption } from 
 const unicode = require("unicode-properties");
 
 type Version = 5 | 6;
+type Features = { helpers: boolean; attributes: boolean };
 
 class CSharpTargetLanguage extends TargetLanguage {
     private readonly _listOption: EnumRendererOption<boolean>;
     private readonly _denseOption: EnumRendererOption<boolean>;
-    private readonly _pocoOption: BooleanRendererOption;
+    private readonly _featuresOption: EnumRendererOption<Features>;
     private readonly _namespaceOption: StringRendererOption;
     private readonly _versionOption: EnumRendererOption<Version>;
 
@@ -56,7 +57,11 @@ class CSharpTargetLanguage extends TargetLanguage {
             ["normal", false],
             ["dense", true]
         ]);
-        const pocoOption = new BooleanRendererOption("just-types", "Plain objects only", false);
+        const featuresOption = new EnumRendererOption("features", "Output features", [
+            ["complete", { helpers: true, attributes: true }],
+            ["attributes-only", { helpers: false, attributes: true }],
+            ["just-types", { helpers: false, attributes: false }]
+        ]);
         // FIXME: Do this via a configurable named eventually.
         const namespaceOption = new StringRendererOption(
             "namespace",
@@ -68,21 +73,23 @@ class CSharpTargetLanguage extends TargetLanguage {
             ["6", 6],
             ["5", 5]
         ]);
-        const options = [namespaceOption, versionOption, denseOption, listOption, pocoOption];
+        const options = [namespaceOption, versionOption, denseOption, listOption, featuresOption];
         super("new C#", ["newcs"], "ncs", "csharp", options);
         this._listOption = listOption;
         this._denseOption = denseOption;
-        this._pocoOption = pocoOption;
+        this._featuresOption = featuresOption;
         this._namespaceOption = namespaceOption;
         this._versionOption = versionOption;
     }
 
     renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
+        const { helpers, attributes } = this._featuresOption.getValue(optionValues);
         const renderer = new CSharpRenderer(
             topLevels,
             this._listOption.getValue(optionValues),
             this._denseOption.getValue(optionValues),
-            this._pocoOption.getValue(optionValues),
+            helpers,
+            attributes,
             this._namespaceOption.getValue(optionValues),
             this._versionOption.getValue(optionValues)
         );
@@ -144,7 +151,8 @@ class CSharpRenderer extends Renderer {
         topLevels: TopLevels,
         private readonly _useList: boolean,
         private readonly _dense: boolean,
-        private readonly _poco: boolean,
+        private readonly _needHelpers: boolean,
+        private readonly _needAttributes: boolean,
         private readonly _namespaceName: string,
         private readonly _version: Version
     ) {
@@ -298,7 +306,7 @@ class CSharpRenderer extends Renderer {
     };
 
     get partialString(): string {
-        return this._poco ? "" : "partial ";
+        return this._needHelpers ? "partial " : "";
     }
 
     emitClassDefinition = (c: ClassType): void => {
@@ -306,13 +314,13 @@ class CSharpRenderer extends Renderer {
         const propertyNameds = this._propertyNameds.get(c);
         this.emitClass([this.partialString, "class"], this._classAndUnionNameds.get(c), () => {
             const maxWidth = c.properties.map((_, name: string) => stringEscape(name).length).max();
-            const withBlankLines = !this._poco && !this._dense;
+            const withBlankLines = this._needAttributes && !this._dense;
             this.forEach(c.properties, withBlankLines, false, (t: Type, name: string) => {
                 const named = propertyNameds.get(name);
                 const escapedName = stringEscape(name);
                 const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
                 const property = ["public ", this.csType(t), " ", named, " { get; set; }"];
-                if (this._poco) {
+                if (!this._needAttributes) {
                     this.emitLine(property);
                 } else if (this._dense) {
                     const indent = maxWidth - escapedName.length + 1;
@@ -516,7 +524,7 @@ class CSharpRenderer extends Renderer {
     };
 
     emitConverterClass = (): void => {
-        const haveUnions = this._unions.size > 0;
+        const haveUnions = !this._unions.isEmpty();
         // FIXME: Make Converter a Named
         let converterName: Sourcelike = ["Converter"];
         if (haveUnions) converterName = converterName.concat([": JsonConverter"]);
@@ -542,13 +550,12 @@ class CSharpRenderer extends Renderer {
         const using = (ns: Sourcelike): void => {
             this.emitLine(["using ", ns, ";"]);
         };
-        // FIXME: Use configurable namespace
         this.emitLine(["namespace ", this._namespaceName]);
         this.emitBlock(() => {
             for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
                 using(ns);
             }
-            if (!this._poco) {
+            if (this._needAttributes || this._needHelpers) {
                 this.emitNewline();
                 using("Newtonsoft.Json");
                 if (this._dense) {
@@ -557,7 +564,7 @@ class CSharpRenderer extends Renderer {
             }
             this.forEachWithLeadingAndInterposedBlankLines(this._classes, this.emitClassDefinition);
             this.forEachWithLeadingAndInterposedBlankLines(this._unions, this.emitUnionDefinition);
-            if (!this._poco) {
+            if (this._needHelpers) {
                 this.emitNewline();
                 this.topLevels.forEach(this.emitFromJsonForTopLevel);
                 this.forEachWithLeadingAndInterposedBlankLines(
@@ -566,6 +573,8 @@ class CSharpRenderer extends Renderer {
                 );
                 this.emitNewline();
                 this.emitSerializeClass();
+            }
+            if (this._needHelpers || (this._needAttributes && !this._unions.isEmpty())) {
                 this.emitNewline();
                 this.emitConverterClass();
             }
