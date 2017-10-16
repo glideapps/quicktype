@@ -2,7 +2,7 @@
 
 import { OrderedSet, Map, Set, Iterable, List } from "immutable";
 import stringHash = require("string-hash");
-import { TypeKind, PrimitiveTypeKind, NamedTypeKind } from "Reykjavik";
+import { TypeKind, PrimitiveTypeKind, NamedTypeKind } from "./Reykjavik";
 
 export type TypeNames = {
     names: Set<string>;

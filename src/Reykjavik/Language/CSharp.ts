@@ -32,7 +32,7 @@ import {
     assignNames,
     countingNamingFunction
 } from "../Naming";
-import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
+import { PrimitiveTypeKind, TypeKind } from "../Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanRendererOption, StringRendererOption, EnumRendererOption } from "../Options";

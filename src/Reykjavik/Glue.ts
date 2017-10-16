@@ -11,7 +11,7 @@ import {
     TypeNames,
     Graph
 } from "./Type";
-import { GlueClassEntry, GlueGraph, GlueType, GlueTypeNames } from "Reykjavik";
+import { GlueClassEntry, GlueGraph, GlueType, GlueTypeNames } from "./Reykjavik";
 
 function glueTypeNamesToNative({ names, combined }: GlueTypeNames): TypeNames {
     return { names: Set(names), combined };
