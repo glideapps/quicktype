@@ -4,7 +4,7 @@ import { List, Map } from "immutable";
 
 import { Annotation } from "./Annotation";
 import { Named } from "./Naming";
-import { intercalate } from "./Utils";
+import { intercalate } from "./Support";
 
 export type Source = TextSource | NewlineSource | SequenceSource | AnnotatedSource | NameSource;
 

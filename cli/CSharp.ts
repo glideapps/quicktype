@@ -15,7 +15,13 @@ import {
     allClassesAndUnions
 } from "./Type";
 import { Source, Sourcelike, newline } from "./Source";
-import { legalizeCharacters, camelCase, startWithLetter, stringEscape, intercalate } from "./Utils";
+import {
+    legalizeCharacters,
+    camelCase,
+    startWithLetter,
+    stringEscape,
+    intercalate
+} from "./Support";
 import {
     Namespace,
     Named,
@@ -68,7 +74,7 @@ class CSharpTargetLanguage extends TypeScriptTargetLanguage {
             ["5", 5]
         ]);
         const options = [namespaceOption, versionOption, denseOption, listOption, featuresOption];
-        super("new C#", ["newcs"], "ncs", "csharp", options);
+        super("new C#", ["newcs"], "ncs", "csharp", options.map(o => o.definition));
         this._listOption = listOption;
         this._denseOption = denseOption;
         this._featuresOption = featuresOption;

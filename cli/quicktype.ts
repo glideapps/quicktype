@@ -11,12 +11,11 @@ import * as _ from "lodash";
 
 import * as Main from "Main";
 import { Config } from "Config";
-import { Renderer } from "Doc";
 import * as Renderers from "Language.Renderers";
 import { ErrorMessage, SourceCode } from "Core";
 import { cSharpTargetLanguage } from "./CSharp";
 import { OptionDefinition } from "./RendererOptions";
-import { TargetLanguage } from "./TargetLanguage";
+import { TargetLanguage, PureScriptTargetLanguage } from "./TargetLanguage";
 
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
@@ -25,9 +24,9 @@ const getUsage = require("command-line-usage");
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-const targetLanguages: (Renderer | TargetLanguage)[] = (Renderers.all as (
-    | Renderer
-    | TargetLanguage)[]).concat([cSharpTargetLanguage]);
+const targetLanguages: TargetLanguage[] = Renderers.all
+    .map(r => new PureScriptTargetLanguage(r))
+    .concat([cSharpTargetLanguage]);
 
 const langs = targetLanguages.map(r => r.names[0]).join("|");
 const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
@@ -129,7 +128,7 @@ const sectionsAfterRenderers: UsageSection[] = [
     }
 ];
 
-function getTargetLanguage(name: string): Renderer | TargetLanguage {
+function getTargetLanguage(name: string): TargetLanguage {
     for (const language of targetLanguages) {
         if (language.names.indexOf(name) >= 0) {
             return language;
@@ -139,30 +138,11 @@ function getTargetLanguage(name: string): Renderer | TargetLanguage {
     return process.exit(1);
 }
 
-function isTargetLanguage(tl: Renderer | TargetLanguage): tl is TargetLanguage {
-    return (tl as TargetLanguage).optionDefinitions !== undefined;
-}
-
-function optionDefinitionsForTargetLanguage(tl: Renderer | TargetLanguage): OptionDefinition[] {
-    if (isTargetLanguage(tl)) {
-        return tl.optionDefinitions;
-    }
-    return _.map(tl.options, o => {
-        return {
-            name: o.name,
-            description: o.description,
-            typeLabel: o.typeLabel,
-            renderer: true,
-            type: String as any
-        } as OptionDefinition;
-    });
-}
-
 function usage() {
     const rendererSections: UsageSection[] = [];
 
     _.forEach(targetLanguages, renderer => {
-        const definitions = optionDefinitionsForTargetLanguage(renderer);
+        const definitions = renderer.optionDefinitions;
         if (definitions.length === 0) return;
 
         rendererSections.push({
@@ -234,8 +214,7 @@ class Run {
     }
 
     getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
-        const tl = getTargetLanguage(opts.lang);
-        return optionDefinitionsForTargetLanguage(tl);
+        return getTargetLanguage(opts.lang).optionDefinitions;
     };
 
     renderSamplesOrSchemas = (samplesOrSchemas: SampleOrSchemaMap): SourceCode => {
@@ -257,11 +236,7 @@ class Run {
         };
 
         try {
-            if (isTargetLanguage(targetLanguage)) {
-                return targetLanguage.transformAndRenderConfig(config);
-            } else {
-                return fromRight(Main.main(config));
-            }
+            return targetLanguage.transformAndRenderConfig(config);
         } catch (e) {
             console.error(e);
             return process.exit(1);
