@@ -91,7 +91,7 @@ class CSharpTargetLanguage extends TargetLanguage {
     }
 }
 
-export const cSharpTargetLanguage: TargetLanguage = new CSharpTargetLanguage();
+export const targetLanguage: TargetLanguage = new CSharpTargetLanguage();
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 
