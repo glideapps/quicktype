@@ -23,7 +23,7 @@ data Version = CSharp5 | CSharp6
 
 forbiddenNames :: Array String
 forbiddenNames =
-    [ "QuickType"
+    [ "QuickType" -- FIXME: Are we forbidding the namespace here? If so, we need to use the option value.
     , "Converter"
     , "JsonConverter"
     , "Type"
@@ -65,6 +65,7 @@ renderer =
         { nameForClass: simpleNamer nameForClass
         , nextName: \s -> "Other" <> s
         , forbiddenNames
+        -- FIXME: why is this a noForbidNamer?  What if a TopLevel is called `Converter`?
         , topLevelName: noForbidNamer csNameStyle
         , unions: Just
             { predicate: unionIsNotSimpleNullable

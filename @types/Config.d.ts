@@ -8,6 +8,6 @@ export type TopLevelConfig =
 export interface Config {
   language: string;
   topLevels: TopLevelConfig[];
-  inferMaps?: boolean;
-  rendererOptions?: { [name: string]: string };
+  inferMaps: boolean;
+  rendererOptions: { [name: string]: any };
 }

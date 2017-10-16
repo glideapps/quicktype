@@ -374,6 +374,7 @@ class JSONSchemaFixture extends LanguageFixture {
 
 export const allFixtures: Fixture[] = [
   new JSONFixture(languages.CSharpLanguage),
+  new JSONFixture(languages.NewCSharpLanguage),
   new JSONFixture(languages.JavaLanguage),
   new JSONFixture(languages.GoLanguage),
   new JSONFixture(languages.ElmLanguage),
@@ -382,6 +383,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.TypeScriptLanguage),
   new JSONSchemaJSONFixture(languages.GoLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
+  new JSONSchemaFixture(languages.NewCSharpLanguage),
   new JSONSchemaFixture(languages.JavaLanguage),
   new JSONSchemaFixture(languages.GoLanguage),
   new JSONSchemaFixture(languages.Swift3ClassesLanguage, "schema-swift3"),
