@@ -13,15 +13,9 @@ import {
     nullableFromUnion,
     removeNullFromUnion,
     allClassesAndUnions
-} from "../Type";
-import { Source, Sourcelike, newline } from "../Source";
-import {
-    legalizeCharacters,
-    camelCase,
-    startWithLetter,
-    stringEscape,
-    intercalate
-} from "../Utils";
+} from "./Type";
+import { Source, Sourcelike, newline } from "./Source";
+import { legalizeCharacters, camelCase, startWithLetter, stringEscape, intercalate } from "./Utils";
 import {
     Namespace,
     Named,
@@ -30,18 +24,18 @@ import {
     NamingFunction,
     keywordNamespace,
     PrefixNamingFunction
-} from "../Naming";
+} from "./Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
-import { Renderer, RenderResult } from "../Renderer";
-import { TargetLanguage } from "../TargetLanguage";
-import { BooleanRendererOption, StringRendererOption, EnumRendererOption } from "../Options";
+import { Renderer, RenderResult } from "./Renderer";
+import { TypeScriptTargetLanguage } from "./TargetLanguage";
+import { BooleanRendererOption, StringRendererOption, EnumRendererOption } from "./RendererOptions";
 
 const unicode = require("unicode-properties");
 
 type Version = 5 | 6;
 type Features = { helpers: boolean; attributes: boolean };
 
-class CSharpTargetLanguage extends TargetLanguage {
+class CSharpTargetLanguage extends TypeScriptTargetLanguage {
     private readonly _listOption: EnumRendererOption<boolean>;
     private readonly _denseOption: EnumRendererOption<boolean>;
     private readonly _featuresOption: EnumRendererOption<Features>;
@@ -97,7 +91,7 @@ class CSharpTargetLanguage extends TargetLanguage {
     }
 }
 
-export const cSharpTargetLanguage: TargetLanguage = new CSharpTargetLanguage();
+export const cSharpTargetLanguage: TypeScriptTargetLanguage = new CSharpTargetLanguage();
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 
