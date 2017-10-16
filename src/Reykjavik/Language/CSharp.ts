@@ -29,7 +29,7 @@ import {
     FixedNamed,
     NamingFunction,
     keywordNamespace,
-    countingNamingFunction
+    PrefixNamingFunction
 } from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
@@ -101,6 +101,23 @@ export const cSharpTargetLanguage: TargetLanguage = new CSharpTargetLanguage();
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 
+export const namingFunction = new PrefixNamingFunction([
+    "Purple",
+    "Fluffy",
+    "Tentacled",
+    "Sticky",
+    "Indigo",
+    "Indecent",
+    "Hilarious",
+    "Ambitious",
+    "Cunning",
+    "Magenta",
+    "Frisky",
+    "Mischievous",
+    "Braggadocious"
+]);
+
+// FIXME: Make a Named?
 const denseJsonPropertyName = "J";
 
 function proposeTopLevelDependencyName(names: List<string>): string {
@@ -205,7 +222,7 @@ class CSharpRenderer extends Renderer {
         const named = new SimpleNamed(
             this._globalNamespace,
             name,
-            countingNamingFunction,
+            namingFunction,
             csNameStyle(name)
         );
         this._classAndUnionNameds = this._classAndUnionNameds.set(type, named);
@@ -216,7 +233,7 @@ class CSharpRenderer extends Renderer {
         const ns = new Namespace(c.names.combined, this._globalNamespace, Set(), Set([classNamed]));
         const nameds = c.properties
             .map((t: Type, name: string) => {
-                return new SimpleNamed(ns, name, countingNamingFunction, csNameStyle(name));
+                return new SimpleNamed(ns, name, namingFunction, csNameStyle(name));
             })
             .toMap();
         this._propertyNameds = this._propertyNameds.set(c, nameds);

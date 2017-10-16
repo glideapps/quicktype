@@ -121,7 +121,7 @@ export abstract class Named {
     abstract proposeName(names: Map<Named, string>): string;
 }
 
-// FIXME: FixedNameds should optionally be configurable
+// FIXME: FixedNameds should optionally be user-configurable
 export class FixedNamed extends Named {
     constructor(namespace: Namespace, name: string) {
         super(namespace, name, null);
@@ -322,7 +322,14 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Named, s
     }
 }
 
-export class CountingNamingFunction extends NamingFunction {
+export class PrefixNamingFunction extends NamingFunction {
+    private readonly _prefixes: OrderedSet<string>;
+
+    constructor(prefixes: string[]) {
+        super();
+        this._prefixes = OrderedSet(prefixes);
+    }
+
     name(
         proposedName: string,
         forbiddenNames: Set<string>,
@@ -332,30 +339,38 @@ export class CountingNamingFunction extends NamingFunction {
             throw "Number of names can't be less than 1";
         }
 
-        const range = Range(1, numberOfNames + 1);
-        let underscores = "";
-        for (;;) {
-            let names: OrderedSet<string>;
-            if (numberOfNames === 1) {
-                names = OrderedSet([proposedName + underscores]);
-            } else {
-                names = range.map(i => proposedName + underscores + i).toOrderedSet();
-            }
-            if (names.some((n: string) => forbiddenNames.has(n))) {
-                underscores += "_";
-                continue;
-            }
-            return names;
+        if (numberOfNames === 1 && !forbiddenNames.has(proposedName)) {
+            return OrderedSet([proposedName]);
         }
+
+        const names = this._prefixes
+            .flatMap<any, string>((prefix: string): string[] => {
+                const name = prefix + proposedName;
+                if (forbiddenNames.has(name)) {
+                    return [];
+                }
+                return [name];
+            })
+            .toList();
+        if (names.size >= numberOfNames) {
+            return names.take(numberOfNames).toOrderedSet();
+        }
+
+        return Range(1)
+            .map((n: number) => proposedName + n.toString())
+            .filterNot((n: string) => forbiddenNames.has(n))
+            .take(numberOfNames)
+            .toOrderedSet();
     }
 
     equals(other: any): boolean {
-        return other instanceof CountingNamingFunction;
+        if (!(other instanceof PrefixNamingFunction)) {
+            return false;
+        }
+        return other._prefixes.equals(this._prefixes);
     }
 
     hashCode(): number {
-        return 31415;
+        return this._prefixes.hashCode();
     }
 }
-
-export const countingNamingFunction = new CountingNamingFunction();
