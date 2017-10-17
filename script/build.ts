@@ -79,10 +79,7 @@ function rewritePureScriptModuleRequiresInTypeScriptBuildOutputThenMoveTypeScrip
     .filter(f => f.endsWith(".d.ts") || f.endsWith(".js"));
 
   for (const source of sources) {
-    const dest = source.replace("src-ts", OUTDIR);
-    shell.mkdir("-p", path.dirname(dest));
-
-    mapFile(source, dest, content => {
+    mapFile(source, source, content => {
       const depth = source.split("/").length - 2;
       const rel = depth == 0 ? "." : path.join(_.repeat("..", depth));
 
@@ -103,8 +100,9 @@ function rewritePureScriptModuleRequiresInTypeScriptBuildOutputThenMoveTypeScrip
         });
     });
 
-    // We've moved the file, remove it to tidy up
-    shell.rm(source);
+    const dest = source.replace("src-ts", OUTDIR);
+    shell.mkdir("-p", path.dirname(dest));
+    shell.mv(source, dest);
   }
 }
 
