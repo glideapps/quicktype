@@ -83,17 +83,20 @@ function rewritePureScriptModuleRequiresInTypeScriptBuildOutputThenMoveTypeScrip
     shell.mkdir("-p", path.dirname(dest));
 
     mapFile(source, dest, content => {
+      const depth = source.split("/").length - 2;
+      const rel = depth == 0 ? "." : path.join(_.repeat("..", depth));
+
       return content
         .replace(/require\(\"(.+)\"\);/gm, (original, module) => {
           if (_.includes(modules, module)) {
-            return `require("./${module}")`;
+            return `require("${rel}/${module}")`;
           } else {
             return original;
           }
         })
         .replace(/from \"(.+)";/gm, (original, module) => {
           if (_.includes(modules, module)) {
-            return `from "./${module}"`;
+            return `from "${rel}/${module}"`;
           } else {
             return original;
           }
