@@ -1,4 +1,4 @@
-import { Maybe } from "./Data.Maybe";
+import { Maybe } from "./Data/Maybe";
 
 export interface BooleanValue {
   value0: boolean;
