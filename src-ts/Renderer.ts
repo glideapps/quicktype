@@ -32,8 +32,12 @@ export abstract class Renderer {
         this._lastNewline = nl;
     }
 
-    emitLine(line: Sourcelike): void {
-        this._emitted.push(line);
+    emitLine(...lineParts: Sourcelike[]): void {
+        if (lineParts.length === 1) {
+            this._emitted.push(lineParts[0]);
+        } else if (lineParts.length > 1) {
+            this._emitted.push(lineParts);
+        }
         this.emitNewline();
     }
 

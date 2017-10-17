@@ -246,7 +246,7 @@ class CSharpRenderer extends Renderer {
     emitBlock = (f: () => void, semicolon: boolean = false): void => {
         this.emitLine("{");
         this.indent(f);
-        this.emitLine(["}", semicolon ? ";" : ""]);
+        this.emitLine("}", semicolon ? ";" : "");
     };
 
     csType = (t: Type): Sourcelike => {
@@ -322,7 +322,7 @@ class CSharpRenderer extends Renderer {
     };
 
     emitClass = (declaration: Sourcelike, name: Sourcelike, emitter: () => void): void => {
-        this.emitLine(["public ", declaration, " ", name]);
+        this.emitLine("public ", declaration, " ", name);
         this.emitBlock(emitter);
     };
 
@@ -346,7 +346,7 @@ class CSharpRenderer extends Renderer {
                 } else if (this._dense) {
                     const indent = maxWidth - escapedName.length + 1;
                     const whitespace = " ".repeat(indent);
-                    this.emitLine([attribute, whitespace, property]);
+                    this.emitLine(attribute, whitespace, property);
                 } else {
                     this.emitLine(attribute);
                     this.emitLine(property);
@@ -365,7 +365,7 @@ class CSharpRenderer extends Renderer {
             nonNulls.forEach((t: Type) => {
                 const csType = this.nullableCSType(t);
                 const field = this.unionFieldName(t);
-                this.emitLine(["public ", csType, " ", field, ";"]);
+                this.emitLine("public ", csType, " ", field, ";");
             });
         });
     };
@@ -374,10 +374,10 @@ class CSharpRenderer extends Renderer {
         if (this._version === 5) {
             this.emitLine(declare);
             this.emitBlock(() => {
-                this.emitLine(["return ", define, ";"]);
+                this.emitLine("return ", define, ";");
             });
         } else {
-            this.emitLine([declare, " => ", define, ";"]);
+            this.emitLine(declare, " => ", define, ";");
         }
     }
 
@@ -404,7 +404,7 @@ class CSharpRenderer extends Renderer {
 
     emitUnionJSONPartial = (u: UnionType): void => {
         const tokenCase = (tokenType: string): void => {
-            this.emitLine(["case JsonToken.", tokenType, ":"]);
+            this.emitLine("case JsonToken.", tokenType, ":");
         };
 
         const emitNullDeserializer = (): void => {
@@ -413,12 +413,12 @@ class CSharpRenderer extends Renderer {
         };
 
         const emitDeserializeType = (t: Type): void => {
-            this.emitLine([
+            this.emitLine(
                 this.unionFieldName(t),
                 " = serializer.Deserialize<",
                 this.csType(t),
                 ">(reader);"
-            ]);
+            );
             this.emitLine("break;");
         };
 
@@ -452,10 +452,10 @@ class CSharpRenderer extends Renderer {
         const [hasNull, nonNulls] = removeNullFromUnion(u);
         const named = this._classAndUnionNameds.get(u);
         this.emitClass("partial struct", named, () => {
-            this.emitLine(["public ", named, "(JsonReader reader, JsonSerializer serializer)"]);
+            this.emitLine("public ", named, "(JsonReader reader, JsonSerializer serializer)");
             this.emitBlock(() => {
                 nonNulls.forEach((t: Type) => {
-                    this.emitLine([this.unionFieldName(t), " = null;"]);
+                    this.emitLine(this.unionFieldName(t), " = null;");
                 });
                 this.emitNewline();
                 this.emitLine("switch (reader.TokenType)");
@@ -468,7 +468,7 @@ class CSharpRenderer extends Renderer {
                     emitGenericDeserializer("array", "StartArray");
                     emitGenericDeserializer("class", "StartObject");
                     emitGenericDeserializer("map", "StartObject");
-                    this.emitLine(['default: throw new Exception("Cannot convert ', named, '");']);
+                    this.emitLine('default: throw new Exception("Cannot convert ', named, '");');
                 });
             });
             this.emitNewline();
@@ -476,9 +476,9 @@ class CSharpRenderer extends Renderer {
             this.emitBlock(() => {
                 nonNulls.forEach((t: Type) => {
                     const fieldName = this.unionFieldName(t);
-                    this.emitLine(["if (", fieldName, " != null)"]);
+                    this.emitLine("if (", fieldName, " != null)");
                     this.emitBlock(() => {
-                        this.emitLine(["serializer.Serialize(writer, ", fieldName, ");"]);
+                        this.emitLine("serializer.Serialize(writer, ", fieldName, ");");
                         this.emitLine("return;");
                     });
                 });
@@ -522,8 +522,8 @@ class CSharpRenderer extends Renderer {
         this.emitBlock(() => {
             // FIXME: call the constructor via reflection?
             nameds.forEach((n: Named) => {
-                this.emitLine(["if (t == typeof(", n, "))"]);
-                this.indent(() => this.emitLine(["return new ", n, "(reader, serializer);"]));
+                this.emitLine("if (t == typeof(", n, "))");
+                this.indent(() => this.emitLine("return new ", n, "(reader, serializer);"));
             });
             this.emitLine('throw new Exception("Unknown type");');
         });
@@ -534,9 +534,9 @@ class CSharpRenderer extends Renderer {
         this.emitBlock(() => {
             this.emitLine("var t = value.GetType();");
             nameds.forEach((n: Named) => {
-                this.emitLine(["if (t == typeof(", n, "))"]);
+                this.emitLine("if (t == typeof(", n, "))");
                 this.emitBlock(() => {
-                    this.emitLine(["((", n, ")value).WriteJson(writer, serializer);"]);
+                    this.emitLine("((", n, ")value).WriteJson(writer, serializer);");
                     this.emitLine("return;");
                 });
             });
@@ -569,9 +569,9 @@ class CSharpRenderer extends Renderer {
 
     protected emitSource(): void {
         const using = (ns: Sourcelike): void => {
-            this.emitLine(["using ", ns, ";"]);
+            this.emitLine("using ", ns, ";");
         };
-        this.emitLine(["namespace ", this._namespaceName]);
+        this.emitLine("namespace ", this._namespaceName);
         this.emitBlock(() => {
             for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
                 using(ns);
