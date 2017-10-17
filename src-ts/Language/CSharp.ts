@@ -78,7 +78,7 @@ class CSharpTargetLanguage extends TypeScriptTargetLanguage {
             ["5", 5]
         ]);
         const options = [namespaceOption, versionOption, denseOption, listOption, featuresOption];
-        super("new C#", ["newcs"], "ncs", "csharp", options.map(o => o.definition));
+        super("C#", ["cs", "csharp"], "cs", "csharp", options.map(o => o.definition));
         this._listOption = listOption;
         this._denseOption = denseOption;
         this._featuresOption = featuresOption;
