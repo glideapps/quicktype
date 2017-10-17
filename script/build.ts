@@ -80,6 +80,8 @@ function rewritePureScriptModuleRequiresInTypeScriptBuildOutputThenMoveTypeScrip
 
   for (const source of sources) {
     const dest = source.replace("src-ts", OUTDIR);
+    shell.mkdir("-p", path.dirname(dest));
+
     mapFile(source, dest, content => {
       return content
         .replace(/require\(\"(.+)\"\);/gm, (original, module) => {
