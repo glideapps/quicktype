@@ -13,15 +13,15 @@ import {
     nullableFromUnion,
     removeNullFromUnion,
     allClassesAndUnions
-} from "./Type";
-import { Source, Sourcelike, newline } from "./Source";
+} from "../Type";
+import { Source, Sourcelike, newline } from "../Source";
 import {
     legalizeCharacters,
     camelCase,
     startWithLetter,
     stringEscape,
     intercalate
-} from "./Support";
+} from "../Support";
 import {
     Namespace,
     Named,
@@ -30,11 +30,15 @@ import {
     NamingFunction,
     keywordNamespace,
     PrefixNamingFunction
-} from "./Naming";
+} from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
-import { Renderer, RenderResult } from "./Renderer";
-import { TypeScriptTargetLanguage } from "./TargetLanguage";
-import { BooleanRendererOption, StringRendererOption, EnumRendererOption } from "./RendererOptions";
+import { Renderer, RenderResult } from "../Renderer";
+import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import {
+    BooleanRendererOption,
+    StringRendererOption,
+    EnumRendererOption
+} from "../RendererOptions";
 
 const unicode = require("unicode-properties");
 
