@@ -24,7 +24,7 @@ const getUsage = require("command-line-usage");
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-const langs = targetLanguages.map(r => r.names[0]).join("|");
+const langs = targetLanguages.map(r => _.minBy(r.names, _.length)).join("|");
 const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
 
 const optionDefinitions: OptionDefinition[] = [
