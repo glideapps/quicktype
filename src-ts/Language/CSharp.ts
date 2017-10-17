@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, List, Map, OrderedSet } from "immutable";
+import { Set, List, Map, OrderedSet, Iterable } from "immutable";
 import {
     TopLevels,
     Type,
@@ -163,8 +163,6 @@ function isValueType(t: Type): boolean {
 class CSharpRenderer extends Renderer {
     private _globalNamespace: Namespace;
     private _topLevelNameds: Map<string, Named>;
-    private _classes: OrderedSet<ClassType>;
-    private _unions: OrderedSet<UnionType>;
     private _classAndUnionNameds: Map<NamedType, Named>;
     private _propertyNameds: Map<ClassType, Map<string, Named>>;
 
@@ -183,8 +181,7 @@ class CSharpRenderer extends Renderer {
     protected setUpNaming(): Namespace[] {
         this._globalNamespace = keywordNamespace("global", forbiddenNames);
         const { classes, unions } = allClassesAndUnions(this.topLevels);
-        this._classes = classes;
-        this._unions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toSet();
+        const namedUnions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toSet();
         this._classAndUnionNameds = Map();
         this._propertyNameds = Map();
         this._topLevelNameds = this.topLevels.map(this.namedFromTopLevel).toMap();
@@ -192,7 +189,7 @@ class CSharpRenderer extends Renderer {
             const named = this.addClassOrUnionNamed(c);
             this.addPropertyNameds(c, named);
         });
-        this._unions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
+        namedUnions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
         return [this._globalNamespace];
     }
 
@@ -504,8 +501,10 @@ class CSharpRenderer extends Renderer {
         });
     };
 
-    emitUnionConverterMembers = (): void => {
-        const nameds = this._unions.map((u: UnionType) => this._classAndUnionNameds.get(u)).toSet();
+    emitUnionConverterMembers = (unions: Iterable<any, UnionType>): void => {
+        const nameds = unions
+            .map((u: UnionType) => this._classAndUnionNameds.get(u))
+            .toOrderedSet();
         const canConvertExpr = intercalate(
             " || ",
             nameds.map((n: Named): Sourcelike => ["t == typeof(", n, ")"])
@@ -544,14 +543,14 @@ class CSharpRenderer extends Renderer {
         });
     };
 
-    emitConverterClass = (): void => {
-        const haveUnions = !this._unions.isEmpty();
+    emitConverterClass = (unions: Iterable<any, UnionType>): void => {
+        const haveUnions = !unions.isEmpty();
         // FIXME: Make Converter a Named
         let converterName: Sourcelike = ["Converter"];
         if (haveUnions) converterName = converterName.concat([": JsonConverter"]);
         this.emitClass("class", converterName, () => {
             if (haveUnions) {
-                this.emitUnionConverterMembers();
+                this.emitUnionConverterMembers(unions);
                 this.emitNewline();
             }
             this.emitLine(
@@ -567,10 +566,25 @@ class CSharpRenderer extends Renderer {
         });
     };
 
+    childrenOfType = (t: Type): OrderedSet<Type> => {
+        const names = this.names;
+        if (t instanceof ClassType) {
+            const propertyNameds = this._propertyNameds.get(t);
+            return t.properties
+                .sortBy((_, n: string): string => names.get(propertyNameds.get(n)))
+                .toOrderedSet();
+        }
+        return t.children.toOrderedSet();
+    };
+
     protected emitSource(): void {
+        const { classes, unions } = allClassesAndUnions(this.topLevels, this.childrenOfType);
+        const namedUnions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toOrderedSet();
+
         const using = (ns: Sourcelike): void => {
             this.emitLine("using ", ns, ";");
         };
+
         this.emitLine("namespace ", this._namespaceName);
         this.emitBlock(() => {
             for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
@@ -583,21 +597,21 @@ class CSharpRenderer extends Renderer {
                     using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
                 }
             }
-            this.forEachWithLeadingAndInterposedBlankLines(this._classes, this.emitClassDefinition);
-            this.forEachWithLeadingAndInterposedBlankLines(this._unions, this.emitUnionDefinition);
+            this.forEachWithLeadingAndInterposedBlankLines(classes, this.emitClassDefinition);
+            this.forEachWithLeadingAndInterposedBlankLines(namedUnions, this.emitUnionDefinition);
             if (this._needHelpers) {
                 this.emitNewline();
                 this.topLevels.forEach(this.emitFromJsonForTopLevel);
                 this.forEachWithLeadingAndInterposedBlankLines(
-                    this._unions,
+                    namedUnions,
                     this.emitUnionJSONPartial
                 );
                 this.emitNewline();
                 this.emitSerializeClass();
             }
-            if (this._needHelpers || (this._needAttributes && !this._unions.isEmpty())) {
+            if (this._needHelpers || (this._needAttributes && !namedUnions.isEmpty())) {
                 this.emitNewline();
-                this.emitConverterClass();
+                this.emitConverterClass(namedUnions);
             }
         });
     }

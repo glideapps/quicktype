@@ -21,11 +21,11 @@ export abstract class Type {
         return false;
     }
 
-    abstract get children(): Set<Type>;
+    abstract get children(): OrderedSet<Type>;
 
-    get directlyReachableNamedTypes(): Set<NamedType> {
-        if (this.isNamedType()) return Set([this]);
-        return setUnion(this.children.map((t: Type) => t.directlyReachableNamedTypes));
+    get directlyReachableNamedTypes(): OrderedSet<NamedType> {
+        if (this.isNamedType()) return OrderedSet([this]);
+        return orderedSetUnion(this.children.map((t: Type) => t.directlyReachableNamedTypes));
     }
 
     abstract equals(other: any): boolean;
@@ -39,8 +39,8 @@ export class PrimitiveType extends Type {
         super(kind);
     }
 
-    get children(): Set<Type> {
-        return Set();
+    get children(): OrderedSet<Type> {
+        return OrderedSet();
     }
 
     equals(other: any): boolean {
@@ -64,8 +64,8 @@ export class ArrayType extends Type {
         super("array");
     }
 
-    get children(): Set<Type> {
-        return Set([this.items]);
+    get children(): OrderedSet<Type> {
+        return OrderedSet([this.items]);
     }
 
     equals(other: any): boolean {
@@ -85,8 +85,8 @@ export class MapType extends Type {
         super("map");
     }
 
-    get children(): Set<Type> {
-        return Set([this.values]);
+    get children(): OrderedSet<Type> {
+        return OrderedSet([this.values]);
     }
 
     equals(other: any): boolean {
@@ -131,8 +131,8 @@ export class ClassType extends NamedType {
         return this._properties;
     }
 
-    get children(): Set<Type> {
-        return this.properties.toSet();
+    get children(): OrderedSet<Type> {
+        return this.properties.toOrderedSet();
     }
 
     equals(other: any): boolean {
@@ -160,8 +160,8 @@ export class UnionType extends NamedType {
         return this.members.find((t: Type) => t.kind === kind);
     };
 
-    get children(): Set<Type> {
-        return this.members.toSet();
+    get children(): OrderedSet<Type> {
+        return this.members;
     }
 
     equals(other: any): boolean {
@@ -188,9 +188,9 @@ export function nullableFromUnion(t: UnionType): Type | null {
     return nonNulls.first();
 }
 
-function setUnion<T>(sets: Iterable<any, Set<T>>): Set<T> {
+function orderedSetUnion<T>(sets: Iterable<any, OrderedSet<T>>): OrderedSet<T> {
     const setArray = sets.toArray();
-    if (setArray.length === 0) return Set();
+    if (setArray.length === 0) return OrderedSet();
     if (setArray.length === 1) return setArray[0];
     return setArray[0].union(...setArray.slice(1));
 }
@@ -200,7 +200,10 @@ export type ClassesAndUnions = {
     unions: OrderedSet<UnionType>;
 };
 
-export function allClassesAndUnions(graph: TopLevels): ClassesAndUnions {
+export function allClassesAndUnions(
+    graph: TopLevels,
+    childrenOfType?: (t: Type) => Iterable<any, Type>
+): ClassesAndUnions {
     let classes = OrderedSet<ClassType>();
     let unions = OrderedSet<UnionType>();
 
@@ -212,7 +215,8 @@ export function allClassesAndUnions(graph: TopLevels): ClassesAndUnions {
             if (unions.has(t)) return;
             unions = unions.add(t);
         }
-        t.children.forEach(addFromType);
+        const children = childrenOfType ? childrenOfType(t) : t.children;
+        children.forEach(addFromType);
     }
 
     graph.forEach(addFromType);

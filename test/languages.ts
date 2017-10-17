@@ -22,8 +22,7 @@ export const CSharpLanguage: Language = {
   runCommand(sample: string) {
     return `dotnet run "${sample}"`;
   },
-  // FIXME: Support this.
-  diffViaSchema: false,
+  diffViaSchema: true,
   allowMissingNull: false,
   output: "QuickType.cs",
   topLevel: "TopLevel",
