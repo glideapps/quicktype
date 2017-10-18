@@ -113,9 +113,18 @@ function makeDistributedCLIExecutable() {
 }
 
 function main() {
-  installPrereqs();
-  buildPureScript();
-  moveTypeScriptTypingsNextToPureScriptOutput();
+  const skipPrereqs = !!process.env.SKIP_INSTALL_PREREQUISITES;
+  const skipPureScript = !!process.env.SKIP_BUILD_PURESCRIPT;
+
+  if (!skipPrereqs) {
+    installPrereqs();
+  }
+
+  if (!skipPureScript) {
+    buildPureScript();
+    moveTypeScriptTypingsNextToPureScriptOutput();
+  }
+
   buildTypeScript();
   rewritePureScriptModuleRequiresInTypeScriptBuildOutputThenMoveTypeScriptBuildToDist();
   makeDistributedCLIExecutable();
