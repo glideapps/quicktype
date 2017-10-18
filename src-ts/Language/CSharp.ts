@@ -34,11 +34,7 @@ import {
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
 import { TypeScriptTargetLanguage } from "../TargetLanguage";
-import {
-    BooleanRendererOption,
-    StringRendererOption,
-    EnumRendererOption
-} from "../RendererOptions";
+import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
 
 const unicode = require("unicode-properties");
 
@@ -46,34 +42,34 @@ type Version = 5 | 6;
 type Features = { helpers: boolean; attributes: boolean };
 
 export default class CSharpTargetLanguage extends TypeScriptTargetLanguage {
-    private readonly _listOption: EnumRendererOption<boolean>;
-    private readonly _denseOption: EnumRendererOption<boolean>;
-    private readonly _featuresOption: EnumRendererOption<Features>;
-    private readonly _namespaceOption: StringRendererOption;
-    private readonly _versionOption: EnumRendererOption<Version>;
+    private readonly _listOption: EnumOption<boolean>;
+    private readonly _denseOption: EnumOption<boolean>;
+    private readonly _featuresOption: EnumOption<Features>;
+    private readonly _namespaceOption: StringOption;
+    private readonly _versionOption: EnumOption<Version>;
 
     constructor() {
-        const listOption = new EnumRendererOption("array-type", "Use T[] or List<T>", [
+        const listOption = new EnumOption("array-type", "Use T[] or List<T>", [
             ["array", false],
             ["list", true]
         ]);
-        const denseOption = new EnumRendererOption("density", "Property density", [
+        const denseOption = new EnumOption("density", "Property density", [
             ["normal", false],
             ["dense", true]
         ]);
-        const featuresOption = new EnumRendererOption("features", "Output features", [
+        const featuresOption = new EnumOption("features", "Output features", [
             ["complete", { helpers: true, attributes: true }],
             ["attributes-only", { helpers: false, attributes: true }],
             ["just-types", { helpers: false, attributes: false }]
         ]);
         // FIXME: Do this via a configurable named eventually.
-        const namespaceOption = new StringRendererOption(
+        const namespaceOption = new StringOption(
             "namespace",
             "Generated namespace",
             "NAME",
             "QuickType"
         );
-        const versionOption = new EnumRendererOption<Version>("csharp-version", "C# version", [
+        const versionOption = new EnumOption<Version>("csharp-version", "C# version", [
             ["6", 6],
             ["5", 5]
         ]);
