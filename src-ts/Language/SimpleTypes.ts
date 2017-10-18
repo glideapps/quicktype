@@ -29,7 +29,7 @@ import {
     intercalate
 } from "../Support";
 
-import { Namespace, Named, SimpleNamed, FixedNamed, keywordNamespace } from "../Naming";
+import { Namespace, Name, SimpleName, FixedName, keywordNamespace } from "../Naming";
 
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
@@ -66,9 +66,9 @@ function simpleNameStyle(original: string, uppercase: boolean): string {
 
 class SimpleTypesRenderer extends Renderer {
     namespace: Namespace;
-    topLevelNames: Map<string, Named>;
-    classAndUnionNames: Map<NamedType, Named>;
-    propertyNames: Map<ClassType, Map<string, Named>>;
+    topLevelNames: Map<string, Name>;
+    classAndUnionNames: Map<NamedType, Name>;
+    propertyNames: Map<ClassType, Map<string, Name>>;
 
     protected setUpNaming(): Namespace[] {
         this.namespace = keywordNamespace("global", forbiddenNames);
@@ -90,9 +90,9 @@ class SimpleTypesRenderer extends Renderer {
         return [this.namespace];
     }
 
-    namedFromTopLevel = (type: Type, name: string): FixedNamed => {
+    namedFromTopLevel = (type: Type, name: string): FixedName => {
         // FIXME: leave the name as-is?
-        const named = new FixedNamed(this.namespace, simpleNameStyle(name, true));
+        const named = new FixedName(this.namespace, simpleNameStyle(name, true));
         const definedTypes = type.directlyReachableNamedTypes;
         if (definedTypes.size > 1) {
             throw "Cannot have more than one defined type per top-level";
@@ -110,20 +110,20 @@ class SimpleTypesRenderer extends Renderer {
         return named;
     };
 
-    addClassOrUnionNamed = (type: NamedType): Named => {
+    addClassOrUnionNamed = (type: NamedType): Name => {
         if (this.classAndUnionNames.has(type)) {
             return this.classAndUnionNames.get(type);
         }
         const name = type.names.combined;
-        const named = new SimpleNamed(this.namespace, name, simpleNameStyle(name, true));
+        const named = new SimpleName(this.namespace, name, simpleNameStyle(name, true));
         this.classAndUnionNames = this.classAndUnionNames.set(type, named);
         return named;
     };
 
-    addPropertyNameds = (c: ClassType, classNamed: Named): void => {
+    addPropertyNameds = (c: ClassType, classNamed: Name): void => {
         const ns = new Namespace(c.names.combined, this.namespace, Set(), Set([classNamed]));
         const nameds = c.properties
-            .map((t: Type, name: string) => new SimpleNamed(ns, name, simpleNameStyle(name, false)))
+            .map((t: Type, name: string) => new SimpleName(ns, name, simpleNameStyle(name, false)))
             .toMap();
         this.propertyNames = this.propertyNames.set(c, nameds);
     };
