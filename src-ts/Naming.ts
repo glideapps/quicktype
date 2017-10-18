@@ -80,7 +80,7 @@ export class Namespace {
 // NamingFunction is a class so that we can compare naming functions and put
 // them into immutable collections.
 
-export abstract class NamingFunction {
+export abstract class Namer {
     abstract name(
         proposedName: string,
         forbiddenNames: Set<string>,
@@ -91,7 +91,7 @@ export abstract class NamingFunction {
     abstract hashCode(): number;
 }
 
-export class PrefixNamingFunction extends NamingFunction {
+export class PrefixNamer extends Namer {
     private readonly _prefixes: OrderedSet<string>;
 
     constructor(prefixes: string[]) {
@@ -133,7 +133,7 @@ export class PrefixNamingFunction extends NamingFunction {
     }
 
     equals(other: any): boolean {
-        if (!(other instanceof PrefixNamingFunction)) {
+        if (!(other instanceof PrefixNamer)) {
             return false;
         }
         return other._prefixes.equals(this._prefixes);
@@ -144,7 +144,7 @@ export class PrefixNamingFunction extends NamingFunction {
     }
 }
 
-export class IncrementingNamingFunction extends NamingFunction {
+export class IncrementingNamer extends Namer {
     name(
         proposedName: string,
         forbiddenNames: Set<string>,
@@ -166,7 +166,7 @@ export class IncrementingNamingFunction extends NamingFunction {
     }
 
     equals(other: any): boolean {
-        return other instanceof PrefixNamingFunction;
+        return other instanceof PrefixNamer;
     }
 
     hashCode(): number {
@@ -178,9 +178,9 @@ export abstract class Name {
     readonly namespace: Namespace;
     readonly name: string;
     // If a Named is fixed, this is null.
-    readonly namingFunction: NamingFunction | null;
+    readonly namingFunction: Namer | null;
 
-    constructor(namespace: Namespace, name: string, namingFunction: NamingFunction | null) {
+    constructor(namespace: Namespace, name: string, namingFunction: Namer | null) {
         this.namespace = namespace;
         this.name = name;
         this.namingFunction = namingFunction;
@@ -220,7 +220,7 @@ export class FixedName extends Name {
 }
 
 export class SimpleName extends Name {
-    private static defaultNamingFunction = new IncrementingNamingFunction();
+    private static defaultNamingFunction = new IncrementingNamer();
 
     // It makes sense for this to be different from the name.  For example, the
     // name for the top-level should be something like "TopLevel", but its
@@ -230,12 +230,7 @@ export class SimpleName extends Name {
     // still check for collisions and just error if there are any).
     private readonly _proposed: string;
 
-    constructor(
-        namespace: Namespace,
-        name: string,
-        proposed: string,
-        namingFunction?: NamingFunction
-    ) {
+    constructor(namespace: Namespace, name: string, proposed: string, namingFunction?: Namer) {
         super(namespace, name, namingFunction || SimpleName.defaultNamingFunction);
         this._proposed = proposed;
     }
@@ -262,7 +257,7 @@ export class DependencyName extends Name {
     constructor(
         namespace: Namespace,
         name: string,
-        namingFunction: NamingFunction,
+        namingFunction: Namer,
         dependencies: List<Name>,
         proposeName: (names: List<string>) => string
     ) {
@@ -383,7 +378,7 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
         // It would be nice if we had tuples, then we wouldn't have to do this in
         // two steps.
         const byNamingFunction = readyNames.groupBy((n: Name) => n.namingFunction);
-        byNamingFunction.forEach((nameds: Iterable<Name, Name>, namingFunction: NamingFunction) => {
+        byNamingFunction.forEach((nameds: Iterable<Name, Name>, namingFunction: Namer) => {
             const byProposed = nameds.groupBy((n: Name) => n.proposeName(ctx.names));
             byProposed.forEach((nameds: Iterable<Name, Name>, proposed: string) => {
                 // 3. Use each set's naming function to name its members.

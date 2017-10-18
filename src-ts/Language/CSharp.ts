@@ -27,9 +27,9 @@ import {
     Name,
     SimpleName,
     FixedName,
-    NamingFunction,
+    Namer,
     keywordNamespace,
-    PrefixNamingFunction
+    PrefixNamer
 } from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
@@ -103,7 +103,7 @@ export default class CSharpTargetLanguage extends TypeScriptTargetLanguage {
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 
-export const namingFunction = new PrefixNamingFunction([
+export const namingFunction = new PrefixNamer([
     "Purple",
     "Fluffy",
     "Tentacled",
