@@ -8,5 +8,4 @@
 
 SKIP_INSTALL_PREREQUISITES=true \
     SKIP_BUILD_PURESCRIPT=true \
-    NOTE="slightly quicker by skipping steps" \
     script/quicktype $@
