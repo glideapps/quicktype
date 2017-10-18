@@ -374,3 +374,33 @@ export class PrefixNamingFunction extends NamingFunction {
         return this._prefixes.hashCode();
     }
 }
+
+export class IncrementingNamingFunction extends NamingFunction {
+    name(
+        proposedName: string,
+        forbiddenNames: Set<string>,
+        numberOfNames: number
+    ): OrderedSet<string> {
+        if (numberOfNames < 1) {
+            throw "Number of names can't be less than 1";
+        }
+
+        if (numberOfNames === 1 && !forbiddenNames.has(proposedName)) {
+            return OrderedSet([proposedName]);
+        }
+
+        return Range(1)
+            .map((n: number) => proposedName + n.toString())
+            .filterNot((n: string) => forbiddenNames.has(n))
+            .take(numberOfNames)
+            .toOrderedSet();
+    }
+
+    equals(other: any): boolean {
+        return other instanceof PrefixNamingFunction;
+    }
+
+    hashCode(): number {
+        return 0;
+    }
+}
