@@ -39,7 +39,7 @@ const unicode = require("unicode-properties");
 
 export default class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage {
     constructor() {
-        super("Simple Types", ["types"], "txt", "groovy", []);
+        super("Simple Types", ["types"], "txt", []);
     }
 
     renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {

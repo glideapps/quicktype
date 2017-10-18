@@ -19,7 +19,6 @@ export abstract class TargetLanguage {
         readonly displayName: string,
         readonly names: string[],
         readonly extension: string,
-        readonly aceMode: string,
         readonly optionDefinitions: OptionDefinition[]
     ) {}
 
@@ -56,13 +55,7 @@ function optionDefinitionsForRenderer(renderer: Renderer): OptionDefinition[] {
 export class PureScriptTargetLanguage extends TargetLanguage {
     constructor(renderer: Renderer) {
         const optionDefinitions = optionDefinitionsForRenderer(renderer);
-        super(
-            renderer.displayName,
-            renderer.names,
-            renderer.extension,
-            renderer.aceMode,
-            optionDefinitions
-        );
+        super(renderer.displayName, renderer.names, renderer.extension, optionDefinitions);
     }
 
     transformAndRenderConfig(config: Config): string {
