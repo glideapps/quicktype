@@ -29,15 +29,7 @@ import {
     intercalate
 } from "../Support";
 
-import {
-    Namespace,
-    Named,
-    SimpleNamed,
-    FixedNamed,
-    NamingFunction,
-    keywordNamespace,
-    IncrementingNamingFunction
-} from "../Naming";
+import { Namespace, Named, SimpleNamed, FixedNamed, keywordNamespace } from "../Naming";
 
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
@@ -56,8 +48,6 @@ export default class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage 
 }
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
-
-export const namingFunction = new IncrementingNamingFunction();
 
 function isStartCharacter(c: string): boolean {
     return unicode.isAlphabetic(c.charCodeAt(0)) || c == "_";
@@ -125,12 +115,7 @@ class SimpleTypesRenderer extends Renderer {
             return this.classAndUnionNames.get(type);
         }
         const name = type.names.combined;
-        const named = new SimpleNamed(
-            this.namespace,
-            name,
-            namingFunction,
-            simpleNameStyle(name, true)
-        );
+        const named = new SimpleNamed(this.namespace, name, simpleNameStyle(name, true));
         this.classAndUnionNames = this.classAndUnionNames.set(type, named);
         return named;
     };
@@ -138,10 +123,7 @@ class SimpleTypesRenderer extends Renderer {
     addPropertyNameds = (c: ClassType, classNamed: Named): void => {
         const ns = new Namespace(c.names.combined, this.namespace, Set(), Set([classNamed]));
         const nameds = c.properties
-            .map(
-                (t: Type, name: string) =>
-                    new SimpleNamed(ns, name, namingFunction, simpleNameStyle(name, false))
-            )
+            .map((t: Type, name: string) => new SimpleNamed(ns, name, simpleNameStyle(name, false)))
             .toMap();
         this.propertyNames = this.propertyNames.set(c, nameds);
     };

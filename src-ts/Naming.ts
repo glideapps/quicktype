@@ -91,6 +91,89 @@ export abstract class NamingFunction {
     abstract hashCode(): number;
 }
 
+export class PrefixNamingFunction extends NamingFunction {
+    private readonly _prefixes: OrderedSet<string>;
+
+    constructor(prefixes: string[]) {
+        super();
+        this._prefixes = OrderedSet(prefixes);
+    }
+
+    name(
+        proposedName: string,
+        forbiddenNames: Set<string>,
+        numberOfNames: number
+    ): OrderedSet<string> {
+        if (numberOfNames < 1) {
+            throw "Number of names can't be less than 1";
+        }
+
+        if (numberOfNames === 1 && !forbiddenNames.has(proposedName)) {
+            return OrderedSet([proposedName]);
+        }
+
+        const names = this._prefixes
+            .flatMap<any, string>((prefix: string): string[] => {
+                const name = prefix + proposedName;
+                if (forbiddenNames.has(name)) {
+                    return [];
+                }
+                return [name];
+            })
+            .toList();
+        if (names.size >= numberOfNames) {
+            return names.take(numberOfNames).toOrderedSet();
+        }
+
+        return Range(1)
+            .map((n: number) => proposedName + n.toString())
+            .filterNot((n: string) => forbiddenNames.has(n))
+            .take(numberOfNames)
+            .toOrderedSet();
+    }
+
+    equals(other: any): boolean {
+        if (!(other instanceof PrefixNamingFunction)) {
+            return false;
+        }
+        return other._prefixes.equals(this._prefixes);
+    }
+
+    hashCode(): number {
+        return this._prefixes.hashCode();
+    }
+}
+
+export class IncrementingNamingFunction extends NamingFunction {
+    name(
+        proposedName: string,
+        forbiddenNames: Set<string>,
+        numberOfNames: number
+    ): OrderedSet<string> {
+        if (numberOfNames < 1) {
+            throw "Number of names can't be less than 1";
+        }
+
+        if (numberOfNames === 1 && !forbiddenNames.has(proposedName)) {
+            return OrderedSet([proposedName]);
+        }
+
+        return Range(1)
+            .map((n: number) => proposedName + n.toString())
+            .filterNot((n: string) => forbiddenNames.has(n))
+            .take(numberOfNames)
+            .toOrderedSet();
+    }
+
+    equals(other: any): boolean {
+        return other instanceof PrefixNamingFunction;
+    }
+
+    hashCode(): number {
+        return 0;
+    }
+}
+
 export abstract class Named {
     readonly namespace: Namespace;
     readonly name: string;
@@ -137,6 +220,8 @@ export class FixedNamed extends Named {
 }
 
 export class SimpleNamed extends Named {
+    private static defaultNamingFunction = new IncrementingNamingFunction();
+
     // It makes sense for this to be different from the name.  For example, the
     // name for the top-level should be something like "TopLevel", but its
     // preferred name could be "QuickType" or "Pokedex".  Also, once we allow
@@ -148,10 +233,10 @@ export class SimpleNamed extends Named {
     constructor(
         namespace: Namespace,
         name: string,
-        namingFunction: NamingFunction,
-        proposed: string
+        proposed: string,
+        namingFunction?: NamingFunction
     ) {
-        super(namespace, name, namingFunction);
+        super(namespace, name, namingFunction || SimpleNamed.defaultNamingFunction);
         this._proposed = proposed;
     }
 
@@ -319,88 +404,5 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Named, s
                 });
             }
         );
-    }
-}
-
-export class PrefixNamingFunction extends NamingFunction {
-    private readonly _prefixes: OrderedSet<string>;
-
-    constructor(prefixes: string[]) {
-        super();
-        this._prefixes = OrderedSet(prefixes);
-    }
-
-    name(
-        proposedName: string,
-        forbiddenNames: Set<string>,
-        numberOfNames: number
-    ): OrderedSet<string> {
-        if (numberOfNames < 1) {
-            throw "Number of names can't be less than 1";
-        }
-
-        if (numberOfNames === 1 && !forbiddenNames.has(proposedName)) {
-            return OrderedSet([proposedName]);
-        }
-
-        const names = this._prefixes
-            .flatMap<any, string>((prefix: string): string[] => {
-                const name = prefix + proposedName;
-                if (forbiddenNames.has(name)) {
-                    return [];
-                }
-                return [name];
-            })
-            .toList();
-        if (names.size >= numberOfNames) {
-            return names.take(numberOfNames).toOrderedSet();
-        }
-
-        return Range(1)
-            .map((n: number) => proposedName + n.toString())
-            .filterNot((n: string) => forbiddenNames.has(n))
-            .take(numberOfNames)
-            .toOrderedSet();
-    }
-
-    equals(other: any): boolean {
-        if (!(other instanceof PrefixNamingFunction)) {
-            return false;
-        }
-        return other._prefixes.equals(this._prefixes);
-    }
-
-    hashCode(): number {
-        return this._prefixes.hashCode();
-    }
-}
-
-export class IncrementingNamingFunction extends NamingFunction {
-    name(
-        proposedName: string,
-        forbiddenNames: Set<string>,
-        numberOfNames: number
-    ): OrderedSet<string> {
-        if (numberOfNames < 1) {
-            throw "Number of names can't be less than 1";
-        }
-
-        if (numberOfNames === 1 && !forbiddenNames.has(proposedName)) {
-            return OrderedSet([proposedName]);
-        }
-
-        return Range(1)
-            .map((n: number) => proposedName + n.toString())
-            .filterNot((n: string) => forbiddenNames.has(n))
-            .take(numberOfNames)
-            .toOrderedSet();
-    }
-
-    equals(other: any): boolean {
-        return other instanceof PrefixNamingFunction;
-    }
-
-    hashCode(): number {
-        return 0;
     }
 }

@@ -221,8 +221,8 @@ class CSharpRenderer extends Renderer {
         const named = new SimpleNamed(
             this._globalNamespace,
             name,
-            namingFunction,
-            csNameStyle(name)
+            csNameStyle(name),
+            namingFunction
         );
         this._classAndUnionNameds = this._classAndUnionNameds.set(type, named);
         return named;
@@ -232,7 +232,7 @@ class CSharpRenderer extends Renderer {
         const ns = new Namespace(c.names.combined, this._globalNamespace, Set(), Set([classNamed]));
         const nameds = c.properties
             .map((t: Type, name: string) => {
-                return new SimpleNamed(ns, name, namingFunction, csNameStyle(name));
+                return new SimpleNamed(ns, name, csNameStyle(name), namingFunction);
             })
             .toMap();
         this._propertyNameds = this._propertyNameds.set(c, nameds);
