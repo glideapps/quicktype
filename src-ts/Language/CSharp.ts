@@ -45,7 +45,7 @@ const unicode = require("unicode-properties");
 type Version = 5 | 6;
 type Features = { helpers: boolean; attributes: boolean };
 
-class CSharpTargetLanguage extends TypeScriptTargetLanguage {
+export default class CSharpTargetLanguage extends TypeScriptTargetLanguage {
     private readonly _listOption: EnumRendererOption<boolean>;
     private readonly _denseOption: EnumRendererOption<boolean>;
     private readonly _featuresOption: EnumRendererOption<Features>;
@@ -100,8 +100,6 @@ class CSharpTargetLanguage extends TypeScriptTargetLanguage {
         return renderer.render();
     }
 }
-
-export const cSharpTargetLanguage: TypeScriptTargetLanguage = new CSharpTargetLanguage();
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 

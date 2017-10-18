@@ -45,7 +45,7 @@ import { TargetLanguage, TypeScriptTargetLanguage } from "../TargetLanguage";
 
 const unicode = require("unicode-properties");
 
-class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage {
+export default class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage {
     constructor() {
         super("Simple Types", ["types"], "txt", "groovy", []);
     }
@@ -54,8 +54,6 @@ class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage {
         return new SimpleTypesRenderer(topLevels).render();
     }
 }
-
-export default new SimpleTypesTargetLanguage() as TargetLanguage;
 
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 
