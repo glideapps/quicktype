@@ -85,8 +85,8 @@ export abstract class Namer {
     abstract name(
         proposedName: string,
         forbiddenNames: Set<string>,
-        numberOfNames: number
-    ): OrderedSet<string>;
+        namesToAssign: Iterable<any, Name>
+    ): Map<Name, string>;
 
     abstract equals(other: any): boolean;
     abstract hashCode(): number;
@@ -103,34 +103,43 @@ export class PrefixNamer extends Namer {
     name(
         proposedName: string,
         forbiddenNames: Set<string>,
-        numberOfNames: number
-    ): OrderedSet<string> {
-        if (numberOfNames < 1) {
+        namesToAssign: Iterable<any, Name>
+    ): Map<Name, string> {
+        if (namesToAssign.isEmpty()) {
             throw "Number of names can't be less than 1";
         }
 
-        if (numberOfNames === 1 && !forbiddenNames.has(proposedName)) {
-            return OrderedSet([proposedName]);
+        if (namesToAssign.size === 1) {
+            const assignedForSingle = namesToAssign
+                .first()
+                .nameAssignments(forbiddenNames, proposedName);
+            if (assignedForSingle) {
+                return assignedForSingle;
+            }
         }
 
-        const names = this._prefixes
-            .flatMap<any, string>((prefix: string): string[] => {
-                const name = prefix + proposedName;
-                if (forbiddenNames.has(name)) {
-                    return [];
-                }
-                return [name];
-            })
-            .toList();
-        if (names.size >= numberOfNames) {
-            return names.take(numberOfNames).toOrderedSet();
+        let allAssignedNames = Map<Name, string>();
+
+        let prefixes = this._prefixes as Iterable<any, string>;
+        let suffixNumber = 1;
+        while (!namesToAssign.isEmpty()) {
+            const name = namesToAssign.first();
+            let nameToTry: string;
+            if (!prefixes.isEmpty()) {
+                nameToTry = prefixes.first() + proposedName;
+                prefixes = prefixes.rest();
+            } else {
+                nameToTry = proposedName + suffixNumber.toString();
+                suffixNumber++;
+            }
+            const assigned = name.nameAssignments(forbiddenNames, nameToTry);
+            if (assigned === null) continue;
+            allAssignedNames = allAssignedNames.merge(assigned);
+            forbiddenNames = forbiddenNames.union(allAssignedNames);
+            namesToAssign = namesToAssign.rest();
         }
 
-        return Range(1)
-            .map((n: number) => proposedName + n.toString())
-            .filterNot((n: string) => forbiddenNames.has(n))
-            .take(numberOfNames)
-            .toOrderedSet();
+        return allAssignedNames;
     }
 
     equals(other: any): boolean {
@@ -145,37 +154,9 @@ export class PrefixNamer extends Namer {
     }
 }
 
-export class IncrementingNamer extends Namer {
-    name(
-        proposedName: string,
-        forbiddenNames: Set<string>,
-        numberOfNames: number
-    ): OrderedSet<string> {
-        if (numberOfNames < 1) {
-            throw "Number of names can't be less than 1";
-        }
-
-        if (numberOfNames === 1 && !forbiddenNames.has(proposedName)) {
-            return OrderedSet([proposedName]);
-        }
-
-        return Range(1)
-            .map((n: number) => proposedName + n.toString())
-            .filterNot((n: string) => forbiddenNames.has(n))
-            .take(numberOfNames)
-            .toOrderedSet();
-    }
-
-    equals(other: any): boolean {
-        return other instanceof IncrementingNamer;
-    }
-
-    hashCode(): number {
-        return 0;
-    }
-}
-
 export abstract class Name {
+    private _associates = Set<AssociatedName>();
+
     // If a Named is fixed, the namingFunction is null.
     constructor(readonly namingFunction: Namer | null) {}
 
@@ -187,6 +168,10 @@ export abstract class Name {
         return 0;
     }
 
+    addAssociate(associate: AssociatedName): void {
+        this._associates = this._associates.add(associate);
+    }
+
     abstract get dependencies(): List<Name>;
 
     isFixed(): this is FixedName {
@@ -194,6 +179,22 @@ export abstract class Name {
     }
 
     abstract proposeName(names: Map<Name, string>): string;
+
+    nameAssignments(forbiddenNames: Set<string>, assignedName: string): Map<Name, string> | null {
+        if (forbiddenNames.has(assignedName)) return null;
+        let assignments = Map<Name, string>().set(this, assignedName);
+        let success = true;
+        this._associates.forEach((an: AssociatedName) => {
+            const associatedAssignedName = an.getName(assignedName);
+            if (forbiddenNames.has(associatedAssignedName)) {
+                success = false;
+                return false;
+            }
+            assignments = assignments.set(an, associatedAssignedName);
+        });
+        if (!success) return null;
+        return assignments;
+    }
 }
 
 // FIXME: FixedNameds should optionally be user-configurable
@@ -216,7 +217,7 @@ export class FixedName extends Name {
 }
 
 export class SimpleName extends Name {
-    private static defaultNamingFunction = new IncrementingNamer();
+    private static defaultNamingFunction = new PrefixNamer([]);
 
     constructor(private readonly _proposed: string, namingFunction?: Namer) {
         super(namingFunction || SimpleName.defaultNamingFunction);
@@ -226,12 +227,29 @@ export class SimpleName extends Name {
         return List();
     }
 
-    proposeName(names: Map<Name, string>): string {
+    proposeName(names?: Map<Name, string>): string {
         return this._proposed;
     }
 
     hashCode(): number {
         return (super.hashCode() + stringHash(this._proposed)) | 0;
+    }
+}
+
+export class AssociatedName extends Name {
+    constructor(
+        private readonly _sponsor: Name,
+        readonly getName: (sponsorName: string) => string
+    ) {
+        super(null);
+    }
+
+    get dependencies(): List<Name> {
+        return List([this._sponsor]);
+    }
+
+    proposeName(names?: Map<Name, string>): string {
+        throw "AssociatedName must be assigned via its sponsor";
     }
 }
 
@@ -365,24 +383,20 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
         // It would be nice if we had tuples, then we wouldn't have to do this in
         // two steps.
         const byNamingFunction = readyNames.groupBy((n: Name) => n.namingFunction);
-        byNamingFunction.forEach((nameds: Iterable<Name, Name>, namingFunction: Namer) => {
-            const byProposed = nameds.groupBy((n: Name) => n.proposeName(ctx.names));
-            byProposed.forEach((nameds: Iterable<Name, Name>, proposed: string) => {
-                // 3. Use each set's naming function to name its members.
+        byNamingFunction.forEach(
+            (namedsForNamingFunction: Iterable<any, Name>, namingFunction: Namer) => {
+                const byProposed = namedsForNamingFunction.groupBy((n: Name) =>
+                    n.proposeName(ctx.names)
+                );
+                byProposed.forEach((nameds: Iterable<any, Name>, proposed: string) => {
+                    // 3. Use each set's naming function to name its members.
 
-                const numNames = nameds.size;
-                const names = namingFunction.name(proposed, forbiddenNames, numNames);
-                const namedsArray = nameds.toArray();
-                const namesArray = names.toArray();
-                if (namesArray.length !== numNames) {
-                    throw "Naming function returned wrong number of names";
-                }
-                for (let i = 0; i < numNames; i++) {
-                    const named = namedsArray[i];
-                    const name = namesArray[i];
-                    ctx.assign(named, readyNamespace, name);
-                }
-            });
-        });
+                    const names = namingFunction.name(proposed, forbiddenNames, nameds);
+                    names.forEach((assigned: string, name: Name) =>
+                        ctx.assign(name, readyNamespace, assigned)
+                    );
+                });
+            }
+        );
     }
 }
