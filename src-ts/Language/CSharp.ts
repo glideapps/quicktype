@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, List, Map, OrderedSet, Iterable } from "immutable";
+import { List, Map, Iterable } from "immutable";
 import {
     TopLevels,
     Type,
@@ -11,10 +11,9 @@ import {
     NamedType,
     ClassType,
     nullableFromUnion,
-    removeNullFromUnion,
-    allClassesAndUnions
+    removeNullFromUnion
 } from "../Type";
-import { Source, Sourcelike, newline, annotated } from "../Source";
+import { Sourcelike, annotated } from "../Source";
 import {
     legalizeCharacters,
     camelCase,
@@ -22,15 +21,7 @@ import {
     stringEscape,
     intercalate
 } from "../Support";
-import {
-    Namespace,
-    Name,
-    SimpleName,
-    FixedName,
-    Namer,
-    keywordNamespace,
-    funPrefixNamer
-} from "../Naming";
+import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -233,13 +224,13 @@ class CSharpRenderer extends ConvenienceRenderer {
                 return [itemsType, "[]"];
             }
         } else if (t instanceof ClassType) {
-            return this._classAndUnionNames.get(t);
+            return this.nameForNamedType(t);
         } else if (t instanceof MapType) {
             return ["Dictionary<string, ", this.csType(t.values), ">"];
         } else if (t instanceof UnionType) {
             const nonNull = nullableFromUnion(t);
             if (nonNull) return this.nullableCSType(nonNull);
-            return this._classAndUnionNames.get(t);
+            return this.nameForNamedType(t);
         }
         throw "Unknown type";
     };
@@ -263,7 +254,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         } else if (t instanceof ArrayType) {
             return this.typeNameForUnionMember(t.items) + "_array";
         } else if (t instanceof ClassType) {
-            return this.names.get(this._classAndUnionNames.get(t));
+            return this.names.get(this.nameForNamedType(t));
         } else if (t instanceof MapType) {
             return this.typeNameForUnionMember(t.values), "_map";
         } else if (t instanceof UnionType) {
@@ -290,10 +281,13 @@ class CSharpRenderer extends ConvenienceRenderer {
         return this._needHelpers ? "partial " : "";
     }
 
-    emitClassDefinition = (c: ClassType): void => {
+    emitClassDefinition = (
+        c: ClassType,
+        className: Name,
+        propertyNames: Map<string, Name>
+    ): void => {
         const jsonProperty = this._dense ? denseJsonPropertyName : "JsonProperty";
-        const propertyNames = this._propertyNames.get(c);
-        this.emitClass([this.partialString, "class"], this._classAndUnionNames.get(c), () => {
+        this.emitClass([this.partialString, "class"], className, () => {
             const maxWidth = c.properties.map((_, name: string) => stringEscape(name).length).max();
             const withBlankLines = this._needAttributes && !this._dense;
             this.forEach(c.properties, withBlankLines, false, (t: Type, name: string) => {
@@ -319,9 +313,9 @@ class CSharpRenderer extends ConvenienceRenderer {
         return csNameStyle(this.typeNameForUnionMember(t));
     };
 
-    emitUnionDefinition = (c: UnionType): void => {
+    emitUnionDefinition = (c: UnionType, unionName: Name): void => {
         const [_, nonNulls] = removeNullFromUnion(c);
-        this.emitClass([this.partialString, "struct"], this._classAndUnionNames.get(c), () => {
+        this.emitClass([this.partialString, "struct"], unionName, () => {
             nonNulls.forEach((t: Type) => {
                 const csType = this.nullableCSType(t);
                 const field = this.unionFieldName(t);
@@ -341,7 +335,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         }
     }
 
-    emitFromJsonForTopLevel = (t: Type, name: string): void => {
+    emitFromJsonForTopLevel = (t: Type, name: Name): void => {
         let partial: string;
         let typeKind: string;
         const definedTypes = t.directlyReachableNamedTypes;
@@ -353,7 +347,7 @@ class CSharpRenderer extends ConvenienceRenderer {
             typeKind = definedTypes.first() instanceof ClassType ? "class" : "struct";
         }
         const csType = this.csType(t);
-        this.emitClass([partial, typeKind], this._topLevelNames.get(name), () => {
+        this.emitClass([partial, typeKind], name, () => {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
@@ -362,7 +356,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         });
     };
 
-    emitUnionJSONPartial = (u: UnionType): void => {
+    emitUnionJSONPartial = (u: UnionType, unionName: Name): void => {
         const tokenCase = (tokenType: string): void => {
             this.emitLine("case JsonToken.", tokenType, ":");
         };
@@ -410,9 +404,8 @@ class CSharpRenderer extends ConvenienceRenderer {
         };
 
         const [hasNull, nonNulls] = removeNullFromUnion(u);
-        const named = this._classAndUnionNames.get(u);
-        this.emitClass("partial struct", named, () => {
-            this.emitLine("public ", named, "(JsonReader reader, JsonSerializer serializer)");
+        this.emitClass("partial struct", unionName, () => {
+            this.emitLine("public ", unionName, "(JsonReader reader, JsonSerializer serializer)");
             this.emitBlock(() => {
                 nonNulls.forEach((t: Type) => {
                     this.emitLine(this.unionFieldName(t), " = null;");
@@ -428,7 +421,11 @@ class CSharpRenderer extends ConvenienceRenderer {
                     emitGenericDeserializer("array", "StartArray");
                     emitGenericDeserializer("class", "StartObject");
                     emitGenericDeserializer("map", "StartObject");
-                    this.emitLine('default: throw new Exception("Cannot convert ', named, '");');
+                    this.emitLine(
+                        'default: throw new Exception("Cannot convert ',
+                        unionName,
+                        '");'
+                    );
                 });
             });
             this.emitNewline();
@@ -465,7 +462,7 @@ class CSharpRenderer extends ConvenienceRenderer {
     };
 
     emitUnionConverterMembers = (unions: Iterable<any, UnionType>): void => {
-        const names = unions.map((u: UnionType) => this._classAndUnionNames.get(u)).toOrderedSet();
+        const names = unions.map((u: UnionType) => this.nameForNamedType(u)).toOrderedSet();
         const canConvertExpr = intercalate(
             " || ",
             names.map((n: Name): Sourcelike => ["t == typeof(", n, ")"])
@@ -504,7 +501,8 @@ class CSharpRenderer extends ConvenienceRenderer {
         });
     };
 
-    emitConverterClass = (unions: Iterable<any, UnionType>): void => {
+    emitConverterClass = (): void => {
+        const unions = this.namedUnions;
         const haveUnions = !unions.isEmpty();
         // FIXME: Make Converter a Named
         let converterName: Sourcelike = ["Converter"];
@@ -527,21 +525,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         });
     };
 
-    childrenOfType = (t: Type): OrderedSet<Type> => {
-        const names = this.names;
-        if (t instanceof ClassType) {
-            const propertyNameds = this._propertyNames.get(t);
-            return t.properties
-                .sortBy((_, n: string): string => names.get(propertyNameds.get(n)))
-                .toOrderedSet();
-        }
-        return t.children.toOrderedSet();
-    };
-
-    protected emitSource(): void {
-        const { classes, unions } = allClassesAndUnions(this.topLevels, this.childrenOfType);
-        const namedUnions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toOrderedSet();
-
+    protected emitSourceStructure(): void {
         const using = (ns: Sourcelike): void => {
             this.emitLine("using ", ns, ";");
         };
@@ -558,21 +542,17 @@ class CSharpRenderer extends ConvenienceRenderer {
                     using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
                 }
             }
-            this.forEachWithLeadingAndInterposedBlankLines(classes, this.emitClassDefinition);
-            this.forEachWithLeadingAndInterposedBlankLines(namedUnions, this.emitUnionDefinition);
+            this.forEachClass("leading-and-interposing", this.emitClassDefinition);
+            this.forEachUnion("leading-and-interposing", this.emitUnionDefinition);
             if (this._needHelpers) {
-                this.emitNewline();
-                this.topLevels.forEach(this.emitFromJsonForTopLevel);
-                this.forEachWithLeadingAndInterposedBlankLines(
-                    namedUnions,
-                    this.emitUnionJSONPartial
-                );
+                this.forEachTopLevel("leading-and-interposing", this.emitFromJsonForTopLevel);
+                this.forEachUnion("leading-and-interposing", this.emitUnionJSONPartial);
                 this.emitNewline();
                 this.emitSerializeClass();
             }
-            if (this._needHelpers || (this._needAttributes && !namedUnions.isEmpty())) {
+            if (this._needHelpers || (this._needAttributes && this.haveUnions)) {
                 this.emitNewline();
-                this.emitConverterClass(namedUnions);
+                this.emitConverterClass();
             }
         });
     }
