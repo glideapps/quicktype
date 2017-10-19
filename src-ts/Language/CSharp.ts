@@ -29,10 +29,11 @@ import {
     FixedName,
     Namer,
     keywordNamespace,
-    PrefixNamer
+    funPrefixNamer
 } from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
-import { Renderer, RenderResult } from "../Renderer";
+import { RenderResult } from "../Renderer";
+import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TypeScriptTargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
 import { IssueAnnotation } from "../Annotation";
@@ -98,23 +99,7 @@ export default class CSharpTargetLanguage extends TypeScriptTargetLanguage {
     }
 }
 
-const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
-
-export const namingFunction = new PrefixNamer([
-    "Purple",
-    "Fluffy",
-    "Tentacled",
-    "Sticky",
-    "Indigo",
-    "Indecent",
-    "Hilarious",
-    "Ambitious",
-    "Cunning",
-    "Magenta",
-    "Frisky",
-    "Mischievous",
-    "Braggadocious"
-]);
+const namingFunction = funPrefixNamer(true);
 
 // FIXME: Make a Named?
 const denseJsonPropertyName = "J";
@@ -155,12 +140,7 @@ function isValueType(t: Type): boolean {
     return false;
 }
 
-class CSharpRenderer extends Renderer {
-    private _globalNamespace: Namespace;
-    private _topLevelNames: Map<string, Name>;
-    private _classAndUnionNames: Map<NamedType, Name>;
-    private _propertyNames: Map<ClassType, Map<string, Name>>;
-
+class CSharpRenderer extends ConvenienceRenderer {
     constructor(
         topLevels: TopLevels,
         private readonly _useList: boolean,
@@ -173,26 +153,23 @@ class CSharpRenderer extends Renderer {
         super(topLevels);
     }
 
-    protected setUpNaming(): Namespace[] {
-        this._globalNamespace = keywordNamespace("global", forbiddenNames);
-        const { classes, unions } = allClassesAndUnions(this.topLevels);
-        const namedUnions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toSet();
-        this._classAndUnionNames = Map();
-        this._propertyNames = Map();
-        this._topLevelNames = this.topLevels.map(this.namedFromTopLevel).toMap();
-        classes.forEach((c: ClassType) => {
-            const named = this.addClassOrUnionNamed(c);
-            this.addPropertyNameds(c, named);
-        });
-        namedUnions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
-        return [this._globalNamespace];
+    protected get forbiddenNames(): string[] {
+        return ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
     }
 
-    namedFromTopLevel = (type: Type, name: string): FixedName => {
-        // FIXME: leave the name as-is?
-        const proposed = csNameStyle(name);
-        const named = this._globalNamespace.add(new FixedName(proposed));
+    protected topLevelNameStyle(rawName: string): string {
+        return csNameStyle(rawName);
+    }
 
+    protected namedTypeNameStyle(rawName: string): string {
+        return csNameStyle(rawName);
+    }
+
+    protected propertyNameStyle(rawName: string): string {
+        return csNameStyle(rawName);
+    }
+
+    protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
         const definedTypes = type.directlyReachableNamedTypes;
         if (definedTypes.size > 1) {
             throw "Cannot have more than one defined type per top-level";
@@ -203,32 +180,18 @@ class CSharpRenderer extends Renderer {
         // emitFromJsonForTopLevel.
 
         if (definedTypes.size === 1) {
-            const definedType = definedTypes.first();
-            this._classAndUnionNames = this._classAndUnionNames.set(definedType, named);
+            return definedTypes.first();
         }
+        return null;
+    }
 
-        return named;
-    };
+    protected get namedTypeNamer(): Namer {
+        return namingFunction;
+    }
 
-    addClassOrUnionNamed = (type: NamedType): Name => {
-        if (this._classAndUnionNames.has(type)) {
-            return this._classAndUnionNames.get(type);
-        }
-        const name = type.names.combined;
-        const named = this._globalNamespace.add(new SimpleName(csNameStyle(name), namingFunction));
-        this._classAndUnionNames = this._classAndUnionNames.set(type, named);
-        return named;
-    };
-
-    addPropertyNameds = (c: ClassType, classNamed: Name): void => {
-        const ns = new Namespace(c.names.combined, this._globalNamespace, Set(), Set([classNamed]));
-        const names = c.properties
-            .map((t: Type, name: string) => {
-                return ns.add(new SimpleName(csNameStyle(name), namingFunction));
-            })
-            .toMap();
-        this._propertyNames = this._propertyNames.set(c, names);
-    };
+    protected get propertyNamer(): Namer {
+        return namingFunction;
+    }
 
     emitBlock = (f: () => void, semicolon: boolean = false): void => {
         this.emitLine("{");

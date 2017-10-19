@@ -4,6 +4,7 @@ import { Set, OrderedSet, List, Map, Iterable, Range } from "immutable";
 import stringHash = require("string-hash");
 
 import { Renderer } from "./Renderer";
+import { decapitalize } from "./Support";
 
 export class Namespace {
     private readonly _name: string;
@@ -67,19 +68,24 @@ export class Namespace {
     }
 }
 
-// Naming functions are invoked when there are conflicts between names.  Those
-// arise under two circumstances, which can also combine:
+// `Namer`s are invoked to figure out what names to assign non-fixed `Name`s,
+// and in particular to resolve conflicts.  Those arise under two circumstances,
+// which can also combine:
 //
 // 1. A proposed name is the same as an already assigned name that's forbidden
 //    for the name to be assigned.
-// 2. There is more than one Named about to be assigned a name that all have
+// 2. There is more than one `Name` about to be assigned a name that all have
 //    the same proposed name.
 //
-// The naming function is invoked with the set of all assigned, forbidden names,
-// the requested name, and the number of names to generate.
+// The namer is invoked with the set of all assigned, forbidden names,
+// the requested name, and the `Name`s to assign names to.
 //
-// NamingFunction is a class so that we can compare naming functions and put
-// them into immutable collections.
+// `Namer` is a class so that we can compare namers and put them into immutable
+// collections.
+
+// FIXME: Put the target-specific name transformation function into the Namer,
+// too.  Then a Name's `proposedName` can just be its `originalName` or whatever,
+// and can do double-duty to specify user overriding when we implement it.
 
 export abstract class Namer {
     abstract name(
@@ -152,6 +158,27 @@ export class PrefixNamer extends Namer {
     hashCode(): number {
         return this._prefixes.hashCode();
     }
+}
+
+const funPrefixes = [
+    "Purple",
+    "Fluffy",
+    "Tentacled",
+    "Sticky",
+    "Indigo",
+    "Indecent",
+    "Hilarious",
+    "Ambitious",
+    "Cunning",
+    "Magenta",
+    "Frisky",
+    "Mischievous",
+    "Braggadocious"
+];
+
+export function funPrefixNamer(upper: boolean): PrefixNamer {
+    const prefixes = upper ? funPrefixes : funPrefixes.map(decapitalize);
+    return new PrefixNamer(funPrefixes);
 }
 
 export abstract class Name {
