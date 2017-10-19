@@ -7,10 +7,11 @@ import {
     Source,
     Sourcelike,
     NewlineSource,
+    annotated,
     sourcelikeToSource,
-    serializeSource,
     newline
 } from "./Source";
+import { Annotation, IssueAnnotation } from "./Annotation";
 
 export type RenderResult = { source: Source; names: Map<Name, string> };
 
@@ -20,25 +21,43 @@ export abstract class Renderer {
 
     private _lastNewline?: NewlineSource;
     private _emitted: Sourcelike[];
+    private _currentEmitTarget: Sourcelike[];
 
     constructor(topLevels: TopLevels) {
         this.topLevels = topLevels;
-        this._emitted = [];
+        this._currentEmitTarget = this._emitted = [];
     }
 
     emitNewline(): void {
         const nl = newline();
-        this._emitted.push(nl);
+        this._currentEmitTarget.push(nl);
         this._lastNewline = nl;
     }
 
     emitLine(...lineParts: Sourcelike[]): void {
         if (lineParts.length === 1) {
-            this._emitted.push(lineParts[0]);
+            this._currentEmitTarget.push(lineParts[0]);
         } else if (lineParts.length > 1) {
-            this._emitted.push(lineParts);
+            this._currentEmitTarget.push(lineParts);
         }
         this.emitNewline();
+    }
+
+    emitAnnotated(annotation: Annotation, emitter: () => void): void {
+        const oldEmitTarget: Sourcelike[] = this._currentEmitTarget;
+        const emitTarget: Sourcelike[] = [];
+        this._currentEmitTarget = emitTarget;
+        emitter();
+        if (this._currentEmitTarget !== emitTarget) {
+            throw "_currentEmitTarget not restored correctly";
+        }
+        this._currentEmitTarget = oldEmitTarget;
+        const source = sourcelikeToSource(emitTarget);
+        this._currentEmitTarget.push(annotated(annotation, source));
+    }
+
+    emitIssue(message: string, emitter: () => void): void {
+        this.emitAnnotated(new IssueAnnotation(message), emitter);
     }
 
     private changeIndent(offset: number): void {

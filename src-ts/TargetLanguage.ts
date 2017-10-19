@@ -12,7 +12,7 @@ import { TopLevels } from "./Type";
 import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";
 import { glueGraphToNative } from "./Glue";
-import { serializeSource } from "./Source";
+import { serializeRenderResult, SerializedRenderResult } from "./Source";
 
 export abstract class TargetLanguage {
     constructor(
@@ -22,19 +22,19 @@ export abstract class TargetLanguage {
         readonly optionDefinitions: OptionDefinition[]
     ) {}
 
-    abstract transformAndRenderConfig(config: Config): string;
+    abstract transformAndRenderConfig(config: Config): SerializedRenderResult;
 }
 
 export abstract class TypeScriptTargetLanguage extends TargetLanguage {
-    transformAndRenderConfig(config: Config): string {
+    transformAndRenderConfig(config: Config): SerializedRenderResult {
         const glueGraphOrError = Main.glueGraphFromJsonConfig(config);
         if (Either.isLeft(glueGraphOrError)) {
             throw `Error processing JSON: ${fromLeft(glueGraphOrError)}`;
         }
         const glueGraph = fromRight(glueGraphOrError);
         const graph = glueGraphToNative(glueGraph);
-        const { source, names } = this.renderGraph(graph, config.rendererOptions);
-        return serializeSource(source, names);
+        const renderResult = this.renderGraph(graph, config.rendererOptions);
+        return serializeRenderResult(renderResult);
     }
 
     abstract renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult;
@@ -58,11 +58,12 @@ export class PureScriptTargetLanguage extends TargetLanguage {
         super(renderer.displayName, renderer.names, renderer.extension, optionDefinitions);
     }
 
-    transformAndRenderConfig(config: Config): string {
+    transformAndRenderConfig(config: Config): SerializedRenderResult {
         const resultOrError = Main.main(config);
         if (Either.isLeft(resultOrError)) {
             throw `Error processing JSON: ${fromLeft(resultOrError)}`;
         }
-        return fromRight(resultOrError);
+        const source = fromRight(resultOrError);
+        return { lines: source.split("\n"), annotations: List() };
     }
 }

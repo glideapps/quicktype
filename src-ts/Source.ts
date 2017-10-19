@@ -5,6 +5,7 @@ import { List, Map } from "immutable";
 import { Annotation } from "./Annotation";
 import { Name } from "./Naming";
 import { intercalate } from "./Support";
+import { RenderResult } from "./Renderer";
 
 export type Source = TextSource | NewlineSource | SequenceSource | AnnotatedSource | NameSource;
 
@@ -73,7 +74,7 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
     return sl;
 }
 
-function annotated(annotation: Annotation, sl: Sourcelike): Source {
+export function annotated(annotation: Annotation, sl: Sourcelike): Source {
     return {
         kind: "annotated",
         annotation,
@@ -85,50 +86,91 @@ function assertNever(x: never): never {
     throw new Error("Unexpected object: " + x);
 }
 
-export function serializeSource(source: Source, names: Map<Name, string>): string {
+export interface Location {
+    // Both of these are zero-based.
+    line: number;
+    column: number;
+}
+
+export interface Span {
+    start: Location;
+    end: Location;
+}
+
+// FIXME: This is badly named.  This is more user-facing, so it should probably
+// be named `Annotation`, so what do we rename `Annotation` to?
+export interface SourceAnnotation {
+    annotation: Annotation;
+    span: Span;
+}
+
+export interface SerializedRenderResult {
+    lines: string[];
+    annotations: List<SourceAnnotation>;
+}
+
+export function serializeRenderResult({ source, names }: RenderResult): SerializedRenderResult {
     let indent = 0;
     let indentNeeded = 0;
 
+    const lines: string[] = [];
+    let currentLine: string[] = [];
+    const annotations: SourceAnnotation[] = [];
+
     function indentIfNeeded(): void {
         if (indentNeeded === 0) return;
-        array.push("    ".repeat(indentNeeded));
+        currentLine.push("    ".repeat(indentNeeded));
         indentNeeded = 0;
     }
 
-    function serializeToStringArray(
-        source: Source,
-        names: Map<Name, string>,
-        array: string[]
-    ): void {
+    function flattenCurrentLine(): string {
+        const str = currentLine.join("");
+        currentLine = [str];
+        return str;
+    }
+
+    function currentLocation(): Location {
+        return { line: lines.length, column: flattenCurrentLine().length };
+    }
+
+    function finishLine(): void {
+        lines.push(flattenCurrentLine());
+        currentLine = [];
+    }
+
+    function serializeToStringArray(source: Source, names: Map<Name, string>): void {
         switch (source.kind) {
             case "text":
                 indentIfNeeded();
-                array.push(source.text);
+                currentLine.push(source.text);
                 break;
             case "newline":
-                array.push("\n");
+                finishLine();
                 indent += source.indentationChange;
                 indentNeeded = indent;
                 break;
             case "sequence":
-                source.sequence.forEach((s: Source) => serializeToStringArray(s, names, array));
+                source.sequence.forEach((s: Source) => serializeToStringArray(s, names));
                 break;
             case "annotated":
-                serializeToStringArray(source.source, names, array);
+                const start = currentLocation();
+                serializeToStringArray(source.source, names);
+                const end = currentLocation();
+                annotations.push({ annotation: source.annotation, span: { start, end } });
                 break;
             case "name":
                 if (!names.has(source.named)) {
                     throw "No name for Named";
                 }
                 indentIfNeeded();
-                array.push(names.get(source.named));
+                currentLine.push(names.get(source.named));
                 break;
             default:
                 return assertNever(source);
         }
     }
 
-    const array: string[] = [];
-    serializeToStringArray(source, names, array);
-    return array.join("");
+    serializeToStringArray(source, names);
+    finishLine();
+    return { lines, annotations: List(annotations) };
 }

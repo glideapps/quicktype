@@ -16,6 +16,8 @@ import { ErrorMessage, SourceCode } from "Core";
 import targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
+import { SerializedRenderResult, SourceAnnotation } from "./Source";
+import { IssueAnnotation } from "./Annotation";
 
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
@@ -213,7 +215,7 @@ class Run {
         return getTargetLanguage(opts.lang).optionDefinitions;
     };
 
-    renderSamplesOrSchemas = (samplesOrSchemas: SampleOrSchemaMap): SourceCode => {
+    renderSamplesOrSchemas = (samplesOrSchemas: SampleOrSchemaMap): SerializedRenderResult => {
         const areSchemas = this.options.srcLang === "schema";
         const targetLanguage = getTargetLanguage(this.options.lang);
 
@@ -270,7 +272,8 @@ class Run {
     };
 
     renderAndOutput = (samplesOrSchemas: SampleOrSchemaMap) => {
-        let output = this.renderSamplesOrSchemas(samplesOrSchemas);
+        const { lines, annotations } = this.renderSamplesOrSchemas(samplesOrSchemas);
+        const output = lines.join("\n");
         if (this.options.out) {
             if (this.options.lang == "java") {
                 this.splitAndWriteJava(path.dirname(this.options.out), output);
@@ -280,6 +283,14 @@ class Run {
         } else {
             process.stdout.write(output);
         }
+        annotations.forEach((sa: SourceAnnotation) => {
+            const annotation = sa.annotation;
+            if (!(annotation instanceof IssueAnnotation)) return;
+            const lineNumber = sa.span.start.line;
+            const humanLineNumber = lineNumber + 1;
+            console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
+            console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
+        });
     };
 
     workFromJsonArray = (jsonArray: object[]) => {

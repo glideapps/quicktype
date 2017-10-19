@@ -1,3 +1,7 @@
 "use strict";
 
-export interface Annotation {}
+export class Annotation {}
+
+export class IssueAnnotation {
+    constructor(readonly message) {}
+}

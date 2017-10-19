@@ -14,7 +14,7 @@ import {
     removeNullFromUnion,
     allClassesAndUnions
 } from "../Type";
-import { Source, Sourcelike, newline } from "../Source";
+import { Source, Sourcelike, newline, annotated } from "../Source";
 import {
     legalizeCharacters,
     camelCase,
@@ -35,6 +35,7 @@ import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
 import { TypeScriptTargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
+import { IssueAnnotation } from "../Annotation";
 
 const unicode = require("unicode-properties");
 
@@ -244,9 +245,19 @@ class CSharpRenderer extends Renderer {
         if (t instanceof PrimitiveType) {
             switch (t.kind) {
                 case "any":
-                    return "object"; // FIXME: add issue annotation
+                    return annotated(
+                        new IssueAnnotation(
+                            "quicktype cannot infer this type because there is no data about in the input."
+                        ),
+                        "object"
+                    );
                 case "null":
-                    return "object"; // FIXME: add issue annotation
+                    return annotated(
+                        new IssueAnnotation(
+                            "The only value for this in the input is null, which means you probably need a more complete input sample."
+                        ),
+                        "object"
+                    );
                 case "bool":
                     return "bool";
                 case "integer":
