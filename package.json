@@ -8,7 +8,7 @@
   "scripts": {
     "pub": "script/publish.sh",
     "prepare": "npm run build",
-    "build": "script/build.sh",
+    "build": "script/build.ts",
     "test": "npm run build && pulp test && test/test",
     "docs": "pulp docs",
     "start": "script/start.sh"

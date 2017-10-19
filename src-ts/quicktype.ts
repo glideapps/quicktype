@@ -13,9 +13,9 @@ import * as Main from "Main";
 import { Config } from "Config";
 import * as Renderers from "Language.Renderers";
 import { ErrorMessage, SourceCode } from "Core";
-import { cSharpTargetLanguage } from "./CSharp";
+import targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
-import { TargetLanguage, PureScriptTargetLanguage } from "./TargetLanguage";
+import { TargetLanguage } from "./TargetLanguage";
 
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
@@ -24,11 +24,7 @@ const getUsage = require("command-line-usage");
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-const targetLanguages: TargetLanguage[] = Renderers.all
-    .map(r => new PureScriptTargetLanguage(r))
-    .concat([cSharpTargetLanguage]);
-
-const langs = targetLanguages.map(r => r.names[0]).join("|");
+const langs = targetLanguages.map(r => _.minBy(r.names, _.length)).join("|");
 const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
 
 const optionDefinitions: OptionDefinition[] = [

@@ -3,7 +3,7 @@
 import { List, Map } from "immutable";
 
 import { Annotation } from "./Annotation";
-import { Named } from "./Naming";
+import { Name } from "./Naming";
 import { intercalate } from "./Support";
 
 export type Source = TextSource | NewlineSource | SequenceSource | AnnotatedSource | NameSource;
@@ -36,7 +36,7 @@ export interface AnnotatedSource {
 
 export interface NameSource {
     kind: "name";
-    named: Named;
+    named: Name;
 }
 
 export function newline(): NewlineSource {
@@ -44,7 +44,7 @@ export function newline(): NewlineSource {
     return { kind: "newline", indentationChange: 0 };
 }
 
-export type Sourcelike = Source | string | Named | SourcelikeArray;
+export type Sourcelike = Source | string | Name | SourcelikeArray;
 export interface SourcelikeArray extends Array<Sourcelike> {}
 
 export function sourcelikeToSource(sl: Sourcelike): Source {
@@ -67,7 +67,7 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
             ).toList()
         };
     }
-    if (sl instanceof Named) {
+    if (sl instanceof Name) {
         return { kind: "name", named: sl };
     }
     return sl;
@@ -85,7 +85,7 @@ function assertNever(x: never): never {
     throw new Error("Unexpected object: " + x);
 }
 
-export function serializeSource(source: Source, names: Map<Named, string>): string {
+export function serializeSource(source: Source, names: Map<Name, string>): string {
     let indent = 0;
     let indentNeeded = 0;
 
@@ -97,7 +97,7 @@ export function serializeSource(source: Source, names: Map<Named, string>): stri
 
     function serializeToStringArray(
         source: Source,
-        names: Map<Named, string>,
+        names: Map<Name, string>,
         array: string[]
     ): void {
         switch (source.kind) {

@@ -2,7 +2,7 @@
 
 import { Map, Iterable, OrderedSet } from "immutable";
 import { TopLevels } from "./Type";
-import { Named, Namespace, assignNames } from "./Naming";
+import { Name, Namespace, assignNames } from "./Naming";
 import {
     Source,
     Sourcelike,
@@ -12,11 +12,11 @@ import {
     newline
 } from "./Source";
 
-export type RenderResult = { source: Source; names: Map<Named, string> };
+export type RenderResult = { source: Source; names: Map<Name, string> };
 
 export abstract class Renderer {
     protected readonly topLevels: TopLevels;
-    private _names: Map<Named, string> | undefined;
+    private _names: Map<Name, string> | undefined;
 
     private _lastNewline?: NewlineSource;
     private _emitted: Sourcelike[];
@@ -32,8 +32,12 @@ export abstract class Renderer {
         this._lastNewline = nl;
     }
 
-    emitLine(line: Sourcelike): void {
-        this._emitted.push(line);
+    emitLine(...lineParts: Sourcelike[]): void {
+        if (lineParts.length === 1) {
+            this._emitted.push(lineParts[0]);
+        } else if (lineParts.length > 1) {
+            this._emitted.push(lineParts);
+        }
         this.emitNewline();
     }
 
@@ -86,7 +90,7 @@ export abstract class Renderer {
         return { source: this.finishedSource(), names: this._names };
     };
 
-    get names(): Map<Named, string> {
+    get names(): Map<Name, string> {
         if (this._names === undefined) {
             throw "Names accessed before they were assigned";
         }

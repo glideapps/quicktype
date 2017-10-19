@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, List, Map, OrderedSet } from "immutable";
+import { Set, List, Map, OrderedSet, Iterable } from "immutable";
 import {
     TopLevels,
     Type,
@@ -13,68 +13,68 @@ import {
     nullableFromUnion,
     removeNullFromUnion,
     allClassesAndUnions
-} from "./Type";
-import { Source, Sourcelike, newline } from "./Source";
+} from "../Type";
+import { Source, Sourcelike, newline } from "../Source";
 import {
     legalizeCharacters,
     camelCase,
     startWithLetter,
     stringEscape,
     intercalate
-} from "./Support";
+} from "../Support";
 import {
     Namespace,
-    Named,
-    SimpleNamed,
-    FixedNamed,
-    NamingFunction,
+    Name,
+    SimpleName,
+    FixedName,
+    Namer,
     keywordNamespace,
-    PrefixNamingFunction
-} from "./Naming";
+    PrefixNamer
+} from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
-import { Renderer, RenderResult } from "./Renderer";
-import { TypeScriptTargetLanguage } from "./TargetLanguage";
-import { BooleanRendererOption, StringRendererOption, EnumRendererOption } from "./RendererOptions";
+import { Renderer, RenderResult } from "../Renderer";
+import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
 
 const unicode = require("unicode-properties");
 
 type Version = 5 | 6;
 type Features = { helpers: boolean; attributes: boolean };
 
-class CSharpTargetLanguage extends TypeScriptTargetLanguage {
-    private readonly _listOption: EnumRendererOption<boolean>;
-    private readonly _denseOption: EnumRendererOption<boolean>;
-    private readonly _featuresOption: EnumRendererOption<Features>;
-    private readonly _namespaceOption: StringRendererOption;
-    private readonly _versionOption: EnumRendererOption<Version>;
+export default class CSharpTargetLanguage extends TypeScriptTargetLanguage {
+    private readonly _listOption: EnumOption<boolean>;
+    private readonly _denseOption: EnumOption<boolean>;
+    private readonly _featuresOption: EnumOption<Features>;
+    private readonly _namespaceOption: StringOption;
+    private readonly _versionOption: EnumOption<Version>;
 
     constructor() {
-        const listOption = new EnumRendererOption("array-type", "Use T[] or List<T>", [
+        const listOption = new EnumOption("array-type", "Use T[] or List<T>", [
             ["array", false],
             ["list", true]
         ]);
-        const denseOption = new EnumRendererOption("density", "Property density", [
+        const denseOption = new EnumOption("density", "Property density", [
             ["normal", false],
             ["dense", true]
         ]);
-        const featuresOption = new EnumRendererOption("features", "Output features", [
+        const featuresOption = new EnumOption("features", "Output features", [
             ["complete", { helpers: true, attributes: true }],
             ["attributes-only", { helpers: false, attributes: true }],
             ["just-types", { helpers: false, attributes: false }]
         ]);
         // FIXME: Do this via a configurable named eventually.
-        const namespaceOption = new StringRendererOption(
+        const namespaceOption = new StringOption(
             "namespace",
             "Generated namespace",
             "NAME",
             "QuickType"
         );
-        const versionOption = new EnumRendererOption<Version>("csharp-version", "C# version", [
+        const versionOption = new EnumOption<Version>("csharp-version", "C# version", [
             ["6", 6],
             ["5", 5]
         ]);
         const options = [namespaceOption, versionOption, denseOption, listOption, featuresOption];
-        super("new C#", ["newcs"], "ncs", "csharp", options.map(o => o.definition));
+        super("C#", ["cs", "csharp"], "cs", options.map(o => o.definition));
         this._listOption = listOption;
         this._denseOption = denseOption;
         this._featuresOption = featuresOption;
@@ -97,11 +97,9 @@ class CSharpTargetLanguage extends TypeScriptTargetLanguage {
     }
 }
 
-export const cSharpTargetLanguage: TypeScriptTargetLanguage = new CSharpTargetLanguage();
-
 const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 
-export const namingFunction = new PrefixNamingFunction([
+export const namingFunction = new PrefixNamer([
     "Purple",
     "Fluffy",
     "Tentacled",
@@ -158,11 +156,9 @@ function isValueType(t: Type): boolean {
 
 class CSharpRenderer extends Renderer {
     private _globalNamespace: Namespace;
-    private _topLevelNameds: Map<string, Named>;
-    private _classes: OrderedSet<ClassType>;
-    private _unions: OrderedSet<UnionType>;
-    private _classAndUnionNameds: Map<NamedType, Named>;
-    private _propertyNameds: Map<ClassType, Map<string, Named>>;
+    private _topLevelNames: Map<string, Name>;
+    private _classAndUnionNames: Map<NamedType, Name>;
+    private _propertyNames: Map<ClassType, Map<string, Name>>;
 
     constructor(
         topLevels: TopLevels,
@@ -179,23 +175,22 @@ class CSharpRenderer extends Renderer {
     protected setUpNaming(): Namespace[] {
         this._globalNamespace = keywordNamespace("global", forbiddenNames);
         const { classes, unions } = allClassesAndUnions(this.topLevels);
-        this._classes = classes;
-        this._unions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toSet();
-        this._classAndUnionNameds = Map();
-        this._propertyNameds = Map();
-        this._topLevelNameds = this.topLevels.map(this.namedFromTopLevel).toMap();
+        const namedUnions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toSet();
+        this._classAndUnionNames = Map();
+        this._propertyNames = Map();
+        this._topLevelNames = this.topLevels.map(this.namedFromTopLevel).toMap();
         classes.forEach((c: ClassType) => {
             const named = this.addClassOrUnionNamed(c);
             this.addPropertyNameds(c, named);
         });
-        this._unions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
+        namedUnions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
         return [this._globalNamespace];
     }
 
-    namedFromTopLevel = (type: Type, name: string): FixedNamed => {
+    namedFromTopLevel = (type: Type, name: string): FixedName => {
         // FIXME: leave the name as-is?
         const proposed = csNameStyle(name);
-        const named = new FixedNamed(this._globalNamespace, proposed);
+        const named = new FixedName(this._globalNamespace, proposed);
 
         const definedTypes = type.directlyReachableNamedTypes;
         if (definedTypes.size > 1) {
@@ -208,41 +203,41 @@ class CSharpRenderer extends Renderer {
 
         if (definedTypes.size === 1) {
             const definedType = definedTypes.first();
-            this._classAndUnionNameds = this._classAndUnionNameds.set(definedType, named);
+            this._classAndUnionNames = this._classAndUnionNames.set(definedType, named);
         }
 
         return named;
     };
 
-    addClassOrUnionNamed = (type: NamedType): Named => {
-        if (this._classAndUnionNameds.has(type)) {
-            return this._classAndUnionNameds.get(type);
+    addClassOrUnionNamed = (type: NamedType): Name => {
+        if (this._classAndUnionNames.has(type)) {
+            return this._classAndUnionNames.get(type);
         }
         const name = type.names.combined;
-        const named = new SimpleNamed(
+        const named = new SimpleName(
             this._globalNamespace,
             name,
-            namingFunction,
-            csNameStyle(name)
+            csNameStyle(name),
+            namingFunction
         );
-        this._classAndUnionNameds = this._classAndUnionNameds.set(type, named);
+        this._classAndUnionNames = this._classAndUnionNames.set(type, named);
         return named;
     };
 
-    addPropertyNameds = (c: ClassType, classNamed: Named): void => {
+    addPropertyNameds = (c: ClassType, classNamed: Name): void => {
         const ns = new Namespace(c.names.combined, this._globalNamespace, Set(), Set([classNamed]));
-        const nameds = c.properties
+        const names = c.properties
             .map((t: Type, name: string) => {
-                return new SimpleNamed(ns, name, namingFunction, csNameStyle(name));
+                return new SimpleName(ns, name, csNameStyle(name), namingFunction);
             })
             .toMap();
-        this._propertyNameds = this._propertyNameds.set(c, nameds);
+        this._propertyNames = this._propertyNames.set(c, names);
     };
 
     emitBlock = (f: () => void, semicolon: boolean = false): void => {
         this.emitLine("{");
         this.indent(f);
-        this.emitLine(["}", semicolon ? ";" : ""]);
+        this.emitLine("}", semicolon ? ";" : "");
     };
 
     csType = (t: Type): Sourcelike => {
@@ -269,13 +264,13 @@ class CSharpRenderer extends Renderer {
                 return [itemsType, "[]"];
             }
         } else if (t instanceof ClassType) {
-            return this._classAndUnionNameds.get(t);
+            return this._classAndUnionNames.get(t);
         } else if (t instanceof MapType) {
             return ["Dictionary<string, ", this.csType(t.values), ">"];
         } else if (t instanceof UnionType) {
             const nonNull = nullableFromUnion(t);
             if (nonNull) return this.nullableCSType(nonNull);
-            return this._classAndUnionNameds.get(t);
+            return this._classAndUnionNames.get(t);
         }
         throw "Unknown type";
     };
@@ -299,7 +294,7 @@ class CSharpRenderer extends Renderer {
         } else if (t instanceof ArrayType) {
             return this.typeNameForUnionMember(t.items) + "_array";
         } else if (t instanceof ClassType) {
-            return this.names.get(this._classAndUnionNameds.get(t));
+            return this.names.get(this._classAndUnionNames.get(t));
         } else if (t instanceof MapType) {
             return this.typeNameForUnionMember(t.values), "_map";
         } else if (t instanceof UnionType) {
@@ -318,7 +313,7 @@ class CSharpRenderer extends Renderer {
     };
 
     emitClass = (declaration: Sourcelike, name: Sourcelike, emitter: () => void): void => {
-        this.emitLine(["public ", declaration, " ", name]);
+        this.emitLine("public ", declaration, " ", name);
         this.emitBlock(emitter);
     };
 
@@ -328,12 +323,12 @@ class CSharpRenderer extends Renderer {
 
     emitClassDefinition = (c: ClassType): void => {
         const jsonProperty = this._dense ? denseJsonPropertyName : "JsonProperty";
-        const propertyNameds = this._propertyNameds.get(c);
-        this.emitClass([this.partialString, "class"], this._classAndUnionNameds.get(c), () => {
+        const propertyNames = this._propertyNames.get(c);
+        this.emitClass([this.partialString, "class"], this._classAndUnionNames.get(c), () => {
             const maxWidth = c.properties.map((_, name: string) => stringEscape(name).length).max();
             const withBlankLines = this._needAttributes && !this._dense;
             this.forEach(c.properties, withBlankLines, false, (t: Type, name: string) => {
-                const named = propertyNameds.get(name);
+                const named = propertyNames.get(name);
                 const escapedName = stringEscape(name);
                 const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
                 const property = ["public ", this.csType(t), " ", named, " { get; set; }"];
@@ -342,7 +337,7 @@ class CSharpRenderer extends Renderer {
                 } else if (this._dense) {
                     const indent = maxWidth - escapedName.length + 1;
                     const whitespace = " ".repeat(indent);
-                    this.emitLine([attribute, whitespace, property]);
+                    this.emitLine(attribute, whitespace, property);
                 } else {
                     this.emitLine(attribute);
                     this.emitLine(property);
@@ -357,11 +352,11 @@ class CSharpRenderer extends Renderer {
 
     emitUnionDefinition = (c: UnionType): void => {
         const [_, nonNulls] = removeNullFromUnion(c);
-        this.emitClass([this.partialString, "struct"], this._classAndUnionNameds.get(c), () => {
+        this.emitClass([this.partialString, "struct"], this._classAndUnionNames.get(c), () => {
             nonNulls.forEach((t: Type) => {
                 const csType = this.nullableCSType(t);
                 const field = this.unionFieldName(t);
-                this.emitLine(["public ", csType, " ", field, ";"]);
+                this.emitLine("public ", csType, " ", field, ";");
             });
         });
     };
@@ -370,10 +365,10 @@ class CSharpRenderer extends Renderer {
         if (this._version === 5) {
             this.emitLine(declare);
             this.emitBlock(() => {
-                this.emitLine(["return ", define, ";"]);
+                this.emitLine("return ", define, ";");
             });
         } else {
-            this.emitLine([declare, " => ", define, ";"]);
+            this.emitLine(declare, " => ", define, ";");
         }
     }
 
@@ -389,7 +384,7 @@ class CSharpRenderer extends Renderer {
             typeKind = definedTypes.first() instanceof ClassType ? "class" : "struct";
         }
         const csType = this.csType(t);
-        this.emitClass([partial, typeKind], this._topLevelNameds.get(name), () => {
+        this.emitClass([partial, typeKind], this._topLevelNames.get(name), () => {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
@@ -400,7 +395,7 @@ class CSharpRenderer extends Renderer {
 
     emitUnionJSONPartial = (u: UnionType): void => {
         const tokenCase = (tokenType: string): void => {
-            this.emitLine(["case JsonToken.", tokenType, ":"]);
+            this.emitLine("case JsonToken.", tokenType, ":");
         };
 
         const emitNullDeserializer = (): void => {
@@ -409,12 +404,12 @@ class CSharpRenderer extends Renderer {
         };
 
         const emitDeserializeType = (t: Type): void => {
-            this.emitLine([
+            this.emitLine(
                 this.unionFieldName(t),
                 " = serializer.Deserialize<",
                 this.csType(t),
                 ">(reader);"
-            ]);
+            );
             this.emitLine("break;");
         };
 
@@ -446,12 +441,12 @@ class CSharpRenderer extends Renderer {
         };
 
         const [hasNull, nonNulls] = removeNullFromUnion(u);
-        const named = this._classAndUnionNameds.get(u);
+        const named = this._classAndUnionNames.get(u);
         this.emitClass("partial struct", named, () => {
-            this.emitLine(["public ", named, "(JsonReader reader, JsonSerializer serializer)"]);
+            this.emitLine("public ", named, "(JsonReader reader, JsonSerializer serializer)");
             this.emitBlock(() => {
                 nonNulls.forEach((t: Type) => {
-                    this.emitLine([this.unionFieldName(t), " = null;"]);
+                    this.emitLine(this.unionFieldName(t), " = null;");
                 });
                 this.emitNewline();
                 this.emitLine("switch (reader.TokenType)");
@@ -464,7 +459,7 @@ class CSharpRenderer extends Renderer {
                     emitGenericDeserializer("array", "StartArray");
                     emitGenericDeserializer("class", "StartObject");
                     emitGenericDeserializer("map", "StartObject");
-                    this.emitLine(['default: throw new Exception("Cannot convert ', named, '");']);
+                    this.emitLine('default: throw new Exception("Cannot convert ', named, '");');
                 });
             });
             this.emitNewline();
@@ -472,9 +467,9 @@ class CSharpRenderer extends Renderer {
             this.emitBlock(() => {
                 nonNulls.forEach((t: Type) => {
                     const fieldName = this.unionFieldName(t);
-                    this.emitLine(["if (", fieldName, " != null)"]);
+                    this.emitLine("if (", fieldName, " != null)");
                     this.emitBlock(() => {
-                        this.emitLine(["serializer.Serialize(writer, ", fieldName, ");"]);
+                        this.emitLine("serializer.Serialize(writer, ", fieldName, ");");
                         this.emitLine("return;");
                     });
                 });
@@ -500,11 +495,11 @@ class CSharpRenderer extends Renderer {
         });
     };
 
-    emitUnionConverterMembers = (): void => {
-        const nameds = this._unions.map((u: UnionType) => this._classAndUnionNameds.get(u)).toSet();
+    emitUnionConverterMembers = (unions: Iterable<any, UnionType>): void => {
+        const names = unions.map((u: UnionType) => this._classAndUnionNames.get(u)).toOrderedSet();
         const canConvertExpr = intercalate(
             " || ",
-            nameds.map((n: Named): Sourcelike => ["t == typeof(", n, ")"])
+            names.map((n: Name): Sourcelike => ["t == typeof(", n, ")"])
         );
         // FIXME: make Iterable<any, Sourcelike> a Sourcelike, too?
         this.emitExpressionMember(
@@ -517,9 +512,9 @@ class CSharpRenderer extends Renderer {
         );
         this.emitBlock(() => {
             // FIXME: call the constructor via reflection?
-            nameds.forEach((n: Named) => {
-                this.emitLine(["if (t == typeof(", n, "))"]);
-                this.indent(() => this.emitLine(["return new ", n, "(reader, serializer);"]));
+            names.forEach((n: Name) => {
+                this.emitLine("if (t == typeof(", n, "))");
+                this.indent(() => this.emitLine("return new ", n, "(reader, serializer);"));
             });
             this.emitLine('throw new Exception("Unknown type");');
         });
@@ -529,10 +524,10 @@ class CSharpRenderer extends Renderer {
         );
         this.emitBlock(() => {
             this.emitLine("var t = value.GetType();");
-            nameds.forEach((n: Named) => {
-                this.emitLine(["if (t == typeof(", n, "))"]);
+            names.forEach((n: Name) => {
+                this.emitLine("if (t == typeof(", n, "))");
                 this.emitBlock(() => {
-                    this.emitLine(["((", n, ")value).WriteJson(writer, serializer);"]);
+                    this.emitLine("((", n, ")value).WriteJson(writer, serializer);");
                     this.emitLine("return;");
                 });
             });
@@ -540,14 +535,14 @@ class CSharpRenderer extends Renderer {
         });
     };
 
-    emitConverterClass = (): void => {
-        const haveUnions = !this._unions.isEmpty();
+    emitConverterClass = (unions: Iterable<any, UnionType>): void => {
+        const haveUnions = !unions.isEmpty();
         // FIXME: Make Converter a Named
         let converterName: Sourcelike = ["Converter"];
         if (haveUnions) converterName = converterName.concat([": JsonConverter"]);
         this.emitClass("class", converterName, () => {
             if (haveUnions) {
-                this.emitUnionConverterMembers();
+                this.emitUnionConverterMembers(unions);
                 this.emitNewline();
             }
             this.emitLine(
@@ -563,11 +558,26 @@ class CSharpRenderer extends Renderer {
         });
     };
 
+    childrenOfType = (t: Type): OrderedSet<Type> => {
+        const names = this.names;
+        if (t instanceof ClassType) {
+            const propertyNameds = this._propertyNames.get(t);
+            return t.properties
+                .sortBy((_, n: string): string => names.get(propertyNameds.get(n)))
+                .toOrderedSet();
+        }
+        return t.children.toOrderedSet();
+    };
+
     protected emitSource(): void {
+        const { classes, unions } = allClassesAndUnions(this.topLevels, this.childrenOfType);
+        const namedUnions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toOrderedSet();
+
         const using = (ns: Sourcelike): void => {
-            this.emitLine(["using ", ns, ";"]);
+            this.emitLine("using ", ns, ";");
         };
-        this.emitLine(["namespace ", this._namespaceName]);
+
+        this.emitLine("namespace ", this._namespaceName);
         this.emitBlock(() => {
             for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
                 using(ns);
@@ -579,21 +589,21 @@ class CSharpRenderer extends Renderer {
                     using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
                 }
             }
-            this.forEachWithLeadingAndInterposedBlankLines(this._classes, this.emitClassDefinition);
-            this.forEachWithLeadingAndInterposedBlankLines(this._unions, this.emitUnionDefinition);
+            this.forEachWithLeadingAndInterposedBlankLines(classes, this.emitClassDefinition);
+            this.forEachWithLeadingAndInterposedBlankLines(namedUnions, this.emitUnionDefinition);
             if (this._needHelpers) {
                 this.emitNewline();
                 this.topLevels.forEach(this.emitFromJsonForTopLevel);
                 this.forEachWithLeadingAndInterposedBlankLines(
-                    this._unions,
+                    namedUnions,
                     this.emitUnionJSONPartial
                 );
                 this.emitNewline();
                 this.emitSerializeClass();
             }
-            if (this._needHelpers || (this._needAttributes && !this._unions.isEmpty())) {
+            if (this._needHelpers || (this._needAttributes && !namedUnions.isEmpty())) {
                 this.emitNewline();
-                this.emitConverterClass();
+                this.emitConverterClass(namedUnions);
             }
         });
     }

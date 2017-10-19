@@ -12,7 +12,7 @@ export interface OptionDefinition {
     description: string;
 }
 
-export abstract class RendererOption {
+export abstract class UntypedOption {
     readonly definition: OptionDefinition;
 
     constructor(definition: OptionDefinition) {
@@ -21,7 +21,7 @@ export abstract class RendererOption {
     }
 }
 
-export abstract class TypedRendererOption<T> extends RendererOption {
+export abstract class Option<T> extends UntypedOption {
     getValue(values: { [name: string]: any }): T {
         const value = values[this.definition.name];
         if (value === undefined) {
@@ -31,7 +31,7 @@ export abstract class TypedRendererOption<T> extends RendererOption {
     }
 }
 
-export class BooleanRendererOption extends TypedRendererOption<boolean> {
+export class BooleanOption extends Option<boolean> {
     constructor(name: string, description: string, defaultValue: boolean) {
         const definition = {
             name,
@@ -43,7 +43,7 @@ export class BooleanRendererOption extends TypedRendererOption<boolean> {
     }
 }
 
-export class StringRendererOption extends TypedRendererOption<string> {
+export class StringOption extends Option<string> {
     constructor(name: string, description: string, typeLabel: string, defaultValue: string) {
         const definition = {
             name,
@@ -56,7 +56,7 @@ export class StringRendererOption extends TypedRendererOption<string> {
     }
 }
 
-export class EnumRendererOption<T> extends TypedRendererOption<T> {
+export class EnumOption<T> extends Option<T> {
     private readonly _values: { [name: string]: T };
 
     constructor(name: string, description: string, values: [string, T][]) {
