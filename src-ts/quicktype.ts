@@ -79,6 +79,11 @@ const optionDefinitions: OptionDefinition[] = [
         description: "Don't infer maps, always use classes."
     },
     {
+        name: "quiet",
+        type: Boolean,
+        description: "Don't show issues in the generated code."
+    },
+    {
         name: "help",
         alias: "h",
         type: Boolean,
@@ -163,6 +168,7 @@ export interface Options {
     out?: string;
     noMaps?: boolean;
     help?: boolean;
+    quiet?: boolean;
     rendererOptions: { [name: string]: string };
 }
 
@@ -174,7 +180,8 @@ interface CompleteOptions {
     srcUrls?: string;
     out?: string;
     noMaps: boolean;
-    help?: boolean;
+    help: boolean;
+    quiet: boolean;
     rendererOptions: { [name: string]: any };
 }
 
@@ -282,6 +289,9 @@ class Run {
             }
         } else {
             process.stdout.write(output);
+        }
+        if (this.options.quiet) {
+            return;
         }
         annotations.forEach((sa: SourceAnnotation) => {
             const annotation = sa.annotation;
@@ -429,6 +439,8 @@ class Run {
             lang: opts.lang || this.inferLang(opts),
             topLevel: opts.topLevel || this.inferTopLevel(opts),
             noMaps: !!opts.noMaps,
+            help: !!opts.help,
+            quiet: !!opts.quiet,
             ...opts
         };
     };
