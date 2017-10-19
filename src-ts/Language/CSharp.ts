@@ -191,7 +191,7 @@ class CSharpRenderer extends Renderer {
     namedFromTopLevel = (type: Type, name: string): FixedName => {
         // FIXME: leave the name as-is?
         const proposed = csNameStyle(name);
-        const named = new FixedName(this._globalNamespace, proposed);
+        const named = this._globalNamespace.add(new FixedName(proposed));
 
         const definedTypes = type.directlyReachableNamedTypes;
         if (definedTypes.size > 1) {
@@ -215,12 +215,7 @@ class CSharpRenderer extends Renderer {
             return this._classAndUnionNames.get(type);
         }
         const name = type.names.combined;
-        const named = new SimpleName(
-            this._globalNamespace,
-            name,
-            csNameStyle(name),
-            namingFunction
-        );
+        const named = this._globalNamespace.add(new SimpleName(csNameStyle(name), namingFunction));
         this._classAndUnionNames = this._classAndUnionNames.set(type, named);
         return named;
     };
@@ -229,7 +224,7 @@ class CSharpRenderer extends Renderer {
         const ns = new Namespace(c.names.combined, this._globalNamespace, Set(), Set([classNamed]));
         const names = c.properties
             .map((t: Type, name: string) => {
-                return new SimpleName(ns, name, csNameStyle(name), namingFunction);
+                return ns.add(new SimpleName(csNameStyle(name), namingFunction));
             })
             .toMap();
         this._propertyNames = this._propertyNames.set(c, names);

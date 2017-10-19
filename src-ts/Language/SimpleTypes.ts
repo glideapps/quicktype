@@ -111,7 +111,7 @@ class SimpleTypesRenderer extends Renderer {
 
     namedFromTopLevel = (type: Type, name: string): FixedName => {
         // FIXME: leave the name as-is?
-        const named = new FixedName(this.namespace, simpleNameStyle(name, true));
+        const named = this.namespace.add(new FixedName(simpleNameStyle(name, true)));
         const definedTypes = type.directlyReachableNamedTypes;
         if (definedTypes.size > 1) {
             throw "Cannot have more than one defined type per top-level";
@@ -134,7 +134,7 @@ class SimpleTypesRenderer extends Renderer {
             return this.classAndUnionNames.get(type);
         }
         const name = type.names.combined;
-        const named = new SimpleName(this.namespace, name, simpleNameStyle(name, true));
+        const named = this.namespace.add(new SimpleName(simpleNameStyle(name, true)));
         this.classAndUnionNames = this.classAndUnionNames.set(type, named);
         return named;
     };
@@ -142,7 +142,7 @@ class SimpleTypesRenderer extends Renderer {
     addPropertyNameds = (c: ClassType, classNamed: Name): void => {
         const ns = new Namespace(c.names.combined, this.namespace, Set(), Set([classNamed]));
         const nameds = c.properties
-            .map((t: Type, name: string) => new SimpleName(ns, name, simpleNameStyle(name, false)))
+            .map((t: Type, name: string) => ns.add(new SimpleName(simpleNameStyle(name, false))))
             .toMap();
         this.propertyNames = this.propertyNames.set(c, nameds);
     };
