@@ -34,20 +34,32 @@ import { Namespace, Name, SimpleName, FixedName, keywordNamespace } from "../Nam
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
 import { TargetLanguage, TypeScriptTargetLanguage } from "../TargetLanguage";
+import { BooleanOption } from "../RendererOptions";
 
 const unicode = require("unicode-properties");
 
 export default class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage {
+    declareUnionsOption: BooleanOption;
+
     constructor() {
-        super("Simple Types", ["types"], "txt", []);
+        const declareUnionsOption = new BooleanOption(
+            "declare-unions",
+            "Declare unions as named types",
+            false
+        );
+
+        super("Simple Types", ["types"], "txt", [declareUnionsOption.definition]);
+
+        this.declareUnionsOption = declareUnionsOption;
     }
 
     renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
-        return new SimpleTypesRenderer(topLevels).render();
+        return new SimpleTypesRenderer(
+            topLevels,
+            !this.declareUnionsOption.getValue(optionValues)
+        ).render();
     }
 }
-
-const forbiddenNames = ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
 
 function isStartCharacter(c: string): boolean {
     return unicode.isAlphabetic(c.charCodeAt(0)) || c == "_";
@@ -70,8 +82,15 @@ class SimpleTypesRenderer extends Renderer {
     classAndUnionNames: Map<NamedType, Name>;
     propertyNames: Map<ClassType, Map<string, Name>>;
 
+    inlineUnions: boolean;
+
+    constructor(topLevels: TopLevels, inlineUnions: boolean) {
+        super(topLevels);
+        this.inlineUnions = inlineUnions;
+    }
+
     protected setUpNaming(): Namespace[] {
-        this.namespace = keywordNamespace("global", forbiddenNames);
+        this.namespace = keywordNamespace("global", []);
 
         const { classes, unions } = allClassesAndUnions(this.topLevels);
         const namedUnions = unions.filter((u: UnionType) => !nullableFromUnion(u)).toSet();
@@ -142,8 +161,12 @@ class SimpleTypesRenderer extends Renderer {
             const nullable = nullableFromUnion(unionType);
             if (nullable) return ["Maybe<", this.sourceFor(nullable), ">"];
 
-            const children = unionType.children.map((t: Type) => this.sourceFor(t));
-            return intercalate(" | ", children).toArray();
+            if (this.inlineUnions) {
+                const children = unionType.children.map((t: Type) => this.sourceFor(t));
+                return intercalate(" | ", children).toArray();
+            } else {
+                return this.classAndUnionNames.get(unionType);
+            }
         }
     );
 
@@ -153,6 +176,16 @@ class SimpleTypesRenderer extends Renderer {
         this.indent(() => {
             this.forEach(c.properties, false, false, (t: Type, name: string) => {
                 this.emitLine(propertyNames.get(name), ": ", this.sourceFor(t));
+            });
+        });
+        this.emitLine("}");
+    };
+
+    emitUnion = (u: UnionType) => {
+        this.emitLine("union ", this.classAndUnionNames.get(u), " {");
+        this.indent(() => {
+            this.forEach(u.children, false, false, t => {
+                this.emitLine("case ", this.sourceFor(t));
             });
         });
         this.emitLine("}");
@@ -169,7 +202,12 @@ class SimpleTypesRenderer extends Renderer {
     };
 
     protected emitSource() {
-        const { classes } = allClassesAndUnions(this.topLevels, this.childrenOfType);
+        const { classes, unions } = allClassesAndUnions(this.topLevels, this.childrenOfType);
         this.forEach(classes, true, false, this.emitClass);
+
+        if (!this.inlineUnions) {
+            const properUnions = unions.filter((u: UnionType) => !nullableFromUnion(u));
+            this.forEach(properUnions, true, true, this.emitUnion);
+        }
     }
 }
