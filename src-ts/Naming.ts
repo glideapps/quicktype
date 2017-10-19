@@ -166,7 +166,7 @@ export class IncrementingNamer extends Namer {
     }
 
     equals(other: any): boolean {
-        return other instanceof PrefixNamer;
+        return other instanceof IncrementingNamer;
     }
 
     hashCode(): number {
