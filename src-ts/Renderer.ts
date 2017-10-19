@@ -15,6 +15,8 @@ import { Annotation, IssueAnnotation } from "./Annotation";
 
 export type RenderResult = { source: Source; names: Map<Name, string> };
 
+export type BlankLineLocations = "none" | "leading-and-interposing";
+
 export abstract class Renderer {
     protected readonly topLevels: TopLevels;
     private _names: Map<Name, string> | undefined;
@@ -83,11 +85,12 @@ export abstract class Renderer {
         });
     }
 
-    forEachWithLeadingAndInterposedBlankLines<K, V>(
+    forEachWithBlankLines<K, V>(
         iterable: Iterable<K, V>,
+        blankLineLocations: BlankLineLocations,
         emitter: (v: V, k: K) => void
     ): void {
-        this.forEach(iterable, true, true, emitter);
+        this.forEach(iterable, blankLineLocations != "none", blankLineLocations != "none", emitter);
     }
 
     indent(fn: () => void): void {

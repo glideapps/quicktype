@@ -5,15 +5,24 @@ import { Map, Set, OrderedSet } from "immutable";
 import {
     Type,
     NamedType,
+    PrimitiveType,
+    ArrayType,
+    MapType,
     ClassType,
     UnionType,
     allClassesAndUnions,
     nullableFromUnion
 } from "./Type";
-import { Namespace, Name, Namer, FixedName, SimpleName, keywordNamespace } from "./Naming";
-import { Renderer } from "./Renderer";
-
-type BlankLineLocations = "leading-and-interposing";
+import {
+    Namespace,
+    Name,
+    Namer,
+    FixedName,
+    SimpleName,
+    DependencyName,
+    keywordNamespace
+} from "./Naming";
+import { Renderer, BlankLineLocations } from "./Renderer";
 
 export abstract class ConvenienceRenderer extends Renderer {
     private _globalNamespace: Namespace;
@@ -24,7 +33,14 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _namedClasses: OrderedSet<ClassType>;
     private _namedUnions: OrderedSet<UnionType>;
 
-    protected abstract get forbiddenNames(): string[];
+    protected get forbiddenNames(): string[] {
+        return [];
+    }
+
+    protected topLevelDependencyNames(topLevelName: Name): DependencyName[] {
+        return [];
+    }
+
     protected abstract topLevelNameStyle(rawName: string): string;
     protected abstract namedTypeNameStyle(rawName: string): string;
     protected abstract propertyNameStyle(rawName: string): string;
@@ -62,6 +78,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
 
         const named = this._globalNamespace.add(new FixedName(styledName));
+        const dependencyNames = this.topLevelDependencyNames(named);
+        for (const dn of dependencyNames) {
+            this._globalNamespace.add(dn);
+        }
 
         if (maybeNamedType) {
             this._classAndUnionNames = this._classAndUnionNames.set(maybeNamedType, named);
@@ -111,6 +131,38 @@ export abstract class ConvenienceRenderer extends Renderer {
         return !this._namedUnions.isEmpty();
     }
 
+    protected unionFieldName = (t: Type): string => {
+        const typeNameForUnionMember = (t: Type): string => {
+            if (t instanceof PrimitiveType) {
+                switch (t.kind) {
+                    case "any":
+                        return "anything";
+                    case "null":
+                        return "null";
+                    case "bool":
+                        return "bool";
+                    case "integer":
+                        return "long";
+                    case "double":
+                        return "double";
+                    case "string":
+                        return "string";
+                }
+            } else if (t instanceof ArrayType) {
+                return typeNameForUnionMember(t.items) + "_array";
+            } else if (t instanceof ClassType) {
+                return this.names.get(this.nameForNamedType(t));
+            } else if (t instanceof MapType) {
+                return typeNameForUnionMember(t.values), "_map";
+            } else if (t instanceof UnionType) {
+                return "union";
+            }
+            throw "Unknown type";
+        };
+
+        return this.propertyNameStyle(typeNameForUnionMember(t));
+    };
+
     protected nameForNamedType = (t: NamedType): Name => {
         if (!this._classAndUnionNames.has(t)) {
             throw "Named type does not exist.";
@@ -122,7 +174,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         blankLocations: BlankLineLocations,
         f: (t: Type, name: Name) => void
     ): void => {
-        this.forEachWithLeadingAndInterposedBlankLines(this.topLevels, (t: Type, name: string) =>
+        this.forEachWithBlankLines(this.topLevels, blankLocations, (t: Type, name: string) =>
             f(t, this._topLevelNames.get(name))
         );
     };
@@ -131,7 +183,8 @@ export abstract class ConvenienceRenderer extends Renderer {
         blankLocations: BlankLineLocations,
         f: (c: ClassType, className: Name, propertyNames: Map<string, Name>) => void
     ): void => {
-        this.forEachWithLeadingAndInterposedBlankLines(this._namedClasses, c =>
+        // FIXME: sort property names
+        this.forEachWithBlankLines(this._namedClasses, blankLocations, c =>
             f(c, this._classAndUnionNames.get(c), this._propertyNames.get(c))
         );
     };
@@ -140,7 +193,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         blankLocations: BlankLineLocations,
         f: (u: UnionType, unionName: Name) => void
     ): void => {
-        this.forEachWithLeadingAndInterposedBlankLines(this._namedUnions, u =>
+        this.forEachWithBlankLines(this._namedUnions, blankLocations, u =>
             f(u, this._classAndUnionNames.get(u))
         );
     };

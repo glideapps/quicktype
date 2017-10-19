@@ -125,10 +125,7 @@ function csNameStyle(original: string): string {
 }
 
 function isValueType(t: Type): boolean {
-    if (t instanceof PrimitiveType) {
-        return ["integer", "double", "bool"].indexOf(t.kind) >= 0;
-    }
-    return false;
+    return ["integer", "double", "bool"].indexOf(t.kind) >= 0;
 }
 
 class CSharpRenderer extends ConvenienceRenderer {
@@ -235,34 +232,6 @@ class CSharpRenderer extends ConvenienceRenderer {
         throw "Unknown type";
     };
 
-    typeNameForUnionMember = (t: Type): string => {
-        if (t instanceof PrimitiveType) {
-            switch (t.kind) {
-                case "any":
-                    return "anything";
-                case "null":
-                    return "null";
-                case "bool":
-                    return "bool";
-                case "integer":
-                    return "long";
-                case "double":
-                    return "double";
-                case "string":
-                    return "string";
-            }
-        } else if (t instanceof ArrayType) {
-            return this.typeNameForUnionMember(t.items) + "_array";
-        } else if (t instanceof ClassType) {
-            return this.names.get(this.nameForNamedType(t));
-        } else if (t instanceof MapType) {
-            return this.typeNameForUnionMember(t.values), "_map";
-        } else if (t instanceof UnionType) {
-            return "union";
-        }
-        throw "Unknown type";
-    };
-
     nullableCSType = (t: Type): Sourcelike => {
         const csType = this.csType(t);
         if (isValueType(t)) {
@@ -307,10 +276,6 @@ class CSharpRenderer extends ConvenienceRenderer {
                 }
             });
         });
-    };
-
-    unionFieldName = (t: Type): string => {
-        return csNameStyle(this.typeNameForUnionMember(t));
     };
 
     emitUnionDefinition = (c: UnionType, unionName: Name): void => {
@@ -526,6 +491,8 @@ class CSharpRenderer extends ConvenienceRenderer {
     };
 
     protected emitSourceStructure(): void {
+        // FIXME: add usage comments
+
         const using = (ns: Sourcelike): void => {
             this.emitLine("using ", ns, ";");
         };
