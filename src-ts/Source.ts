@@ -109,7 +109,10 @@ export interface SerializedRenderResult {
     annotations: List<SourceAnnotation>;
 }
 
-export function serializeRenderResult({ source, names }: RenderResult): SerializedRenderResult {
+export function serializeRenderResult(
+    { source, names }: RenderResult,
+    indentation: string
+): SerializedRenderResult {
     let indent = 0;
     let indentNeeded = 0;
 
@@ -119,7 +122,7 @@ export function serializeRenderResult({ source, names }: RenderResult): Serializ
 
     function indentIfNeeded(): void {
         if (indentNeeded === 0) return;
-        currentLine.push("    ".repeat(indentNeeded));
+        currentLine.push(indentation.repeat(indentNeeded));
         indentNeeded = 0;
     }
 

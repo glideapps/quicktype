@@ -34,10 +34,17 @@ export abstract class TypeScriptTargetLanguage extends TargetLanguage {
         const glueGraph = fromRight(glueGraphOrError);
         const graph = glueGraphToNative(glueGraph);
         const renderResult = this.renderGraph(graph, config.rendererOptions);
-        return serializeRenderResult(renderResult);
+        return serializeRenderResult(renderResult, this.indentation);
     }
 
-    abstract renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult;
+    protected get indentation(): string {
+        return "    ";
+    }
+
+    protected abstract renderGraph(
+        topLevels: TopLevels,
+        optionValues: { [name: string]: any }
+    ): RenderResult;
 }
 
 function optionDefinitionsForRenderer(renderer: Renderer): OptionDefinition[] {
