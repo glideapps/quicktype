@@ -491,11 +491,24 @@ class CSharpRenderer extends ConvenienceRenderer {
     };
 
     protected emitSourceStructure(): void {
-        // FIXME: add usage comments
-
         const using = (ns: Sourcelike): void => {
             this.emitLine("using ", ns, ";");
         };
+
+        if (this._needHelpers) {
+            this.emitLine(
+                "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do",
+                this.topLevels.size === 1 ? "" : " one of these",
+                ":"
+            );
+            this.emitLine("//");
+            this.emitLine("//    using ", this._namespaceName, ";");
+            this.forEachTopLevel("none", (_, topLevelName) => {
+                this.emitLine("//");
+                this.emitLine("//    var data = ", topLevelName, ".FromJson(jsonString);");
+            });
+            this.emitLine("//");
+        }
 
         this.emitLine("namespace ", this._namespaceName);
         this.emitBlock(() => {
