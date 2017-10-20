@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, Set, OrderedSet } from "immutable";
+import { Map, Set, OrderedSet, OrderedMap } from "immutable";
 
 import {
     Type,
@@ -181,12 +181,15 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected forEachClass = (
         blankLocations: BlankLineLocations,
-        f: (c: ClassType, className: Name, propertyNames: Map<string, Name>) => void
+        f: (c: ClassType, className: Name, propertyNames: OrderedMap<string, Name>) => void
     ): void => {
-        // FIXME: sort property names
-        this.forEachWithBlankLines(this._namedClasses, blankLocations, c =>
-            f(c, this._classAndUnionNames.get(c), this._propertyNames.get(c))
-        );
+        this.forEachWithBlankLines(this._namedClasses, blankLocations, c => {
+            const propertyNames = this._propertyNames.get(c);
+            const sortedPropertyNames = propertyNames
+                .sortBy((n: Name) => this.names.get(n))
+                .toOrderedMap();
+            f(c, this._classAndUnionNames.get(c), sortedPropertyNames);
+        });
     };
 
     protected forEachUnion = (

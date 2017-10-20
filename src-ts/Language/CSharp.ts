@@ -1,6 +1,6 @@
 "use strict";
 
-import { List, Map, Iterable } from "immutable";
+import { List, Iterable, OrderedMap } from "immutable";
 import {
     TopLevels,
     Type,
@@ -243,17 +243,17 @@ class CSharpRenderer extends ConvenienceRenderer {
     emitClassDefinition = (
         c: ClassType,
         className: Name,
-        propertyNames: Map<string, Name>
+        propertyNames: OrderedMap<string, Name>
     ): void => {
         const jsonProperty = this._dense ? denseJsonPropertyName : "JsonProperty";
         this.emitClass([this.partialString, "class"], className, () => {
             const maxWidth = c.properties.map((_, name: string) => stringEscape(name).length).max();
             const withBlankLines = this._needAttributes && !this._dense;
-            this.forEach(c.properties, withBlankLines, false, (t: Type, name: string) => {
-                const named = propertyNames.get(name);
-                const escapedName = stringEscape(name);
+            this.forEach(propertyNames, withBlankLines, false, (name: Name, jsonName: string) => {
+                const csType = this.csType(c.properties.get(jsonName), true);
+                const escapedName = stringEscape(jsonName);
                 const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
-                const property = ["public ", this.csType(t, true), " ", named, " { get; set; }"];
+                const property = ["public ", csType, " ", name, " { get; set; }"];
                 if (!this._needAttributes) {
                     this.emitLine(property);
                 } else if (this._dense) {

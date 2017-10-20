@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, OrderedSet, List, Map } from "immutable";
+import { Set, OrderedSet, List, Map, OrderedMap } from "immutable";
 
 import { TypeKind } from "Reykjavik";
 import {
@@ -172,7 +172,11 @@ class GoRenderer extends ConvenienceRenderer {
         });
     };
 
-    private emitClass = (c: ClassType, className: Name, propertyNames: Map<string, Name>): void => {
+    private emitClass = (
+        c: ClassType,
+        className: Name,
+        propertyNames: OrderedMap<string, Name>
+    ): void => {
         let columns: Sourcelike[][] = [];
         propertyNames.forEach((name: Name, jsonName: string) => {
             const goType = this.goType(c.properties.get(jsonName));
@@ -224,7 +228,6 @@ class GoRenderer extends ConvenienceRenderer {
         };
 
         let columns: Sourcelike[][] = [];
-        // FIXME: sort properties
         nonNulls.forEach((t: Type) => {
             const fieldName = this.unionFieldName(t);
             const goType = this.nullableGoType(t);
