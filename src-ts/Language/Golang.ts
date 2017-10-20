@@ -35,7 +35,7 @@ export default class GoTargetLanguage extends TypeScriptTargetLanguage {
 
     constructor() {
         const packageOption = new StringOption("package", "Generated package name", "NAME", "main");
-        super("Go", ["newgo", "go", "golang"], "go", [packageOption.definition]);
+        super("Go", ["go", "golang"], "go", [packageOption.definition]);
         this._packageOption = packageOption;
     }
 

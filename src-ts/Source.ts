@@ -192,7 +192,6 @@ export function serializeRenderResult(
                 source.sequence.forEach((s: Source) => serializeToStringArray(s, names));
                 break;
             case "table":
-                console.error(`at table indent ${indent}`);
                 const t = source.table;
                 const widths = t
                     .map((l: List<Source>) =>

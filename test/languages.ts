@@ -46,7 +46,7 @@ export const JavaLanguage: Language = {
 };
 
 export const GoLanguage: Language = {
-  name: "newgo",
+  name: "golang",
   base: "test/fixtures/golang",
   runCommand(sample: string) {
     return `go run main.go quicktype.go < "${sample}"`;
