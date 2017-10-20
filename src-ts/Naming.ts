@@ -399,7 +399,10 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
             return ctx.names;
         }
 
-        const forbiddenNames = readyNamespace.forbiddenNameds
+        let forbiddenNames = readyNamespace.members
+            .toSet()
+            .union(readyNamespace.forbiddenNameds)
+            .filter((n: Name) => ctx.names.has(n))
             .map((n: Name) => ctx.names.get(n))
             .toSet();
 
@@ -422,6 +425,7 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
                     names.forEach((assigned: string, name: Name) =>
                         ctx.assign(name, readyNamespace, assigned)
                     );
+                    forbiddenNames = forbiddenNames.union(names.toSet());
                 });
             }
         );
