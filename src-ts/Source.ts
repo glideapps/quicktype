@@ -93,6 +93,17 @@ export function annotated(annotation: Annotation, sl: Sourcelike): Source {
     };
 }
 
+export function maybeAnnotated(
+    doAnnotate: boolean,
+    annotation: Annotation,
+    sl: Sourcelike
+): Sourcelike {
+    if (!doAnnotate) {
+        return sl;
+    }
+    return annotated(annotation, sl);
+}
+
 function assertNever(x: never): never {
     throw new Error("Unexpected object: " + x);
 }

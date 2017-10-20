@@ -13,7 +13,7 @@ import {
     nullableFromUnion,
     removeNullFromUnion
 } from "../Type";
-import { Sourcelike, annotated } from "../Source";
+import { Sourcelike, maybeAnnotated } from "../Source";
 import {
     legalizeCharacters,
     camelCase,
@@ -27,7 +27,7 @@ import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TypeScriptTargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
-import { IssueAnnotation } from "../Annotation";
+import { IssueAnnotation, anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
 const unicode = require("unicode-properties");
 
@@ -187,23 +187,13 @@ class CSharpRenderer extends ConvenienceRenderer {
         this.emitLine("}", semicolon ? ";" : "");
     };
 
-    csType = (t: Type): Sourcelike => {
+    csType = (t: Type, withIssues: boolean = false): Sourcelike => {
         if (t instanceof PrimitiveType) {
             switch (t.kind) {
                 case "any":
-                    return annotated(
-                        new IssueAnnotation(
-                            "quicktype cannot infer this type because there is no data about in the input."
-                        ),
-                        "object"
-                    );
+                    return maybeAnnotated(withIssues, anyTypeIssueAnnotation, "object");
                 case "null":
-                    return annotated(
-                        new IssueAnnotation(
-                            "The only value for this in the input is null, which means you probably need a more complete input sample."
-                        ),
-                        "object"
-                    );
+                    return maybeAnnotated(withIssues, nullTypeIssueAnnotation, "object");
                 case "bool":
                     return "bool";
                 case "integer":
@@ -214,7 +204,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                     return "string";
             }
         } else if (t instanceof ArrayType) {
-            const itemsType = this.csType(t.items);
+            const itemsType = this.csType(t.items, withIssues);
             if (this._useList) {
                 return ["List<", itemsType, ">"];
             } else {
@@ -223,16 +213,16 @@ class CSharpRenderer extends ConvenienceRenderer {
         } else if (t instanceof ClassType) {
             return this.nameForNamedType(t);
         } else if (t instanceof MapType) {
-            return ["Dictionary<string, ", this.csType(t.values), ">"];
+            return ["Dictionary<string, ", this.csType(t.values, withIssues), ">"];
         } else if (t instanceof UnionType) {
             const nonNull = nullableFromUnion(t);
-            if (nonNull) return this.nullableCSType(nonNull);
+            if (nonNull) return this.nullableCSType(nonNull, withIssues);
             return this.nameForNamedType(t);
         }
         throw "Unknown type";
     };
 
-    nullableCSType = (t: Type): Sourcelike => {
+    nullableCSType = (t: Type, withIssues: boolean): Sourcelike => {
         const csType = this.csType(t);
         if (isValueType(t)) {
             return [csType, "?"];
@@ -263,7 +253,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                 const named = propertyNames.get(name);
                 const escapedName = stringEscape(name);
                 const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
-                const property = ["public ", this.csType(t), " ", named, " { get; set; }"];
+                const property = ["public ", this.csType(t, true), " ", named, " { get; set; }"];
                 if (!this._needAttributes) {
                     this.emitLine(property);
                 } else if (this._dense) {
@@ -282,7 +272,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         const [_, nonNulls] = removeNullFromUnion(c);
         this.emitClass([this.partialString, "struct"], unionName, () => {
             nonNulls.forEach((t: Type) => {
-                const csType = this.nullableCSType(t);
+                const csType = this.nullableCSType(t, true);
                 const field = this.unionFieldName(t);
                 this.emitLine("public ", csType, " ", field, ";");
             });
