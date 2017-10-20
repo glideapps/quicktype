@@ -17,6 +17,22 @@ export type RenderResult = { source: Source; names: Map<Name, string> };
 
 export type BlankLineLocations = "none" | "leading-and-interposing";
 
+function lineIndentation(line: string): { indent: number; text: string | null } {
+    const len = line.length;
+    let indent = 0;
+    for (let i = 0; i < len; i++) {
+        const c = line.charAt(i);
+        if (c === " ") {
+            indent += 1;
+        } else if (c === "\t") {
+            indent = (indent / 4 + 1) * 4;
+        } else {
+            return { indent, text: line.substring(i) };
+        }
+    }
+    return { indent: 0, text: null };
+}
+
 export abstract class Renderer {
     protected readonly topLevels: TopLevels;
     private _names: Map<Name, string> | undefined;
@@ -43,6 +59,29 @@ export abstract class Renderer {
             this._currentEmitTarget.push(lineParts);
         }
         this.emitNewline();
+    }
+
+    emitMultiline(linesString: string): void {
+        const lines = linesString.split("\n");
+        const numLines = lines.length;
+        if (numLines === 0) return;
+        this.emitLine(lines[0]);
+        let currentIndent = 0;
+        for (let i = 1; i < numLines; i++) {
+            const line = lines[i];
+            const { indent, text } = lineIndentation(line);
+            if (indent % 4 !== 0) {
+                throw "Indentation is not a multiple of 4.";
+            }
+            if (text !== null) {
+                const newIndent = indent / 4;
+                this.changeIndent(newIndent - currentIndent);
+                currentIndent = newIndent;
+                this.emitLine(text);
+            } else {
+                this.emitNewline();
+            }
+        }
     }
 
     emitAnnotated(annotation: Annotation, emitter: () => void): void {

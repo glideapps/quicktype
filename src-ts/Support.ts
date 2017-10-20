@@ -123,6 +123,26 @@ function isPrintable(c: string): boolean {
     );
 }
 
+export function isLetter(c: string): boolean {
+    const category = unicode.getCategory(c.charCodeAt(0));
+    // FIXME: Include all letter categories.
+    return ["Lu", "Ll"].indexOf(category) >= 0;
+}
+
+export function isDigit(c: string): boolean {
+    const category = unicode.getCategory(c.charCodeAt(0));
+    // FIXME: Include all digit categories.
+    return ["Nd"].indexOf(category) >= 0;
+}
+
+export function isLetterOrUnderscore(c: string): boolean {
+    return isLetter(c) || c == "_";
+}
+
+export function isLetterOrUnderscoreOrDigit(c: string): boolean {
+    return isLetter(c) || isDigit(c) || c == "_";
+}
+
 function modifyFirstChar(f: (c: string) => string, s: string): string {
     if (s === "") return s;
     return f(s[0]) + s.slice(1);
