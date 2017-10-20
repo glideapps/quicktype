@@ -10,9 +10,17 @@ fi
 
 # Copy npm package files into output/
 mkdir -p output
-cp -r LICENSE* package*.json cli/README.md $OUTDIR/
+cp -r LICENSE* package*.json $OUTDIR/
 
 cd $OUTDIR
+
+# Travis looks for this script when it does npm publish
+# We have to do this since we're building and publishing in
+# different folders
+mkdir script
+printf "#!/bin/bash\ntrue\n" > script/build.ts
+chmod +x script/build.ts
+
 # If not on CI, publish directly
 if [ -z "$CI" ]; then
    npm publish \
