@@ -124,15 +124,8 @@ class GoRenderer extends ConvenienceRenderer {
         this.emitBlock(["func ", decl], f);
     };
 
-    private emitStruct = (name: Name, f: () => void): void => {
-        this.emitBlock(["type ", name, " struct"], f);
-    };
-
-    private emitColumns = (columns: Sourcelike[][]): void => {
-        // FIXME: implement properly
-        for (const line of columns) {
-            this.emitLine(line);
-        }
+    private emitStruct = (name: Name, table: Sourcelike[][]): void => {
+        this.emitBlock(["type ", name, " struct"], () => this.emitTable(table));
     };
 
     private nullableGoType = (t: Type): Sourcelike => {
@@ -184,9 +177,7 @@ class GoRenderer extends ConvenienceRenderer {
             const goType = this.goType(c.properties.get(jsonName));
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`']]);
         });
-        this.emitStruct(className, () => {
-            this.emitColumns(columns);
-        });
+        this.emitStruct(className, columns);
     };
 
     private emitUnion = (c: UnionType, unionName: Name): void => {
@@ -238,9 +229,7 @@ class GoRenderer extends ConvenienceRenderer {
             const goType = this.nullableGoType(t);
             columns.push([[fieldName, " "], goType]);
         });
-        this.emitStruct(unionName, () => {
-            this.emitColumns(columns);
-        });
+        this.emitStruct(unionName, columns);
         this.emitNewline();
         this.emitFunc(["(x *", unionName, ") UnmarshalJSON(data []byte) error"], () => {
             for (const kind of compoundTypeKinds) {

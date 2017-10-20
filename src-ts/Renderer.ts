@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, Iterable, OrderedSet } from "immutable";
+import { Map, Iterable, OrderedSet, List } from "immutable";
 import { TopLevels } from "./Type";
 import { Name, Namespace, assignNames } from "./Naming";
 import {
@@ -100,6 +100,12 @@ export abstract class Renderer {
     emitIssue(message: string, emitter: () => void): void {
         this.emitAnnotated(new IssueAnnotation(message), emitter);
     }
+
+    protected emitTable = (tableArray: Sourcelike[][]): void => {
+        const table = List(tableArray.map(r => List(r.map(sl => sourcelikeToSource(sl)))));
+        this._currentEmitTarget.push({ kind: "table", table });
+        this.emitNewline();
+    };
 
     private changeIndent(offset: number): void {
         if (!this._lastNewline) {

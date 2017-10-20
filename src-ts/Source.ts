@@ -1,13 +1,19 @@
 "use strict";
 
-import { List, Map } from "immutable";
+import { List, Map, Range } from "immutable";
 
 import { Annotation } from "./Annotation";
 import { Name } from "./Naming";
 import { intercalate } from "./Support";
 import { RenderResult } from "./Renderer";
 
-export type Source = TextSource | NewlineSource | SequenceSource | AnnotatedSource | NameSource;
+export type Source =
+    | TextSource
+    | NewlineSource
+    | SequenceSource
+    | TableSource
+    | AnnotatedSource
+    | NameSource;
 
 export interface TextSource {
     kind: "text";
@@ -27,6 +33,11 @@ export interface NewlineSource {
 export interface SequenceSource {
     kind: "sequence";
     sequence: List<Source>;
+}
+
+export interface TableSource {
+    kind: "table";
+    table: List<List<Source>>;
 }
 
 export interface AnnotatedSource {
@@ -109,6 +120,30 @@ export interface SerializedRenderResult {
     annotations: List<SourceAnnotation>;
 }
 
+function sourceLineLength(source: Source, names: Map<Name, string>): number {
+    switch (source.kind) {
+        case "text":
+            return source.text.length;
+        case "newline":
+            throw "Newline must not occur within a line.";
+        case "sequence":
+            return source.sequence
+                .map((s: Source) => sourceLineLength(s, names))
+                .reduce((a: number, b: number) => a + b, 0);
+        case "table":
+            throw "Table must not occur within a  line.";
+        case "annotated":
+            return sourceLineLength(source.source, names);
+        case "name":
+            if (!names.has(source.named)) {
+                throw "No name for Named";
+            }
+            return names.get(source.named).length;
+        default:
+            return assertNever(source);
+    }
+}
+
 export function serializeRenderResult(
     { source, names }: RenderResult,
     indentation: string
@@ -141,6 +176,7 @@ export function serializeRenderResult(
         currentLine = [];
     }
 
+    // FIXME: We shouldn't have to pass `names` here.
     function serializeToStringArray(source: Source, names: Map<Name, string>): void {
         switch (source.kind) {
             case "text":
@@ -154,6 +190,38 @@ export function serializeRenderResult(
                 break;
             case "sequence":
                 source.sequence.forEach((s: Source) => serializeToStringArray(s, names));
+                break;
+            case "table":
+                console.error(`at table indent ${indent}`);
+                const t = source.table;
+                const widths = t
+                    .map((l: List<Source>) =>
+                        l.map((s: Source) => sourceLineLength(s, names)).toList()
+                    )
+                    .toList();
+                const numRows = t.size;
+                const numColumns = t.map((l: List<Source>) => l.size).max();
+                const columnWidths = Range(0, numColumns).map((i: number) =>
+                    widths.map((l: List<number>) => l.get(i)).max()
+                );
+                for (let y = 0; y < numRows; y++) {
+                    indentIfNeeded();
+                    const row = t.get(y);
+                    const rowWidths = widths.get(y);
+                    for (let x = 0; x < numColumns; x++) {
+                        const colWidth = columnWidths.get(x);
+                        const src = row.get(x);
+                        const srcWidth = rowWidths.get(x);
+                        serializeToStringArray(src, names);
+                        if (srcWidth < colWidth) {
+                            currentLine.push(" ".repeat(colWidth - srcWidth));
+                        }
+                    }
+                    if (y < numRows - 1) {
+                        finishLine();
+                        indentNeeded = indent;
+                    }
+                }
                 break;
             case "annotated":
                 const start = currentLocation();
