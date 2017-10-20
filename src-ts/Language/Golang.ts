@@ -25,7 +25,8 @@ import {
     stringEscape
 } from "../Support";
 import { StringOption } from "../RendererOptions";
-import { Sourcelike } from "../Source";
+import { Sourcelike, annotated } from "../Source";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TypeScriptTargetLanguage } from "../TargetLanguage";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -138,8 +139,8 @@ class GoRenderer extends ConvenienceRenderer {
     };
 
     private goType: (t: Type) => Sourcelike = matchTypeAll<Sourcelike>(
-        anyType => "interface{}", // FIXME: annotation
-        nullType => "interface{}", // FIXME: annotation
+        anyType => annotated(anyTypeIssueAnnotation, "interface{}"),
+        nullType => annotated(nullTypeIssueAnnotation, "interface{}"),
         boolType => "bool",
         integerType => "int64",
         doubleType => "float64",
