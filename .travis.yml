@@ -30,7 +30,7 @@ jobs:
       before_install: true
       install: npm install
       script: npm run pub
-      before_deploy: cd output
+      before_deploy: cd dist
       deploy:
         provider: npm
         email: djsiegel@gmail.com
