@@ -78,7 +78,8 @@ export async function quicktypeForLanguage(
     src: [sourceFile],
     out: language.output,
     topLevel: language.topLevel,
-    rendererOptions: language.rendererOptions
+    rendererOptions: language.rendererOptions,
+    quiet: true
   });
 }
 

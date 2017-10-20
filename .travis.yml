@@ -2,9 +2,9 @@ language: node_js
 node_js: node # latest
 sudo: required
 env:
-  - FIXTURE=csharp,golang,schema,schema-json-golang
-  - FIXTURE=schema,swift3,swift4,java
-  - FIXTURE=elm,typescript
+  - FIXTURE=golang,schema,schema-json-golang
+  - FIXTURE=swift3,swift4,java
+  - FIXTURE=elm,typescript,csharp
 services:
   - docker
 before_install:

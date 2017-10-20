@@ -13,16 +13,17 @@ module Config
 import Prelude
 
 import Control.Alt ((<|>))
-import Data.Argonaut.Core (Json)
+import Data.Argonaut.Core (Json, toString)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?), (.??))
 import Data.Array as A
 import Data.Either (Either(Right, Left))
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(Just), fromMaybe, maybe)
+import Data.Maybe (Maybe(Just), fromMaybe, maybe, fromJust)
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
 import Data.Tuple (Tuple(..))
+import Partial.Unsafe (unsafePartial)
 import Doc as Doc
 import Language.JsonSchema (JSONSchema)
 import Language.Renderers as Renderers
@@ -41,7 +42,7 @@ newtype Config = Config
     { topLevels :: Array TopLevelConfig
     , language :: String
     , inferMaps :: Boolean
-    , rendererOptions :: StrMap String
+    , rendererOptions :: StrMap Json
     }
 
 instance decodeTypeSource :: DecodeJson TypeSource where
@@ -118,7 +119,7 @@ topLevelSchemas (Config config) = withSchemas
         pure $ Tuple name [s]
 
 rendererOptions :: Config -> StrMap String
-rendererOptions (Config { rendererOptions }) = rendererOptions
+rendererOptions (Config { rendererOptions }) = SM.mapWithKey (\_ j -> unsafePartial $ fromJust $ toString j) rendererOptions
 
 inferMaps :: Config -> Boolean
 inferMaps (Config { inferMaps }) = inferMaps
