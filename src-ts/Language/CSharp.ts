@@ -145,6 +145,10 @@ class CSharpRenderer extends ConvenienceRenderer {
         return ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
     }
 
+    protected forbiddenNamesForProperties(c: ClassType, classNamed: Name): Name[] {
+        return [classNamed];
+    }
+
     protected topLevelNameStyle(rawName: string): string {
         return csNameStyle(rawName);
     }

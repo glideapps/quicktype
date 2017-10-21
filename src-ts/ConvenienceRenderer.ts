@@ -37,6 +37,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [];
     }
 
+    protected forbiddenNamesForProperties(c: ClassType, classNamed: Name): Name[] {
+        return [];
+    }
+
     protected topLevelDependencyNames(topLevelName: Name): DependencyName[] {
         return [];
     }
@@ -103,7 +107,8 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     private addPropertyNameds = (c: ClassType, classNamed: Name): void => {
-        const ns = new Namespace(c.names.combined, this._globalNamespace, Set(), Set([classNamed]));
+        const forbidden = this.forbiddenNamesForProperties(c, classNamed);
+        const ns = new Namespace(c.names.combined, this._globalNamespace, Set(), Set(forbidden));
         const names = c.properties
             .map((t: Type, name: string) => {
                 return ns.add(new SimpleName(this.propertyNameStyle(name), this.propertyNamer));
