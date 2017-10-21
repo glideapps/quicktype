@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, Iterable, OrderedSet } from "immutable";
+import { Map, Iterable, OrderedSet, List } from "immutable";
 import { TopLevels } from "./Type";
 import { Name, Namespace, assignNames } from "./Naming";
 import {
@@ -16,6 +16,22 @@ import { Annotation, IssueAnnotation } from "./Annotation";
 export type RenderResult = { source: Source; names: Map<Name, string> };
 
 export type BlankLineLocations = "none" | "leading-and-interposing";
+
+function lineIndentation(line: string): { indent: number; text: string | null } {
+    const len = line.length;
+    let indent = 0;
+    for (let i = 0; i < len; i++) {
+        const c = line.charAt(i);
+        if (c === " ") {
+            indent += 1;
+        } else if (c === "\t") {
+            indent = (indent / 4 + 1) * 4;
+        } else {
+            return { indent, text: line.substring(i) };
+        }
+    }
+    return { indent: 0, text: null };
+}
 
 export abstract class Renderer {
     protected readonly topLevels: TopLevels;
@@ -45,6 +61,29 @@ export abstract class Renderer {
         this.emitNewline();
     }
 
+    emitMultiline(linesString: string): void {
+        const lines = linesString.split("\n");
+        const numLines = lines.length;
+        if (numLines === 0) return;
+        this.emitLine(lines[0]);
+        let currentIndent = 0;
+        for (let i = 1; i < numLines; i++) {
+            const line = lines[i];
+            const { indent, text } = lineIndentation(line);
+            if (indent % 4 !== 0) {
+                throw "Indentation is not a multiple of 4.";
+            }
+            if (text !== null) {
+                const newIndent = indent / 4;
+                this.changeIndent(newIndent - currentIndent);
+                currentIndent = newIndent;
+                this.emitLine(text);
+            } else {
+                this.emitNewline();
+            }
+        }
+    }
+
     emitAnnotated(annotation: Annotation, emitter: () => void): void {
         const oldEmitTarget: Sourcelike[] = this._currentEmitTarget;
         const emitTarget: Sourcelike[] = [];
@@ -61,6 +100,12 @@ export abstract class Renderer {
     emitIssue(message: string, emitter: () => void): void {
         this.emitAnnotated(new IssueAnnotation(message), emitter);
     }
+
+    protected emitTable = (tableArray: Sourcelike[][]): void => {
+        const table = List(tableArray.map(r => List(r.map(sl => sourcelikeToSource(sl)))));
+        this._currentEmitTarget.push({ kind: "table", table });
+        this.emitNewline();
+    };
 
     private changeIndent(offset: number): void {
         if (!this._lastNewline) {
