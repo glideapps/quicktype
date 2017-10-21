@@ -90,7 +90,7 @@ export default class CSharpTargetLanguage extends TypeScriptTargetLanguage {
     }
 }
 
-const namingFunction = funPrefixNamer(true);
+const namingFunction = funPrefixNamer(csNameStyle);
 
 // FIXME: Make a Named?
 const denseJsonPropertyName = "J";
@@ -153,12 +153,12 @@ class CSharpRenderer extends ConvenienceRenderer {
         return csNameStyle(rawName);
     }
 
-    protected namedTypeNameStyle(rawName: string): string {
-        return csNameStyle(rawName);
+    protected get namedTypeNamer(): Namer {
+        return namingFunction;
     }
 
-    protected propertyNameStyle(rawName: string): string {
-        return csNameStyle(rawName);
+    protected get propertyNamer(): Namer {
+        return namingFunction;
     }
 
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
@@ -175,14 +175,6 @@ class CSharpRenderer extends ConvenienceRenderer {
             return definedTypes.first();
         }
         return null;
-    }
-
-    protected get namedTypeNamer(): Namer {
-        return namingFunction;
-    }
-
-    protected get propertyNamer(): Namer {
-        return namingFunction;
     }
 
     emitBlock = (f: () => void, semicolon: boolean = false): void => {

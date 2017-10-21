@@ -46,11 +46,9 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected abstract topLevelNameStyle(rawName: string): string;
-    protected abstract namedTypeNameStyle(rawName: string): string;
-    protected abstract propertyNameStyle(rawName: string): string;
-    protected abstract namedTypeToNameForTopLevel(type: Type): NamedType | null;
     protected abstract get namedTypeNamer(): Namer;
     protected abstract get propertyNamer(): Namer;
+    protected abstract namedTypeToNameForTopLevel(type: Type): NamedType | null;
     protected abstract emitSourceStructure(): void;
 
     protected unionNeedsName(u: UnionType): boolean {
@@ -76,7 +74,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         const maybeNamedType = this.namedTypeToNameForTopLevel(type);
         let styledName: string;
         if (maybeNamedType) {
-            styledName = this.namedTypeNameStyle(name);
+            styledName = this.namedTypeNamer.nameStyle(name);
         } else {
             styledName = this.topLevelNameStyle(name);
         }
@@ -99,9 +97,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             return this._classAndUnionNames.get(type);
         }
         const name = type.names.combined;
-        const named = this._globalNamespace.add(
-            new SimpleName(this.namedTypeNameStyle(name), this.namedTypeNamer)
-        );
+        const named = this._globalNamespace.add(new SimpleName(name, this.namedTypeNamer));
         this._classAndUnionNames = this._classAndUnionNames.set(type, named);
         return named;
     };
@@ -111,7 +107,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         const ns = new Namespace(c.names.combined, this._globalNamespace, Set(), Set(forbidden));
         const names = c.properties
             .map((t: Type, name: string) => {
-                return ns.add(new SimpleName(this.propertyNameStyle(name), this.propertyNamer));
+                return ns.add(new SimpleName(name, this.propertyNamer));
             })
             .toMap();
         this._propertyNames = this._propertyNames.set(c, names);
@@ -165,7 +161,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             throw "Unknown type";
         };
 
-        return this.propertyNameStyle(typeNameForUnionMember(t));
+        return this.propertyNamer.nameStyle(typeNameForUnionMember(t));
     };
 
     protected nameForNamedType = (t: NamedType): Name => {

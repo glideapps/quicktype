@@ -29,7 +29,7 @@ import {
     intercalate
 } from "../Support";
 
-import { Namespace, Name, SimpleName, FixedName, keywordNamespace } from "../Naming";
+import { Namer, Namespace, Name, SimpleName, FixedName, keywordNamespace } from "../Naming";
 
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
@@ -75,6 +75,9 @@ const legalizeName = legalizeCharacters(isPartCharacter);
 function simpleNameStyle(original: string, uppercase: boolean): string {
     return startWithLetter(isStartCharacter, uppercase, camelCase(legalizeName(original)));
 }
+
+const lowerCaseNamer = new Namer(n => simpleNameStyle(n, false), []);
+const upperCaseNamer = new Namer(n => simpleNameStyle(n, true), []);
 
 class SimpleTypesRenderer extends Renderer {
     namespace: Namespace;
@@ -134,7 +137,7 @@ class SimpleTypesRenderer extends Renderer {
             return this.classAndUnionNames.get(type);
         }
         const name = type.names.combined;
-        const named = this.namespace.add(new SimpleName(simpleNameStyle(name, true)));
+        const named = this.namespace.add(new SimpleName(name, upperCaseNamer));
         this.classAndUnionNames = this.classAndUnionNames.set(type, named);
         return named;
     };
@@ -142,7 +145,7 @@ class SimpleTypesRenderer extends Renderer {
     addPropertyNameds = (c: ClassType, classNamed: Name): void => {
         const ns = new Namespace(c.names.combined, this.namespace, Set(), Set([classNamed]));
         const nameds = c.properties
-            .map((t: Type, name: string) => ns.add(new SimpleName(simpleNameStyle(name, false))))
+            .map((t: Type, name: string) => ns.add(new SimpleName(name, lowerCaseNamer)))
             .toMap();
         this.propertyNames = this.propertyNames.set(c, nameds);
     };
