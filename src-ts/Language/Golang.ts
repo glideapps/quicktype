@@ -50,7 +50,7 @@ export default class GoTargetLanguage extends TypeScriptTargetLanguage {
     }
 }
 
-const namingFunction = funPrefixNamer(true);
+const namingFunction = funPrefixNamer(goNameStyle);
 
 const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
 
@@ -79,12 +79,12 @@ class GoRenderer extends ConvenienceRenderer {
         return goNameStyle(rawName);
     }
 
-    protected namedTypeNameStyle(rawName: string): string {
-        return goNameStyle(rawName);
+    protected get namedTypeNamer(): Namer {
+        return namingFunction;
     }
 
-    protected propertyNameStyle(rawName: string): string {
-        return goNameStyle(rawName);
+    protected get propertyNamer(): Namer {
+        return namingFunction;
     }
 
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
@@ -92,14 +92,6 @@ class GoRenderer extends ConvenienceRenderer {
             return type;
         }
         return null;
-    }
-
-    protected get namedTypeNamer(): Namer {
-        return namingFunction;
-    }
-
-    protected get propertyNamer(): Namer {
-        return namingFunction;
     }
 
     protected topLevelDependencyNames(topLevelName: Name): DependencyName[] {

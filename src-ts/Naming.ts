@@ -68,6 +68,8 @@ export class Namespace {
     }
 }
 
+export type NameStyle = (rawName: string) => string;
+
 // `Namer`s are invoked to figure out what names to assign non-fixed `Name`s,
 // and in particular to resolve conflicts.  Those arise under two circumstances,
 // which can also combine:
@@ -90,12 +92,12 @@ export class Namespace {
 export class Namer {
     private readonly _prefixes: OrderedSet<string>;
 
-    constructor(prefixes: string[]) {
+    constructor(readonly nameStyle: NameStyle, prefixes: string[]) {
         this._prefixes = OrderedSet(prefixes);
     }
 
     name(
-        proposedName: string,
+        names: Map<Name, string>,
         forbiddenNames: Set<string>,
         namesToAssign: Iterable<any, Name>
     ): Map<Name, string> {
@@ -104,9 +106,9 @@ export class Namer {
         }
 
         if (namesToAssign.size === 1) {
-            const assignedForSingle = namesToAssign
-                .first()
-                .nameAssignments(forbiddenNames, proposedName);
+            const name = namesToAssign.first();
+            const styledName = this.nameStyle(name.proposeUnstyledName(names));
+            const assignedForSingle = name.nameAssignments(forbiddenNames, styledName);
             if (assignedForSingle) {
                 return assignedForSingle;
             }
@@ -118,15 +120,17 @@ export class Namer {
         let suffixNumber = 1;
         while (!namesToAssign.isEmpty()) {
             const name = namesToAssign.first();
+            const originalName = name.proposeUnstyledName(names);
             let nameToTry: string;
             if (!prefixes.isEmpty()) {
-                nameToTry = prefixes.first() + proposedName;
+                nameToTry = prefixes.first() + "_" + originalName;
                 prefixes = prefixes.rest();
             } else {
-                nameToTry = proposedName + suffixNumber.toString();
+                nameToTry = originalName + "_" + suffixNumber.toString();
                 suffixNumber++;
             }
-            const assigned = name.nameAssignments(forbiddenNames, nameToTry);
+            const styledName = this.nameStyle(nameToTry);
+            const assigned = name.nameAssignments(forbiddenNames, styledName);
             if (assigned === null) continue;
             allAssignedNames = allAssignedNames.merge(assigned);
             forbiddenNames = forbiddenNames.union(allAssignedNames);
@@ -164,10 +168,14 @@ const funPrefixes = [
     "Braggadocious"
 ];
 
-export function funPrefixNamer(upper: boolean): Namer {
-    const prefixes = upper ? funPrefixes : funPrefixes.map(decapitalize);
-    return new Namer(prefixes);
+export function funPrefixNamer(nameStyle: NameStyle): Namer {
+    return new Namer(nameStyle, funPrefixes);
 }
+
+// FIXME: I think the type hierarchy is somewhat wrong here.  `FixedName`
+// should be a `Name`, but the non-fixed names should probably have their
+// own common superclass.  Most methods of `Name` make sense only either
+// for `FixedName` or the non-fixed names.
 
 export abstract class Name {
     private _associates = Set<AssociatedName>();
@@ -193,7 +201,7 @@ export abstract class Name {
         return this.namingFunction === null;
     }
 
-    abstract proposeName(names: Map<Name, string>): string;
+    abstract proposeUnstyledName(names: Map<Name, string>): string;
 
     nameAssignments(forbiddenNames: Set<string>, assignedName: string): Map<Name, string> | null {
         if (forbiddenNames.has(assignedName)) return null;
@@ -222,7 +230,7 @@ export class FixedName extends Name {
         return List();
     }
 
-    proposeName(names?: Map<Name, string>): string {
+    proposeUnstyledName(names?: Map<Name, string>): string {
         return this._fixedName;
     }
 
@@ -232,22 +240,20 @@ export class FixedName extends Name {
 }
 
 export class SimpleName extends Name {
-    private static defaultNamingFunction = new Namer([]);
-
-    constructor(private readonly _proposed: string, namingFunction?: Namer) {
-        super(namingFunction || SimpleName.defaultNamingFunction);
+    constructor(private readonly _unstyledName: string, namingFunction: Namer) {
+        super(namingFunction);
     }
 
     get dependencies(): List<Name> {
         return List();
     }
 
-    proposeName(names?: Map<Name, string>): string {
-        return this._proposed;
+    proposeUnstyledName(names?: Map<Name, string>): string {
+        return this._unstyledName;
     }
 
     hashCode(): number {
-        return (super.hashCode() + stringHash(this._proposed)) | 0;
+        return (super.hashCode() + stringHash(this._unstyledName)) | 0;
     }
 }
 
@@ -263,7 +269,7 @@ export class AssociatedName extends Name {
         return List([this._sponsor]);
     }
 
-    proposeName(names?: Map<Name, string>): string {
+    proposeUnstyledName(names?: Map<Name, string>): string {
         throw "AssociatedName must be assigned via its sponsor";
     }
 }
@@ -279,7 +285,7 @@ export class DependencyName extends Name {
     constructor(
         namingFunction: Namer,
         private readonly _dependencies: List<Name>,
-        private readonly _proposeName: (names: List<string>) => string
+        private readonly _proposeUnstyledName: (names: List<string>) => string
     ) {
         super(namingFunction);
     }
@@ -288,9 +294,9 @@ export class DependencyName extends Name {
         return this._dependencies;
     }
 
-    proposeName(names: Map<Name, string>): string {
+    proposeUnstyledName(names: Map<Name, string>): string {
         const dependencyNames = this._dependencies.map((n: Name) => names.get(n)).toList();
-        return this._proposeName(dependencyNames);
+        return this._proposeUnstyledName(dependencyNames);
     }
 
     hashCode(): number {
@@ -367,7 +373,7 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
     ctx.namespaces.forEach((ns: Namespace) =>
         ns.members.forEach((n: Name) => {
             if (!n.isFixed()) return;
-            ctx.assign(n, ns, n.proposeName());
+            ctx.assign(n, ns, n.proposeUnstyledName());
         })
     );
 
@@ -401,21 +407,19 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
         // It would be nice if we had tuples, then we wouldn't have to do this in
         // two steps.
         const byNamingFunction = readyNames.groupBy((n: Name) => n.namingFunction);
-        byNamingFunction.forEach(
-            (namedsForNamingFunction: Iterable<any, Name>, namingFunction: Namer) => {
-                const byProposed = namedsForNamingFunction.groupBy((n: Name) =>
-                    n.proposeName(ctx.names)
-                );
-                byProposed.forEach((nameds: Iterable<any, Name>, proposed: string) => {
-                    // 3. Use each set's naming function to name its members.
+        byNamingFunction.forEach((namedsForNamingFunction: Iterable<any, Name>, namer: Namer) => {
+            const byProposed = namedsForNamingFunction.groupBy((n: Name) =>
+                namer.nameStyle(n.proposeUnstyledName(ctx.names))
+            );
+            byProposed.forEach((nameds: Iterable<any, Name>, proposed: string) => {
+                // 3. Use each set's naming function to name its members.
 
-                    const names = namingFunction.name(proposed, forbiddenNames, nameds);
-                    names.forEach((assigned: string, name: Name) =>
-                        ctx.assign(name, readyNamespace, assigned)
-                    );
-                    forbiddenNames = forbiddenNames.union(names.toSet());
-                });
-            }
-        );
+                const names = namer.name(ctx.names, forbiddenNames, nameds);
+                names.forEach((assigned: string, name: Name) =>
+                    ctx.assign(name, readyNamespace, assigned)
+                );
+                forbiddenNames = forbiddenNames.union(names.toSet());
+            });
+        });
     }
 }
