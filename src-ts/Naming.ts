@@ -87,22 +87,10 @@ export class Namespace {
 // too.  Then a Name's `proposedName` can just be its `originalName` or whatever,
 // and can do double-duty to specify user overriding when we implement it.
 
-export abstract class Namer {
-    abstract name(
-        proposedName: string,
-        forbiddenNames: Set<string>,
-        namesToAssign: Iterable<any, Name>
-    ): Map<Name, string>;
-
-    abstract equals(other: any): boolean;
-    abstract hashCode(): number;
-}
-
-export class PrefixNamer extends Namer {
+export class Namer {
     private readonly _prefixes: OrderedSet<string>;
 
     constructor(prefixes: string[]) {
-        super();
         this._prefixes = OrderedSet(prefixes);
     }
 
@@ -149,7 +137,7 @@ export class PrefixNamer extends Namer {
     }
 
     equals(other: any): boolean {
-        if (!(other instanceof PrefixNamer)) {
+        if (!(other instanceof Namer)) {
             return false;
         }
         return other._prefixes.equals(this._prefixes);
@@ -176,9 +164,9 @@ const funPrefixes = [
     "Braggadocious"
 ];
 
-export function funPrefixNamer(upper: boolean): PrefixNamer {
+export function funPrefixNamer(upper: boolean): Namer {
     const prefixes = upper ? funPrefixes : funPrefixes.map(decapitalize);
-    return new PrefixNamer(funPrefixes);
+    return new Namer(prefixes);
 }
 
 export abstract class Name {
@@ -244,7 +232,7 @@ export class FixedName extends Name {
 }
 
 export class SimpleName extends Name {
-    private static defaultNamingFunction = new PrefixNamer([]);
+    private static defaultNamingFunction = new Namer([]);
 
     constructor(private readonly _proposed: string, namingFunction?: Namer) {
         super(namingFunction || SimpleName.defaultNamingFunction);
