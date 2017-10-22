@@ -69,6 +69,7 @@ export abstract class Fixture {
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
       chalk.magenta(this.name),
+      JSON.stringify(sample.additionalRendererOptions),
       path.join(cwd, chalk.cyan(path.basename(sample.path))),
       shouldSkip ? chalk.red("SKIP") : ""
     );
@@ -233,16 +234,29 @@ class JSONFixture extends LanguageFixture {
       "json"
     );
 
+    const combinationsInput = _.find(prioritySamples, p =>
+      p.endsWith("/priority/combinations.json")
+    );
+    if (!combinationsInput) {
+      return failWith(
+        "priority/combinations.json sample not found",
+        prioritySamples
+      );
+    }
+    const quickTestSamples = _.map(
+      this.language.quickTestRendererOptions,
+      ro => ({ path: combinationsInput, additionalRendererOptions: ro })
+    );
+    priority = quickTestSamples.concat(priority);
+
     if (IS_CI && !IS_PR && !IS_BLESSED) {
       // Run only priority sources on low-priority CI branches
-      priority = samplesFromPaths(prioritySamples);
       others = [];
     } else if (IS_CI) {
       // On CI, we run a maximum number of test samples. First we test
       // the priority samples to fail faster, then we continue testing
       // until testMax with random sources.
       const testMax = 100;
-      priority = samplesFromPaths(prioritySamples);
       others = _.chain(samplesFromPaths(miscSamples))
         .shuffle()
         .take(testMax - prioritySamples.length)
@@ -278,7 +292,8 @@ class JSONSchemaJSONFixture extends JSONFixture {
         "simple-identifiers.json",
         "blns-object.json"
       ],
-      rendererOptions: {}
+      rendererOptions: {},
+      quickTestRendererOptions: []
     };
     super(schemaLanguage);
     this.runLanguage = language;

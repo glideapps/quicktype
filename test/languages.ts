@@ -14,6 +14,7 @@ export interface Language {
   topLevel: string;
   skipJSON: string[];
   rendererOptions: RendererOptions;
+  quickTestRendererOptions: RendererOptions[];
 }
 
 export const CSharpLanguage: Language = {
@@ -29,7 +30,12 @@ export const CSharpLanguage: Language = {
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [],
-  rendererOptions: {}
+  rendererOptions: {},
+  quickTestRendererOptions: [
+    { "array-type": "list" },
+    { "csharp-version": "5" },
+    { density: "dense" }
+  ]
 };
 
 export const JavaLanguage: Language = {
@@ -44,7 +50,8 @@ export const JavaLanguage: Language = {
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
-  rendererOptions: {}
+  rendererOptions: {},
+  quickTestRendererOptions: []
 };
 
 export const GoLanguage: Language = {
@@ -58,7 +65,8 @@ export const GoLanguage: Language = {
   output: "quicktype.go",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
-  rendererOptions: {}
+  rendererOptions: {},
+  quickTestRendererOptions: []
 };
 
 export const ElmLanguage: Language = {
@@ -74,7 +82,8 @@ export const ElmLanguage: Language = {
   output: "QuickType.elm",
   topLevel: "QuickType",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
-  rendererOptions: {}
+  rendererOptions: {},
+  quickTestRendererOptions: [{ "array-type": "list" }]
 };
 
 function makeSwiftLanguage(rendererOptions: {
@@ -92,7 +101,8 @@ function makeSwiftLanguage(rendererOptions: {
     output: "quicktype.swift",
     topLevel: "TopLevel",
     skipJSON: ["identifiers.json", "no-classes.json", "blns-object.json"],
-    rendererOptions: rendererOptions
+    rendererOptions: rendererOptions,
+    quickTestRendererOptions: [{ "struct-or-class": "class" }]
   };
 }
 
@@ -124,5 +134,6 @@ export const TypeScriptLanguage: Language = {
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json"],
-  rendererOptions: {}
+  rendererOptions: {},
+  quickTestRendererOptions: []
 };
