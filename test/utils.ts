@@ -2,7 +2,13 @@
 
 import * as fs from "fs";
 
-import { main as quicktype_, Options } from "../dist/quicktype";
+import * as _ from "lodash";
+
+import {
+  main as quicktype_,
+  Options,
+  RendererOptions
+} from "../dist/quicktype";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 
@@ -70,7 +76,8 @@ export async function quicktype(opts: Options) {
 export async function quicktypeForLanguage(
   language: languages.Language,
   sourceFile: string,
-  sourceLanguage: string
+  sourceLanguage: string,
+  additionalRendererOptions: RendererOptions
 ) {
   await quicktype({
     srcLang: sourceLanguage,
@@ -78,7 +85,11 @@ export async function quicktypeForLanguage(
     src: [sourceFile],
     out: language.output,
     topLevel: language.topLevel,
-    rendererOptions: language.rendererOptions,
+    rendererOptions: _.merge(
+      {},
+      language.rendererOptions,
+      additionalRendererOptions
+    ),
     quiet: true
   });
 }

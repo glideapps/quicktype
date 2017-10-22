@@ -1,5 +1,7 @@
 "use strict";
 
+import { RendererOptions } from "../dist/quicktype";
+
 export interface Language {
   name: string;
   base: string;
@@ -11,7 +13,7 @@ export interface Language {
   output: string;
   topLevel: string;
   skipJSON: string[];
-  rendererOptions: { [name: string]: string };
+  rendererOptions: RendererOptions;
 }
 
 export const CSharpLanguage: Language = {

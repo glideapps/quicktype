@@ -5,7 +5,7 @@ import * as _ from "lodash";
 
 import { inParallel } from "./lib/multicore";
 import { exec } from "./utils";
-import { Fixture, allFixtures } from "./fixtures";
+import { Fixture, allFixtures, Sample } from "./fixtures";
 
 const exit = require("exit");
 
@@ -19,7 +19,7 @@ const CPUs = parseInt(process.env.CPUs || "0", 10) || os.cpus().length;
 // Test driver
 /////////////////////////////////////
 
-type WorkItem = { sample: string; fixtureName: string };
+type WorkItem = { sample: Sample; fixtureName: string };
 
 async function main(sources: string[]) {
   let fixtures = allFixtures;
