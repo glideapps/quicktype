@@ -2,7 +2,13 @@
 
 import * as fs from "fs";
 
-import { main as quicktype_, Options } from "../dist/quicktype";
+import * as _ from "lodash";
+
+import {
+  main as quicktype_,
+  Options,
+  RendererOptions
+} from "../dist/quicktype";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 
@@ -70,7 +76,8 @@ export async function quicktype(opts: Options) {
 export async function quicktypeForLanguage(
   language: languages.Language,
   sourceFile: string,
-  sourceLanguage: string
+  sourceLanguage: string,
+  additionalRendererOptions: RendererOptions
 ) {
   await quicktype({
     srcLang: sourceLanguage,
@@ -78,7 +85,11 @@ export async function quicktypeForLanguage(
     src: [sourceFile],
     out: language.output,
     topLevel: language.topLevel,
-    rendererOptions: language.rendererOptions,
+    rendererOptions: _.merge(
+      {},
+      language.rendererOptions,
+      additionalRendererOptions
+    ),
     quiet: true
   });
 }
@@ -97,18 +108,33 @@ export function testsInDir(dir: string, extension: string): string[] {
   return shell.ls(`${dir}/*.${extension}`);
 }
 
+export interface Sample {
+  path: string;
+  additionalRendererOptions: RendererOptions;
+}
+
+export function samplesFromPaths(paths: string[]): Sample[] {
+  return paths.map(p => ({ path: p, additionalRendererOptions: {} }));
+}
+
 export function samplesFromSources(
   sources: string[],
   prioritySamples: string[],
   miscSamples: string[],
   extension: string
-): { priority: string[]; others: string[] } {
+): { priority: Sample[]; others: Sample[] } {
   if (sources.length === 0) {
-    return { priority: prioritySamples, others: miscSamples };
+    return {
+      priority: samplesFromPaths(prioritySamples),
+      others: samplesFromPaths(miscSamples)
+    };
   } else if (sources.length === 1 && fs.lstatSync(sources[0]).isDirectory()) {
-    return { priority: testsInDir(sources[0], extension), others: [] };
+    return {
+      priority: samplesFromPaths(testsInDir(sources[0], extension)),
+      others: []
+    };
   } else {
-    return { priority: sources, others: [] };
+    return { priority: samplesFromPaths(sources), others: [] };
   }
 }
 

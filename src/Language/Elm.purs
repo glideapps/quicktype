@@ -31,7 +31,7 @@ forbiddenNames =
     , "int", "float", "bool", "string"
     , "Jenc", "Jdec", "Jpipe"
     , "always", "identity"
-    , "Array", "Dict", "Maybe", "map", "toList"
+    , "Array", "List", "Dict", "Maybe", "map", "toList"
     , "makeArrayEncoder", "makeDictEncoder", "makeNullableEncoder"
     ]
 

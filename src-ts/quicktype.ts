@@ -159,6 +159,8 @@ function usage() {
     console.log(getUsage(sections));
 }
 
+export type RendererOptions = { [name: string]: string };
+
 export interface Options {
     lang?: string;
     src?: string[];
@@ -169,7 +171,7 @@ export interface Options {
     noMaps?: boolean;
     help?: boolean;
     quiet?: boolean;
-    rendererOptions: { [name: string]: string };
+    rendererOptions: RendererOptions;
 }
 
 interface CompleteOptions {
@@ -182,7 +184,7 @@ interface CompleteOptions {
     noMaps: boolean;
     help: boolean;
     quiet: boolean;
-    rendererOptions: { [name: string]: any };
+    rendererOptions: RendererOptions;
 }
 
 interface SampleOrSchemaMap {
