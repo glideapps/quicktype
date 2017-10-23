@@ -4,8 +4,8 @@ import * as os from "os";
 import * as _ from "lodash";
 
 import { inParallel } from "./lib/multicore";
-import { exec } from "./utils";
-import { Fixture, allFixtures, Sample } from "./fixtures";
+import { exec, Sample } from "./utils";
+import { Fixture, allFixtures } from "./fixtures";
 
 const exit = require("exit");
 

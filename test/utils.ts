@@ -108,18 +108,33 @@ export function testsInDir(dir: string, extension: string): string[] {
   return shell.ls(`${dir}/*.${extension}`);
 }
 
+export interface Sample {
+  path: string;
+  additionalRendererOptions: RendererOptions;
+}
+
+export function samplesFromPaths(paths: string[]): Sample[] {
+  return paths.map(p => ({ path: p, additionalRendererOptions: {} }));
+}
+
 export function samplesFromSources(
   sources: string[],
   prioritySamples: string[],
   miscSamples: string[],
   extension: string
-): { priority: string[]; others: string[] } {
+): { priority: Sample[]; others: Sample[] } {
   if (sources.length === 0) {
-    return { priority: prioritySamples, others: miscSamples };
+    return {
+      priority: samplesFromPaths(prioritySamples),
+      others: samplesFromPaths(miscSamples)
+    };
   } else if (sources.length === 1 && fs.lstatSync(sources[0]).isDirectory()) {
-    return { priority: testsInDir(sources[0], extension), others: [] };
+    return {
+      priority: samplesFromPaths(testsInDir(sources[0], extension)),
+      others: []
+    };
   } else {
-    return { priority: sources, others: [] };
+    return { priority: samplesFromPaths(sources), others: [] };
   }
 }
 

@@ -15,7 +15,9 @@ import {
   inDir,
   quicktype,
   quicktypeForLanguage,
+  Sample,
   samplesFromSources,
+  samplesFromPaths,
   testsInDir
 } from "./utils";
 import * as languages from "./languages";
@@ -30,21 +32,6 @@ const IS_BLESSED = BRANCH === "master";
 const IS_PR =
   process.env.TRAVIS_PULL_REQUEST &&
   process.env.TRAVIS_PULL_REQUEST !== "false";
-
-export interface Sample {
-  path: string;
-  additionalRendererOptions: RendererOptions;
-}
-
-function samplesFromPaths(
-  priority: string[],
-  others: string[]
-): { priority: Sample[]; others: Sample[] } {
-  return {
-    priority: priority.map(p => ({ path: p, additionalRendererOptions: {} })),
-    others: others.map(p => ({ path: p, additionalRendererOptions: {} }))
-  };
-}
 
 export abstract class Fixture {
   abstract name: string;
@@ -248,21 +235,21 @@ class JSONFixture extends LanguageFixture {
 
     if (IS_CI && !IS_PR && !IS_BLESSED) {
       // Run only priority sources on low-priority CI branches
-      priority = prioritySamples;
+      priority = samplesFromPaths(prioritySamples);
       others = [];
     } else if (IS_CI) {
       // On CI, we run a maximum number of test samples. First we test
       // the priority samples to fail faster, then we continue testing
       // until testMax with random sources.
       const testMax = 100;
-      priority = prioritySamples;
-      others = _.chain(miscSamples)
+      priority = samplesFromPaths(prioritySamples);
+      others = _.chain(samplesFromPaths(miscSamples))
         .shuffle()
         .take(testMax - prioritySamples.length)
         .value();
     }
 
-    return samplesFromPaths(priority, others);
+    return { priority, others };
   }
 }
 
@@ -371,14 +358,7 @@ class JSONSchemaFixture extends LanguageFixture {
 
   getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
     const prioritySamples = testsInDir("test/inputs/schema/", "schema");
-
-    const { priority, others } = samplesFromSources(
-      sources,
-      prioritySamples,
-      [],
-      "schema"
-    );
-    return samplesFromPaths(priority, others);
+    return samplesFromSources(sources, prioritySamples, [], "schema");
   }
 
   shouldSkipTest(sample: Sample): boolean {
