@@ -223,46 +223,8 @@ export function allClassesAndUnions(
     return { classes, unions };
 }
 
-export function matchType<U>(
-    primitiveType: (primitiveType: PrimitiveType) => U,
-    arrayType: (arrayType: ArrayType) => U,
-    classType: (classType: ClassType) => U,
-    mapType: (mapType: MapType) => U,
-    unionType: (unionType: UnionType) => U
-): (t: Type) => U {
-    return t => {
-        if (t instanceof PrimitiveType) return primitiveType(t);
-        else if (t instanceof ArrayType) return arrayType(t);
-        else if (t instanceof ClassType) return classType(t);
-        else if (t instanceof MapType) return mapType(t);
-        else if (t instanceof UnionType) return unionType(t);
-        throw "Unknown Type";
-    };
-}
-
-export function matchPrimitiveType<U>(
-    anyType: (anyType: PrimitiveType) => U,
-    nullType: (nullType: PrimitiveType) => U,
-    boolType: (boolType: PrimitiveType) => U,
-    integerType: (integerType: PrimitiveType) => U,
-    doubleType: (doubleType: PrimitiveType) => U,
-    stringType: (stringType: PrimitiveType) => U
-): (primitiveType: PrimitiveType) => U {
-    return t => {
-        const f = {
-            any: anyType,
-            null: nullType,
-            bool: boolType,
-            integer: integerType,
-            double: doubleType,
-            string: stringType
-        }[t.kind];
-        if (f) return f(t);
-        throw `Unknown PrimitiveType: ${t.kind}`;
-    };
-}
-
 export function matchTypeAll<U>(
+    t: Type,
     anyType: (anyType: PrimitiveType) => U,
     nullType: (nullType: PrimitiveType) => U,
     boolType: (boolType: PrimitiveType) => U,
@@ -273,12 +235,21 @@ export function matchTypeAll<U>(
     classType: (classType: ClassType) => U,
     mapType: (mapType: MapType) => U,
     unionType: (unionType: UnionType) => U
-): (t: Type) => U {
-    return matchType(
-        matchPrimitiveType(anyType, nullType, boolType, integerType, doubleType, stringType),
-        arrayType,
-        classType,
-        mapType,
-        unionType
-    );
+): U {
+    if (t instanceof PrimitiveType) {
+        const f = {
+            any: anyType,
+            null: nullType,
+            bool: boolType,
+            integer: integerType,
+            double: doubleType,
+            string: stringType
+        }[t.kind];
+        if (f) return f(t);
+        throw `Unknown PrimitiveType: ${t.kind}`;
+    } else if (t instanceof ArrayType) return arrayType(t);
+    else if (t instanceof ClassType) return classType(t);
+    else if (t instanceof MapType) return mapType(t);
+    else if (t instanceof UnionType) return unionType(t);
+    throw "Unknown Type";
 }
