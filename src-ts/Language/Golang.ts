@@ -12,7 +12,7 @@ import {
     UnionType,
     allClassesAndUnions,
     nullableFromUnion,
-    matchTypeAll,
+    matchType,
     removeNullFromUnion
 } from "../Type";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
@@ -131,7 +131,7 @@ class GoRenderer extends ConvenienceRenderer {
     };
 
     private goType = (t: Type, withIssues: boolean = false): Sourcelike => {
-        return matchTypeAll<Sourcelike>(
+        return matchType<Sourcelike>(
             t,
             anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
             nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),

@@ -16,7 +16,7 @@ import {
     nullableFromUnion,
     removeNullFromUnion,
     allClassesAndUnions,
-    matchTypeAll
+    matchType
 } from "../Type";
 
 import { Source, Sourcelike, newline } from "../Source";
@@ -151,7 +151,7 @@ class SimpleTypesRenderer extends Renderer {
     };
 
     sourceFor = (t: Type): Sourcelike => {
-        return matchTypeAll<Sourcelike>(
+        return matchType<Sourcelike>(
             t,
             anyType => "Any",
             nullType => "Null",

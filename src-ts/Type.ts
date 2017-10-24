@@ -223,7 +223,7 @@ export function allClassesAndUnions(
     return { classes, unions };
 }
 
-export function matchTypeAll<U>(
+export function matchType<U>(
     t: Type,
     anyType: (anyType: PrimitiveType) => U,
     nullType: (nullType: PrimitiveType) => U,
