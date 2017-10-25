@@ -15,7 +15,7 @@ import { AnnotationData, IssueAnnotationData } from "./Annotation";
 
 export type RenderResult = { source: Source; names: Map<Name, string> };
 
-export type BlankLineLocations = "none" | "leading-and-interposing";
+export type BlankLineLocations = "none" | "interposing" | "leading-and-interposing";
 
 function lineIndentation(line: string): { indent: number; text: string | null } {
     const len = line.length;
@@ -135,7 +135,12 @@ export abstract class Renderer {
         blankLineLocations: BlankLineLocations,
         emitter: (v: V, k: K) => void
     ): void {
-        this.forEach(iterable, blankLineLocations != "none", blankLineLocations != "none", emitter);
+        this.forEach(
+            iterable,
+            blankLineLocations !== "none",
+            blankLineLocations === "leading-and-interposing",
+            emitter
+        );
     }
 
     indent(fn: () => void): void {

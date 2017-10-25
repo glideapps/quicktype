@@ -1,21 +1,21 @@
-// Place your settings in this file to overwrite default and user settings.
 {
-	"purescript.addNpmPath": true,
+  // Place your settings in this file to overwrite default and user settings.
+  "purescript.addNpmPath": true,
   "purescript.buildCommand": "pulp build --build-path dist -- --json-errors",
-	"editor.formatOnSave": true,
-	"search.exclude": {
-        "**/.git": true,
-        "**/node_modules": true,
-        "**/bower_components": true,
-		"**/tmp": true,
-		"output": true,
-		"**/obj": true,
-		"**/bin": true,
-		"test/inputs": true,
-		"test/runs": true,
-		"app/build": true,
-		"elm-stuff": true,
-		"cli/dist": true	
-	},
-	"java.configuration.updateBuildConfiguration": "automatic"
+  "editor.formatOnSave": true,
+  "search.exclude": {
+    "**/.git": true,
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/tmp": true,
+    "output": true,
+    "**/obj": true,
+    "**/bin": true,
+    "test/inputs": true,
+    "test/runs": true,
+    "app/build": true,
+    "elm-stuff": true,
+    "dist": true
+  },
+  "java.configuration.updateBuildConfiguration": "automatic"
 }
