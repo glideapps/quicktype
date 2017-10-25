@@ -2,7 +2,7 @@
 
 export interface OptionDefinition {
     name: string;
-    type: any; // FIXME: this doesn't seem correct
+    type: StringConstructor | BooleanConstructor;
     renderer?: boolean;
     alias?: string;
     multiple?: boolean;

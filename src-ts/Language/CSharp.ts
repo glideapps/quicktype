@@ -27,7 +27,11 @@ import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TypeScriptTargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
-import { IssueAnnotation, anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import {
+    IssueAnnotationData,
+    anyTypeIssueAnnotation,
+    nullTypeIssueAnnotation
+} from "../Annotation";
 
 const unicode = require("unicode-properties");
 

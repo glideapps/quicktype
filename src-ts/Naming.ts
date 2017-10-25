@@ -85,10 +85,6 @@ export type NameStyle = (rawName: string) => string;
 // `Namer` is a class so that we can compare namers and put them into immutable
 // collections.
 
-// FIXME: Put the target-specific name transformation function into the Namer,
-// too.  Then a Name's `proposedName` can just be its `originalName` or whatever,
-// and can do double-duty to specify user overriding when we implement it.
-
 export class Namer {
     private readonly _prefixes: OrderedSet<string>;
 

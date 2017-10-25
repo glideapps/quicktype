@@ -19,7 +19,7 @@ import {
     matchTypeAll
 } from "../Type";
 
-import { Source, Sourcelike, newline } from "../Source";
+import { Source, Sourcelike } from "../Source";
 
 import {
     legalizeCharacters,
