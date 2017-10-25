@@ -164,7 +164,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     };
 
     protected emitSourceStructure() {
-        this.forEachClass("leading-and-interposing", this.emitClass);
+        this.forEachClass("interposing", this.emitClass);
         if (!this.inlineUnions) {
             this.forEachUnion("leading-and-interposing", this.emitUnion);
         }
