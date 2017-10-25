@@ -16,7 +16,7 @@ import {
     nullableFromUnion,
     removeNullFromUnion,
     allClassesAndUnions,
-    matchTypeAll
+    matchType
 } from "../Type";
 
 import { Source, Sourcelike, newline } from "../Source";
@@ -150,28 +150,31 @@ class SimpleTypesRenderer extends Renderer {
         this.propertyNames = this.propertyNames.set(c, nameds);
     };
 
-    sourceFor: (t: Type) => Sourcelike = matchTypeAll<Sourcelike>(
-        anyType => "Any",
-        nullType => "Null",
-        boolType => "Bool",
-        integerType => "Int",
-        doubleType => "Double",
-        stringType => "String",
-        arrayType => ["List<", this.sourceFor(arrayType.items), ">"],
-        classType => this.classAndUnionNames.get(classType),
-        mapType => ["Map<String, ", this.sourceFor(mapType.values), ">"],
-        unionType => {
-            const nullable = nullableFromUnion(unionType);
-            if (nullable) return ["Maybe<", this.sourceFor(nullable), ">"];
+    sourceFor = (t: Type): Sourcelike => {
+        return matchType<Sourcelike>(
+            t,
+            anyType => "Any",
+            nullType => "Null",
+            boolType => "Bool",
+            integerType => "Int",
+            doubleType => "Double",
+            stringType => "String",
+            arrayType => ["List<", this.sourceFor(arrayType.items), ">"],
+            classType => this.classAndUnionNames.get(classType),
+            mapType => ["Map<String, ", this.sourceFor(mapType.values), ">"],
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable) return ["Maybe<", this.sourceFor(nullable), ">"];
 
-            if (this.inlineUnions) {
-                const children = unionType.children.map((t: Type) => this.sourceFor(t));
-                return intercalate(" | ", children).toArray();
-            } else {
-                return this.classAndUnionNames.get(unionType);
+                if (this.inlineUnions) {
+                    const members = unionType.members.map((t: Type) => this.sourceFor(t));
+                    return intercalate(" | ", members).toArray();
+                } else {
+                    return this.classAndUnionNames.get(unionType);
+                }
             }
-        }
-    );
+        );
+    };
 
     emitClass = (c: ClassType) => {
         const propertyNames = this.propertyNames.get(c);
@@ -187,7 +190,7 @@ class SimpleTypesRenderer extends Renderer {
     emitUnion = (u: UnionType) => {
         this.emitLine("union ", this.classAndUnionNames.get(u), " {");
         this.indent(() => {
-            this.forEach(u.children, false, false, t => {
+            this.forEach(u.members, false, false, (t: Type) => {
                 this.emitLine("case ", this.sourceFor(t));
             });
         });

@@ -12,7 +12,7 @@ import {
     UnionType,
     allClassesAndUnions,
     nullableFromUnion,
-    matchTypeAll,
+    matchType,
     removeNullFromUnion
 } from "../Type";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
@@ -25,7 +25,7 @@ import {
     stringEscape
 } from "../Support";
 import { StringOption } from "../RendererOptions";
-import { Sourcelike, annotated } from "../Source";
+import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TypeScriptTargetLanguage } from "../TargetLanguage";
 import { RenderResult } from "../Renderer";
@@ -121,8 +121,8 @@ class GoRenderer extends ConvenienceRenderer {
         this.emitBlock(["type ", name, " struct"], () => this.emitTable(table));
     };
 
-    private nullableGoType = (t: Type): Sourcelike => {
-        const goType = this.goType(t);
+    private nullableGoType = (t: Type, withIssues: boolean): Sourcelike => {
+        const goType = this.goType(t, withIssues);
         if (isValueType(t)) {
             return ["*", goType];
         } else {
@@ -130,22 +130,25 @@ class GoRenderer extends ConvenienceRenderer {
         }
     };
 
-    private goType: (t: Type) => Sourcelike = matchTypeAll<Sourcelike>(
-        anyType => annotated(anyTypeIssueAnnotation, "interface{}"),
-        nullType => annotated(nullTypeIssueAnnotation, "interface{}"),
-        boolType => "bool",
-        integerType => "int64",
-        doubleType => "float64",
-        stringType => "string",
-        arrayType => ["[]", this.goType(arrayType.items)],
-        classType => this.nameForNamedType(classType),
-        mapType => ["map[string]", this.goType(mapType.values)],
-        unionType => {
-            const nullable = nullableFromUnion(unionType);
-            if (nullable) return this.nullableGoType(nullable);
-            return this.nameForNamedType(unionType);
-        }
-    );
+    private goType = (t: Type, withIssues: boolean = false): Sourcelike => {
+        return matchType<Sourcelike>(
+            t,
+            anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
+            nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
+            boolType => "bool",
+            integerType => "int64",
+            doubleType => "float64",
+            stringType => "string",
+            arrayType => ["[]", this.goType(arrayType.items, withIssues)],
+            classType => this.nameForNamedType(classType),
+            mapType => ["map[string]", this.goType(mapType.values, withIssues)],
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable) return this.nullableGoType(nullable, withIssues);
+                return this.nameForNamedType(unionType);
+            }
+        );
+    };
 
     private emitTopLevel = (t: Type, name: Name): void => {
         const unmarshalName = this._topLevelUnmarshalNames.get(name);
@@ -171,7 +174,7 @@ class GoRenderer extends ConvenienceRenderer {
     ): void => {
         let columns: Sourcelike[][] = [];
         propertyNames.forEach((name: Name, jsonName: string) => {
-            const goType = this.goType(c.properties.get(jsonName));
+            const goType = this.goType(c.properties.get(jsonName), true);
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`']]);
         });
         this.emitStruct(className, columns);
@@ -222,7 +225,7 @@ class GoRenderer extends ConvenienceRenderer {
         let columns: Sourcelike[][] = [];
         nonNulls.forEach((t: Type) => {
             const fieldName = this.unionFieldName(t);
-            const goType = this.nullableGoType(t);
+            const goType = this.nullableGoType(t, true);
             columns.push([[fieldName, " "], goType]);
         });
         this.emitStruct(unionName, columns);
