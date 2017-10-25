@@ -16,8 +16,8 @@ import { ErrorMessage, SourceCode } from "Core";
 import targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
-import { SerializedRenderResult, SourceAnnotation } from "./Source";
-import { IssueAnnotation } from "./Annotation";
+import { SerializedRenderResult, Annotation } from "./Source";
+import { IssueAnnotationData } from "./Annotation";
 
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
@@ -295,9 +295,9 @@ class Run {
         if (this.options.quiet) {
             return;
         }
-        annotations.forEach((sa: SourceAnnotation) => {
+        annotations.forEach((sa: Annotation) => {
             const annotation = sa.annotation;
-            if (!(annotation instanceof IssueAnnotation)) return;
+            if (!(annotation instanceof IssueAnnotationData)) return;
             const lineNumber = sa.span.start.line;
             const humanLineNumber = lineNumber + 1;
             console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);

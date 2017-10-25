@@ -2,7 +2,7 @@
 
 import { List, Map, Range } from "immutable";
 
-import { Annotation } from "./Annotation";
+import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
 import { intercalate } from "./Support";
 import { RenderResult } from "./Renderer";
@@ -42,7 +42,7 @@ export interface TableSource {
 
 export interface AnnotatedSource {
     kind: "annotated";
-    annotation: Annotation;
+    annotation: AnnotationData;
     source: Source;
 }
 
@@ -52,7 +52,8 @@ export interface NameSource {
 }
 
 export function newline(): NewlineSource {
-    // FIXME: use singleton?
+    // We're returning a new object instead of using a singleton
+    // here because `Renderer` will modify `indentationChange`.
     return { kind: "newline", indentationChange: 0 };
 }
 
@@ -85,7 +86,7 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
     return sl;
 }
 
-export function annotated(annotation: Annotation, sl: Sourcelike): Source {
+export function annotated(annotation: AnnotationData, sl: Sourcelike): Source {
     return {
         kind: "annotated",
         annotation,
@@ -95,7 +96,7 @@ export function annotated(annotation: Annotation, sl: Sourcelike): Source {
 
 export function maybeAnnotated(
     doAnnotate: boolean,
-    annotation: Annotation,
+    annotation: AnnotationData,
     sl: Sourcelike
 ): Sourcelike {
     if (!doAnnotate) {
@@ -119,16 +120,14 @@ export interface Span {
     end: Location;
 }
 
-// FIXME: This is badly named.  This is more user-facing, so it should probably
-// be named `Annotation`, so what do we rename `Annotation` to?
-export interface SourceAnnotation {
-    annotation: Annotation;
+export interface Annotation {
+    annotation: AnnotationData;
     span: Span;
 }
 
 export interface SerializedRenderResult {
     lines: string[];
-    annotations: List<SourceAnnotation>;
+    annotations: List<Annotation>;
 }
 
 function sourceLineLength(source: Source, names: Map<Name, string>): number {
@@ -164,7 +163,7 @@ export function serializeRenderResult(
 
     const lines: string[] = [];
     let currentLine: string[] = [];
-    const annotations: SourceAnnotation[] = [];
+    const annotations: Annotation[] = [];
 
     function indentIfNeeded(): void {
         if (indentNeeded === 0) return;
@@ -187,8 +186,7 @@ export function serializeRenderResult(
         currentLine = [];
     }
 
-    // FIXME: We shouldn't have to pass `names` here.
-    function serializeToStringArray(source: Source, names: Map<Name, string>): void {
+    function serializeToStringArray(source: Source): void {
         switch (source.kind) {
             case "text":
                 indentIfNeeded();
@@ -200,7 +198,7 @@ export function serializeRenderResult(
                 indentNeeded = indent;
                 break;
             case "sequence":
-                source.sequence.forEach((s: Source) => serializeToStringArray(s, names));
+                source.sequence.forEach((s: Source) => serializeToStringArray(s));
                 break;
             case "table":
                 const t = source.table;
@@ -222,7 +220,7 @@ export function serializeRenderResult(
                         const colWidth = columnWidths.get(x);
                         const src = row.get(x);
                         const srcWidth = rowWidths.get(x);
-                        serializeToStringArray(src, names);
+                        serializeToStringArray(src);
                         if (srcWidth < colWidth) {
                             currentLine.push(" ".repeat(colWidth - srcWidth));
                         }
@@ -235,7 +233,7 @@ export function serializeRenderResult(
                 break;
             case "annotated":
                 const start = currentLocation();
-                serializeToStringArray(source.source, names);
+                serializeToStringArray(source.source);
                 const end = currentLocation();
                 annotations.push({ annotation: source.annotation, span: { start, end } });
                 break;
@@ -251,7 +249,7 @@ export function serializeRenderResult(
         }
     }
 
-    serializeToStringArray(source, names);
+    serializeToStringArray(source);
     finishLine();
     return { lines, annotations: List(annotations) };
 }

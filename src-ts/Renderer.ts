@@ -11,7 +11,7 @@ import {
     sourcelikeToSource,
     newline
 } from "./Source";
-import { Annotation, IssueAnnotation } from "./Annotation";
+import { AnnotationData, IssueAnnotationData } from "./Annotation";
 
 export type RenderResult = { source: Source; names: Map<Name, string> };
 
@@ -84,7 +84,7 @@ export abstract class Renderer {
         }
     }
 
-    emitAnnotated(annotation: Annotation, emitter: () => void): void {
+    emitAnnotated(annotation: AnnotationData, emitter: () => void): void {
         const oldEmitTarget: Sourcelike[] = this._currentEmitTarget;
         const emitTarget: Sourcelike[] = [];
         this._currentEmitTarget = emitTarget;
@@ -98,7 +98,7 @@ export abstract class Renderer {
     }
 
     emitIssue(message: string, emitter: () => void): void {
-        this.emitAnnotated(new IssueAnnotation(message), emitter);
+        this.emitAnnotated(new IssueAnnotationData(message), emitter);
     }
 
     protected emitTable = (tableArray: Sourcelike[][]): void => {

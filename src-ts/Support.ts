@@ -125,13 +125,12 @@ function isPrintable(c: string): boolean {
 
 export function isLetter(c: string): boolean {
     const category = unicode.getCategory(c.charCodeAt(0));
-    // FIXME: Include all letter categories.
-    return ["Lu", "Ll"].indexOf(category) >= 0;
+    // FIXME: Include Letter, modifier (Lm)?
+    return ["Lu", "Ll", "Lt", "Lo"].indexOf(category) >= 0;
 }
 
 export function isDigit(c: string): boolean {
     const category = unicode.getCategory(c.charCodeAt(0));
-    // FIXME: Include all digit categories.
     return ["Nd"].indexOf(category) >= 0;
 }
 
