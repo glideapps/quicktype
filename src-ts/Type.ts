@@ -195,32 +195,47 @@ function orderedSetUnion<T>(sets: Iterable<any, OrderedSet<T>>): OrderedSet<T> {
     return setArray[0].union(...setArray.slice(1));
 }
 
-export type ClassesAndUnions = {
-    classes: OrderedSet<ClassType>;
-    unions: OrderedSet<UnionType>;
-};
-
-export function allClassesAndUnions(
+export function allNamedTypes(
     graph: TopLevels,
     childrenOfType?: (t: Type) => Iterable<any, Type>
-): ClassesAndUnions {
-    let classes = OrderedSet<ClassType>();
-    let unions = OrderedSet<UnionType>();
+): OrderedSet<NamedType> {
+    let types = OrderedSet<NamedType>();
 
     function addFromType(t: Type): void {
-        if (t instanceof ClassType) {
-            if (classes.has(t)) return;
-            classes = classes.add(t);
-        } else if (t instanceof UnionType) {
-            if (unions.has(t)) return;
-            unions = unions.add(t);
+        if (t instanceof ClassType || t instanceof UnionType) {
+            if (types.has(t)) return;
+            types = types.add(t);
         }
         const children = childrenOfType ? childrenOfType(t) : t.children;
         children.forEach(addFromType);
     }
 
     graph.forEach(addFromType);
+    return types;
+}
+
+export type ClassesAndUnions = {
+    classes: OrderedSet<ClassType>;
+    unions: OrderedSet<UnionType>;
+};
+
+export function splitClassesAndUnions(types: Iterable<any, NamedType>): ClassesAndUnions {
+    const classes = types
+        .filter((t: NamedType) => t instanceof ClassType)
+        .toOrderedSet() as OrderedSet<ClassType>;
+    const unions = types
+        .filter((t: NamedType) => t instanceof UnionType)
+        .toOrderedSet() as OrderedSet<UnionType>;
+
     return { classes, unions };
+}
+
+export function allClassesAndUnions(
+    graph: TopLevels,
+    childrenOfType?: (t: Type) => Iterable<any, Type>
+): ClassesAndUnions {
+    const types = allNamedTypes(graph, childrenOfType);
+    return splitClassesAndUnions(types);
 }
 
 export function matchType<U>(
