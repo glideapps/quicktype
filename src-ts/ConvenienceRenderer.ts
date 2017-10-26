@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, Set, OrderedSet, OrderedMap } from "immutable";
+import { Map, Set, OrderedSet, OrderedMap, Iterable } from "immutable";
 
 import {
     Type,
@@ -11,6 +11,8 @@ import {
     ClassType,
     UnionType,
     allClassesAndUnions,
+    allNamedTypes,
+    splitClassesAndUnions,
     nullableFromUnion
 } from "./Type";
 import {
@@ -30,6 +32,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _classAndUnionNames: Map<NamedType, Name>;
     private _propertyNames: Map<ClassType, Map<string, Name>>;
 
+    private _namedTypes: OrderedSet<NamedType>;
     private _namedClasses: OrderedSet<ClassType>;
     private _namedUnions: OrderedSet<UnionType>;
 
@@ -180,33 +183,64 @@ export abstract class ConvenienceRenderer extends Renderer {
         );
     };
 
+    protected callForClass = (
+        c: ClassType,
+        f: (c: ClassType, className: Name, propertyNames: OrderedMap<string, Name>) => void
+    ): void => {
+        const propertyNames = this._propertyNames.get(c);
+        const sortedPropertyNames = propertyNames
+            .sortBy((n: Name) => this.names.get(n))
+            .toOrderedMap();
+        f(c, this._classAndUnionNames.get(c), sortedPropertyNames);
+    };
+
     protected forEachClass = (
         blankLocations: BlankLineLocations,
         f: (c: ClassType, className: Name, propertyNames: OrderedMap<string, Name>) => void
     ): void => {
         this.forEachWithBlankLines(this._namedClasses, blankLocations, c => {
-            const propertyNames = this._propertyNames.get(c);
-            const sortedPropertyNames = propertyNames
-                .sortBy((n: Name) => this.names.get(n))
-                .toOrderedMap();
-            f(c, this._classAndUnionNames.get(c), sortedPropertyNames);
+            this.callForClass(c, f);
         });
+    };
+
+    protected callForUnion = (u: UnionType, f: (u: UnionType, unionName: Name) => void): void => {
+        f(u, this._classAndUnionNames.get(u));
     };
 
     protected forEachUnion = (
         blankLocations: BlankLineLocations,
         f: (u: UnionType, unionName: Name) => void
     ): void => {
-        this.forEachWithBlankLines(this._namedUnions, blankLocations, u =>
-            f(u, this._classAndUnionNames.get(u))
-        );
+        this.forEachWithBlankLines(this._namedUnions, blankLocations, u => this.callForUnion(u, f));
+    };
+
+    protected forEachNamedType = (
+        blankLocations: BlankLineLocations,
+        leavesFirst: boolean,
+        classFunc: (c: ClassType, className: Name, propertyNames: OrderedMap<string, Name>) => void,
+        unionFunc: (u: UnionType, unionName: Name) => void
+    ): void => {
+        let iterable: Iterable<any, NamedType> = this._namedTypes;
+        if (leavesFirst) iterable = iterable.reverse();
+        this.forEachWithBlankLines(iterable, blankLocations, (t: NamedType) => {
+            if (t instanceof ClassType) {
+                this.callForClass(t, classFunc);
+            } else if (t instanceof UnionType) {
+                this.callForUnion(t, unionFunc);
+            } else {
+                throw "Named type that's neither a class nor union";
+            }
+        });
     };
 
     protected emitSource(): void {
-        const { classes, unions } = allClassesAndUnions(this.topLevels, this.childrenOfType);
+        const types = allNamedTypes(this.topLevels, this.childrenOfType);
+        this._namedTypes = types
+            .filter((t: NamedType) => !(t instanceof UnionType) || this.unionNeedsName(t))
+            .toOrderedSet();
+        const { classes, unions } = splitClassesAndUnions(this._namedTypes);
         this._namedClasses = classes;
-        this._namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
-
+        this._namedUnions = unions;
         this.emitSourceStructure();
     }
 }

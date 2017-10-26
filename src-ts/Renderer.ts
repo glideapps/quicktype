@@ -15,7 +15,7 @@ import { AnnotationData, IssueAnnotationData } from "./Annotation";
 
 export type RenderResult = { source: Source; names: Map<Name, string> };
 
-export type BlankLineLocations = "none" | "interposing" | "leading-and-interposing";
+export type BlankLineLocations = "none" | "interposing" | "leading" | "leading-and-interposing";
 
 function lineIndentation(line: string): { indent: number; text: string | null } {
     const len = line.length;
@@ -120,13 +120,13 @@ export abstract class Renderer {
         leadingBlankLine: boolean,
         emitter: (v: V, k: K) => void
     ): void {
-        let needBlank = false;
+        let onFirst = true;
         iterable.forEach((v: V, k: K) => {
-            if (leadingBlankLine || (interposedBlankLines && needBlank)) {
+            if ((leadingBlankLine && onFirst) || (interposedBlankLines && !onFirst)) {
                 this.emitNewline();
             }
             emitter(v, k);
-            needBlank = true;
+            onFirst = false;
         });
     }
 
@@ -135,12 +135,10 @@ export abstract class Renderer {
         blankLineLocations: BlankLineLocations,
         emitter: (v: V, k: K) => void
     ): void {
-        this.forEach(
-            iterable,
-            blankLineLocations !== "none",
-            blankLineLocations === "leading-and-interposing",
-            emitter
-        );
+        const interposing =
+            ["interposing", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
+        const leading = ["leading", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
+        this.forEach(iterable, interposing, leading, emitter);
     }
 
     indent(fn: () => void): void {

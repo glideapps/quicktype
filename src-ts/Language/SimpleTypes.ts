@@ -15,7 +15,6 @@ import {
     ClassType,
     nullableFromUnion,
     removeNullFromUnion,
-    allClassesAndUnions,
     matchType
 } from "../Type";
 

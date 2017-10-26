@@ -10,7 +10,6 @@ import {
     NamedType,
     ClassType,
     UnionType,
-    allClassesAndUnions,
     nullableFromUnion,
     matchType,
     removeNullFromUnion
