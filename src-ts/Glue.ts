@@ -67,7 +67,8 @@ function glueTypesToNative(glueEntries: GlueClassEntry[]): (Type | null)[] {
 
 export function glueGraphToNative(glueGraph: GlueGraph): TopLevels {
     const classes = glueTypesToNative(glueGraph.classes);
-    return Map(glueGraph.toplevels)
+    const result = Map(glueGraph.toplevels)
         .map((t: GlueType) => glueTypeToNative(t, classes))
         .toMap();
+    return result;
 }

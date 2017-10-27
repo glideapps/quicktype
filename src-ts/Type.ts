@@ -1,8 +1,9 @@
 "use strict";
 
-import { OrderedSet, Map, Set, Iterable, List } from "immutable";
+import { OrderedSet, Map, Set, Collection, List } from "immutable";
 import stringHash = require("string-hash");
 import { TypeKind, PrimitiveTypeKind, NamedTypeKind } from "Reykjavik";
+import { defined } from "./Support";
 
 export type TypeNames = {
     names: Set<string>;
@@ -185,10 +186,12 @@ export function nullableFromUnion(t: UnionType): Type | null {
     const [hasNull, nonNulls] = removeNullFromUnion(t);
     if (!hasNull) return null;
     if (nonNulls.size !== 1) return null;
-    return nonNulls.first();
+    return defined(nonNulls.first());
 }
 
-function orderedSetUnion<T>(sets: Iterable<any, OrderedSet<T>>): OrderedSet<T> {
+// FIXME: The outer OrderedSet should be some Collection, but I can't figure out
+// which one.  Collection.Indexed doesn't work with OrderedSet, which is unfortunate.
+function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
     const setArray = sets.toArray();
     if (setArray.length === 0) return OrderedSet();
     if (setArray.length === 1) return setArray[0];
@@ -197,7 +200,7 @@ function orderedSetUnion<T>(sets: Iterable<any, OrderedSet<T>>): OrderedSet<T> {
 
 export function allNamedTypes(
     graph: TopLevels,
-    childrenOfType?: (t: Type) => Iterable<any, Type>
+    childrenOfType?: (t: Type) => Collection<any, Type>
 ): OrderedSet<NamedType> {
     let types = OrderedSet<NamedType>();
 
@@ -219,7 +222,7 @@ export type ClassesAndUnions = {
     unions: OrderedSet<UnionType>;
 };
 
-export function splitClassesAndUnions(types: Iterable<any, NamedType>): ClassesAndUnions {
+export function splitClassesAndUnions(types: Collection<any, NamedType>): ClassesAndUnions {
     const classes = types
         .filter((t: NamedType) => t instanceof ClassType)
         .toOrderedSet() as OrderedSet<ClassType>;
@@ -232,7 +235,7 @@ export function splitClassesAndUnions(types: Iterable<any, NamedType>): ClassesA
 
 export function allClassesAndUnions(
     graph: TopLevels,
-    childrenOfType?: (t: Type) => Iterable<any, Type>
+    childrenOfType?: (t: Type) => Collection<any, Type>
 ): ClassesAndUnions {
     const types = allNamedTypes(graph, childrenOfType);
     return splitClassesAndUnions(types);

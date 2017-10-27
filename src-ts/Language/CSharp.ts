@@ -1,6 +1,6 @@
 "use strict";
 
-import { List, Iterable, OrderedMap } from "immutable";
+import { List, Collection, OrderedMap } from "immutable";
 import {
     TopLevels,
     Type,
@@ -19,7 +19,8 @@ import {
     camelCase,
     startWithLetter,
     stringEscape,
-    intercalate
+    intercalate,
+    defined
 } from "../Support";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
@@ -101,7 +102,7 @@ const denseJsonPropertyName = "J";
 
 function proposeTopLevelDependencyName(names: List<string>): string {
     if (names.size !== 1) throw "Cannot deal with more than one dependency";
-    return names.first();
+    return defined(names.first());
 }
 
 function isStartCharacter(c: string): boolean {
@@ -175,10 +176,9 @@ class CSharpRenderer extends ConvenienceRenderer {
         // we have to define a class just for the `FromJson` method, in
         // emitFromJsonForTopLevel.
 
-        if (definedTypes.size === 1) {
-            return definedTypes.first();
-        }
-        return null;
+        const first = definedTypes.first();
+        if (first === undefined) return null;
+        return first;
     }
 
     emitBlock = (f: () => void, semicolon: boolean = false): void => {
@@ -247,10 +247,13 @@ class CSharpRenderer extends ConvenienceRenderer {
     ): void => {
         const jsonProperty = this._dense ? denseJsonPropertyName : "JsonProperty";
         this.emitClass([this.partialString, "class"], className, () => {
-            const maxWidth = c.properties.map((_, name: string) => stringEscape(name).length).max();
+            if (c.properties.isEmpty()) return;
+            const maxWidth = defined(
+                c.properties.map((_, name: string) => stringEscape(name).length).max()
+            );
             const withBlankLines = this._needAttributes && !this._dense;
             this.forEach(propertyNames, withBlankLines, false, (name: Name, jsonName: string) => {
-                const csType = this.csType(c.properties.get(jsonName), true);
+                const csType = this.csType(defined(c.properties.get(jsonName)), true);
                 const escapedName = stringEscape(jsonName);
                 const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
                 const property = ["public ", csType, " ", name, " { get; set; }"];
@@ -416,7 +419,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         });
     };
 
-    emitUnionConverterMembers = (unions: Iterable<any, UnionType>): void => {
+    emitUnionConverterMembers = (unions: Collection<any, UnionType>): void => {
         const names = unions.map((u: UnionType) => this.nameForNamedType(u)).toOrderedSet();
         const canConvertExpr = intercalate(
             " || ",
