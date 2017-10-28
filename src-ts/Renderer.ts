@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, Iterable, OrderedSet, List } from "immutable";
+import { Map, Collection, OrderedSet, List } from "immutable";
 import { TopLevels } from "./Type";
 import { Name, Namespace, assignNames } from "./Naming";
 import {
@@ -115,7 +115,7 @@ export abstract class Renderer {
     }
 
     forEach<K, V>(
-        iterable: Iterable<K, V>,
+        iterable: Collection<K, V>,
         interposedBlankLines: boolean,
         leadingBlankLine: boolean,
         emitter: (v: V, k: K) => void
@@ -131,7 +131,7 @@ export abstract class Renderer {
     }
 
     forEachWithBlankLines<K, V>(
-        iterable: Iterable<K, V>,
+        iterable: Collection<K, V>,
         blankLineLocations: BlankLineLocations,
         emitter: (v: V, k: K) => void
     ): void {

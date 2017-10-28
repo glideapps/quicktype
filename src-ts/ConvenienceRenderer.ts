@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, Set, OrderedSet, OrderedMap, Iterable } from "immutable";
+import { Map, Set, OrderedSet, OrderedMap, Collection } from "immutable";
 
 import {
     Type,
@@ -25,6 +25,7 @@ import {
     keywordNamespace
 } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
+import { defined } from "./Support";
 
 export abstract class ConvenienceRenderer extends Renderer {
     private _globalNamespace: Namespace;
@@ -96,9 +97,8 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     private addClassOrUnionNamed = (type: NamedType): Name => {
-        if (this._classAndUnionNames.has(type)) {
-            return this._classAndUnionNames.get(type);
-        }
+        const existing = this._classAndUnionNames.get(type);
+        if (existing !== undefined) return existing;
         const name = type.names.combined;
         const named = this._globalNamespace.add(new SimpleName(name, this.namedTypeNamer));
         this._classAndUnionNames = this._classAndUnionNames.set(type, named);
@@ -119,9 +119,11 @@ export abstract class ConvenienceRenderer extends Renderer {
     private childrenOfType = (t: Type): OrderedSet<Type> => {
         const names = this.names;
         if (t instanceof ClassType) {
-            const propertyNameds = this._propertyNames.get(t);
+            const propertyNameds = defined(this._propertyNames.get(t));
             return t.properties
-                .sortBy((_, n: string): string => names.get(propertyNameds.get(n)))
+                .sortBy((_, n: string): string =>
+                    defined(names.get(defined(propertyNameds.get(n))))
+                )
                 .toOrderedSet();
         }
         return t.children.toOrderedSet();
@@ -155,7 +157,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             } else if (t instanceof ArrayType) {
                 return typeNameForUnionMember(t.items) + "_array";
             } else if (t instanceof ClassType) {
-                return this.names.get(this.nameForNamedType(t));
+                return defined(this.names.get(this.nameForNamedType(t)));
             } else if (t instanceof MapType) {
                 return typeNameForUnionMember(t.values), "_map";
             } else if (t instanceof UnionType) {
@@ -171,7 +173,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (!this._classAndUnionNames.has(t)) {
             throw "Named type does not exist.";
         }
-        return this._classAndUnionNames.get(t);
+        return defined(this._classAndUnionNames.get(t));
     };
 
     protected forEachTopLevel = (
@@ -179,7 +181,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         f: (t: Type, name: Name) => void
     ): void => {
         this.forEachWithBlankLines(this.topLevels, blankLocations, (t: Type, name: string) =>
-            f(t, this._topLevelNames.get(name))
+            f(t, defined(this._topLevelNames.get(name)))
         );
     };
 
@@ -187,11 +189,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         c: ClassType,
         f: (c: ClassType, className: Name, propertyNames: OrderedMap<string, Name>) => void
     ): void => {
-        const propertyNames = this._propertyNames.get(c);
+        const propertyNames = defined(this._propertyNames.get(c));
         const sortedPropertyNames = propertyNames
             .sortBy((n: Name) => this.names.get(n))
             .toOrderedMap();
-        f(c, this._classAndUnionNames.get(c), sortedPropertyNames);
+        f(c, defined(this._classAndUnionNames.get(c)), sortedPropertyNames);
     };
 
     protected forEachClass = (
@@ -204,7 +206,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected callForUnion = (u: UnionType, f: (u: UnionType, unionName: Name) => void): void => {
-        f(u, this._classAndUnionNames.get(u));
+        f(u, defined(this._classAndUnionNames.get(u)));
     };
 
     protected forEachUnion = (
@@ -220,9 +222,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         classFunc: (c: ClassType, className: Name, propertyNames: OrderedMap<string, Name>) => void,
         unionFunc: (u: UnionType, unionName: Name) => void
     ): void => {
-        let iterable: Iterable<any, NamedType> = this._namedTypes;
-        if (leavesFirst) iterable = iterable.reverse();
-        this.forEachWithBlankLines(iterable, blankLocations, (t: NamedType) => {
+        let collection: Collection<any, NamedType> = this._namedTypes;
+        if (leavesFirst) collection = collection.reverse();
+        this.forEachWithBlankLines(collection, blankLocations, (t: NamedType) => {
             if (t instanceof ClassType) {
                 this.callForClass(t, classFunc);
             } else if (t instanceof UnionType) {

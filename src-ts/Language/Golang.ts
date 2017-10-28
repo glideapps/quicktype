@@ -21,7 +21,8 @@ import {
     startWithLetter,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
-    stringEscape
+    stringEscape,
+    defined
 } from "../Support";
 import { StringOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated } from "../Source";
@@ -150,7 +151,7 @@ class GoRenderer extends ConvenienceRenderer {
     };
 
     private emitTopLevel = (t: Type, name: Name): void => {
-        const unmarshalName = this._topLevelUnmarshalNames.get(name);
+        const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
         if (!this.namedTypeToNameForTopLevel(t)) {
             this.emitLine("type ", name, " ", this.goType(t));
             this.emitNewline();
@@ -173,7 +174,7 @@ class GoRenderer extends ConvenienceRenderer {
     ): void => {
         let columns: Sourcelike[][] = [];
         propertyNames.forEach((name: Name, jsonName: string) => {
-            const goType = this.goType(c.properties.get(jsonName), true);
+            const goType = this.goType(defined(c.properties.get(jsonName)), true);
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`']]);
         });
         this.emitStruct(className, columns);
@@ -270,7 +271,11 @@ class GoRenderer extends ConvenienceRenderer {
         );
         this.forEachTopLevel("none", (t: Type, name: Name) => {
             this.emitLine("//");
-            this.emitLine("//    r, err := ", this._topLevelUnmarshalNames.get(name), "(bytes)");
+            this.emitLine(
+                "//    r, err := ",
+                defined(this._topLevelUnmarshalNames.get(name)),
+                "(bytes)"
+            );
             this.emitLine("//    bytes, err = r.Marshal()");
         });
         this.emitNewline();

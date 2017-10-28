@@ -1,6 +1,6 @@
 "use strict";
 
-import { Iterable, List } from "immutable";
+import { Collection, List } from "immutable";
 
 const unicode = require("unicode-properties");
 
@@ -173,11 +173,21 @@ export function startWithLetter(
     return modify("the" + str);
 }
 
-export function intercalate<T>(separator: T, items: Iterable<any, T>): List<T> {
+export function intercalate<T>(separator: T, items: Collection<any, T>): List<T> {
     const acc: T[] = [];
     items.forEach((x: T) => {
         if (acc.length > 0) acc.push(separator);
         acc.push(x);
     });
     return List(acc);
+}
+
+export function defined<T>(x: T | undefined): T {
+    if (x !== undefined) return x;
+    throw "Defined value expected, but got undefined";
+}
+
+export function nonNull<T>(x: T | null): T {
+    if (x !== null) return x;
+    throw "Non-null value expected, but got null";
 }

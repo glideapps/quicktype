@@ -2,7 +2,7 @@
 
 import * as _ from "lodash";
 
-import { Set, List, Map, OrderedMap, OrderedSet, Iterable } from "immutable";
+import { Set, List, Map, OrderedMap, OrderedSet, Collection } from "immutable";
 
 import {
     TopLevels,
@@ -25,7 +25,8 @@ import {
     camelCase,
     startWithLetter,
     stringEscape,
-    intercalate
+    intercalate,
+    defined
 } from "../Support";
 
 import {
@@ -145,7 +146,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
         this.emitLine("class ", className, " {");
         this.indent(() => {
             propertyNames.forEach((name: Name, jsonName: string) => {
-                const type = c.properties.get(jsonName);
+                const type = defined(c.properties.get(jsonName));
                 this.emitLine(name, ": ", this.sourceFor(type));
             });
         });

@@ -4,7 +4,7 @@ import { List, Map, Range } from "immutable";
 
 import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
-import { intercalate } from "./Support";
+import { intercalate, defined } from "./Support";
 import { RenderResult } from "./Renderer";
 
 export type Source =
@@ -145,10 +145,7 @@ function sourceLineLength(source: Source, names: Map<Name, string>): number {
         case "annotated":
             return sourceLineLength(source.source, names);
         case "name":
-            if (!names.has(source.named)) {
-                throw "No name for Named";
-            }
-            return names.get(source.named).length;
+            return defined(names.get(source.named)).length;
         default:
             return assertNever(source);
     }
@@ -208,18 +205,22 @@ export function serializeRenderResult(
                     )
                     .toList();
                 const numRows = t.size;
-                const numColumns = t.map((l: List<Source>) => l.size).max();
-                const columnWidths = Range(0, numColumns).map((i: number) =>
-                    widths.map((l: List<number>) => l.get(i)).max()
+                if (numRows === 0) break;
+                const numColumns = defined(t.map((l: List<Source>) => l.size).max());
+                if (numColumns === 0) break;
+                const columnWidths = defined(
+                    Range(0, numColumns).map((i: number) =>
+                        widths.map((l: List<number>) => l.get(i) || 0).max()
+                    )
                 );
                 for (let y = 0; y < numRows; y++) {
                     indentIfNeeded();
-                    const row = t.get(y);
-                    const rowWidths = widths.get(y);
+                    const row = defined(t.get(y));
+                    const rowWidths = defined(widths.get(y));
                     for (let x = 0; x < numColumns; x++) {
-                        const colWidth = columnWidths.get(x);
-                        const src = row.get(x);
-                        const srcWidth = rowWidths.get(x);
+                        const colWidth = defined(columnWidths.get(x));
+                        const src = row.get(x) || { kind: "text", text: "" };
+                        const srcWidth = rowWidths.get(x) || 0;
                         serializeToStringArray(src);
                         if (srcWidth < colWidth) {
                             currentLine.push(" ".repeat(colWidth - srcWidth));
@@ -242,7 +243,7 @@ export function serializeRenderResult(
                     throw "No name for Named";
                 }
                 indentIfNeeded();
-                currentLine.push(names.get(source.named));
+                currentLine.push(defined(names.get(source.named)));
                 break;
             default:
                 return assertNever(source);
