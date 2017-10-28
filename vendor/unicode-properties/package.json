@@ -1,0 +1,43 @@
+{
+  "name": "unicode-properties",
+  "version": "1.1.0",
+  "description": "Provides fast access to unicode character properties",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "brfs": "^1.4.0",
+    "unicode-trie": "^0.3.0"
+  },
+  "devDependencies": {
+    "codepoints": "^1.2.0",
+    "coffee-script": "^1.9.1",
+    "mocha": "^2.2.1"
+  },
+  "scripts": {
+    "test": "mocha",
+    "prepublish": "coffee generate.coffee && coffee -cb index.coffee",
+    "postpublish": "rm -f index.js"
+  },
+  "browserify": {
+    "transform": [
+      "brfs"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/devongovett/unicode-properties.git"
+  },
+  "keywords": [
+    "unicode",
+    "metadata",
+    "character",
+    "codepoint"
+  ],
+  "author": "Devon Govett <devongovett@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/devongovett/unicode-properties/issues"
+  },
+  "homepage": "https://github.com/devongovett/unicode-properties"
+}
