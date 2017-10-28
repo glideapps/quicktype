@@ -112,6 +112,10 @@ function makeDistributedCLIExecutable() {
   shell.chmod("+x", cli);
 }
 
+function copyVendorToOutput() {
+  shell.cp("-r", "vendor", OUTDIR);
+}
+
 function main() {
   const skipPrereqs = !!process.env.SKIP_INSTALL_PREREQUISITES;
   const skipPureScript = !!process.env.SKIP_BUILD_PURESCRIPT;
@@ -128,6 +132,7 @@ function main() {
   buildTypeScript();
   rewritePureScriptModuleRequiresInTypeScriptBuildOutputThenMoveTypeScriptBuildToDist();
   makeDistributedCLIExecutable();
+  copyVendorToOutput();
 }
 
 main();
