@@ -196,20 +196,28 @@ export abstract class ConvenienceRenderer extends Renderer {
         );
     };
 
-    protected callForClass = (
+    protected forEachProperty = (
         c: ClassType,
-        f: (c: ClassType, className: Name, propertyNames: OrderedMap<string, Name>) => void
+        blankLocations: BlankLineLocations,
+        f: (name: Name, jsonName: string, t: Type) => void
     ): void => {
         const propertyNames = defined(this._propertyNames.get(c));
         const sortedPropertyNames = propertyNames
             .sortBy((n: Name) => this.names.get(n))
             .toOrderedMap();
-        f(c, defined(this._classAndUnionNames.get(c)), sortedPropertyNames);
+        this.forEachWithBlankLines(sortedPropertyNames, blankLocations, (name, jsonName) => {
+            const t = defined(c.properties.get(jsonName));
+            f(name, jsonName, t);
+        });
+    };
+
+    protected callForClass = (c: ClassType, f: (c: ClassType, className: Name) => void): void => {
+        f(c, defined(this._classAndUnionNames.get(c)));
     };
 
     protected forEachClass = (
         blankLocations: BlankLineLocations,
-        f: (c: ClassType, className: Name, propertyNames: OrderedMap<string, Name>) => void
+        f: (c: ClassType, className: Name) => void
     ): void => {
         this.forEachWithBlankLines(this._namedClasses, blankLocations, c => {
             this.callForClass(c, f);
@@ -230,7 +238,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected forEachNamedType = (
         blankLocations: BlankLineLocations,
         leavesFirst: boolean,
-        classFunc: (c: ClassType, className: Name, propertyNames: OrderedMap<string, Name>) => void,
+        classFunc: (c: ClassType, className: Name) => void,
         unionFunc: (u: UnionType, unionName: Name) => void
     ): void => {
         let collection: Collection<any, NamedType> = this._namedTypes;
