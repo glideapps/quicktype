@@ -235,6 +235,15 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.forEachWithBlankLines(this._namedUnions, blankLocations, u => this.callForUnion(u, f));
     };
 
+    protected forEachUniqueUnion = (
+        blankLocations: BlankLineLocations,
+        unionMembers: (u: UnionType) => OrderedSet<Type>,
+        f: (members: OrderedSet<Type>) => void
+    ): void => {
+        const uniqueUnions = this._namedUnions.map(unionMembers);
+        this.forEachWithBlankLines(uniqueUnions, blankLocations, f);
+    };
+
     protected forEachNamedType = (
         blankLocations: BlankLineLocations,
         leavesFirst: boolean,
