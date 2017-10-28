@@ -28,7 +28,7 @@ import { Renderer, BlankLineLocations } from "./Renderer";
 import { defined } from "./Support";
 
 export abstract class ConvenienceRenderer extends Renderer {
-    private _globalNamespace: Namespace;
+    protected globalNamespace: Namespace;
     private _topLevelNames: Map<string, Name>;
     private _classAndUnionNames: Map<NamedType, Name>;
     private _propertyNames: Map<ClassType, Map<string, Name>>;
@@ -37,12 +37,15 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _namedClasses: OrderedSet<ClassType>;
     private _namedUnions: OrderedSet<UnionType>;
 
-    protected get forbiddenNames(): string[] {
+    protected get forbiddenNamesForGlobalNamespace(): string[] {
         return [];
     }
 
-    protected forbiddenNamesForProperties(c: ClassType, classNamed: Name): Name[] {
-        return [];
+    protected forbiddenForProperties(
+        c: ClassType,
+        classNamed: Name
+    ): { names: Name[]; namespaces: Namespace[] } {
+        return { names: [], namespaces: [] };
     }
 
     protected topLevelDependencyNames(topLevelName: Name): DependencyName[] {
@@ -60,7 +63,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected setUpNaming(): Namespace[] {
-        this._globalNamespace = keywordNamespace("global", this.forbiddenNames);
+        this.globalNamespace = keywordNamespace("global", this.forbiddenNamesForGlobalNamespace);
         const { classes, unions } = allClassesAndUnions(this.topLevels);
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
         this._classAndUnionNames = Map();
@@ -71,7 +74,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             this.addPropertyNameds(c, named);
         });
         namedUnions.forEach((u: UnionType) => this.addClassOrUnionNamed(u));
-        return [this._globalNamespace];
+        return [this.globalNamespace];
     }
 
     private nameForTopLevel = (type: Type, name: string): FixedName => {
@@ -83,10 +86,10 @@ export abstract class ConvenienceRenderer extends Renderer {
             styledName = this.topLevelNameStyle(name);
         }
 
-        const named = this._globalNamespace.add(new FixedName(styledName));
+        const named = this.globalNamespace.add(new FixedName(styledName));
         const dependencyNames = this.topLevelDependencyNames(named);
         for (const dn of dependencyNames) {
-            this._globalNamespace.add(dn);
+            this.globalNamespace.add(dn);
         }
 
         if (maybeNamedType) {
@@ -100,14 +103,22 @@ export abstract class ConvenienceRenderer extends Renderer {
         const existing = this._classAndUnionNames.get(type);
         if (existing !== undefined) return existing;
         const name = type.names.combined;
-        const named = this._globalNamespace.add(new SimpleName(name, this.namedTypeNamer));
+        const named = this.globalNamespace.add(new SimpleName(name, this.namedTypeNamer));
         this._classAndUnionNames = this._classAndUnionNames.set(type, named);
         return named;
     };
 
     private addPropertyNameds = (c: ClassType, classNamed: Name): void => {
-        const forbidden = this.forbiddenNamesForProperties(c, classNamed);
-        const ns = new Namespace(c.names.combined, this._globalNamespace, Set(), Set(forbidden));
+        const {
+            names: forbiddenNames,
+            namespaces: forbiddenNamespace
+        } = this.forbiddenForProperties(c, classNamed);
+        const ns = new Namespace(
+            c.names.combined,
+            this.globalNamespace,
+            Set(forbiddenNamespace),
+            Set(forbiddenNames)
+        );
         const names = c.properties
             .map((t: Type, name: string) => {
                 return ns.add(new SimpleName(name, this.propertyNamer));

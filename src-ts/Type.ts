@@ -202,19 +202,22 @@ export function allNamedTypes(
     graph: TopLevels,
     childrenOfType?: (t: Type) => Collection<any, Type>
 ): OrderedSet<NamedType> {
-    let types = OrderedSet<NamedType>();
+    let seen = Set<Type>();
+    let types = List<NamedType>();
 
     function addFromType(t: Type): void {
-        if (t instanceof ClassType || t instanceof UnionType) {
-            if (types.has(t)) return;
-            types = types.add(t);
-        }
+        if (seen.has(t)) return;
+        seen = seen.add(t);
+
         const children = childrenOfType ? childrenOfType(t) : t.children;
         children.forEach(addFromType);
+        if (t instanceof ClassType || t instanceof UnionType) {
+            types = types.push(t);
+        }
     }
 
     graph.forEach(addFromType);
-    return types;
+    return types.reverse().toOrderedSet();
 }
 
 export type ClassesAndUnions = {

@@ -146,12 +146,15 @@ class CSharpRenderer extends ConvenienceRenderer {
         super(topLevels);
     }
 
-    protected get forbiddenNames(): string[] {
+    protected get forbiddenNamesForGlobalNamespace(): string[] {
         return ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
     }
 
-    protected forbiddenNamesForProperties(c: ClassType, classNamed: Name): Name[] {
-        return [classNamed];
+    protected forbiddenForProperties(
+        c: ClassType,
+        classNamed: Name
+    ): { names: Name[]; namespaces: Namespace[] } {
+        return { names: [classNamed], namespaces: [] };
     }
 
     protected topLevelNameStyle(rawName: string): string {
