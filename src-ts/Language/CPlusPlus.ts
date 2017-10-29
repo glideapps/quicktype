@@ -17,12 +17,12 @@ import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import {
-    legalizeCharacters,
+    utf16LegalizeCharacters,
     camelCase,
     startWithLetter,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
-    stringEscape,
+    utf16StringEscape,
     defined
 } from "../Support";
 import { RenderResult } from "../Renderer";
@@ -54,7 +54,7 @@ export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
 
 const namingFunction = funPrefixNamer(cppNameStyle);
 
-const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
+const legalizeName = utf16LegalizeCharacters(isLetterOrUnderscoreOrDigit);
 
 function cppNameStyle(original: string): string {
     const legalized = legalizeName(original);
@@ -320,7 +320,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                                 "get_optional<",
                                 this.cppTypeInOptional(nonNulls, true, false),
                                 '>(_j, "',
-                                stringEscape(json),
+                                utf16StringEscape(json),
                                 '");'
                             );
                             return;
@@ -333,7 +333,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                             " = ",
                             ourQualifier,
                             'get_untyped(_j, "',
-                            stringEscape(json),
+                            utf16StringEscape(json),
                             '");'
                         );
                         return;
@@ -343,7 +343,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                         "_x.",
                         name,
                         ' = _j.at("',
-                        stringEscape(json),
+                        utf16StringEscape(json),
                         '").get<',
                         cppType,
                         ">();"
@@ -365,7 +365,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                     if (args.length !== 0) {
                         args.push(", ");
                     }
-                    args.push('{"', stringEscape(json), '", _x.', name, "}");
+                    args.push('{"', utf16StringEscape(json), '", _x.', name, "}");
                 });
                 this.emitLine("_j = json{", args, "};");
             }

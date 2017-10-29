@@ -21,10 +21,10 @@ import {
 import { Source, Sourcelike } from "../Source";
 
 import {
-    legalizeCharacters,
+    utf16LegalizeCharacters,
     camelCase,
     startWithLetter,
-    stringEscape,
+    utf16StringEscape,
     intercalate,
     defined
 } from "../Support";
@@ -69,16 +69,16 @@ export default class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage 
     }
 }
 
-function isStartCharacter(c: string): boolean {
-    return unicode.isAlphabetic(c.charCodeAt(0)) || c == "_";
+function isStartCharacter(utf16Unit: number): boolean {
+    return unicode.isAlphabetic(utf16Unit) || utf16Unit == 0x5f; // underscore
 }
 
-function isPartCharacter(c: string): boolean {
-    const category: string = unicode.getCategory(c.charCodeAt(0));
-    return _.includes(["Nd", "Pc", "Mn", "Mc"], category) || isStartCharacter(c);
+function isPartCharacter(utf16Unit: number): boolean {
+    const category: string = unicode.getCategory(utf16Unit);
+    return _.includes(["Nd", "Pc", "Mn", "Mc"], category) || isStartCharacter(utf16Unit);
 }
 
-const legalizeName = legalizeCharacters(isPartCharacter);
+const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
 function simpleNameStyle(original: string, uppercase: boolean): string {
     return startWithLetter(isStartCharacter, uppercase, camelCase(legalizeName(original)));

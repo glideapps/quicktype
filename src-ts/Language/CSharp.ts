@@ -15,10 +15,10 @@ import {
 } from "../Type";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import {
-    legalizeCharacters,
+    utf16LegalizeCharacters,
     camelCase,
     startWithLetter,
-    stringEscape,
+    utf16StringEscape,
     intercalate,
     defined
 } from "../Support";
@@ -105,23 +105,22 @@ function proposeTopLevelDependencyName(names: List<string>): string {
     return defined(names.first());
 }
 
-function isStartCharacter(c: string): boolean {
-    const code = c.charCodeAt(0);
-    if (unicode.isAlphabetic(code)) {
+function isStartCharacter(utf16Unit: number): boolean {
+    if (unicode.isAlphabetic(utf16Unit)) {
         return true;
     }
-    return c == "_";
+    return utf16Unit == 0x5f; // underscore
 }
 
-function isPartCharacter(c: string): boolean {
-    const category: string = unicode.getCategory(c.charCodeAt(0));
+function isPartCharacter(utf16Unit: number): boolean {
+    const category: string = unicode.getCategory(utf16Unit);
     if (["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0) {
         return true;
     }
-    return isStartCharacter(c);
+    return isStartCharacter(utf16Unit);
 }
 
-const legalizeName = legalizeCharacters(isPartCharacter);
+const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
 function csNameStyle(original: string): string {
     const legalized = legalizeName(original);
@@ -248,12 +247,12 @@ class CSharpRenderer extends ConvenienceRenderer {
         this.emitClass([this.partialString, "class"], className, () => {
             if (c.properties.isEmpty()) return;
             const maxWidth = defined(
-                c.properties.map((_, name: string) => stringEscape(name).length).max()
+                c.properties.map((_, name: string) => utf16StringEscape(name).length).max()
             );
             const blankLines = this._needAttributes && !this._dense ? "interposing" : "none";
             this.forEachProperty(c, blankLines, (name, jsonName, t) => {
                 const csType = this.csType(t, true);
-                const escapedName = stringEscape(jsonName);
+                const escapedName = utf16StringEscape(jsonName);
                 const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
                 const property = ["public ", csType, " ", name, " { get; set; }"];
                 if (!this._needAttributes) {
