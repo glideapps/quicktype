@@ -5,6 +5,9 @@
 
 #include "quicktype.hpp"
 
+using quicktype::topLevel;
+using nlohmann::json;
+
 int main(int argc, const char * argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " FILE";
