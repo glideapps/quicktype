@@ -419,8 +419,12 @@ struct adl_serializer<boost::optional<T>> {
             this.emitLine("//     ", topLevelName, " data = json::parse(jsonString);");
         });
         this.emitNewline();
-        this.emitLine("#include <boost/optional.hpp>");
-        this.emitLine("#include <boost/variant.hpp>");
+        if (this.haveUnions) {
+            this.emitLine("#include <boost/optional.hpp>");
+        }
+        if (this.haveNamedUnions) {
+            this.emitLine("#include <boost/variant.hpp>");
+        }
         this.emitLine('#include "json.hpp"');
         this.emitNewline();
         this.emitLine("using nlohmann::json;");
