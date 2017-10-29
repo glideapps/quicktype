@@ -1,20 +1,7 @@
-//
-//  main.cpp
-//  CppJson
-//
-//  Created by Mark Probst on 10/22/17.
-//  Copyright © 2017 Mark Probst. All rights reserved.
-//
-
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <streambuf>
-#include "json.hpp"
-#include <boost/optional.hpp>
-#include <boost/variant.hpp>
-
-using nlohmann::json;
 
 #include "quicktype.hpp"
 
@@ -27,9 +14,8 @@ int main(int argc, const char * argv[]) {
     std::ifstream t(argv[1]);
     std::string str((std::istreambuf_iterator<char>(t)),
                     std::istreambuf_iterator<char>());
-    json j = json::parse(str);
 
-    topLevel tl = j;
+    topLevel tl = json::parse(str);
     json j2 = tl;
     
     std::cout << j2 << std::endl;

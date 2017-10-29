@@ -408,7 +408,11 @@ struct adl_serializer<boost::optional<T>> {
     };
 
     protected emitSourceStructure(): void {
+        this.emitLine("#include <boost/optional.hpp>");
+        this.emitLine("#include <boost/variant.hpp>");
         this.emitLine('#include "json.hpp"');
+        this.emitNewline();
+        this.emitLine("using nlohmann::json;");
         this.forEachNamedType(
             "leading-and-interposing",
             true,
