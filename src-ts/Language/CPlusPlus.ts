@@ -408,6 +408,17 @@ struct adl_serializer<boost::optional<T>> {
     };
 
     protected emitSourceStructure(): void {
+        this.emitLine("// To parse this JSON data, first install");
+        this.emitLine("//");
+        this.emitLine("//     Boost     http://www.boost.org");
+        this.emitLine("//     json.hpp  https://github.com/nlohmann/json");
+        this.emitLine("//");
+        this.emitLine("// Then include this file, and then do");
+        this.emitLine("//");
+        this.forEachTopLevel("none", (_, topLevelName) => {
+            this.emitLine("//     ", topLevelName, " data = json::parse(jsonString);");
+        });
+        this.emitNewline();
         this.emitLine("#include <boost/optional.hpp>");
         this.emitLine("#include <boost/variant.hpp>");
         this.emitLine('#include "json.hpp"');
