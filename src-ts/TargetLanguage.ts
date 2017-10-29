@@ -84,6 +84,15 @@ export class PureScriptTargetLanguage extends TargetLanguage {
     }
 
     transformAndRenderConfig(config: Config): SerializedRenderResult {
+        // The PureScript rendering pipeline expects option values to be strings.
+        // TargetLangauges expect options to be strings or booleans
+        // So we stringify the booleans.
+        let options = config.rendererOptions;
+        for (let key of Object.keys(options)) {
+            options[key] = options[key].toString();
+        }
+        config.rendererOptions = options;
+
         const resultOrError = Main.main(config);
         if (Either.isLeft(resultOrError)) {
             throw `Error processing JSON: ${fromLeft(resultOrError)}`;
