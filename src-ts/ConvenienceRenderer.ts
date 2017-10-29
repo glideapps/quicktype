@@ -26,6 +26,7 @@ import {
 } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
 import { defined } from "./Support";
+import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 export abstract class ConvenienceRenderer extends Renderer {
     protected globalNamespace: Namespace;
@@ -240,14 +241,20 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.forEachWithBlankLines(this._namedUnions, blankLocations, u => this.callForUnion(u, f));
     };
 
-    protected forEachUniqueUnion = (
+    protected forEachUniqueUnion<T>(
         blankLocations: BlankLineLocations,
-        unionMembers: (u: UnionType) => OrderedSet<Type>,
-        f: (members: OrderedSet<Type>) => void
-    ): void => {
-        const uniqueUnions = this._namedUnions.map(unionMembers);
-        this.forEachWithBlankLines(uniqueUnions, blankLocations, f);
-    };
+        uniqueValue: (u: UnionType) => T,
+        f: (firstUnion: UnionType, value: T) => void
+    ): void {
+        let firstUnionByValue = OrderedMap<T, UnionType>();
+        this._namedUnions.forEach(u => {
+            const v = uniqueValue(u);
+            if (!firstUnionByValue.has(v)) {
+                firstUnionByValue = firstUnionByValue.set(v, u);
+            }
+        });
+        this.forEachWithBlankLines(firstUnionByValue, blankLocations, f);
+    }
 
     protected forEachNamedType = (
         blankLocations: BlankLineLocations,
@@ -266,6 +273,17 @@ export abstract class ConvenienceRenderer extends Renderer {
                 throw "Named type that's neither a class nor union";
             }
         });
+    };
+
+    protected sourcelikeToString = (src: Sourcelike): string => {
+        return serializeRenderResult(
+            {
+                source: sourcelikeToSource(src),
+                names: this.names
+            },
+            // FIXME: Use proper indentation.
+            ""
+        ).lines.join("\n");
     };
 
     protected emitSource(): void {
