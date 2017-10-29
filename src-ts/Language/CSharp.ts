@@ -243,20 +243,16 @@ class CSharpRenderer extends ConvenienceRenderer {
         return this._needHelpers ? "partial " : "";
     }
 
-    emitClassDefinition = (
-        c: ClassType,
-        className: Name,
-        propertyNames: OrderedMap<string, Name>
-    ): void => {
+    emitClassDefinition = (c: ClassType, className: Name): void => {
         const jsonProperty = this._dense ? denseJsonPropertyName : "JsonProperty";
         this.emitClass([this.partialString, "class"], className, () => {
             if (c.properties.isEmpty()) return;
             const maxWidth = defined(
                 c.properties.map((_, name: string) => stringEscape(name).length).max()
             );
-            const withBlankLines = this._needAttributes && !this._dense;
-            this.forEach(propertyNames, withBlankLines, false, (name: Name, jsonName: string) => {
-                const csType = this.csType(defined(c.properties.get(jsonName)), true);
+            const blankLines = this._needAttributes && !this._dense ? "interposing" : "none";
+            this.forEachProperty(c, blankLines, (name, jsonName, t) => {
+                const csType = this.csType(t, true);
                 const escapedName = stringEscape(jsonName);
                 const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
                 const property = ["public ", csType, " ", name, " { get; set; }"];

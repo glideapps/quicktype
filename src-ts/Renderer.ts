@@ -82,6 +82,9 @@ export abstract class Renderer {
                 this.emitNewline();
             }
         }
+        if (currentIndent !== 0) {
+            this.changeIndent(-currentIndent);
+        }
     }
 
     emitAnnotated(annotation: AnnotationData, emitter: () => void): void {

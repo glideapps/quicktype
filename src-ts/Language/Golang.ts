@@ -167,14 +167,10 @@ class GoRenderer extends ConvenienceRenderer {
         });
     };
 
-    private emitClass = (
-        c: ClassType,
-        className: Name,
-        propertyNames: OrderedMap<string, Name>
-    ): void => {
+    private emitClass = (c: ClassType, className: Name): void => {
         let columns: Sourcelike[][] = [];
-        propertyNames.forEach((name: Name, jsonName: string) => {
-            const goType = this.goType(defined(c.properties.get(jsonName)), true);
+        this.forEachProperty(c, "none", (name, jsonName, t) => {
+            const goType = this.goType(t, true);
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`']]);
         });
         this.emitStruct(className, columns);

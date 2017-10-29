@@ -138,16 +138,11 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
         );
     };
 
-    private emitClass = (
-        c: ClassType,
-        className: Name,
-        propertyNames: OrderedMap<string, Name>
-    ) => {
+    private emitClass = (c: ClassType, className: Name) => {
         this.emitLine("class ", className, " {");
         this.indent(() => {
-            propertyNames.forEach((name: Name, jsonName: string) => {
-                const type = defined(c.properties.get(jsonName));
-                this.emitLine(name, ": ", this.sourceFor(type));
+            this.forEachProperty(c, "none", (name, jsonName, t) => {
+                this.emitLine(name, ": ", this.sourceFor(t));
             });
         });
         this.emitLine("}");
