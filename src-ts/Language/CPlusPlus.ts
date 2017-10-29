@@ -1,21 +1,19 @@
 "use strict";
 
-import { Map, OrderedMap, OrderedSet } from "immutable";
+import { Map, OrderedSet } from "immutable";
 
 import { TypeScriptTargetLanguage } from "../TargetLanguage";
 import {
     Type,
     TopLevels,
-    PrimitiveType,
     NamedType,
     ClassType,
     UnionType,
-    allClassesAndUnions,
     nullableFromUnion,
     matchType,
     removeNullFromUnion
 } from "../Type";
-import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
+import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import {
