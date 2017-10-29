@@ -27,14 +27,27 @@ import {
 } from "../Support";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { StringOption } from "../RendererOptions";
 
 export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
+    private readonly _namespaceOption: StringOption;
+
     constructor() {
-        super("C++", ["c++", "cpp", "cplusplus"], "cpp", []);
+        const namespaceOption = new StringOption(
+            "namespace",
+            "Name of the generated namespace",
+            "NAME",
+            "quicktype"
+        );
+        super("C++", ["c++", "cpp", "cplusplus"], "cpp", [namespaceOption.definition]);
+        this._namespaceOption = namespaceOption;
     }
 
     renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new CPlusPlusRenderer(topLevels, "quicktype");
+        const renderer = new CPlusPlusRenderer(
+            topLevels,
+            this._namespaceOption.getValue(optionValues)
+        );
         return renderer.render();
     }
 }
