@@ -7,6 +7,7 @@ import * as Either from "Data.Either";
 import { Config } from "Config";
 import * as Main from "Main";
 import { Renderer } from "Doc";
+import * as Options from "Options";
 import { fromLeft, fromRight } from "./purescript";
 import { TopLevels } from "./Type";
 import { RenderResult } from "./Renderer";
@@ -47,16 +48,33 @@ export abstract class TypeScriptTargetLanguage extends TargetLanguage {
     ): RenderResult;
 }
 
+function optionSpecificationToOptionDefinition(
+    spec: Options.OptionSpecification
+): OptionDefinition {
+    const valueType = Options.valueType(spec.default);
+    const type = valueType === "BooleanValue" ? Boolean : String;
+
+    let legalValues;
+    let defaultValue = spec.default.value0;
+    if (valueType === "EnumValue") {
+        const { value1 } = spec.default as Options.EnumValue;
+        legalValues = value1;
+        defaultValue = legalValues[defaultValue as number];
+    }
+
+    return {
+        name: spec.name,
+        description: spec.description,
+        typeLabel: spec.typeLabel,
+        renderer: true,
+        type,
+        legalValues,
+        defaultValue
+    };
+}
+
 function optionDefinitionsForRenderer(renderer: Renderer): OptionDefinition[] {
-    return renderer.options.map(o => {
-        return {
-            name: o.name,
-            description: o.description,
-            typeLabel: o.typeLabel,
-            renderer: true,
-            type: String as any
-        } as OptionDefinition;
-    });
+    return renderer.options.map(optionSpecificationToOptionDefinition);
 }
 
 export class PureScriptTargetLanguage extends TargetLanguage {
