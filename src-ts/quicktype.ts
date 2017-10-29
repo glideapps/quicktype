@@ -13,7 +13,7 @@ import * as Main from "Main";
 import { Config } from "Config";
 import * as Renderers from "Language.Renderers";
 import { ErrorMessage, SourceCode } from "Core";
-import targetLanguages from "./Language/All";
+import * as targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation } from "./Source";
@@ -26,8 +26,8 @@ const getUsage = require("command-line-usage");
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-const langs = targetLanguages.map(r => _.minBy(r.names, s => s.length)).join("|");
-const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
+const langs = targetLanguages.all.map(r => _.minBy(r.names, s => s.length)).join("|");
+const langDisplayNames = targetLanguages.all.map(r => r.displayName).join(", ");
 
 const optionDefinitions: OptionDefinition[] = [
     {
@@ -132,10 +132,9 @@ const sectionsAfterRenderers: UsageSection[] = [
 ];
 
 function getTargetLanguage(name: string): TargetLanguage {
-    for (const language of targetLanguages) {
-        if (language.names.indexOf(name) >= 0) {
-            return language;
-        }
+    const language = targetLanguages.languageNamed(name);
+    if (language) {
+        return language;
     }
     console.error(`'${name}' is not yet supported as an output language.`);
     return process.exit(1);
@@ -144,12 +143,12 @@ function getTargetLanguage(name: string): TargetLanguage {
 function usage() {
     const rendererSections: UsageSection[] = [];
 
-    _.forEach(targetLanguages, renderer => {
-        const definitions = renderer.optionDefinitions;
+    _.forEach(targetLanguages.all, language => {
+        const definitions = language.optionDefinitions;
         if (definitions.length === 0) return;
 
         rendererSections.push({
-            header: `Options for ${renderer.displayName}`,
+            header: `Options for ${language.displayName}`,
             optionList: definitions
         });
     });

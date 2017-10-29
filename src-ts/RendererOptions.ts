@@ -10,6 +10,7 @@ export interface OptionDefinition {
     defaultValue?: any;
     typeLabel?: string;
     description: string;
+    legalValues?: string[];
 }
 
 export abstract class UntypedOption {
@@ -65,6 +66,7 @@ export class EnumOption<T> extends Option<T> {
             type: String,
             description,
             typeLabel: values.map(([n, _]) => n).join("|"),
+            legalValues: values.map(([n, _]) => n),
             defaultValue: values[0][0]
         };
         super(definition);

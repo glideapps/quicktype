@@ -9,10 +9,6 @@ export function glueGraphFromJsonConfig(
   config: Config
 ): Either<ErrorMessage, GlueGraph>;
 
-export function mainWithOptions(options: {
-  [name: string]: string;
-}): ((config: Config) => Either<ErrorMessage, SourceCode>);
-
 export function urlsFromJsonGrammar(
   json: object
 ): Either<string, { [key: string]: string[] }>;

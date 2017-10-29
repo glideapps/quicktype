@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "license": "Apache-2.0",
   "main": "quicktype.js",
   "types": "quicktype.d.ts",
@@ -17,7 +17,7 @@
     "chalk": "^2.1.0",
     "command-line-args": "^4.0.6",
     "command-line-usage": "^4.0.0",
-    "json-to-ast": "^2.0.0-alpha1.2",
+    "json-to-ast": "^2.0.2",
     "lodash": "^4.17.4",
     "node-fetch": "^1.7.1",
     "pluralize": "^7.0.0",

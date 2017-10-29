@@ -45,7 +45,7 @@ instance decodeLiteral:: DecodeJson Literal where
     decodeJson j = do
         obj <- decodeJson j
         val <- obj .? "value"
-        raw <- obj .? "rawValue"
+        raw <- obj .? "raw"
         case val of
             _ | isString val ->
                 String <$> decodeJson val
@@ -82,13 +82,13 @@ instance decodeNode :: DecodeJson Node where
         obj <- decodeJson j
         typ <- obj .? "type"
         case typ of
-            "object" -> do
+            "Object" -> do
                 props <- obj .? "children"
                 pure $ Object props
-            "literal" -> do
+            "Literal" -> do
                 literal <- decodeJson j
                 pure $ Literal literal
-            "array" -> do
+            "Array" -> do
                 children <- obj .? "children"
                 pure $ Array children
-            _ -> Left "Unsupported JSON value"
+            _ -> Left $ "Unsupported JSON value: " <> typ

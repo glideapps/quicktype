@@ -1,3 +1,5 @@
+import { find, includes } from "lodash";
+
 import { TargetLanguage, PureScriptTargetLanguage } from "../TargetLanguage";
 import * as Renderers from "Language.Renderers";
 
@@ -15,4 +17,8 @@ const pureScriptTargetLanguages: TargetLanguage[] = Renderers.all.map(
     r => new PureScriptTargetLanguage(r)
 );
 
-export default typeScriptTargetLanguages.concat(pureScriptTargetLanguages);
+export const all = typeScriptTargetLanguages.concat(pureScriptTargetLanguages);
+
+export function languageNamed(name: string): TargetLanguage | undefined {
+    return find(all, l => includes(l.names, name) || l.displayName === name);
+}
