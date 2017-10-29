@@ -277,7 +277,7 @@ class GoRenderer extends ConvenienceRenderer {
         this.emitNewline();
         this.emitLine("package ", this._packageName);
         this.emitNewline();
-        if (this.haveUnions) {
+        if (this.haveNamedUnions) {
             this.emitLine('import "bytes"');
             this.emitLine('import "errors"');
         }
@@ -285,7 +285,7 @@ class GoRenderer extends ConvenienceRenderer {
         this.forEachTopLevel("leading-and-interposing", this.emitTopLevel);
         this.forEachClass("leading-and-interposing", this.emitClass);
         this.forEachUnion("leading-and-interposing", this.emitUnion);
-        if (this.haveUnions) {
+        if (this.haveNamedUnions) {
             this.emitNewline();
             this
                 .emitMultiline(`func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, nullable bool) (bool, error) {

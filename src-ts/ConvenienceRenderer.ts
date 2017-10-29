@@ -36,6 +36,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _namedTypes: OrderedSet<NamedType>;
     private _namedClasses: OrderedSet<ClassType>;
     private _namedUnions: OrderedSet<UnionType>;
+    private _haveUnions: boolean;
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
         return [];
@@ -144,8 +145,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this._namedUnions;
     }
 
-    protected get haveUnions(): boolean {
+    protected get haveNamedUnions(): boolean {
         return !this._namedUnions.isEmpty();
+    }
+
+    protected get haveUnions(): boolean {
+        return this._haveUnions;
     }
 
     protected unionFieldName = (t: Type): string => {
@@ -265,6 +270,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected emitSource(): void {
         const types = allNamedTypes(this.topLevels, this.childrenOfType);
+        this._haveUnions = types.some(t => t instanceof UnionType);
         this._namedTypes = types
             .filter((t: NamedType) => !(t instanceof UnionType) || this.unionNeedsName(t))
             .toOrderedSet();
