@@ -81,7 +81,7 @@ export const CPlusPlusLanguage: Language = {
   diffViaSchema: true,
   allowMissingNull: false,
   output: "quicktype.hpp",
-  topLevel: "topLevel",
+  topLevel: "TopLevel",
   skipJSON: [],
   rendererOptions: {},
   quickTestRendererOptions: []

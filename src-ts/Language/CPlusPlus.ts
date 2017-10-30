@@ -32,11 +32,12 @@ import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { StringOption, EnumOption } from "../RendererOptions";
 
-type NamingStyle = "camel" | "underscore";
+type NamingStyle = "pascal" | "camel" | "underscore";
 
 export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
     private readonly _namespaceOption: StringOption;
-    private readonly _namingStyleOption: EnumOption<NamingStyle>;
+    private readonly _typeNamingStyleOption: EnumOption<NamingStyle>;
+    private readonly _memberNamingStyleOption: EnumOption<NamingStyle>;
 
     constructor() {
         const namespaceOption = new StringOption(
@@ -45,23 +46,35 @@ export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
             "NAME",
             "quicktype"
         );
-        const namingStyleOption = new EnumOption<NamingStyle>("naming-style", "Naming style", [
-            ["underscore-case", "underscore"],
-            ["camel-case", "camel"]
-        ]);
+        const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
+        const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
+        const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
+        const typeNamingStyleOption = new EnumOption<NamingStyle>(
+            "type-style",
+            "Naming style for types",
+            [pascalValue, underscoreValue, camelValue]
+        );
+        const memberNamingStyleOption = new EnumOption<NamingStyle>(
+            "member-style",
+            "Naming style for members",
+            [underscoreValue, pascalValue, camelValue]
+        );
         super("C++", ["c++", "cpp", "cplusplus"], "cpp", [
             namespaceOption.definition,
-            namingStyleOption.definition
+            typeNamingStyleOption.definition,
+            memberNamingStyleOption.definition
         ]);
         this._namespaceOption = namespaceOption;
-        this._namingStyleOption = namingStyleOption;
+        this._typeNamingStyleOption = typeNamingStyleOption;
+        this._memberNamingStyleOption = memberNamingStyleOption;
     }
 
     renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
         const renderer = new CPlusPlusRenderer(
             topLevels,
             this._namespaceOption.getValue(optionValues),
-            this._namingStyleOption.getValue(optionValues)
+            this._typeNamingStyleOption.getValue(optionValues),
+            this._memberNamingStyleOption.getValue(optionValues)
         );
         return renderer.render();
     }
@@ -69,11 +82,27 @@ export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
 
-function cppNameStyle(caser: (uncased: string) => string): (original: string) => string {
+function cppNameStyle(namingStyle: NamingStyle): (rawName: string) => string {
+    let caser: (uncased: string) => string;
+
+    switch (namingStyle) {
+        case "pascal":
+            caser = camelCase;
+            break;
+        case "camel":
+            caser = camelCase;
+            break;
+        case "underscore":
+            caser = underscoreCase;
+            break;
+        default:
+            return assertNever(namingStyle);
+    }
+
     return (original: string) => {
         const legalized = legalizeName(original);
         const cased = caser(legalized);
-        return startWithLetter(isLetterOrUnderscore, false, cased);
+        return startWithLetter(isLetterOrUnderscore, namingStyle === "pascal", cased);
     };
 }
 
@@ -180,27 +209,21 @@ const keywords = [
 ];
 
 class CPlusPlusRenderer extends ConvenienceRenderer {
-    private readonly _nameStyle: (rawName: string) => string;
-    private readonly _namingFunction: Namer;
+    private readonly _typeNameStyle: (rawName: string) => string;
+    private readonly _typeNamingFunction: Namer;
+    private readonly _memberNamingFunction: Namer;
 
     constructor(
         topLevels: TopLevels,
         private readonly _namespaceName: string,
-        _namingStyle: NamingStyle
+        _typeNamingStyle: NamingStyle,
+        _memberNamingStyle: NamingStyle
     ) {
         super(topLevels);
 
-        switch (_namingStyle) {
-            case "camel":
-                this._nameStyle = cppNameStyle(camelCase);
-                break;
-            case "underscore":
-                this._nameStyle = cppNameStyle(underscoreCase);
-                break;
-            default:
-                return assertNever(_namingStyle);
-        }
-        this._namingFunction = funPrefixNamer(this._nameStyle);
+        this._typeNameStyle = cppNameStyle(_typeNamingStyle);
+        this._typeNamingFunction = funPrefixNamer(this._typeNameStyle);
+        this._memberNamingFunction = funPrefixNamer(cppNameStyle(_memberNamingStyle));
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -215,15 +238,15 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected topLevelNameStyle(rawName: string): string {
-        return this._nameStyle(rawName);
+        return this._typeNameStyle(rawName);
     }
 
     protected get namedTypeNamer(): Namer {
-        return this._namingFunction;
+        return this._typeNamingFunction;
     }
 
     protected get propertyNamer(): Namer {
-        return this._namingFunction;
+        return this._memberNamingFunction;
     }
 
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
