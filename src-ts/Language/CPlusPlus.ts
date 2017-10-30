@@ -305,7 +305,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     private emitClassFunctions = (c: ClassType, className: Name): void => {
         const ourQualifier = this.ourQualifier(true);
         this.emitBlock(
-            ["void from_json(const json& _j, struct ", ourQualifier, className, "& _x)"],
+            ["inline void from_json(const json& _j, struct ", ourQualifier, className, "& _x)"],
             false,
             () => {
                 this.forEachProperty(c, "none", (name, json, t) => {
@@ -353,7 +353,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         );
         this.emitNewline();
         this.emitBlock(
-            ["void to_json(json& _j, const struct ", ourQualifier, className, "& _x)"],
+            ["inline void to_json(json& _j, const struct ", ourQualifier, className, "& _x)"],
             false,
             () => {
                 if (c.properties.isEmpty()) {
@@ -388,34 +388,46 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         ];
         const [_, nonNulls] = removeNullFromUnion(u);
         const variantType = this.cppTypeInOptional(nonNulls, true, false);
-        this.emitBlock(["void from_json(const json& _j, ", variantType, "& _x)"], false, () => {
-            let onFirst = true;
-            for (const [kind, func] of functionForKind) {
-                const t = nonNulls.find((t: Type) => t.kind === kind);
-                if (t === undefined) continue;
-                this.emitLine(onFirst ? "if" : "else if", " (_j.", func, "())");
-                this.indent(() => {
-                    this.emitLine("_x = _j.get<", this.cppType(t, true, false), ">();");
-                });
-                onFirst = false;
-            }
-            this.emitLine('else throw "Could not deserialize";');
-        });
-        this.emitNewline();
-        this.emitBlock(["void to_json(json& _j, const ", variantType, "& _x)"], false, () => {
-            this.emitBlock("switch (_x.which())", false, () => {
-                let i = 0;
-                nonNulls.forEach((t: Type) => {
-                    this.emitLine("case ", i.toString(), ":");
+        this.emitBlock(
+            ["inline void from_json(const json& _j, ", variantType, "& _x)"],
+            false,
+            () => {
+                let onFirst = true;
+                for (const [kind, func] of functionForKind) {
+                    const t = nonNulls.find((t: Type) => t.kind === kind);
+                    if (t === undefined) continue;
+                    this.emitLine(onFirst ? "if" : "else if", " (_j.", func, "())");
                     this.indent(() => {
-                        this.emitLine("_j = boost::get<", this.cppType(t, true, false), ">(_x);");
-                        this.emitLine("break;");
+                        this.emitLine("_x = _j.get<", this.cppType(t, true, false), ">();");
                     });
-                    i++;
+                    onFirst = false;
+                }
+                this.emitLine('else throw "Could not deserialize";');
+            }
+        );
+        this.emitNewline();
+        this.emitBlock(
+            ["inline void to_json(json& _j, const ", variantType, "& _x)"],
+            false,
+            () => {
+                this.emitBlock("switch (_x.which())", false, () => {
+                    let i = 0;
+                    nonNulls.forEach((t: Type) => {
+                        this.emitLine("case ", i.toString(), ":");
+                        this.indent(() => {
+                            this.emitLine(
+                                "_j = boost::get<",
+                                this.cppType(t, true, false),
+                                ">(_x);"
+                            );
+                            this.emitLine("break;");
+                        });
+                        i++;
+                    });
+                    this.emitLine('default: throw "This should not happen";');
                 });
-                this.emitLine('default: throw "This should not happen";');
-            });
-        });
+            }
+        );
     };
 
     private emitTopLevelTypedef = (t: Type, name: Name): void => {
@@ -493,7 +505,7 @@ struct adl_serializer<boost::optional<T>> {
             );
             this.forEachTopLevel("leading", this.emitTopLevelTypedef);
             this.emitMultiline(`
-static json get_untyped(const json &j, const char *property) {
+inline json get_untyped(const json &j, const char *property) {
     if (j.find(property) != j.end()) {
         return j.at(property).get<json>();
     }
@@ -502,7 +514,7 @@ static json get_untyped(const json &j, const char *property) {
             if (this.haveUnions) {
                 this.emitMultiline(`
 template <typename T>
-static boost::optional<T> get_optional(const json &j, const char *property) {
+inline boost::optional<T> get_optional(const json &j, const char *property) {
     if (j.find(property) != j.end()) {
         return j.at(property).get<boost::optional<T>>();
     }
