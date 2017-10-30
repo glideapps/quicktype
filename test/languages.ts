@@ -82,7 +82,7 @@ export const CPlusPlusLanguage: Language = {
   allowMissingNull: false,
   output: "quicktype.hpp",
   topLevel: "topLevel",
-  skipJSON: ["identifiers.json", "blns-object.json"],
+  skipJSON: [],
   rendererOptions: {},
   quickTestRendererOptions: []
 };

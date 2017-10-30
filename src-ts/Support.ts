@@ -4,8 +4,9 @@ import { Collection, List } from "immutable";
 
 const unicode = require("unicode-properties");
 
-// FIXME: This is a copy of code in src/Data/String/Util.js
-export function utf16ConcatMap(mapper: (utf16Unit: number) => string): (s: string) => string {
+function computeAsciiMap(
+    mapper: (codePoint: number) => string
+): { charStringMap: string[]; charNoEscapeMap: number[] } {
     const charStringMap: string[] = [];
     const charNoEscapeMap: number[] = [];
 
@@ -18,6 +19,13 @@ export function utf16ConcatMap(mapper: (utf16Unit: number) => string): (s: strin
         charStringMap.push(result);
         charNoEscapeMap.push(noEscape);
     }
+
+    return { charStringMap, charNoEscapeMap };
+}
+
+// FIXME: This is a copy of code in src/Data/String/Util.js
+export function utf16ConcatMap(mapper: (utf16Unit: number) => string): (s: string) => string {
+    const { charStringMap, charNoEscapeMap } = computeAsciiMap(mapper);
 
     return function stringConcatMap_inner(s: string): string {
         let cs: string[] | null = null;
@@ -49,10 +57,59 @@ export function utf16ConcatMap(mapper: (utf16Unit: number) => string): (s: strin
     };
 }
 
+export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: string) => string {
+    const { charStringMap, charNoEscapeMap } = computeAsciiMap(mapper);
+
+    return function stringConcatMap_inner(s: string): string {
+        let cs: string[] | null = null;
+        let start = 0;
+        let i = 0;
+        while (i < s.length) {
+            var cc = s.charCodeAt(i);
+            if (!charNoEscapeMap[cc]) {
+                if (cs === null) cs = [];
+                cs.push(s.substring(start, i));
+
+                if (cc >= 0xd800 && cc <= 0xdbff) {
+                    const highSurrogate = cc;
+                    i++;
+                    const lowSurrogate = s.charCodeAt(i);
+                    if (lowSurrogate < 0xdc00 || lowSurrogate > 0xdfff) {
+                        throw "High surrogate not followed by low surrogate";
+                    }
+                    const highBits = highSurrogate - 0xd800;
+                    const lowBits = lowSurrogate - 0xdc00;
+                    cc = 0x10000 + lowBits + (highBits << 10);
+                }
+
+                const str = charStringMap[cc];
+                if (str === undefined) {
+                    cs.push(mapper(cc));
+                } else {
+                    cs.push(str);
+                }
+
+                start = i + 1;
+            }
+            i++;
+        }
+
+        if (cs === null) return s;
+
+        cs.push(s.substring(start, i));
+
+        return cs.join("");
+    };
+}
+
 export function utf16LegalizeCharacters(
     isLegal: (utf16Unit: number) => boolean
 ): (s: string) => string {
     return utf16ConcatMap(u => (isLegal(u) ? String.fromCharCode(u) : "_"));
+}
+
+export function legalizeCharacters(isLegal: (codePoint: number) => boolean): (s: string) => string {
+    return utf32ConcatMap(u => (u <= 0xffff && isLegal(u) ? String.fromCharCode(u) : "_"));
 }
 
 function intToHex(i: number, width: number): string {
@@ -68,8 +125,7 @@ export function standardUnicodeHexEscape(codePoint: number): string {
         return "\\U" + intToHex(codePoint, 8);
     }
 }
-
-function utf16EscapeNonPrintable(escaper: (utf16Unit: number) => string): (s: string) => string {
+function escapeNonPrintableMapper(escaper: (utf16Unit: number) => string): (u: number) => string {
     function mapper(u: number): string {
         switch (u) {
             case 0x5c:
@@ -87,12 +143,14 @@ function utf16EscapeNonPrintable(escaper: (utf16Unit: number) => string): (s: st
                 return escaper(u);
         }
     }
-    return utf16ConcatMap(mapper);
+    return mapper;
 }
 
-export const utf16StringEscape = utf16EscapeNonPrintable(standardUnicodeHexEscape);
+export const utf16StringEscape = utf16ConcatMap(escapeNonPrintableMapper(standardUnicodeHexEscape));
+export const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(standardUnicodeHexEscape));
 
 function isPrintable(codePoint: number): boolean {
+    if (codePoint > 0xffff) return false;
     const category = unicode.getCategory(codePoint);
     return (
         [
