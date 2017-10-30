@@ -4,7 +4,7 @@ import { List, Map, Range } from "immutable";
 
 import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
-import { intercalate, defined } from "./Support";
+import { intercalate, defined, assertNever } from "./Support";
 import { RenderResult } from "./Renderer";
 
 export type Source =
@@ -103,10 +103,6 @@ export function maybeAnnotated(
         return sl;
     }
     return annotated(annotation, sl);
-}
-
-function assertNever(x: never): never {
-    throw new Error("Unexpected object: " + x);
 }
 
 export interface Location {

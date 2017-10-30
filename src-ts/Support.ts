@@ -217,11 +217,17 @@ export function decapitalize(str: string): string {
     return modifyFirstChar(c => c.toLowerCase(), str);
 }
 
-const wordSeparatorRegex = RegExp("[-_. ]");
+const wordSeparatorRegex = /[-_. ]+/;
 
 export function camelCase(str: string): string {
     const words = str.split(wordSeparatorRegex).map(capitalize);
     return words.join("");
+}
+
+export function underscoreCase(str: string): string {
+    const separated = str.replace(/([^A-Z])([A-Z])/g, "$1_$2");
+    const words = separated.split(wordSeparatorRegex).map(decapitalize);
+    return words.join("_");
 }
 
 export function startWithLetter(
@@ -252,4 +258,8 @@ export function defined<T>(x: T | undefined): T {
 export function nonNull<T>(x: T | null): T {
     if (x !== null) return x;
     throw "Non-null value expected, but got null";
+}
+
+export function assertNever(x: never): never {
+    throw new Error("Unexpected object: " + x);
 }

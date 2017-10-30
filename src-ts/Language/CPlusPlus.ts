@@ -19,19 +19,24 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import {
     legalizeCharacters,
     camelCase,
+    underscoreCase,
     startWithLetter,
     isAscii,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
     stringEscape,
-    defined
+    defined,
+    assertNever
 } from "../Support";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { StringOption } from "../RendererOptions";
+import { StringOption, EnumOption } from "../RendererOptions";
+
+type NamingStyle = "camel" | "underscore";
 
 export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
     private readonly _namespaceOption: StringOption;
+    private readonly _namingStyleOption: EnumOption<NamingStyle>;
 
     constructor() {
         const namespaceOption = new StringOption(
@@ -40,27 +45,36 @@ export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
             "NAME",
             "quicktype"
         );
-        super("C++", ["c++", "cpp", "cplusplus"], "cpp", [namespaceOption.definition]);
+        const namingStyleOption = new EnumOption<NamingStyle>("naming-style", "Naming style", [
+            ["underscore-case", "underscore"],
+            ["camel-case", "camel"]
+        ]);
+        super("C++", ["c++", "cpp", "cplusplus"], "cpp", [
+            namespaceOption.definition,
+            namingStyleOption.definition
+        ]);
         this._namespaceOption = namespaceOption;
+        this._namingStyleOption = namingStyleOption;
     }
 
     renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
         const renderer = new CPlusPlusRenderer(
             topLevels,
-            this._namespaceOption.getValue(optionValues)
+            this._namespaceOption.getValue(optionValues),
+            this._namingStyleOption.getValue(optionValues)
         );
         return renderer.render();
     }
 }
 
-const namingFunction = funPrefixNamer(cppNameStyle);
-
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
 
-function cppNameStyle(original: string): string {
-    const legalized = legalizeName(original);
-    const cameled = camelCase(legalized);
-    return startWithLetter(isLetterOrUnderscore, false, cameled);
+function cppNameStyle(caser: (uncased: string) => string): (original: string) => string {
+    return (original: string) => {
+        const legalized = legalizeName(original);
+        const cased = caser(legalized);
+        return startWithLetter(isLetterOrUnderscore, false, cased);
+    };
 }
 
 const keywords = [
@@ -166,8 +180,27 @@ const keywords = [
 ];
 
 class CPlusPlusRenderer extends ConvenienceRenderer {
-    constructor(topLevels: TopLevels, private readonly _namespaceName) {
+    private readonly _nameStyle: (rawName: string) => string;
+    private readonly _namingFunction: Namer;
+
+    constructor(
+        topLevels: TopLevels,
+        private readonly _namespaceName: string,
+        _namingStyle: NamingStyle
+    ) {
         super(topLevels);
+
+        switch (_namingStyle) {
+            case "camel":
+                this._nameStyle = cppNameStyle(camelCase);
+                break;
+            case "underscore":
+                this._nameStyle = cppNameStyle(underscoreCase);
+                break;
+            default:
+                return assertNever(_namingStyle);
+        }
+        this._namingFunction = funPrefixNamer(this._nameStyle);
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -182,15 +215,15 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected topLevelNameStyle(rawName: string): string {
-        return cppNameStyle(rawName);
+        return this._nameStyle(rawName);
     }
 
     protected get namedTypeNamer(): Namer {
-        return namingFunction;
+        return this._namingFunction;
     }
 
     protected get propertyNamer(): Namer {
-        return namingFunction;
+        return this._namingFunction;
     }
 
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
