@@ -443,6 +443,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.CSharpLanguage),
   new JSONFixture(languages.JavaLanguage),
   new JSONFixture(languages.GoLanguage),
+  new JSONFixture(languages.CPlusPlusLanguage),
   new JSONFixture(languages.ElmLanguage),
   new JSONFixture(languages.Swift3Language, "swift3"),
   new JSONFixture(languages.Swift4Language, "swift4"),

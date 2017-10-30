@@ -222,6 +222,7 @@ export function serializeRenderResult(
                         const src = row.get(x) || { kind: "text", text: "" };
                         const srcWidth = rowWidths.get(x) || 0;
                         serializeToStringArray(src);
+                        // FIXME: don't pad last column
                         if (srcWidth < colWidth) {
                             currentLine.push(" ".repeat(colWidth - srcWidth));
                         }

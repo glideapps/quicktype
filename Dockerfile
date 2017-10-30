@@ -26,6 +26,10 @@ RUN apt-get update
 RUN apt-get install nodejs maven default-jdk clang binutils golang-go --assume-yes
 RUN apt-get install dotnet-sdk-2.0.0 --assume-yes
 
+# Install Boost for C++
+
+RUN apt-get install libboost-all-dev --assume-yes
+
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
 COPY . .

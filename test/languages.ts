@@ -69,6 +69,24 @@ export const GoLanguage: Language = {
   quickTestRendererOptions: []
 };
 
+export const CPlusPlusLanguage: Language = {
+  name: "cplusplus",
+  base: "test/fixtures/cplusplus",
+  setupCommand:
+    "curl -o json.hpp https://raw.githubusercontent.com/nlohmann/json/87df1d6708915ffbfa26a051ad7562ecc22e5579/src/json.hpp",
+  compileCommand: "g++ -O0 -o quicktype -std=c++14 main.cpp",
+  runCommand(sample: string) {
+    return `./quicktype "${sample}"`;
+  },
+  diffViaSchema: true,
+  allowMissingNull: false,
+  output: "quicktype.hpp",
+  topLevel: "topLevel",
+  skipJSON: [],
+  rendererOptions: {},
+  quickTestRendererOptions: []
+};
+
 export const ElmLanguage: Language = {
   name: "elm",
   base: "test/fixtures/elm",

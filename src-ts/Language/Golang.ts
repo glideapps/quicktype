@@ -16,12 +16,12 @@ import {
 } from "../Type";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import {
-    legalizeCharacters,
+    utf16LegalizeCharacters,
     camelCase,
     startWithLetter,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
-    stringEscape,
+    utf16StringEscape,
     defined
 } from "../Support";
 import { StringOption } from "../RendererOptions";
@@ -52,7 +52,7 @@ export default class GoTargetLanguage extends TypeScriptTargetLanguage {
 
 const namingFunction = funPrefixNamer(goNameStyle);
 
-const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
+const legalizeName = utf16LegalizeCharacters(isLetterOrUnderscoreOrDigit);
 
 function goNameStyle(original: string): string {
     const legalized = legalizeName(original);
@@ -171,7 +171,7 @@ class GoRenderer extends ConvenienceRenderer {
         let columns: Sourcelike[][] = [];
         this.forEachProperty(c, "none", (name, jsonName, t) => {
             const goType = this.goType(t, true);
-            columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`']]);
+            columns.push([[name, " "], [goType, " "], ['`json:"', utf16StringEscape(jsonName), '"`']]);
         });
         this.emitStruct(className, columns);
     };
@@ -277,7 +277,7 @@ class GoRenderer extends ConvenienceRenderer {
         this.emitNewline();
         this.emitLine("package ", this._packageName);
         this.emitNewline();
-        if (this.haveUnions) {
+        if (this.haveNamedUnions) {
             this.emitLine('import "bytes"');
             this.emitLine('import "errors"');
         }
@@ -285,7 +285,7 @@ class GoRenderer extends ConvenienceRenderer {
         this.forEachTopLevel("leading-and-interposing", this.emitTopLevel);
         this.forEachClass("leading-and-interposing", this.emitClass);
         this.forEachUnion("leading-and-interposing", this.emitUnion);
-        if (this.haveUnions) {
+        if (this.haveNamedUnions) {
             this.emitNewline();
             this
                 .emitMultiline(`func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, nullable bool) (bool, error) {
