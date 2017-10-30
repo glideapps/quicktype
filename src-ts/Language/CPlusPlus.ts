@@ -20,6 +20,7 @@ import {
     legalizeCharacters,
     camelCase,
     startWithLetter,
+    isAscii,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
     stringEscape,
@@ -54,7 +55,7 @@ export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
 
 const namingFunction = funPrefixNamer(cppNameStyle);
 
-const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
+const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
 
 function cppNameStyle(original: string): string {
     const legalized = legalizeName(original);

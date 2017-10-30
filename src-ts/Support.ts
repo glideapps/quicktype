@@ -181,6 +181,10 @@ function isPrintable(codePoint: number): boolean {
     );
 }
 
+export function isAscii(codePoint: number): boolean {
+    return codePoint < 128;
+}
+
 export function isLetter(codePoint: number): boolean {
     const category = unicode.getCategory(codePoint);
     // FIXME: Include Letter, modifier (Lm)?
