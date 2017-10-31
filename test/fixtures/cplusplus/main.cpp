@@ -5,7 +5,7 @@
 
 #include "quicktype.hpp"
 
-using quicktype::topLevel;
+using quicktype::TopLevel;
 using nlohmann::json;
 
 int main(int argc, const char * argv[]) {
@@ -18,7 +18,7 @@ int main(int argc, const char * argv[]) {
     std::string str((std::istreambuf_iterator<char>(t)),
                     std::istreambuf_iterator<char>());
 
-    topLevel tl = json::parse(str);
+    TopLevel tl = json::parse(str);
     json j2 = tl;
     
     std::cout << j2 << std::endl;
