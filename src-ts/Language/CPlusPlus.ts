@@ -413,18 +413,10 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             ["inline void to_json(json& _j, const struct ", ourQualifier, className, "& _x)"],
             false,
             () => {
-                if (c.properties.isEmpty()) {
-                    this.emitLine("_j = json::object();");
-                    return;
-                }
-                const args: Sourcelike = [];
+                this.emitLine("_j = json::object();");
                 this.forEachProperty(c, "none", (name, json, _) => {
-                    if (args.length !== 0) {
-                        args.push(", ");
-                    }
-                    args.push('{"', stringEscape(json), '", _x.', name, "}");
+                    this.emitLine('_j["', stringEscape(json), '"] = _x.', name, ";");
                 });
-                this.emitLine("_j = json{", args, "};");
             }
         );
     };
