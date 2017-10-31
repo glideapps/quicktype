@@ -3,7 +3,7 @@
 export class AnnotationData {}
 
 export class IssueAnnotationData extends AnnotationData {
-    constructor(readonly message) {
+    constructor(readonly message: string) {
         super();
     }
 }

@@ -13,7 +13,7 @@ import {
 } from "./Source";
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
 
-export type RenderResult = { source: Source; names: Map<Name, string> };
+export type RenderResult = { rootSource: Source; names: Map<Name, string> };
 
 export type BlankLineLocations = "none" | "interposing" | "leading" | "leading-and-interposing";
 
@@ -160,7 +160,7 @@ export abstract class Renderer {
     render = (): RenderResult => {
         this._names = assignNames(OrderedSet(this.setUpNaming()));
         this.emitSource();
-        return { source: this.finishedSource(), names: this._names };
+        return { rootSource: this.finishedSource(), names: this._names };
     };
 
     get names(): Map<Name, string> {
