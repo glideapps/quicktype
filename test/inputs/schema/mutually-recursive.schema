@@ -1,0 +1,30 @@
+{
+  "$ref": "#/definitions/Foo",
+  "definitions": {
+    "Foo": {
+      "type": "object",
+      "properties": {
+        "bar": {
+          "$ref": "#/definitions/Bar"
+        }
+      },
+      "title": "Foo"
+    },
+    "Bar": {
+      "type": "object",
+      "properties": {
+        "foo": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/Foo"
+            },
+            { "type": "array",
+            "items": { "$ref": "#/definitions/Foo" } }
+          ]
+        }
+      },
+      "required": ["foo"],
+      "title": "Bar"
+    }
+  }
+}
