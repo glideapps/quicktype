@@ -87,7 +87,7 @@ function makeCPlusPlusLanguage(rendererOptions: {
     topLevel: "TopLevel",
     skipJSON: [],
     rendererOptions: rendererOptions,
-    quickTestRendererOptions: []
+    quickTestRendererOptions: [{ unions: "indirection" }]
   };
 }
 
