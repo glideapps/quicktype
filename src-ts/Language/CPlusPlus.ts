@@ -38,6 +38,7 @@ export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
     private readonly _namespaceOption: StringOption;
     private readonly _typeNamingStyleOption: EnumOption<NamingStyle>;
     private readonly _memberNamingStyleOption: EnumOption<NamingStyle>;
+    private readonly _uniquePtrOption: EnumOption<boolean>;
 
     constructor() {
         const namespaceOption = new StringOption(
@@ -59,14 +60,20 @@ export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
             "Naming style for members",
             [underscoreValue, pascalValue, camelValue]
         );
+        const uniquePtrOption = new EnumOption("optional", "Type to use for optionals", [
+            ["boost", false],
+            ["unique_ptr", true]
+        ]);
         super("C++", ["c++", "cpp", "cplusplus"], "cpp", [
             namespaceOption.definition,
             typeNamingStyleOption.definition,
-            memberNamingStyleOption.definition
+            memberNamingStyleOption.definition,
+            uniquePtrOption.definition
         ]);
         this._namespaceOption = namespaceOption;
         this._typeNamingStyleOption = typeNamingStyleOption;
         this._memberNamingStyleOption = memberNamingStyleOption;
+        this._uniquePtrOption = uniquePtrOption;
     }
 
     renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
@@ -74,7 +81,8 @@ export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
             topLevels,
             this._namespaceOption.getValue(optionValues),
             this._typeNamingStyleOption.getValue(optionValues),
-            this._memberNamingStyleOption.getValue(optionValues)
+            this._memberNamingStyleOption.getValue(optionValues),
+            this._uniquePtrOption.getValue(optionValues)
         );
         return renderer.render();
     }
@@ -212,18 +220,21 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     private readonly _typeNameStyle: (rawName: string) => string;
     private readonly _typeNamingFunction: Namer;
     private readonly _memberNamingFunction: Namer;
+    private readonly _optionalType: string;
 
     constructor(
         topLevels: TopLevels,
         private readonly _namespaceName: string,
         _typeNamingStyle: NamingStyle,
-        _memberNamingStyle: NamingStyle
+        _memberNamingStyle: NamingStyle,
+        private readonly _uniquePtr: boolean
     ) {
         super(topLevels);
 
         this._typeNameStyle = cppNameStyle(_typeNamingStyle);
         this._typeNamingFunction = funPrefixNamer(this._typeNameStyle);
         this._memberNamingFunction = funPrefixNamer(cppNameStyle(_memberNamingStyle));
+        this._optionalType = _uniquePtr ? "std::unique_ptr" : "boost::optional";
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -295,7 +306,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         if (!hasNull) {
             return variant;
         }
-        return ["boost::optional<", variant, ">"];
+        return [this._optionalType, "<", variant, ">"];
     };
 
     private ourQualifier = (inJsonNamespace: boolean): Sourcelike => {
@@ -343,7 +354,8 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                 if (!nullable)
                     return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
                 return [
-                    "boost::optional<",
+                    this._optionalType,
+                    "<",
                     this.cppType(nullable, inJsonNamespace, withIssues),
                     ">"
                 ];
@@ -497,26 +509,40 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     };
 
     private emitOptionalHelpers = (): void => {
-        this.emitMultiline(`template <typename T>
-struct adl_serializer<boost::optional<T>> {
-    static void to_json(json& j, const boost::optional<T>& opt) {
-        if (opt == boost::none) {
+        this.emitLine("template <typename T>");
+        if (this._uniquePtr) {
+            this.emitMultiline(`struct adl_serializer<std::unique_ptr<T>> {
+    static void to_json(json& j, const std::unique_ptr<T>& opt) {
+        if (!opt)
             j = nullptr;
+        else
+            j = *opt;
+    }
+
+    static std::unique_ptr<T> from_json(const json& j) {
+        if (j.is_null())
+            return std::unique_ptr<T>();
+        else
+            return std::unique_ptr<T>(new T(j.get<T>()));
+    }
+};`);
         } else {
-            j = *opt; // this will call adl_serializer<T>::to_json which will
-            // find the free function to_json in T's namespace!
-        }
+            this.emitMultiline(`struct adl_serializer<boost::optional<T>> {
+    static void to_json(json& j, const boost::optional<T>& opt) {
+        if (opt == boost::none)
+            j = nullptr;
+        else
+            j = *opt;
     }
     
     static void from_json(const json& j, boost::optional<T>& opt) {
-        if (j.is_null()) {
+        if (j.is_null())
             opt = boost::none;
-        } else {
-            opt = j.get<T>(); // same as above, but with
-            // adl_serializer<T>::from_json
-        }
+        else
+            opt = j.get<T>();
     }
 };`);
+        }
     };
 
     protected emitSourceStructure(): void {
@@ -536,7 +562,7 @@ struct adl_serializer<boost::optional<T>> {
             );
         });
         this.emitNewline();
-        if (this.haveUnions) {
+        if (this.haveUnions && !this._uniquePtr) {
             this.emitLine("#include <boost/optional.hpp>");
         }
         if (this.haveNamedUnions) {
@@ -563,11 +589,10 @@ inline json get_untyped(const json &j, const char *property) {
             if (this.haveUnions) {
                 this.emitMultiline(`
 template <typename T>
-inline boost::optional<T> get_optional(const json &j, const char *property) {
-    if (j.find(property) != j.end()) {
-        return j.at(property).get<boost::optional<T>>();
-    }
-    return boost::optional<T>();
+inline ${this._optionalType}<T> get_optional(const json &j, const char *property) {
+    if (j.find(property) != j.end())
+        return j.at(property).get<${this._optionalType}<T>>();
+    return ${this._optionalType}<T>();
 }`);
             }
         });
