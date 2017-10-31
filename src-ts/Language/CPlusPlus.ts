@@ -60,10 +60,11 @@ export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
             "Naming style for members",
             [underscoreValue, pascalValue, camelValue]
         );
-        const uniquePtrOption = new EnumOption("optional", "Type to use for optionals", [
-            ["boost", false],
-            ["unique_ptr", true]
-        ]);
+        const uniquePtrOption = new EnumOption(
+            "unions",
+            "Use containment or indirection for unions",
+            [["containment", false], ["indirection", true]]
+        );
         super("C++", ["c++", "cpp", "cplusplus"], "cpp", [
             namespaceOption.definition,
             typeNamingStyleOption.definition,
@@ -287,14 +288,14 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         withIssues: boolean
     ): Sourcelike => {
         if (nonNulls.size === 1) {
-            return this.cppType(defined(nonNulls.first()), inJsonNamespace, withIssues);
+            return this.cppType(defined(nonNulls.first()), false, inJsonNamespace, withIssues);
         }
         const typeList: Sourcelike = [];
         nonNulls.forEach((t: Type) => {
             if (typeList.length !== 0) {
                 typeList.push(", ");
             }
-            typeList.push(this.cppType(t, inJsonNamespace, withIssues));
+            typeList.push(this.cppType(t, true, inJsonNamespace, withIssues));
         });
         return ["boost::variant<", typeList, ">"];
     };
@@ -317,7 +318,17 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return inJsonNamespace ? [] : "nlohmann::";
     };
 
-    private cppType = (t: Type, inJsonNamespace: boolean, withIssues: boolean): Sourcelike => {
+    private variantIndirection = (inVariant: boolean, typeSrc: Sourcelike): Sourcelike => {
+        if (!inVariant || !this._uniquePtr) return typeSrc;
+        return ["std::unique_ptr<", typeSrc, ">"];
+    };
+
+    private cppType = (
+        t: Type,
+        inVariant: boolean,
+        inJsonNamespace: boolean,
+        withIssues: boolean
+    ): Sourcelike => {
         return matchType<Sourcelike>(
             t,
             anyType =>
@@ -336,17 +347,18 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             stringType => "std::string",
             arrayType => [
                 "std::vector<",
-                this.cppType(arrayType.items, inJsonNamespace, withIssues),
+                this.cppType(arrayType.items, false, inJsonNamespace, withIssues),
                 ">"
             ],
-            classType => [
-                "struct ",
-                this.ourQualifier(inJsonNamespace),
-                this.nameForNamedType(classType)
-            ],
+            classType =>
+                this.variantIndirection(inVariant, [
+                    "struct ",
+                    this.ourQualifier(inJsonNamespace),
+                    this.nameForNamedType(classType)
+                ]),
             mapType => [
                 "std::map<std::string, ",
-                this.cppType(mapType.values, inJsonNamespace, withIssues),
+                this.cppType(mapType.values, false, inJsonNamespace, withIssues),
                 ">"
             ],
             unionType => {
@@ -356,7 +368,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                 return [
                     this._optionalType,
                     "<",
-                    this.cppType(nullable, inJsonNamespace, withIssues),
+                    this.cppType(nullable, false, inJsonNamespace, withIssues),
                     ">"
                 ];
             }
@@ -366,7 +378,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     private emitClass = (c: ClassType, className: Name): void => {
         this.emitBlock(["struct ", className], true, () => {
             this.forEachProperty(c, "none", (name, json, propertyType) => {
-                this.emitLine(this.cppType(propertyType, false, true), " ", name, ";");
+                this.emitLine(this.cppType(propertyType, false, false, true), " ", name, ";");
             });
         });
     };
@@ -407,7 +419,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                         );
                         return;
                     }
-                    const cppType = this.cppType(t, true, false);
+                    const cppType = this.cppType(t, false, true, false);
                     this.emitLine(
                         "_x.",
                         name,
@@ -459,7 +471,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                     if (t === undefined) continue;
                     this.emitLine(onFirst ? "if" : "else if", " (_j.", func, "())");
                     this.indent(() => {
-                        this.emitLine("_x = _j.get<", this.cppType(t, true, false), ">();");
+                        this.emitLine("_x = _j.get<", this.cppType(t, true, true, false), ">();");
                     });
                     onFirst = false;
                 }
@@ -478,7 +490,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.indent(() => {
                             this.emitLine(
                                 "_j = boost::get<",
-                                this.cppType(t, true, false),
+                                this.cppType(t, true, true, false),
                                 ">(_x);"
                             );
                             this.emitLine("break;");
@@ -493,7 +505,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     private emitTopLevelTypedef = (t: Type, name: Name): void => {
         if (!this.namedTypeToNameForTopLevel(t)) {
-            this.emitLine("typedef ", this.cppType(t, false, true), " ", name, ";");
+            this.emitLine("typedef ", this.cppType(t, false, false, true), " ", name, ";");
         }
     };
 
