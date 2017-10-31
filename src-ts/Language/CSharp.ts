@@ -20,7 +20,8 @@ import {
     startWithLetter,
     utf16StringEscape,
     intercalate,
-    defined
+    defined,
+    assertNever
 } from "../Support";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
@@ -109,7 +110,7 @@ function isStartCharacter(utf16Unit: number): boolean {
     if (unicode.isAlphabetic(utf16Unit)) {
         return true;
     }
-    return utf16Unit == 0x5f; // underscore
+    return utf16Unit === 0x5f; // underscore
 }
 
 function isPartCharacter(utf16Unit: number): boolean {
@@ -204,6 +205,8 @@ class CSharpRenderer extends ConvenienceRenderer {
                     return "double";
                 case "string":
                     return "string";
+                default:
+                    assertNever(t.kind);
             }
         } else if (t instanceof ArrayType) {
             const itemsType = this.csType(t.items, withIssues);

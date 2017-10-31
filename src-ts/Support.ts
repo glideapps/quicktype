@@ -197,7 +197,7 @@ export function isDigit(codePoint: number): boolean {
 }
 
 export function isLetterOrUnderscore(codePoint: number): boolean {
-    return isLetter(codePoint) || codePoint == 0x5f;
+    return isLetter(codePoint) || codePoint === 0x5f;
 }
 
 export function isLetterOrUnderscoreOrDigit(codePoint: number): boolean {
@@ -231,13 +231,13 @@ export function underscoreCase(str: string): string {
 }
 
 export function startWithLetter(
-    isLetter: (codePoint: number) => boolean, // FIXME: technically, this operates on UTF16 units
+    isAllowedStart: (codePoint: number) => boolean, // FIXME: technically, this operates on UTF16 units
     upper: boolean,
     str: string
 ): string {
     const modify = upper ? capitalize : decapitalize;
     if (str === "") return modify("empty");
-    if (isLetter(str.charCodeAt(0))) return modify(str);
+    if (isAllowedStart(str.charCodeAt(0))) return modify(str);
     return modify("the" + str);
 }
 

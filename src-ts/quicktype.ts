@@ -273,7 +273,7 @@ class Run {
             } else {
                 writeFile();
                 filename = results[1];
-                while (lines[i] == "") i++;
+                while (lines[i] === "") i++;
             }
         }
         writeFile();
@@ -283,7 +283,7 @@ class Run {
         const { lines, annotations } = this.renderSamplesOrSchemas(samplesOrSchemas);
         const output = lines.join("\n");
         if (this.options.out) {
-            if (this.options.lang == "java") {
+            if (this.options.lang === "java") {
                 this.splitAndWriteJava(path.dirname(this.options.out), output);
             } else {
                 fs.writeFileSync(this.options.out, output);
@@ -391,10 +391,10 @@ class Run {
             let json = JSON.parse(fs.readFileSync(this.options.srcUrls, "utf8"));
             let jsonMap = fromRight(Main.urlsFromJsonGrammar(json));
             this.renderAndOutput(await this.mapValues(jsonMap, this.parseFileOrUrlArray));
-        } else if (this.options.src.length == 0) {
+        } else if (this.options.src.length === 0) {
             let json = await this.parseJsonFromStream(process.stdin);
             this.workFromJsonArray([json]);
-        } else if (this.options.src.length == 1) {
+        } else if (this.options.src.length === 1) {
             let jsons = await this.parseFileOrUrlArray(this.options.src);
             this.workFromJsonArray(jsons);
         } else {
@@ -407,16 +407,16 @@ class Run {
     // according to each option definition's `renderer` field.  If `partial` is false this
     // will throw if it encounters an unknown option.
     parseOptions = (
-        optionDefinitions: OptionDefinition[],
+        definitions: OptionDefinition[],
         argv: string[],
         partial: boolean
     ): CompleteOptions => {
-        const opts: { [key: string]: any } = commandLineArgs(optionDefinitions, {
+        const opts: { [key: string]: any } = commandLineArgs(definitions, {
             argv,
             partial: partial
         });
         const options: Options = { rendererOptions: {} };
-        optionDefinitions.forEach(o => {
+        definitions.forEach(o => {
             if (!(o.name in opts)) return;
             const v = opts[o.name];
             if (o.renderer) options.rendererOptions[o.name] = v;
@@ -450,7 +450,7 @@ class Run {
         // Output file extension determines the language if language is undefined
         if (options.out) {
             let extension = path.extname(options.out);
-            if (extension == "") {
+            if (extension === "") {
                 console.error("Please specify a language (--lang) or an output file extension.");
                 process.exit(1);
             }
@@ -469,7 +469,7 @@ class Run {
         }
 
         // Source determines the top-level if undefined
-        if (options.src && options.src.length == 1) {
+        if (options.src && options.src.length === 1) {
             let src = options.src[0];
             let extension = path.extname(src);
             let without = path.basename(src).replace(extension, "");
@@ -481,7 +481,7 @@ class Run {
 }
 
 export async function main(args: string[] | Options) {
-    if (_.isArray(args) && args.length == 0) {
+    if (_.isArray(args) && args.length === 0) {
         usage();
     } else {
         let run = new Run(args);

@@ -148,7 +148,7 @@ function sourceLineLength(source: Source, names: Map<Name, string>): number {
 }
 
 export function serializeRenderResult(
-    { source, names }: RenderResult,
+    { rootSource, names }: RenderResult,
     indentation: string
 ): SerializedRenderResult {
     let indent = 0;
@@ -247,7 +247,7 @@ export function serializeRenderResult(
         }
     }
 
-    serializeToStringArray(source);
+    serializeToStringArray(rootSource);
     finishLine();
     return { lines, annotations: List(annotations) };
 }

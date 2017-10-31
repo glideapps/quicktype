@@ -467,11 +467,15 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             () => {
                 let onFirst = true;
                 for (const [kind, func] of functionForKind) {
-                    const t = nonNulls.find((t: Type) => t.kind === kind);
-                    if (t === undefined) continue;
+                    const typeForKind = nonNulls.find((t: Type) => t.kind === kind);
+                    if (typeForKind === undefined) continue;
                     this.emitLine(onFirst ? "if" : "else if", " (_j.", func, "())");
                     this.indent(() => {
-                        this.emitLine("_x = _j.get<", this.cppType(t, true, true, false), ">();");
+                        this.emitLine(
+                            "_x = _j.get<",
+                            this.cppType(typeForKind, true, true, false),
+                            ">();"
+                        );
                     });
                     onFirst = false;
                 }

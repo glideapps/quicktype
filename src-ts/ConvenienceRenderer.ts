@@ -25,7 +25,7 @@ import {
     keywordNamespace
 } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
-import { defined } from "./Support";
+import { defined, assertNever } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 export abstract class ConvenienceRenderer extends Renderer {
@@ -154,7 +154,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this._haveUnions;
     }
 
-    protected unionFieldName = (t: Type): string => {
+    protected unionFieldName = (fieldType: Type): string => {
         const typeNameForUnionMember = (t: Type): string => {
             if (t instanceof PrimitiveType) {
                 switch (t.kind) {
@@ -170,6 +170,8 @@ export abstract class ConvenienceRenderer extends Renderer {
                         return "double";
                     case "string":
                         return "string";
+                    default:
+                        assertNever(t.kind);
                 }
             } else if (t instanceof ArrayType) {
                 return typeNameForUnionMember(t.items) + "_array";
@@ -183,7 +185,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             throw "Unknown type";
         };
 
-        return this.propertyNamer.nameStyle(typeNameForUnionMember(t));
+        return this.propertyNamer.nameStyle(typeNameForUnionMember(fieldType));
     };
 
     protected nameForNamedType = (t: NamedType): Name => {
@@ -278,7 +280,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected sourcelikeToString = (src: Sourcelike): string => {
         return serializeRenderResult(
             {
-                source: sourcelikeToSource(src),
+                rootSource: sourcelikeToSource(src),
                 names: this.names
             },
             // FIXME: Use proper indentation.

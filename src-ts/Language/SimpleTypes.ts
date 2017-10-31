@@ -70,7 +70,7 @@ export default class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage 
 }
 
 function isStartCharacter(utf16Unit: number): boolean {
-    return unicode.isAlphabetic(utf16Unit) || utf16Unit == 0x5f; // underscore
+    return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
 }
 
 function isPartCharacter(utf16Unit: number): boolean {
@@ -129,7 +129,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
                 if (nullable) return ["Maybe<", this.sourceFor(nullable), ">"];
 
                 if (this.inlineUnions) {
-                    const children = unionType.children.map((t: Type) => this.sourceFor(t));
+                    const children = unionType.children.map((c: Type) => this.sourceFor(c));
                     return intercalate(" | ", children).toArray();
                 } else {
                     return this.nameForNamedType(unionType);
