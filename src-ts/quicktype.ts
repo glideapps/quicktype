@@ -394,12 +394,9 @@ class Run {
         } else if (this.options.src.length === 0) {
             let json = await this.parseJsonFromStream(process.stdin);
             this.workFromJsonArray([json]);
-        } else if (this.options.src.length === 1) {
+        } else {
             let jsons = await this.parseFileOrUrlArray(this.options.src);
             this.workFromJsonArray(jsons);
-        } else {
-            usage();
-            process.exit(1);
         }
     };
 
