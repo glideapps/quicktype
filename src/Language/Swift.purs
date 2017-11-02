@@ -742,6 +742,13 @@ renderTopLevelExtensions4 topLevelName topLevelType = do
             line "let decoder = JSONDecoder()"
             line $ "return try? decoder.decode(" <> topLevelRendered <> ".self, from: data)"
         line "}"
+        blank
+        line $ "static func from(url urlString: String) -> " <> topLevelRendered <> "? {"
+        indent do
+            line "guard let url = URL(string: urlString) else { return nil }"
+            line "guard let data = try? Data(contentsOf: url) else { return nil }"
+            line "return from(data: data)"
+        line "}"
 
         blank
         line $ "var jsonData: Data? {"
