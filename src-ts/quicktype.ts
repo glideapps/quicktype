@@ -64,8 +64,8 @@ const optionDefinitions: OptionDefinition[] = [
         type: String,
         multiple: true,
         defaultOption: true,
-        typeLabel: "FILE|URL",
-        description: "The file or url to type."
+        typeLabel: "FILE|URL|DIRECTORY",
+        description: "The file, url, or data directory to type."
     },
     {
         name: "src-urls",
@@ -118,8 +118,15 @@ const sectionsAfterRenderers: UsageSection[] = [
             chalk.dim("Generate C# to parse a Bitcoin API"),
             "$ quicktype -o LatestBlock.cs https://blockchain.info/latestblock",
             "",
-            chalk.dim("Generate Go code from a JSON file"),
-            "$ quicktype -l go user.json",
+            chalk.dim("Generate Go code from a directory of samples containing:"),
+            chalk.dim(
+                `  - Foo.json
+  + Bar
+    - bar-sample-1.json
+    - bar-sample-2.json
+  - Baz.url`
+            ),
+            "$ quicktype -l go samples",
             "",
             chalk.dim("Generate JSON Schema, then TypeScript"),
             "$ quicktype -o schema.json https://blockchain.info/latestblock",
@@ -279,7 +286,7 @@ class Run {
         writeFile();
     };
 
-    renderAndOutput = (samplesOrSchemas: SampleOrSchemaMap) => {
+    render = (samplesOrSchemas: SampleOrSchemaMap) => {
         const { lines, annotations } = this.renderSamplesOrSchemas(samplesOrSchemas);
         const output = lines.join("\n");
         if (this.options.out) {
@@ -302,12 +309,6 @@ class Run {
             console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
             console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
         });
-    };
-
-    workFromJsonArray = (jsonArray: object[]) => {
-        let map = <SampleOrSchemaMap>{};
-        map[this.options.topLevel] = jsonArray;
-        this.renderAndOutput(map);
     };
 
     parseJsonFromStream = (stream: fs.ReadStream | NodeJS.Socket): Promise<object> => {
@@ -371,6 +372,48 @@ class Run {
         return result;
     };
 
+    readNamedSamplesFromDirectory = async (dataDir: string): Promise<SampleOrSchemaMap> => {
+        const readFilesOrURLsInDirectory = async (d: string): Promise<SampleOrSchemaMap> => {
+            let samples: SampleOrSchemaMap = {};
+            const files = fs
+                .readdirSync(d)
+                .map(x => path.join(d, x))
+                .filter(x => fs.lstatSync(x).isFile());
+            // Each file is a (Name, JSON | URL)
+            for (const file of files) {
+                const sampleName = (() => {
+                    let name = path.basename(file);
+                    return name.substr(0, name.lastIndexOf("."));
+                })();
+
+                let fileOrUrl = file;
+                // If file is a URL string, download it
+                if (_.endsWith(file, ".url")) {
+                    fileOrUrl = fs.readFileSync(file, "utf8").trim();
+                }
+
+                const sample = await this.parseFileOrUrl(fileOrUrl);
+                samples[sampleName] = [sample];
+            }
+            return samples;
+        };
+
+        const contents = fs.readdirSync(dataDir).map(x => path.join(dataDir, x));
+        const directories = contents.filter(x => fs.lstatSync(x).isDirectory());
+
+        let allSamples = await readFilesOrURLsInDirectory(dataDir);
+        for (const dir of directories) {
+            const sampleName = path.basename(dir);
+            const samples = await readFilesOrURLsInDirectory(dir);
+            allSamples[sampleName] = _(samples)
+                .values()
+                .flatten()
+                .value();
+        }
+
+        return allSamples;
+    };
+
     parseFileOrUrl = async (fileOrUrl: string): Promise<object> => {
         if (fs.existsSync(fileOrUrl)) {
             return this.parseJsonFromStream(fs.createReadStream(fileOrUrl));
@@ -390,13 +433,26 @@ class Run {
         } else if (this.options.srcUrls) {
             let json = JSON.parse(fs.readFileSync(this.options.srcUrls, "utf8"));
             let jsonMap = fromRight(Main.urlsFromJsonGrammar(json));
-            this.renderAndOutput(await this.mapValues(jsonMap, this.parseFileOrUrlArray));
+            this.render(await this.mapValues(jsonMap, this.parseFileOrUrlArray));
         } else if (this.options.src.length === 0) {
-            let json = await this.parseJsonFromStream(process.stdin);
-            this.workFromJsonArray([json]);
+            let samples: SampleOrSchemaMap = {};
+            samples[this.options.topLevel] = [await this.parseJsonFromStream(process.stdin)];
+            this.render(samples);
         } else {
-            let jsons = await this.parseFileOrUrlArray(this.options.src);
-            this.workFromJsonArray(jsons);
+            let samples: SampleOrSchemaMap = {};
+            const directories = this.options.src.filter(x => fs.lstatSync(x).isDirectory());
+            const files = this.options.src.filter(x => fs.lstatSync(x).isFile());
+
+            for (const dataDir of directories) {
+                const moreSamples = await this.readNamedSamplesFromDirectory(dataDir);
+                samples = _.merge(samples, moreSamples);
+            }
+
+            if (!_.isEmpty(files)) {
+                samples[this.options.topLevel] = await this.parseFileOrUrlArray(files);
+            }
+
+            this.render(samples);
         }
     };
 
