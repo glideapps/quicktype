@@ -440,16 +440,18 @@ class Run {
             this.render(samples);
         } else {
             let samples: SampleOrSchemaMap = {};
-            const directories = this.options.src.filter(x => fs.lstatSync(x).isDirectory());
-            const files = this.options.src.filter(x => fs.lstatSync(x).isFile());
+            const exists = this.options.src.filter(fs.existsSync);
+            const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
 
             for (const dataDir of directories) {
                 const moreSamples = await this.readNamedSamplesFromDirectory(dataDir);
                 samples = _.merge(samples, moreSamples);
             }
 
-            if (!_.isEmpty(files)) {
-                samples[this.options.topLevel] = await this.parseFileOrUrlArray(files);
+            // Every src that's not a directory is assumed to be a file or URL
+            const filesOrUrls = this.options.src.filter(x => !_.includes(directories, x));
+            if (!_.isEmpty(filesOrUrls)) {
+                samples[this.options.topLevel] = await this.parseFileOrUrlArray(filesOrUrls);
             }
 
             this.render(samples);
