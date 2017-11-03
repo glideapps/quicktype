@@ -79,8 +79,10 @@ async function main(sources: string[]) {
 
 function testCLI() {
   console.log(`* CLI sanity check`);
-  const qt = "node dist/quicktype.js";
-  exec(`${qt} --help`);
+  const qt = args => exec(`node dist/quicktype.js ${args}`);
+
+  console.log("* Ensure we can quicktype a URL");
+  qt(`https://blockchain.info/latestblock`);
 }
 
 // skip 2 `node` args
