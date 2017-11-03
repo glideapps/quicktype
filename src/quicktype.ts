@@ -15,6 +15,7 @@ import { IssueAnnotationData } from "./Annotation";
 import { defined } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { urlsFromURLGrammar } from "./URLGrammar";
+import { readGraphQLSchema } from "./GraphQL";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -72,6 +73,12 @@ const optionDefinitions: OptionDefinition[] = [
         name: "no-combine-classes",
         type: Boolean,
         description: "Don't combine similar classes."
+    },
+    {
+        name: "graphql",
+        type: String,
+        typeLabel: "FILE",
+        description: "GraphQL introspection file."
     },
     {
         name: "no-maps",
@@ -185,6 +192,7 @@ export interface Options {
     topLevel?: string;
     srcLang?: string;
     srcUrls?: string;
+    graphql?: string;
     out?: string;
     noMaps?: boolean;
     noEnums?: boolean;
@@ -201,6 +209,7 @@ interface CompleteOptions {
     topLevel: string;
     srcLang: string;
     srcUrls?: string;
+    graphql?: string;
     out?: string;
     noMaps: boolean;
     noEnums: boolean;
@@ -430,6 +439,9 @@ class Run {
             for (let key of Object.keys(jsonMap)) {
                 await this.readSampleFromFileOrUrlArray(key, jsonMap[key]);
             }
+        } else if (this.options.graphql) {
+            let json = JSON.parse(fs.readFileSync(this.options.graphql, "utf8"));
+            readGraphQLSchema(json);
         } else if (this._options.src.length === 0) {
             // FIXME: Why do we have to convert to any here?
             await this.readSampleFromStream(this._options.topLevel, process.stdin as any);
