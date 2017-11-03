@@ -283,7 +283,7 @@ converter = do
     }
 
     function isValidPrimitive(typ: string, val: any) {
-        if (typ == "undefined") return !val;
+        if (typ === "undefined") return !val;
         return typ === typeof val;
     }
 
@@ -298,6 +298,7 @@ converter = do
             path.push(`[${i}]`);
             if (isValid(typ, val)) {
                 path.pop();
+                return false;
             } else {
                 return true;
             }
