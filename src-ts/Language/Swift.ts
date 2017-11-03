@@ -6,6 +6,7 @@ import {
     Type,
     NamedType,
     ClassType,
+    EnumType,
     UnionType,
     ArrayType,
     MapType,
@@ -30,7 +31,9 @@ import {
     isDigit,
     utf32ConcatMap,
     escapeNonPrintableMapper,
-    intToHex
+    intToHex,
+    defined,
+    decapitalize
 } from "../Support";
 
 export default class Swift4TargetLanguage extends TypeScriptTargetLanguage {
@@ -198,7 +201,13 @@ class SwiftRenderer extends ConvenienceRenderer {
         c: ClassType,
         classNamed: Name
     ): { names: Name[]; namespaces: Namespace[] } {
-        // FIXME: Do we have to forbid the global namespace here?
+        return { names: [], namespaces: [this.globalNamespace] };
+    }
+
+    protected forbiddenForCases(
+        e: EnumType,
+        enumNamed: Name
+    ): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -211,6 +220,10 @@ class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected get propertyNamer(): Namer {
+        return lowerNamingFunction;
+    }
+
+    protected get caseNamer(): Namer {
         return lowerNamingFunction;
     }
 
@@ -257,11 +270,29 @@ class SwiftRenderer extends ConvenienceRenderer {
             arrayType => ["[", this.swiftType(arrayType.items, withIssues), "]"],
             classType => this.nameForNamedType(classType),
             mapType => ["[String: ", this.swiftType(mapType.values, withIssues), "]"],
+            enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable) return [this.swiftType(nullable, withIssues), "?"];
                 return this.nameForNamedType(unionType);
             }
+        );
+    };
+
+    protected unionFieldName = (fieldType: Type): string => {
+        return matchType(
+            fieldType,
+            anyType => "anything",
+            nullType => "null",
+            boolType => "bool",
+            integerType => "integer",
+            doubleType => "double",
+            stringType => "string",
+            arrayType => this.unionFieldName(arrayType.items) + "Array",
+            classType => decapitalize(defined(this.names.get(this.nameForNamedType(classType)))),
+            mapType => this.unionFieldName(mapType.values) + "Map",
+            enumType => "enumeration",
+            unionType => "oneOf"
         );
     };
 
@@ -297,6 +328,15 @@ class SwiftRenderer extends ConvenienceRenderer {
         this.emitBlock([structOrClass, " ", className, codableString], () => {
             this.forEachProperty(c, "none", (name, jsonName, t) => {
                 this.emitLine("let ", name, ": ", this.swiftType(t, true));
+            });
+        });
+    };
+
+    private renderEnumDefinition = (e: EnumType, enumName: Name): void => {
+        const codableString = this.getCodableString();
+        this.emitBlock(["enum ", enumName, codableString], () => {
+            this.forEachCase(e, "none", name => {
+                this.emitLine("case ", name);
             });
         });
     };
@@ -377,6 +417,50 @@ class SwiftRenderer extends ConvenienceRenderer {
         });
     };
 
+    private emitDecodingError = (name: Name): void => {
+        this.emitLine(
+            "throw DecodingError.typeMismatch(",
+            name,
+            '.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Wrong type for ',
+            name,
+            '"))'
+        );
+    };
+
+    private renderEnumExtensions4 = (e: EnumType, enumName: Name): void => {
+        this.emitBlock(["extension ", enumName], () => {
+            this.emitBlock("init(from decoder: Decoder) throws", () => {
+                this.emitLine("let container = try decoder.singleValueContainer()");
+                this.emitBlock(["if let x = try? container.decode(String.self)"], () => {
+                    this.emitLine("switch x {");
+                    this.forEachCase(e, "none", (name, jsonName) => {
+                        this.emitLine('case "', stringEscape(jsonName), '":');
+                        this.indent(() => {
+                            this.emitLine("self = .", name);
+                            this.emitLine("return");
+                        });
+                    });
+                    this.emitLine("default:");
+                    this.indent(() => this.emitLine("break"));
+                    this.emitLine("}");
+                });
+                this.emitDecodingError(enumName);
+            });
+            this.emitNewline();
+            this.emitBlock("func encode(to encoder: Encoder) throws", () => {
+                this.emitLine("var container = encoder.singleValueContainer()");
+                this.emitLine("switch self {");
+                this.forEachCase(e, "none", (name, jsonName) => {
+                    this.emitLine("case .", name, ":");
+                    this.indent(() =>
+                        this.emitLine('try container.encode("', stringEscape(jsonName), '")')
+                    );
+                });
+                this.emitLine("}");
+            });
+        });
+    };
+
     private renderUnionCase = (t: Type): void => {
         this.emitBlock(["if let x = try? container.decode(", this.swiftType(t), ".self)"], () => {
             this.emitLine("self = .", this.unionFieldName(t), "(x)");
@@ -403,13 +487,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                         this.emitLine("return");
                     });
                 }
-                this.emitLine(
-                    "throw DecodingError.typeMismatch(",
-                    unionName,
-                    '.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Wrong type for ',
-                    unionName,
-                    '"))'
-                );
+                this.emitDecodingError(unionName);
             });
             this.emitNewline();
             this.emitBlock("func encode(to encoder: Encoder) throws", () => {
@@ -690,6 +768,7 @@ class JSONAny: Codable {
             "leading-and-interposing",
             false,
             this.renderClassDefinition,
+            this.renderEnumDefinition,
             this.renderUnionDefinition
         );
 
@@ -703,6 +782,7 @@ class JSONAny: Codable {
                 "leading-and-interposing",
                 false,
                 this.renderClassExtensions4,
+                this.renderEnumExtensions4,
                 this.renderUnionExtensions4
             );
             this.emitNewline();

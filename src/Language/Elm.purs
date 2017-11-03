@@ -13,8 +13,8 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, decapitalize, isLetterOrUnderscore, isLetterOrUnderscoreOrDigit, legalizeCharacters, startWithLetter, stringEscape)
 import Data.Tuple (Tuple(..), fst)
-import Doc (Doc, Namer, Renderer, blank, combineNames, forEachTopLevel_, getClasses, getOptionValue, getTopLevelNames, getTopLevels, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption, whenOption)
-import IRGraph (IRClassData(..), IRType(..), IRUnionRep, isArray, nullableFromUnion, unionToList)
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachTopLevel_, getClasses, getOptionValue, getTopLevelNames, getTopLevels, getTypeNameForUnion, getUnions, indent, line, lookupClassName, lookupName, lookupUnionName, lookupEnumName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, intercalatedName, unlessOption, whenOption)
+import IRGraph (IRClassData(..), IRType(..), IRUnionRep, IREnumData, isArray, nullableFromUnion, unionToList)
 import Options (Option, enumOption, stringOption)
 import Utils (forEnumerated_, sortByKey, sortByKeyM, mapM)
 
@@ -60,7 +60,11 @@ renderer =
         , unions: Just
             { predicate: unionIsNotSimpleNullable
             , properName: elmNamer (upperNameStyle <<< combineNames)
-            , nameFromTypes: elmNamer (unionNameIntercalated upperNameStyle "Or")
+            , nameFromTypes: elmNamer (intercalatedName upperNameStyle "Or")
+            }
+        , enums: Just
+            { properName: elmNamer (upperNameStyle <<< combineNames)
+            , nameFromValues: elmNamer (intercalatedName upperNameStyle "Or")
             }
         }
     }
@@ -159,11 +163,12 @@ import Dict exposing (Dict, map, toList)"""
     unlessOption listOption do
         line $ "import Array exposing (Array, map)"
     blank
-    renderRenderItems blank (Just renderTopLevelDefinition) (typeRenderer renderTypeDefinition) (Just renderUnionDefinition)
+    -- FIXME: render enums
+    renderRenderItems blank (Just renderTopLevelDefinition) (typeRenderer renderTypeDefinition) (Just renderUnionDefinition) Nothing
     blank
     line "-- decoders and encoders"
     blank
-    renderRenderItems blank (Just renderTopLevelFunctions) (typeRenderer renderTypeFunctions) (Just renderUnionFunctions)
+    renderRenderItems blank (Just renderTopLevelFunctions) (typeRenderer renderTypeFunctions) (Just renderUnionFunctions) Nothing
     blank
     line "--- encoder helpers"
     blank
@@ -226,6 +231,7 @@ typeStringForType = case _ of
     IRMap t -> do
         ts <- typeStringForType t
         multiWord "Dict String" $ parenIfNeeded ts
+    IREnum e -> singleWord =<< lookupEnumName e
     IRUnion u ->
         case nullableFromUnion u of
         Just x -> do
@@ -256,6 +262,7 @@ decoderNameForType = case _ of
     IRMap t -> do
         dn <- decoderNameForType t
         multiWord "Jdec.dict" $ parenIfNeeded dn
+    IREnum e -> singleWord =<< decoderNameFromTypeName <$> lookupEnumName e
     IRUnion u ->
         case nullableFromUnion u of
         Just t -> do
@@ -281,6 +288,7 @@ encoderNameForType = case _ of
     IRMap t -> do
         rendered <- encoderNameForType t
         multiWord "makeDictEncoder" $ parenIfNeeded rendered
+    IREnum e -> singleWord =<< encoderNameFromTypeName <$> lookupEnumName e
     IRUnion u ->
         case nullableFromUnion u of
         Just t -> do

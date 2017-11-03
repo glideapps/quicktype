@@ -79,6 +79,7 @@ newtype JSONSchema = JSONSchema
     , properties :: Maybe (StrMap JSONSchema)
     , additionalProperties :: Either Boolean JSONSchema
     , items :: Maybe JSONSchema
+    , enum :: Maybe (Array String)
     , required :: Maybe (Array String)
     , title :: Maybe String
     }
@@ -168,9 +169,10 @@ instance decodeJsonSchema :: DecodeJson JSONSchema where
         properties <- obj .?? "properties"
         additionalProperties <- decodeAdditionalProperties $ SM.lookup "additionalProperties" obj
         items <- obj .?? "items"
+        enum <- obj .?? "enum"
         required <- obj .?? "required"
         title <- obj .?? "title"
-        pure $ JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, required, title }
+        pure $ JSONSchema { definitions, ref, types, oneOf, properties, additionalProperties, items, enum, required, title }
 
 lookupRef :: JSONSchema -> ReversePath -> List PathElement -> JSONSchema -> Either Error (Tuple JSONSchema ReversePath)
 lookupRef root reversePath ref local@(JSONSchema localProps) =
@@ -194,6 +196,10 @@ toIRAndUnify toIR l = do
     irs <- mapWithIndexM toIR $ A.fromFoldable l
     StateT.lift $ unifyMultipleTypes $ L.fromFoldable irs
 
+makeEnum :: Named String -> Array String -> JsonIR IRType
+makeEnum name cases =
+    pure $ IREnum $ IREnumData { names: map S.singleton name, cases: S.fromFoldable cases }
+
 jsonSchemaToIR :: JSONSchema -> ReversePath -> Named String -> JSONSchema -> JsonIR IRType
 jsonSchemaToIR root reversePath name schema@(JSONSchema schemaProps)
     | Just (JSONSchemaRef { path, name }) <- schemaProps.ref =
@@ -204,6 +210,8 @@ jsonSchemaToIR root reversePath name schema@(JSONSchema schemaProps)
         jsonTypeToIR root reversePath name jt schema
     | Just (Right jts) <- schemaProps.types =
         toIRAndUnify (\_ jt -> jsonTypeToIR root reversePath name jt schema) jts
+    | Just evs <- schemaProps.enum =
+        makeEnum name evs
     | Just jss <- schemaProps.oneOf =
         toIRAndUnify (\i -> jsonSchemaToIR root (OneOf i : reversePath) name) jss
     | otherwise =
@@ -238,7 +246,10 @@ jsonTypeToIR root reversePath name jsonType (JSONSchema schema) =
             pure $ IRArray ir
         Nothing -> pure $ IRArray IRAnyType
     JSONBoolean -> pure IRBool
-    JSONString -> pure IRString
+    JSONString ->
+        case schema.enum of
+        Just evs -> makeEnum name evs
+        Nothing -> pure IRString
     JSONNull -> pure IRNull
     JSONInteger -> pure IRInteger
     JSONNumber -> pure IRDouble
@@ -281,6 +292,7 @@ renderer =
         , forbiddenNames
         , topLevelName: noForbidNamer jsonNameStyle -- FIXME: put title on top levels, too
         , unions: Nothing
+        , enums: Nothing
         }
     }
 
@@ -326,6 +338,9 @@ strMapForType t =
         propertyType <- jsonForType m
         sm <- typeStrMap "object"
         pure $ SM.insert "additionalProperties" propertyType sm
+    IREnum (IREnumData { cases }) -> do
+        sm <- typeStrMap "string"
+        pure $ SM.insert "enum" (fromArray $ A.fromFoldable $ S.map fromString cases) sm
     IRUnion ur -> do
         types <- mapUnionM jsonForType ur
         let typesJson = fromArray $ A.fromFoldable types

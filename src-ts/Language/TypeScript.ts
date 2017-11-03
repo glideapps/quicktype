@@ -111,6 +111,10 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         return new Namer(propertyNameStyle, []);
     }
 
+    protected get caseNamer(): Namer {
+        throw "FIXME: support enums";
+    }
+
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
         if (type.isNamedType()) {
             return type;
@@ -144,6 +148,9 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             },
             classType => this.nameForNamedType(classType),
             mapType => ["{ [key: string]: ", this.sourceFor(mapType.values), " }"],
+            enumType => {
+                throw "FIXME: support enums";
+            },
             unionType => {
                 if (this.inlineUnions || nullableFromUnion(unionType)) {
                     const children = unionType.children.map(this.sourceFor);
@@ -167,6 +174,9 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             arrayType => ["array(", this.typeMapTypeFor(arrayType.items), ")"],
             classType => ['object("', this.nameForNamedType(classType), '")'],
             mapType => ["map(", this.typeMapTypeFor(mapType.values), ")"],
+            enumType => {
+                throw "FIXME: support enums";
+            },
             unionType => {
                 const children = unionType.children.map(this.typeMapTypeFor);
                 return ["union(", ...intercalate(", ", children).toArray(), ")"];

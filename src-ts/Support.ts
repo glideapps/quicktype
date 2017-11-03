@@ -242,6 +242,12 @@ export function snakeCase(str: string): string {
     return words.join("_");
 }
 
+export function upperUnderscoreCase(str: string): string {
+    const separated = str.replace(/([^A-Z])([A-Z])/g, "$1_$2");
+    const words = separated.split(wordSeparatorRegex).map(s => s.toUpperCase());
+    return words.join("_");
+}
+
 export function startWithLetter(
     isAllowedStart: (codePoint: number) => boolean, // FIXME: technically, this operates on UTF16 units
     upper: boolean,

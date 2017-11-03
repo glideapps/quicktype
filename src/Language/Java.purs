@@ -10,7 +10,7 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.String.Util (camelCase, capitalize, legalizeCharacters, startWithLetter, stringEscape)
-import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getOptionValue, getTypeNameForUnion, indent, line, lookupClassName, lookupUnionName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption)
+import Doc (Doc, Renderer, blank, combineNames, forEachProperty_, forEachTopLevel_, getForSingleOrMultipleTopLevels, getOptionValue, getTypeNameForUnion, indent, line, lookupClassName, lookupUnionName, lookupEnumName, noForbidNamer, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, intercalatedName, unlessOption)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionHasArray, unionHasClass, unionHasMap)
 import Options (Option, booleanOption, stringOption)
 
@@ -58,7 +58,11 @@ renderer =
         , unions: Just
             { predicate: unionIsNotSimpleNullable
             , properName: simpleNamer (javaNameStyle true <<< combineNames)
-            , nameFromTypes: simpleNamer (unionNameIntercalated (javaNameStyle true) "Or")
+            , nameFromTypes: simpleNamer (intercalatedName (javaNameStyle true) "Or")
+            }
+        , enums: Just
+            { properName: simpleNamer (javaNameStyle true <<< combineNames)
+            , nameFromValues: simpleNamer (intercalatedName (javaNameStyle true) "Or")
             }
         }
     }
@@ -86,7 +90,7 @@ javaDoc = do
     unlessOption pojoOption do
         renderConverter
         blank
-    renderRenderItems blank Nothing renderClassDefinition (Just renderUnionDefinition)
+    renderRenderItems blank Nothing renderClassDefinition (Just renderUnionDefinition) Nothing -- FIXME: render enums
 
 renderUnionWithTypeRenderer :: (Boolean -> IRType -> Doc String) -> IRUnionRep -> Doc String
 renderUnionWithTypeRenderer typeRenderer ur =
@@ -110,6 +114,7 @@ renderType reference = case _ of
     IRMap t -> do
         rendered <- renderType true t
         pure $ "Map<String, " <> rendered <> ">"
+    IREnum e -> lookupEnumName e
     IRUnion ur -> renderUnionWithTypeRenderer renderType ur
 
 renderTypeWithoutGenerics :: Boolean -> IRType -> Doc String

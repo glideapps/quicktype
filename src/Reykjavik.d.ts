@@ -5,7 +5,7 @@ export type PrimitiveTypeKind =
   | "integer"
   | "double"
   | "string";
-export type NamedTypeKind = "class" | "union";
+export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
 
 export type GlueType =
@@ -13,6 +13,7 @@ export type GlueType =
   | GlueClassType
   | GlueArrayType
   | GlueMapType
+  | GlueEnumType
   | GlueUnionType;
 
 export interface GlueGraph {
@@ -47,6 +48,12 @@ export interface GlueClassEntry {
 export interface GlueMapType {
   kind: "map";
   values: GlueType;
+}
+
+export interface GlueEnumType {
+  kind: "enum";
+  names: GlueTypeNames;
+  cases: string[];
 }
 
 export interface GlueUnionType {

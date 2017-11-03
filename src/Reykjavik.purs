@@ -15,7 +15,7 @@ import Data.Set as S
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
 import Doc (combineNames)
-import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, namedValue, unionToList)
+import IRGraph (Entry(..), IRClassData(..), IREnumData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, namedValue, unionToList)
 
 type GlueGraph =
     { classes :: Array Json
@@ -51,6 +51,10 @@ typeToJS (IRClass i) = typeJSObject "class" $
     SM.empty
 typeToJS (IRMap t) = typeJSObject "map" $
     SM.insert "values" (typeToJS t) $
+    SM.empty
+typeToJS (IREnum (IREnumData { names, cases })) = typeJSObject "enum" $
+    SM.insert "names" (namedToJS names) $
+    SM.insert "cases" (fromArray $ A.fromFoldable $ S.map fromString cases)
     SM.empty
 typeToJS (IRUnion ur@(IRUnionRep { names })) = typeJSObject "union" $
     SM.insert "names" (namedToJS names) $
