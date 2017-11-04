@@ -161,6 +161,6 @@ export const TypeScriptLanguage: Language = {
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json"],
-  rendererOptions: {},
+  rendererOptions: { "runtime-typecheck": "yes" },
   quickTestRendererOptions: []
 };

@@ -7,7 +7,7 @@ const process = require("process");
 const sample = process.argv[2];
 const json = fs.readFileSync(sample);
 
-let value = TopLevel.Convert.fromJson(json);
-let backToJson = TopLevel.Convert.toJson(value);
+let value = TopLevel.Convert.jsonToTopLevel(json);
+let backToJson = TopLevel.Convert.topLevelToJson(value);
 
 console.log(backToJson);

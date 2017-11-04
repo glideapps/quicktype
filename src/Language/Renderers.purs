@@ -5,7 +5,6 @@ module Language.Renderers
 
 import Language.Elm as Elm
 import Language.Java as Java
-import Language.TypeScript as TypeScript
 import Language.Swift as Swift
 import Language.JsonSchema as JsonSchema
 
@@ -16,8 +15,7 @@ import Data.Foldable (elem, find)
 
 all :: Array Doc.Renderer
 all = 
-    [ TypeScript.renderer
-    , Java.renderer
+    [ Java.renderer
     , Elm.renderer
     , Swift.renderer
     , JsonSchema.renderer
