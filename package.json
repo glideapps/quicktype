@@ -11,7 +11,7 @@
     "build": "script/build.ts",
     "test": "npm run build && pulp test && test/test",
     "docs": "pulp docs",
-    "start": "script/start.sh"
+    "start": "script/watch"
   },
   "dependencies": {
     "chalk": "^2.1.0",
@@ -42,7 +42,8 @@
     "ts-node": "^3.3.0",
     "tslint": "^5.7.0",
     "typescript": "^2.5.3",
-    "uglify-js": "^3.0.26"
+    "uglify-js": "^3.0.26",
+    "watch": "^1.0.2"
   },
   "files": [
     "*"
