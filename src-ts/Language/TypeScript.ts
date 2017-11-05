@@ -31,10 +31,10 @@ const unicode = require("unicode-properties");
 
 export default class L extends TypeScriptTargetLanguage {
     static justTypes = new BooleanOption("just-types", "Interfaces only", false);
-    static declareUnions = new BooleanOption("declare-unions", "Declare unions", false);
+    static declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
     static runtimeTypecheck = new BooleanOption(
         "runtime-typecheck",
-        "Typecheck JSON.parse results at runtime",
+        "Assert JSON.parse results at runtime",
         false
     );
 
@@ -226,15 +226,18 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     };
 
     emitConvertModule = () => {
-        this.emitMultiline(`// The Convert module converts JSON strings to/from your types`);
+        this.emitMultiline(`// Converts JSON strings to/from your types`);
         if (this.runtimeTypecheck) {
             this.emitMultiline(`// and asserts the results of JSON.parse at runtime`);
         }
         this.emitBlock("export module Convert", "", () => {
-            this.emitLine("let path: string[] = [];");
-            this.forEachTopLevel("leading-and-interposing", (t, name) => {
+            if (this.runtimeTypecheck) {
+                this.emitLine("let path: string[] = [];");
+                this.emitNewline();
+            }
+            this.forEachTopLevel("interposing", (t, name) => {
                 this.emitBlock(
-                    ["export function jsonTo", name, "(json: string): ", this.sourceFor(t)],
+                    ["export function to", name, "(json: string): ", this.sourceFor(t)],
                     "",
                     () => {
                         if (this.runtimeTypecheck) {
@@ -366,15 +369,32 @@ function object(className: string) {
         if (!this.justTypes) {
             this.emitMultiline(`// To parse this data:
 //`);
-            this.forEachTopLevel("interposing", (t, name) => {
+            const topLevelNames = this.topLevels
+                .filter(t => t.isNamedType())
+                .map(this.nameForNamedType)
+                .toArray()
+                .map(([s, name]) => this.sourcelikeToString(name))
+                .join(", ");
+
+            this.emitLine(
+                "//   import { Convert",
+                _.isEmpty(topLevelNames) ? "" : `, ${topLevelNames}`,
+                '} from "./file";'
+            );
+            this.emitLine("//");
+            this.forEachTopLevel("none", (t, name) => {
                 const camelCaseName = _.camelCase(this.sourcelikeToString(name));
-                this.emitLine("//   import { ", name, ', Convert } from "./file";');
-                this.emitLine("//   const ", camelCaseName, " = Convert.jsonTo", name, "(json);");
+                this.emitLine("//   const ", camelCaseName, " = Convert.to", name, "(json);");
             });
+            if (this.runtimeTypecheck) {
+                this.emitLine("//");
+                this.emitLine("// These functions will throw an error if the JSON doesn't");
+                this.emitLine("// match the expected interface, even if the JSON is valid.");
+            }
             this.emitNewline();
         }
 
-        if (!this.inlineUnions) {
+        if (!this.inlineUnions && this.haveNamedUnions) {
             this.forEachUnion("none", this.emitUnion);
             this.emitNewline();
         }
