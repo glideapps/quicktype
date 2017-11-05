@@ -144,8 +144,8 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             classType => this.nameForNamedType(classType),
             mapType => ["{ [key: string]: ", this.sourceFor(mapType.values), " }"],
             unionType => {
-                if (this.inlineUnions) {
-                    const children = unionType.children.map((c: Type) => this.sourceFor(c));
+                if (this.inlineUnions || nullableFromUnion(unionType)) {
+                    const children = unionType.children.map(this.sourceFor);
                     return intercalate(" | ", children).toArray();
                 } else {
                     return this.nameForNamedType(unionType);
