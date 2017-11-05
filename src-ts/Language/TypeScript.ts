@@ -379,7 +379,7 @@ function object(className: string) {
             this.emitLine(
                 "//   import { Convert",
                 _.isEmpty(topLevelNames) ? "" : `, ${topLevelNames}`,
-                '} from "./file";'
+                ' } from "./file";'
             );
             this.emitLine("//");
             this.forEachTopLevel("none", (t, name) => {
