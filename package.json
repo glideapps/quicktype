@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "license": "Apache-2.0",
   "main": "quicktype.js",
   "types": "quicktype.d.ts",
@@ -44,6 +44,8 @@
     "typescript": "^2.5.3",
     "uglify-js": "^3.0.26"
   },
-  "files": ["*"],
+  "files": [
+    "*"
+  ],
   "bin": "quicktype.js"
 }
