@@ -160,7 +160,7 @@ export const TypeScriptLanguage: Language = {
   allowMissingNull: false,
   output: "TopLevel.ts",
   topLevel: "TopLevel",
-  skipJSON: ["identifiers.json"],
-  rendererOptions: {},
+  skipJSON: [],
+  rendererOptions: { "runtime-typecheck": "yes", "explicit-unions": "yes" },
   quickTestRendererOptions: []
 };
