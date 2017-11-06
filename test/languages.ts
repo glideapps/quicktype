@@ -113,11 +113,14 @@ export const ElmLanguage: Language = {
   quickTestRendererOptions: [{ "array-type": "list" }]
 };
 
-function makeSwiftLanguage(rendererOptions: {
-  [name: string]: string;
-}): Language {
+function makeSwiftLanguage(
+  name: string,
+  rendererOptions: {
+    [name: string]: string;
+  }
+): Language {
   return {
-    name: "swift",
+    name: name,
     base: "test/fixtures/swift",
     compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
     runCommand(sample: string) {
@@ -133,18 +136,12 @@ function makeSwiftLanguage(rendererOptions: {
   };
 }
 
-export const Swift3Language: Language = makeSwiftLanguage({
-  "swift-version": "3"
-});
-export const Swift3ClassesLanguage: Language = makeSwiftLanguage({
-  "swift-version": "3",
+export const Swift3Language: Language = makeSwiftLanguage("swift3", {});
+export const Swift3ClassesLanguage: Language = makeSwiftLanguage("swift3", {
   "struct-or-class": "class"
 });
-export const Swift4Language: Language = makeSwiftLanguage({
-  "swift-version": "4"
-});
-export const Swift4ClassesLanguage: Language = makeSwiftLanguage({
-  "swift-version": "4",
+export const Swift4Language: Language = makeSwiftLanguage("swift4", {});
+export const Swift4ClassesLanguage: Language = makeSwiftLanguage("swift4", {
   "struct-or-class": "class"
 });
 

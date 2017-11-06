@@ -8,12 +8,14 @@ import GoTargetLanguage from "./Golang";
 import CPlusPlusTargetLanguage from "./CPlusPlus";
 import SimpleTypesTargetLanguage from "./SimpleTypes";
 import TypeScriptTargetLanguage from "./TypeScript";
+import SwiftTargetLanguage from "./Swift";
 
 const typeScriptTargetLanguages: TargetLanguage[] = [
     new CSharpTargetLanguage(),
     new GoTargetLanguage(),
     new CPlusPlusTargetLanguage(),
     new TypeScriptTargetLanguage(),
+    new SwiftTargetLanguage(),
     new SimpleTypesTargetLanguage()
 ];
 

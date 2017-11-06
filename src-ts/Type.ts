@@ -54,7 +54,7 @@ export class PrimitiveType extends Type {
     }
 }
 
-function isNull(t: Type): boolean {
+function isNull(t: Type): t is PrimitiveType {
     return t.kind === "null";
 }
 
@@ -175,11 +175,12 @@ export class UnionType extends NamedType {
     }
 }
 
-export function removeNullFromUnion(t: UnionType): [boolean, OrderedSet<Type>] {
-    if (!t.members.some(isNull)) {
-        return [false, t.members];
+export function removeNullFromUnion(t: UnionType): [PrimitiveType | null, OrderedSet<Type>] {
+    const nullType = t.findMember("null");
+    if (!nullType) {
+        return [null, t.members];
     }
-    return [true, t.members.filterNot(isNull).toOrderedSet()];
+    return [nullType as PrimitiveType, t.members.filterNot(isNull).toOrderedSet()];
 }
 
 export function nullableFromUnion(t: UnionType): Type | null {
@@ -198,12 +199,13 @@ function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
     return setArray[0].union(...setArray.slice(1));
 }
 
-export function allNamedTypes(
+export function filterTypes<T extends Type>(
+    predicate: (t: Type) => t is T,
     graph: TopLevels,
     childrenOfType?: (t: Type) => Collection<any, Type>
-): OrderedSet<NamedType> {
+): OrderedSet<T> {
     let seen = Set<Type>();
-    let types = List<NamedType>();
+    let types = List<T>();
 
     function addFromType(t: Type): void {
         if (seen.has(t)) return;
@@ -211,13 +213,24 @@ export function allNamedTypes(
 
         const children = childrenOfType ? childrenOfType(t) : t.children;
         children.forEach(addFromType);
-        if (t instanceof ClassType || t instanceof UnionType) {
+        if (predicate(t)) {
             types = types.push(t);
         }
     }
 
     graph.forEach(addFromType);
     return types.reverse().toOrderedSet();
+}
+
+export function allNamedTypes(
+    graph: TopLevels,
+    childrenOfType?: (t: Type) => Collection<any, Type>
+): OrderedSet<NamedType> {
+    return filterTypes<NamedType>(
+        (t): t is NamedType => t instanceof ClassType || t instanceof UnionType,
+        graph,
+        childrenOfType
+    );
 }
 
 export type ClassesAndUnions = {
