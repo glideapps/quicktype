@@ -114,13 +114,22 @@ export const ElmLanguage: Language = {
 };
 
 function makeSwiftLanguage(
-  name: string,
+  version: number,
   rendererOptions: {
     [name: string]: string;
   }
 ): Language {
+  let name: string;
+  // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
+  let skipJSON = ["no-classes.json", "blns-object.json"];
+  if (version === 3) {
+    name = "swift3";
+    skipJSON.push("identifiers.json");
+  } else {
+    name = "swift4";
+  }
   return {
-    name: name,
+    name,
     base: "test/fixtures/swift",
     compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
     runCommand(sample: string) {
@@ -130,18 +139,18 @@ function makeSwiftLanguage(
     allowMissingNull: true,
     output: "quicktype.swift",
     topLevel: "TopLevel",
-    skipJSON: ["identifiers.json", "no-classes.json", "blns-object.json"],
+    skipJSON,
     rendererOptions: rendererOptions,
     quickTestRendererOptions: [{ "struct-or-class": "class" }]
   };
 }
 
-export const Swift3Language: Language = makeSwiftLanguage("swift3", {});
-export const Swift3ClassesLanguage: Language = makeSwiftLanguage("swift3", {
+export const Swift3Language: Language = makeSwiftLanguage(3, {});
+export const Swift3ClassesLanguage: Language = makeSwiftLanguage(3, {
   "struct-or-class": "class"
 });
-export const Swift4Language: Language = makeSwiftLanguage("swift4", {});
-export const Swift4ClassesLanguage: Language = makeSwiftLanguage("swift4", {
+export const Swift4Language: Language = makeSwiftLanguage(4, {});
+export const Swift4ClassesLanguage: Language = makeSwiftLanguage(4, {
   "struct-or-class": "class"
 });
 
