@@ -41,7 +41,7 @@ renderer =
     { displayName: "Swift 3"
     , names: [ "swift3" ]
     , aceMode: "swift"
-    , extension: "swift3"
+    , extension: "swift"
     , doc: swift3Doc
     , options:
         [ classOption.specification

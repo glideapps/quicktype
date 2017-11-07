@@ -123,13 +123,13 @@ function makeSwiftLanguage(
   // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
   let skipJSON = ["no-classes.json", "blns-object.json"];
   if (version === 3) {
-    name = "swift3";
+    rendererOptions["swift-version"] = "3";
     skipJSON.push("identifiers.json");
   } else {
-    name = "swift4";
+    rendererOptions["swift-version"] = "4";
   }
   return {
-    name,
+    name: "swift",
     base: "test/fixtures/swift",
     compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
     runCommand(sample: string) {
