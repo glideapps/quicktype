@@ -243,11 +243,13 @@ class JSONFixture extends LanguageFixture {
         prioritySamples
       );
     }
-    const quickTestSamples = _.map(
-      this.language.quickTestRendererOptions,
-      ro => ({ path: combinationsInput, additionalRendererOptions: ro })
-    );
-    priority = quickTestSamples.concat(priority);
+    if (sources.length === 0) {
+      const quickTestSamples = _.map(
+        this.language.quickTestRendererOptions,
+        ro => ({ path: combinationsInput, additionalRendererOptions: ro })
+      );
+      priority = quickTestSamples.concat(priority);
+    }
 
     if (IS_CI && !IS_PR && !IS_BLESSED) {
       // Run only priority sources on low-priority CI branches
