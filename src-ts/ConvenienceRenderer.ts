@@ -197,9 +197,16 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected forEachTopLevel = (
         blankLocations: BlankLineLocations,
-        f: (t: Type, name: Name) => void
+        f: (t: Type, name: Name) => void,
+        predicate?: (t: Type) => boolean
     ): void => {
-        this.forEachWithBlankLines(this.topLevels, blankLocations, (t: Type, name: string) =>
+        let topLevels: Collection<string, Type>;
+        if (predicate) {
+            topLevels = this.topLevels.filter(predicate);
+        } else {
+            topLevels = this.topLevels;
+        }
+        this.forEachWithBlankLines(topLevels, blankLocations, (t: Type, name: string) =>
             f(t, defined(this._topLevelNames.get(name)))
         );
     };
