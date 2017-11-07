@@ -30,29 +30,21 @@ keywords =
     , "checkNull", "removeNSNull", "nilToNSNull", "convertArray", "convertOptional", "convertDict", "convertDouble"
     ]
 
-data Variant = Swift3 | Swift4
-
-derive instance eqVariant :: Eq Variant
-
 justTypesOption :: Option Boolean
 justTypesOption = booleanOption "just-types" "Plain types only" false
 
 classOption :: Option Boolean
 classOption = enumOption "struct-or-class" "Generate structs or classes" [Tuple "struct" false, Tuple "class" true]
 
-swiftVersionOption :: Option Variant
-swiftVersionOption = enumOption "swift-version" "Swift version" [Tuple "4" Swift4, Tuple "3" Swift3]
-
 renderer :: Renderer
 renderer =
-    { displayName: "Swift"
-    , names: [ "swift" ]
+    { displayName: "Swift 3"
+    , names: [ "swift3" ]
     , aceMode: "swift"
     , extension: "swift"
-    , doc: swiftDoc
+    , doc: swift3Doc
     , options:
-        [ swiftVersionOption.specification
-        , classOption.specification
+        [ classOption.specification
         , justTypesOption.specification
         ]
     , transforms:
@@ -102,13 +94,6 @@ renderHeader = do
         blank
     line "import Foundation"
     blank
-
-swiftDoc :: Doc Unit
-swiftDoc = do
-    variant <- getOptionValue swiftVersionOption
-    case variant of
-        Swift3 -> swift3Doc
-        Swift4 -> swift4Doc
 
 swift3Doc :: Doc Unit
 swift3Doc = do
@@ -497,21 +482,11 @@ renderUnion ur =
         pure $ rendered <> "?"
     Nothing -> lookupUnionName ur
 
-swift3OrPlainCase :: forall a. a -> a -> Doc a
-swift3OrPlainCase swift3OrPlain swift4NonPlain = do
-    variant <- getOptionValue swiftVersionOption
-    justTypes <- getOptionValue justTypesOption
-    if (justTypes || variant == Swift3)
-        then
-            pure swift3OrPlain
-        else
-            pure swift4NonPlain
-
 renderType :: IRType -> Doc String
 renderType = case _ of
     IRNoInformation -> pure "FIXME_THIS_SHOULD_NOT_HAPPEN"
-    IRAnyType -> swift3OrPlainCase "Any?" "JSONAny"
-    IRNull -> swift3OrPlainCase "NSNull" "JSONNull?"
+    IRAnyType -> pure "Any?"
+    IRNull -> pure "NSNull"
     IRInteger -> pure "Int"
     IRDouble -> pure "Double"
     IRBool -> pure "Bool"
@@ -605,12 +580,6 @@ renderTopLevelAlias topLevelName topLevelType = do
     top <- renderType topLevelType
     line $ "typealias "<> topLevelName <> " = " <> top
 
-getCodableString :: Doc String
-getCodableString = do
-    variant <- getOptionValue swiftVersionOption
-    justTypes <- getOptionValue justTypesOption
-    pure $ if variant == Swift3 || justTypes then "" else ": Codable"
-
 renderClassDefinition :: String -> Map String IRType -> Doc Unit
 renderClassDefinition className properties = do
     let forbidden = keywords <> ["json", "any"]
@@ -618,15 +587,13 @@ renderClassDefinition className properties = do
     let propertyNames = makePropertyNames properties "" forbidden
     useClass <- getOptionValue classOption
     let structOrClass = if useClass then "class " else "struct "
-    codableString <- getCodableString
-    line $ structOrClass <> className <> codableString <> " {"
+    line $ structOrClass <> className <> " {"
     indent do
         forEachProperty_ properties propertyNames \_ ptype fieldName _ -> do
             rendered <- renderType ptype
             line $ "let " <> fieldName <> ": " <> rendered
-        variant <- getOptionValue swiftVersionOption
         justTypes <- getOptionValue justTypesOption
-        when ((variant == Swift3) && (not justTypes)) do
+        unless justTypes do
             blank
             line $ "fileprivate init?(fromAny any: Any) {"
             unless (M.isEmpty properties) $ indent do
@@ -813,8 +780,7 @@ makePropertyNames properties suffix forbidden =
 renderUnionDefinition :: String -> IRUnionRep -> Doc Unit
 renderUnionDefinition unionName unionRep = do
     let { hasNull, nonNullUnion } = removeNullFromUnion unionRep
-    codableString <- getCodableString
-    line $ "enum " <> unionName <> codableString <> " {"
+    line $ "enum " <> unionName <> " {"
     indent do
         forUnion_ nonNullUnion \typ -> do
             name <- caseName typ

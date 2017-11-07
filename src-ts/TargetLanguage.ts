@@ -88,10 +88,11 @@ export class PureScriptTargetLanguage extends TargetLanguage {
         // TargetLangauges expect options to be strings or booleans
         // So we stringify the booleans.
         let options = config.rendererOptions;
+        config.rendererOptions = {};
         for (let key of Object.keys(options)) {
-            options[key] = options[key].toString();
+            config.rendererOptions[key] = options[key].toString();
         }
-        config.rendererOptions = options;
+        config.language = this.names[0];
 
         const resultOrError = Main.main(config);
         if (Either.isLeft(resultOrError)) {

@@ -508,9 +508,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     };
 
     private emitTopLevelTypedef = (t: Type, name: Name): void => {
-        if (!this.namedTypeToNameForTopLevel(t)) {
-            this.emitLine("typedef ", this.cppType(t, false, false, true), " ", name, ";");
-        }
+        this.emitLine("typedef ", this.cppType(t, false, false, true), " ", name, ";");
     };
 
     private emitAllUnionFunctions = (): void => {
@@ -594,7 +592,11 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitClass,
                 this.emitUnionTypedefs
             );
-            this.forEachTopLevel("leading", this.emitTopLevelTypedef);
+            this.forEachTopLevel(
+                "leading",
+                this.emitTopLevelTypedef,
+                t => !this.namedTypeToNameForTopLevel(t)
+            );
             this.emitMultiline(`
 inline json get_untyped(const json &j, const char *property) {
     if (j.find(property) != j.end()) {

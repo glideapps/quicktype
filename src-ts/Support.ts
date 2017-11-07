@@ -112,7 +112,7 @@ export function legalizeCharacters(isLegal: (codePoint: number) => boolean): (s:
     return utf32ConcatMap(u => (u <= 0xffff && isLegal(u) ? String.fromCharCode(u) : "_"));
 }
 
-function intToHex(i: number, width: number): string {
+export function intToHex(i: number, width: number): string {
     let str = i.toString(16);
     if (str.length >= width) return str;
     return "0".repeat(width - str.length) + str;
@@ -125,7 +125,10 @@ export function standardUnicodeHexEscape(codePoint: number): string {
         return "\\U" + intToHex(codePoint, 8);
     }
 }
-function escapeNonPrintableMapper(escaper: (utf16Unit: number) => string): (u: number) => string {
+
+export function escapeNonPrintableMapper(
+    escaper: (codePoint: number) => string
+): (u: number) => string {
     function mapper(u: number): string {
         switch (u) {
             case 0x5c:
@@ -194,6 +197,11 @@ export function isLetter(codePoint: number): boolean {
 export function isDigit(codePoint: number): boolean {
     const category = unicode.getCategory(codePoint);
     return ["Nd"].indexOf(category) >= 0;
+}
+
+export function isNumeric(codePoint: number): boolean {
+    const category = unicode.getCategory(codePoint);
+    return ["No", "Nd", "Nl"].indexOf(category) >= 0;
 }
 
 export function isLetterOrUnderscore(codePoint: number): boolean {

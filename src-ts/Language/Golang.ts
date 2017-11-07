@@ -171,7 +171,11 @@ class GoRenderer extends ConvenienceRenderer {
         let columns: Sourcelike[][] = [];
         this.forEachProperty(c, "none", (name, jsonName, t) => {
             const goType = this.goType(t, true);
-            columns.push([[name, " "], [goType, " "], ['`json:"', utf16StringEscape(jsonName), '"`']]);
+            columns.push([
+                [name, " "],
+                [goType, " "],
+                ['`json:"', utf16StringEscape(jsonName), '"`']
+            ]);
         });
         this.emitStruct(className, columns);
     };
@@ -185,7 +189,7 @@ class GoRenderer extends ConvenienceRenderer {
             ifNotMember: U,
             f: (t: Type, fieldName: string, goType: Sourcelike) => T
         ) => T | U = (kind, ifNotMember, f) => {
-            const maybeType = c.members.find((t: Type) => t.kind === kind);
+            const maybeType = c.findMember(kind);
             if (!maybeType) return ifNotMember;
             return f(maybeType, this.unionFieldName(maybeType), this.goType(maybeType));
         };
