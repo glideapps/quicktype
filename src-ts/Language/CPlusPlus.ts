@@ -18,8 +18,9 @@ import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import {
     legalizeCharacters,
+    pascalCase,
+    snakeCase,
     camelCase,
-    underscoreCase,
     startWithLetter,
     isAscii,
     isLetterOrUnderscore,
@@ -96,13 +97,13 @@ function cppNameStyle(namingStyle: NamingStyle): (rawName: string) => string {
 
     switch (namingStyle) {
         case "pascal":
-            caser = camelCase;
+            caser = pascalCase;
             break;
         case "camel":
             caser = camelCase;
             break;
         case "underscore":
-            caser = underscoreCase;
+            caser = snakeCase;
             break;
         default:
             return assertNever(namingStyle);

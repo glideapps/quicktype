@@ -23,6 +23,7 @@ import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
     startWithLetter,
+    pascalCase,
     camelCase,
     isLetterOrUnderscore,
     isNumeric,
@@ -167,7 +168,7 @@ const legalizeName = legalizeCharacters(isPartCharacter);
 
 function swiftNameStyle(isUpper: boolean, original: string): string {
     const legalized = legalizeName(original);
-    const cameled = camelCase(legalized);
+    const cameled = pascalCase(legalized);
     return startWithLetter(isStartCharacter, isUpper, cameled);
 }
 
@@ -269,7 +270,13 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             this.forEachTopLevel("none", (t, name) => {
-                this.emitLine("//   let my", name, " = ", name, ".from(json: jsonString)!");
+                this.emitLine(
+                    "//   let ",
+                    camelCase(this.sourcelikeToString(name)),
+                    " = ",
+                    name,
+                    ".from(json: jsonString)!"
+                );
             });
             this.emitNewline();
         }
@@ -332,7 +339,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         "guard let data = json.data(using: encoding) else { return nil }"
                     );
-                    this.emitLine("return ", typeSource, ".from(data: data)");
+                    this.emitLine("return from(data: data)");
                 }
             );
             this.emitNewline();
@@ -666,6 +673,10 @@ class JSONAny: Codable {
         }
     };
 
+    emitMark = (line: Sourcelike, horizontalLine: boolean = false) => {
+        this.emitLine("// MARK: ", line, horizontalLine ? " -" : "");
+    };
+
     protected emitSourceStructure(): void {
         this.renderHeader();
 
@@ -684,8 +695,10 @@ class JSONAny: Codable {
 
         if (!this._justTypes) {
             this.emitNewline();
-            this.emitLine("// Serialization extensions");
+            this.emitMark("Top-level extensions", true);
             this.forEachTopLevel("leading-and-interposing", this.renderTopLevelExtensions4);
+            this.emitNewline();
+            this.emitMark("Codable extensions", true);
             this.forEachNamedType(
                 "leading-and-interposing",
                 false,

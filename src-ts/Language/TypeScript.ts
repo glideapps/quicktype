@@ -14,6 +14,7 @@ import {
 
 import {
     utf16LegalizeCharacters,
+    pascalCase,
     camelCase,
     startWithLetter,
     stringEscape,
@@ -68,7 +69,7 @@ function isPartCharacter(utf16Unit: number): boolean {
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
 function typeNameStyle(original: string): string {
-    return startWithLetter(isStartCharacter, true, camelCase(legalizeName(original)));
+    return startWithLetter(isStartCharacter, true, pascalCase(legalizeName(original)));
 }
 
 function propertyNameStyle(original: string): string {
@@ -253,7 +254,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
                 );
                 this.emitNewline();
 
-                const camelCaseName = _.camelCase(this.sourcelikeToString(name));
+                const camelCaseName = camelCase(this.sourcelikeToString(name));
                 this.emitBlock(
                     [
                         `export function ${camelCaseName}ToJson(value: `,
@@ -383,7 +384,7 @@ function object(className: string) {
             );
             this.emitLine("//");
             this.forEachTopLevel("none", (t, name) => {
-                const camelCaseName = _.camelCase(this.sourcelikeToString(name));
+                const camelCaseName = camelCase(this.sourcelikeToString(name));
                 this.emitLine("//   const ", camelCaseName, " = Convert.to", name, "(json);");
             });
             if (this.runtimeTypecheck) {

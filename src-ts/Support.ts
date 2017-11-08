@@ -227,12 +227,16 @@ export function decapitalize(str: string): string {
 
 const wordSeparatorRegex = /[-_. ]+/;
 
-export function camelCase(str: string): string {
+export function pascalCase(str: string): string {
     const words = str.split(wordSeparatorRegex).map(capitalize);
     return words.join("");
 }
 
-export function underscoreCase(str: string): string {
+export function camelCase(str: string): string {
+    return decapitalize(pascalCase(str));
+}
+
+export function snakeCase(str: string): string {
     const separated = str.replace(/([^A-Z])([A-Z])/g, "$1_$2");
     const words = separated.split(wordSeparatorRegex).map(decapitalize);
     return words.join("_");
