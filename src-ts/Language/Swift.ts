@@ -32,6 +32,8 @@ import {
     intToHex
 } from "../Support";
 
+import * as _ from "lodash";
+
 export default class Swift4TargetLanguage extends TypeScriptTargetLanguage {
     private readonly _justTypesOption: BooleanOption;
     private readonly _classOption: EnumOption<boolean>;
@@ -269,7 +271,13 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             this.forEachTopLevel("none", (t, name) => {
-                this.emitLine("//   let my", name, " = ", name, ".from(json: jsonString)!");
+                this.emitLine(
+                    "//   let ",
+                    _.camelCase(this.sourcelikeToString(name)),
+                    " = ",
+                    name,
+                    ".from(json: jsonString)!"
+                );
             });
             this.emitNewline();
         }
