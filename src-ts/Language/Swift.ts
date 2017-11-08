@@ -23,6 +23,7 @@ import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
     startWithLetter,
+    PascalCase,
     camelCase,
     isLetterOrUnderscore,
     isNumeric,
@@ -31,8 +32,6 @@ import {
     escapeNonPrintableMapper,
     intToHex
 } from "../Support";
-
-import * as _ from "lodash";
 
 export default class Swift4TargetLanguage extends TypeScriptTargetLanguage {
     private readonly _justTypesOption: BooleanOption;
@@ -169,7 +168,7 @@ const legalizeName = legalizeCharacters(isPartCharacter);
 
 function swiftNameStyle(isUpper: boolean, original: string): string {
     const legalized = legalizeName(original);
-    const cameled = camelCase(legalized);
+    const cameled = PascalCase(legalized);
     return startWithLetter(isStartCharacter, isUpper, cameled);
 }
 
@@ -273,7 +272,7 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.forEachTopLevel("none", (t, name) => {
                 this.emitLine(
                     "//   let ",
-                    _.camelCase(this.sourcelikeToString(name)),
+                    camelCase(this.sourcelikeToString(name)),
                     " = ",
                     name,
                     ".from(json: jsonString)!"

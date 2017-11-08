@@ -16,7 +16,7 @@ import {
 import { Sourcelike, maybeAnnotated } from "../Source";
 import {
     utf16LegalizeCharacters,
-    camelCase,
+    PascalCase,
     startWithLetter,
     utf16StringEscape,
     intercalate,
@@ -125,8 +125,8 @@ const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
 function csNameStyle(original: string): string {
     const legalized = legalizeName(original);
-    const cameled = camelCase(legalized);
-    return startWithLetter(isStartCharacter, true, cameled);
+    const pascaled = PascalCase(legalized);
+    return startWithLetter(isStartCharacter, true, pascaled);
 }
 
 function isValueType(t: Type): boolean {

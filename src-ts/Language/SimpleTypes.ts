@@ -22,7 +22,7 @@ import { Source, Sourcelike } from "../Source";
 
 import {
     utf16LegalizeCharacters,
-    camelCase,
+    PascalCase,
     startWithLetter,
     utf16StringEscape,
     intercalate,
@@ -81,7 +81,7 @@ function isPartCharacter(utf16Unit: number): boolean {
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
 function simpleNameStyle(original: string, uppercase: boolean): string {
-    return startWithLetter(isStartCharacter, uppercase, camelCase(legalizeName(original)));
+    return startWithLetter(isStartCharacter, uppercase, PascalCase(legalizeName(original)));
 }
 
 class SimpleTypesRenderer extends ConvenienceRenderer {
