@@ -14,7 +14,7 @@ import {
 
 import {
     utf16LegalizeCharacters,
-    PascalCase,
+    pascalCase,
     camelCase,
     startWithLetter,
     stringEscape,
@@ -69,7 +69,7 @@ function isPartCharacter(utf16Unit: number): boolean {
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
 function typeNameStyle(original: string): string {
-    return startWithLetter(isStartCharacter, true, PascalCase(legalizeName(original)));
+    return startWithLetter(isStartCharacter, true, pascalCase(legalizeName(original)));
 }
 
 function propertyNameStyle(original: string): string {

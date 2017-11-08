@@ -23,7 +23,7 @@ import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
     startWithLetter,
-    PascalCase,
+    pascalCase,
     camelCase,
     isLetterOrUnderscore,
     isNumeric,
@@ -168,7 +168,7 @@ const legalizeName = legalizeCharacters(isPartCharacter);
 
 function swiftNameStyle(isUpper: boolean, original: string): string {
     const legalized = legalizeName(original);
-    const cameled = PascalCase(legalized);
+    const cameled = pascalCase(legalized);
     return startWithLetter(isStartCharacter, isUpper, cameled);
 }
 

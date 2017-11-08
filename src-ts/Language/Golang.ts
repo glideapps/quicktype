@@ -17,7 +17,7 @@ import {
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import {
     utf16LegalizeCharacters,
-    PascalCase,
+    pascalCase,
     startWithLetter,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
@@ -56,7 +56,7 @@ const legalizeName = utf16LegalizeCharacters(isLetterOrUnderscoreOrDigit);
 
 function goNameStyle(original: string): string {
     const legalized = legalizeName(original);
-    const pascaled = PascalCase(legalized);
+    const pascaled = pascalCase(legalized);
     return startWithLetter(isLetterOrUnderscore, true, pascaled);
 }
 
