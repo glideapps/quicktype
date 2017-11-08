@@ -340,7 +340,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         "guard let data = json.data(using: encoding) else { return nil }"
                     );
-                    this.emitLine("return ", typeSource, ".from(data: data)");
+                    this.emitLine("return from(data: data)");
                 }
             );
             this.emitNewline();
