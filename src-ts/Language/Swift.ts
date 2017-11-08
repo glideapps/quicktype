@@ -692,7 +692,7 @@ class JSONAny: Codable {
 
         if (!this._justTypes) {
             this.emitNewline();
-            this.emitLine("// Serialization extensions");
+            this.emitLine("// MARK: Serialization extensions");
             this.forEachTopLevel("leading-and-interposing", this.renderTopLevelExtensions4);
             this.forEachNamedType(
                 "leading-and-interposing",
