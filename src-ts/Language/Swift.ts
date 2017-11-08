@@ -673,6 +673,10 @@ class JSONAny: Codable {
         }
     };
 
+    emitMark = (line: Sourcelike) => {
+        this.emitLine("// MARK: ", line);
+    };
+
     protected emitSourceStructure(): void {
         this.renderHeader();
 
@@ -691,8 +695,10 @@ class JSONAny: Codable {
 
         if (!this._justTypes) {
             this.emitNewline();
-            this.emitLine("// MARK: Serialization extensions");
+            this.emitMark("Serialization extensions for top-levels");
             this.forEachTopLevel("leading-and-interposing", this.renderTopLevelExtensions4);
+            this.emitNewline();
+            this.emitMark("Codable extensions");
             this.forEachNamedType(
                 "leading-and-interposing",
                 false,
