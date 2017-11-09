@@ -75,10 +75,16 @@ const optionDefinitions: OptionDefinition[] = [
         description: "Don't combine similar classes."
     },
     {
-        name: "graphql",
+        name: "graphql-schema",
         type: String,
         typeLabel: "FILE",
         description: "GraphQL introspection file."
+    },
+    {
+        name: "graphql-query",
+        type: String,
+        typeLabel: "FILE",
+        description: "GraphQL query file."
     },
     {
         name: "no-maps",
@@ -192,7 +198,8 @@ export interface Options {
     topLevel?: string;
     srcLang?: string;
     srcUrls?: string;
-    graphql?: string;
+    graphqlSchema?: string;
+    graphqlQuery?: string;
     out?: string;
     noMaps?: boolean;
     noEnums?: boolean;
@@ -209,7 +216,8 @@ interface CompleteOptions {
     topLevel: string;
     srcLang: string;
     srcUrls?: string;
-    graphql?: string;
+    graphqlSchema?: string;
+    graphqlQuery?: string;
     out?: string;
     noMaps: boolean;
     noEnums: boolean;
@@ -439,9 +447,14 @@ class Run {
             for (let key of Object.keys(jsonMap)) {
                 await this.readSampleFromFileOrUrlArray(key, jsonMap[key]);
             }
-        } else if (this.options.graphql) {
-            let json = JSON.parse(fs.readFileSync(this.options.graphql, "utf8"));
-            readGraphQLSchema(json);
+        } else if (this.options.graphqlSchema) {
+            if (!this.options.graphqlQuery) {
+                console.error("Please specify a GraphQL query with --graphql-query.");
+                return process.exit(1);
+            }
+            let json = JSON.parse(fs.readFileSync(this.options.graphqlSchema, "utf8"));
+            let query = fs.readFileSync(this.options.graphqlQuery, "utf8");
+            readGraphQLSchema(json, query);
         } else if (this._options.src.length === 0) {
             // FIXME: Why do we have to convert to any here?
             await this.readSampleFromStream(this._options.topLevel, process.stdin as any);
