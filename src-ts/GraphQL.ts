@@ -2,7 +2,7 @@
 
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
 
-interface Type {
+export interface Type {
     kind: TypeKind;
     name?: string;
     description?: string;
@@ -14,26 +14,26 @@ interface Type {
     enumValues?: EnumValue[];
 }
 
-interface EnumValue {
+export interface EnumValue {
     name: string;
     description?: string;
 }
 
-interface Field {
+export interface Field {
     name: string;
     description?: string;
     type: Type;
     args: InputValue[];
 }
 
-interface InputValue {
+export interface InputValue {
     name: string;
     description?: string;
     type: Type;
     defaultValue?: string;
 }
 
-export function readGraphQLSchema(json: any): void {
+export function readGraphQLSchema(json: any): Type | null {
     const schema: GraphQLSchema = json.data;
     let types: { [name: string]: Type } = {};
 
@@ -90,6 +90,10 @@ export function readGraphQLSchema(json: any): void {
         return type;
     }
 
+    if (schema.__schema.queryType.name === null) {
+        return null;
+    }
+    
     for (const t of schema.__schema.types as Type[]) {
         if (!t.name) throw "No top-level type name given";
         types[t.name] = { kind: t.kind, name: t.name, description: t.description };
@@ -100,4 +104,11 @@ export function readGraphQLSchema(json: any): void {
         addTypeFields(type, t as Type);
         console.log(`type ${type.name} is ${type.kind}`);
     }
+
+    const queryType = types[schema.__schema.queryType.name];
+    if (!queryType) {
+        return null;
+    }
+    console.log(`query type ${queryType.name} is ${queryType.kind}`);
+    return queryType;
 }
