@@ -1,5 +1,7 @@
 "use strict";
 
+import { parse } from "graphql/language";
+
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
 
 export interface Type {
@@ -33,7 +35,7 @@ export interface InputValue {
     defaultValue?: string;
 }
 
-export function readGraphQLSchema(json: any): Type | null {
+export function readGraphQLSchema(json: any, queryString: string): Type | null {
     const schema: GraphQLSchema = json.data;
     let types: { [name: string]: Type } = {};
 
@@ -93,7 +95,7 @@ export function readGraphQLSchema(json: any): Type | null {
     if (schema.__schema.queryType.name === null) {
         return null;
     }
-    
+
     for (const t of schema.__schema.types as Type[]) {
         if (!t.name) throw "No top-level type name given";
         types[t.name] = { kind: t.kind, name: t.name, description: t.description };
@@ -110,5 +112,9 @@ export function readGraphQLSchema(json: any): Type | null {
         return null;
     }
     console.log(`query type ${queryType.name} is ${queryType.kind}`);
+
+    const query = parse(queryString);
+    console.log(JSON.stringify(query, undefined, 4));
+
     return queryType;
 }
