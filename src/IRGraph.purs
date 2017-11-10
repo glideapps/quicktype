@@ -23,6 +23,7 @@ module IRGraph
     , isArray
     , isClass
     , isMap
+    , isEnum
     , matchingProperties
     , mapClasses
     , classesInGraph
@@ -220,6 +221,10 @@ isClass _ = false
 isMap :: IRType -> Boolean
 isMap (IRMap _) = true
 isMap _ = false
+
+isEnum :: IRType -> Boolean
+isEnum (IREnum _) = true
+isEnum _ = false
 
 canBeNull :: IRType -> Boolean
 canBeNull =

@@ -7,17 +7,19 @@ module Main
 
 import Prelude
 
-import IRGraph (IRGraph, regatherClassNames, regatherUnionNames)
+import IRGraph (IRGraph, regatherClassNames, regatherUnionNames, filterTypes, isEnum)
 import Config as Config
 import Control.Monad.State (modify)
-import Core (Either, Error, SourceCode)
+import Core (Either(..), Error, SourceCode)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson) as J
 import Data.StrMap as SM
+import Data.Maybe (Maybe(..))
 import Doc as Doc
 import IR (execIR, normalizeGraphOrder, replaceNoInformationWithAnyType)
 import IRTypeable (intSentinel) as IRTypeable
 import IRTypeable (makeTypes)
+import Data.Set as S
 import Reykjavik (GlueGraph, irGraphToGlue)
 import Options (makeOptionValues)
 import Transformations as T
@@ -45,13 +47,23 @@ graphFromConfig config = do
         replaceNoInformationWithAnyType
     pure graph
 
+failOnEnum :: IRGraph -> String -> Either Error Unit
+failOnEnum graph language =
+    let set = filterTypes (\t -> if isEnum t then Just $ S.singleton unit else Nothing) graph
+    in
+        if S.isEmpty set then
+            Right unit
+        else
+            Left ("Enums are not supported in " <> language <> " yet.")
+
 -- json is a Foreign object whose type is defined in /cli/src/Main.d.ts
 main :: Json -> Either Error SourceCode
 main json = do
     config <- Config.parseConfig json
     graph <- graphFromConfig config
-    let optionStrings = Config.rendererOptions config
     renderer <- Config.renderer config
+    failOnEnum graph (renderer.displayName)
+    let optionStrings = Config.rendererOptions config
     let optionValues = makeOptionValues renderer.options optionStrings
     pure $ Doc.runRenderer renderer graph optionValues
 

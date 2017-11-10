@@ -52,7 +52,7 @@ export const JavaLanguage: Language = {
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
-  skipSchema: [],
+  skipSchema: ["enum.schema"],
   rendererOptions: {},
   quickTestRendererOptions: []
 };
@@ -128,9 +128,11 @@ function makeSwiftLanguage(
   let name: string;
   // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
   let skipJSON = ["no-classes.json", "blns-object.json"];
+  let skipSchema: string[] = [];
   if (version === 3) {
     rendererOptions["swift-version"] = "3";
     skipJSON.push("identifiers.json");
+    skipSchema.push("enum.schema");
   } else {
     rendererOptions["swift-version"] = "4";
   }
@@ -146,7 +148,7 @@ function makeSwiftLanguage(
     output: "quicktype.swift",
     topLevel: "TopLevel",
     skipJSON,
-    skipSchema: [],
+    skipSchema,
     rendererOptions: rendererOptions,
     quickTestRendererOptions: [{ "struct-or-class": "class" }]
   };
@@ -174,7 +176,7 @@ export const TypeScriptLanguage: Language = {
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: [],
-  skipSchema: [],
+  skipSchema: ["enum.schema"],
   rendererOptions: { "runtime-typecheck": "yes", "explicit-unions": "yes" },
   quickTestRendererOptions: []
 };

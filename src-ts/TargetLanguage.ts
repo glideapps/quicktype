@@ -42,15 +42,10 @@ export abstract class TypeScriptTargetLanguage extends TargetLanguage {
         return "    ";
     }
 
-    protected abstract renderGraph(
-        topLevels: TopLevels,
-        optionValues: { [name: string]: any }
-    ): RenderResult;
+    protected abstract renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult;
 }
 
-function optionSpecificationToOptionDefinition(
-    spec: Options.OptionSpecification
-): OptionDefinition {
+function optionSpecificationToOptionDefinition(spec: Options.OptionSpecification): OptionDefinition {
     const valueType = Options.valueType(spec.default);
     const type = valueType === "BooleanValue" ? Boolean : String;
 
@@ -96,7 +91,7 @@ export class PureScriptTargetLanguage extends TargetLanguage {
 
         const resultOrError = Main.main(config);
         if (Either.isLeft(resultOrError)) {
-            throw `Error processing JSON: ${fromLeft(resultOrError)}`;
+            throw `Error: ${fromLeft(resultOrError)}`;
         }
         const source = fromRight(resultOrError);
         return { lines: source.split("\n"), annotations: List() };
