@@ -1,6 +1,6 @@
 "use strict";
 
-import { List, Collection, OrderedMap } from "immutable";
+import { List, Collection, OrderedMap, OrderedSet } from "immutable";
 import {
     TopLevels,
     Type,
@@ -170,7 +170,15 @@ class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
-        const definedTypes = type.directlyReachableNamedTypes;
+        const definedTypes = type.directlyReachableTypes(t => {
+            if (
+                (!(t instanceof UnionType) && t.isNamedType()) ||
+                (t instanceof UnionType && !nullableFromUnion(t))
+            ) {
+                return OrderedSet([t]);
+            }
+            return null;
+        });
         if (definedTypes.size > 1) {
             throw "Cannot have more than one defined type per top-level";
         }
@@ -297,13 +305,13 @@ class CSharpRenderer extends ConvenienceRenderer {
     emitFromJsonForTopLevel = (t: Type, name: Name): void => {
         let partial: string;
         let typeKind: string;
-        const definedTypes = t.directlyReachableNamedTypes;
-        if (definedTypes.isEmpty()) {
+        const definedType = this.namedTypeToNameForTopLevel(t);
+        if (definedType) {
+            partial = "partial ";
+            typeKind = definedType instanceof ClassType ? "class" : "struct";
+        } else {
             partial = "";
             typeKind = "class";
-        } else {
-            partial = "partial ";
-            typeKind = definedTypes.first() instanceof ClassType ? "class" : "struct";
         }
         const csType = this.csType(t);
         this.emitClass([partial, typeKind], name, () => {

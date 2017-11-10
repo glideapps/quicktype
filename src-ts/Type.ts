@@ -24,9 +24,12 @@ export abstract class Type {
 
     abstract get children(): OrderedSet<Type>;
 
-    get directlyReachableNamedTypes(): OrderedSet<NamedType> {
-        if (this.isNamedType()) return OrderedSet([this]);
-        return orderedSetUnion(this.children.map((t: Type) => t.directlyReachableNamedTypes));
+    directlyReachableTypes<T>(setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
+        const set = setForType(this);
+        if (set) return set;
+        return orderedSetUnion(
+            this.children.map((t: Type) => t.directlyReachableTypes(setForType))
+        );
     }
 
     abstract equals(other: any): boolean;
