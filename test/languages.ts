@@ -13,6 +13,7 @@ export interface Language {
   output: string;
   topLevel: string;
   skipJSON: string[];
+  skipSchema: string[];
   rendererOptions: RendererOptions;
   quickTestRendererOptions: RendererOptions[];
 }
@@ -30,6 +31,7 @@ export const CSharpLanguage: Language = {
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [],
+  skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [
     { "array-type": "list" },
@@ -50,6 +52,7 @@ export const JavaLanguage: Language = {
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
+  skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: []
 };
@@ -65,6 +68,7 @@ export const GoLanguage: Language = {
   output: "quicktype.go",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
+  skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: []
 };
@@ -86,6 +90,7 @@ function makeCPlusPlusLanguage(rendererOptions: {
     output: "quicktype.hpp",
     topLevel: "TopLevel",
     skipJSON: [],
+    skipSchema: [],
     rendererOptions: rendererOptions,
     quickTestRendererOptions: [{ unions: "indirection" }]
   };
@@ -109,6 +114,7 @@ export const ElmLanguage: Language = {
   output: "QuickType.elm",
   topLevel: "QuickType",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
+  skipSchema: [], // All of them currently fail, so we don't even run it.
   rendererOptions: {},
   quickTestRendererOptions: [{ "array-type": "list" }]
 };
@@ -140,6 +146,7 @@ function makeSwiftLanguage(
     output: "quicktype.swift",
     topLevel: "TopLevel",
     skipJSON,
+    skipSchema: [],
     rendererOptions: rendererOptions,
     quickTestRendererOptions: [{ "struct-or-class": "class" }]
   };
@@ -167,6 +174,7 @@ export const TypeScriptLanguage: Language = {
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: [],
+  skipSchema: [],
   rendererOptions: { "runtime-typecheck": "yes", "explicit-unions": "yes" },
   quickTestRendererOptions: []
 };
