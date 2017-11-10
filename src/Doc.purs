@@ -19,6 +19,7 @@ module Doc
     , lookupName
     , lookupClassName
     , lookupUnionName
+    , lookupEnumName
     , lookupTopLevelName
     , forEachTopLevel_
     , forEachClass_
@@ -31,7 +32,7 @@ module Doc
     , simpleNamer
     , noForbidNamer
     , forbidNamer
-    , unionNameIntercalated
+    , intercalatedName
     , unionIsNotSimpleNullable
     , getTopLevelPlural
     , string
@@ -63,7 +64,7 @@ import Data.Set as S
 import Data.String (Pattern(..), fromCharArray, length, split, toCharArray) as String
 import Data.String.Util (times) as String
 import Data.Tuple (Tuple(..), fst, snd)
-import IRGraph (IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, classesInGraph, filterTypes, getClassFromGraph, mapUnionM, namedValue, nullableFromUnion, unionToList)
+import IRGraph (IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), IREnumData(..), Named, classesInGraph, filterTypes, getClassFromGraph, mapUnionM, namedValue, nullableFromUnion, unionToList)
 import Options (OptionSpecifications, OptionValues, lookupOptionValue, Option)
 import Utils (sortByKeyM, mapM, bisectFor_)
 
@@ -90,6 +91,10 @@ type Transforms =
         , properName :: Namer (Named (Set String))
         , nameFromTypes :: Namer (Array String)
         }
+    , enums :: Maybe
+        { properName :: Namer (Named (Set String))
+        , nameFromValues :: Namer (Array String)
+        }
     }
 
 type DocState = { indent :: Int }
@@ -100,6 +105,7 @@ type DocEnv =
     , unionNames :: Map IRUnionRep String
     , topLevelNames :: Map String String
     , unionSet :: Set IRUnionRep
+    , enumNames :: Map IREnumData String
     , optionValues :: OptionValues
     }
 
@@ -121,22 +127,45 @@ runDoc (Doc w) t graph@(IRGraph { toplevels }) optionValues =
         { names: topLevelNames, forbidden: forbiddenAfterTopLevels } = transformNames t.topLevelName t.nextName forbiddenFromStart topLevelTuples
         classes = classesInGraph graph
         { names: classNames, forbidden: forbiddenAfterClasses } = transformNames t.nameForClass t.nextName forbiddenAfterTopLevels classes
-        { unionSet, unionNames } = doUnions classNames forbiddenAfterClasses
+        { unionSet, unionNames, forbidden: forbiddenAfterUnions } = doUnions classNames forbiddenAfterClasses
+        enumNames = doEnums forbiddenAfterUnions
     in
-        evalRWS w { graph, classNames, unionNames, topLevelNames, unionSet, optionValues } { indent: 0 } # snd
+        evalRWS w { graph, classNames, unionNames, topLevelNames, unionSet, enumNames, optionValues } { indent: 0 } # snd
     where
-        doUnions :: Map Int String -> Set String -> { unionSet :: Set IRUnionRep, unionNames :: Map IRUnionRep String }
+        doUnions :: Map Int String -> Set String -> { unionSet :: Set IRUnionRep, unionNames :: Map IRUnionRep String, forbidden :: Set String }
         doUnions classNames forbidden = case t.unions of
-            Nothing -> { unionSet: S.empty, unionNames: M.empty }
+            Nothing -> { unionSet: S.empty, unionNames: M.empty, forbidden }
             Just { predicate, properName, nameFromTypes } ->
                 let unionSet = filterTypes (unionPredicate predicate) graph
-                    unionNames = (transformNames (unionNamer nameFromTypes properName classNames) t.nextName forbidden $ map (\s -> Tuple s s) $ L.fromFoldable unionSet).names
+                    namer = unionNamer nameFromTypes properName classNames
+                    { names: unionNames, forbidden: forbiddenAfterUnions } = transformNames namer t.nextName forbidden $ map (\s -> Tuple s s) $ L.fromFoldable unionSet
                 in
-                    { unionSet, unionNames }
+                    { unionSet, unionNames, forbidden: forbiddenAfterUnions }
+        
+        doEnums :: Set String -> Map IREnumData String
+        doEnums forbidden = case t.enums of
+            Nothing -> M.empty
+            Just { properName, nameFromValues } ->
+                let enumSet = filterTypes enumPredicate graph
+                    namer = enumNamer nameFromValues properName
+                    { names: enumNames } = transformNames namer t.nextName forbidden $ map (\s -> Tuple s s) $ L.fromFoldable enumSet
+                in
+                    enumNames
 
         unionPredicate :: (IRUnionRep -> Boolean) -> IRType -> Maybe IRUnionRep
         unionPredicate p (IRUnion ur) = if p ur then Just ur else Nothing
         unionPredicate _ _ = Nothing
+
+        enumPredicate :: IRType -> Maybe IREnumData
+        enumPredicate (IREnum ed) = Just ed
+        enumPredicate _ = Nothing
+
+        enumNamer :: Namer (Array String) -> Namer (Named (Set String)) -> Namer IREnumData
+        enumNamer nameFromCases properName (IREnumData { names, cases }) =
+            if namedValue names == S.empty then
+                nameFromCases $ A.fromFoldable cases
+            else
+                properName names
 
         unionNamer :: Namer (Array String) -> Namer (Named (Set String)) -> Map Int String -> Namer IRUnionRep
         unionNamer nameFromTypes properName classNames union@(IRUnionRep { names }) =
@@ -199,10 +228,11 @@ typeNameForUnion graph classNames = case _ of
     IRArray a -> typeNameForUnion graph classNames a <> "_array"
     IRClass i -> lookupName i classNames
     IRMap t -> typeNameForUnion graph classNames t <> "_map"
+    IREnum _ -> "enum"
     IRUnion _ -> "union"
 
-unionNameIntercalated :: (String -> String) -> String -> Array String -> String
-unionNameIntercalated nameStyle orString names =
+intercalatedName :: (String -> String) -> String -> Array String -> String
+intercalatedName nameStyle orString names =
     names
     <#> nameStyle
     # intercalate orString
@@ -255,6 +285,14 @@ getUnionNames = Doc (asks _.unionNames)
 getUnionSet :: Doc (Set IRUnionRep)
 getUnionSet = Doc (asks _.unionSet)
 
+getEnums :: Doc (List IREnumData)
+getEnums = do
+    unsorted <- M.keys <$> getEnumNames
+    sortByKeyM lookupEnumName unsorted
+
+getEnumNames :: Doc (Map IREnumData String)
+getEnumNames = Doc (asks _.enumNames)
+
 getTopLevelNames :: Doc (Map String String)
 getTopLevelNames = Doc (asks _.topLevelNames)
 
@@ -300,6 +338,11 @@ lookupUnionName s = do
     unionNames <- getUnionNames
     pure $ lookupName s unionNames
 
+lookupEnumName :: IREnumData -> Doc String
+lookupEnumName s = do
+    enumNames <- getEnumNames
+    pure $ lookupName s enumNames
+
 lookupTopLevelName :: String -> Doc String
 lookupTopLevelName n = do
     topLevelNames <- getTopLevelNames
@@ -308,6 +351,7 @@ lookupTopLevelName n = do
 type TopLevelIterator = String -> IRType -> Doc Unit
 type ClassIterator = String -> Map String IRType -> Doc Unit
 type UnionIterator = String -> IRUnionRep -> Doc Unit
+type EnumIterator = String -> IREnumData -> Doc Unit
 
 callTopLevelIterator :: TopLevelIterator -> String -> IRType -> Doc Unit
 callTopLevelIterator f topLevelNameGiven topLevelType = do
@@ -341,6 +385,11 @@ forEachUnion_ f = do
     unions <- getUnions
     for_ unions \ur ->
         callUnionIterator f ur
+
+callEnumIterator :: EnumIterator -> IREnumData -> Doc Unit
+callEnumIterator f ed = do
+    enumName <- lookupEnumName ed
+    f enumName ed
 
 forEachProperty_ :: Map String IRType -> Map String String -> (String -> IRType -> String -> Boolean -> Doc Unit) -> Doc Unit
 forEachProperty_ properties propertyNames f =
@@ -411,6 +460,7 @@ prefixSuffixFolder { p, s } x =
 data RenderItem
     = RenderTopLevel String IRType
     | RenderClass Int IRClassData
+    | RenderEnum IREnumData
     | RenderUnion IRUnionRep
 
 derive instance eqRenderItem :: Eq RenderItem
@@ -432,6 +482,7 @@ sortRenderItems startItems = do
         expandType (IRClass i) = do
             cd <- getClass i
             pure $ L.singleton $ RenderClass i cd
+        expandType (IREnum e) = pure $ L.singleton $ RenderEnum e
         expandType (IRUnion ur) = do
             unionSet <- getUnionSet
             if S.member ur unionSet
@@ -454,6 +505,8 @@ sortRenderItems startItems = do
             -- that.
             mapped <- mapM expandType $ map snd $ M.toUnfoldable properties
             pure $ L.concat mapped
+        expand (RenderEnum _) =
+            pure $ L.Nil
         expand (RenderUnion ur) =
             expandUnion ur
 
@@ -483,8 +536,8 @@ getRenderItems = do
     topLevels <- map (\(Tuple n t) -> RenderTopLevel n t) <$> M.toUnfoldable <$> getTopLevels
     sortRenderItems topLevels
 
-renderRenderItems :: Doc Unit -> Maybe TopLevelIterator -> ClassIterator -> Maybe UnionIterator -> Doc Unit
-renderRenderItems inBetweener topLevelRenderer classRenderer unionRenderer = do
+renderRenderItems :: Doc Unit -> Maybe TopLevelIterator -> ClassIterator -> Maybe UnionIterator -> Maybe EnumIterator -> Doc Unit
+renderRenderItems inBetweener topLevelRenderer classRenderer unionRenderer enumRenderer = do
     renderItems <- L.fromFoldable <$> getRenderItems
     renderLoop false renderItems
     where
@@ -503,6 +556,13 @@ renderRenderItems inBetweener topLevelRenderer classRenderer unionRenderer = do
                     when needInBetween inBetweener
                     callClassIterator classRenderer i cd
                     renderLoop true rest
+                RenderEnum ed ->
+                    case enumRenderer of
+                    Nothing -> renderLoop needInBetween rest
+                    Just f -> do
+                        when needInBetween inBetweener
+                        callEnumIterator f ed
+                        renderLoop true rest
                 RenderUnion ur ->
                     case unionRenderer of
                     Nothing -> renderLoop needInBetween rest

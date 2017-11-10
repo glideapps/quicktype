@@ -5,6 +5,7 @@ module IRGraph
     , unifyNamed
     , mapToInferred
     , IRClassData(..)
+    , IREnumData(..)
     , IRType(..)
     , IRUnionRep(..)
     , irUnion_Null
@@ -22,6 +23,7 @@ module IRGraph
     , isArray
     , isClass
     , isMap
+    , isEnum
     , matchingProperties
     , mapClasses
     , classesInGraph
@@ -114,6 +116,8 @@ instance functorNamed :: Functor Named where
 -- | order-preserving map would be nice.
 newtype IRClassData = IRClassData { names :: Named (Set String), properties :: Map String IRType }
 
+newtype IREnumData = IREnumData { names :: Named (Set String), cases :: Set String }
+
 -- | Unions have names and a set of constituent types.  The set is implemented
 -- | in a specialized way to make union operations more efficient.
 -- |
@@ -124,6 +128,7 @@ newtype IRUnionRep = IRUnionRep
     , arrayType :: Maybe IRType
     , classRef :: Maybe Int
     , mapType :: Maybe IRType
+    , enumData :: Maybe IREnumData
     }
 
 irUnion_Null :: Int
@@ -155,6 +160,7 @@ data IRType
     | IRArray IRType
     | IRClass Int
     | IRMap IRType
+    | IREnum IREnumData
     | IRUnion IRUnionRep
 
 derive instance eqNamed :: Eq a => Eq (Named a)
@@ -164,6 +170,8 @@ derive instance eqIRType :: Eq IRType
 derive instance ordIRType :: Ord IRType
 derive instance eqIRClassData :: Eq IRClassData
 derive instance ordIRClassData :: Ord IRClassData
+derive instance eqIREnumData :: Eq IREnumData
+derive instance ordIREnumData :: Ord IREnumData
 derive instance eqIRUnionRep :: Eq IRUnionRep
 derive instance ordIRUnionRep :: Ord IRUnionRep
 derive instance eqGraph :: Eq IRGraph
@@ -213,6 +221,10 @@ isClass _ = false
 isMap :: IRType -> Boolean
 isMap (IRMap _) = true
 isMap _ = false
+
+isEnum :: IRType -> Boolean
+isEnum (IREnum _) = true
+isEnum _ = false
 
 canBeNull :: IRType -> Boolean
 canBeNull =
@@ -282,13 +294,13 @@ regatherUnionNames graph@(IRGraph { classes, toplevels }) =
             case t of
             IRArray a -> IRArray $ updateType name a
             IRMap m -> IRMap $ updateType name m
-            IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType}) ->
+            IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType, enumData }) ->
                 let newNames = reassign name names
                     singularName = mapToInferred singular name
                     newArrayType = map (updateType singularName) arrayType
                     newMapType = map (updateType singularName) mapType
                 in
-                    IRUnion $ IRUnionRep { names: newNames, primitives, arrayType: newArrayType, classRef, mapType: newMapType }
+                    IRUnion $ IRUnionRep { names: newNames, primitives, arrayType: newArrayType, classRef, mapType: newMapType, enumData }
             _ -> t
 
 removeNullFromUnion :: IRUnionRep -> { hasNull :: Boolean, nonNullUnion :: IRUnionRep }
@@ -345,11 +357,12 @@ forUnion_ (IRUnionRep { primitives, arrayType, classRef, mapType }) f = do
         inNumber = isInNumber primitives
 
 mapUnionM :: forall a m. Monad m => (IRType -> m a) -> IRUnionRep -> m (List a)
-mapUnionM f (IRUnionRep { primitives, arrayType, classRef, mapType }) = do
+mapUnionM f (IRUnionRep { primitives, arrayType, classRef, mapType, enumData }) = do
     pure L.Nil
         >>= mapGeneral mapType IRMap
         >>= mapGeneral classRef IRClass
         >>= mapGeneral arrayType IRArray
+        >>= mapGeneral enumData IREnum
         >>= mapPrimitive isInPrimitives irUnion_String IRString
         >>= mapPrimitive isInPrimitives irUnion_Bool IRBool
         >>= mapPrimitive isInNumber irUnion_Double IRDouble
@@ -377,7 +390,7 @@ unionToList :: IRUnionRep -> List IRType
 unionToList = mapUnion id
 
 isUnionMember :: IRType -> IRUnionRep -> Boolean
-isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =
+isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType, enumData }) =
     case t of
     IRNull -> inPrimitives irUnion_Null
     IRInteger -> inNumber irUnion_Integer
@@ -387,6 +400,7 @@ isUnionMember t (IRUnionRep { primitives, arrayType, classRef, mapType }) =
     IRArray a -> maybe false (eq a) arrayType
     IRClass i -> maybe false (eq i) classRef
     IRMap m -> maybe false (eq m) mapType
+    IREnum ed -> maybe false (eq ed) enumData
     IRUnion _ -> false
     IRAnyType -> false
     IRNoInformation -> false
@@ -421,4 +435,4 @@ filterTypes predicate graph@(IRGraph { classes, toplevels }) =
 
 emptyUnion :: IRUnionRep
 emptyUnion =
-    IRUnionRep { names: Inferred $ S.empty, primitives: 0, arrayType: Nothing, classRef: Nothing, mapType: Nothing }
+    IRUnionRep { names: Inferred $ S.empty, primitives: 0, arrayType: Nothing, classRef: Nothing, mapType: Nothing, enumData: Nothing }

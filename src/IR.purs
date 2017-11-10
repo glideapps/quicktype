@@ -28,13 +28,13 @@ import Data.List (List, (:))
 import Data.List as L
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), fromMaybe, fromJust)
+import Data.Maybe (Maybe(..), fromJust, fromMaybe)
 import Data.Sequence as Seq
 import Data.Set (Set)
 import Data.Set as S
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Tuple as T
-import IRGraph (Entry(..), IRClassData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, emptyGraph, emptyUnion, followIndex, getClassFromGraph, irUnion_Bool, irUnion_Double, irUnion_Integer, irUnion_Null, irUnion_String, unifyNamed)
+import IRGraph (Entry(..), IRClassData(..), IREnumData(..), IRGraph(..), IRType(..), IRUnionRep(..), Named, emptyGraph, emptyUnion, followIndex, getClassFromGraph, irUnion_Bool, irUnion_Double, irUnion_Integer, irUnion_Null, irUnion_String, unifyNamed)
 import Partial.Unsafe (unsafePartial)
 import Utils (lookupOrDefault, mapM, mapMapM, mapMaybeM, sortByKey)
 
@@ -202,7 +202,7 @@ updateClasses classUpdater typeUpdater = do
             _ -> pure entry
 
 unifyWithUnion :: IRUnionRep -> IRType -> IR IRType
-unifyWithUnion u@(IRUnionRep { names, primitives, arrayType, classRef, mapType }) t =
+unifyWithUnion u@(IRUnionRep { names, primitives, arrayType, classRef, mapType, enumData }) t =
     case t of
     IRNoInformation -> pure  $ IRUnion u
     IRAnyType -> pure IRAnyType
@@ -210,25 +210,37 @@ unifyWithUnion u@(IRUnionRep { names, primitives, arrayType, classRef, mapType }
     IRInteger -> addBit irUnion_Integer
     IRDouble -> addBit irUnion_Double
     IRBool -> addBit irUnion_Bool
-    IRString -> addBit irUnion_String
+    IRString ->
+        pure $ IRUnion $ IRUnionRep { names, primitives: Bits.or irUnion_String primitives, arrayType, classRef, mapType, enumData: Nothing }
     IRArray ta -> do
         unified <- doTypes ta arrayType
-        pure $ IRUnion $ IRUnionRep { names, primitives, arrayType: unified, classRef, mapType }
+        pure $ IRUnion $ IRUnionRep { names, primitives, arrayType: unified, classRef, mapType, enumData }
     IRClass ti -> do
         unified <- doClasses ti classRef
-        pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef: unified, mapType }
+        pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef: unified, mapType, enumData }
     IRMap tm -> do
         unified <- doTypes tm mapType
-        pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType: unified }
-    IRUnion (IRUnionRep { names: na, primitives: pb, arrayType: ab, classRef: cb, mapType: mb }) -> do
+        pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType: unified, enumData }
+    IREnum te ->
+        if (Bits.and irUnion_String primitives) == 0 then
+            pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType, enumData: unifyEnumData enumData $ Just te }
+        else
+            pure $ IRUnion u
+    IRUnion (IRUnionRep { names: na, primitives: pb, arrayType: ab, classRef: cb, mapType: mb, enumData: eb }) -> do
         let p = Bits.or primitives pb
         a <- doMaybeTypes arrayType ab
         c <- doMaybeClasses classRef cb
         m <- doMaybeTypes mapType mb
-        pure $ IRUnion $ IRUnionRep { names: unifyNamed S.union names na, primitives: p, arrayType: a, classRef: c, mapType: m }
+        let e = if (Bits.and irUnion_String p) == 0 then unifyEnumData enumData eb else Nothing
+        pure $ IRUnion $ IRUnionRep { names: unifyNamed S.union names na, primitives: p, arrayType: a, classRef: c, mapType: m, enumData: e }
     where
+        unifyEnumData :: Maybe IREnumData -> Maybe IREnumData -> Maybe IREnumData
+        unifyEnumData (Just (IREnumData { names: n1, cases: v1 })) (Just (IREnumData { names: n2, cases: v2 })) =
+            Just (IREnumData { names: unifyNamed S.union n1 n2, cases: S.union v1 v2 })
+        unifyEnumData e1 Nothing = e1
+        unifyEnumData Nothing e2 = e2
         addBit b =
-            pure $ IRUnion $ IRUnionRep { names, primitives: Bits.or b primitives, arrayType, classRef, mapType }
+            pure $ IRUnion $ IRUnionRep { names, primitives: Bits.or b primitives, arrayType, classRef, mapType, enumData }
         doWithUnifier :: forall a. (a -> a -> IR a) -> a -> Maybe a -> IR (Maybe a)
         doWithUnifier unify a mb =
             case mb of
@@ -257,10 +269,10 @@ replaceClassesInType replacer t =
     IRMap m -> do
         replaced <- replace m
         pure $ IRMap replaced
-    IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType }) -> do
+    IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType, enumData }) -> do
         a <- replaceInMaybe arrayType
         m <- replaceInMaybe mapType
-        doClassRef names primitives a classRef m
+        doClassRef names primitives a classRef m enumData
     _ -> pure t
     where
         replace = replaceClassesInType replacer
@@ -269,15 +281,15 @@ replaceClassesInType replacer t =
             case m of
             Just x -> Just <$> replace x
             Nothing -> pure Nothing
-        doClassRef :: Named (Set String) -> Int -> Maybe IRType -> Maybe Int -> Maybe IRType -> IR IRType
-        doClassRef names primitives arrayType classRef mapType =
+        doClassRef :: Named (Set String) -> Int -> Maybe IRType -> Maybe Int -> Maybe IRType -> Maybe IREnumData -> IR IRType
+        doClassRef names primitives arrayType classRef mapType enumData =
             case classRef of
             Just i ->
                 case replacer i of
                 Just replacement ->
-                    unifyWithUnion (IRUnionRep { names, primitives, arrayType, classRef: Nothing, mapType }) replacement
-                Nothing -> pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType }
-            _ -> pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType }
+                    unifyWithUnion (IRUnionRep { names, primitives, arrayType, classRef: Nothing, mapType, enumData }) replacement
+                Nothing -> pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType, enumData }
+            _ -> pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType, enumData }
 
 replaceTypes :: (IRType -> IR IRType) -> IR Unit
 replaceTypes typeUpdater =
@@ -300,10 +312,10 @@ replaceNoInformationWithAnyType = do
         replacer IRNoInformation = pure IRAnyType
         replacer (IRArray a) = IRArray <$> replacer a
         replacer (IRMap m) = IRMap <$> replacer m
-        replacer (IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType })) = do
+        replacer (IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType, enumData })) = do
             arrayType <- mapM replacer arrayType
             mapType <- mapM replacer mapType
-            pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType }
+            pure $ IRUnion $ IRUnionRep { names, primitives, arrayType, classRef, mapType, enumData }
         replacer t = pure t
 
 -- This maps from old class index to new class index and new class data
@@ -355,11 +367,11 @@ normalizeGraphOrder graph@(IRGraph { toplevels }) =
         addClasses (IRClass i) = IRClass <$> addClassesFromClass i
         addClasses (IRArray t) = IRArray <$> addClasses t
         addClasses (IRMap m) = IRMap <$> addClasses m
-        addClasses (IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType })) = do
+        addClasses (IRUnion (IRUnionRep { names, primitives, arrayType, classRef, mapType, enumData })) = do
             newArrayType <- mapMaybeM addClasses arrayType
             newClassRef <- mapMaybeM addClassesFromClass classRef
             newMapType <- mapMaybeM addClasses mapType
-            pure $ IRUnion $ IRUnionRep { names, primitives, arrayType: newArrayType, classRef: newClassRef, mapType: newMapType }
+            pure $ IRUnion $ IRUnionRep { names, primitives, arrayType: newArrayType, classRef: newClassRef, mapType: newMapType, enumData }
         addClasses t = pure t
 
         dejustifyClassMapEntry (Tuple i mcd) = Tuple i $ unsafePartial $ fromJust mcd

@@ -8,6 +8,7 @@ import {
     TopLevels,
     NamedType,
     ClassType,
+    EnumType,
     UnionType,
     nullableFromUnion,
     matchType,
@@ -21,6 +22,7 @@ import {
     pascalCase,
     snakeCase,
     camelCase,
+    upperUnderscoreCase,
     startWithLetter,
     isAscii,
     isLetterOrUnderscore,
@@ -33,48 +35,53 @@ import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { StringOption, EnumOption } from "../RendererOptions";
 
-type NamingStyle = "pascal" | "camel" | "underscore";
+type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
 export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
     private readonly _namespaceOption: StringOption;
     private readonly _typeNamingStyleOption: EnumOption<NamingStyle>;
     private readonly _memberNamingStyleOption: EnumOption<NamingStyle>;
+    private readonly _enumeratorNamingStyleOption: EnumOption<NamingStyle>;
     private readonly _uniquePtrOption: EnumOption<boolean>;
 
     constructor() {
-        const namespaceOption = new StringOption(
-            "namespace",
-            "Name of the generated namespace",
-            "NAME",
-            "quicktype"
-        );
+        const namespaceOption = new StringOption("namespace", "Name of the generated namespace", "NAME", "quicktype");
         const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
         const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
         const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
-        const typeNamingStyleOption = new EnumOption<NamingStyle>(
-            "type-style",
-            "Naming style for types",
-            [pascalValue, underscoreValue, camelValue]
+        const upperUnderscoreValue: [string, NamingStyle] = ["upper-underscore-case", "upper-underscore"];
+        const typeNamingStyleOption = new EnumOption<NamingStyle>("type-style", "Naming style for types", [
+            pascalValue,
+            underscoreValue,
+            camelValue,
+            upperUnderscoreValue
+        ]);
+        const memberNamingStyleOption = new EnumOption<NamingStyle>("member-style", "Naming style for members", [
+            underscoreValue,
+            pascalValue,
+            camelValue,
+            upperUnderscoreValue
+        ]);
+        const enumeratorNamingStyleOption = new EnumOption<NamingStyle>(
+            "enumerator-style",
+            "Naming style for enumerators",
+            [upperUnderscoreValue, underscoreValue, pascalValue, camelValue]
         );
-        const memberNamingStyleOption = new EnumOption<NamingStyle>(
-            "member-style",
-            "Naming style for members",
-            [underscoreValue, pascalValue, camelValue]
-        );
-        const uniquePtrOption = new EnumOption(
-            "unions",
-            "Use containment or indirection for unions",
-            [["containment", false], ["indirection", true]]
-        );
+        const uniquePtrOption = new EnumOption("unions", "Use containment or indirection for unions", [
+            ["containment", false],
+            ["indirection", true]
+        ]);
         super("C++", ["c++", "cpp", "cplusplus"], "cpp", [
             namespaceOption.definition,
             typeNamingStyleOption.definition,
             memberNamingStyleOption.definition,
+            enumeratorNamingStyleOption.definition,
             uniquePtrOption.definition
         ]);
         this._namespaceOption = namespaceOption;
         this._typeNamingStyleOption = typeNamingStyleOption;
         this._memberNamingStyleOption = memberNamingStyleOption;
+        this._enumeratorNamingStyleOption = enumeratorNamingStyleOption;
         this._uniquePtrOption = uniquePtrOption;
     }
 
@@ -84,6 +91,7 @@ export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
             this._namespaceOption.getValue(optionValues),
             this._typeNamingStyleOption.getValue(optionValues),
             this._memberNamingStyleOption.getValue(optionValues),
+            this._enumeratorNamingStyleOption.getValue(optionValues),
             this._uniquePtrOption.getValue(optionValues)
         );
         return renderer.render();
@@ -94,16 +102,24 @@ const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscor
 
 function cppNameStyle(namingStyle: NamingStyle): (rawName: string) => string {
     let caser: (uncased: string) => string;
+    let upper: boolean;
 
     switch (namingStyle) {
         case "pascal":
             caser = pascalCase;
+            upper = true;
             break;
         case "camel":
             caser = camelCase;
+            upper = false;
             break;
         case "underscore":
             caser = snakeCase;
+            upper = false;
+            break;
+        case "upper-underscore":
+            caser = upperUnderscoreCase;
+            upper = true;
             break;
         default:
             return assertNever(namingStyle);
@@ -112,7 +128,7 @@ function cppNameStyle(namingStyle: NamingStyle): (rawName: string) => string {
     return (original: string) => {
         const legalized = legalizeName(original);
         const cased = caser(legalized);
-        return startWithLetter(isLetterOrUnderscore, namingStyle === "pascal", cased);
+        return startWithLetter(isLetterOrUnderscore, upper, cased);
     };
 }
 
@@ -222,6 +238,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     private readonly _typeNameStyle: (rawName: string) => string;
     private readonly _typeNamingFunction: Namer;
     private readonly _memberNamingFunction: Namer;
+    private readonly _caseNamingFunction: Namer;
     private readonly _optionalType: string;
 
     constructor(
@@ -229,6 +246,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         private readonly _namespaceName: string,
         _typeNamingStyle: NamingStyle,
         _memberNamingStyle: NamingStyle,
+        _enumeratorNamingStyle: NamingStyle,
         private readonly _uniquePtr: boolean
     ) {
         super(topLevels);
@@ -236,6 +254,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         this._typeNameStyle = cppNameStyle(_typeNamingStyle);
         this._typeNamingFunction = funPrefixNamer(this._typeNameStyle);
         this._memberNamingFunction = funPrefixNamer(cppNameStyle(_memberNamingStyle));
+        this._caseNamingFunction = funPrefixNamer(cppNameStyle(_enumeratorNamingStyle));
         this._optionalType = _uniquePtr ? "std::unique_ptr" : "boost::optional";
     }
 
@@ -243,10 +262,11 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForProperties(
-        c: ClassType,
-        classNamed: Name
-    ): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+        return { names: [], namespaces: [this.globalNamespace] };
+    }
+
+    protected forbiddenForCases(e: EnumType, enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -260,6 +280,10 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected get propertyNamer(): Namer {
         return this._memberNamingFunction;
+    }
+
+    protected get caseNamer(): Namer {
+        return this._caseNamingFunction;
     }
 
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
@@ -324,33 +348,18 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return ["std::unique_ptr<", typeSrc, ">"];
     };
 
-    private cppType = (
-        t: Type,
-        inVariant: boolean,
-        inJsonNamespace: boolean,
-        withIssues: boolean
-    ): Sourcelike => {
+    private cppType = (t: Type, inVariant: boolean, inJsonNamespace: boolean, withIssues: boolean): Sourcelike => {
         return matchType<Sourcelike>(
             t,
             anyType =>
-                maybeAnnotated(withIssues, anyTypeIssueAnnotation, [
-                    this.jsonQualifier(inJsonNamespace),
-                    "json"
-                ]),
+                maybeAnnotated(withIssues, anyTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]),
             nullType =>
-                maybeAnnotated(withIssues, nullTypeIssueAnnotation, [
-                    this.jsonQualifier(inJsonNamespace),
-                    "json"
-                ]),
+                maybeAnnotated(withIssues, nullTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]),
             boolType => "bool",
             integerType => "int64_t",
             doubleType => "double",
             stringType => "std::string",
-            arrayType => [
-                "std::vector<",
-                this.cppType(arrayType.items, false, inJsonNamespace, withIssues),
-                ">"
-            ],
+            arrayType => ["std::vector<", this.cppType(arrayType.items, false, inJsonNamespace, withIssues), ">"],
             classType =>
                 this.variantIndirection(inVariant, [
                     "struct ",
@@ -362,16 +371,11 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.cppType(mapType.values, false, inJsonNamespace, withIssues),
                 ">"
             ],
+            enumType => [this.ourQualifier(inJsonNamespace), this.nameForNamedType(enumType)],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (!nullable)
-                    return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
-                return [
-                    this._optionalType,
-                    "<",
-                    this.cppType(nullable, false, inJsonNamespace, withIssues),
-                    ">"
-                ];
+                if (!nullable) return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
+                return [this._optionalType, "<", this.cppType(nullable, false, inJsonNamespace, withIssues), ">"];
             }
         );
     };
@@ -409,41 +413,30 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                         }
                     }
                     if (t.kind === "null" || t.kind === "any") {
-                        this.emitLine(
-                            "_x.",
-                            name,
-                            " = ",
-                            ourQualifier,
-                            'get_untyped(_j, "',
-                            stringEscape(json),
-                            '");'
-                        );
+                        this.emitLine("_x.", name, " = ", ourQualifier, 'get_untyped(_j, "', stringEscape(json), '");');
                         return;
                     }
                     const cppType = this.cppType(t, false, true, false);
-                    this.emitLine(
-                        "_x.",
-                        name,
-                        ' = _j.at("',
-                        stringEscape(json),
-                        '").get<',
-                        cppType,
-                        ">();"
-                    );
+                    this.emitLine("_x.", name, ' = _j.at("', stringEscape(json), '").get<', cppType, ">();");
                 });
             }
         );
         this.emitNewline();
-        this.emitBlock(
-            ["inline void to_json(json& _j, const struct ", ourQualifier, className, "& _x)"],
-            false,
-            () => {
-                this.emitLine("_j = json::object();");
-                this.forEachProperty(c, "none", (name, json, _) => {
-                    this.emitLine('_j["', stringEscape(json), '"] = _x.', name, ";");
-                });
-            }
-        );
+        this.emitBlock(["inline void to_json(json& _j, const struct ", ourQualifier, className, "& _x)"], false, () => {
+            this.emitLine("_j = json::object();");
+            this.forEachProperty(c, "none", (name, json, _) => {
+                this.emitLine('_j["', stringEscape(json), '"] = _x.', name, ";");
+            });
+        });
+    };
+
+    private emitEnum = (e: EnumType, enumName: Name): void => {
+        const caseNames: Sourcelike[] = [];
+        this.forEachCase(e, "none", name => {
+            if (caseNames.length > 0) caseNames.push(", ");
+            caseNames.push(name);
+        });
+        this.emitLine("enum class ", enumName, " { ", caseNames, " };");
     };
 
     private emitUnionTypedefs = (u: UnionType, unionName: Name): void => {
@@ -458,54 +451,80 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             ["string", "is_string"],
             ["class", "is_object"],
             ["map", "is_object"],
-            ["array", "is_array"]
+            ["array", "is_array"],
+            ["enum", "is_string"]
         ];
         const [_, nonNulls] = removeNullFromUnion(u);
         const variantType = this.cppTypeInOptional(nonNulls, true, false);
-        this.emitBlock(
-            ["inline void from_json(const json& _j, ", variantType, "& _x)"],
-            false,
-            () => {
-                let onFirst = true;
-                for (const [kind, func] of functionForKind) {
-                    const typeForKind = nonNulls.find((t: Type) => t.kind === kind);
-                    if (typeForKind === undefined) continue;
-                    this.emitLine(onFirst ? "if" : "else if", " (_j.", func, "())");
-                    this.indent(() => {
-                        this.emitLine(
-                            "_x = _j.get<",
-                            this.cppType(typeForKind, true, true, false),
-                            ">();"
-                        );
-                    });
-                    onFirst = false;
-                }
-                this.emitLine('else throw "Could not deserialize";');
-            }
-        );
-        this.emitNewline();
-        this.emitBlock(
-            ["inline void to_json(json& _j, const ", variantType, "& _x)"],
-            false,
-            () => {
-                this.emitBlock("switch (_x.which())", false, () => {
-                    let i = 0;
-                    nonNulls.forEach((t: Type) => {
-                        this.emitLine("case ", i.toString(), ":");
-                        this.indent(() => {
-                            this.emitLine(
-                                "_j = boost::get<",
-                                this.cppType(t, true, true, false),
-                                ">(_x);"
-                            );
-                            this.emitLine("break;");
-                        });
-                        i++;
-                    });
-                    this.emitLine('default: throw "This should not happen";');
+        this.emitBlock(["inline void from_json(const json& _j, ", variantType, "& _x)"], false, () => {
+            let onFirst = true;
+            for (const [kind, func] of functionForKind) {
+                const typeForKind = nonNulls.find((t: Type) => t.kind === kind);
+                if (typeForKind === undefined) continue;
+                this.emitLine(onFirst ? "if" : "else if", " (_j.", func, "())");
+                this.indent(() => {
+                    this.emitLine("_x = _j.get<", this.cppType(typeForKind, true, true, false), ">();");
                 });
+                onFirst = false;
             }
-        );
+            this.emitLine('else throw "Could not deserialize";');
+        });
+        this.emitNewline();
+        this.emitBlock(["inline void to_json(json& _j, const ", variantType, "& _x)"], false, () => {
+            this.emitBlock("switch (_x.which())", false, () => {
+                let i = 0;
+                nonNulls.forEach((t: Type) => {
+                    this.emitLine("case ", i.toString(), ":");
+                    this.indent(() => {
+                        this.emitLine("_j = boost::get<", this.cppType(t, true, true, false), ">(_x);");
+                        this.emitLine("break;");
+                    });
+                    i++;
+                });
+                this.emitLine('default: throw "Input JSON does not conform to schema";');
+            });
+        });
+    };
+
+    private emitEnumFunctions = (e: EnumType, enumName: Name): void => {
+        const ourQualifier = this.ourQualifier(true);
+        this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, enumName, "& _x)"], false, () => {
+            let onFirst = true;
+            this.forEachCase(e, "none", (name, jsonName) => {
+                const maybeElse = onFirst ? "" : "else ";
+                this.emitLine(
+                    maybeElse,
+                    'if (_j == "',
+                    stringEscape(jsonName),
+                    '") _x = ',
+                    ourQualifier,
+                    enumName,
+                    "::",
+                    name,
+                    ";"
+                );
+                onFirst = false;
+            });
+            this.emitLine('else throw "Input JSON does not conform to schema";');
+        });
+        this.emitNewline();
+        this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, enumName, "& _x)"], false, () => {
+            this.emitBlock("switch (_x)", false, () => {
+                this.forEachCase(e, "none", (name, jsonName) => {
+                    this.emitLine(
+                        "case ",
+                        ourQualifier,
+                        enumName,
+                        "::",
+                        name,
+                        ': _j = "',
+                        stringEscape(jsonName),
+                        '"; break;'
+                    );
+                });
+                this.emitLine('default: throw "This should not happen";');
+            });
+        });
     };
 
     private emitTopLevelTypedef = (t: Type, name: Name): void => {
@@ -515,10 +534,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     private emitAllUnionFunctions = (): void => {
         this.forEachUniqueUnion(
             "interposing",
-            u =>
-                this.sourcelikeToString(
-                    this.cppTypeInOptional(removeNullFromUnion(u)[1], true, false)
-                ),
+            u => this.sourcelikeToString(this.cppTypeInOptional(removeNullFromUnion(u)[1], true, false)),
             this.emitUnionFunctions
         );
     };
@@ -591,13 +607,10 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                 "leading-and-interposing",
                 true,
                 this.emitClass,
+                this.emitEnum,
                 this.emitUnionTypedefs
             );
-            this.forEachTopLevel(
-                "leading",
-                this.emitTopLevelTypedef,
-                t => !this.namedTypeToNameForTopLevel(t)
-            );
+            this.forEachTopLevel("leading", this.emitTopLevelTypedef, t => !this.namedTypeToNameForTopLevel(t));
             this.emitMultiline(`
 inline json get_untyped(const json &j, const char *property) {
     if (j.find(property) != j.end()) {
@@ -621,6 +634,7 @@ inline ${this._optionalType}<T> get_optional(const json &j, const char *property
                 this.emitOptionalHelpers();
             }
             this.forEachClass("leading-and-interposing", this.emitClassFunctions);
+            this.forEachEnum("leading-and-interposing", this.emitEnumFunctions);
             if (this.haveUnions) {
                 this.emitNewline();
                 this.emitAllUnionFunctions();

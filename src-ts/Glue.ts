@@ -7,6 +7,7 @@ import {
     ClassType,
     ArrayType,
     MapType,
+    EnumType,
     UnionType,
     TypeNames,
     TopLevels
@@ -33,6 +34,9 @@ function glueTypeToNative(type: GlueType, classes: (Type | null)[]): Type {
         case "map": {
             const values = glueTypeToNative(type.values, classes);
             return new MapType(values);
+        }
+        case "enum": {
+            return new EnumType(glueTypeNamesToNative(type.names), OrderedSet(type.cases));
         }
         case "union": {
             const members = type.members.map(t => glueTypeToNative(t, classes));

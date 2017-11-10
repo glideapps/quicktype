@@ -15,7 +15,7 @@ import Data.Set as S
 import Data.String as String
 import Data.String.Util (camelCase, capitalize, decapitalize, genericStringEscape, intToHex, legalizeCharacters, startWithLetter)
 import Data.Tuple (Tuple(..))
-import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getGraph, getOptionValue, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, unionNameIntercalated, unlessOption)
+import Doc (Doc, Namer, Renderer, blank, combineNames, forEachClass_, forEachProperty_, forEachTopLevel_, forEachUnion_, forbidNamer, getGraph, getOptionValue, getTypeNameForUnion, indent, line, lookupClassName, lookupName, lookupUnionName, lookupEnumName, renderRenderItems, simpleNamer, transformPropertyNames, unionIsNotSimpleNullable, intercalatedName, unlessOption)
 import IRGraph (IRClassData(..), IRType(..), IRUnionRep, canBeNull, forUnion_, isUnionMember, nullableFromUnion, removeNullFromUnion, unionToList, filterTypes)
 import Options (Option, booleanOption, enumOption)
 
@@ -55,7 +55,11 @@ renderer =
         , unions: Just
             { predicate: unionIsNotSimpleNullable
             , properName: simpleNamer (swiftNameStyle true <<< combineNames)
-            , nameFromTypes: simpleNamer (unionNameIntercalated (swiftNameStyle true) "Or")
+            , nameFromTypes: simpleNamer (intercalatedName (swiftNameStyle true) "Or")
+            }
+        , enums: Just
+            { properName: simpleNamer (swiftNameStyle true <<< combineNames)
+            , nameFromValues: simpleNamer (intercalatedName (swiftNameStyle true) "Or")
             }
         }
     }
@@ -99,7 +103,8 @@ swift3Doc :: Doc Unit
 swift3Doc = do
     renderHeader
 
-    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition (Just renderUnionDefinition)
+    -- FIXME: render enums
+    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition (Just renderUnionDefinition) Nothing
 
     unlessOption justTypesOption do
         blank
@@ -122,7 +127,8 @@ swift4Doc :: Doc Unit
 swift4Doc = do
     renderHeader
 
-    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition (Just renderUnionDefinition)
+    -- FIXME: render enums
+    renderRenderItems blank (Just renderTopLevelAlias) renderClassDefinition (Just renderUnionDefinition) Nothing
 
     unlessOption justTypesOption do
         blank
@@ -498,6 +504,7 @@ renderType = case _ of
     IRMap t -> do
         rendered <- renderType t
         pure $ "[String: " <> rendered <> "]"
+    IREnum e -> lookupEnumName e
     IRUnion ur -> renderUnion ur
 
 convertAny :: IRType -> String -> Doc String
@@ -507,6 +514,8 @@ convertAny (IRArray a) var = do
 convertAny (IRMap m) var = do
     converter <- convertAnyCheckedFunc m
     pure $ "convertDict(" <> converter <> ", " <> var <> ")"
+convertAny (IREnum e) var = do
+    pure "FIXME: enum"
 convertAny (IRUnion ur) var =
     case nullableFromUnion ur of
     Just t -> do

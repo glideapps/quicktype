@@ -10,6 +10,7 @@ import {
     PrimitiveType,
     ArrayType,
     MapType,
+    EnumType,
     UnionType,
     NamedType,
     ClassType,
@@ -101,6 +102,10 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
         return new Namer(n => simpleNameStyle(n, false), []);
     }
 
+    protected get caseNamer(): Namer {
+        return new Namer(n => simpleNameStyle(n, true), []);
+    }
+
     protected topLevelDependencyNames(topLevelName: Name): DependencyName[] {
         return [];
     }
@@ -124,6 +129,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
             arrayType => ["List<", this.sourceFor(arrayType.items), ">"],
             classType => this.nameForNamedType(classType),
             mapType => ["Map<String, ", this.sourceFor(mapType.values), ">"],
+            enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable) return ["Maybe<", this.sourceFor(nullable), ">"];
@@ -148,6 +154,15 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     };
 
+    emitEnum = (e: EnumType, enumName: Name) => {
+        const caseNames: Sourcelike[] = [];
+        this.forEachCase(e, "none", name => {
+            if (caseNames.length > 0) caseNames.push(" | ");
+            caseNames.push(name);
+        });
+        this.emitLine("enum ", enumName, " = ", caseNames);
+    };
+
     emitUnion = (u: UnionType, unionName: Name) => {
         this.emitLine("union ", unionName, " {");
         this.indent(() => {
@@ -160,6 +175,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure() {
         this.forEachClass("interposing", this.emitClass);
+        this.forEachEnum("leading-and-interposing", this.emitEnum);
         if (!this.inlineUnions) {
             this.forEachUnion("leading-and-interposing", this.emitUnion);
         }

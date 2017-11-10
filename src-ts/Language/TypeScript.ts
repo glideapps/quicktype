@@ -12,14 +12,7 @@ import {
     matchType
 } from "../Type";
 
-import {
-    utf16LegalizeCharacters,
-    pascalCase,
-    camelCase,
-    startWithLetter,
-    stringEscape,
-    intercalate
-} from "../Support";
+import { utf16LegalizeCharacters, pascalCase, camelCase, startWithLetter, stringEscape, intercalate } from "../Support";
 
 import { Sourcelike } from "../Source";
 import { Namer, Name } from "../Naming";
@@ -33,11 +26,7 @@ const unicode = require("unicode-properties");
 export default class L extends TypeScriptTargetLanguage {
     static justTypes = new BooleanOption("just-types", "Interfaces only", false);
     static declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
-    static runtimeTypecheck = new BooleanOption(
-        "runtime-typecheck",
-        "Assert JSON.parse results at runtime",
-        false
-    );
+    static runtimeTypecheck = new BooleanOption("runtime-typecheck", "Assert JSON.parse results at runtime", false);
 
     constructor() {
         super("TypeScript", ["typescript", "ts"], "ts", [
@@ -89,6 +78,10 @@ function propertyNameStyle(original: string): string {
     }
 }
 
+function noEnums(): never {
+    throw "Error: Enums are not supported in TypeScript yet.";
+}
+
 class TypeScriptRenderer extends ConvenienceRenderer {
     constructor(
         topLevels: TopLevels,
@@ -109,6 +102,10 @@ class TypeScriptRenderer extends ConvenienceRenderer {
 
     protected get propertyNamer(): Namer {
         return new Namer(propertyNameStyle, []);
+    }
+
+    protected get caseNamer(): Namer {
+        return noEnums();
     }
 
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
@@ -144,6 +141,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             },
             classType => this.nameForNamedType(classType),
             mapType => ["{ [key: string]: ", this.sourceFor(mapType.values), " }"],
+            enumType => noEnums(),
             unionType => {
                 if (this.inlineUnions || nullableFromUnion(unionType)) {
                     const children = unionType.children.map(this.sourceFor);
@@ -167,6 +165,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             arrayType => ["array(", this.typeMapTypeFor(arrayType.items), ")"],
             classType => ['object("', this.nameForNamedType(classType), '")'],
             mapType => ["map(", this.typeMapTypeFor(mapType.values), ")"],
+            enumType => noEnums(),
             unionType => {
                 const children = unionType.children.map(this.typeMapTypeFor);
                 return ["union(", ...intercalate(", ", children).toArray(), ")"];
@@ -214,14 +213,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
                 const indent = maxWidth - nameRendered.length + 1 + nullableIndent;
                 const whitespace = " ".repeat(Math.max(1, indent));
 
-                this.emitLine(
-                    nameRendered,
-                    nullable ? "?" : "",
-                    ":",
-                    whitespace,
-                    this.sourceFor(nullable || t),
-                    ";"
-                );
+                this.emitLine(nameRendered, nullable ? "?" : "", ":", whitespace, this.sourceFor(nullable || t), ";");
             });
         });
     };
@@ -237,30 +229,18 @@ class TypeScriptRenderer extends ConvenienceRenderer {
                 this.emitNewline();
             }
             this.forEachTopLevel("interposing", (t, name) => {
-                this.emitBlock(
-                    ["export function to", name, "(json: string): ", this.sourceFor(t)],
-                    "",
-                    () => {
-                        if (this.runtimeTypecheck) {
-                            this.emitLine(
-                                "return cast(JSON.parse(json), ",
-                                this.typeMapTypeFor(t),
-                                ");"
-                            );
-                        } else {
-                            this.emitLine("return JSON.parse(json);");
-                        }
+                this.emitBlock(["export function to", name, "(json: string): ", this.sourceFor(t)], "", () => {
+                    if (this.runtimeTypecheck) {
+                        this.emitLine("return cast(JSON.parse(json), ", this.typeMapTypeFor(t), ");");
+                    } else {
+                        this.emitLine("return JSON.parse(json);");
                     }
-                );
+                });
                 this.emitNewline();
 
                 const camelCaseName = camelCase(this.sourcelikeToString(name));
                 this.emitBlock(
-                    [
-                        `export function ${camelCaseName}ToJson(value: `,
-                        this.sourceFor(t),
-                        "): string"
-                    ],
+                    [`export function ${camelCaseName}ToJson(value: `, this.sourceFor(t), "): string"],
                     "",
                     () => {
                         this.emitLine("return JSON.stringify(value, null, 2);");
@@ -357,13 +337,7 @@ function object(className: string) {
 
     emitUnion = (u: UnionType, unionName: Name) => {
         const children = u.children.map(this.sourceFor);
-        this.emitLine(
-            "export type ",
-            unionName,
-            " = ",
-            intercalate(" | ", children).toArray(),
-            ";"
-        );
+        this.emitLine("export type ", unionName, " = ", intercalate(" | ", children).toArray(), ";");
     };
 
     protected emitSourceStructure() {

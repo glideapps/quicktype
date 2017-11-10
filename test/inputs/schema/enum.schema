@@ -1,0 +1,29 @@
+{
+    "type": "object",
+    "properties": {
+        "lvc": {
+            "enum": ["lawful", "neutral", "chaotic"]
+        },
+        "gve": {
+            "type": "string",
+            "enum": ["good", "neutral", "evil"]
+        },
+        "arr": {
+            "type": "array",
+            "items": {
+                "oneOf": [
+                    {
+                        "enum": ["foo", "bar", "if"]
+                    },
+                    {
+                        "type": "integer"
+                    }
+                ]
+            }
+        },
+        "for": {
+            "type": "string"
+        }
+    },
+    "required": ["gve"]
+}
