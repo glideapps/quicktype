@@ -294,6 +294,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
         "simple-identifiers.json",
         "blns-object.json"
       ],
+      skipSchema: [],
       rendererOptions: {},
       quickTestRendererOptions: []
     };
@@ -379,7 +380,7 @@ class JSONSchemaFixture extends LanguageFixture {
   }
 
   shouldSkipTest(sample: Sample): boolean {
-    return false;
+    return _.includes(this.language.skipSchema, path.basename(sample.path));
   }
 
   async runQuicktype(
