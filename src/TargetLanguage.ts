@@ -53,6 +53,19 @@ export abstract class TargetLanguage {
         if (!config.doRender) {
             return { lines: ["Done.", ""], annotations: List() };
         }
+        /*
+        let graphQLTopLevels: GraphQLTopLevelConfig[] = [];
+        for (const tl of config.topLevels) {
+            if (tl.hasOwnProperty("graphQLSchema")) {
+                graphQLTopLevels.push(tl as GraphQLTopLevelConfig);
+            } else {
+                pureScriptTopLevels.push(tl);
+            }
+        }
+        for (const tl of graphQLTopLevels) {
+            graph = graph.set(tl.name, readGraphQLSchema(tl.graphQLSchema, tl.graphQLDocument));
+        }
+        */
         const renderResult = this.renderGraph(graph, config.rendererOptions);
         return serializeRenderResult(renderResult, this.indentation);
     }

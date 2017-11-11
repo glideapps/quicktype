@@ -2,7 +2,16 @@
 
 export type Json = object;
 
-export type TopLevelConfig = { name: string; samples: number[] } | { name: string; schema: Json };
+export type GraphQLTopLevelConfig = {
+    name: string;
+    graphQLSchema: any;
+    graphQLDocument: string;
+};
+
+export type TopLevelConfig =
+    | { name: string; samples: number[] }
+    | { name: string; schema: Json }
+    | GraphQLTopLevelConfig;
 
 export interface Config {
     language: string;

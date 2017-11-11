@@ -313,6 +313,19 @@ class Run {
         }
     };
 
+    renderSamplesOrSchemas = (samplesOrSchemas: SampleOrSchemaMap): SerializedRenderResult => {
+        const areSchemas = this.options.srcLang === "schema";
+        const topLevels = Object.getOwnPropertyNames(samplesOrSchemas).map(name => {
+            if (areSchemas) {
+                // Only one schema per top-level is used right now
+                return { name, schema: samplesOrSchemas[name][0] };
+            } else {
+                return { name, samples: samplesOrSchemas[name] };
+            }
+        });
+        return this.renderTopLevels(topLevels);
+    };
+
     splitAndWriteJava = (dir: string, str: string) => {
         const lines = str.split("\n");
         let filename: string | null = null;
@@ -454,7 +467,12 @@ class Run {
             }
             let json = JSON.parse(fs.readFileSync(this.options.graphqlSchema, "utf8"));
             let query = fs.readFileSync(this.options.graphqlQuery, "utf8");
-            readGraphQLSchema(json, query);
+            const topLevel = {
+                name: this.options.topLevel,
+                graphQLSchema: json,
+                graphQLDocument: query
+            };
+            this.produceOutput(this.renderTopLevels([topLevel]));
         } else if (this._options.src.length === 0) {
             // FIXME: Why do we have to convert to any here?
             await this.readSampleFromStream(this._options.topLevel, process.stdin as any);
