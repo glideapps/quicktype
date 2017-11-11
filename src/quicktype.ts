@@ -460,7 +460,12 @@ class Run {
             }
             let json = JSON.parse(fs.readFileSync(this._options.graphqlSchema, "utf8"));
             let query = fs.readFileSync(this._options.graphqlQuery, "utf8");
-            readGraphQLSchema(json, query);
+            const topLevel = {
+                name: this._options.topLevel,
+                graphQLSchema: json,
+                graphQLDocument: query
+            };
+            this.produceOutput(this.renderTopLevels([topLevel]));
         } else if (this._options.src.length === 0) {
             // FIXME: Why do we have to convert to any here?
             await this.readSampleFromStream(this._options.topLevel, process.stdin as any);
