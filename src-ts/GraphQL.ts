@@ -11,6 +11,7 @@ import {
     SelectionNode,
     OperationDefinitionNode,
     FragmentDefinitionNode,
+    DirectiveNode,
     FieldNode,
     FragmentSpreadNode,
     InlineFragmentNode
@@ -98,8 +99,23 @@ function makeScalar(ft: GQLType): Type {
     }
 }
 
-function makeSelectionStack(selectionSet: SelectionSetNode, mustNull: boolean): [SelectionNode, boolean][] {
-    return selectionSet.selections.reverse().map((s: SelectionNode): [SelectionNode, boolean] => [s, mustNull]);
+function hasOptionalDirectives(directives?: DirectiveNode[]): boolean {
+    if (!directives) return false;
+    for (const d of directives) {
+        const name = d.name.value;
+        if (name === "include" || name === "skip") return true;
+    }
+    return false;
+}
+
+interface Selection {
+    selection: SelectionNode;
+    inType: GQLType;
+    optional: boolean;
+}
+
+function expandSelectionSet(selectionSet: SelectionSetNode, inType: GQLType, optional: boolean): Selection[] {
+    return selectionSet.selections.reverse().map(s => ({ selection: s, inType, optional }));
 }
 
 export function readGraphQLSchema(json: any, queryString: string): Type {
@@ -206,36 +222,40 @@ export function readGraphQLSchema(json: any, queryString: string): Type {
         }
         if (!gqlType.name) throw "Error: Object or interface type doesn't have a name.";
         let properties = Map<string, Type>();
-        let selections = makeSelectionStack(selectionSet, false);
+        let selections = expandSelectionSet(selectionSet, gqlType, false);
         for (;;) {
             const nextItem = selections.pop();
             if (!nextItem) break;
-            const [selection, mustNull] = nextItem;
+            const { selection, optional, inType } = nextItem;
             switch (selection.kind) {
                 case "Field":
                     const name = selection.name.value;
-                    const field = getField(gqlType, name);
+                    const field = getField(inType, name);
                     let fieldType = makeIRTypeFromFieldNode(selection, field.type);
-                    if (mustNull) {
+                    if (optional) {
                         fieldType = makeNullable(fieldType, name);
                     }
                     properties = properties.set(name, fieldType);
                     break;
                 case "FragmentSpread": {
                     const fragment = getFragment(selection.name.value);
-                    selections = selections.concat(makeSelectionStack(fragment.selectionSet, mustNull));
+                    const fragmentType = types[fragment.typeCondition.name.value];
+                    const fragmentOptional = optional || fragmentType.name !== inType.name;
+                    const expanded = expandSelectionSet(fragment.selectionSet, fragmentType, fragmentOptional);
+                    selections = selections.concat(expanded);
                     break;
                 }
                 case "InlineFragment": {
-                    if (selection.typeCondition) throw "FIXME: support type conditions";
-                    if (!selection.directives) {
-                        throw "Error: Inline fragment has neither type condition nor directives.";
-                    }
-                    selections = selections.concat(makeSelectionStack(selection.selectionSet, true));
+                    // FIXME: support type conditions with discriminated unions
+                    const fragmentType = selection.typeCondition ? types[selection.typeCondition.name.value] : inType;
+                    const fragmentOptional =
+                        optional || fragmentType.name !== inType.name || hasOptionalDirectives(selection.directives);
+                    const expanded = expandSelectionSet(selection.selectionSet, fragmentType, fragmentOptional);
+                    selections = selections.concat(expanded);
                     break;
                 }
                 default:
-                    assertNever(selection.kind);
+                    assertNever(selection);
             }
         }
         const classType = new ClassType(makeTypeNames(gqlType.name));
