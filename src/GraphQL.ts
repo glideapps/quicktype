@@ -3,15 +3,9 @@
 import { parse } from "graphql/language";
 import { Map, Set, OrderedSet } from "immutable";
 
-import { Type, ClassType, UnionType, PrimitiveType, TypeNames, removeNullFromUnion } from "./Type";
+import { Type, ClassType, ArrayType, EnumType, UnionType, PrimitiveType, TypeNames, removeNullFromUnion } from "./Type";
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
-import {
-    DocumentNode,
-    SelectionSetNode,
-    SelectionNode,
-    OperationDefinitionNode,
-    FieldNode
-} from "./GraphQLAST";
+import { DocumentNode, SelectionSetNode, SelectionNode, OperationDefinitionNode, FieldNode } from "./GraphQLAST";
 import { assertNever } from "./Support";
 
 interface GQLType {
@@ -46,8 +40,7 @@ interface InputValue {
 }
 
 function getField(t: GQLType, name: string): Field {
-    if (!t.fields)
-        throw `Error: Required field ${name} in type ${t.name} which doesn't have fields.`;
+    if (!t.fields) throw `Error: Required field ${name} in type ${t.name} which doesn't have fields.`;
     for (const f of t.fields) {
         if (f.name === name) {
             return f;
@@ -56,16 +49,17 @@ function getField(t: GQLType, name: string): Field {
     throw `Error: Required field ${name} not defined on type ${t.name}.`;
 }
 
+function makeTypeNames(name: string): TypeNames {
+    return { names: Set([name]), combined: name };
+}
+
 function makeNullable(t: Type, name: string): Type {
-    function makeNames(): TypeNames {
-        return { names: Set([name]), combined: name };
-    }
     if (!(t instanceof UnionType)) {
-        return new UnionType(makeNames(), OrderedSet([t, new PrimitiveType("null")]));
+        return new UnionType(makeTypeNames(name), OrderedSet([t, new PrimitiveType("null")]));
     }
     const [maybeNull, nonNulls] = removeNullFromUnion(t);
     if (maybeNull) return t;
-    return new UnionType(makeNames(), nonNulls.add(new PrimitiveType("null")));
+    return new UnionType(makeTypeNames(name), nonNulls.add(new PrimitiveType("null")));
 }
 
 function removeNull(t: Type): Type {
@@ -105,20 +99,21 @@ function makeIRTypeFromFieldNode(fieldNode: FieldNode, fieldType: GQLType): Type
             return makeScalar(fieldType);
         case TypeKind.OBJECT:
             if (!fieldNode.selectionSet) throw "Error: No selection set on object.";
-            return makeNullable(
-                makeIRTypeFromSelectionSet(fieldNode.selectionSet, fieldType),
-                fieldNode.name.value
-            );
+            return makeNullable(makeIRTypeFromSelectionSet(fieldNode.selectionSet, fieldType), fieldNode.name.value);
         case TypeKind.INTERFACE:
             throw "FIXME: support interfaces";
         case TypeKind.UNION:
             throw "FIXME: support unions";
         case TypeKind.ENUM:
-            throw "FIXME: support enums";
+            if (!fieldType.enumValues) throw "Error: Enum type doesn't have values.";
+            const values = fieldType.enumValues.map(ev => ev.name);
+            const name = fieldType.name || fieldNode.name.value;
+            return new EnumType(makeTypeNames(name), OrderedSet(values));
         case TypeKind.INPUT_OBJECT:
             throw "FIXME: support input objects";
         case TypeKind.LIST:
-            throw "FIXME: support lists";
+            if (!fieldType.ofType) throw "Error: No type for list.";
+            return new ArrayType(makeIRTypeFromFieldNode(fieldNode, fieldType.ofType));
         case TypeKind.NON_NULL:
             if (!fieldType.ofType) throw "Error: No type for non-null.";
             return removeNull(makeIRTypeFromFieldNode(fieldNode, fieldType.ofType));
@@ -139,7 +134,7 @@ function makeIRTypeFromSelectionSet(selectionSet: SelectionSetNode, gqlType: GQL
             properties = properties.set(name, fieldType);
         }
     }
-    const classType = new ClassType({ names: Set([gqlType.name]), combined: gqlType.name });
+    const classType = new ClassType(makeTypeNames(gqlType.name));
     classType.setProperties(properties);
     return classType;
 }
