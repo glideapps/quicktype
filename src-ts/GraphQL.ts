@@ -5,7 +5,16 @@ import { Map, Set, OrderedSet } from "immutable";
 
 import { Type, ClassType, ArrayType, EnumType, UnionType, PrimitiveType, TypeNames, removeNullFromUnion } from "./Type";
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
-import { DocumentNode, SelectionSetNode, SelectionNode, OperationDefinitionNode, FieldNode } from "./GraphQLAST";
+import {
+    DocumentNode,
+    SelectionSetNode,
+    SelectionNode,
+    OperationDefinitionNode,
+    FragmentDefinitionNode,
+    FieldNode,
+    FragmentSpreadNode,
+    InlineFragmentNode
+} from "./GraphQLAST";
 import { assertNever } from "./Support";
 
 interface GQLType {
@@ -93,52 +102,6 @@ function makeScalar(ft: GQLType): Type {
     }
 }
 
-function makeIRTypeFromFieldNode(fieldNode: FieldNode, fieldType: GQLType): Type {
-    switch (fieldType.kind) {
-        case TypeKind.SCALAR:
-            return makeScalar(fieldType);
-        case TypeKind.OBJECT:
-            if (!fieldNode.selectionSet) throw "Error: No selection set on object.";
-            return makeNullable(makeIRTypeFromSelectionSet(fieldNode.selectionSet, fieldType), fieldNode.name.value);
-        case TypeKind.INTERFACE:
-            throw "FIXME: support interfaces";
-        case TypeKind.UNION:
-            throw "FIXME: support unions";
-        case TypeKind.ENUM:
-            if (!fieldType.enumValues) throw "Error: Enum type doesn't have values.";
-            const values = fieldType.enumValues.map(ev => ev.name);
-            const name = fieldType.name || fieldNode.name.value;
-            return new EnumType(makeTypeNames(name), OrderedSet(values));
-        case TypeKind.INPUT_OBJECT:
-            throw "FIXME: support input objects";
-        case TypeKind.LIST:
-            if (!fieldType.ofType) throw "Error: No type for list.";
-            return new ArrayType(makeIRTypeFromFieldNode(fieldNode, fieldType.ofType));
-        case TypeKind.NON_NULL:
-            if (!fieldType.ofType) throw "Error: No type for non-null.";
-            return removeNull(makeIRTypeFromFieldNode(fieldNode, fieldType.ofType));
-        default:
-            return assertNever(fieldType.kind);
-    }
-}
-
-function makeIRTypeFromSelectionSet(selectionSet: SelectionSetNode, gqlType: GQLType): ClassType {
-    if (gqlType.kind !== TypeKind.OBJECT) throw "Error: Type for selection set is not object.";
-    if (!gqlType.name) throw "Error: Object type doesn't have a name.";
-    let properties = Map<string, Type>();
-    for (const selection of selectionSet.selections) {
-        if (selection.kind === "Field") {
-            const name = selection.name.value;
-            const field = getField(gqlType, name);
-            const fieldType = makeIRTypeFromFieldNode(selection, field.type);
-            properties = properties.set(name, fieldType);
-        }
-    }
-    const classType = new ClassType(makeTypeNames(gqlType.name));
-    classType.setProperties(properties);
-    return classType;
-}
-
 export function readGraphQLSchema(json: any, queryString: string): Type {
     const schema: GraphQLSchema = json.data;
     let types: { [name: string]: GQLType } = {};
@@ -200,6 +163,70 @@ export function readGraphQLSchema(json: any, queryString: string): Type {
         return type;
     }
 
+    function makeIRTypeFromFieldNode(fieldNode: FieldNode, fieldType: GQLType): Type {
+        switch (fieldType.kind) {
+            case TypeKind.SCALAR:
+                return makeScalar(fieldType);
+            case TypeKind.OBJECT:
+                if (!fieldNode.selectionSet) throw "Error: No selection set on object.";
+                return makeNullable(
+                    makeIRTypeFromSelectionSet(fieldNode.selectionSet, fieldType),
+                    fieldNode.name.value
+                );
+            case TypeKind.INTERFACE:
+                throw "FIXME: support interfaces";
+            case TypeKind.UNION:
+                throw "FIXME: support unions";
+            case TypeKind.ENUM:
+                if (!fieldType.enumValues) throw "Error: Enum type doesn't have values.";
+                const values = fieldType.enumValues.map(ev => ev.name);
+                const name = fieldType.name || fieldNode.name.value;
+                return new EnumType(makeTypeNames(name), OrderedSet(values));
+            case TypeKind.INPUT_OBJECT:
+                throw "FIXME: support input objects";
+            case TypeKind.LIST:
+                if (!fieldType.ofType) throw "Error: No type for list.";
+                return new ArrayType(makeIRTypeFromFieldNode(fieldNode, fieldType.ofType));
+            case TypeKind.NON_NULL:
+                if (!fieldType.ofType) throw "Error: No type for non-null.";
+                return removeNull(makeIRTypeFromFieldNode(fieldNode, fieldType.ofType));
+            default:
+                return assertNever(fieldType.kind);
+        }
+    }
+
+    function makeIRTypeFromSelectionSet(selectionSet: SelectionSetNode, gqlType: GQLType): ClassType {
+        if (gqlType.kind !== TypeKind.OBJECT) throw "Error: Type for selection set is not object.";
+        if (!gqlType.name) throw "Error: Object type doesn't have a name.";
+        let properties = Map<string, Type>();
+        let selections = selectionSet.selections.reverse();
+        for (;;) {
+            const selection = selections.pop();
+            if (!selection) break;
+            switch (selection.kind) {
+                case "Field":
+                    const name = selection.name.value;
+                    const field = getField(gqlType, name);
+                    const fieldType = makeIRTypeFromFieldNode(selection, field.type);
+                    properties = properties.set(name, fieldType);
+                    break;
+                case "FragmentSpread":
+                    const fragmentName = selection.name.value;
+                    const fragment = fragments[fragmentName];
+                    if (!fragment) throw `Error: Fragment ${fragmentName} is not defined.`;
+                    selections = selections.concat(fragment.selectionSet.selections.reverse());
+                    break;
+                case "InlineFragment":
+                    throw "FIXME: support inline fragments";
+                default:
+                    assertNever(selection.kind);
+            }
+        }
+        const classType = new ClassType(makeTypeNames(gqlType.name));
+        classType.setProperties(properties);
+        return classType;
+    }
+
     if (schema.__schema.queryType.name === null) {
         throw "Error: Query type doesn't have a name.";
     }
@@ -222,9 +249,16 @@ export function readGraphQLSchema(json: any, queryString: string): Type {
     // console.log(`query type ${queryType.name} is ${queryType.kind}`);
 
     const queryDocument = <DocumentNode>parse(queryString);
-    const queries = <OperationDefinitionNode[]>queryDocument.definitions.filter(
-        d => d.kind === "OperationDefinition" && d.operation === "query"
-    );
+    const queries: OperationDefinitionNode[] = [];
+    const fragments: { [name: string]: FragmentDefinitionNode } = {};
+    for (const def of queryDocument.definitions) {
+        if (def.kind === "OperationDefinition") {
+            if (def.operation !== "query") continue;
+            queries.push(def);
+        } else if (def.kind === "FragmentDefinition") {
+            fragments[def.name.value] = def;
+        }
+    }
     if (queries.length !== 1) {
         throw "Error: Must have exactly one query defined.";
     }
