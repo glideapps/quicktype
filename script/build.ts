@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env ts-node -O {"target":"es6"}
 
 import * as shell from "shelljs";
 import * as fs from "fs";
