@@ -88,17 +88,13 @@ function makeScalar(ft: GQLType): Type {
     switch (ft.name) {
         case "Boolean":
             return new PrimitiveType("bool");
-        case "String":
-            return new PrimitiveType("string");
         case "Int":
             return new PrimitiveType("integer");
         case "Float":
             return new PrimitiveType("double");
-        case "ID":
-            // FIXME: support ID?
-            return new PrimitiveType("string");
         default:
-            throw `Error: Scalar type ${ft.name} not supported.`;
+            // FIXME: support ID specifically?
+            return new PrimitiveType("string");
     }
 }
 
@@ -172,13 +168,12 @@ export function readGraphQLSchema(json: any, queryString: string): Type {
             case TypeKind.SCALAR:
                 return makeScalar(fieldType);
             case TypeKind.OBJECT:
-                if (!fieldNode.selectionSet) throw "Error: No selection set on object.";
+            case TypeKind.INTERFACE:
+                if (!fieldNode.selectionSet) throw "Error: No selection set on object or interface.";
                 return makeNullable(
                     makeIRTypeFromSelectionSet(fieldNode.selectionSet, fieldType),
                     fieldNode.name.value
                 );
-            case TypeKind.INTERFACE:
-                throw "FIXME: support interfaces";
             case TypeKind.UNION:
                 throw "FIXME: support unions";
             case TypeKind.ENUM:
@@ -206,8 +201,10 @@ export function readGraphQLSchema(json: any, queryString: string): Type {
     }
 
     function makeIRTypeFromSelectionSet(selectionSet: SelectionSetNode, gqlType: GQLType): ClassType {
-        if (gqlType.kind !== TypeKind.OBJECT) throw "Error: Type for selection set is not object.";
-        if (!gqlType.name) throw "Error: Object type doesn't have a name.";
+        if (gqlType.kind !== TypeKind.OBJECT && gqlType.kind !== TypeKind.INTERFACE) {
+            throw "Error: Type for selection set is not object or interface.";
+        }
+        if (!gqlType.name) throw "Error: Object or interface type doesn't have a name.";
         let properties = Map<string, Type>();
         let selections = makeSelectionStack(selectionSet, false);
         for (;;) {
