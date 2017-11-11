@@ -102,6 +102,10 @@ function makeScalar(ft: GQLType): Type {
     }
 }
 
+function makeSelectionStack(selectionSet: SelectionSetNode, mustNull: boolean): [SelectionNode, boolean][] {
+    return selectionSet.selections.reverse().map((s: SelectionNode): [SelectionNode, boolean] => [s, mustNull]);
+}
+
 export function readGraphQLSchema(json: any, queryString: string): Type {
     const schema: GraphQLSchema = json.data;
     let types: { [name: string]: GQLType } = {};
@@ -195,29 +199,44 @@ export function readGraphQLSchema(json: any, queryString: string): Type {
         }
     }
 
+    function getFragment(name: string): FragmentDefinitionNode {
+        const fragment = fragments[name];
+        if (!fragment) throw `Error: Fragment ${name} is not defined.`;
+        return fragment;
+    }
+
     function makeIRTypeFromSelectionSet(selectionSet: SelectionSetNode, gqlType: GQLType): ClassType {
         if (gqlType.kind !== TypeKind.OBJECT) throw "Error: Type for selection set is not object.";
         if (!gqlType.name) throw "Error: Object type doesn't have a name.";
         let properties = Map<string, Type>();
-        let selections = selectionSet.selections.reverse();
+        let selections = makeSelectionStack(selectionSet, false);
         for (;;) {
-            const selection = selections.pop();
-            if (!selection) break;
+            const nextItem = selections.pop();
+            if (!nextItem) break;
+            const [selection, mustNull] = nextItem;
             switch (selection.kind) {
                 case "Field":
                     const name = selection.name.value;
                     const field = getField(gqlType, name);
-                    const fieldType = makeIRTypeFromFieldNode(selection, field.type);
+                    let fieldType = makeIRTypeFromFieldNode(selection, field.type);
+                    if (mustNull) {
+                        fieldType = makeNullable(fieldType, name);
+                    }
                     properties = properties.set(name, fieldType);
                     break;
-                case "FragmentSpread":
-                    const fragmentName = selection.name.value;
-                    const fragment = fragments[fragmentName];
-                    if (!fragment) throw `Error: Fragment ${fragmentName} is not defined.`;
-                    selections = selections.concat(fragment.selectionSet.selections.reverse());
+                case "FragmentSpread": {
+                    const fragment = getFragment(selection.name.value);
+                    selections = selections.concat(makeSelectionStack(fragment.selectionSet, mustNull));
                     break;
-                case "InlineFragment":
-                    throw "FIXME: support inline fragments";
+                }
+                case "InlineFragment": {
+                    if (selection.typeCondition) throw "FIXME: support type conditions";
+                    if (!selection.directives) {
+                        throw "Error: Inline fragment has neither type condition nor directives.";
+                    }
+                    selections = selections.concat(makeSelectionStack(selection.selectionSet, true));
+                    break;
+                }
                 default:
                     assertNever(selection.kind);
             }
