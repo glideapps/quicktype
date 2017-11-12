@@ -118,10 +118,35 @@ function expandSelectionSet(selectionSet: SelectionSetNode, inType: GQLType, opt
     return selectionSet.selections.reverse().map(s => ({ selection: s, inType, optional }));
 }
 
-abstract class GQLSchema {
-    protected readonly types: { [name: string]: GQLType } = {};
-    private fragments?: { [name: string]: FragmentDefinitionNode };
-    protected queryType?: GQLType;
+interface GQLSchema {
+    readonly types: { [name: string]: GQLType };
+    readonly queryType: GQLType;
+}
+
+class GQLQuery {
+    private readonly _schema: GQLSchema;
+    private readonly _fragments: { [name: string]: FragmentDefinitionNode };
+    private readonly _query: OperationDefinitionNode;
+
+    constructor(schema: GQLSchema, queryString: string) {
+        this._schema = schema;
+        this._fragments = {};
+
+        const queryDocument = <DocumentNode>parse(queryString);
+        const queries: OperationDefinitionNode[] = [];
+        for (const def of queryDocument.definitions) {
+            if (def.kind === "OperationDefinition") {
+                if (def.operation !== "query") continue;
+                queries.push(def);
+            } else if (def.kind === "FragmentDefinition") {
+                this._fragments[def.name.value] = def;
+            }
+        }
+        if (queries.length !== 1) {
+            throw "Error: Must have exactly one query defined.";
+        }
+        this._query = queries[0];
+    }
 
     private makeIRTypeFromFieldNode = (fieldNode: FieldNode, fieldType: GQLType): Type => {
         switch (fieldType.kind) {
@@ -155,8 +180,7 @@ abstract class GQLSchema {
     };
 
     private getFragment = (name: string): FragmentDefinitionNode => {
-        if (!this.fragments) throw "This should not happen!  Fragments not initialized from query.";
-        const fragment = this.fragments[name];
+        const fragment = this._fragments[name];
         if (!fragment) throw `Error: Fragment ${name} is not defined.`;
         return fragment;
     };
@@ -184,7 +208,7 @@ abstract class GQLSchema {
                     break;
                 case "FragmentSpread": {
                     const fragment = this.getFragment(selection.name.value);
-                    const fragmentType = this.types[fragment.typeCondition.name.value];
+                    const fragmentType = this._schema.types[fragment.typeCondition.name.value];
                     const fragmentOptional = optional || fragmentType.name !== inType.name;
                     const expanded = expandSelectionSet(fragment.selectionSet, fragmentType, fragmentOptional);
                     selections = selections.concat(expanded);
@@ -193,7 +217,7 @@ abstract class GQLSchema {
                 case "InlineFragment": {
                     // FIXME: support type conditions with discriminated unions
                     const fragmentType = selection.typeCondition
-                        ? this.types[selection.typeCondition.name.value]
+                        ? this._schema.types[selection.typeCondition.name.value]
                         : inType;
                     const fragmentOptional =
                         optional || fragmentType.name !== inType.name || hasOptionalDirectives(selection.directives);
@@ -210,33 +234,16 @@ abstract class GQLSchema {
         return classType;
     };
 
-    makeTypeFromQueryDocument(queryString: string): Type {
-        if (!this.queryType) throw "This should not happen!  GQLSchema did not initialize its queryType.";
-        this.fragments = {};
-        const queryDocument = <DocumentNode>parse(queryString);
-        const queries: OperationDefinitionNode[] = [];
-        for (const def of queryDocument.definitions) {
-            if (def.kind === "OperationDefinition") {
-                if (def.operation !== "query") continue;
-                queries.push(def);
-            } else if (def.kind === "FragmentDefinition") {
-                this.fragments[def.name.value] = def;
-            }
-        }
-        if (queries.length !== 1) {
-            throw "Error: Must have exactly one query defined.";
-        }
-        const query = queries[0];
-        const result = this.makeIRTypeFromSelectionSet(query.selectionSet, this.queryType);
-        this.fragments = undefined;
-        return result;
+    makeType(): Type {
+        return this.makeIRTypeFromSelectionSet(this._query.selectionSet, this._schema.queryType);
     }
 }
 
-class GQLSchemaFromJSON extends GQLSchema {
-    constructor(json: any) {
-        super();
+class GQLSchemaFromJSON implements GQLSchema {
+    readonly types: { [name: string]: GQLType } = {};
+    readonly queryType: GQLType;
 
+    constructor(json: any) {
         const schema: GraphQLSchema = json.data;
 
         if (schema.__schema.queryType.name === null) {
@@ -322,5 +329,6 @@ class GQLSchemaFromJSON extends GQLSchema {
 
 export function readGraphQLSchema(json: any, queryString: string): Type {
     const schema = new GQLSchemaFromJSON(json);
-    return schema.makeTypeFromQueryDocument(queryString);
+    const query = new GQLQuery(schema, queryString);
+    return query.makeType();
 }
