@@ -198,13 +198,14 @@ class GQLQuery {
             const { selection, optional, inType } = nextItem;
             switch (selection.kind) {
                 case "Field":
-                    const name = selection.name.value;
-                    const field = getField(inType, name);
+                    const fieldName = selection.name.value;
+                    const givenName = selection.alias ? selection.alias.value : fieldName;
+                    const field = getField(inType, fieldName);
                     let fieldType = this.makeIRTypeFromFieldNode(selection, field.type);
                     if (optional) {
-                        fieldType = makeNullable(fieldType, name);
+                        fieldType = makeNullable(fieldType, givenName);
                     }
-                    properties = properties.set(name, fieldType);
+                    properties = properties.set(givenName, fieldType);
                     break;
                 case "FragmentSpread": {
                     const fragment = this.getFragment(selection.name.value);
