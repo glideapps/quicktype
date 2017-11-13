@@ -269,11 +269,8 @@ export class FixedName extends Name {
 }
 
 export class SimpleName extends Name {
-    private readonly _proposals: OrderedSet<string>;
-
-    constructor(private readonly _unstyledName: string, namingFunction: Namer) {
+    constructor(private readonly _unstyledNames: OrderedSet<string>, namingFunction: Namer) {
         super(namingFunction);
-        this._proposals = OrderedSet([_unstyledName]);
     }
 
     get dependencies(): List<Name> {
@@ -281,11 +278,11 @@ export class SimpleName extends Name {
     }
 
     proposeUnstyledNames(names?: Map<Name, string>): OrderedSet<string> {
-        return this._proposals;
+        return this._unstyledNames;
     }
 
     hashCode(): number {
-        return (super.hashCode() + stringHash(this._unstyledName)) | 0;
+        return (super.hashCode() + this._unstyledNames.hashCode()) | 0;
     }
 }
 

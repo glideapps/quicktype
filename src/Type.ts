@@ -193,7 +193,13 @@ export abstract class NamedType extends Type {
     private _names: OrderedSet<string>;
     private _areNamesInferred: boolean;
 
-    constructor(typeRef: TypeRef, kind: NamedTypeKind, nameOrNames: NameOrNames, areNamesInferred: boolean) {
+    constructor(
+        typeRef: TypeRef,
+        kind: NamedTypeKind,
+        nameOrNames: NameOrNames,
+        areNamesInferred: boolean,
+        private readonly _alternativeNames: OrderedSet<string> = OrderedSet()
+    ) {
         super(typeRef, kind);
         this._names = setFromNameOrNames(nameOrNames);
         this._areNamesInferred = areNamesInferred;
@@ -233,6 +239,10 @@ export abstract class NamedType extends Type {
 
     get combinedName(): string {
         return combineNames(this._names);
+    }
+
+    get proposedNames(): OrderedSet<string> {
+        return OrderedSet([this.combinedName]).union(this._alternativeNames);
     }
 }
 
