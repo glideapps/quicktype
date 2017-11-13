@@ -14,7 +14,7 @@ import {
 
 import { utf16LegalizeCharacters, pascalCase, camelCase, startWithLetter, stringEscape, intercalate } from "../Support";
 
-import { Sourcelike } from "../Source";
+import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";
 import { Renderer, RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -222,9 +222,9 @@ class TypeScriptRenderer extends ConvenienceRenderer {
                 });
                 this.emitNewline();
 
-                const camelCaseName = camelCase(this.sourcelikeToString(name));
+                const camelCaseName = modifySource(camelCase, name);
                 this.emitBlock(
-                    [`export function ${camelCaseName}ToJson(value: `, this.sourceFor(t), "): string"],
+                    ["export function ", camelCaseName, "ToJson(value: ", this.sourceFor(t), "): string"],
                     "",
                     () => {
                         this.emitLine("return JSON.stringify(value, null, 2);");
@@ -340,7 +340,7 @@ function object(className: string) {
             this.emitLine("//   import { Convert", topLevelNames, ' } from "./file";');
             this.emitLine("//");
             this.forEachTopLevel("none", (t, name) => {
-                const camelCaseName = camelCase(this.sourcelikeToString(name));
+                const camelCaseName = modifySource(camelCase, name);
                 this.emitLine("//   const ", camelCaseName, " = Convert.to", name, "(json);");
             });
             if (this.runtimeTypecheck) {

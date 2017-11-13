@@ -17,7 +17,7 @@ import {
 } from "../Type";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, EnumOption } from "../RendererOptions";
-import { Sourcelike, maybeAnnotated } from "../Source";
+import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -185,11 +185,7 @@ const upperNamingFunction = funPrefixNamer(s => swiftNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer(s => swiftNameStyle(false, s));
 
 class SwiftRenderer extends ConvenienceRenderer {
-    constructor(
-        topLevels: TopLevels,
-        private readonly _justTypes: boolean,
-        private readonly _useClasses: boolean
-    ) {
+    constructor(topLevels: TopLevels, private readonly _justTypes: boolean, private readonly _useClasses: boolean) {
         super(topLevels);
     }
 
@@ -197,17 +193,11 @@ class SwiftRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForProperties(
-        c: ClassType,
-        classNamed: Name
-    ): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
-    protected forbiddenForCases(
-        e: EnumType,
-        enumNamed: Name
-    ): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForCases(e: EnumType, enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -240,10 +230,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     };
 
-    private swift3OrPlainCase = (
-        swift3OrPlain: Sourcelike,
-        swift4NonPlain: Sourcelike
-    ): Sourcelike => {
+    private swift3OrPlainCase = (swift3OrPlain: Sourcelike, swift4NonPlain: Sourcelike): Sourcelike => {
         if (this._justTypes) return swift3OrPlain;
         else return swift4NonPlain;
     };
@@ -251,18 +238,9 @@ class SwiftRenderer extends ConvenienceRenderer {
     private swiftType = (t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType =>
-                maybeAnnotated(
-                    withIssues,
-                    anyTypeIssueAnnotation,
-                    this.swift3OrPlainCase("Any?", "JSONAny")
-                ),
+            anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.swift3OrPlainCase("Any?", "JSONAny")),
             nullType =>
-                maybeAnnotated(
-                    withIssues,
-                    nullTypeIssueAnnotation,
-                    this.swift3OrPlainCase("NSNull", "JSONNull?")
-                ),
+                maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.swift3OrPlainCase("NSNull", "JSONNull?")),
             boolType => "Bool",
             integerType => "Int",
             doubleType => "Double",
@@ -301,13 +279,7 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             this.forEachTopLevel("none", (t, name) => {
-                this.emitLine(
-                    "//   let ",
-                    camelCase(this.sourcelikeToString(name)),
-                    " = ",
-                    name,
-                    ".from(json: jsonString)!"
-                );
+                this.emitLine("//   let ", modifySource(camelCase, name), " = ", name, ".from(json: jsonString)!");
             });
             this.emitNewline();
         }
@@ -360,25 +332,16 @@ class SwiftRenderer extends ConvenienceRenderer {
         if (t instanceof ArrayType) {
             extensionSource = ["Array where Element == ", this.swiftType(t.items)];
         } else if (t instanceof MapType) {
-            extensionSource = [
-                "Dictionary where Key == String, Value == ",
-                this.swiftType(t.values)
-            ];
+            extensionSource = ["Dictionary where Key == String, Value == ", this.swiftType(t.values)];
         } else {
             extensionSource = typeSource;
         }
 
         this.emitBlock(["extension ", extensionSource], () => {
             this.emitBlock(
-                [
-                    "static func from(json: String, using encoding: String.Encoding = .utf8) -> ",
-                    typeSource,
-                    "?"
-                ],
+                ["static func from(json: String, using encoding: String.Encoding = .utf8) -> ", typeSource, "?"],
                 () => {
-                    this.emitLine(
-                        "guard let data = json.data(using: encoding) else { return nil }"
-                    );
+                    this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
                     this.emitLine("return from(data: data)");
                 }
             );
@@ -452,9 +415,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                 this.emitLine("switch self {");
                 this.forEachCase(e, "none", (name, jsonName) => {
                     this.emitLine("case .", name, ":");
-                    this.indent(() =>
-                        this.emitLine('try container.encode("', stringEscape(jsonName), '")')
-                    );
+                    this.indent(() => this.emitLine('try container.encode("', stringEscape(jsonName), '")'));
                 });
                 this.emitLine("}");
             });
@@ -507,10 +468,7 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private emitSupportFunctions4 = (): void => {
-        const anyAndNullSet = filterTypes(
-            (t): t is Type => t.kind === "any" || t.kind === "null",
-            this.topLevels
-        );
+        const anyAndNullSet = filterTypes((t): t is Type => t.kind === "any" || t.kind === "null", this.topLevels);
         const needAny = anyAndNullSet.some(t => t.kind === "any");
         const needNull = anyAndNullSet.some(t => t.kind === "null");
         if (needAny || needNull) {
@@ -758,11 +716,7 @@ class JSONAny: Codable {
     protected emitSourceStructure(): void {
         this.renderHeader();
 
-        this.forEachTopLevel(
-            "leading",
-            this.renderTopLevelAlias,
-            t => !this.namedTypeToNameForTopLevel(t)
-        );
+        this.forEachTopLevel("leading", this.renderTopLevelAlias, t => !this.namedTypeToNameForTopLevel(t));
 
         this.forEachNamedType(
             "leading-and-interposing",

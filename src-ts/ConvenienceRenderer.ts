@@ -316,6 +316,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         });
     };
 
+    // You should never have to use this to produce parts of your generated
+    // code.  If you need to modify a Name, for example to change its casing,
+    // use `modifySource`.
     protected sourcelikeToString = (src: Sourcelike): string => {
         return serializeRenderResult(
             {
