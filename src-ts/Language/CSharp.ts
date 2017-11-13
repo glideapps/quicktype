@@ -85,11 +85,6 @@ const namingFunction = funPrefixNamer(csNameStyle);
 // FIXME: Make a Named?
 const denseJsonPropertyName = "J";
 
-function proposeTopLevelDependencyName(names: List<string>): string {
-    if (names.size !== 1) throw "Cannot deal with more than one dependency";
-    return defined(names.first());
-}
-
 function isStartCharacter(utf16Unit: number): boolean {
     if (unicode.isAlphabetic(utf16Unit)) {
         return true;
@@ -156,14 +151,8 @@ class CSharpRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    nullableFromUnion = (u: UnionType): Type | null => {
-        const nullable = nullableFromUnion(u);
-        if (!nullable) return null;
-        return nullable;
-    };
-
     protected unionNeedsName(u: UnionType): boolean {
-        return !this.nullableFromUnion(u);
+        return !nullableFromUnion(u);
     }
 
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
@@ -225,7 +214,7 @@ class CSharpRenderer extends ConvenienceRenderer {
             mapType => ["Dictionary<string, ", this.csType(mapType.values, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
             unionType => {
-                const nullable = this.nullableFromUnion(unionType);
+                const nullable = nullableFromUnion(unionType);
                 if (nullable) return this.nullableCSType(nullable, withIssues);
                 return this.nameForNamedType(unionType);
             }

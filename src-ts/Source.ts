@@ -13,7 +13,8 @@ export type Source =
     | SequenceSource
     | TableSource
     | AnnotatedSource
-    | NameSource;
+    | NameSource
+    | ModifiedSource;
 
 export interface TextSource {
     kind: "text";
@@ -49,6 +50,12 @@ export interface AnnotatedSource {
 export interface NameSource {
     kind: "name";
     named: Name;
+}
+
+export interface ModifiedSource {
+    kind: "modified";
+    modifier: (serialized: string) => string;
+    source: Source;
 }
 
 export function newline(): NewlineSource {
@@ -94,15 +101,19 @@ export function annotated(annotation: AnnotationData, sl: Sourcelike): Source {
     };
 }
 
-export function maybeAnnotated(
-    doAnnotate: boolean,
-    annotation: AnnotationData,
-    sl: Sourcelike
-): Sourcelike {
+export function maybeAnnotated(doAnnotate: boolean, annotation: AnnotationData, sl: Sourcelike): Sourcelike {
     if (!doAnnotate) {
         return sl;
     }
     return annotated(annotation, sl);
+}
+
+export function modifySource(modifier: (serialized: string) => string, sl: Sourcelike): Sourcelike {
+    return {
+        kind: "modified",
+        modifier,
+        source: sourcelikeToSource(sl)
+    };
 }
 
 export interface Location {
@@ -142,6 +153,8 @@ function sourceLineLength(source: Source, names: Map<Name, string>): number {
             return sourceLineLength(source.source, names);
         case "name":
             return defined(names.get(source.named)).length;
+        case "modified":
+            return serializeRenderResult({ rootSource: source, names }, "").lines.join("\n").length;
         default:
             return assertNever(source);
     }
@@ -196,18 +209,14 @@ export function serializeRenderResult(
             case "table":
                 const t = source.table;
                 const widths = t
-                    .map((l: List<Source>) =>
-                        l.map((s: Source) => sourceLineLength(s, names)).toList()
-                    )
+                    .map((l: List<Source>) => l.map((s: Source) => sourceLineLength(s, names)).toList())
                     .toList();
                 const numRows = t.size;
                 if (numRows === 0) break;
                 const numColumns = defined(t.map((l: List<Source>) => l.size).max());
                 if (numColumns === 0) break;
                 const columnWidths = defined(
-                    Range(0, numColumns).map((i: number) =>
-                        widths.map((l: List<number>) => l.get(i) || 0).max()
-                    )
+                    Range(0, numColumns).map((i: number) => widths.map((l: List<number>) => l.get(i) || 0).max())
                 );
                 for (let y = 0; y < numRows; y++) {
                     indentIfNeeded();
@@ -241,6 +250,13 @@ export function serializeRenderResult(
                 }
                 indentIfNeeded();
                 currentLine.push(defined(names.get(source.named)));
+                break;
+            case "modified":
+                const serialized = serializeRenderResult({ rootSource: source.source, names }, indentation).lines;
+                if (serialized.length !== 1) {
+                    throw "Cannot modify more than one line.";
+                }
+                currentLine.push(source.modifier(serialized[0]));
                 break;
             default:
                 return assertNever(source);
