@@ -60,7 +60,8 @@ function getField(t: GQLType, name: string): Field {
 }
 
 function makeTypeNames(name: string): TypeNames {
-    return { names: Set([name]), combined: name };
+    // FIXME: implement alternatives
+    return { names: Set([name]), combined: name, alternatives: OrderedSet() };
 }
 
 function makeNullable(t: Type, name: string): Type {
