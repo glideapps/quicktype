@@ -51,8 +51,8 @@ export const JavaLanguage: Language = {
   allowMissingNull: false,
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
-  skipSchema: ["enum.schema"],
+  skipJSON: ["identifiers.json", "simple-identifiers.json"],
+  skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: []
 };
