@@ -59,18 +59,26 @@ function getField(t: GQLType, name: string): Field {
     throw `Error: Required field ${name} not defined on type ${t.name}.`;
 }
 
-function makeTypeNames(name: string): TypeNames {
+function makeTypeNames(name: string, fieldName: string | null, containingType: GQLType | null): TypeNames {
+    const containingTypeName = containingType ? containingType.name : undefined;
+    const alternatives: string[] = [];
+    if (fieldName) alternatives.push(fieldName);
+    if (containingTypeName) alternatives.push(`${containingTypeName}_${name}`);
+    if (fieldName && containingTypeName) alternatives.push(`${containingTypeName}_${fieldName}`);
     // FIXME: implement alternatives
-    return { names: Set([name]), combined: name, alternatives: OrderedSet() };
+    return { names: Set([name]), combined: name, alternatives: OrderedSet(alternatives) };
 }
 
-function makeNullable(t: Type, name: string): Type {
+function makeNullable(t: Type, name: string, fieldName: string | null, containingType: GQLType | null): Type {
     if (!(t instanceof UnionType)) {
-        return new UnionType(makeTypeNames(name), OrderedSet([t, new PrimitiveType("null")]));
+        return new UnionType(
+            makeTypeNames(name, fieldName, containingType),
+            OrderedSet([t, new PrimitiveType("null")])
+        );
     }
     const [maybeNull, nonNulls] = removeNullFromUnion(t);
     if (maybeNull) return t;
-    return new UnionType(makeTypeNames(name), nonNulls.add(new PrimitiveType("null")));
+    return new UnionType(makeTypeNames(name, fieldName, containingType), nonNulls.add(new PrimitiveType("null")));
 }
 
 function removeNull(t: Type): Type {
@@ -149,7 +157,11 @@ class GQLQuery {
         this._query = queries[0];
     }
 
-    private makeIRTypeFromFieldNode = (fieldNode: FieldNode, fieldType: GQLType): Type => {
+    private makeIRTypeFromFieldNode = (
+        fieldNode: FieldNode,
+        fieldType: GQLType,
+        containingType: GQLType | null
+    ): Type => {
         switch (fieldType.kind) {
             case TypeKind.SCALAR:
                 return makeScalar(fieldType);
@@ -157,24 +169,39 @@ class GQLQuery {
             case TypeKind.INTERFACE:
                 if (!fieldNode.selectionSet) throw "Error: No selection set on object or interface.";
                 return makeNullable(
-                    this.makeIRTypeFromSelectionSet(fieldNode.selectionSet, fieldType),
-                    fieldNode.name.value
+                    this.makeIRTypeFromSelectionSet(
+                        fieldNode.selectionSet,
+                        fieldType,
+                        fieldNode.name.value,
+                        containingType
+                    ),
+                    fieldNode.name.value,
+                    null,
+                    containingType
                 );
             case TypeKind.UNION:
                 throw "FIXME: support unions";
             case TypeKind.ENUM:
                 if (!fieldType.enumValues) throw "Error: Enum type doesn't have values.";
                 const values = fieldType.enumValues.map(ev => ev.name);
-                const name = fieldType.name || fieldNode.name.value;
-                return new EnumType(makeTypeNames(name), OrderedSet(values));
+                let name: string;
+                let fieldName: string | null;
+                if (fieldType.name) {
+                    name = fieldType.name;
+                    fieldName = fieldNode.name.value;
+                } else {
+                    name = fieldNode.name.value;
+                    fieldName = null;
+                }
+                return new EnumType(makeTypeNames(name, fieldName, containingType), OrderedSet(values));
             case TypeKind.INPUT_OBJECT:
                 throw "FIXME: support input objects";
             case TypeKind.LIST:
                 if (!fieldType.ofType) throw "Error: No type for list.";
-                return new ArrayType(this.makeIRTypeFromFieldNode(fieldNode, fieldType.ofType));
+                return new ArrayType(this.makeIRTypeFromFieldNode(fieldNode, fieldType.ofType, containingType));
             case TypeKind.NON_NULL:
                 if (!fieldType.ofType) throw "Error: No type for non-null.";
-                return removeNull(this.makeIRTypeFromFieldNode(fieldNode, fieldType.ofType));
+                return removeNull(this.makeIRTypeFromFieldNode(fieldNode, fieldType.ofType, containingType));
             default:
                 return assertNever(fieldType.kind);
         }
@@ -186,7 +213,12 @@ class GQLQuery {
         return fragment;
     };
 
-    private makeIRTypeFromSelectionSet = (selectionSet: SelectionSetNode, gqlType: GQLType): ClassType => {
+    private makeIRTypeFromSelectionSet = (
+        selectionSet: SelectionSetNode,
+        gqlType: GQLType,
+        containingFieldName: string | null,
+        containingType: GQLType | null
+    ): ClassType => {
         if (gqlType.kind !== TypeKind.OBJECT && gqlType.kind !== TypeKind.INTERFACE) {
             throw "Error: Type for selection set is not object or interface.";
         }
@@ -202,9 +234,9 @@ class GQLQuery {
                     const fieldName = selection.name.value;
                     const givenName = selection.alias ? selection.alias.value : fieldName;
                     const field = getField(inType, fieldName);
-                    let fieldType = this.makeIRTypeFromFieldNode(selection, field.type);
+                    let fieldType = this.makeIRTypeFromFieldNode(selection, field.type, gqlType);
                     if (optional) {
-                        fieldType = makeNullable(fieldType, givenName);
+                        fieldType = makeNullable(fieldType, givenName, null, gqlType);
                     }
                     properties = properties.set(givenName, fieldType);
                     break;
@@ -231,13 +263,13 @@ class GQLQuery {
                     assertNever(selection);
             }
         }
-        const classType = new ClassType(makeTypeNames(gqlType.name));
+        const classType = new ClassType(makeTypeNames(gqlType.name, containingFieldName, containingType));
         classType.setProperties(properties);
         return classType;
     };
 
     makeType(): Type {
-        return this.makeIRTypeFromSelectionSet(this._query.selectionSet, this._schema.queryType);
+        return this.makeIRTypeFromSelectionSet(this._query.selectionSet, this._schema.queryType, null, null);
     }
 }
 
