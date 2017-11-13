@@ -182,7 +182,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     emitTypeMap = () => {
         this.emitBlock("const typeMap: any =", ";", () => {
             this.forEachClass("none", (t, name) => {
-                this.emitBlock(`"${this.sourcelikeToString(name)}":`, ",", () => {
+                this.emitBlock(['"', name, '":'], ",", () => {
                     this.forEachProperty(t, "none", (propName, propJsonName, propType) => {
                         this.emitLine(propName, ": ", this.typeMapTypeFor(propType), ",");
                     });
@@ -192,29 +192,13 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     };
 
     private emitClass = (c: ClassType, className: Name) => {
-        let includesNullableProperties = false;
-        let maxWidth = 0;
-
-        this.forEachProperty(c, "none", (name, jsonName, t) => {
-            const isNullable = !!(t instanceof UnionType && nullableFromUnion(t));
-            const nameRendered = this.sourcelikeToString(name);
-            const width = nameRendered.length + (isNullable ? 1 : 0);
-
-            maxWidth = Math.max(maxWidth, width);
-            includesNullableProperties = includesNullableProperties || isNullable;
-        });
-
         this.emitBlock(["export interface ", className], "", () => {
+            const table: Sourcelike[][] = [];
             this.forEachProperty(c, "none", (name, jsonName, t) => {
                 const nullable = t instanceof UnionType && nullableFromUnion(t);
-                const nullableIndent = includesNullableProperties && !nullable ? 1 : 0;
-
-                const nameRendered = this.sourcelikeToString(name);
-                const indent = maxWidth - nameRendered.length + 1 + nullableIndent;
-                const whitespace = " ".repeat(Math.max(1, indent));
-
-                this.emitLine(nameRendered, nullable ? "?" : "", ":", whitespace, this.sourceFor(nullable || t), ";");
+                table.push([[name, nullable ? "?" : "", ": "], [this.sourceFor(nullable || t), ";"]]);
             });
+            this.emitTable(table);
         });
     };
 
@@ -344,18 +328,16 @@ function object(className: string) {
         if (!this.justTypes) {
             this.emitMultiline(`// To parse this data:
 //`);
-            const topLevelNames = this.topLevels
-                .filter(t => t.isNamedType())
-                .map(this.nameForNamedType)
-                .toArray()
-                .map(([s, name]) => this.sourcelikeToString(name))
-                .join(", ");
-
-            this.emitLine(
-                "//   import { Convert",
-                _.isEmpty(topLevelNames) ? "" : `, ${topLevelNames}`,
-                ' } from "./file";'
+            const topLevelNames: Sourcelike[] = [];
+            this.forEachTopLevel(
+                "none",
+                (t, name) => {
+                    topLevelNames.push(", ", name);
+                },
+                t => t.isNamedType()
             );
+
+            this.emitLine("//   import { Convert", topLevelNames, ' } from "./file";');
             this.emitLine("//");
             this.forEachTopLevel("none", (t, name) => {
                 const camelCaseName = camelCase(this.sourcelikeToString(name));
