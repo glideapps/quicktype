@@ -89,7 +89,7 @@ function makeCPlusPlusLanguage(rendererOptions: {
     allowMissingNull: false,
     output: "quicktype.hpp",
     topLevel: "TopLevel",
-    skipJSON: [],
+    skipJSON: ["recursive.json"],
     skipSchema: [],
     rendererOptions: rendererOptions,
     quickTestRendererOptions: [{ unions: "indirection" }]
@@ -113,7 +113,12 @@ export const ElmLanguage: Language = {
   allowMissingNull: false,
   output: "QuickType.elm",
   topLevel: "QuickType",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
+  skipJSON: [
+    "identifiers.json",
+    "simple-identifiers.json",
+    "blns-object.json",
+    "recursive.json"
+  ],
   skipSchema: [], // All of them currently fail, so we don't even run it.
   rendererOptions: {},
   quickTestRendererOptions: [{ "array-type": "list" }]
@@ -127,7 +132,7 @@ function makeSwiftLanguage(
 ): Language {
   let name: string;
   // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
-  let skipJSON = ["no-classes.json", "blns-object.json"];
+  let skipJSON = ["no-classes.json", "blns-object.json", "recursive.json"];
   let skipSchema: string[] = [];
   if (version === 3) {
     rendererOptions["swift-version"] = "3";
