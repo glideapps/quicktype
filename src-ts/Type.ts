@@ -27,13 +27,18 @@ export abstract class Type {
     directlyReachableTypes<T>(setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
         const set = setForType(this);
         if (set) return set;
-        return orderedSetUnion(
-            this.children.map((t: Type) => t.directlyReachableTypes(setForType))
-        );
+        return orderedSetUnion(this.children.map((t: Type) => t.directlyReachableTypes(setForType)));
     }
 
-    abstract equals(other: any): boolean;
-    abstract hashCode(): number;
+    equals(other: any): boolean {
+        return typesEqual(this, other);
+    }
+
+    abstract expandForEquality(other: Type): [Type, Type][] | boolean;
+    abstract flatHashCode(): number;
+    hashCode(): number {
+        return this.flatHashCode();
+    }
 }
 
 export class PrimitiveType extends Type {
@@ -47,12 +52,12 @@ export class PrimitiveType extends Type {
         return OrderedSet();
     }
 
-    equals(other: any): boolean {
+    expandForEquality(other: any): boolean {
         if (!(other instanceof PrimitiveType)) return false;
         return this.kind === other.kind;
     }
 
-    hashCode(): number {
+    flatHashCode(): number {
         return stringHash(this.kind) | 0;
     }
 }
@@ -72,12 +77,12 @@ export class ArrayType extends Type {
         return OrderedSet([this.items]);
     }
 
-    equals(other: any): boolean {
+    expandForEquality(other: Type): [Type, Type][] | boolean {
         if (!(other instanceof ArrayType)) return false;
-        return this.items.equals(other.items);
+        return [[this.items, other.items]];
     }
 
-    hashCode(): number {
+    flatHashCode(): number {
         return (stringHash(this.kind) + this.items.hashCode()) | 0;
     }
 }
@@ -93,12 +98,12 @@ export class MapType extends Type {
         return OrderedSet([this.values]);
     }
 
-    equals(other: any): boolean {
+    expandForEquality(other: Type): [Type, Type][] | boolean {
         if (!(other instanceof MapType)) return false;
-        return this.values.equals(other.values);
+        return [[this.values, other.values]];
     }
 
-    hashCode(): number {
+    flatHashCode(): number {
         return (stringHash(this.kind) + this.values.hashCode()) | 0;
     }
 }
@@ -139,17 +144,31 @@ export class ClassType extends NamedType {
         return this.properties.toOrderedSet();
     }
 
-    equals(other: any): boolean {
+    expandForEquality(other: Type): [Type, Type][] | boolean {
         if (!(other instanceof ClassType)) return false;
-        return (
-            this.names.names.equals(other.names.names) && this.properties.equals(other.properties)
-        );
+        if (!this.names.names.equals(other.names.names)) return false;
+        if (this.properties.size !== other.properties.size) return false;
+        if (this.properties.size === 0) return true;
+        const queue: [Type, Type][] = [];
+        this.properties.forEach((t, name) => {
+            const otherT = other.properties.get(name);
+            if (!otherT) return false;
+            queue.push([t, otherT]);
+        });
+        if (queue.length !== this.properties.size) return false;
+        return queue;
+    }
+
+    flatHashCode(): number {
+        return (stringHash(this.kind) + this.names.names.hashCode() + this.properties.size) | 0;
     }
 
     hashCode(): number {
-        return (
-            (stringHash(this.kind) + this.names.names.hashCode() + this.properties.hashCode()) | 0
-        );
+        let hash = this.flatHashCode();
+        this.properties.forEach((t, n) => {
+            hash = (hash + t.flatHashCode() + stringHash(n)) | 0;
+        });
+        return hash;
     }
 }
 
@@ -164,12 +183,12 @@ export class EnumType extends NamedType {
         return OrderedSet();
     }
 
-    equals(other: any): boolean {
+    expandForEquality(other: any): boolean {
         if (!(other instanceof EnumType)) return false;
         return this.names.names.equals(other.names.names) && this.cases.equals(other.cases);
     }
 
-    hashCode(): number {
+    flatHashCode(): number {
         return (stringHash(this.kind) + this.names.names.hashCode() + this.cases.hashCode()) | 0;
     }
 }
@@ -194,8 +213,71 @@ export class UnionType extends NamedType {
         return this.names.names.equals(other.names.names) && this.members.equals(other.members);
     }
 
+    expandForEquality(other: Type): [Type, Type][] | boolean {
+        if (!(other instanceof UnionType)) return false;
+        if (!this.names.names.equals(other.names.names)) return false;
+        if (this.members.size !== other.members.size) return false;
+        if (this.members.size === 0) return true;
+        const otherByKind: { [kind: string]: Type } = {};
+        other.members.forEach(t => {
+            otherByKind[t.kind] = t;
+        });
+        const queue: [Type, Type][] = [];
+        this.members.forEach(t => {
+            const otherT = otherByKind[t.kind];
+            if (!otherT) return false;
+            queue.push([t, otherT]);
+        });
+        if (queue.length !== this.members.size) return false;
+        return queue;
+    }
+
+    flatHashCode(): number {
+        return (stringHash(this.kind) + this.names.names.hashCode() + this.members.size) | 0;
+    }
+
     hashCode(): number {
-        return (stringHash(this.kind) + this.names.names.hashCode() + this.members.hashCode()) | 0;
+        let hash = this.flatHashCode();
+        this.members.forEach(t => {
+            hash = (hash + t.flatHashCode()) | 0;
+        });
+        return hash;
+    }
+}
+
+function typesEqual(t1: Type, t2: any): boolean {
+    if (t1 === t2) return true;
+    let queueOrResult = t1.expandForEquality(t2);
+    if (typeof queueOrResult === "boolean") return queueOrResult;
+    let queue = queueOrResult;
+    const alreadySeenByHash: { [hash: string]: [Type, Type][] } = {};
+    function alreadySeen(types: [Type, Type]): boolean {
+        const hash = types[0].hashCode().toString();
+        let pairs = alreadySeenByHash[hash];
+        if (pairs) {
+            for (const [o1, o2] of pairs) {
+                if (o1 === types[0] && o2 === types[1]) return true;
+            }
+        } else {
+            alreadySeenByHash[hash] = pairs = [];
+        }
+        pairs.push(types);
+        return false;
+    }
+    for (;;) {
+        const maybePair = queue.pop();
+        if (!maybePair) return true;
+        [t1, t2] = maybePair;
+        if (t1 === t2) continue;
+        if (alreadySeen(maybePair)) continue;
+        queueOrResult = t1.expandForEquality(t2);
+        if (typeof queueOrResult === "boolean") {
+            if (!queueOrResult) return false;
+            continue;
+        }
+        for (const p of queueOrResult) {
+            queue.push(p);
+        }
     }
 }
 
@@ -250,11 +332,7 @@ export function allNamedTypes(
     graph: TopLevels,
     childrenOfType?: (t: Type) => Collection<any, Type>
 ): OrderedSet<NamedType> {
-    return filterTypes<NamedType>(
-        (t: Type): t is NamedType => t.isNamedType(),
-        graph,
-        childrenOfType
-    );
+    return filterTypes<NamedType>((t: Type): t is NamedType => t.isNamedType(), graph, childrenOfType);
 }
 
 export type SeparatedNamedTypes = {
@@ -264,15 +342,9 @@ export type SeparatedNamedTypes = {
 };
 
 export function separateNamedTypes(types: Collection<any, NamedType>): SeparatedNamedTypes {
-    const classes = types
-        .filter((t: NamedType) => t instanceof ClassType)
-        .toOrderedSet() as OrderedSet<ClassType>;
-    const enums = types
-        .filter((t: NamedType) => t instanceof EnumType)
-        .toOrderedSet() as OrderedSet<EnumType>;
-    const unions = types
-        .filter((t: NamedType) => t instanceof UnionType)
-        .toOrderedSet() as OrderedSet<UnionType>;
+    const classes = types.filter((t: NamedType) => t instanceof ClassType).toOrderedSet() as OrderedSet<ClassType>;
+    const enums = types.filter((t: NamedType) => t instanceof EnumType).toOrderedSet() as OrderedSet<EnumType>;
+    const unions = types.filter((t: NamedType) => t instanceof UnionType).toOrderedSet() as OrderedSet<UnionType>;
 
     return { classes, enums, unions };
 }
