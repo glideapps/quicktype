@@ -31,6 +31,7 @@ import {
     isDigit,
     utf32ConcatMap,
     escapeNonPrintableMapper,
+    isPrintable,
     intToHex,
     defined,
     decapitalize
@@ -179,7 +180,7 @@ function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
 }
 
-const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(unicodeEscape));
+const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
 const upperNamingFunction = funPrefixNamer(s => swiftNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer(s => swiftNameStyle(false, s));

@@ -11,6 +11,7 @@ import * as Renderers from "Language.Renderers";
 import CSharpTargetLanguage from "./CSharp";
 import GoTargetLanguage from "./Golang";
 import CPlusPlusTargetLanguage from "./CPlusPlus";
+import JavaTargetLanguage from "./Java";
 import SimpleTypesTargetLanguage from "./SimpleTypes";
 import TypeScriptTargetLanguage from "./TypeScript";
 import Swift4TargetLanguage from "./Swift";
@@ -34,9 +35,7 @@ class SwiftTargetLanguage extends TargetLanguage {
         const optionDefinitions = [versionOption.definition].concat(swift4.optionDefinitions);
         super("Swift", ["swift"], "swift", optionDefinitions);
         this._versionOption = versionOption;
-        this._swift3 = new PureScriptTargetLanguage(
-            fromJust(Renderers.rendererForLanguage("swift3"))
-        );
+        this._swift3 = new PureScriptTargetLanguage(fromJust(Renderers.rendererForLanguage("swift3")));
         this._swift4 = swift4;
     }
 
@@ -57,6 +56,7 @@ const typeScriptTargetLanguages: TargetLanguage[] = [
     new CSharpTargetLanguage(),
     new GoTargetLanguage(),
     new CPlusPlusTargetLanguage(),
+    new JavaTargetLanguage(),
     new TypeScriptTargetLanguage(),
     new SwiftTargetLanguage(),
     new SimpleTypesTargetLanguage()

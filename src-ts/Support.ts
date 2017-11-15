@@ -102,9 +102,7 @@ export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: strin
     };
 }
 
-export function utf16LegalizeCharacters(
-    isLegal: (utf16Unit: number) => boolean
-): (s: string) => string {
+export function utf16LegalizeCharacters(isLegal: (utf16Unit: number) => boolean): (s: string) => string {
     return utf16ConcatMap(u => (isLegal(u) ? String.fromCharCode(u) : "_"));
 }
 
@@ -127,6 +125,7 @@ export function standardUnicodeHexEscape(codePoint: number): string {
 }
 
 export function escapeNonPrintableMapper(
+    printablePredicate: (codePoint: number) => boolean,
     escaper: (codePoint: number) => string
 ): (u: number) => string {
     function mapper(u: number): string {
@@ -140,7 +139,7 @@ export function escapeNonPrintableMapper(
             case 0x09:
                 return "\\t";
             default:
-                if (isPrintable(u)) {
+                if (printablePredicate(u)) {
                     return String.fromCharCode(u);
                 }
                 return escaper(u);
@@ -149,10 +148,10 @@ export function escapeNonPrintableMapper(
     return mapper;
 }
 
-export const utf16StringEscape = utf16ConcatMap(escapeNonPrintableMapper(standardUnicodeHexEscape));
-export const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(standardUnicodeHexEscape));
+export const utf16StringEscape = utf16ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeHexEscape));
+export const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeHexEscape));
 
-function isPrintable(codePoint: number): boolean {
+export function isPrintable(codePoint: number): boolean {
     if (codePoint > 0xffff) return false;
     const category = unicode.getCategory(codePoint);
     return (
