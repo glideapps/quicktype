@@ -9,5 +9,7 @@ export interface Config {
   language: string;
   topLevels: TopLevelConfig[];
   inferMaps: boolean;
+  combineClasses: boolean;
+  doRender: boolean;
   rendererOptions: { [name: string]: any };
 }

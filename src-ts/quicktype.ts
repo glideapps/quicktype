@@ -74,9 +74,19 @@ const optionDefinitions: OptionDefinition[] = [
         description: "Tracery grammar describing URLs to crawl."
     },
     {
+        name: "no-combine-classes",
+        type: Boolean,
+        description: "Don't combine similar classes."
+    },
+    {
         name: "no-maps",
         type: Boolean,
         description: "Don't infer maps, always use classes."
+    },
+    {
+        name: "no-render",
+        type: Boolean,
+        description: "Don't render output."
     },
     {
         name: "quiet",
@@ -95,6 +105,7 @@ interface UsageSection {
     header?: string;
     content?: string | string[];
     optionList?: OptionDefinition[];
+    hide?: string[];
 }
 
 const sectionsBeforeRenderers: UsageSection[] = [
@@ -108,7 +119,8 @@ const sectionsBeforeRenderers: UsageSection[] = [
     },
     {
         header: "Options",
-        optionList: optionDefinitions
+        optionList: optionDefinitions,
+        hide: ["no-render"]
     }
 ];
 const sectionsAfterRenderers: UsageSection[] = [
@@ -175,6 +187,8 @@ export interface Options {
     srcUrls?: string;
     out?: string;
     noMaps?: boolean;
+    noCombineClasses?: boolean;
+    noRender?: boolean;
     help?: boolean;
     quiet?: boolean;
     rendererOptions: RendererOptions;
@@ -188,6 +202,8 @@ interface CompleteOptions {
     srcUrls?: string;
     out?: string;
     noMaps: boolean;
+    noCombineClasses: boolean;
+    noRender: boolean;
     help: boolean;
     quiet: boolean;
     rendererOptions: RendererOptions;
@@ -245,6 +261,8 @@ class Run {
                 }
             }),
             inferMaps: !this.options.noMaps,
+            combineClasses: !this.options.noCombineClasses,
+            doRender: !this.options.noRender,
             rendererOptions: this.options.rendererOptions
         };
 
@@ -461,11 +479,7 @@ class Run {
     // Parse the options in argv and split them into global options and renderer options,
     // according to each option definition's `renderer` field.  If `partial` is false this
     // will throw if it encounters an unknown option.
-    parseOptions = (
-        definitions: OptionDefinition[],
-        argv: string[],
-        partial: boolean
-    ): CompleteOptions => {
+    parseOptions = (definitions: OptionDefinition[], argv: string[], partial: boolean): CompleteOptions => {
         const opts: { [key: string]: any } = commandLineArgs(definitions, {
             argv,
             partial: partial
@@ -495,6 +509,8 @@ class Run {
             lang: opts.lang || this.inferLang(opts),
             topLevel: opts.topLevel || this.inferTopLevel(opts),
             noMaps: !!opts.noMaps,
+            noCombineClasses: !!opts.noCombineClasses,
+            noRender: !!opts.noRender,
             help: !!opts.help,
             quiet: !!opts.quiet,
             ...opts
