@@ -18,6 +18,7 @@ import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
+import { defined } from "./Support";
 
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
@@ -334,10 +335,11 @@ class Run {
             let source = makeSource();
             let assembler = new Assembler();
 
-            let assemble = chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value);
-            let isInt = intString => /^\d+$/.test(intString);
+            let assemble = (chunk: { name: string; value?: string }) =>
+                assembler[chunk.name] && assembler[chunk.name](chunk.value);
+            let isInt = (intString: string) => /^\d+$/.test(intString);
 
-            let intSentinelChunks = intString => [
+            let intSentinelChunks = (intString: string) => [
                 { name: "startObject" },
                 { name: "startKey" },
                 { name: "stringChunk", value: Main.intSentinel },
@@ -352,7 +354,7 @@ class Run {
 
             // FIXME: this is all completely untyped
             let queue: any[] = [];
-            source.output.on("data", chunk => {
+            source.output.on("data", (chunk: { name: string; value?: string }) => {
                 switch (chunk.name) {
                     case "startNumber":
                     case "numberChunk":
@@ -362,8 +364,8 @@ class Run {
                         break;
                     case "numberValue":
                         queue.push(chunk);
-                        if (isInt(chunk.value)) {
-                            intSentinelChunks(chunk.value).forEach(assemble);
+                        if (isInt(defined(chunk.value))) {
+                            intSentinelChunks(defined(chunk.value)).forEach(assemble);
                         } else {
                             queue.forEach(assemble);
                         }
@@ -382,8 +384,8 @@ class Run {
         });
     };
 
-    mapValues = async (obj: object, f: (val: any) => Promise<any>): Promise<any> => {
-        let result = {};
+    mapValues = async (obj: { [key: string]: any }, f: (val: any) => Promise<any>): Promise<{ [key: string]: any }> => {
+        let result: { [key: string]: any } = {};
         for (let key of Object.keys(obj)) {
             result[key] = await f(obj[key]);
         }
@@ -484,7 +486,7 @@ class Run {
             argv,
             partial: partial
         });
-        const options: Options = { rendererOptions: {} };
+        const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
         definitions.forEach(o => {
             if (!(o.name in opts)) return;
             const v = opts[o.name];
