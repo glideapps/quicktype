@@ -7,6 +7,8 @@ module Config
     , topLevelSchemas
     , rendererOptions
     , inferMaps
+    , combineClasses
+    , doRender
     , renderer
     ) where
 
@@ -42,6 +44,8 @@ newtype Config = Config
     { topLevels :: Array TopLevelConfig
     , language :: String
     , inferMaps :: Boolean
+    , combineClasses :: Boolean
+    , doRender :: Boolean
     , rendererOptions :: StrMap Json
     }
 
@@ -74,12 +78,16 @@ instance decodeConfig :: DecodeJson Config where
         topLevels <- obj .? "topLevels"
         language <- obj .? "language"
         maybeInferMaps <- obj .?? "inferMaps"
+        maybeCombineClasses <- obj .?? "combineClasses"
+        maybeDoRender <- obj .?? "doRender"
         maybeOptions <- obj .?? "rendererOptions"
         pure $ Config
             { topLevels
             -- TODO derive from outFile
             , language
             , inferMaps: maybe true id maybeInferMaps
+            , combineClasses: maybe true id maybeCombineClasses
+            , doRender: maybe true id maybeDoRender
             , rendererOptions: maybe SM.empty id maybeOptions
             }
 
@@ -123,3 +131,9 @@ rendererOptions (Config { rendererOptions }) = SM.mapWithKey (\_ j -> unsafePart
 
 inferMaps :: Config -> Boolean
 inferMaps (Config { inferMaps }) = inferMaps
+
+combineClasses :: Config -> Boolean
+combineClasses (Config { combineClasses }) = combineClasses
+
+doRender :: Config -> Boolean
+doRender (Config { doRender }) = doRender

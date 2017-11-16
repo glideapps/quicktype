@@ -32,6 +32,9 @@ export abstract class TypeScriptTargetLanguage extends TargetLanguage {
         if (Either.isLeft(glueGraphOrError)) {
             throw `Error processing JSON: ${fromLeft(glueGraphOrError)}`;
         }
+        if (!config.doRender) {
+            return { lines: ["Done.", ""], annotations: List() };
+        }
         const glueGraph = fromRight(glueGraphOrError);
         const graph = glueGraphToNative(glueGraph);
         const renderResult = this.renderGraph(graph, config.rendererOptions);

@@ -36,7 +36,7 @@ graphFromConfig config = do
 
     graph <- normalizeGraphOrder <$> execIR do
         makeTypes samples
-        T.replaceSimilarClasses
+        if Config.combineClasses config then T.replaceSimilarClasses else pure unit
         if Config.inferMaps config then T.makeMaps else pure unit
         modify regatherClassNames
 
@@ -61,11 +61,15 @@ main :: Json -> Either Error SourceCode
 main json = do
     config <- Config.parseConfig json
     graph <- graphFromConfig config
-    renderer <- Config.renderer config
-    failOnEnum graph (renderer.displayName)
-    let optionStrings = Config.rendererOptions config
-    let optionValues = makeOptionValues renderer.options optionStrings
-    pure $ Doc.runRenderer renderer graph optionValues
+    if Config.doRender config then
+        do
+            renderer <- Config.renderer config
+            failOnEnum graph (renderer.displayName)
+            let optionStrings = Config.rendererOptions config
+            let optionValues = makeOptionValues renderer.options optionStrings
+            pure $ Doc.runRenderer renderer graph optionValues
+        else
+            pure "Done."
 
 glueGraphFromJsonConfig :: Json -> Either Error GlueGraph
 glueGraphFromJsonConfig json = do
