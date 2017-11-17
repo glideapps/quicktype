@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as process from "process";
+import * as stream from "stream";
+import * as getStream from "get-stream";
 
 import * as Maybe from "Data.Maybe";
 
@@ -10,15 +12,16 @@ import { fromRight } from "./purescript";
 import * as _ from "lodash";
 
 import * as Main from "Main";
-import { Config } from "Config";
+import { Config, TopLevelConfig } from "Config";
 import * as Renderers from "Language.Renderers";
 import { ErrorMessage, SourceCode } from "Core";
 import * as targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
-import { TargetLanguage } from "./TargetLanguage";
+import { TargetLanguage, PureScriptTargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
 import { defined } from "./Support";
+import { CompressedJSON, Value } from "./CompressedJSON";
 
 const makeSource = require("stream-json");
 const Assembler = require("stream-json/utils/Assembler");
@@ -83,6 +86,11 @@ const optionDefinitions: OptionDefinition[] = [
         name: "no-maps",
         type: Boolean,
         description: "Don't infer maps, always use classes."
+    },
+    {
+        name: "no-enums",
+        type: Boolean,
+        description: "Don't infer enums, always use strings."
     },
     {
         name: "no-render",
@@ -188,6 +196,7 @@ export interface Options {
     srcUrls?: string;
     out?: string;
     noMaps?: boolean;
+    noEnums?: boolean;
     noCombineClasses?: boolean;
     noRender?: boolean;
     help?: boolean;
@@ -203,6 +212,7 @@ interface CompleteOptions {
     srcUrls?: string;
     out?: string;
     noMaps: boolean;
+    noEnums: boolean;
     noCombineClasses: boolean;
     noRender: boolean;
     help: boolean;
@@ -210,12 +220,15 @@ interface CompleteOptions {
     rendererOptions: RendererOptions;
 }
 
-interface SampleOrSchemaMap {
-    [key: string]: object[];
-}
+type SampleOrSchemaMap = {
+    samples: { [name: string]: any[] };
+    schemas: { [name: string]: any };
+};
 
 class Run {
-    options: CompleteOptions;
+    private _options: CompleteOptions;
+    private _compressedJSON: CompressedJSON;
+    private _allSamples: SampleOrSchemaMap;
 
     constructor(argv: string[] | Options) {
         if (_.isArray(argv)) {
@@ -229,7 +242,7 @@ class Run {
             const allOptionDefinitions = _.concat(optionDefinitions, rendererOptionDefinitions);
             try {
                 // This is the parse that counts:
-                this.options = this.parseOptions(allOptionDefinitions, argv, false);
+                this._options = this.parseOptions(allOptionDefinitions, argv, false);
             } catch (error) {
                 if (error.name === "UNKNOWN_OPTION") {
                     console.error("Error: Unknown option");
@@ -239,32 +252,49 @@ class Run {
                 throw error;
             }
         } else {
-            this.options = this.inferOptions(argv);
+            this._options = this.inferOptions(argv);
         }
+        this._compressedJSON = new CompressedJSON();
+        this._allSamples = { samples: {}, schemas: {} };
     }
 
     getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
         return getTargetLanguage(opts.lang).optionDefinitions;
     };
 
-    renderSamplesOrSchemas = (samplesOrSchemas: SampleOrSchemaMap): SerializedRenderResult => {
-        const areSchemas = this.options.srcLang === "schema";
-        const targetLanguage = getTargetLanguage(this.options.lang);
+    get isInputJSONSchema(): boolean {
+        return this._options.srcLang === "schema";
+    }
 
+    get needCompressedJSONInput(): boolean {
+        if (this.isInputJSONSchema) {
+            return false;
+        }
+        const lang = getTargetLanguage(this._options.lang);
+        return lang.needsCompressedJSONInput(this._options.rendererOptions);
+    }
+
+    renderSamplesOrSchemas = (): SerializedRenderResult => {
+        const targetLanguage = getTargetLanguage(this._options.lang);
+
+        let topLevels: TopLevelConfig[];
+        if (this.isInputJSONSchema) {
+            const names = Object.getOwnPropertyNames(this._allSamples.schemas);
+            topLevels = names.map(name => ({ name, schema: this._allSamples.schemas[name] }));
+        } else {
+            const names = Object.getOwnPropertyNames(this._allSamples.samples);
+            topLevels = names.map(name => ({ name, samples: this._allSamples.samples[name] }));
+        }
         let config: Config = {
             language: targetLanguage.names[0],
-            topLevels: Object.getOwnPropertyNames(samplesOrSchemas).map(name => {
-                if (areSchemas) {
-                    // Only one schema per top-level is used right now
-                    return { name, schema: samplesOrSchemas[name][0] };
-                } else {
-                    return { name, samples: samplesOrSchemas[name] };
-                }
-            }),
-            inferMaps: !this.options.noMaps,
-            combineClasses: !this.options.noCombineClasses,
-            doRender: !this.options.noRender,
-            rendererOptions: this.options.rendererOptions
+            isInputJSONSchema: this.isInputJSONSchema,
+            topLevels,
+            compressedJSON: this._compressedJSON,
+            inferMaps: !this._options.noMaps,
+            inferEnums: !this._options.noEnums,
+            combineClasses: !this._options.noCombineClasses,
+            doRender: !this._options.noRender,
+            rendererOptions: this._options.rendererOptions
         };
 
         try {
@@ -305,19 +335,19 @@ class Run {
         writeFile();
     };
 
-    render = (samplesOrSchemas: SampleOrSchemaMap) => {
-        const { lines, annotations } = this.renderSamplesOrSchemas(samplesOrSchemas);
+    render = () => {
+        const { lines, annotations } = this.renderSamplesOrSchemas();
         const output = lines.join("\n");
-        if (this.options.out) {
-            if (this.options.lang === "java") {
-                this.splitAndWriteJava(path.dirname(this.options.out), output);
+        if (this._options.out) {
+            if (this._options.lang === "java") {
+                this.splitAndWriteJava(path.dirname(this._options.out), output);
             } else {
-                fs.writeFileSync(this.options.out, output);
+                fs.writeFileSync(this._options.out, output);
             }
         } else {
             process.stdout.write(output);
         }
-        if (this.options.quiet) {
+        if (this._options.quiet) {
             return;
         }
         annotations.forEach((sa: Annotation) => {
@@ -330,81 +360,54 @@ class Run {
         });
     };
 
-    parseJsonFromStream = (stream: fs.ReadStream | NodeJS.Socket): Promise<object> => {
-        return new Promise<object>(resolve => {
-            let source = makeSource();
-            let assembler = new Assembler();
-
-            let assemble = (chunk: { name: string; value?: string }) =>
-                assembler[chunk.name] && assembler[chunk.name](chunk.value);
-            let isInt = (intString: string) => /^\d+$/.test(intString);
-
-            let intSentinelChunks = (intString: string) => [
-                { name: "startObject" },
-                { name: "startKey" },
-                { name: "stringChunk", value: Main.intSentinel },
-                { name: "endKey" },
-                { name: "keyValue", value: Main.intSentinel },
-                { name: "startNumber" },
-                { name: "numberChunk", value: intString },
-                { name: "endNumber" },
-                { name: "numberValue", value: intString },
-                { name: "endObject" }
-            ];
-
-            // FIXME: this is all completely untyped
-            let queue: any[] = [];
-            source.output.on("data", (chunk: { name: string; value?: string }) => {
-                switch (chunk.name) {
-                    case "startNumber":
-                    case "numberChunk":
-                    case "endNumber":
-                        // We queue number chunks until we decide if they are int
-                        queue.push(chunk);
-                        break;
-                    case "numberValue":
-                        queue.push(chunk);
-                        if (isInt(defined(chunk.value))) {
-                            intSentinelChunks(defined(chunk.value)).forEach(assemble);
-                        } else {
-                            queue.forEach(assemble);
-                        }
-                        queue = [];
-                        break;
-                    default:
-                        assemble(chunk);
-                }
-            });
-
-            source.output.on("end", () => resolve(assembler.current));
-
-            stream.setEncoding("utf8");
-            stream.pipe(source.input);
-            stream.resume();
-        });
-    };
-
-    mapValues = async (obj: { [key: string]: any }, f: (val: any) => Promise<any>): Promise<{ [key: string]: any }> => {
-        let result: { [key: string]: any } = {};
-        for (let key of Object.keys(obj)) {
-            result[key] = await f(obj[key]);
+    readSampleFromStream = async (name: string, readStream: stream.Readable): Promise<void> => {
+        let input: any;
+        if (this.needCompressedJSONInput) {
+            input = await this._compressedJSON.readFromStream(readStream);
+        } else {
+            input = JSON.parse(await getStream(readStream));
         }
-        return result;
+        if (this.isInputJSONSchema) {
+            if (Object.prototype.hasOwnProperty.call(this._allSamples.schemas, name)) {
+                console.error(`Error: More than one schema given for top-level ${name}.`);
+                return process.exit(1);
+            }
+            this._allSamples.schemas[name] = input;
+        } else {
+            if (!Object.prototype.hasOwnProperty.call(this._allSamples.samples, name)) {
+                this._allSamples.samples[name] = [];
+            }
+            this._allSamples.samples[name].push(input);
+        }
     };
 
-    readNamedSamplesFromDirectory = async (dataDir: string): Promise<SampleOrSchemaMap> => {
-        const readFilesOrURLsInDirectory = async (d: string): Promise<SampleOrSchemaMap> => {
-            let samples: SampleOrSchemaMap = {};
+    readSampleFromFileOrUrl = async (name: string, fileOrUrl: string): Promise<void> => {
+        if (fs.existsSync(fileOrUrl)) {
+            await this.readSampleFromStream(name, fs.createReadStream(fileOrUrl));
+        } else {
+            const res = await fetch(fileOrUrl);
+            await this.readSampleFromStream(name, res.body);
+        }
+    };
+
+    readSampleFromFileOrUrlArray = async (name: string, filesOrUrls: string[]): Promise<void> => {
+        for (const fileOrUrl of filesOrUrls) {
+            await this.readSampleFromFileOrUrl(name, fileOrUrl);
+        }
+    };
+
+    readNamedSamplesFromDirectory = async (dataDir: string): Promise<void> => {
+        const readFilesOrURLsInDirectory = async (d: string, sampleName?: string): Promise<void> => {
             const files = fs
                 .readdirSync(d)
                 .map(x => path.join(d, x))
                 .filter(x => fs.lstatSync(x).isFile());
             // Each file is a (Name, JSON | URL)
             for (const file of files) {
-                const sampleName = (() => {
-                    let name = path.basename(file);
-                    return name.substr(0, name.lastIndexOf("."));
-                })();
+                if (sampleName === undefined) {
+                    const name = path.basename(file);
+                    sampleName = name.substr(0, name.lastIndexOf("."));
+                }
 
                 let fileOrUrl = file;
                 // If file is a URL string, download it
@@ -412,70 +415,48 @@ class Run {
                     fileOrUrl = fs.readFileSync(file, "utf8").trim();
                 }
 
-                const sample = await this.parseFileOrUrl(fileOrUrl);
-                samples[sampleName] = [sample];
+                await this.readSampleFromFileOrUrl(sampleName, fileOrUrl);
             }
-            return samples;
         };
 
         const contents = fs.readdirSync(dataDir).map(x => path.join(dataDir, x));
         const directories = contents.filter(x => fs.lstatSync(x).isDirectory());
 
-        let allSamples = await readFilesOrURLsInDirectory(dataDir);
+        await readFilesOrURLsInDirectory(dataDir);
         for (const dir of directories) {
             const sampleName = path.basename(dir);
-            const samples = await readFilesOrURLsInDirectory(dir);
-            allSamples[sampleName] = _(samples)
-                .values()
-                .flatten()
-                .value();
+            await readFilesOrURLsInDirectory(dir, sampleName);
         }
-
-        return allSamples;
-    };
-
-    parseFileOrUrl = async (fileOrUrl: string): Promise<object> => {
-        if (fs.existsSync(fileOrUrl)) {
-            return this.parseJsonFromStream(fs.createReadStream(fileOrUrl));
-        } else {
-            let res = await fetch(fileOrUrl);
-            return this.parseJsonFromStream(res.body);
-        }
-    };
-
-    parseFileOrUrlArray = (filesOrUrls: string[]): Promise<object[]> => {
-        return Promise.all(filesOrUrls.map(this.parseFileOrUrl));
     };
 
     main = async () => {
-        if (this.options.help) {
+        if (this._options.help) {
             usage();
-        } else if (this.options.srcUrls) {
-            let json = JSON.parse(fs.readFileSync(this.options.srcUrls, "utf8"));
+            return;
+        } else if (this._options.srcUrls) {
+            let json = JSON.parse(fs.readFileSync(this._options.srcUrls, "utf8"));
             let jsonMap = fromRight(Main.urlsFromJsonGrammar(json));
-            this.render(await this.mapValues(jsonMap, this.parseFileOrUrlArray));
-        } else if (this.options.src.length === 0) {
-            let samples: SampleOrSchemaMap = {};
-            samples[this.options.topLevel] = [await this.parseJsonFromStream(process.stdin)];
-            this.render(samples);
+            for (let key of Object.keys(jsonMap)) {
+                await this.readSampleFromFileOrUrlArray(key, jsonMap[key]);
+            }
+        } else if (this._options.src.length === 0) {
+            // FIXME: Why do we have to convert to any here?
+            await this.readSampleFromStream(this._options.topLevel, process.stdin as any);
         } else {
-            let samples: SampleOrSchemaMap = {};
-            const exists = this.options.src.filter(fs.existsSync);
+            const exists = this._options.src.filter(fs.existsSync);
             const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
 
             for (const dataDir of directories) {
-                const moreSamples = await this.readNamedSamplesFromDirectory(dataDir);
-                samples = _.merge(samples, moreSamples);
+                await this.readNamedSamplesFromDirectory(dataDir);
             }
 
             // Every src that's not a directory is assumed to be a file or URL
-            const filesOrUrls = this.options.src.filter(x => !_.includes(directories, x));
+            const filesOrUrls = this._options.src.filter(x => !_.includes(directories, x));
             if (!_.isEmpty(filesOrUrls)) {
-                samples[this.options.topLevel] = await this.parseFileOrUrlArray(filesOrUrls);
+                await this.readSampleFromFileOrUrlArray(this._options.topLevel, filesOrUrls);
             }
-
-            this.render(samples);
         }
+        this.render();
     };
 
     // Parse the options in argv and split them into global options and renderer options,
@@ -511,6 +492,7 @@ class Run {
             lang: opts.lang || this.inferLang(opts),
             topLevel: opts.topLevel || this.inferTopLevel(opts),
             noMaps: !!opts.noMaps,
+            noEnums: !!opts.noEnums,
             noCombineClasses: !!opts.noCombineClasses,
             noRender: !!opts.noRender,
             help: !!opts.help,

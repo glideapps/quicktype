@@ -44,6 +44,10 @@ export default class L extends TypeScriptTargetLanguage {
         ]);
     }
 
+    protected get supportsEnums(): boolean {
+        return false;
+    }
+
     renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
         return new TypeScriptRenderer(
             topLevels,

@@ -123,7 +123,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private addNamedForNamedType = (type: NamedType): Name => {
         const existing = this._namesForNamedTypes.get(type);
         if (existing !== undefined) return existing;
-        const name = type.names.combined;
+        const name = type.combinedName;
         const named = this.globalNamespace.add(new SimpleName(name, this.namedTypeNamer));
 
         this.addDependenciesForNamedType(type, named);
@@ -139,7 +139,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
 
         const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForProperties(c, classNamed);
-        const ns = new Namespace(c.names.combined, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
+        const ns = new Namespace(c.combinedName, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
         const names = c.properties
             .map((t: Type, name: string) => {
                 return ns.add(new SimpleName(name, propertyNamer));
@@ -160,7 +160,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (this.casesInGlobalNamespace) {
             ns = this.globalNamespace;
         } else {
-            ns = new Namespace(e.names.combined, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
+            ns = new Namespace(e.combinedName, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
         }
         let names = Map<string, Name>();
         e.cases.forEach((name: string) => {

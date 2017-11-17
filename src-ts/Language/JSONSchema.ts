@@ -98,7 +98,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
                 required.push(name);
             }
         });
-        return { type: "object", additionalProperties: false, properties, required, title: c.names.combined };
+        return { type: "object", additionalProperties: false, properties, required, title: c.combinedName };
     };
 
     protected emitSourceStructure(): void {
