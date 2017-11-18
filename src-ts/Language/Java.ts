@@ -31,7 +31,8 @@ import {
     isLetter,
     isDigit,
     capitalize,
-    nonNull
+    nonNull,
+    assert
 } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { TypeKind } from "Reykjavik";
@@ -207,9 +208,7 @@ class JavaRenderer extends ConvenienceRenderer {
             }
             return null;
         });
-        if (definedTypes.size > 1) {
-            throw "Cannot have more than one defined type per top-level";
-        }
+        assert(definedTypes.size <= 1, "Cannot have more than one defined type per top-level");
 
         // If the top-level type doesn't contain any classes or unions
         // we have to define a class just for the `FromJson` method, in

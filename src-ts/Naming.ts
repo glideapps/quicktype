@@ -4,7 +4,7 @@ import { Set, OrderedSet, List, Map, Collection, Range } from "immutable";
 import stringHash = require("string-hash");
 
 import { Renderer } from "./Renderer";
-import { decapitalize, defined, nonNull } from "./Support";
+import { decapitalize, defined, nonNull, assert, panic } from "./Support";
 
 export class Namespace {
     private readonly _name: string;
@@ -97,9 +97,7 @@ export class Namer {
         forbiddenNames: Set<string>,
         namesToAssign: Collection<any, Name>
     ): Map<Name, string> {
-        if (namesToAssign.isEmpty()) {
-            throw "Number of names can't be less than 1";
-        }
+        assert(!namesToAssign.isEmpty(), "Number of names can't be less than 1");
 
         if (namesToAssign.count() === 1) {
             const name = defined(namesToAssign.first());
@@ -255,10 +253,7 @@ export class SimpleName extends Name {
 }
 
 export class AssociatedName extends Name {
-    constructor(
-        private readonly _sponsor: Name,
-        readonly getName: (sponsorName: string) => string
-    ) {
+    constructor(private readonly _sponsor: Name, readonly getName: (sponsorName: string) => string) {
         super(null);
     }
 
@@ -266,8 +261,8 @@ export class AssociatedName extends Name {
         return List([this._sponsor]);
     }
 
-    proposeUnstyledName(names?: Map<Name, string>): string {
-        throw "AssociatedName must be assigned via its sponsor";
+    proposeUnstyledName(names?: Map<Name, string>): never {
+        return panic("AssociatedName must be assigned via its sponsor");
     }
 }
 
@@ -310,9 +305,7 @@ export function keywordNamespace(name: string, keywords: string[]) {
 }
 
 function allNamespacesRecursively(namespaces: OrderedSet<Namespace>): OrderedSet<Namespace> {
-    return namespaces.union(
-        ...namespaces.map((ns: Namespace) => allNamespacesRecursively(ns.children)).toArray()
-    );
+    return namespaces.union(...namespaces.map((ns: Namespace) => allNamespacesRecursively(ns.children)).toArray());
 }
 
 class NamingContext {
@@ -349,12 +342,8 @@ class NamingContext {
     };
 
     assign = (named: Name, namedNamespace: Namespace, name: string): void => {
-        if (this.names.has(named)) {
-            throw "Named assigned twice";
-        }
-        if (this.isConflicting(named, namedNamespace, name)) {
-            throw "Assigned name conflicts";
-        }
+        assert(!this.names.has(named), "Named assigned twice");
+        assert(!this.isConflicting(named, namedNamespace, name), "Assigned name conflicts");
         this.names = this.names.set(named, name);
         let namedsForName = this._namedsForName.get(name);
         if (namedsForName === undefined) {
@@ -384,9 +373,7 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
         //    cycle.
 
         const unfinishedNamespaces = ctx.namespaces.filter(ctx.areForbiddensFullyNamed);
-        const readyNamespace = unfinishedNamespaces.find((ns: Namespace) =>
-            ns.members.some(ctx.isReadyToBeNamed)
-        );
+        const readyNamespace = unfinishedNamespaces.find((ns: Namespace) => ns.members.some(ctx.isReadyToBeNamed));
 
         if (!readyNamespace) {
             // FIXME: Check for cycles?
@@ -415,9 +402,7 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
                 // 3. Use each set's naming function to name its members.
 
                 const names = namer.name(ctx.names, forbiddenNames, nameds);
-                names.forEach((assigned: string, name: Name) =>
-                    ctx.assign(name, readyNamespace, assigned)
-                );
+                names.forEach((assigned: string, name: Name) => ctx.assign(name, readyNamespace, assigned));
                 forbiddenNames = forbiddenNames.union(names.toSet());
             });
         });

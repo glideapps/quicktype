@@ -12,7 +12,15 @@ import {
     matchType
 } from "../Type";
 
-import { utf16LegalizeCharacters, pascalCase, camelCase, startWithLetter, stringEscape, intercalate } from "../Support";
+import {
+    utf16LegalizeCharacters,
+    pascalCase,
+    camelCase,
+    startWithLetter,
+    stringEscape,
+    intercalate,
+    panic
+} from "../Support";
 
 import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";
@@ -79,7 +87,7 @@ function propertyNameStyle(original: string): string {
 }
 
 function noEnums(): never {
-    throw "Error: Enums are not supported in TypeScript yet.";
+    return panic("Error: Enums are not supported in TypeScript yet.");
 }
 
 class TypeScriptRenderer extends ConvenienceRenderer {

@@ -3,7 +3,7 @@
 import { OrderedSet, Map, Set, Collection, List } from "immutable";
 import stringHash = require("string-hash");
 import { TypeKind, PrimitiveTypeKind, NamedTypeKind } from "Reykjavik";
-import { defined } from "./Support";
+import { defined, panic } from "./Support";
 
 export type TypeNames = {
     names: Set<string>;
@@ -128,14 +128,14 @@ export class ClassType extends NamedType {
 
     setProperties(properties: Map<string, Type>): void {
         if (this._properties !== undefined) {
-            throw "Can only set class properties once";
+            return panic("Can only set class properties once");
         }
         this._properties = properties;
     }
 
     get properties(): Map<string, Type> {
         if (this._properties === undefined) {
-            throw "Class properties accessed before they were set";
+            return panic("Class properties accessed before they were set");
         }
         return this._properties;
     }
@@ -381,11 +381,11 @@ export function matchType<U>(
             string: stringType
         }[t.kind];
         if (f) return f(t);
-        throw `Unknown PrimitiveType: ${t.kind}`;
+        return panic(`Unknown PrimitiveType: ${t.kind}`);
     } else if (t instanceof ArrayType) return arrayType(t);
     else if (t instanceof ClassType) return classType(t);
     else if (t instanceof MapType) return mapType(t);
     else if (t instanceof EnumType) return enumType(t);
     else if (t instanceof UnionType) return unionType(t);
-    throw "Unknown Type";
+    return panic("Unknown Type");
 }
