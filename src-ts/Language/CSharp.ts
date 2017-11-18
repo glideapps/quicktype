@@ -571,7 +571,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                 this.emitNewline();
                 this.emitSerializeClass();
             }
-            if (this._needHelpers || this.haveEnums || (this._needAttributes && this.haveNamedUnions)) {
+            if (this._needHelpers || (this._needAttributes && (this.haveNamedUnions || this.haveEnums))) {
                 this.emitNewline();
                 this.emitConverterClass();
             }
