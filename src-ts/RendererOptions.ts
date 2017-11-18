@@ -1,5 +1,7 @@
 "use strict";
 
+import { panic } from "./Support";
+
 export interface OptionDefinition {
     name: string;
     type: StringConstructor | BooleanConstructor;
@@ -84,7 +86,7 @@ export class EnumOption<T> extends Option<T> {
         }
         const value = this._values[name];
         if (value === undefined) {
-            throw "Unknown option value.";
+            return panic("Unknown option value.");
         }
         return value;
     }

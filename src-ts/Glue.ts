@@ -1,18 +1,9 @@
 "use strict";
 
 import { OrderedSet, Map, Set } from "immutable";
-import {
-    Type,
-    PrimitiveType,
-    ClassType,
-    ArrayType,
-    MapType,
-    EnumType,
-    UnionType,
-    TypeNames,
-    TopLevels
-} from "./Type";
+import { Type, PrimitiveType, ClassType, ArrayType, MapType, EnumType, UnionType, TypeNames, TopLevels } from "./Type";
 import { GlueClassEntry, GlueGraph, GlueType, GlueTypeNames } from "Reykjavik";
+import { panic } from "./Support";
 
 function glueTypeNamesToNative({ names, combined }: GlueTypeNames): TypeNames {
     return { names: Set(names), combined };
@@ -27,7 +18,7 @@ function glueTypeToNative(type: GlueType, classes: (Type | null)[]): Type {
         case "class": {
             const c = classes[type.index];
             if (c === null) {
-                throw "Expected class is not in graph array";
+                return panic("Expected class is not in graph array");
             }
             return c;
         }

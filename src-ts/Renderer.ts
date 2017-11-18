@@ -3,15 +3,9 @@
 import { Map, Collection, OrderedSet, List } from "immutable";
 import { TopLevels } from "./Type";
 import { Name, Namespace, assignNames } from "./Naming";
-import {
-    Source,
-    Sourcelike,
-    NewlineSource,
-    annotated,
-    sourcelikeToSource,
-    newline
-} from "./Source";
+import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newline } from "./Source";
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
+import { assert, panic } from "./Support";
 
 export type RenderResult = { rootSource: Source; names: Map<Name, string> };
 
@@ -70,9 +64,7 @@ export abstract class Renderer {
         for (let i = 1; i < numLines; i++) {
             const line = lines[i];
             const { indent, text } = lineIndentation(line);
-            if (indent % 4 !== 0) {
-                throw "Indentation is not a multiple of 4.";
-            }
+            assert(indent % 4 === 0, "Indentation is not a multiple of 4.");
             if (text !== null) {
                 const newIndent = indent / 4;
                 this.changeIndent(newIndent - currentIndent);
@@ -92,9 +84,7 @@ export abstract class Renderer {
         const emitTarget: Sourcelike[] = [];
         this._currentEmitTarget = emitTarget;
         emitter();
-        if (this._currentEmitTarget !== emitTarget) {
-            throw "_currentEmitTarget not restored correctly";
-        }
+        assert(this._currentEmitTarget === emitTarget, "_currentEmitTarget not restored correctly");
         this._currentEmitTarget = oldEmitTarget;
         const source = sourcelikeToSource(emitTarget);
         this._currentEmitTarget.push(annotated(annotation, source));
@@ -112,7 +102,7 @@ export abstract class Renderer {
 
     private changeIndent(offset: number): void {
         if (!this._lastNewline) {
-            throw "Cannot change indent for the first line";
+            return panic("Cannot change indent for the first line");
         }
         this._lastNewline.indentationChange += offset;
     }
@@ -138,8 +128,7 @@ export abstract class Renderer {
         blankLineLocations: BlankLineLocations,
         emitter: (v: V, k: K) => void
     ): void {
-        const interposing =
-            ["interposing", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
+        const interposing = ["interposing", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
         const leading = ["leading", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
         this.forEach(iterable, interposing, leading, emitter);
     }
@@ -165,7 +154,7 @@ export abstract class Renderer {
 
     get names(): Map<Name, string> {
         if (this._names === undefined) {
-            throw "Names accessed before they were assigned";
+            return panic("Names accessed before they were assigned");
         }
         return this._names;
     }

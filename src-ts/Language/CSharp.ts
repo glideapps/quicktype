@@ -23,7 +23,8 @@ import {
     utf16StringEscape,
     intercalate,
     defined,
-    assertNever
+    assertNever,
+    assert
 } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { TypeKind } from "Reykjavik";
@@ -162,9 +163,7 @@ class CSharpRenderer extends ConvenienceRenderer {
             }
             return null;
         });
-        if (definedTypes.size > 1) {
-            throw "Cannot have more than one defined type per top-level";
-        }
+        assert(definedTypes.size <= 1, "Cannot have more than one defined type per top-level");
 
         // If the top-level type doesn't contain any classes or unions
         // we have to define a class just for the `FromJson` method, in
@@ -452,7 +451,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         withReturn: boolean,
         f: (t: T) => void
     ): void {
-        if (withReturn && !withBlock) throw "Can only have return with block";
+        assert(!withReturn || withBlock, "Can only have return with block");
         types.forEach(t => {
             this.emitLine("if (", condition(t), ")");
             if (withBlock) {

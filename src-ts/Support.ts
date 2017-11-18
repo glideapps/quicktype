@@ -75,7 +75,7 @@ export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: strin
                     i++;
                     const lowSurrogate = s.charCodeAt(i);
                     if (lowSurrogate < 0xdc00 || lowSurrogate > 0xdfff) {
-                        throw "High surrogate not followed by low surrogate";
+                        return panic("High surrogate not followed by low surrogate");
                     }
                     const highBits = highSurrogate - 0xd800;
                     const lowBits = lowSurrogate - 0xdc00;
@@ -269,14 +269,22 @@ export function intercalate<T>(separator: T, items: Collection<any, T>): List<T>
 
 export function defined<T>(x: T | undefined): T {
     if (x !== undefined) return x;
-    throw "Defined value expected, but got undefined";
+    return panic("Defined value expected, but got undefined");
 }
 
 export function nonNull<T>(x: T | null): T {
     if (x !== null) return x;
-    throw "Non-null value expected, but got null";
+    return panic("Non-null value expected, but got null");
 }
 
 export function assertNever(x: never): never {
     throw new Error("Unexpected object: " + x);
+}
+
+export function assert(condition: boolean, message: string = "Assertion failed"): void {
+    if (!condition) throw Error(message);
+}
+
+export function panic(message: string): never {
+    throw Error(message);
 }

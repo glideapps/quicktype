@@ -19,7 +19,7 @@ import {
 } from "./Type";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
-import { defined, assertNever } from "./Support";
+import { defined, assertNever, panic } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 export abstract class ConvenienceRenderer extends Renderer {
@@ -209,7 +209,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected nameForNamedType = (t: NamedType): Name => {
         if (!this._namesForNamedTypes.has(t)) {
-            throw "Named type does not exist.";
+            return panic("Named type does not exist.");
         }
         return defined(this._namesForNamedTypes.get(t));
     };
@@ -311,7 +311,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             } else if (t instanceof UnionType) {
                 this.callForNamedType(t, unionFunc);
             } else {
-                throw "Named type that's neither a class nor union";
+                return panic("Named type that's neither a class nor union");
             }
         });
     };

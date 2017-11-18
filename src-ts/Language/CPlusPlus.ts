@@ -34,6 +34,7 @@ import {
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { StringOption, EnumOption } from "../RendererOptions";
+import { assert } from "../Support";
 
 type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
@@ -327,7 +328,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     private variantType = (u: UnionType, inJsonNamespace: boolean): Sourcelike => {
         const [hasNull, nonNulls] = removeNullFromUnion(u);
-        if (nonNulls.size < 2) throw "Variant not needed for less than two types.";
+        assert(nonNulls.size >= 2, "Variant not needed for less than two types.");
         const variant = this.cppTypeInOptional(nonNulls, inJsonNamespace, true);
         if (!hasNull) {
             return variant;

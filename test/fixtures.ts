@@ -22,6 +22,7 @@ import {
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype";
+import { panic } from "../dist/Support";
 
 const chalk = require("chalk");
 const shell = require("shelljs");
@@ -283,7 +284,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
       base: language.base,
       setupCommand: language.setupCommand,
       runCommand: (sample: string) => {
-        throw "This must not be called!";
+        return panic("This must not be called!");
       },
       diffViaSchema: false,
       allowMissingNull: language.allowMissingNull,
