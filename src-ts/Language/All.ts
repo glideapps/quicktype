@@ -15,6 +15,7 @@ import JavaTargetLanguage from "./Java";
 import SimpleTypesTargetLanguage from "./SimpleTypes";
 import TypeScriptTargetLanguage from "./TypeScript";
 import Swift4TargetLanguage from "./Swift";
+import ElmTargetLanguage from "./Elm";
 
 enum SwiftVersion {
     Swift3,
@@ -59,6 +60,7 @@ const typeScriptTargetLanguages: TargetLanguage[] = [
     new JavaTargetLanguage(),
     new TypeScriptTargetLanguage(),
     new SwiftTargetLanguage(),
+    new ElmTargetLanguage(),
     new SimpleTypesTargetLanguage()
 ];
 
