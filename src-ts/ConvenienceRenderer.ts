@@ -47,7 +47,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return { names: [], namespaces: [] };
     }
 
-    protected topLevelDependencyNames(topLevelName: Name): DependencyName[] {
+    protected topLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
         return [];
     }
 
@@ -90,6 +90,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [this.globalNamespace];
     }
 
+    private addDependenciesForNamedType = (type: NamedType, named: Name): void => {
+        const dependencyNames = this.namedTypeDependencyNames(type, named);
+        for (const dn of dependencyNames) {
+            this.globalNamespace.add(dn);
+        }
+    };
+
     private nameForTopLevel = (type: Type, name: string): FixedName => {
         const maybeNamedType = this.namedTypeToNameForTopLevel(type);
         let styledName: string;
@@ -100,12 +107,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
 
         const named = this.globalNamespace.add(new FixedName(styledName));
-        const dependencyNames = this.topLevelDependencyNames(named);
+        const dependencyNames = this.topLevelDependencyNames(type, named);
         for (const dn of dependencyNames) {
             this.globalNamespace.add(dn);
         }
 
         if (maybeNamedType) {
+            this.addDependenciesForNamedType(maybeNamedType, named);
             this._namesForNamedTypes = this._namesForNamedTypes.set(maybeNamedType, named);
         }
 
@@ -118,10 +126,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         const name = type.names.combined;
         const named = this.globalNamespace.add(new SimpleName(name, this.namedTypeNamer));
 
-        const dependencyNames = this.namedTypeDependencyNames(type, named);
-        for (const dn of dependencyNames) {
-            this.globalNamespace.add(dn);
-        }
+        this.addDependenciesForNamedType(type, named);
 
         this._namesForNamedTypes = this._namesForNamedTypes.set(type, named);
         return named;

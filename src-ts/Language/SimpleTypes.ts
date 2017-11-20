@@ -30,15 +30,7 @@ import {
     defined
 } from "../Support";
 
-import {
-    Namer,
-    Namespace,
-    Name,
-    DependencyName,
-    SimpleName,
-    FixedName,
-    keywordNamespace
-} from "../Naming";
+import { Namer, Namespace, Name, DependencyName, SimpleName, FixedName, keywordNamespace } from "../Naming";
 
 import { PrimitiveTypeKind, TypeKind } from "Reykjavik";
 import { Renderer, RenderResult } from "../Renderer";
@@ -50,16 +42,10 @@ import { BooleanOption } from "../RendererOptions";
 const unicode = require("unicode-properties");
 
 export default class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage {
-    static declareUnionsOption = new BooleanOption(
-        "declare-unions",
-        "Declare unions as named types",
-        false
-    );
+    static declareUnionsOption = new BooleanOption("declare-unions", "Declare unions as named types", false);
 
     constructor() {
-        super("Simple Types", ["types"], "txt", [
-            SimpleTypesTargetLanguage.declareUnionsOption.definition
-        ]);
+        super("Simple Types", ["types"], "txt", [SimpleTypesTargetLanguage.declareUnionsOption.definition]);
     }
 
     renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
@@ -104,10 +90,6 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
 
     protected get caseNamer(): Namer {
         return new Namer(n => simpleNameStyle(n, true), []);
-    }
-
-    protected topLevelDependencyNames(topLevelName: Name): DependencyName[] {
-        return [];
     }
 
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {

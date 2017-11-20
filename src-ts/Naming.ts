@@ -139,7 +139,7 @@ export class Namer {
         if (!(other instanceof Namer)) {
             return false;
         }
-        return other._prefixes.equals(this._prefixes);
+        return this.nameStyle === other.nameStyle && other._prefixes.equals(this._prefixes);
     }
 
     hashCode(): number {

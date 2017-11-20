@@ -103,16 +103,13 @@ class GoRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    protected topLevelDependencyNames(topLevelName: Name): DependencyName[] {
+    protected topLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
         const unmarshalName = new DependencyName(
             namingFunction,
             List([topLevelName]),
             (names: List<string>) => `Unmarshal${names.first()}`
         );
-        this._topLevelUnmarshalNames = this._topLevelUnmarshalNames.set(
-            topLevelName,
-            unmarshalName
-        );
+        this._topLevelUnmarshalNames = this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
         return [unmarshalName];
     }
 
@@ -226,9 +223,7 @@ if err != nil {
             this.emitBlock("switch *x", () => {
                 this.forEachCase(e, "none", (name, jsonName) => {
                     this.emitLine("case ", name, ":");
-                    this.indent(() =>
-                        this.emitLine('return json.Marshal("', stringEscape(jsonName), '")')
-                    );
+                    this.indent(() => this.emitLine('return json.Marshal("', stringEscape(jsonName), '")'));
                 });
             });
             this.emitLine('panic("Invalid enum value")');
@@ -260,16 +255,11 @@ if err != nil {
         ): Sourcelike => {
             const args: Sourcelike = [];
             for (const kind of primitiveValueTypeKinds) {
-                args.push(
-                    ifMember(kind, "nil", (_1, fieldName, _2) => primitiveArg(fieldName)),
-                    ", "
-                );
+                args.push(ifMember(kind, "nil", (_1, fieldName, _2) => primitiveArg(fieldName)), ", ");
             }
             for (const kind of compoundTypeKinds) {
                 args.push(
-                    ifMember(kind, "false, nil", (t, fieldName, _) =>
-                        compoundArg(t.kind === "class", fieldName)
-                    ),
+                    ifMember(kind, "false, nil", (t, fieldName, _) => compoundArg(t.kind === "class", fieldName)),
                     ", "
                 );
             }
@@ -321,16 +311,10 @@ if err != nil {
     };
 
     protected emitSourceStructure(): void {
-        this.emitLine(
-            "// To parse and unparse this JSON data, add this code to your project and do:"
-        );
+        this.emitLine("// To parse and unparse this JSON data, add this code to your project and do:");
         this.forEachTopLevel("none", (t: Type, name: Name) => {
             this.emitLine("//");
-            this.emitLine(
-                "//    r, err := ",
-                defined(this._topLevelUnmarshalNames.get(name)),
-                "(bytes)"
-            );
+            this.emitLine("//    r, err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
             this.emitLine("//    bytes, err = r.Marshal()");
         });
         this.emitNewline();
