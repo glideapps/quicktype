@@ -346,6 +346,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
       src: ["schema.json"],
       srcLang: "schema",
       lang: "schema",
+      topLevel: "Schema",
       out: schemaSchema,
       rendererOptions: {}
     });
