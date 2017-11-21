@@ -412,7 +412,7 @@ class ElmRenderer extends ConvenienceRenderer {
         this.indent(() => {
             this.emitLine("Jdec.string");
             this.indent(() => {
-                this.emitLine("|> Jdec.andThen (str ->");
+                this.emitLine("|> Jdec.andThen (\\str ->");
                 this.indent(() => {
                     this.emitLine("case str of");
                     this.indent(() => {
