@@ -1,7 +1,6 @@
 module Language.JsonSchema
     ( JSONSchema
     , jsonSchemaListToIR
-    , renderer
     ) where
 
 import IRGraph
@@ -9,11 +8,10 @@ import IRGraph
 import Control.Bind ((>>=))
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.State.Trans as StateT
-import Core (class Eq, class Ord, Error, Unit, unit, bind, const, map, not, otherwise, pure, discard, ($), (&&), (/=), (<), (<$>), (<>), (=<<), (>=), (>>>))
-import Data.Argonaut.Core (Json, foldJson, fromArray, fromBoolean, fromObject, fromString, isBoolean, stringifyWithSpace)
+import Core (class Eq, class Ord, Error, Unit, unit, bind, const, map, otherwise, pure, discard, ($), (<$>))
+import Data.Argonaut.Core (Json, foldJson, isBoolean)
 import Data.Argonaut.Decode ((.??), decodeJson, class DecodeJson)
 import Data.Array as A
-import Data.Char as Char
 import Data.Either (Either(Right, Left), either)
 import Data.Foldable (class Foldable)
 import Data.List (List, (:))
@@ -27,10 +25,9 @@ import Data.Set as S
 import Data.StrMap (StrMap)
 import Data.StrMap as SM
 import Data.String as String
-import Data.String.Util (camelCase, capitalize, singular)
+import Data.String.Util (singular)
 import Data.Traversable (class Traversable, traverse)
 import Data.Tuple (Tuple(..))
-import Doc (Doc, Renderer, combineNames, getClasses, getTopLevels, line, lookupClassName, noForbidNamer, simpleNamer)
 import IR (IR, addPlaceholder, replacePlaceholder, unifyMultipleTypes, unifyTypes)
 import Utils (mapM, mapMapM, mapWithIndexM)
 
@@ -274,112 +271,3 @@ jsonTypeToIR root reversePath name jsonType (JSONSchema schema) =
                     nulled <- mapMapM (\n -> if S.member n required then pure else jsonUnifyTypes IRNull) props
                     StateT.lift $ replacePlaceholder classIndex $ makeClass title nulled
                     pure $ IRClass classIndex
-
-forbiddenNames :: Array String
-forbiddenNames = []
-
-renderer :: Renderer
-renderer =
-    { displayName: "Schema"
-    , names: [ "schema", "json-schema" ]
-    , aceMode: "json"
-    , extension: "schema"
-    , doc: jsonSchemaDoc
-    , options: []
-    , transforms:
-        { nameForClass: simpleNamer nameForClass
-        , nextName: \s -> "Other" <> s
-        , forbiddenNames
-        , topLevelName: noForbidNamer jsonNameStyle -- FIXME: put title on top levels, too
-        , unions: Nothing
-        , enums: Nothing
-        }
-    }
-
-legalize :: String -> String
-legalize s =
-    String.fromCharArray $ map (\c -> if isLegal c then c else '_') (String.toCharArray s)
-    where
-        isLegal c =
-            let cc = Char.toCharCode c
-            in cc >= 32 && cc < 128 && c /= '/'
-
-jsonNameStyle :: String -> String
-jsonNameStyle =
-    legalize >>> camelCase >>> capitalize
-
-nameForClass :: IRClassData -> String
-nameForClass (IRClassData { names }) = jsonNameStyle $ combineNames names
-
-typeStrMap :: String -> Doc (StrMap Json)
-typeStrMap s = pure $ SM.insert "type" (fromString s) SM.empty
-
-typeJson :: String -> Doc Json
-typeJson s = fromObject <$> typeStrMap s
-
-strMapForType :: IRType -> Doc (StrMap Json)
-strMapForType t =
-    case t of
-    IRNoInformation -> typeStrMap "FIXME_THIS_SHOULD_NOT_HAPPEN"
-    IRAnyType -> pure $ SM.empty
-    IRNull -> typeStrMap "null"
-    IRInteger -> typeStrMap "integer"
-    IRDouble -> typeStrMap "number"
-    IRBool -> typeStrMap "boolean"
-    IRString -> typeStrMap "string"
-    IRArray a -> do
-        itemType <- jsonForType a
-        sm <- typeStrMap "array"
-        pure $ SM.insert "items" itemType sm
-    IRClass i -> do
-        name <- lookupClassName i
-        pure $ SM.insert "$ref" (fromString $ "#/definitions/" <> name) SM.empty
-    IRMap m -> do
-        propertyType <- jsonForType m
-        sm <- typeStrMap "object"
-        pure $ SM.insert "additionalProperties" propertyType sm
-    IREnum (IREnumData { cases }) -> do
-        sm <- typeStrMap "string"
-        pure $ SM.insert "enum" (fromArray $ A.fromFoldable $ S.map fromString cases) sm
-    IRUnion ur -> do
-        types <- mapUnionM jsonForType ur
-        let typesJson = fromArray $ A.fromFoldable types
-        pure $ SM.insert "oneOf" typesJson SM.empty
-
-jsonForType :: IRType -> Doc Json
-jsonForType t = do
-    sm <- strMapForType t
-    pure $ fromObject sm
-
-strMapForOneOfTypes :: List IRType -> Doc (StrMap Json)
-strMapForOneOfTypes L.Nil = pure $ SM.empty
-strMapForOneOfTypes (t : L.Nil) = strMapForType t
-strMapForOneOfTypes typeList = do
-    objList <- mapM jsonForType typeList
-    pure $ SM.insert "oneOf" (fromArray $ A.fromFoldable objList) SM.empty
-
-definitionForClass :: Tuple Int IRClassData -> Doc (Tuple String Json)
-definitionForClass (Tuple i (IRClassData { names, properties })) = do
-    className <- lookupClassName i
-    let sm = SM.insert "additionalProperties" (fromBoolean false) $ SM.insert "type" (fromString "object") SM.empty
-    propsMap <- mapMapM (const jsonForType) properties
-    let requiredProps = A.fromFoldable $ map fromString $ M.keys $ M.filter (\t -> not $ canBeNull t) properties
-    let propsSM = SM.fromFoldable $ (M.toUnfoldable propsMap :: List (Tuple String Json))
-    let withProperties = SM.insert "properties" (fromObject propsSM) sm
-    let withRequired = SM.insert "required" (fromArray requiredProps) withProperties
-    let withTitle = SM.insert "title" (fromString $ combineNames names) withRequired
-    pure $ Tuple className $ fromObject withTitle
-
-irToJson :: Doc Json
-irToJson = do
-    classes <- getClasses
-    definitions <- fromObject <$> SM.fromFoldable <$> mapM definitionForClass classes
-    -- FIXME: give a title to top-levels, too
-    topLevel <- strMapForOneOfTypes =<< M.values <$> getTopLevels
-    let sm = SM.insert "definitions" definitions topLevel
-    pure $ fromObject sm
-
-jsonSchemaDoc :: Doc Unit
-jsonSchemaDoc = do
-    json <- irToJson
-    line $ stringifyWithSpace "    " json

@@ -30,6 +30,8 @@ export abstract class Type {
         return orderedSetUnion(this.children.map((t: Type) => t.directlyReachableTypes(setForType)));
     }
 
+    abstract get isNullable(): boolean;
+
     equals(other: any): boolean {
         return typesEqual(this, other);
     }
@@ -50,6 +52,10 @@ export class PrimitiveType extends Type {
 
     get children(): OrderedSet<Type> {
         return OrderedSet();
+    }
+
+    get isNullable(): boolean {
+        return this.kind === "null";
     }
 
     expandForEquality(other: any): boolean {
@@ -77,6 +83,10 @@ export class ArrayType extends Type {
         return OrderedSet([this.items]);
     }
 
+    get isNullable(): boolean {
+        return false;
+    }
+
     expandForEquality(other: Type): [Type, Type][] | boolean {
         if (!(other instanceof ArrayType)) return false;
         return [[this.items, other.items]];
@@ -96,6 +106,10 @@ export class MapType extends Type {
 
     get children(): OrderedSet<Type> {
         return OrderedSet([this.values]);
+    }
+
+    get isNullable(): boolean {
+        return false;
     }
 
     expandForEquality(other: Type): [Type, Type][] | boolean {
@@ -144,6 +158,10 @@ export class ClassType extends NamedType {
         return this.properties.toOrderedSet();
     }
 
+    get isNullable(): boolean {
+        return false;
+    }
+
     expandForEquality(other: Type): [Type, Type][] | boolean {
         if (!(other instanceof ClassType)) return false;
         if (!this.names.names.equals(other.names.names)) return false;
@@ -183,6 +201,10 @@ export class EnumType extends NamedType {
         return OrderedSet();
     }
 
+    get isNullable(): boolean {
+        return false;
+    }
+
     expandForEquality(other: any): boolean {
         if (!(other instanceof EnumType)) return false;
         return this.names.names.equals(other.names.names) && this.cases.equals(other.cases);
@@ -206,6 +228,10 @@ export class UnionType extends NamedType {
 
     get children(): OrderedSet<Type> {
         return this.members;
+    }
+
+    get isNullable(): boolean {
+        return this.findMember("null") !== undefined;
     }
 
     equals(other: any): boolean {

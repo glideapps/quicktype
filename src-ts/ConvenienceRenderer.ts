@@ -47,7 +47,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return { names: [], namespaces: [] };
     }
 
-    protected topLevelDependencyNames(topLevelName: Name): DependencyName[] {
+    protected topLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
         return [];
     }
 
@@ -57,8 +57,8 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected abstract topLevelNameStyle(rawName: string): string;
     protected abstract get namedTypeNamer(): Namer;
-    protected abstract get propertyNamer(): Namer;
-    protected abstract get caseNamer(): Namer;
+    protected abstract get propertyNamer(): Namer | null;
+    protected abstract get caseNamer(): Namer | null;
     protected abstract namedTypeToNameForTopLevel(type: Type): NamedType | null;
     protected abstract emitSourceStructure(): void;
 
@@ -90,6 +90,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [this.globalNamespace];
     }
 
+    private addDependenciesForNamedType = (type: NamedType, named: Name): void => {
+        const dependencyNames = this.namedTypeDependencyNames(type, named);
+        for (const dn of dependencyNames) {
+            this.globalNamespace.add(dn);
+        }
+    };
+
     private nameForTopLevel = (type: Type, name: string): FixedName => {
         const maybeNamedType = this.namedTypeToNameForTopLevel(type);
         let styledName: string;
@@ -100,12 +107,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
 
         const named = this.globalNamespace.add(new FixedName(styledName));
-        const dependencyNames = this.topLevelDependencyNames(named);
+        const dependencyNames = this.topLevelDependencyNames(type, named);
         for (const dn of dependencyNames) {
             this.globalNamespace.add(dn);
         }
 
         if (maybeNamedType) {
+            this.addDependenciesForNamedType(maybeNamedType, named);
             this._namesForNamedTypes = this._namesForNamedTypes.set(maybeNamedType, named);
         }
 
@@ -118,21 +126,23 @@ export abstract class ConvenienceRenderer extends Renderer {
         const name = type.names.combined;
         const named = this.globalNamespace.add(new SimpleName(name, this.namedTypeNamer));
 
-        const dependencyNames = this.namedTypeDependencyNames(type, named);
-        for (const dn of dependencyNames) {
-            this.globalNamespace.add(dn);
-        }
+        this.addDependenciesForNamedType(type, named);
 
         this._namesForNamedTypes = this._namesForNamedTypes.set(type, named);
         return named;
     };
 
     private addPropertyNameds = (c: ClassType, classNamed: Name): void => {
+        const propertyNamer = this.propertyNamer;
+        if (propertyNamer === null) {
+            return;
+        }
+
         const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForProperties(c, classNamed);
         const ns = new Namespace(c.names.combined, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
         const names = c.properties
             .map((t: Type, name: string) => {
-                return ns.add(new SimpleName(name, this.propertyNamer));
+                return ns.add(new SimpleName(name, propertyNamer));
             })
             .toMap();
         this._propertyNames = this._propertyNames.set(c, names);
@@ -140,6 +150,11 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     // FIXME: this is very similar to addPropertyNameds
     private addCaseNameds = (e: EnumType, enumNamed: Name): void => {
+        const caseNamer = this.caseNamer;
+        if (caseNamer === null) {
+            return;
+        }
+
         const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForCases(e, enumNamed);
         let ns: Namespace;
         if (this.casesInGlobalNamespace) {
@@ -149,14 +164,14 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
         let names = Map<string, Name>();
         e.cases.forEach((name: string) => {
-            names = names.set(name, ns.add(new SimpleName(name, this.caseNamer)));
+            names = names.set(name, ns.add(new SimpleName(name, caseNamer)));
         });
         this._caseNames = this._caseNames.set(e, names);
     };
 
     private childrenOfType = (t: Type): OrderedSet<Type> => {
         const names = this.names;
-        if (t instanceof ClassType) {
+        if (t instanceof ClassType && this.propertyNamer !== null) {
             const propertyNameds = defined(this._propertyNames.get(t));
             return t.properties
                 .sortBy((_, n: string): string => defined(names.get(defined(propertyNameds.get(n)))))
@@ -188,6 +203,11 @@ export abstract class ConvenienceRenderer extends Renderer {
     // FIXME: These should use Name.  Not only to fix collisions, but also
     // so we can rename them via config at some point.
     protected unionFieldName = (fieldType: Type): string => {
+        const propertyNamer = this.propertyNamer;
+        if (propertyNamer === null) {
+            return panic("Can't get union field name unless we have a property namer");
+        }
+
         const typeNameForUnionMember = (t: Type): string =>
             matchType(
                 t,
@@ -204,7 +224,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 unionType => "union"
             );
 
-        return this.propertyNamer.nameStyle(typeNameForUnionMember(fieldType));
+        return propertyNamer.nameStyle(typeNameForUnionMember(fieldType));
     };
 
     protected nameForNamedType = (t: NamedType): Name => {

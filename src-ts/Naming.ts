@@ -139,7 +139,7 @@ export class Namer {
         if (!(other instanceof Namer)) {
             return false;
         }
-        return other._prefixes.equals(this._prefixes);
+        return this.nameStyle === other.nameStyle && other._prefixes.equals(this._prefixes);
     }
 
     hashCode(): number {
@@ -193,7 +193,7 @@ export abstract class Name {
     abstract get dependencies(): List<Name>;
 
     isFixed(): this is FixedName {
-        return this.namingFunction === null;
+        return this instanceof FixedName;
     }
 
     abstract proposeUnstyledName(names: Map<Name, string>): string;
@@ -223,6 +223,10 @@ export class FixedName extends Name {
 
     get dependencies(): List<Name> {
         return List();
+    }
+
+    addAssociate(associate: AssociatedName): never {
+        return panic("Cannot add associates to fixed names");
     }
 
     proposeUnstyledName(names?: Map<Name, string>): string {

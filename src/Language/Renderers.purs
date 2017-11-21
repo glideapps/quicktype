@@ -3,9 +3,7 @@ module Language.Renderers
     , rendererForLanguage
     ) where
 
-import Language.Elm as Elm
 import Language.Swift as Swift
-import Language.JsonSchema as JsonSchema
 
 import Doc as Doc
 
@@ -14,9 +12,7 @@ import Data.Foldable (elem, find)
 
 all :: Array Doc.Renderer
 all = 
-    [ Elm.renderer
-    , Swift.renderer
-    , JsonSchema.renderer
+    [ Swift.renderer
     ]
 
 rendererForLanguage :: String -> Maybe Doc.Renderer
