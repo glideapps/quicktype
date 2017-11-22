@@ -5,9 +5,9 @@ import * as pluralize from "pluralize";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType, makeNullable } from "./Type";
-import { assertNever } from "./Support";
+import { assertNever, assert } from "./Support";
 import { PrimitiveTypeKind } from "Reykjavik";
-import { TypeBuilder } from "./TypeBuilder";
+import { TypeBuilder, UnionBuilder } from "./TypeBuilder";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -17,104 +17,92 @@ function concatArrays<T>(arrays: T[][]): T[] {
     return combined;
 }
 
+class InferenceUnionBuilder extends UnionBuilder<Value[], Value[], any> {
+    constructor(
+        typeBuilder: TypeBuilder,
+        typeName: string,
+        private readonly _typeInference: TypeInference,
+        private readonly _cjson: CompressedJSON,
+        private readonly _numValues: number
+    ) {
+        super(typeBuilder, typeName, true);
+    }
+
+    protected makeEnum(enumCases: string[]): EnumType | null {
+        assert(enumCases.length > 0);
+        if (enumCases.length < Math.sqrt(this._numValues)) {
+            return this.typeBuilder.getEnumType(this.typeName, true, OrderedSet(enumCases));
+        }
+        return null;
+    }
+
+    protected makeClass(classes: Value[][], maps: any[]): Type {
+        assert(maps.length === 0);
+        return this._typeInference.inferClassType(this._cjson, this.typeName, classes);
+    }
+
+    protected makeArray(arrays: Value[][]): Type {
+        const combined = concatArrays(arrays);
+        return this.typeBuilder.getArrayType(
+            this._typeInference.inferType(this._cjson, pluralize.singular(this.typeName), combined)
+        );
+    }
+}
+
 export class TypeInference {
     private readonly _typeBuilder = new TypeBuilder();
 
     constructor(private readonly _inferMaps: boolean, private readonly _inferEnums: boolean) {}
 
     inferType = (cjson: CompressedJSON, typeName: string, valueArray: Value[]): Type => {
-        let haveNull = false;
-        let haveBool = false;
-        let haveInteger = false;
-        let haveDouble = false;
-        let haveString = false;
-        let enumCaseMap: { [name: string]: number } = {};
-        let enumCases: string[] = [];
-        const objects: Value[][] = [];
-        const arrays: Value[][] = [];
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeName, this, cjson, valueArray.length);
 
         for (const value of valueArray) {
             const t = valueTag(value);
             switch (t) {
                 case Tag.Null:
-                    haveNull = true;
+                    unionBuilder.addNull();
                     break;
                 case Tag.False:
                 case Tag.True:
-                    haveBool = true;
+                    unionBuilder.addBool();
                     break;
                 case Tag.Integer:
-                    haveInteger = true;
+                    unionBuilder.addInteger();
                     break;
                 case Tag.Double:
-                    haveDouble = true;
+                    unionBuilder.addDouble();
                     break;
                 case Tag.InternedString:
-                    if (!haveString && valueArray.length >= MIN_LENGTH_FOR_ENUM) {
+                    if (this._inferEnums && !unionBuilder.haveString && valueArray.length >= MIN_LENGTH_FOR_ENUM) {
                         const s = cjson.getStringForValue(value);
-                        if (!Object.prototype.hasOwnProperty.call(enumCaseMap, s)) {
-                            enumCaseMap[s] = 0;
-                            enumCases.push(s);
-                        }
-                        enumCaseMap[s] += 1;
+                        unionBuilder.addEnumCase(s);
                     } else {
-                        haveString = true;
+                        unionBuilder.addString();
                     }
                     break;
                 case Tag.UninternedString:
-                    if (!haveString) {
-                        haveString = true;
-                        enumCaseMap = {};
-                        enumCases = [];
-                    }
+                    unionBuilder.addString();
                     break;
                 case Tag.Object:
-                    objects.push(cjson.getObjectForValue(value));
+                    unionBuilder.addClass(cjson.getObjectForValue(value));
                     break;
                 case Tag.Array:
-                    arrays.push(cjson.getArrayForValue(value));
+                    unionBuilder.addArray(cjson.getArrayForValue(value));
                     break;
                 default:
                     return assertNever(t);
             }
         }
 
-        const types: Type[] = [];
-
-        if (haveNull) {
-            types.push(this._typeBuilder.getPrimitiveType("null"));
+        const result = unionBuilder.buildUnion();
+        if (result.isNamedType()) {
+            result.setGivenName(typeName);
         }
-        if (haveBool) {
-            types.push(this._typeBuilder.getPrimitiveType("bool"));
-        }
-        if (haveDouble) {
-            types.push(this._typeBuilder.getPrimitiveType("double"));
-        } else if (haveInteger) {
-            types.push(this._typeBuilder.getPrimitiveType("integer"));
-        }
-        if (this._inferEnums && enumCases.length > 0 && enumCases.length < Math.sqrt(valueArray.length)) {
-            types.push(this._typeBuilder.getEnumType(typeName, OrderedSet(enumCases)));
-        } else if (enumCases.length > 0 || haveString) {
-            types.push(this._typeBuilder.getPrimitiveType("string"));
-        }
-        if (objects.length > 0) {
-            types.push(this.inferClassType(cjson, typeName, objects));
-        }
-        if (arrays.length > 0) {
-            const combined = concatArrays(arrays);
-            types.push(this._typeBuilder.getArrayType(this.inferType(cjson, pluralize.singular(typeName), combined)));
-        }
-
-        if (types.length === 0) {
-            return this._typeBuilder.getPrimitiveType("any");
-        }
-        if (types.length === 1) {
-            return types[0];
-        }
-        return this._typeBuilder.getUnionType(typeName, OrderedSet(types));
+        return result;
     };
 
-    private inferClassType = (cjson: CompressedJSON, typeName: string, objects: Value[][]): Type => {
+    inferClassType = (cjson: CompressedJSON, typeName: string, objects: Value[][]): Type => {
         const combined = concatArrays(objects);
         const propertyNames: string[] = [];
         const propertyValues: { [name: string]: Value[] } = {};
@@ -135,7 +123,7 @@ export class TypeInference {
             const values = propertyValues[key];
             let t = this.inferType(cjson, key, values);
             if (values.length < objects.length) {
-                t = makeNullable(t, key);
+                t = makeNullable(t, key, true);
             }
             if (couldBeMap && properties.length > 0 && t !== properties[0][1]) {
                 couldBeMap = false;
@@ -146,6 +134,6 @@ export class TypeInference {
         if (couldBeMap && properties.length >= 20) {
             return this._typeBuilder.getMapType(properties[0][1]);
         }
-        return this._typeBuilder.getClassType(typeName, OrderedMap(properties));
+        return this._typeBuilder.getClassType(typeName, true, OrderedMap(properties));
     };
 }

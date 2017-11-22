@@ -12,12 +12,12 @@ import { fromLeft, fromRight } from "./purescript";
 import { TopLevels, Type } from "./Type";
 import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";
-import { glueGraphToNative } from "./Glue";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
 import { TypeInference } from "./Inference";
 import { combineClasses } from "./CombineClasses";
 import { CompressedJSON } from "./CompressedJSON";
 import { RendererOptions } from "./quicktype";
+import { schemaToType } from "./JSONSchemaInput";
 
 export abstract class TargetLanguage {
     constructor(
@@ -36,15 +36,11 @@ export abstract class TypeScriptTargetLanguage extends TargetLanguage {
     transformAndRenderConfig(config: Config): SerializedRenderResult {
         let graph: TopLevels;
         if (config.isInputJSONSchema) {
-            const glueGraphOrError = Main.glueGraphFromJsonConfig(config);
-            if (Either.isLeft(glueGraphOrError)) {
-                throw `Error processing JSON: ${fromLeft(glueGraphOrError)}`;
+            graph = Map();
+            for (const tlc of config.topLevels) {
+                // FIXME: This is ugly
+                graph = graph.set(tlc.name, schemaToType(tlc.name, (tlc as any).schema));
             }
-            if (!config.doRender) {
-                return { lines: ["Done.", ""], annotations: List() };
-            }
-            const glueGraph = fromRight(glueGraphOrError);
-            graph = glueGraphToNative(glueGraph);
         } else {
             const inference = new TypeInference(config.inferMaps, this.supportsEnums && config.inferEnums);
             graph = Map(
