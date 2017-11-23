@@ -6,6 +6,7 @@ import { fromJust } from "../purescript";
 import { Config } from "Config";
 import { SerializedRenderResult } from "../Source";
 import { assertNever } from "../Support";
+import { RendererOptions } from "../quicktype";
 import * as Renderers from "Language.Renderers";
 
 import CSharpTargetLanguage from "./CSharp";
@@ -39,6 +40,10 @@ class SwiftTargetLanguage extends TargetLanguage {
         this._versionOption = versionOption;
         this._swift3 = new PureScriptTargetLanguage(fromJust(Renderers.rendererForLanguage("swift3")));
         this._swift4 = swift4;
+    }
+
+    needsCompressedJSONInput(rendererOptions: RendererOptions): boolean {
+        return this._versionOption.getValue(rendererOptions) === SwiftVersion.Swift4;
     }
 
     transformAndRenderConfig(config: Config): SerializedRenderResult {

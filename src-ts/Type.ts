@@ -3,13 +3,7 @@
 import { OrderedSet, Map, Set, Collection, List } from "immutable";
 import stringHash = require("string-hash");
 import { TypeKind, PrimitiveTypeKind, NamedTypeKind } from "Reykjavik";
-import { defined, panic } from "./Support";
-
-export type TypeNames = {
-    names: Set<string>;
-    // FIXME: this is here until we have combineNames in TypeScript.
-    combined: string;
-};
+import { defined, panic, assert } from "./Support";
 
 // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
 // and maybe even earlier in the TypeScript driver.
@@ -31,6 +25,7 @@ export abstract class Type {
     }
 
     abstract get isNullable(): boolean;
+    abstract map(f: (t: Type) => Type): Type;
 
     equals(other: any): boolean {
         return typesEqual(this, other);
@@ -56,6 +51,10 @@ export class PrimitiveType extends Type {
 
     get isNullable(): boolean {
         return this.kind === "null";
+    }
+
+    map(f: (t: Type) => Type): this {
+        return this;
     }
 
     expandForEquality(other: any): boolean {
@@ -87,6 +86,12 @@ export class ArrayType extends Type {
         return false;
     }
 
+    map(f: (t: Type) => Type): ArrayType {
+        const items = f(this.items);
+        if (items === this.items) return this;
+        return new ArrayType(items);
+    }
+
     expandForEquality(other: Type): [Type, Type][] | boolean {
         if (!(other instanceof ArrayType)) return false;
         return [[this.items, other.items]];
@@ -112,6 +117,12 @@ export class MapType extends Type {
         return false;
     }
 
+    map(f: (t: Type) => Type): MapType {
+        const values = f(this.values);
+        if (values === this.values) return this;
+        return new MapType(values);
+    }
+
     expandForEquality(other: Type): [Type, Type][] | boolean {
         if (!(other instanceof MapType)) return false;
         return [[this.values, other.values]];
@@ -122,21 +133,81 @@ export class MapType extends Type {
     }
 }
 
+// FIXME: In the case of overlapping prefixes and suffixes we will
+// produce a name that includes the overlap twice.  For example, for
+// the names "aaa" and "aaaa" we have the common prefix "aaa" and the
+// common suffix "aaa", so we will produce the combined name "aaaaaa".
+function combineNames(names: Collection<any, string>): string {
+    const first = names.first();
+    if (first === undefined) {
+        return panic("Named type has no names");
+    }
+    if (names.count() === 1) {
+        return first;
+    }
+    let prefixLength = first.length;
+    let suffixLength = first.length;
+    names.rest().forEach(n => {
+        prefixLength = Math.min(prefixLength, n.length);
+        for (let i = 0; i < prefixLength; i++) {
+            if (first[i] !== n[i]) {
+                prefixLength = i;
+                break;
+            }
+        }
+
+        suffixLength = Math.min(suffixLength, n.length);
+        for (let i = 0; i < suffixLength; i++) {
+            if (first[first.length - i - 1] !== n[n.length - i - 1]) {
+                suffixLength = i;
+                break;
+            }
+        }
+    });
+    const prefix = prefixLength > 2 ? first.substr(0, prefixLength) : "";
+    const suffix = suffixLength > 2 ? first.substr(first.length - suffixLength) : "";
+    const combined = prefix + suffix;
+    if (combined.length > 2) {
+        return combined;
+    }
+    return first;
+}
+
+export type NameOrNames = string | OrderedSet<string>;
+
 export abstract class NamedType extends Type {
-    constructor(kind: NamedTypeKind, readonly names: TypeNames) {
+    private _names: OrderedSet<string>;
+
+    constructor(kind: NamedTypeKind, nameOrNames: NameOrNames) {
         super(kind);
+        if (typeof nameOrNames === "string") {
+            this._names = OrderedSet([nameOrNames]);
+        } else {
+            this._names = nameOrNames;
+        }
     }
 
     isNamedType(): this is NamedType {
         return true;
     }
+
+    get names(): OrderedSet<string> {
+        return this._names;
+    }
+
+    addName(name: string): void {
+        this._names = this._names.add(name);
+    }
+
+    get combinedName(): string {
+        return combineNames(this._names);
+    }
 }
 
 export class ClassType extends NamedType {
     kind: "class";
-    private _properties: Map<string, Type> | undefined;
 
-    constructor(names: TypeNames) {
+    constructor(names: NameOrNames, private _properties?: Map<string, Type>) {
         super("class", names);
     }
 
@@ -162,9 +233,20 @@ export class ClassType extends NamedType {
         return false;
     }
 
+    map(f: (t: Type) => Type): ClassType {
+        let same = true;
+        const properties = this.properties.map(t => {
+            const ft = f(t);
+            if (ft !== t) same = false;
+            return ft;
+        });
+        if (same) return this;
+        return new ClassType(this.names, properties);
+    }
+
     expandForEquality(other: Type): [Type, Type][] | boolean {
         if (!(other instanceof ClassType)) return false;
-        if (!this.names.names.equals(other.names.names)) return false;
+        if (!this.names.equals(other.names)) return false;
         if (this.properties.size !== other.properties.size) return false;
         if (this.properties.size === 0) return true;
         const queue: [Type, Type][] = [];
@@ -178,7 +260,7 @@ export class ClassType extends NamedType {
     }
 
     flatHashCode(): number {
-        return (stringHash(this.kind) + this.names.names.hashCode() + this.properties.size) | 0;
+        return (stringHash(this.kind) + this.names.hashCode() + this.properties.size) | 0;
     }
 
     hashCode(): number {
@@ -193,7 +275,7 @@ export class ClassType extends NamedType {
 export class EnumType extends NamedType {
     kind: "enum";
 
-    constructor(names: TypeNames, readonly cases: OrderedSet<string>) {
+    constructor(names: NameOrNames, readonly cases: OrderedSet<string>) {
         super("enum", names);
     }
 
@@ -205,21 +287,26 @@ export class EnumType extends NamedType {
         return false;
     }
 
+    map(f: (t: Type) => Type): this {
+        return this;
+    }
+
     expandForEquality(other: any): boolean {
         if (!(other instanceof EnumType)) return false;
-        return this.names.names.equals(other.names.names) && this.cases.equals(other.cases);
+        return this.names.equals(other.names) && this.cases.equals(other.cases);
     }
 
     flatHashCode(): number {
-        return (stringHash(this.kind) + this.names.names.hashCode() + this.cases.hashCode()) | 0;
+        return (stringHash(this.kind) + this.names.hashCode() + this.cases.hashCode()) | 0;
     }
 }
 
 export class UnionType extends NamedType {
     kind: "union";
 
-    constructor(names: TypeNames, readonly members: OrderedSet<Type>) {
+    constructor(names: NameOrNames, readonly members: OrderedSet<Type>) {
         super("union", names);
+        assert(members.size > 1);
     }
 
     findMember = (kind: TypeKind): Type | undefined => {
@@ -234,14 +321,25 @@ export class UnionType extends NamedType {
         return this.findMember("null") !== undefined;
     }
 
+    map(f: (t: Type) => Type): UnionType {
+        let same = true;
+        const members = this.members.map(t => {
+            const ft = f(t);
+            if (ft !== t) same = false;
+            return ft;
+        });
+        if (same) return this;
+        return new UnionType(this.names, members);
+    }
+
     equals(other: any): boolean {
         if (!(other instanceof UnionType)) return false;
-        return this.names.names.equals(other.names.names) && this.members.equals(other.members);
+        return this.names.equals(other.names) && this.members.equals(other.members);
     }
 
     expandForEquality(other: Type): [Type, Type][] | boolean {
         if (!(other instanceof UnionType)) return false;
-        if (!this.names.names.equals(other.names.names)) return false;
+        if (!this.names.equals(other.names)) return false;
         if (this.members.size !== other.members.size) return false;
         if (this.members.size === 0) return true;
         const otherByKind: { [kind: string]: Type } = {};
@@ -259,7 +357,7 @@ export class UnionType extends NamedType {
     }
 
     flatHashCode(): number {
-        return (stringHash(this.kind) + this.names.names.hashCode() + this.members.size) | 0;
+        return (stringHash(this.kind) + this.names.hashCode() + this.members.size) | 0;
     }
 
     hashCode(): number {
@@ -320,6 +418,31 @@ export function nullableFromUnion(t: UnionType): Type | null {
     if (!hasNull) return null;
     if (nonNulls.size !== 1) return null;
     return defined(nonNulls.first());
+}
+
+export function makeNullable(t: Type, typeNames: NameOrNames): Type {
+    if (t.kind === "null") {
+        return t;
+    }
+    if (!(t instanceof UnionType)) {
+        return new UnionType(typeNames, OrderedSet([t, new PrimitiveType("null")]));
+    }
+    const [maybeNull, nonNulls] = removeNullFromUnion(t);
+    if (maybeNull) return t;
+    return new UnionType(typeNames, nonNulls.add(new PrimitiveType("null")));
+}
+
+export function removeNull(t: Type): Type {
+    if (!(t instanceof UnionType)) {
+        return t;
+    }
+    const [_, nonNulls] = removeNullFromUnion(t);
+    const first = nonNulls.first();
+    if (first) {
+        if (nonNulls.size === 1) return first;
+        return new UnionType(t.names, nonNulls);
+    }
+    return panic("Trying to remove null results in empty union.");
 }
 
 // FIXME: The outer OrderedSet should be some Collection, but I can't figure out

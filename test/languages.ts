@@ -26,7 +26,7 @@ export const CSharpLanguage: Language = {
   runCommand(sample: string) {
     return `dotnet run "${sample}"`;
   },
-  diffViaSchema: true,
+  diffViaSchema: false,
   allowMissingNull: false,
   output: "QuickType.cs",
   topLevel: "TopLevel",
@@ -63,11 +63,16 @@ export const GoLanguage: Language = {
   runCommand(sample: string) {
     return `go run main.go quicktype.go < "${sample}"`;
   },
-  diffViaSchema: true,
+  diffViaSchema: false,
   allowMissingNull: false,
   output: "quicktype.go",
   topLevel: "TopLevel",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
+  skipJSON: [
+    "identifiers.json",
+    "simple-identifiers.json",
+    "blns-object.json",
+    "7f568.json" // this contains a property "-", which Go can't handle
+  ],
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: []
@@ -85,11 +90,11 @@ function makeCPlusPlusLanguage(rendererOptions: {
     runCommand(sample: string) {
       return `./quicktype "${sample}"`;
     },
-    diffViaSchema: true,
+    diffViaSchema: false,
     allowMissingNull: false,
     output: "quicktype.hpp",
     topLevel: "TopLevel",
-    skipJSON: ["recursive.json"],
+    skipJSON: ["recursive.json", "list.json"],
     skipSchema: [],
     rendererOptions: rendererOptions,
     quickTestRendererOptions: [{ unions: "indirection" }]
@@ -109,7 +114,7 @@ export const ElmLanguage: Language = {
   runCommand(sample: string) {
     return `node ./runner.js "${sample}"`;
   },
-  diffViaSchema: true,
+  diffViaSchema: false,
   allowMissingNull: false,
   output: "QuickType.elm",
   topLevel: "QuickType",
@@ -117,7 +122,8 @@ export const ElmLanguage: Language = {
     "identifiers.json",
     "simple-identifiers.json",
     "blns-object.json",
-    "recursive.json"
+    "recursive.json",
+    "list.json"
   ],
   skipSchema: [], // All of them currently fail, so we don't even run it.
   rendererOptions: {},
@@ -140,6 +146,7 @@ function makeSwiftLanguage(
     skipSchema.push("enum.schema");
   } else {
     rendererOptions["swift-version"] = "4";
+    skipJSON.push("list.json"); // crashes the Swift compiler
   }
   return {
     name: "swift",
@@ -176,7 +183,7 @@ export const TypeScriptLanguage: Language = {
     // to the root test/tsconfig.json
     return `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`;
   },
-  diffViaSchema: true,
+  diffViaSchema: false,
   allowMissingNull: false,
   output: "TopLevel.ts",
   topLevel: "TopLevel",

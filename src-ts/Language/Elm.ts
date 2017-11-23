@@ -27,7 +27,8 @@ import {
     decapitalize,
     defined,
     stringEscape,
-    intercalate
+    intercalate,
+    isAscii
 } from "../Support";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -91,7 +92,7 @@ const forbiddenNames = [
     "makeNullableEncoder"
 ];
 
-const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
+const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
 
 function elmNameStyle(original: string, upper: boolean): string {
     const legalized = legalizeName(original);

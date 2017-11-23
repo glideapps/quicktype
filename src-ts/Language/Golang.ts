@@ -212,7 +212,13 @@ if err != nil {
                         this.indent(() => this.emitLine("*x = ", name));
                     });
                     this.emitLine("default:");
-                    this.indent(() => this.emitLine('return errors.New("Unknown enum value")'));
+                    this.indent(() =>
+                        this.emitLine(
+                            'return errors.New(fmt.Sprintf("Unknown enum value \\"%s\\" for type ',
+                            enumName,
+                            '", v))'
+                        )
+                    );
                 });
                 this.emitLine("return nil");
             });
@@ -323,6 +329,9 @@ if err != nil {
         if (this.haveEnums || this.haveNamedUnions) {
             this.emitLine('import "bytes"');
             this.emitLine('import "errors"');
+        }
+        if (this.haveEnums) {
+            this.emitLine('import "fmt"');
         }
         this.emitLine('import "encoding/json"');
         this.forEachTopLevel("leading-and-interposing", this.emitTopLevel);

@@ -1,19 +1,23 @@
 "use strict";
 
-import { List } from "immutable";
+import { List, Map } from "immutable";
 
 import * as Either from "Data.Either";
 
-import { Config } from "Config";
+import { Config, TopLevelConfig } from "Config";
 import * as Main from "Main";
 import { Renderer } from "Doc";
 import * as Options from "Options";
 import { fromLeft, fromRight } from "./purescript";
-import { TopLevels } from "./Type";
+import { TopLevels, Type } from "./Type";
 import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";
 import { glueGraphToNative } from "./Glue";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
+import { TypeInference } from "./Inference";
+import { combineClasses } from "./CombineClasses";
+import { CompressedJSON } from "./CompressedJSON";
+import { RendererOptions } from "./quicktype";
 
 export abstract class TargetLanguage {
     constructor(
@@ -24,25 +28,54 @@ export abstract class TargetLanguage {
     ) {}
 
     abstract transformAndRenderConfig(config: Config): SerializedRenderResult;
+
+    abstract needsCompressedJSONInput(rendererOptions: RendererOptions): boolean;
 }
 
 export abstract class TypeScriptTargetLanguage extends TargetLanguage {
     transformAndRenderConfig(config: Config): SerializedRenderResult {
-        const glueGraphOrError = Main.glueGraphFromJsonConfig(config);
-        if (Either.isLeft(glueGraphOrError)) {
-            throw `Error processing JSON: ${fromLeft(glueGraphOrError)}`;
+        let graph: TopLevels;
+        if (config.isInputJSONSchema) {
+            const glueGraphOrError = Main.glueGraphFromJsonConfig(config);
+            if (Either.isLeft(glueGraphOrError)) {
+                throw `Error processing JSON: ${fromLeft(glueGraphOrError)}`;
+            }
+            if (!config.doRender) {
+                return { lines: ["Done.", ""], annotations: List() };
+            }
+            const glueGraph = fromRight(glueGraphOrError);
+            graph = glueGraphToNative(glueGraph);
+        } else {
+            const inference = new TypeInference(config.inferMaps, this.supportsEnums && config.inferEnums);
+            graph = Map(
+                config.topLevels.map((tlc: TopLevelConfig): [string, Type] => {
+                    return [
+                        tlc.name,
+                        inference.inferType(config.compressedJSON as CompressedJSON, tlc.name, (tlc as any).samples)
+                    ];
+                })
+            );
+            if (config.combineClasses) {
+                graph = combineClasses(graph);
+            }
         }
         if (!config.doRender) {
             return { lines: ["Done.", ""], annotations: List() };
         }
-        const glueGraph = fromRight(glueGraphOrError);
-        const graph = glueGraphToNative(glueGraph);
         const renderResult = this.renderGraph(graph, config.rendererOptions);
         return serializeRenderResult(renderResult, this.indentation);
     }
 
+    needsCompressedJSONInput(rendererOptions: RendererOptions): boolean {
+        return true;
+    }
+
     protected get indentation(): string {
         return "    ";
+    }
+
+    protected get supportsEnums(): boolean {
+        return true;
     }
 
     protected abstract renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult;
@@ -98,5 +131,9 @@ export class PureScriptTargetLanguage extends TargetLanguage {
         }
         const source = fromRight(resultOrError);
         return { lines: source.split("\n"), annotations: List() };
+    }
+
+    needsCompressedJSONInput(rendererOptions: RendererOptions): boolean {
+        return false;
     }
 }
