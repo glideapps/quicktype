@@ -7,6 +7,7 @@ import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType, makeNullable } from "./Type";
 import { assertNever } from "./Support";
 import { PrimitiveTypeKind } from "Reykjavik";
+import { TypeBuilder } from "./TypeBuilder";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -17,75 +18,9 @@ function concatArrays<T>(arrays: T[][]): T[] {
 }
 
 export class TypeInference {
-    // FIXME: make mutable?
-    private _primitiveTypes: Map<PrimitiveTypeKind, PrimitiveType> = Map();
-    private _mapTypes: Map<Type, MapType> = Map();
-    private _arrayTypes: Map<Type, ArrayType> = Map();
-    private _enumTypes: Map<OrderedSet<string>, EnumType> = Map();
-    private _classTypes: Map<Map<string, Type>, ClassType> = Map();
-    private _unionTypes: Map<OrderedSet<Type>, UnionType> = Map();
+    private readonly _typeBuilder = new TypeBuilder();
 
     constructor(private readonly _inferMaps: boolean, private readonly _inferEnums: boolean) {}
-
-    private getPrimitiveType = (kind: PrimitiveTypeKind): PrimitiveType => {
-        let t = this._primitiveTypes.get(kind);
-        if (t === undefined) {
-            t = new PrimitiveType(kind);
-            this._primitiveTypes = this._primitiveTypes.set(kind, t);
-        }
-        return t;
-    };
-
-    private getEnumType = (name: string, cases: OrderedSet<string>): EnumType => {
-        let t = this._enumTypes.get(cases);
-        if (t === undefined) {
-            t = new EnumType(name, cases);
-            this._enumTypes = this._enumTypes.set(cases, t);
-        } else {
-            t.addName(name);
-        }
-        return t;
-    };
-
-    private getMapType = (values: Type): MapType => {
-        let t = this._mapTypes.get(values);
-        if (t === undefined) {
-            t = new MapType(values);
-            this._mapTypes = this._mapTypes.set(values, t);
-        }
-        return t;
-    };
-
-    private getArrayType = (items: Type): ArrayType => {
-        let t = this._arrayTypes.get(items);
-        if (t === undefined) {
-            t = new ArrayType(items);
-            this._arrayTypes = this._arrayTypes.set(items, t);
-        }
-        return t;
-    };
-
-    private getClassType = (name: string, properties: Map<string, Type>): ClassType => {
-        let t = this._classTypes.get(properties);
-        if (t === undefined) {
-            t = new ClassType(name, properties);
-            this._classTypes = this._classTypes.set(properties, t);
-        } else {
-            t.addName(name);
-        }
-        return t;
-    };
-
-    private getUnionType = (name: string, members: OrderedSet<Type>): UnionType => {
-        let t = this._unionTypes.get(members);
-        if (t === undefined) {
-            t = new UnionType(name, members);
-            this._unionTypes = this._unionTypes.set(members, t);
-        } else {
-            t.addName(name);
-        }
-        return t;
-    };
 
     inferType = (cjson: CompressedJSON, typeName: string, valueArray: Value[]): Type => {
         let haveNull = false;
@@ -147,36 +82,36 @@ export class TypeInference {
         const types: Type[] = [];
 
         if (haveNull) {
-            types.push(this.getPrimitiveType("null"));
+            types.push(this._typeBuilder.getPrimitiveType("null"));
         }
         if (haveBool) {
-            types.push(this.getPrimitiveType("bool"));
+            types.push(this._typeBuilder.getPrimitiveType("bool"));
         }
         if (haveDouble) {
-            types.push(this.getPrimitiveType("double"));
+            types.push(this._typeBuilder.getPrimitiveType("double"));
         } else if (haveInteger) {
-            types.push(this.getPrimitiveType("integer"));
+            types.push(this._typeBuilder.getPrimitiveType("integer"));
         }
         if (this._inferEnums && enumCases.length > 0 && enumCases.length < Math.sqrt(valueArray.length)) {
-            types.push(this.getEnumType(typeName, OrderedSet(enumCases)));
+            types.push(this._typeBuilder.getEnumType(typeName, OrderedSet(enumCases)));
         } else if (enumCases.length > 0 || haveString) {
-            types.push(this.getPrimitiveType("string"));
+            types.push(this._typeBuilder.getPrimitiveType("string"));
         }
         if (objects.length > 0) {
             types.push(this.inferClassType(cjson, typeName, objects));
         }
         if (arrays.length > 0) {
             const combined = concatArrays(arrays);
-            types.push(this.getArrayType(this.inferType(cjson, pluralize.singular(typeName), combined)));
+            types.push(this._typeBuilder.getArrayType(this.inferType(cjson, pluralize.singular(typeName), combined)));
         }
 
         if (types.length === 0) {
-            return this.getPrimitiveType("any");
+            return this._typeBuilder.getPrimitiveType("any");
         }
         if (types.length === 1) {
             return types[0];
         }
-        return this.getUnionType(typeName, OrderedSet(types));
+        return this._typeBuilder.getUnionType(typeName, OrderedSet(types));
     };
 
     private inferClassType = (cjson: CompressedJSON, typeName: string, objects: Value[][]): Type => {
@@ -209,8 +144,8 @@ export class TypeInference {
         }
 
         if (couldBeMap && properties.length >= 20) {
-            return this.getMapType(properties[0][1]);
+            return this._typeBuilder.getMapType(properties[0][1]);
         }
-        return this.getClassType(typeName, OrderedMap(properties));
+        return this._typeBuilder.getClassType(typeName, OrderedMap(properties));
     };
 }
