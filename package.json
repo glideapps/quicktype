@@ -9,7 +9,7 @@
     "pub": "script/publish.sh",
     "prepare": "npm run build",
     "build": "script/build.ts",
-    "test": "npm run build && test/test",
+    "test": "npm run build && script/test",
     "start": "script/watch"
   },
   "dependencies": {
