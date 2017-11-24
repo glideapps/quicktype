@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "license": "Apache-2.0",
   "main": "quicktype.js",
   "types": "quicktype.d.ts",
