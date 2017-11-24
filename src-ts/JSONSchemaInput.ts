@@ -4,7 +4,7 @@ import { List, OrderedSet, Map, OrderedMap, fromJS, Set } from "immutable";
 import * as pluralize from "pluralize";
 
 import { Type, ClassType, NameOrNames, matchType, EnumType, makeNullable } from "./Type";
-import { panic, assertNever } from "./Support";
+import { panic, assertNever, StringMap, checkStringMap } from "./Support";
 import { TypeBuilder, UnionBuilder } from "./TypeBuilder";
 
 enum PathElementKind {
@@ -25,15 +25,6 @@ type PathElement =
     | { kind: PathElementKind.Items };
 
 type Ref = List<PathElement>;
-
-type StringMap = { [name: string]: any };
-
-function checkStringMap(schema: any): StringMap {
-    if (typeof schema !== "object") {
-        return panic("Schema must be an object");
-    }
-    return schema;
-}
 
 function checkStringArray(arr: any): string[] {
     if (!Array.isArray(arr)) {
