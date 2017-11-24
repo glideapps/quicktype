@@ -140,7 +140,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForProperties(c, classNamed);
         const ns = new Namespace(c.combinedName, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
-        const names = c.properties
+        const names = c.sortedProperties
             .map((t: Type, name: string) => {
                 return ns.add(new SimpleName(name, propertyNamer));
             })

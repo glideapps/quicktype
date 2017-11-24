@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, Map, Set, Collection, List } from "immutable";
+import { OrderedSet, OrderedMap, Map, Set, Collection, List } from "immutable";
 import stringHash = require("string-hash");
 import { TypeKind, PrimitiveTypeKind, NamedTypeKind } from "Reykjavik";
 import { defined, panic, assert } from "./Support";
@@ -244,9 +244,14 @@ export class ClassType extends NamedType {
         return this._properties;
     }
 
-    get children(): OrderedSet<Type> {
+    get sortedProperties(): OrderedMap<string, Type> {
         const sortedKeys = this.properties.keySeq().sort();
-        return sortedKeys.map(k => defined(this.properties.get(k))).toOrderedSet();
+        const props = sortedKeys.map((k: string): [string, Type] => [k, defined(this.properties.get(k))]);
+        return OrderedMap(props);
+    }
+
+    get children(): OrderedSet<Type> {
+        return this.sortedProperties.toOrderedSet();
     }
 
     get isNullable(): boolean {
