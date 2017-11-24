@@ -450,15 +450,13 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.GoLanguage),
   new JSONFixture(languages.CPlusPlusLanguage),
   new JSONFixture(languages.ElmLanguage),
-  new JSONFixture(languages.Swift3Language, "swift3"),
-  new JSONFixture(languages.Swift4Language, "swift4"),
+  new JSONFixture(languages.SwiftLanguage),
   new JSONFixture(languages.TypeScriptLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.JavaLanguage),
   new JSONSchemaFixture(languages.GoLanguage),
   new JSONSchemaFixture(languages.CPlusPlusIndirectionLanguage),
-  new JSONSchemaFixture(languages.Swift3ClassesLanguage, "schema-swift3"),
-  new JSONSchemaFixture(languages.Swift4ClassesLanguage, "schema-swift4"),
+  new JSONSchemaFixture(languages.SwiftClassesLanguage),
   new JSONSchemaFixture(languages.TypeScriptLanguage)
 ];

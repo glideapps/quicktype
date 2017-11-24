@@ -2,13 +2,7 @@
 
 import { List, Map } from "immutable";
 
-import * as Either from "Data.Either";
-
 import { Config, TopLevelConfig } from "Config";
-import * as Main from "Main";
-import { Renderer } from "Doc";
-import * as Options from "Options";
-import { fromLeft, fromRight } from "./purescript";
 import { TopLevels, Type } from "./Type";
 import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";
@@ -75,61 +69,4 @@ export abstract class TypeScriptTargetLanguage extends TargetLanguage {
     }
 
     protected abstract renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult;
-}
-
-function optionSpecificationToOptionDefinition(spec: Options.OptionSpecification): OptionDefinition {
-    const valueType = Options.valueType(spec.default);
-    const type = valueType === "BooleanValue" ? Boolean : String;
-
-    let legalValues;
-    let defaultValue = spec.default.value0;
-    if (valueType === "EnumValue") {
-        const { value1 } = spec.default as Options.EnumValue;
-        legalValues = value1;
-        defaultValue = legalValues[defaultValue as number];
-    }
-
-    return {
-        name: spec.name,
-        description: spec.description,
-        typeLabel: spec.typeLabel,
-        renderer: true,
-        type,
-        legalValues,
-        defaultValue
-    };
-}
-
-function optionDefinitionsForRenderer(renderer: Renderer): OptionDefinition[] {
-    return renderer.options.map(optionSpecificationToOptionDefinition);
-}
-
-export class PureScriptTargetLanguage extends TargetLanguage {
-    constructor(renderer: Renderer) {
-        const optionDefinitions = optionDefinitionsForRenderer(renderer);
-        super(renderer.displayName, renderer.names, renderer.extension, optionDefinitions);
-    }
-
-    transformAndRenderConfig(config: Config): SerializedRenderResult {
-        // The PureScript rendering pipeline expects option values to be strings.
-        // TargetLangauges expect options to be strings or booleans
-        // So we stringify the booleans.
-        let options = config.rendererOptions;
-        config.rendererOptions = {};
-        for (let key of Object.keys(options)) {
-            config.rendererOptions[key] = options[key].toString();
-        }
-        config.language = this.names[0];
-
-        const resultOrError = Main.main(config);
-        if (Either.isLeft(resultOrError)) {
-            throw `Error: ${fromLeft(resultOrError)}`;
-        }
-        const source = fromRight(resultOrError);
-        return { lines: source.split("\n"), annotations: List() };
-    }
-
-    needsCompressedJSONInput(rendererOptions: RendererOptions): boolean {
-        return false;
-    }
 }

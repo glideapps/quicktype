@@ -4,8 +4,6 @@ import * as process from "process";
 import * as stream from "stream";
 import * as getStream from "get-stream";
 
-import * as Maybe from "Data.Maybe";
-
 // These are simplified, uncurried versions of Either.fromRight, etc.
 import { fromRight } from "./purescript";
 
@@ -13,11 +11,9 @@ import * as _ from "lodash";
 
 import * as Main from "Main";
 import { Config, TopLevelConfig } from "Config";
-import * as Renderers from "Language.Renderers";
-import { ErrorMessage, SourceCode } from "Core";
 import * as targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
-import { TargetLanguage, PureScriptTargetLanguage } from "./TargetLanguage";
+import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
 import { defined } from "./Support";
