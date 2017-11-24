@@ -3,14 +3,11 @@
         "target": "es5",
         "module": "commonjs",
         "lib": ["es2015"],
-        "baseUrl": ".",
         "allowJs": false,
         "declaration": true,
         "typeRoots": ["../node_modules/@types"],
         "strictNullChecks": true,
         "noImplicitAny": true,
-        "paths": {
-            "*": ["../dist/*"]
-        }
+        "outDir": "../dist"
     }
 }
