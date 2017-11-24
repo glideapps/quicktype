@@ -85,7 +85,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
             classType => ({ $ref: `#/definitions/${this.nameForType(classType)}` }),
             mapType => ({ type: "object", additionalProperties: this.schemaForType(mapType.values) }),
             enumType => ({ type: "string", enum: enumType.cases.toArray() }),
-            unionType => this.makeOneOf(unionType.members)
+            unionType => this.makeOneOf(unionType.sortedMembers)
         );
     };
 
@@ -98,7 +98,13 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
                 required.push(name);
             }
         });
-        return { type: "object", additionalProperties: false, properties, required, title: c.combinedName };
+        return {
+            type: "object",
+            additionalProperties: false,
+            properties,
+            required: required.sort(),
+            title: c.combinedName
+        };
     };
 
     protected emitSourceStructure(): void {

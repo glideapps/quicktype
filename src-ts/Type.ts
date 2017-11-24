@@ -245,7 +245,8 @@ export class ClassType extends NamedType {
     }
 
     get children(): OrderedSet<Type> {
-        return this.properties.toOrderedSet();
+        const sortedKeys = this.properties.keySeq().sort();
+        return sortedKeys.map(k => defined(this.properties.get(k))).toOrderedSet();
     }
 
     get isNullable(): boolean {
@@ -333,7 +334,7 @@ export class UnionType extends NamedType {
     };
 
     get children(): OrderedSet<Type> {
-        return this.members;
+        return this.sortedMembers;
     }
 
     get isNullable(): boolean {
@@ -349,6 +350,11 @@ export class UnionType extends NamedType {
         });
         if (same) return this;
         return new UnionType(this.names, this.areNamesInferred, members);
+    }
+
+    get sortedMembers(): OrderedSet<Type> {
+        // FIXME: We're assuming no two members of the same kind.
+        return this.members.sortBy(t => t.kind);
     }
 
     equals(other: any): boolean {

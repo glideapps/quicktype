@@ -346,7 +346,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
       src: ["schema.json"],
       srcLang: "schema",
       lang: "schema",
-      topLevel: "Schema",
+      topLevel: "schema",
       out: schemaSchema,
       rendererOptions: {}
     });
@@ -453,10 +453,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.Swift3Language, "swift3"),
   new JSONFixture(languages.Swift4Language, "swift4"),
   new JSONFixture(languages.TypeScriptLanguage),
-  // We're sometimes naming classes in the wrong order, which leads to the schema
-  // being textually different.  Until we have a new graph representation this
-  // is hard to fix.  Once we have it, it'll be easy.
-  // new JSONSchemaJSONFixture(languages.GoLanguage),
+  new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.JavaLanguage),
   new JSONSchemaFixture(languages.GoLanguage),
