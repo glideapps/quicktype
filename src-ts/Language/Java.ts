@@ -2,6 +2,7 @@
 
 import { List, Collection, OrderedMap, OrderedSet, Map } from "immutable";
 import {
+    TypeKind,
     TopLevels,
     Type,
     PrimitiveType,
@@ -35,7 +36,6 @@ import {
     assert
 } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
-import { TypeKind } from "Reykjavik";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TypeScriptTargetLanguage } from "../TargetLanguage";

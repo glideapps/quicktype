@@ -2,8 +2,7 @@
 
 import { Map, OrderedSet, isIndexed } from "immutable";
 
-import { Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType } from "./Type";
-import { PrimitiveTypeKind } from "Reykjavik";
+import { PrimitiveTypeKind, Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType } from "./Type";
 
 export class TypeBuilder {
     // FIXME: make mutable?

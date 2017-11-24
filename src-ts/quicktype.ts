@@ -6,7 +6,7 @@ import * as getStream from "get-stream";
 
 import * as _ from "lodash";
 
-import { Config, TopLevelConfig } from "Config";
+import { Config, TopLevelConfig } from "./Config";
 import * as targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";

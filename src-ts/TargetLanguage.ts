@@ -2,7 +2,7 @@
 
 import { List, Map } from "immutable";
 
-import { Config, TopLevelConfig } from "Config";
+import { Config, TopLevelConfig } from "./Config";
 import { TopLevels, Type } from "./Type";
 import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";
