@@ -66,11 +66,11 @@ function isPartOfClique(c: ClassType, clique: ClassType[]): boolean {
 }
 
 function makeCliqueClass(clique: ClassType[]): ClassType {
-    let names = OrderedSet<string>();
+    const result = new ClassType(OrderedSet(), true);
     for (const c of clique) {
-        names = names.union(c.names);
+        c.names.forEach(n => result.addName(n, c.areNamesInferred));
     }
-    return new ClassType(names);
+    return result;
 }
 
 export function combineClasses(graph: TopLevels): TopLevels {
@@ -143,7 +143,11 @@ export function combineClasses(graph: TopLevels): TopLevels {
             properties.map(([t, count, haveNullable], name) => {
                 t = replaceClasses(t);
                 if (haveNullable || count < clique.length) {
-                    t = makeNullable(t, name);
+                    if (t.isNamedType()) {
+                        t = makeNullable(t, t.names, t.areNamesInferred);
+                    } else {
+                        t = makeNullable(t, name, true);
+                    }
                 }
                 return t;
             })

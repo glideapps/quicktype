@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, Map, Set, Collection, List } from "immutable";
+import { OrderedSet, OrderedMap, Map, Set, Collection, List } from "immutable";
 import stringHash = require("string-hash");
 import { TypeKind, PrimitiveTypeKind, NamedTypeKind } from "Reykjavik";
 import { defined, panic, assert } from "./Support";
@@ -177,14 +177,16 @@ export type NameOrNames = string | OrderedSet<string>;
 
 export abstract class NamedType extends Type {
     private _names: OrderedSet<string>;
+    private _areNamesInferred: boolean;
 
-    constructor(kind: NamedTypeKind, nameOrNames: NameOrNames) {
+    constructor(kind: NamedTypeKind, nameOrNames: NameOrNames, areNamesInferred: boolean) {
         super(kind);
         if (typeof nameOrNames === "string") {
             this._names = OrderedSet([nameOrNames]);
         } else {
             this._names = nameOrNames;
         }
+        this._areNamesInferred = areNamesInferred;
     }
 
     isNamedType(): this is NamedType {
@@ -195,8 +197,25 @@ export abstract class NamedType extends Type {
         return this._names;
     }
 
-    addName(name: string): void {
-        this._names = this._names.add(name);
+    get areNamesInferred(): boolean {
+        return this._areNamesInferred;
+    }
+
+    addName(name: string, isInferred: boolean): void {
+        if (isInferred && !this._areNamesInferred) {
+            return;
+        }
+        if (this._areNamesInferred && !isInferred) {
+            this._names = OrderedSet([name]);
+            this._areNamesInferred = isInferred;
+        } else {
+            this._names = this._names.add(name);
+        }
+    }
+
+    setGivenName(name: string): void {
+        this._names = OrderedSet([name]);
+        this._areNamesInferred = false;
     }
 
     get combinedName(): string {
@@ -207,8 +226,8 @@ export abstract class NamedType extends Type {
 export class ClassType extends NamedType {
     kind: "class";
 
-    constructor(names: NameOrNames, private _properties?: Map<string, Type>) {
-        super("class", names);
+    constructor(names: NameOrNames, areNamesInferred: boolean, private _properties?: Map<string, Type>) {
+        super("class", names, areNamesInferred);
     }
 
     setProperties(properties: Map<string, Type>): void {
@@ -225,8 +244,14 @@ export class ClassType extends NamedType {
         return this._properties;
     }
 
+    get sortedProperties(): OrderedMap<string, Type> {
+        const sortedKeys = this.properties.keySeq().sort();
+        const props = sortedKeys.map((k: string): [string, Type] => [k, defined(this.properties.get(k))]);
+        return OrderedMap(props);
+    }
+
     get children(): OrderedSet<Type> {
-        return this.properties.toOrderedSet();
+        return this.sortedProperties.toOrderedSet();
     }
 
     get isNullable(): boolean {
@@ -241,7 +266,7 @@ export class ClassType extends NamedType {
             return ft;
         });
         if (same) return this;
-        return new ClassType(this.names, properties);
+        return new ClassType(this.names, this.areNamesInferred, properties);
     }
 
     expandForEquality(other: Type): [Type, Type][] | boolean {
@@ -275,8 +300,8 @@ export class ClassType extends NamedType {
 export class EnumType extends NamedType {
     kind: "enum";
 
-    constructor(names: NameOrNames, readonly cases: OrderedSet<string>) {
-        super("enum", names);
+    constructor(names: NameOrNames, areNamesInferred: boolean, readonly cases: OrderedSet<string>) {
+        super("enum", names, areNamesInferred);
     }
 
     get children(): OrderedSet<Type> {
@@ -304,8 +329,8 @@ export class EnumType extends NamedType {
 export class UnionType extends NamedType {
     kind: "union";
 
-    constructor(names: NameOrNames, readonly members: OrderedSet<Type>) {
-        super("union", names);
+    constructor(names: NameOrNames, areNamesInferred: boolean, readonly members: OrderedSet<Type>) {
+        super("union", names, areNamesInferred);
         assert(members.size > 1);
     }
 
@@ -314,7 +339,7 @@ export class UnionType extends NamedType {
     };
 
     get children(): OrderedSet<Type> {
-        return this.members;
+        return this.sortedMembers;
     }
 
     get isNullable(): boolean {
@@ -329,7 +354,12 @@ export class UnionType extends NamedType {
             return ft;
         });
         if (same) return this;
-        return new UnionType(this.names, members);
+        return new UnionType(this.names, this.areNamesInferred, members);
+    }
+
+    get sortedMembers(): OrderedSet<Type> {
+        // FIXME: We're assuming no two members of the same kind.
+        return this.members.sortBy(t => t.kind);
     }
 
     equals(other: any): boolean {
@@ -420,16 +450,16 @@ export function nullableFromUnion(t: UnionType): Type | null {
     return defined(nonNulls.first());
 }
 
-export function makeNullable(t: Type, typeNames: NameOrNames): Type {
+export function makeNullable(t: Type, typeNames: NameOrNames, areNamesInferred: boolean): Type {
     if (t.kind === "null") {
         return t;
     }
     if (!(t instanceof UnionType)) {
-        return new UnionType(typeNames, OrderedSet([t, new PrimitiveType("null")]));
+        return new UnionType(typeNames, areNamesInferred, OrderedSet([t, new PrimitiveType("null")]));
     }
     const [maybeNull, nonNulls] = removeNullFromUnion(t);
     if (maybeNull) return t;
-    return new UnionType(typeNames, nonNulls.add(new PrimitiveType("null")));
+    return new UnionType(typeNames, areNamesInferred, nonNulls.add(new PrimitiveType("null")));
 }
 
 export function removeNull(t: Type): Type {
@@ -440,7 +470,7 @@ export function removeNull(t: Type): Type {
     const first = nonNulls.first();
     if (first) {
         if (nonNulls.size === 1) return first;
-        return new UnionType(t.names, nonNulls);
+        return new UnionType(t.names, t.areNamesInferred, nonNulls);
     }
     return panic("Trying to remove null results in empty union.");
 }

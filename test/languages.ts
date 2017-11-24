@@ -26,7 +26,7 @@ export const CSharpLanguage: Language = {
   runCommand(sample: string) {
     return `dotnet run "${sample}"`;
   },
-  diffViaSchema: false,
+  diffViaSchema: true,
   allowMissingNull: false,
   output: "QuickType.cs",
   topLevel: "TopLevel",
@@ -47,6 +47,7 @@ export const JavaLanguage: Language = {
   runCommand(sample: string) {
     return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`;
   },
+  // FIXME: implement comparing multiple files
   diffViaSchema: false,
   allowMissingNull: false,
   output: "src/main/java/io/quicktype/TopLevel.java",
@@ -63,7 +64,7 @@ export const GoLanguage: Language = {
   runCommand(sample: string) {
     return `go run main.go quicktype.go < "${sample}"`;
   },
-  diffViaSchema: false,
+  diffViaSchema: true,
   allowMissingNull: false,
   output: "quicktype.go",
   topLevel: "TopLevel",
@@ -90,7 +91,7 @@ function makeCPlusPlusLanguage(rendererOptions: {
     runCommand(sample: string) {
       return `./quicktype "${sample}"`;
     },
-    diffViaSchema: false,
+    diffViaSchema: true,
     allowMissingNull: false,
     output: "quicktype.hpp",
     topLevel: "TopLevel",
@@ -114,7 +115,7 @@ export const ElmLanguage: Language = {
   runCommand(sample: string) {
     return `node ./runner.js "${sample}"`;
   },
-  diffViaSchema: false,
+  diffViaSchema: true,
   allowMissingNull: false,
   output: "QuickType.elm",
   topLevel: "QuickType",
@@ -155,7 +156,7 @@ function makeSwiftLanguage(
     runCommand(sample: string) {
       return `./quicktype "${sample}"`;
     },
-    diffViaSchema: false,
+    diffViaSchema: version === 4,
     allowMissingNull: true,
     output: "quicktype.swift",
     topLevel: "TopLevel",
@@ -183,6 +184,7 @@ export const TypeScriptLanguage: Language = {
     // to the root test/tsconfig.json
     return `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`;
   },
+  // FIXME: enable once TypeScript supports unions
   diffViaSchema: false,
   allowMissingNull: false,
   output: "TopLevel.ts",
