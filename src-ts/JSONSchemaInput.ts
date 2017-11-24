@@ -202,7 +202,7 @@ export function schemaToType(topLevelName: string, rootJson: any): Type {
                 registerType(t);
             }
 
-            return unionBuilder.buildUnion();
+            return unionBuilder.buildUnion(true);
         }
     }
 

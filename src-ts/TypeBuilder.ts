@@ -77,6 +77,10 @@ export class TypeBuilder {
         }
         return t;
     };
+
+    getUniqueUnionType = (name: string, isInferred: boolean, members: OrderedSet<Type>): UnionType => {
+        return new UnionType(name, isInferred, members);
+    };
 }
 
 export abstract class UnionBuilder<TArray, TClass, TMap> {
@@ -150,7 +154,7 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
     protected abstract makeClass(classes: TClass[], maps: TMap[]): Type;
     protected abstract makeArray(arrays: TArray[]): Type;
 
-    buildUnion = (): Type => {
+    buildUnion = (unique: boolean): Type => {
         const types: Type[] = [];
 
         if (this._haveAny) {
@@ -190,6 +194,11 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
         if (types.length === 1) {
             return types[0];
         }
-        return this.typeBuilder.getUnionType(this.typeName, this.isInferred, OrderedSet(types));
+        const typesSet = OrderedSet(types);
+        if (unique) {
+            return this.typeBuilder.getUniqueUnionType(this.typeName, this.isInferred, typesSet);
+        } else {
+            return this.typeBuilder.getUnionType(this.typeName, this.isInferred, typesSet);
+        }
     };
 }

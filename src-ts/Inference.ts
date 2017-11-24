@@ -95,7 +95,7 @@ export class TypeInference {
             }
         }
 
-        const result = unionBuilder.buildUnion();
+        const result = unionBuilder.buildUnion(false);
         if (result.isNamedType()) {
             result.setGivenName(typeName);
         }
