@@ -21,27 +21,7 @@ function installPrereqs() {
 }
 
 function buildTypeScript() {
-  shell.exec(`tsc --project src-ts`);
-}
-
-function moveTypeScriptBuildToDist() {
-  const isDirectory = source => fs.lstatSync(source).isDirectory();
-
-  const modules = fs
-    .readdirSync(OUTDIR)
-    .map(name => path.join(OUTDIR, name))
-    .filter(isDirectory)
-    .map(name => path.basename(name));
-
-  const sources = shell
-    .find("src-ts")
-    .filter(f => f.endsWith(".d.ts") || f.endsWith(".js"));
-
-  for (const source of sources) {
-    const dest = source.replace("src-ts", OUTDIR);
-    shell.mkdir("-p", path.dirname(dest));
-    shell.mv(source, dest);
-  }
+  shell.exec(`tsc --project src`);
 }
 
 function makeDistributedCLIExecutable() {
@@ -56,6 +36,10 @@ function makeDistributedCLIExecutable() {
   shell.chmod("+x", cli);
 }
 
+function bundleDistributables() {
+  shell.cp(["README.md", "package.json"], "dist");
+}
+
 function main() {
   const skipPrereqs = !!process.env.SKIP_INSTALL_PREREQUISITES;
 
@@ -64,8 +48,8 @@ function main() {
   }
 
   buildTypeScript();
-  moveTypeScriptBuildToDist();
   makeDistributedCLIExecutable();
+  bundleDistributables();
 }
 
 main();
