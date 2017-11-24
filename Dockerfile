@@ -27,17 +27,11 @@ RUN apt-get install nodejs maven default-jdk clang binutils golang-go --assume-y
 RUN apt-get install dotnet-sdk-2.0.0 --assume-yes
 
 # Install Boost for C++
-
 RUN apt-get install libboost-all-dev --assume-yes
 
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
 COPY . .
 
-# Assemble output for publishing (does not publish)
 ENV CI=true
-RUN script/publish.sh
-
-RUN npm install
-RUN npm run build
-#CMD sh -c "npm install && npm run build"
+RUN npm install --unsafe-perm
