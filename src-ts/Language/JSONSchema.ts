@@ -84,8 +84,12 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
             arrayType => ({ type: "array", items: this.schemaForType(arrayType.items) }),
             classType => ({ $ref: `#/definitions/${this.nameForType(classType)}` }),
             mapType => ({ type: "object", additionalProperties: this.schemaForType(mapType.values) }),
-            enumType => ({ type: "string", enum: enumType.cases.toArray() }),
-            unionType => this.makeOneOf(unionType.sortedMembers)
+            enumType => ({ type: "string", enum: enumType.cases.toArray(), title: enumType.combinedName }),
+            unionType => {
+                const schema = this.makeOneOf(unionType.sortedMembers);
+                schema.title = unionType.combinedName;
+                return schema;
+            }
         );
     };
 
