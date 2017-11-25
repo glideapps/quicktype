@@ -155,9 +155,8 @@ class UnifyUnionBuilder extends UnionBuilder<Type, ClassType, Type> {
     }
 }
 
-export function schemaToType(topLevelName: string, rootJson: any): Type {
+export function schemaToType(typeBuilder: TypeGraph, topLevelName: string, rootJson: any): Type {
     const root = checkStringMap(rootJson);
-    const typeBuilder = new TypeGraph();
     let typeForPath = Map<Ref, Type>();
 
     function setTypeForPath(path: Ref, t: Type): void {

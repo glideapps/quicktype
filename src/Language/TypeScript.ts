@@ -1,16 +1,7 @@
 import * as _ from "lodash";
 
-import {
-    TopLevels,
-    Type,
-    ArrayType,
-    MapType,
-    UnionType,
-    NamedType,
-    ClassType,
-    nullableFromUnion,
-    matchType
-} from "../Type";
+import { Type, ArrayType, MapType, UnionType, NamedType, ClassType, nullableFromUnion, matchType } from "../Type";
+import { TypeGraph } from "../TypeBuilder";
 import { utf16LegalizeCharacters, pascalCase, camelCase, startWithLetter, stringEscape } from "../Strings";
 import { intercalate, panic } from "../Support";
 
@@ -40,9 +31,9 @@ export default class L extends TargetLanguage {
         return false;
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
+    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
         return new TypeScriptRenderer(
-            topLevels,
+            graph,
             L.justTypes.getValue(optionValues),
             !L.declareUnions.getValue(optionValues),
             L.runtimeTypecheck.getValue(optionValues)
@@ -88,12 +79,12 @@ function noEnums(): never {
 
 class TypeScriptRenderer extends ConvenienceRenderer {
     constructor(
-        topLevels: TopLevels,
+        graph: TypeGraph,
         private readonly justTypes: boolean,
         private readonly inlineUnions: boolean,
         private readonly runtimeTypecheck: boolean
     ) {
-        super(topLevels);
+        super(graph);
     }
 
     protected topLevelNameStyle(rawName: string): string {

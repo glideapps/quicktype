@@ -3,7 +3,8 @@
 import { List, Map } from "immutable";
 
 import { Config, TopLevelConfig } from "./Config";
-import { TopLevels, Type } from "./Type";
+import { Type } from "./Type";
+import { TypeGraph } from "./TypeBuilder";
 import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
@@ -22,25 +23,21 @@ export abstract class TargetLanguage {
     ) {}
 
     transformAndRenderConfig(config: Config): SerializedRenderResult {
-        let graph: TopLevels;
+        const graph = new TypeGraph();
         if (config.isInputJSONSchema) {
-            graph = Map();
             for (const tlc of config.topLevels) {
-                // FIXME: This is ugly
-                graph = graph.set(tlc.name, schemaToType(tlc.name, (tlc as any).schema));
+                graph.addTopLevel(tlc.name, schemaToType(graph, tlc.name, (tlc as any).schema));
             }
         } else {
-            const inference = new TypeInference(config.inferMaps, this.supportsEnums && config.inferEnums);
-            graph = Map(
-                config.topLevels.map((tlc: TopLevelConfig): [string, Type] => {
-                    return [
-                        tlc.name,
-                        inference.inferType(config.compressedJSON as CompressedJSON, tlc.name, (tlc as any).samples)
-                    ];
-                })
-            );
+            const inference = new TypeInference(graph, config.inferMaps, this.supportsEnums && config.inferEnums);
+            config.topLevels.forEach(tlc => {
+                graph.addTopLevel(
+                    tlc.name,
+                    inference.inferType(config.compressedJSON as CompressedJSON, tlc.name, (tlc as any).samples)
+                );
+            });
             if (config.combineClasses) {
-                graph = combineClasses(graph);
+                combineClasses(graph);
             }
         }
         if (!config.doRender) {
@@ -62,5 +59,5 @@ export abstract class TargetLanguage {
         return true;
     }
 
-    protected abstract renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult;
+    protected abstract renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult;
 }

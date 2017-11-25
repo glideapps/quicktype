@@ -64,9 +64,11 @@ class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueAr
 }
 
 export class TypeInference {
-    private readonly _typeBuilder = new TypeGraph();
-
-    constructor(private readonly _inferMaps: boolean, private readonly _inferEnums: boolean) {}
+    constructor(
+        private readonly _typeBuilder: TypeGraph,
+        private readonly _inferMaps: boolean,
+        private readonly _inferEnums: boolean
+    ) {}
 
     inferType = (cjson: CompressedJSON, typeName: string, valueArray: NestedValueArray): Type => {
         const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeName, this, cjson, valueArray.length);

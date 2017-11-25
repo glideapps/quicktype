@@ -3,7 +3,8 @@
 import { Map, Collection } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, TopLevels, NamedType, UnionType, matchType, ClassType } from "../Type";
+import { Type, NamedType, UnionType, matchType, ClassType } from "../Type";
+import { TypeGraph } from "../TypeBuilder";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
@@ -15,8 +16,8 @@ export default class JSONSchemaTargetLanguage extends TargetLanguage {
         super("JSON Schema", ["schema", "json-schema"], "schema", []);
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new JSONSchemaRenderer(topLevels);
+    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
+        const renderer = new JSONSchemaRenderer(graph);
         return renderer.render();
     }
 }

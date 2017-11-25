@@ -4,10 +4,6 @@ import { OrderedSet, OrderedMap, Map, Set, Collection, List } from "immutable";
 import { defined, panic, assert } from "./Support";
 import { TypeGraph } from "./TypeBuilder";
 
-// FIXME: OrderedMap?  We lose the order in PureScript right now, though,
-// and maybe even earlier in the TypeScript driver.
-export type TopLevels = Map<string, Type>;
-
 export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | "string";
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
@@ -396,36 +392,6 @@ function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
     return setArray[0].union(...setArray.slice(1));
 }
 
-export function filterTypes<T extends Type>(
-    predicate: (t: Type) => t is T,
-    graph: TopLevels,
-    childrenOfType?: (t: Type) => Collection<any, Type>
-): OrderedSet<T> {
-    let seen = Set<Type>();
-    let types = List<T>();
-
-    function addFromType(t: Type): void {
-        if (seen.has(t)) return;
-        seen = seen.add(t);
-
-        const children = childrenOfType ? childrenOfType(t) : t.children;
-        children.forEach(addFromType);
-        if (predicate(t)) {
-            types = types.push(t);
-        }
-    }
-
-    graph.forEach(addFromType);
-    return types.reverse().toOrderedSet();
-}
-
-export function allNamedTypes(
-    graph: TopLevels,
-    childrenOfType?: (t: Type) => Collection<any, Type>
-): OrderedSet<NamedType> {
-    return filterTypes<NamedType>((t: Type): t is NamedType => t.isNamedType(), graph, childrenOfType);
-}
-
 export type SeparatedNamedTypes = {
     classes: OrderedSet<ClassType>;
     enums: OrderedSet<EnumType>;
@@ -438,14 +404,6 @@ export function separateNamedTypes(types: Collection<any, NamedType>): Separated
     const unions = types.filter((t: NamedType) => t instanceof UnionType).toOrderedSet() as OrderedSet<UnionType>;
 
     return { classes, enums, unions };
-}
-
-export function allNamedTypesSeparated(
-    graph: TopLevels,
-    childrenOfType?: (t: Type) => Collection<any, Type>
-): SeparatedNamedTypes {
-    const types = allNamedTypes(graph, childrenOfType);
-    return separateNamedTypes(types);
 }
 
 export function matchType<U>(

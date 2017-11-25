@@ -1,21 +1,28 @@
 "use strict";
 
-import { Map, OrderedSet, List } from "immutable";
+import { Map, OrderedSet, List, Collection, Set } from "immutable";
 
 import {
     PrimitiveTypeKind,
     Type,
     PrimitiveType,
+    NamedType,
     EnumType,
     MapType,
     ArrayType,
     ClassType,
     UnionType,
-    NameOrNames
+    NameOrNames,
+    SeparatedNamedTypes,
+    separateNamedTypes
 } from "./Type";
-import { defined } from "./Support";
+import { defined, assert } from "./Support";
 
 export class TypeGraph {
+    // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
+    // and maybe even earlier in the TypeScript driver.
+    private _topLevels: Map<string, number> = Map();
+
     private _types: List<Type> = List();
 
     // FIXME: make mutable?
@@ -25,6 +32,16 @@ export class TypeGraph {
     private _enumTypes: Map<OrderedSet<string>, EnumType> = Map();
     private _classTypes: Map<Map<string, Type>, ClassType> = Map();
     private _unionTypes: Map<OrderedSet<Type>, UnionType> = Map();
+
+    get topLevels(): Map<string, Type> {
+        return this._topLevels.map(this.typeAtIndex);
+    }
+
+    addTopLevel = (name: string, t: Type): void => {
+        assert(t.typeGraph === this, "Adding top-level to wrong type graph");
+        assert(!this._topLevels.has(name), "Trying to add top-level with existing name");
+        this._topLevels = this._topLevels.set(name, t.indexInGraph);
+    };
 
     addType = (t: Type): number => {
         const index = this._types.size;
@@ -102,6 +119,53 @@ export class TypeGraph {
 
     getUniqueUnionType = (name: string, isInferred: boolean, members: OrderedSet<Type>): UnionType => {
         return new UnionType(this, name, isInferred, members);
+    };
+
+    filterTypes<T extends Type>(
+        predicate: (t: Type) => t is T,
+        childrenOfType?: (t: Type) => Collection<any, Type>
+    ): OrderedSet<T> {
+        let seen = Set<Type>();
+        let types = List<T>();
+
+        function addFromType(t: Type): void {
+            if (seen.has(t)) return;
+            seen = seen.add(t);
+
+            const children = childrenOfType ? childrenOfType(t) : t.children;
+            children.forEach(addFromType);
+            if (predicate(t)) {
+                types = types.push(t);
+            }
+        }
+
+        this.topLevels.forEach(addFromType);
+        return types.reverse().toOrderedSet();
+    }
+
+    allNamedTypes = (childrenOfType?: (t: Type) => Collection<any, Type>): OrderedSet<NamedType> => {
+        return this.filterTypes<NamedType>((t: Type): t is NamedType => t.isNamedType(), childrenOfType);
+    };
+
+    allNamedTypesSeparated = (childrenOfType?: (t: Type) => Collection<any, Type>): SeparatedNamedTypes => {
+        const types = this.allNamedTypes(childrenOfType);
+        return separateNamedTypes(types);
+    };
+
+    // FIXME: Replace with a non-mutating solution.  It should look something like this:
+    //
+    // inputs:
+    //    replacementGroups: Type[][]
+    //    replacer: (group: Type[], builder: TypeBuilder): Type
+    //
+    // Each array in `replacementGroups` is a bunch of types to be replaced by a
+    // single new type.  `replacer` is a function that takes a group and a
+    // TypeBuilder, and builds a new type with that builder that replaces the group.
+    // That particular TypeBuilder will have to take as inputs types in the old
+    // graph, but return types in the new graph.  Recursive types must be handled
+    // carefully.
+    alter = (f: (t: Type) => Type): void => {
+        this._topLevels = this.topLevels.map(t => f(t).indexInGraph);
     };
 }
 

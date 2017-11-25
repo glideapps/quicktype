@@ -5,7 +5,6 @@ import { Set, OrderedSet, List, Map, OrderedMap } from "immutable";
 import {
     TypeKind,
     Type,
-    TopLevels,
     PrimitiveType,
     NamedType,
     ClassType,
@@ -15,6 +14,7 @@ import {
     matchType,
     removeNullFromUnion
 } from "../Type";
+import { TypeGraph } from "../TypeBuilder";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,
@@ -41,8 +41,8 @@ export default class GoTargetLanguage extends TargetLanguage {
         this._packageOption = packageOption;
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new GoRenderer(topLevels, this._packageOption.getValue(optionValues));
+    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
+        const renderer = new GoRenderer(graph, this._packageOption.getValue(optionValues));
         return renderer.render();
     }
 
@@ -72,8 +72,8 @@ function isValueType(t: Type): boolean {
 class GoRenderer extends ConvenienceRenderer {
     private _topLevelUnmarshalNames = Map<Name, Name>();
 
-    constructor(topLevels: TopLevels, private readonly _packageName: string) {
-        super(topLevels);
+    constructor(graph: TypeGraph, private readonly _packageName: string) {
+        super(graph);
     }
 
     protected topLevelNameStyle(rawName: string): string {

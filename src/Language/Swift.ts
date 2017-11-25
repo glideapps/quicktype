@@ -2,7 +2,6 @@
 
 import { TargetLanguage } from "../TargetLanguage";
 import {
-    TopLevels,
     Type,
     NamedType,
     ClassType,
@@ -12,9 +11,9 @@ import {
     MapType,
     matchType,
     nullableFromUnion,
-    removeNullFromUnion,
-    filterTypes
+    removeNullFromUnion
 } from "../Type";
+import { TypeGraph } from "../TypeBuilder";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, EnumOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -53,9 +52,9 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         this._classOption = classOption;
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
+    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
         const renderer = new SwiftRenderer(
-            topLevels,
+            graph,
             this._justTypesOption.getValue(optionValues),
             this._classOption.getValue(optionValues)
         );
@@ -186,8 +185,8 @@ const upperNamingFunction = funPrefixNamer(s => swiftNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer(s => swiftNameStyle(false, s));
 
 class SwiftRenderer extends ConvenienceRenderer {
-    constructor(topLevels: TopLevels, private readonly _justTypes: boolean, private readonly _useClasses: boolean) {
-        super(topLevels);
+    constructor(graph: TypeGraph, private readonly _justTypes: boolean, private readonly _useClasses: boolean) {
+        super(graph);
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -469,7 +468,7 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private emitSupportFunctions4 = (): void => {
-        const anyAndNullSet = filterTypes((t): t is Type => t.kind === "any" || t.kind === "null", this.topLevels);
+        const anyAndNullSet = this.typeGraph.filterTypes((t): t is Type => t.kind === "any" || t.kind === "null");
         const needAny = anyAndNullSet.some(t => t.kind === "any");
         const needNull = anyAndNullSet.some(t => t.kind === "null");
         if (needAny || needNull) {

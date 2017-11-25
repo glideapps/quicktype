@@ -2,7 +2,8 @@
 
 import { Map, OrderedMap, OrderedSet } from "immutable";
 
-import { TopLevels, ClassType, Type, allNamedTypesSeparated, removeNull, makeNullable } from "./Type";
+import { ClassType, Type, removeNull, makeNullable } from "./Type";
+import { TypeGraph } from "./TypeBuilder";
 import { assert, panic } from "./Support";
 
 const REQUIRED_OVERLAP = 3 / 4;
@@ -74,10 +75,14 @@ function makeCliqueClass(clique: ClassType[]): ClassType {
     return result;
 }
 
-export function combineClasses(graph: TopLevels): TopLevels {
-    let unprocessedClasses = allNamedTypesSeparated(graph).classes.toArray();
+export function combineClasses(graph: TypeGraph): void {
+    let unprocessedClasses = graph.allNamedTypesSeparated().classes.toArray();
     const cliques: ClassType[][] = [];
 
+    // FIXME: Don't build cliques one by one.  Instead have a list of
+    // cliques-in-progress and iterate over all classes.  Add the class
+    // to the first clique that it's part of.  If there's none, make it
+    // into a new clique.
     while (unprocessedClasses.length > 0) {
         const classesLeft: ClassType[] = [];
         const clique = [unprocessedClasses[0]];
@@ -159,5 +164,5 @@ export function combineClasses(graph: TopLevels): TopLevels {
         setCliqueProperties(combinedCliques[i], cliques[i]);
     }
 
-    return graph.map(replaceClasses);
+    graph.alter(replaceClasses);
 }

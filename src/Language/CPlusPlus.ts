@@ -5,7 +5,6 @@ import { Map, OrderedSet } from "immutable";
 import { TargetLanguage } from "../TargetLanguage";
 import {
     Type,
-    TopLevels,
     NamedType,
     ClassType,
     EnumType,
@@ -14,6 +13,7 @@ import {
     matchType,
     removeNullFromUnion
 } from "../Type";
+import { TypeGraph } from "../TypeBuilder";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -85,9 +85,9 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
         this._uniquePtrOption = uniquePtrOption;
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
+    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
         const renderer = new CPlusPlusRenderer(
-            topLevels,
+            graph,
             this._namespaceOption.getValue(optionValues),
             this._typeNamingStyleOption.getValue(optionValues),
             this._memberNamingStyleOption.getValue(optionValues),
@@ -242,14 +242,14 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     private readonly _optionalType: string;
 
     constructor(
-        topLevels: TopLevels,
+        graph: TypeGraph,
         private readonly _namespaceName: string,
         _typeNamingStyle: NamingStyle,
         _memberNamingStyle: NamingStyle,
         _enumeratorNamingStyle: NamingStyle,
         private readonly _uniquePtr: boolean
     ) {
-        super(topLevels);
+        super(graph);
 
         this._typeNameStyle = cppNameStyle(_typeNamingStyle);
         this._typeNamingFunction = funPrefixNamer(this._typeNameStyle);
