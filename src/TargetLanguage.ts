@@ -13,7 +13,7 @@ import { CompressedJSON } from "./CompressedJSON";
 import { RendererOptions } from "./quicktype";
 import { schemaToType } from "./JSONSchemaInput";
 
-export abstract class TargetLanguage {
+export default abstract class TargetLanguage {
     constructor(
         readonly displayName: string,
         readonly names: string[],
@@ -21,12 +21,6 @@ export abstract class TargetLanguage {
         readonly optionDefinitions: OptionDefinition[]
     ) {}
 
-    abstract transformAndRenderConfig(config: Config): SerializedRenderResult;
-
-    abstract needsCompressedJSONInput(rendererOptions: RendererOptions): boolean;
-}
-
-export abstract class TypeScriptTargetLanguage extends TargetLanguage {
     transformAndRenderConfig(config: Config): SerializedRenderResult {
         let graph: TopLevels;
         if (config.isInputJSONSchema) {

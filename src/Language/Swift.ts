@@ -1,6 +1,6 @@
 "use strict";
 
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import TargetLanguage from "../TargetLanguage";
 import {
     TopLevels,
     Type,
@@ -37,7 +37,7 @@ import {
     decapitalize
 } from "../Support";
 
-export default class SwiftTargetLanguage extends TypeScriptTargetLanguage {
+export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption: BooleanOption;
     private readonly _classOption: EnumOption<boolean>;
 

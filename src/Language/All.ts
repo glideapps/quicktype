@@ -1,6 +1,6 @@
 import { find, includes } from "lodash";
 
-import { TargetLanguage } from "../TargetLanguage";
+import TargetLanguage from "../TargetLanguage";
 
 import CSharpTargetLanguage from "./CSharp";
 import GoTargetLanguage from "./Golang";

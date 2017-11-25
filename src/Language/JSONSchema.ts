@@ -2,14 +2,14 @@
 
 import { Map, Collection } from "immutable";
 
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import TargetLanguage from "../TargetLanguage";
 import { Type, TopLevels, NamedType, UnionType, matchType, ClassType } from "../Type";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
 import { legalizeCharacters, pascalCase, defined, assert } from "../Support";
 
-export default class JSONSchemaTargetLanguage extends TypeScriptTargetLanguage {
+export default class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
         super("JSON Schema", ["schema", "json-schema"], "schema", []);
     }

@@ -38,13 +38,13 @@ import {
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import TargetLanguage from "../TargetLanguage";
 import { BooleanOption, StringOption } from "../RendererOptions";
 import { IssueAnnotationData, anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
 const unicode = require("unicode-properties");
 
-export default class JavaTargetLanguage extends TypeScriptTargetLanguage {
+export default class JavaTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption: BooleanOption;
     private readonly _packageOption: StringOption;
 
