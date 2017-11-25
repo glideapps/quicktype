@@ -2,12 +2,15 @@
 
 import { OrderedSet, OrderedMap, Map, Set, Collection, List } from "immutable";
 import stringHash = require("string-hash");
-import { TypeKind, PrimitiveTypeKind, NamedTypeKind } from "Reykjavik";
 import { defined, panic, assert } from "./Support";
 
 // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
 // and maybe even earlier in the TypeScript driver.
 export type TopLevels = Map<string, Type>;
+
+export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | "string";
+export type NamedTypeKind = "class" | "enum" | "union";
+export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
 
 export abstract class Type {
     constructor(readonly kind: TypeKind) {}

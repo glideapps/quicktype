@@ -3,7 +3,7 @@ node_js: node # latest
 sudo: required
 env:
   - FIXTURE=golang,cplusplus,schema
-  - FIXTURE=swift3,swift4,java,schema-json-csharp
+  - FIXTURE=swift,java,schema-json-csharp
   - FIXTURE=elm,typescript,csharp
 services:
   - docker
@@ -21,7 +21,7 @@ script: >
     -e TRAVIS_EVENT_TYPE \
     -e TRAVIS_PULL_REQUEST \
     -e CPUs=2 \
-    dvdsgl/quicktype test/test
+    dvdsgl/quicktype npm test
 jobs:
   include:
     - stage: deploy
@@ -42,7 +42,6 @@ jobs:
       cache:
         directories:
           - node_modules
-          - bower_components
 notifications:
   email:
     on_success: never # default: change

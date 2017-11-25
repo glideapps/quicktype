@@ -131,24 +131,9 @@ export const ElmLanguage: Language = {
   quickTestRendererOptions: [{ "array-type": "list" }]
 };
 
-function makeSwiftLanguage(
-  version: number,
-  rendererOptions: {
-    [name: string]: string;
-  }
-): Language {
-  let name: string;
-  // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
-  let skipJSON = ["no-classes.json", "blns-object.json", "recursive.json"];
-  let skipSchema: string[] = [];
-  if (version === 3) {
-    rendererOptions["swift-version"] = "3";
-    skipJSON.push("identifiers.json");
-    skipSchema.push("enum.schema");
-  } else {
-    rendererOptions["swift-version"] = "4";
-    skipJSON.push("list.json"); // crashes the Swift compiler
-  }
+function makeSwiftLanguage(rendererOptions: {
+  [name: string]: string;
+}): Language {
   return {
     name: "swift",
     base: "test/fixtures/swift",
@@ -156,23 +141,26 @@ function makeSwiftLanguage(
     runCommand(sample: string) {
       return `./quicktype "${sample}"`;
     },
-    diffViaSchema: version === 4,
+    diffViaSchema: true,
     allowMissingNull: true,
     output: "quicktype.swift",
     topLevel: "TopLevel",
-    skipJSON,
-    skipSchema,
+    // list.json crashes the Swift compiler
+    // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
+    skipJSON: [
+      "no-classes.json",
+      "blns-object.json",
+      "recursive.json",
+      "list.json"
+    ],
+    skipSchema: [],
     rendererOptions: rendererOptions,
     quickTestRendererOptions: [{ "struct-or-class": "class" }]
   };
 }
 
-export const Swift3Language: Language = makeSwiftLanguage(3, {});
-export const Swift3ClassesLanguage: Language = makeSwiftLanguage(3, {
-  "struct-or-class": "class"
-});
-export const Swift4Language: Language = makeSwiftLanguage(4, {});
-export const Swift4ClassesLanguage: Language = makeSwiftLanguage(4, {
+export const SwiftLanguage: Language = makeSwiftLanguage({});
+export const SwiftClassesLanguage: Language = makeSwiftLanguage({
   "struct-or-class": "class"
 });
 

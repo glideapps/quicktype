@@ -2,8 +2,8 @@
 
 import { Set, OrderedSet, List, Map, OrderedMap } from "immutable";
 
-import { TypeKind } from "Reykjavik";
 import {
+    TypeKind,
     Type,
     TopLevels,
     PrimitiveType,

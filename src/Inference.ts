@@ -6,7 +6,6 @@ import * as pluralize from "pluralize";
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType, makeNullable } from "./Type";
 import { assertNever, assert } from "./Support";
-import { PrimitiveTypeKind } from "Reykjavik";
 import { TypeBuilder, UnionBuilder } from "./TypeBuilder";
 
 const MIN_LENGTH_FOR_ENUM = 10;

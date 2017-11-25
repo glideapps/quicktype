@@ -4,27 +4,18 @@ import * as process from "process";
 import * as stream from "stream";
 import * as getStream from "get-stream";
 
-import * as Maybe from "Data.Maybe";
-
-// These are simplified, uncurried versions of Either.fromRight, etc.
-import { fromRight } from "./purescript";
-
 import * as _ from "lodash";
 
-import * as Main from "Main";
-import { Config, TopLevelConfig } from "Config";
-import * as Renderers from "Language.Renderers";
-import { ErrorMessage, SourceCode } from "Core";
+import { Config, TopLevelConfig } from "./Config";
 import * as targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
-import { TargetLanguage, PureScriptTargetLanguage } from "./TargetLanguage";
+import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
 import { defined } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
+import { urlsFromURLGrammar } from "./URLGrammar";
 
-const makeSource = require("stream-json");
-const Assembler = require("stream-json/utils/Assembler");
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
 const fetch = require("node-fetch");
@@ -435,7 +426,7 @@ class Run {
             return;
         } else if (this._options.srcUrls) {
             let json = JSON.parse(fs.readFileSync(this._options.srcUrls, "utf8"));
-            let jsonMap = fromRight(Main.urlsFromJsonGrammar(json));
+            let jsonMap = urlsFromURLGrammar(json);
             for (let key of Object.keys(jsonMap)) {
                 await this.readSampleFromFileOrUrlArray(key, jsonMap[key]);
             }

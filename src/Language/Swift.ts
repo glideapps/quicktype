@@ -37,7 +37,7 @@ import {
     decapitalize
 } from "../Support";
 
-export default class Swift4TargetLanguage extends TypeScriptTargetLanguage {
+export default class SwiftTargetLanguage extends TypeScriptTargetLanguage {
     private readonly _justTypesOption: BooleanOption;
     private readonly _classOption: EnumOption<boolean>;
 
@@ -48,7 +48,7 @@ export default class Swift4TargetLanguage extends TypeScriptTargetLanguage {
             ["class", true]
         ]);
         const options = [justTypesOption, classOption];
-        super("Swift 4", ["swift4"], "swift", options.map(o => o.definition));
+        super("Swift", ["swift", "swift4"], "swift", options.map(o => o.definition));
         this._justTypesOption = justTypesOption;
         this._classOption = classOption;
     }

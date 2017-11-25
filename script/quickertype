@@ -1,11 +1,7 @@
 #!/bin/bash
 
-# This runs quicktype, without installing dependencies
-# or rebuilding the PureScript core.
+# This runs quicktype, without installing dependencies.
 #
-# In practice this runs 75% faster, which adds up if you're
-# developing TargetLanguages in TypeScript
+# In practice this runs 75% faster.
 
-SKIP_INSTALL_PREREQUISITES=true \
-    SKIP_BUILD_PURESCRIPT=true \
-    script/quicktype $@
+SKIP_INSTALL_PREREQUISITES=true script/quicktype $@
