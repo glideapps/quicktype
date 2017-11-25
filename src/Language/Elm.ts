@@ -2,7 +2,7 @@
 
 import { Map, List } from "immutable";
 
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption } from "../RendererOptions";
 import {
     TopLevels,
@@ -33,7 +33,7 @@ import {
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
-export default class ElmTargetLanguage extends TypeScriptTargetLanguage {
+export default class ElmTargetLanguage extends TargetLanguage {
     private readonly _listOption: EnumOption<boolean>;
     private readonly _moduleOption: StringOption;
 

@@ -30,7 +30,7 @@ import {
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
 import { IssueAnnotationData, anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
@@ -39,7 +39,7 @@ const unicode = require("unicode-properties");
 type Version = 5 | 6;
 type Features = { helpers: boolean; attributes: boolean };
 
-export default class CSharpTargetLanguage extends TypeScriptTargetLanguage {
+export default class CSharpTargetLanguage extends TargetLanguage {
     private readonly _listOption: EnumOption<boolean>;
     private readonly _denseOption: EnumOption<boolean>;
     private readonly _featuresOption: EnumOption<Features>;

@@ -21,12 +21,6 @@ export abstract class TargetLanguage {
         readonly optionDefinitions: OptionDefinition[]
     ) {}
 
-    abstract transformAndRenderConfig(config: Config): SerializedRenderResult;
-
-    abstract needsCompressedJSONInput(rendererOptions: RendererOptions): boolean;
-}
-
-export abstract class TypeScriptTargetLanguage extends TargetLanguage {
     transformAndRenderConfig(config: Config): SerializedRenderResult {
         let graph: TopLevels;
         if (config.isInputJSONSchema) {

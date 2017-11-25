@@ -26,12 +26,12 @@ import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";
 import { Renderer, RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption } from "../RendererOptions";
 
 const unicode = require("unicode-properties");
 
-export default class L extends TypeScriptTargetLanguage {
+export default class L extends TargetLanguage {
     static justTypes = new BooleanOption("just-types", "Interfaces only", false);
     static declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
     static runtimeTypecheck = new BooleanOption("runtime-typecheck", "Assert JSON.parse results at runtime", false);

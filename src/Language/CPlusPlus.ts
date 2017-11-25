@@ -2,7 +2,7 @@
 
 import { Map, OrderedSet } from "immutable";
 
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import {
     Type,
     TopLevels,
@@ -38,7 +38,7 @@ import { assert } from "../Support";
 
 type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
-export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
+export default class CPlusPlusTargetLanguage extends TargetLanguage {
     private readonly _namespaceOption: StringOption;
     private readonly _typeNamingStyleOption: EnumOption<NamingStyle>;
     private readonly _memberNamingStyleOption: EnumOption<NamingStyle>;

@@ -28,11 +28,11 @@ import {
 import { StringOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
-export default class GoTargetLanguage extends TypeScriptTargetLanguage {
+export default class GoTargetLanguage extends TargetLanguage {
     private readonly _packageOption: StringOption;
 
     constructor() {

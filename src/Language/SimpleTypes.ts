@@ -35,12 +35,12 @@ import { Namer, Namespace, Name, DependencyName, SimpleName, FixedName, keywordN
 import { Renderer, RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
-import { TargetLanguage, TypeScriptTargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption } from "../RendererOptions";
 
 const unicode = require("unicode-properties");
 
-export default class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage {
+export default class SimpleTypesTargetLanguage extends TargetLanguage {
     static declareUnionsOption = new BooleanOption("declare-unions", "Declare unions as named types", false);
 
     constructor() {
