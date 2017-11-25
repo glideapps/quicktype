@@ -20,3 +20,4 @@ test/elm/QuickType.elm
 /test/elm/libsysconfcpus/
 /test/runs
 test/fixtures/cplusplus/json.hpp
+/dist

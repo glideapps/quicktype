@@ -9,7 +9,7 @@
     "pub": "script/publish.sh",
     "prepare": "npm run build",
     "build": "script/build.ts",
-    "test": "npm run build && test/test",
+    "test": "npm run build && script/test",
     "start": "script/watch"
   },
   "dependencies": {
@@ -27,9 +27,10 @@
   },
   "devDependencies": {
     "@types/get-stream": "^3.0.1",
-    "@types/pluralize": "0.0.28",
     "@types/lodash": "^4.14.72",
     "@types/node": "^8.0.19",
+    "@types/pluralize": "0.0.28",
+    "@types/shelljs": "^0.7.6",
     "@types/string-hash": "^1.1.1",
     "ajv": "^5.2.2",
     "deep-equal": "^1.0.1",

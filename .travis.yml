@@ -21,7 +21,7 @@ script: >
     -e TRAVIS_EVENT_TYPE \
     -e TRAVIS_PULL_REQUEST \
     -e CPUs=2 \
-    dvdsgl/quicktype test/test
+    dvdsgl/quicktype npm test
 jobs:
   include:
     - stage: deploy
