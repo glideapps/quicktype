@@ -1,10 +1,23 @@
 "use strict";
 
-import { Map, OrderedSet, isIndexed } from "immutable";
+import { Map, OrderedSet, List } from "immutable";
 
-import { PrimitiveTypeKind, Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType } from "./Type";
+import {
+    PrimitiveTypeKind,
+    Type,
+    PrimitiveType,
+    EnumType,
+    MapType,
+    ArrayType,
+    ClassType,
+    UnionType,
+    NameOrNames
+} from "./Type";
+import { defined } from "./Support";
 
-export class TypeBuilder {
+export class TypeGraph {
+    private _types: List<Type> = List();
+
     // FIXME: make mutable?
     private _primitiveTypes: Map<PrimitiveTypeKind, PrimitiveType> = Map();
     private _mapTypes: Map<Type, MapType> = Map();
@@ -13,22 +26,32 @@ export class TypeBuilder {
     private _classTypes: Map<Map<string, Type>, ClassType> = Map();
     private _unionTypes: Map<OrderedSet<Type>, UnionType> = Map();
 
+    addType = (t: Type): number => {
+        const index = this._types.size;
+        this._types = this._types.push(t);
+        return index;
+    };
+
+    typeAtIndex = (index: number): Type => {
+        return defined(this._types.get(index));
+    };
+
     getPrimitiveType = (kind: PrimitiveTypeKind): PrimitiveType => {
         let t = this._primitiveTypes.get(kind);
         if (t === undefined) {
-            t = new PrimitiveType(kind);
+            t = new PrimitiveType(this, kind);
             this._primitiveTypes = this._primitiveTypes.set(kind, t);
         }
         return t;
     };
 
-    getEnumType = (name: string, isInferred: boolean, cases: OrderedSet<string>): EnumType => {
+    getEnumType = (names: NameOrNames, isInferred: boolean, cases: OrderedSet<string>): EnumType => {
         let t = this._enumTypes.get(cases);
         if (t === undefined) {
-            t = new EnumType(name, isInferred, cases);
+            t = new EnumType(this, names, isInferred, cases);
             this._enumTypes = this._enumTypes.set(cases, t);
         } else {
-            t.addName(name, isInferred);
+            t.addNames(names, isInferred);
         }
         return t;
     };
@@ -36,7 +59,7 @@ export class TypeBuilder {
     getMapType = (values: Type): MapType => {
         let t = this._mapTypes.get(values);
         if (t === undefined) {
-            t = new MapType(values);
+            t = new MapType(this, values);
             this._mapTypes = this._mapTypes.set(values, t);
         }
         return t;
@@ -45,40 +68,40 @@ export class TypeBuilder {
     getArrayType = (items: Type): ArrayType => {
         let t = this._arrayTypes.get(items);
         if (t === undefined) {
-            t = new ArrayType(items);
+            t = new ArrayType(this, items);
             this._arrayTypes = this._arrayTypes.set(items, t);
         }
         return t;
     };
 
-    getClassType = (name: string, isInferred: boolean, properties: Map<string, Type>): ClassType => {
+    getClassType = (names: NameOrNames, isInferred: boolean, properties: Map<string, Type>): ClassType => {
         let t = this._classTypes.get(properties);
         if (t === undefined) {
-            t = new ClassType(name, isInferred, properties);
+            t = new ClassType(this, names, isInferred, properties);
             this._classTypes = this._classTypes.set(properties, t);
         } else {
-            t.addName(name, isInferred);
+            t.addNames(names, isInferred);
         }
         return t;
     };
 
-    getUniqueClassType = (name: string, isInferred: boolean, properties?: Map<string, Type>): ClassType => {
-        return new ClassType(name, isInferred, properties);
+    getUniqueClassType = (names: NameOrNames, isInferred: boolean, properties?: Map<string, Type>): ClassType => {
+        return new ClassType(this, names, isInferred, properties);
     };
 
-    getUnionType = (name: string, isInferred: boolean, members: OrderedSet<Type>): UnionType => {
+    getUnionType = (names: NameOrNames, isInferred: boolean, members: OrderedSet<Type>): UnionType => {
         let t = this._unionTypes.get(members);
         if (t === undefined) {
-            t = new UnionType(name, isInferred, members);
+            t = new UnionType(this, names, isInferred, members);
             this._unionTypes = this._unionTypes.set(members, t);
         } else {
-            t.addName(name, isInferred);
+            t.addNames(names, isInferred);
         }
         return t;
     };
 
     getUniqueUnionType = (name: string, isInferred: boolean, members: OrderedSet<Type>): UnionType => {
-        return new UnionType(name, isInferred, members);
+        return new UnionType(this, name, isInferred, members);
     };
 }
 
@@ -96,7 +119,7 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
     private _enumCases: string[] = [];
 
     constructor(
-        protected readonly typeBuilder: TypeBuilder,
+        protected readonly typeBuilder: TypeGraph,
         protected readonly typeName: string,
         protected readonly isInferred: boolean
     ) {}

@@ -66,9 +66,10 @@ function isPartOfClique(c: ClassType, clique: ClassType[]): boolean {
 }
 
 function makeCliqueClass(clique: ClassType[]): ClassType {
-    const result = new ClassType(OrderedSet(), true);
+    assert(clique.length > 0, "Clique can't be empty");
+    const result = clique[0].typeGraph.getUniqueClassType(OrderedSet<string>(), true);
     for (const c of clique) {
-        c.names.forEach(n => result.addName(n, c.areNamesInferred));
+        c.names.forEach(n => result.addNames(n, c.areNamesInferred));
     }
     return result;
 }
