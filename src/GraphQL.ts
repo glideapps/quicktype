@@ -1,9 +1,19 @@
 "use strict";
 
-import { parse } from "graphql/language";
 import { Map, Set, OrderedSet } from "immutable";
 
-import { Type, ClassType, ArrayType, EnumType, UnionType, PrimitiveType, TypeNames, removeNullFromUnion } from "./Type";
+const graphql = require("graphql/language");
+
+import {
+    Type,
+    ClassType,
+    ArrayType,
+    EnumType,
+    UnionType,
+    PrimitiveType,
+    removeNullFromUnion,
+    NamesWithAlternatives
+} from "./Type";
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
 import {
     DocumentNode,
@@ -59,26 +69,24 @@ function getField(t: GQLType, name: string): Field {
     throw `Error: Required field ${name} not defined on type ${t.name}.`;
 }
 
-function makeTypeNames(name: string, fieldName: string | null, containingType: GQLType | null): TypeNames {
+function makeTypeNames(name: string, fieldName: string | null, containingType: GQLType | null): NamesWithAlternatives {
     const containingTypeName = containingType ? containingType.name : undefined;
     const alternatives: string[] = [];
     if (fieldName) alternatives.push(fieldName);
     if (containingTypeName) alternatives.push(`${containingTypeName}_${name}`);
     if (fieldName && containingTypeName) alternatives.push(`${containingTypeName}_${fieldName}`);
     // FIXME: implement alternatives
-    return { names: Set([name]), combined: name, alternatives: OrderedSet(alternatives) };
+    return { names: OrderedSet([name]), alternatives: OrderedSet(alternatives) };
 }
 
 function makeNullable(t: Type, name: string, fieldName: string | null, containingType: GQLType | null): Type {
+    const typeNames = makeTypeNames(name, fieldName, containingType);
     if (!(t instanceof UnionType)) {
-        return new UnionType(
-            makeTypeNames(name, fieldName, containingType),
-            OrderedSet([t, new PrimitiveType("null")])
-        );
+        return new UnionType(typeNames.names, false, OrderedSet([t, new PrimitiveType("null")]));
     }
     const [maybeNull, nonNulls] = removeNullFromUnion(t);
     if (maybeNull) return t;
-    return new UnionType(makeTypeNames(name, fieldName, containingType), nonNulls.add(new PrimitiveType("null")));
+    return new UnionType(typeNames, false, nonNulls.add(new PrimitiveType("null")));
 }
 
 function removeNull(t: Type): Type {
@@ -89,7 +97,7 @@ function removeNull(t: Type): Type {
     const first = nonNulls.first();
     if (first) {
         if (nonNulls.size === 1) return first;
-        return new UnionType(t.names, nonNulls);
+        return new UnionType({ names: t.names, alternatives: t.alternativeNames }, t.areNamesInferred, nonNulls);
     }
     throw "Error: Trying to remove null results in empty union.";
 }
@@ -141,7 +149,7 @@ class GQLQuery {
         this._schema = schema;
         this._fragments = {};
 
-        const queryDocument = <DocumentNode>parse(queryString);
+        const queryDocument = graphql.parse(queryString) as DocumentNode;
         const queries: OperationDefinitionNode[] = [];
         for (const def of queryDocument.definitions) {
             if (def.kind === "OperationDefinition") {
@@ -193,7 +201,7 @@ class GQLQuery {
                     name = fieldNode.name.value;
                     fieldName = null;
                 }
-                return new EnumType(makeTypeNames(name, fieldName, containingType), OrderedSet(values));
+                return new EnumType(makeTypeNames(name, fieldName, containingType), false, OrderedSet(values));
             case TypeKind.INPUT_OBJECT:
                 throw "FIXME: support input objects";
             case TypeKind.LIST:
@@ -263,7 +271,7 @@ class GQLQuery {
                     assertNever(selection);
             }
         }
-        const classType = new ClassType(makeTypeNames(gqlType.name, containingFieldName, containingType));
+        const classType = new ClassType(makeTypeNames(gqlType.name, containingFieldName, containingType), false);
         classType.setProperties(properties);
         return classType;
     };

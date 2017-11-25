@@ -235,9 +235,10 @@ interface CompleteOptions {
     rendererOptions: RendererOptions;
 }
 
-type SampleOrSchemaMap = {
+type InputData = {
     samples: { [name: string]: Value[] };
     schemas: { [name: string]: any };
+    graphQLs: { [name: string]: { schema: any; query: string } };
 };
 
 let graphByInputHash: Map<number, TypeGraph> = Map();
@@ -245,7 +246,7 @@ let graphByInputHash: Map<number, TypeGraph> = Map();
 class Run {
     private _options: CompleteOptions;
     private _compressedJSON: CompressedJSON;
-    private _allSamples: SampleOrSchemaMap;
+    private _allInputs: InputData;
 
     constructor(argv: string[] | Options, private readonly _doCache: boolean) {
         if (_.isArray(argv)) {
@@ -272,7 +273,7 @@ class Run {
             this._options = this.inferOptions(argv);
         }
         this._compressedJSON = new CompressedJSON();
-        this._allSamples = { samples: {}, schemas: {} };
+        this._allInputs = { samples: {}, schemas: {}, graphQLs: {} };
     }
 
     private getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
@@ -283,19 +284,28 @@ class Run {
         return this._options.srcLang === "schema";
     }
 
+    private get isInputGraphQL(): boolean {
+        return this._options.graphqlQuery !== undefined;
+    }
+
     private makeGraph = (): TypeGraph => {
         const supportsEnums = getTargetLanguage(this._options.lang).supportsEnums;
         const typeBuilder = new TypeGraphBuilder();
         if (this.isInputJSONSchema) {
-            Map(this._allSamples.schemas).forEach((schema, name) => {
+            Map(this._allInputs.schemas).forEach((schema, name) => {
                 typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema));
+            });
+            return typeBuilder.finish();
+        } else if (this.isInputGraphQL) {
+            Map(this._allInputs.graphQLs).forEach(({ schema, query }, name) => {
+                typeBuilder.addTopLevel(name, readGraphQLSchema(schema, query));
             });
             return typeBuilder.finish();
         } else {
             const doInferMaps = !this._options.noMaps;
             const doInferEnums = supportsEnums && !this._options.noEnums;
             const doCombineClasses = !this._options.noCombineClasses;
-            const samplesMap = Map(this._allSamples.samples);
+            const samplesMap = Map(this._allInputs.samples);
             const inputs = List([
                 doInferMaps,
                 doInferEnums,
@@ -314,7 +324,7 @@ class Run {
             }
 
             const inference = new TypeInference(typeBuilder, doInferMaps, doInferEnums);
-            Map(this._allSamples.samples).forEach((cjson, name) => {
+            Map(this._allInputs.samples).forEach((cjson, name) => {
                 typeBuilder.addTopLevel(
                     name,
                     inference.inferType(this._compressedJSON as CompressedJSON, name, false, cjson)
@@ -383,17 +393,17 @@ class Run {
     private readSampleFromStream = async (name: string, readStream: stream.Readable): Promise<void> => {
         if (this.isInputJSONSchema) {
             const input = JSON.parse(await getStream(readStream));
-            if (Object.prototype.hasOwnProperty.call(this._allSamples.schemas, name)) {
+            if (Object.prototype.hasOwnProperty.call(this._allInputs.schemas, name)) {
                 console.error(`Error: More than one schema given for top-level ${name}.`);
                 return process.exit(1);
             }
-            this._allSamples.schemas[name] = input;
+            this._allInputs.schemas[name] = input;
         } else {
             const input = await this._compressedJSON.readFromStream(readStream);
-            if (!Object.prototype.hasOwnProperty.call(this._allSamples.samples, name)) {
-                this._allSamples.samples[name] = [];
+            if (!Object.prototype.hasOwnProperty.call(this._allInputs.samples, name)) {
+                this._allInputs.samples[name] = [];
             }
-            this._allSamples.samples[name].push(input);
+            this._allInputs.samples[name].push(input);
         }
     };
 
@@ -450,7 +460,7 @@ class Run {
         if (this._options.srcUrls) {
             let json = JSON.parse(fs.readFileSync(this._options.srcUrls, "utf8"));
             let jsonMap = urlsFromURLGrammar(json);
-            for (let key of Object.keys(jsonMap)) {
+            for (let key of Object.getOwnPropertyNames(jsonMap)) {
                 await this.readSampleFromFileOrUrlArray(key, jsonMap[key]);
             }
         } else if (this._options.graphqlSchema) {
@@ -460,12 +470,7 @@ class Run {
             }
             let json = JSON.parse(fs.readFileSync(this._options.graphqlSchema, "utf8"));
             let query = fs.readFileSync(this._options.graphqlQuery, "utf8");
-            const topLevel = {
-                name: this._options.topLevel,
-                graphQLSchema: json,
-                graphQLDocument: query
-            };
-            this.produceOutput(this.renderTopLevels([topLevel]));
+            this._allInputs.graphQLs[this._options.topLevel] = { schema: json, query };
         } else if (this._options.src.length === 0) {
             // FIXME: Why do we have to convert to any here?
             await this.readSampleFromStream(this._options.topLevel, process.stdin as any);

@@ -179,30 +179,30 @@ function combineNames(names: Collection<any, string>): string {
     return first;
 }
 
-export type NameOrNames = string | OrderedSet<string>;
+export type NamesWithAlternatives = { names: OrderedSet<string>; alternatives: OrderedSet<string> };
+export type NameOrNames = string | OrderedSet<string> | NamesWithAlternatives;
 
-function setFromNameOrNames(nameOrNames: NameOrNames): OrderedSet<string> {
+function setFromNameOrNames(nameOrNames: NameOrNames): NamesWithAlternatives {
     if (typeof nameOrNames === "string") {
-        return OrderedSet([nameOrNames]);
+        return { names: OrderedSet([nameOrNames]), alternatives: OrderedSet() };
+    } else if (OrderedSet.isOrderedSet(nameOrNames)) {
+        return { names: nameOrNames as OrderedSet<string>, alternatives: OrderedSet() };
     } else {
-        return nameOrNames;
+        return nameOrNames as NamesWithAlternatives;
     }
 }
 
 export abstract class NamedType extends Type {
     private _names: OrderedSet<string>;
     private _areNamesInferred: boolean;
+    private _alternativeNames: OrderedSet<string>;
 
-    constructor(
-        typeRef: TypeRef,
-        kind: NamedTypeKind,
-        nameOrNames: NameOrNames,
-        areNamesInferred: boolean,
-        private readonly _alternativeNames: OrderedSet<string> = OrderedSet()
-    ) {
+    constructor(typeRef: TypeRef, kind: NamedTypeKind, nameOrNames: NameOrNames, areNamesInferred: boolean) {
         super(typeRef, kind);
-        this._names = setFromNameOrNames(nameOrNames);
+        const { names, alternatives } = setFromNameOrNames(nameOrNames);
+        this._names = names;
         this._areNamesInferred = areNamesInferred;
+        this._alternativeNames = alternatives;
     }
 
     isNamedType(): this is NamedType {
@@ -217,17 +217,22 @@ export abstract class NamedType extends Type {
         return this._areNamesInferred;
     }
 
+    get alternativeNames(): OrderedSet<string> {
+        return this._alternativeNames;
+    }
+
     addNames(nameOrNames: NameOrNames, isInferred: boolean): void {
         if (isInferred && !this._areNamesInferred) {
             return;
         }
-        const names = setFromNameOrNames(nameOrNames);
+        const { names, alternatives } = setFromNameOrNames(nameOrNames);
         if (this._areNamesInferred && !isInferred) {
             this._names = names;
             this._areNamesInferred = isInferred;
         } else {
             this._names = this._names.union(names);
         }
+        this._alternativeNames = this._alternativeNames.union(alternatives);
     }
 
     /*
