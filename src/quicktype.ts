@@ -228,15 +228,17 @@ interface CompleteOptions {
     rendererOptions: RendererOptions;
 }
 
-type SampleOrSchemaMap = {
+// FIXME: Combine this with TopLevelConfig
+type InputData = {
     samples: { [name: string]: any[] };
     schemas: { [name: string]: any };
+    graphQLs: { [name: string]: { schema: any; query: string } };
 };
 
 class Run {
     private _options: CompleteOptions;
     private _compressedJSON: CompressedJSON;
-    private _allSamples: SampleOrSchemaMap;
+    private _allInputs: InputData;
 
     constructor(argv: string[] | Options) {
         if (_.isArray(argv)) {
@@ -263,7 +265,7 @@ class Run {
             this._options = this.inferOptions(argv);
         }
         this._compressedJSON = new CompressedJSON();
-        this._allSamples = { samples: {}, schemas: {} };
+        this._allInputs = { samples: {}, schemas: {}, graphQLs: {} };
     }
 
     getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
@@ -272,6 +274,10 @@ class Run {
 
     get isInputJSONSchema(): boolean {
         return this._options.srcLang === "schema";
+    }
+
+    get isInputGraphQL(): boolean {
+        return this._options.graphqlQuery !== undefined;
     }
 
     get needCompressedJSONInput(): boolean {
@@ -284,23 +290,32 @@ class Run {
 
     renderSamplesOrSchemas = (): SerializedRenderResult => {
         const targetLanguage = getTargetLanguage(this._options.lang);
+        let combineClasses = !this._options.noCombineClasses;
 
-        let topLevels: TopLevelConfig[];
-        if (this.isInputJSONSchema) {
-            const names = Object.getOwnPropertyNames(this._allSamples.schemas);
-            topLevels = names.map(name => ({ name, schema: this._allSamples.schemas[name] }));
-        } else {
-            const names = Object.getOwnPropertyNames(this._allSamples.samples);
-            topLevels = names.map(name => ({ name, samples: this._allSamples.samples[name] }));
+        let topLevels: TopLevelConfig[] = [];
+        for (const name of Object.getOwnPropertyNames(this._allInputs.schemas)) {
+            const schema = this._allInputs.schemas[name];
+            topLevels.push({ name, schema });
+            combineClasses = false;
+        }
+        for (const name of Object.getOwnPropertyNames(this._allInputs.samples)) {
+            const samples = this._allInputs.samples[name];
+            topLevels.push({ name, samples });
+        }
+        for (const name of Object.getOwnPropertyNames(this._allInputs.graphQLs)) {
+            const gql = this._allInputs.graphQLs[name];
+            topLevels.push({ name, graphQLSchema: gql.schema, graphQLDocument: gql.query });
+            combineClasses = false;
         }
         let config: Config = {
             language: targetLanguage.names[0],
             isInputJSONSchema: this.isInputJSONSchema,
+            isInputGraphQL: this.isInputGraphQL,
             topLevels,
             compressedJSON: this._compressedJSON,
             inferMaps: !this._options.noMaps,
             inferEnums: !this._options.noEnums,
-            combineClasses: !this._options.noCombineClasses,
+            combineClasses,
             doRender: !this._options.noRender,
             rendererOptions: this._options.rendererOptions
         };
@@ -311,19 +326,6 @@ class Run {
             console.error(e);
             return process.exit(1);
         }
-    };
-
-    renderSamplesOrSchemas = (samplesOrSchemas: SampleOrSchemaMap): SerializedRenderResult => {
-        const areSchemas = this.options.srcLang === "schema";
-        const topLevels = Object.getOwnPropertyNames(samplesOrSchemas).map(name => {
-            if (areSchemas) {
-                // Only one schema per top-level is used right now
-                return { name, schema: samplesOrSchemas[name][0] };
-            } else {
-                return { name, samples: samplesOrSchemas[name] };
-            }
-        });
-        return this.renderTopLevels(topLevels);
     };
 
     splitAndWriteJava = (dir: string, str: string) => {
@@ -389,16 +391,16 @@ class Run {
             input = JSON.parse(await getStream(readStream));
         }
         if (this.isInputJSONSchema) {
-            if (Object.prototype.hasOwnProperty.call(this._allSamples.schemas, name)) {
+            if (Object.prototype.hasOwnProperty.call(this._allInputs.schemas, name)) {
                 console.error(`Error: More than one schema given for top-level ${name}.`);
                 return process.exit(1);
             }
-            this._allSamples.schemas[name] = input;
+            this._allInputs.schemas[name] = input;
         } else {
-            if (!Object.prototype.hasOwnProperty.call(this._allSamples.samples, name)) {
-                this._allSamples.samples[name] = [];
+            if (!Object.prototype.hasOwnProperty.call(this._allInputs.samples, name)) {
+                this._allInputs.samples[name] = [];
             }
-            this._allSamples.samples[name].push(input);
+            this._allInputs.samples[name].push(input);
         }
     };
 
@@ -457,22 +459,17 @@ class Run {
         } else if (this._options.srcUrls) {
             let json = JSON.parse(fs.readFileSync(this._options.srcUrls, "utf8"));
             let jsonMap = urlsFromURLGrammar(json);
-            for (let key of Object.keys(jsonMap)) {
+            for (let key of Object.getOwnPropertyNames(jsonMap)) {
                 await this.readSampleFromFileOrUrlArray(key, jsonMap[key]);
             }
-        } else if (this.options.graphqlSchema) {
-            if (!this.options.graphqlQuery) {
+        } else if (this._options.graphqlSchema) {
+            if (!this._options.graphqlQuery) {
                 console.error("Please specify a GraphQL query with --graphql-query.");
                 return process.exit(1);
             }
-            let json = JSON.parse(fs.readFileSync(this.options.graphqlSchema, "utf8"));
-            let query = fs.readFileSync(this.options.graphqlQuery, "utf8");
-            const topLevel = {
-                name: this.options.topLevel,
-                graphQLSchema: json,
-                graphQLDocument: query
-            };
-            this.produceOutput(this.renderTopLevels([topLevel]));
+            let json = JSON.parse(fs.readFileSync(this._options.graphqlSchema, "utf8"));
+            let query = fs.readFileSync(this._options.graphqlQuery, "utf8");
+            this._allInputs.graphQLs[this._options.topLevel] = { schema: json, query };
         } else if (this._options.src.length === 0) {
             // FIXME: Why do we have to convert to any here?
             await this.readSampleFromStream(this._options.topLevel, process.stdin as any);

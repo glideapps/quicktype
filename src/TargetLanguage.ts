@@ -2,7 +2,7 @@
 
 import { List, Map } from "immutable";
 
-import { Config, TopLevelConfig } from "./Config";
+import { Config, TopLevelConfig, GraphQLTopLevelConfig } from "./Config";
 import { Type } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { RenderResult } from "./Renderer";
@@ -15,6 +15,7 @@ import { RendererOptions } from "./quicktype";
 import { schemaToType } from "./JSONSchemaInput";
 import { TypeGraphBuilder } from "./TypeBuilder";
 import { inferMaps } from "./InferMaps";
+import { readGraphQLSchema } from "./GraphQL";
 
 export abstract class TargetLanguage {
     constructor(
@@ -27,11 +28,20 @@ export abstract class TargetLanguage {
     transformAndRenderConfig(config: Config): SerializedRenderResult {
         const typeBuilder = new TypeGraphBuilder();
         let combine = config.combineClasses;
+        let doInferMaps = config.inferMaps;
         if (config.isInputJSONSchema) {
             for (const tlc of config.topLevels) {
                 typeBuilder.addTopLevel(tlc.name, schemaToType(typeBuilder, tlc.name, (tlc as any).schema));
             }
             combine = false;
+            doInferMaps = false;
+        } else if (config.isInputGraphQL) {
+            for (const tlc of config.topLevels) {
+                const gql = tlc as GraphQLTopLevelConfig;
+                typeBuilder.addTopLevel(tlc.name, readGraphQLSchema(gql.graphQLSchema, gql.graphQLDocument));
+            }
+            combine = false;
+            doInferMaps = false;
         } else {
             const inference = new TypeInference(typeBuilder, config.inferMaps, this.supportsEnums && config.inferEnums);
             config.topLevels.forEach(tlc => {
@@ -53,19 +63,6 @@ export abstract class TargetLanguage {
         if (!config.doRender) {
             return { lines: ["Done.", ""], annotations: List() };
         }
-        /*
-        let graphQLTopLevels: GraphQLTopLevelConfig[] = [];
-        for (const tl of config.topLevels) {
-            if (tl.hasOwnProperty("graphQLSchema")) {
-                graphQLTopLevels.push(tl as GraphQLTopLevelConfig);
-            } else {
-                pureScriptTopLevels.push(tl);
-            }
-        }
-        for (const tl of graphQLTopLevels) {
-            graph = graph.set(tl.name, readGraphQLSchema(tl.graphQLSchema, tl.graphQLDocument));
-        }
-        */
         const renderResult = this.renderGraph(graph, config.rendererOptions);
         return serializeRenderResult(renderResult, this.indentation);
     }

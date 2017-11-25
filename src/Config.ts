@@ -16,6 +16,7 @@ export type TopLevelConfig =
 export interface Config {
     language: string;
     isInputJSONSchema: boolean;
+    isInputGraphQL: boolean;
     topLevels: TopLevelConfig[];
     compressedJSON: object;
     inferMaps: boolean;
