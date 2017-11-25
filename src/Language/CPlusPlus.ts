@@ -27,10 +27,9 @@ import {
     isAscii,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
-    stringEscape,
-    defined,
-    assertNever
-} from "../Support";
+    stringEscape
+} from "../Strings";
+import { defined, assertNever } from "../Support";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { StringOption, EnumOption } from "../RendererOptions";

@@ -25,16 +25,12 @@ import {
     escapeNonPrintableMapper,
     utf16ConcatMap,
     standardUnicodeHexEscape,
-    intercalate,
-    defined,
-    assertNever,
     isAscii,
     isLetter,
     isDigit,
-    capitalize,
-    nonNull,
-    assert
-} from "../Support";
+    capitalize
+} from "../Strings";
+import { intercalate, defined, assertNever, nonNull, assert } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";

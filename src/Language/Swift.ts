@@ -33,9 +33,9 @@ import {
     escapeNonPrintableMapper,
     isPrintable,
     intToHex,
-    defined,
     decapitalize
-} from "../Support";
+} from "../Strings";
+import { defined } from "../Support";
 
 export default class SwiftTargetLanguage extends TypeScriptTargetLanguage {
     private readonly _justTypesOption: BooleanOption;

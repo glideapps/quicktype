@@ -7,7 +7,8 @@ import { Type, TopLevels, NamedType, UnionType, matchType, ClassType } from "../
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
-import { legalizeCharacters, pascalCase, defined, assert } from "../Support";
+import { legalizeCharacters, pascalCase } from "../Strings";
+import { defined, assert } from "../Support";
 
 export default class JSONSchemaTargetLanguage extends TypeScriptTargetLanguage {
     constructor() {

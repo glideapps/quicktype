@@ -11,16 +11,8 @@ import {
     nullableFromUnion,
     matchType
 } from "../Type";
-
-import {
-    utf16LegalizeCharacters,
-    pascalCase,
-    camelCase,
-    startWithLetter,
-    stringEscape,
-    intercalate,
-    panic
-} from "../Support";
+import { utf16LegalizeCharacters, pascalCase, camelCase, startWithLetter, stringEscape } from "../Strings";
+import { intercalate, panic } from "../Support";
 
 import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";

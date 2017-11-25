@@ -18,17 +18,9 @@ import {
     removeNullFromUnion,
     matchType
 } from "../Type";
-
 import { Source, Sourcelike } from "../Source";
-
-import {
-    utf16LegalizeCharacters,
-    pascalCase,
-    startWithLetter,
-    utf16StringEscape,
-    intercalate,
-    defined
-} from "../Support";
+import { utf16LegalizeCharacters, pascalCase, startWithLetter, utf16StringEscape } from "../Strings";
+import { intercalate, defined } from "../Support";
 
 import { Namer, Namespace, Name, DependencyName, SimpleName, FixedName, keywordNamespace } from "../Naming";
 

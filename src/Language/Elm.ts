@@ -25,11 +25,10 @@ import {
     startWithLetter,
     isLetterOrUnderscore,
     decapitalize,
-    defined,
     stringEscape,
-    intercalate,
     isAscii
-} from "../Support";
+} from "../Strings";
+import { defined, intercalate } from "../Support";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
