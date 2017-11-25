@@ -13,7 +13,7 @@ import { CompressedJSON } from "./CompressedJSON";
 import { RendererOptions } from "./quicktype";
 import { schemaToType } from "./JSONSchemaInput";
 
-export default abstract class TargetLanguage {
+export abstract class TargetLanguage {
     constructor(
         readonly displayName: string,
         readonly names: string[],

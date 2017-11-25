@@ -2,7 +2,7 @@
 
 import { Map, List } from "immutable";
 
-import TargetLanguage from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption } from "../RendererOptions";
 import {
     TopLevels,

@@ -1,6 +1,6 @@
 "use strict";
 
-import TargetLanguage from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import {
     TopLevels,
     Type,

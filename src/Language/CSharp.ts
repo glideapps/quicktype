@@ -30,7 +30,7 @@ import {
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import TargetLanguage from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
 import { IssueAnnotationData, anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 

@@ -2,7 +2,7 @@
 
 import { Map, OrderedSet } from "immutable";
 
-import TargetLanguage from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import {
     Type,
     TopLevels,

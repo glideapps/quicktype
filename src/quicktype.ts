@@ -9,7 +9,7 @@ import * as _ from "lodash";
 import { Config, TopLevelConfig } from "./Config";
 import * as targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
-import TargetLanguage from "./TargetLanguage";
+import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
 import { defined } from "./Support";

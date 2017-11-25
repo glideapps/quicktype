@@ -28,7 +28,7 @@ import {
 import { StringOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import TargetLanguage from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 

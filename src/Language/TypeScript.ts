@@ -26,7 +26,7 @@ import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";
 import { Renderer, RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import TargetLanguage from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption } from "../RendererOptions";
 
 const unicode = require("unicode-properties");

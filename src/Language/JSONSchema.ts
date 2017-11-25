@@ -2,7 +2,7 @@
 
 import { Map, Collection } from "immutable";
 
-import TargetLanguage from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { Type, TopLevels, NamedType, UnionType, matchType, ClassType } from "../Type";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
