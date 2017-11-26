@@ -13,7 +13,7 @@ import {
     nullableFromUnion,
     removeNullFromUnion
 } from "../Type";
-import { TypeGraph } from "../TypeBuilder";
+import { TypeGraph } from "../TypeGraph";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, EnumOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";

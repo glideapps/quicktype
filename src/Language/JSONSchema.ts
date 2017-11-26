@@ -4,7 +4,7 @@ import { Map, Collection } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, NamedType, UnionType, matchType, ClassType } from "../Type";
-import { TypeGraph } from "../TypeBuilder";
+import { TypeGraph } from "../TypeGraph";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";

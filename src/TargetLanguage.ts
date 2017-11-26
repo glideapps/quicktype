@@ -4,7 +4,7 @@ import { List, Map } from "immutable";
 
 import { Config, TopLevelConfig } from "./Config";
 import { Type } from "./Type";
-import { TypeGraph } from "./TypeBuilder";
+import { TypeGraph } from "./TypeGraph";
 import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
@@ -13,6 +13,7 @@ import { combineClasses } from "./CombineClasses";
 import { CompressedJSON } from "./CompressedJSON";
 import { RendererOptions } from "./quicktype";
 import { schemaToType } from "./JSONSchemaInput";
+import { TypeBuilder } from "./TypeBuilder";
 
 export abstract class TargetLanguage {
     constructor(
@@ -24,12 +25,13 @@ export abstract class TargetLanguage {
 
     transformAndRenderConfig(config: Config): SerializedRenderResult {
         const graph = new TypeGraph();
+        const typeBuilder = new TypeBuilder(graph);
         if (config.isInputJSONSchema) {
             for (const tlc of config.topLevels) {
-                graph.addTopLevel(tlc.name, schemaToType(graph, tlc.name, (tlc as any).schema));
+                graph.addTopLevel(tlc.name, schemaToType(typeBuilder, tlc.name, (tlc as any).schema));
             }
         } else {
-            const inference = new TypeInference(graph, config.inferMaps, this.supportsEnums && config.inferEnums);
+            const inference = new TypeInference(typeBuilder, config.inferMaps, this.supportsEnums && config.inferEnums);
             config.topLevels.forEach(tlc => {
                 graph.addTopLevel(
                     tlc.name,

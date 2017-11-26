@@ -15,7 +15,7 @@ import {
     nullableFromUnion,
     matchType
 } from "./Type";
-import { TypeGraph } from "./TypeBuilder";
+import { TypeGraph } from "./TypeGraph";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
 import { defined, assertNever, panic } from "./Support";

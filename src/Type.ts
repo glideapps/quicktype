@@ -2,7 +2,8 @@
 
 import { OrderedSet, OrderedMap, Map, Set, Collection, List } from "immutable";
 import { defined, panic, assert } from "./Support";
-import { TypeGraph } from "./TypeBuilder";
+import { TypeGraph } from "./TypeGraph";
+import { TypeBuilder } from "./TypeBuilder";
 
 export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | "string";
 export type NamedTypeKind = "class" | "enum" | "union";
@@ -28,7 +29,7 @@ export abstract class Type {
     }
 
     abstract get isNullable(): boolean;
-    abstract map(f: (t: Type) => Type): Type;
+    abstract map(builder: TypeBuilder, f: (t: Type) => Type): Type;
 
     equals(other: any): boolean {
         if (!Object.prototype.hasOwnProperty.call(other, "indexInGraph")) {
@@ -57,7 +58,7 @@ export class PrimitiveType extends Type {
         return this.kind === "null";
     }
 
-    map(f: (t: Type) => Type): this {
+    map(builder: TypeBuilder, f: (t: Type) => Type): this {
         return this;
     }
 }
@@ -92,10 +93,10 @@ export class ArrayType extends Type {
         return false;
     }
 
-    map(f: (t: Type) => Type): ArrayType {
+    map(builder: TypeBuilder, f: (t: Type) => Type): ArrayType {
         const items = f(this.items);
         if (items === this.items) return this;
-        return this.typeGraph.getArrayType(items);
+        return builder.getArrayType(items);
     }
 }
 
@@ -120,10 +121,10 @@ export class MapType extends Type {
         return false;
     }
 
-    map(f: (t: Type) => Type): MapType {
+    map(builder: TypeBuilder, f: (t: Type) => Type): MapType {
         const values = f(this.values);
         if (values === this.values) return this;
-        return this.typeGraph.getMapType(values);
+        return builder.getMapType(values);
     }
 }
 
@@ -262,7 +263,7 @@ export class ClassType extends NamedType {
         return false;
     }
 
-    map(f: (t: Type) => Type): ClassType {
+    map(builder: TypeBuilder, f: (t: Type) => Type): ClassType {
         let same = true;
         const properties = this.properties.map(t => {
             const ft = f(t);
@@ -270,7 +271,7 @@ export class ClassType extends NamedType {
             return ft;
         });
         if (same) return this;
-        return this.typeGraph.getClassType(this.names, this.areNamesInferred, properties);
+        return builder.getClassType(this.names, this.areNamesInferred, properties);
     }
 }
 
@@ -294,7 +295,7 @@ export class EnumType extends NamedType {
         return false;
     }
 
-    map(f: (t: Type) => Type): this {
+    map(builder: TypeBuilder, f: (t: Type) => Type): this {
         return this;
     }
 }
@@ -325,7 +326,7 @@ export class UnionType extends NamedType {
         return this.findMember("null") !== undefined;
     }
 
-    map(f: (t: Type) => Type): UnionType {
+    map(builder: TypeBuilder, f: (t: Type) => Type): UnionType {
         let same = true;
         const members = this.members.map(t => {
             const ft = f(t);
@@ -333,7 +334,7 @@ export class UnionType extends NamedType {
             return ft;
         });
         if (same) return this;
-        return this.typeGraph.getUnionType(this.names, this.areNamesInferred, members);
+        return builder.getUnionType(this.names, this.areNamesInferred, members);
     }
 
     get sortedMembers(): OrderedSet<Type> {
@@ -357,30 +358,15 @@ export function nullableFromUnion(t: UnionType): Type | null {
     return defined(nonNulls.first());
 }
 
-export function makeNullable(t: Type, typeNames: NameOrNames, areNamesInferred: boolean): Type {
-    if (t.kind === "null") {
-        return t;
+export function nonNullTypeCases(t: Type): Set<Type> {
+    if (t.kind === null) {
+        return Set();
     }
-    const nullType = t.typeGraph.getPrimitiveType("null");
     if (!(t instanceof UnionType)) {
-        return t.typeGraph.getUnionType(typeNames, areNamesInferred, OrderedSet([t, nullType]));
-    }
-    const [maybeNull, nonNulls] = removeNullFromUnion(t);
-    if (maybeNull) return t;
-    return t.typeGraph.getUnionType(typeNames, areNamesInferred, nonNulls.add(nullType));
-}
-
-export function removeNull(t: Type): Type {
-    if (!(t instanceof UnionType)) {
-        return t;
+        return Set([t]);
     }
     const [_, nonNulls] = removeNullFromUnion(t);
-    const first = nonNulls.first();
-    if (first) {
-        if (nonNulls.size === 1) return first;
-        return t.typeGraph.getUnionType(t.names, t.areNamesInferred, nonNulls);
-    }
-    return panic("Trying to remove null results in empty union.");
+    return Set(nonNulls);
 }
 
 // FIXME: The outer OrderedSet should be some Collection, but I can't figure out

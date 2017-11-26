@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 
 import { Type, ArrayType, MapType, UnionType, NamedType, ClassType, nullableFromUnion, matchType } from "../Type";
-import { TypeGraph } from "../TypeBuilder";
+import { TypeGraph } from "../TypeGraph";
 import { utf16LegalizeCharacters, pascalCase, camelCase, startWithLetter, stringEscape } from "../Strings";
 import { intercalate, panic } from "../Support";
 

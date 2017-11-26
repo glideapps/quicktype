@@ -4,9 +4,9 @@ import { OrderedSet, Set, Map, OrderedMap } from "immutable";
 import * as pluralize from "pluralize";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
-import { Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType, makeNullable } from "./Type";
+import { Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType } from "./Type";
 import { assertNever, assert } from "./Support";
-import { TypeGraph, UnionBuilder } from "./TypeBuilder";
+import { TypeBuilder, UnionBuilder } from "./TypeBuilder";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -34,7 +34,7 @@ function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => v
 
 class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueArray, any> {
     constructor(
-        typeBuilder: TypeGraph,
+        typeBuilder: TypeBuilder,
         typeName: string,
         private readonly _typeInference: TypeInference,
         private readonly _cjson: CompressedJSON,
@@ -65,7 +65,7 @@ class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueAr
 
 export class TypeInference {
     constructor(
-        private readonly _typeBuilder: TypeGraph,
+        private readonly _typeBuilder: TypeBuilder,
         private readonly _inferMaps: boolean,
         private readonly _inferEnums: boolean
     ) {}
@@ -140,7 +140,7 @@ export class TypeInference {
             const values = propertyValues[key];
             let t = this.inferType(cjson, key, values);
             if (values.length < objects.length) {
-                t = makeNullable(t, key, true);
+                t = this._typeBuilder.makeNullable(t, key, true);
             }
             if (couldBeMap && properties.length > 0 && t !== properties[0][1]) {
                 couldBeMap = false;

@@ -3,9 +3,10 @@
 import { List, OrderedSet, Map, OrderedMap, fromJS, Set } from "immutable";
 import * as pluralize from "pluralize";
 
-import { Type, ClassType, NameOrNames, matchType, EnumType, makeNullable } from "./Type";
+import { Type, ClassType, NameOrNames, matchType, EnumType } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap } from "./Support";
-import { TypeGraph, UnionBuilder } from "./TypeBuilder";
+import { TypeGraph } from "./TypeGraph";
+import { UnionBuilder, TypeBuilder } from "./TypeBuilder";
 
 enum PathElementKind {
     Root,
@@ -110,7 +111,7 @@ function checkTypeList(typeOrTypes: any): string[] {
 
 class UnifyUnionBuilder extends UnionBuilder<Type, ClassType, Type> {
     constructor(
-        typeBuilder: TypeGraph,
+        typeBuilder: TypeBuilder,
         typeName: string,
         isInferred: boolean,
         private readonly _unifyTypes: (typesToUnify: Type[], typeName: string, isInferred: boolean) => Type
@@ -155,7 +156,7 @@ class UnifyUnionBuilder extends UnionBuilder<Type, ClassType, Type> {
     }
 }
 
-export function schemaToType(typeBuilder: TypeGraph, topLevelName: string, rootJson: any): Type {
+export function schemaToType(typeBuilder: TypeBuilder, topLevelName: string, rootJson: any): Type {
     const root = checkStringMap(rootJson);
     let typeForPath = Map<Ref, Type>();
 
@@ -240,7 +241,7 @@ export function schemaToType(typeBuilder: TypeGraph, topLevelName: string, rootJ
                 pluralize.singular(propName)
             );
             if (!required.has(propName)) {
-                t = makeNullable(t, propName, true);
+                t = typeBuilder.makeNullable(t, propName, true);
             }
             return t;
         });

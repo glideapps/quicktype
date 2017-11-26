@@ -2,9 +2,10 @@
 
 import { Map, OrderedMap, OrderedSet } from "immutable";
 
-import { ClassType, Type, removeNull, makeNullable } from "./Type";
-import { TypeGraph } from "./TypeBuilder";
+import { ClassType, Type, nonNullTypeCases } from "./Type";
+import { TypeBuilder } from "./TypeBuilder";
 import { assert, panic } from "./Support";
+import { TypeGraph } from "./TypeGraph";
 
 const REQUIRED_OVERLAP = 3 / 4;
 
@@ -43,14 +44,12 @@ function canBeCombined(c1: ClassType, c2: ClassType): boolean {
         if (ts === undefined || tl === undefined) {
             return panic("Both of these should have this property");
         }
-        ts = removeNull(ts);
-        tl = removeNull(tl);
-        // Removing null can make unions not referentially equal.
-        // We allow null properties to unify with any other.
+        const tsCases = nonNullTypeCases(ts);
+        const tlCases = nonNullTypeCases(tl);
         // FIXME: Allow some type combinations to unify, like different enums,
         // enums with strings, integers with doubles, maps with objects of
         // the correct type.
-        if (ts.kind !== "null" && tl.kind !== "null" && !ts.equals(tl)) {
+        if (!ts.equals(tl)) {
             return false;
         }
     }
@@ -66,16 +65,10 @@ function isPartOfClique(c: ClassType, clique: ClassType[]): boolean {
     return true;
 }
 
-function makeCliqueClass(clique: ClassType[]): ClassType {
-    assert(clique.length > 0, "Clique can't be empty");
-    const result = clique[0].typeGraph.getUniqueClassType(OrderedSet<string>(), true);
-    for (const c of clique) {
-        c.names.forEach(n => result.addNames(n, c.areNamesInferred));
-    }
-    return result;
-}
-
 export function combineClasses(graph: TypeGraph): void {
+    // FIXME: Don't use a `TypeBuilder` here.  Instead, have `alter` work
+    // properly in `TypeGraph` and permit the whole transformation.
+    const builder = new TypeBuilder(graph);
     let unprocessedClasses = graph.allNamedTypesSeparated().classes.toArray();
     const cliques: ClassType[][] = [];
 
@@ -106,6 +99,15 @@ export function combineClasses(graph: TypeGraph): void {
     const combinedCliques: ClassType[] = [];
     let replacements: Map<ClassType, ClassType> = Map();
 
+    function makeCliqueClass(clique: ClassType[]): ClassType {
+        assert(clique.length > 0, "Clique can't be empty");
+        const result = builder.getUniqueClassType(OrderedSet<string>(), true);
+        for (const c of clique) {
+            c.names.forEach(n => result.addNames(n, c.areNamesInferred));
+        }
+        return result;
+    }
+
     for (const clique of cliques) {
         const combined = makeCliqueClass(clique);
         combinedCliques.push(combined);
@@ -120,7 +122,7 @@ export function combineClasses(graph: TypeGraph): void {
             const c = replacements.get(t);
             if (c) return c;
         }
-        return t.map(replaceClasses);
+        return t.map(builder, replaceClasses);
     };
 
     const setCliqueProperties = (combined: ClassType, clique: ClassType[]): void => {
@@ -150,9 +152,9 @@ export function combineClasses(graph: TypeGraph): void {
                 t = replaceClasses(t);
                 if (haveNullable || count < clique.length) {
                     if (t.isNamedType()) {
-                        t = makeNullable(t, t.names, t.areNamesInferred);
+                        t = builder.makeNullable(t, t.names, t.areNamesInferred);
                     } else {
-                        t = makeNullable(t, name, true);
+                        t = builder.makeNullable(t, name, true);
                     }
                 }
                 return t;

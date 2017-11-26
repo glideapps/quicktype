@@ -14,7 +14,7 @@ import {
     matchType,
     removeNullFromUnion
 } from "../Type";
-import { TypeGraph } from "../TypeBuilder";
+import { TypeGraph } from "../TypeGraph";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,

@@ -15,7 +15,7 @@ import {
     nullableFromUnion,
     removeNullFromUnion
 } from "../Type";
-import { TypeGraph } from "../TypeBuilder";
+import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     utf16LegalizeCharacters,

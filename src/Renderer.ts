@@ -1,7 +1,7 @@
 "use strict";
 
 import { Map, Collection, OrderedSet, List } from "immutable";
-import { TypeGraph } from "./TypeBuilder";
+import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
 import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newline } from "./Source";
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
