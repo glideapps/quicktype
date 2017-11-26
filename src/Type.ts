@@ -3,18 +3,14 @@
 import { OrderedSet, OrderedMap, Map, Set, Collection, List } from "immutable";
 import { defined, panic, assert } from "./Support";
 import { TypeGraph } from "./TypeGraph";
-import { TypeBuilder } from "./TypeBuilder";
+import { TypeGraphBuilder, TypeRef, TypeBuilder } from "./TypeBuilder";
 
 export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | "string";
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
 
 export abstract class Type {
-    readonly indexInGraph: number;
-
-    constructor(readonly typeGraph: TypeGraph, readonly kind: TypeKind) {
-        this.indexInGraph = typeGraph.addType(this);
-    }
+    constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
 
     isNamedType(): this is NamedType {
         return false;
@@ -29,25 +25,25 @@ export abstract class Type {
     }
 
     abstract get isNullable(): boolean;
-    abstract map(builder: TypeBuilder, f: (t: Type) => Type): Type;
+    abstract map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef;
 
     equals(other: any): boolean {
-        if (!Object.prototype.hasOwnProperty.call(other, "indexInGraph")) {
+        if (!Object.prototype.hasOwnProperty.call(other, "typeRef")) {
             return false;
         }
-        return this.indexInGraph === other.indexInGraph;
+        return this.typeRef.equals(other.typeRef);
     }
 
     hashCode(): number {
-        return this.indexInGraph | 0;
+        return this.typeRef.hashCode();
     }
 }
 
 export class PrimitiveType extends Type {
     readonly kind: PrimitiveTypeKind;
 
-    constructor(typeGraph: TypeGraph, kind: PrimitiveTypeKind) {
-        super(typeGraph, kind);
+    constructor(typeRef: TypeRef, kind: PrimitiveTypeKind) {
+        super(typeRef, kind);
     }
 
     get children(): OrderedSet<Type> {
@@ -58,8 +54,8 @@ export class PrimitiveType extends Type {
         return this.kind === "null";
     }
 
-    map(builder: TypeBuilder, f: (t: Type) => Type): this {
-        return this;
+    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getPrimitiveType(this.kind);
     }
 }
 
@@ -67,22 +63,15 @@ function isNull(t: Type): t is PrimitiveType {
     return t.kind === "null";
 }
 
-function constituentIndex(container: Type, constituent: Type): number {
-    assert(container.typeGraph === constituent.typeGraph, "Container and constituent are not in the same type graph");
-    return constituent.indexInGraph;
-}
-
 export class ArrayType extends Type {
     readonly kind: "array";
-    private readonly _itemsIndex: number;
 
-    constructor(typeGraph: TypeGraph, items: Type) {
-        super(typeGraph, "array");
-        this._itemsIndex = constituentIndex(this, items);
+    constructor(typeRef: TypeRef, private readonly _itemsRef: TypeRef) {
+        super(typeRef, "array");
     }
 
     get items(): Type {
-        return this.typeGraph.typeAtIndex(this._itemsIndex);
+        return this._itemsRef.deref();
     }
 
     get children(): OrderedSet<Type> {
@@ -93,24 +82,20 @@ export class ArrayType extends Type {
         return false;
     }
 
-    map(builder: TypeBuilder, f: (t: Type) => Type): ArrayType {
-        const items = f(this.items);
-        if (items === this.items) return this;
-        return builder.getArrayType(items);
+    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getArrayType(f(this._itemsRef));
     }
 }
 
 export class MapType extends Type {
     readonly kind: "map";
-    private readonly _valuesIndex: number;
 
-    constructor(typeGraph: TypeGraph, values: Type) {
-        super(typeGraph, "map");
-        this._valuesIndex = constituentIndex(this, values);
+    constructor(typeRef: TypeRef, private readonly _valuesRef: TypeRef) {
+        super(typeRef, "map");
     }
 
     get values(): Type {
-        return this.typeGraph.typeAtIndex(this._valuesIndex);
+        return this._valuesRef.deref();
     }
 
     get children(): OrderedSet<Type> {
@@ -121,10 +106,8 @@ export class MapType extends Type {
         return false;
     }
 
-    map(builder: TypeBuilder, f: (t: Type) => Type): MapType {
-        const values = f(this.values);
-        if (values === this.values) return this;
-        return builder.getMapType(values);
+    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getMapType(f(this._valuesRef));
     }
 }
 
@@ -182,8 +165,8 @@ export abstract class NamedType extends Type {
     private _names: OrderedSet<string>;
     private _areNamesInferred: boolean;
 
-    constructor(typeGraph: TypeGraph, kind: NamedTypeKind, nameOrNames: NameOrNames, areNamesInferred: boolean) {
-        super(typeGraph, kind);
+    constructor(typeRef: TypeRef, kind: NamedTypeKind, nameOrNames: NameOrNames, areNamesInferred: boolean) {
+        super(typeRef, kind);
         this._names = setFromNameOrNames(nameOrNames);
         this._areNamesInferred = areNamesInferred;
     }
@@ -213,10 +196,12 @@ export abstract class NamedType extends Type {
         }
     }
 
+    /*
     setGivenName(name: string): void {
         this._names = OrderedSet([name]);
         this._areNamesInferred = false;
     }
+    */
 
     get combinedName(): string {
         return combineNames(this._names);
@@ -225,27 +210,41 @@ export abstract class NamedType extends Type {
 
 export class ClassType extends NamedType {
     kind: "class";
-    private _propertyIndexes?: Map<string, number>;
 
-    constructor(typeGraph: TypeGraph, names: NameOrNames, areNamesInferred: boolean, properties?: Map<string, Type>) {
-        super(typeGraph, "class", names, areNamesInferred);
-        if (properties !== undefined) {
-            this.setProperties(properties);
-        }
+    constructor(
+        typeRef: TypeRef,
+        names: NameOrNames,
+        areNamesInferred: boolean,
+        private _propertyRefs?: Map<string, TypeRef>
+    ) {
+        super(typeRef, "class", names, areNamesInferred);
     }
 
-    setProperties(properties: Map<string, Type>): void {
-        if (this._propertyIndexes !== undefined) {
+    // FIXME: Get rid of this.  We use this for resolving recursive
+    // types, where we create the class type first without properties,
+    // then create the property types, which are now allowed to refer
+    // to the class, and then we set the properties.  With the TypeBuilder
+    // we have a much nicer solution to this, however.  We can just create
+    // a forwarding entry without having to create the class itself.  This
+    // also solves the problem of recursion when classes are not involved.
+    // You could, for example, have a type `X = Map<string, X>`, which
+    // right now we cannot resolve.
+    setProperties(propertyRefs: Map<string, TypeRef>): void {
+        if (this._propertyRefs !== undefined) {
             return panic("Can only set class properties once");
         }
-        this._propertyIndexes = properties.map(t => constituentIndex(this, t));
+        this._propertyRefs = propertyRefs;
+    }
+
+    private getPropertyRefs(): Map<string, TypeRef> {
+        if (this._propertyRefs === undefined) {
+            return panic("Class properties accessed before they were set");
+        }
+        return this._propertyRefs;
     }
 
     get properties(): Map<string, Type> {
-        if (this._propertyIndexes === undefined) {
-            return panic("Class properties accessed before they were set");
-        }
-        return this._propertyIndexes.map(this.typeGraph.typeAtIndex);
+        return this.getPropertyRefs().map(tref => tref.deref());
     }
 
     get sortedProperties(): OrderedMap<string, Type> {
@@ -263,14 +262,8 @@ export class ClassType extends NamedType {
         return false;
     }
 
-    map(builder: TypeBuilder, f: (t: Type) => Type): ClassType {
-        let same = true;
-        const properties = this.properties.map(t => {
-            const ft = f(t);
-            if (ft !== t) same = false;
-            return ft;
-        });
-        if (same) return this;
+    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+        const properties = this.getPropertyRefs().map(f);
         return builder.getClassType(this.names, this.areNamesInferred, properties);
     }
 }
@@ -278,13 +271,8 @@ export class ClassType extends NamedType {
 export class EnumType extends NamedType {
     kind: "enum";
 
-    constructor(
-        typeGraph: TypeGraph,
-        names: NameOrNames,
-        areNamesInferred: boolean,
-        readonly cases: OrderedSet<string>
-    ) {
-        super(typeGraph, "enum", names, areNamesInferred);
+    constructor(typeRef: TypeRef, names: NameOrNames, areNamesInferred: boolean, readonly cases: OrderedSet<string>) {
+        super(typeRef, "enum", names, areNamesInferred);
     }
 
     get children(): OrderedSet<Type> {
@@ -295,23 +283,26 @@ export class EnumType extends NamedType {
         return false;
     }
 
-    map(builder: TypeBuilder, f: (t: Type) => Type): this {
-        return this;
+    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getEnumType(this.names, this.areNamesInferred, this.cases);
     }
 }
 
 export class UnionType extends NamedType {
     kind: "union";
-    private readonly _memberIndexes: OrderedSet<number>;
 
-    constructor(typeGraph: TypeGraph, names: NameOrNames, areNamesInferred: boolean, members: OrderedSet<Type>) {
-        super(typeGraph, "union", names, areNamesInferred);
-        assert(members.size > 1);
-        this._memberIndexes = members.map(t => constituentIndex(this, t));
+    constructor(
+        typeRef: TypeRef,
+        names: NameOrNames,
+        areNamesInferred: boolean,
+        private readonly _memberRefs: OrderedSet<TypeRef>
+    ) {
+        super(typeRef, "union", names, areNamesInferred);
+        assert(_memberRefs.size > 1, "Union has zero members");
     }
 
     get members(): OrderedSet<Type> {
-        return this._memberIndexes.map(this.typeGraph.typeAtIndex);
+        return this._memberRefs.map(tref => tref.deref());
     }
 
     findMember = (kind: TypeKind): Type | undefined => {
@@ -326,14 +317,8 @@ export class UnionType extends NamedType {
         return this.findMember("null") !== undefined;
     }
 
-    map(builder: TypeBuilder, f: (t: Type) => Type): UnionType {
-        let same = true;
-        const members = this.members.map(t => {
-            const ft = f(t);
-            if (ft !== t) same = false;
-            return ft;
-        });
-        if (same) return this;
+    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+        const members = this._memberRefs.map(f);
         return builder.getUnionType(this.names, this.areNamesInferred, members);
     }
 

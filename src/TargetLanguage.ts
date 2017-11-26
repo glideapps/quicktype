@@ -13,7 +13,7 @@ import { combineClasses } from "./CombineClasses";
 import { CompressedJSON } from "./CompressedJSON";
 import { RendererOptions } from "./quicktype";
 import { schemaToType } from "./JSONSchemaInput";
-import { TypeBuilder } from "./TypeBuilder";
+import { TypeGraphBuilder } from "./TypeBuilder";
 
 export abstract class TargetLanguage {
     constructor(
@@ -24,23 +24,25 @@ export abstract class TargetLanguage {
     ) {}
 
     transformAndRenderConfig(config: Config): SerializedRenderResult {
-        const graph = new TypeGraph();
-        const typeBuilder = new TypeBuilder(graph);
+        const typeBuilder = new TypeGraphBuilder();
+        let combine = config.combineClasses;
         if (config.isInputJSONSchema) {
             for (const tlc of config.topLevels) {
-                graph.addTopLevel(tlc.name, schemaToType(typeBuilder, tlc.name, (tlc as any).schema));
+                typeBuilder.addTopLevel(tlc.name, schemaToType(typeBuilder, tlc.name, (tlc as any).schema));
             }
+            combine = false;
         } else {
             const inference = new TypeInference(typeBuilder, config.inferMaps, this.supportsEnums && config.inferEnums);
             config.topLevels.forEach(tlc => {
-                graph.addTopLevel(
+                typeBuilder.addTopLevel(
                     tlc.name,
-                    inference.inferType(config.compressedJSON as CompressedJSON, tlc.name, (tlc as any).samples)
+                    inference.inferType(config.compressedJSON as CompressedJSON, tlc.name, false, (tlc as any).samples)
                 );
             });
-            if (config.combineClasses) {
-                combineClasses(graph);
-            }
+        }
+        let graph = typeBuilder.finish();
+        if (combine) {
+            graph = combineClasses(graph);
         }
         if (!config.doRender) {
             return { lines: ["Done.", ""], annotations: List() };

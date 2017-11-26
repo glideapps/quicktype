@@ -1,12 +1,13 @@
 "use strict";
 
-import { List, OrderedSet, Map, OrderedMap, fromJS, Set } from "immutable";
+import { List, OrderedSet, Map, OrderedMap, fromJS, Set, isIndexed } from "immutable";
 import * as pluralize from "pluralize";
 
 import { Type, ClassType, NameOrNames, matchType, EnumType } from "./Type";
-import { panic, assertNever, StringMap, checkStringMap } from "./Support";
+import { panic, assertNever, StringMap, checkStringMap, assert } from "./Support";
 import { TypeGraph } from "./TypeGraph";
-import { UnionBuilder, TypeBuilder } from "./TypeBuilder";
+import { UnionBuilder, TypeGraphBuilder, TypeRef } from "./TypeBuilder";
+import { getHashes } from "crypto";
 
 enum PathElementKind {
     Root,
@@ -81,14 +82,15 @@ function indexOneOf(schema: StringMap, index: number): StringMap {
     return checkStringMap(cases[index]);
 }
 
-function getName(schema: StringMap, inferredName: string): [string, boolean] {
-    let name: string;
-    let isInferred: boolean;
+function getName(schema: StringMap, name: string, isInferred: boolean): [string, boolean] {
+    if (!isInferred) {
+        return [name, false];
+    }
     const title = schema.title;
     if (typeof title === "string") {
         return [title, false];
     } else {
-        return [inferredName, true];
+        return [name, true];
     }
 }
 
@@ -109,21 +111,46 @@ function checkTypeList(typeOrTypes: any): string[] {
     }
 }
 
-class UnifyUnionBuilder extends UnionBuilder<Type, ClassType, Type> {
+// Here's a case we can't handle: If the schema specifies
+// types
+//
+//   Foo = class { x: Bar }
+//   Bar = Foo | Quux
+//   Quux = class { ... }
+//
+// then to resolve the properties of `Foo` we have to know
+// the properties of `Bar`, but to resolve those we have to
+// know the properties of `Foo`.
+function getHopefullyFinishedType(builder: TypeGraphBuilder, t: TypeRef): Type {
+    const result = builder.lookupType(t);
+    if (result === undefined) {
+        return panic("Inconveniently recursive types in schema");
+    }
+    return result;
+}
+
+function assertIsClass(t: Type): ClassType {
+    if (!(t instanceof ClassType)) {
+        return panic("Supposed class type is not a class type");
+    }
+    return t;
+}
+
+class UnifyUnionBuilder extends UnionBuilder<TypeRef, TypeRef, TypeRef> {
     constructor(
-        typeBuilder: TypeBuilder,
+        typeBuilder: TypeGraphBuilder,
         typeName: string,
         isInferred: boolean,
-        private readonly _unifyTypes: (typesToUnify: Type[], typeName: string, isInferred: boolean) => Type
+        private readonly _unifyTypes: (typesToUnify: TypeRef[], typeName: string, isInferred: boolean) => TypeRef
     ) {
         super(typeBuilder, typeName, isInferred);
     }
 
-    protected makeEnum(enumCases: string[]): EnumType {
+    protected makeEnum(enumCases: string[]): TypeRef {
         return this.typeBuilder.getEnumType(this.typeName, this.isInferred, OrderedSet(enumCases));
     }
 
-    protected makeClass(classes: ClassType[], maps: Type[]): Type {
+    protected makeClass(classes: TypeRef[], maps: TypeRef[]): TypeRef {
         if (classes.length > 0 && maps.length > 0) {
             return panic("Cannot handle a class type that's also a map");
         }
@@ -133,14 +160,19 @@ class UnifyUnionBuilder extends UnionBuilder<Type, ClassType, Type> {
         if (classes.length === 1) {
             return classes[0];
         }
-        let properties = OrderedMap<string, Type[]>();
+        let properties = OrderedMap<string, TypeRef[]>();
+        const actualClasses: ClassType[] = [];
         for (const c of classes) {
+            const t = assertIsClass(getHopefullyFinishedType(this.typeBuilder, c));
+            actualClasses.push(t);
+        }
+        for (const c of actualClasses) {
             c.properties.forEach((t, name) => {
                 const types = properties.get(name);
                 if (types === undefined) {
-                    properties = properties.set(name, [t]);
+                    properties = properties.set(name, [t.typeRef]);
                 } else {
-                    types.push(t);
+                    types.push(t.typeRef);
                 }
             });
         }
@@ -151,20 +183,20 @@ class UnifyUnionBuilder extends UnionBuilder<Type, ClassType, Type> {
         );
     }
 
-    protected makeArray(arrays: Type[]): Type {
+    protected makeArray(arrays: TypeRef[]): TypeRef {
         return this.typeBuilder.getArrayType(this._unifyTypes(arrays, pluralize.singular(this.typeName), true));
     }
 }
 
-export function schemaToType(typeBuilder: TypeBuilder, topLevelName: string, rootJson: any): Type {
+export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string, rootJson: any): TypeRef {
     const root = checkStringMap(rootJson);
-    let typeForPath = Map<Ref, Type>();
+    let typeForPath = Map<Ref, TypeRef>();
 
-    function setTypeForPath(path: Ref, t: Type): void {
+    function setTypeForPath(path: Ref, t: TypeRef): void {
         typeForPath = typeForPath.set(path.map(pe => fromJS(pe)), t);
     }
 
-    function unifyTypes(typesToUnify: Type[], typeName: string, isInferred: boolean): Type {
+    function unifyTypes(typesToUnify: TypeRef[], typeName: string, isInferred: boolean): TypeRef {
         if (typesToUnify.length === 0) {
             return panic("Cannot unify empty list of types");
         } else if (typesToUnify.length === 1) {
@@ -181,19 +213,19 @@ export function schemaToType(typeBuilder: TypeBuilder, topLevelName: string, roo
                     integerType => unionBuilder.addInteger(),
                     doubleType => unionBuilder.addDouble(),
                     stringType => unionBuilder.addString(),
-                    arrayType => unionBuilder.addArray(arrayType.items),
-                    classType => unionBuilder.addClass(classType),
-                    mapType => unionBuilder.addMap(mapType.values),
+                    arrayType => unionBuilder.addArray(arrayType.items.typeRef),
+                    classType => unionBuilder.addClass(classType.typeRef),
+                    mapType => unionBuilder.addMap(mapType.values.typeRef),
                     enumType => enumType.cases.forEach(s => unionBuilder.addEnumCase(s)),
                     unionType => unionType.members.forEach(registerType)
                 );
             };
 
             for (const t of typesToUnify) {
-                registerType(t);
+                registerType(getHopefullyFinishedType(typeBuilder, t));
             }
 
-            return unionBuilder.buildUnion(true);
+            return unionBuilder.buildUnion(false);
         }
     }
 
@@ -226,31 +258,34 @@ export function schemaToType(typeBuilder: TypeBuilder, topLevelName: string, roo
     function makeClass(
         schema: StringMap,
         path: Ref,
-        inferredName: string,
+        name: string,
+        isInferred: boolean,
         properties: StringMap,
         requiredArray: string[]
-    ): ClassType {
+    ): TypeRef {
         const required = Set(requiredArray);
-        const [name, isInferred] = getName(schema, inferredName);
-        const c = typeBuilder.getUniqueClassType(name, isInferred);
-        setTypeForPath(path, c);
+        [name, isInferred] = getName(schema, name, isInferred);
+        const result = typeBuilder.getUniqueClassType(name, isInferred);
+        const c = assertIsClass(getHopefullyFinishedType(typeBuilder, result));
+        setTypeForPath(path, result);
         const props = Map(properties).map((propSchema, propName) => {
             let t = toType(
                 checkStringMap(propSchema),
                 path.push({ kind: PathElementKind.Property, name: propName }),
-                pluralize.singular(propName)
+                pluralize.singular(propName),
+                true
             );
             if (!required.has(propName)) {
-                t = typeBuilder.makeNullable(t, propName, true);
+                return typeBuilder.makeNullable(t, propName, true);
             }
             return t;
         });
         c.setProperties(props);
-        return c;
+        return result;
     }
 
-    function fromTypeName(schema: StringMap, path: Ref, inferredName: string, typeName: string): Type {
-        const [name, isInferred] = getName(schema, inferredName);
+    function fromTypeName(schema: StringMap, path: Ref, inferredName: string, typeName: string): TypeRef {
+        const [name, isInferred] = getName(schema, inferredName, true);
         switch (typeName) {
             case "object":
                 let required: string[];
@@ -260,17 +295,17 @@ export function schemaToType(typeBuilder: TypeBuilder, topLevelName: string, roo
                     required = checkStringArray(schema.required);
                 }
                 if (schema.properties !== undefined) {
-                    return makeClass(schema, path, name, checkStringMap(schema.properties), required);
+                    return makeClass(schema, path, name, isInferred, checkStringMap(schema.properties), required);
                 } else if (schema.additionalProperties !== undefined) {
                     const additional = schema.additionalProperties;
                     if (additional === true) {
                         return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
                     } else if (additional === false) {
-                        return makeClass(schema, path, name, {}, required);
+                        return makeClass(schema, path, name, isInferred, {}, required);
                     } else {
                         path = path.push({ kind: PathElementKind.AdditionalProperty });
                         return typeBuilder.getMapType(
-                            toType(checkStringMap(additional), path, pluralize.singular(name))
+                            toType(checkStringMap(additional), path, pluralize.singular(name), true)
                         );
                     }
                 } else {
@@ -280,7 +315,7 @@ export function schemaToType(typeBuilder: TypeBuilder, topLevelName: string, roo
                 if (schema.items !== undefined) {
                     path = path.push({ kind: PathElementKind.Items });
                     return typeBuilder.getArrayType(
-                        toType(checkStringMap(schema.items), path, pluralize.singular(name))
+                        toType(checkStringMap(schema.items), path, pluralize.singular(name), true)
                     );
                 }
                 return typeBuilder.getArrayType(typeBuilder.getPrimitiveType("any"));
@@ -299,12 +334,12 @@ export function schemaToType(typeBuilder: TypeBuilder, topLevelName: string, roo
         }
     }
 
-    function convertToType(schema: StringMap, path: Ref, inferredName: string): Type {
-        const [name, isInferred] = getName(schema, inferredName);
+    function convertToType(schema: StringMap, path: Ref, name: string, isInferred: boolean): TypeRef {
+        [name, isInferred] = getName(schema, name, isInferred);
         if (schema.$ref !== undefined) {
             const [ref, refName] = parseRef(schema.$ref);
             const [target, targetPath] = lookupRef(schema, path, ref);
-            return toType(target, targetPath, refName);
+            return toType(target, targetPath, isInferred ? refName : name, isInferred);
         } else if (schema.enum !== undefined) {
             return typeBuilder.getEnumType(name, isInferred, OrderedSet(checkStringArray(schema.enum)));
         } else if (schema.type !== undefined) {
@@ -317,7 +352,7 @@ export function schemaToType(typeBuilder: TypeBuilder, topLevelName: string, roo
                 return panic(`oneOf is not an array: ${schema.oneOf}`);
             }
             const types = oneOf.map((t, index) =>
-                toType(checkStringMap(t), path.push({ kind: PathElementKind.OneOf, index }), name)
+                toType(checkStringMap(t), path.push({ kind: PathElementKind.OneOf, index }), name, true)
             );
             return unifyTypes(types, name, isInferred);
         } else {
@@ -325,7 +360,7 @@ export function schemaToType(typeBuilder: TypeBuilder, topLevelName: string, roo
         }
     }
 
-    function toType(schema: StringMap, path: Ref, name: string): Type {
+    function toType(schema: StringMap, path: Ref, name: string, isInferred: boolean): TypeRef {
         // FIXME: This fromJS thing is ugly and inefficient.  Schemas aren't
         // big, so it most likely doesn't matter.
         const immutablePath = path.map(pe => fromJS(pe));
@@ -333,15 +368,12 @@ export function schemaToType(typeBuilder: TypeBuilder, topLevelName: string, roo
         if (maybeType !== undefined) {
             return maybeType;
         }
-        const result = convertToType(schema, path, name);
+        const result = convertToType(schema, path, name, isInferred);
         setTypeForPath(immutablePath, result);
         return result;
     }
 
     const rootPathElement: PathElement = { kind: PathElementKind.Root };
-    const rootType = toType(root, List<PathElement>([rootPathElement]), topLevelName);
-    if (rootType.isNamedType()) {
-        rootType.setGivenName(topLevelName);
-    }
+    const rootType = toType(root, List<PathElement>([rootPathElement]), topLevelName, false);
     return rootType;
 }

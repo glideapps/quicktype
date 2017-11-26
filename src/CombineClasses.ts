@@ -1,9 +1,9 @@
 "use strict";
 
-import { Map, OrderedMap, OrderedSet } from "immutable";
+import { Map, Set, OrderedMap, OrderedSet } from "immutable";
 
 import { ClassType, Type, nonNullTypeCases } from "./Type";
-import { TypeBuilder } from "./TypeBuilder";
+import { TypeGraphBuilder, GraphRewriteBuilder, TypeBuilder, TypeRef } from "./TypeBuilder";
 import { assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 
@@ -65,10 +65,7 @@ function isPartOfClique(c: ClassType, clique: ClassType[]): boolean {
     return true;
 }
 
-export function combineClasses(graph: TypeGraph): void {
-    // FIXME: Don't use a `TypeBuilder` here.  Instead, have `alter` work
-    // properly in `TypeGraph` and permit the whole transformation.
-    const builder = new TypeBuilder(graph);
+export function combineClasses(graph: TypeGraph): TypeGraph {
     let unprocessedClasses = graph.allNamedTypesSeparated().classes.toArray();
     const cliques: ClassType[][] = [];
 
@@ -96,38 +93,25 @@ export function combineClasses(graph: TypeGraph): void {
         unprocessedClasses = classesLeft;
     }
 
-    const combinedCliques: ClassType[] = [];
-    let replacements: Map<ClassType, ClassType> = Map();
-
-    function makeCliqueClass(clique: ClassType[]): ClassType {
-        assert(clique.length > 0, "Clique can't be empty");
-        const result = builder.getUniqueClassType(OrderedSet<string>(), true);
-        for (const c of clique) {
-            c.names.forEach(n => result.addNames(n, c.areNamesInferred));
-        }
-        return result;
+    function makeCliqueClass(clique: Set<ClassType>, builder: GraphRewriteBuilder): TypeRef {
+        assert(clique.size > 0, "Clique can't be empty");
+        let inferredNames = OrderedSet<string>();
+        let givenNames = OrderedSet<string>();
+        clique.forEach(c => {
+            if (c.areNamesInferred) {
+                inferredNames = inferredNames.union(c.names);
+            } else {
+                givenNames = givenNames.union(c.names);
+            }
+        });
+        const areNamesInferred = givenNames.isEmpty();
+        const properties = getCliqueProperties(clique, builder);
+        return builder.getClassType(areNamesInferred ? inferredNames : givenNames, areNamesInferred, properties);
     }
 
-    for (const clique of cliques) {
-        const combined = makeCliqueClass(clique);
-        combinedCliques.push(combined);
-        for (const c of clique) {
-            replacements = replacements.set(c, combined);
-        }
-    }
-
-    const replaceClasses = (t: Type): Type => {
-        if (t instanceof ClassType) {
-            if (combinedCliques.indexOf(t) >= 0) return t;
-            const c = replacements.get(t);
-            if (c) return c;
-        }
-        return t.map(builder, replaceClasses);
-    };
-
-    const setCliqueProperties = (combined: ClassType, clique: ClassType[]): void => {
+    function getCliqueProperties(clique: Set<ClassType>, builder: GraphRewriteBuilder): OrderedMap<string, TypeRef> {
         let properties = OrderedMap<string, [Type, number, boolean]>();
-        for (const c of clique) {
+        clique.forEach(c => {
             c.properties.forEach((t, name) => {
                 const p = properties.get(name);
                 if (p) {
@@ -146,25 +130,19 @@ export function combineClasses(graph: TypeGraph): void {
                     properties = properties.set(name, [t, 1, t.isNullable]);
                 }
             });
-        }
-        combined.setProperties(
-            properties.map(([t, count, haveNullable], name) => {
-                t = replaceClasses(t);
-                if (haveNullable || count < clique.length) {
-                    if (t.isNamedType()) {
-                        t = builder.makeNullable(t, t.names, t.areNamesInferred);
-                    } else {
-                        t = builder.makeNullable(t, name, true);
-                    }
+        });
+        return properties.map(([t, count, haveNullable], name) => {
+            let resultType = builder.reconstituteType(t);
+            if (haveNullable || count < clique.size) {
+                if (t.isNamedType()) {
+                    resultType = builder.makeNullable(resultType, t.names, t.areNamesInferred);
+                } else {
+                    resultType = builder.makeNullable(resultType, name, true);
                 }
-                return t;
-            })
-        );
-    };
-
-    for (let i = 0; i < cliques.length; i++) {
-        setCliqueProperties(combinedCliques[i], cliques[i]);
+            }
+            return resultType;
+        });
     }
 
-    graph.alter(replaceClasses);
+    return graph.rewrite(cliques, makeCliqueClass);
 }

@@ -4,38 +4,37 @@ import { Map, List, Set, OrderedSet, Collection } from "immutable";
 
 import { Type, NamedType, separateNamedTypes, SeparatedNamedTypes } from "./Type";
 import { defined, assert } from "./Support";
+import { GraphRewriteBuilder, TypeRef } from "./TypeBuilder";
 
 export class TypeGraph {
     private _frozen: boolean = false;
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
-    private _topLevels: Map<string, number> = Map();
+    private _topLevels?: Map<string, TypeRef> = Map();
 
-    private _types: List<Type> = List();
+    private _types?: List<Type> = List();
+
+    freeze = (topLevels: Map<string, TypeRef>, types: List<Type>): void => {
+        assert(!this._frozen, "Tried to freeze TypeGraph a second time");
+        assert(
+            types.every(t => t.typeRef.graph === this),
+            "Trying to freeze a graph with types that don't belong in it"
+        );
+        this._frozen = true;
+
+        this._topLevels = topLevels;
+        this._types = types;
+    };
 
     get topLevels(): Map<string, Type> {
-        // assert(this._frozen, "Cannot get top-levels from a non-frozen graph");
-        return this._topLevels.map(this.typeAtIndex);
+        assert(this._frozen, "Cannot get top-levels from a non-frozen graph");
+        return defined(this._topLevels).map(tref => tref.deref());
     }
 
-    addTopLevel = (name: string, t: Type): void => {
-        assert(!this._frozen, "Cannot add top-level to a frozen graph");
-        assert(t.typeGraph === this, "Adding top-level to wrong type graph");
-        assert(!this._topLevels.has(name), "Trying to add top-level with existing name");
-        this._topLevels = this._topLevels.set(name, t.indexInGraph);
-    };
-
     typeAtIndex = (index: number): Type => {
-        // assert(this._frozen, "Cannot get type from a non-frozen graph");
-        return defined(this._types.get(index));
-    };
-
-    addType = (t: Type): number => {
-        assert(!this._frozen, "Cannot add type to a frozen graph");
-        const index = this._types.size;
-        this._types = this._types.push(t);
-        return index;
+        assert(this._frozen, "Cannot get type from a non-frozen graph");
+        return defined(defined(this._types).get(index));
     };
 
     filterTypes<T extends Type>(
@@ -69,19 +68,16 @@ export class TypeGraph {
         return separateNamedTypes(types);
     };
 
-    // FIXME: Replace with a non-mutating solution.  It should look something like this:
-    //
-    // inputs:
-    //    replacementGroups: Type[][]
-    //    replacer: (group: Type[], builder: TypeBuilder): Type
-    //
     // Each array in `replacementGroups` is a bunch of types to be replaced by a
     // single new type.  `replacer` is a function that takes a group and a
     // TypeBuilder, and builds a new type with that builder that replaces the group.
     // That particular TypeBuilder will have to take as inputs types in the old
     // graph, but return types in the new graph.  Recursive types must be handled
     // carefully.
-    alter = (f: (t: Type) => Type): void => {
-        this._topLevels = this.topLevels.map(t => f(t).indexInGraph);
+    rewrite = (
+        replacementGroups: Type[][],
+        replacer: (typesToReplace: Set<Type>, builder: GraphRewriteBuilder) => TypeRef
+    ): TypeGraph => {
+        return new GraphRewriteBuilder(this, replacementGroups, replacer).finish();
     };
 }
