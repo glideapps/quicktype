@@ -4,7 +4,8 @@ import { Set, OrderedSet, List, Map, Collection, Range } from "immutable";
 import stringHash = require("string-hash");
 
 import { Renderer } from "./Renderer";
-import { decapitalize, defined, nonNull, assert, panic } from "./Support";
+import { decapitalize } from "./Strings";
+import { defined, nonNull, assert, panic } from "./Support";
 
 export class Namespace {
     private readonly _name: string;

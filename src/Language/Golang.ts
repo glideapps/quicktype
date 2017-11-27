@@ -22,9 +22,9 @@ import {
     startWithLetter,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
-    stringEscape,
-    defined
-} from "../Support";
+    stringEscape
+} from "../Strings";
+import { defined } from "../Support";
 import { StringOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
