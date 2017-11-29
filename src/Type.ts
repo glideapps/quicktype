@@ -66,12 +66,26 @@ function isNull(t: Type): t is PrimitiveType {
 export class ArrayType extends Type {
     readonly kind: "array";
 
-    constructor(typeRef: TypeRef, private readonly _itemsRef: TypeRef) {
+    constructor(typeRef: TypeRef, private _itemsRef?: TypeRef) {
         super(typeRef, "array");
     }
 
+    setItems(itemsRef: TypeRef) {
+        if (this._itemsRef !== undefined) {
+            return panic("Can only set array items once");
+        }
+        this._itemsRef = itemsRef;
+    }
+
+    private getItemsRef(): TypeRef {
+        if (this._itemsRef === undefined) {
+            return panic("Array items accessed before they were set");
+        }
+        return this._itemsRef;
+    }
+
     get items(): Type {
-        return this._itemsRef.deref();
+        return this.getItemsRef().deref();
     }
 
     get children(): OrderedSet<Type> {
@@ -83,19 +97,33 @@ export class ArrayType extends Type {
     }
 
     map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getArrayType(f(this._itemsRef));
+        return builder.getArrayType(f(this.getItemsRef()));
     }
 }
 
 export class MapType extends Type {
     readonly kind: "map";
 
-    constructor(typeRef: TypeRef, private readonly _valuesRef: TypeRef) {
+    constructor(typeRef: TypeRef, private _valuesRef?: TypeRef) {
         super(typeRef, "map");
     }
 
+    setValues(valuesRef: TypeRef) {
+        if (this._valuesRef !== undefined) {
+            return panic("Can only set map values once");
+        }
+        this._valuesRef = valuesRef;
+    }
+
+    private getValuesRef(): TypeRef {
+        if (this._valuesRef === undefined) {
+            return panic("Map values accessed before they were set");
+        }
+        return this._valuesRef;
+    }
+
     get values(): Type {
-        return this._valuesRef.deref();
+        return this.getValuesRef().deref();
     }
 
     get children(): OrderedSet<Type> {
@@ -107,7 +135,7 @@ export class MapType extends Type {
     }
 
     map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getMapType(f(this._valuesRef));
+        return builder.getMapType(f(this.getValuesRef()));
     }
 }
 
@@ -220,15 +248,6 @@ export class ClassType extends NamedType {
         super(typeRef, "class", names, areNamesInferred);
     }
 
-    // FIXME: Get rid of this.  We use this for resolving recursive
-    // types, where we create the class type first without properties,
-    // then create the property types, which are now allowed to refer
-    // to the class, and then we set the properties.  With the TypeBuilder
-    // we have a much nicer solution to this, however.  We can just create
-    // a forwarding entry without having to create the class itself.  This
-    // also solves the problem of recursion when classes are not involved.
-    // You could, for example, have a type `X = Map<string, X>`, which
-    // right now we cannot resolve.
     setProperties(propertyRefs: Map<string, TypeRef>): void {
         if (this._propertyRefs !== undefined) {
             return panic("Can only set class properties once");
@@ -295,14 +314,31 @@ export class UnionType extends NamedType {
         typeRef: TypeRef,
         names: NameOrNames,
         areNamesInferred: boolean,
-        private readonly _memberRefs: OrderedSet<TypeRef>
+        private _memberRefs?: OrderedSet<TypeRef>
     ) {
         super(typeRef, "union", names, areNamesInferred);
-        assert(_memberRefs.size > 1, "Union has zero members");
+        if (_memberRefs !== undefined) {
+            assert(_memberRefs.size > 1, "Union has zero members");
+        }
+    }
+
+    setMembers(memberRefs: OrderedSet<TypeRef>) {
+        if (this._memberRefs !== undefined) {
+            return panic("Can only set map members once");
+        }
+        assert(memberRefs.size > 1, "Union has zero members");
+        this._memberRefs = memberRefs;
+    }
+
+    private getMemberRefs(): OrderedSet<TypeRef> {
+        if (this._memberRefs === undefined) {
+            return panic("Map members accessed before they were set");
+        }
+        return this._memberRefs;
     }
 
     get members(): OrderedSet<Type> {
-        return this._memberRefs.map(tref => tref.deref());
+        return this.getMemberRefs().map(tref => tref.deref());
     }
 
     findMember = (kind: TypeKind): Type | undefined => {
@@ -318,7 +354,7 @@ export class UnionType extends NamedType {
     }
 
     map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
-        const members = this._memberRefs.map(f);
+        const members = this.getMemberRefs().map(f);
         return builder.getUnionType(this.names, this.areNamesInferred, members);
     }
 
