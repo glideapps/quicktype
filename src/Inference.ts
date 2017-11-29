@@ -10,13 +10,29 @@ import { TypeBuilder, UnionBuilder } from "./TypeBuilder";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
-function concatArrays<T>(arrays: T[][]): T[] {
-    let combined: T[] = [];
-    for (let i = 0; i < arrays.length; i++) combined = combined.concat(arrays[i]);
-    return combined;
+// This should be the recursive type
+//   Value[] | NestedValueArray[]
+// but TypeScript doesn't support that.
+type NestedValueArray = any;
+
+function forEachArrayInNestedValueArray(va: NestedValueArray, f: (va: Value[]) => void): void {
+    if (va.length === 0) {
+        return;
+    }
+    if (Array.isArray(va[0])) {
+        for (const x of va) {
+            forEachArrayInNestedValueArray(x, f);
+        }
+    } else {
+        f(va);
+    }
 }
 
-class InferenceUnionBuilder extends UnionBuilder<Value[], Value[], any> {
+function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => void): void {
+    forEachArrayInNestedValueArray(va, a => a.forEach(f));
+}
+
+class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueArray, any> {
     constructor(
         typeBuilder: TypeBuilder,
         typeName: string,
@@ -35,15 +51,14 @@ class InferenceUnionBuilder extends UnionBuilder<Value[], Value[], any> {
         return null;
     }
 
-    protected makeClass(classes: Value[][], maps: any[]): Type {
+    protected makeClass(classes: NestedValueArray, maps: any[]): Type {
         assert(maps.length === 0);
         return this._typeInference.inferClassType(this._cjson, this.typeName, classes);
     }
 
-    protected makeArray(arrays: Value[][]): Type {
-        const combined = concatArrays(arrays);
+    protected makeArray(arrays: NestedValueArray): Type {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, pluralize.singular(this.typeName), combined)
+            this._typeInference.inferType(this._cjson, pluralize.singular(this.typeName), arrays)
         );
     }
 }
@@ -53,10 +68,10 @@ export class TypeInference {
 
     constructor(private readonly _inferMaps: boolean, private readonly _inferEnums: boolean) {}
 
-    inferType = (cjson: CompressedJSON, typeName: string, valueArray: Value[]): Type => {
+    inferType = (cjson: CompressedJSON, typeName: string, valueArray: NestedValueArray): Type => {
         const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeName, this, cjson, valueArray.length);
 
-        for (const value of valueArray) {
+        forEachValueInNestedValueArray(valueArray, value => {
             const t = valueTag(value);
             switch (t) {
                 case Tag.Null:
@@ -92,7 +107,7 @@ export class TypeInference {
                 default:
                     return assertNever(t);
             }
-        }
+        });
 
         const result = unionBuilder.buildUnion(false);
         if (result.isNamedType()) {
@@ -101,20 +116,21 @@ export class TypeInference {
         return result;
     };
 
-    inferClassType = (cjson: CompressedJSON, typeName: string, objects: Value[][]): Type => {
-        const combined = concatArrays(objects);
+    inferClassType = (cjson: CompressedJSON, typeName: string, objects: NestedValueArray): Type => {
         const propertyNames: string[] = [];
         const propertyValues: { [name: string]: Value[] } = {};
 
-        for (let i = 0; i < combined.length; i += 2) {
-            const key = cjson.getStringForValue(combined[i]);
-            const value = combined[i + 1];
-            if (!Object.prototype.hasOwnProperty.call(propertyValues, key)) {
-                propertyNames.push(key);
-                propertyValues[key] = [];
+        forEachArrayInNestedValueArray(objects, arr => {
+            for (let i = 0; i < arr.length; i += 2) {
+                const key = cjson.getStringForValue(arr[i]);
+                const value = arr[i + 1];
+                if (!Object.prototype.hasOwnProperty.call(propertyValues, key)) {
+                    propertyNames.push(key);
+                    propertyValues[key] = [];
+                }
+                propertyValues[key].push(value);
             }
-            propertyValues[key].push(value);
-        }
+        });
 
         const properties: [string, Type][] = [];
         let couldBeMap = this._inferMaps;
