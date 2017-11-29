@@ -223,6 +223,8 @@ type SampleOrSchemaMap = {
     schemas: { [name: string]: any };
 };
 
+let graphByInputHash: Map<number, TypeGraph> = Map();
+
 class Run {
     private _options: CompleteOptions;
     private _compressedJSON: CompressedJSON;
@@ -256,15 +258,15 @@ class Run {
         this._allSamples = { samples: {}, schemas: {} };
     }
 
-    getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
+    private getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
         return getTargetLanguage(opts.lang).optionDefinitions;
     };
 
-    get isInputJSONSchema(): boolean {
+    private get isInputJSONSchema(): boolean {
         return this._options.srcLang === "schema";
     }
 
-    makeGraph = (): TypeGraph => {
+    private makeGraph = (): TypeGraph => {
         const supportsEnums = getTargetLanguage(this._options.lang).supportsEnums;
         const typeBuilder = new TypeGraphBuilder();
         if (this.isInputJSONSchema) {
@@ -273,11 +275,24 @@ class Run {
             });
             return typeBuilder.finish();
         } else {
-            const inference = new TypeInference(
-                typeBuilder,
-                !this._options.noMaps,
-                supportsEnums && !this._options.noEnums
-            );
+            const doInferMaps = !this._options.noMaps;
+            const doInferEnums = supportsEnums && !this._options.noEnums;
+            const doCombineClasses = !this._options.noCombineClasses;
+            const samplesMap = Map(this._allSamples.samples);
+            const inputs = List([
+                doInferMaps,
+                doInferEnums,
+                doCombineClasses,
+                samplesMap.map(values => List(values)),
+                this._compressedJSON
+            ]);
+            const inputHash = inputs.hashCode();
+            const maybeGraph = graphByInputHash.get(inputHash);
+            if (maybeGraph !== undefined) {
+                return maybeGraph;
+            }
+
+            const inference = new TypeInference(typeBuilder, doInferMaps, doInferEnums);
             Map(this._allSamples.samples).forEach((cjson, name) => {
                 typeBuilder.addTopLevel(
                     name,
@@ -285,17 +300,20 @@ class Run {
                 );
             });
             let graph = typeBuilder.finish();
-            if (!this._options.noCombineClasses) {
+            if (doCombineClasses) {
                 graph = combineClasses(graph);
             }
-            if (!this._options.noMaps) {
+            if (doInferMaps) {
                 graph = inferMaps(graph);
             }
+
+            graphByInputHash = graphByInputHash.set(inputHash, graph);
+
             return graph;
         }
     };
 
-    renderSamplesOrSchemas = (): SerializedRenderResult => {
+    private renderSamplesOrSchemas = (): SerializedRenderResult => {
         const targetLanguage = getTargetLanguage(this._options.lang);
         try {
             const graph = this.makeGraph();
@@ -309,7 +327,7 @@ class Run {
         }
     };
 
-    splitAndWriteJava = (dir: string, str: string) => {
+    private splitAndWriteJava = (dir: string, str: string) => {
         const lines = str.split("\n");
         let filename: string | null = null;
         let currentFileContents: string = "";
@@ -339,7 +357,7 @@ class Run {
         writeFile();
     };
 
-    render = () => {
+    private render = () => {
         const { lines, annotations } = this.renderSamplesOrSchemas();
         const output = lines.join("\n");
         if (this._options.out) {
@@ -364,7 +382,7 @@ class Run {
         });
     };
 
-    readSampleFromStream = async (name: string, readStream: stream.Readable): Promise<void> => {
+    private readSampleFromStream = async (name: string, readStream: stream.Readable): Promise<void> => {
         if (this.isInputJSONSchema) {
             const input = JSON.parse(await getStream(readStream));
             if (Object.prototype.hasOwnProperty.call(this._allSamples.schemas, name)) {
@@ -381,7 +399,7 @@ class Run {
         }
     };
 
-    readSampleFromFileOrUrl = async (name: string, fileOrUrl: string): Promise<void> => {
+    private readSampleFromFileOrUrl = async (name: string, fileOrUrl: string): Promise<void> => {
         if (fs.existsSync(fileOrUrl)) {
             await this.readSampleFromStream(name, fs.createReadStream(fileOrUrl));
         } else {
@@ -390,13 +408,13 @@ class Run {
         }
     };
 
-    readSampleFromFileOrUrlArray = async (name: string, filesOrUrls: string[]): Promise<void> => {
+    private readSampleFromFileOrUrlArray = async (name: string, filesOrUrls: string[]): Promise<void> => {
         for (const fileOrUrl of filesOrUrls) {
             await this.readSampleFromFileOrUrl(name, fileOrUrl);
         }
     };
 
-    readNamedSamplesFromDirectory = async (dataDir: string): Promise<void> => {
+    private readNamedSamplesFromDirectory = async (dataDir: string): Promise<void> => {
         const readFilesOrURLsInDirectory = async (d: string, sampleName?: string): Promise<void> => {
             const files = fs
                 .readdirSync(d)
@@ -462,7 +480,7 @@ class Run {
     // Parse the options in argv and split them into global options and renderer options,
     // according to each option definition's `renderer` field.  If `partial` is false this
     // will throw if it encounters an unknown option.
-    parseOptions = (definitions: OptionDefinition[], argv: string[], partial: boolean): CompleteOptions => {
+    private parseOptions = (definitions: OptionDefinition[], argv: string[], partial: boolean): CompleteOptions => {
         const opts: { [key: string]: any } = commandLineArgs(definitions, {
             argv,
             partial: partial
@@ -485,7 +503,7 @@ class Run {
         return this.inferOptions(options);
     };
 
-    inferOptions = (opts: Options): CompleteOptions => {
+    private inferOptions = (opts: Options): CompleteOptions => {
         return {
             src: opts.src || [],
             srcLang: opts.srcLang || "json",
@@ -501,7 +519,7 @@ class Run {
         };
     };
 
-    inferLang = (options: Options): string => {
+    private inferLang = (options: Options): string => {
         // Output file extension determines the language if language is undefined
         if (options.out) {
             let extension = path.extname(options.out);
@@ -515,7 +533,7 @@ class Run {
         return "go";
     };
 
-    inferTopLevel = (options: Options): string => {
+    private inferTopLevel = (options: Options): string => {
         // Output file name determines the top-level if undefined
         if (options.out) {
             let extension = path.extname(options.out);

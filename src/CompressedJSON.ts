@@ -4,9 +4,10 @@ import * as fs from "fs";
 import * as process from "process";
 import * as stream from "stream";
 
-import { defined, assertNever } from "./Support";
+import { defined, assertNever, hashCodeInit, addHashCode } from "./Support";
 
 const makeSource = require("stream-json/main");
+const stringHash = require("string-hash");
 
 export enum Tag {
     Null,
@@ -323,5 +324,34 @@ export class CompressedJSON {
 
     private handleFalseValue = (): void => {
         this.commitValue(makeValue(Tag.False, 0));
+    };
+
+    equals = (other: any): boolean => {
+        return this === other;
+    };
+
+    hashCode = (): number => {
+        let hash = hashCodeInit;
+        for (const s of this._strings) {
+            hash = addHashCode(hash, stringHash(s));
+        }
+
+        for (const s of Object.getOwnPropertyNames(this._stringValues).sort()) {
+            hash = addHashCode(hash, stringHash(s));
+            hash = addHashCode(hash, this._stringValues[s]);
+        }
+
+        for (const o of this._objects) {
+            for (const v of o) {
+                hash = addHashCode(hash, v);
+            }
+        }
+        for (const o of this._arrays) {
+            for (const v of o) {
+                hash = addHashCode(hash, v);
+            }
+        }
+
+        return hash;
     };
 }
