@@ -219,7 +219,7 @@ interface CompleteOptions {
 }
 
 type SampleOrSchemaMap = {
-    samples: { [name: string]: any[] };
+    samples: { [name: string]: Value[] };
     schemas: { [name: string]: any };
 };
 
@@ -262,14 +262,6 @@ class Run {
 
     get isInputJSONSchema(): boolean {
         return this._options.srcLang === "schema";
-    }
-
-    get needCompressedJSONInput(): boolean {
-        if (this.isInputJSONSchema) {
-            return false;
-        }
-        const lang = getTargetLanguage(this._options.lang);
-        return lang.needsCompressedJSONInput(this._options.rendererOptions);
     }
 
     makeGraph = (): TypeGraph => {
@@ -373,19 +365,15 @@ class Run {
     };
 
     readSampleFromStream = async (name: string, readStream: stream.Readable): Promise<void> => {
-        let input: any;
-        if (this.needCompressedJSONInput) {
-            input = await this._compressedJSON.readFromStream(readStream);
-        } else {
-            input = JSON.parse(await getStream(readStream));
-        }
         if (this.isInputJSONSchema) {
+            const input = JSON.parse(await getStream(readStream));
             if (Object.prototype.hasOwnProperty.call(this._allSamples.schemas, name)) {
                 console.error(`Error: More than one schema given for top-level ${name}.`);
                 return process.exit(1);
             }
             this._allSamples.schemas[name] = input;
         } else {
+            const input = await this._compressedJSON.readFromStream(readStream);
             if (!Object.prototype.hasOwnProperty.call(this._allSamples.samples, name)) {
                 this._allSamples.samples[name] = [];
             }

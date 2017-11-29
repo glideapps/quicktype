@@ -19,10 +19,6 @@ export abstract class TargetLanguage {
         return serializeRenderResult(renderResult, this.indentation);
     }
 
-    needsCompressedJSONInput(rendererOptions: RendererOptions): boolean {
-        return true;
-    }
-
     protected get indentation(): string {
         return "    ";
     }
