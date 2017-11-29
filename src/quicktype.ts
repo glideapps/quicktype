@@ -6,15 +6,23 @@ import * as getStream from "get-stream";
 
 import * as _ from "lodash";
 
-import { Config, TopLevelConfig } from "./Config";
+import { List, Map } from "immutable";
+
+import { TopLevelConfig } from "./Config";
 import * as targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
-import { SerializedRenderResult, Annotation } from "./Source";
+import { SerializedRenderResult, Annotation, serializeRenderResult } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
 import { defined } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { urlsFromURLGrammar } from "./URLGrammar";
+import { combineClasses } from "./CombineClasses";
+import { schemaToType } from "./JSONSchemaInput";
+import { TypeInference } from "./Inference";
+import { inferMaps } from "./InferMaps";
+import { TypeGraphBuilder } from "./TypeBuilder";
+import { TypeGraph } from "./TypeGraph";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -265,6 +273,36 @@ class Run {
         return lang.needsCompressedJSONInput(this._options.rendererOptions);
     }
 
+    makeGraph = (topLevelConfigs: TopLevelConfig[], supportsEnums: boolean): TypeGraph => {
+        const typeBuilder = new TypeGraphBuilder();
+        if (this.isInputJSONSchema) {
+            for (const tlc of topLevelConfigs) {
+                typeBuilder.addTopLevel(tlc.name, schemaToType(typeBuilder, tlc.name, (tlc as any).schema));
+            }
+            return typeBuilder.finish();
+        } else {
+            const inference = new TypeInference(
+                typeBuilder,
+                !this._options.noMaps,
+                supportsEnums && !this._options.noEnums
+            );
+            topLevelConfigs.forEach(tlc => {
+                typeBuilder.addTopLevel(
+                    tlc.name,
+                    inference.inferType(this._compressedJSON as CompressedJSON, tlc.name, false, (tlc as any).samples)
+                );
+            });
+            let graph = typeBuilder.finish();
+            if (!this._options.noCombineClasses) {
+                graph = combineClasses(graph);
+            }
+            if (!this._options.noMaps) {
+                graph = inferMaps(graph);
+            }
+            return graph;
+        }
+    };
+
     renderSamplesOrSchemas = (): SerializedRenderResult => {
         const targetLanguage = getTargetLanguage(this._options.lang);
 
@@ -276,20 +314,13 @@ class Run {
             const names = Object.getOwnPropertyNames(this._allSamples.samples);
             topLevels = names.map(name => ({ name, samples: this._allSamples.samples[name] }));
         }
-        let config: Config = {
-            language: targetLanguage.names[0],
-            isInputJSONSchema: this.isInputJSONSchema,
-            topLevels,
-            compressedJSON: this._compressedJSON,
-            inferMaps: !this._options.noMaps,
-            inferEnums: !this._options.noEnums,
-            combineClasses: !this._options.noCombineClasses,
-            doRender: !this._options.noRender,
-            rendererOptions: this._options.rendererOptions
-        };
 
         try {
-            return targetLanguage.transformAndRenderConfig(config);
+            const graph = this.makeGraph(topLevels, targetLanguage.supportsEnums);
+            if (this._options.noRender) {
+                return { lines: ["Done.", ""], annotations: List() };
+            }
+            return targetLanguage.renderGraphAndSerialize(graph, this._options.rendererOptions);
         } catch (e) {
             console.error(e);
             return process.exit(1);

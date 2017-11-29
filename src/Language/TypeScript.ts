@@ -27,7 +27,7 @@ export default class L extends TargetLanguage {
         ]);
     }
 
-    protected get supportsEnums(): boolean {
+    get supportsEnums(): boolean {
         return false;
     }
 
