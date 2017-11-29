@@ -1,6 +1,5 @@
 "use strict";
 
-import { TopLevelConfig } from "./Config";
 import { TypeGraph } from "./TypeGraph";
 import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";

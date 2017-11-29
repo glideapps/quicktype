@@ -8,7 +8,6 @@ import * as _ from "lodash";
 
 import { List, Map } from "immutable";
 
-import { TopLevelConfig } from "./Config";
 import * as targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
@@ -273,12 +272,13 @@ class Run {
         return lang.needsCompressedJSONInput(this._options.rendererOptions);
     }
 
-    makeGraph = (topLevelConfigs: TopLevelConfig[], supportsEnums: boolean): TypeGraph => {
+    makeGraph = (): TypeGraph => {
+        const supportsEnums = getTargetLanguage(this._options.lang).supportsEnums;
         const typeBuilder = new TypeGraphBuilder();
         if (this.isInputJSONSchema) {
-            for (const tlc of topLevelConfigs) {
-                typeBuilder.addTopLevel(tlc.name, schemaToType(typeBuilder, tlc.name, (tlc as any).schema));
-            }
+            Map(this._allSamples.schemas).forEach((schema, name) => {
+                typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema));
+            });
             return typeBuilder.finish();
         } else {
             const inference = new TypeInference(
@@ -286,10 +286,10 @@ class Run {
                 !this._options.noMaps,
                 supportsEnums && !this._options.noEnums
             );
-            topLevelConfigs.forEach(tlc => {
+            Map(this._allSamples.samples).forEach((cjson, name) => {
                 typeBuilder.addTopLevel(
-                    tlc.name,
-                    inference.inferType(this._compressedJSON as CompressedJSON, tlc.name, false, (tlc as any).samples)
+                    name,
+                    inference.inferType(this._compressedJSON as CompressedJSON, name, false, cjson)
                 );
             });
             let graph = typeBuilder.finish();
@@ -305,18 +305,8 @@ class Run {
 
     renderSamplesOrSchemas = (): SerializedRenderResult => {
         const targetLanguage = getTargetLanguage(this._options.lang);
-
-        let topLevels: TopLevelConfig[];
-        if (this.isInputJSONSchema) {
-            const names = Object.getOwnPropertyNames(this._allSamples.schemas);
-            topLevels = names.map(name => ({ name, schema: this._allSamples.schemas[name] }));
-        } else {
-            const names = Object.getOwnPropertyNames(this._allSamples.samples);
-            topLevels = names.map(name => ({ name, samples: this._allSamples.samples[name] }));
-        }
-
         try {
-            const graph = this.makeGraph(topLevels, targetLanguage.supportsEnums);
+            const graph = this.makeGraph();
             if (this._options.noRender) {
                 return { lines: ["Done.", ""], annotations: List() };
             }
