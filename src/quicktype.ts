@@ -230,7 +230,7 @@ class Run {
     private _compressedJSON: CompressedJSON;
     private _allSamples: SampleOrSchemaMap;
 
-    constructor(argv: string[] | Options) {
+    constructor(argv: string[] | Options, private readonly _doCache: boolean) {
         if (_.isArray(argv)) {
             // We can only fully parse the options once we know which renderer is selected,
             // because there are renderer-specific options.  But we only know which renderer
@@ -286,10 +286,14 @@ class Run {
                 samplesMap.map(values => List(values)),
                 this._compressedJSON
             ]);
-            const inputHash = inputs.hashCode();
-            const maybeGraph = graphByInputHash.get(inputHash);
-            if (maybeGraph !== undefined) {
-                return maybeGraph;
+            let inputHash: number | undefined = undefined;
+
+            if (this._doCache) {
+                inputHash = inputs.hashCode();
+                const maybeGraph = graphByInputHash.get(inputHash);
+                if (maybeGraph !== undefined) {
+                    return maybeGraph;
+                }
             }
 
             const inference = new TypeInference(typeBuilder, doInferMaps, doInferEnums);
@@ -307,7 +311,9 @@ class Run {
                 graph = inferMaps(graph);
             }
 
-            graphByInputHash = graphByInputHash.set(inputHash, graph);
+            if (inputHash !== undefined) {
+                graphByInputHash = graphByInputHash.set(inputHash, graph);
+            }
 
             return graph;
         }
@@ -560,7 +566,7 @@ export async function main(args: string[] | Options) {
     if (_.isArray(args) && args.length === 0) {
         usage();
     } else {
-        let run = new Run(args);
+        let run = new Run(args, false);
         await run.runAndPrint();
     }
 }
