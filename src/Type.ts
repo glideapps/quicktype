@@ -380,7 +380,7 @@ export function nullableFromUnion(t: UnionType): Type | null {
 }
 
 export function nonNullTypeCases(t: Type): OrderedSet<Type> {
-    if (t.kind === null) {
+    if (t.kind === "null") {
         return OrderedSet();
     }
     if (!(t instanceof UnionType)) {
