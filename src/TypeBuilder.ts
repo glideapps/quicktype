@@ -75,6 +75,7 @@ export class TypeRef {
         if (this._maybeIndexOrRef !== undefined) {
             return panic("Trying to resolve an already resolved type reference");
         }
+        assert(tref.follow() !== this, "Tried to create a TypeRef cycle");
         this._maybeIndexOrRef = tref;
         if (this._callbacks !== undefined) {
             for (const cb of this._callbacks) {
