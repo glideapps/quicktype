@@ -24,6 +24,9 @@ export class TypeRef {
     private _maybeIndexOrRef?: number | TypeRef;
     private _callbacks?: TypeRefCallback[];
 
+    // FIXME: This should refer to the TypeGraph, not the builder.
+    // Maybe before the TypeGraph is frozen is holds a reference to
+    // its TypeBuilder so it can get the types from there?
     constructor(readonly builder: CoalescingTypeBuilder, index?: number) {
         this._maybeIndexOrRef = index;
     }

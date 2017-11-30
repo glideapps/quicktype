@@ -14,6 +14,7 @@ import { CompressedJSON } from "./CompressedJSON";
 import { RendererOptions } from "./quicktype";
 import { schemaToType } from "./JSONSchemaInput";
 import { TypeGraphBuilder } from "./TypeBuilder";
+import { inferMaps } from "./InferMaps";
 
 export abstract class TargetLanguage {
     constructor(
@@ -41,8 +42,13 @@ export abstract class TargetLanguage {
             });
         }
         let graph = typeBuilder.finish();
-        if (combine) {
-            graph = combineClasses(graph);
+        if (!config.isInputJSONSchema) {
+            if (combine) {
+                graph = combineClasses(graph);
+            }
+            if (config.inferMaps) {
+                graph = inferMaps(graph);
+            }
         }
         if (!config.doRender) {
             return { lines: ["Done.", ""], annotations: List() };

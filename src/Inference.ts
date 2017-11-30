@@ -7,6 +7,7 @@ import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType } from "./Type";
 import { assertNever, assert } from "./Support";
 import { TypeGraphBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
+import { shouldBeMap } from "./InferMaps";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -149,22 +150,16 @@ export class TypeInference {
         });
 
         const properties: [string, TypeRef][] = [];
-        let couldBeMap = this._inferMaps;
         for (const key of propertyNames) {
             const values = propertyValues[key];
             let t = this.inferType(cjson, key, true, values);
             if (values.length < objects.length) {
                 t = this._typeBuilder.makeNullable(t, key, true);
             }
-            if (couldBeMap && properties.length > 0 && t !== properties[0][1]) {
-                couldBeMap = false;
-            }
             properties.push([key, t]);
         }
 
-        if (couldBeMap && properties.length >= 20) {
-            return this._typeBuilder.getMapType(properties[0][1]);
-        }
-        return this._typeBuilder.getClassType(typeName, isInferred, OrderedMap(properties));
+        const propertyMap = OrderedMap(properties);
+        return this._typeBuilder.getClassType(typeName, isInferred, propertyMap);
     };
 }

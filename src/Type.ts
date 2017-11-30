@@ -379,15 +379,15 @@ export function nullableFromUnion(t: UnionType): Type | null {
     return defined(nonNulls.first());
 }
 
-export function nonNullTypeCases(t: Type): Set<Type> {
+export function nonNullTypeCases(t: Type): OrderedSet<Type> {
     if (t.kind === null) {
-        return Set();
+        return OrderedSet();
     }
     if (!(t instanceof UnionType)) {
-        return Set([t]);
+        return OrderedSet([t]);
     }
     const [_, nonNulls] = removeNullFromUnion(t);
-    return Set(nonNulls);
+    return OrderedSet(nonNulls);
 }
 
 // FIXME: The outer OrderedSet should be some Collection, but I can't figure out

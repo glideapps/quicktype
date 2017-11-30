@@ -68,12 +68,7 @@ export const GoLanguage: Language = {
   allowMissingNull: false,
   output: "quicktype.go",
   topLevel: "TopLevel",
-  skipJSON: [
-    "identifiers.json",
-    "simple-identifiers.json",
-    "blns-object.json",
-    "7f568.json" // this contains a property "-", which Go can't handle
-  ],
+  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: []
