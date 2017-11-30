@@ -268,6 +268,10 @@ export class TypeGraphBuilder extends CoalescingTypeBuilder {
         return entry;
     }
 
+    getLazyMapType(valuesCreator: () => TypeRef | undefined): TypeRef {
+        return this.addType(tref => new MapType(tref, valuesCreator()));
+    }
+
     getUniqueClassType = (names: NameOrNames, isInferred: boolean, properties?: Map<string, TypeRef>): TypeRef => {
         return this.addType(tref => new ClassType(tref, names, isInferred, properties));
     };
