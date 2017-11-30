@@ -42,7 +42,9 @@ export function assertNever(x: never): never {
 }
 
 export function assert(condition: boolean, message: string = "Assertion failed"): void {
-    if (!condition) throw Error(message);
+    if (!condition) {
+        throw Error(message);
+    }
 }
 
 export function panic(message: string): never {
