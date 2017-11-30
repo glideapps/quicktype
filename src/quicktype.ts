@@ -13,7 +13,7 @@ import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, serializeRenderResult } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
-import { defined } from "./Support";
+import { defined, assert } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { combineClasses } from "./CombineClasses";
@@ -357,31 +357,6 @@ class Run {
         writeFile();
     };
 
-    private render = () => {
-        const { lines, annotations } = this.renderSamplesOrSchemas();
-        const output = lines.join("\n");
-        if (this._options.out) {
-            if (this._options.lang === "java") {
-                this.splitAndWriteJava(path.dirname(this._options.out), output);
-            } else {
-                fs.writeFileSync(this._options.out, output);
-            }
-        } else {
-            process.stdout.write(output);
-        }
-        if (this._options.quiet) {
-            return;
-        }
-        annotations.forEach((sa: Annotation) => {
-            const annotation = sa.annotation;
-            if (!(annotation instanceof IssueAnnotationData)) return;
-            const lineNumber = sa.span.start.line;
-            const humanLineNumber = lineNumber + 1;
-            console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
-            console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
-        });
-    };
-
     private readSampleFromStream = async (name: string, readStream: stream.Readable): Promise<void> => {
         if (this.isInputJSONSchema) {
             const input = JSON.parse(await getStream(readStream));
@@ -447,11 +422,9 @@ class Run {
         }
     };
 
-    main = async () => {
-        if (this._options.help) {
-            usage();
-            return;
-        } else if (this._options.srcUrls) {
+    run = async (): Promise<SerializedRenderResult> => {
+        assert(!this._options.help, "Cannot print help when run without printing");
+        if (this._options.srcUrls) {
             let json = JSON.parse(fs.readFileSync(this._options.srcUrls, "utf8"));
             let jsonMap = urlsFromURLGrammar(json);
             for (let key of Object.keys(jsonMap)) {
@@ -474,7 +447,37 @@ class Run {
                 await this.readSampleFromFileOrUrlArray(this._options.topLevel, filesOrUrls);
             }
         }
-        this.render();
+        return this.renderSamplesOrSchemas();
+    };
+
+    runAndPrint = async () => {
+        if (this._options.help) {
+            usage();
+            return;
+        }
+
+        const { lines, annotations } = await this.run();
+        const output = lines.join("\n");
+        if (this._options.out) {
+            if (this._options.lang === "java") {
+                this.splitAndWriteJava(path.dirname(this._options.out), output);
+            } else {
+                fs.writeFileSync(this._options.out, output);
+            }
+        } else {
+            process.stdout.write(output);
+        }
+        if (this._options.quiet) {
+            return;
+        }
+        annotations.forEach((sa: Annotation) => {
+            const annotation = sa.annotation;
+            if (!(annotation instanceof IssueAnnotationData)) return;
+            const lineNumber = sa.span.start.line;
+            const humanLineNumber = lineNumber + 1;
+            console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
+            console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
+        });
     };
 
     // Parse the options in argv and split them into global options and renderer options,
@@ -558,7 +561,7 @@ export async function main(args: string[] | Options) {
         usage();
     } else {
         let run = new Run(args);
-        await run.main();
+        await run.runAndPrint();
     }
 }
 
