@@ -26,6 +26,8 @@ import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
 import { IssueAnnotationData, anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
+import * as _ from "lodash";
+
 const unicode = require("unicode-properties");
 
 type Version = 5 | 6;
@@ -248,7 +250,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                     this.emitLine(property);
                 } else if (this._dense) {
                     const indent = maxWidth - escapedName.length + 1;
-                    const whitespace = " ".repeat(indent);
+                    const whitespace = _.repeat(" ", indent);
                     this.emitLine(attribute, whitespace, property);
                 } else {
                     this.emitLine(attribute);

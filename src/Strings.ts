@@ -1,6 +1,7 @@
 "use strict";
 
 import { assert } from "./Support";
+import * as _ from "lodash";
 
 const unicode = require("unicode-properties");
 
@@ -114,7 +115,7 @@ export function legalizeCharacters(isLegal: (codePoint: number) => boolean): (s:
 export function intToHex(i: number, width: number): string {
     let str = i.toString(16);
     if (str.length >= width) return str;
-    return "0".repeat(width - str.length) + str;
+    return _.repeat("0", width - str.length) + str;
 }
 
 export function standardUnicodeHexEscape(codePoint: number): string {
