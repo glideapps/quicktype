@@ -1,5 +1,7 @@
 "use strict";
 
+import * as _ from "lodash";
+
 import { List, Map, Range } from "immutable";
 
 import { AnnotationData } from "./Annotation";
@@ -173,7 +175,7 @@ export function serializeRenderResult(
 
     function indentIfNeeded(): void {
         if (indentNeeded === 0) return;
-        currentLine.push(indentation.repeat(indentNeeded));
+        currentLine.push(_.repeat(indentation, indentNeeded));
         indentNeeded = 0;
     }
 
@@ -229,7 +231,7 @@ export function serializeRenderResult(
                         serializeToStringArray(src);
                         // FIXME: don't pad last column
                         if (srcWidth < colWidth) {
-                            currentLine.push(" ".repeat(colWidth - srcWidth));
+                            currentLine.push(_.repeat(" ", colWidth - srcWidth));
                         }
                     }
                     if (y < numRows - 1) {
