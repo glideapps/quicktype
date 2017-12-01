@@ -38,7 +38,10 @@ export abstract class TargetLanguage {
         } else if (config.isInputGraphQL) {
             for (const tlc of config.topLevels) {
                 const gql = tlc as GraphQLTopLevelConfig;
-                typeBuilder.addTopLevel(tlc.name, readGraphQLSchema(gql.graphQLSchema, gql.graphQLDocument));
+                typeBuilder.addTopLevel(
+                    tlc.name,
+                    readGraphQLSchema(typeBuilder, gql.graphQLSchema, gql.graphQLDocument)
+                );
             }
             combine = false;
             doInferMaps = false;

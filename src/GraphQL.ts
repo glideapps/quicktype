@@ -4,16 +4,7 @@ import { Map, Set, OrderedSet } from "immutable";
 
 const graphql = require("graphql/language");
 
-import {
-    Type,
-    ClassType,
-    ArrayType,
-    EnumType,
-    UnionType,
-    PrimitiveType,
-    removeNullFromUnion,
-    NamesWithAlternatives
-} from "./Type";
+import { NamesWithAlternatives, removeNullFromUnion, UnionType } from "./Type";
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
 import {
     DocumentNode,
@@ -27,6 +18,7 @@ import {
     InlineFragmentNode
 } from "./GraphQLAST";
 import { assertNever } from "./Support";
+import { TypeBuilder, TypeRef } from "./TypeBuilder";
 
 interface GQLType {
     kind: TypeKind;
@@ -79,40 +71,52 @@ function makeTypeNames(name: string, fieldName: string | null, containingType: G
     return { names: OrderedSet([name]), alternatives: OrderedSet(alternatives) };
 }
 
-function makeNullable(t: Type, name: string, fieldName: string | null, containingType: GQLType | null): Type {
+function makeNullable(
+    builder: TypeBuilder,
+    tref: TypeRef,
+    name: string,
+    fieldName: string | null,
+    containingType: GQLType | null
+): TypeRef {
     const typeNames = makeTypeNames(name, fieldName, containingType);
+    const t = tref.deref();
     if (!(t instanceof UnionType)) {
-        return new UnionType(typeNames.names, false, OrderedSet([t, new PrimitiveType("null")]));
+        return builder.getUnionType(typeNames.names, false, OrderedSet([tref, builder.getPrimitiveType("null")]));
     }
     const [maybeNull, nonNulls] = removeNullFromUnion(t);
-    if (maybeNull) return t;
-    return new UnionType(typeNames, false, nonNulls.add(new PrimitiveType("null")));
+    if (maybeNull) return tref;
+    return builder.getUnionType(typeNames, false, nonNulls.map(nn => nn.typeRef).add(builder.getPrimitiveType("null")));
 }
 
-function removeNull(t: Type): Type {
+function removeNull(builder: TypeBuilder, tref: TypeRef): TypeRef {
+    const t = tref.deref();
     if (!(t instanceof UnionType)) {
-        return t;
+        return tref;
     }
     const [_, nonNulls] = removeNullFromUnion(t);
     const first = nonNulls.first();
     if (first) {
-        if (nonNulls.size === 1) return first;
-        return new UnionType({ names: t.names, alternatives: t.alternativeNames }, t.areNamesInferred, nonNulls);
+        if (nonNulls.size === 1) return first.typeRef;
+        return builder.getUnionType(
+            { names: t.names, alternatives: t.alternativeNames },
+            t.areNamesInferred,
+            nonNulls.map(nn => nn.typeRef)
+        );
     }
     throw "Error: Trying to remove null results in empty union.";
 }
 
-function makeScalar(ft: GQLType): Type {
+function makeScalar(builder: TypeBuilder, ft: GQLType): TypeRef {
     switch (ft.name) {
         case "Boolean":
-            return new PrimitiveType("bool");
+            return builder.getPrimitiveType("bool");
         case "Int":
-            return new PrimitiveType("integer");
+            return builder.getPrimitiveType("integer");
         case "Float":
-            return new PrimitiveType("double");
+            return builder.getPrimitiveType("double");
         default:
             // FIXME: support ID specifically?
-            return new PrimitiveType("string");
+            return builder.getPrimitiveType("string");
     }
 }
 
@@ -166,18 +170,21 @@ class GQLQuery {
     }
 
     private makeIRTypeFromFieldNode = (
+        builder: TypeBuilder,
         fieldNode: FieldNode,
         fieldType: GQLType,
         containingType: GQLType | null
-    ): Type => {
+    ): TypeRef => {
         switch (fieldType.kind) {
             case TypeKind.SCALAR:
-                return makeScalar(fieldType);
+                return makeScalar(builder, fieldType);
             case TypeKind.OBJECT:
             case TypeKind.INTERFACE:
                 if (!fieldNode.selectionSet) throw "Error: No selection set on object or interface.";
                 return makeNullable(
+                    builder,
                     this.makeIRTypeFromSelectionSet(
+                        builder,
                         fieldNode.selectionSet,
                         fieldType,
                         fieldNode.name.value,
@@ -201,15 +208,20 @@ class GQLQuery {
                     name = fieldNode.name.value;
                     fieldName = null;
                 }
-                return new EnumType(makeTypeNames(name, fieldName, containingType), false, OrderedSet(values));
+                return builder.getEnumType(makeTypeNames(name, fieldName, containingType), false, OrderedSet(values));
             case TypeKind.INPUT_OBJECT:
                 throw "FIXME: support input objects";
             case TypeKind.LIST:
                 if (!fieldType.ofType) throw "Error: No type for list.";
-                return new ArrayType(this.makeIRTypeFromFieldNode(fieldNode, fieldType.ofType, containingType));
+                return builder.getArrayType(
+                    this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingType)
+                );
             case TypeKind.NON_NULL:
                 if (!fieldType.ofType) throw "Error: No type for non-null.";
-                return removeNull(this.makeIRTypeFromFieldNode(fieldNode, fieldType.ofType, containingType));
+                return removeNull(
+                    builder,
+                    this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingType)
+                );
             default:
                 return assertNever(fieldType.kind);
         }
@@ -222,16 +234,17 @@ class GQLQuery {
     };
 
     private makeIRTypeFromSelectionSet = (
+        builder: TypeBuilder,
         selectionSet: SelectionSetNode,
         gqlType: GQLType,
         containingFieldName: string | null,
         containingType: GQLType | null
-    ): ClassType => {
+    ): TypeRef => {
         if (gqlType.kind !== TypeKind.OBJECT && gqlType.kind !== TypeKind.INTERFACE) {
             throw "Error: Type for selection set is not object or interface.";
         }
         if (!gqlType.name) throw "Error: Object or interface type doesn't have a name.";
-        let properties = Map<string, Type>();
+        let properties = Map<string, TypeRef>();
         let selections = expandSelectionSet(selectionSet, gqlType, false);
         for (;;) {
             const nextItem = selections.pop();
@@ -242,9 +255,9 @@ class GQLQuery {
                     const fieldName = selection.name.value;
                     const givenName = selection.alias ? selection.alias.value : fieldName;
                     const field = getField(inType, fieldName);
-                    let fieldType = this.makeIRTypeFromFieldNode(selection, field.type, gqlType);
+                    let fieldType = this.makeIRTypeFromFieldNode(builder, selection, field.type, gqlType);
                     if (optional) {
-                        fieldType = makeNullable(fieldType, givenName, null, gqlType);
+                        fieldType = makeNullable(builder, fieldType, givenName, null, gqlType);
                     }
                     properties = properties.set(givenName, fieldType);
                     break;
@@ -271,13 +284,15 @@ class GQLQuery {
                     assertNever(selection);
             }
         }
-        const classType = new ClassType(makeTypeNames(gqlType.name, containingFieldName, containingType), false);
-        classType.setProperties(properties);
-        return classType;
+        return builder.getClassType(
+            makeTypeNames(gqlType.name, containingFieldName, containingType),
+            false,
+            properties
+        );
     };
 
-    makeType(): Type {
-        return this.makeIRTypeFromSelectionSet(this._query.selectionSet, this._schema.queryType, null, null);
+    makeType(builder: TypeBuilder): TypeRef {
+        return this.makeIRTypeFromSelectionSet(builder, this._query.selectionSet, this._schema.queryType, null, null);
     }
 }
 
@@ -369,8 +384,8 @@ class GQLSchemaFromJSON implements GQLSchema {
     };
 }
 
-export function readGraphQLSchema(json: any, queryString: string): Type {
+export function readGraphQLSchema(builder: TypeBuilder, json: any, queryString: string): TypeRef {
     const schema = new GQLSchemaFromJSON(json);
     const query = new GQLQuery(schema, queryString);
-    return query.makeType();
+    return query.makeType(builder);
 }
