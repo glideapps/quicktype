@@ -27,7 +27,7 @@ export class TypeRef {
     // FIXME: This should refer to the TypeGraph, not the builder.
     // Maybe before the TypeGraph is frozen is holds a reference to
     // its TypeBuilder so it can get the types from there?
-    constructor(readonly builder: CoalescingTypeBuilder, index?: number) {
+    constructor(readonly graph: TypeGraph, index?: number) {
         this._maybeIndexOrRef = index;
     }
 
@@ -36,10 +36,6 @@ export class TypeRef {
             return this._maybeIndexOrRef.follow();
         }
         return this;
-    }
-
-    get graph(): TypeGraph {
-        return this.builder.typeGraph;
     }
 
     get maybeIndex(): number | undefined {
@@ -86,14 +82,14 @@ export class TypeRef {
     };
 
     deref = (): Type => {
-        return defined(this.builder.types.get(this.index));
+        return this.graph.typeAtIndex(this.index);
     };
 
     equals = (other: any): boolean => {
         if (!(other instanceof TypeRef)) {
             return false;
         }
-        assert(this.builder === other.builder, "Comparing type refs of different graphs");
+        assert(this.graph === other.graph, "Comparing type refs of different graphs");
         return this.follow() === other.follow();
     };
 
@@ -112,10 +108,10 @@ export interface TypeBuilder {
 }
 
 export abstract class CoalescingTypeBuilder implements TypeBuilder {
-    readonly typeGraph: TypeGraph = new TypeGraph();
+    readonly typeGraph: TypeGraph = new TypeGraph(this);
 
     protected topLevels: Map<string, TypeRef> = Map();
-    types: List<Type | undefined> = List();
+    protected types: List<Type | undefined> = List();
 
     protected namesToAdd: Map<number, { names: NameOrNames; isInferred: boolean }[]> = Map();
 
@@ -126,20 +122,16 @@ export abstract class CoalescingTypeBuilder implements TypeBuilder {
         this.topLevels = this.topLevels.set(name, tref);
     };
 
-    reserveTypeRef = (): TypeRef => {
+    private reserveTypeRef = (): TypeRef => {
         const index = this.types.size;
         this.types = this.types.push(undefined);
-        return new TypeRef(this, index);
+        return new TypeRef(this.typeGraph, index);
     };
 
-    commitType = (tref: TypeRef, t: Type): void => {
+    private commitType = (tref: TypeRef, t: Type): void => {
         assert(this.types.get(tref.index) === undefined, "A type index was committed twice");
         this.types = this.types.set(tref.index, t);
     };
-
-    followIndex(index: number): number {
-        return index;
-    }
 
     protected addType<T extends Type>(creator: (tref: TypeRef) => T): TypeRef {
         const tref = this.reserveTypeRef();
@@ -156,6 +148,14 @@ export abstract class CoalescingTypeBuilder implements TypeBuilder {
         }
         return tref;
     }
+
+    typeAtIndex = (index: number): Type => {
+        const maybeType = this.types.get(index);
+        if (maybeType === undefined) {
+            return panic("Trying to deref an undefined type in a type builder");
+        }
+        return maybeType;
+    };
 
     addNames = (tref: TypeRef, names: NameOrNames, isInferred: boolean): void => {
         tref.callWhenResolved(index => {
@@ -333,7 +333,7 @@ export class GraphRewriteBuilder extends CoalescingTypeBuilder {
     }
 
     private withForwardingRef(typeCreator: (forwardingRef: TypeRef) => TypeRef): TypeRef {
-        const forwardingRef = new TypeRef(this);
+        const forwardingRef = new TypeRef(this.typeGraph);
         const actualRef = typeCreator(forwardingRef);
         forwardingRef.resolve(actualRef);
         return actualRef;
