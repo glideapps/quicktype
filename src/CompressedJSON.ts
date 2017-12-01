@@ -6,7 +6,7 @@ import * as stream from "stream";
 
 import { defined, assertNever } from "./Support";
 
-const makeSource = require("stream-json");
+const makeSource = require("stream-json/main");
 
 export enum Tag {
     Null,
