@@ -49,7 +49,7 @@ function canBeCombined(c1: ClassType, c2: ClassType): boolean {
         // FIXME: Allow some type combinations to unify, like different enums,
         // enums with strings, integers with doubles, maps with objects of
         // the correct type.
-        if (!ts.equals(tl)) {
+        if (!tsCases.isEmpty() && !tlCases.isEmpty() && !tsCases.equals(tlCases)) {
             return false;
         }
     }
