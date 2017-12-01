@@ -298,7 +298,7 @@ class Run {
             return typeBuilder.finish();
         } else if (this.isInputGraphQL) {
             Map(this._allInputs.graphQLs).forEach(({ schema, query }, name) => {
-                typeBuilder.addTopLevel(name, readGraphQLSchema(schema, query));
+                typeBuilder.addTopLevel(name, readGraphQLSchema(typeBuilder, schema, query));
             });
             return typeBuilder.finish();
         } else {
