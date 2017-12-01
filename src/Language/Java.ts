@@ -3,7 +3,6 @@
 import { List, Collection, OrderedMap, OrderedSet, Map } from "immutable";
 import {
     TypeKind,
-    TopLevels,
     Type,
     PrimitiveType,
     ArrayType,
@@ -16,6 +15,7 @@ import {
     nullableFromUnion,
     removeNullFromUnion
 } from "../Type";
+import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     utf16LegalizeCharacters,
@@ -54,9 +54,9 @@ export default class JavaTargetLanguage extends TargetLanguage {
         this._packageOption = packageOption;
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
+    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
         const renderer = new JavaRenderer(
-            topLevels,
+            graph,
             this._justTypesOption.getValue(optionValues),
             this._packageOption.getValue(optionValues)
         );
@@ -164,8 +164,8 @@ function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
 }
 
 class JavaRenderer extends ConvenienceRenderer {
-    constructor(topLevels: TopLevels, private readonly _justTypes: boolean, private readonly _packageName: string) {
-        super(topLevels);
+    constructor(graph: TypeGraph, private readonly _justTypes: boolean, private readonly _packageName: string) {
+        super(graph);
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {

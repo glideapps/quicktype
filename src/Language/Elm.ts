@@ -4,17 +4,8 @@ import { Map, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption } from "../RendererOptions";
-import {
-    TopLevels,
-    NamedType,
-    Type,
-    matchType,
-    nullableFromUnion,
-    ClassType,
-    UnionType,
-    EnumType,
-    PrimitiveType
-} from "../Type";
+import { NamedType, Type, matchType, nullableFromUnion, ClassType, UnionType, EnumType, PrimitiveType } from "../Type";
+import { TypeGraph } from "../TypeGraph";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, Name, DependencyName, funPrefixNamer, AssociatedName, Namespace } from "../Naming";
@@ -46,9 +37,9 @@ export default class ElmTargetLanguage extends TargetLanguage {
         this._moduleOption = moduleOption;
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
+    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
         const renderer = new ElmRenderer(
-            topLevels,
+            graph,
             this._listOption.getValue(optionValues),
             this._moduleOption.getValue(optionValues)
         );
@@ -155,8 +146,8 @@ class ElmRenderer extends ConvenienceRenderer {
     private _topLevelDependents: Map<Name, TopLevelDependent> = Map();
     private _namedTypeDependents: Map<Name, NamedTypeDependent> = Map();
 
-    constructor(topLevels: TopLevels, private readonly _useList: boolean, private readonly _moduleName: string) {
-        super(topLevels);
+    constructor(graph: TypeGraph, private readonly _useList: boolean, private readonly _moduleName: string) {
+        super(graph);
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {

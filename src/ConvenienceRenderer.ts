@@ -11,12 +11,11 @@ import {
     ClassType,
     EnumType,
     UnionType,
-    allNamedTypesSeparated,
-    allNamedTypes,
     separateNamedTypes,
     nullableFromUnion,
     matchType
 } from "./Type";
+import { TypeGraph } from "./TypeGraph";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
 import { defined, assertNever, panic } from "./Support";
@@ -34,6 +33,10 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _namedEnums: OrderedSet<EnumType>;
     private _namedUnions: OrderedSet<UnionType>;
     private _haveUnions: boolean;
+
+    get topLevels(): Map<string, Type> {
+        return this.typeGraph.topLevels;
+    }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
         return [];
@@ -72,7 +75,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected setUpNaming(): Namespace[] {
         this.globalNamespace = keywordNamespace("global", this.forbiddenNamesForGlobalNamespace);
-        const { classes, enums, unions } = allNamedTypesSeparated(this.topLevels);
+        const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
         this._namesForNamedTypes = Map();
         this._propertyNames = Map();
@@ -351,7 +354,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected emitSource(): void {
-        const types = allNamedTypes(this.topLevels, this.childrenOfType);
+        const types = this.typeGraph.allNamedTypes(this.childrenOfType);
         this._haveUnions = types.some(t => t instanceof UnionType);
         this._namedTypes = types
             .filter((t: NamedType) => !(t instanceof UnionType) || this.unionNeedsName(t))

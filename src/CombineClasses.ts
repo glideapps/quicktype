@@ -1,9 +1,11 @@
 "use strict";
 
-import { Map, OrderedMap, OrderedSet } from "immutable";
+import { Map, Set, OrderedMap, OrderedSet } from "immutable";
 
-import { TopLevels, ClassType, Type, allNamedTypesSeparated, removeNull, makeNullable } from "./Type";
+import { ClassType, Type, nonNullTypeCases } from "./Type";
+import { TypeGraphBuilder, GraphRewriteBuilder, TypeBuilder, TypeRef } from "./TypeBuilder";
 import { assert, panic } from "./Support";
+import { TypeGraph } from "./TypeGraph";
 
 const REQUIRED_OVERLAP = 3 / 4;
 
@@ -42,14 +44,12 @@ function canBeCombined(c1: ClassType, c2: ClassType): boolean {
         if (ts === undefined || tl === undefined) {
             return panic("Both of these should have this property");
         }
-        ts = removeNull(ts);
-        tl = removeNull(tl);
-        // Removing null can make unions not referentially equal.
-        // We allow null properties to unify with any other.
+        const tsCases = nonNullTypeCases(ts);
+        const tlCases = nonNullTypeCases(tl);
         // FIXME: Allow some type combinations to unify, like different enums,
         // enums with strings, integers with doubles, maps with objects of
         // the correct type.
-        if (ts.kind !== "null" && tl.kind !== "null" && !ts.equals(tl)) {
+        if (!tsCases.isEmpty() && !tlCases.isEmpty() && !tsCases.equals(tlCases)) {
             return false;
         }
     }
@@ -65,18 +65,14 @@ function isPartOfClique(c: ClassType, clique: ClassType[]): boolean {
     return true;
 }
 
-function makeCliqueClass(clique: ClassType[]): ClassType {
-    const result = new ClassType(OrderedSet(), true);
-    for (const c of clique) {
-        c.names.forEach(n => result.addName(n, c.areNamesInferred));
-    }
-    return result;
-}
-
-export function combineClasses(graph: TopLevels): TopLevels {
-    let unprocessedClasses = allNamedTypesSeparated(graph).classes.toArray();
+export function combineClasses(graph: TypeGraph): TypeGraph {
+    let unprocessedClasses = graph.allNamedTypesSeparated().classes.toArray();
     const cliques: ClassType[][] = [];
 
+    // FIXME: Don't build cliques one by one.  Instead have a list of
+    // cliques-in-progress and iterate over all classes.  Add the class
+    // to the first clique that it's part of.  If there's none, make it
+    // into a new clique.
     while (unprocessedClasses.length > 0) {
         const classesLeft: ClassType[] = [];
         const clique = [unprocessedClasses[0]];
@@ -97,29 +93,25 @@ export function combineClasses(graph: TopLevels): TopLevels {
         unprocessedClasses = classesLeft;
     }
 
-    const combinedCliques: ClassType[] = [];
-    let replacements: Map<ClassType, ClassType> = Map();
-
-    for (const clique of cliques) {
-        const combined = makeCliqueClass(clique);
-        combinedCliques.push(combined);
-        for (const c of clique) {
-            replacements = replacements.set(c, combined);
-        }
+    function makeCliqueClass(clique: Set<ClassType>, builder: GraphRewriteBuilder): TypeRef {
+        assert(clique.size > 0, "Clique can't be empty");
+        let inferredNames = OrderedSet<string>();
+        let givenNames = OrderedSet<string>();
+        clique.forEach(c => {
+            if (c.areNamesInferred) {
+                inferredNames = inferredNames.union(c.names);
+            } else {
+                givenNames = givenNames.union(c.names);
+            }
+        });
+        const areNamesInferred = givenNames.isEmpty();
+        const properties = getCliqueProperties(clique, builder);
+        return builder.getClassType(areNamesInferred ? inferredNames : givenNames, areNamesInferred, properties);
     }
 
-    const replaceClasses = (t: Type): Type => {
-        if (t instanceof ClassType) {
-            if (combinedCliques.indexOf(t) >= 0) return t;
-            const c = replacements.get(t);
-            if (c) return c;
-        }
-        return t.map(replaceClasses);
-    };
-
-    const setCliqueProperties = (combined: ClassType, clique: ClassType[]): void => {
+    function getCliqueProperties(clique: Set<ClassType>, builder: GraphRewriteBuilder): OrderedMap<string, TypeRef> {
         let properties = OrderedMap<string, [Type, number, boolean]>();
-        for (const c of clique) {
+        clique.forEach(c => {
             c.properties.forEach((t, name) => {
                 const p = properties.get(name);
                 if (p) {
@@ -138,25 +130,19 @@ export function combineClasses(graph: TopLevels): TopLevels {
                     properties = properties.set(name, [t, 1, t.isNullable]);
                 }
             });
-        }
-        combined.setProperties(
-            properties.map(([t, count, haveNullable], name) => {
-                t = replaceClasses(t);
-                if (haveNullable || count < clique.length) {
-                    if (t.isNamedType()) {
-                        t = makeNullable(t, t.names, t.areNamesInferred);
-                    } else {
-                        t = makeNullable(t, name, true);
-                    }
+        });
+        return properties.map(([t, count, haveNullable], name) => {
+            let resultType = builder.reconstituteType(t);
+            if (haveNullable || count < clique.size) {
+                if (t.isNamedType()) {
+                    resultType = builder.makeNullable(resultType, t.names, t.areNamesInferred);
+                } else {
+                    resultType = builder.makeNullable(resultType, name, true);
                 }
-                return t;
-            })
-        );
-    };
-
-    for (let i = 0; i < cliques.length; i++) {
-        setCliqueProperties(combinedCliques[i], cliques[i]);
+            }
+            return resultType;
+        });
     }
 
-    return graph.map(replaceClasses);
+    return graph.rewrite(cliques, makeCliqueClass);
 }

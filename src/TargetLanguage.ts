@@ -3,7 +3,8 @@
 import { List, Map } from "immutable";
 
 import { Config, TopLevelConfig } from "./Config";
-import { TopLevels, Type } from "./Type";
+import { Type } from "./Type";
+import { TypeGraph } from "./TypeGraph";
 import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
@@ -12,6 +13,8 @@ import { combineClasses } from "./CombineClasses";
 import { CompressedJSON } from "./CompressedJSON";
 import { RendererOptions } from "./quicktype";
 import { schemaToType } from "./JSONSchemaInput";
+import { TypeGraphBuilder } from "./TypeBuilder";
+import { inferMaps } from "./InferMaps";
 
 export abstract class TargetLanguage {
     constructor(
@@ -22,25 +25,29 @@ export abstract class TargetLanguage {
     ) {}
 
     transformAndRenderConfig(config: Config): SerializedRenderResult {
-        let graph: TopLevels;
+        const typeBuilder = new TypeGraphBuilder();
+        let combine = config.combineClasses;
         if (config.isInputJSONSchema) {
-            graph = Map();
             for (const tlc of config.topLevels) {
-                // FIXME: This is ugly
-                graph = graph.set(tlc.name, schemaToType(tlc.name, (tlc as any).schema));
+                typeBuilder.addTopLevel(tlc.name, schemaToType(typeBuilder, tlc.name, (tlc as any).schema));
             }
+            combine = false;
         } else {
-            const inference = new TypeInference(config.inferMaps, this.supportsEnums && config.inferEnums);
-            graph = Map(
-                config.topLevels.map((tlc: TopLevelConfig): [string, Type] => {
-                    return [
-                        tlc.name,
-                        inference.inferType(config.compressedJSON as CompressedJSON, tlc.name, (tlc as any).samples)
-                    ];
-                })
-            );
-            if (config.combineClasses) {
+            const inference = new TypeInference(typeBuilder, config.inferMaps, this.supportsEnums && config.inferEnums);
+            config.topLevels.forEach(tlc => {
+                typeBuilder.addTopLevel(
+                    tlc.name,
+                    inference.inferType(config.compressedJSON as CompressedJSON, tlc.name, false, (tlc as any).samples)
+                );
+            });
+        }
+        let graph = typeBuilder.finish();
+        if (!config.isInputJSONSchema) {
+            if (combine) {
                 graph = combineClasses(graph);
+            }
+            if (config.inferMaps) {
+                graph = inferMaps(graph);
             }
         }
         if (!config.doRender) {
@@ -62,5 +69,5 @@ export abstract class TargetLanguage {
         return true;
     }
 
-    protected abstract renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult;
+    protected abstract renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult;
 }
