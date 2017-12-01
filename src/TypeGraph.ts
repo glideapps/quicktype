@@ -4,36 +4,49 @@ import { Map, List, Set, OrderedSet, Collection } from "immutable";
 
 import { Type, NamedType, separateNamedTypes, SeparatedNamedTypes } from "./Type";
 import { defined, assert } from "./Support";
-import { GraphRewriteBuilder, TypeRef } from "./TypeBuilder";
+import { GraphRewriteBuilder, TypeRef, TypeBuilder } from "./TypeBuilder";
 
 export class TypeGraph {
-    private _frozen: boolean = false;
+    private _typeBuilder?: TypeBuilder;
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
-    private _topLevels?: Map<string, TypeRef> = Map();
+    private _topLevels?: Map<string, Type> = Map();
 
     private _types?: List<Type> = List();
 
+    constructor(typeBuilder: TypeBuilder) {
+        this._typeBuilder = typeBuilder;
+    }
+
+    private get isFrozen(): boolean {
+        return this._typeBuilder === undefined;
+    }
+
     freeze = (topLevels: Map<string, TypeRef>, types: List<Type>): void => {
-        assert(!this._frozen, "Tried to freeze TypeGraph a second time");
+        assert(!this.isFrozen, "Tried to freeze TypeGraph a second time");
         assert(
             types.every(t => t.typeRef.graph === this),
             "Trying to freeze a graph with types that don't belong in it"
         );
-        this._frozen = true;
-
-        this._topLevels = topLevels;
+        // The order of these three statements matters.  If we set _typeBuilder
+        // to undefined before we deref the TypeRefs, then we need to set _types
+        // before, also, because the deref will call into typeAtIndex, which requires
+        // either a _typeBuilder or a _types.
         this._types = types;
+        this._typeBuilder = undefined;
+        this._topLevels = topLevels.map(tref => tref.deref());
     };
 
     get topLevels(): Map<string, Type> {
-        assert(this._frozen, "Cannot get top-levels from a non-frozen graph");
-        return defined(this._topLevels).map(tref => tref.deref());
+        assert(this.isFrozen, "Cannot get top-levels from a non-frozen graph");
+        return defined(this._topLevels);
     }
 
     typeAtIndex = (index: number): Type => {
-        assert(this._frozen, "Cannot get type from a non-frozen graph");
+        if (this._typeBuilder !== undefined) {
+            return this._typeBuilder.typeAtIndex(index);
+        }
         return defined(defined(this._types).get(index));
     };
 
