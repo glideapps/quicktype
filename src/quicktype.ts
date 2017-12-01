@@ -6,15 +6,22 @@ import * as getStream from "get-stream";
 
 import * as _ from "lodash";
 
-import { Config, TopLevelConfig } from "./Config";
+import { List, Map } from "immutable";
+
 import * as targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
-import { SerializedRenderResult, Annotation } from "./Source";
+import { SerializedRenderResult, Annotation, serializeRenderResult } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
-import { defined } from "./Support";
+import { defined, assert } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { urlsFromURLGrammar } from "./URLGrammar";
+import { combineClasses } from "./CombineClasses";
+import { schemaToType } from "./JSONSchemaInput";
+import { TypeInference } from "./Inference";
+import { inferMaps } from "./InferMaps";
+import { TypeGraphBuilder } from "./TypeBuilder";
+import { TypeGraph } from "./TypeGraph";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -212,16 +219,18 @@ interface CompleteOptions {
 }
 
 type SampleOrSchemaMap = {
-    samples: { [name: string]: any[] };
+    samples: { [name: string]: Value[] };
     schemas: { [name: string]: any };
 };
+
+let graphByInputHash: Map<number, TypeGraph> = Map();
 
 class Run {
     private _options: CompleteOptions;
     private _compressedJSON: CompressedJSON;
     private _allSamples: SampleOrSchemaMap;
 
-    constructor(argv: string[] | Options) {
+    constructor(argv: string[] | Options, private readonly _doCache: boolean) {
         if (_.isArray(argv)) {
             // We can only fully parse the options once we know which renderer is selected,
             // because there are renderer-specific options.  But we only know which renderer
@@ -249,54 +258,82 @@ class Run {
         this._allSamples = { samples: {}, schemas: {} };
     }
 
-    getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
+    private getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
         return getTargetLanguage(opts.lang).optionDefinitions;
     };
 
-    get isInputJSONSchema(): boolean {
+    private get isInputJSONSchema(): boolean {
         return this._options.srcLang === "schema";
     }
 
-    get needCompressedJSONInput(): boolean {
+    private makeGraph = (): TypeGraph => {
+        const supportsEnums = getTargetLanguage(this._options.lang).supportsEnums;
+        const typeBuilder = new TypeGraphBuilder();
         if (this.isInputJSONSchema) {
-            return false;
-        }
-        const lang = getTargetLanguage(this._options.lang);
-        return lang.needsCompressedJSONInput(this._options.rendererOptions);
-    }
-
-    renderSamplesOrSchemas = (): SerializedRenderResult => {
-        const targetLanguage = getTargetLanguage(this._options.lang);
-
-        let topLevels: TopLevelConfig[];
-        if (this.isInputJSONSchema) {
-            const names = Object.getOwnPropertyNames(this._allSamples.schemas);
-            topLevels = names.map(name => ({ name, schema: this._allSamples.schemas[name] }));
+            Map(this._allSamples.schemas).forEach((schema, name) => {
+                typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema));
+            });
+            return typeBuilder.finish();
         } else {
-            const names = Object.getOwnPropertyNames(this._allSamples.samples);
-            topLevels = names.map(name => ({ name, samples: this._allSamples.samples[name] }));
-        }
-        let config: Config = {
-            language: targetLanguage.names[0],
-            isInputJSONSchema: this.isInputJSONSchema,
-            topLevels,
-            compressedJSON: this._compressedJSON,
-            inferMaps: !this._options.noMaps,
-            inferEnums: !this._options.noEnums,
-            combineClasses: !this._options.noCombineClasses,
-            doRender: !this._options.noRender,
-            rendererOptions: this._options.rendererOptions
-        };
+            const doInferMaps = !this._options.noMaps;
+            const doInferEnums = supportsEnums && !this._options.noEnums;
+            const doCombineClasses = !this._options.noCombineClasses;
+            const samplesMap = Map(this._allSamples.samples);
+            const inputs = List([
+                doInferMaps,
+                doInferEnums,
+                doCombineClasses,
+                samplesMap.map(values => List(values)),
+                this._compressedJSON
+            ]);
+            let inputHash: number | undefined = undefined;
 
+            if (this._doCache) {
+                inputHash = inputs.hashCode();
+                const maybeGraph = graphByInputHash.get(inputHash);
+                if (maybeGraph !== undefined) {
+                    return maybeGraph;
+                }
+            }
+
+            const inference = new TypeInference(typeBuilder, doInferMaps, doInferEnums);
+            Map(this._allSamples.samples).forEach((cjson, name) => {
+                typeBuilder.addTopLevel(
+                    name,
+                    inference.inferType(this._compressedJSON as CompressedJSON, name, false, cjson)
+                );
+            });
+            let graph = typeBuilder.finish();
+            if (doCombineClasses) {
+                graph = combineClasses(graph);
+            }
+            if (doInferMaps) {
+                graph = inferMaps(graph);
+            }
+
+            if (inputHash !== undefined) {
+                graphByInputHash = graphByInputHash.set(inputHash, graph);
+            }
+
+            return graph;
+        }
+    };
+
+    private renderSamplesOrSchemas = (): SerializedRenderResult => {
+        const targetLanguage = getTargetLanguage(this._options.lang);
         try {
-            return targetLanguage.transformAndRenderConfig(config);
+            const graph = this.makeGraph();
+            if (this._options.noRender) {
+                return { lines: ["Done.", ""], annotations: List() };
+            }
+            return targetLanguage.renderGraphAndSerialize(graph, this._options.rendererOptions);
         } catch (e) {
             console.error(e);
             return process.exit(1);
         }
     };
 
-    splitAndWriteJava = (dir: string, str: string) => {
+    private splitAndWriteJava = (dir: string, str: string) => {
         const lines = str.split("\n");
         let filename: string | null = null;
         let currentFileContents: string = "";
@@ -326,45 +363,16 @@ class Run {
         writeFile();
     };
 
-    render = () => {
-        const { lines, annotations } = this.renderSamplesOrSchemas();
-        const output = lines.join("\n");
-        if (this._options.out) {
-            if (this._options.lang === "java") {
-                this.splitAndWriteJava(path.dirname(this._options.out), output);
-            } else {
-                fs.writeFileSync(this._options.out, output);
-            }
-        } else {
-            process.stdout.write(output);
-        }
-        if (this._options.quiet) {
-            return;
-        }
-        annotations.forEach((sa: Annotation) => {
-            const annotation = sa.annotation;
-            if (!(annotation instanceof IssueAnnotationData)) return;
-            const lineNumber = sa.span.start.line;
-            const humanLineNumber = lineNumber + 1;
-            console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
-            console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
-        });
-    };
-
-    readSampleFromStream = async (name: string, readStream: stream.Readable): Promise<void> => {
-        let input: any;
-        if (this.needCompressedJSONInput) {
-            input = await this._compressedJSON.readFromStream(readStream);
-        } else {
-            input = JSON.parse(await getStream(readStream));
-        }
+    private readSampleFromStream = async (name: string, readStream: stream.Readable): Promise<void> => {
         if (this.isInputJSONSchema) {
+            const input = JSON.parse(await getStream(readStream));
             if (Object.prototype.hasOwnProperty.call(this._allSamples.schemas, name)) {
                 console.error(`Error: More than one schema given for top-level ${name}.`);
                 return process.exit(1);
             }
             this._allSamples.schemas[name] = input;
         } else {
+            const input = await this._compressedJSON.readFromStream(readStream);
             if (!Object.prototype.hasOwnProperty.call(this._allSamples.samples, name)) {
                 this._allSamples.samples[name] = [];
             }
@@ -372,7 +380,7 @@ class Run {
         }
     };
 
-    readSampleFromFileOrUrl = async (name: string, fileOrUrl: string): Promise<void> => {
+    private readSampleFromFileOrUrl = async (name: string, fileOrUrl: string): Promise<void> => {
         if (fs.existsSync(fileOrUrl)) {
             await this.readSampleFromStream(name, fs.createReadStream(fileOrUrl));
         } else {
@@ -381,13 +389,13 @@ class Run {
         }
     };
 
-    readSampleFromFileOrUrlArray = async (name: string, filesOrUrls: string[]): Promise<void> => {
+    private readSampleFromFileOrUrlArray = async (name: string, filesOrUrls: string[]): Promise<void> => {
         for (const fileOrUrl of filesOrUrls) {
             await this.readSampleFromFileOrUrl(name, fileOrUrl);
         }
     };
 
-    readNamedSamplesFromDirectory = async (dataDir: string): Promise<void> => {
+    private readNamedSamplesFromDirectory = async (dataDir: string): Promise<void> => {
         const readFilesOrURLsInDirectory = async (d: string, sampleName?: string): Promise<void> => {
             const files = fs
                 .readdirSync(d)
@@ -420,11 +428,9 @@ class Run {
         }
     };
 
-    main = async () => {
-        if (this._options.help) {
-            usage();
-            return;
-        } else if (this._options.srcUrls) {
+    run = async (): Promise<SerializedRenderResult> => {
+        assert(!this._options.help, "Cannot print help when run without printing");
+        if (this._options.srcUrls) {
             let json = JSON.parse(fs.readFileSync(this._options.srcUrls, "utf8"));
             let jsonMap = urlsFromURLGrammar(json);
             for (let key of Object.keys(jsonMap)) {
@@ -447,13 +453,43 @@ class Run {
                 await this.readSampleFromFileOrUrlArray(this._options.topLevel, filesOrUrls);
             }
         }
-        this.render();
+        return this.renderSamplesOrSchemas();
+    };
+
+    runAndPrint = async () => {
+        if (this._options.help) {
+            usage();
+            return;
+        }
+
+        const { lines, annotations } = await this.run();
+        const output = lines.join("\n");
+        if (this._options.out) {
+            if (this._options.lang === "java") {
+                this.splitAndWriteJava(path.dirname(this._options.out), output);
+            } else {
+                fs.writeFileSync(this._options.out, output);
+            }
+        } else {
+            process.stdout.write(output);
+        }
+        if (this._options.quiet) {
+            return;
+        }
+        annotations.forEach((sa: Annotation) => {
+            const annotation = sa.annotation;
+            if (!(annotation instanceof IssueAnnotationData)) return;
+            const lineNumber = sa.span.start.line;
+            const humanLineNumber = lineNumber + 1;
+            console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
+            console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
+        });
     };
 
     // Parse the options in argv and split them into global options and renderer options,
     // according to each option definition's `renderer` field.  If `partial` is false this
     // will throw if it encounters an unknown option.
-    parseOptions = (definitions: OptionDefinition[], argv: string[], partial: boolean): CompleteOptions => {
+    private parseOptions = (definitions: OptionDefinition[], argv: string[], partial: boolean): CompleteOptions => {
         const opts: { [key: string]: any } = commandLineArgs(definitions, {
             argv,
             partial: partial
@@ -476,7 +512,7 @@ class Run {
         return this.inferOptions(options);
     };
 
-    inferOptions = (opts: Options): CompleteOptions => {
+    private inferOptions = (opts: Options): CompleteOptions => {
         return {
             src: opts.src || [],
             srcLang: opts.srcLang || "json",
@@ -492,7 +528,7 @@ class Run {
         };
     };
 
-    inferLang = (options: Options): string => {
+    private inferLang = (options: Options): string => {
         // Output file extension determines the language if language is undefined
         if (options.out) {
             let extension = path.extname(options.out);
@@ -506,7 +542,7 @@ class Run {
         return "go";
     };
 
-    inferTopLevel = (options: Options): string => {
+    private inferTopLevel = (options: Options): string => {
         // Output file name determines the top-level if undefined
         if (options.out) {
             let extension = path.extname(options.out);
@@ -530,8 +566,8 @@ export async function main(args: string[] | Options) {
     if (_.isArray(args) && args.length === 0) {
         usage();
     } else {
-        let run = new Run(args);
-        await run.main();
+        let run = new Run(args, false);
+        await run.runAndPrint();
     }
 }
 
