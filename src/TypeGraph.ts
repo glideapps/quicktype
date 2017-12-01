@@ -4,10 +4,10 @@ import { Map, List, Set, OrderedSet, Collection } from "immutable";
 
 import { Type, NamedType, separateNamedTypes, SeparatedNamedTypes } from "./Type";
 import { defined, assert } from "./Support";
-import { GraphRewriteBuilder, TypeRef, CoalescingTypeBuilder } from "./TypeBuilder";
+import { GraphRewriteBuilder, TypeRef, TypeBuilder } from "./TypeBuilder";
 
 export class TypeGraph {
-    private _typeBuilder?: CoalescingTypeBuilder;
+    private _typeBuilder?: TypeBuilder;
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
@@ -15,7 +15,7 @@ export class TypeGraph {
 
     private _types?: List<Type> = List();
 
-    constructor(typeBuilder: CoalescingTypeBuilder) {
+    constructor(typeBuilder: TypeBuilder) {
         this._typeBuilder = typeBuilder;
     }
 

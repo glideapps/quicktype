@@ -98,16 +98,7 @@ export class TypeRef {
     };
 }
 
-export interface TypeBuilder {
-    getPrimitiveType(kind: PrimitiveTypeKind): TypeRef;
-    getEnumType(names: NameOrNames, isInferred: boolean, cases: OrderedSet<string>): TypeRef;
-    getMapType(values: TypeRef): TypeRef;
-    getArrayType(items: TypeRef): TypeRef;
-    getClassType(names: NameOrNames, isInferred: boolean, properties: Map<string, TypeRef>): TypeRef;
-    getUnionType(names: NameOrNames, isInferred: boolean, members: OrderedSet<TypeRef>): TypeRef;
-}
-
-export abstract class CoalescingTypeBuilder implements TypeBuilder {
+export abstract class TypeBuilder {
     readonly typeGraph: TypeGraph = new TypeGraph(this);
 
     protected topLevels: Map<string, TypeRef> = Map();
@@ -267,7 +258,7 @@ export abstract class CoalescingTypeBuilder implements TypeBuilder {
     }
 }
 
-export class TypeGraphBuilder extends CoalescingTypeBuilder {
+export class TypeGraphBuilder extends TypeBuilder {
     protected typeForEntry(entry: Type | undefined): Type | undefined {
         return entry;
     }
@@ -293,7 +284,7 @@ export class TypeGraphBuilder extends CoalescingTypeBuilder {
     };
 }
 
-export class GraphRewriteBuilder extends CoalescingTypeBuilder {
+export class GraphRewriteBuilder extends TypeBuilder {
     private _setsToReplaceByMember: Map<number, Set<Type>>;
     private _reconstitutedTypes: Map<number, TypeRef> = Map();
 
