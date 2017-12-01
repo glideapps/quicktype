@@ -11,7 +11,7 @@ export class TypeGraph {
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
-    private _topLevels?: Map<string, TypeRef> = Map();
+    private _topLevels?: Map<string, Type> = Map();
 
     private _types?: List<Type> = List();
 
@@ -29,15 +29,18 @@ export class TypeGraph {
             types.every(t => t.typeRef.graph === this),
             "Trying to freeze a graph with types that don't belong in it"
         );
-        this._typeBuilder = undefined;
-
-        this._topLevels = topLevels;
+        // The order of these three statements matters.  If we set _typeBuilder
+        // to undefined before we deref the TypeRefs, then we need to set _types
+        // before, also, because the deref will call into typeAtIndex, which requires
+        // either a _typeBuilder or a _types.
         this._types = types;
+        this._typeBuilder = undefined;
+        this._topLevels = topLevels.map(tref => tref.deref());
     };
 
     get topLevels(): Map<string, Type> {
         assert(this.isFrozen, "Cannot get top-levels from a non-frozen graph");
-        return defined(this._topLevels).map(tref => tref.deref());
+        return defined(this._topLevels);
     }
 
     typeAtIndex = (index: number): Type => {
