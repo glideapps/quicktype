@@ -162,12 +162,12 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     typeMapTypeFor = (t: Type): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType => `"undefined"`,
-            nullType => `"undefined"`,
-            boolType => `"boolean"`,
-            integerType => `"number"`,
-            doubleType => `"number"`,
-            stringType => `"string"`,
+            anyType => `undefined`,
+            nullType => `undefined`,
+            boolType => `false`,
+            integerType => `0`,
+            doubleType => `3.14`,
+            stringType => `""`,
             arrayType => ["A(", this.typeMapTypeFor(arrayType.items), ")"],
             classType => ['O("', this.nameForNamedType(classType), '")'],
             mapType => ["M(", this.typeMapTypeFor(mapType.values), ")"],
@@ -267,8 +267,8 @@ function isValid(typ: any, val: any): boolean {
 }
 
 function isValidPrimitive(typ: string, val: any) {
-    if (typ === "undefined") return !val;
-    return typ === typeof val;
+    // if (typ === "undefined") return !val;
+    return typeof typ === typeof val;
 }
 
 function isValidUnion(typs: any[], val: any): boolean {
