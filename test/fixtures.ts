@@ -21,7 +21,7 @@ import {
   testsInDir
 } from "./utils";
 import * as languages from "./languages";
-import { RendererOptions } from "../dist/quicktype";
+import { RendererOptions } from "../dist";
 import { panic } from "../dist/Support";
 
 const chalk = require("chalk");
@@ -206,8 +206,9 @@ class JSONFixture extends LanguageFixture {
 
       // Compare fixture.output to fixture.output.expected
       exec(
-        `diff -Naur ${this.language.output}.expected ${this.language
-          .output} > /dev/null 2>&1`
+        `diff -Naur ${this.language.output}.expected ${
+          this.language.output
+        } > /dev/null 2>&1`
       );
     }
   }
