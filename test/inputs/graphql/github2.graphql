@@ -1,0 +1,11 @@
+query {
+  viewer {
+    login
+    repositories(first: 10) {
+      totalCount
+      nodes {
+        name
+      }
+    }
+  }
+}
