@@ -267,7 +267,6 @@ function isValid(typ: any, val: any): boolean {
 }
 
 function isValidPrimitive(typ: string, val: any) {
-    // if (typ === "undefined") return !val;
     return typeof typ === typeof val;
 }
 
