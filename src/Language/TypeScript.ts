@@ -115,7 +115,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     private emitEnum = (e: EnumType, enumName: Name): void => {
         this.emitBlock(["export enum ", enumName], "", () => {
             this.forEachCase(e, "none", (name, jsonName) => {
-                this.emitLine(name, ` = "${jsonName}",`);
+                this.emitLine(name, ` = "${stringEscape(jsonName)}",`);
             });
         });
         this.emitNewline();
