@@ -1,6 +1,16 @@
 import * as _ from "lodash";
 
-import { Type, ArrayType, MapType, UnionType, NamedType, ClassType, nullableFromUnion, matchType } from "../Type";
+import {
+    Type,
+    ArrayType,
+    MapType,
+    UnionType,
+    NamedType,
+    ClassType,
+    nullableFromUnion,
+    matchType,
+    EnumType
+} from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { utf16LegalizeCharacters, pascalCase, camelCase, startWithLetter, stringEscape } from "../Strings";
 import { intercalate, panic } from "../Support";
@@ -25,10 +35,6 @@ export default class L extends TargetLanguage {
             L.declareUnions.definition,
             L.runtimeTypecheck.definition
         ]);
-    }
-
-    get supportsEnums(): boolean {
-        return false;
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
@@ -73,10 +79,6 @@ function propertyNameStyle(original: string): string {
     }
 }
 
-function noEnums(): never {
-    return panic("Error: Enums are not supported in TypeScript yet.");
-}
-
 class TypeScriptRenderer extends ConvenienceRenderer {
     constructor(
         graph: TypeGraph,
@@ -100,7 +102,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     }
 
     protected get caseNamer(): Namer {
-        return noEnums();
+        return new Namer(typeNameStyle, []);
     }
 
     protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
@@ -109,6 +111,15 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         }
         return null;
     }
+
+    private emitEnum = (e: EnumType, enumName: Name): void => {
+        this.emitBlock(["export enum ", enumName], "", () => {
+            this.forEachCase(e, "none", (name, jsonName) => {
+                this.emitLine(name, ` = "${jsonName}",`);
+            });
+        });
+        this.emitNewline();
+    };
 
     sourceFor = (t: Type): Sourcelike => {
         return matchType<Sourcelike>(
@@ -136,7 +147,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             },
             classType => this.nameForNamedType(classType),
             mapType => ["{ [key: string]: ", this.sourceFor(mapType.values), " }"],
-            enumType => noEnums(),
+            enumType => this.nameForNamedType(enumType),
             unionType => {
                 if (this.inlineUnions || nullableFromUnion(unionType)) {
                     const children = unionType.children.map(this.sourceFor);
@@ -157,13 +168,13 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             integerType => `"number"`,
             doubleType => `"number"`,
             stringType => `"string"`,
-            arrayType => ["array(", this.typeMapTypeFor(arrayType.items), ")"],
-            classType => ['object("', this.nameForNamedType(classType), '")'],
-            mapType => ["map(", this.typeMapTypeFor(mapType.values), ")"],
-            enumType => noEnums(),
+            arrayType => ["A(", this.typeMapTypeFor(arrayType.items), ")"],
+            classType => ['O("', this.nameForNamedType(classType), '")'],
+            mapType => ["M(", this.typeMapTypeFor(mapType.values), ")"],
+            enumType => ['E("', this.nameForNamedType(enumType), '")'],
             unionType => {
                 const children = unionType.children.map(this.typeMapTypeFor);
-                return ["union(", ...intercalate(", ", children).toArray(), ")"];
+                return ["U(", ...intercalate(", ", children).toArray(), ")"];
             }
         );
     };
@@ -183,6 +194,15 @@ class TypeScriptRenderer extends ConvenienceRenderer {
                     });
                 });
             });
+            this.forEachEnum("none", (e, name) => {
+                this.emitLine('"', name, '": [');
+                this.indent(() => {
+                    this.forEachCase(e, "none", caseName => {
+                        this.emitLine(name, ".", caseName, ",");
+                    });
+                });
+                this.emitLine("],");
+            });
         });
     };
 
@@ -195,6 +215,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             });
             this.emitTable(table);
         });
+        this.emitNewline();
     };
 
     emitConvertModule = () => {
@@ -240,6 +261,7 @@ function isValid(typ: any, val: any): boolean {
     return typ.isUnion  ? isValidUnion(typ.typs, val)
             : typ.isArray  ? isValidArray(typ.typ, val)
             : typ.isMap    ? isValidMap(typ.typ, val)
+            : typ.isEnum   ? isValidEnum(typ.name, val)
             : typ.isObject ? isValidObject(typ.cls, val)
             :                isValidPrimitive(typ, val);
 }
@@ -252,6 +274,11 @@ function isValidPrimitive(typ: string, val: any) {
 function isValidUnion(typs: any[], val: any): boolean {
     // val must validate against one typ in typs
     return typs.find(typ => isValid(typ, val)) !== undefined;
+}
+
+function isValidEnum(enumName: string, val: any): boolean {
+    const cases = typeMap[enumName];
+    return cases.indexOf(val) !== -1;
 }
 
 function isValidArray(typ: any, val: any): boolean {
@@ -293,19 +320,23 @@ function isValidObject(className: string, val: any): boolean {
     return true;
 }
 
-function array(typ: any) {
+function A(typ: any) {
     return { typ, isArray: true };
 }
 
-function union(...typs: any[]) {
+function E(name: string) {
+    return { name, isEnum: true };
+}
+
+function U(...typs: any[]) {
     return { typs, isUnion: true };
 }
 
-function map(typ: any) {
+function M(typ: any) {
     return { typ, isMap: true };
 }
 
-function object(className: string) {
+function O(className: string) {
     return { cls: className, isObject: true };
 }
 `);
@@ -315,8 +346,12 @@ function object(className: string) {
     };
 
     emitUnion = (u: UnionType, unionName: Name) => {
+        if (this.inlineUnions) {
+            return;
+        }
         const children = u.children.map(this.sourceFor);
         this.emitLine("export type ", unionName, " = ", intercalate(" | ", children).toArray(), ";");
+        this.emitNewline();
     };
 
     protected emitSourceStructure() {
@@ -346,15 +381,9 @@ function object(className: string) {
             this.emitNewline();
         }
 
-        if (!this.inlineUnions && this.haveNamedUnions) {
-            this.forEachUnion("none", this.emitUnion);
-            this.emitNewline();
-        }
-
-        this.forEachClass("interposing", this.emitClass);
+        this.forEachNamedType("none", false, this.emitClass, this.emitEnum, this.emitUnion);
 
         if (!this.justTypes) {
-            this.emitNewline();
             this.emitConvertModule();
         }
     }
