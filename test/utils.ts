@@ -77,13 +77,15 @@ export async function quicktypeForLanguage(
   language: languages.Language,
   sourceFile: string,
   sourceLanguage: string,
-  additionalRendererOptions: RendererOptions
+  additionalRendererOptions: RendererOptions,
+  graphqlSchema?: string
 ) {
   await quicktype({
     srcLang: sourceLanguage,
     lang: language.name,
     src: [sourceFile],
     out: language.output,
+    graphqlSchema,
     topLevel: language.topLevel,
     rendererOptions: _.merge(
       {},
