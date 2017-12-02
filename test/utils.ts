@@ -76,19 +76,23 @@ export async function quicktypeForLanguage(
   sourceLanguage: string,
   additionalRendererOptions: RendererOptions
 ) {
-  await quicktype({
-    srcLang: sourceLanguage,
-    lang: language.name,
-    src: [sourceFile],
-    out: language.output,
-    topLevel: language.topLevel,
-    rendererOptions: _.merge(
-      {},
-      language.rendererOptions,
-      additionalRendererOptions
-    ),
-    quiet: true
-  });
+  try {
+    await quicktype({
+      srcLang: sourceLanguage,
+      lang: language.name,
+      src: [sourceFile],
+      out: language.output,
+      topLevel: language.topLevel,
+      rendererOptions: _.merge(
+        {},
+        language.rendererOptions,
+        additionalRendererOptions
+      ),
+      quiet: true
+    });
+  } catch (e) {
+    failWith("quicktype threw an exception", { error: e });
+  }
 }
 
 export async function inDir(dir: string, work: () => Promise<void>) {

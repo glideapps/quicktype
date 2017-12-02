@@ -163,8 +163,7 @@ function getTargetLanguage(name: string): TargetLanguage {
     if (language) {
         return language;
     }
-    console.error(`'${name}' is not yet supported as an output language.`);
-    return process.exit(1);
+    throw new Error(`'${name}' is not yet supported as an output language.`);
 }
 
 export function usage() {
@@ -246,9 +245,8 @@ export class Run {
                 this._options = this.parseOptions(allOptionDefinitions, argv, false);
             } catch (error) {
                 if (error.name === "UNKNOWN_OPTION") {
-                    console.error("Error: Unknown option");
                     usage();
-                    process.exit(1);
+                    throw new Error("Unknown option");
                 }
                 throw error;
             }
@@ -322,16 +320,11 @@ export class Run {
 
     private renderSamplesOrSchemas = (): SerializedRenderResult => {
         const targetLanguage = getTargetLanguage(this._options.lang);
-        try {
-            const graph = this.makeGraph();
-            if (this._options.noRender) {
-                return { lines: ["Done.", ""], annotations: List() };
-            }
-            return targetLanguage.renderGraphAndSerialize(graph, this._options.rendererOptions);
-        } catch (e) {
-            console.error(e);
-            return process.exit(1);
+        const graph = this.makeGraph();
+        if (this._options.noRender) {
+            return { lines: ["Done.", ""], annotations: List() };
         }
+        return targetLanguage.renderGraphAndSerialize(graph, this._options.rendererOptions);
     };
 
     private splitAndWriteJava = (dir: string, str: string) => {
@@ -542,8 +535,7 @@ export class Run {
         if (options.out) {
             let extension = path.extname(options.out);
             if (extension === "") {
-                console.error("Please specify a language (--lang) or an output file extension.");
-                process.exit(1);
+                throw new Error("Please specify a language (--lang) or an output file extension.");
             }
             return extension.substr(1);
         }
