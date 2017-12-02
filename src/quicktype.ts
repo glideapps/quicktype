@@ -13,7 +13,7 @@ import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, serializeRenderResult } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
-import { defined, assert } from "./Support";
+import { defined, assert, panic } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { combineClasses } from "./CombineClasses";
@@ -58,8 +58,8 @@ const optionDefinitions: OptionDefinition[] = [
         name: "src-lang",
         alias: "s",
         type: String,
-        defaultValue: "json",
-        typeLabel: "json|schema",
+        defaultValue: undefined,
+        typeLabel: "json|schema|graphql",
         description: "The source language (default is json)."
     },
     {
@@ -86,12 +86,6 @@ const optionDefinitions: OptionDefinition[] = [
         type: String,
         typeLabel: "FILE",
         description: "GraphQL introspection file."
-    },
-    {
-        name: "graphql-query",
-        type: String,
-        typeLabel: "FILE",
-        description: "GraphQL query file."
     },
     {
         name: "no-maps",
@@ -206,7 +200,6 @@ export interface Options {
     srcLang?: string;
     srcUrls?: string;
     graphqlSchema?: string;
-    graphqlQuery?: string;
     out?: string;
     noMaps?: boolean;
     noEnums?: boolean;
@@ -224,7 +217,6 @@ interface CompleteOptions {
     srcLang: string;
     srcUrls?: string;
     graphqlSchema?: string;
-    graphqlQuery?: string;
     out?: string;
     noMaps: boolean;
     noEnums: boolean;
@@ -285,7 +277,7 @@ class Run {
     }
 
     private get isInputGraphQL(): boolean {
-        return this._options.graphqlQuery !== undefined;
+        return this._options.graphqlSchema !== undefined;
     }
 
     private makeGraph = (): TypeGraph => {
@@ -464,12 +456,12 @@ class Run {
                 await this.readSampleFromFileOrUrlArray(key, jsonMap[key]);
             }
         } else if (this._options.graphqlSchema) {
-            if (!this._options.graphqlQuery) {
-                console.error("Please specify a GraphQL query with --graphql-query.");
-                return process.exit(1);
+            if (this._options.src.length !== 1) {
+                return panic("Please specify one GraphQL query as input.");
             }
+            const graphQLQuery = this._options.src[0];
             let json = JSON.parse(fs.readFileSync(this._options.graphqlSchema, "utf8"));
-            let query = fs.readFileSync(this._options.graphqlQuery, "utf8");
+            let query = fs.readFileSync(graphQLQuery, "utf8");
             this._allInputs.graphQLs[this._options.topLevel] = { schema: json, query };
         } else if (this._options.src.length === 0) {
             // FIXME: Why do we have to convert to any here?
@@ -548,9 +540,20 @@ class Run {
     };
 
     private inferOptions = (opts: Options): CompleteOptions => {
+        let srcLang = opts.srcLang;
+        if (opts.graphqlSchema !== undefined) {
+            assert(
+                srcLang === undefined || srcLang === "graphql",
+                "If a GraphQL schema is specified, the source language must be GraphQL"
+            );
+            srcLang = "graphql";
+        } else {
+            assert(srcLang !== "graphql", "Please specify a GraphQL schema with --graphql-schema");
+            srcLang = srcLang || "json";
+        }
         return {
             src: opts.src || [],
-            srcLang: opts.srcLang || "json",
+            srcLang: srcLang,
             lang: opts.lang || this.inferLang(opts),
             topLevel: opts.topLevel || this.inferTopLevel(opts),
             noMaps: !!opts.noMaps,
