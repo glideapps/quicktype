@@ -1,6 +1,6 @@
 "use strict";
 
-import { RendererOptions } from "../dist/quicktype";
+import { RendererOptions } from "../dist";
 
 export interface Language {
   name: string;
@@ -45,7 +45,9 @@ export const JavaLanguage: Language = {
   base: "test/fixtures/java",
   compileCommand: "mvn package",
   runCommand(sample: string) {
-    return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`;
+    return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${
+      sample
+    }"`;
   },
   // FIXME: implement comparing multiple files
   diffViaSchema: false,

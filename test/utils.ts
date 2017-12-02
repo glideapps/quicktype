@@ -4,11 +4,8 @@ import * as fs from "fs";
 
 import * as _ from "lodash";
 
-import {
-  main as quicktype_,
-  Options,
-  RendererOptions
-} from "../dist/quicktype";
+import { main as quicktype_ } from "../dist/quicktype";
+import { Options, RendererOptions } from "../dist";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 

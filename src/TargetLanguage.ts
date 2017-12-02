@@ -4,7 +4,7 @@ import { TypeGraph } from "./TypeGraph";
 import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
-import { RendererOptions } from "./quicktype";
+import { RendererOptions } from "./index";
 
 export abstract class TargetLanguage {
     constructor(
