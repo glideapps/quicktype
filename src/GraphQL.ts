@@ -17,7 +17,7 @@ import {
     FragmentSpreadNode,
     InlineFragmentNode
 } from "./GraphQLAST";
-import { assertNever } from "./Support";
+import { assertNever, panic } from "./Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
 
 interface GQLType {
@@ -175,12 +175,17 @@ class GQLQuery {
         fieldType: GQLType,
         containingType: GQLType | null
     ): TypeRef => {
+        const optional = hasOptionalDirectives(fieldNode.directives);
+        let result: TypeRef;
         switch (fieldType.kind) {
             case TypeKind.SCALAR:
-                return makeScalar(builder, fieldType);
+                result = makeScalar(builder, fieldType);
+                break;
             case TypeKind.OBJECT:
             case TypeKind.INTERFACE:
-                if (!fieldNode.selectionSet) throw "Error: No selection set on object or interface.";
+                if (!fieldNode.selectionSet) {
+                    return panic("No selection set on object or interface");
+                }
                 return makeNullable(
                     builder,
                     this.makeIRTypeFromSelectionSet(
@@ -195,9 +200,11 @@ class GQLQuery {
                     containingType
                 );
             case TypeKind.UNION:
-                throw "FIXME: support unions";
+                return panic("FIXME: support unions");
             case TypeKind.ENUM:
-                if (!fieldType.enumValues) throw "Error: Enum type doesn't have values.";
+                if (!fieldType.enumValues) {
+                    return panic("Enum type doesn't have values");
+                }
                 const values = fieldType.enumValues.map(ev => ev.name);
                 let name: string;
                 let fieldName: string | null;
@@ -208,23 +215,34 @@ class GQLQuery {
                     name = fieldNode.name.value;
                     fieldName = null;
                 }
-                return builder.getEnumType(makeTypeNames(name, fieldName, containingType), false, OrderedSet(values));
+                result = builder.getEnumType(makeTypeNames(name, fieldName, containingType), false, OrderedSet(values));
+                break;
             case TypeKind.INPUT_OBJECT:
-                throw "FIXME: support input objects";
+                return panic("FIXME: Support input objects");
             case TypeKind.LIST:
-                if (!fieldType.ofType) throw "Error: No type for list.";
-                return builder.getArrayType(
+                if (!fieldType.ofType) {
+                    return panic("No type for list.");
+                }
+                result = builder.getArrayType(
                     this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingType)
                 );
+                break;
             case TypeKind.NON_NULL:
-                if (!fieldType.ofType) throw "Error: No type for non-null.";
-                return removeNull(
+                if (!fieldType.ofType) {
+                    return panic("No type for non-null");
+                }
+                result = removeNull(
                     builder,
                     this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingType)
                 );
+                break;
             default:
                 return assertNever(fieldType.kind);
         }
+        if (optional) {
+            result = makeNullable(builder, result, fieldNode.name.value, null, containingType);
+        }
+        return result;
     };
 
     private getFragment = (name: string): FragmentDefinitionNode => {
