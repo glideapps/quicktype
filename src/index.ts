@@ -47,8 +47,6 @@ export interface Options {
     noEnums: boolean;
     noCombineClasses: boolean;
     noRender: boolean;
-    help: boolean;
-    quiet: boolean;
     rendererOptions: RendererOptions;
 }
 
@@ -101,8 +99,6 @@ export function inferOptions(opts: Partial<Options>): Options {
         noEnums: !!opts.noEnums,
         noCombineClasses: !!opts.noCombineClasses,
         noRender: !!opts.noRender,
-        help: !!opts.help,
-        quiet: !!opts.quiet,
         rendererOptions: opts.rendererOptions || {}
     };
 }
@@ -258,7 +254,6 @@ export class Run {
     };
 
     run = async (): Promise<SerializedRenderResult> => {
-        assert(!this._options.help, "Cannot print help when run without printing");
         if (this._options.srcUrls) {
             let json = JSON.parse(fs.readFileSync(this._options.srcUrls, "utf8"));
             let jsonMap = urlsFromURLGrammar(json);

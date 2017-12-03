@@ -17,6 +17,11 @@ const chalk = require("chalk");
 const langs = targetLanguages.all.map(r => _.minBy(r.names, s => s.length)).join("|");
 const langDisplayNames = targetLanguages.all.map(r => r.displayName).join(", ");
 
+export interface CLIOptions extends Options {
+    help: boolean;
+    quiet: boolean;
+}
+
 const optionDefinitions: OptionDefinition[] = [
     {
         name: "out",
@@ -243,7 +248,7 @@ function splitAndWriteJava(dir: string, str: string) {
     writeFile();
 }
 
-export async function main(args: string[] | Partial<Options>) {
+export async function main(args: string[] | Partial<CLIOptions>) {
     if (_.isArray(args) && args.length === 0) {
         usage();
     } else {

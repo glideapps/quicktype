@@ -4,7 +4,7 @@ import * as fs from "fs";
 
 import * as _ from "lodash";
 
-import { main as quicktype_ } from "../dist/cli";
+import { main as quicktype_, CLIOptions } from "../dist/cli";
 import { Options, RendererOptions } from "../dist";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
@@ -64,7 +64,7 @@ async function time<T>(work: () => Promise<T>): Promise<[T, number]> {
   return [result, end - start];
 }
 
-export async function quicktype(opts: Partial<Options>) {
+export async function quicktype(opts: Partial<CLIOptions>) {
   let [result, duration] = await time(async () => {
     await quicktype_(opts);
   });
