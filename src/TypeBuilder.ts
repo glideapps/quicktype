@@ -13,7 +13,8 @@ import {
     ClassType,
     UnionType,
     NameOrNames,
-    removeNullFromUnion
+    removeNullFromUnion,
+    PrimitiveStringTypeKind
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { defined, assert, panic } from "./Support";
@@ -98,6 +99,12 @@ export class TypeRef {
     };
 }
 
+export type StringTypeMapping = {
+    date: PrimitiveStringTypeKind;
+    time: PrimitiveStringTypeKind;
+    dateTime: PrimitiveStringTypeKind;
+};
+
 export abstract class TypeBuilder {
     readonly typeGraph: TypeGraph = new TypeGraph(this);
 
@@ -105,6 +112,8 @@ export abstract class TypeBuilder {
     protected types: List<Type | undefined> = List();
 
     protected namesToAdd: Map<number, { names: NameOrNames; isInferred: boolean }[]> = Map();
+
+    constructor(private readonly _stringTypeMapping: StringTypeMapping) {}
 
     addTopLevel = (name: string, tref: TypeRef): void => {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
@@ -196,6 +205,9 @@ export abstract class TypeBuilder {
     private _unionTypes: Map<Set<TypeRef>, TypeRef> = Map();
 
     getPrimitiveType(kind: PrimitiveTypeKind): TypeRef {
+        if (kind === "date") kind = this._stringTypeMapping.date;
+        if (kind === "time") kind = this._stringTypeMapping.time;
+        if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
         let tref = this._primitiveTypes.get(kind);
         if (tref === undefined) {
             tref = this.addType(tr => new PrimitiveType(tr, kind));
@@ -290,10 +302,11 @@ export class GraphRewriteBuilder extends TypeBuilder {
 
     constructor(
         private readonly _originalGraph: TypeGraph,
+        stringTypeMapping: StringTypeMapping,
         setsToReplace: Type[][],
         private readonly _replacer: (typesToReplace: Set<Type>, builder: GraphRewriteBuilder) => TypeRef
     ) {
-        super();
+        super(stringTypeMapping);
         this._setsToReplaceByMember = Map();
         for (const types of setsToReplace) {
             const set = Set(types);
@@ -375,7 +388,7 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
     private _haveBool = false;
     private _haveInteger = false;
     private _haveDouble = false;
-    private _haveString = false;
+    private _stringTypes = OrderedSet<PrimitiveStringTypeKind>();
     private readonly _arrays: TArray[] = [];
     private readonly _maps: TMap[] = [];
     private readonly _classes: TClass[] = [];
@@ -389,7 +402,7 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
     ) {}
 
     get haveString(): boolean {
-        return this._haveString;
+        return this._stringTypes.has("string");
     }
 
     addAny = (): void => {
@@ -408,11 +421,16 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
         this._haveDouble = true;
     };
 
-    addString = (): void => {
-        if (!this._haveString) {
-            this._haveString = true;
+    addStringType = (kind: PrimitiveStringTypeKind): void => {
+        if (this._stringTypes.has(kind)) return;
+        // string overrides all other string types, as well as enum
+        if (kind === "string") {
+            this._stringTypes = OrderedSet([kind]);
             this._enumCaseMap = {};
             this._enumCases = [];
+        } else {
+            if (this.haveString) return;
+            this._stringTypes = this._stringTypes.add(kind);
         }
     };
     addArray = (t: TArray): void => {
@@ -426,7 +444,7 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
     };
 
     addEnumCase = (s: string): void => {
-        if (this._haveString) {
+        if (this.haveString) {
             return;
         }
         if (!Object.prototype.hasOwnProperty.call(this._enumCaseMap, s)) {
@@ -457,9 +475,10 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
         } else if (this._haveInteger) {
             types.push(this.typeBuilder.getPrimitiveType("integer"));
         }
-        if (this._haveString) {
-            types.push(this.typeBuilder.getPrimitiveType("string"));
-        } else if (this._enumCases.length > 0) {
+        this._stringTypes.forEach(kind => {
+            types.push(this.typeBuilder.getPrimitiveType(kind));
+        });
+        if (this._enumCases.length > 0) {
             const maybeEnum = this.makeEnum(this._enumCases);
             if (maybeEnum !== null) {
                 types.push(maybeEnum);

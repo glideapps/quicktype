@@ -3,7 +3,7 @@
 import { Map, Set, OrderedMap, OrderedSet } from "immutable";
 
 import { ClassType, Type, nonNullTypeCases } from "./Type";
-import { TypeGraphBuilder, GraphRewriteBuilder, TypeRef } from "./TypeBuilder";
+import { TypeGraphBuilder, GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 
@@ -65,7 +65,7 @@ function isPartOfClique(c: ClassType, clique: ClassType[]): boolean {
     return true;
 }
 
-export function combineClasses(graph: TypeGraph): TypeGraph {
+export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
     let unprocessedClasses = graph.allNamedTypesSeparated().classes.toArray();
     const cliques: ClassType[][] = [];
 
@@ -144,5 +144,5 @@ export function combineClasses(graph: TypeGraph): TypeGraph {
         });
     }
 
-    return graph.rewrite(cliques, makeCliqueClass);
+    return graph.rewrite(stringTypeMapping, cliques, makeCliqueClass);
 }

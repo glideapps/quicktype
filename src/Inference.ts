@@ -108,11 +108,11 @@ export class TypeInference {
                         const s = cjson.getStringForValue(value);
                         unionBuilder.addEnumCase(s);
                     } else {
-                        unionBuilder.addString();
+                        unionBuilder.addStringType("string");
                     }
                     break;
                 case Tag.UninternedString:
-                    unionBuilder.addString();
+                    unionBuilder.addStringType("string");
                     break;
                 case Tag.Object:
                     unionBuilder.addClass(cjson.getObjectForValue(value));

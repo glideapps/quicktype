@@ -18,17 +18,17 @@ import {
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { utf16LegalizeCharacters, pascalCase, startWithLetter, utf16StringEscape } from "../Strings";
-import { intercalate, defined, assertNever, assert } from "../Support";
+import { intercalate, defined, assertNever, assert, nonNull, panic } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
 import { IssueAnnotationData, anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-
-import * as _ from "lodash";
+import { StringTypeMapping } from "../TypeBuilder";
 
 const unicode = require("unicode-properties");
+const lodash = require("lodash");
 
 type Version = 5 | 6;
 type Features = { helpers: boolean; attributes: boolean };
@@ -58,6 +58,10 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         this._featuresOption = featuresOption;
         this._namespaceOption = namespaceOption;
         this._versionOption = versionOption;
+    }
+
+    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
+        return { date: "date-time", time: "date-time", dateTime: "date-time" };
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
@@ -104,7 +108,7 @@ function csNameStyle(original: string): string {
 }
 
 function isValueType(t: Type): boolean {
-    return ["integer", "double", "bool", "enum"].indexOf(t.kind) >= 0;
+    return ["integer", "double", "bool", "enum", "date-time"].indexOf(t.kind) >= 0;
 }
 
 class CSharpRenderer extends ConvenienceRenderer {
@@ -210,6 +214,9 @@ class CSharpRenderer extends ConvenienceRenderer {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable) return this.nullableCSType(nullable, withIssues);
                 return this.nameForNamedType(unionType);
+            },
+            {
+                dateTimeType: dateTimeType => "DateTime"
             }
         );
     };
@@ -250,7 +257,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                     this.emitLine(property);
                 } else if (this._dense) {
                     const indent = maxWidth - escapedName.length + 1;
-                    const whitespace = _.repeat(" ", indent);
+                    const whitespace = lodash.repeat(" ", indent);
                     this.emitLine(attribute, whitespace, property);
                 } else {
                     this.emitLine(attribute);
@@ -314,15 +321,23 @@ class CSharpRenderer extends ConvenienceRenderer {
 
     emitEnumExtension = (e: EnumType, enumName: Name): void => {
         this.emitClass(false, "static class", defined(this._enumExtensionsNames.get(enumName)), () => {
-            this.emitLine("public static ", enumName, " ReadJson(JsonReader reader, JsonSerializer serializer)");
+            this.emitLine("public static ", enumName, "? ValueForString(string str)");
             this.emitBlock(() => {
-                this.emitLine("switch (serializer.Deserialize<string>(reader))");
+                this.emitLine("switch (str)");
                 this.emitBlock(() => {
                     this.forEachCase(e, "none", (name, jsonName) => {
                         this.emitLine('case "', utf16StringEscape(jsonName), '": return ', enumName, ".", name, ";");
                     });
+                    this.emitLine("default: return null;");
                 });
-                this.emitLine('throw new Exception("Unknown enum case");');
+            });
+            this.emitNewline();
+            this.emitLine("public static ", enumName, " ReadJson(JsonReader reader, JsonSerializer serializer)");
+            this.emitBlock(() => {
+                this.emitLine("var str = serializer.Deserialize<string>(reader);");
+                this.emitLine("var maybeValue = ValueForString(str);");
+                this.emitLine("if (maybeValue.HasValue) return maybeValue.Value;");
+                this.emitLine('throw new Exception("Unknown enum case " + str);');
             });
             this.emitNewline();
             this.emitLine(
@@ -356,31 +371,65 @@ class CSharpRenderer extends ConvenienceRenderer {
 
         const emitNullDeserializer = (): void => {
             tokenCase("Null");
-            this.indent(() => this.emitLine("break;"));
+            this.indent(() => this.emitLine("return;"));
         };
 
         const emitDeserializeType = (t: Type): void => {
             this.emitLine(this.unionFieldName(t), " = serializer.Deserialize<", this.csType(t), ">(reader);");
-            this.emitLine("break;");
+            this.emitLine("return;");
         };
 
-        const emitDeserializer = (tokenTypes: string[], kind: TypeKind): void => {
+        const emitDeserializer = (tokenType: string, kind: TypeKind): void => {
             const t = u.findMember(kind);
             if (!t) return;
 
-            for (const tokenType of tokenTypes) {
-                tokenCase(tokenType);
-            }
+            tokenCase(tokenType);
             this.indent(() => emitDeserializeType(t));
         };
 
-        const emitDoubleSerializer = (): void => {
+        const emitDoubleDeserializer = (): void => {
             const t = u.findMember("double");
             if (!t) return;
 
             if (!u.findMember("integer")) tokenCase("Integer");
             tokenCase("Float");
             this.indent(() => emitDeserializeType(t));
+        };
+
+        const emitStringDeserializer = (): void => {
+            const stringTypes = u.stringTypeMembers;
+            if (stringTypes.isEmpty()) return;
+            tokenCase("String");
+            tokenCase("Date");
+            this.indent(() => {
+                if (stringTypes.size === 1) {
+                    emitDeserializeType(defined(stringTypes.first()));
+                    return;
+                }
+                this.emitLine("var str = serializer.Deserialize<string>(reader);");
+                stringTypes.forEach(t => {
+                    const fieldName = this.unionFieldName(t);
+                    if (t instanceof EnumType) {
+                        const extension = defined(this._enumExtensionsNames.get(this.nameForNamedType(t)));
+                        this.emitLine("var maybeEnum = ", extension, ".ValueForString(str);");
+                        this.emitLine("if (maybeEnum.HasValue)");
+                        this.emitBlock(() => {
+                            this.emitLine(fieldName, " = maybeEnum.Value;");
+                            this.emitLine("return;");
+                        });
+                    } else if (t.kind === "date-time") {
+                        this.emitLine("DateTime dt;");
+                        this.emitLine("if (System.DateTime.TryParse(str, out dt))");
+                        this.emitBlock(() => {
+                            this.emitLine(fieldName, " = dt;");
+                            this.emitLine("return;");
+                        });
+                    } else {
+                        return panic("Unsupported string enum type");
+                    }
+                });
+                this.emitLine("break;");
+            });
         };
 
         const [hasNull, nonNulls] = removeNullFromUnion(u);
@@ -394,16 +443,15 @@ class CSharpRenderer extends ConvenienceRenderer {
                 this.emitLine("switch (reader.TokenType)");
                 this.emitBlock(() => {
                     if (hasNull) emitNullDeserializer();
-                    emitDeserializer(["Integer"], "integer");
-                    emitDoubleSerializer();
-                    emitDeserializer(["Boolean"], "bool");
-                    emitDeserializer(["String", "Date"], "string");
-                    emitDeserializer(["StartArray"], "array");
-                    emitDeserializer(["StartObject"], "class");
-                    emitDeserializer(["String"], "enum");
-                    emitDeserializer(["StartObject"], "map");
-                    this.emitLine('default: throw new Exception("Cannot convert ', unionName, '");');
+                    emitDeserializer("Integer", "integer");
+                    emitDoubleDeserializer();
+                    emitDeserializer("Boolean", "bool");
+                    emitDeserializer("StartArray", "array");
+                    emitDeserializer("StartObject", "class");
+                    emitDeserializer("StartObject", "map");
+                    emitStringDeserializer();
                 });
+                this.emitLine('throw new Exception("Cannot convert ', unionName, '");');
             });
             this.emitNewline();
             this.emitLine("public void WriteJson(JsonWriter writer, JsonSerializer serializer)");

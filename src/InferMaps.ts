@@ -5,7 +5,7 @@ import { Map, Set, OrderedSet } from "immutable";
 import { Type, ClassType, nonNullTypeCases } from "./Type";
 import { defined, assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
-import { GraphRewriteBuilder, TypeRef } from "./TypeBuilder";
+import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 
 const mapSizeThreshold = 20;
 
@@ -83,8 +83,8 @@ export function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewrit
     return builder.getMapType(valuesType);
 }
 
-export function inferMaps(graph: TypeGraph): TypeGraph {
+export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
     const allClasses = graph.allNamedTypesSeparated().classes;
     const classesToReplace = allClasses.filter(c => shouldBeMap(c.properties) !== undefined).toArray();
-    return graph.rewrite(classesToReplace.map(c => [c]), replaceClass);
+    return graph.rewrite(stringTypeMapping, classesToReplace.map(c => [c]), replaceClass);
 }

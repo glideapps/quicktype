@@ -136,8 +136,8 @@ export class Run {
     }
 
     private makeGraph = (): TypeGraph => {
-        const supportsEnums = getTargetLanguage(this._options.lang).supportsEnums;
-        const typeBuilder = new TypeGraphBuilder();
+        const stringTypeMapping = getTargetLanguage(this._options.lang).stringTypeMapping;
+        const typeBuilder = new TypeGraphBuilder(stringTypeMapping);
         if (this.isInputJSONSchema) {
             Map(this._allInputs.schemas).forEach((schema, name) => {
                 typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema));
@@ -150,7 +150,7 @@ export class Run {
             return typeBuilder.finish();
         } else {
             const doInferMaps = this._options.inferMaps;
-            const doInferEnums = supportsEnums && this._options.inferEnums;
+            const doInferEnums = this._options.inferEnums;
             const doCombineClasses = this._options.combineClasses;
             const samplesMap = Map(this._allInputs.samples);
             const inputs = List([
@@ -179,10 +179,10 @@ export class Run {
             });
             let graph = typeBuilder.finish();
             if (doCombineClasses) {
-                graph = combineClasses(graph);
+                graph = combineClasses(graph, stringTypeMapping);
             }
             if (doInferMaps) {
-                graph = inferMaps(graph);
+                graph = inferMaps(graph, stringTypeMapping);
             }
 
             if (inputHash !== undefined) {

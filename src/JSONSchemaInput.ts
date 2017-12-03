@@ -3,7 +3,7 @@
 import { List, OrderedSet, Map, OrderedMap, fromJS, Set, isIndexed } from "immutable";
 import * as pluralize from "pluralize";
 
-import { Type, ClassType, NameOrNames, matchType, EnumType, MapType } from "./Type";
+import { Type, ClassType, NameOrNames, matchTypeExhaustive, EnumType, MapType } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 import { UnionBuilder, TypeGraphBuilder, TypeRef } from "./TypeBuilder";
@@ -211,19 +211,22 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
             const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeName, isInferred, unifyTypes);
 
             const registerType = (t: Type): void => {
-                matchType<void>(
+                matchTypeExhaustive<void>(
                     t,
                     anyType => unionBuilder.addAny(),
                     nullType => unionBuilder.addNull(),
                     boolType => unionBuilder.addBool(),
                     integerType => unionBuilder.addInteger(),
                     doubleType => unionBuilder.addDouble(),
-                    stringType => unionBuilder.addString(),
+                    stringType => unionBuilder.addStringType("string"),
                     arrayType => unionBuilder.addArray(arrayType.items.typeRef),
                     classType => unionBuilder.addClass(classType.typeRef),
                     mapType => unionBuilder.addMap(mapType.values.typeRef),
                     enumType => enumType.cases.forEach(s => unionBuilder.addEnumCase(s)),
-                    unionType => unionType.members.forEach(registerType)
+                    unionType => unionType.members.forEach(registerType),
+                    dateType => unionBuilder.addStringType("date"),
+                    timeType => unionBuilder.addStringType("time"),
+                    dateTimeType => unionBuilder.addStringType("date-time")
                 );
             };
 
@@ -341,6 +344,18 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
             case "boolean":
                 return typeBuilder.getPrimitiveType("bool");
             case "string":
+                if (schema.format !== undefined) {
+                    switch (schema.format) {
+                        case "date":
+                            return typeBuilder.getPrimitiveType("date");
+                        case "time":
+                            return typeBuilder.getPrimitiveType("time");
+                        case "date-time":
+                            return typeBuilder.getPrimitiveType("date-time");
+                        default:
+                            return panic(`String format ${schema.format} not supported`);
+                    }
+                }
                 return typeBuilder.getPrimitiveType("string");
             case "null":
                 return typeBuilder.getPrimitiveType("null");

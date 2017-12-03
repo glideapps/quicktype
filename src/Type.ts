@@ -5,7 +5,8 @@ import { defined, panic, assert } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 import { TypeGraphBuilder, TypeRef, TypeBuilder } from "./TypeBuilder";
 
-export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | "string";
+export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
+export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
 
@@ -13,6 +14,10 @@ export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
 
     isNamedType(): this is NamedType {
+        return false;
+    }
+
+    get isStringType(): boolean {
         return false;
     }
 
@@ -52,6 +57,11 @@ export class PrimitiveType extends Type {
 
     get isNullable(): boolean {
         return this.kind === "null";
+    }
+
+    get isStringType(): boolean {
+        const kind = this.kind;
+        return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
     }
 
     map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
@@ -317,6 +327,10 @@ export class EnumType extends NamedType {
         return false;
     }
 
+    get isStringType(): boolean {
+        return true;
+    }
+
     map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
         return builder.getEnumType(this.names, this.areNamesInferred, this.cases);
     }
@@ -354,6 +368,10 @@ export class UnionType extends NamedType {
 
     get members(): OrderedSet<Type> {
         return this.getMemberRefs().map(tref => tref.deref());
+    }
+
+    get stringTypeMembers(): OrderedSet<Type> {
+        return this.members.filter(t => t.isStringType);
     }
 
     findMember = (kind: TypeKind): Type | undefined => {
@@ -428,6 +446,51 @@ export function separateNamedTypes(types: Collection<any, NamedType>): Separated
     return { classes, enums, unions };
 }
 
+export type StringTypeMatchers<U> = {
+    dateType?: (dateType: PrimitiveType) => U;
+    timeType?: (timeType: PrimitiveType) => U;
+    dateTimeType?: (dateTimeType: PrimitiveType) => U;
+};
+
+export function matchTypeExhaustive<U>(
+    t: Type,
+    anyType: (anyType: PrimitiveType) => U,
+    nullType: (nullType: PrimitiveType) => U,
+    boolType: (boolType: PrimitiveType) => U,
+    integerType: (integerType: PrimitiveType) => U,
+    doubleType: (doubleType: PrimitiveType) => U,
+    stringType: (stringType: PrimitiveType) => U,
+    arrayType: (arrayType: ArrayType) => U,
+    classType: (classType: ClassType) => U,
+    mapType: (mapType: MapType) => U,
+    enumType: (enumType: EnumType) => U,
+    unionType: (unionType: UnionType) => U,
+    dateType: (dateType: PrimitiveType) => U,
+    timeType: (timeType: PrimitiveType) => U,
+    dateTimeType: (dateTimeType: PrimitiveType) => U
+): U {
+    if (t instanceof PrimitiveType) {
+        const f = {
+            any: anyType,
+            null: nullType,
+            bool: boolType,
+            integer: integerType,
+            double: doubleType,
+            string: stringType,
+            date: dateType,
+            time: timeType,
+            "date-time": dateTimeType
+        }[t.kind];
+        if (f) return f(t);
+        return panic(`Unsupported PrimitiveType: ${t.kind}`);
+    } else if (t instanceof ArrayType) return arrayType(t);
+    else if (t instanceof ClassType) return classType(t);
+    else if (t instanceof MapType) return mapType(t);
+    else if (t instanceof EnumType) return enumType(t);
+    else if (t instanceof UnionType) return unionType(t);
+    return panic("Unknown Type");
+}
+
 export function matchType<U>(
     t: Type,
     anyType: (anyType: PrimitiveType) => U,
@@ -440,23 +503,30 @@ export function matchType<U>(
     classType: (classType: ClassType) => U,
     mapType: (mapType: MapType) => U,
     enumType: (enumType: EnumType) => U,
-    unionType: (unionType: UnionType) => U
+    unionType: (unionType: UnionType) => U,
+    stringTypeMatchers?: StringTypeMatchers<U>
 ): U {
-    if (t instanceof PrimitiveType) {
-        const f = {
-            any: anyType,
-            null: nullType,
-            bool: boolType,
-            integer: integerType,
-            double: doubleType,
-            string: stringType
-        }[t.kind];
-        if (f) return f(t);
-        return panic(`Unknown PrimitiveType: ${t.kind}`);
-    } else if (t instanceof ArrayType) return arrayType(t);
-    else if (t instanceof ClassType) return classType(t);
-    else if (t instanceof MapType) return mapType(t);
-    else if (t instanceof EnumType) return enumType(t);
-    else if (t instanceof UnionType) return unionType(t);
-    return panic("Unknown Type");
+    if (stringTypeMatchers === undefined) {
+        stringTypeMatchers = {};
+    }
+    const typeNotSupported = (_: Type) => {
+        return panic("Unsupported PrimitiveType");
+    };
+    return matchTypeExhaustive(
+        t,
+        anyType,
+        nullType,
+        boolType,
+        integerType,
+        doubleType,
+        stringType,
+        arrayType,
+        classType,
+        mapType,
+        enumType,
+        unionType,
+        stringTypeMatchers.dateType || typeNotSupported,
+        stringTypeMatchers.timeType || typeNotSupported,
+        stringTypeMatchers.dateTimeType || typeNotSupported
+    );
 }

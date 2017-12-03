@@ -13,7 +13,7 @@ import {
     UnionType,
     separateNamedTypes,
     nullableFromUnion,
-    matchType
+    matchTypeExhaustive
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
@@ -224,7 +224,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
 
         const typeNameForUnionMember = (t: Type): string =>
-            matchType(
+            matchTypeExhaustive(
                 t,
                 anyType => "anything",
                 nullType => "null",
@@ -236,7 +236,10 @@ export abstract class ConvenienceRenderer extends Renderer {
                 classType => defined(this.names.get(this.nameForNamedType(classType))),
                 mapType => typeNameForUnionMember(mapType.values) + "_map",
                 enumType => "enum",
-                unionType => "union"
+                unionType => "union",
+                dateType => "date",
+                timeType => "time",
+                dateTimeType => "date_time"
             );
 
         return propertyNamer.nameStyle(typeNameForUnionMember(fieldType));
