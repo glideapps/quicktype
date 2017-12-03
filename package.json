@@ -13,6 +13,7 @@
     "start": "script/watch"
   },
   "dependencies": {
+    "@types/request": "^2.0.8",
     "chalk": "^2.1.0",
     "command-line-args": "^4.0.6",
     "command-line-usage": "^4.0.0",
@@ -21,6 +22,7 @@
     "lodash": "^4.17.4",
     "node-fetch": "^1.7.1",
     "pluralize": "^7.0.0",
+    "request": "^2.83.0",
     "stream-json": "0.5.2",
     "string-hash": "^1.1.3",
     "string-to-stream": "^1.1.0",
@@ -44,6 +46,8 @@
     "uglify-js": "^3.0.26",
     "watch": "^1.0.2"
   },
-  "files": ["*"],
+  "files": [
+    "*"
+  ],
   "bin": "quicktype.js"
 }

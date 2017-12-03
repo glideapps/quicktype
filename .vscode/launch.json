@@ -12,11 +12,10 @@
       "args": [
         "--project",
         "src/tsconfig.json",
-        "src/quicktype.ts",
+        "src/cli.ts",
         "--lang",
-        "swift",
-        "--just-types",
-        "./test/inputs/json/samples/kitchen-sink.json"
+        "go",
+        "test/inputs/json/samples/bitcoin-block.json"
       ],
       "cwd": "${workspaceRoot}",
       "protocol": "inspector"

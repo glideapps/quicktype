@@ -2,7 +2,8 @@
     "compilerOptions": {
         "target": "es5",
         "module": "commonjs",
-        "lib": ["es2015"],
+        "lib": ["es2015", "es2015.iterable"],
+        "downlevelIteration": true,
         "allowJs": false,
         "declaration": true,
         "typeRoots": ["../node_modules/@types"],

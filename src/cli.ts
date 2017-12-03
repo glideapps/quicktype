@@ -2,16 +2,17 @@ import * as fs from "fs";
 import * as path from "path";
 
 import * as _ from "lodash";
-import { Run, Options, RendererOptions, inferOptions, getTargetLanguage } from ".";
+import { Run, Source, Sample, Options, RendererOptions, getTargetLanguage } from ".";
 import { OptionDefinition } from "./RendererOptions";
 import * as targetLanguages from "./Language/All";
+import { urlsFromURLGrammar } from "./URLGrammar";
 import { Annotation } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
+import { Readable } from "stream";
+import * as request from "request";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
-
-const fetch = require("node-fetch");
 const chalk = require("chalk");
 
 const langs = targetLanguages.all.map(r => _.minBy(r.names, s => s.length)).join("|");
@@ -20,6 +21,116 @@ const langDisplayNames = targetLanguages.all.map(r => r.displayName).join(", ");
 export interface CLIOptions extends Options {
     help: boolean;
     quiet: boolean;
+    topLevel: string;
+    srcUrls?: string;
+    src: string[];
+    out?: string;
+}
+
+function sampleFromFileOrUrl(fileOrUrl: string): Sample<Readable> {
+    if (fs.existsSync(fileOrUrl)) {
+        return { source: fs.createReadStream(fileOrUrl) };
+    } else {
+        // TODO no idea if this works
+        return { source: request.get(fileOrUrl) as any };
+    }
+}
+
+function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Source<Readable> {
+    return { name, samples: filesOrUrls.map(sampleFromFileOrUrl) };
+}
+
+function* samplesFromDirectory(dataDir: string): IterableIterator<Source<Readable>> {
+    function* readFilesOrURLsInDirectory(d: string) {
+        const files = fs
+            .readdirSync(d)
+            .map(x => path.join(d, x))
+            .filter(x => fs.lstatSync(x).isFile());
+        // Each file is a (Name, JSON | URL)
+        for (const file of files) {
+            const name = path.basename(file);
+            const inferredName = name.substr(0, name.lastIndexOf("."));
+
+            let fileOrUrl = file;
+            // If file is a URL string, download it
+            if (_.endsWith(file, ".url")) {
+                fileOrUrl = fs.readFileSync(file, "utf8").trim();
+            }
+
+            yield {
+                inferredName,
+                sample: sampleFromFileOrUrl(fileOrUrl)
+            };
+        }
+    }
+
+    const contents = fs.readdirSync(dataDir).map(x => path.join(dataDir, x));
+    const directories = contents.filter(x => fs.lstatSync(x).isDirectory());
+    const topLevelSamples = Array.from(readFilesOrURLsInDirectory(dataDir));
+
+    for (const topLevel of topLevelSamples) {
+        yield {
+            name: topLevel.inferredName,
+            samples: [topLevel.sample]
+        };
+    }
+
+    for (const dir of directories) {
+        const samples = Array.from(readFilesOrURLsInDirectory(dir));
+        yield {
+            name: path.basename(dir),
+            samples: samples.map(x => x.sample)
+        };
+    }
+}
+
+function inferLang(options: Partial<CLIOptions>): string {
+    // Output file extension determines the language if language is undefined
+    if (options.out) {
+        let extension = path.extname(options.out);
+        if (extension === "") {
+            throw new Error("Please specify a language (--lang) or an output file extension.");
+        }
+        return extension.substr(1);
+    }
+
+    return "go";
+}
+
+function inferTopLevel(options: Partial<CLIOptions>): string {
+    // Output file name determines the top-level if undefined
+    if (options.out) {
+        let extension = path.extname(options.out);
+        let without = path.basename(options.out).replace(extension, "");
+        return without;
+    }
+
+    // Source determines the top-level if undefined
+    if (options.src && options.src.length === 1) {
+        let src = options.src[0];
+        let extension = path.extname(src);
+        let without = path.basename(src).replace(extension, "");
+        return without;
+    }
+
+    return "TopLevel";
+}
+
+function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
+    return {
+        src: opts.src || [],
+        srcLang: opts.srcLang || "json",
+        lang: opts.lang || inferLang(opts),
+        topLevel: opts.topLevel || inferTopLevel(opts),
+        noMaps: !!opts.noMaps,
+        noEnums: !!opts.noEnums,
+        noCombineClasses: !!opts.noCombineClasses,
+        noRender: !!opts.noRender,
+        rendererOptions: opts.rendererOptions || {},
+        help: opts.help || false,
+        quiet: opts.quiet || false,
+        out: opts.out
+    };
 }
 
 const optionDefinitions: OptionDefinition[] = [
@@ -153,7 +264,7 @@ function getOptionDefinitions(opts: Options): OptionDefinition[] {
     return getTargetLanguage(opts.lang).optionDefinitions;
 }
 
-function parseArgv(argv: string[]): Options {
+function parseArgv(argv: string[]): CLIOptions {
     // We can only fully parse the options once we know which renderer is selected,
     // because there are renderer-specific options.  But we only know which renderer
     // is selected after we've parsed the options.  Hence, we parse the options
@@ -177,7 +288,7 @@ function parseArgv(argv: string[]): Options {
 // Parse the options in argv and split them into global options and renderer options,
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
-function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): Options {
+function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): CLIOptions {
     const opts: { [key: string]: any } = commandLineArgs(definitions, {
         argv,
         partial: partial
@@ -248,20 +359,55 @@ function splitAndWriteJava(dir: string, str: string) {
     writeFile();
 }
 
+function* getSources(options: CLIOptions): IterableIterator<Source<Readable>> {
+    if (options.srcUrls) {
+        let json = JSON.parse(fs.readFileSync(options.srcUrls, "utf8"));
+        let jsonMap = urlsFromURLGrammar(json);
+        for (let key of Object.keys(jsonMap)) {
+            yield sourceFromFileOrUrlArray(key, jsonMap[key]);
+        }
+    } else if (options.src.length === 0) {
+        yield {
+            name: options.topLevel,
+            samples: [
+                {
+                    source: process.stdin
+                }
+            ]
+        };
+    } else {
+        const exists = options.src.filter(fs.existsSync);
+        const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
+
+        for (const dataDir of directories) {
+            // TODO why do we need Array.from
+            yield* Array.from(samplesFromDirectory(dataDir));
+        }
+
+        // Every src that's not a directory is assumed to be a file or URL
+        const filesOrUrls = options.src.filter(x => !_.includes(directories, x));
+        if (!_.isEmpty(filesOrUrls)) {
+            yield sourceFromFileOrUrlArray(options.topLevel, filesOrUrls);
+        }
+    }
+}
+
 export async function main(args: string[] | Partial<CLIOptions>) {
     if (_.isArray(args) && args.length === 0) {
         usage();
     } else {
-        let options = _.isArray(args) ? parseArgv(args) : args;
-        let run = new Run(options, false);
+        let options = _.isArray(args) ? parseArgv(args) : inferOptions(args);
 
         if (options.help) {
             usage();
             return;
         }
 
-        const { lines, annotations } = await run.run();
+        let run = new Run(options, false);
+        const sources = Array.from(getSources(options));
+        const { lines, annotations } = await run.run(sources);
         const output = lines.join("\n");
+
         if (options.out) {
             if (options.lang === "java") {
                 splitAndWriteJava(path.dirname(options.out), output);
