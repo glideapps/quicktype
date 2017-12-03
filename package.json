@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "4.1.2",
+  "version": "5.0.0",
   "license": "Apache-2.0",
   "main": "index.js",
   "types": "index.d.ts",
@@ -46,5 +46,5 @@
     "watch": "^1.0.2"
   },
   "files": ["*"],
-  "bin": "quicktype.js"
+  "bin": "cli.js"
 }
