@@ -93,11 +93,14 @@ export abstract class Fixture {
     cwd: string,
     shouldSkip: boolean
   ): void {
+    const rendererOptions = _.map(
+      sample.additionalRendererOptions,
+      (v, k) => `${k}: ${v}`
+    ).join(", ");
     console.error(
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
-      chalk.magenta(this.name),
-      JSON.stringify(sample.additionalRendererOptions),
+      chalk.magenta(this.name) + chalk.dim(`(${rendererOptions})`),
       path.join(cwd, chalk.cyan(path.basename(sample.path))),
       shouldSkip ? chalk.red("SKIP") : ""
     );
