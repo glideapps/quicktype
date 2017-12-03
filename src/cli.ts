@@ -31,8 +31,8 @@ function sampleFromFileOrUrl(fileOrUrl: string): Sample<Readable> {
     if (fs.existsSync(fileOrUrl)) {
         return { source: fs.createReadStream(fileOrUrl) };
     } else {
-        // TODO no idea if this works
-        return { source: request.get(fileOrUrl) as any };
+        // TODO make this work
+        return { source: "{}" as any };
     }
 }
 

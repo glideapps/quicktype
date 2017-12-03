@@ -146,7 +146,7 @@ export class Run {
 
         for (const source of sources) {
             for (const sample of source.samples) {
-                const stream = _.isString(sample) ? stringToStream(sample) : sample;
+                const stream = _.isString(sample.source) ? stringToStream(sample.source) : sample.source;
                 await this.readSampleFromStream(source.name, stream);
             }
         }
