@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "4.1.2",
+  "version": "5.0.0",
   "license": "Apache-2.0",
   "main": "index.js",
   "types": "index.d.ts",
@@ -45,8 +45,6 @@
     "uglify-js": "^3.0.26",
     "watch": "^1.0.2"
   },
-  "files": [
-    "*"
-  ],
+  "files": ["*"],
   "bin": "cli.js"
 }
