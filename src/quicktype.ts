@@ -11,8 +11,12 @@ export async function main(args: string[] | Options) {
 }
 
 if (require.main === module) {
-    main(process.argv.slice(2)).catch(reason => {
-        console.error(reason);
+    main(process.argv.slice(2)).catch(e => {
+        if (e instanceof Error) {
+            console.error(`Error: ${e.message}.`);
+        } else {
+            console.error(e);
+        }
         process.exit(1);
     });
 }
