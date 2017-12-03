@@ -1,8 +1,7 @@
 import * as getStream from "get-stream";
-
 import * as _ from "lodash";
-
 import { List, Map } from "immutable";
+import { Readable } from "stream";
 
 import * as targetLanguages from "./Language/All";
 import { OptionDefinition } from "./RendererOptions";
@@ -19,7 +18,12 @@ import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
 import { TypeGraph } from "./TypeGraph";
 import { readGraphQLSchema } from "./GraphQL";
-import { Readable } from "stream";
+
+// Re-export essential types and functions
+export { TargetLanguage } from "./TargetLanguage";
+export { SerializedRenderResult, Annotation } from "./Source";
+export { all as languages, languageNamed } from "./Language/All";
+export { OptionDefinition } from "./RendererOptions";
 
 const stringToStream = require("string-to-stream");
 const fetch = require("node-fetch");
