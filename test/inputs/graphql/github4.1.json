@@ -1,0 +1,24 @@
+{
+  "viewer": {
+    "repository": {
+      "pullRequests": {
+        "nodes": [
+          {
+            "state": "MERGED"
+          },
+          {
+            "state": "MERGED"
+          },
+          {
+            "state": "MERGED"
+          },
+          {
+            "state": "OPEN"
+          }
+        ]
+      }
+    },
+    "login": "schani",
+    "name": "Mark Probst"
+  }
+}

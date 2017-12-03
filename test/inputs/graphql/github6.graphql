@@ -1,0 +1,8 @@
+query {
+  resource(url: "https://github.com/quicktype/quicktype") {
+    url
+    ... on User {
+      login
+    }
+  }
+}
