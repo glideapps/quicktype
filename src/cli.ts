@@ -327,10 +327,7 @@ function parseArgv(argv: string[]): CLIOptions {
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): CLIOptions {
-    const opts: { [key: string]: any } = commandLineArgs(definitions, {
-        argv,
-        partial: partial
-    });
+    const opts: { [key: string]: any } = commandLineArgs(definitions, { argv, partial });
     const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
     definitions.forEach(o => {
         if (!(o.name in opts)) return;
