@@ -8,4 +8,4 @@
 # are just working on TargetLanguage code in TypeScript.
 
 npm run build &>/dev/null
-node --stack_trace_limit=100 dist/quicktype.js $@
+node --stack_trace_limit=100 dist/cli.js $@
