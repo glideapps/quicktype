@@ -9,14 +9,18 @@
       "type": "node",
       "request": "launch",
       "program": "${workspaceRoot}/node_modules/ts-node/dist/_bin.js",
+      "runtimeArgs": ["--nolazy"],
       "args": [
         "--project",
         "src/tsconfig.json",
-        "src/quicktype.ts",
+        "src/cli.ts",
         "--lang",
-        "swift",
-        "--just-types",
-        "./test/inputs/json/samples/kitchen-sink.json"
+        "ts",
+        "--src-lang",
+        "graphql",
+        "--graphql-schema",
+        "test/inputs/graphql/github.gqlschema",
+        "test/inputs/graphql/github1.graphql"
       ],
       "cwd": "${workspaceRoot}",
       "protocol": "inspector"
