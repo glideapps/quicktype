@@ -13,7 +13,7 @@ import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, serializeRenderResult } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
-import { defined, assert } from "./Support";
+import { defined, assert, panic } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { combineClasses } from "./CombineClasses";
@@ -22,6 +22,7 @@ import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
 import { TypeGraph } from "./TypeGraph";
+import { readGraphQLSchema } from "./GraphQL";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -58,8 +59,8 @@ const optionDefinitions: OptionDefinition[] = [
         name: "src-lang",
         alias: "s",
         type: String,
-        defaultValue: "json",
-        typeLabel: "json|schema",
+        defaultValue: undefined,
+        typeLabel: "json|schema|graphql",
         description: "The source language (default is json)."
     },
     {
@@ -80,6 +81,12 @@ const optionDefinitions: OptionDefinition[] = [
         name: "no-combine-classes",
         type: Boolean,
         description: "Don't combine similar classes."
+    },
+    {
+        name: "graphql-schema",
+        type: String,
+        typeLabel: "FILE",
+        description: "GraphQL introspection file."
     },
     {
         name: "no-maps",
@@ -192,6 +199,7 @@ export interface Options {
     topLevel?: string;
     srcLang?: string;
     srcUrls?: string;
+    graphqlSchema?: string;
     out?: string;
     noMaps?: boolean;
     noEnums?: boolean;
@@ -208,6 +216,7 @@ interface CompleteOptions {
     topLevel: string;
     srcLang: string;
     srcUrls?: string;
+    graphqlSchema?: string;
     out?: string;
     noMaps: boolean;
     noEnums: boolean;
@@ -218,9 +227,10 @@ interface CompleteOptions {
     rendererOptions: RendererOptions;
 }
 
-type SampleOrSchemaMap = {
+type InputData = {
     samples: { [name: string]: Value[] };
     schemas: { [name: string]: any };
+    graphQLs: { [name: string]: { schema: any; query: string } };
 };
 
 let graphByInputHash: Map<number, TypeGraph> = Map();
@@ -228,7 +238,7 @@ let graphByInputHash: Map<number, TypeGraph> = Map();
 export class Run {
     private _options: CompleteOptions;
     private _compressedJSON: CompressedJSON;
-    private _allSamples: SampleOrSchemaMap;
+    private _allInputs: InputData;
 
     constructor(argv: string[] | Options, private readonly _doCache: boolean) {
         if (_.isArray(argv)) {
@@ -254,7 +264,7 @@ export class Run {
             this._options = this.inferOptions(argv);
         }
         this._compressedJSON = new CompressedJSON();
-        this._allSamples = { samples: {}, schemas: {} };
+        this._allInputs = { samples: {}, schemas: {}, graphQLs: {} };
     }
 
     private getOptionDefinitions = (opts: CompleteOptions): OptionDefinition[] => {
@@ -265,19 +275,28 @@ export class Run {
         return this._options.srcLang === "schema";
     }
 
+    private get isInputGraphQL(): boolean {
+        return this._options.graphqlSchema !== undefined;
+    }
+
     private makeGraph = (): TypeGraph => {
         const supportsEnums = getTargetLanguage(this._options.lang).supportsEnums;
         const typeBuilder = new TypeGraphBuilder();
         if (this.isInputJSONSchema) {
-            Map(this._allSamples.schemas).forEach((schema, name) => {
+            Map(this._allInputs.schemas).forEach((schema, name) => {
                 typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema));
+            });
+            return typeBuilder.finish();
+        } else if (this.isInputGraphQL) {
+            Map(this._allInputs.graphQLs).forEach(({ schema, query }, name) => {
+                typeBuilder.addTopLevel(name, readGraphQLSchema(typeBuilder, schema, query));
             });
             return typeBuilder.finish();
         } else {
             const doInferMaps = !this._options.noMaps;
             const doInferEnums = supportsEnums && !this._options.noEnums;
             const doCombineClasses = !this._options.noCombineClasses;
-            const samplesMap = Map(this._allSamples.samples);
+            const samplesMap = Map(this._allInputs.samples);
             const inputs = List([
                 doInferMaps,
                 doInferEnums,
@@ -296,7 +315,7 @@ export class Run {
             }
 
             const inference = new TypeInference(typeBuilder, doInferMaps, doInferEnums);
-            Map(this._allSamples.samples).forEach((cjson, name) => {
+            Map(this._allInputs.samples).forEach((cjson, name) => {
                 typeBuilder.addTopLevel(
                     name,
                     inference.inferType(this._compressedJSON as CompressedJSON, name, false, cjson)
@@ -360,16 +379,16 @@ export class Run {
     private readSampleFromStream = async (name: string, readStream: stream.Readable): Promise<void> => {
         if (this.isInputJSONSchema) {
             const input = JSON.parse(await getStream(readStream));
-            if (_.has(this._allSamples.schemas, name)) {
+            if (_.has(this._allInputs.schemas, name)) {
                 throw new Error(`More than one schema given for ${name}`);
             }
-            this._allSamples.schemas[name] = input;
+            this._allInputs.schemas[name] = input;
         } else {
             const input = await this._compressedJSON.readFromStream(readStream);
-            if (!_.has(this._allSamples.samples, name)) {
-                this._allSamples.samples[name] = [];
+            if (!_.has(this._allInputs.samples, name)) {
+                this._allInputs.samples[name] = [];
             }
-            this._allSamples.samples[name].push(input);
+            this._allInputs.samples[name].push(input);
         }
     };
 
@@ -435,9 +454,17 @@ export class Run {
         if (this._options.srcUrls) {
             let json = JSON.parse(fs.readFileSync(this._options.srcUrls, "utf8"));
             let jsonMap = urlsFromURLGrammar(json);
-            for (let key of Object.keys(jsonMap)) {
+            for (let key of Object.getOwnPropertyNames(jsonMap)) {
                 await this.readSampleFromFileOrUrlArray(key, jsonMap[key]);
             }
+        } else if (this._options.graphqlSchema) {
+            if (this._options.src.length !== 1) {
+                return panic("Please specify one GraphQL query as input.");
+            }
+            const graphQLQuery = this._options.src[0];
+            let json = JSON.parse(fs.readFileSync(this._options.graphqlSchema, "utf8"));
+            let query = fs.readFileSync(graphQLQuery, "utf8");
+            this._allInputs.graphQLs[this._options.topLevel] = { schema: json, query };
         } else if (this._options.src.length === 0) {
             // FIXME: Why do we have to convert to any here?
             await this.readSampleFromStream(this._options.topLevel, process.stdin as any);
@@ -515,9 +542,20 @@ export class Run {
     };
 
     private inferOptions = (opts: Options): CompleteOptions => {
+        let srcLang = opts.srcLang;
+        if (opts.graphqlSchema !== undefined) {
+            assert(
+                srcLang === undefined || srcLang === "graphql",
+                "If a GraphQL schema is specified, the source language must be GraphQL"
+            );
+            srcLang = "graphql";
+        } else {
+            assert(srcLang !== "graphql", "Please specify a GraphQL schema with --graphql-schema");
+            srcLang = srcLang || "json";
+        }
         return {
             src: opts.src || [],
-            srcLang: opts.srcLang || "json",
+            srcLang: srcLang,
             lang: opts.lang || this.inferLang(opts),
             topLevel: opts.topLevel || this.inferTopLevel(opts),
             noMaps: !!opts.noMaps,
