@@ -129,7 +129,8 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         rendererOptions: opts.rendererOptions || {},
         help: opts.help || false,
         quiet: opts.quiet || false,
-        out: opts.out
+        out: opts.out,
+        sources: opts.sources || []
     };
 }
 
@@ -397,6 +398,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
         usage();
     } else {
         let options = _.isArray(args) ? parseArgv(args) : inferOptions(args);
+        options.sources = Array.from(getSources(options));
 
         if (options.help) {
             usage();
@@ -404,8 +406,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
         }
 
         let run = new Run(options, false);
-        const sources = Array.from(getSources(options));
-        const { lines, annotations } = await run.run(sources);
+        const { lines, annotations } = await run.run();
         const output = lines.join("\n");
 
         if (options.out) {

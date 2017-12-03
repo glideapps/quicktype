@@ -45,6 +45,7 @@ export interface Source<T> {
 export interface Options {
     lang: string;
     srcLang: string;
+    sources: Source<string | Readable>[];
     noMaps: boolean;
     noEnums: boolean;
     noCombineClasses: boolean;
@@ -141,10 +142,10 @@ export class Run {
         }
     };
 
-    public run = async (sources: Source<string | Readable>[]): Promise<SerializedRenderResult> => {
+    public run = async (): Promise<SerializedRenderResult> => {
         const targetLanguage = getTargetLanguage(this._options.lang);
 
-        for (const source of sources) {
+        for (const source of this._options.sources) {
             for (const sample of source.samples) {
                 const stream = _.isString(sample.source) ? stringToStream(sample.source) : sample.source;
                 await this.readSampleFromStream(source.name, stream);
