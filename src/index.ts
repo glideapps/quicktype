@@ -1,4 +1,4 @@
-import * as getStream from "get-stream";
+import { getStream } from "./get-stream";
 import * as _ from "lodash";
 import { List, Map } from "immutable";
 import { Readable } from "stream";
