@@ -319,9 +319,8 @@ class JSONSchemaJSONFixture extends JSONFixture {
       output: "schema.json",
       topLevel: "schema",
       skipJSON: [
-        "identifiers.json",
-        "simple-identifiers.json",
-        "blns-object.json"
+        "blns-object.json", // AJV refuses to even "compile" the schema we generate
+        "31189.json" // same here
       ],
       skipSchema: [],
       rendererOptions: {},
@@ -344,7 +343,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
     let input = JSON.parse(fs.readFileSync(filename, "utf8"));
     let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
 
-    let ajv = new Ajv();
+    let ajv = new Ajv({ format: "full" });
     let valid = ajv.validate(schema, input);
     if (!valid) {
       failWith("Generated schema does not validate input JSON.", {

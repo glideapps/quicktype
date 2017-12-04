@@ -120,6 +120,15 @@ export class TypeInference {
                 case Tag.Array:
                     unionBuilder.addArray(cjson.getArrayForValue(value));
                     break;
+                case Tag.Date:
+                    unionBuilder.addStringType("date");
+                    break;
+                case Tag.Time:
+                    unionBuilder.addStringType("time");
+                    break;
+                case Tag.DateTime:
+                    unionBuilder.addStringType("date-time");
+                    break;
                 default:
                     return assertNever(t);
             }

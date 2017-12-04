@@ -121,10 +121,14 @@ export class Run {
     private _options: Options;
 
     constructor(options: Partial<Options>, private readonly _doCache: boolean) {
-        this._compressedJSON = new CompressedJSON();
-
         this._options = _.assign(_.clone(defaultOptions), options);
         this._allInputs = { samples: {}, schemas: {}, graphQLs: {} };
+
+        const mapping = getTargetLanguage(this._options.lang).stringTypeMapping;
+        const makeDate = mapping.date !== "string";
+        const makeTime = mapping.time !== "string";
+        const makeDateTime = mapping.dateTime !== "string";
+        this._compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
     }
 
     private get isInputJSONSchema(): boolean {
