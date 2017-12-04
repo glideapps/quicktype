@@ -16,7 +16,7 @@
     "chalk": "^2.1.0",
     "command-line-args": "^4.0.6",
     "command-line-usage": "^4.0.0",
-    "get-stream": "^3.0.0",
+    "get-stream": "quicktype/get-stream#67ae4ddfbac117cd1fd403f2b9e6c14e3c221d88",
     "graphql": "^0.11.7",
     "immutable": "^4.0.0-rc.9",
     "lodash": "^4.17.4",
