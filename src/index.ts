@@ -26,7 +26,6 @@ export { all as languages, languageNamed } from "./Language/All";
 export { OptionDefinition } from "./RendererOptions";
 
 const stringToStream = require("string-to-stream");
-const fetch = require("node-fetch");
 
 export function getTargetLanguage(name: string): TargetLanguage {
     const language = targetLanguages.languageNamed(name);
