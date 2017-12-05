@@ -1,11 +1,11 @@
-"use strict";
-const PassThrough = require("stream").PassThrough;
+import { Options } from ".";
+import { PassThrough } from "stream";
 
-export default function bufferStream(opts: any) {
+export default function bufferStream(opts: Options) {
     opts = Object.assign({}, opts);
 
     const array = opts.array;
-    let encoding = opts.encoding;
+    let encoding: string | undefined = opts.encoding;
     const buffer = encoding === "buffer";
     let objectMode = false;
 
@@ -16,14 +16,14 @@ export default function bufferStream(opts: any) {
     }
 
     if (buffer) {
-        encoding = null;
+        encoding = undefined;
     }
 
     let len = 0;
     const ret: any[] = [];
     const stream = new PassThrough({
         objectMode
-    });
+    }) as any;
 
     if (encoding) {
         stream.setEncoding(encoding);

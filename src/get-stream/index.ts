@@ -1,14 +1,20 @@
-"use strict";
-const bufferStream = require("./buffer-stream");
+import { Readable } from "stream";
+import bufferStream from "./buffer-stream";
 
-export function getStream(inputStream: any, opts: any = {}) {
+export interface Options {
+    maxBuffer?: number;
+    array?: boolean;
+    encoding?: string;
+}
+
+export function getStream(inputStream: Readable, opts: Options = {}) {
     if (!inputStream) {
         return Promise.reject(new Error("Expected a stream"));
     }
 
     opts = Object.assign({ maxBuffer: Infinity }, opts);
 
-    const maxBuffer = opts.maxBuffer;
+    const maxBuffer = opts.maxBuffer || Infinity;
     let stream: any;
     let clean;
 
@@ -47,6 +53,10 @@ export function getStream(inputStream: any, opts: any = {}) {
     return p.then(() => stream.getBufferedValue());
 }
 
-module.exports = getStream;
-module.exports.buffer = (stream: any, opts: any) => getStream(stream, Object.assign({}, opts, { encoding: "buffer" }));
-module.exports.array = (stream: any, opts: any) => getStream(stream, Object.assign({}, opts, { array: true }));
+export function buffer(stream: Readable, opts: Options = {}) {
+    getStream(stream, Object.assign({}, opts, { encoding: "buffer" }));
+}
+
+export function array(stream: Readable, opts: Options = {}) {
+    getStream(stream, Object.assign({}, opts, { array: true }));
+}
