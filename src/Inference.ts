@@ -8,6 +8,7 @@ import { Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType
 import { assertNever, assert } from "./Support";
 import { TypeGraphBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
 import { shouldBeMap } from "./InferMaps";
+import { isTime, isDateTime, isDate } from "./DateTime";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -65,6 +66,12 @@ class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueAr
     }
 }
 
+function canBeEnumCase(s: string): boolean {
+    if (s.length === 0) return true; // FIXME: Do we really want this?
+    if ("0123456789".indexOf(s[0]) < 0) return false;
+    return !isDate(s) && !isTime(s, false) && !isDateTime(s);
+}
+
 export class TypeInference {
     constructor(
         private readonly _typeBuilder: TypeGraphBuilder,
@@ -106,7 +113,11 @@ export class TypeInference {
                 case Tag.InternedString:
                     if (this._inferEnums && !unionBuilder.haveString && valueArray.length >= MIN_LENGTH_FOR_ENUM) {
                         const s = cjson.getStringForValue(value);
-                        unionBuilder.addEnumCase(s);
+                        if (canBeEnumCase(s)) {
+                            unionBuilder.addEnumCase(s);
+                        } else {
+                            unionBuilder.addStringType("string");
+                        }
                     } else {
                         unionBuilder.addStringType("string");
                     }
