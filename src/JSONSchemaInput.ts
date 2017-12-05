@@ -13,6 +13,7 @@ enum PathElementKind {
     Root,
     Definition,
     OneOf,
+    AnyOf,
     Property,
     AdditionalProperty,
     Items
@@ -22,6 +23,7 @@ type PathElement =
     | { kind: PathElementKind.Root }
     | { kind: PathElementKind.Definition; name: string }
     | { kind: PathElementKind.OneOf; index: number }
+    | { kind: PathElementKind.AnyOf; index: number }
     | { kind: PathElementKind.Property; name: string }
     | { kind: PathElementKind.AdditionalProperty }
     | { kind: PathElementKind.Items };
@@ -74,10 +76,9 @@ function lookupProperty(schema: StringMap, name: string): StringMap {
     return checkStringMap(properties[name]);
 }
 
-function indexOneOf(schema: StringMap, index: number): StringMap {
-    const cases = schema.oneOf;
+function indexArray(cases: any, index: number): StringMap {
     if (!Array.isArray(cases)) {
-        return panic("oneOf value must be an array");
+        return panic("oneOf or anyOf value must be an array");
     }
     return checkStringMap(cases[index]);
 }
@@ -249,7 +250,9 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
             case PathElementKind.Definition:
                 return lookupRef(lookupDefinition(local, first.name), localPath, rest);
             case PathElementKind.OneOf:
-                return lookupRef(indexOneOf(local, first.index), localPath, rest);
+                return lookupRef(indexArray(local.oneOf, first.index), localPath, rest);
+            case PathElementKind.AnyOf:
+                return lookupRef(indexArray(local.anyOf, first.index), localPath, rest);
             case PathElementKind.Property:
                 return lookupRef(lookupProperty(local, first.name), localPath, rest);
             case PathElementKind.AdditionalProperty:
@@ -355,6 +358,18 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
 
     function convertToType(schema: StringMap, path: Ref, name: string, isInferred: boolean): TypeRef {
         [name, isInferred] = getName(schema, name, isInferred);
+
+        function convertOneOrAnyOf(cases: any, kind: PathElementKind.OneOf | PathElementKind.AnyOf): TypeRef {
+            if (!Array.isArray(cases)) {
+                return panic(`oneOf or anyOf is not an array: ${cases}`);
+            }
+            // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
+            const types = cases.map((t, index) =>
+                toType(checkStringMap(t), path.push({ kind, index } as any), name, true)
+            );
+            return unifyTypes(types, name, isInferred);
+        }
+
         if (schema.$ref !== undefined) {
             const [ref, refName] = parseRef(schema.$ref);
             const [target, targetPath] = lookupRef(schema, path, ref);
@@ -370,14 +385,9 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
                 return unifyTypes(types.toArray(), name, isInferred);
             }
         } else if (schema.oneOf !== undefined) {
-            const oneOf = schema.oneOf;
-            if (!Array.isArray(oneOf)) {
-                return panic(`oneOf is not an array: ${schema.oneOf}`);
-            }
-            const types = oneOf.map((t, index) =>
-                toType(checkStringMap(t), path.push({ kind: PathElementKind.OneOf, index }), name, true)
-            );
-            return unifyTypes(types, name, isInferred);
+            return convertOneOrAnyOf(schema.oneOf, PathElementKind.OneOf);
+        } else if (schema.anyOf !== undefined) {
+            return convertOneOrAnyOf(schema.anyOf, PathElementKind.AnyOf);
         } else {
             return typeBuilder.getPrimitiveType("any");
         }
