@@ -16,7 +16,6 @@
     "chalk": "^2.1.0",
     "command-line-args": "^4.0.6",
     "command-line-usage": "^4.0.0",
-    "get-stream": "^3.0.0",
     "graphql": "^0.11.7",
     "immutable": "^4.0.0-rc.9",
     "lodash": "^4.17.4",
@@ -28,7 +27,6 @@
     "unicode-properties": "quicktype/unicode-properties#dist"
   },
   "devDependencies": {
-    "@types/get-stream": "^3.0.1",
     "@types/lodash": "^4.14.72",
     "@types/node": "^8.0.19",
     "@types/pluralize": "0.0.28",
@@ -45,6 +43,8 @@
     "uglify-js": "^3.0.26",
     "watch": "^1.0.2"
   },
-  "files": ["*"],
+  "files": [
+    "*"
+  ],
   "bin": "cli.js"
 }
