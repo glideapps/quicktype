@@ -1,6 +1,6 @@
 "use strict";
 
-import { assert } from "./Support";
+import { assert, defined, panic } from "./Support";
 import * as _ from "lodash";
 
 const unicode = require("unicode-properties");
@@ -22,6 +22,18 @@ function computeAsciiMap(
     }
 
     return { charStringMap, charNoEscapeMap };
+}
+
+type CodePointPredicate = (codePoint: number) => boolean;
+
+function precomputedCodePointPredicate(p: CodePointPredicate): CodePointPredicate {
+    const asciiResults: boolean[] = [];
+    for (let cp = 0; cp < 128; cp++) {
+        asciiResults.push(p(cp));
+    }
+    return function(cp: number) {
+        return cp < 128 ? asciiResults[cp] : p(cp);
+    };
 }
 
 // FIXME: This is a copy of code in src/Data/String/Util.js
@@ -104,12 +116,18 @@ export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: strin
     };
 }
 
-export function utf16LegalizeCharacters(isLegal: (utf16Unit: number) => boolean): (s: string) => string {
-    return utf16ConcatMap(u => (isLegal(u) ? String.fromCharCode(u) : "_"));
+export function utf16LegalizeCharacters(
+    isLegal: (utf16Unit: number) => boolean,
+    replacement: string = "_"
+): (s: string) => string {
+    return utf16ConcatMap(u => (isLegal(u) ? String.fromCharCode(u) : replacement));
 }
 
-export function legalizeCharacters(isLegal: (codePoint: number) => boolean): (s: string) => string {
-    return utf32ConcatMap(u => (u <= 0xffff && isLegal(u) ? String.fromCharCode(u) : "_"));
+export function legalizeCharacters(
+    isLegal: (codePoint: number) => boolean,
+    replacement: string = "_"
+): (s: string) => string {
+    return utf32ConcatMap(u => (u <= 0xffff && isLegal(u) ? String.fromCharCode(u) : replacement));
 }
 
 export function intToHex(i: number, width: number): string {
@@ -213,6 +231,10 @@ export function isLetterOrUnderscoreOrDigit(codePoint: number): boolean {
     return isLetterOrUnderscore(codePoint) || isDigit(codePoint);
 }
 
+export function isWordCharacter(codePoint: number): boolean {
+    return isLetter(codePoint) || isDigit(codePoint);
+}
+
 function modifyFirstChar(f: (c: string) => string, s: string): string {
     if (s === "") return s;
     return f(s[0]) + s.slice(1);
@@ -258,4 +280,192 @@ export function startWithLetter(
     if (str === "") return modify("empty");
     if (isAllowedStart(str.charCodeAt(0))) return modify(str);
     return modify("the" + str);
+}
+
+export type WordInName = {
+    word: string;
+    isInitialism: boolean;
+};
+
+const fastIsWordCharacter = precomputedCodePointPredicate(isWordCharacter);
+const fastIsNonWordCharacter = precomputedCodePointPredicate(cp => !isWordCharacter(cp));
+const fastIsLowerCase = precomputedCodePointPredicate(cp => unicode.isLowerCase(cp));
+const fastIsUpperCase = precomputedCodePointPredicate(cp => unicode.isUpperCase(cp));
+const fastNonLetter = precomputedCodePointPredicate(cp => !unicode.isLowerCase(cp) && !unicode.isUpperCase(cp));
+const fastIsDigit = precomputedCodePointPredicate(isDigit);
+
+export function splitIntoWords(s: string): WordInName[] {
+    // [start, end, allUpper]
+    const intervals: [number, number, boolean][] = [];
+    let intervalStart: number | undefined = undefined;
+    const len = s.length;
+    let i = 0;
+    let lastLowerCaseIndex: number | undefined = undefined;
+
+    function atEnd(): boolean {
+        return i >= len;
+    }
+    function currentCodePoint(): number {
+        return defined(s.codePointAt(i));
+    }
+
+    function skipWhile(p: (codePoint: number) => boolean): void {
+        while (!atEnd()) {
+            const cp = currentCodePoint();
+            if (!p(cp)) break;
+            if (fastIsLowerCase(cp)) lastLowerCaseIndex = i;
+            i++;
+        }
+    }
+
+    function skipNonWord(): void {
+        skipWhile(fastIsNonWordCharacter);
+    }
+    function skipLowerCase(): void {
+        skipWhile(fastIsLowerCase);
+    }
+    function skipUpperCase(): void {
+        skipWhile(fastIsUpperCase);
+    }
+    function skipNonLetter(): void {
+        skipWhile(fastNonLetter);
+    }
+    function skipDigits(): void {
+        skipWhile(fastIsDigit);
+    }
+
+    function startInterval(): void {
+        assert(intervalStart === undefined, "Interval started before last one was committed");
+        intervalStart = i;
+    }
+
+    function commitInterval(): void {
+        if (intervalStart === undefined) {
+            return panic("Tried to commit interval without starting one");
+        }
+        assert(i > intervalStart, "Interval must be non-empty");
+        const allUpper = lastLowerCaseIndex === undefined || lastLowerCaseIndex < intervalStart;
+        intervals.push([intervalStart, i, allUpper]);
+        intervalStart = undefined;
+    }
+
+    function intervalLength(): number {
+        if (intervalStart === undefined) {
+            return panic("Tried to get interval length without starting one");
+        }
+        return i - intervalStart;
+    }
+
+    for (;;) {
+        skipNonWord();
+        if (atEnd()) break;
+
+        startInterval();
+        if (fastIsLowerCase(currentCodePoint())) {
+            skipLowerCase();
+            skipDigits();
+            commitInterval();
+        } else if (fastIsUpperCase(currentCodePoint())) {
+            skipUpperCase();
+            if (atEnd()) {
+                commitInterval();
+            } else if (intervalLength() === 1) {
+                skipLowerCase();
+                skipDigits();
+                commitInterval();
+            } else if (isDigit(currentCodePoint())) {
+                skipDigits();
+                commitInterval();
+            } else {
+                if (fastIsWordCharacter(currentCodePoint())) {
+                    i -= 1;
+                }
+                commitInterval();
+            }
+        } else {
+            skipNonLetter();
+            commitInterval();
+        }
+    }
+
+    const words: WordInName[] = [];
+    for (const [start, end, allUpper] of intervals) {
+        const word = s.slice(start, end);
+        const isInitialism = lastLowerCaseIndex !== undefined && allUpper;
+        words.push({ word, isInitialism });
+    }
+    return words;
+}
+
+export type WordStyle = (word: string) => string;
+
+export function firstUpperWordStyle(s: string): string {
+    assert(s.length > 0, "Cannot style an empty string");
+    return s[0].toUpperCase() + s.slice(1).toLowerCase();
+}
+
+export function allUpperWordStyle(s: string): string {
+    return s.toUpperCase();
+}
+
+export function allLowerWordStyle(s: string): string {
+    return s.toLowerCase();
+}
+
+function styleWord(style: WordStyle, word: string): string {
+    assert(word.length > 0, "Tried to style an empty word");
+    const result = style(word);
+    assert(result.length > 0, "Word style must not make word empty");
+    return result;
+}
+
+export function combineWords(
+    words: WordInName[],
+    removeInvalidCharacters: (s: string) => string,
+    firstWordStyle: WordStyle,
+    restWordStyle: WordStyle,
+    firstWordInitialismStyle: WordStyle,
+    restInitialismStyle: WordStyle,
+    separator: string,
+    isStartCharacter: (codePoint: number) => boolean
+): string {
+    const legalizedWords: WordInName[] = [];
+    for (const w of words) {
+        const word = removeInvalidCharacters(w.word);
+        if (word.length === 0) continue;
+        legalizedWords.push({ word, isInitialism: w.isInitialism });
+    }
+
+    if (legalizedWords.length === 0) {
+        const validEmpty = removeInvalidCharacters("empty");
+        assert(validEmpty.length > 0, 'Word "empty" is invalid in target language');
+        legalizedWords.push({ word: validEmpty, isInitialism: false });
+    }
+
+    const styledWords: string[] = [];
+    const first = legalizedWords[0];
+    const firstStyle = first.isInitialism ? firstWordInitialismStyle : firstWordStyle;
+    const styledFirstWord = styleWord(firstStyle, first.word);
+    let restWords: WordInName[];
+    if (!isStartCharacter(defined(styledFirstWord.codePointAt(0)))) {
+        const validThe = removeInvalidCharacters("the");
+        assert(validThe.length > 0, 'Word "the" is invalid in the target language');
+        const styledThe = styleWord(firstWordStyle, validThe);
+        assert(
+            isStartCharacter(defined(styledThe.codePointAt(0))),
+            'The first character of styling "the" is not a start character'
+        );
+        styledWords.push(styledThe);
+        restWords = legalizedWords;
+    } else {
+        styledWords.push(styledFirstWord);
+        restWords = legalizedWords.slice(1);
+    }
+
+    for (const w of restWords) {
+        const style = w.isInitialism ? restInitialismStyle : restWordStyle;
+        styledWords.push(styleWord(style, w.word));
+    }
+
+    return styledWords.join(separator);
 }

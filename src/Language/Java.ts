@@ -28,7 +28,12 @@ import {
     isAscii,
     isLetter,
     isDigit,
-    capitalize
+    capitalize,
+    splitIntoWords,
+    combineWords,
+    allUpperWordStyle,
+    firstUpperWordStyle,
+    allLowerWordStyle
 } from "../Strings";
 import { intercalate, defined, assertNever, nonNull, assert } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
@@ -155,12 +160,24 @@ function isPartCharacter(codePoint: number): boolean {
     return isStartCharacter(codePoint) || (isAscii(codePoint) && isDigit(codePoint));
 }
 
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
+const legalizeName = utf16LegalizeCharacters(isPartCharacter, "");
 
+// FIXME: Handle initialisms consistently.  In particular, that means that
+// we have to use namers to produce the getter and setter names - we can't
+// just capitalize and concatenate.
+// https://stackoverflow.com/questions/8277355/naming-convention-for-upper-case-abbreviations
 function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, original: string): string {
-    const legalized = legalizeName(original);
-    const cased = upperUnderscore ? upperUnderscoreCase(legalized) : pascalCase(legalized);
-    return startWithLetter(isStartCharacter, startWithUpper, cased);
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        upperUnderscore ? allUpperWordStyle : startWithUpper ? firstUpperWordStyle : allLowerWordStyle,
+        upperUnderscore ? allUpperWordStyle : firstUpperWordStyle,
+        upperUnderscore || startWithUpper ? allUpperWordStyle : allLowerWordStyle,
+        allUpperWordStyle,
+        upperUnderscore ? "_" : "",
+        isStartCharacter
+    );
 }
 
 class JavaRenderer extends ConvenienceRenderer {

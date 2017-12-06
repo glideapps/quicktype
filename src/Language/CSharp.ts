@@ -17,7 +17,15 @@ import {
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated } from "../Source";
-import { utf16LegalizeCharacters, pascalCase, startWithLetter, utf16StringEscape } from "../Strings";
+import {
+    utf16LegalizeCharacters,
+    pascalCase,
+    startWithLetter,
+    utf16StringEscape,
+    splitIntoWords,
+    combineWords,
+    firstUpperWordStyle
+} from "../Strings";
 import { intercalate, defined, assertNever, assert, nonNull, panic } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { RenderResult } from "../Renderer";
@@ -99,12 +107,20 @@ function isPartCharacter(utf16Unit: number): boolean {
     return isStartCharacter(utf16Unit);
 }
 
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
+const legalizeName = utf16LegalizeCharacters(isPartCharacter, "");
 
 function csNameStyle(original: string): string {
-    const legalized = legalizeName(original);
-    const pascaled = pascalCase(legalized);
-    return startWithLetter(isStartCharacter, true, pascaled);
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        firstUpperWordStyle,
+        firstUpperWordStyle,
+        firstUpperWordStyle,
+        firstUpperWordStyle,
+        "",
+        isStartCharacter
+    );
 }
 
 function isValueType(t: Type): boolean {
