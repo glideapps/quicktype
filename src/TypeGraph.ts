@@ -4,7 +4,7 @@ import { Map, List, Set, OrderedSet, Collection } from "immutable";
 
 import { Type, NamedType, separateNamedTypes, SeparatedNamedTypes } from "./Type";
 import { defined, assert } from "./Support";
-import { GraphRewriteBuilder, TypeRef, TypeBuilder } from "./TypeBuilder";
+import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
 
 export class TypeGraph {
     private _typeBuilder?: TypeBuilder;
@@ -88,9 +88,10 @@ export class TypeGraph {
     // graph, but return types in the new graph.  Recursive types must be handled
     // carefully.
     rewrite = (
+        stringTypeMapping: StringTypeMapping,
         replacementGroups: Type[][],
         replacer: (typesToReplace: Set<Type>, builder: GraphRewriteBuilder) => TypeRef
     ): TypeGraph => {
-        return new GraphRewriteBuilder(this, replacementGroups, replacer).finish();
+        return new GraphRewriteBuilder(this, stringTypeMapping, replacementGroups, replacer).finish();
     };
 }

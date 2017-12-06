@@ -15,7 +15,7 @@ import {
     ClassType,
     nullableFromUnion,
     removeNullFromUnion,
-    matchType
+    matchTypeExhaustive
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 
@@ -30,6 +30,7 @@ import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption } from "../RendererOptions";
+import { StringTypeMapping } from "../TypeBuilder";
 
 const unicode = require("unicode-properties");
 
@@ -38,6 +39,10 @@ export default class SimpleTypesTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Simple Types", ["types"], "txt", [SimpleTypesTargetLanguage.declareUnionsOption.definition]);
+    }
+
+    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
+        return { date: "date", time: "time", dateTime: "date-time" };
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
@@ -92,7 +97,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     }
 
     sourceFor = (t: Type): Sourcelike => {
-        return matchType<Sourcelike>(
+        return matchTypeExhaustive<Sourcelike>(
             t,
             anyType => "Any",
             nullType => "Null",
@@ -114,7 +119,10 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
                 } else {
                     return this.nameForNamedType(unionType);
                 }
-            }
+            },
+            dateType => "Date",
+            timeType => "Time",
+            dateTimeType => "DateTime"
         );
     };
 

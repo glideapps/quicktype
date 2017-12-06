@@ -5,6 +5,7 @@ import { RenderResult } from "./Renderer";
 import { OptionDefinition } from "./RendererOptions";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
 import { RendererOptions } from "./index";
+import { StringTypeMapping } from "./TypeBuilder";
 
 export abstract class TargetLanguage {
     constructor(
@@ -23,8 +24,17 @@ export abstract class TargetLanguage {
         return "    ";
     }
 
-    get supportsEnums(): boolean {
-        return true;
+    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
+        return {};
+    }
+
+    get stringTypeMapping(): StringTypeMapping {
+        const partial = this.partialStringTypeMapping;
+        return {
+            date: partial.date || "string",
+            time: partial.time || "string",
+            dateTime: partial.dateTime || "string"
+        };
     }
 
     protected abstract renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult;

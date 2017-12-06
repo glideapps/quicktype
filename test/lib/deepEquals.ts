@@ -1,3 +1,6 @@
+import * as moment from "moment";
+import { Moment } from "moment";
+
 function pathToString(path: string[]): string {
   return "." + path.join(".");
 }
@@ -5,6 +8,26 @@ function pathToString(path: string[]): string {
 declare namespace Math {
   // TypeScript cannot find this function
   function fround(n: number): number;
+}
+
+function tryParseMoment(s: string): [Moment | undefined, boolean] {
+  let m = moment(s);
+  if (m.isValid()) return [m, false];
+  m = moment(s, "HH:mm:ss.SSZ");
+  if (m.isValid()) return [m, true];
+  return [undefined, false];
+}
+
+function momentsEqual(x: Moment, y: Moment, isTime: boolean): boolean {
+  if (!isTime) {
+    return x.isSame(y);
+  }
+  return (
+    x.hour() === y.hour() &&
+    x.minute() === y.minute() &&
+    x.second() === y.second() &&
+    x.millisecond() === y.millisecond()
+  );
 }
 
 // https://stackoverflow.com/questions/1068834/object-comparison-in-javascript
@@ -35,14 +58,24 @@ export default function deepEquals(
     return true;
   }
 
-  if (x instanceof String && y instanceof String) {
-    if (x.toString() !== y.toString()) {
-      console.error(
-        `Number or string not equal at path ${pathToString(path)}.`
-      );
-      return false;
+  if (typeof x === "string" && typeof y === "string") {
+    if (x === y) return true;
+    const [xMoment, isTime] = tryParseMoment(x);
+    const [yMoment, _] = tryParseMoment(y);
+    if (
+      xMoment !== undefined &&
+      yMoment !== undefined &&
+      momentsEqual(xMoment, yMoment, isTime)
+    ) {
+      return true;
     }
-    return true;
+    console.error(`Strings not equal at path ${pathToString(path)}.`);
+  }
+
+  if (x instanceof String && y instanceof String) {
+    if (x.toString() === y.toString()) return true;
+    console.error(`Number or string not equal at path ${pathToString(path)}.`);
+    return false;
   }
 
   // At last checking prototypes as good as we can
@@ -55,9 +88,9 @@ export default function deepEquals(
   // compare it regularly.
   if (x.constructor instanceof String && x.constructor !== y.constructor) {
     console.error(
-      `Not the same constructor at path ${pathToString(
-        path
-      )}: should be ${x.constructor} but is ${y.constructor}.`
+      `Not the same constructor at path ${pathToString(path)}: should be ${
+        x.constructor
+      } but is ${y.constructor}.`
     );
     return false;
   }
@@ -132,26 +165,11 @@ export default function deepEquals(
       return false;
     }
 
-    switch (typeof x[p]) {
-      case "object":
-        path.push(p);
-        if (!deepEquals(x[p], y[p], allowMissingNull, path)) {
-          return false;
-        }
-        path.pop();
-        break;
-
-      default:
-        if (x[p] !== y[p]) {
-          console.error(
-            `Non-object properties ${p} are not equal at path ${pathToString(
-              path
-            )}.`
-          );
-          return false;
-        }
-        break;
+    path.push(p);
+    if (!deepEquals(x[p], y[p], allowMissingNull, path)) {
+      return false;
     }
+    path.pop();
   }
 
   return true;

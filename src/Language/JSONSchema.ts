@@ -3,17 +3,22 @@
 import { Map, Collection } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, NamedType, UnionType, matchType, ClassType } from "../Type";
+import { Type, NamedType, UnionType, matchType, ClassType, matchTypeExhaustive } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
 import { legalizeCharacters, pascalCase } from "../Strings";
 import { defined, assert } from "../Support";
+import { StringTypeMapping } from "../TypeBuilder";
 
 export default class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
         super("JSON Schema", ["schema", "json-schema"], "schema", []);
+    }
+
+    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
+        return { date: "date", time: "time", dateTime: "date-time" };
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
@@ -75,7 +80,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
     };
 
     private schemaForType = (t: Type): Schema => {
-        return matchType<{ [name: string]: any }>(
+        return matchTypeExhaustive<{ [name: string]: any }>(
             t,
             anyType => ({}),
             nullType => ({ type: "null" }),
@@ -91,7 +96,10 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
                 const schema = this.makeOneOf(unionType.sortedMembers);
                 schema.title = unionType.combinedName;
                 return schema;
-            }
+            },
+            dateType => ({ type: "string", format: "date" }),
+            timeType => ({ type: "string", format: "time" }),
+            dateTimeType => ({ type: "string", format: "date-time" })
         );
     };
 

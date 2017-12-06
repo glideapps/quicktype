@@ -19,6 +19,7 @@
     "graphql": "^0.11.7",
     "immutable": "^4.0.0-rc.9",
     "lodash": "^4.17.4",
+    "moment": "^2.19.3",
     "node-fetch": "^1.7.1",
     "pluralize": "^7.0.0",
     "stream-json": "0.5.2",
