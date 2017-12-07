@@ -19,15 +19,16 @@ import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import {
     legalizeCharacters,
-    pascalCase,
-    snakeCase,
-    camelCase,
-    upperUnderscoreCase,
-    startWithLetter,
     isAscii,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
-    stringEscape
+    stringEscape,
+    splitIntoWords,
+    combineWords,
+    WordStyle,
+    firstUpperWordStyle,
+    allUpperWordStyle,
+    allLowerWordStyle
 } from "../Strings";
 import { defined, assertNever } from "../Support";
 import { RenderResult } from "../Renderer";
@@ -101,34 +102,48 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
 
 function cppNameStyle(namingStyle: NamingStyle): (rawName: string) => string {
-    let caser: (uncased: string) => string;
-    let upper: boolean;
+    let separator: string;
+    let firstWordStyle: WordStyle;
+    let restWordStyle: WordStyle;
+    let firstWordInitialismStyle: WordStyle;
+    let restInitialismStyle: WordStyle;
 
+    if (namingStyle === "pascal" || namingStyle === "camel") {
+        separator = "";
+        restWordStyle = firstUpperWordStyle;
+        restInitialismStyle = allUpperWordStyle;
+    } else {
+        separator = "_";
+    }
     switch (namingStyle) {
         case "pascal":
-            caser = pascalCase;
-            upper = true;
+            firstWordStyle = firstWordInitialismStyle = firstUpperWordStyle;
             break;
         case "camel":
-            caser = camelCase;
-            upper = false;
+            firstWordStyle = firstWordInitialismStyle = allLowerWordStyle;
             break;
         case "underscore":
-            caser = snakeCase;
-            upper = false;
+            firstWordStyle = restWordStyle = firstWordInitialismStyle = restInitialismStyle = allLowerWordStyle;
             break;
         case "upper-underscore":
-            caser = upperUnderscoreCase;
-            upper = true;
+            firstWordStyle = restWordStyle = firstWordInitialismStyle = restInitialismStyle = allUpperWordStyle;
             break;
         default:
             return assertNever(namingStyle);
     }
 
     return (original: string) => {
-        const legalized = legalizeName(original);
-        const cased = caser(legalized);
-        return startWithLetter(isLetterOrUnderscore, upper, cased);
+        const words = splitIntoWords(original);
+        return combineWords(
+            words,
+            legalizeName,
+            firstWordStyle,
+            restWordStyle,
+            firstWordInitialismStyle,
+            restInitialismStyle,
+            separator,
+            isLetterOrUnderscore
+        );
     };
 }
 

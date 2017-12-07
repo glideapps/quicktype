@@ -12,7 +12,15 @@ import {
     EnumType
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { utf16LegalizeCharacters, pascalCase, camelCase, startWithLetter, stringEscape } from "../Strings";
+import {
+    utf16LegalizeCharacters,
+    stringEscape,
+    splitIntoWords,
+    combineWords,
+    firstUpperWordStyle,
+    allUpperWordStyle,
+    camelCase
+} from "../Strings";
 import { intercalate, panic } from "../Support";
 
 import { Sourcelike, modifySource } from "../Source";
@@ -59,7 +67,17 @@ function isPartCharacter(utf16Unit: number): boolean {
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
 function typeNameStyle(original: string): string {
-    return startWithLetter(isStartCharacter, true, pascalCase(legalizeName(original)));
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        firstUpperWordStyle,
+        firstUpperWordStyle,
+        allUpperWordStyle,
+        allUpperWordStyle,
+        "",
+        isStartCharacter
+    );
 }
 
 function propertyNameStyle(original: string): string {

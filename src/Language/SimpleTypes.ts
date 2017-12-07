@@ -20,7 +20,14 @@ import {
 import { TypeGraph } from "../TypeGraph";
 
 import { Source, Sourcelike } from "../Source";
-import { utf16LegalizeCharacters, pascalCase, startWithLetter, utf16StringEscape } from "../Strings";
+import {
+    legalizeCharacters,
+    splitIntoWords,
+    combineWords,
+    firstUpperWordStyle,
+    allUpperWordStyle,
+    allLowerWordStyle
+} from "../Strings";
 import { intercalate, defined } from "../Support";
 
 import { Namer, Namespace, Name, DependencyName, SimpleName, FixedName, keywordNamespace } from "../Naming";
@@ -62,10 +69,20 @@ function isPartCharacter(utf16Unit: number): boolean {
     return _.includes(["Nd", "Pc", "Mn", "Mc"], category) || isStartCharacter(utf16Unit);
 }
 
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
+const legalizeName = legalizeCharacters(isPartCharacter);
 
 function simpleNameStyle(original: string, uppercase: boolean): string {
-    return startWithLetter(isStartCharacter, uppercase, pascalCase(legalizeName(original)));
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        uppercase ? firstUpperWordStyle : allLowerWordStyle,
+        firstUpperWordStyle,
+        uppercase ? allUpperWordStyle : allLowerWordStyle,
+        allUpperWordStyle,
+        "",
+        isStartCharacter
+    );
 }
 
 class SimpleTypesRenderer extends ConvenienceRenderer {

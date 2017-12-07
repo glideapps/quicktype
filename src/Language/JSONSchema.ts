@@ -8,7 +8,7 @@ import { TypeGraph } from "../TypeGraph";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
-import { legalizeCharacters, pascalCase } from "../Strings";
+import { legalizeCharacters, splitIntoWords, combineWords, firstUpperWordStyle, allUpperWordStyle } from "../Strings";
 import { defined, assert } from "../Support";
 import { StringTypeMapping } from "../TypeBuilder";
 
@@ -32,8 +32,17 @@ const namingFunction = funPrefixNamer(jsonNameStyle);
 const legalizeName = legalizeCharacters(cp => cp >= 32 && cp < 128 && cp !== 0x2f /* slash */);
 
 function jsonNameStyle(original: string): string {
-    const legalized = legalizeName(original);
-    return pascalCase(legalized);
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        firstUpperWordStyle,
+        firstUpperWordStyle,
+        allUpperWordStyle,
+        allUpperWordStyle,
+        "",
+        _ => true
+    );
 }
 
 type Schema = { [name: string]: any };
