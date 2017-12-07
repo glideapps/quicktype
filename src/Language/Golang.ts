@@ -18,11 +18,13 @@ import { TypeGraph } from "../TypeGraph";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,
-    pascalCase,
-    startWithLetter,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
-    stringEscape
+    stringEscape,
+    splitIntoWords,
+    combineWords,
+    firstUpperWordStyle,
+    allUpperWordStyle
 } from "../Strings";
 import { defined } from "../Support";
 import { StringOption } from "../RendererOptions";
@@ -56,9 +58,17 @@ const namingFunction = funPrefixNamer(goNameStyle);
 const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
 
 function goNameStyle(original: string): string {
-    const legalized = legalizeName(original);
-    const pascaled = pascalCase(legalized);
-    return startWithLetter(isLetterOrUnderscore, true, pascaled);
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        firstUpperWordStyle,
+        firstUpperWordStyle,
+        allUpperWordStyle,
+        allUpperWordStyle,
+        "",
+        isLetterOrUnderscore
+    );
 }
 
 const primitiveValueTypeKinds: TypeKind[] = ["integer", "double", "bool", "string"];

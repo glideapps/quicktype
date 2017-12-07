@@ -70,6 +70,14 @@ export function utf16ConcatMap(mapper: (utf16Unit: number) => string): (s: strin
     };
 }
 
+function isHighSurrogate(cc: number): boolean {
+    return cc >= 0xd800 && cc <= 0xdbff;
+}
+
+function isLowSurrogate(cc: number): boolean {
+    return cc >= 0xdc00 && cc <= 0xdfff;
+}
+
 export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: string) => string {
     const { charStringMap, charNoEscapeMap } = computeAsciiMap(mapper);
 
@@ -83,14 +91,11 @@ export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: strin
                 if (cs === null) cs = [];
                 cs.push(s.substring(start, i));
 
-                if (cc >= 0xd800 && cc <= 0xdbff) {
+                if (isHighSurrogate(cc)) {
                     const highSurrogate = cc;
                     i++;
                     const lowSurrogate = s.charCodeAt(i);
-                    assert(
-                        lowSurrogate >= 0xdc00 && lowSurrogate <= 0xdfff,
-                        "High surrogate not followed by low surrogate"
-                    );
+                    assert(isLowSurrogate(lowSurrogate), "High surrogate not followed by low surrogate");
                     const highBits = highSurrogate - 0xd800;
                     const lowBits = lowSurrogate - 0xdc00;
                     cc = 0x10000 + lowBits + (highBits << 10);
@@ -116,18 +121,12 @@ export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: strin
     };
 }
 
-export function utf16LegalizeCharacters(
-    isLegal: (utf16Unit: number) => boolean,
-    replacement: string = "_"
-): (s: string) => string {
-    return utf16ConcatMap(u => (isLegal(u) ? String.fromCharCode(u) : replacement));
+export function utf16LegalizeCharacters(isLegal: (utf16Unit: number) => boolean): (s: string) => string {
+    return utf16ConcatMap(u => (isLegal(u) ? String.fromCharCode(u) : ""));
 }
 
-export function legalizeCharacters(
-    isLegal: (codePoint: number) => boolean,
-    replacement: string = "_"
-): (s: string) => string {
-    return utf32ConcatMap(u => (u <= 0xffff && isLegal(u) ? String.fromCharCode(u) : replacement));
+export function legalizeCharacters(isLegal: (codePoint: number) => boolean): (s: string) => string {
+    return utf32ConcatMap(u => (u <= 0xffff && isLegal(u) ? String.fromCharCode(u) : ""));
 }
 
 export function intToHex(i: number, width: number): string {
@@ -259,18 +258,6 @@ export function camelCase(str: string): string {
     return decapitalize(pascalCase(str));
 }
 
-export function snakeCase(str: string): string {
-    const separated = str.replace(/([^A-Z])([A-Z])/g, "$1_$2");
-    const words = separated.split(wordSeparatorRegex).map(decapitalize);
-    return words.join("_");
-}
-
-export function upperUnderscoreCase(str: string): string {
-    const separated = str.replace(/([^A-Z])([A-Z])/g, "$1_$2");
-    const words = separated.split(wordSeparatorRegex).map(s => s.toUpperCase());
-    return words.join("_");
-}
-
 export function startWithLetter(
     isAllowedStart: (codePoint: number) => boolean, // FIXME: technically, this operates on UTF16 units
     upper: boolean,
@@ -344,6 +331,14 @@ export function splitIntoWords(s: string): WordInName[] {
             return panic("Tried to commit interval without starting one");
         }
         assert(i > intervalStart, "Interval must be non-empty");
+        // FIXME: This is a hack to avoid splitting up surrogates.  We shouldn't
+        // look at surrogates individually in the first place.  When we
+        // encounter a high surrogate we have to combine it with the low
+        // surrogate and then do the logic on the code point.  Right now we're
+        // only operating on UTF16 char codes, which is wrong.
+        if (!atEnd() && isLowSurrogate(currentCodePoint())) {
+            i += 1;
+        }
         const allUpper = lastLowerCaseIndex === undefined || lastLowerCaseIndex < intervalStart;
         intervals.push([intervalStart, i, allUpper]);
         intervalStart = undefined;

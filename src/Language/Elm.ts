@@ -12,12 +12,15 @@ import { Namer, Name, DependencyName, funPrefixNamer, AssociatedName, Namespace 
 import {
     legalizeCharacters,
     isLetterOrUnderscoreOrDigit,
-    pascalCase,
-    startWithLetter,
     isLetterOrUnderscore,
     decapitalize,
     stringEscape,
-    isAscii
+    isAscii,
+    splitIntoWords,
+    combineWords,
+    firstUpperWordStyle,
+    allLowerWordStyle,
+    allUpperWordStyle
 } from "../Strings";
 import { defined, intercalate } from "../Support";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -85,10 +88,17 @@ const forbiddenNames = [
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
 
 function elmNameStyle(original: string, upper: boolean): string {
-    const legalized = legalizeName(original);
-    const pascaled = pascalCase(legalized);
-    const result = startWithLetter(isLetterOrUnderscore, upper, pascaled);
-    return result;
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        upper ? firstUpperWordStyle : allLowerWordStyle,
+        firstUpperWordStyle,
+        upper ? allUpperWordStyle : allLowerWordStyle,
+        allUpperWordStyle,
+        "",
+        isLetterOrUnderscore
+    );
 }
 
 const upperNamingFunction = funPrefixNamer(n => elmNameStyle(n, true));

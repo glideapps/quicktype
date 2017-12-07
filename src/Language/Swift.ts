@@ -22,9 +22,6 @@ import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
-    startWithLetter,
-    pascalCase,
-    camelCase,
     isLetterOrUnderscore,
     isNumeric,
     isDigit,
@@ -32,7 +29,13 @@ import {
     escapeNonPrintableMapper,
     isPrintable,
     intToHex,
-    decapitalize
+    decapitalize,
+    splitIntoWords,
+    combineWords,
+    firstUpperWordStyle,
+    allLowerWordStyle,
+    allUpperWordStyle,
+    camelCase
 } from "../Strings";
 import { defined } from "../Support";
 
@@ -156,7 +159,9 @@ const keywords = [
     "convertArray",
     "convertOptional",
     "convertDict",
-    "convertDouble"
+    "convertDouble",
+    "jsonString",
+    "jsonData"
 ];
 
 function isPartCharacter(codePoint: number): boolean {
@@ -170,9 +175,17 @@ function isStartCharacter(codePoint: number): boolean {
 const legalizeName = legalizeCharacters(isPartCharacter);
 
 function swiftNameStyle(isUpper: boolean, original: string): string {
-    const legalized = legalizeName(original);
-    const cameled = pascalCase(legalized);
-    return startWithLetter(isStartCharacter, isUpper, cameled);
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        isUpper ? firstUpperWordStyle : allLowerWordStyle,
+        firstUpperWordStyle,
+        isUpper ? allUpperWordStyle : allLowerWordStyle,
+        allUpperWordStyle,
+        "",
+        isStartCharacter
+    );
 }
 
 function unicodeEscape(codePoint: number): string {

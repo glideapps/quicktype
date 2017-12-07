@@ -19,9 +19,6 @@ import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     utf16LegalizeCharacters,
-    pascalCase,
-    upperUnderscoreCase,
-    startWithLetter,
     escapeNonPrintableMapper,
     utf16ConcatMap,
     standardUnicodeHexEscape,
@@ -160,7 +157,7 @@ function isPartCharacter(codePoint: number): boolean {
     return isStartCharacter(codePoint) || (isAscii(codePoint) && isDigit(codePoint));
 }
 
-const legalizeName = utf16LegalizeCharacters(isPartCharacter, "");
+const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
 // FIXME: Handle initialisms consistently.  In particular, that means that
 // we have to use namers to produce the getter and setter names - we can't

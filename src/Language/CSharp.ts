@@ -19,8 +19,6 @@ import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import {
     utf16LegalizeCharacters,
-    pascalCase,
-    startWithLetter,
     utf16StringEscape,
     splitIntoWords,
     combineWords,
@@ -107,7 +105,7 @@ function isPartCharacter(utf16Unit: number): boolean {
     return isStartCharacter(utf16Unit);
 }
 
-const legalizeName = utf16LegalizeCharacters(isPartCharacter, "");
+const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
 function csNameStyle(original: string): string {
     const words = splitIntoWords(original);
