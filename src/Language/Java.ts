@@ -159,7 +159,7 @@ function isPartCharacter(codePoint: number): boolean {
 
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
-// FIXME: Handle initialisms consistently.  In particular, that means that
+// FIXME: Handle acronyms consistently.  In particular, that means that
 // we have to use namers to produce the getter and setter names - we can't
 // just capitalize and concatenate.
 // https://stackoverflow.com/questions/8277355/naming-convention-for-upper-case-abbreviations

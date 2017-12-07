@@ -105,28 +105,28 @@ function cppNameStyle(namingStyle: NamingStyle): (rawName: string) => string {
     let separator: string;
     let firstWordStyle: WordStyle;
     let restWordStyle: WordStyle;
-    let firstWordInitialismStyle: WordStyle;
-    let restInitialismStyle: WordStyle;
+    let firstWordAcronymStyle: WordStyle;
+    let restAcronymStyle: WordStyle;
 
     if (namingStyle === "pascal" || namingStyle === "camel") {
         separator = "";
         restWordStyle = firstUpperWordStyle;
-        restInitialismStyle = allUpperWordStyle;
+        restAcronymStyle = allUpperWordStyle;
     } else {
         separator = "_";
     }
     switch (namingStyle) {
         case "pascal":
-            firstWordStyle = firstWordInitialismStyle = firstUpperWordStyle;
+            firstWordStyle = firstWordAcronymStyle = firstUpperWordStyle;
             break;
         case "camel":
-            firstWordStyle = firstWordInitialismStyle = allLowerWordStyle;
+            firstWordStyle = firstWordAcronymStyle = allLowerWordStyle;
             break;
         case "underscore":
-            firstWordStyle = restWordStyle = firstWordInitialismStyle = restInitialismStyle = allLowerWordStyle;
+            firstWordStyle = restWordStyle = firstWordAcronymStyle = restAcronymStyle = allLowerWordStyle;
             break;
         case "upper-underscore":
-            firstWordStyle = restWordStyle = firstWordInitialismStyle = restInitialismStyle = allUpperWordStyle;
+            firstWordStyle = restWordStyle = firstWordAcronymStyle = restAcronymStyle = allUpperWordStyle;
             break;
         default:
             return assertNever(namingStyle);
@@ -139,8 +139,8 @@ function cppNameStyle(namingStyle: NamingStyle): (rawName: string) => string {
             legalizeName,
             firstWordStyle,
             restWordStyle,
-            firstWordInitialismStyle,
-            restInitialismStyle,
+            firstWordAcronymStyle,
+            restAcronymStyle,
             separator,
             isLetterOrUnderscore
         );

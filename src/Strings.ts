@@ -1,6 +1,9 @@
 "use strict";
 
+import { Set } from "immutable";
+
 import { assert, defined, panic } from "./Support";
+import { acronyms } from "./Acronyms";
 import * as _ from "lodash";
 
 const unicode = require("unicode-properties");
@@ -269,9 +272,11 @@ export function startWithLetter(
     return modify("the" + str);
 }
 
+const knownAcronyms = Set(acronyms);
+
 export type WordInName = {
     word: string;
-    isInitialism: boolean;
+    isAcronym: boolean;
 };
 
 const fastIsWordCharacter = precomputedCodePointPredicate(isWordCharacter);
@@ -386,8 +391,8 @@ export function splitIntoWords(s: string): WordInName[] {
     const words: WordInName[] = [];
     for (const [start, end, allUpper] of intervals) {
         const word = s.slice(start, end);
-        const isInitialism = lastLowerCaseIndex !== undefined && allUpper;
-        words.push({ word, isInitialism });
+        const isAcronym = (lastLowerCaseIndex !== undefined && allUpper) || knownAcronyms.has(word);
+        words.push({ word, isAcronym });
     }
     return words;
 }
@@ -419,8 +424,8 @@ export function combineWords(
     removeInvalidCharacters: (s: string) => string,
     firstWordStyle: WordStyle,
     restWordStyle: WordStyle,
-    firstWordInitialismStyle: WordStyle,
-    restInitialismStyle: WordStyle,
+    firstWordAcronymStyle: WordStyle,
+    restAcronymStyle: WordStyle,
     separator: string,
     isStartCharacter: (codePoint: number) => boolean
 ): string {
@@ -428,18 +433,18 @@ export function combineWords(
     for (const w of words) {
         const word = removeInvalidCharacters(w.word);
         if (word.length === 0) continue;
-        legalizedWords.push({ word, isInitialism: w.isInitialism });
+        legalizedWords.push({ word, isAcronym: w.isAcronym });
     }
 
     if (legalizedWords.length === 0) {
         const validEmpty = removeInvalidCharacters("empty");
         assert(validEmpty.length > 0, 'Word "empty" is invalid in target language');
-        legalizedWords.push({ word: validEmpty, isInitialism: false });
+        legalizedWords.push({ word: validEmpty, isAcronym: false });
     }
 
     const styledWords: string[] = [];
     const first = legalizedWords[0];
-    const firstStyle = first.isInitialism ? firstWordInitialismStyle : firstWordStyle;
+    const firstStyle = first.isAcronym ? firstWordAcronymStyle : firstWordStyle;
     const styledFirstWord = styleWord(firstStyle, first.word);
     let restWords: WordInName[];
     if (!isStartCharacter(defined(styledFirstWord.codePointAt(0)))) {
@@ -458,7 +463,7 @@ export function combineWords(
     }
 
     for (const w of restWords) {
-        const style = w.isInitialism ? restInitialismStyle : restWordStyle;
+        const style = w.isAcronym ? restAcronymStyle : restWordStyle;
         styledWords.push(styleWord(style, w.word));
     }
 
