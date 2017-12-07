@@ -1,16 +1,6 @@
 import * as _ from "lodash";
 
-import {
-    Type,
-    ArrayType,
-    MapType,
-    UnionType,
-    NamedType,
-    ClassType,
-    nullableFromUnion,
-    matchType,
-    EnumType
-} from "../Type";
+import { Type, ArrayType, UnionType, NamedType, ClassType, nullableFromUnion, matchType, EnumType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import {
     utf16LegalizeCharacters,
@@ -21,11 +11,11 @@ import {
     allUpperWordStyle,
     camelCase
 } from "../Strings";
-import { intercalate, panic } from "../Support";
+import { intercalate } from "../Support";
 
 import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";
-import { Renderer, RenderResult } from "../Renderer";
+import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption } from "../RendererOptions";
@@ -142,12 +132,12 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     sourceFor = (t: Type): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType => "any",
-            nullType => "null",
-            boolType => "boolean",
-            integerType => "number",
-            doubleType => "number",
-            stringType => "string",
+            _anyType => "any",
+            _nullType => "null",
+            _boolType => "boolean",
+            _integerType => "number",
+            _doubleType => "number",
+            _stringType => "string",
             arrayType => {
                 const itemType = this.sourceFor(arrayType.items);
                 if (this.inlineUnions && arrayType.items instanceof UnionType) {
@@ -180,12 +170,12 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     typeMapTypeFor = (t: Type): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType => `undefined`,
-            nullType => `undefined`,
-            boolType => `false`,
-            integerType => `0`,
-            doubleType => `3.14`,
-            stringType => `""`,
+            _anyType => `undefined`,
+            _nullType => `undefined`,
+            _boolType => `false`,
+            _integerType => `0`,
+            _doubleType => `3.14`,
+            _stringType => `""`,
             arrayType => ["A(", this.typeMapTypeFor(arrayType.items), ")"],
             classType => ['O("', this.nameForNamedType(classType), '")'],
             mapType => ["M(", this.typeMapTypeFor(mapType.values), ")"],
@@ -207,7 +197,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         this.emitBlock("const typeMap: any =", ";", () => {
             this.forEachClass("none", (t, name) => {
                 this.emitBlock(['"', name, '":'], ",", () => {
-                    this.forEachProperty(t, "none", (propName, propJsonName, propType) => {
+                    this.forEachProperty(t, "none", (propName, _propJsonName, propType) => {
                         this.emitLine(propName, ": ", this.typeMapTypeFor(propType), ",");
                     });
                 });
@@ -227,7 +217,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     private emitClass = (c: ClassType, className: Name) => {
         this.emitBlock(["export interface ", className], "", () => {
             const table: Sourcelike[][] = [];
-            this.forEachProperty(c, "none", (name, jsonName, t) => {
+            this.forEachProperty(c, "none", (name, _jsonName, t) => {
                 const nullable = t instanceof UnionType && nullableFromUnion(t);
                 table.push([[name, nullable ? "?" : "", ": "], [this.sourceFor(nullable || t), ";"]]);
             });
@@ -378,7 +368,7 @@ function O(className: string) {
             const topLevelNames: Sourcelike[] = [];
             this.forEachTopLevel(
                 "none",
-                (t, name) => {
+                (_t, name) => {
                     topLevelNames.push(", ", name);
                 },
                 t => t.isNamedType()
@@ -386,7 +376,7 @@ function O(className: string) {
 
             this.emitLine("//   import { Convert", topLevelNames, ' } from "./file";');
             this.emitLine("//");
-            this.forEachTopLevel("none", (t, name) => {
+            this.forEachTopLevel("none", (_t, name) => {
                 const camelCaseName = modifySource(camelCase, name);
                 this.emitLine("//   const ", camelCaseName, " = Convert.to", name, "(json);");
             });

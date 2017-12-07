@@ -3,7 +3,7 @@
 import { Map, Set, OrderedMap, OrderedSet } from "immutable";
 
 import { ClassType, Type, nonNullTypeCases } from "./Type";
-import { TypeGraphBuilder, GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 

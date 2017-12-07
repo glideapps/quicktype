@@ -1,10 +1,8 @@
 "use strict";
 
-import { Set, OrderedSet, List, Map, Collection, Range } from "immutable";
+import { Set, OrderedSet, List, Map, Collection } from "immutable";
 import stringHash = require("string-hash");
 
-import { Renderer } from "./Renderer";
-import { decapitalize } from "./Strings";
 import { defined, nonNull, assert, panic } from "./Support";
 
 export class Namespace {
@@ -251,7 +249,7 @@ export class FixedName extends Name {
         return List();
     }
 
-    addAssociate(associate: AssociatedName): never {
+    addAssociate(_: AssociatedName): never {
         return panic("Cannot add associates to fixed names");
     }
 
@@ -259,7 +257,7 @@ export class FixedName extends Name {
         return this._fixedName;
     }
 
-    proposeUnstyledNames(names?: Map<Name, string>): OrderedSet<string> {
+    proposeUnstyledNames(_?: Map<Name, string>): OrderedSet<string> {
         throw "Only fixedName should be called on FixedName.";
     }
 
@@ -277,7 +275,7 @@ export class SimpleName extends Name {
         return List();
     }
 
-    proposeUnstyledNames(names?: Map<Name, string>): OrderedSet<string> {
+    proposeUnstyledNames(_?: Map<Name, string>): OrderedSet<string> {
         return this._unstyledNames;
     }
 
@@ -295,7 +293,7 @@ export class AssociatedName extends Name {
         return List([this._sponsor]);
     }
 
-    proposeUnstyledNames(names?: Map<Name, string>): never {
+    proposeUnstyledNames(_?: Map<Name, string>): never {
         return panic("AssociatedName must be assigned via its sponsor");
     }
 }
@@ -360,7 +358,7 @@ class NamingContext {
         return namespace.forbiddenNameds.every((n: Name) => this.names.has(n));
     };
 
-    isConflicting = (named: Name, namedNamespace: Namespace, proposed: string): boolean => {
+    isConflicting = (namedNamespace: Namespace, proposed: string): boolean => {
         const namedsForProposed = this._namedsForName.get(proposed);
         // If the name is not assigned at all, there is no conflict.
         if (namedsForProposed === undefined) return false;
@@ -377,7 +375,7 @@ class NamingContext {
 
     assign = (named: Name, namedNamespace: Namespace, name: string): void => {
         assert(!this.names.has(named), "Named assigned twice");
-        assert(!this.isConflicting(named, namedNamespace, name), "Assigned name conflicts");
+        assert(!this.isConflicting(namedNamespace, name), "Assigned name conflicts");
         this.names = this.names.set(named, name);
         let namedsForName = this._namedsForName.get(name);
         if (namedsForName === undefined) {
@@ -432,7 +430,7 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
             const byProposed = namedsForNamingFunction.groupBy((n: Name) =>
                 namer.nameStyle(n.firstProposedName(ctx.names))
             );
-            byProposed.forEach((nameds: Collection<any, Name>, proposed: string) => {
+            byProposed.forEach((nameds: Collection<any, Name>, _: string) => {
                 // 3. Use each set's naming function to name its members.
 
                 const names = namer.name(ctx.names, forbiddenNames, nameds);

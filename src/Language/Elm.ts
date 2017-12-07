@@ -8,7 +8,7 @@ import { NamedType, Type, matchType, nullableFromUnion, ClassType, UnionType, En
 import { TypeGraph } from "../TypeGraph";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { Namer, Name, DependencyName, funPrefixNamer, AssociatedName, Namespace } from "../Naming";
+import { Namer, Name, DependencyName, funPrefixNamer, Namespace } from "../Naming";
 import {
     legalizeCharacters,
     isLetterOrUnderscoreOrDigit,
@@ -23,7 +23,7 @@ import {
     allUpperWordStyle
 } from "../Strings";
 import { defined, intercalate } from "../Support";
-import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
 export default class ElmTargetLanguage extends TargetLanguage {
@@ -189,7 +189,7 @@ class ElmRenderer extends ConvenienceRenderer {
         return upperNamingFunction;
     }
 
-    protected namedTypeDependencyNames(t: NamedType, typeName: Name): DependencyName[] {
+    protected namedTypeDependencyNames(_: NamedType, typeName: Name): DependencyName[] {
         const encoder = new DependencyName(
             lowerNamingFunction,
             List([typeName]),
@@ -204,7 +204,7 @@ class ElmRenderer extends ConvenienceRenderer {
         return lowerNamingFunction;
     }
 
-    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForProperties(_c: ClassType, _classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -230,12 +230,12 @@ class ElmRenderer extends ConvenienceRenderer {
     private elmType = (t: Type, withIssues: boolean = false): MultiWord => {
         return matchType<MultiWord>(
             t,
-            anyType => singleWord(maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Jdec.Value")),
-            nullType => singleWord(maybeAnnotated(withIssues, nullTypeIssueAnnotation, "()")),
-            boolType => singleWord("Bool"),
-            integerType => singleWord("Int"),
-            doubleType => singleWord("Float"),
-            stringType => singleWord("String"),
+            _anyType => singleWord(maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Jdec.Value")),
+            _nullType => singleWord(maybeAnnotated(withIssues, nullTypeIssueAnnotation, "()")),
+            _boolType => singleWord("Bool"),
+            _integerType => singleWord("Int"),
+            _doubleType => singleWord("Float"),
+            _stringType => singleWord("String"),
             arrayType => multiWord(this.arrayType, parenIfNeeded(this.elmType(arrayType.items, withIssues))),
             classType => singleWord(this.nameForNamedType(classType)),
             mapType => multiWord("Dict String", parenIfNeeded(this.elmType(mapType.values, withIssues))),
@@ -256,12 +256,12 @@ class ElmRenderer extends ConvenienceRenderer {
     private decoderNameForType = (t: Type): MultiWord => {
         return matchType<MultiWord>(
             t,
-            anyType => singleWord("Jdec.value"),
-            nullType => multiWord("Jdec.null", "()"),
-            boolType => singleWord("Jdec.bool"),
-            integerType => singleWord("Jdec.int"),
-            doubleType => singleWord("Jdec.float"),
-            stringType => singleWord("Jdec.string"),
+            _anyType => singleWord("Jdec.value"),
+            _nullType => multiWord("Jdec.null", "()"),
+            _boolType => singleWord("Jdec.bool"),
+            _integerType => singleWord("Jdec.int"),
+            _doubleType => singleWord("Jdec.float"),
+            _stringType => singleWord("Jdec.string"),
             arrayType =>
                 multiWord(
                     ["Jdec.", decapitalize(this.arrayType)],
@@ -286,12 +286,12 @@ class ElmRenderer extends ConvenienceRenderer {
     private encoderNameForType = (t: Type): MultiWord => {
         return matchType<MultiWord>(
             t,
-            anyType => singleWord("identity"),
-            nullType => multiWord("always", "Jenc.null"),
-            boolType => singleWord("Jenc.bool"),
-            integerType => singleWord("Jenc.int"),
-            doubleType => singleWord("Jenc.float"),
-            stringType => singleWord("Jenc.string"),
+            _anyType => singleWord("identity"),
+            _nullType => multiWord("always", "Jenc.null"),
+            _boolType => singleWord("Jenc.bool"),
+            _integerType => singleWord("Jenc.int"),
+            _doubleType => singleWord("Jenc.float"),
+            _stringType => singleWord("Jenc.string"),
             arrayType =>
                 multiWord(["make", this.arrayType, "Encoder"], parenIfNeeded(this.encoderNameForType(arrayType.items))),
             classType => singleWord(this.encoderNameForNamedType(classType)),
@@ -376,7 +376,7 @@ class ElmRenderer extends ConvenienceRenderer {
         this.indent(() => {
             this.emitLine("Jpipe.decode ", className);
             this.indent(() => {
-                this.forEachProperty(c, "none", (name, jsonName, t) => {
+                this.forEachProperty(c, "none", (_, jsonName, t) => {
                     const propDecoder = parenIfNeeded(this.decoderNameForType(t));
                     const { reqOrOpt, fallback } = requiredOrOptional(t);
                     this.emitLine("|> ", reqOrOpt, ' "', stringEscape(jsonName), '" ', propDecoder, fallback);

@@ -1,10 +1,9 @@
 "use strict";
 
-import { List, Collection, OrderedMap, OrderedSet, Map } from "immutable";
+import { OrderedSet } from "immutable";
 import {
     TypeKind,
     Type,
-    PrimitiveType,
     ArrayType,
     MapType,
     EnumType,
@@ -32,15 +31,13 @@ import {
     firstUpperWordStyle,
     allLowerWordStyle
 } from "../Strings";
-import { intercalate, defined, assertNever, nonNull, assert } from "../Support";
-import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
+import { assert } from "../Support";
+import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption } from "../RendererOptions";
-import { IssueAnnotationData, anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-
-const unicode = require("unicode-properties");
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
 export default class JavaTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption: BooleanOption;
@@ -186,7 +183,7 @@ class JavaRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForProperties(_c: ClassType, _classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -288,12 +285,12 @@ class JavaRenderer extends ConvenienceRenderer {
     javaType = (reference: boolean, t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Object"),
-            nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Object"),
-            boolType => (reference ? "Boolean" : "boolean"),
-            integerType => (reference ? "Long" : "long"),
-            doubleType => (reference ? "Double" : "double"),
-            stringType => "String",
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Object"),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Object"),
+            _boolType => (reference ? "Boolean" : "boolean"),
+            _integerType => (reference ? "Long" : "long"),
+            _doubleType => (reference ? "Double" : "double"),
+            _stringType => "String",
             arrayType => [this.javaType(false, arrayType.items, withIssues), "[]"],
             classType => this.nameForNamedType(classType),
             mapType => ["Map<String, ", this.javaType(true, mapType.values, withIssues), ">"],

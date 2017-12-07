@@ -1,6 +1,6 @@
 "use strict";
 
-import { assert, panic, StringMap, checkStringMap, checkArray } from "./Support";
+import { panic, checkStringMap, checkArray } from "./Support";
 
 function expand(json: any): string[] {
     if (typeof json === "string") {

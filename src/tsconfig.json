@@ -8,6 +8,8 @@
         "typeRoots": ["../node_modules/@types"],
         "strictNullChecks": true,
         "noImplicitAny": true,
-        "outDir": "../dist"
+        "outDir": "../dist",
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
     }
 }

@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, Set, OrderedSet } from "immutable";
+import { Map, OrderedSet } from "immutable";
 
 const graphql = require("graphql/language");
 
@@ -13,9 +13,7 @@ import {
     OperationDefinitionNode,
     FragmentDefinitionNode,
     DirectiveNode,
-    FieldNode,
-    FragmentSpreadNode,
-    InlineFragmentNode
+    FieldNode
 } from "./GraphQLAST";
 import { assertNever, panic, assert } from "./Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
@@ -93,7 +91,7 @@ function removeNull(builder: TypeBuilder, tref: TypeRef): TypeRef {
     if (!(t instanceof UnionType)) {
         return tref;
     }
-    const [_, nonNulls] = removeNullFromUnion(t);
+    const nonNulls = removeNullFromUnion(t)[1];
     const first = nonNulls.first();
     if (first) {
         if (nonNulls.size === 1) return first.typeRef;

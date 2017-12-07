@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import * as _ from "lodash";
-import { Run, Source, Sample, Options, RendererOptions, getTargetLanguage, SourceType, SchemaData } from ".";
+import { Run, Source, Sample, RendererOptions, getTargetLanguage, SourceType } from ".";
 import { OptionDefinition } from "./RendererOptions";
 import * as targetLanguages from "./Language/All";
 import { urlsFromURLGrammar } from "./URLGrammar";

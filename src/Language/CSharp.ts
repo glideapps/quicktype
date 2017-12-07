@@ -1,12 +1,9 @@
 "use strict";
 
-import { List, Collection, OrderedMap, OrderedSet, Map } from "immutable";
+import { List, OrderedSet, Map } from "immutable";
 import {
     TypeKind,
     Type,
-    PrimitiveType,
-    ArrayType,
-    MapType,
     EnumType,
     UnionType,
     NamedType,
@@ -24,13 +21,13 @@ import {
     combineWords,
     firstUpperWordStyle
 } from "../Strings";
-import { intercalate, defined, assertNever, assert, nonNull, panic } from "../Support";
+import { intercalate, defined, assert, panic } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption, StringOption, EnumOption } from "../RendererOptions";
-import { IssueAnnotationData, anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { StringOption, EnumOption } from "../RendererOptions";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { StringTypeMapping } from "../TypeBuilder";
 
 const unicode = require("unicode-properties");
@@ -144,7 +141,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         return ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
     }
 
-    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForProperties(_: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [classNamed], namespaces: [] };
     }
 
@@ -207,12 +204,12 @@ class CSharpRenderer extends ConvenienceRenderer {
     csType = (t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "object"),
-            nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "object"),
-            boolType => "bool",
-            integerType => "long",
-            doubleType => "double",
-            stringType => "string",
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "object"),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "object"),
+            _boolType => "bool",
+            _integerType => "long",
+            _doubleType => "double",
+            _stringType => "string",
             arrayType => {
                 const itemsType = this.csType(arrayType.items, withIssues);
                 if (this._useList) {
@@ -226,16 +223,16 @@ class CSharpRenderer extends ConvenienceRenderer {
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable) return this.nullableCSType(nullable, withIssues);
+                if (nullable) return this.nullableCSType(nullable);
                 return this.nameForNamedType(unionType);
             },
             {
-                dateTimeType: dateTimeType => "DateTime"
+                dateTimeType: _ => "DateTime"
             }
         );
     };
 
-    nullableCSType = (t: Type, withIssues: boolean): Sourcelike => {
+    nullableCSType = (t: Type): Sourcelike => {
         const csType = this.csType(t);
         if (isValueType(t)) {
             return [csType, "?"];
@@ -282,10 +279,10 @@ class CSharpRenderer extends ConvenienceRenderer {
     };
 
     emitUnionDefinition = (c: UnionType, unionName: Name): void => {
-        const [_, nonNulls] = removeNullFromUnion(c);
+        const nonNulls = removeNullFromUnion(c)[1];
         this.emitClass(true, [this.partialString, "struct"], unionName, () => {
             nonNulls.forEach((t: Type) => {
-                const csType = this.nullableCSType(t, true);
+                const csType = this.nullableCSType(t);
                 const field = this.unionFieldName(t);
                 this.emitLine("public ", csType, " ", field, ";");
             });
@@ -490,7 +487,7 @@ class CSharpRenderer extends ConvenienceRenderer {
     emitSerializeClass = (): void => {
         // FIXME: Make Serialize a Named
         this.emitClass(true, "static class", "Serialize", () => {
-            this.topLevels.forEach((t: Type, name: string) => {
+            this.topLevels.forEach((t: Type, _: string) => {
                 // FIXME: Make ToJson a Named
                 this.emitExpressionMember(
                     ["public static string ToJson(this ", this.csType(t), " self)"],

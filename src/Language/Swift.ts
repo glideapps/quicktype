@@ -206,11 +206,11 @@ class SwiftRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForProperties(_c: ClassType, _classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
-    protected forbiddenForCases(e: EnumType, enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -251,13 +251,13 @@ class SwiftRenderer extends ConvenienceRenderer {
     private swiftType = (t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.swift3OrPlainCase("Any?", "JSONAny")),
-            nullType =>
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.swift3OrPlainCase("Any?", "JSONAny")),
+            _nullType =>
                 maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.swift3OrPlainCase("NSNull", "JSONNull?")),
-            boolType => "Bool",
-            integerType => "Int",
-            doubleType => "Double",
-            stringType => "String",
+            _boolType => "Bool",
+            _integerType => "Int",
+            _doubleType => "Double",
+            _stringType => "String",
             arrayType => ["[", this.swiftType(arrayType.items, withIssues), "]"],
             classType => this.nameForNamedType(classType),
             mapType => ["[String: ", this.swiftType(mapType.values, withIssues), "]"],
@@ -273,17 +273,17 @@ class SwiftRenderer extends ConvenienceRenderer {
     protected unionFieldName = (fieldType: Type): string => {
         return matchType(
             fieldType,
-            anyType => "anything",
-            nullType => "null",
-            boolType => "bool",
-            integerType => "integer",
-            doubleType => "double",
-            stringType => "string",
+            _anyType => "anything",
+            _nullType => "null",
+            _boolType => "bool",
+            _integerType => "integer",
+            _doubleType => "double",
+            _stringType => "string",
             arrayType => this.unionFieldName(arrayType.items) + "Array",
             classType => decapitalize(defined(this.names.get(this.nameForNamedType(classType)))),
             mapType => this.unionFieldName(mapType.values) + "Map",
-            enumType => "enumeration",
-            unionType => "oneOf"
+            _enumType => "enumeration",
+            _unionType => "oneOf"
         );
     };
 
@@ -291,7 +291,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         if (!this._justTypes) {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
-            this.forEachTopLevel("none", (t, name) => {
+            this.forEachTopLevel("none", (_, name) => {
                 this.emitLine("//   let ", modifySource(camelCase, name), " = ", name, ".from(json: jsonString)!");
             });
             this.emitNewline();
@@ -311,7 +311,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         const structOrClass = this._useClasses ? "class" : "struct";
         const codableString = this.getCodableString();
         this.emitBlock([structOrClass, " ", className, codableString], () => {
-            this.forEachProperty(c, "none", (name, jsonName, t) => {
+            this.forEachProperty(c, "none", (name, _, t) => {
                 this.emitLine("let ", name, ": ", this.swiftType(t, true));
             });
         });
@@ -339,7 +339,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         });
     };
 
-    private renderTopLevelExtensions4 = (t: Type, topLevelName: Name): void => {
+    private renderTopLevelExtensions4 = (t: Type, _: Name): void => {
         const typeSource = this.swiftType(t);
         let extensionSource: Sourcelike;
         if (t instanceof ArrayType) {

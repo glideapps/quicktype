@@ -4,13 +4,10 @@ import { List, Map } from "immutable";
 import { Readable } from "stream";
 
 import * as targetLanguages from "./Language/All";
-import { OptionDefinition } from "./RendererOptions";
 import { TargetLanguage } from "./TargetLanguage";
-import { SerializedRenderResult, Annotation, serializeRenderResult } from "./Source";
-import { IssueAnnotationData } from "./Annotation";
-import { defined, assert, panic } from "./Support";
+import { SerializedRenderResult } from "./Source";
+import { panic } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
-import { urlsFromURLGrammar } from "./URLGrammar";
 import { combineClasses } from "./CombineClasses";
 import { schemaToType } from "./JSONSchemaInput";
 import { TypeInference } from "./Inference";
@@ -174,7 +171,7 @@ export class Run {
                 }
             }
 
-            const inference = new TypeInference(typeBuilder, doInferMaps, doInferEnums);
+            const inference = new TypeInference(typeBuilder, doInferEnums);
             Map(this._allInputs.samples).forEach((cjson, name) => {
                 typeBuilder.addTopLevel(
                     name,

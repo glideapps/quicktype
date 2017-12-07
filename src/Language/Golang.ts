@@ -1,11 +1,10 @@
 "use strict";
 
-import { Set, OrderedSet, List, Map, OrderedMap } from "immutable";
+import { List, Map } from "immutable";
 
 import {
     TypeKind,
     Type,
-    PrimitiveType,
     NamedType,
     ClassType,
     EnumType,
@@ -15,7 +14,7 @@ import {
     removeNullFromUnion
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
+import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,
     isLetterOrUnderscore,
@@ -113,7 +112,7 @@ class GoRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    protected topLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
+    protected topLevelDependencyNames(_: Type, topLevelName: Name): DependencyName[] {
         const unmarshalName = new DependencyName(
             namingFunction,
             List([topLevelName]),
@@ -149,12 +148,12 @@ class GoRenderer extends ConvenienceRenderer {
     private goType = (t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
-            nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
-            boolType => "bool",
-            integerType => "int64",
-            doubleType => "float64",
-            stringType => "string",
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
+            _boolType => "bool",
+            _integerType => "int64",
+            _doubleType => "float64",
+            _stringType => "string",
             arrayType => ["[]", this.goType(arrayType.items, withIssues)],
             classType => this.nameForNamedType(classType),
             mapType => ["map[string]", this.goType(mapType.values, withIssues)],
@@ -328,7 +327,7 @@ if err != nil {
 
     protected emitSourceStructure(): void {
         this.emitLine("// To parse and unparse this JSON data, add this code to your project and do:");
-        this.forEachTopLevel("none", (t: Type, name: Name) => {
+        this.forEachTopLevel("none", (_: Type, name: Name) => {
             this.emitLine("//");
             this.emitLine("//    r, err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
             this.emitLine("//    bytes, err = r.Marshal()");

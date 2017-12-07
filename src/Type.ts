@@ -1,9 +1,8 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Map, Set, Collection, List } from "immutable";
+import { OrderedSet, OrderedMap, Map, Collection } from "immutable";
 import { defined, panic, assert } from "./Support";
-import { TypeGraph } from "./TypeGraph";
-import { TypeGraphBuilder, TypeRef, TypeBuilder } from "./TypeBuilder";
+import { TypeRef, TypeBuilder } from "./TypeBuilder";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
@@ -64,7 +63,7 @@ export class PrimitiveType extends Type {
         return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
     }
 
-    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+    map(builder: TypeBuilder, _: (tref: TypeRef) => TypeRef): TypeRef {
         return builder.getPrimitiveType(this.kind);
     }
 }
@@ -331,7 +330,7 @@ export class EnumType extends NamedType {
         return true;
     }
 
-    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+    map(builder: TypeBuilder, _: (tref: TypeRef) => TypeRef): TypeRef {
         return builder.getEnumType(this.names, this.areNamesInferred, this.cases);
     }
 }
@@ -419,7 +418,7 @@ export function nonNullTypeCases(t: Type): OrderedSet<Type> {
     if (!(t instanceof UnionType)) {
         return OrderedSet([t]);
     }
-    const [_, nonNulls] = removeNullFromUnion(t);
+    const nonNulls = removeNullFromUnion(t)[1];
     return OrderedSet(nonNulls);
 }
 
