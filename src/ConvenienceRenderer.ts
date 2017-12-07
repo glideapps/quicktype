@@ -5,9 +5,6 @@ import { Map, Set, OrderedSet, OrderedMap, Collection } from "immutable";
 import {
     Type,
     NamedType,
-    PrimitiveType,
-    ArrayType,
-    MapType,
     ClassType,
     EnumType,
     UnionType,
@@ -15,10 +12,9 @@ import {
     nullableFromUnion,
     matchTypeExhaustive
 } from "./Type";
-import { TypeGraph } from "./TypeGraph";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
-import { defined, assertNever, panic } from "./Support";
+import { defined, panic } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 export abstract class ConvenienceRenderer extends Renderer {
@@ -42,19 +38,19 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [];
     }
 
-    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForProperties(_c: ClassType, _classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [] };
     }
 
-    protected forbiddenForCases(e: EnumType, enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [] };
     }
 
-    protected topLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
+    protected topLevelDependencyNames(_t: Type, _topLevelName: Name): DependencyName[] {
         return [];
     }
 
-    protected namedTypeDependencyNames(t: NamedType, name: Name): DependencyName[] {
+    protected namedTypeDependencyNames(_t: NamedType, _name: Name): DependencyName[] {
         return [];
     }
 
@@ -143,7 +139,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForProperties(c, classNamed);
         const ns = new Namespace(c.combinedName, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
         const names = c.sortedProperties
-            .map((t: Type, name: string) => {
+            .map((_: Type, name: string) => {
                 // FIXME: This alternative should really depend on what the
                 // actual name of the class ends up being.  We can do this
                 // with a DependencyName.
@@ -226,20 +222,20 @@ export abstract class ConvenienceRenderer extends Renderer {
         const typeNameForUnionMember = (t: Type): string =>
             matchTypeExhaustive(
                 t,
-                anyType => "anything",
-                nullType => "null",
-                boolType => "bool",
-                integerType => "integer",
-                doubleType => "double",
-                stringType => "string",
+                _anyType => "anything",
+                _nullType => "null",
+                _boolType => "bool",
+                _integerType => "integer",
+                _doubleType => "double",
+                _stringType => "string",
                 arrayType => typeNameForUnionMember(arrayType.items) + "_array",
                 classType => defined(this.names.get(this.nameForNamedType(classType))),
                 mapType => typeNameForUnionMember(mapType.values) + "_map",
-                enumType => "enum",
-                unionType => "union",
-                dateType => "date",
-                timeType => "time",
-                dateTimeType => "date_time"
+                _enumType => "enum",
+                _unionType => "union",
+                _dateType => "date",
+                _timeType => "time",
+                _dateTimeType => "date_time"
             );
 
         return propertyNamer.nameStyle(typeNameForUnionMember(fieldType));

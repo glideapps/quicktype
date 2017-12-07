@@ -1,13 +1,11 @@
 "use strict";
 
-import { OrderedSet, Set, Map, OrderedMap } from "immutable";
+import { OrderedSet, OrderedMap } from "immutable";
 import * as pluralize from "pluralize";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
-import { Type, PrimitiveType, EnumType, MapType, ArrayType, ClassType, UnionType } from "./Type";
 import { assertNever, assert } from "./Support";
 import { TypeGraphBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
-import { shouldBeMap } from "./InferMaps";
 import { isTime, isDateTime, isDate } from "./DateTime";
 
 const MIN_LENGTH_FOR_ENUM = 10;
@@ -73,11 +71,7 @@ function canBeEnumCase(s: string): boolean {
 }
 
 export class TypeInference {
-    constructor(
-        private readonly _typeBuilder: TypeGraphBuilder,
-        private readonly _inferMaps: boolean,
-        private readonly _inferEnums: boolean
-    ) {}
+    constructor(private readonly _typeBuilder: TypeGraphBuilder, private readonly _inferEnums: boolean) {}
 
     inferType = (
         cjson: CompressedJSON,

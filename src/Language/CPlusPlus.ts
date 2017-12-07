@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, OrderedSet } from "immutable";
+import { OrderedSet } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
 import {
@@ -277,11 +277,11 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForProperties(_c: ClassType, _classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
-    protected forbiddenForCases(e: EnumType, enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -366,14 +366,14 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     private cppType = (t: Type, inVariant: boolean, inJsonNamespace: boolean, withIssues: boolean): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType =>
+            _anyType =>
                 maybeAnnotated(withIssues, anyTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]),
-            nullType =>
+            _nullType =>
                 maybeAnnotated(withIssues, nullTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]),
-            boolType => "bool",
-            integerType => "int64_t",
-            doubleType => "double",
-            stringType => "std::string",
+            _boolType => "bool",
+            _integerType => "int64_t",
+            _doubleType => "double",
+            _stringType => "std::string",
             arrayType => ["std::vector<", this.cppType(arrayType.items, false, inJsonNamespace, withIssues), ">"],
             classType =>
                 this.variantIndirection(inVariant, [
@@ -397,7 +397,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     private emitClass = (c: ClassType, className: Name): void => {
         this.emitBlock(["struct ", className], true, () => {
-            this.forEachProperty(c, "none", (name, json, propertyType) => {
+            this.forEachProperty(c, "none", (name, _json, propertyType) => {
                 this.emitLine(this.cppType(propertyType, false, false, true), " ", name, ";");
             });
         });
@@ -469,7 +469,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             ["array", "is_array"],
             ["enum", "is_string"]
         ];
-        const [_, nonNulls] = removeNullFromUnion(u);
+        const nonNulls = removeNullFromUnion(u)[1];
         const variantType = this.cppTypeInOptional(nonNulls, true, false);
         this.emitBlock(["inline void from_json(const json& _j, ", variantType, "& _x)"], false, () => {
             let onFirst = true;

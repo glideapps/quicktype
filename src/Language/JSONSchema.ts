@@ -1,9 +1,9 @@
 "use strict";
 
-import { Map, Collection } from "immutable";
+import { Collection } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, NamedType, UnionType, matchType, ClassType, matchTypeExhaustive } from "../Type";
+import { Type, NamedType, UnionType, ClassType, matchTypeExhaustive } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -21,7 +21,7 @@ export default class JSONSchemaTargetLanguage extends TargetLanguage {
         return { date: "date", time: "time", dateTime: "date-time" };
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
+    renderGraph(graph: TypeGraph, _optionValues: { [name: string]: any }): RenderResult {
         const renderer = new JSONSchemaRenderer(graph);
         return renderer.render();
     }
@@ -71,7 +71,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    protected unionNeedsName(u: UnionType): boolean {
+    protected unionNeedsName(_: UnionType): boolean {
         return false;
     }
 
@@ -91,12 +91,12 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
     private schemaForType = (t: Type): Schema => {
         return matchTypeExhaustive<{ [name: string]: any }>(
             t,
-            anyType => ({}),
-            nullType => ({ type: "null" }),
-            boolType => ({ type: "boolean" }),
-            integerType => ({ type: "integer" }),
-            doubleType => ({ type: "number" }),
-            stringType => ({ type: "string" }),
+            _anyType => ({}),
+            _nullType => ({ type: "null" }),
+            _boolType => ({ type: "boolean" }),
+            _integerType => ({ type: "integer" }),
+            _doubleType => ({ type: "number" }),
+            _stringType => ({ type: "string" }),
             arrayType => ({ type: "array", items: this.schemaForType(arrayType.items) }),
             classType => ({ $ref: `#/definitions/${this.nameForType(classType)}` }),
             mapType => ({ type: "object", additionalProperties: this.schemaForType(mapType.values) }),
@@ -106,9 +106,9 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
                 schema.title = unionType.combinedName;
                 return schema;
             },
-            dateType => ({ type: "string", format: "date" }),
-            timeType => ({ type: "string", format: "time" }),
-            dateTimeType => ({ type: "string", format: "date-time" })
+            _dateType => ({ type: "string", format: "date" }),
+            _timeType => ({ type: "string", format: "time" }),
+            _dateTimeType => ({ type: "string", format: "date-time" })
         );
     };
 

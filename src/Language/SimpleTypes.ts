@@ -2,24 +2,10 @@
 
 import * as _ from "lodash";
 
-import { Set, List, Map, OrderedMap, OrderedSet, Collection } from "immutable";
-
-import {
-    Type,
-    PrimitiveType,
-    ArrayType,
-    MapType,
-    EnumType,
-    UnionType,
-    NamedType,
-    ClassType,
-    nullableFromUnion,
-    removeNullFromUnion,
-    matchTypeExhaustive
-} from "../Type";
+import { Type, EnumType, UnionType, NamedType, ClassType, nullableFromUnion, matchTypeExhaustive } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 
-import { Source, Sourcelike } from "../Source";
+import { Sourcelike } from "../Source";
 import {
     legalizeCharacters,
     splitIntoWords,
@@ -28,11 +14,11 @@ import {
     allUpperWordStyle,
     allLowerWordStyle
 } from "../Strings";
-import { intercalate, defined } from "../Support";
+import { intercalate } from "../Support";
 
-import { Namer, Namespace, Name, DependencyName, SimpleName, FixedName, keywordNamespace } from "../Naming";
+import { Namer, Name } from "../Naming";
 
-import { Renderer, RenderResult } from "../Renderer";
+import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
 import { TargetLanguage } from "../TargetLanguage";
@@ -116,12 +102,12 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     sourceFor = (t: Type): Sourcelike => {
         return matchTypeExhaustive<Sourcelike>(
             t,
-            anyType => "Any",
-            nullType => "Null",
-            boolType => "Bool",
-            integerType => "Int",
-            doubleType => "Double",
-            stringType => "String",
+            _anyType => "Any",
+            _nullType => "Null",
+            _boolType => "Bool",
+            _integerType => "Int",
+            _doubleType => "Double",
+            _stringType => "String",
             arrayType => ["List<", this.sourceFor(arrayType.items), ">"],
             classType => this.nameForNamedType(classType),
             mapType => ["Map<String, ", this.sourceFor(mapType.values), ">"],
@@ -137,16 +123,16 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
                     return this.nameForNamedType(unionType);
                 }
             },
-            dateType => "Date",
-            timeType => "Time",
-            dateTimeType => "DateTime"
+            _dateType => "Date",
+            _timeType => "Time",
+            _dateTimeType => "DateTime"
         );
     };
 
     private emitClass = (c: ClassType, className: Name) => {
         this.emitLine("class ", className, " {");
         this.indent(() => {
-            this.forEachProperty(c, "none", (name, jsonName, t) => {
+            this.forEachProperty(c, "none", (name, _jsonName, t) => {
                 this.emitLine(name, ": ", this.sourceFor(t));
             });
         });

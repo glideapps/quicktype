@@ -45,7 +45,7 @@ export function utf16ConcatMap(mapper: (utf16Unit: number) => string): (s: strin
         let start = 0;
         let i = 0;
         while (i < s.length) {
-            var cc = s.charCodeAt(i);
+            const cc = s.charCodeAt(i);
             if (!charNoEscapeMap[cc]) {
                 if (cs === null) cs = [];
                 cs.push(s.substring(start, i));
@@ -86,7 +86,7 @@ export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: strin
         let start = 0;
         let i = 0;
         while (i < s.length) {
-            var cc = s.charCodeAt(i);
+            let cc = s.charCodeAt(i);
             if (!charNoEscapeMap[cc]) {
                 if (cs === null) cs = [];
                 cs.push(s.substring(start, i));

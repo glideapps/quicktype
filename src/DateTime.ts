@@ -35,7 +35,6 @@ export function isDate(str: string) {
     const matches = str.match(DATE);
     if (!matches) return false;
 
-    const year = +matches[1];
     const month = +matches[2];
     const day = +matches[3];
     return month >= 1 && month <= 12 && day >= 1 && day <= DAYS[month];

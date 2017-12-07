@@ -1,13 +1,11 @@
 "use strict";
 
-import { List, OrderedSet, Map, OrderedMap, fromJS, Set, isIndexed } from "immutable";
+import { List, OrderedSet, Map, OrderedMap, fromJS, Set } from "immutable";
 import * as pluralize from "pluralize";
 
-import { Type, ClassType, NameOrNames, matchTypeExhaustive, EnumType, MapType } from "./Type";
+import { Type, ClassType, matchTypeExhaustive, MapType } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "./Support";
-import { TypeGraph } from "./TypeGraph";
 import { UnionBuilder, TypeGraphBuilder, TypeRef } from "./TypeBuilder";
-import { getHashes } from "crypto";
 
 enum PathElementKind {
     Root,
@@ -214,20 +212,20 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
             const registerType = (t: Type): void => {
                 matchTypeExhaustive<void>(
                     t,
-                    anyType => unionBuilder.addAny(),
-                    nullType => unionBuilder.addNull(),
-                    boolType => unionBuilder.addBool(),
-                    integerType => unionBuilder.addInteger(),
-                    doubleType => unionBuilder.addDouble(),
-                    stringType => unionBuilder.addStringType("string"),
+                    _anyType => unionBuilder.addAny(),
+                    _nullType => unionBuilder.addNull(),
+                    _boolType => unionBuilder.addBool(),
+                    _integerType => unionBuilder.addInteger(),
+                    _doubleType => unionBuilder.addDouble(),
+                    _stringType => unionBuilder.addStringType("string"),
                     arrayType => unionBuilder.addArray(arrayType.items.typeRef),
                     classType => unionBuilder.addClass(classType.typeRef),
                     mapType => unionBuilder.addMap(mapType.values.typeRef),
                     enumType => enumType.cases.forEach(s => unionBuilder.addEnumCase(s)),
                     unionType => unionType.members.forEach(registerType),
-                    dateType => unionBuilder.addStringType("date"),
-                    timeType => unionBuilder.addStringType("time"),
-                    dateTimeType => unionBuilder.addStringType("date-time")
+                    _dateType => unionBuilder.addStringType("date"),
+                    _timeType => unionBuilder.addStringType("time"),
+                    _dateTimeType => unionBuilder.addStringType("date-time")
                 );
             };
 

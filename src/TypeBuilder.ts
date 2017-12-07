@@ -1,12 +1,11 @@
 "use strict";
 
-import { Map, OrderedSet, List, Collection, Set } from "immutable";
+import { Map, OrderedSet, List, Set } from "immutable";
 
 import {
     PrimitiveTypeKind,
     Type,
     PrimitiveType,
-    NamedType,
     EnumType,
     MapType,
     ArrayType,

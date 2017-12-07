@@ -1,12 +1,9 @@
 "use strict";
 
-import * as fs from "fs";
-import * as process from "process";
 import * as stream from "stream";
 
-import { defined, assertNever, hashCodeInit, addHashCode } from "./Support";
+import { defined, hashCodeInit, addHashCode } from "./Support";
 import { isDate, isTime, isDateTime } from "./DateTime";
-import { isDigit } from "./Strings";
 
 const makeSource = require("stream-json/main");
 const stringHash = require("string-hash");
