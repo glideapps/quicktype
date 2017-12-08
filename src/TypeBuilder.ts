@@ -295,15 +295,15 @@ export class TypeGraphBuilder extends TypeBuilder {
     };
 }
 
-export class GraphRewriteBuilder extends TypeBuilder {
-    private _setsToReplaceByMember: Map<number, Set<Type>>;
+export class GraphRewriteBuilder<T extends Type> extends TypeBuilder {
+    private _setsToReplaceByMember: Map<number, Set<T>>;
     private _reconstitutedTypes: Map<number, TypeRef> = Map();
 
     constructor(
         private readonly _originalGraph: TypeGraph,
         stringTypeMapping: StringTypeMapping,
-        setsToReplace: Type[][],
-        private readonly _replacer: (typesToReplace: Set<Type>, builder: GraphRewriteBuilder) => TypeRef
+        setsToReplace: T[][],
+        private readonly _replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>) => TypeRef
     ) {
         super(stringTypeMapping);
         this._setsToReplaceByMember = Map();
@@ -342,7 +342,7 @@ export class GraphRewriteBuilder extends TypeBuilder {
         return actualRef;
     }
 
-    private replaceSet(typesToReplace: Set<Type>): TypeRef {
+    private replaceSet(typesToReplace: Set<T>): TypeRef {
         return this.withForwardingRef(forwardingRef => {
             typesToReplace.forEach(t => {
                 const originalRef = t.typeRef;
