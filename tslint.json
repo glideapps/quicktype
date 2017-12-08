@@ -62,7 +62,7 @@
     ],
     "quotemark": [true, "double", "avoid-escape"],
     "radix": true,
-    "semicolon": [true, "ignore-bound-class-methods"],
+    "semicolon": [true, "always", "ignore-bound-class-methods"],
     "switch-default": true,
 
     "trailing-comma": false,

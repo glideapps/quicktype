@@ -87,11 +87,11 @@ export class TypeGraph {
     // That particular TypeBuilder will have to take as inputs types in the old
     // graph, but return types in the new graph.  Recursive types must be handled
     // carefully.
-    rewrite = (
+    rewrite<T extends Type>(
         stringTypeMapping: StringTypeMapping,
-        replacementGroups: Type[][],
-        replacer: (typesToReplace: Set<Type>, builder: GraphRewriteBuilder) => TypeRef
-    ): TypeGraph => {
+        replacementGroups: T[][],
+        replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>) => TypeRef
+    ): TypeGraph {
         return new GraphRewriteBuilder(this, stringTypeMapping, replacementGroups, replacer).finish();
-    };
+    }
 }

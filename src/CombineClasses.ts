@@ -93,7 +93,7 @@ export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMa
         unprocessedClasses = classesLeft;
     }
 
-    function makeCliqueClass(clique: Set<ClassType>, builder: GraphRewriteBuilder): TypeRef {
+    function makeCliqueClass(clique: Set<ClassType>, builder: GraphRewriteBuilder<ClassType>): TypeRef {
         assert(clique.size > 0, "Clique can't be empty");
         let inferredNames = OrderedSet<string>();
         let givenNames = OrderedSet<string>();
@@ -109,7 +109,10 @@ export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMa
         return builder.getClassType(areNamesInferred ? inferredNames : givenNames, areNamesInferred, properties);
     }
 
-    function getCliqueProperties(clique: Set<ClassType>, builder: GraphRewriteBuilder): OrderedMap<string, TypeRef> {
+    function getCliqueProperties(
+        clique: Set<ClassType>,
+        builder: GraphRewriteBuilder<ClassType>
+    ): OrderedMap<string, TypeRef> {
         let properties = OrderedMap<string, [Type, number, boolean]>();
         clique.forEach(c => {
             c.properties.forEach((t, name) => {

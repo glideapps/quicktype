@@ -53,7 +53,7 @@ export function shouldBeMap(properties: Map<string, Type>): [OrderedSet<Type>, b
     return [nonNullCases, isNullable];
 }
 
-export function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewriteBuilder): TypeRef {
+export function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewriteBuilder<ClassType>): TypeRef {
     const c = defined(setOfOneClass.first());
     const properties = c.properties;
 
