@@ -56,11 +56,15 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected get propertyNamer(): null {
+    protected get classPropertyNamer(): null {
         return null;
     }
 
-    protected get caseNamer(): null {
+    protected get unionMemberNamer(): null {
+        return null;
+    }
+
+    protected get enumCaseNamer(): null {
         return null;
     }
 

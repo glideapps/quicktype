@@ -277,11 +277,14 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForProperties(_c: ClassType, _classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForClassProperties(
+        _c: ClassType,
+        _classNamed: Name
+    ): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
-    protected forbiddenForCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -293,11 +296,15 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return this._typeNamingFunction;
     }
 
-    protected get propertyNamer(): Namer {
+    protected get classPropertyNamer(): Namer {
         return this._memberNamingFunction;
     }
 
-    protected get caseNamer(): Namer {
+    protected get unionMemberNamer(): null {
+        return null;
+    }
+
+    protected get enumCaseNamer(): Namer {
         return this._caseNamingFunction;
     }
 
@@ -397,7 +404,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     private emitClass = (c: ClassType, className: Name): void => {
         this.emitBlock(["struct ", className], true, () => {
-            this.forEachProperty(c, "none", (name, _json, propertyType) => {
+            this.forEachClassProperty(c, "none", (name, _json, propertyType) => {
                 this.emitLine(this.cppType(propertyType, false, false, true), " ", name, ";");
             });
         });
@@ -409,7 +416,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             ["inline void from_json(const json& _j, struct ", ourQualifier, className, "& _x)"],
             false,
             () => {
-                this.forEachProperty(c, "none", (name, json, t) => {
+                this.forEachClassProperty(c, "none", (name, json, t) => {
                     if (t instanceof UnionType) {
                         const [hasNull, nonNulls] = removeNullFromUnion(t);
                         if (hasNull) {
@@ -439,7 +446,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitNewline();
         this.emitBlock(["inline void to_json(json& _j, const struct ", ourQualifier, className, "& _x)"], false, () => {
             this.emitLine("_j = json::object();");
-            this.forEachProperty(c, "none", (name, json, _) => {
+            this.forEachClassProperty(c, "none", (name, json, _) => {
                 this.emitLine('_j["', stringEscape(json), '"] = _x.', name, ";");
             });
         });
@@ -447,7 +454,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     private emitEnum = (e: EnumType, enumName: Name): void => {
         const caseNames: Sourcelike[] = [];
-        this.forEachCase(e, "none", name => {
+        this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
         });
@@ -505,7 +512,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         const ourQualifier = this.ourQualifier(true);
         this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, enumName, "& _x)"], false, () => {
             let onFirst = true;
-            this.forEachCase(e, "none", (name, jsonName) => {
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
                 const maybeElse = onFirst ? "" : "else ";
                 this.emitLine(
                     maybeElse,
@@ -525,7 +532,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitNewline();
         this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, enumName, "& _x)"], false, () => {
             this.emitBlock("switch (_x)", false, () => {
-                this.forEachCase(e, "none", (name, jsonName) => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine(
                         "case ",
                         ourQualifier,

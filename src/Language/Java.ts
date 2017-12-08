@@ -183,7 +183,10 @@ class JavaRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForProperties(_c: ClassType, _classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForClassProperties(
+        _c: ClassType,
+        _classNamed: Name
+    ): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -195,11 +198,15 @@ class JavaRenderer extends ConvenienceRenderer {
         return typeNamingFunction;
     }
 
-    protected get propertyNamer(): Namer {
+    protected get classPropertyNamer(): Namer {
         return propertyNamingFunction;
     }
 
-    protected get caseNamer(): Namer {
+    protected get unionMemberNamer(): Namer {
+        return propertyNamingFunction;
+    }
+
+    protected get enumCaseNamer(): Namer {
         return enumCaseNamingFunction;
     }
 
@@ -323,10 +330,10 @@ class JavaRenderer extends ConvenienceRenderer {
             this.emitLine("@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)");
         }
         this.emitBlock(["public class ", className], () => {
-            this.forEachProperty(c, "none", (name, _, t) => {
+            this.forEachClassProperty(c, "none", (name, _, t) => {
                 this.emitLine("private ", this.javaType(false, t, true), " ", name, ";");
             });
-            this.forEachProperty(c, "leading-and-interposing", (name, jsonName, t) => {
+            this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, t) => {
                 if (!this._justTypes) this.emitLine('@JsonProperty("', stringEscape(jsonName), '")');
                 const rendered = this.javaType(false, t);
                 this.emitLine("public ", rendered, " get", modifySource(capitalize, name), "() { return ", name, "; }");
@@ -344,9 +351,14 @@ class JavaRenderer extends ConvenienceRenderer {
         });
     };
 
-    unionField = (t: Type, withIssues: boolean = false): { fieldType: Sourcelike; fieldName: string } => {
+    unionField = (
+        u: UnionType,
+        t: Type,
+        withIssues: boolean = false
+    ): { fieldType: Sourcelike; fieldName: Sourcelike } => {
         const fieldType = this.javaType(true, t, withIssues);
-        const fieldName = `${this.unionFieldName(t)}Value`;
+        // FIXME: "Value" should be part of the name.
+        const fieldName = [this.nameForUnionMember(u, t), "Value"];
         return { fieldType, fieldName };
     };
 
@@ -361,7 +373,7 @@ class JavaRenderer extends ConvenienceRenderer {
         };
 
         const emitDeserializeType = (t: Type): void => {
-            const { fieldName } = this.unionField(t);
+            const { fieldName } = this.unionField(u, t);
             const rendered = this.javaTypeWithoutGenerics(true, t);
             this.emitLine("value.", fieldName, " = jsonParser.readValueAs(", rendered, ".class);");
             this.emitLine("break;");
@@ -399,7 +411,7 @@ class JavaRenderer extends ConvenienceRenderer {
         const [maybeNull, nonNulls] = removeNullFromUnion(u);
         this.emitBlock(["public class ", unionName], () => {
             nonNulls.forEach(t => {
-                const { fieldType, fieldName } = this.unionField(t, true);
+                const { fieldType, fieldName } = this.unionField(u, t, true);
                 this.emitLine("public ", fieldType, " ", fieldName, ";");
             });
             if (this._justTypes) return;
@@ -441,7 +453,7 @@ class JavaRenderer extends ConvenienceRenderer {
                     ],
                     () => {
                         nonNulls.forEach(t => {
-                            const { fieldName } = this.unionField(t, true);
+                            const { fieldName } = this.unionField(u, t, true);
                             this.emitBlock(["if (obj.", fieldName, " != null)"], () => {
                                 this.emitLine("jsonGenerator.writeObject(obj.", fieldName, ");");
                                 this.emitLine("return;");
@@ -461,7 +473,7 @@ class JavaRenderer extends ConvenienceRenderer {
     emitEnumDefinition = (e: EnumType, enumName: Name): void => {
         this.emitFileHeader(enumName, ["java.io.IOException", "com.fasterxml.jackson.annotation.*"]);
         const caseNames: Sourcelike[] = [];
-        this.forEachCase(e, "none", name => {
+        this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
         });
@@ -472,7 +484,7 @@ class JavaRenderer extends ConvenienceRenderer {
             this.emitLine("@JsonValue");
             this.emitBlock("public String toValue()", () => {
                 this.emitLine("switch (this) {");
-                this.forEachCase(e, "none", (name, jsonName) => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine("case ", name, ': return "', stringEscape(jsonName), '";');
                 });
                 this.emitLine("}");
@@ -481,7 +493,7 @@ class JavaRenderer extends ConvenienceRenderer {
             this.emitNewline();
             this.emitLine("@JsonCreator");
             this.emitBlock(["public static ", enumName, " forValue(String value) throws IOException"], () => {
-                this.forEachCase(e, "none", (name, jsonName) => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine('if (value.equals("', stringEscape(jsonName), '")) return ', name, ";");
                 });
                 this.emitLine('throw new IOException("Cannot deserialize ', enumName, '");');

@@ -84,11 +84,15 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
         return new Namer(n => simpleNameStyle(n, true), []);
     }
 
-    protected get propertyNamer(): Namer {
+    protected get classPropertyNamer(): Namer {
         return new Namer(n => simpleNameStyle(n, false), []);
     }
 
-    protected get caseNamer(): Namer {
+    protected get unionMemberNamer(): null {
+        return null;
+    }
+
+    protected get enumCaseNamer(): Namer {
         return new Namer(n => simpleNameStyle(n, true), []);
     }
 
@@ -132,7 +136,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     private emitClass = (c: ClassType, className: Name) => {
         this.emitLine("class ", className, " {");
         this.indent(() => {
-            this.forEachProperty(c, "none", (name, _jsonName, t) => {
+            this.forEachClassProperty(c, "none", (name, _jsonName, t) => {
                 this.emitLine(name, ": ", this.sourceFor(t));
             });
         });
@@ -141,7 +145,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
 
     emitEnum = (e: EnumType, enumName: Name) => {
         const caseNames: Sourcelike[] = [];
-        this.forEachCase(e, "none", name => {
+        this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(" | ");
             caseNames.push(name);
         });
