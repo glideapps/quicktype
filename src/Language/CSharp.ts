@@ -1,6 +1,6 @@
 "use strict";
 
-import { List, OrderedSet, Map } from "immutable";
+import { OrderedSet, Map } from "immutable";
 import {
     TypeKind,
     Type,
@@ -186,11 +186,7 @@ class CSharpRenderer extends ConvenienceRenderer {
     protected namedTypeDependencyNames(t: NamedType, name: Name): DependencyName[] {
         if (!(t instanceof EnumType)) return [];
 
-        const extensionsName = new DependencyName(
-            namingFunction,
-            List([name]),
-            (names: List<string>) => `${names.first()}Extensions`
-        );
+        const extensionsName = new DependencyName(namingFunction, lookup => `${lookup(name)}_extensions`);
         this._enumExtensionsNames = this._enumExtensionsNames.set(name, extensionsName);
         return [extensionsName];
     }
