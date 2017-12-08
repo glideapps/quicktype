@@ -299,28 +299,29 @@ export class AssociatedName extends Name {
 }
 
 export class DependencyName extends Name {
-    // _dependencies is a List as opposed to a set because it might contain
-    // the same name more than once, and we don't want to put the burden of
-    // checking on the renderer.
+    private readonly _dependencies: OrderedSet<Name>;
 
-    // The `names` parameter of _proposeName will contain the names of all
-    // `dependencies` in the same order as the latter.  If some of them are
-    // the same, `names` will contain their names multiple times.
-    constructor(
-        namingFunction: Namer,
-        private readonly _dependencies: List<Name>,
-        private readonly _proposeUnstyledName: (names: List<string>) => string
-    ) {
+    constructor(namingFunction: Namer, private readonly _proposeUnstyledName: (lookup: (n: Name) => string) => string) {
         super(namingFunction);
+        const dependencies: Name[] = [];
+        _proposeUnstyledName(n => {
+            dependencies.push(n);
+            return "0xDEADBEEF";
+        });
+        this._dependencies = OrderedSet(dependencies);
     }
 
     get dependencies(): List<Name> {
-        return this._dependencies;
+        return this._dependencies.toList();
     }
 
     proposeUnstyledNames(names: Map<Name, string>): OrderedSet<string> {
-        const dependencyNames = this._dependencies.map((n: Name) => defined(names.get(n))).toList();
-        return OrderedSet([this._proposeUnstyledName(dependencyNames)]);
+        return OrderedSet([
+            this._proposeUnstyledName(n => {
+                assert(this._dependencies.has(n), "DependencyName proposer is not pure");
+                return defined(names.get(n));
+            })
+        ]);
     }
 
     hashCode(): number {

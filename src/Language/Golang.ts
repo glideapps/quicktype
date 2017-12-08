@@ -1,6 +1,6 @@
 "use strict";
 
-import { List, Map } from "immutable";
+import { Map } from "immutable";
 
 import {
     TypeKind,
@@ -113,11 +113,7 @@ class GoRenderer extends ConvenienceRenderer {
     }
 
     protected topLevelDependencyNames(_: Type, topLevelName: Name): DependencyName[] {
-        const unmarshalName = new DependencyName(
-            namingFunction,
-            List([topLevelName]),
-            (names: List<string>) => `Unmarshal${names.first()}`
-        );
+        const unmarshalName = new DependencyName(namingFunction, lookup => `unmarshal_${lookup(topLevelName)}`);
         this._topLevelUnmarshalNames = this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
         return [unmarshalName];
     }
