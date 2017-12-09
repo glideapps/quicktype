@@ -2,8 +2,6 @@
 
 import { Map, OrderedSet } from "immutable";
 
-const graphql = require("graphql/language");
-
 import { NamesWithAlternatives, removeNullFromUnion, UnionType } from "./Type";
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
 import {
@@ -14,9 +12,10 @@ import {
     FragmentDefinitionNode,
     DirectiveNode,
     FieldNode
-} from "./GraphQLAST";
+} from "graphql/language/ast";
 import { assertNever, panic, assert } from "./Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
+import * as graphql from "graphql/language";
 
 interface GQLType {
     kind: TypeKind;
