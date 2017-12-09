@@ -33,6 +33,7 @@
     "@types/pluralize": "0.0.28",
     "@types/shelljs": "^0.7.6",
     "@types/string-hash": "^1.1.1",
+    "@types/graphql": "^0.11.7",
     "ajv": "^5.2.2",
     "deep-equal": "^1.0.1",
     "elm": "^0.18.0",

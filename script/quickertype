@@ -4,4 +4,4 @@
 #
 # In practice this runs 75% faster.
 
-SKIP_INSTALL_PREREQUISITES=true script/quicktype $@
+SKIP_INSTALL_PREREQUISITES=true script/quicktype "$@"
