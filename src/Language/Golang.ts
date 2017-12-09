@@ -1,6 +1,6 @@
 "use strict";
 
-import { List, Map } from "immutable";
+import { Map } from "immutable";
 
 import {
     TypeKind,
@@ -93,15 +93,19 @@ class GoRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected get propertyNamer(): Namer {
+    protected get classPropertyNamer(): Namer {
         return namingFunction;
     }
 
-    protected get caseNamer(): Namer {
+    protected get unionMemberNamer(): Namer {
         return namingFunction;
     }
 
-    protected get casesInGlobalNamespace(): boolean {
+    protected get enumCaseNamer(): Namer {
+        return namingFunction;
+    }
+
+    protected get enumCasesInGlobalNamespace(): boolean {
         return true;
     }
 
@@ -113,11 +117,7 @@ class GoRenderer extends ConvenienceRenderer {
     }
 
     protected topLevelDependencyNames(_: Type, topLevelName: Name): DependencyName[] {
-        const unmarshalName = new DependencyName(
-            namingFunction,
-            List([topLevelName]),
-            (names: List<string>) => `Unmarshal${names.first()}`
-        );
+        const unmarshalName = new DependencyName(namingFunction, lookup => `unmarshal_${lookup(topLevelName)}`);
         this._topLevelUnmarshalNames = this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
         return [unmarshalName];
     }
@@ -185,7 +185,7 @@ class GoRenderer extends ConvenienceRenderer {
 
     private emitClass = (c: ClassType, className: Name): void => {
         let columns: Sourcelike[][] = [];
-        this.forEachProperty(c, "none", (name, jsonName, t) => {
+        this.forEachClassProperty(c, "none", (name, jsonName, t) => {
             const goType = this.goType(t, true);
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`']]);
         });
@@ -197,7 +197,7 @@ class GoRenderer extends ConvenienceRenderer {
         this.emitLine("const (");
         let onFirst = true;
         this.indent(() =>
-            this.forEachCase(e, "none", name => {
+            this.forEachEnumCase(e, "none", name => {
                 if (onFirst) {
                     this.emitLine(name, " ", enumName, " = iota");
                 } else {
@@ -216,7 +216,7 @@ if err != nil {
 }`);
             this.emitBlock("if v, ok := tok.(string); ok", () => {
                 this.emitBlock("switch v", () => {
-                    this.forEachCase(e, "none", (name, jsonName) => {
+                    this.forEachEnumCase(e, "none", (name, jsonName) => {
                         this.emitLine('case "', stringEscape(jsonName), '":');
                         this.indent(() => this.emitLine("*x = ", name));
                     });
@@ -236,7 +236,7 @@ if err != nil {
         this.emitNewline();
         this.emitFunc(["(x *", enumName, ") MarshalJSON() ([]byte, error)"], () => {
             this.emitBlock("switch *x", () => {
-                this.forEachCase(e, "none", (name, jsonName) => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine("case ", name, ":");
                     this.indent(() => this.emitLine('return json.Marshal("', stringEscape(jsonName), '")'));
                 });
@@ -245,18 +245,18 @@ if err != nil {
         });
     };
 
-    private emitUnion = (c: UnionType, unionName: Name): void => {
-        const [hasNull, nonNulls] = removeNullFromUnion(c);
+    private emitUnion = (u: UnionType, unionName: Name): void => {
+        const [hasNull, nonNulls] = removeNullFromUnion(u);
         const isNullableArg = hasNull ? "true" : "false";
 
         const ifMember: <T, U>(
             kind: TypeKind,
             ifNotMember: U,
-            f: (t: Type, fieldName: string, goType: Sourcelike) => T
+            f: (t: Type, fieldName: Name, goType: Sourcelike) => T
         ) => T | U = (kind, ifNotMember, f) => {
-            const maybeType = c.findMember(kind);
+            const maybeType = u.findMember(kind);
             if (!maybeType) return ifNotMember;
-            return f(maybeType, this.unionFieldName(maybeType), this.goType(maybeType));
+            return f(maybeType, this.nameForUnionMember(u, maybeType), this.goType(maybeType));
         };
 
         const maybeAssignNil = (kind: TypeKind): void => {
@@ -265,8 +265,8 @@ if err != nil {
             });
         };
         const makeArgs = (
-            primitiveArg: (fieldName: string) => Sourcelike,
-            compoundArg: (isClass: boolean, fieldName: string) => Sourcelike
+            primitiveArg: (fieldName: Sourcelike) => Sourcelike,
+            compoundArg: (isClass: boolean, fieldName: Sourcelike) => Sourcelike
         ): Sourcelike => {
             const args: Sourcelike = [];
             for (const kind of primitiveValueTypeKinds) {
@@ -283,8 +283,7 @@ if err != nil {
         };
 
         let columns: Sourcelike[][] = [];
-        nonNulls.forEach((t: Type) => {
-            const fieldName = this.unionFieldName(t);
+        this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
             const goType = this.nullableGoType(t, true);
             columns.push([[fieldName, " "], goType]);
         });

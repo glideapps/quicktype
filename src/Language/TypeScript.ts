@@ -105,11 +105,15 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         return new Namer(typeNameStyle, []);
     }
 
-    protected get propertyNamer(): Namer {
+    protected get classPropertyNamer(): Namer {
         return new Namer(propertyNameStyle, []);
     }
 
-    protected get caseNamer(): Namer {
+    protected get unionMemberNamer(): null {
+        return null;
+    }
+
+    protected get enumCaseNamer(): Namer {
         return new Namer(typeNameStyle, []);
     }
 
@@ -122,7 +126,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
 
     private emitEnum = (e: EnumType, enumName: Name): void => {
         this.emitBlock(["export enum ", enumName], "", () => {
-            this.forEachCase(e, "none", (name, jsonName) => {
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
                 this.emitLine(name, ` = "${stringEscape(jsonName)}",`);
             });
         });
@@ -197,7 +201,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         this.emitBlock("const typeMap: any =", ";", () => {
             this.forEachClass("none", (t, name) => {
                 this.emitBlock(['"', name, '":'], ",", () => {
-                    this.forEachProperty(t, "none", (propName, _propJsonName, propType) => {
+                    this.forEachClassProperty(t, "none", (propName, _propJsonName, propType) => {
                         this.emitLine(propName, ": ", this.typeMapTypeFor(propType), ",");
                     });
                 });
@@ -205,7 +209,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             this.forEachEnum("none", (e, name) => {
                 this.emitLine('"', name, '": [');
                 this.indent(() => {
-                    this.forEachCase(e, "none", caseName => {
+                    this.forEachEnumCase(e, "none", caseName => {
                         this.emitLine(name, ".", caseName, ",");
                     });
                 });
@@ -217,7 +221,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     private emitClass = (c: ClassType, className: Name) => {
         this.emitBlock(["export interface ", className], "", () => {
             const table: Sourcelike[][] = [];
-            this.forEachProperty(c, "none", (name, _jsonName, t) => {
+            this.forEachClassProperty(c, "none", (name, _jsonName, t) => {
                 const nullable = t instanceof UnionType && nullableFromUnion(t);
                 table.push([[name, nullable ? "?" : "", ": "], [this.sourceFor(nullable || t), ";"]]);
             });
