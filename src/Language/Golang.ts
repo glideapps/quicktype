@@ -462,8 +462,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         return json.Marshal(nil)
     }
     return nil, errors.New("Union must not be null")
-}
-`);
+}`);
         }
     }
 }
