@@ -10,6 +10,7 @@ import { Annotation } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
 import { Readable } from "stream";
 import { panic, assert, defined } from "./Support";
+import { introspectServer } from "./GraphQLIntrospection";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -26,6 +27,8 @@ export interface CLIOptions {
     srcUrls?: string;
     srcLang: string;
     graphqlSchema?: string;
+    graphqlIntrospect?: string;
+    graphqlServerHeader?: string[];
     out?: string;
 
     noMaps: boolean;
@@ -137,14 +140,14 @@ function inferTopLevel(options: Partial<CLIOptions>): string {
 
 function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
     let srcLang = opts.srcLang;
-    if (opts.graphqlSchema !== undefined) {
+    if (opts.graphqlSchema !== undefined || opts.graphqlIntrospect !== undefined) {
         assert(
             srcLang === undefined || srcLang === "graphql",
             "If a GraphQL schema is specified, the source language must be GraphQL"
         );
         srcLang = "graphql";
     } else {
-        assert(srcLang !== "graphql", "Please specify a GraphQL schema with --graphql-schema");
+        assert(srcLang !== "graphql", "Please specify a GraphQL schema with --graphql-schema or --graphql-introspect");
         srcLang = srcLang || "json";
     }
 
@@ -161,7 +164,9 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         help: opts.help || false,
         quiet: opts.quiet || false,
         out: opts.out,
-        graphqlSchema: opts.graphqlSchema
+        graphqlSchema: opts.graphqlSchema,
+        graphqlIntrospect: opts.graphqlIntrospect,
+        graphqlServerHeader: opts.graphqlServerHeader
     };
 }
 
@@ -219,6 +224,18 @@ const optionDefinitions: OptionDefinition[] = [
         type: String,
         typeLabel: "FILE",
         description: "GraphQL introspection file."
+    },
+    {
+        name: "graphql-introspect",
+        type: String,
+        typeLabel: "URL",
+        description: "Introspect GraphQL schema from a server."
+    },
+    {
+        name: "graphql-server-header",
+        type: String,
+        multiple: true,
+        description: "HTTP header for the GraphQL introspection query."
     },
     {
         name: "no-maps",
@@ -440,12 +457,28 @@ export async function main(args: string[] | Partial<CLIOptions>) {
         let sources: SourceType<string | Readable> | undefined;
         switch (options.srcLang) {
             case "graphql":
+                let schemaString: string | undefined = undefined;
+                let wroteSchemaToFile = false;
+                if (options.graphqlIntrospect !== undefined) {
+                    schemaString = await introspectServer(options.graphqlIntrospect, options.graphqlServerHeader || []);
+                    if (options.graphqlSchema !== undefined) {
+                        fs.writeFileSync(options.graphqlSchema, schemaString);
+                        wroteSchemaToFile = true;
+                    }
+                }
                 if (options.src.length !== 1) {
+                    if (wroteSchemaToFile) {
+                        // We're done.
+                        return;
+                    }
                     return panic("Please specify one GraphQL query as input.");
                 }
                 const queryFile = options.src[0];
-                const schemaFile = defined(options.graphqlSchema);
-                const schema = JSON.parse(fs.readFileSync(schemaFile, "utf8"));
+                if (schemaString === undefined) {
+                    const schemaFile = defined(options.graphqlSchema);
+                    schemaString = fs.readFileSync(schemaFile, "utf8");
+                }
+                const schema = JSON.parse(schemaString);
                 const query = fs.readFileSync(queryFile, "utf8");
                 sources = { topLevelName: options.topLevel, schema, query };
                 break;
