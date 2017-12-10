@@ -193,6 +193,7 @@ class JSONFixture extends LanguageFixture {
       this.language,
       sample,
       "json",
+      true,
       additionalRendererOptions
     );
   }
@@ -228,6 +229,7 @@ class JSONFixture extends LanguageFixture {
         this.language,
         "schema.json",
         "schema",
+        true,
         additionalRendererOptions
       );
 
@@ -356,6 +358,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
       this.runLanguage,
       "schema.json",
       "schema",
+      false,
       additionalRendererOptions
     );
 
@@ -417,6 +420,7 @@ class JSONSchemaFixture extends LanguageFixture {
       this.language,
       filename,
       "schema",
+      false,
       additionalRendererOptions
     );
   }
@@ -487,6 +491,7 @@ class GraphQLFixture extends LanguageFixture {
       this.language,
       filename,
       "graphql",
+      false,
       additionalRendererOptions,
       schemaFilename
     );

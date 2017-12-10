@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, OrderedSet, List, Set } from "immutable";
+import { Map, OrderedMap, OrderedSet, List, Set } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -245,11 +245,11 @@ export abstract class TypeBuilder {
         return tref;
     }
 
-    getClassType(names: NameOrNames, isInferred: boolean, properties: Map<string, TypeRef>): TypeRef {
-        let tref = this._classTypes.get(properties);
+    getClassType(names: NameOrNames, isInferred: boolean, properties: OrderedMap<string, TypeRef>): TypeRef {
+        let tref = this._classTypes.get(properties.toMap());
         if (tref === undefined) {
             tref = this.addType(tr => new ClassType(tr, names, isInferred, properties));
-            this._classTypes = this._classTypes.set(properties, tref);
+            this._classTypes = this._classTypes.set(properties.toMap(), tref);
         } else {
             this.addNames(tref, names, isInferred);
         }
@@ -278,7 +278,11 @@ export class TypeGraphBuilder extends TypeBuilder {
         return this.addType(tref => new MapType(tref, valuesCreator()));
     }
 
-    getUniqueClassType = (names: NameOrNames, isInferred: boolean, properties?: Map<string, TypeRef>): TypeRef => {
+    getUniqueClassType = (
+        names: NameOrNames,
+        isInferred: boolean,
+        properties?: OrderedMap<string, TypeRef>
+    ): TypeRef => {
         return this.addType(tref => new ClassType(tref, names, isInferred, properties));
     };
 
