@@ -18,7 +18,6 @@ import { intercalate } from "../Support";
 
 import { Namer, Name } from "../Naming";
 
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
 import { TargetLanguage } from "../TargetLanguage";
@@ -28,21 +27,19 @@ import { StringTypeMapping } from "../TypeBuilder";
 const unicode = require("unicode-properties");
 
 export default class SimpleTypesTargetLanguage extends TargetLanguage {
-    static declareUnionsOption = new BooleanOption("declare-unions", "Declare unions as named types", false);
+    private readonly _declareUnionsOption = new BooleanOption("declare-unions", "Declare unions as named types", false);
 
     constructor() {
-        super("Simple Types", ["types"], "txt", [SimpleTypesTargetLanguage.declareUnionsOption.definition]);
+        super("Simple Types", ["types"], "txt");
+        this.setOptions([this._declareUnionsOption]);
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
         return { date: "date", time: "time", dateTime: "date-time" };
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        return new SimpleTypesRenderer(
-            graph,
-            !SimpleTypesTargetLanguage.declareUnionsOption.getValue(optionValues)
-        ).render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return SimpleTypesRenderer;
     }
 }
 

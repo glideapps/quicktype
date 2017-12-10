@@ -30,21 +30,18 @@ import { StringOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
 export default class GoTargetLanguage extends TargetLanguage {
-    private readonly _packageOption: StringOption;
+    private readonly _packageOption = new StringOption("package", "Generated package name", "NAME", "main");
 
     constructor() {
-        const packageOption = new StringOption("package", "Generated package name", "NAME", "main");
-        super("Go", ["go", "golang"], "go", [packageOption.definition]);
-        this._packageOption = packageOption;
+        super("Go", ["go", "golang"], "go");
+        this.setOptions([this._packageOption]);
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new GoRenderer(graph, this._packageOption.getValue(optionValues));
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return GoRenderer;
     }
 
     protected get indentation(): string {

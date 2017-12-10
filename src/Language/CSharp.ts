@@ -23,7 +23,6 @@ import {
 } from "../Strings";
 import { intercalate, defined, assert, panic } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { StringOption, EnumOption } from "../RendererOptions";
@@ -34,51 +33,40 @@ const unicode = require("unicode-properties");
 const lodash = require("lodash");
 
 type Version = 5 | 6;
-type Features = { helpers: boolean; attributes: boolean };
+type OutputFeatures = { helpers: boolean; attributes: boolean };
 
 export default class CSharpTargetLanguage extends TargetLanguage {
-    private readonly _listOption: EnumOption<boolean>;
-    private readonly _denseOption: EnumOption<boolean>;
-    private readonly _featuresOption: EnumOption<Features>;
-    private readonly _namespaceOption: StringOption;
-    private readonly _versionOption: EnumOption<Version>;
+    private readonly _listOption = new EnumOption("array-type", "Use T[] or List<T>", [
+        ["array", false],
+        ["list", true]
+    ]);
+    private readonly _denseOption = new EnumOption("density", "Property density", [["normal", false], ["dense", true]]);
+    private readonly _featuresOption = new EnumOption("features", "Output features", [
+        ["complete", { helpers: true, attributes: true }],
+        ["attributes-only", { helpers: false, attributes: true }],
+        ["just-types", { helpers: false, attributes: false }]
+    ]);
+    // FIXME: Do this via a configurable named eventually.
+    private readonly _namespaceOption = new StringOption("namespace", "Generated namespace", "NAME", "QuickType");
+    private readonly _versionOption = new EnumOption<Version>("csharp-version", "C# version", [["6", 6], ["5", 5]]);
 
     constructor() {
-        const listOption = new EnumOption("array-type", "Use T[] or List<T>", [["array", false], ["list", true]]);
-        const denseOption = new EnumOption("density", "Property density", [["normal", false], ["dense", true]]);
-        const featuresOption = new EnumOption("features", "Output features", [
-            ["complete", { helpers: true, attributes: true }],
-            ["attributes-only", { helpers: false, attributes: true }],
-            ["just-types", { helpers: false, attributes: false }]
+        super("C#", ["cs", "csharp"], "cs");
+        this.setOptions([
+            this._namespaceOption,
+            this._versionOption,
+            this._denseOption,
+            this._listOption,
+            this._featuresOption
         ]);
-        // FIXME: Do this via a configurable named eventually.
-        const namespaceOption = new StringOption("namespace", "Generated namespace", "NAME", "QuickType");
-        const versionOption = new EnumOption<Version>("csharp-version", "C# version", [["6", 6], ["5", 5]]);
-        const options = [namespaceOption, versionOption, denseOption, listOption, featuresOption];
-        super("C#", ["cs", "csharp"], "cs", options.map(o => o.definition));
-        this._listOption = listOption;
-        this._denseOption = denseOption;
-        this._featuresOption = featuresOption;
-        this._namespaceOption = namespaceOption;
-        this._versionOption = versionOption;
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
         return { date: "date-time", time: "date-time", dateTime: "date-time" };
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        const { helpers, attributes } = this._featuresOption.getValue(optionValues);
-        const renderer = new CSharpRenderer(
-            graph,
-            this._listOption.getValue(optionValues),
-            this._denseOption.getValue(optionValues),
-            helpers,
-            attributes,
-            this._namespaceOption.getValue(optionValues),
-            this._versionOption.getValue(optionValues)
-        );
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return CSharpRenderer;
     }
 }
 
@@ -124,17 +112,20 @@ function isValueType(t: Type): boolean {
 
 class CSharpRenderer extends ConvenienceRenderer {
     private _enumExtensionsNames = Map<Name, Name>();
+    private readonly _needHelpers: boolean;
+    private readonly _needAttributes: boolean;
 
     constructor(
         graph: TypeGraph,
-        private readonly _useList: boolean,
-        private readonly _dense: boolean,
-        private readonly _needHelpers: boolean,
-        private readonly _needAttributes: boolean,
         private readonly _namespaceName: string,
-        private readonly _version: Version
+        private readonly _version: Version,
+        private readonly _dense: boolean,
+        private readonly _useList: boolean,
+        outputFeatures: OutputFeatures
     ) {
         super(graph);
+        this._needHelpers = outputFeatures.helpers;
+        this._needAttributes = outputFeatures.attributes;
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {

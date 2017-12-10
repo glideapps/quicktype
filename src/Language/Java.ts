@@ -33,33 +33,23 @@ import {
 } from "../Strings";
 import { assert } from "../Support";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
 export default class JavaTargetLanguage extends TargetLanguage {
-    private readonly _justTypesOption: BooleanOption;
-    private readonly _packageOption: StringOption;
+    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
+    // FIXME: Do this via a configurable named eventually.
+    private readonly _packageOption = new StringOption("package", "Generated package name", "NAME", "io.quicktype");
 
     constructor() {
-        const justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-        // FIXME: Do this via a configurable named eventually.
-        const packageOption = new StringOption("package", "Generated package name", "NAME", "io.quicktype");
-        const options = [packageOption, justTypesOption];
-        super("Java", ["java"], "java", options.map(o => o.definition));
-        this._justTypesOption = justTypesOption;
-        this._packageOption = packageOption;
+        super("Java", ["java"], "java");
+        this.setOptions([this._packageOption, this._justTypesOption]);
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new JavaRenderer(
-            graph,
-            this._justTypesOption.getValue(optionValues),
-            this._packageOption.getValue(optionValues)
-        );
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return JavaRenderer;
     }
 }
 
@@ -175,7 +165,7 @@ function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
 }
 
 class JavaRenderer extends ConvenienceRenderer {
-    constructor(graph: TypeGraph, private readonly _justTypes: boolean, private readonly _packageName: string) {
+    constructor(graph: TypeGraph, private readonly _packageName: string, private readonly _justTypes: boolean) {
         super(graph);
     }
 

@@ -6,7 +6,6 @@ import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption } from "../RendererOptions";
 import { NamedType, Type, matchType, nullableFromUnion, ClassType, UnionType, EnumType, PrimitiveType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, Name, DependencyName, funPrefixNamer, Namespace } from "../Naming";
 import {
@@ -27,26 +26,20 @@ import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
 export default class ElmTargetLanguage extends TargetLanguage {
-    private readonly _listOption: EnumOption<boolean>;
-    private readonly _moduleOption: StringOption;
+    private readonly _listOption = new EnumOption("array-type", "Use Array or List", [
+        ["array", false],
+        ["list", true]
+    ]);
+    // FIXME: Do this via a configurable named eventually.
+    private readonly _moduleOption = new StringOption("module", "Generated module name", "NAME", "QuickType");
 
     constructor() {
-        const listOption = new EnumOption("array-type", "Use Array or List", [["array", false], ["list", true]]);
-        // FIXME: Do this via a configurable named eventually.
-        const moduleOption = new StringOption("module", "Generated module name", "NAME", "QuickType");
-        const options = [moduleOption, listOption];
-        super("Elm", ["elm"], "elm", options.map(o => o.definition));
-        this._listOption = listOption;
-        this._moduleOption = moduleOption;
+        super("Elm", ["elm"], "elm");
+        this.setOptions([this._moduleOption, this._listOption]);
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new ElmRenderer(
-            graph,
-            this._listOption.getValue(optionValues),
-            this._moduleOption.getValue(optionValues)
-        );
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return ElmRenderer;
     }
 }
 
@@ -156,7 +149,7 @@ class ElmRenderer extends ConvenienceRenderer {
     private _topLevelDependents: Map<Name, TopLevelDependent> = Map();
     private _namedTypeDependents: Map<Name, NamedTypeDependent> = Map();
 
-    constructor(graph: TypeGraph, private readonly _useList: boolean, private readonly _moduleName: string) {
+    constructor(graph: TypeGraph, private readonly _moduleName: string, private readonly _useList: boolean) {
         super(graph);
     }
 

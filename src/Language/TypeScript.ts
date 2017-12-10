@@ -15,7 +15,6 @@ import { intercalate } from "../Support";
 
 import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption } from "../RendererOptions";
@@ -23,25 +22,21 @@ import { BooleanOption } from "../RendererOptions";
 const unicode = require("unicode-properties");
 
 export default class L extends TargetLanguage {
-    static justTypes = new BooleanOption("just-types", "Interfaces only", false);
-    static declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
-    static runtimeTypecheck = new BooleanOption("runtime-typecheck", "Assert JSON.parse results at runtime", false);
+    private readonly _justTypes = new BooleanOption("just-types", "Interfaces only", false);
+    private readonly _declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
+    private readonly _runtimeTypecheck = new BooleanOption(
+        "runtime-typecheck",
+        "Assert JSON.parse results at runtime",
+        false
+    );
 
     constructor() {
-        super("TypeScript", ["typescript", "ts"], "ts", [
-            L.justTypes.definition,
-            L.declareUnions.definition,
-            L.runtimeTypecheck.definition
-        ]);
+        super("TypeScript", ["typescript", "ts"], "ts");
+        this.setOptions([this._justTypes, this._declareUnions, this._runtimeTypecheck]);
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        return new TypeScriptRenderer(
-            graph,
-            L.justTypes.getValue(optionValues),
-            !L.declareUnions.getValue(optionValues),
-            L.runtimeTypecheck.getValue(optionValues)
-        ).render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return TypeScriptRenderer;
     }
 }
 
@@ -88,13 +83,16 @@ function propertyNameStyle(original: string): string {
 }
 
 class TypeScriptRenderer extends ConvenienceRenderer {
+    private readonly _inlineUnions: boolean;
+
     constructor(
         graph: TypeGraph,
-        private readonly justTypes: boolean,
-        private readonly inlineUnions: boolean,
-        private readonly runtimeTypecheck: boolean
+        private readonly _justTypes: boolean,
+        declareUnions: boolean,
+        private readonly _runtimeTypecheck: boolean
     ) {
         super(graph);
+        this._inlineUnions = !declareUnions;
     }
 
     protected topLevelNameStyle(rawName: string): string {
@@ -144,7 +142,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             _stringType => "string",
             arrayType => {
                 const itemType = this.sourceFor(arrayType.items);
-                if (this.inlineUnions && arrayType.items instanceof UnionType) {
+                if (this._inlineUnions && arrayType.items instanceof UnionType) {
                     const nullable = nullableFromUnion(arrayType.items);
                     if (nullable !== null) {
                         return [this.sourceFor(nullable), "[]"];
@@ -161,7 +159,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             mapType => ["{ [key: string]: ", this.sourceFor(mapType.values), " }"],
             enumType => this.nameForNamedType(enumType),
             unionType => {
-                if (this.inlineUnions || nullableFromUnion(unionType)) {
+                if (this._inlineUnions || nullableFromUnion(unionType)) {
                     const children = unionType.children.map(this.sourceFor);
                     return intercalate(" | ", children).toArray();
                 } else {
@@ -232,17 +230,17 @@ class TypeScriptRenderer extends ConvenienceRenderer {
 
     emitConvertModule = () => {
         this.emitMultiline(`// Converts JSON strings to/from your types`);
-        if (this.runtimeTypecheck) {
+        if (this._runtimeTypecheck) {
             this.emitMultiline(`// and asserts the results of JSON.parse at runtime`);
         }
         this.emitBlock("export module Convert", "", () => {
-            if (this.runtimeTypecheck) {
+            if (this._runtimeTypecheck) {
                 this.emitLine("let path: string[] = [];");
                 this.emitNewline();
             }
             this.forEachTopLevel("interposing", (t, name) => {
                 this.emitBlock(["export function to", name, "(json: string): ", this.sourceFor(t)], "", () => {
-                    if (this.runtimeTypecheck) {
+                    if (this._runtimeTypecheck) {
                         this.emitLine("return cast(JSON.parse(json), ", this.typeMapTypeFor(t), ");");
                     } else {
                         this.emitLine("return JSON.parse(json);");
@@ -259,7 +257,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
                     }
                 );
             });
-            if (this.runtimeTypecheck) {
+            if (this._runtimeTypecheck) {
                 this.emitMultiline(`
 function cast<T>(obj: any, typ: any): T {
     path = [];
@@ -357,7 +355,7 @@ function O(className: string) {
     };
 
     emitUnion = (u: UnionType, unionName: Name) => {
-        if (this.inlineUnions) {
+        if (this._inlineUnions) {
             return;
         }
         const children = u.children.map(this.sourceFor);
@@ -366,7 +364,7 @@ function O(className: string) {
     };
 
     protected emitSourceStructure() {
-        if (!this.justTypes) {
+        if (!this._justTypes) {
             this.emitMultiline(`// To parse this data:
 //`);
             const topLevelNames: Sourcelike[] = [];
@@ -384,7 +382,7 @@ function O(className: string) {
                 const camelCaseName = modifySource(camelCase, name);
                 this.emitLine("//   const ", camelCaseName, " = Convert.to", name, "(json);");
             });
-            if (this.runtimeTypecheck) {
+            if (this._runtimeTypecheck) {
                 this.emitLine("//");
                 this.emitLine("// These functions will throw an error if the JSON doesn't");
                 this.emitLine("// match the expected interface, even if the JSON is valid.");
@@ -394,7 +392,7 @@ function O(className: string) {
 
         this.forEachNamedType("none", false, this.emitClass, this.emitEnum, this.emitUnion);
 
-        if (!this.justTypes) {
+        if (!this._justTypes) {
             this.emitConvertModule();
         }
     }
