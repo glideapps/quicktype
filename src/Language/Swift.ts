@@ -39,19 +39,15 @@ import {
 } from "../Strings";
 
 export default class SwiftTargetLanguage extends TargetLanguage {
-    private readonly _justTypesOption: BooleanOption;
-    private readonly _classOption: EnumOption<boolean>;
+    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
+    private readonly _classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
+        ["struct", false],
+        ["class", true]
+    ]);
 
     constructor() {
-        const justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-        const classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
-            ["struct", false],
-            ["class", true]
-        ]);
-        const options = [justTypesOption, classOption];
-        super("Swift", ["swift", "swift4"], "swift", options.map(o => o.definition));
-        this._justTypesOption = justTypesOption;
-        this._classOption = classOption;
+        super("Swift", ["swift", "swift4"], "swift");
+        this.setOptions([this._justTypesOption, this._classOption]);
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {

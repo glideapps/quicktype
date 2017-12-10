@@ -40,17 +40,13 @@ import { BooleanOption, StringOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
 export default class JavaTargetLanguage extends TargetLanguage {
-    private readonly _justTypesOption: BooleanOption;
-    private readonly _packageOption: StringOption;
+    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
+    // FIXME: Do this via a configurable named eventually.
+    private readonly _packageOption = new StringOption("package", "Generated package name", "NAME", "io.quicktype");
 
     constructor() {
-        const justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-        // FIXME: Do this via a configurable named eventually.
-        const packageOption = new StringOption("package", "Generated package name", "NAME", "io.quicktype");
-        const options = [packageOption, justTypesOption];
-        super("Java", ["java"], "java", options.map(o => o.definition));
-        this._justTypesOption = justTypesOption;
-        this._packageOption = packageOption;
+        super("Java", ["java"], "java");
+        this.setOptions([this._packageOption, this._justTypesOption]);
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {

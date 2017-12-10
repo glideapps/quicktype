@@ -38,52 +38,48 @@ import { assert } from "../Support";
 
 type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
+const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
+const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
+const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
+const upperUnderscoreValue: [string, NamingStyle] = ["upper-underscore-case", "upper-underscore"];
+
 export default class CPlusPlusTargetLanguage extends TargetLanguage {
-    private readonly _namespaceOption: StringOption;
-    private readonly _typeNamingStyleOption: EnumOption<NamingStyle>;
-    private readonly _memberNamingStyleOption: EnumOption<NamingStyle>;
-    private readonly _enumeratorNamingStyleOption: EnumOption<NamingStyle>;
-    private readonly _uniquePtrOption: EnumOption<boolean>;
+    private readonly _namespaceOption = new StringOption(
+        "namespace",
+        "Name of the generated namespace",
+        "NAME",
+        "quicktype"
+    );
+    private readonly _typeNamingStyleOption = new EnumOption<NamingStyle>("type-style", "Naming style for types", [
+        pascalValue,
+        underscoreValue,
+        camelValue,
+        upperUnderscoreValue
+    ]);
+    private readonly _memberNamingStyleOption = new EnumOption<NamingStyle>(
+        "member-style",
+        "Naming style for members",
+        [underscoreValue, pascalValue, camelValue, upperUnderscoreValue]
+    );
+    private readonly _enumeratorNamingStyleOption = new EnumOption<NamingStyle>(
+        "enumerator-style",
+        "Naming style for enumerators",
+        [upperUnderscoreValue, underscoreValue, pascalValue, camelValue]
+    );
+    private readonly _uniquePtrOption = new EnumOption("unions", "Use containment or indirection for unions", [
+        ["containment", false],
+        ["indirection", true]
+    ]);
 
     constructor() {
-        const namespaceOption = new StringOption("namespace", "Name of the generated namespace", "NAME", "quicktype");
-        const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
-        const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
-        const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
-        const upperUnderscoreValue: [string, NamingStyle] = ["upper-underscore-case", "upper-underscore"];
-        const typeNamingStyleOption = new EnumOption<NamingStyle>("type-style", "Naming style for types", [
-            pascalValue,
-            underscoreValue,
-            camelValue,
-            upperUnderscoreValue
+        super("C++", ["c++", "cpp", "cplusplus"], "cpp");
+        this.setOptions([
+            this._namespaceOption,
+            this._typeNamingStyleOption,
+            this._memberNamingStyleOption,
+            this._enumeratorNamingStyleOption,
+            this._uniquePtrOption
         ]);
-        const memberNamingStyleOption = new EnumOption<NamingStyle>("member-style", "Naming style for members", [
-            underscoreValue,
-            pascalValue,
-            camelValue,
-            upperUnderscoreValue
-        ]);
-        const enumeratorNamingStyleOption = new EnumOption<NamingStyle>(
-            "enumerator-style",
-            "Naming style for enumerators",
-            [upperUnderscoreValue, underscoreValue, pascalValue, camelValue]
-        );
-        const uniquePtrOption = new EnumOption("unions", "Use containment or indirection for unions", [
-            ["containment", false],
-            ["indirection", true]
-        ]);
-        super("C++", ["c++", "cpp", "cplusplus"], "cpp", [
-            namespaceOption.definition,
-            typeNamingStyleOption.definition,
-            memberNamingStyleOption.definition,
-            enumeratorNamingStyleOption.definition,
-            uniquePtrOption.definition
-        ]);
-        this._namespaceOption = namespaceOption;
-        this._typeNamingStyleOption = typeNamingStyleOption;
-        this._memberNamingStyleOption = memberNamingStyleOption;
-        this._enumeratorNamingStyleOption = enumeratorNamingStyleOption;
-        this._uniquePtrOption = uniquePtrOption;
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {

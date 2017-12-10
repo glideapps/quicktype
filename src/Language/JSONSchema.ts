@@ -14,7 +14,8 @@ import { StringTypeMapping } from "../TypeBuilder";
 
 export default class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
-        super("JSON Schema", ["schema", "json-schema"], "schema", []);
+        super("JSON Schema", ["schema", "json-schema"], "schema");
+        this.setOptions([]);
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {

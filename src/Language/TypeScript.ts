@@ -23,24 +23,25 @@ import { BooleanOption } from "../RendererOptions";
 const unicode = require("unicode-properties");
 
 export default class L extends TargetLanguage {
-    static justTypes = new BooleanOption("just-types", "Interfaces only", false);
-    static declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
-    static runtimeTypecheck = new BooleanOption("runtime-typecheck", "Assert JSON.parse results at runtime", false);
+    private readonly _justTypes = new BooleanOption("just-types", "Interfaces only", false);
+    private readonly _declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
+    private readonly _runtimeTypecheck = new BooleanOption(
+        "runtime-typecheck",
+        "Assert JSON.parse results at runtime",
+        false
+    );
 
     constructor() {
-        super("TypeScript", ["typescript", "ts"], "ts", [
-            L.justTypes.definition,
-            L.declareUnions.definition,
-            L.runtimeTypecheck.definition
-        ]);
+        super("TypeScript", ["typescript", "ts"], "ts");
+        this.setOptions([this._justTypes, this._declareUnions, this._runtimeTypecheck]);
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
         return new TypeScriptRenderer(
             graph,
-            L.justTypes.getValue(optionValues),
-            !L.declareUnions.getValue(optionValues),
-            L.runtimeTypecheck.getValue(optionValues)
+            this._justTypes.getValue(optionValues),
+            !this._declareUnions.getValue(optionValues),
+            this._runtimeTypecheck.getValue(optionValues)
         ).render();
     }
 }

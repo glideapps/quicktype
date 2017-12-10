@@ -27,17 +27,16 @@ import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
 export default class ElmTargetLanguage extends TargetLanguage {
-    private readonly _listOption: EnumOption<boolean>;
-    private readonly _moduleOption: StringOption;
+    private readonly _listOption = new EnumOption("array-type", "Use Array or List", [
+        ["array", false],
+        ["list", true]
+    ]);
+    // FIXME: Do this via a configurable named eventually.
+    private readonly _moduleOption = new StringOption("module", "Generated module name", "NAME", "QuickType");
 
     constructor() {
-        const listOption = new EnumOption("array-type", "Use Array or List", [["array", false], ["list", true]]);
-        // FIXME: Do this via a configurable named eventually.
-        const moduleOption = new StringOption("module", "Generated module name", "NAME", "QuickType");
-        const options = [moduleOption, listOption];
-        super("Elm", ["elm"], "elm", options.map(o => o.definition));
-        this._listOption = listOption;
-        this._moduleOption = moduleOption;
+        super("Elm", ["elm"], "elm");
+        this.setOptions([this._moduleOption, this._listOption]);
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {

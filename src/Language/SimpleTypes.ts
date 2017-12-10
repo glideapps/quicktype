@@ -28,10 +28,11 @@ import { StringTypeMapping } from "../TypeBuilder";
 const unicode = require("unicode-properties");
 
 export default class SimpleTypesTargetLanguage extends TargetLanguage {
-    static declareUnionsOption = new BooleanOption("declare-unions", "Declare unions as named types", false);
+    private readonly _declareUnionsOption = new BooleanOption("declare-unions", "Declare unions as named types", false);
 
     constructor() {
-        super("Simple Types", ["types"], "txt", [SimpleTypesTargetLanguage.declareUnionsOption.definition]);
+        super("Simple Types", ["types"], "txt");
+        this.setOptions([this._declareUnionsOption]);
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
@@ -39,10 +40,7 @@ export default class SimpleTypesTargetLanguage extends TargetLanguage {
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        return new SimpleTypesRenderer(
-            graph,
-            !SimpleTypesTargetLanguage.declareUnionsOption.getValue(optionValues)
-        ).render();
+        return new SimpleTypesRenderer(graph, !this._declareUnionsOption.getValue(optionValues)).render();
     }
 }
 

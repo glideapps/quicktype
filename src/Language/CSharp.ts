@@ -34,33 +34,31 @@ const unicode = require("unicode-properties");
 const lodash = require("lodash");
 
 type Version = 5 | 6;
-type Features = { helpers: boolean; attributes: boolean };
 
 export default class CSharpTargetLanguage extends TargetLanguage {
-    private readonly _listOption: EnumOption<boolean>;
-    private readonly _denseOption: EnumOption<boolean>;
-    private readonly _featuresOption: EnumOption<Features>;
-    private readonly _namespaceOption: StringOption;
-    private readonly _versionOption: EnumOption<Version>;
+    private readonly _listOption = new EnumOption("array-type", "Use T[] or List<T>", [
+        ["array", false],
+        ["list", true]
+    ]);
+    private readonly _denseOption = new EnumOption("density", "Property density", [["normal", false], ["dense", true]]);
+    private readonly _featuresOption = new EnumOption("features", "Output features", [
+        ["complete", { helpers: true, attributes: true }],
+        ["attributes-only", { helpers: false, attributes: true }],
+        ["just-types", { helpers: false, attributes: false }]
+    ]);
+    // FIXME: Do this via a configurable named eventually.
+    private readonly _namespaceOption = new StringOption("namespace", "Generated namespace", "NAME", "QuickType");
+    private readonly _versionOption = new EnumOption<Version>("csharp-version", "C# version", [["6", 6], ["5", 5]]);
 
     constructor() {
-        const listOption = new EnumOption("array-type", "Use T[] or List<T>", [["array", false], ["list", true]]);
-        const denseOption = new EnumOption("density", "Property density", [["normal", false], ["dense", true]]);
-        const featuresOption = new EnumOption("features", "Output features", [
-            ["complete", { helpers: true, attributes: true }],
-            ["attributes-only", { helpers: false, attributes: true }],
-            ["just-types", { helpers: false, attributes: false }]
+        super("C#", ["cs", "csharp"], "cs");
+        this.setOptions([
+            this._namespaceOption,
+            this._versionOption,
+            this._denseOption,
+            this._listOption,
+            this._featuresOption
         ]);
-        // FIXME: Do this via a configurable named eventually.
-        const namespaceOption = new StringOption("namespace", "Generated namespace", "NAME", "QuickType");
-        const versionOption = new EnumOption<Version>("csharp-version", "C# version", [["6", 6], ["5", 5]]);
-        const options = [namespaceOption, versionOption, denseOption, listOption, featuresOption];
-        super("C#", ["cs", "csharp"], "cs", options.map(o => o.definition));
-        this._listOption = listOption;
-        this._denseOption = denseOption;
-        this._featuresOption = featuresOption;
-        this._namespaceOption = namespaceOption;
-        this._versionOption = versionOption;
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {

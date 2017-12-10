@@ -34,12 +34,11 @@ import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
 export default class GoTargetLanguage extends TargetLanguage {
-    private readonly _packageOption: StringOption;
+    private readonly _packageOption = new StringOption("package", "Generated package name", "NAME", "main");
 
     constructor() {
-        const packageOption = new StringOption("package", "Generated package name", "NAME", "main");
-        super("Go", ["go", "golang"], "go", [packageOption.definition]);
-        this._packageOption = packageOption;
+        super("Go", ["go", "golang"], "go");
+        this.setOptions([this._packageOption]);
     }
 
     renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
