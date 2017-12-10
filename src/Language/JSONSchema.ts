@@ -5,7 +5,6 @@ import { Collection } from "immutable";
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, NamedType, UnionType, ClassType, matchTypeExhaustive } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
 import { legalizeCharacters, splitIntoWords, combineWords, firstUpperWordStyle, allUpperWordStyle } from "../Strings";
@@ -22,9 +21,8 @@ export default class JSONSchemaTargetLanguage extends TargetLanguage {
         return { date: "date", time: "time", dateTime: "date-time" };
     }
 
-    renderGraph(graph: TypeGraph, _optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new JSONSchemaRenderer(graph);
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return JSONSchemaRenderer;
     }
 }
 

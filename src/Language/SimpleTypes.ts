@@ -18,7 +18,6 @@ import { intercalate } from "../Support";
 
 import { Namer, Name } from "../Naming";
 
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
 import { TargetLanguage } from "../TargetLanguage";
@@ -39,8 +38,8 @@ export default class SimpleTypesTargetLanguage extends TargetLanguage {
         return { date: "date", time: "time", dateTime: "date-time" };
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        return new SimpleTypesRenderer(graph, !this._declareUnionsOption.getValue(optionValues)).render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return SimpleTypesRenderer;
     }
 }
 

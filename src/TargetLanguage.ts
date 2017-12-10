@@ -1,35 +1,37 @@
 "use strict";
 
 import { TypeGraph } from "./TypeGraph";
-import { RenderResult } from "./Renderer";
+import { Renderer } from "./Renderer";
 import { OptionDefinition, Option } from "./RendererOptions";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
 import { StringTypeMapping } from "./TypeBuilder";
 import { assert, panic } from "./Support";
 
 export abstract class TargetLanguage {
-    private _optionDefinitions?: OptionDefinition[] | undefined;
+    private _options?: Option<any>[];
 
     constructor(readonly displayName: string, readonly names: string[], readonly extension: string) {}
 
     protected setOptions = (options: Option<any>[]): void => {
-        assert(
-            this._optionDefinitions === undefined,
-            `Target language ${this.displayName} sets its options more than once`
-        );
-        this._optionDefinitions = options.map(o => o.definition);
+        assert(this._options === undefined, `Target language ${this.displayName} sets its options more than once`);
+        this._options = options;
     };
 
     get optionDefinitions(): OptionDefinition[] {
-        if (this._optionDefinitions === undefined) {
+        if (this._options === undefined) {
             return panic(`Target language ${this.displayName} did not set its options`);
         }
-        return this._optionDefinitions;
+        return this._options.map(o => o.definition);
     }
 
+    protected abstract get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => Renderer;
+
     renderGraphAndSerialize(graph: TypeGraph, rendererOptions: { [name: string]: any }): SerializedRenderResult {
-        assert(this._optionDefinitions !== undefined, `Target language ${this.displayName} did not set its options`);
-        const renderResult = this.renderGraph(graph, rendererOptions);
+        if (this._options === undefined) {
+            return panic(`Target language ${this.displayName} did not set its options`);
+        }
+        const renderer = new this.rendererClass(graph, ...this._options.map(o => o.getValue(rendererOptions)));
+        const renderResult = renderer.render();
         return serializeRenderResult(renderResult, this.indentation);
     }
 
@@ -49,6 +51,4 @@ export abstract class TargetLanguage {
             dateTime: partial.dateTime || "string"
         };
     }
-
-    protected abstract renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult;
 }

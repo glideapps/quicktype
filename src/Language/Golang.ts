@@ -30,7 +30,6 @@ import { StringOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
 export default class GoTargetLanguage extends TargetLanguage {
@@ -41,9 +40,8 @@ export default class GoTargetLanguage extends TargetLanguage {
         this.setOptions([this._packageOption]);
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new GoRenderer(graph, this._packageOption.getValue(optionValues));
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return GoRenderer;
     }
 
     protected get indentation(): string {

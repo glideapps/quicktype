@@ -23,7 +23,6 @@ import {
 } from "../Strings";
 import { intercalate, defined, assert, panic } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { StringOption, EnumOption } from "../RendererOptions";
@@ -34,6 +33,7 @@ const unicode = require("unicode-properties");
 const lodash = require("lodash");
 
 type Version = 5 | 6;
+type OutputFeatures = { helpers: boolean; attributes: boolean };
 
 export default class CSharpTargetLanguage extends TargetLanguage {
     private readonly _listOption = new EnumOption("array-type", "Use T[] or List<T>", [
@@ -65,18 +65,8 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         return { date: "date-time", time: "date-time", dateTime: "date-time" };
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        const { helpers, attributes } = this._featuresOption.getValue(optionValues);
-        const renderer = new CSharpRenderer(
-            graph,
-            this._listOption.getValue(optionValues),
-            this._denseOption.getValue(optionValues),
-            helpers,
-            attributes,
-            this._namespaceOption.getValue(optionValues),
-            this._versionOption.getValue(optionValues)
-        );
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return CSharpRenderer;
     }
 }
 
@@ -122,17 +112,20 @@ function isValueType(t: Type): boolean {
 
 class CSharpRenderer extends ConvenienceRenderer {
     private _enumExtensionsNames = Map<Name, Name>();
+    private readonly _needHelpers: boolean;
+    private readonly _needAttributes: boolean;
 
     constructor(
         graph: TypeGraph,
-        private readonly _useList: boolean,
-        private readonly _dense: boolean,
-        private readonly _needHelpers: boolean,
-        private readonly _needAttributes: boolean,
         private readonly _namespaceName: string,
-        private readonly _version: Version
+        private readonly _version: Version,
+        private readonly _dense: boolean,
+        private readonly _useList: boolean,
+        outputFeatures: OutputFeatures
     ) {
         super(graph);
+        this._needHelpers = outputFeatures.helpers;
+        this._needAttributes = outputFeatures.attributes;
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {

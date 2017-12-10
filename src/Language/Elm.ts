@@ -6,7 +6,6 @@ import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption } from "../RendererOptions";
 import { NamedType, Type, matchType, nullableFromUnion, ClassType, UnionType, EnumType, PrimitiveType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, Name, DependencyName, funPrefixNamer, Namespace } from "../Naming";
 import {
@@ -39,13 +38,8 @@ export default class ElmTargetLanguage extends TargetLanguage {
         this.setOptions([this._moduleOption, this._listOption]);
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new ElmRenderer(
-            graph,
-            this._listOption.getValue(optionValues),
-            this._moduleOption.getValue(optionValues)
-        );
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return ElmRenderer;
     }
 }
 
@@ -155,7 +149,7 @@ class ElmRenderer extends ConvenienceRenderer {
     private _topLevelDependents: Map<Name, TopLevelDependent> = Map();
     private _namedTypeDependents: Map<Name, NamedTypeDependent> = Map();
 
-    constructor(graph: TypeGraph, private readonly _useList: boolean, private readonly _moduleName: string) {
+    constructor(graph: TypeGraph, private readonly _moduleName: string, private readonly _useList: boolean) {
         super(graph);
     }
 

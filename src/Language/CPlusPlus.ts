@@ -31,7 +31,6 @@ import {
     allLowerWordStyle
 } from "../Strings";
 import { defined, assertNever } from "../Support";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { StringOption, EnumOption } from "../RendererOptions";
 import { assert } from "../Support";
@@ -82,16 +81,8 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
         ]);
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new CPlusPlusRenderer(
-            graph,
-            this._namespaceOption.getValue(optionValues),
-            this._typeNamingStyleOption.getValue(optionValues),
-            this._memberNamingStyleOption.getValue(optionValues),
-            this._enumeratorNamingStyleOption.getValue(optionValues),
-            this._uniquePtrOption.getValue(optionValues)
-        );
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return CPlusPlusRenderer;
     }
 }
 

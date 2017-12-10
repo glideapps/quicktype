@@ -19,7 +19,6 @@ import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, EnumOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
@@ -50,13 +49,8 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         this.setOptions([this._justTypesOption, this._classOption]);
     }
 
-    renderGraph(graph: TypeGraph, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new SwiftRenderer(
-            graph,
-            this._justTypesOption.getValue(optionValues),
-            this._classOption.getValue(optionValues)
-        );
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return SwiftRenderer;
     }
 }
 
