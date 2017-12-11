@@ -7,5 +7,8 @@
 # and rebuilding PureScript for 10s faster runs if you
 # are just working on TargetLanguage code in TypeScript.
 
-npm run build &>/dev/null
-node --stack_trace_limit=100 dist/cli.js "$@"
+SCRIPTDIR=$(dirname "$0")
+BASEDIR="$SCRIPTDIR/.."
+
+( cd "$BASEDIR" ; npm run build &>/dev/null )
+node --stack_trace_limit=100 "$BASEDIR/dist/cli.js" "$@"
