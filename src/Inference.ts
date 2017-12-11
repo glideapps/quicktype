@@ -4,7 +4,7 @@ import { OrderedSet, OrderedMap } from "immutable";
 import * as pluralize from "pluralize";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
-import { assertNever, assert } from "./Support";
+import { assertNever, assert, panic, defined } from "./Support";
 import { TypeGraphBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 
@@ -33,20 +33,29 @@ function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => v
 }
 
 class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueArray, any> {
+    private _numValues?: number;
+
     constructor(
         typeBuilder: TypeGraphBuilder,
         typeName: string,
         isInferred: boolean,
         private readonly _typeInference: TypeInference,
-        private readonly _cjson: CompressedJSON,
-        private readonly _numValues: number
+        private readonly _cjson: CompressedJSON
     ) {
         super(typeBuilder, typeName, isInferred);
     }
 
+    setNumValues = (n: number): void => {
+        if (this._numValues !== undefined) {
+            return panic("Can only set number of values once");
+        }
+        this._numValues = n;
+    };
+
     protected makeEnum(enumCases: string[]): TypeRef | null {
         assert(enumCases.length > 0);
-        if (enumCases.length < Math.sqrt(this._numValues)) {
+        const numValues = defined(this._numValues);
+        if (numValues > 4 && enumCases.length < Math.sqrt(numValues)) {
             return this.typeBuilder.getEnumType(this.typeName, true, OrderedSet(enumCases));
         }
         return null;
@@ -66,7 +75,6 @@ class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueAr
 
 function canBeEnumCase(s: string): boolean {
     if (s.length === 0) return true; // FIXME: Do we really want this?
-    if ("0123456789".indexOf(s[0]) < 0) return false;
     return !isDate(s) && !isTime(s, false) && !isDateTime(s);
 }
 
@@ -79,16 +87,11 @@ export class TypeInference {
         isInferred: boolean,
         valueArray: NestedValueArray
     ): TypeRef => {
-        const unionBuilder = new InferenceUnionBuilder(
-            this._typeBuilder,
-            typeName,
-            isInferred,
-            this,
-            cjson,
-            valueArray.length
-        );
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeName, isInferred, this, cjson);
+        let numValues = 0;
 
         forEachValueInNestedValueArray(valueArray, value => {
+            numValues += 1;
             const t = valueTag(value);
             switch (t) {
                 case Tag.Null:
@@ -139,6 +142,7 @@ export class TypeInference {
             }
         });
 
+        unionBuilder.setNumValues(numValues);
         return unionBuilder.buildUnion(false);
     };
 
