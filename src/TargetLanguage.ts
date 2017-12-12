@@ -29,15 +29,15 @@ export abstract class TargetLanguage {
 
     renderGraphAndSerialize(
         graph: TypeGraph,
-        sortProperties: boolean,
+        alphabetizeProperties: boolean,
         rendererOptions: { [name: string]: any }
     ): SerializedRenderResult {
         if (this._options === undefined) {
             return panic(`Target language ${this.displayName} did not set its options`);
         }
         const renderer = new this.rendererClass(graph, ...this._options.map(o => o.getValue(rendererOptions)));
-        if ((renderer as any).setSortProperties !== undefined) {
-            (renderer as ConvenienceRenderer).setSortProperties(sortProperties);
+        if ((renderer as any).setAlphabetizeProperties !== undefined) {
+            (renderer as ConvenienceRenderer).setAlphabetizeProperties(alphabetizeProperties);
         }
         const renderResult = renderer.render();
         return serializeRenderResult(renderResult, this.indentation);

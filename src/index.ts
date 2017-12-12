@@ -85,7 +85,7 @@ export interface Options {
     sources: SourceType<string | Readable>;
     inferMaps: boolean;
     inferEnums: boolean;
-    sortProperties: boolean;
+    alphabetizeProperties: boolean;
     combineClasses: boolean;
     noRender: boolean;
     rendererOptions: RendererOptions;
@@ -96,7 +96,7 @@ const defaultOptions = {
     sources: [],
     inferMaps: true,
     inferEnums: true,
-    sortProperties: false,
+    alphabetizeProperties: false,
     combineClasses: true,
     noRender: false,
     rendererOptions: {}
@@ -238,7 +238,7 @@ export class Run {
 
         return targetLanguage.renderGraphAndSerialize(
             graph,
-            this._options.sortProperties,
+            this._options.alphabetizeProperties,
             this._options.rendererOptions
         );
     };
