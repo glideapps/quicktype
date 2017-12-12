@@ -36,10 +36,6 @@ jobs:
       before_install: true
       install: npm install
       script: npm run pub
-      before_deploy:
-        - npm run patch-npm-version
-        - cp package.json dist/
-        - cd dist
       deploy:
         provider: npm
         email: djsiegel@gmail.com

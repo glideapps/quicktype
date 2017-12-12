@@ -36,10 +36,6 @@ function makeDistributedCLIExecutable() {
   shell.chmod("+x", cli);
 }
 
-function bundleDistributables() {
-  shell.cp(["README.md", "package.json"], "dist");
-}
-
 function main() {
   const skipPrereqs = !!process.env.SKIP_INSTALL_PREREQUISITES;
 
@@ -49,7 +45,6 @@ function main() {
 
   buildTypeScript();
   makeDistributedCLIExecutable();
-  bundleDistributables();
 }
 
 main();

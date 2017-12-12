@@ -2,12 +2,11 @@
   "name": "quicktype",
   "version": "5.0.1",
   "license": "Apache-2.0",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "repository": "https://github.com/quicktype/quicktype",
   "scripts": {
     "pub": "script/publish.sh",
-    "patch-npm-version": "script/patch-npm-version.ts",
     "prepare": "npm run build",
     "build": "script/build.ts",
     "test": "npm run build && script/test",
@@ -47,6 +46,8 @@
     "uglify-js": "^3.0.26",
     "watch": "^1.0.2"
   },
-  "files": ["*"],
-  "bin": "cli.js"
+  "files": [
+    "dist/**"
+  ],
+  "bin": "dist/cli.js"
 }
