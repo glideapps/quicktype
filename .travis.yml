@@ -10,13 +10,16 @@ env:
   - FIXTURE=elm,typescript,csharp
 services:
   - docker
-before_install:
-  - docker pull dvdsgl/quicktype:latest
+before_install: >
+  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || \
+    docker pull dvdsgl/quicktype:latest
 install: >
+  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || \
   docker build \
     --cache-from dvdsgl/quicktype:latest \
     --tag dvdsgl/quicktype .
 script: >
+  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || \
   docker run \
     -e FIXTURE \
     -e CI \
