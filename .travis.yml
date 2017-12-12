@@ -33,10 +33,13 @@ jobs:
     - stage: deploy
       env:
         - FIXTURE=none
-      before_install: npm run patch-npm-version
+      before_install: true
       install: npm install
       script: npm run pub
-      before_deploy: cd dist
+      before_deploy:
+        - npm run patch-npm-version
+        - cp package.json dist/
+        - cd dist
       deploy:
         provider: npm
         email: djsiegel@gmail.com
