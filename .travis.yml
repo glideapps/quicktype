@@ -10,13 +10,16 @@ env:
   - FIXTURE=elm,typescript,csharp
 services:
   - docker
-before_install:
-  - docker pull dvdsgl/quicktype:latest
+before_install: >
+  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || \
+    docker pull dvdsgl/quicktype:latest
 install: >
+  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || \
   docker build \
     --cache-from dvdsgl/quicktype:latest \
     --tag dvdsgl/quicktype .
 script: >
+  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || \
   docker run \
     -e FIXTURE \
     -e CI \
@@ -30,10 +33,13 @@ jobs:
     - stage: deploy
       env:
         - FIXTURE=none
-      before_install: npm run patch-npm-version
+      before_install: true
       install: npm install
       script: npm run pub
-      before_deploy: cd dist
+      before_deploy:
+        - npm run patch-npm-version
+        - cp package.json dist/
+        - cd dist
       deploy:
         provider: npm
         email: djsiegel@gmail.com
