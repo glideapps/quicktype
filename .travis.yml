@@ -30,7 +30,7 @@ jobs:
     - stage: deploy
       env:
         - FIXTURE=none
-      before_install: true
+      before_install: npm run patch-npm-version
       install: npm install
       script: npm run pub
       before_deploy: cd dist
