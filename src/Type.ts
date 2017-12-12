@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Map, Collection } from "immutable";
+import { OrderedSet, OrderedMap, Collection } from "immutable";
 import { defined, panic, assert } from "./Support";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
 
@@ -267,26 +267,26 @@ export class ClassType extends NamedType {
         typeRef: TypeRef,
         names: NameOrNames,
         areNamesInferred: boolean,
-        private _propertyRefs?: Map<string, TypeRef>
+        private _propertyRefs?: OrderedMap<string, TypeRef>
     ) {
         super(typeRef, "class", names, areNamesInferred);
     }
 
-    setProperties(propertyRefs: Map<string, TypeRef>): void {
+    setProperties(propertyRefs: OrderedMap<string, TypeRef>): void {
         if (this._propertyRefs !== undefined) {
             return panic("Can only set class properties once");
         }
         this._propertyRefs = propertyRefs;
     }
 
-    private getPropertyRefs(): Map<string, TypeRef> {
+    private getPropertyRefs(): OrderedMap<string, TypeRef> {
         if (this._propertyRefs === undefined) {
             return panic("Class properties accessed before they were set");
         }
         return this._propertyRefs;
     }
 
-    get properties(): Map<string, Type> {
+    get properties(): OrderedMap<string, Type> {
         return this.getPropertyRefs().map(tref => tref.deref());
     }
 

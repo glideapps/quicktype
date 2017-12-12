@@ -32,6 +32,8 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _namedUnions: OrderedSet<UnionType>;
     private _haveUnions: boolean;
 
+    private _alphabetizeProperties = false;
+
     get topLevels(): Map<string, Type> {
         return this.typeGraph.topLevels;
     }
@@ -311,17 +313,28 @@ export abstract class ConvenienceRenderer extends Renderer {
         );
     };
 
+    setAlphabetizeProperties = (value: boolean): void => {
+        this._alphabetizeProperties = value;
+    };
+
     protected forEachClassProperty = (
         c: ClassType,
         blankLocations: BlankLineLocations,
         f: (name: Name, jsonName: string, t: Type) => void
     ): void => {
         const propertyNames = defined(this._propertyNames.get(c));
-        const sortedPropertyNames = propertyNames.sortBy(n => this.names.get(n)).toOrderedMap();
-        this.forEachWithBlankLines(sortedPropertyNames, blankLocations, (name, jsonName) => {
-            const t = defined(c.properties.get(jsonName));
-            f(name, jsonName, t);
-        });
+        if (this._alphabetizeProperties) {
+            const alphabetizedPropertyNames = propertyNames.sortBy(n => this.names.get(n)).toOrderedMap();
+            this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName) => {
+                const t = defined(c.properties.get(jsonName));
+                f(name, jsonName, t);
+            });
+        } else {
+            this.forEachWithBlankLines(c.properties, blankLocations, (t, jsonName) => {
+                const name = defined(propertyNames.get(jsonName));
+                f(name, jsonName, t);
+            });
+        }
     };
 
     protected nameForUnionMember = (u: UnionType, t: Type): Name => {

@@ -278,6 +278,9 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
         const result = typeBuilder.getUniqueClassType(name, isInferred);
         const c = assertIsClass(getHopefullyFinishedType(typeBuilder, result));
         setTypeForPath(path, result);
+        // FIXME: We're using a Map instead of an OrderedMap here because we represent
+        // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
+        // we would use a JSON parser that preserves order.
         const props = Map(properties).map((propSchema, propName) => {
             let t = toType(
                 checkStringMap(propSchema),
@@ -290,7 +293,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
             }
             return t;
         });
-        c.setProperties(props);
+        c.setProperties(props.toOrderedMap());
         return result;
     }
 

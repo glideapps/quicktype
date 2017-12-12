@@ -74,6 +74,7 @@ export async function quicktypeForLanguage(
   language: languages.Language,
   sourceFile: string,
   sourceLanguage: string,
+  alphabetizeProperties: boolean,
   additionalRendererOptions: RendererOptions,
   graphqlSchema?: string
 ) {
@@ -85,6 +86,7 @@ export async function quicktypeForLanguage(
       out: language.output,
       graphqlSchema,
       topLevel: language.topLevel,
+      alphabetizeProperties,
       rendererOptions: _.merge(
         {},
         language.rendererOptions,

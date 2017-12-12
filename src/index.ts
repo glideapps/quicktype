@@ -85,6 +85,7 @@ export interface Options {
     sources: SourceType<string | Readable>;
     inferMaps: boolean;
     inferEnums: boolean;
+    alphabetizeProperties: boolean;
     combineClasses: boolean;
     noRender: boolean;
     rendererOptions: RendererOptions;
@@ -95,6 +96,7 @@ const defaultOptions = {
     sources: [],
     inferMaps: true,
     inferEnums: true,
+    alphabetizeProperties: false,
     combineClasses: true,
     noRender: false,
     rendererOptions: {}
@@ -234,7 +236,11 @@ export class Run {
             return { lines: ["Done.", ""], annotations: List() };
         }
 
-        return targetLanguage.renderGraphAndSerialize(graph, this._options.rendererOptions);
+        return targetLanguage.renderGraphAndSerialize(
+            graph,
+            this._options.alphabetizeProperties,
+            this._options.rendererOptions
+        );
     };
 }
 
