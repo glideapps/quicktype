@@ -55,7 +55,7 @@ class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueAr
     protected makeEnum(enumCases: string[]): TypeRef | null {
         assert(enumCases.length > 0);
         const numValues = defined(this._numValues);
-        if (numValues > 4 && enumCases.length < Math.sqrt(numValues)) {
+        if (numValues >= MIN_LENGTH_FOR_ENUM && enumCases.length < Math.sqrt(numValues)) {
             return this.typeBuilder.getEnumType(this.typeName, true, OrderedSet(enumCases));
         }
         return null;
@@ -108,7 +108,7 @@ export class TypeInference {
                     unionBuilder.addDouble();
                     break;
                 case Tag.InternedString:
-                    if (this._inferEnums && !unionBuilder.haveString && valueArray.length >= MIN_LENGTH_FOR_ENUM) {
+                    if (this._inferEnums && !unionBuilder.haveString) {
                         const s = cjson.getStringForValue(value);
                         if (canBeEnumCase(s)) {
                             unionBuilder.addEnumCase(s);
