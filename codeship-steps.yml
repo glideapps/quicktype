@@ -1,0 +1,34 @@
+- type: parallel
+  name: language tests
+  steps:
+    - name: golang
+      service: quicktype
+      command: bash -c "export FIXTURE=golang && test/test"
+    - name: swift3
+      service: quicktype
+      command: bash -c "export FIXTURE=swift3 && test/test"
+    - name: swift4
+      service: quicktype
+      command: bash -c "export FIXTURE=swift4 && test/test"
+    - name: java
+      service: quicktype
+      command: bash -c "export FIXTURE=java && test/test"
+    - name: schema
+      service: quicktype
+      command: bash -c "export FIXTURE=schema && test/test"
+    - name: schema-json-golang
+      service: quicktype
+      command: bash -c "export FIXTURE=schema-json-golang && test/test"
+    - name: elm
+      service: quicktype
+      command: bash -c "export FIXTURE=elm && test/test"
+    - name: typescript
+      service: quicktype
+      command: bash -c "export FIXTURE=typescript && test/test"
+    - name: csharp
+      service: quicktype
+      command: bash -c "export FIXTURE=csharp && test/test"
+- name: example_tagged_step
+  tag: master
+  service: quicktype
+  command: echo "Deploy here!"
