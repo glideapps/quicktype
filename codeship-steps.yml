@@ -3,31 +3,34 @@
   steps:
     - name: golang
       service: quicktype
-      command: bash -c "export FIXTURE=golang && test/test"
-    - name: swift3
+      command: bash -c "export FIXTURE=golang && npm test"
+    - name: swift
       service: quicktype
-      command: bash -c "export FIXTURE=swift3 && test/test"
-    - name: swift4
-      service: quicktype
-      command: bash -c "export FIXTURE=swift4 && test/test"
+      command: bash -c "export FIXTURE=swift && npm test"
     - name: java
       service: quicktype
-      command: bash -c "export FIXTURE=java && test/test"
+      command: bash -c "export FIXTURE=java && npm test"
     - name: schema
       service: quicktype
-      command: bash -c "export FIXTURE=schema && test/test"
-    - name: schema-json-golang
+      command: bash -c "export FIXTURE=schema && npm test"
+    - name: schema-json-csharp
       service: quicktype
-      command: bash -c "export FIXTURE=schema-json-golang && test/test"
+      command: bash -c "export FIXTURE=schema-json-csharp && npm test"
     - name: elm
       service: quicktype
-      command: bash -c "export FIXTURE=elm && test/test"
+      command: bash -c "export FIXTURE=elm && npm test"
     - name: typescript
       service: quicktype
-      command: bash -c "export FIXTURE=typescript && test/test"
+      command: bash -c "export FIXTURE=typescript && npm test"
     - name: csharp
       service: quicktype
-      command: bash -c "export FIXTURE=csharp && test/test"
+      command: bash -c "export FIXTURE=csharp && npm test"
+    - name: cplusplus
+      service: quicktype
+      command: bash -c "export FIXTURE=cplusplus && npm test"
+    - name: graphql
+      service: quicktype
+      command: bash -c "export FIXTURE=graphql && npm test"
 - name: example_tagged_step
   tag: master
   service: quicktype
