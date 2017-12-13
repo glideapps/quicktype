@@ -1,9 +1,6 @@
 language: node_js
 node_js: node # latest
 sudo: required
-branches:
-  except:
-    - release
 env:
   - FIXTURE=golang,cplusplus,schema,graphql
   - FIXTURE=swift,java,schema-json-csharp
@@ -11,16 +8,13 @@ env:
 services:
   - docker
 before_install: >
-  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || \
-    docker pull dvdsgl/quicktype:latest
+  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || docker pull dvdsgl/quicktype:latest
 install: >
-  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || \
-  docker build \
+  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || docker build \
     --cache-from dvdsgl/quicktype:latest \
     --tag dvdsgl/quicktype .
 script: >
-  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || \
-  docker run \
+  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || docker run \
     -e FIXTURE \
     -e CI \
     -e TRAVIS_BRANCH \
@@ -31,15 +25,12 @@ script: >
 jobs:
   include:
     - stage: deploy
+      if: branch == master
       env:
         - FIXTURE=none
       before_install: true
       install: npm install
       script: npm run pub
-      before_deploy:
-        - npm run patch-npm-version
-        - cp package.json dist/
-        - cd dist
       deploy:
         provider: npm
         email: djsiegel@gmail.com
