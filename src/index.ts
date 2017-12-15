@@ -15,6 +15,7 @@ import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
 import { TypeGraph } from "./TypeGraph";
 import { readGraphQLSchema } from "./GraphQL";
+import { gatherNames } from "./GatherNames";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -145,7 +146,9 @@ export class Run {
             Map(this._allInputs.schemas).forEach((schema, name) => {
                 typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema));
             });
-            return typeBuilder.finish();
+            const graph = typeBuilder.finish();
+            gatherNames(graph);
+            return graph;
         } else if (this.isInputGraphQL) {
             Map(this._allInputs.graphQLs).forEach(({ schema, query }, name) => {
                 typeBuilder.addTopLevel(name, readGraphQLSchema(typeBuilder, schema, query));
@@ -187,6 +190,7 @@ export class Run {
             if (doInferMaps) {
                 graph = inferMaps(graph, stringTypeMapping);
             }
+            gatherNames(graph);
 
             if (inputHash !== undefined) {
                 graphByInputHash = graphByInputHash.set(inputHash, graph);

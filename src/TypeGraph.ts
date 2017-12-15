@@ -94,4 +94,9 @@ export class TypeGraph {
     ): TypeGraph {
         return new GraphRewriteBuilder(this, stringTypeMapping, replacementGroups, replacer).finish();
     }
+
+    allTypesUnordered = (): Set<Type> => {
+        assert(this.isFrozen, "Tried to get all graph types before it was frozen");
+        return Set(defined(this._types));
+    };
 }
