@@ -231,25 +231,22 @@ export abstract class NamedType extends Type {
     }
 
     addNames(nameOrNames: NameOrNames, isInferred: boolean): void {
-        if (isInferred && !this._areNamesInferred) {
-            return;
-        }
         const { names, alternatives } = setFromNameOrNames(nameOrNames);
         if (this._areNamesInferred && !isInferred) {
             this._names = names;
-            this._areNamesInferred = isInferred;
-        } else {
+            this._areNamesInferred = false;
+        } else if (this._areNamesInferred === isInferred) {
             this._names = this._names.union(names);
         }
         this._alternativeNames = this._alternativeNames.union(alternatives);
     }
 
-    /*
-    setGivenName(name: string): void {
-        this._names = OrderedSet([name]);
-        this._areNamesInferred = false;
+    clearInferredNames(): void {
+        if (this._areNamesInferred) {
+            this._names = OrderedSet();
+        }
+        this._alternativeNames = OrderedSet();
     }
-    */
 
     get combinedName(): string {
         return combineNames(this._names);
@@ -527,5 +524,33 @@ export function matchType<U>(
         stringTypeMatchers.dateType || typeNotSupported,
         stringTypeMatchers.timeType || typeNotSupported,
         stringTypeMatchers.dateTimeType || typeNotSupported
+    );
+}
+
+export function matchCompoundType(
+    t: Type,
+    arrayType: (arrayType: ArrayType) => void,
+    classType: (classType: ClassType) => void,
+    mapType: (mapType: MapType) => void,
+    unionType: (unionType: UnionType) => void
+): void {
+    function ignore<T extends Type>(_: T): void {
+        return;
+    }
+
+    return matchType(
+        t,
+        ignore,
+        ignore,
+        ignore,
+        ignore,
+        ignore,
+        ignore,
+        arrayType,
+        classType,
+        mapType,
+        ignore,
+        unionType,
+        { dateType: ignore, timeType: ignore, dateTimeType: ignore }
     );
 }

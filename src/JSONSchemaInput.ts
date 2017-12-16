@@ -184,7 +184,7 @@ class UnifyUnionBuilder extends UnionBuilder<TypeRef, TypeRef, TypeRef> {
         return this.typeBuilder.getUniqueClassType(
             this.typeName,
             this.isInferred,
-            properties.map((ts, name) => this._unifyTypes(ts, name, true))
+            properties.map((ts, name) => this._unifyTypes(ts, name, true)).sortBy((_, n) => n)
         );
     }
 
@@ -381,7 +381,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
             const types = cases.map((t, index) =>
-                toType(checkStringMap(t), path.push({ kind, index } as any), name, true)
+                toType(checkStringMap(t), path.push({ kind, index } as any), name, isInferred)
             );
             return unifyTypes(types, name, isInferred);
         }
