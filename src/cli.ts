@@ -57,6 +57,11 @@ async function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Pr
     return { name, samples };
 }
 
+function typeNameFromFilename(filename: string): string {
+    const name = path.basename(filename);
+    return name.substr(0, name.lastIndexOf("."));
+}
+
 async function samplesFromDirectory(dataDir: string): Promise<Source<Readable>[]> {
     async function readFilesOrURLsInDirectory(d: string) {
         const files = fs
@@ -66,8 +71,7 @@ async function samplesFromDirectory(dataDir: string): Promise<Source<Readable>[]
         // Each file is a (Name, JSON | URL)
         return Promise.all(
             files.map(async file => {
-                const name = path.basename(file);
-                const inferredName = name.substr(0, name.lastIndexOf("."));
+                const inferredName = typeNameFromFilename(file);
 
                 let fileOrUrl = file;
                 // If file is a URL string, download it
@@ -473,21 +477,26 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                         wroteSchemaToFile = true;
                     }
                 }
-                if (options.src.length !== 1) {
+                const numSources = options.src.length;
+                if (numSources !== 1) {
                     if (wroteSchemaToFile) {
                         // We're done.
                         return;
                     }
-                    return panic("Please specify one GraphQL query as input.");
+                    if (numSources === 0) {
+                        return panic("Please specify at least one GraphQL query as input");
+                    }
                 }
-                const queryFile = options.src[0];
-                if (schemaString === undefined) {
-                    const schemaFile = defined(options.graphqlSchema);
-                    schemaString = fs.readFileSync(schemaFile, "utf8");
-                }
-                const schema = JSON.parse(schemaString);
-                const query = fs.readFileSync(queryFile, "utf8");
-                sources = { topLevelName: options.topLevel, schema, query };
+                sources = options.src.map(queryFile => {
+                    if (schemaString === undefined) {
+                        const schemaFile = defined(options.graphqlSchema);
+                        schemaString = fs.readFileSync(schemaFile, "utf8");
+                    }
+                    const schema = JSON.parse(schemaString);
+                    const query = fs.readFileSync(queryFile, "utf8");
+                    const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
+                    return { name, schema, query };
+                });
                 break;
             case "json":
                 sources = await getSources(options);
