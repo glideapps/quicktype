@@ -1,5 +1,7 @@
 {
-  "resource": {
-    "url": "https://github.com/quicktype/quicktype"
+  "data": {
+    "resource": {
+      "url": "https://github.com/quicktype/quicktype"
+    }
   }
 }

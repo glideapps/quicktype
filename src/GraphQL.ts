@@ -1,6 +1,6 @@
 "use strict";
 
-import { List, Map, OrderedSet } from "immutable";
+import { List, Map, OrderedSet, OrderedMap } from "immutable";
 
 import { NamesWithAlternatives, removeNullFromUnion, UnionType } from "./Type";
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
@@ -324,8 +324,8 @@ class GQLQuery {
             query.selectionSet,
             this._schema.queryType,
             null,
-            null,
-            queryName
+            queryName,
+            "data"
         );
     }
 }
@@ -429,10 +429,11 @@ export function makeGraphQLQueryTypes(
     let types: Map<string, TypeRef> = Map();
     query.queries.forEach(odn => {
         const queryName = odn.name ? odn.name.value : topLevelName;
-        const t = query.makeType(builder, odn, queryName);
         if (types.has(queryName)) {
             return panic(`Duplicate query name ${queryName}`);
         }
+        const dataType = query.makeType(builder, odn, queryName);
+        const t = builder.getClassType(queryName, false, OrderedMap({data: dataType}));
         types = types.set(queryName, t);
     });
     return types;
