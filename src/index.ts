@@ -14,7 +14,7 @@ import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
 import { TypeGraph } from "./TypeGraph";
-import { readGraphQLSchema } from "./GraphQL";
+import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
 
 // Re-export essential types and functions
@@ -64,22 +64,28 @@ function isSchemaData<T>(sources: SourceType<T>): sources is SchemaData<T>[] {
         if (sources.length === 0) {
             panic("You must provide at least one sample");
         }
-        return "schema" in sources[0];
+        return !("query" in sources[0]) && !("samples" in sources[0]);
     }
     return false;
 }
 
 export interface GraphQLData {
-    topLevelName: string;
+    name: string;
     schema: any;
     query: string;
 }
 
-function isGraphQLData<T>(sources: SourceType<T>): sources is GraphQLData {
-    return "schema" in sources;
+function isGraphQLData<T>(sources: SourceType<T>): sources is GraphQLData[] {
+    if (_.isArray(sources)) {
+        if (sources.length === 0) {
+            panic("You must provide at least one sample");
+        }
+        return "query" in sources[0];
+    }
+    return false;
 }
 
-export type SourceType<T> = GraphQLData | Source<T>[] | SchemaData<T>[];
+export type SourceType<T> = GraphQLData[] | Source<T>[] | SchemaData<T>[];
 
 export interface Options {
     lang: string;
@@ -150,8 +156,12 @@ export class Run {
             gatherNames(graph);
             return graph;
         } else if (this.isInputGraphQL) {
+            const numInputs = Object.keys(this._allInputs.graphQLs).length;
             Map(this._allInputs.graphQLs).forEach(({ schema, query }, name) => {
-                typeBuilder.addTopLevel(name, readGraphQLSchema(typeBuilder, schema, query));
+                const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
+                newTopLevels.forEach((t, actualName) => {
+                    typeBuilder.addTopLevel(numInputs === 1 ? name : actualName, t);
+                });
             });
             return typeBuilder.finish();
         } else {
@@ -220,8 +230,10 @@ export class Run {
         const targetLanguage = getTargetLanguage(this._options.lang);
 
         if (isGraphQLData(this._options.sources)) {
-            const { topLevelName, schema, query } = this._options.sources;
-            this._allInputs.graphQLs[topLevelName] = { schema, query };
+            for (const source of this._options.sources) {
+                const { name, schema, query } = source;
+                this._allInputs.graphQLs[name] = { schema, query };
+            }
         } else if (isSourceData(this._options.sources)) {
             for (const source of this._options.sources) {
                 for (const sample of source.samples) {

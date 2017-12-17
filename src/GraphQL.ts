@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, OrderedSet } from "immutable";
+import { List, Map, OrderedSet } from "immutable";
 
 import { NamesWithAlternatives, removeNullFromUnion, UnionType } from "./Type";
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
@@ -58,13 +58,15 @@ function getField(t: GQLType, name: string): Field {
     return panic(`Required field ${name} not defined on type ${t.name}.`);
 }
 
-function makeTypeNames(name: string, fieldName: string | null, containingType: GQLType | null): NamesWithAlternatives {
-    const containingTypeName = containingType ? containingType.name : undefined;
+function makeTypeNames(
+    name: string,
+    fieldName: string | null,
+    containingTypeName: string | null
+): NamesWithAlternatives {
     const alternatives: string[] = [];
     if (fieldName) alternatives.push(fieldName);
     if (containingTypeName) alternatives.push(`${containingTypeName}_${name}`);
     if (fieldName && containingTypeName) alternatives.push(`${containingTypeName}_${fieldName}`);
-    // FIXME: implement alternatives
     return { names: OrderedSet([name]), alternatives: OrderedSet(alternatives) };
 }
 
@@ -73,9 +75,9 @@ function makeNullable(
     tref: TypeRef,
     name: string,
     fieldName: string | null,
-    containingType: GQLType | null
+    containingTypeName: string
 ): TypeRef {
-    const typeNames = makeTypeNames(name, fieldName, containingType);
+    const typeNames = makeTypeNames(name, fieldName, containingTypeName);
     const t = tref.deref();
     if (!(t instanceof UnionType)) {
         return builder.getUnionType(typeNames.names, false, OrderedSet([tref, builder.getPrimitiveType("null")]));
@@ -144,7 +146,8 @@ interface GQLSchema {
 class GQLQuery {
     private readonly _schema: GQLSchema;
     private readonly _fragments: { [name: string]: FragmentDefinitionNode };
-    private readonly _query: OperationDefinitionNode;
+
+    readonly queries: List<OperationDefinitionNode>;
 
     constructor(schema: GQLSchema, queryString: string) {
         this._schema = schema;
@@ -160,15 +163,15 @@ class GQLQuery {
                 this._fragments[def.name.value] = def;
             }
         }
-        assert(queries.length === 1, "Must have exactly one query defined.");
-        this._query = queries[0];
+        assert(queries.length >= 1, "GraphQL file doesn't have any queries defined.");
+        this.queries = List(queries);
     }
 
     private makeIRTypeFromFieldNode = (
         builder: TypeBuilder,
         fieldNode: FieldNode,
         fieldType: GQLType,
-        containingType: GQLType | null
+        containingTypeName: string
     ): TypeRef => {
         const optional = hasOptionalDirectives(fieldNode.directives);
         let result: TypeRef;
@@ -189,11 +192,11 @@ class GQLQuery {
                         fieldNode.selectionSet,
                         fieldType,
                         fieldNode.name.value,
-                        containingType
+                        containingTypeName
                     ),
                     fieldNode.name.value,
                     null,
-                    containingType
+                    containingTypeName
                 );
             case TypeKind.ENUM:
                 if (!fieldType.enumValues) {
@@ -209,7 +212,11 @@ class GQLQuery {
                     name = fieldNode.name.value;
                     fieldName = null;
                 }
-                result = builder.getEnumType(makeTypeNames(name, fieldName, containingType), false, OrderedSet(values));
+                result = builder.getEnumType(
+                    makeTypeNames(name, fieldName, containingTypeName),
+                    false,
+                    OrderedSet(values)
+                );
                 break;
             case TypeKind.INPUT_OBJECT:
                 return panic("FIXME: Support input objects");
@@ -218,7 +225,7 @@ class GQLQuery {
                     return panic("No type for list.");
                 }
                 result = builder.getArrayType(
-                    this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingType)
+                    this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingTypeName)
                 );
                 break;
             case TypeKind.NON_NULL:
@@ -227,14 +234,14 @@ class GQLQuery {
                 }
                 result = removeNull(
                     builder,
-                    this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingType)
+                    this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingTypeName)
                 );
                 break;
             default:
                 return assertNever(fieldType.kind);
         }
         if (optional) {
-            result = makeNullable(builder, result, fieldNode.name.value, null, containingType);
+            result = makeNullable(builder, result, fieldNode.name.value, null, containingTypeName);
         }
         return result;
     };
@@ -250,7 +257,8 @@ class GQLQuery {
         selectionSet: SelectionSetNode,
         gqlType: GQLType,
         containingFieldName: string | null,
-        containingType: GQLType | null
+        containingTypeName: string | null,
+        overrideName?: string
     ): TypeRef => {
         if (
             gqlType.kind !== TypeKind.OBJECT &&
@@ -262,6 +270,7 @@ class GQLQuery {
         if (!gqlType.name) {
             return panic("Object, interface, or union type doesn't have a name.");
         }
+        const nameOrOverride = overrideName || gqlType.name;
         let properties = Map<string, TypeRef>();
         let selections = expandSelectionSet(selectionSet, gqlType, false);
         for (;;) {
@@ -273,9 +282,9 @@ class GQLQuery {
                     const fieldName = selection.name.value;
                     const givenName = selection.alias ? selection.alias.value : fieldName;
                     const field = getField(inType, fieldName);
-                    let fieldType = this.makeIRTypeFromFieldNode(builder, selection, field.type, gqlType);
+                    let fieldType = this.makeIRTypeFromFieldNode(builder, selection, field.type, nameOrOverride);
                     if (optional) {
-                        fieldType = makeNullable(builder, fieldType, givenName, null, gqlType);
+                        fieldType = makeNullable(builder, fieldType, givenName, null, nameOrOverride);
                     }
                     properties = properties.set(givenName, fieldType);
                     break;
@@ -303,14 +312,21 @@ class GQLQuery {
             }
         }
         return builder.getClassType(
-            makeTypeNames(gqlType.name, containingFieldName, containingType),
+            makeTypeNames(nameOrOverride, containingFieldName, containingTypeName),
             false,
             properties
         );
     };
 
-    makeType(builder: TypeBuilder): TypeRef {
-        return this.makeIRTypeFromSelectionSet(builder, this._query.selectionSet, this._schema.queryType, null, null);
+    makeType(builder: TypeBuilder, query: OperationDefinitionNode, queryName: string): TypeRef {
+        return this.makeIRTypeFromSelectionSet(
+            builder,
+            query.selectionSet,
+            this._schema.queryType,
+            null,
+            null,
+            queryName
+        );
     }
 }
 
@@ -402,8 +418,22 @@ class GQLSchemaFromJSON implements GQLSchema {
     };
 }
 
-export function readGraphQLSchema(builder: TypeBuilder, json: any, queryString: string): TypeRef {
+export function makeGraphQLQueryTypes(
+    topLevelName: string,
+    builder: TypeBuilder,
+    json: any,
+    queryString: string
+): Map<string, TypeRef> {
     const schema = new GQLSchemaFromJSON(json);
     const query = new GQLQuery(schema, queryString);
-    return query.makeType(builder);
+    let types: Map<string, TypeRef> = Map();
+    query.queries.forEach(odn => {
+        const queryName = odn.name ? odn.name.value : topLevelName;
+        const t = query.makeType(builder, odn, queryName);
+        if (types.has(queryName)) {
+            return panic(`Duplicate query name ${queryName}`);
+        }
+        types = types.set(queryName, t);
+    });
+    return types;
 }
