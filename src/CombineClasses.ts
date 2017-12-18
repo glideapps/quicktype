@@ -66,7 +66,10 @@ function isPartOfClique(c: ClassType, clique: ClassType[]): boolean {
 }
 
 export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
-    let unprocessedClasses = graph.allNamedTypesSeparated().classes.toArray();
+    let unprocessedClasses = graph
+        .allNamedTypesSeparated()
+        .classes.filter(c => !c.isFixed)
+        .toArray();
     const cliques: ClassType[][] = [];
 
     // FIXME: Don't build cliques one by one.  Instead have a list of

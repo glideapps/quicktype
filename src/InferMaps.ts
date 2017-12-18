@@ -85,6 +85,6 @@ export function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewrit
 
 export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
     const allClasses = graph.allNamedTypesSeparated().classes;
-    const classesToReplace = allClasses.filter(c => shouldBeMap(c.properties) !== undefined).toArray();
+    const classesToReplace = allClasses.filter(c => !c.isFixed && shouldBeMap(c.properties) !== undefined).toArray();
     return graph.rewrite(stringTypeMapping, classesToReplace.map(c => [c]), replaceClass);
 }
