@@ -35,13 +35,9 @@ export function getTargetLanguage(name: string): TargetLanguage {
 
 export type RendererOptions = { [name: string]: string };
 
-export interface Sample<T> {
-    source: T;
-}
-
 export interface Source<T> {
     name: string;
-    samples: Sample<T>[];
+    samples: T[];
 }
 
 function isSourceData<T>(sources: SourceType<T>): sources is Source<T>[] {
@@ -237,7 +233,7 @@ export class Run {
         } else if (isSourceData(this._options.sources)) {
             for (const source of this._options.sources) {
                 for (const sample of source.samples) {
-                    await this.readSampleFromStream(source.name, toReadable(sample.source));
+                    await this.readSampleFromStream(source.name, toReadable(sample));
                 }
             }
         } else if (isSchemaData(this._options.sources)) {

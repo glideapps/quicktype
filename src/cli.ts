@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import * as _ from "lodash";
-import { Run, Source, Sample, RendererOptions, getTargetLanguage, SourceType } from ".";
+import { Run, Source, RendererOptions, getTargetLanguage, SourceType } from ".";
 import { OptionDefinition } from "./RendererOptions";
 import * as targetLanguages from "./Language/All";
 import { urlsFromURLGrammar } from "./URLGrammar";
@@ -43,12 +43,12 @@ export interface CLIOptions {
     quiet: boolean;
 }
 
-async function sampleFromFileOrUrl(fileOrUrl: string): Promise<Sample<Readable>> {
+async function sampleFromFileOrUrl(fileOrUrl: string): Promise<Readable> {
     if (fs.existsSync(fileOrUrl)) {
-        return { source: fs.createReadStream(fileOrUrl) };
+        return fs.createReadStream(fileOrUrl);
     } else {
         const response = await fetch(fileOrUrl);
-        return { source: response.body };
+        return response.body;
     }
 }
 
@@ -432,7 +432,7 @@ async function getSources(options: CLIOptions): Promise<Source<Readable>[]> {
         return [
             {
                 name: options.topLevel,
-                samples: [{ source: process.stdin }]
+                samples: [process.stdin]
             }
         ];
     } else {
@@ -508,7 +508,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                     assert(jsonSource.samples.length === 1, `Please specify one schema file for ${jsonSource.name}`);
                     return {
                         name: jsonSource.name,
-                        schema: jsonSource.samples[0].source
+                        schema: jsonSource.samples[0]
                     };
                 });
                 break;
