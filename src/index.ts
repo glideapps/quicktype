@@ -65,13 +65,13 @@ function isSchemaData<T>(sources: SourceType<T>): sources is SchemaData<T>[] {
     return false;
 }
 
-export interface GraphQLData {
+export interface GraphQLData<T> {
     name: string;
     schema: any;
-    query: string;
+    query: T;
 }
 
-function isGraphQLData<T>(sources: SourceType<T>): sources is GraphQLData[] {
+function isGraphQLData<T>(sources: SourceType<T>): sources is GraphQLData<T>[] {
     if (_.isArray(sources)) {
         if (sources.length === 0) {
             panic("You must provide at least one sample");
@@ -81,7 +81,7 @@ function isGraphQLData<T>(sources: SourceType<T>): sources is GraphQLData[] {
     return false;
 }
 
-export type SourceType<T> = GraphQLData[] | Source<T>[] | SchemaData<T>[];
+export type SourceType<T> = GraphQLData<T>[] | Source<T>[] | SchemaData<T>[];
 
 export interface Options {
     lang: string;
@@ -115,6 +115,10 @@ let graphByInputHash: Map<number, TypeGraph> = Map();
 
 function toReadable(source: string | Readable): Readable {
     return _.isString(source) ? stringToStream(source) : source;
+}
+
+async function toString(source: string | Readable): Promise<string> {
+    return _.isString(source) ? source : await getStream(source);
 }
 
 export class Run {
@@ -206,15 +210,15 @@ export class Run {
         }
     };
 
-    private readSampleFromStream = async (name: string, readStream: Readable): Promise<void> => {
+    private readSampleFromStream = async (name: string, source: string | Readable): Promise<void> => {
         if (this.isInputJSONSchema) {
-            const input = JSON.parse(await getStream(readStream));
+            const input = JSON.parse(await toString(source));
             if (_.has(this._allInputs.schemas, name)) {
                 throw new Error(`More than one schema given for ${name}`);
             }
             this._allInputs.schemas[name] = input;
         } else {
-            const input = await this._compressedJSON.readFromStream(readStream);
+            const input = await this._compressedJSON.readFromStream(toReadable(source));
             if (!_.has(this._allInputs.samples, name)) {
                 this._allInputs.samples[name] = [];
             }
@@ -228,17 +232,17 @@ export class Run {
         if (isGraphQLData(this._options.sources)) {
             for (const source of this._options.sources) {
                 const { name, schema, query } = source;
-                this._allInputs.graphQLs[name] = { schema, query };
+                this._allInputs.graphQLs[name] = { schema, query: await toString(query) };
             }
         } else if (isSourceData(this._options.sources)) {
             for (const source of this._options.sources) {
                 for (const sample of source.samples) {
-                    await this.readSampleFromStream(source.name, toReadable(sample));
+                    await this.readSampleFromStream(source.name, sample);
                 }
             }
         } else if (isSchemaData(this._options.sources)) {
             for (const { name, schema } of this._options.sources) {
-                await this.readSampleFromStream(name, toReadable(schema));
+                await this.readSampleFromStream(name, schema);
             }
         }
 

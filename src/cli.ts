@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import * as _ from "lodash";
-import { Run, Source, RendererOptions, getTargetLanguage, SourceType } from ".";
+import { Run, Source, RendererOptions, getTargetLanguage, SourceType, GraphQLData } from ".";
 import { OptionDefinition } from "./RendererOptions";
 import * as targetLanguages from "./Language/All";
 import { urlsFromURLGrammar } from "./URLGrammar";
@@ -487,16 +487,18 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                         return panic("Please specify at least one GraphQL query as input");
                     }
                 }
-                sources = options.src.map(queryFile => {
+                const gqlSources: GraphQLData<string | Readable>[] = [];
+                for (const queryFile of options.src) {
                     if (schemaString === undefined) {
                         const schemaFile = defined(options.graphqlSchema);
                         schemaString = fs.readFileSync(schemaFile, "utf8");
                     }
                     const schema = JSON.parse(schemaString);
-                    const query = fs.readFileSync(queryFile, "utf8");
+                    const query = await sampleFromFileOrUrl(queryFile);
                     const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
-                    return { name, schema, query };
-                });
+                    gqlSources.push({ name, schema, query });
+                }
+                sources = gqlSources;
                 break;
             case "json":
                 sources = await getSources(options);
