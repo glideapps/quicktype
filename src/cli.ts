@@ -2,7 +2,19 @@ import * as fs from "fs";
 import * as path from "path";
 
 import * as _ from "lodash";
-import { Run, JSONTypeSource, RendererOptions, getTargetLanguage, TypeSource, GraphQLTypeSource } from ".";
+import {
+    Run,
+    JSONTypeSource,
+    RendererOptions,
+    getTargetLanguage,
+    TypeSource,
+    GraphQLTypeSource,
+    isJSONSource,
+    StringInput,
+    SchemaTypeSource,
+    isSchemaSource,
+    isGraphQLSource
+} from ".";
 import { OptionDefinition } from "./RendererOptions";
 import * as targetLanguages from "./Language/All";
 import { urlsFromURLGrammar } from "./URLGrammar";
@@ -43,7 +55,7 @@ export interface CLIOptions {
     quiet: boolean;
 }
 
-async function sampleFromFileOrUrl(fileOrUrl: string): Promise<Readable> {
+async function readableFromFileOrUrl(fileOrUrl: string): Promise<Readable> {
     if (fs.existsSync(fileOrUrl)) {
         return fs.createReadStream(fileOrUrl);
     } else {
@@ -53,7 +65,7 @@ async function sampleFromFileOrUrl(fileOrUrl: string): Promise<Readable> {
 }
 
 async function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Promise<JSONTypeSource> {
-    const samples = await Promise.all(filesOrUrls.map(sampleFromFileOrUrl));
+    const samples = await Promise.all(filesOrUrls.map(readableFromFileOrUrl));
     return { name, samples };
 }
 
@@ -62,50 +74,84 @@ function typeNameFromFilename(filename: string): string {
     return name.substr(0, name.lastIndexOf("."));
 }
 
-async function samplesFromDirectory(dataDir: string): Promise<JSONTypeSource[]> {
-    async function readFilesOrURLsInDirectory(d: string) {
+async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
+    async function readFilesOrURLsInDirectory(d: string): Promise<TypeSource[]> {
         const files = fs
             .readdirSync(d)
             .map(x => path.join(d, x))
             .filter(x => fs.lstatSync(x).isFile());
         // Each file is a (Name, JSON | URL)
-        return Promise.all(
-            files.map(async file => {
-                const inferredName = typeNameFromFilename(file);
+        const unfiltered = await Promise.all(
+            files.map(async (file: string): Promise<TypeSource | undefined> => {
+                const name = typeNameFromFilename(file);
 
                 let fileOrUrl = file;
+                file = file.toLowerCase();
+
                 // If file is a URL string, download it
-                if (_.endsWith(file, ".url")) {
+                if (file.endsWith(".url")) {
                     fileOrUrl = fs.readFileSync(file, "utf8").trim();
                 }
+                const readable = readableFromFileOrUrl(fileOrUrl);
 
-                return {
-                    inferredName,
-                    sample: await sampleFromFileOrUrl(fileOrUrl)
-                };
+                if (file.endsWith(".url") || file.endsWith(".json")) {
+                    return {
+                        name,
+                        samples: [await readable]
+                    };
+                } else if (file.endsWith(".schema")) {
+                    return {
+                        name,
+                        schema: await readable
+                    };
+                } else {
+                    return undefined;
+                }
             })
         );
+        const filtered: TypeSource[] = [];
+        for (const ts of unfiltered) {
+            if (ts !== undefined) {
+                filtered.push(ts);
+            }
+        }
+        return filtered;
     }
 
     const contents = fs.readdirSync(dataDir).map(x => path.join(dataDir, x));
     const directories = contents.filter(x => fs.lstatSync(x).isDirectory());
-    const topLevelSamples = await readFilesOrURLsInDirectory(dataDir);
 
-    let sources: JSONTypeSource[] = [];
-
-    for (const topLevel of topLevelSamples) {
-        sources.push({
-            name: topLevel.inferredName,
-            samples: [topLevel.sample]
-        });
-    }
+    let sources = await readFilesOrURLsInDirectory(dataDir);
 
     for (const dir of directories) {
-        const samples = await readFilesOrURLsInDirectory(dir);
-        sources.push({
-            name: path.basename(dir),
-            samples: samples.map(x => x.sample)
-        });
+        let jsonSamples: StringInput[] = [];
+        const schemaSources: SchemaTypeSource[] = [];
+        const graphQLSources: GraphQLTypeSource[] = [];
+        for (const source of await readFilesOrURLsInDirectory(dir)) {
+            // FIXME: We do a type switch here, but we know which types we're putting in
+            // in the function above.  It should separate it right away.
+            if (isJSONSource(source)) {
+                jsonSamples = jsonSamples.concat(source.samples);
+            } else if (isSchemaSource(source)) {
+                schemaSources.push(source);
+            } else {
+                graphQLSources.push(source);
+            }
+        }
+        if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length > 0) {
+            return panic("Cannot mix JSON samples with JSON Schema or GraphQL in input subdirectory");
+        }
+        if (schemaSources.length > 0 && graphQLSources.length > 0) {
+            return panic("Cannot mix JSON Schema with GraphQL in an input subdirectory");
+        }
+        if (jsonSamples.length > 0) {
+            sources.push({
+                name: path.basename(dir),
+                samples: jsonSamples
+            });
+        }
+        sources = sources.concat(schemaSources);
+        sources = sources.concat(graphQLSources);
     }
 
     return sources;
@@ -422,7 +468,7 @@ function splitAndWriteJava(dir: string, str: string) {
     writeFile();
 }
 
-async function getSources(options: CLIOptions): Promise<JSONTypeSource[]> {
+async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     if (options.srcUrls) {
         const json = JSON.parse(fs.readFileSync(options.srcUrls, "utf8"));
         const jsonMap = urlsFromURLGrammar(json);
@@ -439,7 +485,7 @@ async function getSources(options: CLIOptions): Promise<JSONTypeSource[]> {
         const exists = options.src.filter(fs.existsSync);
         const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
 
-        let sources: JSONTypeSource[] = [];
+        let sources: TypeSource[] = [];
         for (const dataDir of directories) {
             sources = sources.concat(await samplesFromDirectory(dataDir));
         }
@@ -494,7 +540,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                         schemaString = fs.readFileSync(schemaFile, "utf8");
                     }
                     const schema = JSON.parse(schemaString);
-                    const query = await sampleFromFileOrUrl(queryFile);
+                    const query = await readableFromFileOrUrl(queryFile);
                     const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
                     gqlSources.push({ name, schema, query });
                 }
@@ -505,14 +551,20 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                 break;
             case "schema":
                 // Collect sources as JSON, then map to schema data
-                let jsonSources = await getSources(options);
-                sources = jsonSources.map(jsonSource => {
-                    assert(jsonSource.samples.length === 1, `Please specify one schema file for ${jsonSource.name}`);
-                    return {
-                        name: jsonSource.name,
-                        schema: jsonSource.samples[0]
-                    };
-                });
+                for (const source of await getSources(options)) {
+                    if (isGraphQLSource(source)) {
+                        return panic("Cannot accept GraphQL for JSON Schema input");
+                    }
+                    if (isJSONSource(source)) {
+                        assert(source.samples.length === 1, `Please specify one schema file for ${source.name}`);
+                        sources.push({
+                            name: source.name,
+                            schema: source.samples[0]
+                        });
+                    } else {
+                        sources.push(source);
+                    }
+                }
                 break;
             default:
                 panic(`Unsupported source language (${options.srcLang})`);

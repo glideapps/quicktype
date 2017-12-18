@@ -42,7 +42,7 @@ export interface JSONTypeSource {
     samples: StringInput[];
 }
 
-function isJSONData(source: TypeSource): source is JSONTypeSource {
+export function isJSONSource(source: TypeSource): source is JSONTypeSource {
     return "samples" in source;
 }
 
@@ -51,7 +51,7 @@ export interface SchemaTypeSource {
     schema: StringInput;
 }
 
-function isSchemaData(source: TypeSource): source is SchemaTypeSource {
+export function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
     return !("query" in source) && !("samples" in source);
 }
 
@@ -61,7 +61,7 @@ export interface GraphQLTypeSource {
     query: StringInput;
 }
 
-function isGraphQLData(source: TypeSource): source is GraphQLTypeSource {
+export function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource {
     return "query" in source;
 }
 
@@ -168,10 +168,10 @@ export class Run {
         const targetLanguage = getTargetLanguage(this._options.lang);
 
         for (const source of this._options.sources) {
-            if (isGraphQLData(source)) {
+            if (isGraphQLSource(source)) {
                 const { name, schema, query } = source;
                 this._allInputs.graphQLs[name] = { schema, query: await toString(query) };
-            } else if (isJSONData(source)) {
+            } else if (isJSONSource(source)) {
                 const { name, samples } = source;
                 for (const sample of samples) {
                     const input = await this._compressedJSON.readFromStream(toReadable(sample));
@@ -180,7 +180,7 @@ export class Run {
                     }
                     this._allInputs.samples[name].push(input);
                 }
-            } else if (isSchemaData(source)) {
+            } else if (isSchemaSource(source)) {
                 const { name, schema } = source;
                 const input = JSON.parse(await toString(schema));
                 if (_.has(this._allInputs.schemas, name)) {
