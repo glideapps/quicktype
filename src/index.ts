@@ -35,39 +35,41 @@ export function getTargetLanguage(name: string): TargetLanguage {
 
 export type RendererOptions = { [name: string]: string };
 
-export interface JSONTypeSource<T> {
+export type StringInput = string | Readable;
+
+export interface JSONTypeSource {
     name: string;
-    samples: T[];
+    samples: StringInput[];
 }
 
-function isJSONData<T>(source: TypeSource<T>): source is JSONTypeSource<T> {
+function isJSONData(source: TypeSource): source is JSONTypeSource {
     return "samples" in source;
 }
 
-export interface SchemaTypeSource<T> {
+export interface SchemaTypeSource {
     name: string;
-    schema: T;
+    schema: StringInput;
 }
 
-function isSchemaData<T>(source: TypeSource<T>): source is SchemaTypeSource<T> {
+function isSchemaData(source: TypeSource): source is SchemaTypeSource {
     return !("query" in source) && !("samples" in source);
 }
 
-export interface GraphQLTypeSource<T> {
+export interface GraphQLTypeSource {
     name: string;
     schema: any;
-    query: T;
+    query: StringInput;
 }
 
-function isGraphQLData<T>(source: TypeSource<T>): source is GraphQLTypeSource<T> {
+function isGraphQLData(source: TypeSource): source is GraphQLTypeSource {
     return "query" in source;
 }
 
-export type TypeSource<T> = GraphQLTypeSource<T> | JSONTypeSource<T> | SchemaTypeSource<T>;
+export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource;
 
 export interface Options {
     lang: string;
-    sources: TypeSource<string | Readable>[];
+    sources: TypeSource[];
     inferMaps: boolean;
     inferEnums: boolean;
     alphabetizeProperties: boolean;
