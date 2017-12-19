@@ -23,6 +23,7 @@ import { IssueAnnotationData } from "./Annotation";
 import { Readable } from "stream";
 import { panic, assert, defined } from "./Support";
 import { introspectServer } from "./GraphQLIntrospection";
+import { getStream } from "./get-stream/index";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -81,41 +82,50 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
             .map(x => path.join(d, x))
             .filter(x => fs.lstatSync(x).isFile());
         // Each file is a (Name, JSON | URL)
-        const unfiltered = await Promise.all(
-            files.map(async (file: string): Promise<TypeSource | undefined> => {
-                const name = typeNameFromFilename(file);
+        const sourcesInDir: TypeSource[] = [];
+        const graphQLSources: GraphQLTypeSource[] = [];
+        let graphQLSchema: Readable | undefined = undefined;
+        for (let file of files) {
+            const name = typeNameFromFilename(file);
 
-                let fileOrUrl = file;
-                file = file.toLowerCase();
+            let fileOrUrl = file;
+            file = file.toLowerCase();
 
-                // If file is a URL string, download it
-                if (file.endsWith(".url")) {
-                    fileOrUrl = fs.readFileSync(file, "utf8").trim();
-                }
-                const readable = readableFromFileOrUrl(fileOrUrl);
+            // If file is a URL string, download it
+            if (file.endsWith(".url")) {
+                fileOrUrl = fs.readFileSync(file, "utf8").trim();
+            }
 
-                if (file.endsWith(".url") || file.endsWith(".json")) {
-                    return {
-                        name,
-                        samples: [await readable]
-                    };
-                } else if (file.endsWith(".schema")) {
-                    return {
-                        name,
-                        schema: await readable
-                    };
-                } else {
-                    return undefined;
-                }
-            })
-        );
-        const filtered: TypeSource[] = [];
-        for (const ts of unfiltered) {
-            if (ts !== undefined) {
-                filtered.push(ts);
+            if (file.endsWith(".url") || file.endsWith(".json")) {
+                sourcesInDir.push({
+                    name,
+                    samples: [await readableFromFileOrUrl(fileOrUrl)]
+                });
+            } else if (file.endsWith(".schema")) {
+                sourcesInDir.push({
+                    name,
+                    schema: await readableFromFileOrUrl(fileOrUrl)
+                });
+            } else if (file.endsWith(".gqlschema")) {
+                assert(graphQLSchema === undefined, `More than one GraphQL schema in ${dataDir}`);
+                graphQLSchema = await readableFromFileOrUrl(fileOrUrl);
+            } else if (file.endsWith(".graphql")) {
+                graphQLSources.push({ name, schema: undefined, query: await readableFromFileOrUrl(fileOrUrl) });
             }
         }
-        return filtered;
+
+        if (graphQLSources.length > 0) {
+            if (graphQLSchema === undefined) {
+                return panic(`No GraphQL schema in ${dataDir}`);
+            }
+            const schema = JSON.parse(await getStream(graphQLSchema));
+            for (const source of graphQLSources) {
+                source.schema = schema;
+                sourcesInDir.push(source);
+            }
+        }
+
+        return sourcesInDir;
     }
 
     const contents = fs.readdirSync(dataDir).map(x => path.join(dataDir, x));
