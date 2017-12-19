@@ -1,6 +1,8 @@
 {
-  "viewer": {
-    "login": "schani",
-    "name": "Mark Probst"
+  "data": {
+    "viewer": {
+      "login": "schani",
+      "name": "Mark Probst"
+    }
   }
 }
