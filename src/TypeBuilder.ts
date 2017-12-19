@@ -248,7 +248,7 @@ export abstract class TypeBuilder {
     getClassType(names: NameOrNames, isInferred: boolean, properties: OrderedMap<string, TypeRef>): TypeRef {
         let tref = this._classTypes.get(properties.toMap());
         if (tref === undefined) {
-            tref = this.addType(tr => new ClassType(tr, names, isInferred, properties));
+            tref = this.addType(tr => new ClassType(tr, names, isInferred, false, properties));
             this._classTypes = this._classTypes.set(properties.toMap(), tref);
         } else {
             this.addNames(tref, names, isInferred);
@@ -283,7 +283,7 @@ export class TypeGraphBuilder extends TypeBuilder {
         isInferred: boolean,
         properties?: OrderedMap<string, TypeRef>
     ): TypeRef => {
-        return this.addType(tref => new ClassType(tref, names, isInferred, properties));
+        return this.addType(tref => new ClassType(tref, names, isInferred, true, properties));
     };
 
     getUniqueUnionType = (name: string, isInferred: boolean, members: OrderedSet<TypeRef>): TypeRef => {

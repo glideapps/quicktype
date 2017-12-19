@@ -264,6 +264,7 @@ export class ClassType extends NamedType {
         typeRef: TypeRef,
         names: NameOrNames,
         areNamesInferred: boolean,
+        readonly isFixed: boolean,
         private _propertyRefs?: OrderedMap<string, TypeRef>
     ) {
         super(typeRef, "class", names, areNamesInferred);

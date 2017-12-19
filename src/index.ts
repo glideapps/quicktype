@@ -6,7 +6,7 @@ import { Readable } from "stream";
 import * as targetLanguages from "./Language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult } from "./Source";
-import { panic } from "./Support";
+import { assertNever } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { combineClasses } from "./CombineClasses";
 import { schemaToType } from "./JSONSchemaInput";
@@ -35,61 +35,41 @@ export function getTargetLanguage(name: string): TargetLanguage {
 
 export type RendererOptions = { [name: string]: string };
 
-export interface Sample<T> {
-    source: T;
-}
+export type StringInput = string | Readable;
 
-export interface Source<T> {
+export interface JSONTypeSource {
     name: string;
-    samples: Sample<T>[];
+    samples: StringInput[];
 }
 
-function isSourceData<T>(sources: SourceType<T>): sources is Source<T>[] {
-    if (_.isArray(sources)) {
-        if (sources.length === 0) {
-            panic("You must provide at least one sample");
-        }
-        return "samples" in sources[0];
-    }
-    return false;
+export function isJSONSource(source: TypeSource): source is JSONTypeSource {
+    return "samples" in source;
 }
 
-export interface SchemaData<T> {
+export interface SchemaTypeSource {
     name: string;
-    schema: T;
+    schema: StringInput;
 }
 
-function isSchemaData<T>(sources: SourceType<T>): sources is SchemaData<T>[] {
-    if (_.isArray(sources)) {
-        if (sources.length === 0) {
-            panic("You must provide at least one sample");
-        }
-        return !("query" in sources[0]) && !("samples" in sources[0]);
-    }
-    return false;
+export function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
+    return !("query" in source) && !("samples" in source);
 }
 
-export interface GraphQLData {
+export interface GraphQLTypeSource {
     name: string;
     schema: any;
-    query: string;
+    query: StringInput;
 }
 
-function isGraphQLData<T>(sources: SourceType<T>): sources is GraphQLData[] {
-    if (_.isArray(sources)) {
-        if (sources.length === 0) {
-            panic("You must provide at least one sample");
-        }
-        return "query" in sources[0];
-    }
-    return false;
+export function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource {
+    return "query" in source;
 }
 
-export type SourceType<T> = GraphQLData[] | Source<T>[] | SchemaData<T>[];
+export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource;
 
 export interface Options {
     lang: string;
-    sources: SourceType<string | Readable>;
+    sources: TypeSource[];
     inferMaps: boolean;
     inferEnums: boolean;
     alphabetizeProperties: boolean;
@@ -115,10 +95,12 @@ type InputData = {
     graphQLs: { [name: string]: { schema: any; query: string } };
 };
 
-let graphByInputHash: Map<number, TypeGraph> = Map();
-
 function toReadable(source: string | Readable): Readable {
     return _.isString(source) ? stringToStream(source) : source;
+}
+
+async function toString(source: string | Readable): Promise<string> {
+    return _.isString(source) ? source : await getStream(source);
 }
 
 export class Run {
@@ -126,7 +108,7 @@ export class Run {
     private _allInputs: InputData;
     private _options: Options;
 
-    constructor(options: Partial<Options>, private readonly _doCache: boolean) {
+    constructor(options: Partial<Options>) {
         this._options = _.assign(_.clone(defaultOptions), options);
         this._allInputs = { samples: {}, schemas: {}, graphQLs: {} };
 
@@ -137,112 +119,76 @@ export class Run {
         this._compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
     }
 
-    private get isInputJSONSchema(): boolean {
-        return isSchemaData(this._options.sources);
-    }
-
-    private get isInputGraphQL(): boolean {
-        return isGraphQLData(this._options.sources);
-    }
-
     private makeGraph = (): TypeGraph => {
         const stringTypeMapping = getTargetLanguage(this._options.lang).stringTypeMapping;
         const typeBuilder = new TypeGraphBuilder(stringTypeMapping);
-        if (this.isInputJSONSchema) {
-            Map(this._allInputs.schemas).forEach((schema, name) => {
-                typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema));
+
+        // JSON Schema
+        Map(this._allInputs.schemas).forEach((schema, name) => {
+            typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema));
+        });
+
+        // GraphQL
+        const numInputs = Object.keys(this._allInputs.graphQLs).length;
+        Map(this._allInputs.graphQLs).forEach(({ schema, query }, name) => {
+            const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
+            newTopLevels.forEach((t, actualName) => {
+                typeBuilder.addTopLevel(numInputs === 1 ? name : actualName, t);
             });
-            const graph = typeBuilder.finish();
-            gatherNames(graph);
-            return graph;
-        } else if (this.isInputGraphQL) {
-            const numInputs = Object.keys(this._allInputs.graphQLs).length;
-            Map(this._allInputs.graphQLs).forEach(({ schema, query }, name) => {
-                const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
-                newTopLevels.forEach((t, actualName) => {
-                    typeBuilder.addTopLevel(numInputs === 1 ? name : actualName, t);
-                });
-            });
-            return typeBuilder.finish();
-        } else {
-            const doInferMaps = this._options.inferMaps;
+        });
+
+        // JSON
+        if (Object.keys(this._allInputs.samples).length > 0) {
             const doInferEnums = this._options.inferEnums;
-            const doCombineClasses = this._options.combineClasses;
-            const samplesMap = Map(this._allInputs.samples);
-            const inputs = List([
-                doInferMaps,
-                doInferEnums,
-                doCombineClasses,
-                samplesMap.map(values => List(values)),
-                this._compressedJSON
-            ]);
-            let inputHash: number | undefined = undefined;
-
-            if (this._doCache) {
-                inputHash = inputs.hashCode();
-                const maybeGraph = graphByInputHash.get(inputHash);
-                if (maybeGraph !== undefined) {
-                    return maybeGraph;
-                }
-            }
-
             const inference = new TypeInference(typeBuilder, doInferEnums);
+
             Map(this._allInputs.samples).forEach((cjson, name) => {
                 typeBuilder.addTopLevel(
                     name,
                     inference.inferType(this._compressedJSON as CompressedJSON, name, false, cjson)
                 );
             });
-            let graph = typeBuilder.finish();
-            if (doCombineClasses) {
-                graph = combineClasses(graph, stringTypeMapping);
-            }
-            if (doInferMaps) {
-                graph = inferMaps(graph, stringTypeMapping);
-            }
-            gatherNames(graph);
-
-            if (inputHash !== undefined) {
-                graphByInputHash = graphByInputHash.set(inputHash, graph);
-            }
-
-            return graph;
         }
-    };
 
-    private readSampleFromStream = async (name: string, readStream: Readable): Promise<void> => {
-        if (this.isInputJSONSchema) {
-            const input = JSON.parse(await getStream(readStream));
-            if (_.has(this._allInputs.schemas, name)) {
-                throw new Error(`More than one schema given for ${name}`);
-            }
-            this._allInputs.schemas[name] = input;
-        } else {
-            const input = await this._compressedJSON.readFromStream(readStream);
-            if (!_.has(this._allInputs.samples, name)) {
-                this._allInputs.samples[name] = [];
-            }
-            this._allInputs.samples[name].push(input);
+        let graph = typeBuilder.finish();
+        const doCombineClasses = this._options.combineClasses;
+        if (doCombineClasses) {
+            graph = combineClasses(graph, stringTypeMapping);
         }
+        const doInferMaps = this._options.inferMaps;
+        if (doInferMaps) {
+            graph = inferMaps(graph, stringTypeMapping);
+        }
+        gatherNames(graph);
+
+        return graph;
     };
 
     public run = async (): Promise<SerializedRenderResult> => {
         const targetLanguage = getTargetLanguage(this._options.lang);
 
-        if (isGraphQLData(this._options.sources)) {
-            for (const source of this._options.sources) {
+        for (const source of this._options.sources) {
+            if (isGraphQLSource(source)) {
                 const { name, schema, query } = source;
-                this._allInputs.graphQLs[name] = { schema, query };
-            }
-        } else if (isSourceData(this._options.sources)) {
-            for (const source of this._options.sources) {
-                for (const sample of source.samples) {
-                    await this.readSampleFromStream(source.name, toReadable(sample.source));
+                this._allInputs.graphQLs[name] = { schema, query: await toString(query) };
+            } else if (isJSONSource(source)) {
+                const { name, samples } = source;
+                for (const sample of samples) {
+                    const input = await this._compressedJSON.readFromStream(toReadable(sample));
+                    if (!_.has(this._allInputs.samples, name)) {
+                        this._allInputs.samples[name] = [];
+                    }
+                    this._allInputs.samples[name].push(input);
                 }
-            }
-        } else if (isSchemaData(this._options.sources)) {
-            for (const { name, schema } of this._options.sources) {
-                await this.readSampleFromStream(name, toReadable(schema));
+            } else if (isSchemaSource(source)) {
+                const { name, schema } = source;
+                const input = JSON.parse(await toString(schema));
+                if (_.has(this._allInputs.schemas, name)) {
+                    throw new Error(`More than one schema given for ${name}`);
+                }
+                this._allInputs.schemas[name] = input;
+            } else {
+                assertNever(source);
             }
         }
 
@@ -260,6 +206,6 @@ export class Run {
     };
 }
 
-export function quicktype(options: Partial<Options>, useCache: boolean = true) {
-    return new Run(options, useCache).run();
+export function quicktype(options: Partial<Options>) {
+    return new Run(options).run();
 }

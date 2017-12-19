@@ -92,6 +92,7 @@ export class TypeGraph {
         replacementGroups: T[][],
         replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>) => TypeRef
     ): TypeGraph {
+        if (replacementGroups.length === 0) return this;
         return new GraphRewriteBuilder(this, stringTypeMapping, replacementGroups, replacer).finish();
     }
 
