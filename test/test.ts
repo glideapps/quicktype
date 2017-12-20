@@ -82,7 +82,7 @@ function testCLI() {
   const qt = args => exec(`node dist/cli.js ${args}`);
 
   console.log("* Ensure we can quicktype a URL");
-  qt(`https://blockchain.info/latestblock`);
+  qt(`https://www.reddit.com/r/all.json`);
 }
 
 // skip 2 `node` args
