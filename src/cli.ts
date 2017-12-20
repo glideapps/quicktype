@@ -359,8 +359,8 @@ const sectionsAfterRenderers: UsageSection[] = [
     {
         header: "Examples",
         content: [
-            chalk.dim("Generate C# to parse a Bitcoin API"),
-            "$ quicktype -o LatestBlock.cs https://blockchain.info/latestblock",
+            chalk.dim("Generate C# to parse a Reddit API"),
+            "$ quicktype -o Reddit.cs https://www.reddit.com/r/all.json",
             "",
             chalk.dim("Generate Go code from a directory of samples containing:"),
             chalk.dim(
@@ -373,8 +373,8 @@ const sectionsAfterRenderers: UsageSection[] = [
             "$ quicktype -l go samples",
             "",
             chalk.dim("Generate JSON Schema, then TypeScript"),
-            "$ quicktype -o schema.json https://blockchain.info/latestblock",
-            "$ quicktype -o bitcoin.ts --src-lang schema schema.json"
+            "$ quicktype -o schema.json https://www.reddit.com/r/all.json",
+            "$ quicktype -o reddit.ts --src-lang schema schema.json"
         ]
     },
     {
