@@ -1,7 +1,7 @@
 "use strict";
 
 import { Map, Collection, OrderedSet, List } from "immutable";
-import { TopLevels } from "./Type";
+import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
 import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newline } from "./Source";
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
@@ -28,15 +28,13 @@ function lineIndentation(line: string): { indent: number; text: string | null } 
 }
 
 export abstract class Renderer {
-    protected readonly topLevels: TopLevels;
     private _names: Map<Name, string> | undefined;
 
     private _lastNewline?: NewlineSource;
     private _emitted: Sourcelike[];
     private _currentEmitTarget: Sourcelike[];
 
-    constructor(topLevels: TopLevels) {
-        this.topLevels = topLevels;
+    constructor(protected readonly typeGraph: TypeGraph) {
         this._currentEmitTarget = this._emitted = [];
     }
 

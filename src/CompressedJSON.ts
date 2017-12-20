@@ -1,12 +1,12 @@
 "use strict";
 
-import * as fs from "fs";
-import * as process from "process";
 import * as stream from "stream";
 
-import { defined, assertNever } from "./Support";
+import { defined, hashCodeInit, addHashCode } from "./Support";
+import { isDate, isTime, isDateTime } from "./DateTime";
 
-const makeSource = require("stream-json");
+const makeSource = require("stream-json/main");
+const stringHash = require("string-hash");
 
 export enum Tag {
     Null,
@@ -17,15 +17,11 @@ export enum Tag {
     InternedString,
     UninternedString,
     Object,
-    Array
+    Array,
+    Date,
+    Time,
+    DateTime
 }
-
-/*
-export type ExpandedValue =
-    | { kind: Tag.Null | Tag.False | Tag.True | Tag.Integer | Tag.Double | Tag.UninternedString }
-    | { kind: Tag.InternedString, value: string }
-    | { kind: Tag.Object | Tag.Array, value: Value[] };
-    */
 
 export type Value = number;
 
@@ -66,6 +62,12 @@ export class CompressedJSON {
     private _objects: Value[][] = [];
     private _arrays: Value[][] = [];
 
+    constructor(
+        private readonly _makeDate: boolean,
+        private readonly _makeTime: boolean,
+        private readonly _makeDateTime: boolean
+    ) {}
+
     async readFromStream(readStream: stream.Readable): Promise<Value> {
         const jsonSource = makeSource();
         jsonSource.on("startObject", this.handleStartObject);
@@ -104,47 +106,6 @@ export class CompressedJSON {
 
     getArrayForValue = (v: Value): Value[] => {
         return this._arrays[getIndex(v, Tag.Array)];
-    };
-
-    jsonForValue = (value: Value): any => {
-        if (typeof value !== "number") {
-            throw `CompressedJSON value is not a number: ${value}`;
-        }
-        const t = valueTag(value);
-        const index = value >> TAG_BITS;
-        switch (t) {
-            case Tag.Null:
-                return null;
-            case Tag.False:
-                return false;
-            case Tag.True:
-                return true;
-            case Tag.Integer:
-                return 123;
-            case Tag.Double:
-                return 3.1415;
-            case Tag.InternedString:
-                return this._strings[index];
-            case Tag.UninternedString:
-                return "!?!?!?!?!";
-            case Tag.Object: {
-                const kvs = this._objects[index];
-                const obj: { [key: string]: any } = {};
-                for (let i = 0; i < kvs.length; i += 2) {
-                    const key = this.jsonForValue(kvs[i]);
-                    if (typeof key === "string") {
-                        obj[key] = this.jsonForValue(kvs[i + 1]);
-                    } else {
-                        throw `Object key is not a string: ${key}`;
-                    }
-                }
-                return obj;
-            }
-            case Tag.Array:
-                return this._arrays[index].map(this.jsonForValue);
-            default:
-                return assertNever(t);
-        }
     };
 
     private internString = (s: string): Value => {
@@ -284,9 +245,20 @@ export class CompressedJSON {
         }
         const str = defined(defined(this._ctx).currentString);
         this.popContext();
-        let value: Value;
+        let value: Value | undefined = undefined;
         if (str.length <= 64) {
-            value = this.internString(str);
+            if (str.length > 0 && "0123456789".indexOf(str[0]) >= 0) {
+                if (this._makeDate && isDate(str)) {
+                    value = makeValue(Tag.Date, 0);
+                } else if (this._makeTime && isTime(str, false)) {
+                    value = makeValue(Tag.Time, 0);
+                } else if (this._makeDateTime && isDateTime(str)) {
+                    value = makeValue(Tag.DateTime, 0);
+                }
+            }
+            if (value === undefined) {
+                value = this.internString(str);
+            }
         } else {
             value = makeValue(Tag.UninternedString, 0);
         }
@@ -323,5 +295,34 @@ export class CompressedJSON {
 
     private handleFalseValue = (): void => {
         this.commitValue(makeValue(Tag.False, 0));
+    };
+
+    equals = (other: any): boolean => {
+        return this === other;
+    };
+
+    hashCode = (): number => {
+        let hash = hashCodeInit;
+        for (const s of this._strings) {
+            hash = addHashCode(hash, stringHash(s));
+        }
+
+        for (const s of Object.getOwnPropertyNames(this._stringValues).sort()) {
+            hash = addHashCode(hash, stringHash(s));
+            hash = addHashCode(hash, this._stringValues[s]);
+        }
+
+        for (const o of this._objects) {
+            for (const v of o) {
+                hash = addHashCode(hash, v);
+            }
+        }
+        for (const o of this._arrays) {
+            for (const v of o) {
+                hash = addHashCode(hash, v);
+            }
+        }
+
+        return hash;
     };
 }

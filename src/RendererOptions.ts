@@ -86,7 +86,7 @@ export class EnumOption<T> extends Option<T> {
         }
         const value = this._values[name];
         if (value === undefined) {
-            return panic("Unknown option value.");
+            return panic(`Unknown value for option ${name}`);
         }
         return value;
     }

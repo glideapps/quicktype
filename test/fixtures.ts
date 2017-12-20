@@ -21,7 +21,7 @@ import {
   testsInDir
 } from "./utils";
 import * as languages from "./languages";
-import { RendererOptions } from "../dist/quicktype";
+import { RendererOptions } from "../dist";
 import { panic } from "../dist/Support";
 
 const chalk = require("chalk");
@@ -33,6 +33,33 @@ const IS_BLESSED = BRANCH === "master";
 const IS_PR =
   process.env.TRAVIS_PULL_REQUEST &&
   process.env.TRAVIS_PULL_REQUEST !== "false";
+
+function pathWithoutExtension(fullPath: string, extension: string): string {
+  return path.join(path.dirname(fullPath), path.basename(fullPath, extension));
+}
+
+function jsonTestFiles(base: string): string[] {
+  const jsonFiles: string[] = [];
+  let fn = `${base}.json`;
+  if (fs.existsSync(fn)) {
+    jsonFiles.push(fn);
+  }
+  let i = 1;
+  for (;;) {
+    fn = `${base}.${i.toString()}.json`;
+    if (fs.existsSync(fn)) {
+      jsonFiles.push(fn);
+    } else {
+      break;
+    }
+    i++;
+  }
+
+  if (jsonFiles.length === 0) {
+    return failWith("No JSON input files", { base });
+  }
+  return jsonFiles;
+}
 
 export abstract class Fixture {
   abstract name: string;
@@ -66,11 +93,14 @@ export abstract class Fixture {
     cwd: string,
     shouldSkip: boolean
   ): void {
+    const rendererOptions = _.map(
+      sample.additionalRendererOptions,
+      (v, k) => `${k}: ${v}`
+    ).join(", ");
     console.error(
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
-      chalk.magenta(this.name),
-      JSON.stringify(sample.additionalRendererOptions),
+      chalk.magenta(this.name) + chalk.dim(`(${rendererOptions})`),
       path.join(cwd, chalk.cyan(path.basename(sample.path))),
       shouldSkip ? chalk.red("SKIP") : ""
     );
@@ -80,7 +110,7 @@ export abstract class Fixture {
 abstract class LanguageFixture extends Fixture {
   protected language: languages.Language;
 
-  public constructor(language: languages.Language) {
+  constructor(language: languages.Language) {
     super();
     this.language = language;
   }
@@ -147,14 +177,11 @@ abstract class LanguageFixture extends Fixture {
 }
 
 class JSONFixture extends LanguageFixture {
-  public name: string;
-
-  public constructor(
+  constructor(
     language: languages.Language,
-    name: string = language.name
+    public name: string = language.name
   ) {
     super(language);
-    this.name = name;
   }
 
   async runQuicktype(
@@ -166,6 +193,7 @@ class JSONFixture extends LanguageFixture {
       this.language,
       sample,
       "json",
+      true,
       additionalRendererOptions
     );
   }
@@ -201,13 +229,15 @@ class JSONFixture extends LanguageFixture {
         this.language,
         "schema.json",
         "schema",
+        true,
         additionalRendererOptions
       );
 
       // Compare fixture.output to fixture.output.expected
       exec(
-        `diff -Naur ${this.language.output}.expected ${this.language
-          .output} > /dev/null 2>&1`
+        `diff -Naur ${this.language.output}.expected ${
+          this.language.output
+        } > /dev/null 2>&1`
       );
     }
   }
@@ -276,7 +306,7 @@ class JSONFixture extends LanguageFixture {
 // generating a Schema from the Schema and testing that it's
 // the same as the original Schema.
 class JSONSchemaJSONFixture extends JSONFixture {
-  private runLanguage: languages.Language;
+  private readonly runLanguage: languages.Language;
 
   constructor(language: languages.Language) {
     const schemaLanguage: languages.Language = {
@@ -291,9 +321,8 @@ class JSONSchemaJSONFixture extends JSONFixture {
       output: "schema.json",
       topLevel: "schema",
       skipJSON: [
-        "identifiers.json",
-        "simple-identifiers.json",
-        "blns-object.json"
+        "blns-object.json", // AJV refuses to even "compile" the schema we generate
+        "31189.json" // same here
       ],
       skipSchema: [],
       rendererOptions: {},
@@ -316,7 +345,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
     let input = JSON.parse(fs.readFileSync(filename, "utf8"));
     let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
 
-    let ajv = new Ajv();
+    let ajv = new Ajv({ format: "full" });
     let valid = ajv.validate(schema, input);
     if (!valid) {
       failWith("Generated schema does not validate input JSON.", {
@@ -329,6 +358,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
       this.runLanguage,
       "schema.json",
       "schema",
+      false,
       additionalRendererOptions
     );
 
@@ -362,14 +392,11 @@ class JSONSchemaJSONFixture extends JSONFixture {
 // that we can't (yet) get from JSON.  Right now that's only
 // recursive types.
 class JSONSchemaFixture extends LanguageFixture {
-  name: string;
-
   constructor(
     language: languages.Language,
-    name: string = `schema-${language.name}`
+    readonly name: string = `schema-${language.name}`
   ) {
     super(language);
-    this.name = name;
   }
 
   runForName(name: string): boolean {
@@ -393,35 +420,13 @@ class JSONSchemaFixture extends LanguageFixture {
       this.language,
       filename,
       "schema",
+      false,
       additionalRendererOptions
     );
   }
 
   additionalFiles(sample: Sample): string[] {
-    const base = path.join(
-      path.dirname(sample.path),
-      path.basename(sample.path, ".schema")
-    );
-    const jsonFiles: string[] = [];
-    let fn = `${base}.json`;
-    if (fs.existsSync(fn)) {
-      jsonFiles.push(fn);
-    }
-    let i = 1;
-    for (;;) {
-      fn = `${base}.${i.toString()}.json`;
-      if (fs.existsSync(fn)) {
-        jsonFiles.push(fn);
-      } else {
-        break;
-      }
-      i++;
-    }
-
-    if (jsonFiles.length === 0) {
-      failWith("No JSON input files", { base });
-    }
-    return jsonFiles;
+    return jsonTestFiles(pathWithoutExtension(sample.path, ".schema"));
   }
 
   async test(
@@ -434,6 +439,82 @@ class JSONSchemaFixture extends LanguageFixture {
     }
     for (const json of jsonFiles) {
       const jsonBase = path.basename(json);
+      compareJsonFileToJson({
+        expectedFile: jsonBase,
+        given: { command: this.language.runCommand(jsonBase) },
+        strict: false,
+        allowMissingNull: this.language.allowMissingNull
+      });
+    }
+  }
+}
+
+function graphQLSchemaFilename(baseName: string): string {
+  const baseMatch = baseName.match(/(.*\D)\d+$/);
+  if (baseMatch === null) {
+    return failWith(
+      "GraphQL test filename does not correspond to naming schema",
+      { baseName }
+    );
+  }
+  return baseMatch[1] + ".gqlschema";
+}
+
+class GraphQLFixture extends LanguageFixture {
+  constructor(
+    language: languages.Language,
+    readonly name: string = `graphql-${language.name}`
+  ) {
+    super(language);
+  }
+
+  runForName(name: string): boolean {
+    return this.name === name || name === "graphql";
+  }
+
+  getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
+    const prioritySamples = testsInDir("test/inputs/graphql/", "graphql");
+    return samplesFromSources(sources, prioritySamples, [], "graphql");
+  }
+
+  shouldSkipTest(sample: Sample): boolean {
+    return false;
+  }
+
+  async runQuicktype(
+    filename: string,
+    additionalRendererOptions: RendererOptions
+  ): Promise<void> {
+    const baseName = pathWithoutExtension(filename, ".graphql");
+    const schemaFilename = graphQLSchemaFilename(baseName);
+    await quicktypeForLanguage(
+      this.language,
+      filename,
+      "graphql",
+      false,
+      additionalRendererOptions,
+      schemaFilename
+    );
+  }
+
+  additionalFiles(sample: Sample): string[] {
+    const baseName = pathWithoutExtension(sample.path, ".graphql");
+    return jsonTestFiles(baseName).concat(graphQLSchemaFilename(baseName));
+  }
+
+  async test(
+    filename: string,
+    additionalRendererOptions: RendererOptions,
+    additionalFiles: string[]
+  ): Promise<void> {
+    if (this.language.compileCommand) {
+      exec(this.language.compileCommand);
+    }
+    for (const fn of additionalFiles) {
+      if (!fn.endsWith(".json")) {
+        continue;
+      }
+      const jsonBase = path.basename(fn);
       compareJsonFileToJson({
         expectedFile: jsonBase,
         given: { command: this.language.runCommand(jsonBase) },
@@ -458,5 +539,11 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.GoLanguage),
   new JSONSchemaFixture(languages.CPlusPlusIndirectionLanguage),
   new JSONSchemaFixture(languages.SwiftClassesLanguage),
-  new JSONSchemaFixture(languages.TypeScriptLanguage)
+  new JSONSchemaFixture(languages.TypeScriptLanguage),
+  new GraphQLFixture(languages.CSharpLanguage),
+  new GraphQLFixture(languages.JavaLanguage),
+  new GraphQLFixture(languages.GoLanguage),
+  new GraphQLFixture(languages.CPlusPlusIndirectionLanguage),
+  new GraphQLFixture(languages.SwiftClassesLanguage)
+  // new GraphQLFixture(languages.TypeScriptLanguage) // enable once we have enums in TS
 ];

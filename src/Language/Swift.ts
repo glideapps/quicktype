@@ -1,8 +1,7 @@
 "use strict";
 
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import {
-    TopLevels,
     Type,
     NamedType,
     ClassType,
@@ -13,19 +12,16 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-    filterTypes
+    TypeKind
 } from "../Type";
+import { TypeGraph } from "../TypeGraph";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, EnumOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
-    startWithLetter,
-    pascalCase,
-    camelCase,
     isLetterOrUnderscore,
     isNumeric,
     isDigit,
@@ -33,33 +29,28 @@ import {
     escapeNonPrintableMapper,
     isPrintable,
     intToHex,
-    defined,
-    decapitalize
-} from "../Support";
+    splitIntoWords,
+    combineWords,
+    firstUpperWordStyle,
+    allLowerWordStyle,
+    allUpperWordStyle,
+    camelCase
+} from "../Strings";
 
-export default class SwiftTargetLanguage extends TypeScriptTargetLanguage {
-    private readonly _justTypesOption: BooleanOption;
-    private readonly _classOption: EnumOption<boolean>;
+export default class SwiftTargetLanguage extends TargetLanguage {
+    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
+    private readonly _classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
+        ["struct", false],
+        ["class", true]
+    ]);
 
     constructor() {
-        const justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-        const classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
-            ["struct", false],
-            ["class", true]
-        ]);
-        const options = [justTypesOption, classOption];
-        super("Swift", ["swift", "swift4"], "swift", options.map(o => o.definition));
-        this._justTypesOption = justTypesOption;
-        this._classOption = classOption;
+        super("Swift", ["swift", "swift4"], "swift");
+        this.setOptions([this._justTypesOption, this._classOption]);
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new SwiftRenderer(
-            topLevels,
-            this._justTypesOption.getValue(optionValues),
-            this._classOption.getValue(optionValues)
-        );
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return SwiftRenderer;
     }
 }
 
@@ -157,7 +148,9 @@ const keywords = [
     "convertArray",
     "convertOptional",
     "convertDict",
-    "convertDouble"
+    "convertDouble",
+    "jsonString",
+    "jsonData"
 ];
 
 function isPartCharacter(codePoint: number): boolean {
@@ -171,9 +164,17 @@ function isStartCharacter(codePoint: number): boolean {
 const legalizeName = legalizeCharacters(isPartCharacter);
 
 function swiftNameStyle(isUpper: boolean, original: string): string {
-    const legalized = legalizeName(original);
-    const cameled = pascalCase(legalized);
-    return startWithLetter(isStartCharacter, isUpper, cameled);
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        isUpper ? firstUpperWordStyle : allLowerWordStyle,
+        firstUpperWordStyle,
+        isUpper ? allUpperWordStyle : allLowerWordStyle,
+        allUpperWordStyle,
+        "",
+        isStartCharacter
+    );
 }
 
 function unicodeEscape(codePoint: number): string {
@@ -186,19 +187,22 @@ const upperNamingFunction = funPrefixNamer(s => swiftNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer(s => swiftNameStyle(false, s));
 
 class SwiftRenderer extends ConvenienceRenderer {
-    constructor(topLevels: TopLevels, private readonly _justTypes: boolean, private readonly _useClasses: boolean) {
-        super(topLevels);
+    constructor(graph: TypeGraph, private readonly _justTypes: boolean, private readonly _useClasses: boolean) {
+        super(graph);
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
         return keywords;
     }
 
-    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForClassProperties(
+        _c: ClassType,
+        _classNamed: Name
+    ): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
-    protected forbiddenForCases(e: EnumType, enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -210,11 +214,15 @@ class SwiftRenderer extends ConvenienceRenderer {
         return upperNamingFunction;
     }
 
-    protected get propertyNamer(): Namer {
+    protected get classPropertyNamer(): Namer {
         return lowerNamingFunction;
     }
 
-    protected get caseNamer(): Namer {
+    protected get unionMemberNamer(): Namer {
+        return lowerNamingFunction;
+    }
+
+    protected get enumCaseNamer(): Namer {
         return lowerNamingFunction;
     }
 
@@ -239,13 +247,13 @@ class SwiftRenderer extends ConvenienceRenderer {
     private swiftType = (t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.swift3OrPlainCase("Any?", "JSONAny")),
-            nullType =>
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.swift3OrPlainCase("Any?", "JSONAny")),
+            _nullType =>
                 maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.swift3OrPlainCase("NSNull", "JSONNull?")),
-            boolType => "Bool",
-            integerType => "Int",
-            doubleType => "Double",
-            stringType => "String",
+            _boolType => "Bool",
+            _integerType => "Int",
+            _doubleType => "Double",
+            _stringType => "String",
             arrayType => ["[", this.swiftType(arrayType.items, withIssues), "]"],
             classType => this.nameForNamedType(classType),
             mapType => ["[String: ", this.swiftType(mapType.values, withIssues), "]"],
@@ -258,28 +266,21 @@ class SwiftRenderer extends ConvenienceRenderer {
         );
     };
 
-    protected unionFieldName = (fieldType: Type): string => {
-        return matchType(
-            fieldType,
-            anyType => "anything",
-            nullType => "null",
-            boolType => "bool",
-            integerType => "integer",
-            doubleType => "double",
-            stringType => "string",
-            arrayType => this.unionFieldName(arrayType.items) + "Array",
-            classType => decapitalize(defined(this.names.get(this.nameForNamedType(classType)))),
-            mapType => this.unionFieldName(mapType.values) + "Map",
-            enumType => "enumeration",
-            unionType => "oneOf"
-        );
+    protected proposedUnionMemberNameForTypeKind = (kind: TypeKind): string | null => {
+        if (kind === "enum") {
+            return "enumeration";
+        }
+        if (kind === "union") {
+            return "one_of";
+        }
+        return null;
     };
 
     private renderHeader = (): void => {
         if (!this._justTypes) {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
-            this.forEachTopLevel("none", (t, name) => {
+            this.forEachTopLevel("none", (_, name) => {
                 this.emitLine("//   let ", modifySource(camelCase, name), " = ", name, ".from(json: jsonString)!");
             });
             this.emitNewline();
@@ -299,7 +300,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         const structOrClass = this._useClasses ? "class" : "struct";
         const codableString = this.getCodableString();
         this.emitBlock([structOrClass, " ", className, codableString], () => {
-            this.forEachProperty(c, "none", (name, jsonName, t) => {
+            this.forEachClassProperty(c, "none", (name, _, t) => {
                 this.emitLine("let ", name, ": ", this.swiftType(t, true));
             });
         });
@@ -308,7 +309,7 @@ class SwiftRenderer extends ConvenienceRenderer {
     private renderEnumDefinition = (e: EnumType, enumName: Name): void => {
         const codableString = this.getCodableString();
         this.emitBlock(["enum ", enumName, codableString], () => {
-            this.forEachCase(e, "none", name => {
+            this.forEachEnumCase(e, "none", name => {
                 this.emitLine("case ", name);
             });
         });
@@ -318,16 +319,16 @@ class SwiftRenderer extends ConvenienceRenderer {
         const [maybeNull, nonNulls] = removeNullFromUnion(u);
         const codableString = this.getCodableString();
         this.emitBlock(["enum ", unionName, codableString], () => {
-            nonNulls.forEach(t => {
-                this.emitLine("case ", this.unionFieldName(t), "(", this.swiftType(t), ")");
+            this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
+                this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });
             if (maybeNull) {
-                this.emitLine("case ", this.unionFieldName(maybeNull));
+                this.emitLine("case ", this.nameForUnionMember(u, maybeNull));
             }
         });
     };
 
-    private renderTopLevelExtensions4 = (t: Type, topLevelName: Name): void => {
+    private renderTopLevelExtensions4 = (t: Type, _: Name): void => {
         const typeSource = this.swiftType(t);
         let extensionSource: Sourcelike;
         if (t instanceof ArrayType) {
@@ -374,7 +375,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         if (c.properties.isEmpty()) return;
         this.emitBlock(["extension ", className], () => {
             this.emitBlock("enum CodingKeys: String, CodingKey", () => {
-                this.forEachProperty(c, "none", (name, jsonName) => {
+                this.forEachClassProperty(c, "none", (name, jsonName) => {
                     this.emitLine("case ", name, ' = "', stringEscape(jsonName), '"');
                 });
             });
@@ -397,7 +398,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                 this.emitLine("let container = try decoder.singleValueContainer()");
                 this.emitBlock(["if let x = try? container.decode(String.self)"], () => {
                     this.emitLine("switch x {");
-                    this.forEachCase(e, "none", (name, jsonName) => {
+                    this.forEachEnumCase(e, "none", (name, jsonName) => {
                         this.emitLine('case "', stringEscape(jsonName), '":');
                         this.indent(() => {
                             this.emitLine("self = .", name);
@@ -414,7 +415,7 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.emitBlock("func encode(to encoder: Encoder) throws", () => {
                 this.emitLine("var container = encoder.singleValueContainer()");
                 this.emitLine("switch self {");
-                this.forEachCase(e, "none", (name, jsonName) => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine("case .", name, ":");
                     this.indent(() => this.emitLine('try container.encode("', stringEscape(jsonName), '")'));
                 });
@@ -423,29 +424,29 @@ class SwiftRenderer extends ConvenienceRenderer {
         });
     };
 
-    private renderUnionCase = (t: Type): void => {
-        this.emitBlock(["if let x = try? container.decode(", this.swiftType(t), ".self)"], () => {
-            this.emitLine("self = .", this.unionFieldName(t), "(x)");
-            this.emitLine("return");
-        });
-    };
-
     private renderUnionExtensions4 = (u: UnionType, unionName: Name): void => {
+        const renderUnionCase = (t: Type): void => {
+            this.emitBlock(["if let x = try? container.decode(", this.swiftType(t), ".self)"], () => {
+                this.emitLine("self = .", this.nameForUnionMember(u, t), "(x)");
+                this.emitLine("return");
+            });
+        };
+
         const [maybeNull, nonNulls] = removeNullFromUnion(u);
         this.emitBlock(["extension ", unionName], () => {
             this.emitBlock("init(from decoder: Decoder) throws", () => {
                 this.emitLine("let container = try decoder.singleValueContainer()");
                 const boolMember = u.findMember("bool");
-                if (boolMember) this.renderUnionCase(boolMember);
+                if (boolMember) renderUnionCase(boolMember);
                 const integerMember = u.findMember("integer");
-                if (integerMember) this.renderUnionCase(integerMember);
+                if (integerMember) renderUnionCase(integerMember);
                 nonNulls.forEach(t => {
                     if (t.kind === "bool" || t.kind === "integer") return;
-                    this.renderUnionCase(t);
+                    renderUnionCase(t);
                 });
                 if (maybeNull) {
                     this.emitBlock("if container.decodeNil()", () => {
-                        this.emitLine("self = .", this.unionFieldName(maybeNull));
+                        this.emitLine("self = .", this.nameForUnionMember(u, maybeNull));
                         this.emitLine("return");
                     });
                 }
@@ -455,12 +456,12 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.emitBlock("func encode(to encoder: Encoder) throws", () => {
                 this.emitLine("var container = encoder.singleValueContainer()");
                 this.emitLine("switch self {");
-                nonNulls.forEach(t => {
-                    this.emitLine("case .", this.unionFieldName(t), "(let x):");
+                this.forEachUnionMember(u, nonNulls, "none", null, (name, _) => {
+                    this.emitLine("case .", name, "(let x):");
                     this.indent(() => this.emitLine("try container.encode(x)"));
                 });
                 if (maybeNull) {
-                    this.emitLine("case .", this.unionFieldName(maybeNull), ":");
+                    this.emitLine("case .", this.nameForUnionMember(u, maybeNull), ":");
                     this.indent(() => this.emitLine("try container.encodeNil()"));
                 }
                 this.emitLine("}");
@@ -469,7 +470,7 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private emitSupportFunctions4 = (): void => {
-        const anyAndNullSet = filterTypes((t): t is Type => t.kind === "any" || t.kind === "null", this.topLevels);
+        const anyAndNullSet = this.typeGraph.filterTypes((t): t is Type => t.kind === "any" || t.kind === "null");
         const needAny = anyAndNullSet.some(t => t.kind === "any");
         const needNull = anyAndNullSet.some(t => t.kind === "null");
         if (needAny || needNull) {

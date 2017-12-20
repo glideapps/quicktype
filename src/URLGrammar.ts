@@ -1,6 +1,6 @@
 "use strict";
 
-import { assert, panic, StringMap, checkStringMap, checkArray } from "./Support";
+import { panic, checkStringMap, checkArray } from "./Support";
 
 function expand(json: any): string[] {
     if (typeof json === "string") {
@@ -37,7 +37,7 @@ export function urlsFromURLGrammar(json: any): { [name: string]: string[] } {
     const topLevelMap = checkStringMap(json);
     const results: { [name: string]: string[] } = {};
 
-    for (const name of Object.keys(topLevelMap)) {
+    for (const name of Object.getOwnPropertyNames(topLevelMap)) {
         results[name] = expand(topLevelMap[name]);
     }
 

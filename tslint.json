@@ -49,6 +49,10 @@
     "no-unsafe-any": true,
     "no-unused-expression": true,
     "no-use-before-declare": true,
+    "no-unused-variable": true,
+    "no-var-keyword": true,
+    "no-void-expression": true,
+    "strict-boolean-expressions": true,
     "one-line": [
       true,
       "check-catch",
@@ -58,7 +62,7 @@
     ],
     "quotemark": [true, "double", "avoid-escape"],
     "radix": true,
-    "semicolon": [true, "ignore-bound-class-methods"],
+    "semicolon": [true, "always", "ignore-bound-class-methods"],
     "switch-default": true,
 
     "trailing-comma": false,

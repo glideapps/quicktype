@@ -1,11 +1,9 @@
 "use strict";
 
-import { List, Collection, OrderedMap, OrderedSet, Map } from "immutable";
+import { OrderedSet } from "immutable";
 import {
     TypeKind,
-    TopLevels,
     Type,
-    PrimitiveType,
     ArrayType,
     MapType,
     EnumType,
@@ -16,55 +14,42 @@ import {
     nullableFromUnion,
     removeNullFromUnion
 } from "../Type";
+import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     utf16LegalizeCharacters,
-    pascalCase,
-    upperUnderscoreCase,
-    startWithLetter,
     escapeNonPrintableMapper,
     utf16ConcatMap,
     standardUnicodeHexEscape,
-    intercalate,
-    defined,
-    assertNever,
     isAscii,
     isLetter,
     isDigit,
     capitalize,
-    nonNull,
-    assert
-} from "../Support";
-import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
-import { RenderResult } from "../Renderer";
+    splitIntoWords,
+    combineWords,
+    allUpperWordStyle,
+    firstUpperWordStyle,
+    allLowerWordStyle
+} from "../Strings";
+import { assert } from "../Support";
+import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption } from "../RendererOptions";
-import { IssueAnnotationData, anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
-const unicode = require("unicode-properties");
-
-export default class JavaTargetLanguage extends TypeScriptTargetLanguage {
-    private readonly _justTypesOption: BooleanOption;
-    private readonly _packageOption: StringOption;
+export default class JavaTargetLanguage extends TargetLanguage {
+    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
+    // FIXME: Do this via a configurable named eventually.
+    private readonly _packageOption = new StringOption("package", "Generated package name", "NAME", "io.quicktype");
 
     constructor() {
-        const justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-        // FIXME: Do this via a configurable named eventually.
-        const packageOption = new StringOption("package", "Generated package name", "NAME", "io.quicktype");
-        const options = [packageOption, justTypesOption];
-        super("Java", ["java"], "java", options.map(o => o.definition));
-        this._justTypesOption = justTypesOption;
-        this._packageOption = packageOption;
+        super("Java", ["java"], "java");
+        this.setOptions([this._packageOption, this._justTypesOption]);
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new JavaRenderer(
-            topLevels,
-            this._justTypesOption.getValue(optionValues),
-            this._packageOption.getValue(optionValues)
-        );
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return JavaRenderer;
     }
 }
 
@@ -161,22 +146,37 @@ function isPartCharacter(codePoint: number): boolean {
 
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
+// FIXME: Handle acronyms consistently.  In particular, that means that
+// we have to use namers to produce the getter and setter names - we can't
+// just capitalize and concatenate.
+// https://stackoverflow.com/questions/8277355/naming-convention-for-upper-case-abbreviations
 function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, original: string): string {
-    const legalized = legalizeName(original);
-    const cased = upperUnderscore ? upperUnderscoreCase(legalized) : pascalCase(legalized);
-    return startWithLetter(isStartCharacter, startWithUpper, cased);
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        upperUnderscore ? allUpperWordStyle : startWithUpper ? firstUpperWordStyle : allLowerWordStyle,
+        upperUnderscore ? allUpperWordStyle : firstUpperWordStyle,
+        upperUnderscore || startWithUpper ? allUpperWordStyle : allLowerWordStyle,
+        allUpperWordStyle,
+        upperUnderscore ? "_" : "",
+        isStartCharacter
+    );
 }
 
 class JavaRenderer extends ConvenienceRenderer {
-    constructor(topLevels: TopLevels, private readonly _justTypes: boolean, private readonly _packageName: string) {
-        super(topLevels);
+    constructor(graph: TypeGraph, private readonly _packageName: string, private readonly _justTypes: boolean) {
+        super(graph);
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
         return keywords;
     }
 
-    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForClassProperties(
+        _c: ClassType,
+        _classNamed: Name
+    ): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -188,11 +188,15 @@ class JavaRenderer extends ConvenienceRenderer {
         return typeNamingFunction;
     }
 
-    protected get propertyNamer(): Namer {
+    protected get classPropertyNamer(): Namer {
         return propertyNamingFunction;
     }
 
-    protected get caseNamer(): Namer {
+    protected get unionMemberNamer(): Namer {
+        return propertyNamingFunction;
+    }
+
+    protected get enumCaseNamer(): Namer {
         return enumCaseNamingFunction;
     }
 
@@ -278,12 +282,12 @@ class JavaRenderer extends ConvenienceRenderer {
     javaType = (reference: boolean, t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Object"),
-            nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Object"),
-            boolType => (reference ? "Boolean" : "boolean"),
-            integerType => (reference ? "Long" : "long"),
-            doubleType => (reference ? "Double" : "double"),
-            stringType => "String",
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Object"),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Object"),
+            _boolType => (reference ? "Boolean" : "boolean"),
+            _integerType => (reference ? "Long" : "long"),
+            _doubleType => (reference ? "Double" : "double"),
+            _stringType => "String",
             arrayType => [this.javaType(false, arrayType.items, withIssues), "[]"],
             classType => this.nameForNamedType(classType),
             mapType => ["Map<String, ", this.javaType(true, mapType.values, withIssues), ">"],
@@ -316,10 +320,10 @@ class JavaRenderer extends ConvenienceRenderer {
             this.emitLine("@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)");
         }
         this.emitBlock(["public class ", className], () => {
-            this.forEachProperty(c, "none", (name, _, t) => {
+            this.forEachClassProperty(c, "none", (name, _, t) => {
                 this.emitLine("private ", this.javaType(false, t, true), " ", name, ";");
             });
-            this.forEachProperty(c, "leading-and-interposing", (name, jsonName, t) => {
+            this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, t) => {
                 if (!this._justTypes) this.emitLine('@JsonProperty("', stringEscape(jsonName), '")');
                 const rendered = this.javaType(false, t);
                 this.emitLine("public ", rendered, " get", modifySource(capitalize, name), "() { return ", name, "; }");
@@ -337,9 +341,14 @@ class JavaRenderer extends ConvenienceRenderer {
         });
     };
 
-    unionField = (t: Type, withIssues: boolean = false): { fieldType: Sourcelike; fieldName: string } => {
+    unionField = (
+        u: UnionType,
+        t: Type,
+        withIssues: boolean = false
+    ): { fieldType: Sourcelike; fieldName: Sourcelike } => {
         const fieldType = this.javaType(true, t, withIssues);
-        const fieldName = `${this.unionFieldName(t)}Value`;
+        // FIXME: "Value" should be part of the name.
+        const fieldName = [this.nameForUnionMember(u, t), "Value"];
         return { fieldType, fieldName };
     };
 
@@ -354,7 +363,7 @@ class JavaRenderer extends ConvenienceRenderer {
         };
 
         const emitDeserializeType = (t: Type): void => {
-            const { fieldName } = this.unionField(t);
+            const { fieldName } = this.unionField(u, t);
             const rendered = this.javaTypeWithoutGenerics(true, t);
             this.emitLine("value.", fieldName, " = jsonParser.readValueAs(", rendered, ".class);");
             this.emitLine("break;");
@@ -392,7 +401,7 @@ class JavaRenderer extends ConvenienceRenderer {
         const [maybeNull, nonNulls] = removeNullFromUnion(u);
         this.emitBlock(["public class ", unionName], () => {
             nonNulls.forEach(t => {
-                const { fieldType, fieldName } = this.unionField(t, true);
+                const { fieldType, fieldName } = this.unionField(u, t, true);
                 this.emitLine("public ", fieldType, " ", fieldName, ";");
             });
             if (this._justTypes) return;
@@ -434,7 +443,7 @@ class JavaRenderer extends ConvenienceRenderer {
                     ],
                     () => {
                         nonNulls.forEach(t => {
-                            const { fieldName } = this.unionField(t, true);
+                            const { fieldName } = this.unionField(u, t, true);
                             this.emitBlock(["if (obj.", fieldName, " != null)"], () => {
                                 this.emitLine("jsonGenerator.writeObject(obj.", fieldName, ");");
                                 this.emitLine("return;");
@@ -454,7 +463,7 @@ class JavaRenderer extends ConvenienceRenderer {
     emitEnumDefinition = (e: EnumType, enumName: Name): void => {
         this.emitFileHeader(enumName, ["java.io.IOException", "com.fasterxml.jackson.annotation.*"]);
         const caseNames: Sourcelike[] = [];
-        this.forEachCase(e, "none", name => {
+        this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
         });
@@ -465,7 +474,7 @@ class JavaRenderer extends ConvenienceRenderer {
             this.emitLine("@JsonValue");
             this.emitBlock("public String toValue()", () => {
                 this.emitLine("switch (this) {");
-                this.forEachCase(e, "none", (name, jsonName) => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine("case ", name, ': return "', stringEscape(jsonName), '";');
                 });
                 this.emitLine("}");
@@ -474,7 +483,7 @@ class JavaRenderer extends ConvenienceRenderer {
             this.emitNewline();
             this.emitLine("@JsonCreator");
             this.emitBlock(["public static ", enumName, " forValue(String value) throws IOException"], () => {
-                this.forEachCase(e, "none", (name, jsonName) => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine('if (value.equals("', stringEscape(jsonName), '")) return ', name, ";");
                 });
                 this.emitLine('throw new IOException("Cannot deserialize ', enumName, '");');

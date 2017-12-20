@@ -2,56 +2,44 @@
 
 import * as _ from "lodash";
 
-import { Set, List, Map, OrderedMap, OrderedSet, Collection } from "immutable";
+import { Type, EnumType, UnionType, NamedType, ClassType, nullableFromUnion, matchTypeExhaustive } from "../Type";
+import { TypeGraph } from "../TypeGraph";
 
+import { Sourcelike } from "../Source";
 import {
-    TopLevels,
-    Type,
-    PrimitiveType,
-    ArrayType,
-    MapType,
-    EnumType,
-    UnionType,
-    NamedType,
-    ClassType,
-    nullableFromUnion,
-    removeNullFromUnion,
-    matchType
-} from "../Type";
+    legalizeCharacters,
+    splitIntoWords,
+    combineWords,
+    firstUpperWordStyle,
+    allUpperWordStyle,
+    allLowerWordStyle
+} from "../Strings";
+import { intercalate } from "../Support";
 
-import { Source, Sourcelike } from "../Source";
+import { Namer, Name } from "../Naming";
 
-import {
-    utf16LegalizeCharacters,
-    pascalCase,
-    startWithLetter,
-    utf16StringEscape,
-    intercalate,
-    defined
-} from "../Support";
-
-import { Namer, Namespace, Name, DependencyName, SimpleName, FixedName, keywordNamespace } from "../Naming";
-
-import { Renderer, RenderResult } from "../Renderer";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
-import { TargetLanguage, TypeScriptTargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption } from "../RendererOptions";
+import { StringTypeMapping } from "../TypeBuilder";
 
 const unicode = require("unicode-properties");
 
-export default class SimpleTypesTargetLanguage extends TypeScriptTargetLanguage {
-    static declareUnionsOption = new BooleanOption("declare-unions", "Declare unions as named types", false);
+export default class SimpleTypesTargetLanguage extends TargetLanguage {
+    private readonly _declareUnionsOption = new BooleanOption("declare-unions", "Declare unions as named types", false);
 
     constructor() {
-        super("Simple Types", ["types"], "txt", [SimpleTypesTargetLanguage.declareUnionsOption.definition]);
+        super("Simple Types", ["types"], "txt");
+        this.setOptions([this._declareUnionsOption]);
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
-        return new SimpleTypesRenderer(
-            topLevels,
-            !SimpleTypesTargetLanguage.declareUnionsOption.getValue(optionValues)
-        ).render();
+    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
+        return { date: "date", time: "time", dateTime: "date-time" };
+    }
+
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return SimpleTypesRenderer;
     }
 }
 
@@ -64,15 +52,25 @@ function isPartCharacter(utf16Unit: number): boolean {
     return _.includes(["Nd", "Pc", "Mn", "Mc"], category) || isStartCharacter(utf16Unit);
 }
 
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
+const legalizeName = legalizeCharacters(isPartCharacter);
 
 function simpleNameStyle(original: string, uppercase: boolean): string {
-    return startWithLetter(isStartCharacter, uppercase, pascalCase(legalizeName(original)));
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        uppercase ? firstUpperWordStyle : allLowerWordStyle,
+        firstUpperWordStyle,
+        uppercase ? allUpperWordStyle : allLowerWordStyle,
+        allUpperWordStyle,
+        "",
+        isStartCharacter
+    );
 }
 
 class SimpleTypesRenderer extends ConvenienceRenderer {
-    constructor(topLevels: TopLevels, private readonly inlineUnions: boolean) {
-        super(topLevels);
+    constructor(graph: TypeGraph, private readonly inlineUnions: boolean) {
+        super(graph);
     }
 
     protected topLevelNameStyle(rawName: string): string {
@@ -83,11 +81,15 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
         return new Namer(n => simpleNameStyle(n, true), []);
     }
 
-    protected get propertyNamer(): Namer {
+    protected get classPropertyNamer(): Namer {
         return new Namer(n => simpleNameStyle(n, false), []);
     }
 
-    protected get caseNamer(): Namer {
+    protected get unionMemberNamer(): null {
+        return null;
+    }
+
+    protected get enumCaseNamer(): Namer {
         return new Namer(n => simpleNameStyle(n, true), []);
     }
 
@@ -99,14 +101,14 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     }
 
     sourceFor = (t: Type): Sourcelike => {
-        return matchType<Sourcelike>(
+        return matchTypeExhaustive<Sourcelike>(
             t,
-            anyType => "Any",
-            nullType => "Null",
-            boolType => "Bool",
-            integerType => "Int",
-            doubleType => "Double",
-            stringType => "String",
+            _anyType => "Any",
+            _nullType => "Null",
+            _boolType => "Bool",
+            _integerType => "Int",
+            _doubleType => "Double",
+            _stringType => "String",
             arrayType => ["List<", this.sourceFor(arrayType.items), ">"],
             classType => this.nameForNamedType(classType),
             mapType => ["Map<String, ", this.sourceFor(mapType.values), ">"],
@@ -121,14 +123,17 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
                 } else {
                     return this.nameForNamedType(unionType);
                 }
-            }
+            },
+            _dateType => "Date",
+            _timeType => "Time",
+            _dateTimeType => "DateTime"
         );
     };
 
     private emitClass = (c: ClassType, className: Name) => {
         this.emitLine("class ", className, " {");
         this.indent(() => {
-            this.forEachProperty(c, "none", (name, jsonName, t) => {
+            this.forEachClassProperty(c, "none", (name, _jsonName, t) => {
                 this.emitLine(name, ": ", this.sourceFor(t));
             });
         });
@@ -137,7 +142,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
 
     emitEnum = (e: EnumType, enumName: Name) => {
         const caseNames: Sourcelike[] = [];
-        this.forEachCase(e, "none", name => {
+        this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(" | ");
             caseNames.push(name);
         });

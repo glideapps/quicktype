@@ -1,12 +1,10 @@
 "use strict";
 
-import { Set, OrderedSet, List, Map, OrderedMap } from "immutable";
+import { Map } from "immutable";
 
 import {
     TypeKind,
     Type,
-    TopLevels,
-    PrimitiveType,
     NamedType,
     ClassType,
     EnumType,
@@ -15,35 +13,35 @@ import {
     matchType,
     removeNullFromUnion
 } from "../Type";
-import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
+import { TypeGraph } from "../TypeGraph";
+import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,
-    pascalCase,
-    startWithLetter,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
     stringEscape,
-    defined
-} from "../Support";
+    splitIntoWords,
+    combineWords,
+    firstUpperWordStyle,
+    allUpperWordStyle
+} from "../Strings";
+import { defined } from "../Support";
 import { StringOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
-import { RenderResult } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
-export default class GoTargetLanguage extends TypeScriptTargetLanguage {
-    private readonly _packageOption: StringOption;
+export default class GoTargetLanguage extends TargetLanguage {
+    private readonly _packageOption = new StringOption("package", "Generated package name", "NAME", "main");
 
     constructor() {
-        const packageOption = new StringOption("package", "Generated package name", "NAME", "main");
-        super("Go", ["go", "golang"], "go", [packageOption.definition]);
-        this._packageOption = packageOption;
+        super("Go", ["go", "golang"], "go");
+        this.setOptions([this._packageOption]);
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new GoRenderer(topLevels, this._packageOption.getValue(optionValues));
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return GoRenderer;
     }
 
     protected get indentation(): string {
@@ -56,9 +54,17 @@ const namingFunction = funPrefixNamer(goNameStyle);
 const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
 
 function goNameStyle(original: string): string {
-    const legalized = legalizeName(original);
-    const pascaled = pascalCase(legalized);
-    return startWithLetter(isLetterOrUnderscore, true, pascaled);
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        firstUpperWordStyle,
+        firstUpperWordStyle,
+        allUpperWordStyle,
+        allUpperWordStyle,
+        "",
+        isLetterOrUnderscore
+    );
 }
 
 const primitiveValueTypeKinds: TypeKind[] = ["integer", "double", "bool", "string"];
@@ -72,8 +78,8 @@ function isValueType(t: Type): boolean {
 class GoRenderer extends ConvenienceRenderer {
     private _topLevelUnmarshalNames = Map<Name, Name>();
 
-    constructor(topLevels: TopLevels, private readonly _packageName: string) {
-        super(topLevels);
+    constructor(graph: TypeGraph, private readonly _packageName: string) {
+        super(graph);
     }
 
     protected topLevelNameStyle(rawName: string): string {
@@ -84,15 +90,19 @@ class GoRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected get propertyNamer(): Namer {
+    protected get classPropertyNamer(): Namer {
         return namingFunction;
     }
 
-    protected get caseNamer(): Namer {
+    protected get unionMemberNamer(): Namer {
         return namingFunction;
     }
 
-    protected get casesInGlobalNamespace(): boolean {
+    protected get enumCaseNamer(): Namer {
+        return namingFunction;
+    }
+
+    protected get enumCasesInGlobalNamespace(): boolean {
         return true;
     }
 
@@ -103,12 +113,8 @@ class GoRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    protected topLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
-        const unmarshalName = new DependencyName(
-            namingFunction,
-            List([topLevelName]),
-            (names: List<string>) => `Unmarshal${names.first()}`
-        );
+    protected topLevelDependencyNames(_: Type, topLevelName: Name): DependencyName[] {
+        const unmarshalName = new DependencyName(namingFunction, lookup => `unmarshal_${lookup(topLevelName)}`);
         this._topLevelUnmarshalNames = this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
         return [unmarshalName];
     }
@@ -139,12 +145,12 @@ class GoRenderer extends ConvenienceRenderer {
     private goType = (t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
-            nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
-            boolType => "bool",
-            integerType => "int64",
-            doubleType => "float64",
-            stringType => "string",
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "interface{}"),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "interface{}"),
+            _boolType => "bool",
+            _integerType => "int64",
+            _doubleType => "float64",
+            _stringType => "string",
             arrayType => ["[]", this.goType(arrayType.items, withIssues)],
             classType => this.nameForNamedType(classType),
             mapType => ["map[string]", this.goType(mapType.values, withIssues)],
@@ -176,7 +182,7 @@ class GoRenderer extends ConvenienceRenderer {
 
     private emitClass = (c: ClassType, className: Name): void => {
         let columns: Sourcelike[][] = [];
-        this.forEachProperty(c, "none", (name, jsonName, t) => {
+        this.forEachClassProperty(c, "none", (name, jsonName, t) => {
             const goType = this.goType(t, true);
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`']]);
         });
@@ -188,7 +194,7 @@ class GoRenderer extends ConvenienceRenderer {
         this.emitLine("const (");
         let onFirst = true;
         this.indent(() =>
-            this.forEachCase(e, "none", name => {
+            this.forEachEnumCase(e, "none", name => {
                 if (onFirst) {
                     this.emitLine(name, " ", enumName, " = iota");
                 } else {
@@ -207,7 +213,7 @@ if err != nil {
 }`);
             this.emitBlock("if v, ok := tok.(string); ok", () => {
                 this.emitBlock("switch v", () => {
-                    this.forEachCase(e, "none", (name, jsonName) => {
+                    this.forEachEnumCase(e, "none", (name, jsonName) => {
                         this.emitLine('case "', stringEscape(jsonName), '":');
                         this.indent(() => this.emitLine("*x = ", name));
                     });
@@ -227,7 +233,7 @@ if err != nil {
         this.emitNewline();
         this.emitFunc(["(x *", enumName, ") MarshalJSON() ([]byte, error)"], () => {
             this.emitBlock("switch *x", () => {
-                this.forEachCase(e, "none", (name, jsonName) => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine("case ", name, ":");
                     this.indent(() => this.emitLine('return json.Marshal("', stringEscape(jsonName), '")'));
                 });
@@ -236,18 +242,18 @@ if err != nil {
         });
     };
 
-    private emitUnion = (c: UnionType, unionName: Name): void => {
-        const [hasNull, nonNulls] = removeNullFromUnion(c);
+    private emitUnion = (u: UnionType, unionName: Name): void => {
+        const [hasNull, nonNulls] = removeNullFromUnion(u);
         const isNullableArg = hasNull ? "true" : "false";
 
         const ifMember: <T, U>(
             kind: TypeKind,
             ifNotMember: U,
-            f: (t: Type, fieldName: string, goType: Sourcelike) => T
+            f: (t: Type, fieldName: Name, goType: Sourcelike) => T
         ) => T | U = (kind, ifNotMember, f) => {
-            const maybeType = c.findMember(kind);
+            const maybeType = u.findMember(kind);
             if (!maybeType) return ifNotMember;
-            return f(maybeType, this.unionFieldName(maybeType), this.goType(maybeType));
+            return f(maybeType, this.nameForUnionMember(u, maybeType), this.goType(maybeType));
         };
 
         const maybeAssignNil = (kind: TypeKind): void => {
@@ -256,8 +262,8 @@ if err != nil {
             });
         };
         const makeArgs = (
-            primitiveArg: (fieldName: string) => Sourcelike,
-            compoundArg: (isClass: boolean, fieldName: string) => Sourcelike
+            primitiveArg: (fieldName: Sourcelike) => Sourcelike,
+            compoundArg: (isClass: boolean, fieldName: Sourcelike) => Sourcelike
         ): Sourcelike => {
             const args: Sourcelike = [];
             for (const kind of primitiveValueTypeKinds) {
@@ -274,8 +280,7 @@ if err != nil {
         };
 
         let columns: Sourcelike[][] = [];
-        nonNulls.forEach((t: Type) => {
-            const fieldName = this.unionFieldName(t);
+        this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
             const goType = this.nullableGoType(t, true);
             columns.push([[fieldName, " "], goType]);
         });
@@ -318,7 +323,7 @@ if err != nil {
 
     protected emitSourceStructure(): void {
         this.emitLine("// To parse and unparse this JSON data, add this code to your project and do:");
-        this.forEachTopLevel("none", (t: Type, name: Name) => {
+        this.forEachTopLevel("none", (_: Type, name: Name) => {
             this.emitLine("//");
             this.emitLine("//    r, err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
             this.emitLine("//    bytes, err = r.Marshal()");
@@ -453,8 +458,7 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
         return json.Marshal(nil)
     }
     return nil, errors.New("Union must not be null")
-}
-`);
+}`);
         }
     }
 }

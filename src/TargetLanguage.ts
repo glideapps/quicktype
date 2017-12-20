@@ -1,72 +1,62 @@
 "use strict";
 
-import { List, Map } from "immutable";
-
-import { Config, TopLevelConfig } from "./Config";
-import { TopLevels, Type } from "./Type";
-import { RenderResult } from "./Renderer";
-import { OptionDefinition } from "./RendererOptions";
+import { TypeGraph } from "./TypeGraph";
+import { Renderer } from "./Renderer";
+import { OptionDefinition, Option } from "./RendererOptions";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
-import { TypeInference } from "./Inference";
-import { combineClasses } from "./CombineClasses";
-import { CompressedJSON } from "./CompressedJSON";
-import { RendererOptions } from "./quicktype";
-import { schemaToType } from "./JSONSchemaInput";
+import { StringTypeMapping } from "./TypeBuilder";
+import { assert, panic } from "./Support";
+import { ConvenienceRenderer } from "./ConvenienceRenderer";
 
 export abstract class TargetLanguage {
-    constructor(
-        readonly displayName: string,
-        readonly names: string[],
-        readonly extension: string,
-        readonly optionDefinitions: OptionDefinition[]
-    ) {}
+    private _options?: Option<any>[];
 
-    abstract transformAndRenderConfig(config: Config): SerializedRenderResult;
+    constructor(readonly displayName: string, readonly names: string[], readonly extension: string) {}
 
-    abstract needsCompressedJSONInput(rendererOptions: RendererOptions): boolean;
-}
+    protected setOptions = (options: Option<any>[]): void => {
+        assert(this._options === undefined, `Target language ${this.displayName} sets its options more than once`);
+        this._options = options;
+    };
 
-export abstract class TypeScriptTargetLanguage extends TargetLanguage {
-    transformAndRenderConfig(config: Config): SerializedRenderResult {
-        let graph: TopLevels;
-        if (config.isInputJSONSchema) {
-            graph = Map();
-            for (const tlc of config.topLevels) {
-                // FIXME: This is ugly
-                graph = graph.set(tlc.name, schemaToType(tlc.name, (tlc as any).schema));
-            }
-        } else {
-            const inference = new TypeInference(config.inferMaps, this.supportsEnums && config.inferEnums);
-            graph = Map(
-                config.topLevels.map((tlc: TopLevelConfig): [string, Type] => {
-                    return [
-                        tlc.name,
-                        inference.inferType(config.compressedJSON as CompressedJSON, tlc.name, (tlc as any).samples)
-                    ];
-                })
-            );
-            if (config.combineClasses) {
-                graph = combineClasses(graph);
-            }
+    get optionDefinitions(): OptionDefinition[] {
+        if (this._options === undefined) {
+            return panic(`Target language ${this.displayName} did not set its options`);
         }
-        if (!config.doRender) {
-            return { lines: ["Done.", ""], annotations: List() };
-        }
-        const renderResult = this.renderGraph(graph, config.rendererOptions);
-        return serializeRenderResult(renderResult, this.indentation);
+        return this._options.map(o => o.definition);
     }
 
-    needsCompressedJSONInput(rendererOptions: RendererOptions): boolean {
-        return true;
+    protected abstract get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => Renderer;
+
+    renderGraphAndSerialize(
+        graph: TypeGraph,
+        alphabetizeProperties: boolean,
+        rendererOptions: { [name: string]: any }
+    ): SerializedRenderResult {
+        if (this._options === undefined) {
+            return panic(`Target language ${this.displayName} did not set its options`);
+        }
+        const renderer = new this.rendererClass(graph, ...this._options.map(o => o.getValue(rendererOptions)));
+        if ((renderer as any).setAlphabetizeProperties !== undefined) {
+            (renderer as ConvenienceRenderer).setAlphabetizeProperties(alphabetizeProperties);
+        }
+        const renderResult = renderer.render();
+        return serializeRenderResult(renderResult, this.indentation);
     }
 
     protected get indentation(): string {
         return "    ";
     }
 
-    protected get supportsEnums(): boolean {
-        return true;
+    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
+        return {};
     }
 
-    protected abstract renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult;
+    get stringTypeMapping(): StringTypeMapping {
+        const partial = this.partialStringTypeMapping;
+        return {
+            date: partial.date || "string",
+            time: partial.time || "string",
+            dateTime: partial.dateTime || "string"
+        };
+    }
 }

@@ -5,21 +5,17 @@ import { Map, Set, OrderedSet, OrderedMap, Collection } from "immutable";
 import {
     Type,
     NamedType,
-    PrimitiveType,
-    ArrayType,
-    MapType,
     ClassType,
     EnumType,
     UnionType,
-    allNamedTypesSeparated,
-    allNamedTypes,
     separateNamedTypes,
     nullableFromUnion,
-    matchType
+    matchTypeExhaustive,
+    TypeKind
 } from "./Type";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
-import { defined, assertNever, panic } from "./Support";
+import { defined, panic, nonNull } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 export abstract class ConvenienceRenderer extends Renderer {
@@ -27,6 +23,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _topLevelNames: Map<string, Name>;
     private _namesForNamedTypes: Map<NamedType, Name>;
     private _propertyNames: Map<ClassType, Map<string, Name>>;
+    private _memberNames: Map<UnionType, Map<Type, Name>>;
     private _caseNames: Map<EnumType, Map<string, Name>>;
 
     private _namedTypes: OrderedSet<NamedType>;
@@ -35,34 +32,49 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _namedUnions: OrderedSet<UnionType>;
     private _haveUnions: boolean;
 
+    private _alphabetizeProperties = false;
+
+    get topLevels(): Map<string, Type> {
+        return this.typeGraph.topLevels;
+    }
+
     protected get forbiddenNamesForGlobalNamespace(): string[] {
         return [];
     }
 
-    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForClassProperties(_c: ClassType, _className: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [] };
     }
 
-    protected forbiddenForCases(e: EnumType, enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [] };
     }
 
-    protected topLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
+    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): { names: Name[]; namespaces: Namespace[] } {
+        return { names: [], namespaces: [] };
+    }
+
+    protected topLevelDependencyNames(_t: Type, _topLevelName: Name): DependencyName[] {
         return [];
     }
 
-    protected namedTypeDependencyNames(t: NamedType, name: Name): DependencyName[] {
+    protected namedTypeDependencyNames(_t: NamedType, _name: Name): DependencyName[] {
         return [];
     }
 
     protected abstract topLevelNameStyle(rawName: string): string;
     protected abstract get namedTypeNamer(): Namer;
-    protected abstract get propertyNamer(): Namer | null;
-    protected abstract get caseNamer(): Namer | null;
+    protected abstract get classPropertyNamer(): Namer | null;
+    protected abstract get unionMemberNamer(): Namer | null;
+    protected abstract get enumCaseNamer(): Namer | null;
     protected abstract namedTypeToNameForTopLevel(type: Type): NamedType | null;
     protected abstract emitSourceStructure(): void;
 
-    protected get casesInGlobalNamespace(): boolean {
+    protected get unionMembersInGlobalNamespace(): boolean {
+        return false;
+    }
+
+    protected get enumCasesInGlobalNamespace(): boolean {
         return false;
     }
 
@@ -72,20 +84,24 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected setUpNaming(): Namespace[] {
         this.globalNamespace = keywordNamespace("global", this.forbiddenNamesForGlobalNamespace);
-        const { classes, enums, unions } = allNamedTypesSeparated(this.topLevels);
+        const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
         this._namesForNamedTypes = Map();
         this._propertyNames = Map();
+        this._memberNames = Map();
         this._caseNames = Map();
         this._topLevelNames = this.topLevels.map(this.nameForTopLevel).toMap();
         classes.forEach((c: ClassType) => {
-            const named = this.addNamedForNamedType(c);
-            this.addPropertyNameds(c, named);
+            const name = this.addNamedForNamedType(c);
+            this.addPropertyNames(c, name);
         });
-        namedUnions.forEach((u: UnionType) => this.addNamedForNamedType(u));
         enums.forEach((e: EnumType) => {
-            const named = this.addNamedForNamedType(e);
-            this.addCaseNameds(e, named);
+            const name = this.addNamedForNamedType(e);
+            this.addEnumCaseNames(e, name);
+        });
+        namedUnions.forEach((u: UnionType) => {
+            const name = this.addNamedForNamedType(u);
+            this.addUnionMemberNames(u, name);
         });
         return [this.globalNamespace];
     }
@@ -123,8 +139,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private addNamedForNamedType = (type: NamedType): Name => {
         const existing = this._namesForNamedTypes.get(type);
         if (existing !== undefined) return existing;
-        const name = type.combinedName;
-        const named = this.globalNamespace.add(new SimpleName(name, this.namedTypeNamer));
+        const named = this.globalNamespace.add(new SimpleName(type.proposedNames, this.namedTypeNamer));
 
         this.addDependenciesForNamedType(type, named);
 
@@ -132,46 +147,83 @@ export abstract class ConvenienceRenderer extends Renderer {
         return named;
     };
 
-    private addPropertyNameds = (c: ClassType, classNamed: Name): void => {
-        const propertyNamer = this.propertyNamer;
-        if (propertyNamer === null) {
-            return;
-        }
+    private addPropertyNames = (c: ClassType, className: Name): void => {
+        const propertyNamer = this.classPropertyNamer;
+        if (propertyNamer === null) return;
 
-        const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForProperties(c, classNamed);
+        const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForClassProperties(
+            c,
+            className
+        );
         const ns = new Namespace(c.combinedName, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
         const names = c.sortedProperties
-            .map((t: Type, name: string) => {
-                return ns.add(new SimpleName(name, propertyNamer));
+            .map((_: Type, name: string) => {
+                // FIXME: This alternative should really depend on what the
+                // actual name of the class ends up being.  We can do this
+                // with a DependencyName.
+                // Also, we currently don't have any languages where properties
+                // are global, so collisions here could only occur where two
+                // properties of the same class have the same name, in which case
+                // the alternative would also be the same, i.e. useless.  But
+                // maybe we'll need global properties for some weird language at
+                // some point.
+                const alternative = `${c.combinedName}_${name}`;
+                return ns.add(new SimpleName(OrderedSet([name, alternative]), propertyNamer));
             })
             .toMap();
         this._propertyNames = this._propertyNames.set(c, names);
     };
 
-    // FIXME: this is very similar to addPropertyNameds
-    private addCaseNameds = (e: EnumType, enumNamed: Name): void => {
-        const caseNamer = this.caseNamer;
-        if (caseNamer === null) {
-            return;
-        }
+    private makeUnionMemberName(u: UnionType, unionName: Name, t: Type): Name {
+        return new DependencyName(nonNull(this.unionMemberNamer), lookup =>
+            this.proposeUnionMemberName(u, unionName, t, lookup)
+        );
+    }
 
-        const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForCases(e, enumNamed);
+    private addUnionMemberNames = (u: UnionType, unionName: Name): void => {
+        const memberNamer = this.unionMemberNamer;
+        if (memberNamer === null) return;
+
+        const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForUnionMembers(u, unionName);
         let ns: Namespace;
-        if (this.casesInGlobalNamespace) {
+        if (this.unionMembersInGlobalNamespace) {
+            ns = this.globalNamespace;
+        } else {
+            ns = new Namespace(u.combinedName, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
+        }
+        let names = Map<Type, Name>();
+        u.members.forEach(t => {
+            const name = this.makeUnionMemberName(u, unionName, t);
+            names = names.set(t, ns.add(name));
+        });
+        this._memberNames = this._memberNames.set(u, names);
+    };
+
+    // FIXME: this is very similar to addPropertyNameds and addUnionMemberNames
+    private addEnumCaseNames = (e: EnumType, enumName: Name): void => {
+        const caseNamer = this.enumCaseNamer;
+        if (caseNamer === null) return;
+
+        const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForEnumCases(e, enumName);
+        let ns: Namespace;
+        if (this.enumCasesInGlobalNamespace) {
             ns = this.globalNamespace;
         } else {
             ns = new Namespace(e.combinedName, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
         }
         let names = Map<string, Name>();
-        e.cases.forEach((name: string) => {
-            names = names.set(name, ns.add(new SimpleName(name, caseNamer)));
+        e.cases.forEach(name => {
+            // FIXME: See the FIXME in `addPropertyNameds`.  We do have global
+            // enum cases, though (in Go), so this is actually useful already.
+            const alternative = `${e.combinedName}_${name}`;
+            names = names.set(name, ns.add(new SimpleName(OrderedSet([name, alternative]), caseNamer)));
         });
         this._caseNames = this._caseNames.set(e, names);
     };
 
     private childrenOfType = (t: Type): OrderedSet<Type> => {
         const names = this.names;
-        if (t instanceof ClassType && this.propertyNamer !== null) {
+        if (t instanceof ClassType && this.classPropertyNamer !== null) {
             const propertyNameds = defined(this._propertyNames.get(t));
             return t.properties
                 .sortBy((_, n: string): string => defined(names.get(defined(propertyNameds.get(n)))))
@@ -200,38 +252,49 @@ export abstract class ConvenienceRenderer extends Renderer {
         return !this._namedEnums.isEmpty();
     }
 
-    // FIXME: These should use Name.  Not only to fix collisions, but also
-    // so we can rename them via config at some point.
-    protected unionFieldName = (fieldType: Type): string => {
-        const propertyNamer = this.propertyNamer;
-        if (propertyNamer === null) {
-            return panic("Can't get union field name unless we have a property namer");
+    protected proposedUnionMemberNameForTypeKind = (_kind: TypeKind): string | null => {
+        return null;
+    };
+
+    protected proposeUnionMemberName(
+        _u: UnionType,
+        _unionName: Name,
+        fieldType: Type,
+        lookup: (n: Name) => string
+    ): string {
+        const simpleName = this.proposedUnionMemberNameForTypeKind(fieldType.kind);
+        if (simpleName !== null) {
+            return simpleName;
         }
 
         const typeNameForUnionMember = (t: Type): string =>
-            matchType(
+            matchTypeExhaustive(
                 t,
-                anyType => "anything",
-                nullType => "null",
-                boolType => "bool",
-                integerType => "integer",
-                doubleType => "double",
-                stringType => "string",
+                _anyType => "anything",
+                _nullType => "null",
+                _boolType => "bool",
+                _integerType => "integer",
+                _doubleType => "double",
+                _stringType => "string",
                 arrayType => typeNameForUnionMember(arrayType.items) + "_array",
-                classType => defined(this.names.get(this.nameForNamedType(classType))),
+                classType => lookup(this.nameForNamedType(classType)),
                 mapType => typeNameForUnionMember(mapType.values) + "_map",
-                enumType => "enum",
-                unionType => "union"
+                _enumType => "enum",
+                _unionType => "union",
+                _dateType => "date",
+                _timeType => "time",
+                _dateTimeType => "date_time"
             );
 
-        return propertyNamer.nameStyle(typeNameForUnionMember(fieldType));
-    };
+        return typeNameForUnionMember(fieldType);
+    }
 
     protected nameForNamedType = (t: NamedType): Name => {
-        if (!this._namesForNamedTypes.has(t)) {
+        const name = this._namesForNamedTypes.get(t);
+        if (name === undefined) {
             return panic("Named type does not exist.");
         }
-        return defined(this._namesForNamedTypes.get(t));
+        return name;
     };
 
     protected forEachTopLevel = (
@@ -250,26 +313,57 @@ export abstract class ConvenienceRenderer extends Renderer {
         );
     };
 
-    protected forEachProperty = (
+    setAlphabetizeProperties = (value: boolean): void => {
+        this._alphabetizeProperties = value;
+    };
+
+    protected forEachClassProperty = (
         c: ClassType,
         blankLocations: BlankLineLocations,
         f: (name: Name, jsonName: string, t: Type) => void
     ): void => {
         const propertyNames = defined(this._propertyNames.get(c));
-        const sortedPropertyNames = propertyNames.sortBy((n: Name) => this.names.get(n)).toOrderedMap();
-        this.forEachWithBlankLines(sortedPropertyNames, blankLocations, (name, jsonName) => {
-            const t = defined(c.properties.get(jsonName));
-            f(name, jsonName, t);
-        });
+        if (this._alphabetizeProperties) {
+            const alphabetizedPropertyNames = propertyNames.sortBy(n => this.names.get(n)).toOrderedMap();
+            this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName) => {
+                const t = defined(c.properties.get(jsonName));
+                f(name, jsonName, t);
+            });
+        } else {
+            this.forEachWithBlankLines(c.properties, blankLocations, (t, jsonName) => {
+                const name = defined(propertyNames.get(jsonName));
+                f(name, jsonName, t);
+            });
+        }
     };
 
-    protected forEachCase = (
+    protected nameForUnionMember = (u: UnionType, t: Type): Name => {
+        return defined(defined(this._memberNames.get(u)).get(t));
+    };
+
+    protected forEachUnionMember = (
+        u: UnionType,
+        members: OrderedSet<Type> | null,
+        blankLocations: BlankLineLocations,
+        sortOrder: ((n: Name, t: Type) => string) | null,
+        f: (name: Name, t: Type) => void
+    ): void => {
+        const iterateMembers = members === null ? u.members : members;
+        if (sortOrder === null) {
+            sortOrder = n => defined(this.names.get(n));
+        }
+        const memberNames = defined(this._memberNames.get(u)).filter((_, t) => iterateMembers.has(t));
+        const sortedMemberNames = memberNames.sortBy(sortOrder).toOrderedMap();
+        this.forEachWithBlankLines(sortedMemberNames, blankLocations, f);
+    };
+
+    protected forEachEnumCase = (
         e: EnumType,
         blankLocations: BlankLineLocations,
         f: (name: Name, jsonName: string) => void
     ): void => {
         const caseNames = defined(this._caseNames.get(e));
-        const sortedCaseNames = caseNames.sortBy((n: Name) => this.names.get(n)).toOrderedMap();
+        const sortedCaseNames = caseNames.sortBy(n => this.names.get(n)).toOrderedMap();
         this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
     };
 
@@ -351,7 +445,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected emitSource(): void {
-        const types = allNamedTypes(this.topLevels, this.childrenOfType);
+        const types = this.typeGraph.allNamedTypes(this.childrenOfType);
         this._haveUnions = types.some(t => t instanceof UnionType);
         this._namedTypes = types
             .filter((t: NamedType) => !(t instanceof UnionType) || this.unionNeedsName(t))

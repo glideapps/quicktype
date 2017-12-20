@@ -1,11 +1,10 @@
 "use strict";
 
-import { Map, OrderedSet } from "immutable";
+import { OrderedSet } from "immutable";
 
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
+import { TargetLanguage } from "../TargetLanguage";
 import {
     Type,
-    TopLevels,
     NamedType,
     ClassType,
     EnumType,
@@ -14,122 +13,124 @@ import {
     matchType,
     removeNullFromUnion
 } from "../Type";
+import { TypeGraph } from "../TypeGraph";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import {
     legalizeCharacters,
-    pascalCase,
-    snakeCase,
-    camelCase,
-    upperUnderscoreCase,
-    startWithLetter,
     isAscii,
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
     stringEscape,
-    defined,
-    assertNever
-} from "../Support";
-import { RenderResult } from "../Renderer";
+    splitIntoWords,
+    combineWords,
+    WordStyle,
+    firstUpperWordStyle,
+    allUpperWordStyle,
+    allLowerWordStyle
+} from "../Strings";
+import { defined, assertNever } from "../Support";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { StringOption, EnumOption } from "../RendererOptions";
 import { assert } from "../Support";
 
 type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
-export default class CPlusPlusTargetLanguage extends TypeScriptTargetLanguage {
-    private readonly _namespaceOption: StringOption;
-    private readonly _typeNamingStyleOption: EnumOption<NamingStyle>;
-    private readonly _memberNamingStyleOption: EnumOption<NamingStyle>;
-    private readonly _enumeratorNamingStyleOption: EnumOption<NamingStyle>;
-    private readonly _uniquePtrOption: EnumOption<boolean>;
+const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
+const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
+const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
+const upperUnderscoreValue: [string, NamingStyle] = ["upper-underscore-case", "upper-underscore"];
+
+export default class CPlusPlusTargetLanguage extends TargetLanguage {
+    private readonly _namespaceOption = new StringOption(
+        "namespace",
+        "Name of the generated namespace",
+        "NAME",
+        "quicktype"
+    );
+    private readonly _typeNamingStyleOption = new EnumOption<NamingStyle>("type-style", "Naming style for types", [
+        pascalValue,
+        underscoreValue,
+        camelValue,
+        upperUnderscoreValue
+    ]);
+    private readonly _memberNamingStyleOption = new EnumOption<NamingStyle>(
+        "member-style",
+        "Naming style for members",
+        [underscoreValue, pascalValue, camelValue, upperUnderscoreValue]
+    );
+    private readonly _enumeratorNamingStyleOption = new EnumOption<NamingStyle>(
+        "enumerator-style",
+        "Naming style for enumerators",
+        [upperUnderscoreValue, underscoreValue, pascalValue, camelValue]
+    );
+    private readonly _uniquePtrOption = new EnumOption("unions", "Use containment or indirection for unions", [
+        ["containment", false],
+        ["indirection", true]
+    ]);
 
     constructor() {
-        const namespaceOption = new StringOption("namespace", "Name of the generated namespace", "NAME", "quicktype");
-        const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
-        const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
-        const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
-        const upperUnderscoreValue: [string, NamingStyle] = ["upper-underscore-case", "upper-underscore"];
-        const typeNamingStyleOption = new EnumOption<NamingStyle>("type-style", "Naming style for types", [
-            pascalValue,
-            underscoreValue,
-            camelValue,
-            upperUnderscoreValue
+        super("C++", ["c++", "cpp", "cplusplus"], "cpp");
+        this.setOptions([
+            this._namespaceOption,
+            this._typeNamingStyleOption,
+            this._memberNamingStyleOption,
+            this._enumeratorNamingStyleOption,
+            this._uniquePtrOption
         ]);
-        const memberNamingStyleOption = new EnumOption<NamingStyle>("member-style", "Naming style for members", [
-            underscoreValue,
-            pascalValue,
-            camelValue,
-            upperUnderscoreValue
-        ]);
-        const enumeratorNamingStyleOption = new EnumOption<NamingStyle>(
-            "enumerator-style",
-            "Naming style for enumerators",
-            [upperUnderscoreValue, underscoreValue, pascalValue, camelValue]
-        );
-        const uniquePtrOption = new EnumOption("unions", "Use containment or indirection for unions", [
-            ["containment", false],
-            ["indirection", true]
-        ]);
-        super("C++", ["c++", "cpp", "cplusplus"], "cpp", [
-            namespaceOption.definition,
-            typeNamingStyleOption.definition,
-            memberNamingStyleOption.definition,
-            enumeratorNamingStyleOption.definition,
-            uniquePtrOption.definition
-        ]);
-        this._namespaceOption = namespaceOption;
-        this._typeNamingStyleOption = typeNamingStyleOption;
-        this._memberNamingStyleOption = memberNamingStyleOption;
-        this._enumeratorNamingStyleOption = enumeratorNamingStyleOption;
-        this._uniquePtrOption = uniquePtrOption;
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new CPlusPlusRenderer(
-            topLevels,
-            this._namespaceOption.getValue(optionValues),
-            this._typeNamingStyleOption.getValue(optionValues),
-            this._memberNamingStyleOption.getValue(optionValues),
-            this._enumeratorNamingStyleOption.getValue(optionValues),
-            this._uniquePtrOption.getValue(optionValues)
-        );
-        return renderer.render();
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return CPlusPlusRenderer;
     }
 }
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
 
 function cppNameStyle(namingStyle: NamingStyle): (rawName: string) => string {
-    let caser: (uncased: string) => string;
-    let upper: boolean;
+    let separator: string;
+    let firstWordStyle: WordStyle;
+    let restWordStyle: WordStyle;
+    let firstWordAcronymStyle: WordStyle;
+    let restAcronymStyle: WordStyle;
 
+    if (namingStyle === "pascal" || namingStyle === "camel") {
+        separator = "";
+        restWordStyle = firstUpperWordStyle;
+        restAcronymStyle = allUpperWordStyle;
+    } else {
+        separator = "_";
+    }
     switch (namingStyle) {
         case "pascal":
-            caser = pascalCase;
-            upper = true;
+            firstWordStyle = firstWordAcronymStyle = firstUpperWordStyle;
             break;
         case "camel":
-            caser = camelCase;
-            upper = false;
+            firstWordStyle = firstWordAcronymStyle = allLowerWordStyle;
             break;
         case "underscore":
-            caser = snakeCase;
-            upper = false;
+            firstWordStyle = restWordStyle = firstWordAcronymStyle = restAcronymStyle = allLowerWordStyle;
             break;
         case "upper-underscore":
-            caser = upperUnderscoreCase;
-            upper = true;
+            firstWordStyle = restWordStyle = firstWordAcronymStyle = restAcronymStyle = allUpperWordStyle;
             break;
         default:
             return assertNever(namingStyle);
     }
 
     return (original: string) => {
-        const legalized = legalizeName(original);
-        const cased = caser(legalized);
-        return startWithLetter(isLetterOrUnderscore, upper, cased);
+        const words = splitIntoWords(original);
+        return combineWords(
+            words,
+            legalizeName,
+            firstWordStyle,
+            restWordStyle,
+            firstWordAcronymStyle,
+            restAcronymStyle,
+            separator,
+            isLetterOrUnderscore
+        );
     };
 }
 
@@ -243,14 +244,14 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     private readonly _optionalType: string;
 
     constructor(
-        topLevels: TopLevels,
+        graph: TypeGraph,
         private readonly _namespaceName: string,
         _typeNamingStyle: NamingStyle,
         _memberNamingStyle: NamingStyle,
         _enumeratorNamingStyle: NamingStyle,
         private readonly _uniquePtr: boolean
     ) {
-        super(topLevels);
+        super(graph);
 
         this._typeNameStyle = cppNameStyle(_typeNamingStyle);
         this._typeNamingFunction = funPrefixNamer(this._typeNameStyle);
@@ -263,11 +264,14 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForProperties(c: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForClassProperties(
+        _c: ClassType,
+        _classNamed: Name
+    ): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
-    protected forbiddenForCases(e: EnumType, enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
+    protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
         return { names: [], namespaces: [this.globalNamespace] };
     }
 
@@ -279,11 +283,15 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return this._typeNamingFunction;
     }
 
-    protected get propertyNamer(): Namer {
+    protected get classPropertyNamer(): Namer {
         return this._memberNamingFunction;
     }
 
-    protected get caseNamer(): Namer {
+    protected get unionMemberNamer(): null {
+        return null;
+    }
+
+    protected get enumCaseNamer(): Namer {
         return this._caseNamingFunction;
     }
 
@@ -352,14 +360,14 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     private cppType = (t: Type, inVariant: boolean, inJsonNamespace: boolean, withIssues: boolean): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            anyType =>
+            _anyType =>
                 maybeAnnotated(withIssues, anyTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]),
-            nullType =>
+            _nullType =>
                 maybeAnnotated(withIssues, nullTypeIssueAnnotation, [this.jsonQualifier(inJsonNamespace), "json"]),
-            boolType => "bool",
-            integerType => "int64_t",
-            doubleType => "double",
-            stringType => "std::string",
+            _boolType => "bool",
+            _integerType => "int64_t",
+            _doubleType => "double",
+            _stringType => "std::string",
             arrayType => ["std::vector<", this.cppType(arrayType.items, false, inJsonNamespace, withIssues), ">"],
             classType =>
                 this.variantIndirection(inVariant, [
@@ -383,7 +391,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     private emitClass = (c: ClassType, className: Name): void => {
         this.emitBlock(["struct ", className], true, () => {
-            this.forEachProperty(c, "none", (name, json, propertyType) => {
+            this.forEachClassProperty(c, "none", (name, _json, propertyType) => {
                 this.emitLine(this.cppType(propertyType, false, false, true), " ", name, ";");
             });
         });
@@ -395,7 +403,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             ["inline void from_json(const json& _j, struct ", ourQualifier, className, "& _x)"],
             false,
             () => {
-                this.forEachProperty(c, "none", (name, json, t) => {
+                this.forEachClassProperty(c, "none", (name, json, t) => {
                     if (t instanceof UnionType) {
                         const [hasNull, nonNulls] = removeNullFromUnion(t);
                         if (hasNull) {
@@ -425,7 +433,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitNewline();
         this.emitBlock(["inline void to_json(json& _j, const struct ", ourQualifier, className, "& _x)"], false, () => {
             this.emitLine("_j = json::object();");
-            this.forEachProperty(c, "none", (name, json, _) => {
+            this.forEachClassProperty(c, "none", (name, json, _) => {
                 this.emitLine('_j["', stringEscape(json), '"] = _x.', name, ";");
             });
         });
@@ -433,7 +441,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     private emitEnum = (e: EnumType, enumName: Name): void => {
         const caseNames: Sourcelike[] = [];
-        this.forEachCase(e, "none", name => {
+        this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
         });
@@ -455,7 +463,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             ["array", "is_array"],
             ["enum", "is_string"]
         ];
-        const [_, nonNulls] = removeNullFromUnion(u);
+        const nonNulls = removeNullFromUnion(u)[1];
         const variantType = this.cppTypeInOptional(nonNulls, true, false);
         this.emitBlock(["inline void from_json(const json& _j, ", variantType, "& _x)"], false, () => {
             let onFirst = true;
@@ -491,7 +499,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         const ourQualifier = this.ourQualifier(true);
         this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, enumName, "& _x)"], false, () => {
             let onFirst = true;
-            this.forEachCase(e, "none", (name, jsonName) => {
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
                 const maybeElse = onFirst ? "" : "else ";
                 this.emitLine(
                     maybeElse,
@@ -511,7 +519,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitNewline();
         this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, enumName, "& _x)"], false, () => {
             this.emitBlock("switch (_x)", false, () => {
-                this.forEachCase(e, "none", (name, jsonName) => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine(
                         "case ",
                         ourQualifier,

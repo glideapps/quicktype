@@ -4,4 +4,6 @@
 #
 # In practice this runs 75% faster.
 
-SKIP_INSTALL_PREREQUISITES=true script/quicktype $@
+SCRIPTDIR=$(dirname "$0")
+
+SKIP_INSTALL_PREREQUISITES=true "$SCRIPTDIR/quicktype" "$@"

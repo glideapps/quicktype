@@ -1,6 +1,6 @@
 "use strict";
 
-import { RendererOptions } from "../dist/quicktype";
+import { RendererOptions } from "../dist";
 
 export interface Language {
   name: string;
@@ -30,7 +30,9 @@ export const CSharpLanguage: Language = {
   allowMissingNull: false,
   output: "QuickType.cs",
   topLevel: "TopLevel",
-  skipJSON: [],
+  skipJSON: [
+    "31189.json" // JSON.NET doesn't accept year 0000 as 1BC, though it should
+  ],
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [
@@ -45,7 +47,9 @@ export const JavaLanguage: Language = {
   base: "test/fixtures/java",
   compileCommand: "mvn package",
   runCommand(sample: string) {
-    return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`;
+    return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${
+      sample
+    }"`;
   },
   // FIXME: implement comparing multiple files
   diffViaSchema: false,
@@ -68,12 +72,7 @@ export const GoLanguage: Language = {
   allowMissingNull: false,
   output: "quicktype.go",
   topLevel: "TopLevel",
-  skipJSON: [
-    "identifiers.json",
-    "simple-identifiers.json",
-    "blns-object.json",
-    "7f568.json" // this contains a property "-", which Go can't handle
-  ],
+  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: []

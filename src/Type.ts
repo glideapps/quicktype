@@ -1,21 +1,22 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Map, Set, Collection, List } from "immutable";
-import stringHash = require("string-hash");
+import { OrderedSet, OrderedMap, Collection } from "immutable";
 import { defined, panic, assert } from "./Support";
+import { TypeRef, TypeBuilder } from "./TypeBuilder";
 
-// FIXME: OrderedMap?  We lose the order in PureScript right now, though,
-// and maybe even earlier in the TypeScript driver.
-export type TopLevels = Map<string, Type>;
-
-export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | "string";
+export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
+export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
 
 export abstract class Type {
-    constructor(readonly kind: TypeKind) {}
+    constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
 
     isNamedType(): this is NamedType {
+        return false;
+    }
+
+    get isStringType(): boolean {
         return false;
     }
 
@@ -28,24 +29,25 @@ export abstract class Type {
     }
 
     abstract get isNullable(): boolean;
-    abstract map(f: (t: Type) => Type): Type;
+    abstract map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef;
 
     equals(other: any): boolean {
-        return typesEqual(this, other);
+        if (!Object.prototype.hasOwnProperty.call(other, "typeRef")) {
+            return false;
+        }
+        return this.typeRef.equals(other.typeRef);
     }
 
-    abstract expandForEquality(other: Type): [Type, Type][] | boolean;
-    abstract flatHashCode(): number;
     hashCode(): number {
-        return this.flatHashCode();
+        return this.typeRef.hashCode();
     }
 }
 
 export class PrimitiveType extends Type {
     readonly kind: PrimitiveTypeKind;
 
-    constructor(kind: PrimitiveTypeKind) {
-        super(kind);
+    constructor(typeRef: TypeRef, kind: PrimitiveTypeKind) {
+        super(typeRef, kind);
     }
 
     get children(): OrderedSet<Type> {
@@ -56,17 +58,13 @@ export class PrimitiveType extends Type {
         return this.kind === "null";
     }
 
-    map(f: (t: Type) => Type): this {
-        return this;
+    get isStringType(): boolean {
+        const kind = this.kind;
+        return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
     }
 
-    expandForEquality(other: any): boolean {
-        if (!(other instanceof PrimitiveType)) return false;
-        return this.kind === other.kind;
-    }
-
-    flatHashCode(): number {
-        return stringHash(this.kind) | 0;
+    map(builder: TypeBuilder, _: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getPrimitiveType(this.kind);
     }
 }
 
@@ -77,8 +75,26 @@ function isNull(t: Type): t is PrimitiveType {
 export class ArrayType extends Type {
     readonly kind: "array";
 
-    constructor(readonly items: Type) {
-        super("array");
+    constructor(typeRef: TypeRef, private _itemsRef?: TypeRef) {
+        super(typeRef, "array");
+    }
+
+    setItems(itemsRef: TypeRef) {
+        if (this._itemsRef !== undefined) {
+            return panic("Can only set array items once");
+        }
+        this._itemsRef = itemsRef;
+    }
+
+    private getItemsRef(): TypeRef {
+        if (this._itemsRef === undefined) {
+            return panic("Array items accessed before they were set");
+        }
+        return this._itemsRef;
+    }
+
+    get items(): Type {
+        return this.getItemsRef().deref();
     }
 
     get children(): OrderedSet<Type> {
@@ -89,27 +105,34 @@ export class ArrayType extends Type {
         return false;
     }
 
-    map(f: (t: Type) => Type): ArrayType {
-        const items = f(this.items);
-        if (items === this.items) return this;
-        return new ArrayType(items);
-    }
-
-    expandForEquality(other: Type): [Type, Type][] | boolean {
-        if (!(other instanceof ArrayType)) return false;
-        return [[this.items, other.items]];
-    }
-
-    flatHashCode(): number {
-        return (stringHash(this.kind) + this.items.hashCode()) | 0;
+    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getArrayType(f(this.getItemsRef()));
     }
 }
 
 export class MapType extends Type {
     readonly kind: "map";
 
-    constructor(readonly values: Type) {
-        super("map");
+    constructor(typeRef: TypeRef, private _valuesRef?: TypeRef) {
+        super(typeRef, "map");
+    }
+
+    setValues(valuesRef: TypeRef) {
+        if (this._valuesRef !== undefined) {
+            return panic("Can only set map values once");
+        }
+        this._valuesRef = valuesRef;
+    }
+
+    private getValuesRef(): TypeRef {
+        if (this._valuesRef === undefined) {
+            return panic("Map values accessed before they were set");
+        }
+        return this._valuesRef;
+    }
+
+    get values(): Type {
+        return this.getValuesRef().deref();
     }
 
     get children(): OrderedSet<Type> {
@@ -120,19 +143,8 @@ export class MapType extends Type {
         return false;
     }
 
-    map(f: (t: Type) => Type): MapType {
-        const values = f(this.values);
-        if (values === this.values) return this;
-        return new MapType(values);
-    }
-
-    expandForEquality(other: Type): [Type, Type][] | boolean {
-        if (!(other instanceof MapType)) return false;
-        return [[this.values, other.values]];
-    }
-
-    flatHashCode(): number {
-        return (stringHash(this.kind) + this.values.hashCode()) | 0;
+    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getMapType(f(this.getValuesRef()));
     }
 }
 
@@ -176,20 +188,30 @@ function combineNames(names: Collection<any, string>): string {
     return first;
 }
 
-export type NameOrNames = string | OrderedSet<string>;
+export type NamesWithAlternatives = { names: OrderedSet<string>; alternatives: OrderedSet<string> };
+export type NameOrNames = string | OrderedSet<string> | NamesWithAlternatives;
+
+function setFromNameOrNames(nameOrNames: NameOrNames): NamesWithAlternatives {
+    if (typeof nameOrNames === "string") {
+        return { names: OrderedSet([nameOrNames]), alternatives: OrderedSet() };
+    } else if (OrderedSet.isOrderedSet(nameOrNames)) {
+        return { names: nameOrNames as OrderedSet<string>, alternatives: OrderedSet() };
+    } else {
+        return nameOrNames as NamesWithAlternatives;
+    }
+}
 
 export abstract class NamedType extends Type {
     private _names: OrderedSet<string>;
     private _areNamesInferred: boolean;
+    private _alternativeNames: OrderedSet<string>;
 
-    constructor(kind: NamedTypeKind, nameOrNames: NameOrNames, areNamesInferred: boolean) {
-        super(kind);
-        if (typeof nameOrNames === "string") {
-            this._names = OrderedSet([nameOrNames]);
-        } else {
-            this._names = nameOrNames;
-        }
+    constructor(typeRef: TypeRef, kind: NamedTypeKind, nameOrNames: NameOrNames, areNamesInferred: boolean) {
+        super(typeRef, kind);
+        const { names, alternatives } = setFromNameOrNames(nameOrNames);
+        this._names = names;
         this._areNamesInferred = areNamesInferred;
+        this._alternativeNames = alternatives;
     }
 
     isNamedType(): this is NamedType {
@@ -204,52 +226,72 @@ export abstract class NamedType extends Type {
         return this._areNamesInferred;
     }
 
-    addName(name: string, isInferred: boolean): void {
-        if (isInferred && !this._areNamesInferred) {
-            return;
-        }
-        if (this._areNamesInferred && !isInferred) {
-            this._names = OrderedSet([name]);
-            this._areNamesInferred = isInferred;
-        } else {
-            this._names = this._names.add(name);
-        }
+    get alternativeNames(): OrderedSet<string> {
+        return this._alternativeNames;
     }
 
-    setGivenName(name: string): void {
-        this._names = OrderedSet([name]);
-        this._areNamesInferred = false;
+    addNames(nameOrNames: NameOrNames, isInferred: boolean): void {
+        const { names, alternatives } = setFromNameOrNames(nameOrNames);
+        if (this._areNamesInferred && !isInferred) {
+            this._names = names;
+            this._areNamesInferred = false;
+        } else if (this._areNamesInferred === isInferred) {
+            this._names = this._names.union(names);
+        }
+        this._alternativeNames = this._alternativeNames.union(alternatives);
+    }
+
+    clearInferredNames(): void {
+        if (this._areNamesInferred) {
+            this._names = OrderedSet();
+        }
+        this._alternativeNames = OrderedSet();
     }
 
     get combinedName(): string {
         return combineNames(this._names);
+    }
+
+    get proposedNames(): OrderedSet<string> {
+        return OrderedSet([this.combinedName]).union(this._alternativeNames);
     }
 }
 
 export class ClassType extends NamedType {
     kind: "class";
 
-    constructor(names: NameOrNames, areNamesInferred: boolean, private _properties?: Map<string, Type>) {
-        super("class", names, areNamesInferred);
+    constructor(
+        typeRef: TypeRef,
+        names: NameOrNames,
+        areNamesInferred: boolean,
+        readonly isFixed: boolean,
+        private _propertyRefs?: OrderedMap<string, TypeRef>
+    ) {
+        super(typeRef, "class", names, areNamesInferred);
     }
 
-    setProperties(properties: Map<string, Type>): void {
-        if (this._properties !== undefined) {
+    setProperties(propertyRefs: OrderedMap<string, TypeRef>): void {
+        if (this._propertyRefs !== undefined) {
             return panic("Can only set class properties once");
         }
-        this._properties = properties;
+        this._propertyRefs = propertyRefs;
     }
 
-    get properties(): Map<string, Type> {
-        if (this._properties === undefined) {
+    private getPropertyRefs(): OrderedMap<string, TypeRef> {
+        if (this._propertyRefs === undefined) {
             return panic("Class properties accessed before they were set");
         }
-        return this._properties;
+        return this._propertyRefs;
+    }
+
+    get properties(): OrderedMap<string, Type> {
+        return this.getPropertyRefs().map(tref => tref.deref());
     }
 
     get sortedProperties(): OrderedMap<string, Type> {
-        const sortedKeys = this.properties.keySeq().sort();
-        const props = sortedKeys.map((k: string): [string, Type] => [k, defined(this.properties.get(k))]);
+        const properties = this.properties;
+        const sortedKeys = properties.keySeq().sort();
+        const props = sortedKeys.map((k: string): [string, Type] => [k, defined(properties.get(k))]);
         return OrderedMap(props);
     }
 
@@ -261,50 +303,17 @@ export class ClassType extends NamedType {
         return false;
     }
 
-    map(f: (t: Type) => Type): ClassType {
-        let same = true;
-        const properties = this.properties.map(t => {
-            const ft = f(t);
-            if (ft !== t) same = false;
-            return ft;
-        });
-        if (same) return this;
-        return new ClassType(this.names, this.areNamesInferred, properties);
-    }
-
-    expandForEquality(other: Type): [Type, Type][] | boolean {
-        if (!(other instanceof ClassType)) return false;
-        if (!this.names.equals(other.names)) return false;
-        if (this.properties.size !== other.properties.size) return false;
-        if (this.properties.size === 0) return true;
-        const queue: [Type, Type][] = [];
-        this.properties.forEach((t, name) => {
-            const otherT = other.properties.get(name);
-            if (!otherT) return false;
-            queue.push([t, otherT]);
-        });
-        if (queue.length !== this.properties.size) return false;
-        return queue;
-    }
-
-    flatHashCode(): number {
-        return (stringHash(this.kind) + this.names.hashCode() + this.properties.size) | 0;
-    }
-
-    hashCode(): number {
-        let hash = this.flatHashCode();
-        this.properties.forEach((t, n) => {
-            hash = (hash + t.flatHashCode() + stringHash(n)) | 0;
-        });
-        return hash;
+    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+        const properties = this.getPropertyRefs().map(f);
+        return builder.getClassType(this.names, this.areNamesInferred, properties);
     }
 }
 
 export class EnumType extends NamedType {
     kind: "enum";
 
-    constructor(names: NameOrNames, areNamesInferred: boolean, readonly cases: OrderedSet<string>) {
-        super("enum", names, areNamesInferred);
+    constructor(typeRef: TypeRef, names: NameOrNames, areNamesInferred: boolean, readonly cases: OrderedSet<string>) {
+        super(typeRef, "enum", names, areNamesInferred);
     }
 
     get children(): OrderedSet<Type> {
@@ -315,26 +324,51 @@ export class EnumType extends NamedType {
         return false;
     }
 
-    map(f: (t: Type) => Type): this {
-        return this;
+    get isStringType(): boolean {
+        return true;
     }
 
-    expandForEquality(other: any): boolean {
-        if (!(other instanceof EnumType)) return false;
-        return this.names.equals(other.names) && this.cases.equals(other.cases);
-    }
-
-    flatHashCode(): number {
-        return (stringHash(this.kind) + this.names.hashCode() + this.cases.hashCode()) | 0;
+    map(builder: TypeBuilder, _: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getEnumType(this.names, this.areNamesInferred, this.cases);
     }
 }
 
 export class UnionType extends NamedType {
     kind: "union";
 
-    constructor(names: NameOrNames, areNamesInferred: boolean, readonly members: OrderedSet<Type>) {
-        super("union", names, areNamesInferred);
-        assert(members.size > 1);
+    constructor(
+        typeRef: TypeRef,
+        names: NameOrNames,
+        areNamesInferred: boolean,
+        private _memberRefs?: OrderedSet<TypeRef>
+    ) {
+        super(typeRef, "union", names, areNamesInferred);
+        if (_memberRefs !== undefined) {
+            assert(_memberRefs.size > 1, "Union has zero members");
+        }
+    }
+
+    setMembers(memberRefs: OrderedSet<TypeRef>) {
+        if (this._memberRefs !== undefined) {
+            return panic("Can only set map members once");
+        }
+        assert(memberRefs.size > 1, "Union has zero members");
+        this._memberRefs = memberRefs;
+    }
+
+    private getMemberRefs(): OrderedSet<TypeRef> {
+        if (this._memberRefs === undefined) {
+            return panic("Map members accessed before they were set");
+        }
+        return this._memberRefs;
+    }
+
+    get members(): OrderedSet<Type> {
+        return this.getMemberRefs().map(tref => tref.deref());
+    }
+
+    get stringTypeMembers(): OrderedSet<Type> {
+        return this.members.filter(t => t.isStringType);
     }
 
     findMember = (kind: TypeKind): Type | undefined => {
@@ -349,92 +383,14 @@ export class UnionType extends NamedType {
         return this.findMember("null") !== undefined;
     }
 
-    map(f: (t: Type) => Type): UnionType {
-        let same = true;
-        const members = this.members.map(t => {
-            const ft = f(t);
-            if (ft !== t) same = false;
-            return ft;
-        });
-        if (same) return this;
-        return new UnionType(this.names, this.areNamesInferred, members);
+    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+        const members = this.getMemberRefs().map(f);
+        return builder.getUnionType(this.names, this.areNamesInferred, members);
     }
 
     get sortedMembers(): OrderedSet<Type> {
         // FIXME: We're assuming no two members of the same kind.
         return this.members.sortBy(t => t.kind);
-    }
-
-    equals(other: any): boolean {
-        if (!(other instanceof UnionType)) return false;
-        return this.names.equals(other.names) && this.members.equals(other.members);
-    }
-
-    expandForEquality(other: Type): [Type, Type][] | boolean {
-        if (!(other instanceof UnionType)) return false;
-        if (!this.names.equals(other.names)) return false;
-        if (this.members.size !== other.members.size) return false;
-        if (this.members.size === 0) return true;
-        const otherByKind: { [kind: string]: Type } = {};
-        other.members.forEach(t => {
-            otherByKind[t.kind] = t;
-        });
-        const queue: [Type, Type][] = [];
-        this.members.forEach(t => {
-            const otherT = otherByKind[t.kind];
-            if (!otherT) return false;
-            queue.push([t, otherT]);
-        });
-        if (queue.length !== this.members.size) return false;
-        return queue;
-    }
-
-    flatHashCode(): number {
-        return (stringHash(this.kind) + this.names.hashCode() + this.members.size) | 0;
-    }
-
-    hashCode(): number {
-        let hash = this.flatHashCode();
-        this.members.forEach(t => {
-            hash = (hash + t.flatHashCode()) | 0;
-        });
-        return hash;
-    }
-}
-
-function typesEqual(t1: Type, t2: any): boolean {
-    if (t1 === t2) return true;
-    let queueOrResult = t1.expandForEquality(t2);
-    if (typeof queueOrResult === "boolean") return queueOrResult;
-    let queue = queueOrResult;
-    const alreadySeenByHash: { [hash: string]: [Type, Type][] } = {};
-    function alreadySeen(types: [Type, Type]): boolean {
-        const hash = types[0].hashCode().toString();
-        let pairs = alreadySeenByHash[hash];
-        if (pairs) {
-            for (const [o1, o2] of pairs) {
-                if (o1 === types[0] && o2 === types[1]) return true;
-            }
-        } else {
-            alreadySeenByHash[hash] = pairs = [];
-        }
-        pairs.push(types);
-        return false;
-    }
-    for (;;) {
-        const maybePair = queue.pop();
-        if (!maybePair) return true;
-        [t1, t2] = maybePair;
-        if (t1 === t2) continue;
-        if (alreadySeen(maybePair)) continue;
-        queueOrResult = t1.expandForEquality(t2);
-        if (typeof queueOrResult === "boolean") {
-            if (!queueOrResult) return false;
-            continue;
-        }
-        for (const p of queueOrResult) {
-            queue.push(p);
-        }
     }
 }
 
@@ -453,29 +409,15 @@ export function nullableFromUnion(t: UnionType): Type | null {
     return defined(nonNulls.first());
 }
 
-export function makeNullable(t: Type, typeNames: NameOrNames, areNamesInferred: boolean): Type {
+export function nonNullTypeCases(t: Type): OrderedSet<Type> {
     if (t.kind === "null") {
-        return t;
+        return OrderedSet();
     }
     if (!(t instanceof UnionType)) {
-        return new UnionType(typeNames, areNamesInferred, OrderedSet([t, new PrimitiveType("null")]));
+        return OrderedSet([t]);
     }
-    const [maybeNull, nonNulls] = removeNullFromUnion(t);
-    if (maybeNull) return t;
-    return new UnionType(typeNames, areNamesInferred, nonNulls.add(new PrimitiveType("null")));
-}
-
-export function removeNull(t: Type): Type {
-    if (!(t instanceof UnionType)) {
-        return t;
-    }
-    const [_, nonNulls] = removeNullFromUnion(t);
-    const first = nonNulls.first();
-    if (first) {
-        if (nonNulls.size === 1) return first;
-        return new UnionType(t.names, t.areNamesInferred, nonNulls);
-    }
-    return panic("Trying to remove null results in empty union.");
+    const nonNulls = removeNullFromUnion(t)[1];
+    return OrderedSet(nonNulls);
 }
 
 // FIXME: The outer OrderedSet should be some Collection, but I can't figure out
@@ -485,36 +427,6 @@ function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
     if (setArray.length === 0) return OrderedSet();
     if (setArray.length === 1) return setArray[0];
     return setArray[0].union(...setArray.slice(1));
-}
-
-export function filterTypes<T extends Type>(
-    predicate: (t: Type) => t is T,
-    graph: TopLevels,
-    childrenOfType?: (t: Type) => Collection<any, Type>
-): OrderedSet<T> {
-    let seen = Set<Type>();
-    let types = List<T>();
-
-    function addFromType(t: Type): void {
-        if (seen.has(t)) return;
-        seen = seen.add(t);
-
-        const children = childrenOfType ? childrenOfType(t) : t.children;
-        children.forEach(addFromType);
-        if (predicate(t)) {
-            types = types.push(t);
-        }
-    }
-
-    graph.forEach(addFromType);
-    return types.reverse().toOrderedSet();
-}
-
-export function allNamedTypes(
-    graph: TopLevels,
-    childrenOfType?: (t: Type) => Collection<any, Type>
-): OrderedSet<NamedType> {
-    return filterTypes<NamedType>((t: Type): t is NamedType => t.isNamedType(), graph, childrenOfType);
 }
 
 export type SeparatedNamedTypes = {
@@ -531,12 +443,49 @@ export function separateNamedTypes(types: Collection<any, NamedType>): Separated
     return { classes, enums, unions };
 }
 
-export function allNamedTypesSeparated(
-    graph: TopLevels,
-    childrenOfType?: (t: Type) => Collection<any, Type>
-): SeparatedNamedTypes {
-    const types = allNamedTypes(graph, childrenOfType);
-    return separateNamedTypes(types);
+export type StringTypeMatchers<U> = {
+    dateType?: (dateType: PrimitiveType) => U;
+    timeType?: (timeType: PrimitiveType) => U;
+    dateTimeType?: (dateTimeType: PrimitiveType) => U;
+};
+
+export function matchTypeExhaustive<U>(
+    t: Type,
+    anyType: (anyType: PrimitiveType) => U,
+    nullType: (nullType: PrimitiveType) => U,
+    boolType: (boolType: PrimitiveType) => U,
+    integerType: (integerType: PrimitiveType) => U,
+    doubleType: (doubleType: PrimitiveType) => U,
+    stringType: (stringType: PrimitiveType) => U,
+    arrayType: (arrayType: ArrayType) => U,
+    classType: (classType: ClassType) => U,
+    mapType: (mapType: MapType) => U,
+    enumType: (enumType: EnumType) => U,
+    unionType: (unionType: UnionType) => U,
+    dateType: (dateType: PrimitiveType) => U,
+    timeType: (timeType: PrimitiveType) => U,
+    dateTimeType: (dateTimeType: PrimitiveType) => U
+): U {
+    if (t instanceof PrimitiveType) {
+        const f = {
+            any: anyType,
+            null: nullType,
+            bool: boolType,
+            integer: integerType,
+            double: doubleType,
+            string: stringType,
+            date: dateType,
+            time: timeType,
+            "date-time": dateTimeType
+        }[t.kind];
+        if (f) return f(t);
+        return panic(`Unsupported PrimitiveType: ${t.kind}`);
+    } else if (t instanceof ArrayType) return arrayType(t);
+    else if (t instanceof ClassType) return classType(t);
+    else if (t instanceof MapType) return mapType(t);
+    else if (t instanceof EnumType) return enumType(t);
+    else if (t instanceof UnionType) return unionType(t);
+    return panic("Unknown Type");
 }
 
 export function matchType<U>(
@@ -551,23 +500,58 @@ export function matchType<U>(
     classType: (classType: ClassType) => U,
     mapType: (mapType: MapType) => U,
     enumType: (enumType: EnumType) => U,
-    unionType: (unionType: UnionType) => U
+    unionType: (unionType: UnionType) => U,
+    stringTypeMatchers?: StringTypeMatchers<U>
 ): U {
-    if (t instanceof PrimitiveType) {
-        const f = {
-            any: anyType,
-            null: nullType,
-            bool: boolType,
-            integer: integerType,
-            double: doubleType,
-            string: stringType
-        }[t.kind];
-        if (f) return f(t);
-        return panic(`Unknown PrimitiveType: ${t.kind}`);
-    } else if (t instanceof ArrayType) return arrayType(t);
-    else if (t instanceof ClassType) return classType(t);
-    else if (t instanceof MapType) return mapType(t);
-    else if (t instanceof EnumType) return enumType(t);
-    else if (t instanceof UnionType) return unionType(t);
-    return panic("Unknown Type");
+    if (stringTypeMatchers === undefined) {
+        stringTypeMatchers = {};
+    }
+    const typeNotSupported = (_: Type) => {
+        return panic("Unsupported PrimitiveType");
+    };
+    return matchTypeExhaustive(
+        t,
+        anyType,
+        nullType,
+        boolType,
+        integerType,
+        doubleType,
+        stringType,
+        arrayType,
+        classType,
+        mapType,
+        enumType,
+        unionType,
+        stringTypeMatchers.dateType || typeNotSupported,
+        stringTypeMatchers.timeType || typeNotSupported,
+        stringTypeMatchers.dateTimeType || typeNotSupported
+    );
+}
+
+export function matchCompoundType(
+    t: Type,
+    arrayType: (arrayType: ArrayType) => void,
+    classType: (classType: ClassType) => void,
+    mapType: (mapType: MapType) => void,
+    unionType: (unionType: UnionType) => void
+): void {
+    function ignore<T extends Type>(_: T): void {
+        return;
+    }
+
+    return matchType(
+        t,
+        ignore,
+        ignore,
+        ignore,
+        ignore,
+        ignore,
+        ignore,
+        arrayType,
+        classType,
+        mapType,
+        ignore,
+        unionType,
+        { dateType: ignore, timeType: ignore, dateTimeType: ignore }
+    );
 }

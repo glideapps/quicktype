@@ -1,22 +1,28 @@
 "use strict";
 
-import { Map, Collection } from "immutable";
+import { Collection } from "immutable";
 
-import { TypeScriptTargetLanguage } from "../TargetLanguage";
-import { Type, TopLevels, NamedType, UnionType, matchType, ClassType } from "../Type";
-import { RenderResult } from "../Renderer";
+import { TargetLanguage } from "../TargetLanguage";
+import { Type, NamedType, UnionType, ClassType, matchTypeExhaustive } from "../Type";
+import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
-import { legalizeCharacters, pascalCase, defined, assert } from "../Support";
+import { legalizeCharacters, splitIntoWords, combineWords, firstUpperWordStyle, allUpperWordStyle } from "../Strings";
+import { defined, assert } from "../Support";
+import { StringTypeMapping } from "../TypeBuilder";
 
-export default class JSONSchemaTargetLanguage extends TypeScriptTargetLanguage {
+export default class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
-        super("JSON Schema", ["schema", "json-schema"], "schema", []);
+        super("JSON Schema", ["schema", "json-schema"], "schema");
+        this.setOptions([]);
     }
 
-    renderGraph(topLevels: TopLevels, optionValues: { [name: string]: any }): RenderResult {
-        const renderer = new JSONSchemaRenderer(topLevels);
-        return renderer.render();
+    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
+        return { date: "date", time: "time", dateTime: "date-time" };
+    }
+
+    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+        return JSONSchemaRenderer;
     }
 }
 
@@ -25,8 +31,17 @@ const namingFunction = funPrefixNamer(jsonNameStyle);
 const legalizeName = legalizeCharacters(cp => cp >= 32 && cp < 128 && cp !== 0x2f /* slash */);
 
 function jsonNameStyle(original: string): string {
-    const legalized = legalizeName(original);
-    return pascalCase(legalized);
+    const words = splitIntoWords(original);
+    return combineWords(
+        words,
+        legalizeName,
+        firstUpperWordStyle,
+        firstUpperWordStyle,
+        allUpperWordStyle,
+        allUpperWordStyle,
+        "",
+        _ => true
+    );
 }
 
 type Schema = { [name: string]: any };
@@ -40,11 +55,15 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected get propertyNamer(): null {
+    protected get classPropertyNamer(): null {
         return null;
     }
 
-    protected get caseNamer(): null {
+    protected get unionMemberNamer(): null {
+        return null;
+    }
+
+    protected get enumCaseNamer(): null {
         return null;
     }
 
@@ -55,7 +74,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    protected unionNeedsName(u: UnionType): boolean {
+    protected unionNeedsName(_: UnionType): boolean {
         return false;
     }
 
@@ -73,14 +92,14 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
     };
 
     private schemaForType = (t: Type): Schema => {
-        return matchType<{ [name: string]: any }>(
+        return matchTypeExhaustive<{ [name: string]: any }>(
             t,
-            anyType => ({}),
-            nullType => ({ type: "null" }),
-            boolType => ({ type: "boolean" }),
-            integerType => ({ type: "integer" }),
-            doubleType => ({ type: "number" }),
-            stringType => ({ type: "string" }),
+            _anyType => ({}),
+            _nullType => ({ type: "null" }),
+            _boolType => ({ type: "boolean" }),
+            _integerType => ({ type: "integer" }),
+            _doubleType => ({ type: "number" }),
+            _stringType => ({ type: "string" }),
             arrayType => ({ type: "array", items: this.schemaForType(arrayType.items) }),
             classType => ({ $ref: `#/definitions/${this.nameForType(classType)}` }),
             mapType => ({ type: "object", additionalProperties: this.schemaForType(mapType.values) }),
@@ -89,7 +108,10 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
                 const schema = this.makeOneOf(unionType.sortedMembers);
                 schema.title = unionType.combinedName;
                 return schema;
-            }
+            },
+            _dateType => ({ type: "string", format: "date" }),
+            _timeType => ({ type: "string", format: "time" }),
+            _dateTimeType => ({ type: "string", format: "date-time" })
         );
     };
 
