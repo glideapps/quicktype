@@ -433,7 +433,17 @@ export function makeGraphQLQueryTypes(
             return panic(`Duplicate query name ${queryName}`);
         }
         const dataType = query.makeType(builder, odn, queryName);
-        const t = builder.getClassType(queryName, false, OrderedMap({data: dataType}));
+        const errorType = builder.getClassType(
+            { names: OrderedSet(["error"]), alternatives: OrderedSet(["graphQLError"]) },
+            false,
+            OrderedMap({ message: builder.getPrimitiveType("string") })
+        );
+        const optionalErrorArray = builder.makeNullable(
+            builder.getArrayType(errorType),
+            { names: OrderedSet(["errors"]), alternatives: OrderedSet(["graphQLErrors"]) },
+            false
+        );
+        const t = builder.getClassType(queryName, false, OrderedMap({ data: dataType, errors: optionalErrorArray }));
         types = types.set(queryName, t);
     });
     return types;
