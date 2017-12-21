@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, OrderedSet } from "immutable";
+import { Set, OrderedSet, List } from "immutable";
 import * as pluralize from "pluralize";
 
 import { TypeGraph } from "./TypeGraph";
@@ -13,7 +13,7 @@ export function gatherNames(graph: TypeGraph): void {
         }
     });
 
-    let processed: Set<Type> = Set();
+    let processed: Set<List<any>> = Set();
 
     function processType(t: Type, names: OrderedSet<string>, parentNames: OrderedSet<string> | null) {
         if (t.isNamedType()) {
@@ -29,8 +29,9 @@ export function gatherNames(graph: TypeGraph): void {
             });
             t.addNames({ names, alternatives: OrderedSet(alternatives) }, true);
         }
-        if (processed.has(t)) return;
-        processed = processed.add(t);
+        const processedEnry = List([t, names, parentNames]);
+        if (processed.has(processedEnry)) return;
+        processed = processed.add(processedEnry);
         matchCompoundType(
             t,
             arrayType => {
