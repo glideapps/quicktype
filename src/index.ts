@@ -17,6 +17,7 @@ import { TypeGraph } from "./TypeGraph";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
 import { makeTypeNames } from "./TypeNames";
+import { inferEnums } from "./InferEnums";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -141,8 +142,8 @@ export class Run {
         });
 
         // JSON
+        const doInferEnums = this._options.inferEnums;
         if (Object.keys(this._allInputs.samples).length > 0) {
-            const doInferEnums = this._options.inferEnums;
             const inference = new TypeInference(typeBuilder, doInferEnums);
 
             Map(this._allInputs.samples).forEach((cjson, name) => {
@@ -157,6 +158,9 @@ export class Run {
         const doCombineClasses = this._options.combineClasses;
         if (doCombineClasses) {
             graph = combineClasses(graph, stringTypeMapping);
+        }
+        if (doInferEnums) {
+            graph = inferEnums(graph, stringTypeMapping);
         }
         const doInferMaps = this._options.inferMaps;
         if (doInferMaps) {

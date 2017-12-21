@@ -91,8 +91,12 @@ function isNull(t: Type): t is PrimitiveType {
 }
 
 export class StringType extends PrimitiveType {
-    constructor(typeRef: TypeRef) {
+    constructor(typeRef: TypeRef, readonly enumCases: OrderedMap<string, number> | undefined) {
         super(typeRef, "string");
+    }
+
+    map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getStringType(this.enumCases);
     }
 }
 
@@ -407,7 +411,7 @@ export function matchTypeExhaustive<U>(
             bool: boolType,
             integer: integerType,
             double: doubleType,
-            string: stringType,
+            string: stringType as (t: PrimitiveType) => U,
             date: dateType,
             time: timeType,
             "date-time": dateTimeType

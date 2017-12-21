@@ -1,14 +1,12 @@
 "use strict";
 
-import { OrderedSet, OrderedMap } from "immutable";
+import { OrderedMap } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
-import { assertNever, assert, panic, defined } from "./Support";
+import { assertNever, assert, panic } from "./Support";
 import { TypeGraphBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { makeTypeNames, TypeNames } from "./TypeNames";
-
-const MIN_LENGTH_FOR_ENUM = 10;
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
@@ -51,13 +49,9 @@ class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueAr
         this._numValues = n;
     };
 
-    protected makeEnum(enumCases: string[]): TypeRef | null {
-        assert(enumCases.length > 0);
-        const numValues = defined(this._numValues);
-        if (numValues >= MIN_LENGTH_FOR_ENUM && enumCases.length < Math.sqrt(numValues)) {
-            return this.typeBuilder.getEnumType(this.typeNames, OrderedSet(enumCases));
-        }
-        return null;
+    protected makeEnum(cases: string[], counts: { [name: string]: number }): TypeRef {
+        const caseMap = OrderedMap(cases.map((c: string): [string, number] => [c, counts[c]]));
+        return this.typeBuilder.getStringType(this.typeNames, caseMap);
     }
 
     protected makeClass(classes: NestedValueArray, maps: any[]): TypeRef {
