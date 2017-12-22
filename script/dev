@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+docker build --cache-from dvdsgl/quicktype -t quicktype .
+docker run -it \
+    -p 3000:3000 \
+    --volume=$PWD:/quicktype \
+    --workdir="/quicktype" \
+    --memory=4g --memory-swap=4g --memory-swappiness=0 \
+    --entrypoint=/bin/bash \
+    quicktype

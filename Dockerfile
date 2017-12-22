@@ -5,7 +5,7 @@ ENV workdir /app
 RUN mkdir ${workdir}
 WORKDIR ${workdir}
 
-RUN apt-get update
+RUN apt-get update --fix-missing
 RUN apt-get install curl git apt-transport-https --assume-yes
 
 # Install Swift
