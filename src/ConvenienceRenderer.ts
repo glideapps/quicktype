@@ -444,6 +444,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         ).lines.join("\n");
     };
 
+    protected emitCommentLines = (commentStart: string, lines: string[]): void => {
+        for (const line of lines) {
+            this.emitLine((commentStart + line).trimRight());
+        }
+    };
+
     protected emitSource(): void {
         const types = this.typeGraph.allNamedTypes(this.childrenOfType);
         this._haveUnions = types.some(t => t instanceof UnionType);

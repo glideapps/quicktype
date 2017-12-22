@@ -65,7 +65,11 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         return { date: "date-time", time: "date-time", dateTime: "date-time" };
     }
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return CSharpRenderer;
     }
 }
@@ -117,13 +121,14 @@ class CSharpRenderer extends ConvenienceRenderer {
 
     constructor(
         graph: TypeGraph,
+        leadingComments: string[] | undefined,
         private readonly _namespaceName: string,
         private readonly _version: Version,
         private readonly _dense: boolean,
         private readonly _useList: boolean,
         outputFeatures: OutputFeatures
     ) {
-        super(graph);
+        super(graph, leadingComments);
         this._needHelpers = outputFeatures.helpers;
         this._needAttributes = outputFeatures.attributes;
     }
@@ -574,7 +579,9 @@ class CSharpRenderer extends ConvenienceRenderer {
             this.emitLine("using ", ns, ";");
         };
 
-        if (this._needHelpers) {
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines("// ", this.leadingComments);
+        } else if (this._needHelpers) {
             this.emitLine(
                 "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do",
                 this.topLevels.size === 1 ? "" : " one of these",

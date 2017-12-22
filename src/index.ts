@@ -75,10 +75,11 @@ export interface Options {
     alphabetizeProperties: boolean;
     combineClasses: boolean;
     noRender: boolean;
+    leadingComments: string[] | undefined;
     rendererOptions: RendererOptions;
 }
 
-const defaultOptions = {
+const defaultOptions: Options = {
     lang: "ts",
     sources: [],
     inferMaps: true,
@@ -86,6 +87,7 @@ const defaultOptions = {
     alphabetizeProperties: false,
     combineClasses: true,
     noRender: false,
+    leadingComments: undefined,
     rendererOptions: {}
 };
 
@@ -201,6 +203,7 @@ export class Run {
         return targetLanguage.renderGraphAndSerialize(
             graph,
             this._options.alphabetizeProperties,
+            this._options.leadingComments,
             this._options.rendererOptions
         );
     };

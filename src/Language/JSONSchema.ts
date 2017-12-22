@@ -21,7 +21,11 @@ export default class JSONSchemaTargetLanguage extends TargetLanguage {
         return { date: "date", time: "time", dateTime: "date-time" };
     }
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return JSONSchemaRenderer;
     }
 }

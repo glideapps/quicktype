@@ -81,7 +81,11 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
         ]);
     }
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return CPlusPlusRenderer;
     }
 }
@@ -245,13 +249,14 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     constructor(
         graph: TypeGraph,
+        leadingComments: string[] | undefined,
         private readonly _namespaceName: string,
         _typeNamingStyle: NamingStyle,
         _memberNamingStyle: NamingStyle,
         _enumeratorNamingStyle: NamingStyle,
         private readonly _uniquePtr: boolean
     ) {
-        super(graph);
+        super(graph, leadingComments);
 
         this._typeNameStyle = cppNameStyle(_typeNamingStyle);
         this._typeNamingFunction = funPrefixNamer(this._typeNameStyle);
@@ -586,21 +591,27 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     };
 
     protected emitSourceStructure(): void {
-        this.emitLine("// To parse this JSON data, first install");
-        this.emitLine("//");
-        this.emitLine("//     Boost     http://www.boost.org");
-        this.emitLine("//     json.hpp  https://github.com/nlohmann/json");
-        this.emitLine("//");
-        this.emitLine("// Then include this file, and then do");
-        this.emitLine("//");
-        this.forEachTopLevel("none", (_, topLevelName) => {
-            this.emitLine(
-                "//     ",
-                this.ourQualifier(false),
-                topLevelName,
-                " data = nlohmann::json::parse(jsonString);"
-            );
-        });
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines("// ", this.leadingComments);
+        } else {
+            this.emitCommentLines("// ", [
+                " To parse this JSON data, first install",
+                "",
+                "     Boost     http://www.boost.org",
+                "     json.hpp  https://github.com/nlohmann/json",
+                "",
+                " Then include this file, and then do",
+                ""
+            ]);
+            this.forEachTopLevel("none", (_, topLevelName) => {
+                this.emitLine(
+                    "//     ",
+                    this.ourQualifier(false),
+                    topLevelName,
+                    " data = nlohmann::json::parse(jsonString);"
+                );
+            });
+        }
         this.emitNewline();
         if (this.haveUnions && !this._uniquePtr) {
             this.emitLine("#include <boost/optional.hpp>");

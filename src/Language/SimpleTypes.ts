@@ -38,7 +38,11 @@ export default class SimpleTypesTargetLanguage extends TargetLanguage {
         return { date: "date", time: "time", dateTime: "date-time" };
     }
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return SimpleTypesRenderer;
     }
 }
@@ -69,8 +73,8 @@ function simpleNameStyle(original: string, uppercase: boolean): string {
 }
 
 class SimpleTypesRenderer extends ConvenienceRenderer {
-    constructor(graph: TypeGraph, private readonly inlineUnions: boolean) {
-        super(graph);
+    constructor(graph: TypeGraph, leadingComments: string[] | undefined, private readonly inlineUnions: boolean) {
+        super(graph, leadingComments);
     }
 
     protected topLevelNameStyle(rawName: string): string {
@@ -160,6 +164,10 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     };
 
     protected emitSourceStructure() {
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines("// ", this.leadingComments);
+            this.emitNewline();
+        }
         this.forEachClass("interposing", this.emitClass);
         this.forEachEnum("leading-and-interposing", this.emitEnum);
         if (!this.inlineUnions) {

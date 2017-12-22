@@ -48,7 +48,11 @@ export default class JavaTargetLanguage extends TargetLanguage {
         this.setOptions([this._packageOption, this._justTypesOption]);
     }
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return JavaRenderer;
     }
 }
@@ -165,8 +169,13 @@ function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
 }
 
 class JavaRenderer extends ConvenienceRenderer {
-    constructor(graph: TypeGraph, private readonly _packageName: string, private readonly _justTypes: boolean) {
-        super(graph);
+    constructor(
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        private readonly _packageName: string,
+        private readonly _justTypes: boolean
+    ) {
+        super(graph, leadingComments);
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -494,12 +503,18 @@ class JavaRenderer extends ConvenienceRenderer {
     emitConverterClass = (): void => {
         this.emitFileComment("Converter");
         this.emitNewline();
-        this.emitMultiline(`// To use this code, add the following Maven dependency to your project:
-//
-//     com.fasterxml.jackson.core : jackson-databind : 2.9.0
-//
-// Import this package:
-//`);
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines("// ", this.leadingComments);
+        } else {
+            this.emitCommentLines("// ", [
+                "To use this code, add the following Maven dependency to your project:",
+                "",
+                "    com.fasterxml.jackson.core : jackson-databind : 2.9.0",
+                "",
+                "Import this package:",
+                ""
+            ]);
+        }
         this.emitLine("//     import ", this._packageName, ".Converter;");
         this.emitMultiline(`//
 // Then you can deserialize a JSON string with
@@ -582,9 +597,10 @@ class JavaRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         if (!this._justTypes) {
             this.emitConverterClass();
+            this.emitNewline();
         }
         this.forEachNamedType(
-            "leading-and-interposing",
+            "interposing",
             false,
             this.emitClassDefinition,
             this.emitEnumDefinition,

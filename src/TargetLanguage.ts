@@ -25,17 +25,26 @@ export abstract class TargetLanguage {
         return this._options.map(o => o.definition);
     }
 
-    protected abstract get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => Renderer;
+    protected abstract get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => Renderer;
 
     renderGraphAndSerialize(
         graph: TypeGraph,
         alphabetizeProperties: boolean,
+        leadingComments: string[] | undefined,
         rendererOptions: { [name: string]: any }
     ): SerializedRenderResult {
         if (this._options === undefined) {
             return panic(`Target language ${this.displayName} did not set its options`);
         }
-        const renderer = new this.rendererClass(graph, ...this._options.map(o => o.getValue(rendererOptions)));
+        const renderer = new this.rendererClass(
+            graph,
+            leadingComments,
+            ...this._options.map(o => o.getValue(rendererOptions))
+        );
         if ((renderer as any).setAlphabetizeProperties !== undefined) {
             (renderer as ConvenienceRenderer).setAlphabetizeProperties(alphabetizeProperties);
         }

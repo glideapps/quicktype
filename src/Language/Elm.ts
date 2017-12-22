@@ -38,7 +38,11 @@ export default class ElmTargetLanguage extends TargetLanguage {
         this.setOptions([this._moduleOption, this._listOption]);
     }
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return ElmRenderer;
     }
 }
@@ -149,8 +153,13 @@ class ElmRenderer extends ConvenienceRenderer {
     private _topLevelDependents: Map<Name, TopLevelDependent> = Map();
     private _namedTypeDependents: Map<Name, NamedTypeDependent> = Map();
 
-    constructor(graph: TypeGraph, private readonly _moduleName: string, private readonly _useList: boolean) {
-        super(graph);
+    constructor(
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        private readonly _moduleName: string,
+        private readonly _useList: boolean
+    ) {
+        super(graph, leadingComments);
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -504,30 +513,36 @@ class ElmRenderer extends ConvenienceRenderer {
             if (!this.topLevels.contains(t)) exports.push([name, "(..)"]);
         });
 
-        this.emitMultiline(`-- To decode the JSON data, add this file to your project, run
---
---     elm-package install NoRedInk/elm-decode-pipeline
---
--- add these imports
---
---     import Json.Decode exposing (decodeString)`);
-        this.emitLine(
-            "--     import ",
-            this._moduleName,
-            " exposing (",
-            intercalate(", ", topLevelDecoders).toArray(),
-            ")"
-        );
-        this.emitMultiline(`--
--- and you're off to the races with
---`);
-        this.forEachTopLevel("none", (_, name) => {
-            let { decoder } = defined(this._topLevelDependents.get(name));
-            if (decoder === undefined) {
-                decoder = defined(this._namedTypeDependents.get(name)).decoder;
-            }
-            this.emitLine("--     decodeString ", decoder, " myJsonString");
-        });
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines("-- ", this.leadingComments);
+        } else {
+            this.emitCommentLines("-- ", [
+                "To decode the JSON data, add this file to your project, run",
+                "",
+                "    elm-package install NoRedInk/elm-decode-pipeline",
+                "",
+                "add these imports",
+                "",
+                "    import Json.Decode exposing (decodeString)`);"
+            ]);
+            this.emitLine(
+                "--     import ",
+                this._moduleName,
+                " exposing (",
+                intercalate(", ", topLevelDecoders).toArray(),
+                ")"
+            );
+            this.emitMultiline(`--
+            -- and you're off to the races with
+            --`);
+            this.forEachTopLevel("none", (_, name) => {
+                let { decoder } = defined(this._topLevelDependents.get(name));
+                if (decoder === undefined) {
+                    decoder = defined(this._namedTypeDependents.get(name)).decoder;
+                }
+                this.emitLine("--     decodeString ", decoder, " myJsonString");
+            });
+        }
         this.emitNewline();
 
         this.emitLine("module ", this._moduleName, " exposing");

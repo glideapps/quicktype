@@ -40,7 +40,11 @@ export default class GoTargetLanguage extends TargetLanguage {
         this.setOptions([this._packageOption]);
     }
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return GoRenderer;
     }
 
@@ -78,8 +82,8 @@ function isValueType(t: Type): boolean {
 class GoRenderer extends ConvenienceRenderer {
     private _topLevelUnmarshalNames = Map<Name, Name>();
 
-    constructor(graph: TypeGraph, private readonly _packageName: string) {
-        super(graph);
+    constructor(graph: TypeGraph, leadingComments: string[] | undefined, private readonly _packageName: string) {
+        super(graph, leadingComments);
     }
 
     protected topLevelNameStyle(rawName: string): string {
@@ -322,12 +326,16 @@ if err != nil {
     };
 
     protected emitSourceStructure(): void {
-        this.emitLine("// To parse and unparse this JSON data, add this code to your project and do:");
-        this.forEachTopLevel("none", (_: Type, name: Name) => {
-            this.emitLine("//");
-            this.emitLine("//    r, err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
-            this.emitLine("//    bytes, err = r.Marshal()");
-        });
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines("// ", this.leadingComments);
+        } else {
+            this.emitLine("// To parse and unparse this JSON data, add this code to your project and do:");
+            this.forEachTopLevel("none", (_: Type, name: Name) => {
+                this.emitLine("//");
+                this.emitLine("//    r, err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
+                this.emitLine("//    bytes, err = r.Marshal()");
+            });
+        }
         this.emitNewline();
         this.emitLine("package ", this._packageName);
         this.emitNewline();
