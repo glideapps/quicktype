@@ -2,6 +2,31 @@
 [![Build Status](https://travis-ci.org/quicktype/quicktype.svg?branch=master)](https://travis-ci.org/quicktype/quicktype)
 [![Join us in Slack](http://slack.quicktype.io/badge.svg)](http://slack.quicktype.io/)
 
+![](logo.png)
+
+`quicktype` infers types from sample JSON data, then outputs strongly typed models and serializers for working with that data in your desired programming language. In short, quicktype makes it a breeze to work with JSON type-safely. For more explanation, read [A first look at quicktype](http://blog.quicktype.io/first-look/).
+
+### Supported Input Languages
+
+* JSON
+* JSON Schema
+* GraphQL queries
+* JSON URLs
+
+### Supported Output Languages
+
+* C#
+* Go
+* C++
+* Java
+* TypeScript
+* Swift
+* Elm
+* JSON Schema
+* Simple Types
+
+---
+
 ## Setup, Build, Run
 
 ```shell
@@ -36,29 +61,25 @@ files, URLs, or add other options.
 
 ## Test
 
+`quicktype` has a lot of complicated test dependencies:
+
+* `swift` compiler
+* `dotnetcore` SDK
+* Java, Maven
+* `elm` tools
+* `g++` C++ compiler
+* `golang` stack
+
+We've assembled all of these tools in a Docker container that you build and test within:
+
 ```shell
-$ npm test
+$ script/dev
+# ... Docker will build the image and start a bash shell
+$ npm run test
 ```
-
-### Requirements
-
-* [`dotnetcore`](https://www.microsoft.com/net/core#macos)
-* [Maven](https://maven.apache.org/) (for example via
-  [Homebrew](https://brew.sh))
-
-On macOS the system Java seems sufficient to run tests.
 
 ### Test only a specific fixture
 
 ```shell
 $ FIXTURE=golang npm test
-```
-
-### Using Docker
-
-```shell
-$ docker build --cache-from dvdsgl/quicktype -t quicktype .
-$ docker run -t quicktype npm test
-$ # run specific fixtures
-$ docker run -t quicktype sh -c "FIXTURE=golang,java npm test"
 ```
