@@ -1,8 +1,8 @@
+![](quicktype-logo.svg)
+
 [![npm version](https://badge.fury.io/js/quicktype.svg)](https://badge.fury.io/js/quicktype)
 [![Build Status](https://travis-ci.org/quicktype/quicktype.svg?branch=master)](https://travis-ci.org/quicktype/quicktype)
 [![Join us in Slack](http://slack.quicktype.io/badge.svg)](http://slack.quicktype.io/)
-
-![](logo.svg)
 
 `quicktype` infers types from sample JSON data, then outputs strongly typed models and serializers for working with that data in your desired programming language. In short, quicktype makes it a breeze to work with JSON type-safely. For more explanation, read [A first look at quicktype](http://blog.quicktype.io/first-look/).
 
