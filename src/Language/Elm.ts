@@ -3,7 +3,7 @@
 import { Map, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { EnumOption, StringOption } from "../RendererOptions";
+import { EnumOption, StringOption, BooleanOption } from "../RendererOptions";
 import { NamedType, Type, matchType, nullableFromUnion, ClassType, UnionType, EnumType, PrimitiveType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -26,6 +26,7 @@ import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
 export default class ElmTargetLanguage extends TargetLanguage {
+    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
     private readonly _listOption = new EnumOption("array-type", "Use Array or List", [
         ["array", false],
         ["list", true]
@@ -35,7 +36,7 @@ export default class ElmTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Elm", ["elm"], "elm");
-        this.setOptions([this._moduleOption, this._listOption]);
+        this.setOptions([this._justTypesOption, this._moduleOption, this._listOption]);
     }
 
     protected get rendererClass(): new (
@@ -156,6 +157,7 @@ class ElmRenderer extends ConvenienceRenderer {
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
+        private readonly _justTypes: boolean,
         private readonly _moduleName: string,
         private readonly _useList: boolean
     ) {
@@ -515,7 +517,8 @@ class ElmRenderer extends ConvenienceRenderer {
 
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("-- ", this.leadingComments);
-        } else {
+            this.emitNewline();
+        } else if (!this._justTypes) {
             this.emitCommentLines("-- ", [
                 "To decode the JSON data, add this file to your project, run",
                 "",
@@ -533,8 +536,8 @@ class ElmRenderer extends ConvenienceRenderer {
                 ")"
             );
             this.emitMultiline(`--
-            -- and you're off to the races with
-            --`);
+-- and you're off to the races with
+--`);
             this.forEachTopLevel("none", (_, name) => {
                 let { decoder } = defined(this._topLevelDependents.get(name));
                 if (decoder === undefined) {
@@ -542,42 +545,47 @@ class ElmRenderer extends ConvenienceRenderer {
                 }
                 this.emitLine("--     decodeString ", decoder, " myJsonString");
             });
+            this.emitNewline();
         }
-        this.emitNewline();
 
-        this.emitLine("module ", this._moduleName, " exposing");
-        this.indent(() => {
-            for (let i = 0; i < exports.length; i++) {
-                this.emitLine(i === 0 ? "(" : ",", " ", exports[i]);
-            }
-            this.emitLine(")");
-        });
-        this.emitNewline();
+        if (!this._justTypes) {
+            this.emitLine("module ", this._moduleName, " exposing");
+            this.indent(() => {
+                for (let i = 0; i < exports.length; i++) {
+                    this.emitLine(i === 0 ? "(" : ",", " ", exports[i]);
+                }
+                this.emitLine(")");
+            });
+            this.emitNewline();
 
-        this.emitMultiline(`import Json.Decode as Jdec
+            this.emitMultiline(`import Json.Decode as Jdec
 import Json.Decode.Pipeline as Jpipe
 import Json.Encode as Jenc
 import Dict exposing (Dict, map, toList)`);
-        if (this._useList) {
-            this.emitLine("import List exposing (map)");
-        } else {
-            this.emitLine("import Array exposing (Array, map)");
+            if (this._useList) {
+                this.emitLine("import List exposing (map)");
+            } else {
+                this.emitLine("import Array exposing (Array, map)");
+            }
+            this.emitNewline();
         }
 
-        this.forEachTopLevel(
-            "leading-and-interposing",
-            this.emitTopLevelDefinition,
-            t => !this.namedTypeToNameForTopLevel(t)
-        );
+        if (
+            this.forEachTopLevel("interposing", this.emitTopLevelDefinition, t => !this.namedTypeToNameForTopLevel(t))
+        ) {
+            this.emitNewline();
+        }
         this.forEachNamedType(
-            "leading-and-interposing",
+            "interposing",
             false,
             this.emitClassDefinition,
             this.emitEnumDefinition,
             this.emitUnionDefinition
         );
-        this.emitNewline();
 
+        if (this._justTypes) return;
+
+        this.emitNewline();
         this.emitLine("-- decoders and encoders");
         this.forEachTopLevel("leading-and-interposing", this.emitTopLevelFunctions);
         this.forEachNamedType(
