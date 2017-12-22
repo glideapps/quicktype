@@ -6,6 +6,8 @@
 
 `quicktype` infers types from sample JSON data, then outputs strongly typed models and serializers for working with that data in your desired programming language. In short, quicktype makes it a breeze to work with JSON type-safely. For more explanation, read [A first look at quicktype](http://blog.quicktype.io/first-look/).
 
+Try `quicktype` in your browser at [app.quicktype.io](https://app.quicktype.io).
+
 ### Supported Input Languages
 
 * JSON
