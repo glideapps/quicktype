@@ -32,7 +32,7 @@ import {
 } from "../Strings";
 import { defined, assertNever } from "../Support";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { StringOption, EnumOption } from "../RendererOptions";
+import { StringOption, EnumOption, BooleanOption } from "../RendererOptions";
 import { assert } from "../Support";
 
 type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
@@ -43,6 +43,7 @@ const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
 const upperUnderscoreValue: [string, NamingStyle] = ["upper-underscore-case", "upper-underscore"];
 
 export default class CPlusPlusTargetLanguage extends TargetLanguage {
+    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
     private readonly _namespaceOption = new StringOption(
         "namespace",
         "Name of the generated namespace",
@@ -73,6 +74,7 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
     constructor() {
         super("C++", ["c++", "cpp", "cplusplus"], "cpp");
         this.setOptions([
+            this._justTypesOption,
             this._namespaceOption,
             this._typeNamingStyleOption,
             this._memberNamingStyleOption,
@@ -250,6 +252,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
+        private readonly _justTypes: boolean,
         private readonly _namespaceName: string,
         _typeNamingStyle: NamingStyle,
         _memberNamingStyle: NamingStyle,
@@ -593,7 +596,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
-        } else {
+        } else if (!this._justTypes) {
             this.emitCommentLines("// ", [
                 " To parse this JSON data, first install",
                 "",
@@ -619,35 +622,36 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         if (this.haveNamedUnions) {
             this.emitLine("#include <boost/variant.hpp>");
         }
-        this.emitLine('#include "json.hpp"');
+        if (!this._justTypes) {
+            this.emitLine('#include "json.hpp"');
+        }
         this.emitNewline();
         this.emitNamespace(this._namespaceName, () => {
-            this.emitLine("using nlohmann::json;");
-            this.forEachNamedType(
-                "leading-and-interposing",
-                true,
-                this.emitClass,
-                this.emitEnum,
-                this.emitUnionTypedefs
-            );
+            if (!this._justTypes) {
+                this.emitLine("using nlohmann::json;");
+                this.emitNewline();
+            }
+            this.forEachNamedType("interposing", true, this.emitClass, this.emitEnum, this.emitUnionTypedefs);
+            if (this._justTypes) return;
             this.forEachTopLevel("leading", this.emitTopLevelTypedef, t => !this.namedTypeToNameForTopLevel(t));
             this.emitMultiline(`
-inline json get_untyped(const json &j, const char *property) {
-    if (j.find(property) != j.end()) {
-        return j.at(property).get<json>();
-    }
-    return json();
-}`);
+    inline json get_untyped(const json &j, const char *property) {
+        if (j.find(property) != j.end()) {
+            return j.at(property).get<json>();
+        }
+        return json();
+    }`);
             if (this.haveUnions) {
                 this.emitMultiline(`
-template <typename T>
-inline ${this._optionalType}<T> get_optional(const json &j, const char *property) {
-    if (j.find(property) != j.end())
-        return j.at(property).get<${this._optionalType}<T>>();
-    return ${this._optionalType}<T>();
-}`);
+    template <typename T>
+    inline ${this._optionalType}<T> get_optional(const json &j, const char *property) {
+        if (j.find(property) != j.end())
+            return j.at(property).get<${this._optionalType}<T>>();
+        return ${this._optionalType}<T>();
+    }`);
             }
         });
+        if (this._justTypes) return;
         this.emitNewline();
         this.emitNamespace("nlohmann", () => {
             if (this.haveUnions) {
