@@ -2,126 +2,63 @@
 [![Build Status](https://travis-ci.org/quicktype/quicktype.svg?branch=master)](https://travis-ci.org/quicktype/quicktype)
 [![Join us in Slack](http://slack.quicktype.io/badge.svg)](http://slack.quicktype.io/)
 
-## Synopsis
+## Setup, Build, Run
 
-```
-$ quicktype [--lang cs|go|c++|java|ts|swift|elm|schema|types] FILE|URL ... 
-```
-
-## Description
-
-  Given JSON sample data, quicktype outputs code for working with that data in  
-  C#, Go, C++, Java, TypeScript, Swift, Elm, JSON Schema, Simple Types.         
-
-## Options
-
-```
-  -o, --out FILE                                       The output file. Determines --lang and --top-level
-  -t, --top-level NAME                                 The name for the top level type.            
-  -l, --lang cs|go|c++|java|ts|swift|elm|schema|types  The target language.                        
-  -s, --src-lang json|schema                           The source language (default is json).      
-  --src FILE|URL|DIRECTORY                              The file, url, or data directory to type.   
-  --src-urls FILE                                       Tracery grammar describing URLs to crawl.   
-  --no-combine-classes                                  Don't combine similar classes.              
-  --no-maps                                             Don't infer maps, always use classes.       
-  --no-enums                                            Don't infer enums, always use strings.      
-  --quiet                                               Don't show issues in the generated code.    
-  -h, --help                                           Get some help.                              
+```shell
+$ npm install
+$ npm run build
+$ script/quicktype # rebuild and run
 ```
 
-### Options for C#
+## Edit
 
-```
-  --namespace NAME                                 Generated namespace 
-  --csharp-version 6|5                             C# version          
-  --density normal|dense                           Property density    
-  --array-type array|list                          Use T[] or List<T>  
-  --features complete|attributes-only|just-types   Output features     
-```
+Install [Visual Studio Code](https://code.visualstudio.com/), open this
+workspace, and install the recommended extensions:
 
-### Options for Go
-
-```
-  --package NAME   Generated package name 
+```shell
+$ code . # opens in VS Code
 ```
 
-### Options for C++
+## Live-reloading for quick feedback
 
-```
-  --namespace NAME                                                                  Name of the     
-                                                                                    generated       
-                                                                                    namespace       
-  --type-style pascal-case|underscore-case|camel-case|upper-underscore-case         Naming style    
-                                                                                    for types       
-  --member-style underscore-case|pascal-case|camel-case|upper-underscore-case       Naming style    
-                                                                                    for members     
-  --enumerator-style upper-underscore-case|underscore-case|pascal-case|camel-case   Naming style    
-                                                                                    for enumerators 
-  --unions containment|indirection                                                  Use containment 
-                                                                                    or indirection  
-                                                                                    for unions      
+When working on an output language, you'll want to view generated
+output as you edit. Use `npm start` to watch for changes and
+recompile and rerun `quicktype` for live feedback. For example, if you're
+developing a new renderer for `fortran`, you could use the following command to
+rebuild and reinvoke `quicktype` as you implement your renderer:
+
+```shell
+$ npm start -- "--lang fortran test/inputs/json/samples/bitcoin-block.json"
 ```
 
-### Options for Java
+The command in quotes is passed to `quicktype`, so you can render local `.json`
+files, URLs, or add other options.
 
-```
-  --package NAME   Generated package name 
-  --just-types     Plain types only       
-```
+## Test
 
-### Options for TypeScript
-
-```
-  --just-types           Interfaces only                      
-  --explicit-unions      Explicitly name unions               
-  --runtime-typecheck    Assert JSON.parse results at runtime 
+```shell
+$ npm test
 ```
 
-### Options for Swift
+### Requirements
 
-```
-  --just-types                     Plain types only            
-  --struct-or-class struct|class   Generate structs or classes 
-```
+* [`dotnetcore`](https://www.microsoft.com/net/core#macos)
+* [Maven](https://maven.apache.org/) (for example via
+  [Homebrew](https://brew.sh))
 
-### Options for Elm
+On macOS the system Java seems sufficient to run tests.
 
-```
-  --module NAME             Generated module name 
-  --array-type array|list   Use Array or List     
-```
+### Test only a specific fixture
 
-### Options for Simple Types
-
-```
-  --declare-unions    Declare unions as named types 
+```shell
+$ FIXTURE=golang npm test
 ```
 
-## Examples
+### Using Docker
 
-### Generate C# to parse a Bitcoin API
+```shell
+$ docker build --cache-from dvdsgl/quicktype -t quicktype .
+$ docker run -t quicktype npm test
+$ # run specific fixtures
+$ docker run -t quicktype sh -c "FIXTURE=golang,java npm test"
 ```
-  $ quicktype -o LatestBlock.cs https://blockchain.info/latestblock             
-```
-
-### Generate Go code from a directory of samples containing:
-```
-  - Foo.json                                                                    
-  + Bar                                                                         
-  - bar-sample-1.json                                                           
-  - bar-sample-2.json                                                           
-  - Baz.url 
-```
-```
-  $ quicktype -l go samples                                                     
-```
-
-### Generate JSON Schema, then TypeScript  
-
-```
-  $ quicktype -o schema.json https://blockchain.info/latestblock                
-  $ quicktype -o bitcoin.ts --src-lang schema schema.json                       
-```
-
-Learn more at [quicktype.io](https://quicktype.io)
-
