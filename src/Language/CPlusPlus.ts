@@ -593,6 +593,32 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     };
 
+    private emitTypes = (): void => {
+        if (!this._justTypes) {
+            this.emitLine("using nlohmann::json;");
+            this.emitNewline();
+        }
+        this.forEachNamedType("interposing", true, this.emitClass, this.emitEnum, this.emitUnionTypedefs);
+        if (this._justTypes) return;
+        this.forEachTopLevel("leading", this.emitTopLevelTypedef, t => !this.namedTypeToNameForTopLevel(t));
+        this.emitMultiline(`
+inline json get_untyped(const json &j, const char *property) {
+    if (j.find(property) != j.end()) {
+        return j.at(property).get<json>();
+    }
+    return json();
+}`);
+        if (this.haveUnions) {
+            this.emitMultiline(`
+template <typename T>
+inline ${this._optionalType}<T> get_optional(const json &j, const char *property) {
+    if (j.find(property) != j.end())
+        return j.at(property).get<${this._optionalType}<T>>();
+    return ${this._optionalType}<T>();
+}`);
+        }
+    };
+
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
@@ -626,31 +652,11 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine('#include "json.hpp"');
         }
         this.emitNewline();
-        this.emitNamespace(this._namespaceName, () => {
-            if (!this._justTypes) {
-                this.emitLine("using nlohmann::json;");
-                this.emitNewline();
-            }
-            this.forEachNamedType("interposing", true, this.emitClass, this.emitEnum, this.emitUnionTypedefs);
-            if (this._justTypes) return;
-            this.forEachTopLevel("leading", this.emitTopLevelTypedef, t => !this.namedTypeToNameForTopLevel(t));
-            this.emitMultiline(`
-    inline json get_untyped(const json &j, const char *property) {
-        if (j.find(property) != j.end()) {
-            return j.at(property).get<json>();
+        if (this._justTypes) {
+            this.emitTypes();
+        } else {
+            this.emitNamespace(this._namespaceName, this.emitTypes);
         }
-        return json();
-    }`);
-            if (this.haveUnions) {
-                this.emitMultiline(`
-    template <typename T>
-    inline ${this._optionalType}<T> get_optional(const json &j, const char *property) {
-        if (j.find(property) != j.end())
-            return j.at(property).get<${this._optionalType}<T>>();
-        return ${this._optionalType}<T>();
-    }`);
-            }
-        });
         if (this._justTypes) return;
         this.emitNewline();
         this.emitNamespace("nlohmann", () => {
