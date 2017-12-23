@@ -574,13 +574,42 @@ class CSharpRenderer extends ConvenienceRenderer {
         });
     };
 
-    protected emitSourceStructure(): void {
+    private emitTypesAndSupport = (): void => {
         const using = (ns: Sourcelike): void => {
             this.emitLine("using ", ns, ";");
         };
 
+        if (this._needAttributes || this._needHelpers) {
+            for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
+                using(ns);
+            }
+            this.emitNewline();
+            using("Newtonsoft.Json");
+            if (this._dense) {
+                using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
+            }
+            this.emitNewline();
+        }
+        this.forEachClass("interposing", this.emitClassDefinition);
+        this.forEachEnum("leading-and-interposing", this.emitEnumDefinition);
+        this.forEachUnion("leading-and-interposing", this.emitUnionDefinition);
+        if (this._needHelpers) {
+            this.forEachTopLevel("leading-and-interposing", this.emitFromJsonForTopLevel);
+            this.forEachEnum("leading-and-interposing", this.emitEnumExtension);
+            this.forEachUnion("leading-and-interposing", this.emitUnionJSONPartial);
+            this.emitNewline();
+            this.emitSerializeClass();
+        }
+        if (this._needHelpers || (this._needAttributes && (this.haveNamedUnions || this.haveEnums))) {
+            this.emitNewline();
+            this.emitConverterClass();
+        }
+    };
+
+    protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
+            this.emitNewline();
         } else if (this._needHelpers) {
             this.emitLine(
                 "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do",
@@ -593,35 +622,14 @@ class CSharpRenderer extends ConvenienceRenderer {
                 this.emitLine("//");
                 this.emitLine("//    var data = ", topLevelName, ".FromJson(jsonString);");
             });
-            this.emitLine("//");
+            this.emitNewline();
         }
 
-        this.emitLine("namespace ", this._namespaceName);
-        this.emitBlock(() => {
-            for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
-                using(ns);
-            }
-            if (this._needAttributes || this._needHelpers) {
-                this.emitNewline();
-                using("Newtonsoft.Json");
-                if (this._dense) {
-                    using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
-                }
-            }
-            this.forEachClass("leading-and-interposing", this.emitClassDefinition);
-            this.forEachEnum("leading-and-interposing", this.emitEnumDefinition);
-            this.forEachUnion("leading-and-interposing", this.emitUnionDefinition);
-            if (this._needHelpers) {
-                this.forEachTopLevel("leading-and-interposing", this.emitFromJsonForTopLevel);
-                this.forEachEnum("leading-and-interposing", this.emitEnumExtension);
-                this.forEachUnion("leading-and-interposing", this.emitUnionJSONPartial);
-                this.emitNewline();
-                this.emitSerializeClass();
-            }
-            if (this._needHelpers || (this._needAttributes && (this.haveNamedUnions || this.haveEnums))) {
-                this.emitNewline();
-                this.emitConverterClass();
-            }
-        });
+        if (this._needHelpers || this._needAttributes) {
+            this.emitLine("namespace ", this._namespaceName);
+            this.emitBlock(this.emitTypesAndSupport);
+        } else {
+            this.emitTypesAndSupport();
+        }
     }
 }
