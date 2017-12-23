@@ -622,6 +622,7 @@ inline ${this._optionalType}<T> get_optional(const json &j, const char *property
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
+            this.emitNewline();
         } else if (!this._justTypes) {
             this.emitCommentLines("// ", [
                 " To parse this JSON data, first install",
@@ -640,18 +641,19 @@ inline ${this._optionalType}<T> get_optional(const json &j, const char *property
                     " data = nlohmann::json::parse(jsonString);"
                 );
             });
+            this.emitNewline();
         }
-        this.emitNewline();
-        if (this.haveUnions && !this._uniquePtr) {
-            this.emitLine("#include <boost/optional.hpp>");
-        }
-        if (this.haveNamedUnions) {
-            this.emitLine("#include <boost/variant.hpp>");
-        }
-        if (!this._justTypes) {
-            this.emitLine('#include "json.hpp"');
-        }
-        this.emitNewline();
+        
+        let didInclude = false;
+        const include = (name: string): void => {
+            this.emitLine(`#include ${name}`);
+            didInclude = true;            
+        };
+        if (this.haveUnions && !this._uniquePtr) include("<boost/optional.hpp>");
+        if (this.haveNamedUnions) include("<boost/variant.hpp>");
+        if (!this._justTypes) include('"json.hpp"');
+        if (didInclude) this.emitNewline();
+
         if (this._justTypes) {
             this.emitTypes();
         } else {
