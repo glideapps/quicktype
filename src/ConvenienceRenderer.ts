@@ -301,16 +301,18 @@ export abstract class ConvenienceRenderer extends Renderer {
         blankLocations: BlankLineLocations,
         f: (t: Type, name: Name) => void,
         predicate?: (t: Type) => boolean
-    ): void => {
+    ): boolean => {
         let topLevels: Collection<string, Type>;
         if (predicate) {
             topLevels = this.topLevels.filter(predicate);
         } else {
             topLevels = this.topLevels;
         }
+        if (topLevels.count() === 0) return false;
         this.forEachWithBlankLines(topLevels, blankLocations, (t: Type, name: string) =>
             f(t, defined(this._topLevelNames.get(name)))
         );
+        return true;
     };
 
     setAlphabetizeProperties = (value: boolean): void => {
