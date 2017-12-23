@@ -49,7 +49,11 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         this.setOptions([this._justTypesOption, this._classOption]);
     }
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return SwiftRenderer;
     }
 }
@@ -187,8 +191,13 @@ const upperNamingFunction = funPrefixNamer(s => swiftNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer(s => swiftNameStyle(false, s));
 
 class SwiftRenderer extends ConvenienceRenderer {
-    constructor(graph: TypeGraph, private readonly _justTypes: boolean, private readonly _useClasses: boolean) {
-        super(graph);
+    constructor(
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        private readonly _justTypes: boolean,
+        private readonly _useClasses: boolean
+    ) {
+        super(graph, leadingComments);
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -277,7 +286,10 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private renderHeader = (): void => {
-        if (!this._justTypes) {
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines("// ", this.leadingComments);
+            this.emitNewline();
+        } else if (!this._justTypes) {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             this.forEachTopLevel("none", (_, name) => {

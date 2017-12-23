@@ -34,7 +34,7 @@ export abstract class Renderer {
     private _emitted: Sourcelike[];
     private _currentEmitTarget: Sourcelike[];
 
-    constructor(protected readonly typeGraph: TypeGraph) {
+    constructor(protected readonly typeGraph: TypeGraph, protected readonly leadingComments: string[] | undefined) {
         this._currentEmitTarget = this._emitted = [];
     }
 

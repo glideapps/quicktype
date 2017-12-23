@@ -26,21 +26,26 @@ import {
     allUpperWordStyle
 } from "../Strings";
 import { defined } from "../Support";
-import { StringOption } from "../RendererOptions";
+import { StringOption, BooleanOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
 export default class GoTargetLanguage extends TargetLanguage {
+    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
     private readonly _packageOption = new StringOption("package", "Generated package name", "NAME", "main");
 
     constructor() {
         super("Go", ["go", "golang"], "go");
-        this.setOptions([this._packageOption]);
+        this.setOptions([this._justTypesOption, this._packageOption]);
     }
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return GoRenderer;
     }
 
@@ -78,8 +83,13 @@ function isValueType(t: Type): boolean {
 class GoRenderer extends ConvenienceRenderer {
     private _topLevelUnmarshalNames = Map<Name, Name>();
 
-    constructor(graph: TypeGraph, private readonly _packageName: string) {
-        super(graph);
+    constructor(
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        private readonly _justTypes: boolean,
+        private readonly _packageName: string
+    ) {
+        super(graph, leadingComments);
     }
 
     protected topLevelNameStyle(rawName: string): string {
@@ -167,8 +177,11 @@ class GoRenderer extends ConvenienceRenderer {
         const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
         if (!this.namedTypeToNameForTopLevel(t)) {
             this.emitLine("type ", name, " ", this.goType(t));
-            this.emitNewline();
         }
+
+        if (this._justTypes) return;
+
+        this.emitNewline();
         this.emitFunc([unmarshalName, "(data []byte) (", name, ", error)"], () => {
             this.emitLine("var r ", name);
             this.emitLine("err := json.Unmarshal(data, &r)");
@@ -204,6 +217,9 @@ class GoRenderer extends ConvenienceRenderer {
             })
         );
         this.emitLine(")");
+
+        if (this._justTypes) return;
+
         this.emitNewline();
         this.emitFunc(["(x *", enumName, ") UnmarshalJSON(data []byte) error"], () => {
             this.emitMultiline(`dec := json.NewDecoder(bytes.NewReader(data))
@@ -285,6 +301,9 @@ if err != nil {
             columns.push([[fieldName, " "], goType]);
         });
         this.emitStruct(unionName, columns);
+
+        if (this._justTypes) return;
+
         this.emitNewline();
         this.emitFunc(["(x *", unionName, ") UnmarshalJSON(data []byte) error"], () => {
             for (const kind of compoundTypeKinds) {
@@ -322,27 +341,46 @@ if err != nil {
     };
 
     protected emitSourceStructure(): void {
-        this.emitLine("// To parse and unparse this JSON data, add this code to your project and do:");
-        this.forEachTopLevel("none", (_: Type, name: Name) => {
-            this.emitLine("//");
-            this.emitLine("//    r, err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
-            this.emitLine("//    bytes, err = r.Marshal()");
-        });
-        this.emitNewline();
-        this.emitLine("package ", this._packageName);
-        this.emitNewline();
-        if (this.haveEnums || this.haveNamedUnions) {
-            this.emitLine('import "bytes"');
-            this.emitLine('import "errors"');
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines("// ", this.leadingComments);
+            this.emitNewline();
+        } else if (!this._justTypes) {
+            this.emitLine("// To parse and unparse this JSON data, add this code to your project and do:");
+            this.forEachTopLevel("none", (_: Type, name: Name) => {
+                this.emitLine("//");
+                this.emitLine("//    r, err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
+                this.emitLine("//    bytes, err = r.Marshal()");
+            });
+            this.emitNewline();
         }
-        if (this.haveEnums) {
-            this.emitLine('import "fmt"');
+        if (!this._justTypes) {
+            this.emitLine("package ", this._packageName);
+            this.emitNewline();
+            if (this.haveEnums || this.haveNamedUnions) {
+                this.emitLine('import "bytes"');
+                this.emitLine('import "errors"');
+            }
+            if (this.haveEnums) {
+                this.emitLine('import "fmt"');
+            }
+            this.emitLine('import "encoding/json"');
+            this.emitNewline();
         }
-        this.emitLine('import "encoding/json"');
-        this.forEachTopLevel("leading-and-interposing", this.emitTopLevel);
-        this.forEachClass("leading-and-interposing", this.emitClass);
+        if (
+            this.forEachTopLevel(
+                "interposing",
+                this.emitTopLevel,
+                t => !this._justTypes || !this.namedTypeToNameForTopLevel(t)
+            )
+        ) {
+            this.emitNewline();
+        }
+        this.forEachClass("interposing", this.emitClass);
         this.forEachEnum("leading-and-interposing", this.emitEnum);
         this.forEachUnion("leading-and-interposing", this.emitUnion);
+
+        if (this._justTypes) return;
+
         if (this.haveNamedUnions) {
             this.emitNewline();
             this

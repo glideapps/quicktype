@@ -35,7 +35,11 @@ export default class L extends TargetLanguage {
         this.setOptions([this._justTypes, this._declareUnions, this._runtimeTypecheck]);
     }
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return TypeScriptRenderer;
     }
 }
@@ -87,11 +91,12 @@ class TypeScriptRenderer extends ConvenienceRenderer {
 
     constructor(
         graph: TypeGraph,
+        leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
         declareUnions: boolean,
         private readonly _runtimeTypecheck: boolean
     ) {
-        super(graph);
+        super(graph, leadingComments);
         this._inlineUnions = !declareUnions;
     }
 
@@ -364,7 +369,10 @@ function O(className: string) {
     };
 
     protected emitSourceStructure() {
-        if (!this._justTypes) {
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines("// ", this.leadingComments);
+            this.emitNewline();
+        } else if (!this._justTypes) {
             this.emitMultiline(`// To parse this data:
 //`);
             const topLevelNames: Sourcelike[] = [];
