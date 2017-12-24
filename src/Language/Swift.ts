@@ -318,12 +318,19 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private renderEnumDefinition = (e: EnumType, enumName: Name): void => {
-        const codableString = this.getCodableString();
-        this.emitBlock(["enum ", enumName, codableString], () => {
-            this.forEachEnumCase(e, "none", name => {
-                this.emitLine("case ", name);
+        if (this._justTypes) {
+            this.emitBlock(["enum ", enumName], () => {
+                this.forEachEnumCase(e, "none", name => {
+                    this.emitLine("case ", name);
+                });
             });
-        });
+        } else {
+            this.emitBlock(["enum ", enumName, ": String, Codable"], () => {
+                this.forEachEnumCase(e, "none", (name, jsonName) => {
+                    this.emitLine("case ", name, ' = "', stringEscape(jsonName), '"');
+                });
+            });
+        }
     };
 
     private renderUnionDefinition = (u: UnionType, unionName: Name): void => {
@@ -401,38 +408,6 @@ class SwiftRenderer extends ConvenienceRenderer {
             name,
             '"))'
         );
-    };
-
-    private renderEnumExtensions4 = (e: EnumType, enumName: Name): void => {
-        this.emitBlock(["extension ", enumName], () => {
-            this.emitBlock("init(from decoder: Decoder) throws", () => {
-                this.emitLine("let container = try decoder.singleValueContainer()");
-                this.emitBlock(["if let x = try? container.decode(String.self)"], () => {
-                    this.emitLine("switch x {");
-                    this.forEachEnumCase(e, "none", (name, jsonName) => {
-                        this.emitLine('case "', stringEscape(jsonName), '":');
-                        this.indent(() => {
-                            this.emitLine("self = .", name);
-                            this.emitLine("return");
-                        });
-                    });
-                    this.emitLine("default:");
-                    this.indent(() => this.emitLine("break"));
-                    this.emitLine("}");
-                });
-                this.emitDecodingError(enumName);
-            });
-            this.ensureBlankLine();
-            this.emitBlock("func encode(to encoder: Encoder) throws", () => {
-                this.emitLine("var container = encoder.singleValueContainer()");
-                this.emitLine("switch self {");
-                this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    this.emitLine("case .", name, ":");
-                    this.indent(() => this.emitLine('try container.encode("', stringEscape(jsonName), '")'));
-                });
-                this.emitLine("}");
-            });
-        });
     };
 
     private renderUnionExtensions4 = (u: UnionType, unionName: Name): void => {
@@ -749,7 +724,7 @@ class JSONAny: Codable {
                 "leading-and-interposing",
                 false,
                 this.renderClassExtensions4,
-                this.renderEnumExtensions4,
+                () => undefined,
                 this.renderUnionExtensions4
             );
             this.ensureBlankLine();
