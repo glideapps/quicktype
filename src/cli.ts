@@ -30,6 +30,8 @@ const getUsage = require("command-line-usage");
 const chalk = require("chalk");
 const fetch = require("node-fetch");
 
+const packageJSON = require("../package.json");
+
 const langs = targetLanguages.all.map(r => _.minBy(r.names, s => s.length)).join("|");
 const langDisplayNames = targetLanguages.all.map(r => r.displayName).join(", ");
 
@@ -54,6 +56,7 @@ export interface CLIOptions {
 
     help: boolean;
     quiet: boolean;
+    version: boolean;
 }
 
 async function readableFromFileOrUrl(fileOrUrl: string): Promise<Readable> {
@@ -225,6 +228,7 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         rendererOptions: opts.rendererOptions || {},
         help: opts.help || false,
         quiet: opts.quiet || false,
+        version: opts.version || false,
         out: opts.out,
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
@@ -329,6 +333,12 @@ const optionDefinitions: OptionDefinition[] = [
         alias: "h",
         type: Boolean,
         description: "Get some help."
+    },
+    {
+        name: "version",
+        alias: "v",
+        type: Boolean,
+        description: "Display the version of quicktype"
     }
 ];
 
@@ -518,6 +528,11 @@ export async function main(args: string[] | Partial<CLIOptions>) {
 
         if (options.help) {
             usage();
+            return;
+        }
+        if (options.version) {
+            console.log(`quicktype, version ${packageJSON.version}`);
+            console.log("Visit https://quicktype.io/ for more information.");
             return;
         }
 
