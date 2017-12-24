@@ -166,9 +166,8 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     protected emitSourceStructure() {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
-            this.emitNewline();
         }
-        this.forEachClass("interposing", this.emitClass);
+        this.forEachClass("leading-and-interposing", this.emitClass);
         this.forEachEnum("leading-and-interposing", this.emitEnum);
         if (!this.inlineUnions) {
             this.forEachUnion("leading-and-interposing", this.emitUnion);

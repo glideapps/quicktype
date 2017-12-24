@@ -133,7 +133,6 @@ class TypeScriptRenderer extends ConvenienceRenderer {
                 this.emitLine(name, ` = "${stringEscape(jsonName)}",`);
             });
         });
-        this.emitNewline();
     };
 
     sourceFor = (t: Type): Sourcelike => {
@@ -230,7 +229,6 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             });
             this.emitTable(table);
         });
-        this.emitNewline();
     };
 
     emitConvertModule = () => {
@@ -241,7 +239,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         this.emitBlock("export module Convert", "", () => {
             if (this._runtimeTypecheck) {
                 this.emitLine("let path: string[] = [];");
-                this.emitNewline();
+                this.ensureBlankLine();
             }
             this.forEachTopLevel("interposing", (t, name) => {
                 this.emitBlock(["export function to", name, "(json: string): ", this.sourceFor(t)], "", () => {
@@ -251,7 +249,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
                         this.emitLine("return JSON.parse(json);");
                     }
                 });
-                this.emitNewline();
+                this.ensureBlankLine();
 
                 const camelCaseName = modifySource(camelCase, name);
                 this.emitBlock(
@@ -365,13 +363,11 @@ function O(className: string) {
         }
         const children = u.children.map(this.sourceFor);
         this.emitLine("export type ", unionName, " = ", intercalate(" | ", children).toArray(), ";");
-        this.emitNewline();
     };
 
     protected emitSourceStructure() {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
-            this.emitNewline();
         } else if (!this._justTypes) {
             this.emitMultiline(`// To parse this data:
 //`);
@@ -395,12 +391,12 @@ function O(className: string) {
                 this.emitLine("// These functions will throw an error if the JSON doesn't");
                 this.emitLine("// match the expected interface, even if the JSON is valid.");
             }
-            this.emitNewline();
         }
 
-        this.forEachNamedType("none", false, this.emitClass, this.emitEnum, this.emitUnion);
+        this.forEachNamedType("leading-and-interposing", false, this.emitClass, this.emitEnum, this.emitUnion);
 
         if (!this._justTypes) {
+            this.ensureBlankLine();
             this.emitConvertModule();
         }
     }

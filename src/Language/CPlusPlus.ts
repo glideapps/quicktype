@@ -438,7 +438,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                 });
             }
         );
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitBlock(["inline void to_json(json& _j, const struct ", ourQualifier, className, "& _x)"], false, () => {
             this.emitLine("_j = json::object();");
             this.forEachClassProperty(c, "none", (name, json, _) => {
@@ -486,7 +486,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             }
             this.emitLine('else throw "Could not deserialize";');
         });
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitBlock(["inline void to_json(json& _j, const ", variantType, "& _x)"], false, () => {
             this.emitBlock("switch (_x.which())", false, () => {
                 let i = 0;
@@ -524,7 +524,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             });
             this.emitLine('else throw "Input JSON does not conform to schema";');
         });
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, enumName, "& _x)"], false, () => {
             this.emitBlock("switch (_x)", false, () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
@@ -596,7 +596,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     private emitTypes = (): void => {
         if (!this._justTypes) {
             this.emitLine("using nlohmann::json;");
-            this.emitNewline();
+            this.ensureBlankLine();
         }
         this.forEachNamedType("interposing", true, this.emitClass, this.emitEnum, this.emitUnionTypedefs);
         if (this._justTypes) return;
@@ -622,7 +622,6 @@ inline ${this._optionalType}<T> get_optional(const json &j, const char *property
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
-            this.emitNewline();
         } else if (!this._justTypes) {
             this.emitCommentLines("// ", [
                 " To parse this JSON data, first install",
@@ -641,18 +640,16 @@ inline ${this._optionalType}<T> get_optional(const json &j, const char *property
                     " data = nlohmann::json::parse(jsonString);"
                 );
             });
-            this.emitNewline();
         }
-        
-        let didInclude = false;
+        this.ensureBlankLine();
+
         const include = (name: string): void => {
             this.emitLine(`#include ${name}`);
-            didInclude = true;            
         };
         if (this.haveUnions && !this._uniquePtr) include("<boost/optional.hpp>");
         if (this.haveNamedUnions) include("<boost/variant.hpp>");
         if (!this._justTypes) include('"json.hpp"');
-        if (didInclude) this.emitNewline();
+        this.ensureBlankLine();
 
         if (this._justTypes) {
             this.emitTypes();
@@ -660,7 +657,8 @@ inline ${this._optionalType}<T> get_optional(const json &j, const char *property
             this.emitNamespace(this._namespaceName, this.emitTypes);
         }
         if (this._justTypes) return;
-        this.emitNewline();
+
+        this.ensureBlankLine();
         this.emitNamespace("nlohmann", () => {
             if (this.haveUnions) {
                 this.emitOptionalHelpers();
@@ -668,7 +666,7 @@ inline ${this._optionalType}<T> get_optional(const json &j, const char *property
             this.forEachClass("leading-and-interposing", this.emitClassFunctions);
             this.forEachEnum("leading-and-interposing", this.emitEnumFunctions);
             if (this.haveUnions) {
-                this.emitNewline();
+                this.ensureBlankLine();
                 this.emitAllUnionFunctions();
             }
         });
