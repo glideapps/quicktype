@@ -5,7 +5,8 @@ import * as stream from "stream";
 import { defined, hashCodeInit, addHashCode } from "./Support";
 import { isDate, isTime, isDateTime } from "./DateTime";
 
-const makeSource = require("stream-json/main");
+const Combo = require("stream-json/Combo");
+const Source = require("stream-json/Source");
 const stringHash = require("string-hash");
 
 export enum Tag {
@@ -69,7 +70,8 @@ export class CompressedJSON {
     ) {}
 
     async readFromStream(readStream: stream.Readable): Promise<Value> {
-        const jsonSource = makeSource();
+        const combo = new Combo();
+        const jsonSource = new Source([combo]);
         jsonSource.on("startObject", this.handleStartObject);
         jsonSource.on("endObject", this.handleEndObject);
         jsonSource.on("startArray", this.handleStartArray);
@@ -85,9 +87,12 @@ export class CompressedJSON {
         jsonSource.on("nullValue", this.handleNullValue);
         jsonSource.on("trueValue", this.handleTrueValue);
         jsonSource.on("falseValue", this.handleFalseValue);
-        const promise = new Promise<Value>(resolve => {
+        const promise = new Promise<Value>((resolve, reject) => {
             jsonSource.on("end", () => {
                 resolve(this.finish());
+            });
+            combo.on("error", (err: any) => {
+                reject(err);
             });
         });
         readStream.setEncoding("utf8");
