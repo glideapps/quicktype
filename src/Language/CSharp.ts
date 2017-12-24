@@ -337,7 +337,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                     this.emitLine("default: return null;");
                 });
             });
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitLine("public static ", enumName, " ReadJson(JsonReader reader, JsonSerializer serializer)");
             this.emitBlock(() => {
                 this.emitLine("var str = serializer.Deserialize<string>(reader);");
@@ -345,7 +345,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                 this.emitLine("if (maybeValue.HasValue) return maybeValue.Value;");
                 this.emitLine('throw new Exception("Unknown enum case " + str);');
             });
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitLine(
                 "public static void WriteJson(this ",
                 enumName,
@@ -444,7 +444,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                 this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, _) => {
                     this.emitLine(fieldName, " = null;");
                 });
-                this.emitNewline();
+                this.ensureBlankLine();
                 this.emitLine("switch (reader.TokenType)");
                 this.emitBlock(() => {
                     if (hasNull) emitNullDeserializer();
@@ -458,7 +458,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                 });
                 this.emitLine('throw new Exception("Cannot convert ', unionName, '");');
             });
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitLine("public void WriteJson(JsonWriter writer, JsonSerializer serializer)");
             this.emitBlock(() => {
                 this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, _) => {
@@ -522,7 +522,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         const canConvertExpr = intercalate(" || ", canConvertExprs.union(nullableCanConvertExprs));
         // FIXME: make Iterable<any, Sourcelike> a Sourcelike, too?
         this.emitExpressionMember("public override bool CanConvert(Type t)", canConvertExpr.toArray());
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitLine(
             "public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)"
         );
@@ -542,7 +542,7 @@ class CSharpRenderer extends ConvenienceRenderer {
             });
             this.emitLine('throw new Exception("Unknown type");');
         });
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitLine("public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)");
         this.emitBlock(() => {
             this.emitLine("var t = value.GetType();");
@@ -561,7 +561,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         this.emitClass(true, "class", converterName, () => {
             if (jsonConverter) {
                 this.emitConverterMembers();
-                this.emitNewline();
+                this.ensureBlankLine();
             }
             this.emitLine("public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings");
             this.emitBlock(() => {
@@ -583,25 +583,24 @@ class CSharpRenderer extends ConvenienceRenderer {
             for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
                 using(ns);
             }
-            this.emitNewline();
+            this.ensureBlankLine();
             using("Newtonsoft.Json");
             if (this._dense) {
                 using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
             }
-            this.emitNewline();
         }
-        this.forEachClass("interposing", this.emitClassDefinition);
+        this.forEachClass("leading-and-interposing", this.emitClassDefinition);
         this.forEachEnum("leading-and-interposing", this.emitEnumDefinition);
         this.forEachUnion("leading-and-interposing", this.emitUnionDefinition);
         if (this._needHelpers) {
             this.forEachTopLevel("leading-and-interposing", this.emitFromJsonForTopLevel);
             this.forEachEnum("leading-and-interposing", this.emitEnumExtension);
             this.forEachUnion("leading-and-interposing", this.emitUnionJSONPartial);
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitSerializeClass();
         }
         if (this._needHelpers || (this._needAttributes && (this.haveNamedUnions || this.haveEnums))) {
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitConverterClass();
         }
     };
@@ -609,7 +608,6 @@ class CSharpRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
-            this.emitNewline();
         } else if (this._needHelpers) {
             this.emitLine(
                 "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do",
@@ -622,9 +620,9 @@ class CSharpRenderer extends ConvenienceRenderer {
                 this.emitLine("//");
                 this.emitLine("//    var data = ", topLevelName, ".FromJson(jsonString);");
             });
-            this.emitNewline();
         }
 
+        this.ensureBlankLine();
         if (this._needHelpers || this._needAttributes) {
             this.emitLine("namespace ", this._namespaceName);
             this.emitBlock(this.emitTypesAndSupport);

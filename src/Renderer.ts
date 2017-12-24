@@ -33,22 +33,40 @@ export abstract class Renderer {
     private _lastNewline?: NewlineSource;
     private _emitted: Sourcelike[];
     private _currentEmitTarget: Sourcelike[];
+    private _needBlankLine: boolean;
 
     constructor(protected readonly typeGraph: TypeGraph, protected readonly leadingComments: string[] | undefined) {
         this._currentEmitTarget = this._emitted = [];
+        this._needBlankLine = false;
     }
 
-    emitNewline(): void {
+    private emitNewline = (): void => {
         const nl = newline();
         this._currentEmitTarget.push(nl);
         this._lastNewline = nl;
-    }
+    };
+
+    private emitItem = (item: Sourcelike): void => {
+        if (this._needBlankLine) {
+            this.emitNewline();
+            this._needBlankLine = false;
+        }
+        this._currentEmitTarget.push(item);
+    };
+
+    ensureBlankLine = (): void => {
+        if (this._emitted.length === 0 && this._currentEmitTarget.length === 0) {
+            // no blank lines at start of file
+            return;
+        }
+        this._needBlankLine = true;
+    };
 
     emitLine(...lineParts: Sourcelike[]): void {
         if (lineParts.length === 1) {
-            this._currentEmitTarget.push(lineParts[0]);
+            this.emitItem(lineParts[0]);
         } else if (lineParts.length > 1) {
-            this._currentEmitTarget.push(lineParts);
+            this.emitItem(lineParts);
         }
         this.emitNewline();
     }
@@ -94,7 +112,7 @@ export abstract class Renderer {
 
     protected emitTable = (tableArray: Sourcelike[][]): void => {
         const table = List(tableArray.map(r => List(r.map(sl => sourcelikeToSource(sl)))));
-        this._currentEmitTarget.push({ kind: "table", table });
+        this.emitItem({ kind: "table", table });
         this.emitNewline();
     };
 
@@ -114,7 +132,7 @@ export abstract class Renderer {
         let onFirst = true;
         iterable.forEach((v: V, k: K) => {
             if ((leadingBlankLine && onFirst) || (interposedBlankLines && !onFirst)) {
-                this.emitNewline();
+                this.ensureBlankLine();
             }
             emitter(v, k);
             onFirst = false;

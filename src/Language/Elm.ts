@@ -374,7 +374,7 @@ class ElmRenderer extends ConvenienceRenderer {
         if (!this.namedTypeToNameForTopLevel(t)) {
             this.emitLine(defined(decoder), " : Jdec.Decoder ", topLevelName);
             this.emitLine(defined(decoder), " = ", this.decoderNameForType(t).source);
-            this.emitNewline();
+            this.ensureBlankLine();
         }
         this.emitLine(encoder, " : ", topLevelName, " -> String");
         this.emitLine(encoder, " r = Jenc.encode 0 (", this.encoderNameForType(t).source, " r)");
@@ -394,7 +394,7 @@ class ElmRenderer extends ConvenienceRenderer {
                 });
             });
         });
-        this.emitNewline();
+        this.ensureBlankLine();
 
         const encoderName = this.encoderNameForNamedType(c);
         this.emitLine(encoderName, " : ", className, " -> Jenc.Value");
@@ -437,7 +437,7 @@ class ElmRenderer extends ConvenienceRenderer {
                 this.emitLine(")");
             });
         });
-        this.emitNewline();
+        this.ensureBlankLine();
 
         const encoderName = this.encoderNameForNamedType(e);
         this.emitLine(encoderName, " : ", enumName, " -> Jenc.Value");
@@ -480,7 +480,7 @@ class ElmRenderer extends ConvenienceRenderer {
                 this.emitLine("]");
             });
         });
-        this.emitNewline();
+        this.ensureBlankLine();
 
         const encoderName = this.encoderNameForNamedType(u);
         this.emitLine(encoderName, " : ", unionName, " -> Jenc.Value");
@@ -517,7 +517,6 @@ class ElmRenderer extends ConvenienceRenderer {
 
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("-- ", this.leadingComments);
-            this.emitNewline();
         } else if (!this._justTypes) {
             this.emitCommentLines("-- ", [
                 "To decode the JSON data, add this file to your project, run",
@@ -545,10 +544,10 @@ class ElmRenderer extends ConvenienceRenderer {
                 }
                 this.emitLine("--     decodeString ", decoder, " myJsonString");
             });
-            this.emitNewline();
         }
 
         if (!this._justTypes) {
+            this.ensureBlankLine();
             this.emitLine("module ", this._moduleName, " exposing");
             this.indent(() => {
                 for (let i = 0; i < exports.length; i++) {
@@ -556,7 +555,7 @@ class ElmRenderer extends ConvenienceRenderer {
                 }
                 this.emitLine(")");
             });
-            this.emitNewline();
+            this.ensureBlankLine();
 
             this.emitMultiline(`import Json.Decode as Jdec
 import Json.Decode.Pipeline as Jpipe
@@ -567,16 +566,15 @@ import Dict exposing (Dict, map, toList)`);
             } else {
                 this.emitLine("import Array exposing (Array, map)");
             }
-            this.emitNewline();
         }
 
-        if (
-            this.forEachTopLevel("interposing", this.emitTopLevelDefinition, t => !this.namedTypeToNameForTopLevel(t))
-        ) {
-            this.emitNewline();
-        }
+        this.forEachTopLevel(
+            "leading-and-interposing",
+            this.emitTopLevelDefinition,
+            t => !this.namedTypeToNameForTopLevel(t)
+        );
         this.forEachNamedType(
-            "interposing",
+            "leading-and-interposing",
             false,
             this.emitClassDefinition,
             this.emitEnumDefinition,
@@ -585,7 +583,7 @@ import Dict exposing (Dict, map, toList)`);
 
         if (this._justTypes) return;
 
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitLine("-- decoders and encoders");
         this.forEachTopLevel("leading-and-interposing", this.emitTopLevelFunctions);
         this.forEachNamedType(
@@ -595,16 +593,16 @@ import Dict exposing (Dict, map, toList)`);
             this.emitEnumFunctions,
             this.emitUnionFunctions
         );
-        this.emitNewline();
+        this.ensureBlankLine();
 
         this.emitLine("--- encoder helpers");
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitLine("make", this.arrayType, "Encoder : (a -> Jenc.Value) -> ", this.arrayType, " a -> Jenc.Value");
         this.emitLine("make", this.arrayType, "Encoder f arr =");
         this.indent(() => {
             this.emitLine("Jenc.", decapitalize(this.arrayType), " (", this.arrayType, ".map f arr)");
         });
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitMultiline(`makeDictEncoder : (a -> Jenc.Value) -> Dict String a -> Jenc.Value
 makeDictEncoder f dict =
     Jenc.object (toList (Dict.map (\\k -> f) dict))

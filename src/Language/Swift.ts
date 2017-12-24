@@ -288,15 +288,14 @@ class SwiftRenderer extends ConvenienceRenderer {
     private renderHeader = (): void => {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
-            this.emitNewline();
         } else if (!this._justTypes) {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             this.forEachTopLevel("none", (_, name) => {
                 this.emitLine("//   let ", modifySource(camelCase, name), " = ", name, ".from(json: jsonString)!");
             });
-            this.emitNewline();
         }
+        this.ensureBlankLine();
         this.emitLine("import Foundation");
     };
 
@@ -359,23 +358,23 @@ class SwiftRenderer extends ConvenienceRenderer {
                     this.emitLine("return from(data: data)");
                 }
             );
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitBlock(["static func from(data: Data) -> ", typeSource, "?"], () => {
                 this.emitLine("let decoder = JSONDecoder()");
                 this.emitLine("return try? decoder.decode(", typeSource, ".self, from: data)");
             });
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitBlock(["static func from(url urlString: String) -> ", typeSource, "?"], () => {
                 this.emitLine("guard let url = URL(string: urlString) else { return nil }");
                 this.emitLine("guard let data = try? Data(contentsOf: url) else { return nil }");
                 this.emitLine("return from(data: data)");
             });
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitBlock("var jsonData: Data?", () => {
                 this.emitLine("let encoder = JSONEncoder()");
                 this.emitLine("return try? encoder.encode(self)");
             });
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitBlock("var jsonString: String?", () => {
                 this.emitLine("guard let data = self.jsonData else { return nil }");
                 this.emitLine("return String(data: data, encoding: .utf8)");
@@ -423,7 +422,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                 });
                 this.emitDecodingError(enumName);
             });
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitBlock("func encode(to encoder: Encoder) throws", () => {
                 this.emitLine("var container = encoder.singleValueContainer()");
                 this.emitLine("switch self {");
@@ -464,7 +463,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                 }
                 this.emitDecodingError(unionName);
             });
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitBlock("func encode(to encoder: Encoder) throws", () => {
                 this.emitLine("var container = encoder.singleValueContainer()");
                 this.emitLine("switch self {");
@@ -487,7 +486,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         const needNull = anyAndNullSet.some(t => t.kind === "null");
         if (needAny || needNull) {
             this.emitLine("// Helpers");
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitMultiline(`class JSONNull: Codable {
     public init() {
     }
@@ -506,7 +505,7 @@ class SwiftRenderer extends ConvenienceRenderer {
 }`);
         }
         if (needAny) {
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitMultiline(`class JSONCodingKey : CodingKey {
     let key: String
     
@@ -741,10 +740,10 @@ class JSONAny: Codable {
         );
 
         if (!this._justTypes) {
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitMark("Top-level extensions", true);
             this.forEachTopLevel("leading-and-interposing", this.renderTopLevelExtensions4);
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitMark("Codable extensions", true);
             this.forEachNamedType(
                 "leading-and-interposing",
@@ -753,7 +752,7 @@ class JSONAny: Codable {
                 this.renderEnumExtensions4,
                 this.renderUnionExtensions4
             );
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitSupportFunctions4();
         }
     }

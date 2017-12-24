@@ -181,13 +181,13 @@ class GoRenderer extends ConvenienceRenderer {
 
         if (this._justTypes) return;
 
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitFunc([unmarshalName, "(data []byte) (", name, ", error)"], () => {
             this.emitLine("var r ", name);
             this.emitLine("err := json.Unmarshal(data, &r)");
             this.emitLine("return r, err");
         });
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitFunc(["(r *", name, ") Marshal() ([]byte, error)"], () => {
             this.emitLine("return json.Marshal(r)");
         });
@@ -220,7 +220,7 @@ class GoRenderer extends ConvenienceRenderer {
 
         if (this._justTypes) return;
 
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitFunc(["(x *", enumName, ") UnmarshalJSON(data []byte) error"], () => {
             this.emitMultiline(`dec := json.NewDecoder(bytes.NewReader(data))
 tok, err := dec.Token()
@@ -246,7 +246,7 @@ if err != nil {
             });
             this.emitLine('return errors.New("Value for enum must be string")');
         });
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitFunc(["(x *", enumName, ") MarshalJSON() ([]byte, error)"], () => {
             this.emitBlock("switch *x", () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
@@ -304,7 +304,7 @@ if err != nil {
 
         if (this._justTypes) return;
 
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitFunc(["(x *", unionName, ") UnmarshalJSON(data []byte) error"], () => {
             for (const kind of compoundTypeKinds) {
                 maybeAssignNil(kind);
@@ -333,7 +333,7 @@ if err != nil {
             });
             this.emitLine("return nil");
         });
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitFunc(["(x *", unionName, ") MarshalJSON() ([]byte, error)"], () => {
             const args = makeArgs(fn => ["x.", fn], (_, fn) => ["x.", fn, " != nil, x.", fn]);
             this.emitLine("return marshalUnion(", args, ")");
@@ -343,7 +343,6 @@ if err != nil {
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
-            this.emitNewline();
         } else if (!this._justTypes) {
             this.emitLine("// To parse and unparse this JSON data, add this code to your project and do:");
             this.forEachTopLevel("none", (_: Type, name: Name) => {
@@ -351,11 +350,11 @@ if err != nil {
                 this.emitLine("//    r, err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
                 this.emitLine("//    bytes, err = r.Marshal()");
             });
-            this.emitNewline();
         }
         if (!this._justTypes) {
+            this.ensureBlankLine();
             this.emitLine("package ", this._packageName);
-            this.emitNewline();
+            this.ensureBlankLine();
             if (this.haveEnums || this.haveNamedUnions) {
                 this.emitLine('import "bytes"');
                 this.emitLine('import "errors"');
@@ -364,25 +363,20 @@ if err != nil {
                 this.emitLine('import "fmt"');
             }
             this.emitLine('import "encoding/json"');
-            this.emitNewline();
         }
-        if (
-            this.forEachTopLevel(
-                "interposing",
-                this.emitTopLevel,
-                t => !this._justTypes || !this.namedTypeToNameForTopLevel(t)
-            )
-        ) {
-            this.emitNewline();
-        }
-        this.forEachClass("interposing", this.emitClass);
+        this.forEachTopLevel(
+            "leading-and-interposing",
+            this.emitTopLevel,
+            t => !this._justTypes || !this.namedTypeToNameForTopLevel(t)
+        );
+        this.forEachClass("leading-and-interposing", this.emitClass);
         this.forEachEnum("leading-and-interposing", this.emitEnum);
         this.forEachUnion("leading-and-interposing", this.emitUnion);
 
         if (this._justTypes) return;
 
         if (this.haveNamedUnions) {
-            this.emitNewline();
+            this.ensureBlankLine();
             this
                 .emitMultiline(`func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, haveEnum bool, pe interface{}, nullable bool) (bool, error) {
     if pi != nil {

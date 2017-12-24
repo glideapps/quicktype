@@ -269,7 +269,7 @@ class JavaRenderer extends ConvenienceRenderer {
     emitPackageAndImports = (imports: string[]): void => {
         const allImports = ["java.util.Map"].concat(this._justTypes ? [] : imports);
         this.emitLine("package ", this._packageName, ";");
-        this.emitNewline();
+        this.ensureBlankLine();
         for (const pkg of allImports) {
             this.emitLine("import ", pkg, ";");
         }
@@ -277,9 +277,9 @@ class JavaRenderer extends ConvenienceRenderer {
 
     emitFileHeader = (fileName: Sourcelike, imports: string[]): void => {
         this.emitFileComment(fileName);
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitPackageAndImports(imports);
-        this.emitNewline();
+        this.ensureBlankLine();
     };
 
     emitBlock = (line: Sourcelike, f: () => void): void => {
@@ -414,7 +414,7 @@ class JavaRenderer extends ConvenienceRenderer {
                 this.emitLine("public ", fieldType, " ", fieldName, ";");
             });
             if (this._justTypes) return;
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitBlock(["static class Deserializer extends JsonDeserializer<", unionName, ">"], () => {
                 this.emitLine("@Override");
                 this.emitBlock(
@@ -441,7 +441,7 @@ class JavaRenderer extends ConvenienceRenderer {
                     }
                 );
             });
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitBlock(["static class Serializer extends JsonSerializer<", unionName, ">"], () => {
                 this.emitLine("@Override");
                 this.emitBlock(
@@ -479,7 +479,7 @@ class JavaRenderer extends ConvenienceRenderer {
         caseNames.push(";");
         this.emitBlock(["public enum ", enumName], () => {
             this.emitLine(caseNames);
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitLine("@JsonValue");
             this.emitBlock("public String toValue()", () => {
                 this.emitLine("switch (this) {");
@@ -489,7 +489,7 @@ class JavaRenderer extends ConvenienceRenderer {
                 this.emitLine("}");
                 this.emitLine("return null;");
             });
-            this.emitNewline();
+            this.ensureBlankLine();
             this.emitLine("@JsonCreator");
             this.emitBlock(["public static ", enumName, " forValue(String value) throws IOException"], () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
@@ -502,7 +502,7 @@ class JavaRenderer extends ConvenienceRenderer {
 
     emitConverterClass = (): void => {
         this.emitFileComment("Converter");
-        this.emitNewline();
+        this.ensureBlankLine();
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
         } else {
@@ -528,13 +528,13 @@ class JavaRenderer extends ConvenienceRenderer {
                 "(jsonString);"
             );
         });
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitPackageAndImports([
             "java.io.IOException",
             "com.fasterxml.jackson.databind.*",
             "com.fasterxml.jackson.core.JsonProcessingException"
         ]);
-        this.emitNewline();
+        this.ensureBlankLine();
         this.emitBlock(["public class Converter"], () => {
             this.emitLine("// Serialize/deserialize helpers");
             this.forEachTopLevel("leading-and-interposing", (topLevelType, topLevelName) => {
@@ -551,7 +551,7 @@ class JavaRenderer extends ConvenienceRenderer {
                         this.emitLine("return ", this.readerGetterName(topLevelName), "().readValue(json);");
                     }
                 );
-                this.emitNewline();
+                this.ensureBlankLine();
                 this.emitBlock(
                     [
                         "public static String ",
@@ -570,7 +570,7 @@ class JavaRenderer extends ConvenienceRenderer {
                 const writerName = this.fieldOrMethodName("writer", topLevelName);
                 this.emitLine("private static ObjectReader ", readerName, ";");
                 this.emitLine("private static ObjectWriter ", writerName, ";");
-                this.emitNewline();
+                this.ensureBlankLine();
                 this.emitBlock(
                     ["private static void ", this.methodName("instantiate", "Mapper", topLevelName), "()"],
                     () => {
@@ -580,12 +580,12 @@ class JavaRenderer extends ConvenienceRenderer {
                         this.emitLine(writerName, " = mapper.writerFor(", renderedForClass, ".class);");
                     }
                 );
-                this.emitNewline();
+                this.ensureBlankLine();
                 this.emitBlock(["private static ObjectReader ", this.readerGetterName(topLevelName), "()"], () => {
                     this.emitLine("if (", readerName, " == null) instantiateMapper();");
                     this.emitLine("return ", readerName, ";");
                 });
-                this.emitNewline();
+                this.ensureBlankLine();
                 this.emitBlock(["private static ObjectWriter ", this.writerGetterName(topLevelName), "()"], () => {
                     this.emitLine("if (", writerName, " == null) instantiateMapper();");
                     this.emitLine("return ", writerName, ";");
@@ -597,10 +597,9 @@ class JavaRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         if (!this._justTypes) {
             this.emitConverterClass();
-            this.emitNewline();
         }
         this.forEachNamedType(
-            "interposing",
+            "leading-and-interposing",
             false,
             this.emitClassDefinition,
             this.emitEnumDefinition,
