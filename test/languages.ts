@@ -154,7 +154,11 @@ function makeSwiftLanguage(rendererOptions: {
     ],
     skipSchema: [],
     rendererOptions: rendererOptions,
-    quickTestRendererOptions: [{ "struct-or-class": "class" }]
+    quickTestRendererOptions: [
+      { "struct-or-class": "class" },
+      { density: "dense" },
+      { density: "normal" }
+    ]
   };
 }
 
