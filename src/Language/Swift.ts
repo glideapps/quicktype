@@ -351,6 +351,13 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private renderUnionDefinition = (u: UnionType, unionName: Name): void => {
+        const renderUnionCase = (t: Type): void => {
+            this.emitBlock(["if let x = try? container.decode(", this.swiftType(t), ".self)"], () => {
+                this.emitLine("self = .", this.nameForUnionMember(u, t), "(x)");
+                this.emitLine("return");
+            });
+        };
+
         const [maybeNull, nonNulls] = removeNullFromUnion(u);
         const codableString = this.getCodableString();
         this.emitBlock(["enum ", unionName, codableString], () => {
@@ -359,6 +366,42 @@ class SwiftRenderer extends ConvenienceRenderer {
             });
             if (maybeNull) {
                 this.emitLine("case ", this.nameForUnionMember(u, maybeNull));
+            }
+
+            if (!this._justTypes) {
+                this.ensureBlankLine();
+                this.emitBlock("init(from decoder: Decoder) throws", () => {
+                    this.emitLine("let container = try decoder.singleValueContainer()");
+                    const boolMember = u.findMember("bool");
+                    if (boolMember) renderUnionCase(boolMember);
+                    const integerMember = u.findMember("integer");
+                    if (integerMember) renderUnionCase(integerMember);
+                    nonNulls.forEach(t => {
+                        if (t.kind === "bool" || t.kind === "integer") return;
+                        renderUnionCase(t);
+                    });
+                    if (maybeNull) {
+                        this.emitBlock("if container.decodeNil()", () => {
+                            this.emitLine("self = .", this.nameForUnionMember(u, maybeNull));
+                            this.emitLine("return");
+                        });
+                    }
+                    this.emitDecodingError(unionName);
+                });
+                this.ensureBlankLine();
+                this.emitBlock("func encode(to encoder: Encoder) throws", () => {
+                    this.emitLine("var container = encoder.singleValueContainer()");
+                    this.emitLine("switch self {");
+                    this.forEachUnionMember(u, nonNulls, "none", null, (name, _) => {
+                        this.emitLine("case .", name, "(let x):");
+                        this.indent(() => this.emitLine("try container.encode(x)"));
+                    });
+                    if (maybeNull) {
+                        this.emitLine("case .", this.nameForUnionMember(u, maybeNull), ":");
+                        this.indent(() => this.emitLine("try container.encodeNil()"));
+                    }
+                    this.emitLine("}");
+                });
             }
         });
     };
@@ -414,51 +457,6 @@ class SwiftRenderer extends ConvenienceRenderer {
             name,
             '"))'
         );
-    };
-
-    private renderUnionExtensions4 = (u: UnionType, unionName: Name): void => {
-        const renderUnionCase = (t: Type): void => {
-            this.emitBlock(["if let x = try? container.decode(", this.swiftType(t), ".self)"], () => {
-                this.emitLine("self = .", this.nameForUnionMember(u, t), "(x)");
-                this.emitLine("return");
-            });
-        };
-
-        const [maybeNull, nonNulls] = removeNullFromUnion(u);
-        this.emitBlock(["extension ", unionName], () => {
-            this.emitBlock("init(from decoder: Decoder) throws", () => {
-                this.emitLine("let container = try decoder.singleValueContainer()");
-                const boolMember = u.findMember("bool");
-                if (boolMember) renderUnionCase(boolMember);
-                const integerMember = u.findMember("integer");
-                if (integerMember) renderUnionCase(integerMember);
-                nonNulls.forEach(t => {
-                    if (t.kind === "bool" || t.kind === "integer") return;
-                    renderUnionCase(t);
-                });
-                if (maybeNull) {
-                    this.emitBlock("if container.decodeNil()", () => {
-                        this.emitLine("self = .", this.nameForUnionMember(u, maybeNull));
-                        this.emitLine("return");
-                    });
-                }
-                this.emitDecodingError(unionName);
-            });
-            this.ensureBlankLine();
-            this.emitBlock("func encode(to encoder: Encoder) throws", () => {
-                this.emitLine("var container = encoder.singleValueContainer()");
-                this.emitLine("switch self {");
-                this.forEachUnionMember(u, nonNulls, "none", null, (name, _) => {
-                    this.emitLine("case .", name, "(let x):");
-                    this.indent(() => this.emitLine("try container.encode(x)"));
-                });
-                if (maybeNull) {
-                    this.emitLine("case .", this.nameForUnionMember(u, maybeNull), ":");
-                    this.indent(() => this.emitLine("try container.encodeNil()"));
-                }
-                this.emitLine("}");
-            });
-        });
     };
 
     private emitSupportFunctions4 = (): void => {
@@ -724,15 +722,6 @@ class JSONAny: Codable {
             this.ensureBlankLine();
             this.emitMark("Top-level extensions", true);
             this.forEachTopLevel("leading-and-interposing", this.renderTopLevelExtensions4);
-            this.ensureBlankLine();
-            this.emitMark("Codable extensions", true);
-            this.forEachNamedType(
-                "leading-and-interposing",
-                false,
-                () => undefined,
-                () => undefined,
-                this.renderUnionExtensions4
-            );
             this.ensureBlankLine();
             this.emitSupportFunctions4();
         }
