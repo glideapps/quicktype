@@ -314,6 +314,14 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.forEachClassProperty(c, "none", (name, _, t) => {
                 this.emitLine("let ", name, ": ", this.swiftType(t, true));
             });
+            if (!this._justTypes) {
+                this.ensureBlankLine();
+                this.emitBlock("enum CodingKeys: String, CodingKey", () => {
+                    this.forEachClassProperty(c, "none", (name, jsonName) => {
+                        this.emitLine("case ", name, ' = "', stringEscape(jsonName), '"');
+                    });
+                });
+            }
         });
     };
 
@@ -385,17 +393,6 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.emitBlock("var jsonString: String?", () => {
                 this.emitLine("guard let data = self.jsonData else { return nil }");
                 this.emitLine("return String(data: data, encoding: .utf8)");
-            });
-        });
-    };
-
-    private renderClassExtensions4 = (c: ClassType, className: Name): void => {
-        if (c.properties.isEmpty()) return;
-        this.emitBlock(["extension ", className], () => {
-            this.emitBlock("enum CodingKeys: String, CodingKey", () => {
-                this.forEachClassProperty(c, "none", (name, jsonName) => {
-                    this.emitLine("case ", name, ' = "', stringEscape(jsonName), '"');
-                });
             });
         });
     };
@@ -723,7 +720,7 @@ class JSONAny: Codable {
             this.forEachNamedType(
                 "leading-and-interposing",
                 false,
-                this.renderClassExtensions4,
+                () => undefined,
                 () => undefined,
                 this.renderUnionExtensions4
             );
