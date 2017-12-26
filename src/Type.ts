@@ -29,7 +29,7 @@ export abstract class Type {
     }
 
     abstract get isNullable(): boolean;
-    abstract map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef;
+    abstract map(builder: TypeBuilder, forwardingRef: TypeRef, f: (tref: TypeRef) => TypeRef): TypeRef;
 
     equals(other: any): boolean {
         if (!Object.prototype.hasOwnProperty.call(other, "typeRef")) {
@@ -63,8 +63,8 @@ export class PrimitiveType extends Type {
         return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
     }
 
-    map(builder: TypeBuilder, _: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getPrimitiveType(this.kind);
+    map(builder: TypeBuilder, forwardingRef: TypeRef, _: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getPrimitiveType(this.kind, forwardingRef);
     }
 }
 
@@ -105,8 +105,8 @@ export class ArrayType extends Type {
         return false;
     }
 
-    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getArrayType(f(this.getItemsRef()));
+    map(builder: TypeBuilder, forwardingRef: TypeRef, f: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getArrayType(f(this.getItemsRef()), forwardingRef);
     }
 }
 
@@ -143,8 +143,8 @@ export class MapType extends Type {
         return false;
     }
 
-    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getMapType(f(this.getValuesRef()));
+    map(builder: TypeBuilder, forwardingRef: TypeRef, f: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getMapType(f(this.getValuesRef()), forwardingRef);
     }
 }
 
@@ -303,9 +303,13 @@ export class ClassType extends NamedType {
         return false;
     }
 
-    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+    map(builder: TypeBuilder, forwardingRef: TypeRef, f: (tref: TypeRef) => TypeRef): TypeRef {
         const properties = this.getPropertyRefs().map(f);
-        return builder.getClassType(this.names, this.areNamesInferred, properties);
+        if (this.isFixed) {
+            return builder.getUniqueClassType(this.names, this.areNamesInferred, properties, forwardingRef);
+        } else {
+            return builder.getClassType(this.names, this.areNamesInferred, properties, forwardingRef);
+        }
     }
 }
 
@@ -328,8 +332,8 @@ export class EnumType extends NamedType {
         return true;
     }
 
-    map(builder: TypeBuilder, _: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getEnumType(this.names, this.areNamesInferred, this.cases);
+    map(builder: TypeBuilder, forwardingRef: TypeRef, _: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getEnumType(this.names, this.areNamesInferred, this.cases, forwardingRef);
     }
 }
 
@@ -383,9 +387,9 @@ export class UnionType extends NamedType {
         return this.findMember("null") !== undefined;
     }
 
-    map(builder: TypeBuilder, f: (tref: TypeRef) => TypeRef): TypeRef {
+    map(builder: TypeBuilder, forwardingRef: TypeRef, f: (tref: TypeRef) => TypeRef): TypeRef {
         const members = this.getMemberRefs().map(f);
-        return builder.getUnionType(this.names, this.areNamesInferred, members);
+        return builder.getUnionType(this.names, this.areNamesInferred, members, forwardingRef);
     }
 
     get sortedMembers(): OrderedSet<Type> {

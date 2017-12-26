@@ -24,10 +24,7 @@ export class TypeRef {
     private _maybeIndexOrRef?: number | TypeRef;
     private _callbacks?: TypeRefCallback[];
 
-    // FIXME: This should refer to the TypeGraph, not the builder.
-    // Maybe before the TypeGraph is frozen is holds a reference to
-    // its TypeBuilder so it can get the types from there?
-    constructor(readonly graph: TypeGraph, index?: number) {
+    constructor(readonly graph: TypeGraph, index?: number, private _allocate?: () => TypeRef) {
         this._maybeIndexOrRef = index;
     }
 
@@ -49,6 +46,14 @@ export class TypeRef {
     get index(): number {
         const maybeIndex = this.maybeIndex;
         if (maybeIndex === undefined) {
+            const tref = this.follow();
+            if (tref._allocate !== undefined) {
+                const allocated = tref._allocate();
+                tref._maybeIndexOrRef = allocated;
+                tref._allocate = undefined;
+                return allocated.index;
+            }
+
             return panic("Trying to dereference unresolved type reference");
         }
         return maybeIndex;
@@ -69,10 +74,15 @@ export class TypeRef {
 
     resolve = (tref: TypeRef): void => {
         if (this._maybeIndexOrRef !== undefined) {
-            return panic("Trying to resolve an already resolved type reference");
+            assert(
+                this.maybeIndex === tref.maybeIndex,
+                "Trying to resolve an allocated type reference with an incompatible one"
+            );
+        } else {
+            assert(tref.follow() !== this, "Tried to create a TypeRef cycle");
         }
-        assert(tref.follow() !== this, "Tried to create a TypeRef cycle");
         this._maybeIndexOrRef = tref;
+        this._allocate = undefined;
         if (this._callbacks !== undefined) {
             for (const cb of this._callbacks) {
                 tref.callWhenResolved(cb);
@@ -121,10 +131,10 @@ export abstract class TypeBuilder {
         this.topLevels = this.topLevels.set(name, tref);
     };
 
-    private reserveTypeRef = (): TypeRef => {
+    protected reserveTypeRef = (): TypeRef => {
         const index = this.types.size;
         this.types = this.types.push(undefined);
-        return new TypeRef(this.typeGraph, index);
+        return new TypeRef(this.typeGraph, index, undefined);
     };
 
     private commitType = (tref: TypeRef, t: Type): void => {
@@ -132,10 +142,16 @@ export abstract class TypeBuilder {
         this.types = this.types.set(tref.index, t);
     };
 
-    protected addType<T extends Type>(creator: (tref: TypeRef) => T): TypeRef {
-        const tref = this.reserveTypeRef();
+    protected addType<T extends Type>(forwardingRef: TypeRef | undefined, creator: (tref: TypeRef) => T): TypeRef {
+        const tref =
+            forwardingRef !== undefined && forwardingRef.maybeIndex !== undefined
+                ? forwardingRef
+                : this.reserveTypeRef();
         const t = creator(tref);
         this.commitType(tref, t);
+        if (forwardingRef !== undefined && tref !== forwardingRef) {
+            forwardingRef.resolve(tref);
+        }
         const namesToAdd = this.namesToAdd.get(tref.index);
         if (namesToAdd !== undefined) {
             if (t.isNamedType()) {
@@ -203,23 +219,23 @@ export abstract class TypeBuilder {
     private _classTypes: Map<Map<string, TypeRef>, TypeRef> = Map();
     private _unionTypes: Map<Set<TypeRef>, TypeRef> = Map();
 
-    getPrimitiveType(kind: PrimitiveTypeKind): TypeRef {
+    getPrimitiveType(kind: PrimitiveTypeKind, forwardingRef?: TypeRef): TypeRef {
         if (kind === "date") kind = this._stringTypeMapping.date;
         if (kind === "time") kind = this._stringTypeMapping.time;
         if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
         let tref = this._primitiveTypes.get(kind);
         if (tref === undefined) {
-            tref = this.addType(tr => new PrimitiveType(tr, kind));
+            tref = this.addType(forwardingRef, tr => new PrimitiveType(tr, kind));
             this._primitiveTypes = this._primitiveTypes.set(kind, tref);
         }
         return tref;
     }
 
-    getEnumType(names: NameOrNames, isInferred: boolean, cases: OrderedSet<string>): TypeRef {
+    getEnumType(names: NameOrNames, isInferred: boolean, cases: OrderedSet<string>, forwardingRef?: TypeRef): TypeRef {
         const unorderedCases = cases.toSet();
         let tref = this._enumTypes.get(unorderedCases);
         if (tref === undefined) {
-            tref = this.addType(tr => new EnumType(tr, names, isInferred, cases));
+            tref = this.addType(forwardingRef, tr => new EnumType(tr, names, isInferred, cases));
             this._enumTypes = this._enumTypes.set(unorderedCases, tref);
         } else {
             this.addNames(tref, names, isInferred);
@@ -227,28 +243,33 @@ export abstract class TypeBuilder {
         return tref;
     }
 
-    getMapType(values: TypeRef): TypeRef {
+    getMapType(values: TypeRef, forwardingRef?: TypeRef): TypeRef {
         let tref = this._mapTypes.get(values);
         if (tref === undefined) {
-            tref = this.addType(tr => new MapType(tr, values));
+            tref = this.addType(forwardingRef, tr => new MapType(tr, values));
             this._mapTypes = this._mapTypes.set(values, tref);
         }
         return tref;
     }
 
-    getArrayType(items: TypeRef): TypeRef {
+    getArrayType(items: TypeRef, forwardingRef?: TypeRef): TypeRef {
         let tref = this._arrayTypes.get(items);
         if (tref === undefined) {
-            tref = this.addType(tr => new ArrayType(tr, items));
+            tref = this.addType(forwardingRef, tr => new ArrayType(tr, items));
             this._arrayTypes = this._arrayTypes.set(items, tref);
         }
         return tref;
     }
 
-    getClassType(names: NameOrNames, isInferred: boolean, properties: OrderedMap<string, TypeRef>): TypeRef {
+    getClassType(
+        names: NameOrNames,
+        isInferred: boolean,
+        properties: OrderedMap<string, TypeRef>,
+        forwardingRef?: TypeRef
+    ): TypeRef {
         let tref = this._classTypes.get(properties.toMap());
-        if (tref === undefined) {
-            tref = this.addType(tr => new ClassType(tr, names, isInferred, false, properties));
+        if (forwardingRef !== undefined || tref === undefined) {
+            tref = this.addType(forwardingRef, tr => new ClassType(tr, names, isInferred, false, properties));
             this._classTypes = this._classTypes.set(properties.toMap(), tref);
         } else {
             this.addNames(tref, names, isInferred);
@@ -256,11 +277,27 @@ export abstract class TypeBuilder {
         return tref;
     }
 
-    getUnionType(names: NameOrNames, isInferred: boolean, members: OrderedSet<TypeRef>): TypeRef {
+    // FIXME: Maybe just distinguish between this and `getClassType`
+    // via a flag?  That would make `ClassType.map` simpler.
+    getUniqueClassType = (
+        names: NameOrNames,
+        isInferred: boolean,
+        properties?: OrderedMap<string, TypeRef>,
+        forwardingRef?: TypeRef
+    ): TypeRef => {
+        return this.addType(forwardingRef, tref => new ClassType(tref, names, isInferred, true, properties));
+    };
+
+    getUnionType(
+        names: NameOrNames,
+        isInferred: boolean,
+        members: OrderedSet<TypeRef>,
+        forwardingRef?: TypeRef
+    ): TypeRef {
         const unorderedMembers = members.toSet();
         let tref = this._unionTypes.get(unorderedMembers);
         if (tref === undefined) {
-            tref = this.addType(tr => new UnionType(tr, names, isInferred, members));
+            tref = this.addType(forwardingRef, tr => new UnionType(tr, names, isInferred, members));
             this._unionTypes = this._unionTypes.set(unorderedMembers, tref);
         } else {
             this.addNames(tref, names, isInferred);
@@ -275,19 +312,11 @@ export class TypeGraphBuilder extends TypeBuilder {
     }
 
     getLazyMapType(valuesCreator: () => TypeRef | undefined): TypeRef {
-        return this.addType(tref => new MapType(tref, valuesCreator()));
+        return this.addType(undefined, tref => new MapType(tref, valuesCreator()));
     }
 
-    getUniqueClassType = (
-        names: NameOrNames,
-        isInferred: boolean,
-        properties?: OrderedMap<string, TypeRef>
-    ): TypeRef => {
-        return this.addType(tref => new ClassType(tref, names, isInferred, true, properties));
-    };
-
     getUniqueUnionType = (name: string, isInferred: boolean, members: OrderedSet<TypeRef>): TypeRef => {
-        return this.addType(tref => new UnionType(tref, name, isInferred, members));
+        return this.addType(undefined, tref => new UnionType(tref, name, isInferred, members));
     };
 
     lookupType = (typeRef: TypeRef): Type | undefined => {
@@ -340,7 +369,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder {
     }
 
     private withForwardingRef(typeCreator: (forwardingRef: TypeRef) => TypeRef): TypeRef {
-        const forwardingRef = new TypeRef(this.typeGraph);
+        const forwardingRef = new TypeRef(this.typeGraph, undefined, this.reserveTypeRef);
         const actualRef = typeCreator(forwardingRef);
         forwardingRef.resolve(actualRef);
         return actualRef;
@@ -368,7 +397,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder {
         }
         return this.withForwardingRef(forwardingRef => {
             this._reconstitutedTypes = this._reconstitutedTypes.set(originalRef.index, forwardingRef);
-            return originalRef.deref().map(this, this.getReconstitutedType);
+            return originalRef.deref().map(this, forwardingRef, this.getReconstitutedType);
         });
     };
 
