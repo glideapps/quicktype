@@ -36,6 +36,9 @@ import {
     allUpperWordStyle,
     camelCase
 } from "../Strings";
+import { intercalate } from "../Support";
+
+const MAX_SAMELINE_PROPERTIES = 4;
 
 export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
@@ -44,7 +47,7 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         ["class", true]
     ]);
 
-    private readonly _denseOption = new EnumOption("density", "Code density", [["normal", false], ["dense", true]]);
+    private readonly _denseOption = new EnumOption("density", "Code density", [["dense", true], ["normal", false]]);
 
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
@@ -314,9 +317,41 @@ class SwiftRenderer extends ConvenienceRenderer {
         const structOrClass = this._useClasses ? "class" : "struct";
         const codableString = this.getCodableString();
         this.emitBlock([structOrClass, " ", className, codableString], () => {
-            this.forEachClassProperty(c, "none", (name, _, t) => {
-                this.emitLine("let ", name, ": ", this.swiftType(t, true));
-            });
+            if (this._dense) {
+                let lastType: Type | undefined = undefined;
+                let lastNames: Name[] = [];
+
+                const emitLastType = () => {
+                    if (lastType !== undefined) {
+                        let sources: Sourcelike[] = ["let "];
+                        lastNames.forEach((n, i) => {
+                            if (i > 0) sources.push(", ");
+                            sources.push(n);
+                        });
+                        sources.push(": ");
+                        sources.push(this.swiftType(lastType, true));
+                        this.emitLine(sources);
+                    }
+                };
+
+                this.forEachClassProperty(c, "none", (name, _, t) => {
+                    lastType = lastType || t;
+                    if (t.equals(lastType) && lastNames.length <= MAX_SAMELINE_PROPERTIES) {
+                        lastNames.push(name);
+                    } else {
+                        emitLastType();
+                        lastType = t;
+                        lastNames = [name];
+                    }
+                });
+                emitLastType();
+            } else {
+                this.forEachClassProperty(c, "none", (name, _, t) => {
+                    this.emitLine("let ", name, ": ", this.swiftType(t, true));
+                });
+            }
+
+
             if (!this._justTypes) {
                 this.ensureBlankLine();
                 this.emitBlock("enum CodingKeys: String, CodingKey", () => {
