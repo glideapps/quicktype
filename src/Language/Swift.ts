@@ -438,26 +438,32 @@ class SwiftRenderer extends ConvenienceRenderer {
                         }
                     });
                 }
+
+                // If using classes with convenience initializers,
+                // this main initializer must be defined within the class
+                // declaration since it assigns let constants
+                if (this._useClasses && this._convenienceInitializers) {
+                    // Make an initializer that initalizes all fields
+                    this.ensureBlankLine();
+                    let properties: Sourcelike[] = [];
+                    this.forEachClassProperty(c, "none", (name, _, t) => {
+                        if (properties.length > 0) properties.push(", ");
+                        properties.push(name, ": ", this.swiftType(t, true));
+                    });
+                    this.emitBlock(["init(", ...properties, ")"], () => {
+                        this.forEachClassProperty(c, "none", name => {
+                            this.emitLine("self.", name, " = ", name);
+                        });
+                    });
+                }
             }
         });
     };
 
-    private emitClassExtension = (c: ClassType, className: Name): void => {
+    private emitConvenienceInitializersExtension = (c: ClassType, className: Name): void => {
         this.emitBlock(["extension ", className], () => {
             if (this._useClasses) {
-                // 1. Make an initializer that initalizes all fields
-                let properties: Sourcelike[] = [];
-                this.forEachClassProperty(c, "none", (name, _, t) => {
-                    if (properties.length > 0) properties.push(", ");
-                    properties.push(name, ": ", this.swiftType(t, true));
-                });
-                this.emitBlock(["init(", ...properties, ")"], () => {
-                    this.forEachClassProperty(c, "none", name => {
-                        this.emitLine("self.", name, " = ", name);
-                    });
-                });
-                this.ensureBlankLine();
-                // 2. Two convenience initializers for Json string and data
+                // Convenience initializers for Json string and data
                 this.emitBlock(["convenience init?(data: Data)"], () => {
                     this.emitLine(
                         "guard let me = try? JSONDecoder().decode(",
@@ -889,7 +895,7 @@ class JSONAny: Codable {
                 this.forEachNamedType(
                     "leading-and-interposing",
                     false,
-                    this.emitClassExtension,
+                    this.emitConvenienceInitializersExtension,
                     () => undefined,
                     () => undefined
                 );
