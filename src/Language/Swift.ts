@@ -36,6 +36,8 @@ import {
     allUpperWordStyle,
     camelCase
 } from "../Strings";
+import { intercalate } from "../Support";
+import { List } from "immutable";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
@@ -329,6 +331,34 @@ class SwiftRenderer extends ConvenienceRenderer {
             : "";
     };
 
+    getEnumPropertyGroups = (c: ClassType) => {
+        type PropertyGroup = { name: Name, label?: string }[];
+
+        let groups: PropertyGroup[] = [];
+        let group: PropertyGroup = [];
+
+        this.forEachClassProperty(c, "none", (name, jsonName) => {
+            const label = stringEscape(jsonName);
+            const redundant = this.sourcelikeToString(name) === label;
+
+            if (this._dense && redundant) {
+                group.push({ name });
+            } else {
+                if (group.length > 0) {
+                    groups.push(group);
+                    group = [];
+                }
+                groups.push([{ name, label }]);
+            }
+        });
+
+        if (group.length > 0) {
+            groups.push(group);
+        }
+
+        return groups;
+    };
+
     private renderClassDefinition = (c: ClassType, className: Name): void => {
         const structOrClass = this._useClasses ? "class" : "struct";
         this.emitBlock([structOrClass, " ", className, this.getProtocolString()], () => {
@@ -351,7 +381,7 @@ class SwiftRenderer extends ConvenienceRenderer {
 
                 this.forEachClassProperty(c, "none", (name, _, t) => {
                     lastType = lastType || t;
-                    if (t.equals(lastType) && lastNames.length <= MAX_SAMELINE_PROPERTIES) {
+                    if (t.equals(lastType) && lastNames.length < MAX_SAMELINE_PROPERTIES) {
                         lastNames.push(name);
                     } else {
                         emitLastType();
@@ -366,19 +396,25 @@ class SwiftRenderer extends ConvenienceRenderer {
                 });
             }
 
-            if (!this._justTypes && !c.properties.isEmpty()) {
-                this.ensureBlankLine();
-                this.emitBlock("enum CodingKeys: String, CodingKey", () => {
-                    this.forEachClassProperty(c, "none", (name, jsonName) => {
-                        const escaped = stringEscape(jsonName);
-                        // TODO make this comparison valid
-                        if (name.equals(jsonName)) {
-                            this.emitLine("case ", name);
-                        } else {
-                            this.emitLine("case ", name, ' = "', escaped, '"');
+            if (!this._justTypes) {
+                const groups = this.getEnumPropertyGroups(c);
+                const allPropertiesRedundant = groups.every(group => {
+                    return group.every(p => p.label === undefined);
+                });
+                if (!allPropertiesRedundant && !c.properties.isEmpty()) {
+                    this.ensureBlankLine();
+                    this.emitBlock("enum CodingKeys: String, CodingKey", () => {
+                        for (const group of groups) {
+                            const { name, label } = group[0];
+                            if (label !== undefined) {
+                                this.emitLine("case ", name, ' = "', label, '"');
+                            } else {
+                                const names = intercalate<Sourcelike>(", ", List(group.map(p => p.name))).toArray();
+                                this.emitLine("case ", ...names);
+                            }
                         }
                     });
-                });
+                }
             }
         });
     };
