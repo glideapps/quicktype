@@ -577,11 +577,11 @@ var json: String? {
         });
     };
 
-    private emitTopLevelMapAndArrayExtensions = (t: Type, _: Name): void => {
+    private emitTopLevelMapAndArrayExtensions = (t: Type, name: Name): void => {
         const typeSource = this.swiftType(t);
         let extensionSource: Sourcelike;
         if (t instanceof ArrayType) {
-            extensionSource = ["Array where Element == ", this.swiftType(t.items)];
+            extensionSource = ["Array where Element == ", name, ".Element"];
         } else if (t instanceof MapType) {
             extensionSource = ["Dictionary where Key == String, Value == ", this.swiftType(t.values)];
         } else {
@@ -589,31 +589,25 @@ var json: String? {
         }
 
         this.emitBlock(["extension ", extensionSource], () => {
-            this.emitBlock(
-                ["static func from(json: String, using encoding: String.Encoding = .utf8) -> ", typeSource, "?"],
-                () => {
-                    this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
-                    this.emitLine("return from(data: data)");
-                }
-            );
-            this.ensureBlankLine();
-            this.emitBlock(["static func from(data: Data) -> ", typeSource, "?"], () => {
-                this.emitLine("let decoder = JSONDecoder()");
-                this.emitLine("return try? decoder.decode(", typeSource, ".self, from: data)");
+            this.emitBlock(["init?(data: Data)"], () => {
+                this.emitLine(
+                    "guard let me = try? JSONDecoder().decode(",
+                    name,
+                    ".self, from: data) else { return nil }"
+                );
+                this.emitLine("self = me");
             });
             this.ensureBlankLine();
-            this.emitBlock(["static func from(url urlString: String) -> ", typeSource, "?"], () => {
-                this.emitLine("guard let url = URL(string: urlString) else { return nil }");
-                this.emitLine("guard let data = try? Data(contentsOf: url) else { return nil }");
-                this.emitLine("return from(data: data)");
+            this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8)"], () => {
+                this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
+                this.emitLine("self.init(data: data)");
             });
             this.ensureBlankLine();
             this.emitBlock("var jsonData: Data?", () => {
-                this.emitLine("let encoder = JSONEncoder()");
-                this.emitLine("return try? encoder.encode(self)");
+                this.emitLine("return try? JSONEncoder().encode(self)");
             });
             this.ensureBlankLine();
-            this.emitBlock("var jsonString: String?", () => {
+            this.emitBlock("var json: String?", () => {
                 this.emitLine("guard let data = self.jsonData else { return nil }");
                 this.emitLine("return String(data: data, encoding: .utf8)");
             });
