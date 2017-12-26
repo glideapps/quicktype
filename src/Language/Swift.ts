@@ -465,7 +465,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                         ".self, from: data) else { return nil }"
                     );
                     let args: Sourcelike[] = [];
-                    this.forEachClassProperty(c, "none", (name, _, t) => {
+                    this.forEachClassProperty(c, "none", name => {
                         if (args.length > 0) args.push(", ");
                         args.push(name, ": ", "me.", name);
                     });
@@ -578,8 +578,8 @@ var json: String? {
     };
 
     private emitTopLevelMapAndArrayExtensions = (t: Type, name: Name): void => {
-        const typeSource = this.swiftType(t);
         let extensionSource: Sourcelike;
+
         if (t instanceof ArrayType) {
             extensionSource = ["Array where Element == ", name, ".Element"];
         } else if (t instanceof MapType) {
