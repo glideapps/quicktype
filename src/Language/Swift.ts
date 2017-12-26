@@ -366,7 +366,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                 });
             }
 
-            if (!this._justTypes) {
+            if (!this._justTypes && !c.properties.isEmpty()) {
                 this.ensureBlankLine();
                 this.emitBlock("enum CodingKeys: String, CodingKey", () => {
                     this.forEachClassProperty(c, "none", (name, jsonName) => {
