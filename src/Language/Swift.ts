@@ -45,6 +45,13 @@ type Version = 4 | 4.1;
 
 export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
+
+    private readonly _convenienceInitializers = new BooleanOption(
+        "convenience-initializers",
+        "Generate convenience initializers",
+        true
+    );
+
     private readonly _classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
         ["struct", false],
         ["class", true]
@@ -59,7 +66,13 @@ export default class SwiftTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
-        this.setOptions([this._justTypesOption, this._classOption, this._denseOption, this._versionOption]);
+        this.setOptions([
+            this._justTypesOption,
+            this._classOption,
+            this._denseOption,
+            this._versionOption,
+            this._convenienceInitializers
+        ]);
     }
 
     protected get rendererClass(): new (
@@ -211,6 +224,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         private readonly _useClasses: boolean,
         private readonly _dense: boolean,
         private readonly _version: Version,
+        private readonly _convenienceInitializers: Boolean
     ) {
         super(graph, leadingComments);
     }
@@ -307,7 +321,7 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             this.forEachTopLevel("none", (_, name) => {
-                this.emitLine("//   let ", modifySource(camelCase, name), " = ", name, ".from(json: jsonString)!");
+                this.emitLine("//   let ", modifySource(camelCase, name), " = ", name, "(json)!");
             });
         }
         this.ensureBlankLine();
@@ -326,13 +340,11 @@ class SwiftRenderer extends ConvenienceRenderer {
         if (!this._justTypes) {
             protocols.push("Codable");
         }
-        return protocols.length
-            ? ": " + protocols.join(", ")
-            : "";
+        return protocols.length ? ": " + protocols.join(", ") : "";
     };
 
     getEnumPropertyGroups = (c: ClassType) => {
-        type PropertyGroup = { name: Name, label?: string }[];
+        type PropertyGroup = { name: Name; label?: string }[];
 
         let groups: PropertyGroup[] = [];
         let group: PropertyGroup = [];
@@ -415,6 +427,64 @@ class SwiftRenderer extends ConvenienceRenderer {
                         }
                     });
                 }
+
+                if (this._convenienceInitializers) {
+                    // No we do initializers for structs or classes
+                    this.ensureBlankLine();
+                    if (this._useClasses) {
+                        // 1. Make an initializer that initalizes all fields
+                        let properties: Sourcelike[] = [];
+                        this.forEachClassProperty(c, "none", (name, _, t) => {
+                            if (properties.length > 0) properties.push(", ");
+                            properties.push(name, ": ", this.swiftType(t, true));
+                        });
+                        this.emitBlock(["init(", ...properties, ")"], () => {
+                            this.forEachClassProperty(c, "none", name => {
+                                this.emitLine("self.", name, " = ", name);
+                            });
+                        });
+                        this.ensureBlankLine();
+                        // 2. Two convenience initializers for Json string and data
+                        this.emitBlock(["convenience init?(data: Data)"], () => {
+                            this.emitLine(
+                                "guard let me = try? JSONDecoder().decode(type(of: self), from: data) else { return nil }"
+                            );
+                            let args: Sourcelike[] = [];
+                            this.forEachClassProperty(c, "none", (name, _, t) => {
+                                if (args.length > 0) args.push(", ");
+                                args.push(name, ": ", "me.", name);
+                            });
+                            this.emitLine("self.init(", ...args, ")");
+                        });
+                        this.ensureBlankLine();
+                        this.emitMultiline(`convenience init?(_ json: String, using encoding: String.Encoding = .utf8) {
+    guard let data = json.data(using: encoding) else { return nil }
+    self.init(data: data)
+}`);
+                    } else {
+                        // 1. Two convenience initializers for Json string and data
+                        this.emitMultiline(`init?(data: Data) {
+    guard let me = try? JSONDecoder().decode(type(of: self), from: data) else { return nil }
+    self = me
+}
+
+init?(_ json: String, using encoding: String.Encoding = .utf8) {
+    guard let data = json.data(using: encoding) else { return nil }
+    self.init(data: data)
+}`);
+                    }
+
+                    // Convenience serializers
+                    this.ensureBlankLine();
+                    this.emitMultiline(`var jsonData: Data? {
+    return try? JSONEncoder().encode(self)
+}
+
+var json: String? {
+    guard let data = self.jsonData else { return nil }
+    return String(data: data, encoding: .utf8)
+}`);
+                }
             }
         });
     };
@@ -490,7 +560,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         });
     };
 
-    private renderTopLevelExtensions4 = (t: Type, _: Name): void => {
+    private emitTopLevelMapAndArrayExtensions = (t: Type, _: Name): void => {
         const typeSource = this.swiftType(t);
         let extensionSource: Sourcelike;
         if (t instanceof ArrayType) {
@@ -498,7 +568,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         } else if (t instanceof MapType) {
             extensionSource = ["Dictionary where Key == String, Value == ", this.swiftType(t.values)];
         } else {
-            extensionSource = typeSource;
+            return;
         }
 
         this.emitBlock(["extension ", extensionSource], () => {
@@ -803,9 +873,7 @@ class JSONAny: Codable {
         );
 
         if (!this._justTypes) {
-            this.ensureBlankLine();
-            this.emitMark("Top-level extensions", true);
-            this.forEachTopLevel("leading-and-interposing", this.renderTopLevelExtensions4);
+            this.forEachTopLevel("leading-and-interposing", this.emitTopLevelMapAndArrayExtensions);
             this.ensureBlankLine();
             this.emitSupportFunctions4();
         }
