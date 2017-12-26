@@ -2,7 +2,7 @@
 
 import { OrderedSet, OrderedMap, Collection } from "immutable";
 import { defined, panic, assert } from "./Support";
-import { TypeRef, TypeBuilder } from "./TypeBuilder";
+import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
@@ -29,7 +29,7 @@ export abstract class Type {
     }
 
     abstract get isNullable(): boolean;
-    abstract map(builder: TypeBuilder, forwardingRef: TypeRef, f: (tref: TypeRef) => TypeRef): TypeRef;
+    abstract map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef;
 
     equals(other: any): boolean {
         if (!Object.prototype.hasOwnProperty.call(other, "typeRef")) {
@@ -63,8 +63,8 @@ export class PrimitiveType extends Type {
         return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
     }
 
-    map(builder: TypeBuilder, forwardingRef: TypeRef, _: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getPrimitiveType(this.kind, forwardingRef);
+    map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getPrimitiveType(this.kind);
     }
 }
 
@@ -105,8 +105,8 @@ export class ArrayType extends Type {
         return false;
     }
 
-    map(builder: TypeBuilder, forwardingRef: TypeRef, f: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getArrayType(f(this.getItemsRef()), forwardingRef);
+    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getArrayType(f(this.getItemsRef()));
     }
 }
 
@@ -143,8 +143,8 @@ export class MapType extends Type {
         return false;
     }
 
-    map(builder: TypeBuilder, forwardingRef: TypeRef, f: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getMapType(f(this.getValuesRef()), forwardingRef);
+    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getMapType(f(this.getValuesRef()));
     }
 }
 
@@ -303,12 +303,12 @@ export class ClassType extends NamedType {
         return false;
     }
 
-    map(builder: TypeBuilder, forwardingRef: TypeRef, f: (tref: TypeRef) => TypeRef): TypeRef {
+    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
         const properties = this.getPropertyRefs().map(f);
         if (this.isFixed) {
-            return builder.getUniqueClassType(this.names, this.areNamesInferred, properties, forwardingRef);
+            return builder.getUniqueClassType(this.names, this.areNamesInferred, properties);
         } else {
-            return builder.getClassType(this.names, this.areNamesInferred, properties, forwardingRef);
+            return builder.getClassType(this.names, this.areNamesInferred, properties);
         }
     }
 }
@@ -332,8 +332,8 @@ export class EnumType extends NamedType {
         return true;
     }
 
-    map(builder: TypeBuilder, forwardingRef: TypeRef, _: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getEnumType(this.names, this.areNamesInferred, this.cases, forwardingRef);
+    map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getEnumType(this.names, this.areNamesInferred, this.cases);
     }
 }
 
@@ -387,9 +387,9 @@ export class UnionType extends NamedType {
         return this.findMember("null") !== undefined;
     }
 
-    map(builder: TypeBuilder, forwardingRef: TypeRef, f: (tref: TypeRef) => TypeRef): TypeRef {
+    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
         const members = this.getMemberRefs().map(f);
-        return builder.getUnionType(this.names, this.areNamesInferred, members, forwardingRef);
+        return builder.getUnionType(this.names, this.areNamesInferred, members);
     }
 
     get sortedMembers(): OrderedSet<Type> {
