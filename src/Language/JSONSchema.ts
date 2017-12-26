@@ -3,7 +3,7 @@
 import { Collection } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, NamedType, UnionType, ClassType, matchTypeExhaustive } from "../Type";
+import { Type, UnionType, ClassType, matchTypeExhaustive, isNamedType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
@@ -71,8 +71,8 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
-        if (type.isNamedType()) {
+    protected namedTypeToNameForTopLevel(type: Type): Type | null {
+        if (isNamedType(type)) {
             return type;
         }
         return null;
@@ -82,7 +82,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return false;
     }
 
-    private nameForType = (t: NamedType): string => {
+    private nameForType = (t: Type): string => {
         return defined(this.names.get(this.nameForNamedType(t)));
     };
 
@@ -107,10 +107,10 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
             arrayType => ({ type: "array", items: this.schemaForType(arrayType.items) }),
             classType => ({ $ref: `#/definitions/${this.nameForType(classType)}` }),
             mapType => ({ type: "object", additionalProperties: this.schemaForType(mapType.values) }),
-            enumType => ({ type: "string", enum: enumType.cases.toArray(), title: enumType.combinedName }),
+            enumType => ({ type: "string", enum: enumType.cases.toArray(), title: enumType.getCombinedName() }),
             unionType => {
                 const schema = this.makeOneOf(unionType.sortedMembers);
-                schema.title = unionType.combinedName;
+                schema.title = unionType.getCombinedName();
                 return schema;
             },
             _dateType => ({ type: "string", format: "date" }),
@@ -133,7 +133,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
             additionalProperties: false,
             properties,
             required: required.sort(),
-            title: c.combinedName
+            title: c.getCombinedName()
         };
     };
 

@@ -3,7 +3,6 @@
 import { TargetLanguage } from "../TargetLanguage";
 import {
     Type,
-    NamedType,
     ClassType,
     EnumType,
     UnionType,
@@ -12,7 +11,8 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-    TypeKind
+    TypeKind,
+    isNamedType
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
@@ -264,8 +264,8 @@ class SwiftRenderer extends ConvenienceRenderer {
         return lowerNamingFunction;
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
-        if (type.isNamedType()) {
+    protected namedTypeToNameForTopLevel(type: Type): Type | null {
+        if (isNamedType(type)) {
             return type;
         }
         return null;

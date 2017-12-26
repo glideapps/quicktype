@@ -5,18 +5,19 @@ import * as pluralize from "pluralize";
 
 import { TypeGraph } from "./TypeGraph";
 import { matchCompoundType, Type } from "./Type";
+import { TypeNames } from "./TypeNames";
 
 export function gatherNames(graph: TypeGraph): void {
     graph.allTypesUnordered().forEach(t => {
-        if (t.isNamedType()) {
-            t.clearInferredNames();
+        if (t.hasNames) {
+            t.getNames().clearInferred();
         }
     });
 
     let processed: Set<List<any>> = Set();
 
     function processType(t: Type, names: OrderedSet<string>, parentNames: OrderedSet<string> | null) {
-        if (t.isNamedType()) {
+        if (t.hasNames) {
             const alternatives: string[] = [];
             names.forEach(name => {
                 if (parentNames !== null) {
@@ -27,7 +28,7 @@ export function gatherNames(graph: TypeGraph): void {
                     alternatives.push(...parentNames.map(pn => `${pn}_${name}_${t.kind}`).toArray());
                 }
             });
-            t.addNames({ names, alternatives: OrderedSet(alternatives) }, true);
+            t.getNames().add(new TypeNames(names, OrderedSet(alternatives), true));
         }
         const processedEnry = List([t, names, parentNames]);
         if (processed.has(processedEnry)) return;

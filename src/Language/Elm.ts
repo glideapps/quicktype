@@ -4,7 +4,16 @@ import { Map, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption, BooleanOption } from "../RendererOptions";
-import { NamedType, Type, matchType, nullableFromUnion, ClassType, UnionType, EnumType, PrimitiveType } from "../Type";
+import {
+    Type,
+    matchType,
+    nullableFromUnion,
+    ClassType,
+    UnionType,
+    EnumType,
+    PrimitiveType,
+    isNamedType
+} from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, Name, DependencyName, funPrefixNamer, Namespace } from "../Naming";
@@ -189,7 +198,7 @@ class ElmRenderer extends ConvenienceRenderer {
         return upperNamingFunction;
     }
 
-    protected namedTypeDependencyNames(_: NamedType, typeName: Name): DependencyName[] {
+    protected namedTypeDependencyNames(_: Type, typeName: Name): DependencyName[] {
         const encoder = new DependencyName(lowerNamingFunction, lookup => `encode_${lookup(typeName)}`);
         const decoder = new DependencyName(lowerNamingFunction, lookup => lookup(typeName));
         this._namedTypeDependents = this._namedTypeDependents.set(typeName, { encoder, decoder });
@@ -223,8 +232,8 @@ class ElmRenderer extends ConvenienceRenderer {
         return true;
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
-        if (type.isNamedType()) {
+    protected namedTypeToNameForTopLevel(type: Type): Type | null {
+        if (isNamedType(type)) {
             return type;
         }
         return null;
@@ -265,7 +274,7 @@ class ElmRenderer extends ConvenienceRenderer {
         );
     };
 
-    private decoderNameForNamedType = (t: NamedType): Name => {
+    private decoderNameForNamedType = (t: Type): Name => {
         const name = this.nameForNamedType(t);
         return defined(this._namedTypeDependents.get(name)).decoder;
     };
@@ -295,7 +304,7 @@ class ElmRenderer extends ConvenienceRenderer {
         );
     };
 
-    private encoderNameForNamedType = (t: NamedType): Name => {
+    private encoderNameForNamedType = (t: Type): Name => {
         const name = this.nameForNamedType(t);
         return defined(this._namedTypeDependents.get(name)).encoder;
     };

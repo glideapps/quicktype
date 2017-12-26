@@ -6,11 +6,11 @@ import {
     Type,
     EnumType,
     UnionType,
-    NamedType,
     ClassType,
     matchType,
     nullableFromUnion,
-    removeNullFromUnion
+    removeNullFromUnion,
+    isNamedType
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated } from "../Source";
@@ -165,9 +165,9 @@ class CSharpRenderer extends ConvenienceRenderer {
         return !nullableFromUnion(u);
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
+    protected namedTypeToNameForTopLevel(type: Type): Type | null {
         const definedTypes = type.directlyReachableTypes(t => {
-            if ((!(t instanceof UnionType) && t.isNamedType()) || (t instanceof UnionType && !nullableFromUnion(t))) {
+            if ((!(t instanceof UnionType) && isNamedType(t)) || (t instanceof UnionType && !nullableFromUnion(t))) {
                 return OrderedSet([t]);
             }
             return null;
@@ -183,7 +183,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         return first;
     }
 
-    protected namedTypeDependencyNames(t: NamedType, name: Name): DependencyName[] {
+    protected namedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
         if (!(t instanceof EnumType)) return [];
 
         const extensionsName = new DependencyName(namingFunction, lookup => `${lookup(name)}_extensions`);

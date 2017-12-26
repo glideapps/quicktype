@@ -8,11 +8,11 @@ import {
     MapType,
     EnumType,
     UnionType,
-    NamedType,
     ClassType,
     matchType,
     nullableFromUnion,
-    removeNullFromUnion
+    removeNullFromUnion,
+    isNamedType
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -214,9 +214,9 @@ class JavaRenderer extends ConvenienceRenderer {
     }
 
     // FIXME: This is the same as for C#.
-    protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
+    protected namedTypeToNameForTopLevel(type: Type): Type | null {
         const definedTypes = type.directlyReachableTypes(t => {
-            if ((!(t instanceof UnionType) && t.isNamedType()) || (t instanceof UnionType && !nullableFromUnion(t))) {
+            if ((!(t instanceof UnionType) && isNamedType(t)) || (t instanceof UnionType && !nullableFromUnion(t))) {
                 return OrderedSet([t]);
             }
             return null;

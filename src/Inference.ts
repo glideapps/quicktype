@@ -1,12 +1,12 @@
 "use strict";
 
 import { OrderedSet, OrderedMap } from "immutable";
-import * as pluralize from "pluralize";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { assertNever, assert, panic, defined } from "./Support";
 import { TypeGraphBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
+import { makeTypeNames, TypeNames } from "./TypeNames";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -37,12 +37,11 @@ class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueAr
 
     constructor(
         typeBuilder: TypeGraphBuilder,
-        typeName: string,
-        isInferred: boolean,
+        typeNames: TypeNames,
         private readonly _typeInference: TypeInference,
         private readonly _cjson: CompressedJSON
     ) {
-        super(typeBuilder, typeName, isInferred);
+        super(typeBuilder, typeNames);
     }
 
     setNumValues = (n: number): void => {
@@ -56,19 +55,19 @@ class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueAr
         assert(enumCases.length > 0);
         const numValues = defined(this._numValues);
         if (numValues >= MIN_LENGTH_FOR_ENUM && enumCases.length < Math.sqrt(numValues)) {
-            return this.typeBuilder.getEnumType(this.typeName, true, OrderedSet(enumCases));
+            return this.typeBuilder.getEnumType(this.typeNames, OrderedSet(enumCases));
         }
         return null;
     }
 
     protected makeClass(classes: NestedValueArray, maps: any[]): TypeRef {
         assert(maps.length === 0);
-        return this._typeInference.inferClassType(this._cjson, this.typeName, this.isInferred, classes);
+        return this._typeInference.inferClassType(this._cjson, this.typeNames, classes);
     }
 
     protected makeArray(arrays: NestedValueArray): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, pluralize.singular(this.typeName), this.isInferred, arrays)
+            this._typeInference.inferType(this._cjson, this.typeNames.singularize(), arrays)
         );
     }
 }
@@ -81,13 +80,8 @@ function canBeEnumCase(s: string): boolean {
 export class TypeInference {
     constructor(private readonly _typeBuilder: TypeGraphBuilder, private readonly _inferEnums: boolean) {}
 
-    inferType = (
-        cjson: CompressedJSON,
-        typeName: string,
-        isInferred: boolean,
-        valueArray: NestedValueArray
-    ): TypeRef => {
-        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeName, isInferred, this, cjson);
+    inferType = (cjson: CompressedJSON, typeNames: TypeNames, valueArray: NestedValueArray): TypeRef => {
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeNames, this, cjson);
         let numValues = 0;
 
         forEachValueInNestedValueArray(valueArray, value => {
@@ -146,12 +140,7 @@ export class TypeInference {
         return unionBuilder.buildUnion(false);
     };
 
-    inferClassType = (
-        cjson: CompressedJSON,
-        typeName: string,
-        isInferred: boolean,
-        objects: NestedValueArray
-    ): TypeRef => {
+    inferClassType = (cjson: CompressedJSON, typeNames: TypeNames, objects: NestedValueArray): TypeRef => {
         const propertyNames: string[] = [];
         const propertyValues: { [name: string]: Value[] } = {};
 
@@ -170,14 +159,14 @@ export class TypeInference {
         const properties: [string, TypeRef][] = [];
         for (const key of propertyNames) {
             const values = propertyValues[key];
-            let t = this.inferType(cjson, key, true, values);
+            let t = this.inferType(cjson, makeTypeNames(key, true), values);
             if (values.length < objects.length) {
-                t = this._typeBuilder.makeNullable(t, key, true);
+                t = this._typeBuilder.makeNullable(t, makeTypeNames(key, true));
             }
             properties.push([key, t]);
         }
 
         const propertyMap = OrderedMap(properties);
-        return this._typeBuilder.getClassType(typeName, isInferred, propertyMap);
+        return this._typeBuilder.getClassType(typeNames, propertyMap);
     };
 }

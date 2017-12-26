@@ -1,6 +1,6 @@
 import * as _ from "lodash";
 
-import { Type, ArrayType, UnionType, NamedType, ClassType, nullableFromUnion, matchType, EnumType } from "../Type";
+import { Type, ArrayType, UnionType, ClassType, nullableFromUnion, matchType, EnumType, isNamedType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import {
     utf16LegalizeCharacters,
@@ -120,8 +120,8 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         return new Namer(typeNameStyle, []);
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
-        if (type.isNamedType()) {
+    protected namedTypeToNameForTopLevel(type: Type): Type | null {
+        if (isNamedType(type)) {
             return type;
         }
         return null;
@@ -377,7 +377,7 @@ function O(className: string) {
                 (_t, name) => {
                     topLevelNames.push(", ", name);
                 },
-                t => t.isNamedType()
+                isNamedType
             );
 
             this.emitLine("//   import { Convert", topLevelNames, ' } from "./file";');

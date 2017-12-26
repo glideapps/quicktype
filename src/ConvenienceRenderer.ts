@@ -4,7 +4,6 @@ import { Map, Set, OrderedSet, OrderedMap, Collection } from "immutable";
 
 import {
     Type,
-    NamedType,
     ClassType,
     EnumType,
     UnionType,
@@ -23,12 +22,12 @@ import { trimEnd } from "lodash";
 export abstract class ConvenienceRenderer extends Renderer {
     protected globalNamespace: Namespace;
     private _topLevelNames: Map<string, Name>;
-    private _namesForNamedTypes: Map<NamedType, Name>;
+    private _namesForNamedTypes: Map<Type, Name>;
     private _propertyNames: Map<ClassType, Map<string, Name>>;
     private _memberNames: Map<UnionType, Map<Type, Name>>;
     private _caseNames: Map<EnumType, Map<string, Name>>;
 
-    private _namedTypes: OrderedSet<NamedType>;
+    private _namedTypes: OrderedSet<Type>;
     private _namedClasses: OrderedSet<ClassType>;
     private _namedEnums: OrderedSet<EnumType>;
     private _namedUnions: OrderedSet<UnionType>;
@@ -60,7 +59,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [];
     }
 
-    protected namedTypeDependencyNames(_t: NamedType, _name: Name): DependencyName[] {
+    protected namedTypeDependencyNames(_t: Type, _name: Name): DependencyName[] {
         return [];
     }
 
@@ -69,7 +68,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected abstract get classPropertyNamer(): Namer | null;
     protected abstract get unionMemberNamer(): Namer | null;
     protected abstract get enumCaseNamer(): Namer | null;
-    protected abstract namedTypeToNameForTopLevel(type: Type): NamedType | null;
+    protected abstract namedTypeToNameForTopLevel(type: Type): Type | null;
     protected abstract emitSourceStructure(): void;
 
     protected get unionMembersInGlobalNamespace(): boolean {
@@ -108,7 +107,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [this.globalNamespace];
     }
 
-    private addDependenciesForNamedType = (type: NamedType, named: Name): void => {
+    private addDependenciesForNamedType = (type: Type, named: Name): void => {
         const dependencyNames = this.namedTypeDependencyNames(type, named);
         for (const dn of dependencyNames) {
             this.globalNamespace.add(dn);
@@ -138,10 +137,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         return named;
     };
 
-    private addNamedForNamedType = (type: NamedType): Name => {
+    private addNamedForNamedType = (type: Type): Name => {
         const existing = this._namesForNamedTypes.get(type);
         if (existing !== undefined) return existing;
-        const named = this.globalNamespace.add(new SimpleName(type.proposedNames, this.namedTypeNamer));
+        const named = this.globalNamespace.add(new SimpleName(type.getProposedNames(), this.namedTypeNamer));
 
         this.addDependenciesForNamedType(type, named);
 
@@ -157,7 +156,12 @@ export abstract class ConvenienceRenderer extends Renderer {
             c,
             className
         );
-        const ns = new Namespace(c.combinedName, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
+        const ns = new Namespace(
+            c.getCombinedName(),
+            this.globalNamespace,
+            Set(forbiddenNamespace),
+            Set(forbiddenNames)
+        );
         const names = c.sortedProperties
             .map((_: Type, name: string) => {
                 // FIXME: This alternative should really depend on what the
@@ -169,7 +173,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 // the alternative would also be the same, i.e. useless.  But
                 // maybe we'll need global properties for some weird language at
                 // some point.
-                const alternative = `${c.combinedName}_${name}`;
+                const alternative = `${c.getCombinedName()}_${name}`;
                 return ns.add(new SimpleName(OrderedSet([name, alternative]), propertyNamer));
             })
             .toMap();
@@ -191,7 +195,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (this.unionMembersInGlobalNamespace) {
             ns = this.globalNamespace;
         } else {
-            ns = new Namespace(u.combinedName, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
+            ns = new Namespace(u.getCombinedName(), this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
         }
         let names = Map<Type, Name>();
         u.members.forEach(t => {
@@ -211,13 +215,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (this.enumCasesInGlobalNamespace) {
             ns = this.globalNamespace;
         } else {
-            ns = new Namespace(e.combinedName, this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
+            ns = new Namespace(e.getCombinedName(), this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
         }
         let names = Map<string, Name>();
         e.cases.forEach(name => {
             // FIXME: See the FIXME in `addPropertyNameds`.  We do have global
             // enum cases, though (in Go), so this is actually useful already.
-            const alternative = `${e.combinedName}_${name}`;
+            const alternative = `${e.getCombinedName()}_${name}`;
             names = names.set(name, ns.add(new SimpleName(OrderedSet([name, alternative]), caseNamer)));
         });
         this._caseNames = this._caseNames.set(e, names);
@@ -291,7 +295,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return typeNameForUnionMember(fieldType);
     }
 
-    protected nameForNamedType = (t: NamedType): Name => {
+    protected nameForNamedType = (t: Type): Name => {
         const name = this._namesForNamedTypes.get(t);
         if (name === undefined) {
             return panic("Named type does not exist.");
@@ -369,11 +373,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
     };
 
-    protected callForNamedType<T extends NamedType>(t: T, f: (t: T, name: Name) => void): void {
+    protected callForNamedType<T extends Type>(t: T, f: (t: T, name: Name) => void): void {
         f(t, defined(this._namesForNamedTypes.get(t)));
     }
 
-    protected forEachSpecificNamedType<T extends NamedType>(
+    protected forEachSpecificNamedType<T extends Type>(
         blankLocations: BlankLineLocations,
         types: OrderedSet<T>,
         f: (t: T, name: Name) => void
@@ -417,9 +421,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         enumFunc: (e: EnumType, enumName: Name) => void,
         unionFunc: (u: UnionType, unionName: Name) => void
     ): void => {
-        let collection: Collection<any, NamedType> = this._namedTypes;
+        let collection: Collection<any, Type> = this._namedTypes;
         if (leavesFirst) collection = collection.reverse();
-        this.forEachWithBlankLines(collection, blankLocations, (t: NamedType) => {
+        this.forEachWithBlankLines(collection, blankLocations, (t: Type) => {
             if (t instanceof ClassType) {
                 this.callForNamedType(t, classFunc);
             } else if (t instanceof EnumType) {
@@ -456,7 +460,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         const types = this.typeGraph.allNamedTypes(this.childrenOfType);
         this._haveUnions = types.some(t => t instanceof UnionType);
         this._namedTypes = types
-            .filter((t: NamedType) => !(t instanceof UnionType) || this.unionNeedsName(t))
+            .filter((t: Type) => !(t instanceof UnionType) || this.unionNeedsName(t))
             .toOrderedSet();
         const { classes, enums, unions } = separateNamedTypes(this._namedTypes);
         this._namedClasses = classes;

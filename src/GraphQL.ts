@@ -2,7 +2,7 @@
 
 import { List, Map, OrderedSet, OrderedMap } from "immutable";
 
-import { NamesWithAlternatives, removeNullFromUnion, UnionType } from "./Type";
+import { removeNullFromUnion, UnionType } from "./Type";
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
 import {
     DocumentNode,
@@ -16,6 +16,7 @@ import {
 import { assertNever, panic, assert } from "./Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import * as graphql from "graphql/language";
+import { TypeNames, makeTypeNames } from "./TypeNames";
 
 interface GQLType {
     kind: TypeKind;
@@ -58,16 +59,12 @@ function getField(t: GQLType, name: string): Field {
     return panic(`Required field ${name} not defined on type ${t.name}.`);
 }
 
-function makeTypeNames(
-    name: string,
-    fieldName: string | null,
-    containingTypeName: string | null
-): NamesWithAlternatives {
+function makeNames(name: string, fieldName: string | null, containingTypeName: string | null): TypeNames {
     const alternatives: string[] = [];
     if (fieldName) alternatives.push(fieldName);
     if (containingTypeName) alternatives.push(`${containingTypeName}_${name}`);
     if (fieldName && containingTypeName) alternatives.push(`${containingTypeName}_${fieldName}`);
-    return { names: OrderedSet([name]), alternatives: OrderedSet(alternatives) };
+    return new TypeNames(OrderedSet([name]), OrderedSet(alternatives), false);
 }
 
 function makeNullable(
@@ -77,14 +74,14 @@ function makeNullable(
     fieldName: string | null,
     containingTypeName: string
 ): TypeRef {
-    const typeNames = makeTypeNames(name, fieldName, containingTypeName);
+    const typeNames = makeNames(name, fieldName, containingTypeName);
     const t = tref.deref();
     if (!(t instanceof UnionType)) {
-        return builder.getUnionType(typeNames.names, false, OrderedSet([tref, builder.getPrimitiveType("null")]));
+        return builder.getUnionType(typeNames, OrderedSet([tref, builder.getPrimitiveType("null")]));
     }
     const [maybeNull, nonNulls] = removeNullFromUnion(t);
     if (maybeNull) return tref;
-    return builder.getUnionType(typeNames, false, nonNulls.map(nn => nn.typeRef).add(builder.getPrimitiveType("null")));
+    return builder.getUnionType(typeNames, nonNulls.map(nn => nn.typeRef).add(builder.getPrimitiveType("null")));
 }
 
 function removeNull(builder: TypeBuilder, tref: TypeRef): TypeRef {
@@ -96,11 +93,7 @@ function removeNull(builder: TypeBuilder, tref: TypeRef): TypeRef {
     const first = nonNulls.first();
     if (first) {
         if (nonNulls.size === 1) return first.typeRef;
-        return builder.getUnionType(
-            { names: t.names, alternatives: t.alternativeNames },
-            t.areNamesInferred,
-            nonNulls.map(nn => nn.typeRef)
-        );
+        return builder.getUnionType(t.getNames(), nonNulls.map(nn => nn.typeRef));
     }
     return panic("Trying to remove null results in empty union.");
 }
@@ -212,11 +205,7 @@ class GQLQuery {
                     name = fieldNode.name.value;
                     fieldName = null;
                 }
-                result = builder.getEnumType(
-                    makeTypeNames(name, fieldName, containingTypeName),
-                    false,
-                    OrderedSet(values)
-                );
+                result = builder.getEnumType(makeNames(name, fieldName, containingTypeName), OrderedSet(values));
                 break;
             case TypeKind.INPUT_OBJECT:
                 return panic("FIXME: Support input objects");
@@ -311,11 +300,7 @@ class GQLQuery {
                     assertNever(selection);
             }
         }
-        return builder.getClassType(
-            makeTypeNames(nameOrOverride, containingFieldName, containingTypeName),
-            false,
-            properties
-        );
+        return builder.getClassType(makeNames(nameOrOverride, containingFieldName, containingTypeName), properties);
     };
 
     makeType(builder: TypeBuilder, query: OperationDefinitionNode, queryName: string): TypeRef {
@@ -434,16 +419,17 @@ export function makeGraphQLQueryTypes(
         }
         const dataType = query.makeType(builder, odn, queryName);
         const errorType = builder.getClassType(
-            { names: OrderedSet(["error"]), alternatives: OrderedSet(["graphQLError"]) },
-            false,
+            new TypeNames(OrderedSet(["error"]), OrderedSet(["graphQLError"]), false),
             OrderedMap({ message: builder.getPrimitiveType("string") })
         );
         const optionalErrorArray = builder.makeNullable(
             builder.getArrayType(errorType),
-            { names: OrderedSet(["errors"]), alternatives: OrderedSet(["graphQLErrors"]) },
-            false
+            new TypeNames(OrderedSet(["errors"]), OrderedSet(["graphQLErrors"]), false)
         );
-        const t = builder.getClassType(queryName, false, OrderedMap({ data: dataType, errors: optionalErrorArray }));
+        const t = builder.getClassType(
+            makeTypeNames(queryName, false),
+            OrderedMap({ data: dataType, errors: optionalErrorArray })
+        );
         types = types.set(queryName, t);
     });
     return types;

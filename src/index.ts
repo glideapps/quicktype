@@ -16,6 +16,7 @@ import { TypeGraphBuilder } from "./TypeBuilder";
 import { TypeGraph } from "./TypeGraph";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
+import { makeTypeNames } from "./TypeNames";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -147,7 +148,7 @@ export class Run {
             Map(this._allInputs.samples).forEach((cjson, name) => {
                 typeBuilder.addTopLevel(
                     name,
-                    inference.inferType(this._compressedJSON as CompressedJSON, name, false, cjson)
+                    inference.inferType(this._compressedJSON as CompressedJSON, makeTypeNames(name, false), cjson)
                 );
             });
         }

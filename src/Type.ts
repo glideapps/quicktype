@@ -3,6 +3,7 @@
 import { OrderedSet, OrderedMap, Collection } from "immutable";
 import { defined, panic, assert } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
+import { TypeNames } from "./TypeNames";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
@@ -11,10 +12,6 @@ export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
-
-    isNamedType(): this is NamedType {
-        return false;
-    }
 
     get isStringType(): boolean {
         return false;
@@ -27,6 +24,22 @@ export abstract class Type {
         if (set) return set;
         return orderedSetUnion(this.children.map((t: Type) => t.directlyReachableTypes(setForType)));
     }
+
+    get hasNames(): boolean {
+        return this.typeRef.graph.typeNamesForType(this) !== undefined;
+    }
+
+    getNames = (): TypeNames => {
+        return defined(this.typeRef.graph.typeNamesForType(this));
+    };
+
+    getCombinedName = (): string => {
+        return this.getNames().combinedName;
+    };
+
+    getProposedNames = (): OrderedSet<string> => {
+        return this.getNames().proposedNames;
+    };
 
     abstract get isNullable(): boolean;
     abstract map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef;
@@ -148,126 +161,11 @@ export class MapType extends Type {
     }
 }
 
-// FIXME: In the case of overlapping prefixes and suffixes we will
-// produce a name that includes the overlap twice.  For example, for
-// the names "aaa" and "aaaa" we have the common prefix "aaa" and the
-// common suffix "aaa", so we will produce the combined name "aaaaaa".
-function combineNames(names: Collection<any, string>): string {
-    const first = names.first();
-    if (first === undefined) {
-        return panic("Named type has no names");
-    }
-    if (names.count() === 1) {
-        return first;
-    }
-    let prefixLength = first.length;
-    let suffixLength = first.length;
-    names.rest().forEach(n => {
-        prefixLength = Math.min(prefixLength, n.length);
-        for (let i = 0; i < prefixLength; i++) {
-            if (first[i] !== n[i]) {
-                prefixLength = i;
-                break;
-            }
-        }
-
-        suffixLength = Math.min(suffixLength, n.length);
-        for (let i = 0; i < suffixLength; i++) {
-            if (first[first.length - i - 1] !== n[n.length - i - 1]) {
-                suffixLength = i;
-                break;
-            }
-        }
-    });
-    const prefix = prefixLength > 2 ? first.substr(0, prefixLength) : "";
-    const suffix = suffixLength > 2 ? first.substr(first.length - suffixLength) : "";
-    const combined = prefix + suffix;
-    if (combined.length > 2) {
-        return combined;
-    }
-    return first;
-}
-
-export type NamesWithAlternatives = { names: OrderedSet<string>; alternatives: OrderedSet<string> };
-export type NameOrNames = string | OrderedSet<string> | NamesWithAlternatives;
-
-function setFromNameOrNames(nameOrNames: NameOrNames): NamesWithAlternatives {
-    if (typeof nameOrNames === "string") {
-        return { names: OrderedSet([nameOrNames]), alternatives: OrderedSet() };
-    } else if (OrderedSet.isOrderedSet(nameOrNames)) {
-        return { names: nameOrNames as OrderedSet<string>, alternatives: OrderedSet() };
-    } else {
-        return nameOrNames as NamesWithAlternatives;
-    }
-}
-
-export abstract class NamedType extends Type {
-    private _names: OrderedSet<string>;
-    private _areNamesInferred: boolean;
-    private _alternativeNames: OrderedSet<string>;
-
-    constructor(typeRef: TypeRef, kind: NamedTypeKind, nameOrNames: NameOrNames, areNamesInferred: boolean) {
-        super(typeRef, kind);
-        const { names, alternatives } = setFromNameOrNames(nameOrNames);
-        this._names = names;
-        this._areNamesInferred = areNamesInferred;
-        this._alternativeNames = alternatives;
-    }
-
-    isNamedType(): this is NamedType {
-        return true;
-    }
-
-    get names(): OrderedSet<string> {
-        return this._names;
-    }
-
-    get areNamesInferred(): boolean {
-        return this._areNamesInferred;
-    }
-
-    get alternativeNames(): OrderedSet<string> {
-        return this._alternativeNames;
-    }
-
-    addNames(nameOrNames: NameOrNames, isInferred: boolean): void {
-        const { names, alternatives } = setFromNameOrNames(nameOrNames);
-        if (this._areNamesInferred && !isInferred) {
-            this._names = names;
-            this._areNamesInferred = false;
-        } else if (this._areNamesInferred === isInferred) {
-            this._names = this._names.union(names);
-        }
-        this._alternativeNames = this._alternativeNames.union(alternatives);
-    }
-
-    clearInferredNames(): void {
-        if (this._areNamesInferred) {
-            this._names = OrderedSet();
-        }
-        this._alternativeNames = OrderedSet();
-    }
-
-    get combinedName(): string {
-        return combineNames(this._names);
-    }
-
-    get proposedNames(): OrderedSet<string> {
-        return OrderedSet([this.combinedName]).union(this._alternativeNames);
-    }
-}
-
-export class ClassType extends NamedType {
+export class ClassType extends Type {
     kind: "class";
 
-    constructor(
-        typeRef: TypeRef,
-        names: NameOrNames,
-        areNamesInferred: boolean,
-        readonly isFixed: boolean,
-        private _propertyRefs?: OrderedMap<string, TypeRef>
-    ) {
-        super(typeRef, "class", names, areNamesInferred);
+    constructor(typeRef: TypeRef, readonly isFixed: boolean, private _propertyRefs?: OrderedMap<string, TypeRef>) {
+        super(typeRef, "class");
     }
 
     setProperties(propertyRefs: OrderedMap<string, TypeRef>): void {
@@ -306,18 +204,18 @@ export class ClassType extends NamedType {
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
         const properties = this.getPropertyRefs().map(f);
         if (this.isFixed) {
-            return builder.getUniqueClassType(this.names, this.areNamesInferred, properties);
+            return builder.getUniqueClassType(properties);
         } else {
-            return builder.getClassType(this.names, this.areNamesInferred, properties);
+            return builder.getClassType(properties);
         }
     }
 }
 
-export class EnumType extends NamedType {
+export class EnumType extends Type {
     kind: "enum";
 
-    constructor(typeRef: TypeRef, names: NameOrNames, areNamesInferred: boolean, readonly cases: OrderedSet<string>) {
-        super(typeRef, "enum", names, areNamesInferred);
+    constructor(typeRef: TypeRef, readonly cases: OrderedSet<string>) {
+        super(typeRef, "enum");
     }
 
     get children(): OrderedSet<Type> {
@@ -333,20 +231,15 @@ export class EnumType extends NamedType {
     }
 
     map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getEnumType(this.names, this.areNamesInferred, this.cases);
+        return builder.getEnumType(this.cases);
     }
 }
 
-export class UnionType extends NamedType {
+export class UnionType extends Type {
     kind: "union";
 
-    constructor(
-        typeRef: TypeRef,
-        names: NameOrNames,
-        areNamesInferred: boolean,
-        private _memberRefs?: OrderedSet<TypeRef>
-    ) {
-        super(typeRef, "union", names, areNamesInferred);
+    constructor(typeRef: TypeRef, private _memberRefs?: OrderedSet<TypeRef>) {
+        super(typeRef, "union");
         if (_memberRefs !== undefined) {
             assert(_memberRefs.size > 1, "Union has zero members");
         }
@@ -389,7 +282,7 @@ export class UnionType extends NamedType {
 
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
         const members = this.getMemberRefs().map(f);
-        return builder.getUnionType(this.names, this.areNamesInferred, members);
+        return builder.getUnionType(members);
     }
 
     get sortedMembers(): OrderedSet<Type> {
@@ -433,16 +326,22 @@ function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
     return setArray[0].union(...setArray.slice(1));
 }
 
+// FIXME: Give this an appropriate name, considering that we don't distinguish
+// between named and non-named types anymore.
+export function isNamedType(t: Type): boolean {
+    return t instanceof ClassType || t instanceof EnumType || t instanceof UnionType;
+}
+
 export type SeparatedNamedTypes = {
     classes: OrderedSet<ClassType>;
     enums: OrderedSet<EnumType>;
     unions: OrderedSet<UnionType>;
 };
 
-export function separateNamedTypes(types: Collection<any, NamedType>): SeparatedNamedTypes {
-    const classes = types.filter((t: NamedType) => t instanceof ClassType).toOrderedSet() as OrderedSet<ClassType>;
-    const enums = types.filter((t: NamedType) => t instanceof EnumType).toOrderedSet() as OrderedSet<EnumType>;
-    const unions = types.filter((t: NamedType) => t instanceof UnionType).toOrderedSet() as OrderedSet<UnionType>;
+export function separateNamedTypes(types: Collection<any, Type>): SeparatedNamedTypes {
+    const classes = types.filter((t: Type) => t instanceof ClassType).toOrderedSet() as OrderedSet<ClassType>;
+    const enums = types.filter((t: Type) => t instanceof EnumType).toOrderedSet() as OrderedSet<EnumType>;
+    const unions = types.filter((t: Type) => t instanceof UnionType).toOrderedSet() as OrderedSet<UnionType>;
 
     return { classes, enums, unions };
 }
