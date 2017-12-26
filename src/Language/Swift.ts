@@ -40,6 +40,8 @@ import { intercalate } from "../Support";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
+type Version = 4 | 4.1;
+
 export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
     private readonly _classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
@@ -47,11 +49,16 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         ["class", true]
     ]);
 
+    private readonly _versionOption = new EnumOption<Version>("swift-version", "Swift version", [
+        ["4", 4],
+        ["4.1", 4.1]
+    ]);
+
     private readonly _denseOption = new EnumOption("density", "Code density", [["dense", true], ["normal", false]]);
 
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
-        this.setOptions([this._justTypesOption, this._classOption, this._denseOption]);
+        this.setOptions([this._justTypesOption, this._classOption, this._denseOption, this._versionOption]);
     }
 
     protected get rendererClass(): new (
@@ -201,7 +208,8 @@ class SwiftRenderer extends ConvenienceRenderer {
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
         private readonly _useClasses: boolean,
-        private readonly _dense: boolean
+        private readonly _dense: boolean,
+        private readonly _version: Version,
     ) {
         super(graph, leadingComments);
     }
@@ -309,14 +317,24 @@ class SwiftRenderer extends ConvenienceRenderer {
         this.emitLine("typealias ", name, " = ", this.swiftType(t, true));
     };
 
-    private getCodableString = (): Sourcelike => {
-        return this.swift3OrPlainCase("", ": Codable");
+    private getProtocolString = (): Sourcelike => {
+        let protocols: string[] = [];
+
+        if (this._version > 4) {
+            protocols.push("Hashable", "Equatable");
+        }
+        if (!this._justTypes) {
+            protocols.push("Codable");
+        }
+
+        return protocols.length
+            ? ": " + protocols.join(", ")
+            : "";
     };
 
     private renderClassDefinition = (c: ClassType, className: Name): void => {
         const structOrClass = this._useClasses ? "class" : "struct";
-        const codableString = this.getCodableString();
-        this.emitBlock([structOrClass, " ", className, codableString], () => {
+        this.emitBlock([structOrClass, " ", className, this.getProtocolString()], () => {
             if (this._dense) {
                 let lastType: Type | undefined = undefined;
                 let lastNames: Name[] = [];
@@ -394,8 +412,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         };
 
         const [maybeNull, nonNulls] = removeNullFromUnion(u);
-        const codableString = this.getCodableString();
-        this.emitBlock(["enum ", unionName, codableString], () => {
+        this.emitBlock(["enum ", unionName, this.getProtocolString()], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });
