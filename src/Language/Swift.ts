@@ -15,7 +15,7 @@ import {
     TypeKind
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
+import { Namespace, Name, Namer, funPrefixNamer, FixedName } from "../Naming";
 import { BooleanOption, EnumOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -44,9 +44,11 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         ["class", true]
     ]);
 
+    private readonly _denseOption = new EnumOption("density", "Code density", [["normal", false], ["dense", true]]);
+
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
-        this.setOptions([this._justTypesOption, this._classOption]);
+        this.setOptions([this._justTypesOption, this._classOption, this._denseOption]);
     }
 
     protected get rendererClass(): new (
@@ -195,7 +197,8 @@ class SwiftRenderer extends ConvenienceRenderer {
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
-        private readonly _useClasses: boolean
+        private readonly _useClasses: boolean,
+        private readonly _dense: boolean
     ) {
         super(graph, leadingComments);
     }
@@ -318,7 +321,13 @@ class SwiftRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
                 this.emitBlock("enum CodingKeys: String, CodingKey", () => {
                     this.forEachClassProperty(c, "none", (name, jsonName) => {
-                        this.emitLine("case ", name, ' = "', stringEscape(jsonName), '"');
+                        const escaped = stringEscape(jsonName);
+                        // TODO make this comparison valid
+                        if (name.equals(jsonName)) {
+                            this.emitLine("case ", name);
+                        } else {
+                            this.emitLine("case ", name, ' = "', escaped, '"');
+                        }
                     });
                 });
             }
