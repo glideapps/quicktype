@@ -18,6 +18,8 @@ import { Renderer, BlankLineLocations } from "./Renderer";
 import { defined, panic, nonNull } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
+import { trimEnd } from "lodash";
+
 export abstract class ConvenienceRenderer extends Renderer {
     protected globalNamespace: Namespace;
     private _topLevelNames: Map<string, Name>;
@@ -446,7 +448,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected emitCommentLines = (commentStart: string, lines: string[]): void => {
         for (const line of lines) {
-            this.emitLine((commentStart + line).trimRight());
+            this.emitLine(trimEnd(commentStart + line));
         }
     };
 
