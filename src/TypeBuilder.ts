@@ -328,6 +328,50 @@ export class TypeGraphBuilder extends TypeBuilder {
     };
 }
 
+export class TypeReconstituter {
+    private _wasUsed: boolean = false;
+
+    constructor(private readonly _typeBuilder: TypeBuilder, private readonly _forwardingRef: TypeRef) {}
+
+    private useBuilder = (): TypeBuilder => {
+        assert(!this._wasUsed, "TypeReconstituter used more than once");
+        this._wasUsed = true;
+        return this._typeBuilder;
+    };
+
+    getPrimitiveType = (kind: PrimitiveTypeKind): TypeRef => {
+        return this.useBuilder().getPrimitiveType(kind, this._forwardingRef);
+    };
+
+    getEnumType = (names: NameOrNames, isInferred: boolean, cases: OrderedSet<string>): TypeRef => {
+        return this.useBuilder().getEnumType(names, isInferred, cases, this._forwardingRef);
+    };
+
+    getMapType = (values: TypeRef): TypeRef => {
+        return this.useBuilder().getMapType(values, this._forwardingRef);
+    };
+
+    getArrayType = (items: TypeRef): TypeRef => {
+        return this.useBuilder().getArrayType(items, this._forwardingRef);
+    };
+
+    getClassType = (names: NameOrNames, isInferred: boolean, properties: OrderedMap<string, TypeRef>): TypeRef => {
+        return this.useBuilder().getClassType(names, isInferred, properties, this._forwardingRef);
+    };
+
+    getUniqueClassType = (
+        names: NameOrNames,
+        isInferred: boolean,
+        properties?: OrderedMap<string, TypeRef>
+    ): TypeRef => {
+        return this.useBuilder().getUniqueClassType(names, isInferred, properties, this._forwardingRef);
+    };
+
+    getUnionType = (names: NameOrNames, isInferred: boolean, members: OrderedSet<TypeRef>): TypeRef => {
+        return this.useBuilder().getUnionType(names, isInferred, members, this._forwardingRef);
+    };
+}
+
 export class GraphRewriteBuilder<T extends Type> extends TypeBuilder {
     private _setsToReplaceByMember: Map<number, Set<T>>;
     private _reconstitutedTypes: Map<number, TypeRef> = Map();
@@ -397,7 +441,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder {
         }
         return this.withForwardingRef(forwardingRef => {
             this._reconstitutedTypes = this._reconstitutedTypes.set(originalRef.index, forwardingRef);
-            return originalRef.deref().map(this, forwardingRef, this.getReconstitutedType);
+            return originalRef.deref().map(new TypeReconstituter(this, forwardingRef), this.getReconstitutedType);
         });
     };
 
