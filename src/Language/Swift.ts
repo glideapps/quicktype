@@ -47,7 +47,7 @@ export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
 
     private readonly _convenienceInitializers = new BooleanOption(
-        "convenience-initializers",
+        "initializers",
         "Generate convenience initializers",
         true
     );
@@ -321,7 +321,18 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             this.forEachTopLevel("none", (_, name) => {
-                this.emitLine("//   let ", modifySource(camelCase, name), " = ", name, "(json)!");
+                if (this._convenienceInitializers) {
+                    this.emitLine("//   let ", modifySource(camelCase, name), " = ", name, "(json)!");
+                } else {
+                    this.emitLine(
+                        "//   let ",
+                        modifySource(camelCase, name),
+                        " = ",
+                        "try? JSONDecoder().decode(",
+                        name,
+                        ".self, from: jsonData)"
+                    );
+                }
             });
         }
         this.ensureBlankLine();
@@ -427,56 +438,64 @@ class SwiftRenderer extends ConvenienceRenderer {
                         }
                     });
                 }
+            }
+        });
+    };
 
-                if (this._convenienceInitializers) {
-                    // No we do initializers for structs or classes
-                    this.ensureBlankLine();
-                    if (this._useClasses) {
-                        // 1. Make an initializer that initalizes all fields
-                        let properties: Sourcelike[] = [];
-                        this.forEachClassProperty(c, "none", (name, _, t) => {
-                            if (properties.length > 0) properties.push(", ");
-                            properties.push(name, ": ", this.swiftType(t, true));
-                        });
-                        this.emitBlock(["init(", ...properties, ")"], () => {
-                            this.forEachClassProperty(c, "none", name => {
-                                this.emitLine("self.", name, " = ", name);
-                            });
-                        });
-                        this.ensureBlankLine();
-                        // 2. Two convenience initializers for Json string and data
-                        this.emitBlock(["convenience init?(data: Data)"], () => {
-                            this.emitLine(
-                                "guard let me = try? JSONDecoder().decode(type(of: self), from: data) else { return nil }"
-                            );
-                            let args: Sourcelike[] = [];
-                            this.forEachClassProperty(c, "none", (name, _, t) => {
-                                if (args.length > 0) args.push(", ");
-                                args.push(name, ": ", "me.", name);
-                            });
-                            this.emitLine("self.init(", ...args, ")");
-                        });
-                        this.ensureBlankLine();
-                        this.emitMultiline(`convenience init?(_ json: String, using encoding: String.Encoding = .utf8) {
+    private emitClassExtension = (c: ClassType, className: Name): void => {
+        this.emitBlock(["extension ", className], () => {
+            if (this._useClasses) {
+                // 1. Make an initializer that initalizes all fields
+                let properties: Sourcelike[] = [];
+                this.forEachClassProperty(c, "none", (name, _, t) => {
+                    if (properties.length > 0) properties.push(", ");
+                    properties.push(name, ": ", this.swiftType(t, true));
+                });
+                this.emitBlock(["init(", ...properties, ")"], () => {
+                    this.forEachClassProperty(c, "none", name => {
+                        this.emitLine("self.", name, " = ", name);
+                    });
+                });
+                this.ensureBlankLine();
+                // 2. Two convenience initializers for Json string and data
+                this.emitBlock(["convenience init?(data: Data)"], () => {
+                    this.emitLine(
+                        "guard let me = try? JSONDecoder().decode(",
+                        this.swiftType(c),
+                        ".self, from: data) else { return nil }"
+                    );
+                    let args: Sourcelike[] = [];
+                    this.forEachClassProperty(c, "none", (name, _, t) => {
+                        if (args.length > 0) args.push(", ");
+                        args.push(name, ": ", "me.", name);
+                    });
+                    this.emitLine("self.init(", ...args, ")");
+                });
+                this.ensureBlankLine();
+                this.emitMultiline(`convenience init?(_ json: String, using encoding: String.Encoding = .utf8) {
     guard let data = json.data(using: encoding) else { return nil }
     self.init(data: data)
 }`);
-                    } else {
-                        // 1. Two convenience initializers for Json string and data
-                        this.emitMultiline(`init?(data: Data) {
-    guard let me = try? JSONDecoder().decode(type(of: self), from: data) else { return nil }
-    self = me
-}
+            } else {
+                // 1. Two convenience initializers for Json string and data
+                this.emitBlock(["init?(data: Data)"], () => {
+                    this.emitLine(
+                        "guard let me = try? JSONDecoder().decode(",
+                        this.swiftType(c),
+                        ".self, from: data) else { return nil }"
+                    );
+                    this.emitLine("self = me");
+                });
+                this.ensureBlankLine();
+                this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8)"], () => {
+                    this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
+                    this.emitLine("self.init(data: data)");
+                });
+            }
 
-init?(_ json: String, using encoding: String.Encoding = .utf8) {
-    guard let data = json.data(using: encoding) else { return nil }
-    self.init(data: data)
-}`);
-                    }
-
-                    // Convenience serializers
-                    this.ensureBlankLine();
-                    this.emitMultiline(`var jsonData: Data? {
+            // Convenience serializers
+            this.ensureBlankLine();
+            this.emitMultiline(`var jsonData: Data? {
     return try? JSONEncoder().encode(self)
 }
 
@@ -484,8 +503,6 @@ var json: String? {
     guard let data = self.jsonData else { return nil }
     return String(data: data, encoding: .utf8)
 }`);
-                }
-            }
         });
     };
 
@@ -618,11 +635,10 @@ var json: String? {
         const needAny = anyAndNullSet.some(t => t.kind === "any");
         const needNull = anyAndNullSet.some(t => t.kind === "null");
         if (needAny || needNull) {
-            this.emitLine("// Helpers");
+            this.emitMark("Encode/decode helpers");
             this.ensureBlankLine();
             this.emitMultiline(`class JSONNull: Codable {
-    public init() {
-    }
+    public init() {}
     
     public required init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
@@ -639,7 +655,7 @@ var json: String? {
         }
         if (needAny) {
             this.ensureBlankLine();
-            this.emitMultiline(`class JSONCodingKey : CodingKey {
+            this.emitMultiline(`class JSONCodingKey: CodingKey {
     let key: String
     
     required init?(intValue: Int) {
@@ -873,6 +889,18 @@ class JSONAny: Codable {
         );
 
         if (!this._justTypes) {
+            if (this._convenienceInitializers) {
+                this.ensureBlankLine();
+                this.emitMark("Convenience initializers");
+                this.forEachNamedType(
+                    "leading-and-interposing",
+                    false,
+                    this.emitClassExtension,
+                    () => undefined,
+                    () => undefined
+                );
+            }
+            this.ensureBlankLine();
             this.forEachTopLevel("leading-and-interposing", this.emitTopLevelMapAndArrayExtensions);
             this.ensureBlankLine();
             this.emitSupportFunctions4();
