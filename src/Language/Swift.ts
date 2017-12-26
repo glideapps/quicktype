@@ -482,6 +482,12 @@ class SwiftRenderer extends ConvenienceRenderer {
     guard let data = json.data(using: encoding) else { return nil }
     self.init(data: data)
 }`);
+                this.ensureBlankLine();
+                this.emitMultiline(`convenience init?(url: String) {
+    guard let url = URL(string: url) else { return nil }
+    guard let data = try? Data(contentsOf: url) else { return nil }
+    self.init(data: data)
+}`);
             } else {
                 // 1. Two convenience initializers for Json string and data
                 this.emitBlock(["init?(data: Data)"], () => {
@@ -497,6 +503,12 @@ class SwiftRenderer extends ConvenienceRenderer {
                     this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
                     this.emitLine("self.init(data: data)");
                 });
+                this.ensureBlankLine();
+                this.emitMultiline(`init?(url: String) {
+    guard let url = URL(string: url) else { return nil }
+    guard let data = try? Data(contentsOf: url) else { return nil }
+    self.init(data: data)
+}`);
             }
 
             // Convenience serializers
@@ -608,6 +620,12 @@ var json: String? {
                 this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
                 this.emitLine("self.init(data: data)");
             });
+            this.ensureBlankLine();
+            this.emitMultiline(`init?(url: String) {
+    guard let url = URL(string: url) else { return nil }
+    guard let data = try? Data(contentsOf: url) else { return nil }
+    self.init(data: data)
+}`);
             this.ensureBlankLine();
             this.emitBlock("var jsonData: Data?", () => {
                 this.emitLine("return try? JSONEncoder().encode(self)");
