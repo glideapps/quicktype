@@ -15,7 +15,7 @@ import {
     TypeKind
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Namespace, Name, Namer, funPrefixNamer, FixedName } from "../Naming";
+import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, EnumOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -36,7 +36,6 @@ import {
     allUpperWordStyle,
     camelCase
 } from "../Strings";
-import { intercalate } from "../Support";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
@@ -319,14 +318,12 @@ class SwiftRenderer extends ConvenienceRenderer {
 
     private getProtocolString = (): Sourcelike => {
         let protocols: string[] = [];
-
         if (this._version > 4) {
             protocols.push("Hashable", "Equatable");
         }
         if (!this._justTypes) {
             protocols.push("Codable");
         }
-
         return protocols.length
             ? ": " + protocols.join(", ")
             : "";
@@ -368,7 +365,6 @@ class SwiftRenderer extends ConvenienceRenderer {
                     this.emitLine("let ", name, ": ", this.swiftType(t, true));
                 });
             }
-
 
             if (!this._justTypes) {
                 this.ensureBlankLine();
