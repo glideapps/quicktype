@@ -36,17 +36,43 @@ import {
     allUpperWordStyle,
     camelCase
 } from "../Strings";
+import { intercalate } from "../Support";
+import { List } from "immutable";
+
+const MAX_SAMELINE_PROPERTIES = 4;
+
+type Version = 4 | 4.1;
 
 export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
+
+    private readonly _convenienceInitializers = new BooleanOption(
+        "initializers",
+        "Generate convenience initializers",
+        true
+    );
+
     private readonly _classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
         ["struct", false],
         ["class", true]
     ]);
 
+    private readonly _versionOption = new EnumOption<Version>("swift-version", "Swift version", [
+        ["4", 4],
+        ["4.1", 4.1]
+    ]);
+
+    private readonly _denseOption = new EnumOption("density", "Code density", [["dense", true], ["normal", false]]);
+
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
-        this.setOptions([this._justTypesOption, this._classOption]);
+        this.setOptions([
+            this._justTypesOption,
+            this._classOption,
+            this._denseOption,
+            this._versionOption,
+            this._convenienceInitializers
+        ]);
     }
 
     protected get rendererClass(): new (
@@ -195,7 +221,10 @@ class SwiftRenderer extends ConvenienceRenderer {
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
-        private readonly _useClasses: boolean
+        private readonly _useClasses: boolean,
+        private readonly _dense: boolean,
+        private readonly _version: Version,
+        private readonly _convenienceInitializers: Boolean
     ) {
         super(graph, leadingComments);
     }
@@ -292,7 +321,18 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             this.forEachTopLevel("none", (_, name) => {
-                this.emitLine("//   let ", modifySource(camelCase, name), " = ", name, ".from(json: jsonString)!");
+                if (this._convenienceInitializers) {
+                    this.emitLine("//   let ", modifySource(camelCase, name), " = ", name, "(json)!");
+                } else {
+                    this.emitLine(
+                        "//   let ",
+                        modifySource(camelCase, name),
+                        " = ",
+                        "try? JSONDecoder().decode(",
+                        name,
+                        ".self, from: jsonData)"
+                    );
+                }
             });
         }
         this.ensureBlankLine();
@@ -303,17 +343,184 @@ class SwiftRenderer extends ConvenienceRenderer {
         this.emitLine("typealias ", name, " = ", this.swiftType(t, true));
     };
 
-    private getCodableString = (): Sourcelike => {
-        return this.swift3OrPlainCase("", ": Codable");
+    private getProtocolString = (): Sourcelike => {
+        let protocols: string[] = [];
+        if (this._version > 4) {
+            protocols.push("Hashable", "Equatable");
+        }
+        if (!this._justTypes) {
+            protocols.push("Codable");
+        }
+        return protocols.length ? ": " + protocols.join(", ") : "";
+    };
+
+    getEnumPropertyGroups = (c: ClassType) => {
+        type PropertyGroup = { name: Name; label?: string }[];
+
+        let groups: PropertyGroup[] = [];
+        let group: PropertyGroup = [];
+
+        this.forEachClassProperty(c, "none", (name, jsonName) => {
+            const label = stringEscape(jsonName);
+            const redundant = this.sourcelikeToString(name) === label;
+
+            if (this._dense && redundant) {
+                group.push({ name });
+            } else {
+                if (group.length > 0) {
+                    groups.push(group);
+                    group = [];
+                }
+                groups.push([{ name, label }]);
+            }
+        });
+
+        if (group.length > 0) {
+            groups.push(group);
+        }
+
+        return groups;
     };
 
     private renderClassDefinition = (c: ClassType, className: Name): void => {
         const structOrClass = this._useClasses ? "class" : "struct";
-        const codableString = this.getCodableString();
-        this.emitBlock([structOrClass, " ", className, codableString], () => {
-            this.forEachClassProperty(c, "none", (name, _, t) => {
-                this.emitLine("let ", name, ": ", this.swiftType(t, true));
-            });
+        this.emitBlock([structOrClass, " ", className, this.getProtocolString()], () => {
+            if (this._dense) {
+                let lastType: Type | undefined = undefined;
+                let lastNames: Name[] = [];
+
+                const emitLastType = () => {
+                    if (lastType !== undefined) {
+                        let sources: Sourcelike[] = ["let "];
+                        lastNames.forEach((n, i) => {
+                            if (i > 0) sources.push(", ");
+                            sources.push(n);
+                        });
+                        sources.push(": ");
+                        sources.push(this.swiftType(lastType, true));
+                        this.emitLine(sources);
+                    }
+                };
+
+                this.forEachClassProperty(c, "none", (name, _, t) => {
+                    lastType = lastType || t;
+                    if (t.equals(lastType) && lastNames.length < MAX_SAMELINE_PROPERTIES) {
+                        lastNames.push(name);
+                    } else {
+                        emitLastType();
+                        lastType = t;
+                        lastNames = [name];
+                    }
+                });
+                emitLastType();
+            } else {
+                this.forEachClassProperty(c, "none", (name, _, t) => {
+                    this.emitLine("let ", name, ": ", this.swiftType(t, true));
+                });
+            }
+
+            if (!this._justTypes) {
+                const groups = this.getEnumPropertyGroups(c);
+                const allPropertiesRedundant = groups.every(group => {
+                    return group.every(p => p.label === undefined);
+                });
+                if (!allPropertiesRedundant && !c.properties.isEmpty()) {
+                    this.ensureBlankLine();
+                    this.emitBlock("enum CodingKeys: String, CodingKey", () => {
+                        for (const group of groups) {
+                            const { name, label } = group[0];
+                            if (label !== undefined) {
+                                this.emitLine("case ", name, ' = "', label, '"');
+                            } else {
+                                const names = intercalate<Sourcelike>(", ", List(group.map(p => p.name))).toArray();
+                                this.emitLine("case ", ...names);
+                            }
+                        }
+                    });
+                }
+
+                // If using classes with convenience initializers,
+                // this main initializer must be defined within the class
+                // declaration since it assigns let constants
+                if (this._useClasses && this._convenienceInitializers) {
+                    // Make an initializer that initalizes all fields
+                    this.ensureBlankLine();
+                    let properties: Sourcelike[] = [];
+                    this.forEachClassProperty(c, "none", (name, _, t) => {
+                        if (properties.length > 0) properties.push(", ");
+                        properties.push(name, ": ", this.swiftType(t, true));
+                    });
+                    this.emitBlock(["init(", ...properties, ")"], () => {
+                        this.forEachClassProperty(c, "none", name => {
+                            this.emitLine("self.", name, " = ", name);
+                        });
+                    });
+                }
+            }
+        });
+    };
+
+    private emitConvenienceInitializersExtension = (c: ClassType, className: Name): void => {
+        this.emitBlock(["extension ", className], () => {
+            if (this._useClasses) {
+                // Convenience initializers for Json string and data
+                this.emitBlock(["convenience init?(data: Data)"], () => {
+                    this.emitLine(
+                        "guard let me = try? JSONDecoder().decode(",
+                        this.swiftType(c),
+                        ".self, from: data) else { return nil }"
+                    );
+                    let args: Sourcelike[] = [];
+                    this.forEachClassProperty(c, "none", name => {
+                        if (args.length > 0) args.push(", ");
+                        args.push(name, ": ", "me.", name);
+                    });
+                    this.emitLine("self.init(", ...args, ")");
+                });
+                this.ensureBlankLine();
+                this.emitMultiline(`convenience init?(_ json: String, using encoding: String.Encoding = .utf8) {
+    guard let data = json.data(using: encoding) else { return nil }
+    self.init(data: data)
+}`);
+                this.ensureBlankLine();
+                this.emitMultiline(`convenience init?(url: String) {
+    guard let url = URL(string: url) else { return nil }
+    guard let data = try? Data(contentsOf: url) else { return nil }
+    self.init(data: data)
+}`);
+            } else {
+                // 1. Two convenience initializers for Json string and data
+                this.emitBlock(["init?(data: Data)"], () => {
+                    this.emitLine(
+                        "guard let me = try? JSONDecoder().decode(",
+                        this.swiftType(c),
+                        ".self, from: data) else { return nil }"
+                    );
+                    this.emitLine("self = me");
+                });
+                this.ensureBlankLine();
+                this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8)"], () => {
+                    this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
+                    this.emitLine("self.init(data: data)");
+                });
+                this.ensureBlankLine();
+                this.emitMultiline(`init?(url: String) {
+    guard let url = URL(string: url) else { return nil }
+    guard let data = try? Data(contentsOf: url) else { return nil }
+    self.init(data: data)
+}`);
+            }
+
+            // Convenience serializers
+            this.ensureBlankLine();
+            this.emitMultiline(`var jsonData: Data? {
+    return try? JSONEncoder().encode(self)
+}
+
+var json: String? {
+    guard let data = self.jsonData else { return nil }
+    return String(data: data, encoding: .utf8)
+}`);
         });
     };
 
@@ -334,68 +541,99 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private renderUnionDefinition = (u: UnionType, unionName: Name): void => {
+        const renderUnionCase = (t: Type): void => {
+            this.emitBlock(["if let x = try? container.decode(", this.swiftType(t), ".self)"], () => {
+                this.emitLine("self = .", this.nameForUnionMember(u, t), "(x)");
+                this.emitLine("return");
+            });
+        };
+
         const [maybeNull, nonNulls] = removeNullFromUnion(u);
-        const codableString = this.getCodableString();
-        this.emitBlock(["enum ", unionName, codableString], () => {
+        this.emitBlock(["enum ", unionName, this.getProtocolString()], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });
             if (maybeNull) {
                 this.emitLine("case ", this.nameForUnionMember(u, maybeNull));
             }
+
+            if (!this._justTypes) {
+                this.ensureBlankLine();
+                this.emitBlock("init(from decoder: Decoder) throws", () => {
+                    this.emitLine("let container = try decoder.singleValueContainer()");
+                    const boolMember = u.findMember("bool");
+                    if (boolMember) renderUnionCase(boolMember);
+                    const integerMember = u.findMember("integer");
+                    if (integerMember) renderUnionCase(integerMember);
+                    nonNulls.forEach(t => {
+                        if (t.kind === "bool" || t.kind === "integer") return;
+                        renderUnionCase(t);
+                    });
+                    if (maybeNull) {
+                        this.emitBlock("if container.decodeNil()", () => {
+                            this.emitLine("self = .", this.nameForUnionMember(u, maybeNull));
+                            this.emitLine("return");
+                        });
+                    }
+                    this.emitDecodingError(unionName);
+                });
+                this.ensureBlankLine();
+                this.emitBlock("func encode(to encoder: Encoder) throws", () => {
+                    this.emitLine("var container = encoder.singleValueContainer()");
+                    this.emitLine("switch self {");
+                    this.forEachUnionMember(u, nonNulls, "none", null, (name, _) => {
+                        this.emitLine("case .", name, "(let x):");
+                        this.indent(() => this.emitLine("try container.encode(x)"));
+                    });
+                    if (maybeNull) {
+                        this.emitLine("case .", this.nameForUnionMember(u, maybeNull), ":");
+                        this.indent(() => this.emitLine("try container.encodeNil()"));
+                    }
+                    this.emitLine("}");
+                });
+            }
         });
     };
 
-    private renderTopLevelExtensions4 = (t: Type, _: Name): void => {
-        const typeSource = this.swiftType(t);
+    private emitTopLevelMapAndArrayExtensions = (t: Type, name: Name): void => {
         let extensionSource: Sourcelike;
+
         if (t instanceof ArrayType) {
-            extensionSource = ["Array where Element == ", this.swiftType(t.items)];
+            extensionSource = ["Array where Element == ", name, ".Element"];
         } else if (t instanceof MapType) {
             extensionSource = ["Dictionary where Key == String, Value == ", this.swiftType(t.values)];
         } else {
-            extensionSource = typeSource;
+            return;
         }
 
         this.emitBlock(["extension ", extensionSource], () => {
-            this.emitBlock(
-                ["static func from(json: String, using encoding: String.Encoding = .utf8) -> ", typeSource, "?"],
-                () => {
-                    this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
-                    this.emitLine("return from(data: data)");
-                }
-            );
-            this.ensureBlankLine();
-            this.emitBlock(["static func from(data: Data) -> ", typeSource, "?"], () => {
-                this.emitLine("let decoder = JSONDecoder()");
-                this.emitLine("return try? decoder.decode(", typeSource, ".self, from: data)");
+            this.emitBlock(["init?(data: Data)"], () => {
+                this.emitLine(
+                    "guard let me = try? JSONDecoder().decode(",
+                    name,
+                    ".self, from: data) else { return nil }"
+                );
+                this.emitLine("self = me");
             });
             this.ensureBlankLine();
-            this.emitBlock(["static func from(url urlString: String) -> ", typeSource, "?"], () => {
-                this.emitLine("guard let url = URL(string: urlString) else { return nil }");
-                this.emitLine("guard let data = try? Data(contentsOf: url) else { return nil }");
-                this.emitLine("return from(data: data)");
+            this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8)"], () => {
+                this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
+                this.emitLine("self.init(data: data)");
             });
+            this.ensureBlankLine();
+            this.emitMultiline(`init?(url: String) {
+    guard let url = URL(string: url) else { return nil }
+    guard let data = try? Data(contentsOf: url) else { return nil }
+    self.init(data: data)
+}`);
             this.ensureBlankLine();
             this.emitBlock("var jsonData: Data?", () => {
-                this.emitLine("let encoder = JSONEncoder()");
-                this.emitLine("return try? encoder.encode(self)");
+                this.emitLine("return try? JSONEncoder().encode(self)");
             });
             this.ensureBlankLine();
-            this.emitBlock("var jsonString: String?", () => {
+            this.emitBlock("var json: String?", () => {
                 this.emitLine("guard let data = self.jsonData else { return nil }");
                 this.emitLine("return String(data: data, encoding: .utf8)");
-            });
-        });
-    };
-
-    private renderClassExtensions4 = (c: ClassType, className: Name): void => {
-        if (c.properties.isEmpty()) return;
-        this.emitBlock(["extension ", className], () => {
-            this.emitBlock("enum CodingKeys: String, CodingKey", () => {
-                this.forEachClassProperty(c, "none", (name, jsonName) => {
-                    this.emitLine("case ", name, ' = "', stringEscape(jsonName), '"');
-                });
             });
         });
     };
@@ -410,61 +648,15 @@ class SwiftRenderer extends ConvenienceRenderer {
         );
     };
 
-    private renderUnionExtensions4 = (u: UnionType, unionName: Name): void => {
-        const renderUnionCase = (t: Type): void => {
-            this.emitBlock(["if let x = try? container.decode(", this.swiftType(t), ".self)"], () => {
-                this.emitLine("self = .", this.nameForUnionMember(u, t), "(x)");
-                this.emitLine("return");
-            });
-        };
-
-        const [maybeNull, nonNulls] = removeNullFromUnion(u);
-        this.emitBlock(["extension ", unionName], () => {
-            this.emitBlock("init(from decoder: Decoder) throws", () => {
-                this.emitLine("let container = try decoder.singleValueContainer()");
-                const boolMember = u.findMember("bool");
-                if (boolMember) renderUnionCase(boolMember);
-                const integerMember = u.findMember("integer");
-                if (integerMember) renderUnionCase(integerMember);
-                nonNulls.forEach(t => {
-                    if (t.kind === "bool" || t.kind === "integer") return;
-                    renderUnionCase(t);
-                });
-                if (maybeNull) {
-                    this.emitBlock("if container.decodeNil()", () => {
-                        this.emitLine("self = .", this.nameForUnionMember(u, maybeNull));
-                        this.emitLine("return");
-                    });
-                }
-                this.emitDecodingError(unionName);
-            });
-            this.ensureBlankLine();
-            this.emitBlock("func encode(to encoder: Encoder) throws", () => {
-                this.emitLine("var container = encoder.singleValueContainer()");
-                this.emitLine("switch self {");
-                this.forEachUnionMember(u, nonNulls, "none", null, (name, _) => {
-                    this.emitLine("case .", name, "(let x):");
-                    this.indent(() => this.emitLine("try container.encode(x)"));
-                });
-                if (maybeNull) {
-                    this.emitLine("case .", this.nameForUnionMember(u, maybeNull), ":");
-                    this.indent(() => this.emitLine("try container.encodeNil()"));
-                }
-                this.emitLine("}");
-            });
-        });
-    };
-
     private emitSupportFunctions4 = (): void => {
         const anyAndNullSet = this.typeGraph.filterTypes((t): t is Type => t.kind === "any" || t.kind === "null");
         const needAny = anyAndNullSet.some(t => t.kind === "any");
         const needNull = anyAndNullSet.some(t => t.kind === "null");
         if (needAny || needNull) {
-            this.emitLine("// Helpers");
+            this.emitMark("Encode/decode helpers");
             this.ensureBlankLine();
             this.emitMultiline(`class JSONNull: Codable {
-    public init() {
-    }
+    public init() {}
     
     public required init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
@@ -481,7 +673,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         }
         if (needAny) {
             this.ensureBlankLine();
-            this.emitMultiline(`class JSONCodingKey : CodingKey {
+            this.emitMultiline(`class JSONCodingKey: CodingKey {
     let key: String
     
     required init?(intValue: Int) {
@@ -715,18 +907,19 @@ class JSONAny: Codable {
         );
 
         if (!this._justTypes) {
+            if (this._convenienceInitializers) {
+                this.ensureBlankLine();
+                this.emitMark("Convenience initializers");
+                this.forEachNamedType(
+                    "leading-and-interposing",
+                    false,
+                    this.emitConvenienceInitializersExtension,
+                    () => undefined,
+                    () => undefined
+                );
+            }
             this.ensureBlankLine();
-            this.emitMark("Top-level extensions", true);
-            this.forEachTopLevel("leading-and-interposing", this.renderTopLevelExtensions4);
-            this.ensureBlankLine();
-            this.emitMark("Codable extensions", true);
-            this.forEachNamedType(
-                "leading-and-interposing",
-                false,
-                this.renderClassExtensions4,
-                () => undefined,
-                this.renderUnionExtensions4
-            );
+            this.forEachTopLevel("leading-and-interposing", this.emitTopLevelMapAndArrayExtensions);
             this.ensureBlankLine();
             this.emitSupportFunctions4();
         }
