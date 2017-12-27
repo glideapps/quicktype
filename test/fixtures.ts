@@ -322,7 +322,8 @@ class JSONSchemaJSONFixture extends JSONFixture {
       topLevel: "schema",
       skipJSON: [
         "blns-object.json", // AJV refuses to even "compile" the schema we generate
-        "31189.json" // same here
+        "31189.json", // same here
+        "ed095.json" // same here on Travis
       ],
       skipSchema: [],
       rendererOptions: {},
