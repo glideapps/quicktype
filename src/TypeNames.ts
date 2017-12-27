@@ -74,7 +74,7 @@ export class TypeNames {
         return this._areInferred;
     }
 
-    add(names: TypeNames): void {
+    add = (names: TypeNames): void => {
         if (this._areInferred && !names._areInferred) {
             this._names = names._names;
             this._areInferred = false;
@@ -82,14 +82,20 @@ export class TypeNames {
             this._names = this._names.union(names._names);
         }
         this._alternativeNames = this._alternativeNames.union(names._alternativeNames);
-    }
+    };
 
-    clearInferred(): void {
+    union = (names: TypeNames): TypeNames => {
+        const copy = this.copy();
+        copy.add(names);
+        return copy;
+    };
+
+    clearInferred = (): void => {
         if (this._areInferred) {
             this._names = OrderedSet();
         }
         this._alternativeNames = OrderedSet();
-    }
+    };
 
     get combinedName(): string {
         return combineNames(this._names);

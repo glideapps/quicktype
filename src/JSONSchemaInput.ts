@@ -1,12 +1,13 @@
 "use strict";
 
-import { List, OrderedSet, Map, OrderedMap, fromJS, Set } from "immutable";
+import { List, OrderedSet, Map, fromJS, Set } from "immutable";
 import * as pluralize from "pluralize";
 
 import { Type, ClassType, matchTypeExhaustive, MapType } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "./Support";
 import { UnionBuilder, TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames, makeTypeNames } from "./TypeNames";
+import { getCliqueProperties } from "./UnifyClasses";
 
 enum PathElementKind {
     Root,
@@ -165,26 +166,21 @@ class UnifyUnionBuilder extends UnionBuilder<TypeRef, TypeRef, TypeRef> {
         if (classes.length === 1) {
             return classes[0];
         }
-        let properties = OrderedMap<string, TypeRef[]>();
+
         const actualClasses: ClassType[] = [];
         for (const c of classes) {
             const t = assertIsClass(getHopefullyFinishedType(this.typeBuilder, c));
             actualClasses.push(t);
         }
-        for (const c of actualClasses) {
-            c.properties.forEach((t, name) => {
-                const types = properties.get(name);
-                if (types === undefined) {
-                    properties = properties.set(name, [t.typeRef]);
-                } else {
-                    types.push(t.typeRef);
-                }
-            });
-        }
-        return this.typeBuilder.getUniqueClassType(
-            this.typeNames,
-            properties.map((ts, name) => this._unifyTypes(ts, makeTypeNames(name, true))).sortBy((_, n) => n)
-        );
+
+        const properties = getCliqueProperties(OrderedSet(actualClasses), (names, types, isNullable) => {
+            const tref = this._unifyTypes(types.map(t => t.typeRef).toArray(), names);
+            if (isNullable) {
+                return this.typeBuilder.makeNullable(tref, names);
+            }
+            return tref;
+        });
+        return this.typeBuilder.getUniqueClassType(this.typeNames, properties);
     }
 
     protected makeArray(arrays: TypeRef[]): TypeRef {
@@ -304,7 +300,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
         path = path.push({ kind: PathElementKind.AdditionalProperty });
         valuesType = toType(additional, path, typeNames.singularize());
         if (mustSet) {
-            (result.deref() as MapType).setValues(valuesType);
+            (result.deref()[0] as MapType).setValues(valuesType);
         }
         return result;
     }

@@ -91,8 +91,8 @@ export class TypeRef {
         }
     };
 
-    deref = (): Type => {
-        return this.graph.typeAtIndex(this.index);
+    deref = (): [Type, TypeNames | undefined] => {
+        return this.graph.atIndex(this.index);
     };
 
     equals = (other: any): boolean => {
@@ -169,12 +169,13 @@ export abstract class TypeBuilder {
         return tref;
     }
 
-    typeAtIndex = (index: number): Type => {
+    atIndex = (index: number): [Type, TypeNames | undefined] => {
         const maybeType = this.types.get(index);
         if (maybeType === undefined) {
             return panic("Trying to deref an undefined type in a type builder");
         }
-        return maybeType;
+        const maybeNames = this.typeNames.get(index);
+        return [maybeType, maybeNames];
     };
 
     addNames = (tref: TypeRef, names: TypeNames): void => {
@@ -427,16 +428,11 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder {
         }
         return this.withForwardingRef(forwardingRef => {
             this._reconstitutedTypes = this._reconstitutedTypes.set(index, forwardingRef);
-            return originalRef
-                .deref()
-                .map(
-                    new TypeReconstituter(
-                        this,
-                        this._originalGraph.typeNamesForType(originalRef.deref()),
-                        forwardingRef
-                    ),
-                    this.getReconstitutedType
-                );
+            const [originalType, originalNames] = originalRef.deref();
+            return originalType.map(
+                new TypeReconstituter(this, originalNames, forwardingRef),
+                this.getReconstitutedType
+            );
         });
     };
 

@@ -1,12 +1,13 @@
 "use strict";
 
-import { Map, Set, OrderedMap } from "immutable";
+import { Map, Set, OrderedSet } from "immutable";
 
 import { ClassType, Type, nonNullTypeCases } from "./Type";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
-import { typeNamesUnion, makeTypeNames } from "./TypeNames";
+import { typeNamesUnion, TypeNames } from "./TypeNames";
+import { getCliqueProperties } from "./UnifyClasses";
 
 const REQUIRED_OVERLAP = 3 / 4;
 
@@ -98,48 +99,24 @@ export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMa
     }
 
     function makeCliqueClass(clique: Set<ClassType>, builder: GraphRewriteBuilder<ClassType>): TypeRef {
-        assert(clique.size > 0, "Clique can't be empty");
-        const allNames = clique.map(c => c.getNames());
-        const properties = getCliqueProperties(clique, builder);
-        return builder.getClassType(typeNamesUnion(allNames), properties);
-    }
-
-    function getCliqueProperties(
-        clique: Set<ClassType>,
-        builder: GraphRewriteBuilder<ClassType>
-    ): OrderedMap<string, TypeRef> {
-        let properties = OrderedMap<string, [Type, number, boolean]>();
-        clique.forEach(c => {
-            c.properties.forEach((t, name) => {
-                const p = properties.get(name);
-                if (p) {
-                    p[1] += 1;
-                    // If one of the clique class's properties is nullable,
-                    // the combined property must be nullable, too, so we
-                    // just set it to this one.  Of course it can't be one of
-                    // the properties that is just null.
-                    if (t.kind !== "null") {
-                        p[0] = t;
-                    }
-                    if (t.isNullable) {
-                        p[2] = true;
-                    }
-                } else {
-                    properties = properties.set(name, [t, 1, t.isNullable]);
-                }
-            });
-        });
-        return properties.map(([t, count, haveNullable], name) => {
-            let resultType = builder.reconstituteType(t);
-            if (haveNullable || count < clique.size) {
-                if (t.hasNames) {
-                    resultType = builder.makeNullable(resultType, t.getNames());
-                } else {
-                    resultType = builder.makeNullable(resultType, makeTypeNames(name, true));
-                }
+        function makePropertyType(names: TypeNames, types: OrderedSet<Type>, isNullable: boolean): TypeRef {
+            let resultType: TypeRef;
+            const first = types.first();
+            if (first === undefined) {
+                resultType = builder.getPrimitiveType("null");
+            } else {
+                resultType = builder.reconstituteType(first);
+            }
+            if (isNullable) {
+                resultType = builder.makeNullable(resultType, names);
             }
             return resultType;
-        });
+        }
+
+        assert(clique.size > 0, "Clique can't be empty");
+        const allNames = clique.map(c => c.getNames());
+        const properties = getCliqueProperties(clique, makePropertyType);
+        return builder.getClassType(typeNamesUnion(allNames), properties);
     }
 
     return graph.rewrite(stringTypeMapping, cliques, makeCliqueClass);
