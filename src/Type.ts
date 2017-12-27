@@ -26,11 +26,11 @@ export abstract class Type {
     }
 
     get hasNames(): boolean {
-        return this.typeRef.graph.typeNamesForType(this) !== undefined;
+        return this.typeRef.deref()[1] !== undefined;
     }
 
     getNames = (): TypeNames => {
-        return defined(this.typeRef.graph.typeNamesForType(this));
+        return defined(this.typeRef.deref()[1]);
     };
 
     getCombinedName = (): string => {

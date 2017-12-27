@@ -53,11 +53,6 @@ export class TypeGraph {
         return [defined(defined(this._types).get(index)), defined(this._typeNames).get(index)];
     };
 
-    typeNamesForType = (t: Type): TypeNames | undefined => {
-        assert(this.isFrozen, "Tried to get type names before graph was frozen");
-        return defined(this._typeNames).get(t.typeRef.index);
-    };
-
     filterTypes(
         predicate: (t: Type) => boolean,
         childrenOfType?: (t: Type) => Collection<any, Type>

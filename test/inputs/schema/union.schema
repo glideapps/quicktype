@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "type": "array",
+  "items": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "one": { "type": "integer" },
+          "two": { "type": "boolean" }
+        },
+        "required": ["one", "two"]
+      },
+      {
+        "type": "object",
+        "properties": {
+          "two": { "type": "boolean" },
+          "three": { "type": "number" }
+        },
+        "required": ["two", "three"]
+      }
+    ]
+  }
+}
