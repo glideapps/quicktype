@@ -5,13 +5,13 @@ import { OrderedSet } from "immutable";
 import { TargetLanguage } from "../TargetLanguage";
 import {
     Type,
-    NamedType,
     ClassType,
     EnumType,
     UnionType,
     nullableFromUnion,
     matchType,
-    removeNullFromUnion
+    removeNullFromUnion,
+    isNamedType
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
@@ -303,8 +303,8 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return this._caseNamingFunction;
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
-        if (type.isNamedType()) {
+    protected namedTypeToNameForTopLevel(type: Type): Type | null {
+        if (isNamedType(type)) {
             return type;
         }
         return null;

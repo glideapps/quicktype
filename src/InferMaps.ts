@@ -59,7 +59,7 @@ export function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewrit
 
     const shouldBe = shouldBeMap(properties);
     if (shouldBe === undefined) {
-        return panic(`We shouldn't be replacing class ${c.combinedName} with a map`);
+        return panic(`We shouldn't be replacing class ${c.getCombinedName()} with a map`);
     }
     const [nonNulls, isNullable] = shouldBe;
 
@@ -78,7 +78,7 @@ export function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewrit
     if (trefs.size === 1) {
         valuesType = defined(trefs.first());
     } else {
-        valuesType = builder.getUnionType(c.names, c.areNamesInferred, trefs);
+        valuesType = builder.getUnionType(c.getNames(), trefs);
     }
     return builder.getMapType(valuesType);
 }

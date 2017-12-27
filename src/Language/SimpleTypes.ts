@@ -2,7 +2,7 @@
 
 import * as _ from "lodash";
 
-import { Type, EnumType, UnionType, NamedType, ClassType, nullableFromUnion, matchTypeExhaustive } from "../Type";
+import { Type, EnumType, UnionType, ClassType, nullableFromUnion, matchTypeExhaustive, isNamedType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 
 import { Sourcelike } from "../Source";
@@ -97,8 +97,8 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
         return new Namer(n => simpleNameStyle(n, true), []);
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
-        if (type.isNamedType()) {
+    protected namedTypeToNameForTopLevel(type: Type): Type | null {
+        if (isNamedType(type)) {
             return type;
         }
         return null;

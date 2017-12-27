@@ -1,11 +1,12 @@
 "use strict";
 
-import { Map, Set, OrderedMap, OrderedSet } from "immutable";
+import { Map, Set, OrderedMap } from "immutable";
 
 import { ClassType, Type, nonNullTypeCases } from "./Type";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
+import { typeNamesUnion, makeTypeNames } from "./TypeNames";
 
 const REQUIRED_OVERLAP = 3 / 4;
 
@@ -98,18 +99,9 @@ export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMa
 
     function makeCliqueClass(clique: Set<ClassType>, builder: GraphRewriteBuilder<ClassType>): TypeRef {
         assert(clique.size > 0, "Clique can't be empty");
-        let inferredNames = OrderedSet<string>();
-        let givenNames = OrderedSet<string>();
-        clique.forEach(c => {
-            if (c.areNamesInferred) {
-                inferredNames = inferredNames.union(c.names);
-            } else {
-                givenNames = givenNames.union(c.names);
-            }
-        });
-        const areNamesInferred = givenNames.isEmpty();
+        const allNames = clique.map(c => c.getNames());
         const properties = getCliqueProperties(clique, builder);
-        return builder.getClassType(areNamesInferred ? inferredNames : givenNames, areNamesInferred, properties);
+        return builder.getClassType(typeNamesUnion(allNames), properties);
     }
 
     function getCliqueProperties(
@@ -140,10 +132,10 @@ export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMa
         return properties.map(([t, count, haveNullable], name) => {
             let resultType = builder.reconstituteType(t);
             if (haveNullable || count < clique.size) {
-                if (t.isNamedType()) {
-                    resultType = builder.makeNullable(resultType, t.names, t.areNamesInferred);
+                if (t.hasNames) {
+                    resultType = builder.makeNullable(resultType, t.getNames());
                 } else {
-                    resultType = builder.makeNullable(resultType, name, true);
+                    resultType = builder.makeNullable(resultType, makeTypeNames(name, true));
                 }
             }
             return resultType;

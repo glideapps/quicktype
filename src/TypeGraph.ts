@@ -2,9 +2,10 @@
 
 import { Map, List, Set, OrderedSet, Collection } from "immutable";
 
-import { Type, NamedType, separateNamedTypes, SeparatedNamedTypes } from "./Type";
+import { Type, separateNamedTypes, SeparatedNamedTypes, isNamedType } from "./Type";
 import { defined, assert } from "./Support";
 import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
+import { TypeNames } from "./TypeNames";
 
 export class TypeGraph {
     private _typeBuilder?: TypeBuilder;
@@ -13,7 +14,8 @@ export class TypeGraph {
     // and maybe even earlier in the TypeScript driver.
     private _topLevels?: Map<string, Type> = Map();
 
-    private _types?: List<Type> = List();
+    private _types?: List<Type>;
+    private _typeNames?: List<TypeNames | undefined>;
 
     constructor(typeBuilder: TypeBuilder) {
         this._typeBuilder = typeBuilder;
@@ -23,7 +25,7 @@ export class TypeGraph {
         return this._typeBuilder === undefined;
     }
 
-    freeze = (topLevels: Map<string, TypeRef>, types: List<Type>): void => {
+    freeze = (topLevels: Map<string, TypeRef>, types: List<Type>, typeNames: List<TypeNames | undefined>): void => {
         assert(!this.isFrozen, "Tried to freeze TypeGraph a second time");
         assert(
             types.every(t => t.typeRef.graph === this),
@@ -34,6 +36,7 @@ export class TypeGraph {
         // before, also, because the deref will call into typeAtIndex, which requires
         // either a _typeBuilder or a _types.
         this._types = types;
+        this._typeNames = typeNames;
         this._typeBuilder = undefined;
         this._topLevels = topLevels.map(tref => tref.deref());
     };
@@ -50,12 +53,17 @@ export class TypeGraph {
         return defined(defined(this._types).get(index));
     };
 
-    filterTypes<T extends Type>(
-        predicate: (t: Type) => t is T,
+    typeNamesForType = (t: Type): TypeNames | undefined => {
+        assert(this.isFrozen, "Tried to get type names before graph was frozen");
+        return defined(this._typeNames).get(t.typeRef.index);
+    };
+
+    filterTypes(
+        predicate: (t: Type) => boolean,
         childrenOfType?: (t: Type) => Collection<any, Type>
-    ): OrderedSet<T> {
+    ): OrderedSet<Type> {
         let seen = Set<Type>();
-        let types = List<T>();
+        let types = List<Type>();
 
         function addFromType(t: Type): void {
             if (seen.has(t)) return;
@@ -72,8 +80,8 @@ export class TypeGraph {
         return types.reverse().toOrderedSet();
     }
 
-    allNamedTypes = (childrenOfType?: (t: Type) => Collection<any, Type>): OrderedSet<NamedType> => {
-        return this.filterTypes<NamedType>((t: Type): t is NamedType => t.isNamedType(), childrenOfType);
+    allNamedTypes = (childrenOfType?: (t: Type) => Collection<any, Type>): OrderedSet<Type> => {
+        return this.filterTypes(isNamedType, childrenOfType);
     };
 
     allNamedTypesSeparated = (childrenOfType?: (t: Type) => Collection<any, Type>): SeparatedNamedTypes => {

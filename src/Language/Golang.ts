@@ -5,13 +5,13 @@ import { Map } from "immutable";
 import {
     TypeKind,
     Type,
-    NamedType,
     ClassType,
     EnumType,
     UnionType,
     nullableFromUnion,
     matchType,
-    removeNullFromUnion
+    removeNullFromUnion,
+    isNamedType
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
@@ -116,8 +116,8 @@ class GoRenderer extends ConvenienceRenderer {
         return true;
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): NamedType | null {
-        if (type.isNamedType()) {
+    protected namedTypeToNameForTopLevel(type: Type): Type | null {
+        if (isNamedType(type)) {
             return type;
         }
         return null;
