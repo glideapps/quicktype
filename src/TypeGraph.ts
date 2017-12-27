@@ -38,7 +38,7 @@ export class TypeGraph {
         this._types = types;
         this._typeNames = typeNames;
         this._typeBuilder = undefined;
-        this._topLevels = topLevels.map(tref => tref.deref());
+        this._topLevels = topLevels.map(tref => tref.deref()[0]);
     };
 
     get topLevels(): Map<string, Type> {
@@ -46,11 +46,11 @@ export class TypeGraph {
         return defined(this._topLevels);
     }
 
-    typeAtIndex = (index: number): Type => {
+    atIndex = (index: number): [Type, TypeNames | undefined] => {
         if (this._typeBuilder !== undefined) {
-            return this._typeBuilder.typeAtIndex(index);
+            return this._typeBuilder.atIndex(index);
         }
-        return defined(defined(this._types).get(index));
+        return [defined(defined(this._types).get(index)), defined(this._typeNames).get(index)];
     };
 
     typeNamesForType = (t: Type): TypeNames | undefined => {

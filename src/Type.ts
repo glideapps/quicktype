@@ -107,7 +107,7 @@ export class ArrayType extends Type {
     }
 
     get items(): Type {
-        return this.getItemsRef().deref();
+        return this.getItemsRef().deref()[0];
     }
 
     get children(): OrderedSet<Type> {
@@ -145,7 +145,7 @@ export class MapType extends Type {
     }
 
     get values(): Type {
-        return this.getValuesRef().deref();
+        return this.getValuesRef().deref()[0];
     }
 
     get children(): OrderedSet<Type> {
@@ -183,7 +183,7 @@ export class ClassType extends Type {
     }
 
     get properties(): OrderedMap<string, Type> {
-        return this.getPropertyRefs().map(tref => tref.deref());
+        return this.getPropertyRefs().map(tref => tref.deref()[0]);
     }
 
     get sortedProperties(): OrderedMap<string, Type> {
@@ -261,7 +261,7 @@ export class UnionType extends Type {
     }
 
     get members(): OrderedSet<Type> {
-        return this.getMemberRefs().map(tref => tref.deref());
+        return this.getMemberRefs().map(tref => tref.deref()[0]);
     }
 
     get stringTypeMembers(): OrderedSet<Type> {

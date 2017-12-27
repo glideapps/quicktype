@@ -304,7 +304,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
         path = path.push({ kind: PathElementKind.AdditionalProperty });
         valuesType = toType(additional, path, typeNames.singularize());
         if (mustSet) {
-            (result.deref() as MapType).setValues(valuesType);
+            (result.deref()[0] as MapType).setValues(valuesType);
         }
         return result;
     }
