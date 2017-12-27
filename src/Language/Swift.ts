@@ -217,6 +217,9 @@ const upperNamingFunction = funPrefixNamer(s => swiftNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer(s => swiftNameStyle(false, s));
 
 class SwiftRenderer extends ConvenienceRenderer {
+    private _needAny: boolean = false;
+    private _needNull: boolean = false;
+
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
@@ -277,17 +280,22 @@ class SwiftRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     };
 
-    private swift3OrPlainCase = (swift3OrPlain: Sourcelike, swift4NonPlain: Sourcelike): Sourcelike => {
-        if (this._justTypes) return swift3OrPlain;
-        else return swift4NonPlain;
+    private justTypesCase = (justTypes: Sourcelike, notJustTypes: Sourcelike): Sourcelike => {
+        if (this._justTypes) return justTypes;
+        else return notJustTypes;
     };
 
     private swiftType = (t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.swift3OrPlainCase("Any?", "JSONAny")),
-            _nullType =>
-                maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.swift3OrPlainCase("NSNull", "JSONNull?")),
+            _anyType => {
+                this._needAny = true;
+                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.justTypesCase("Any?", "JSONAny"));
+            },
+            _nullType => {
+                this._needNull = true;
+                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.justTypesCase("NSNull", "JSONNull?"));
+            },
             _boolType => "Bool",
             _integerType => "Int",
             _doubleType => "Double",
@@ -649,10 +657,9 @@ var json: String? {
     };
 
     private emitSupportFunctions4 = (): void => {
-        const anyAndNullSet = this.typeGraph.filterTypes((t): t is Type => t.kind === "any" || t.kind === "null");
-        const needAny = anyAndNullSet.some(t => t.kind === "any");
-        const needNull = anyAndNullSet.some(t => t.kind === "null");
-        if (needAny || needNull) {
+        // This assumes that this method is called after declarations
+        // are emitted.
+        if (this._needAny || this._needNull) {
             this.emitMark("Encode/decode helpers");
             this.ensureBlankLine();
             this.emitMultiline(`class JSONNull: Codable {
@@ -671,7 +678,7 @@ var json: String? {
     }
 }`);
         }
-        if (needAny) {
+        if (this._needAny) {
             this.ensureBlankLine();
             this.emitMultiline(`class JSONCodingKey: CodingKey {
     let key: String
