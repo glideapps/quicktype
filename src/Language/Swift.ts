@@ -603,7 +603,7 @@ var json: String? {
         });
     };
 
-    private emitTopLevelMapAndArrayExtensions = (t: Type, name: Name): void => {
+    private emitTopLevelMapAndArrayConvenienceInitializerExtensions = (t: Type, name: Name): void => {
         let extensionSource: Sourcelike;
 
         if (t instanceof ArrayType) {
@@ -924,9 +924,10 @@ class JSONAny: Codable {
                     () => undefined,
                     () => undefined
                 );
+                this.ensureBlankLine();
+                this.forEachTopLevel("leading-and-interposing", this.emitTopLevelMapAndArrayConvenienceInitializerExtensions);
             }
-            this.ensureBlankLine();
-            this.forEachTopLevel("leading-and-interposing", this.emitTopLevelMapAndArrayExtensions);
+
             this.ensureBlankLine();
             this.emitSupportFunctions4();
         }
