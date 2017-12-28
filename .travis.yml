@@ -7,14 +7,11 @@ env:
   - FIXTURE=elm,typescript,csharp
 services:
   - docker
-before_install: >
-  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || docker pull dvdsgl/quicktype:latest
-install: >
-  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || docker build \
-    --cache-from dvdsgl/quicktype:latest \
-    --tag dvdsgl/quicktype .
+before_install:
+  - docker pull dvdsgl/quicktype:latest
+  - docker build --cache-from dvdsgl/quicktype:latest --tag dvdsgl/quicktype:latest .
 script: >
-  [[ $TRAVIS_COMMIT_MESSAGE == *"ci:skip-tests"* ]] || docker run \
+  docker run \
     -e FIXTURE \
     -e CI \
     -e TRAVIS_BRANCH \
@@ -22,6 +19,11 @@ script: >
     -e TRAVIS_PULL_REQUEST \
     -e CPUs=2 \
     dvdsgl/quicktype npm test
+after_success:
+  - if [[ $TRAVIS_BRANCH == "master" ]]; then
+    docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD";
+    docker push dvdsgl/quicktype:latest;
+    fi
 jobs:
   include:
     - stage: deploy
