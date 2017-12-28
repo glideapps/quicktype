@@ -57,6 +57,24 @@ export function exec(
   return result;
 }
 
+export function execAsync(
+  s: string,
+  opts: { silent: boolean } = { silent: !DEBUG },
+  cb?: any
+) {
+  return new Promise<{ stdout: string; code: number }>((resolve, reject) => {
+    debug(s);
+    shell.exec(s, opts, (code, stdout, stderr) => {
+      if (code !== 0) {
+        console.error(stdout);
+        console.error(stderr);
+        reject({ command: s, code });
+      }
+      resolve({ stdout, code });
+    });
+  });
+}
+
 async function time<T>(work: () => Promise<T>): Promise<[T, number]> {
   let start = +new Date();
   let result = await work();
