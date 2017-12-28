@@ -4,6 +4,7 @@ import * as _ from "lodash";
 import * as path from "path";
 import * as fs from "fs";
 import { randomBytes } from "crypto";
+import { timeout } from "promise-timeout";
 
 const Ajv = require("ajv");
 
@@ -11,6 +12,7 @@ import {
   compareJsonFileToJson,
   debug,
   exec,
+  execAsync,
   failWith,
   inDir,
   quicktype,
@@ -33,6 +35,8 @@ const IS_BLESSED = BRANCH === "master";
 const IS_PR =
   process.env.TRAVIS_PULL_REQUEST &&
   process.env.TRAVIS_PULL_REQUEST !== "false";
+
+const MAX_TEST_RUNTIME_MS = 5 * 60 * 1000;
 
 function pathWithoutExtension(fullPath: string, extension: string): string {
   return path.join(path.dirname(fullPath), path.basename(fullPath, extension));
@@ -124,7 +128,7 @@ abstract class LanguageFixture extends Fixture {
     console.error(`* Setting up`, chalk.magenta(this.name), `fixture`);
 
     await inDir(this.language.base, async () => {
-      exec(setupCommand);
+      await execAsync(setupCommand);
     });
   }
 
@@ -162,10 +166,13 @@ abstract class LanguageFixture extends Fixture {
       await this.runQuicktype(sampleFile, sample.additionalRendererOptions);
 
       try {
-        await this.test(
-          sampleFile,
-          sample.additionalRendererOptions,
-          additionalFiles
+        await timeout(
+          this.test(
+            sampleFile,
+            sample.additionalRendererOptions,
+            additionalFiles
+          ),
+          MAX_TEST_RUNTIME_MS
         );
       } catch (e) {
         failWith("Fixture threw an exception", { error: e });
@@ -204,7 +211,7 @@ class JSONFixture extends LanguageFixture {
     additionalFiles: string[]
   ): Promise<void> {
     if (this.language.compileCommand) {
-      exec(this.language.compileCommand);
+      await execAsync(this.language.compileCommand);
     }
     compareJsonFileToJson({
       expectedFile: filename,
@@ -436,7 +443,7 @@ class JSONSchemaFixture extends LanguageFixture {
     jsonFiles: string[]
   ): Promise<void> {
     if (this.language.compileCommand) {
-      exec(this.language.compileCommand);
+      await execAsync(this.language.compileCommand);
     }
     for (const json of jsonFiles) {
       const jsonBase = path.basename(json);
@@ -509,7 +516,7 @@ class GraphQLFixture extends LanguageFixture {
     additionalFiles: string[]
   ): Promise<void> {
     if (this.language.compileCommand) {
-      exec(this.language.compileCommand);
+      await execAsync(this.language.compileCommand);
     }
     for (const fn of additionalFiles) {
       if (!fn.endsWith(".json")) {
