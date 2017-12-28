@@ -42,6 +42,7 @@ export abstract class Type {
     };
 
     abstract get isNullable(): boolean;
+    abstract isPrimitive(): this is PrimitiveType;
     abstract map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef;
 
     equals(other: any): boolean {
@@ -71,6 +72,10 @@ export class PrimitiveType extends Type {
         return this.kind === "null";
     }
 
+    isPrimitive(): this is PrimitiveType {
+        return true;
+    }
+
     get isStringType(): boolean {
         const kind = this.kind;
         return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
@@ -83,6 +88,16 @@ export class PrimitiveType extends Type {
 
 function isNull(t: Type): t is PrimitiveType {
     return t.kind === "null";
+}
+
+export class StringType extends PrimitiveType {
+    constructor(typeRef: TypeRef, readonly enumCases: OrderedMap<string, number> | undefined) {
+        super(typeRef, "string");
+    }
+
+    map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
+        return builder.getStringType(this.enumCases);
+    }
 }
 
 export class ArrayType extends Type {
@@ -115,6 +130,10 @@ export class ArrayType extends Type {
     }
 
     get isNullable(): boolean {
+        return false;
+    }
+
+    isPrimitive(): this is PrimitiveType {
         return false;
     }
 
@@ -153,6 +172,10 @@ export class MapType extends Type {
     }
 
     get isNullable(): boolean {
+        return false;
+    }
+
+    isPrimitive(): this is PrimitiveType {
         return false;
     }
 
@@ -201,6 +224,10 @@ export class ClassType extends Type {
         return false;
     }
 
+    isPrimitive(): this is PrimitiveType {
+        return false;
+    }
+
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
         const properties = this.getPropertyRefs().map(f);
         if (this.isFixed) {
@@ -228,6 +255,10 @@ export class EnumType extends Type {
 
     get isStringType(): boolean {
         return true;
+    }
+
+    isPrimitive(): this is PrimitiveType {
+        return false;
     }
 
     map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
@@ -278,6 +309,10 @@ export class UnionType extends Type {
 
     get isNullable(): boolean {
         return this.findMember("null") !== undefined;
+    }
+
+    isPrimitive(): this is PrimitiveType {
+        return false;
     }
 
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
@@ -359,7 +394,7 @@ export function matchTypeExhaustive<U>(
     boolType: (boolType: PrimitiveType) => U,
     integerType: (integerType: PrimitiveType) => U,
     doubleType: (doubleType: PrimitiveType) => U,
-    stringType: (stringType: PrimitiveType) => U,
+    stringType: (stringType: StringType) => U,
     arrayType: (arrayType: ArrayType) => U,
     classType: (classType: ClassType) => U,
     mapType: (mapType: MapType) => U,
@@ -369,14 +404,14 @@ export function matchTypeExhaustive<U>(
     timeType: (timeType: PrimitiveType) => U,
     dateTimeType: (dateTimeType: PrimitiveType) => U
 ): U {
-    if (t instanceof PrimitiveType) {
+    if (t.isPrimitive()) {
         const f = {
             any: anyType,
             null: nullType,
             bool: boolType,
             integer: integerType,
             double: doubleType,
-            string: stringType,
+            string: stringType as (t: PrimitiveType) => U,
             date: dateType,
             time: timeType,
             "date-time": dateTimeType
@@ -398,7 +433,7 @@ export function matchType<U>(
     boolType: (boolType: PrimitiveType) => U,
     integerType: (integerType: PrimitiveType) => U,
     doubleType: (doubleType: PrimitiveType) => U,
-    stringType: (stringType: PrimitiveType) => U,
+    stringType: (stringType: StringType) => U,
     arrayType: (arrayType: ArrayType) => U,
     classType: (classType: ClassType) => U,
     mapType: (mapType: MapType) => U,
