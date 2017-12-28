@@ -31,7 +31,7 @@ export default class L extends TargetLanguage {
     );
 
     constructor() {
-        super("TypeScript", ["typescript", "ts"], "ts");
+        super("TypeScript", ["typescript", "ts", "tsx"], "ts");
         this.setOptions([this._justTypes, this._declareUnions, this._runtimeTypecheck]);
     }
 
