@@ -203,59 +203,14 @@ class GoRenderer extends ConvenienceRenderer {
     };
 
     private emitEnum = (e: EnumType, enumName: Name): void => {
-        this.emitLine("type ", enumName, " int");
+        this.emitLine("type ", enumName, " string");
         this.emitLine("const (");
-        let onFirst = true;
         this.indent(() =>
-            this.forEachEnumCase(e, "none", name => {
-                if (onFirst) {
-                    this.emitLine(name, " ", enumName, " = iota");
-                } else {
-                    this.emitLine(name);
-                }
-                onFirst = false;
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
+                this.emitLine(name, " ", enumName, ' = "', stringEscape(jsonName), '"');
             })
         );
         this.emitLine(")");
-
-        if (this._justTypes) return;
-
-        this.ensureBlankLine();
-        this.emitFunc(["(x *", enumName, ") UnmarshalJSON(data []byte) error"], () => {
-            this.emitMultiline(`dec := json.NewDecoder(bytes.NewReader(data))
-tok, err := dec.Token()
-if err != nil {
-    return err
-}`);
-            this.emitBlock("if v, ok := tok.(string); ok", () => {
-                this.emitBlock("switch v", () => {
-                    this.forEachEnumCase(e, "none", (name, jsonName) => {
-                        this.emitLine('case "', stringEscape(jsonName), '":');
-                        this.indent(() => this.emitLine("*x = ", name));
-                    });
-                    this.emitLine("default:");
-                    this.indent(() =>
-                        this.emitLine(
-                            'return errors.New(fmt.Sprintf("Unknown enum value \\"%s\\" for type ',
-                            enumName,
-                            '", v))'
-                        )
-                    );
-                });
-                this.emitLine("return nil");
-            });
-            this.emitLine('return errors.New("Value for enum must be string")');
-        });
-        this.ensureBlankLine();
-        this.emitFunc(["(x *", enumName, ") MarshalJSON() ([]byte, error)"], () => {
-            this.emitBlock("switch *x", () => {
-                this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    this.emitLine("case ", name, ":");
-                    this.indent(() => this.emitLine('return json.Marshal("', stringEscape(jsonName), '")'));
-                });
-            });
-            this.emitLine('panic("Invalid enum value")');
-        });
     };
 
     private emitUnion = (u: UnionType, unionName: Name): void => {
@@ -355,12 +310,9 @@ if err != nil {
             this.ensureBlankLine();
             this.emitLine("package ", this._packageName);
             this.ensureBlankLine();
-            if (this.haveEnums || this.haveNamedUnions) {
+            if (this.haveNamedUnions) {
                 this.emitLine('import "bytes"');
                 this.emitLine('import "errors"');
-            }
-            if (this.haveEnums) {
-                this.emitLine('import "fmt"');
             }
             this.emitLine('import "encoding/json"');
         }

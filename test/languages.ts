@@ -70,14 +70,7 @@ export const GoLanguage: Language = {
   allowMissingNull: false,
   output: "quicktype.go",
   topLevel: "TopLevel",
-  skipJSON: [
-    "identifiers.json",
-    "simple-identifiers.json",
-    "blns-object.json",
-    "e324e.json", // https://github.com/golang/go/issues/23263
-    "76ae1.json", // same
-    "7d397.json" // same
-  ],
+  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: []
