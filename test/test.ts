@@ -4,7 +4,7 @@ import * as os from "os";
 import * as _ from "lodash";
 
 import { inParallel } from "./lib/multicore";
-import { exec, Sample } from "./utils";
+import { exec, execAsync, Sample } from "./utils";
 import { Fixture, allFixtures } from "./fixtures";
 
 const exit = require("exit");
@@ -58,8 +58,8 @@ async function main(sources: string[]) {
       );
 
       for (const fixture of fixtures) {
-        exec(`rm -rf test/runs`);
-        exec(`mkdir -p test/runs`);
+        await execAsync(`rm -rf test/runs`);
+        await execAsync(`mkdir -p test/runs`);
 
         await fixture.setup();
       }
