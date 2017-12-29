@@ -79,6 +79,7 @@ export interface Options {
     noRender: boolean;
     leadingComments: string[] | undefined;
     rendererOptions: RendererOptions;
+    indentation: string | undefined;
 }
 
 const defaultOptions: Options = {
@@ -90,7 +91,8 @@ const defaultOptions: Options = {
     combineClasses: true,
     noRender: false,
     leadingComments: undefined,
-    rendererOptions: {}
+    rendererOptions: {},
+    indentation: undefined
 };
 
 type InputData = {
@@ -209,7 +211,8 @@ export class Run {
             graph,
             this._options.alphabetizeProperties,
             this._options.leadingComments,
-            this._options.rendererOptions
+            this._options.rendererOptions,
+            this._options.indentation
         );
     };
 }

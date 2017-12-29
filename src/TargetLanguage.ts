@@ -35,10 +35,14 @@ export abstract class TargetLanguage {
         graph: TypeGraph,
         alphabetizeProperties: boolean,
         leadingComments: string[] | undefined,
-        rendererOptions: { [name: string]: any }
+        rendererOptions: { [name: string]: any },
+        indentation?: string
     ): SerializedRenderResult {
         if (this._options === undefined) {
             return panic(`Target language ${this.displayName} did not set its options`);
+        }
+        if (indentation === undefined) {
+            indentation = this.defaultIndentation;
         }
         const renderer = new this.rendererClass(
             graph,
@@ -49,10 +53,10 @@ export abstract class TargetLanguage {
             (renderer as ConvenienceRenderer).setAlphabetizeProperties(alphabetizeProperties);
         }
         const renderResult = renderer.render();
-        return serializeRenderResult(renderResult, this.indentation);
+        return serializeRenderResult(renderResult, indentation);
     }
 
-    protected get indentation(): string {
+    protected get defaultIndentation(): string {
         return "    ";
     }
 
