@@ -2,14 +2,15 @@
 
 import { Map, Set, OrderedSet } from "immutable";
 
-import { Type, ClassType, nonNullTypeCases } from "./Type";
+import { Type, ClassType, unionCasesEqual, removeNullFromType } from "./Type";
 import { defined, assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { unifyTypes } from "./UnifyClasses";
 
 const mapSizeThreshold = 20;
 
-export function shouldBeMap(properties: Map<string, Type>): [OrderedSet<Type>, boolean] | undefined {
+function shouldBeMap(properties: Map<string, Type>): Set<Type> | undefined {
     // Only classes with a certain number of properties are inferred
     // as maps.
     if (properties.size < mapSizeThreshold) {
@@ -22,38 +23,42 @@ export function shouldBeMap(properties: Map<string, Type>): [OrderedSet<Type>, b
     // 1. All property types are null.
     // 2. Some property types are null or nullable.
     // 3. No property types are null or nullable.
-    let nonNullCases: OrderedSet<Type> | undefined = undefined;
+    let firstNonNullCases: OrderedSet<Type> | undefined = undefined;
+    let allCases: Set<Type> = Set();
     let isNullable = false;
     let canBeMap = true;
     // Check that all the property types are the same, modulo nullability.
     properties.forEach(t => {
         // The set of types first property can be, minus null.
-        const nn = nonNullTypeCases(t);
+        const [maybeNull, nn] = removeNullFromType(t);
         if (!nn.isEmpty()) {
-            if (nonNullCases !== undefined) {
+            if (firstNonNullCases !== undefined) {
                 // The set of non-null cases for all other properties must
                 // be the the same, otherwise we won't infer a map.
-                if (!nn.toSet().equals(nonNullCases.toSet())) {
+                if (!unionCasesEqual(nn, firstNonNullCases, (a, b) => a.structurallyEquals(b))) {
                     canBeMap = false;
                     return false;
                 }
             } else {
-                nonNullCases = nn;
+                firstNonNullCases = nn;
             }
         }
-        isNullable = isNullable || t.isNullable;
+        allCases = allCases.union(nn.toSet());
+        if (maybeNull !== null) {
+            allCases = allCases.add(maybeNull);
+            isNullable = true;
+        }
     });
     if (!canBeMap) {
         return undefined;
     }
-    if (nonNullCases === undefined) {
+    if (firstNonNullCases === undefined) {
         assert(isNullable, "Non-nullable map candidate with no types");
-        return [OrderedSet(), true];
     }
-    return [nonNullCases, isNullable];
+    return allCases;
 }
 
-export function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewriteBuilder<ClassType>): TypeRef {
+function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewriteBuilder<ClassType>): TypeRef {
     const c = defined(setOfOneClass.first());
     const properties = c.properties;
 
@@ -61,7 +66,6 @@ export function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewrit
     if (shouldBe === undefined) {
         return panic(`We shouldn't be replacing class ${c.getCombinedName()} with a map`);
     }
-    const [nonNulls, isNullable] = shouldBe;
 
     // Now reconstitute all the types in the new graph.  TypeGraphs are
     // immutable, so any change in the graph actually means building a new
@@ -69,18 +73,7 @@ export function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewrit
     // Reconstituting a type means generating the "same" type in the new
     // type graph.  Except we don't get Type objects but TypeRef objects,
     // which is a type-to-be.
-    let trefs = nonNulls.map(builder.reconstituteType);
-    if (isNullable) {
-        trefs = trefs.add(builder.getPrimitiveType("null"));
-    }
-    assert(!trefs.isEmpty(), "We must have at least one type for the map properties");
-    let valuesType: TypeRef;
-    if (trefs.size === 1) {
-        valuesType = defined(trefs.first());
-    } else {
-        valuesType = builder.getUnionType(c.getNames(), trefs);
-    }
-    return builder.getMapType(valuesType);
+    return builder.getMapType(unifyTypes(shouldBe, c.getNames(), builder));
 }
 
 export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {

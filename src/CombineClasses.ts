@@ -1,13 +1,13 @@
 "use strict";
 
-import { Map, Set, OrderedSet, OrderedMap } from "immutable";
+import { Map, Set, OrderedSet } from "immutable";
 
-import { ClassType, Type, nonNullTypeCases, StringType } from "./Type";
+import { ClassType, Type, nonNullTypeCases } from "./Type";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
-import { assert, panic, defined } from "./Support";
+import { assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
-import { typeNamesUnion, TypeNames } from "./TypeNames";
-import { getCliqueProperties } from "./UnifyClasses";
+import { typeNamesUnion } from "./TypeNames";
+import { unifyTypes } from "./UnifyClasses";
 
 const REQUIRED_OVERLAP = 3 / 4;
 
@@ -22,9 +22,7 @@ function typeSetsCanBeCombined(s1: OrderedSet<Type>, s2: OrderedSet<Type>): bool
         const kind = t.kind;
         const other = s2ByKind.get(kind);
         if (other === undefined) return false;
-        if (t.equals(other)) return true;
-        if (kind === "string") return true;
-        return false;
+        return t.structurallyEquals(other);
     });
 }
 
@@ -113,39 +111,9 @@ export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMa
     }
 
     function makeCliqueClass(clique: Set<ClassType>, builder: GraphRewriteBuilder<ClassType>): TypeRef {
-        function makePropertyType(names: TypeNames, types: OrderedSet<Type>, isNullable: boolean): TypeRef {
-            let resultType: TypeRef;
-            const first = types.first();
-            if (first === undefined) {
-                resultType = builder.getPrimitiveType("null");
-            } else if (first instanceof StringType) {
-                assert(
-                    types.every(t => t instanceof StringType),
-                    "We can't combine strings with other types when combining classes"
-                );
-                const stringTypes = types as OrderedSet<StringType>;
-                if (stringTypes.every(t => t.enumCases !== undefined)) {
-                    const allEnumCases = stringTypes.toList().map(t => defined(t.enumCases));
-                    const mergedCases = allEnumCases.reduce<OrderedMap<string, number>>((l, r) =>
-                        l.mergeWith((a, b) => a + b, r)
-                    );
-                    resultType = builder.getStringType(names, mergedCases);
-                } else {
-                    resultType = builder.reconstituteType(first);
-                }
-            } else {
-                resultType = builder.reconstituteType(first);
-            }
-            if (isNullable) {
-                resultType = builder.makeNullable(resultType, names);
-            }
-            return resultType;
-        }
-
         assert(clique.size > 0, "Clique can't be empty");
         const allNames = clique.map(c => c.getNames());
-        const properties = getCliqueProperties(clique, makePropertyType);
-        return builder.getClassType(typeNamesUnion(allNames), properties);
+        return unifyTypes(clique, typeNamesUnion(allNames), builder);
     }
 
     return graph.rewrite(stringTypeMapping, cliques, makeCliqueClass);

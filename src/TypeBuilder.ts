@@ -192,7 +192,7 @@ export abstract class TypeBuilder {
 
     makeNullable = (tref: TypeRef, typeNames: TypeNames): TypeRef => {
         const t = defined(this.types.get(tref.index));
-        if (t.kind === "null") {
+        if (t.kind === "null" || t.kind === "any") {
             return tref;
         }
         const nullType = this.getPrimitiveType("null");
@@ -320,9 +320,36 @@ export abstract class TypeBuilder {
         }
         return tref;
     }
+
+    getUniqueUnionType = (names: TypeNames, members: OrderedSet<TypeRef>): TypeRef => {
+        return this.addType(undefined, tref => new UnionType(tref, members), names);
+    };
 }
 
-export class TypeGraphBuilder extends TypeBuilder {
+export interface TypeLookerUp {
+    lookupTypeRef(typeRef: TypeRef): TypeRef;
+    lookupType(typeRef: TypeRef): Type | undefined;
+}
+
+// Here's a case we can't handle: If the schema specifies
+// types
+//
+//   Foo = class { x: Bar }
+//   Bar = Foo | Quux
+//   Quux = class { ... }
+//
+// then to resolve the properties of `Foo` we have to know
+// the properties of `Bar`, but to resolve those we have to
+// know the properties of `Foo`.
+export function getHopefullyFinishedType(builder: TypeLookerUp, t: TypeRef): Type {
+    const result = builder.lookupType(t);
+    if (result === undefined) {
+        return panic("Inconveniently recursive types");
+    }
+    return result;
+}
+
+export class TypeGraphBuilder extends TypeBuilder implements TypeLookerUp {
     protected typeForEntry(entry: Type | undefined): Type | undefined {
         return entry;
     }
@@ -331,8 +358,8 @@ export class TypeGraphBuilder extends TypeBuilder {
         return this.addType(undefined, tref => new MapType(tref, valuesCreator()), undefined);
     }
 
-    getUniqueUnionType = (names: TypeNames, members: OrderedSet<TypeRef>): TypeRef => {
-        return this.addType(undefined, tref => new UnionType(tref, members), names);
+    lookupTypeRef = (typeRef: TypeRef): TypeRef => {
+        return typeRef;
     };
 
     lookupType = (typeRef: TypeRef): Type | undefined => {
@@ -392,7 +419,7 @@ export class TypeReconstituter {
     };
 }
 
-export class GraphRewriteBuilder<T extends Type> extends TypeBuilder {
+export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements TypeLookerUp {
     private _setsToReplaceByMember: Map<number, Set<T>>;
     private _reconstitutedTypes: Map<number, TypeRef> = Map();
 
@@ -475,6 +502,17 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder {
         return this.getReconstitutedType(t.typeRef);
     };
 
+    lookupTypeRef = (typeRef: TypeRef): TypeRef => {
+        return this.reconstituteType(typeRef.deref()[0]);
+    };
+
+    lookupType = (typeRef: TypeRef): Type | undefined => {
+        const tref = this.lookupTypeRef(typeRef);
+        const maybeIndex = tref.maybeIndex;
+        if (maybeIndex === undefined) return undefined;
+        return this.types.get(maybeIndex);
+    };
+
     finish(): TypeGraph {
         this._originalGraph.topLevels.forEach((t, name) => {
             this.addTopLevel(name, this.getReconstitutedType(t.typeRef));
@@ -483,7 +521,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder {
     }
 }
 
-export abstract class UnionBuilder<TArray, TClass, TMap> {
+export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass, TMap> {
     private _haveAny = false;
     private _haveNull = false;
     private _haveBool = false;
@@ -493,10 +531,11 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
     private readonly _arrays: TArray[] = [];
     private readonly _maps: TMap[] = [];
     private readonly _classes: TClass[] = [];
+    // FIXME: we're losing order here
     private _enumCaseMap: { [name: string]: number } = {};
     private _enumCases: string[] = [];
 
-    constructor(protected readonly typeBuilder: TypeGraphBuilder, protected readonly typeNames: TypeNames) {}
+    constructor(protected readonly typeBuilder: TBuilder, protected readonly typeNames: TypeNames) {}
 
     get haveString(): boolean {
         return this._stringTypes.has("string");
@@ -540,7 +579,7 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
         this._maps.push(t);
     };
 
-    addEnumCase = (s: string): void => {
+    addEnumCase = (s: string, count: number = 1): void => {
         if (this.haveString) {
             return;
         }
@@ -548,7 +587,10 @@ export abstract class UnionBuilder<TArray, TClass, TMap> {
             this._enumCaseMap[s] = 0;
             this._enumCases.push(s);
         }
-        this._enumCaseMap[s] += 1;
+        this._enumCaseMap[s] += count;
+    };
+    addEnumCases = (cases: OrderedMap<string, number>): void => {
+        cases.forEach((count, name) => this.addEnumCase(name, count));
     };
 
     protected abstract makeEnum(cases: string[], counts: { [name: string]: number }): TypeRef;

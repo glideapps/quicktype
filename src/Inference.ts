@@ -4,7 +4,7 @@ import { OrderedMap } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { assertNever, assert, panic } from "./Support";
-import { TypeGraphBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
+import { TypeBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { makeTypeNames, TypeNames } from "./TypeNames";
 
@@ -30,11 +30,11 @@ function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => v
     forEachArrayInNestedValueArray(va, a => a.forEach(f));
 }
 
-class InferenceUnionBuilder extends UnionBuilder<NestedValueArray, NestedValueArray, any> {
+class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, NestedValueArray, any> {
     private _numValues?: number;
 
     constructor(
-        typeBuilder: TypeGraphBuilder,
+        typeBuilder: TypeBuilder,
         typeNames: TypeNames,
         private readonly _typeInference: TypeInference,
         private readonly _cjson: CompressedJSON
@@ -72,7 +72,7 @@ function canBeEnumCase(s: string): boolean {
 }
 
 export class TypeInference {
-    constructor(private readonly _typeBuilder: TypeGraphBuilder, private readonly _inferEnums: boolean) {}
+    constructor(private readonly _typeBuilder: TypeBuilder, private readonly _inferEnums: boolean) {}
 
     inferType = (cjson: CompressedJSON, typeNames: TypeNames, valueArray: NestedValueArray): TypeRef => {
         const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeNames, this, cjson);

@@ -430,7 +430,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                             this.emitLine("return;");
                         });
                     } else {
-                        return panic("Unsupported string enum type");
+                        return panic(`Unsupported string enum type ${t.kind}`);
                     }
                 });
                 this.emitLine("break;");
