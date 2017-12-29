@@ -52,6 +52,7 @@ async function main(sources: string[]) {
 
     setup: async () => {
       testCLI();
+      testMapInference();
 
       console.error(
         `* Running ${tests.length} tests between ${fixtures.length} fixtures`
@@ -75,6 +76,11 @@ async function main(sources: string[]) {
       }
     }
   });
+}
+
+function testMapInference() {
+  console.log(`* Test map inference`);
+  exec("test/fixtures/map-inference/run.sh");
 }
 
 function testCLI() {
