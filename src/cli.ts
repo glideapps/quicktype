@@ -1,7 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
-import * as isURL from "is-url";
+
+// The typings for this module are screwy
+const isURL = require("is-url");
 
 import {
     Run,
