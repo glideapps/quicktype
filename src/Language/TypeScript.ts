@@ -308,8 +308,8 @@ function isValidArray(typ: any, val: any): boolean {
 
 function isValidMap(typ: any, val: any): boolean {
     // all values in the map must be typ
-    for (const prop in val) {
-        if (!!prop) continue;
+    for (const prop of Object.keys(val)) {
+        if (prop === undefined) continue;
         path.push(\`["$\{prop\}"]\`);
         if (!isValid(typ, val[prop]))
             return false;
@@ -321,8 +321,8 @@ function isValidMap(typ: any, val: any): boolean {
 function isValidObject(className: string, val: any): boolean {
     let typeRep = typeMap[className];
     
-    for (const prop in typeRep) {
-        if (!!prop) continue;
+    for (const prop of Object.keys(typeRep)) {
+        if (prop === undefined) continue;
         path.push(\`.$\{prop\}\`);
         if (!isValid(typeRep[prop], val[prop]))
             return false;
