@@ -1,7 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
-
 import * as _ from "lodash";
+import * as isURL from "is-url";
+
 import {
     Run,
     JSONTypeSource,
@@ -60,11 +61,13 @@ export interface CLIOptions {
 }
 
 async function readableFromFileOrUrl(fileOrUrl: string): Promise<Readable> {
-    if (fs.existsSync(fileOrUrl)) {
-        return fs.createReadStream(fileOrUrl);
-    } else {
+    if (isURL(fileOrUrl)) {
         const response = await fetch(fileOrUrl);
         return response.body;
+    } else if (fs.existsSync(fileOrUrl)) {
+        return fs.createReadStream(fileOrUrl);
+    } else {
+        return panic(`Input file ${fileOrUrl} does not exist`);
     }
 }
 
