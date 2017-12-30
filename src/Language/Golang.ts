@@ -49,7 +49,7 @@ export default class GoTargetLanguage extends TargetLanguage {
         return GoRenderer;
     }
 
-    protected get indentation(): string {
+    protected get defaultIndentation(): string {
         return "\t";
     }
 }
