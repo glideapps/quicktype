@@ -28,13 +28,14 @@ export function replaceString(setOfOneString: Set<StringType>, builder: GraphRew
     if (maybeEnumCases !== undefined) {
         return builder.getEnumType(t.getNames(), maybeEnumCases.keySeq().toOrderedSet());
     }
-    return builder.getStringType(t.getNames(), undefined);
+    const names = t.hasNames ? t.getNames() : undefined;
+    return builder.getStringType(names, undefined);
 }
 
 export function inferEnums(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
     const allStrings = graph
         .allTypesUnordered()
-        .filter(t => t instanceof StringType && shouldBeEnum(t) !== undefined)
+        .filter(t => t instanceof StringType)
         .map(t => [t])
         .toArray() as StringType[][];
     return graph.rewrite(stringTypeMapping, allStrings, replaceString);
