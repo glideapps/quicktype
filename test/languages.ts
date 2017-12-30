@@ -149,7 +149,8 @@ function makeSwiftLanguage(rendererOptions: {
       "no-classes.json",
       "blns-object.json",
       "recursive.json",
-      "list.json"
+      "list.json",
+      "ed095.json" // this times out swiftc because map inference is broken and we generate a huge class
     ],
     skipSchema: [],
     rendererOptions: rendererOptions,
