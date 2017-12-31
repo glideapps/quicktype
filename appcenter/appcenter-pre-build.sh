@@ -7,12 +7,7 @@ source appcenter/slack.sh
 ### Build ###
 #############
 
-if npm run build; then
-    slack_notify_build_passed
-else
-    slack_notify_build_failed
-    exit 1
-fi
+npm run build
 
 ############
 ### Test ###
@@ -20,7 +15,12 @@ fi
 
 brew install go boost
 
-time CI=true FIXTURE=swift script/test
+if time CI=true FIXTURE=swift script/test; then
+    slack_notify_build_passed
+else
+    slack_notify_build_failed
+    exit 1
+fi
 
 ###############
 ### Archive ###
