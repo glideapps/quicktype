@@ -3,11 +3,11 @@
 import { List, OrderedSet, Map, fromJS, Set } from "immutable";
 import * as pluralize from "pluralize";
 
-import { Type, matchTypeExhaustive, MapType, assertIsClass } from "./Type";
+import { MapType, assertIsClass } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "./Support";
 import { TypeGraphBuilder, TypeRef, getHopefullyFinishedType } from "./TypeBuilder";
 import { TypeNames, makeTypeNames } from "./TypeNames";
-import { UnifyUnionBuilder } from "./UnifyClasses";
+import { unifyTypes } from "./UnifyClasses";
 
 enum PathElementKind {
     Root,
@@ -124,42 +124,6 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
 
     function setTypeForPath(path: Ref, t: TypeRef): void {
         typeForPath = typeForPath.set(makeImmutablePath(path), t);
-    }
-
-    function unifyTypes(typesToUnify: TypeRef[], typeNames: TypeNames): TypeRef {
-        if (typesToUnify.length === 0) {
-            return panic("Cannot unify empty list of types");
-        } else if (typesToUnify.length === 1) {
-            return typesToUnify[0];
-        } else {
-            const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeNames, true, unifyTypes);
-
-            const registerType = (t: Type): void => {
-                matchTypeExhaustive<void>(
-                    t,
-                    _anyType => unionBuilder.addAny(),
-                    _nullType => unionBuilder.addNull(),
-                    _boolType => unionBuilder.addBool(),
-                    _integerType => unionBuilder.addInteger(),
-                    _doubleType => unionBuilder.addDouble(),
-                    _stringType => unionBuilder.addStringType("string"),
-                    arrayType => unionBuilder.addArray(arrayType.items.typeRef),
-                    classType => unionBuilder.addClass(classType.typeRef),
-                    mapType => unionBuilder.addMap(mapType.values.typeRef),
-                    enumType => enumType.cases.forEach(s => unionBuilder.addEnumCase(s)),
-                    unionType => unionType.members.forEach(registerType),
-                    _dateType => unionBuilder.addStringType("date"),
-                    _timeType => unionBuilder.addStringType("time"),
-                    _dateTimeType => unionBuilder.addStringType("date-time")
-                );
-            };
-
-            for (const t of typesToUnify) {
-                registerType(getHopefullyFinishedType(typeBuilder, t));
-            }
-
-            return unionBuilder.buildUnion(false);
-        }
     }
 
     function lookupRef(local: StringMap, localPath: Ref, ref: Ref): [StringMap, Ref] {
@@ -302,10 +266,10 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
                 return panic(`oneOf or anyOf is not an array: ${cases}`);
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
-            const types = cases.map((t, index) =>
-                toType(checkStringMap(t), path.push({ kind, index } as any), typeNames)
+            const types = cases.map(
+                (t, index) => toType(checkStringMap(t), path.push({ kind, index } as any), typeNames).deref()[0]
             );
-            return unifyTypes(types, typeNames);
+            return unifyTypes(OrderedSet(types), typeNames, typeBuilder, true);
         }
 
         if (schema.$ref !== undefined) {
@@ -319,8 +283,8 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
             if (jsonTypes.size === 1) {
                 return fromTypeName(schema, path, typeNames, defined(jsonTypes.first()));
             } else {
-                const types = jsonTypes.map(n => fromTypeName(schema, path, typeNames, n));
-                return unifyTypes(types.toArray(), typeNames);
+                const types = jsonTypes.map(n => fromTypeName(schema, path, typeNames, n).deref()[0]);
+                return unifyTypes(types, typeNames, typeBuilder, true);
             }
         } else if (schema.oneOf !== undefined) {
             return convertOneOrAnyOf(schema.oneOf, PathElementKind.OneOf);
