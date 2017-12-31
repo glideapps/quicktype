@@ -1,6 +1,26 @@
 #!/usr/bin/env bash -e
 
 cd $APPCENTER_SOURCE_DIRECTORY
+source appcenter/slack.sh
+
+#####################
+### Deploy to npm ###
+#####################
+
+# TODO ^
+
+if [ "$APPCENTER_BRANCH" == "master" ]; then
+    # For now we assume we're just about to deploy to npm from Travis
+    # but soon we will do all deployment here, once our full test suite
+    # runs in App Center and App Center supports PRs.
+    slack_notify_deployed
+fi
+
+#########################
+### Deploy to VS Code ###
+#########################
+
+# TODO ^
 
 ###############################
 ### Deploy app.quicktype.io ###
