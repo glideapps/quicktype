@@ -121,8 +121,7 @@ export const ElmLanguage: Language = {
     "simple-identifiers.json",
     "blns-object.json",
     "recursive.json",
-    "list.json",
-    "ed095.json" // stack overflow in Elm on Travis
+    "list.json"
   ],
   skipSchema: [], // All of them currently fail, so we don't even run it.
   rendererOptions: {},
@@ -149,8 +148,7 @@ function makeSwiftLanguage(rendererOptions: {
       "no-classes.json",
       "blns-object.json",
       "recursive.json",
-      "list.json",
-      "ed095.json" // this times out swiftc because map inference is broken and we generate a huge class
+      "list.json"
     ],
     skipSchema: [],
     rendererOptions: rendererOptions,
