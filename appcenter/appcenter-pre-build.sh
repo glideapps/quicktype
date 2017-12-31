@@ -15,7 +15,9 @@ npm run build
 
 brew install go boost
 
-if time CI=true FIXTURE=swift script/test; then
+CI=true
+FIXTURE=swift
+if time script/test; then
     slack_notify_build_passed
 else
     slack_notify_build_failed
