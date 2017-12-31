@@ -1,5 +1,5 @@
 ORG=quicktype
-APP=quiktype
+APP=quicktype
 
 ICON=https://pbs.twimg.com/profile_images/881784177422725121/hXRP69QY_200x200.jpg
 
