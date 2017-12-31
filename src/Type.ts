@@ -60,7 +60,10 @@ export abstract class Type {
 export class PrimitiveType extends Type {
     readonly kind: PrimitiveTypeKind;
 
-    constructor(typeRef: TypeRef, kind: PrimitiveTypeKind) {
+    constructor(typeRef: TypeRef, kind: PrimitiveTypeKind, checkKind: boolean = true) {
+        if (checkKind) {
+            assert(kind !== "string", "Cannot instantiate a PrimitiveType as string");
+        }
         super(typeRef, kind);
     }
 
@@ -92,7 +95,7 @@ function isNull(t: Type): t is PrimitiveType {
 
 export class StringType extends PrimitiveType {
     constructor(typeRef: TypeRef, readonly enumCases: OrderedMap<string, number> | undefined) {
-        super(typeRef, "string");
+        super(typeRef, "string", false);
     }
 
     map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {

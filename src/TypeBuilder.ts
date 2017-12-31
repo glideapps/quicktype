@@ -223,6 +223,9 @@ export abstract class TypeBuilder {
         if (kind === "date") kind = this._stringTypeMapping.date;
         if (kind === "time") kind = this._stringTypeMapping.time;
         if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
+        if (kind === "string") {
+            return this.getStringType(undefined, undefined, forwardingRef);
+        }
         let tref = this._primitiveTypes.get(kind);
         if (tref === undefined) {
             tref = this.addType(forwardingRef, tr => new PrimitiveType(tr, kind), undefined);
@@ -236,7 +239,17 @@ export abstract class TypeBuilder {
         cases: OrderedMap<string, number> | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
-        if (names === undefined && cases === undefined) {
+        if (cases === undefined) {
+            // FIXME: Right now we completely ignore names for strings
+            // without enum cases.  That's the correct behavior at the time,
+            // because string types never are assigned names, but we might
+            // do that at some point, but in that case we'll want a different
+            // type for each occurrence, not the same single string type with
+            // all the names.
+            //
+            // The proper solution at that point might be to just figure
+            // out whether we do want string types to have names (we most
+            // likely don't), and if not, still don't keep track of them.
             if (this._noEnumStringType === undefined) {
                 this._noEnumStringType = this.addType(forwardingRef, tr => new StringType(tr, undefined), undefined);
             }
@@ -351,7 +364,7 @@ export class TypeReconstituter {
     };
 
     getStringType = (enumCases: OrderedMap<string, number> | undefined): TypeRef => {
-        return this.useBuilder().getStringType(defined(this._typeNames), enumCases, this._forwardingRef);
+        return this.useBuilder().getStringType(this._typeNames, enumCases, this._forwardingRef);
     };
 
     getEnumType = (cases: OrderedSet<string>): TypeRef => {
