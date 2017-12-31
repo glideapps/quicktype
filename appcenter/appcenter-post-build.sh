@@ -6,7 +6,7 @@ cd $APPCENTER_SOURCE_DIRECTORY
 ### Deploy Xcode extension ###
 ##############################
 
-if [ "$APPCENTER_BRANCH" == "master" ]; then
+if [ "$APPCENTER_BRANCH" == "appcenter" ]; then
     appcenter \
         build queue \
         --app quicktype/quicktype-xcode \
