@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Collection } from "immutable";
+import { OrderedSet, OrderedMap, Set, List, Collection } from "immutable";
 import { defined, panic, assert } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
@@ -12,10 +12,6 @@ export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
-
-    get isStringType(): boolean {
-        return false;
-    }
 
     abstract get children(): OrderedSet<Type>;
 
@@ -55,6 +51,47 @@ export abstract class Type {
     hashCode(): number {
         return this.typeRef.hashCode();
     }
+
+    // This will only ever be called when `this` and `other` are not
+    // equal, but `this.kind === other.kind`.
+    protected abstract structuralEqualityStep(other: Type, queue: (a: Type, b: Type) => boolean): boolean;
+
+    structurallyEquals(other: Type): boolean {
+        if (this.equals(other)) return true;
+        if (this.kind !== other.kind) return false;
+
+        const workList: [Type, Type][] = [[this, other]];
+        // This contains a set of pairs which are the type pairs
+        // we have already determined to be equal.  We can't just
+        // do comparison recursively because types can have cycles.
+        let done: Set<List<Type>> = Set();
+
+        while (workList.length > 0) {
+            let [a, b] = defined(workList.pop());
+            if (a.typeRef.index > b.typeRef.index) {
+                [a, b] = [b, a];
+            }
+            const pair = List([a, b]);
+            if (done.has(pair)) continue;
+
+            let failed = false;
+            const queue = (x: Type, y: Type): boolean => {
+                if (x === y) return true;
+                if (x.kind !== y.kind) {
+                    failed = true;
+                    return false;
+                }
+                workList.push([x, y]);
+                return true;
+            };
+            if (!a.structuralEqualityStep(b, queue)) return false;
+            if (failed) return false;
+
+            done = done.add(pair);
+        }
+
+        return true;
+    }
 }
 
 export class PrimitiveType extends Type {
@@ -79,13 +116,12 @@ export class PrimitiveType extends Type {
         return true;
     }
 
-    get isStringType(): boolean {
-        const kind = this.kind;
-        return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
-    }
-
     map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
         return builder.getPrimitiveType(this.kind);
+    }
+
+    protected structuralEqualityStep(_other: Type, _queue: (a: Type, b: Type) => boolean): boolean {
+        return true;
     }
 }
 
@@ -100,6 +136,10 @@ export class StringType extends PrimitiveType {
 
     map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
         return builder.getStringType(this.enumCases);
+    }
+
+    protected structuralEqualityStep(_other: Type, _queue: (a: Type, b: Type) => boolean): boolean {
+        return true;
     }
 }
 
@@ -143,6 +183,10 @@ export class ArrayType extends Type {
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
         return builder.getArrayType(f(this.getItemsRef()));
     }
+
+    protected structuralEqualityStep(other: ArrayType, queue: (a: Type, b: Type) => boolean): boolean {
+        return queue(this.items, other.items);
+    }
 }
 
 export class MapType extends Type {
@@ -184,6 +228,10 @@ export class MapType extends Type {
 
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
         return builder.getMapType(f(this.getValuesRef()));
+    }
+
+    protected structuralEqualityStep(other: MapType, queue: (a: Type, b: Type) => boolean): boolean {
+        return queue(this.values, other.values);
     }
 }
 
@@ -239,6 +287,28 @@ export class ClassType extends Type {
             return builder.getClassType(properties);
         }
     }
+
+    protected structuralEqualityStep(other: ClassType, queue: (a: Type, b: Type) => boolean): boolean {
+        const pa = this.properties;
+        const pb = other.properties;
+        if (pa.size !== pb.size) return false;
+        let failed = false;
+        pa.forEach((ta, name) => {
+            const tb = pb.get(name);
+            if (tb === undefined || !queue(ta, tb)) {
+                failed = true;
+                return false;
+            }
+        });
+        return !failed;
+    }
+}
+
+export function assertIsClass(t: Type): ClassType {
+    if (!(t instanceof ClassType)) {
+        return panic("Supposed class type is not a class type");
+    }
+    return t;
 }
 
 export class EnumType extends Type {
@@ -256,16 +326,16 @@ export class EnumType extends Type {
         return false;
     }
 
-    get isStringType(): boolean {
-        return true;
-    }
-
     isPrimitive(): this is PrimitiveType {
         return false;
     }
 
     map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
         return builder.getEnumType(this.cases);
+    }
+
+    protected structuralEqualityStep(other: EnumType, _queue: (a: Type, b: Type) => void): boolean {
+        return this.cases.toSet().equals(other.cases.toSet());
     }
 }
 
@@ -275,7 +345,7 @@ export class UnionType extends Type {
     constructor(typeRef: TypeRef, private _memberRefs?: OrderedSet<TypeRef>) {
         super(typeRef, "union");
         if (_memberRefs !== undefined) {
-            assert(_memberRefs.size > 1, "Union has zero members");
+            assert(_memberRefs.size > 1, "Union less than two members");
         }
     }
 
@@ -283,7 +353,7 @@ export class UnionType extends Type {
         if (this._memberRefs !== undefined) {
             return panic("Can only set map members once");
         }
-        assert(memberRefs.size > 1, "Union has zero members");
+        assert(memberRefs.size > 1, "Union less than two members");
         this._memberRefs = memberRefs;
     }
 
@@ -299,7 +369,7 @@ export class UnionType extends Type {
     }
 
     get stringTypeMembers(): OrderedSet<Type> {
-        return this.members.filter(t => t.isStringType);
+        return this.members.filter(t => ["string", "date", "time", "date-time", "enum"].indexOf(t.kind) >= 0);
     }
 
     findMember = (kind: TypeKind): Type | undefined => {
@@ -327,6 +397,27 @@ export class UnionType extends Type {
         // FIXME: We're assuming no two members of the same kind.
         return this.members.sortBy(t => t.kind);
     }
+
+    protected structuralEqualityStep(other: UnionType, queue: (a: Type, b: Type) => boolean): boolean {
+        return unionCasesEqual(this.members, other.members, queue);
+    }
+}
+
+export function unionCasesEqual(
+    ma: OrderedSet<Type>,
+    mb: OrderedSet<Type>,
+    membersEqual: (a: Type, b: Type) => boolean
+): boolean {
+    if (ma.size !== mb.size) return false;
+    let failed = false;
+    ma.forEach(ta => {
+        const tb = mb.find(t => t.kind === ta.kind);
+        if (tb === undefined || !membersEqual(ta, tb)) {
+            failed = true;
+            return false;
+        }
+    });
+    return !failed;
 }
 
 export function removeNullFromUnion(t: UnionType): [PrimitiveType | null, OrderedSet<Type>] {
@@ -337,6 +428,16 @@ export function removeNullFromUnion(t: UnionType): [PrimitiveType | null, Ordere
     return [nullType as PrimitiveType, t.members.filterNot(isNull).toOrderedSet()];
 }
 
+export function removeNullFromType(t: Type): [PrimitiveType | null, OrderedSet<Type>] {
+    if (t.kind === "null") {
+        return [t as PrimitiveType, OrderedSet()];
+    }
+    if (!(t instanceof UnionType)) {
+        return [null, OrderedSet([t])];
+    }
+    return removeNullFromUnion(t);
+}
+
 export function nullableFromUnion(t: UnionType): Type | null {
     const [hasNull, nonNulls] = removeNullFromUnion(t);
     if (!hasNull) return null;
@@ -345,14 +446,7 @@ export function nullableFromUnion(t: UnionType): Type | null {
 }
 
 export function nonNullTypeCases(t: Type): OrderedSet<Type> {
-    if (t.kind === "null") {
-        return OrderedSet();
-    }
-    if (!(t instanceof UnionType)) {
-        return OrderedSet([t]);
-    }
-    const nonNulls = removeNullFromUnion(t)[1];
-    return OrderedSet(nonNulls);
+    return removeNullFromType(t)[1];
 }
 
 // FIXME: The outer OrderedSet should be some Collection, but I can't figure out

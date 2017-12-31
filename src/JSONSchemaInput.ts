@@ -3,11 +3,11 @@
 import { List, OrderedSet, Map, fromJS, Set } from "immutable";
 import * as pluralize from "pluralize";
 
-import { Type, ClassType, matchTypeExhaustive, MapType } from "./Type";
+import { Type, matchTypeExhaustive, MapType, assertIsClass } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "./Support";
-import { UnionBuilder, TypeGraphBuilder, TypeRef } from "./TypeBuilder";
+import { TypeGraphBuilder, TypeRef, getHopefullyFinishedType } from "./TypeBuilder";
 import { TypeNames, makeTypeNames } from "./TypeNames";
-import { getCliqueProperties } from "./UnifyClasses";
+import { UnifyUnionBuilder } from "./UnifyClasses";
 
 enum PathElementKind {
     Root,
@@ -114,78 +114,8 @@ function checkTypeList(typeOrTypes: any): OrderedSet<string> {
     }
 }
 
-// Here's a case we can't handle: If the schema specifies
-// types
-//
-//   Foo = class { x: Bar }
-//   Bar = Foo | Quux
-//   Quux = class { ... }
-//
-// then to resolve the properties of `Foo` we have to know
-// the properties of `Bar`, but to resolve those we have to
-// know the properties of `Foo`.
-function getHopefullyFinishedType(builder: TypeGraphBuilder, t: TypeRef): Type {
-    const result = builder.lookupType(t);
-    if (result === undefined) {
-        return panic("Inconveniently recursive types in schema");
-    }
-    return result;
-}
-
-function assertIsClass(t: Type): ClassType {
-    if (!(t instanceof ClassType)) {
-        return panic("Supposed class type is not a class type");
-    }
-    return t;
-}
-
 function makeImmutablePath(path: Ref): List<any> {
     return path.map(pe => fromJS(pe));
-}
-
-class UnifyUnionBuilder extends UnionBuilder<TypeRef, TypeRef, TypeRef> {
-    constructor(
-        typeBuilder: TypeGraphBuilder,
-        typeNames: TypeNames,
-        private readonly _unifyTypes: (typesToUnify: TypeRef[], typeNames: TypeNames) => TypeRef
-    ) {
-        super(typeBuilder, typeNames);
-    }
-
-    protected makeEnum(enumCases: string[]): TypeRef {
-        return this.typeBuilder.getEnumType(this.typeNames, OrderedSet(enumCases));
-    }
-
-    protected makeClass(classes: TypeRef[], maps: TypeRef[]): TypeRef {
-        if (classes.length > 0 && maps.length > 0) {
-            return panic("Cannot handle a class type that's also a map");
-        }
-        if (maps.length > 0) {
-            return this.typeBuilder.getMapType(this._unifyTypes(maps, this.typeNames));
-        }
-        if (classes.length === 1) {
-            return classes[0];
-        }
-
-        const actualClasses: ClassType[] = [];
-        for (const c of classes) {
-            const t = assertIsClass(getHopefullyFinishedType(this.typeBuilder, c));
-            actualClasses.push(t);
-        }
-
-        const properties = getCliqueProperties(OrderedSet(actualClasses), (names, types, isNullable) => {
-            const tref = this._unifyTypes(types.map(t => t.typeRef).toArray(), names);
-            if (isNullable) {
-                return this.typeBuilder.makeNullable(tref, names);
-            }
-            return tref;
-        });
-        return this.typeBuilder.getUniqueClassType(this.typeNames, properties);
-    }
-
-    protected makeArray(arrays: TypeRef[]): TypeRef {
-        return this.typeBuilder.getArrayType(this._unifyTypes(arrays, this.typeNames.singularize()));
-    }
 }
 
 export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string, rootJson: any): TypeRef {
@@ -202,7 +132,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
         } else if (typesToUnify.length === 1) {
             return typesToUnify[0];
         } else {
-            const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeNames, unifyTypes);
+            const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeNames, true, unifyTypes);
 
             const registerType = (t: Type): void => {
                 matchTypeExhaustive<void>(

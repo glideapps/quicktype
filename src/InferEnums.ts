@@ -1,11 +1,11 @@
 "use strict";
 
-import { Set, OrderedMap } from "immutable";
+import { Set, OrderedMap, OrderedSet } from "immutable";
 
-import { StringType } from "./Type";
+import { Type, StringType, UnionType } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
-import { assert, defined } from "./Support";
+import { assert, defined, assertNever } from "./Support";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -21,15 +21,51 @@ function shouldBeEnum(t: StringType): OrderedMap<string, number> | undefined {
     return undefined;
 }
 
-export function replaceString(setOfOneString: Set<StringType>, builder: GraphRewriteBuilder<StringType>): TypeRef {
-    assert(setOfOneString.size === 1);
-    const t = defined(setOfOneString.first());
+function replaceString(t: StringType, builder: GraphRewriteBuilder<StringType | UnionType>): TypeRef {
     const maybeEnumCases = shouldBeEnum(t);
     if (maybeEnumCases !== undefined) {
         return builder.getEnumType(t.getNames(), maybeEnumCases.keySeq().toOrderedSet());
     }
-    const names = t.hasNames ? t.getNames() : undefined;
-    return builder.getStringType(names, undefined);
+    return builder.getStringType(undefined, undefined);
+}
+
+function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {
+    const stringMembers = u.stringTypeMembers;
+    if (stringMembers.size <= 1) return undefined;
+    const stringType = u.findMember("string");
+    if (stringType === undefined || shouldBeEnum(stringType as StringType) !== undefined) return undefined;
+    return stringMembers;
+}
+
+function replaceUnion(u: UnionType, builder: GraphRewriteBuilder<StringType | UnionType>): TypeRef {
+    const stringMembers = defined(unionNeedsReplacing(u));
+    const types: TypeRef[] = [];
+    u.members.forEach(t => {
+        if (stringMembers.has(t)) return;
+        types.push(builder.reconstituteType(t));
+    });
+    // FIXME: add names
+    const stringType = builder.getStringType(undefined, undefined);
+    if (types.length === 0) {
+        return stringType;
+    }
+    types.push(stringType);
+    return builder.getUnionType(u.getNames(), OrderedSet(types));
+}
+
+function replace(
+    setOfStringOrUnion: Set<StringType | UnionType>,
+    builder: GraphRewriteBuilder<StringType | UnionType>
+): TypeRef {
+    assert(setOfStringOrUnion.size === 1);
+    const t = defined(setOfStringOrUnion.first());
+    if (t instanceof StringType) {
+        return replaceString(t, builder);
+    } else if (t instanceof UnionType) {
+        return replaceUnion(t, builder);
+    } else {
+        return assertNever(t);
+    }
 }
 
 export function inferEnums(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
@@ -38,5 +74,11 @@ export function inferEnums(graph: TypeGraph, stringTypeMapping: StringTypeMappin
         .filter(t => t instanceof StringType)
         .map(t => [t])
         .toArray() as StringType[][];
-    return graph.rewrite(stringTypeMapping, allStrings, replaceString);
+    const allUnions = graph.allNamedTypesSeparated().unions;
+    const unionsToReplace = allUnions
+        .filter(unionNeedsReplacing)
+        .map(t => [t])
+        .toArray();
+    const typesToReplace = ([] as (StringType | UnionType)[][]).concat(allStrings, unionsToReplace);
+    return graph.rewrite(stringTypeMapping, typesToReplace, replace);
 }
