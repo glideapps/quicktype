@@ -237,6 +237,7 @@ export class MapType extends Type {
 
 export class ClassType extends Type {
     kind: "class";
+    private _propertyTypes: OrderedMap<string, Type> | undefined;
 
     constructor(typeRef: TypeRef, readonly isFixed: boolean, private _propertyRefs?: OrderedMap<string, TypeRef>) {
         super(typeRef, "class");
@@ -257,7 +258,10 @@ export class ClassType extends Type {
     }
 
     get properties(): OrderedMap<string, Type> {
-        return this.getPropertyRefs().map(tref => tref.deref()[0]);
+        if (this._propertyTypes === undefined) {
+            this._propertyTypes = this.getPropertyRefs().map(tref => tref.deref()[0]);
+        }
+        return this._propertyTypes;
     }
 
     get sortedProperties(): OrderedMap<string, Type> {

@@ -4,7 +4,7 @@ import { Set, OrderedMap, OrderedSet } from "immutable";
 
 import { ClassType, Type, nonNullTypeCases, matchTypeExhaustive, assertIsClass } from "./Type";
 import { TypeRef, UnionBuilder, TypeBuilder, TypeLookerUp } from "./TypeBuilder";
-import { TypeNames, makeTypeNames } from "./TypeNames";
+import { TypeNames, typeNamesUnion, makeTypeNames } from "./TypeNames";
 import { panic, assert } from "./Support";
 
 function getCliqueProperties(
@@ -33,9 +33,7 @@ function getCliqueProperties(
         );
         const isNullable = haveNullable || count < clique.size;
         const allNames = types.filter(t => t.hasNames).map(t => t.getNames());
-        const typeNames = allNames.isEmpty()
-            ? makeTypeNames(name, true)
-            : allNames.reduce<TypeNames>((l, r) => l.union(r));
+        const typeNames = allNames.isEmpty() ? makeTypeNames(name, true) : typeNamesUnion(allNames);
         return makePropertyType(typeNames, types, isNullable);
     });
 }

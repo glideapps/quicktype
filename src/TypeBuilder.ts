@@ -92,21 +92,21 @@ export class TypeRef {
         }
     };
 
-    deref = (): [Type, TypeNames | undefined] => {
+    deref(): [Type, TypeNames | undefined] {
         return this.graph.atIndex(this.index);
-    };
+    }
 
-    equals = (other: any): boolean => {
+    equals(other: any): boolean {
         if (!(other instanceof TypeRef)) {
             return false;
         }
         assert(this.graph === other.graph, "Comparing type refs of different graphs");
         return this.follow() === other.follow();
-    };
+    }
 
-    hashCode = (): number => {
+    hashCode(): number {
         return this.index | 0;
-    };
+    }
 }
 
 export type StringTypeMapping = {

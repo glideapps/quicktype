@@ -11,6 +11,11 @@ import { unifyTypes } from "./UnifyClasses";
 
 const REQUIRED_OVERLAP = 3 / 4;
 
+type Clique = {
+    members: ClassType[];
+    prototypes: ClassType[];
+};
+
 // FIXME: Allow some type combinations to unify, like different enums,
 // enums with strings, integers with doubles, maps with objects of
 // the correct type.
@@ -70,13 +75,21 @@ function canBeCombined(c1: ClassType, c2: ClassType): boolean {
     return true;
 }
 
-function isPartOfClique(c: ClassType, clique: ClassType[]): boolean {
-    for (const cc of clique) {
-        if (!canBeCombined(c, cc)) {
-            return false;
+function tryAddToClique(c: ClassType, clique: Clique): boolean {
+    for (const prototype of clique.prototypes) {
+        if (prototype.structurallyEquals(c)) {
+            clique.members.push(c);
+            return true;
         }
     }
-    return true;
+    for (const prototype of clique.prototypes) {
+        if (canBeCombined(prototype, c)) {
+            clique.prototypes.push(c);
+            clique.members.push(c);
+            return true;
+        }
+    }
+    return false;
 }
 
 export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
@@ -92,19 +105,17 @@ export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMa
     // into a new clique.
     while (unprocessedClasses.length > 0) {
         const classesLeft: ClassType[] = [];
-        const clique = [unprocessedClasses[0]];
+        const clique: Clique = { members: [unprocessedClasses[0]], prototypes: [unprocessedClasses[0]] };
 
         for (let i = 1; i < unprocessedClasses.length; i++) {
             const c = unprocessedClasses[i];
-            if (isPartOfClique(c, clique)) {
-                clique.push(c);
-            } else {
+            if (!tryAddToClique(c, clique)) {
                 classesLeft.push(c);
             }
         }
 
-        if (clique.length > 1) {
-            cliques.push(clique);
+        if (clique.members.length > 1) {
+            cliques.push(clique.members);
         }
 
         unprocessedClasses = classesLeft;
