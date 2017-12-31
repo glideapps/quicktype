@@ -26,7 +26,7 @@ fi
 ### Deploy app.quicktype.io ###
 ###############################
 
-if [ "$APPCENTER_BRANCH" == "appcenter" ]; then
+if [ "$APPCENTER_BRANCH" == "master" ]; then
     appcenter \
         build queue \
         --app quicktype/app.quicktype.io \
@@ -38,7 +38,7 @@ fi
 ### Deploy Xcode extension ###
 ##############################
 
-if [ "$APPCENTER_BRANCH" == "appcenter" ]; then
+if [ "$APPCENTER_BRANCH" == "master" ]; then
     appcenter \
         build queue \
         --app quicktype/quicktype-xcode \
