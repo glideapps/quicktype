@@ -14,7 +14,7 @@ npm run build
 
 brew install go boost
 
-time CI=true script/test
+time CI=true FIXTURE=swift script/test
 
 ###############
 ### Archive ###
