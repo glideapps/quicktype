@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Set, List, Collection } from "immutable";
+import { OrderedSet, OrderedMap, Collection } from "immutable";
 import { defined, panic, assert } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
@@ -64,7 +64,7 @@ export abstract class Type {
         // This contains a set of pairs which are the type pairs
         // we have already determined to be equal.  We can't just
         // do comparison recursively because types can have cycles.
-        let done: Set<List<Type>> = Set();
+        const done: [number, number][] = [];
 
         let failed: boolean;
         const queue = (x: Type, y: Type): boolean => {
@@ -82,9 +82,21 @@ export abstract class Type {
             if (a.typeRef.index > b.typeRef.index) {
                 [a, b] = [b, a];
             }
-            const pair = List([a, b]);
-            if (done.has(pair)) continue;
-            done = done.add(pair);
+
+            if (!a.isPrimitive()) {
+                let ai = a.typeRef.index;
+                let bi = b.typeRef.index;
+
+                let found = false;
+                for (const [dai, dbi] of done) {
+                    if (dai === ai && dbi === bi) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) continue;
+                done.push([ai, bi]);
+            }
 
             failed = false;
             if (!a.structuralEqualityStep(b, queue)) return false;
