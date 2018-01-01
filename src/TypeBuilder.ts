@@ -327,6 +327,7 @@ export abstract class TypeBuilder {
 }
 
 export interface TypeLookerUp {
+    lookupTypeRefs(typeRefs: TypeRef[]): TypeRef | undefined;
     lookupTypeRef(typeRef: TypeRef): TypeRef;
     lookupType(typeRef: TypeRef): Type | undefined;
 }
@@ -356,6 +357,10 @@ export class TypeGraphBuilder extends TypeBuilder implements TypeLookerUp {
 
     getLazyMapType(valuesCreator: () => TypeRef | undefined): TypeRef {
         return this.addType(undefined, tref => new MapType(tref, valuesCreator()), undefined);
+    }
+
+    lookupTypeRefs(_typeRefs: TypeRef[]): undefined {
+        return undefined;
     }
 
     lookupTypeRef = (typeRef: TypeRef): TypeRef => {
@@ -501,6 +506,36 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         assert(t.typeRef.graph === this._originalGraph, "Trying to reconstitute a type from the wrong graph");
         return this.getReconstitutedType(t.typeRef);
     };
+
+    lookupTypeRefs(typeRefs: TypeRef[]): TypeRef | undefined {
+        assert(typeRefs.length >= 2, "Use lookupTypeRef to look up a single type");
+
+        const maybeRef = this._reconstitutedTypes.get(typeRefs[0].index);
+        if (maybeRef !== undefined && maybeRef.maybeIndex !== undefined) {
+            let allEqual = true;
+            for (let i = 1; i < typeRefs.length; i++) {
+                if (this._reconstitutedTypes.get(typeRefs[i].index) !== maybeRef) {
+                    allEqual = false;
+                    break;
+                }
+            }
+            if (allEqual) {
+                return maybeRef;
+            }
+        }
+
+        const maybeSet = this._setsToReplaceByMember.get(typeRefs[0].index);
+        if (maybeSet === undefined) {
+            return undefined;
+        }
+        for (let i = 1; i < typeRefs.length; i++) {
+            if (this._setsToReplaceByMember.get(typeRefs[i].index) !== maybeSet) {
+                return undefined;
+            }
+        }
+
+        return this.reconstituteType(typeRefs[0].deref()[0]);
+    }
 
     lookupTypeRef = (typeRef: TypeRef): TypeRef => {
         return this.reconstituteType(typeRef.deref()[0]);
