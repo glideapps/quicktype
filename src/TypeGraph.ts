@@ -14,8 +14,8 @@ export class TypeGraph {
     // and maybe even earlier in the TypeScript driver.
     private _topLevels?: Map<string, Type> = Map();
 
-    private _types?: List<Type>;
-    private _typeNames?: List<TypeNames | undefined>;
+    private _types?: Type[];
+    private _typeNames?: (TypeNames | undefined)[];
 
     constructor(typeBuilder: TypeBuilder) {
         this._typeBuilder = typeBuilder;
@@ -25,7 +25,7 @@ export class TypeGraph {
         return this._typeBuilder === undefined;
     }
 
-    freeze = (topLevels: Map<string, TypeRef>, types: List<Type>, typeNames: List<TypeNames | undefined>): void => {
+    freeze = (topLevels: Map<string, TypeRef>, types: Type[], typeNames: (TypeNames | undefined)[]): void => {
         assert(!this.isFrozen, "Tried to freeze TypeGraph a second time");
         assert(
             types.every(t => t.typeRef.graph === this),
@@ -46,12 +46,12 @@ export class TypeGraph {
         return defined(this._topLevels);
     }
 
-    atIndex = (index: number): [Type, TypeNames | undefined] => {
+    atIndex(index: number): [Type, TypeNames | undefined] {
         if (this._typeBuilder !== undefined) {
             return this._typeBuilder.atIndex(index);
         }
-        return [defined(defined(this._types).get(index)), defined(this._typeNames).get(index)];
-    };
+        return [defined(this._types)[index], defined(this._typeNames)[index]];
+    }
 
     filterTypes(
         predicate: (t: Type) => boolean,
