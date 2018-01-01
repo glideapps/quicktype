@@ -10,7 +10,7 @@ export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
 
-function triviallyStructurallyEqual(x: Type, y: Type): boolean {
+function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     if (x.typeRef.index === y.typeRef.index) return true;
     if (x.kind === "none" || y.kind === "none") return true;
     return false;
@@ -62,8 +62,8 @@ export abstract class Type {
     // equal, but `this.kind === other.kind`.
     protected abstract structuralEqualityStep(other: Type, queue: (a: Type, b: Type) => boolean): boolean;
 
-    structurallyEquals(other: Type): boolean {
-        if (triviallyStructurallyEqual(this, other)) return true;
+    structurallyCompatible(other: Type): boolean {
+        if (triviallyStructurallyCompatible(this, other)) return true;
         if (this.kind !== other.kind) return false;
 
         const workList: [Type, Type][] = [[this, other]];
@@ -74,7 +74,7 @@ export abstract class Type {
 
         let failed: boolean;
         const queue = (x: Type, y: Type): boolean => {
-            if (triviallyStructurallyEqual(x, y)) return true;
+            if (triviallyStructurallyCompatible(x, y)) return true;
             if (x.kind !== y.kind) {
                 failed = true;
                 return false;
