@@ -36,7 +36,7 @@ const IS_PR =
   process.env.TRAVIS_PULL_REQUEST &&
   process.env.TRAVIS_PULL_REQUEST !== "false";
 
-const MAX_TEST_RUNTIME_MS = 5 * 60 * 1000;
+const MAX_TEST_RUNTIME_MS = 15 * 60 * 1000;
 
 function pathWithoutExtension(fullPath: string, extension: string): string {
   return path.join(path.dirname(fullPath), path.basename(fullPath, extension));
@@ -49,7 +49,7 @@ function jsonTestFiles(base: string): string[] {
     jsonFiles.push(fn);
   }
   let i = 1;
-  for (;;) {
+  for (; ;) {
     fn = `${base}.${i.toString()}.json`;
     if (fs.existsSync(fn)) {
       jsonFiles.push(fn);
@@ -243,7 +243,7 @@ class JSONFixture extends LanguageFixture {
       // Compare fixture.output to fixture.output.expected
       exec(
         `diff -Naur ${this.language.output}.expected ${
-          this.language.output
+        this.language.output
         } > /dev/null 2>&1`
       );
     }
