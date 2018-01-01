@@ -7,23 +7,7 @@ env:
   - FIXTURE=elm,typescript,csharp
 services:
   - docker
-before_install:
-  - docker pull dvdsgl/quicktype:latest
-  - docker build --cache-from dvdsgl/quicktype:latest --tag dvdsgl/quicktype:latest .
-script: >
-  docker run \
-    -e FIXTURE \
-    -e CI \
-    -e TRAVIS_BRANCH \
-    -e TRAVIS_EVENT_TYPE \
-    -e TRAVIS_PULL_REQUEST \
-    -e CPUs=2 \
-    dvdsgl/quicktype npm test
-after_success:
-  - if [[ $TRAVIS_BRANCH == "master" ]]; then
-    docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD";
-    docker push dvdsgl/quicktype:latest;
-    fi
+script: true
 jobs:
   include:
     - stage: deploy
