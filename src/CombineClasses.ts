@@ -27,7 +27,7 @@ function typeSetsCanBeCombined(s1: OrderedSet<Type>, s2: OrderedSet<Type>): bool
         const kind = t.kind;
         const other = s2ByKind.get(kind);
         if (other === undefined) return false;
-        return t.structurallyEquals(other);
+        return t.structurallyCompatible(other);
     });
 }
 
@@ -77,7 +77,7 @@ function canBeCombined(c1: ClassType, c2: ClassType): boolean {
 
 function tryAddToClique(c: ClassType, clique: Clique): boolean {
     for (const prototype of clique.prototypes) {
-        if (prototype.structurallyEquals(c)) {
+        if (prototype.structurallyCompatible(c)) {
             clique.members.push(c);
             return true;
         }
