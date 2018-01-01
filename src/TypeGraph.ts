@@ -104,3 +104,14 @@ export class TypeGraph {
         return Set(defined(this._types));
     };
 }
+
+export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
+    const noneTypes = graph.allTypesUnordered().filter(t => t.kind === "none");
+    if (noneTypes.size === 0) {
+        return graph;
+    }
+    assert(noneTypes.size === 1, "Cannot have more than one none type");
+    return graph.rewrite(stringTypeMapping, [noneTypes.toArray()], (_, builder) => {
+        return builder.getPrimitiveType("any");
+    });
+}

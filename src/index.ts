@@ -13,7 +13,7 @@ import { schemaToType } from "./JSONSchemaInput";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
-import { TypeGraph } from "./TypeGraph";
+import { TypeGraph, noneToAny } from "./TypeGraph";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
 import { makeTypeNames } from "./TypeNames";
@@ -168,6 +168,7 @@ export class Run {
         if (doInferMaps) {
             graph = inferMaps(graph, stringTypeMapping);
         }
+        graph = noneToAny(graph, stringTypeMapping);
         gatherNames(graph);
 
         return graph;

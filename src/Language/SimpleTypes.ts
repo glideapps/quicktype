@@ -14,7 +14,7 @@ import {
     allUpperWordStyle,
     allLowerWordStyle
 } from "../Strings";
-import { intercalate } from "../Support";
+import { intercalate, panic } from "../Support";
 
 import { Namer, Name } from "../Naming";
 
@@ -107,6 +107,9 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     sourceFor = (t: Type): Sourcelike => {
         return matchTypeExhaustive<Sourcelike>(
             t,
+            _noneType => {
+                return panic("None type should have been replaced");
+            },
             _anyType => "Any",
             _nullType => "Null",
             _boolType => "Bool",

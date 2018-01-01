@@ -8,7 +8,7 @@ import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
 import { legalizeCharacters, splitIntoWords, combineWords, firstUpperWordStyle, allUpperWordStyle } from "../Strings";
-import { defined, assert } from "../Support";
+import { defined, assert, panic } from "../Support";
 import { StringTypeMapping } from "../TypeBuilder";
 
 export default class JSONSchemaTargetLanguage extends TargetLanguage {
@@ -98,6 +98,9 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
     private schemaForType = (t: Type): Schema => {
         return matchTypeExhaustive<{ [name: string]: any }>(
             t,
+            _noneType => {
+                return panic("None type should have been replaced");
+            },
             _anyType => ({}),
             _nullType => ({ type: "null" }),
             _boolType => ({ type: "boolean" }),

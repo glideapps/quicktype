@@ -118,6 +118,9 @@ export function unifyTypes(
     const addType = (t: Type): void => {
         matchTypeExhaustive(
             t,
+            _noneType => {
+                return;
+            },
             _anyType => unionBuilder.addAny(),
             _nullType => unionBuilder.addNull(),
             _boolType => unionBuilder.addBool(),
