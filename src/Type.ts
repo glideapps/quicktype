@@ -25,17 +25,17 @@ export abstract class Type {
         return this.typeRef.deref()[1] !== undefined;
     }
 
-    getNames = (): TypeNames => {
+    getNames(): TypeNames {
         return defined(this.typeRef.deref()[1]);
-    };
+    }
 
-    getCombinedName = (): string => {
+    getCombinedName(): string {
         return this.getNames().combinedName;
-    };
+    }
 
-    getProposedNames = (): OrderedSet<string> => {
+    getProposedNames(): OrderedSet<string> {
         return this.getNames().proposedNames;
-    };
+    }
 
     abstract get isNullable(): boolean;
     abstract isPrimitive(): this is PrimitiveType;
@@ -376,9 +376,9 @@ export class UnionType extends Type {
         return this.members.filter(t => ["string", "date", "time", "date-time", "enum"].indexOf(t.kind) >= 0);
     }
 
-    findMember = (kind: TypeKind): Type | undefined => {
+    findMember(kind: TypeKind): Type | undefined {
         return this.members.find((t: Type) => t.kind === kind);
-    };
+    }
 
     get children(): OrderedSet<Type> {
         return this.sortedMembers;
@@ -542,12 +542,13 @@ export function matchType<U>(
     unionType: (unionType: UnionType) => U,
     stringTypeMatchers?: StringTypeMatchers<U>
 ): U {
+    function typeNotSupported(_: Type) {
+        return panic("Unsupported PrimitiveType");
+    }
+
     if (stringTypeMatchers === undefined) {
         stringTypeMatchers = {};
     }
-    const typeNotSupported = (_: Type) => {
-        return panic("Unsupported PrimitiveType");
-    };
     return matchTypeExhaustive(
         t,
         anyType,
