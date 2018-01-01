@@ -26,7 +26,7 @@ after_success:
 jobs:
   include:
   - stage: deploy
-    if: branch == appcenter-deploy
+    if: branch == master
     install: npm install -g appcenter-cli
     script: appcenter build queue --app quicktype/quicktype --branch master --token
       $APPCENTER_TOKEN
