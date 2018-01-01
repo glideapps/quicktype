@@ -30,6 +30,8 @@ jobs:
     install: npm install -g appcenter-cli
     script: appcenter build queue --app quicktype/quicktype --branch master --token
       $APPCENTER_TOKEN
+    on:		
+      branch: master
 notifications:
   email:
     on_success: never
