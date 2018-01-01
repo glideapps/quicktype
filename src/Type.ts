@@ -66,6 +66,17 @@ export abstract class Type {
         // do comparison recursively because types can have cycles.
         let done: Set<List<Type>> = Set();
 
+        let failed: boolean;
+        const queue = (x: Type, y: Type): boolean => {
+            if (x === y) return true;
+            if (x.kind !== y.kind) {
+                failed = true;
+                return false;
+            }
+            workList.push([x, y]);
+            return true;
+        };
+
         while (workList.length > 0) {
             let [a, b] = defined(workList.pop());
             if (a.typeRef.index > b.typeRef.index) {
@@ -73,21 +84,11 @@ export abstract class Type {
             }
             const pair = List([a, b]);
             if (done.has(pair)) continue;
+            done = done.add(pair);
 
-            let failed = false;
-            const queue = (x: Type, y: Type): boolean => {
-                if (x === y) return true;
-                if (x.kind !== y.kind) {
-                    failed = true;
-                    return false;
-                }
-                workList.push([x, y]);
-                return true;
-            };
+            failed = false;
             if (!a.structuralEqualityStep(b, queue)) return false;
             if (failed) return false;
-
-            done = done.add(pair);
         }
 
         return true;
