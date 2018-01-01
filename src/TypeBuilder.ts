@@ -632,7 +632,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         }
 
         if (types.length === 0) {
-            return this.typeBuilder.getPrimitiveType("any");
+            return this.typeBuilder.getPrimitiveType("none");
         }
         if (types.length === 1) {
             this.typeBuilder.addNames(types[0], this.typeNames);

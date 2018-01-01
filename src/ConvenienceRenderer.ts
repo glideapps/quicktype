@@ -276,6 +276,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         const typeNameForUnionMember = (t: Type): string =>
             matchTypeExhaustive(
                 t,
+                _noneType => {
+                    return panic("None type should have been replaced");
+                },
                 _anyType => "anything",
                 _nullType => "null",
                 _boolType => "bool",

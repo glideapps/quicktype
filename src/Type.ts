@@ -6,9 +6,15 @@ import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
-export type PrimitiveTypeKind = "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
+export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
+
+function triviallyStructurallyEqual(x: Type, y: Type): boolean {
+    if (x.typeRef.index === y.typeRef.index) return true;
+    if (x.kind === "none" || y.kind === "none") return true;
+    return false;
+}
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
@@ -57,7 +63,7 @@ export abstract class Type {
     protected abstract structuralEqualityStep(other: Type, queue: (a: Type, b: Type) => boolean): boolean;
 
     structurallyEquals(other: Type): boolean {
-        if (this.equals(other)) return true;
+        if (triviallyStructurallyEqual(this, other)) return true;
         if (this.kind !== other.kind) return false;
 
         const workList: [Type, Type][] = [[this, other]];
@@ -68,7 +74,7 @@ export abstract class Type {
 
         let failed: boolean;
         const queue = (x: Type, y: Type): boolean => {
-            if (x === y) return true;
+            if (triviallyStructurallyEqual(x, y)) return true;
             if (x.kind !== y.kind) {
                 failed = true;
                 return false;
@@ -503,6 +509,7 @@ export type StringTypeMatchers<U> = {
 
 export function matchTypeExhaustive<U>(
     t: Type,
+    noneType: (noneType: PrimitiveType) => U,
     anyType: (anyType: PrimitiveType) => U,
     nullType: (nullType: PrimitiveType) => U,
     boolType: (boolType: PrimitiveType) => U,
@@ -520,6 +527,7 @@ export function matchTypeExhaustive<U>(
 ): U {
     if (t.isPrimitive()) {
         const f = {
+            none: noneType,
             any: anyType,
             null: nullType,
             bool: boolType,
@@ -564,6 +572,7 @@ export function matchType<U>(
     }
     return matchTypeExhaustive(
         t,
+        typeNotSupported,
         anyType,
         nullType,
         boolType,
