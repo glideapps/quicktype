@@ -4,7 +4,7 @@ APP=quicktype
 ICON=https://pbs.twimg.com/profile_images/881784177422725121/hXRP69QY_200x200.jpg
 
 build_url=https://appcenter.ms/orgs/$ORG/apps/$APP/build/branches/$APPCENTER_BRANCH/builds/$APPCENTER_BUILD_ID
-build_link="<$build_url|$APP $APPCENTER_BRANCH#$APPCENTER_BUILD_ID>"
+build_link="<$build_url|$APP $APPCENTER_BRANCH #$APPCENTER_BUILD_ID>"
 
 version() {
     cat package.json | jq -r .version
@@ -33,5 +33,5 @@ slack_notify_build_failed() {
 }
 
 slack_notify_deployed() {
-    slack_notify message="✓ <$build_url|$APP ($APPCENTER_BRANCH, v`version`)> released to npm"
+    slack_notify message="✓ <$build_url|$APP v`version`> released to npm"
 }
