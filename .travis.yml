@@ -27,11 +27,13 @@ jobs:
   include:
   - stage: deploy
     if: branch == master
-    install: npm install -g appcenter-cli
-    script: appcenter build queue --app quicktype/quicktype --branch master --token
-      $APPCENTER_TOKEN
-    on:		
-      branch: master
+    deploy:
+      provider: script
+      on:		
+        branch: master
+      script:
+        - npm install -g appcenter-cli
+        - appcenter build queue --app quicktype/quicktype --branch master --token $APPCENTER_TOKEN
 notifications:
   email:
     on_success: never
