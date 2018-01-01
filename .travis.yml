@@ -1,16 +1,17 @@
 language: node_js
-node_js: node # latest
+node_js: node
 sudo: required
 env:
-  - FIXTURE=golang,cplusplus,schema,graphql
-  - FIXTURE=swift,java,schema-json-csharp
-  - FIXTURE=elm,typescript,csharp
+- FIXTURE=golang,cplusplus,schema,graphql
+- FIXTURE=swift,java,schema-json-csharp
+- FIXTURE=elm,typescript,csharp
 services:
-  - docker
+- docker
 before_install:
-  - docker pull dvdsgl/quicktype:latest
-  - docker build --cache-from dvdsgl/quicktype:latest --tag dvdsgl/quicktype:latest .
-script: >
+- docker pull dvdsgl/quicktype:latest
+- docker build --cache-from dvdsgl/quicktype:latest --tag dvdsgl/quicktype:latest
+  .
+script: |
   docker run \
     -e FIXTURE \
     -e CI \
@@ -20,18 +21,17 @@ script: >
     -e CPUs=2 \
     dvdsgl/quicktype npm test
 after_success:
-  - if [[ $TRAVIS_BRANCH == "master" ]]; then
-    docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD";
-    docker push dvdsgl/quicktype:latest;
-    fi
+- if [[ $TRAVIS_BRANCH == "master" ]]; then docker login -u "$DOCKER_USERNAME" -p
+  "$DOCKER_PASSWORD"; docker push dvdsgl/quicktype:latest; fi
 jobs:
   include:
-    - stage: deploy
-      if: branch == appcenter-deploy
-      install: npm install -g appcenter-cli
-      script: appcenter build queue --app quicktype/quicktype --branch master --token $APPCENTER_TOKEN
+  - stage: deploy
+    if: branch == appcenter-deploy
+    install: npm install -g appcenter-cli
+    script: appcenter build queue --app quicktype/quicktype --branch master --token
+      $APPCENTER_TOKEN
 notifications:
   email:
-    on_success: never # default: change
+    on_success: never
   slack:
-    secure: "XRAIego99I4ZbEgPo+NREnrcMGxhJZ5pCKcfwehGrtpyQ0hNKa/F1RKp9BH8F1k7awaXs4MWG9fRsJVm8kaEMp29E9gj81CX4d1Z6Pej3QIjSWJc2+ZYcJDaxe+t9AZEAmmviZqUWn9WkJZvkVtnykdfo19wb1SEScZXm8qHZhefmTfpv7caBSq1Y73tlTsRVnDELqmK0hodBPVnbVLeIseaR0bqqD+bIZsA+YE/vqr9GPrzYqgcJ2vMTr9YrlRzo9Om8WoD0DNOiFWWortJFQ8unoTszjCKzXXOVf6l9CJL7uqe6WY7yRIaMu+x1uRSMBpaoek1ehL3kyn1E5vG3alK6JbCfSFrhiSpJxYSNmK6s9dJrt0teydlil2UsbcHOVOy8B8mWc9L548OEUI6KoRY3mQWaZQYy27hkT1U1F46OA9jvzpSofGLLaXX4sAofO+zuhypzIyvV4qK+Gk0r+ZWYEMh2JcdJ+4JbVw6S9ssdu+88v/29BV8NI3OrS8ci4MHtI0wOoEO799BQU4dXt8pUNem1oZ9SroAjbx4ZR0DClnhhlhBB+2+TjdXtSTBfDVuxs3quzaMXHN8rAZmZYvXPycTDHZUIcB7aDqN2lBp03fuJRSkL/qmQxUn+eXTLOVIecHW+hiimZwpPkFfO+7Nc7lGRO8bo90fY3rtk1Q="
+    secure: iyS16BnUyjRuVbNI4tNL0xPv/Kx8TEGW2oErsljn9ZR5omy+PDif+QW0C4pzFZLxoCmjDDswHnEm/LUQ0QbDcN8CnJPHJGoDl7Wc6IO+RWLC4NDD1IRyz6qj8yN3wgnRvBxmtEq4xUFjYpeaKLo+jKESlziCVLl8oQotrTXG/u3KfMM9vBggQtrzUK/ttCKXFIV8z70CB3uWy4getL5+nhHqShKEM5IU4tD+gVxlH1L4rzQVR3aX9UQ+1UQY1k115adz4nFHC6on7gPICUJR7N+0tsamz1X7wgdDs5meRMQWljPtxUme/9ri29rTWlyaRyB+ih0GtC2ww4WA8zg2tuTN2H3diZkMkDJSZLQlvyzh6B4wmqs/gMPbmkmAQl/pSKoYZ9xZ+2fFpfETywLSOxWuq+uul+0xaqvwpdPCNIeyEMBrFVnxUZik2o1PpSDRLjUodW2/ltDxr1LwFqq6q4mG3MM4XvH6zTLlazeVgaWV+t3zMNvDgKLie8xOQ9iJAtKoNTnsvpouxCuvR9okF3S8dGXUvkPwTHACS8UNhSV8tw7I8ftO3M0rR57HZbTsAaWA0TKoK/bcxo5t0BVGiqCPsJqpiDPQbTzNwg7PnpZtMA16+Jyc/jgCJIemSogP57kQjheNzoSrzifOsS9SRNIL/2LggLgqDxiwtND5Wpw=
