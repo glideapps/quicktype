@@ -7,12 +7,13 @@ source appcenter/slack.sh
 ### Deploy to npm ###
 #####################
 
-# TODO ^
-
 if [ "$APPCENTER_BRANCH" == "master" ]; then
     # For now we assume we're just about to deploy to npm from Travis
     # but soon we will do all deployment here, once our full test suite
     # runs in App Center and App Center supports PRs.
+    echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
+    npm run pub
+    
     slack_notify_deployed
 fi
 
