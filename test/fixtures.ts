@@ -175,7 +175,7 @@ abstract class LanguageFixture extends Fixture {
           MAX_TEST_RUNTIME_MS
         );
       } catch (e) {
-        failWith("Fixture threw an exception", { error: e });
+        failWith("Fixture threw an exception", { error: e, sample });
       }
     });
 
