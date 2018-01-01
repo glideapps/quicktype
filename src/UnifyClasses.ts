@@ -4,15 +4,15 @@ import { Set, OrderedMap, OrderedSet } from "immutable";
 
 import { ClassType, Type, nonNullTypeCases, matchTypeExhaustive, assertIsClass } from "./Type";
 import { TypeRef, UnionBuilder, TypeBuilder, TypeLookerUp } from "./TypeBuilder";
-import { TypeNames, typeNamesUnion, makeTypeNames } from "./TypeNames";
-import { panic, assert } from "./Support";
+import { TypeNames, makeTypeNames, typeNamesUnion } from "./TypeNames";
+import { panic, assert, defined } from "./Support";
 
 function getCliqueProperties(
-    clique: Set<ClassType>,
+    clique: ClassType[],
     makePropertyType: (names: TypeNames, types: OrderedSet<Type>, isNullable: boolean) => TypeRef
 ): OrderedMap<string, TypeRef> {
     let properties = OrderedMap<string, [OrderedSet<Type>, number, boolean]>();
-    clique.forEach(c => {
+    for (const c of clique) {
         c.properties.forEach((t, name) => {
             let p = properties.get(name);
             if (p === undefined) {
@@ -25,20 +25,20 @@ function getCliqueProperties(
                 p[2] = true;
             }
         });
-    });
+    }
     return properties.map(([types, count, haveNullable], name) => {
         assert(
             !types.some(t => t.isNullable || t.kind === "any"),
             "Nullable types are not allowed in non-nullable properties"
         );
-        const isNullable = haveNullable || count < clique.size;
+        const isNullable = haveNullable || count < clique.length;
         const allNames = types.filter(t => t.hasNames).map(t => t.getNames());
         const typeNames = allNames.isEmpty() ? makeTypeNames(name, true) : typeNamesUnion(allNames);
         return makePropertyType(typeNames, types, isNullable);
     });
 }
 
-export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef> {
+class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef> {
     constructor(
         typeBuilder: TypeBuilder & TypeLookerUp,
         typeNames: TypeNames,
@@ -69,7 +69,7 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
 
         const actualClasses: ClassType[] = classes.map(c => assertIsClass(c.deref()[0]));
 
-        const properties = getCliqueProperties(OrderedSet(actualClasses), (names, types, isNullable) => {
+        const properties = getCliqueProperties(actualClasses, (names, types, isNullable) => {
             if (types.size === 0) {
                 assert(isNullable, "Property has no type");
                 return this.typeBuilder.getPrimitiveType("null");
@@ -88,9 +88,20 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
     }
 }
 
-export function unifyTypes(types: Set<Type>, typeNames: TypeNames, typeBuilder: TypeBuilder & TypeLookerUp): TypeRef {
-    const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeNames, false, (trefs, names) =>
-        unifyTypes(Set(trefs.map(tref => tref.deref()[0])), names, typeBuilder)
+export function unifyTypes(
+    types: Set<Type>,
+    typeNames: TypeNames,
+    typeBuilder: TypeBuilder & TypeLookerUp,
+    makeEnums: boolean
+): TypeRef {
+    if (types.isEmpty()) {
+        return panic("Cannot unify empty set of types");
+    } else if (types.count() === 1) {
+        return typeBuilder.lookupTypeRef(defined(types.first()).typeRef);
+    }
+
+    const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeNames, makeEnums, (trefs, names) =>
+        unifyTypes(Set(trefs.map(tref => tref.deref()[0])), names, typeBuilder, makeEnums)
     );
 
     const addType = (t: Type): void => {
@@ -112,7 +123,10 @@ export function unifyTypes(types: Set<Type>, typeNames: TypeNames, typeBuilder: 
             arrayType => unionBuilder.addArray(arrayType.items.typeRef),
             classType => unionBuilder.addClass(classType.typeRef),
             mapType => unionBuilder.addMap(mapType.values.typeRef),
-            _enumType => panic("We don't support unification of enums yet, because they don't carry counts"),
+            // FIXME: We're not carrying counts, so this is not correct if we do enum
+            // inference.  JSON Schema input uses this case, however, without enum
+            // inference, which is fine, but still a bit ugly.
+            enumType => enumType.cases.forEach(s => unionBuilder.addEnumCase(s)),
             unionType => unionType.members.forEach(addType),
             _dateType => unionBuilder.addStringType("date"),
             _timeType => unionBuilder.addStringType("time"),

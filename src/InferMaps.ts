@@ -73,7 +73,7 @@ function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewriteBuilde
     // Reconstituting a type means generating the "same" type in the new
     // type graph.  Except we don't get Type objects but TypeRef objects,
     // which is a type-to-be.
-    return builder.getMapType(unifyTypes(shouldBe, c.getNames(), builder));
+    return builder.getMapType(unifyTypes(shouldBe, c.getNames(), builder, false));
 }
 
 export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
