@@ -2,4 +2,6 @@
 
 cd $APPCENTER_SOURCE_DIRECTORY
 
+brew install jq
+
 npm install
