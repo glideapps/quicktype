@@ -25,7 +25,7 @@ export class TypeRef {
     private _maybeIndexOrRef?: number | TypeRef;
     private _callbacks?: TypeRefCallback[];
 
-    constructor(readonly graph: TypeGraph, index?: number, private _allocate?: () => TypeRef) {
+    constructor(readonly graph: TypeGraph, index?: number, private _allocatingTypeBuilder?: TypeBuilder) {
         this._maybeIndexOrRef = index;
     }
 
@@ -48,10 +48,10 @@ export class TypeRef {
         const maybeIndex = this.maybeIndex;
         if (maybeIndex === undefined) {
             const tref = this.follow();
-            if (tref._allocate !== undefined) {
-                const allocated = tref._allocate();
+            if (tref._allocatingTypeBuilder !== undefined) {
+                const allocated = tref._allocatingTypeBuilder.reserveTypeRef();
                 tref._maybeIndexOrRef = allocated;
-                tref._allocate = undefined;
+                tref._allocatingTypeBuilder = undefined;
                 return allocated.index;
             }
 
@@ -60,7 +60,7 @@ export class TypeRef {
         return maybeIndex;
     }
 
-    callWhenResolved = (callback: TypeRefCallback): void => {
+    callWhenResolved(callback: TypeRefCallback): void {
         if (this._maybeIndexOrRef === undefined) {
             if (this._callbacks === undefined) {
                 this._callbacks = [];
@@ -71,9 +71,9 @@ export class TypeRef {
         } else {
             this._maybeIndexOrRef.callWhenResolved(callback);
         }
-    };
+    }
 
-    resolve = (tref: TypeRef): void => {
+    resolve(tref: TypeRef): void {
         if (this._maybeIndexOrRef !== undefined) {
             assert(
                 this.maybeIndex === tref.maybeIndex,
@@ -83,14 +83,14 @@ export class TypeRef {
             assert(tref.follow() !== this, "Tried to create a TypeRef cycle");
         }
         this._maybeIndexOrRef = tref;
-        this._allocate = undefined;
+        this._allocatingTypeBuilder = undefined;
         if (this._callbacks !== undefined) {
             for (const cb of this._callbacks) {
                 tref.callWhenResolved(cb);
             }
             this._callbacks = undefined;
         }
-    };
+    }
 
     deref(): [Type, TypeNames | undefined] {
         return this.graph.atIndex(this.index);
@@ -124,19 +124,19 @@ export abstract class TypeBuilder {
 
     constructor(private readonly _stringTypeMapping: StringTypeMapping) {}
 
-    addTopLevel = (name: string, tref: TypeRef): void => {
+    addTopLevel(name: string, tref: TypeRef): void {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
         assert(!this.topLevels.has(name), "Trying to add top-level with existing name");
         assert(this.types.get(tref.index) !== undefined, "Trying to add a top-level type that doesn't exist (yet?)");
         this.topLevels = this.topLevels.set(name, tref);
-    };
+    }
 
-    protected reserveTypeRef = (): TypeRef => {
+    reserveTypeRef(): TypeRef {
         const index = this.types.size;
         this.types = this.types.push(undefined);
         this.typeNames = this.typeNames.push(undefined);
         return new TypeRef(this.typeGraph, index, undefined);
-    };
+    }
 
     private commitType = (tref: TypeRef, t: Type, names: TypeNames | undefined): void => {
         assert(this.types.get(tref.index) === undefined, "A type index was committed twice");
@@ -460,7 +460,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
     }
 
     private withForwardingRef(typeCreator: (forwardingRef: TypeRef) => TypeRef): TypeRef {
-        const forwardingRef = new TypeRef(this.typeGraph, undefined, this.reserveTypeRef);
+        const forwardingRef = new TypeRef(this.typeGraph, undefined, this);
         const actualRef = typeCreator(forwardingRef);
         forwardingRef.resolve(actualRef);
         return actualRef;
