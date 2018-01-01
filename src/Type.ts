@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Set, List, Collection } from "immutable";
+import { OrderedSet, OrderedMap, Collection } from "immutable";
 import { defined, panic, assert } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
@@ -25,17 +25,17 @@ export abstract class Type {
         return this.typeRef.deref()[1] !== undefined;
     }
 
-    getNames = (): TypeNames => {
+    getNames(): TypeNames {
         return defined(this.typeRef.deref()[1]);
-    };
+    }
 
-    getCombinedName = (): string => {
+    getCombinedName(): string {
         return this.getNames().combinedName;
-    };
+    }
 
-    getProposedNames = (): OrderedSet<string> => {
+    getProposedNames(): OrderedSet<string> {
         return this.getNames().proposedNames;
-    };
+    }
 
     abstract get isNullable(): boolean;
     abstract isPrimitive(): this is PrimitiveType;
@@ -64,30 +64,43 @@ export abstract class Type {
         // This contains a set of pairs which are the type pairs
         // we have already determined to be equal.  We can't just
         // do comparison recursively because types can have cycles.
-        let done: Set<List<Type>> = Set();
+        const done: [number, number][] = [];
+
+        let failed: boolean;
+        const queue = (x: Type, y: Type): boolean => {
+            if (x === y) return true;
+            if (x.kind !== y.kind) {
+                failed = true;
+                return false;
+            }
+            workList.push([x, y]);
+            return true;
+        };
 
         while (workList.length > 0) {
             let [a, b] = defined(workList.pop());
             if (a.typeRef.index > b.typeRef.index) {
                 [a, b] = [b, a];
             }
-            const pair = List([a, b]);
-            if (done.has(pair)) continue;
 
-            let failed = false;
-            const queue = (x: Type, y: Type): boolean => {
-                if (x === y) return true;
-                if (x.kind !== y.kind) {
-                    failed = true;
-                    return false;
+            if (!a.isPrimitive()) {
+                let ai = a.typeRef.index;
+                let bi = b.typeRef.index;
+
+                let found = false;
+                for (const [dai, dbi] of done) {
+                    if (dai === ai && dbi === bi) {
+                        found = true;
+                        break;
+                    }
                 }
-                workList.push([x, y]);
-                return true;
-            };
+                if (found) continue;
+                done.push([ai, bi]);
+            }
+
+            failed = false;
             if (!a.structuralEqualityStep(b, queue)) return false;
             if (failed) return false;
-
-            done = done.add(pair);
         }
 
         return true;
@@ -376,9 +389,9 @@ export class UnionType extends Type {
         return this.members.filter(t => ["string", "date", "time", "date-time", "enum"].indexOf(t.kind) >= 0);
     }
 
-    findMember = (kind: TypeKind): Type | undefined => {
+    findMember(kind: TypeKind): Type | undefined {
         return this.members.find((t: Type) => t.kind === kind);
-    };
+    }
 
     get children(): OrderedSet<Type> {
         return this.sortedMembers;
@@ -542,12 +555,13 @@ export function matchType<U>(
     unionType: (unionType: UnionType) => U,
     stringTypeMatchers?: StringTypeMatchers<U>
 ): U {
+    function typeNotSupported(_: Type) {
+        return panic("Unsupported PrimitiveType");
+    }
+
     if (stringTypeMatchers === undefined) {
         stringTypeMatchers = {};
     }
-    const typeNotSupported = (_: Type) => {
-        return panic("Unsupported PrimitiveType");
-    };
     return matchTypeExhaustive(
         t,
         anyType,
