@@ -11,13 +11,13 @@ export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
 
 function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
-    if (x.typeRef.index === y.typeRef.index) return true;
+    if (x.typeRef.getIndex() === y.typeRef.getIndex()) return true;
     if (x.kind === "none" || y.kind === "none") return true;
     return false;
 }
 
 export abstract class Type {
-    constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
+    constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) { }
 
     abstract get children(): OrderedSet<Type>;
 
