@@ -11,7 +11,7 @@ export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
 
 function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
-    if (x.typeRef.index === y.typeRef.index) return true;
+    if (x.typeRef.getIndex() === y.typeRef.getIndex()) return true;
     if (x.kind === "none" || y.kind === "none") return true;
     return false;
 }
@@ -85,13 +85,13 @@ export abstract class Type {
 
         while (workList.length > 0) {
             let [a, b] = defined(workList.pop());
-            if (a.typeRef.index > b.typeRef.index) {
+            if (a.typeRef.getIndex() > b.typeRef.getIndex()) {
                 [a, b] = [b, a];
             }
 
             if (!a.isPrimitive()) {
-                let ai = a.typeRef.index;
-                let bi = b.typeRef.index;
+                let ai = a.typeRef.getIndex();
+                let bi = b.typeRef.getIndex();
 
                 let found = false;
                 for (const [dai, dbi] of done) {
@@ -305,7 +305,7 @@ export class ClassType extends Type {
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
         const properties = this.getPropertyRefs().map(f);
         if (this.isFixed) {
-            return builder.getUniqueClassType(true, properties);
+            return builder.getUniqueClassType(properties);
         } else {
             return builder.getClassType(properties);
         }
