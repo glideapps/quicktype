@@ -17,7 +17,7 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
 }
 
 export abstract class Type {
-    constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
+    constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) { }
 
     abstract get children(): OrderedSet<Type>;
 
