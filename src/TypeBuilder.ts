@@ -44,7 +44,7 @@ export class TypeRef {
         return undefined;
     }
 
-    get index(): number {
+    getIndex(): number {
         const maybeIndex = this.maybeIndex;
         if (maybeIndex === undefined) {
             const tref = this.follow();
@@ -52,7 +52,7 @@ export class TypeRef {
                 const allocated = tref._allocatingTypeBuilder.reserveTypeRef();
                 tref._maybeIndexOrRef = allocated;
                 tref._allocatingTypeBuilder = undefined;
-                return allocated.index;
+                return allocated.getIndex();
             }
 
             return panic("Trying to dereference unresolved type reference");
@@ -93,7 +93,7 @@ export class TypeRef {
     }
 
     deref(): [Type, TypeNames | undefined] {
-        return this.graph.atIndex(this.index);
+        return this.graph.atIndex(this.getIndex());
     }
 
     equals(other: any): boolean {
@@ -105,7 +105,7 @@ export class TypeRef {
     }
 
     hashCode(): number {
-        return this.index | 0;
+        return this.getIndex() | 0;
     }
 }
 
@@ -127,7 +127,7 @@ export abstract class TypeBuilder {
     addTopLevel(name: string, tref: TypeRef): void {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
         assert(!this.topLevels.has(name), "Trying to add top-level with existing name");
-        assert(this.types[tref.index] !== undefined, "Trying to add a top-level type that doesn't exist (yet?)");
+        assert(this.types[tref.getIndex()] !== undefined, "Trying to add a top-level type that doesn't exist (yet?)");
         this.topLevels = this.topLevels.set(name, tref);
     }
 
@@ -139,9 +139,10 @@ export abstract class TypeBuilder {
     }
 
     private commitType = (tref: TypeRef, t: Type, names: TypeNames | undefined): void => {
-        assert(this.types[tref.index] === undefined, "A type index was committed twice");
-        this.types[tref.index] = t;
-        this.typeNames[tref.index] = names;
+        const index = tref.getIndex();
+        assert(this.types[index] === undefined, "A type index was committed twice");
+        this.types[index] = t;
+        this.typeNames[index] = names;
     };
 
     protected addType<T extends Type>(
@@ -191,7 +192,7 @@ export abstract class TypeBuilder {
     };
 
     makeNullable = (tref: TypeRef, typeNames: TypeNames): TypeRef => {
-        const t = defined(this.types[tref.index]);
+        const t = defined(this.types[tref.getIndex()]);
         if (t.kind === "null" || t.kind === "any") {
             return tref;
         }
@@ -439,7 +440,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         for (const types of setsToReplace) {
             const set = Set(types);
             set.forEach(t => {
-                const index = t.typeRef.index;
+                const index = t.typeRef.getIndex();
                 assert(!this._setsToReplaceByMember.has(index), "A type is member of more than one set to be replaced");
                 this._setsToReplaceByMember = this._setsToReplaceByMember.set(index, set);
             });
@@ -475,15 +476,16 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         return this.withForwardingRef(forwardingRef => {
             typesToReplace.forEach(t => {
                 const originalRef = t.typeRef;
-                this._reconstitutedTypes = this._reconstitutedTypes.set(originalRef.index, forwardingRef);
-                this._setsToReplaceByMember = this._setsToReplaceByMember.remove(originalRef.index);
+                const index = originalRef.getIndex();
+                this._reconstitutedTypes = this._reconstitutedTypes.set(index, forwardingRef);
+                this._setsToReplaceByMember = this._setsToReplaceByMember.remove(index);
             });
             return this._replacer(typesToReplace, this);
         });
     }
 
     private getReconstitutedType = (originalRef: TypeRef): TypeRef => {
-        const index = originalRef.index;
+        const index = originalRef.getIndex();
         const maybeTypeRef = this._reconstitutedTypes.get(index);
         if (maybeTypeRef !== undefined) {
             return maybeTypeRef;
@@ -510,11 +512,11 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
     lookupTypeRefs(typeRefs: TypeRef[]): TypeRef | undefined {
         assert(typeRefs.length >= 2, "Use lookupTypeRef to look up a single type");
 
-        const maybeRef = this._reconstitutedTypes.get(typeRefs[0].index);
+        const maybeRef = this._reconstitutedTypes.get(typeRefs[0].getIndex());
         if (maybeRef !== undefined && maybeRef.maybeIndex !== undefined) {
             let allEqual = true;
             for (let i = 1; i < typeRefs.length; i++) {
-                if (this._reconstitutedTypes.get(typeRefs[i].index) !== maybeRef) {
+                if (this._reconstitutedTypes.get(typeRefs[i].getIndex()) !== maybeRef) {
                     allEqual = false;
                     break;
                 }
@@ -524,12 +526,12 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
             }
         }
 
-        const maybeSet = this._setsToReplaceByMember.get(typeRefs[0].index);
+        const maybeSet = this._setsToReplaceByMember.get(typeRefs[0].getIndex());
         if (maybeSet === undefined) {
             return undefined;
         }
         for (let i = 1; i < typeRefs.length; i++) {
-            if (this._setsToReplaceByMember.get(typeRefs[i].index) !== maybeSet) {
+            if (this._setsToReplaceByMember.get(typeRefs[i].getIndex()) !== maybeSet) {
                 return undefined;
             }
         }
