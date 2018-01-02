@@ -20,8 +20,9 @@ for fn in `cd "$DIR1" ; find . -type f` ; do
         set +e
         diff -u "$f1" "$f2" >"$of"
         set -e
+        stat=`diffstat -s "$of"`
         lines=`cat "$of" | wc -l`
-        echo "$lines $fn"
+        echo "$lines $stat $fn"
     else
         echo "missing $fn"
     fi
