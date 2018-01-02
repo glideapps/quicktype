@@ -66,6 +66,10 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
         if (classes.length === 1) {
             return this.typeBuilder.lookupTypeRef(classes[0]);
         }
+        const maybeTypeRef = this.typeBuilder.lookupTypeRefs(classes);
+        if (maybeTypeRef !== undefined) {
+            return maybeTypeRef;
+        }
 
         const actualClasses: ClassType[] = classes.map(c => assertIsClass(c.deref()[0]));
 
@@ -98,6 +102,11 @@ export function unifyTypes(
         return panic("Cannot unify empty set of types");
     } else if (types.count() === 1) {
         return typeBuilder.lookupTypeRef(defined(types.first()).typeRef);
+    }
+
+    const maybeTypeRef = typeBuilder.lookupTypeRefs(types.toArray().map(t => t.typeRef));
+    if (maybeTypeRef !== undefined) {
+        return maybeTypeRef;
     }
 
     const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeNames, makeEnums, (trefs, names) =>
