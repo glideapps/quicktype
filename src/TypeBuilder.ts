@@ -291,7 +291,10 @@ export abstract class TypeBuilder {
 
     getClassType(names: TypeNames, properties: OrderedMap<string, TypeRef>, forwardingRef?: TypeRef): TypeRef {
         let tref = this._classTypes.get(properties.toMap());
-        if (forwardingRef !== undefined || tref === undefined) {
+        // FIXME: It's not clear to me that the `forwardingRef` condition here
+        // might actually ever be true.  And if it can, shouldn't we also have
+        // it in all the other `getXXX` methods here?
+        if ((forwardingRef !== undefined && forwardingRef.maybeIndex !== undefined) || tref === undefined) {
             tref = this.addType(forwardingRef, tr => new ClassType(tr, false, properties), names);
             this._classTypes = this._classTypes.set(properties.toMap(), tref);
         } else {
