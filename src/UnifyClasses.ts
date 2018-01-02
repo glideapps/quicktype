@@ -27,10 +27,7 @@ function getCliqueProperties(
         });
     }
     return properties.map(([types, count, haveNullable], name) => {
-        assert(
-            !types.some(t => t.isNullable || t.kind === "any"),
-            "Nullable types are not allowed in non-nullable properties"
-        );
+        assert(!types.some(t => t.isNullable), "Nullable types are not allowed in non-nullable properties");
         const isNullable = haveNullable || count < clique.length;
         const allNames = types.filter(t => t.hasNames).map(t => t.getNames());
         const typeNames = allNames.isEmpty() ? makeTypeNames(name, true) : typeNamesUnion(allNames);
