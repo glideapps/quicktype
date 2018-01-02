@@ -26,7 +26,13 @@ fi
 ### Deploy to VS Code ###
 #########################
 
-# TODO ^
+if [ "$APPCENTER_BRANCH" == "master" ]; then
+    appcenter \
+        build queue \
+        --app quicktype/quicktype-vscode \
+        --branch master \
+        --token $APPCENTER_TOKEN
+fi
 
 ###############################
 ### Deploy app.quicktype.io ###
