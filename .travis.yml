@@ -9,7 +9,7 @@ services:
 - docker
 before_install:
 - docker pull dvdsgl/quicktype:latest
-- docker build --cache-from dvdsgl/quicktype:latest --tag dvdsgl/quicktype:latest
+- docker build --cache-from dvdsgl/quicktype:latest --tag dvdsgl/quicktype:latest .
 script: |
   docker run \
     -e FIXTURE \
@@ -19,9 +19,6 @@ script: |
     -e TRAVIS_PULL_REQUEST \
     -e CPUs=2 \
     dvdsgl/quicktype npm test
-after_success:
-- if [[ $TRAVIS_BRANCH == "master" ]]; then docker login -u "$DOCKER_USERNAME" -p
-  "$DOCKER_PASSWORD"; docker push dvdsgl/quicktype:latest; fi
 jobs:
   include:
   - stage: deploy
@@ -29,7 +26,9 @@ jobs:
     before_install: true
     install: npm install -g appcenter-cli
     script: appcenter build queue --app quicktype/quicktype --branch master --token $APPCENTER_TOKEN
-    after_success: true
+    after_success:
+      - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+      - docker push dvdsgl/quicktype:latest
 notifications:
   email:
     on_success: never
