@@ -305,7 +305,7 @@ export class ClassType extends Type {
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
         const properties = this.getPropertyRefs().map(f);
         if (this.isFixed) {
-            return builder.getUniqueClassType(true, properties);
+            return builder.getUniqueClassType(properties);
         } else {
             return builder.getClassType(properties);
         }

@@ -86,7 +86,7 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
             return tref;
         });
         if (this._makeClassesFixed) {
-            return this.typeBuilder.getUniqueClassType(this.typeNames, this._makeClassesFixed, properties);
+            return this.typeBuilder.getUniqueClassType(this.typeNames, properties);
         } else {
             return this.typeBuilder.getClassType(this.typeNames, properties);
         }
