@@ -2,14 +2,14 @@ language: node_js
 node_js: node
 sudo: required
 env:
-- FIXTURE=golang,cplusplus,schema,graphql
-- FIXTURE=swift,java,schema-json-csharp
-- FIXTURE=elm,typescript,csharp
+  - FIXTURE=golang,cplusplus,schema,graphql
+  - FIXTURE=swift,java,schema-json-csharp
+  - FIXTURE=elm,typescript,csharp
 services:
-- docker
+  - docker
 before_install:
-- docker pull dvdsgl/quicktype:latest
-- docker build --cache-from dvdsgl/quicktype:latest --tag dvdsgl/quicktype:latest .
+  - docker pull dvdsgl/quicktype:latest
+  - docker build --cache-from dvdsgl/quicktype:latest --tag dvdsgl/quicktype:latest .
 script: |
   docker run \
     -e FIXTURE \
@@ -22,19 +22,17 @@ script: |
 jobs:
   include:
     - stage: deploy
-      if: branch == master
+      if: branch == master AND type IN (push, api, cron)
       env:
         - FIXTURE=none
       before_install: true
       install: true
       after_success: true
-      deploy:
-        on:
-          branch: master
-        provider: script
-        script:
-          - npm install -g appcenter-cli
-          - appcenter build queue --app quicktype/quicktype --branch master --token $APPCENTER_TOKEN
+      script: |
+        if [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
+          npm install -g appcenter-cli;
+          appcenter build queue --app quicktype/quicktype --branch master --token $APPCENTER_TOKEN;
+        fi
 notifications:
   email:
     on_success: never
