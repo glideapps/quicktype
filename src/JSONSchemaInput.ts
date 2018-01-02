@@ -162,7 +162,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
         requiredArray: string[]
     ): TypeRef {
         const required = Set(requiredArray);
-        const result = typeBuilder.getUniqueClassType(getName(schema, typeNames));
+        const result = typeBuilder.getUniqueClassType(getName(schema, typeNames), true);
         const c = assertIsClass(getHopefullyFinishedType(typeBuilder, result));
         setTypeForPath(path, result);
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
@@ -269,7 +269,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
             const types = cases.map(
                 (t, index) => toType(checkStringMap(t), path.push({ kind, index } as any), typeNames).deref()[0]
             );
-            return unifyTypes(OrderedSet(types), typeNames, typeBuilder, true);
+            return unifyTypes(OrderedSet(types), typeNames, typeBuilder, true, true);
         }
 
         if (schema.$ref !== undefined) {
@@ -284,7 +284,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
                 return fromTypeName(schema, path, typeNames, defined(jsonTypes.first()));
             } else {
                 const types = jsonTypes.map(n => fromTypeName(schema, path, typeNames, n).deref()[0]);
-                return unifyTypes(types, typeNames, typeBuilder, true);
+                return unifyTypes(types, typeNames, typeBuilder, true, true);
             }
         } else if (schema.oneOf !== undefined) {
             return convertOneOrAnyOf(schema.oneOf, PathElementKind.OneOf);

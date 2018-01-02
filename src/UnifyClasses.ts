@@ -43,6 +43,7 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
         typeBuilder: TypeBuilder & TypeLookerUp,
         typeNames: TypeNames,
         private readonly _makeEnums: boolean,
+        private readonly _makeClassesFixed: boolean,
         private readonly _unifyTypes: (typesToUnify: TypeRef[], typeNames: TypeNames) => TypeRef
     ) {
         super(typeBuilder, typeNames);
@@ -84,7 +85,7 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
             }
             return tref;
         });
-        return this.typeBuilder.getUniqueClassType(this.typeNames, properties);
+        return this.typeBuilder.getUniqueClassType(this.typeNames, this._makeClassesFixed, properties);
     }
 
     protected makeArray(arrays: TypeRef[]): TypeRef {
@@ -96,7 +97,8 @@ export function unifyTypes(
     types: Set<Type>,
     typeNames: TypeNames,
     typeBuilder: TypeBuilder & TypeLookerUp,
-    makeEnums: boolean
+    makeEnums: boolean,
+    makeClassesFixed: boolean
 ): TypeRef {
     if (types.isEmpty()) {
         return panic("Cannot unify empty set of types");
@@ -109,8 +111,8 @@ export function unifyTypes(
         return maybeTypeRef;
     }
 
-    const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeNames, makeEnums, (trefs, names) =>
-        unifyTypes(Set(trefs.map(tref => tref.deref()[0])), names, typeBuilder, makeEnums)
+    const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeNames, makeEnums, makeClassesFixed, (trefs, names) =>
+        unifyTypes(Set(trefs.map(tref => tref.deref()[0])), names, typeBuilder, makeEnums, makeClassesFixed)
     );
 
     const addType = (t: Type): void => {

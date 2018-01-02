@@ -303,10 +303,11 @@ export abstract class TypeBuilder {
     // via a flag?  That would make `ClassType.map` simpler.
     getUniqueClassType = (
         names: TypeNames,
+        isFixed: boolean,
         properties?: OrderedMap<string, TypeRef>,
         forwardingRef?: TypeRef
     ): TypeRef => {
-        return this.addType(forwardingRef, tref => new ClassType(tref, true, properties), names);
+        return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties), names);
     };
 
     getUnionType(names: TypeNames, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
@@ -415,8 +416,8 @@ export class TypeReconstituter {
         return this.useBuilder().getClassType(defined(this._typeNames), properties, this._forwardingRef);
     };
 
-    getUniqueClassType = (properties?: OrderedMap<string, TypeRef>): TypeRef => {
-        return this.useBuilder().getUniqueClassType(defined(this._typeNames), properties, this._forwardingRef);
+    getUniqueClassType = (isFixed: boolean, properties?: OrderedMap<string, TypeRef>): TypeRef => {
+        return this.useBuilder().getUniqueClassType(defined(this._typeNames), isFixed, properties, this._forwardingRef);
     };
 
     getUnionType = (members: OrderedSet<TypeRef>): TypeRef => {
