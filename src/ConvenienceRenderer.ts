@@ -10,7 +10,8 @@ import {
     separateNamedTypes,
     nullableFromUnion,
     matchTypeExhaustive,
-    TypeKind
+    TypeKind,
+    isNamedType
 } from "./Type";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
@@ -18,6 +19,7 @@ import { defined, panic, nonNull } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 import { trimEnd } from "lodash";
+import { declarationsForGraph } from "./DeclarationIR";
 
 export abstract class ConvenienceRenderer extends Renderer {
     protected globalNamespace: Namespace;
@@ -27,6 +29,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _memberNames: Map<UnionType, Map<Type, Name>>;
     private _caseNames: Map<EnumType, Map<string, Name>>;
 
+    // FIXME: remove this and cache declarations instead
     private _namedTypes: OrderedSet<Type>;
     private _namedClasses: OrderedSet<ClassType>;
     private _namedEnums: OrderedSet<EnumType>;
@@ -424,8 +427,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         enumFunc: (e: EnumType, enumName: Name) => void,
         unionFunc: (u: UnionType, unionName: Name) => void
     ): void => {
-        let collection: Collection<any, Type> = this._namedTypes;
-        if (leavesFirst) collection = collection.reverse();
+        const declarations = declarationsForGraph(this.typeGraph, leavesFirst, t => {
+            if (t instanceof UnionType) {
+                return this.unionNeedsName(t);
+            }
+            return isNamedType(t);
+        }).declarations;
+        const collection = declarations.filter(d => d.kind === "define").map(d => d.type);
         this.forEachWithBlankLines(collection, blankLocations, (t: Type) => {
             if (t instanceof ClassType) {
                 this.callForNamedType(t, classFunc);
