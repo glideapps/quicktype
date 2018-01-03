@@ -128,7 +128,7 @@ export class PrimitiveType extends Type {
     }
 
     get isNullable(): boolean {
-        return this.kind === "null";
+        return this.kind === "null" || this.kind === "any" || this.kind === "none";
     }
 
     isPrimitive(): this is PrimitiveType {
