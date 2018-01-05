@@ -52,11 +52,6 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         true
     );
 
-    private readonly _classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
-        ["struct", false],
-        ["class", true]
-    ]);
-
     private readonly _versionOption = new EnumOption<Version>("swift-version", "Swift version", [
         ["4", 4],
         ["4.1", 4.1]
@@ -66,13 +61,7 @@ export default class SwiftTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
-        this.setOptions([
-            this._justTypesOption,
-            this._classOption,
-            this._denseOption,
-            this._versionOption,
-            this._convenienceInitializers
-        ]);
+        this.setOptions([this._justTypesOption, this._denseOption, this._versionOption, this._convenienceInitializers]);
     }
 
     protected get rendererClass(): new (
@@ -225,7 +214,6 @@ class SwiftRenderer extends ConvenienceRenderer {
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
-        private readonly _useClasses: boolean,
         private readonly _dense: boolean,
         private readonly _version: Version,
         private readonly _convenienceInitializers: Boolean
@@ -278,6 +266,11 @@ class SwiftRenderer extends ConvenienceRenderer {
             return type;
         }
         return null;
+    }
+
+    protected canBeCycleBreakerType(t: Type): boolean {
+        const kind = t.kind;
+        return kind !== "array" && kind !== "map";
     }
 
     private emitBlock = (line: Sourcelike, f: () => void): void => {
@@ -397,7 +390,8 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private renderClassDefinition = (c: ClassType, className: Name): void => {
-        const structOrClass = this._useClasses ? "class" : "struct";
+        const isClass = this.isCycleBreakerType(c);
+        const structOrClass = isClass ? "class" : "struct";
         this.emitBlock([structOrClass, " ", className, this.getProtocolString()], () => {
             if (this._dense) {
                 let lastType: Type | undefined = undefined;
@@ -456,7 +450,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                 // If using classes with convenience initializers,
                 // this main initializer must be defined within the class
                 // declaration since it assigns let constants
-                if (this._useClasses && this._convenienceInitializers) {
+                if (isClass && this._convenienceInitializers) {
                     // Make an initializer that initalizes all fields
                     this.ensureBlankLine();
                     let properties: Sourcelike[] = [];
@@ -475,8 +469,9 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private emitConvenienceInitializersExtension = (c: ClassType, className: Name): void => {
+        const isClass = this.isCycleBreakerType(c);
         this.emitBlock(["extension ", className], () => {
-            if (this._useClasses) {
+            if (isClass) {
                 // Convenience initializers for Json string and data
                 this.emitBlock(["convenience init?(data: Data)"], () => {
                     this.emitLine(

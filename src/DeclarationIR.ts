@@ -22,7 +22,7 @@ export class Declaration {
 }
 
 export class DeclarationIR {
-    constructor(readonly declarations: List<Declaration>, readonly cycleBreakerTypes: Set<Type>) {}
+    constructor(readonly declarations: List<Declaration>, readonly forwardedTypes: Set<Type>) {}
 }
 
 export function declarationsForGraph(
@@ -31,12 +31,12 @@ export function declarationsForGraph(
     childrenOfType: (t: Type) => OrderedSet<Type>,
     typeNeedsDeclaration: (t: Type) => boolean
 ): DeclarationIR {
-    let definedTypes: Set<Type> = Set();
+    let visitedTypes: Set<Type> = Set();
     let forwardedTypes: Set<Type> = Set();
     const declarations: Declaration[] = [];
 
     function visit(t: Type, path: Set<Type>): void {
-        if (definedTypes.has(t)) return;
+        if (visitedTypes.has(t)) return;
 
         if (path.has(t)) {
             if (needsForwardDeclarations) {
@@ -49,10 +49,10 @@ export function declarationsForGraph(
         const pathForChildren = path.add(t);
         childrenOfType(t).forEach(c => visit(c, pathForChildren));
 
-        if (definedTypes.has(t)) return;
+        if (visitedTypes.has(t)) return;
         if (forwardedTypes.has(t) || typeNeedsDeclaration(t)) {
             declarations.push(new Declaration("define", t));
-            definedTypes = definedTypes.add(t);
+            visitedTypes = visitedTypes.add(t);
         }
     }
 
@@ -69,4 +69,36 @@ export function declarationsForGraph(
     }
 
     return new DeclarationIR(declarationsList, forwardedTypes);
+}
+
+export function cycleBreakerTypesForGraph(graph: TypeGraph, canBeCycleBreaker: (t: Type) => boolean): Set<Type> {
+    let visitedTypes = Set();
+    let cycleBreakerTypes: Set<Type> = Set();
+    const queue: Type[] = graph.topLevels.valueSeq().toArray();
+
+    function visit(t: Type, path: Set<Type>): void {
+        if (visitedTypes.has(t)) return;
+
+        if (canBeCycleBreaker(t)) {
+            if (path.has(t)) {
+                cycleBreakerTypes = cycleBreakerTypes.add(t);
+                return;
+            }
+
+            const pathForChildren = path.add(t);
+            t.children.forEach(c => visit(c, pathForChildren));
+        } else {
+            queue.push(...t.children.toArray());
+        }
+
+        visitedTypes = visitedTypes.add(t);
+    }
+
+    for (;;) {
+        const maybeType = queue.pop();
+        if (maybeType === undefined) break;
+        visit(maybeType, Set());
+    }
+
+    return cycleBreakerTypes;
 }

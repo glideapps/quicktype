@@ -19,7 +19,7 @@ import { defined, panic, nonNull } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 import { trimEnd } from "lodash";
-import { declarationsForGraph, DeclarationIR } from "./DeclarationIR";
+import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph } from "./DeclarationIR";
 
 export abstract class ConvenienceRenderer extends Renderer {
     protected globalNamespace: Namespace;
@@ -35,6 +35,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _namedEnums: OrderedSet<EnumType>;
     private _namedUnions: OrderedSet<UnionType>;
     private _haveUnions: boolean;
+    private _cycleBreakerTypes?: Set<Type>;
 
     private _alphabetizeProperties = false;
 
@@ -312,6 +313,21 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
         return name;
     };
+
+    protected isForwardDeclaredType(t: Type): boolean {
+        return this._declarationIR.forwardedTypes.has(t);
+    }
+
+    protected canBeCycleBreakerType(_t: Type): boolean {
+        return panic("A renderer that invokes isCycleBreakerType must implement canBeCycleBreakerType");
+    }
+
+    protected isCycleBreakerType(t: Type): boolean {
+        if (this._cycleBreakerTypes === undefined) {
+            this._cycleBreakerTypes = cycleBreakerTypesForGraph(this.typeGraph, s => this.canBeCycleBreakerType(s));
+        }
+        return this._cycleBreakerTypes.has(t);
+    }
 
     protected forEachTopLevel = (
         blankLocations: BlankLineLocations,
