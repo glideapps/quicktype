@@ -600,7 +600,6 @@ class JavaRenderer extends ConvenienceRenderer {
         }
         this.forEachNamedType(
             "leading-and-interposing",
-            false,
             this.emitClassDefinition,
             this.emitEnumDefinition,
             this.emitUnionDefinition

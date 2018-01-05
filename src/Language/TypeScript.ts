@@ -393,7 +393,7 @@ function O(className: string) {
             }
         }
 
-        this.forEachNamedType("leading-and-interposing", false, this.emitClass, this.emitEnum, this.emitUnion);
+        this.forEachNamedType("leading-and-interposing", this.emitClass, this.emitEnum, this.emitUnion);
 
         if (!this._justTypes) {
             this.ensureBlankLine();

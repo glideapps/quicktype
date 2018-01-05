@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, Set, OrderedSet, OrderedMap, Collection } from "immutable";
+import { Map, Set, List, OrderedSet, OrderedMap, Collection } from "immutable";
 
 import {
     Type,
@@ -19,7 +19,7 @@ import { defined, panic, nonNull } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 import { trimEnd } from "lodash";
-import { declarationsForGraph } from "./DeclarationIR";
+import { declarationsForGraph, DeclarationIR } from "./DeclarationIR";
 
 export abstract class ConvenienceRenderer extends Renderer {
     protected globalNamespace: Namespace;
@@ -29,8 +29,8 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _memberNames: Map<UnionType, Map<Type, Name>>;
     private _caseNames: Map<EnumType, Map<string, Name>>;
 
-    // FIXME: remove this and cache declarations instead
-    private _namedTypes: OrderedSet<Type>;
+    private _declarationIR: DeclarationIR;
+    private _namedTypes: List<Type>;
     private _namedClasses: OrderedSet<ClassType>;
     private _namedEnums: OrderedSet<EnumType>;
     private _namedUnions: OrderedSet<UnionType>;
@@ -79,6 +79,10 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected get enumCasesInGlobalNamespace(): boolean {
+        return false;
+    }
+
+    protected get needsTypeDeclarationBeforeUse(): boolean {
         return false;
     }
 
@@ -422,19 +426,11 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected forEachNamedType = (
         blankLocations: BlankLineLocations,
-        leavesFirst: boolean,
         classFunc: (c: ClassType, className: Name) => void,
         enumFunc: (e: EnumType, enumName: Name) => void,
         unionFunc: (u: UnionType, unionName: Name) => void
     ): void => {
-        const declarations = declarationsForGraph(this.typeGraph, leavesFirst, t => {
-            if (t instanceof UnionType) {
-                return this.unionNeedsName(t);
-            }
-            return isNamedType(t);
-        }).declarations;
-        const collection = declarations.filter(d => d.kind === "define").map(d => d.type);
-        this.forEachWithBlankLines(collection, blankLocations, (t: Type) => {
+        this.forEachWithBlankLines(this._namedTypes, blankLocations, (t: Type) => {
             if (t instanceof ClassType) {
                 this.callForNamedType(t, classFunc);
             } else if (t instanceof EnumType) {
@@ -468,11 +464,21 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected emitSource(): void {
-        const types = this.typeGraph.allNamedTypes(this.childrenOfType);
+        this._declarationIR = declarationsForGraph(
+            this.typeGraph,
+            this.needsTypeDeclarationBeforeUse,
+            this.childrenOfType,
+            t => {
+                if (t instanceof UnionType) {
+                    return this.unionNeedsName(t);
+                }
+                return isNamedType(t);
+            }
+        );
+
+        const types = this.typeGraph.allTypesUnordered();
         this._haveUnions = types.some(t => t instanceof UnionType);
-        this._namedTypes = types
-            .filter((t: Type) => !(t instanceof UnionType) || this.unionNeedsName(t))
-            .toOrderedSet();
+        this._namedTypes = this._declarationIR.declarations.filter(d => d.kind === "define").map(d => d.type);
         const { classes, enums, unions } = separateNamedTypes(this._namedTypes);
         this._namedClasses = classes;
         this._namedEnums = enums;

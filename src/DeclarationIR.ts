@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, List } from "immutable";
+import { Set, List, OrderedSet } from "immutable";
 import stringHash = require("string-hash");
 
 import { TypeGraph } from "./TypeGraph";
@@ -28,6 +28,7 @@ export class DeclarationIR {
 export function declarationsForGraph(
     graph: TypeGraph,
     needsForwardDeclarations: boolean,
+    childrenOfType: (t: Type) => OrderedSet<Type>,
     typeNeedsDeclaration: (t: Type) => boolean
 ): DeclarationIR {
     let definedTypes: Set<Type> = Set();
@@ -46,7 +47,7 @@ export function declarationsForGraph(
         }
 
         const pathForChildren = path.add(t);
-        t.children.forEach(c => visit(c, pathForChildren));
+        childrenOfType(t).forEach(c => visit(c, pathForChildren));
 
         if (definedTypes.has(t)) return;
         if (forwardedTypes.has(t) || typeNeedsDeclaration(t)) {

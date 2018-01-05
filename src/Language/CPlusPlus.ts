@@ -310,6 +310,10 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return null;
     }
 
+    protected get needsTypeDeclarationBeforeUse(): boolean {
+        return true;
+    }
+
     private emitBlock = (line: Sourcelike, withSemicolon: boolean, f: () => void): void => {
         this.emitLine(line, " {");
         this.indent(f);
@@ -598,7 +602,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine("using nlohmann::json;");
             this.ensureBlankLine();
         }
-        this.forEachNamedType("interposing", true, this.emitClass, this.emitEnum, this.emitUnionTypedefs);
+        this.forEachNamedType("interposing", this.emitClass, this.emitEnum, this.emitUnionTypedefs);
         if (this._justTypes) return;
         this.forEachTopLevel("leading", this.emitTopLevelTypedef, t => !this.namedTypeToNameForTopLevel(t));
         this.emitMultiline(`

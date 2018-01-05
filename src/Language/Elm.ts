@@ -575,7 +575,6 @@ import Dict exposing (Dict, map, toList)`);
         );
         this.forEachNamedType(
             "leading-and-interposing",
-            false,
             this.emitClassDefinition,
             this.emitEnumDefinition,
             this.emitUnionDefinition
@@ -588,7 +587,6 @@ import Dict exposing (Dict, map, toList)`);
         this.forEachTopLevel("leading-and-interposing", this.emitTopLevelFunctions);
         this.forEachNamedType(
             "leading-and-interposing",
-            false,
             this.emitClassFunctions,
             this.emitEnumFunctions,
             this.emitUnionFunctions

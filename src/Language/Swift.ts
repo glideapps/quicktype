@@ -913,7 +913,6 @@ class JSONAny: Codable {
 
         this.forEachNamedType(
             "leading-and-interposing",
-            false,
             this.renderClassDefinition,
             this.renderEnumDefinition,
             this.renderUnionDefinition
@@ -925,7 +924,6 @@ class JSONAny: Codable {
                 this.emitMark("Convenience initializers");
                 this.forEachNamedType(
                     "leading-and-interposing",
-                    false,
                     this.emitConvenienceInitializersExtension,
                     () => undefined,
                     () => undefined
