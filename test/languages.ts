@@ -93,7 +93,7 @@ function makeCPlusPlusLanguage(rendererOptions: {
     output: "quicktype.hpp",
     topLevel: "TopLevel",
     skipJSON: ["recursive.json", "list.json"],
-    skipSchema: [],
+    skipSchema: ["union-list.schema"],
     rendererOptions: rendererOptions,
     quickTestRendererOptions: [{ unions: "indirection" }]
   };
@@ -128,42 +128,28 @@ export const ElmLanguage: Language = {
   quickTestRendererOptions: [{ "array-type": "list" }]
 };
 
-function makeSwiftLanguage(rendererOptions: {
-  [name: string]: string;
-}): Language {
-  return {
-    name: "swift",
-    base: "test/fixtures/swift",
-    compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
-    runCommand(sample: string) {
-      return `./quicktype "${sample}"`;
-    },
-    diffViaSchema: true,
-    allowMissingNull: true,
-    output: "quicktype.swift",
-    topLevel: "TopLevel",
-    // list.json crashes the Swift compiler
-    // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
-    skipJSON: [
-      "no-classes.json",
-      "blns-object.json",
-      "recursive.json",
-      "list.json"
-    ],
-    skipSchema: [],
-    rendererOptions: rendererOptions,
-    quickTestRendererOptions: [
-      { "struct-or-class": "class" },
-      { density: "dense" },
-      { density: "normal" }
-    ]
-  };
-}
-
-export const SwiftLanguage: Language = makeSwiftLanguage({});
-export const SwiftClassesLanguage: Language = makeSwiftLanguage({
-  "struct-or-class": "class"
-});
+export const SwiftLanguage: Language = {
+  name: "swift",
+  base: "test/fixtures/swift",
+  compileCommand: `swiftc -o quicktype main.swift quicktype.swift`,
+  runCommand(sample: string) {
+    return `./quicktype "${sample}"`;
+  },
+  diffViaSchema: true,
+  allowMissingNull: true,
+  output: "quicktype.swift",
+  topLevel: "TopLevel",
+  // list.json crashes the Swift compiler
+  // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
+  skipJSON: ["no-classes.json", "blns-object.json"],
+  skipSchema: [],
+  rendererOptions: {},
+  quickTestRendererOptions: [
+    { "struct-or-class": "class" },
+    { density: "dense" },
+    { density: "normal" }
+  ]
+};
 
 export const TypeScriptLanguage: Language = {
   name: "typescript",
@@ -179,7 +165,7 @@ export const TypeScriptLanguage: Language = {
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: [],
-  skipSchema: ["enum.schema"],
+  skipSchema: [],
   rendererOptions: { "runtime-typecheck": "yes", "explicit-unions": "yes" },
   quickTestRendererOptions: []
 };

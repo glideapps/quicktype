@@ -1,0 +1,32 @@
+{
+  "$ref": "#/definitions/TopLevel",
+  "definitions": {
+    "TopLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "list": {
+          "$ref": "#/definitions/UnionList"
+        }
+      },
+      "required": ["list"]
+    },
+    "UnionList": {
+      "oneOf": [
+	{
+	  "type": "object",
+	  "additionalProperties": false,
+	  "properties": {
+	    "next": {
+	      "$ref": "#/definitions/UnionList"
+	    }
+	  },
+	  "required": ["next"]
+	},
+	{
+	  "type": "number"
+	}
+      ]
+    }
+  }
+}

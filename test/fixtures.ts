@@ -49,7 +49,7 @@ function jsonTestFiles(base: string): string[] {
     jsonFiles.push(fn);
   }
   let i = 1;
-  for (; ;) {
+  for (;;) {
     fn = `${base}.${i.toString()}.json`;
     if (fs.existsSync(fn)) {
       jsonFiles.push(fn);
@@ -243,7 +243,7 @@ class JSONFixture extends LanguageFixture {
       // Compare fixture.output to fixture.output.expected
       exec(
         `diff -Naur ${this.language.output}.expected ${
-        this.language.output
+          this.language.output
         } > /dev/null 2>&1`
       );
     }
@@ -546,12 +546,12 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.JavaLanguage),
   new JSONSchemaFixture(languages.GoLanguage),
   new JSONSchemaFixture(languages.CPlusPlusIndirectionLanguage),
-  new JSONSchemaFixture(languages.SwiftClassesLanguage),
+  new JSONSchemaFixture(languages.SwiftLanguage),
   new JSONSchemaFixture(languages.TypeScriptLanguage),
   new GraphQLFixture(languages.CSharpLanguage),
   new GraphQLFixture(languages.JavaLanguage),
   new GraphQLFixture(languages.GoLanguage),
   new GraphQLFixture(languages.CPlusPlusIndirectionLanguage),
-  new GraphQLFixture(languages.SwiftClassesLanguage)
+  new GraphQLFixture(languages.SwiftLanguage)
   // new GraphQLFixture(languages.TypeScriptLanguage) // enable once we have enums in TS
 ];
