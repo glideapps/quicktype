@@ -446,24 +446,24 @@ class SwiftRenderer extends ConvenienceRenderer {
                         }
                     });
                 }
+            }
 
-                // If using classes with convenience initializers,
-                // this main initializer must be defined within the class
-                // declaration since it assigns let constants
-                if (isClass && this._convenienceInitializers) {
-                    // Make an initializer that initalizes all fields
-                    this.ensureBlankLine();
-                    let properties: Sourcelike[] = [];
-                    this.forEachClassProperty(c, "none", (name, _, t) => {
-                        if (properties.length > 0) properties.push(", ");
-                        properties.push(name, ": ", this.swiftType(t, true));
+            // If using classes with convenience initializers,
+            // this main initializer must be defined within the class
+            // declaration since it assigns let constants
+            if (isClass && (this._convenienceInitializers || this._justTypes)) {
+                // Make an initializer that initalizes all fields
+                this.ensureBlankLine();
+                let properties: Sourcelike[] = [];
+                this.forEachClassProperty(c, "none", (name, _, t) => {
+                    if (properties.length > 0) properties.push(", ");
+                    properties.push(name, ": ", this.swiftType(t, true));
+                });
+                this.emitBlock(["init(", ...properties, ")"], () => {
+                    this.forEachClassProperty(c, "none", name => {
+                        this.emitLine("self.", name, " = ", name);
                     });
-                    this.emitBlock(["init(", ...properties, ")"], () => {
-                        this.forEachClassProperty(c, "none", name => {
-                            this.emitLine("self.", name, " = ", name);
-                        });
-                    });
-                }
+                });
             }
         });
     };
@@ -557,8 +557,9 @@ var json: String? {
             });
         };
 
+        const indirect = this.isCycleBreakerType(u) ? "indirect " : "";
         const [maybeNull, nonNulls] = removeNullFromUnion(u);
-        this.emitBlock(["enum ", unionName, this.getProtocolString()], () => {
+        this.emitBlock([indirect, "enum ", unionName, this.getProtocolString()], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });

@@ -93,7 +93,7 @@ function makeCPlusPlusLanguage(rendererOptions: {
     output: "quicktype.hpp",
     topLevel: "TopLevel",
     skipJSON: ["recursive.json", "list.json"],
-    skipSchema: [],
+    skipSchema: ["union-list.schema"],
     rendererOptions: rendererOptions,
     quickTestRendererOptions: [{ unions: "indirection" }]
   };
@@ -165,7 +165,7 @@ export const TypeScriptLanguage: Language = {
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: [],
-  skipSchema: ["enum.schema"],
+  skipSchema: [],
   rendererOptions: { "runtime-typecheck": "yes", "explicit-unions": "yes" },
   quickTestRendererOptions: []
 };
