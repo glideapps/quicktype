@@ -5,6 +5,8 @@ import stringHash = require("string-hash");
 
 import { TypeGraph } from "./TypeGraph";
 import { Type } from "./Type";
+import { panic, defined } from "./Support";
+import { Graph } from "./Graph";
 
 export type DeclarationKind = "forward" | "define";
 
@@ -25,69 +27,42 @@ export class DeclarationIR {
     constructor(readonly declarations: List<Declaration>, readonly forwardedTypes: Set<Type>) {}
 }
 
-export function declarationsForGraph(
-    graph: TypeGraph,
-    needsForwardDeclarations: boolean,
-    childrenOfType: (t: Type) => OrderedSet<Type>,
-    typeNeedsDeclaration: (t: Type) => boolean
-): DeclarationIR {
-    let visitedTypes: Set<Type> = Set();
-    let forwardedTypes: Set<Type> = Set();
-    const declarations: Declaration[] = [];
-
-    function visit(t: Type, path: Set<Type>): void {
-        if (visitedTypes.has(t)) return;
-
-        if (path.has(t)) {
-            if (needsForwardDeclarations) {
-                declarations.push(new Declaration("forward", t));
-                forwardedTypes = forwardedTypes.add(t);
-            }
-            return;
-        }
-
-        const pathForChildren = path.add(t);
-        childrenOfType(t).forEach(c => visit(c, pathForChildren));
-
-        if (visitedTypes.has(t)) return;
-        if (forwardedTypes.has(t) || typeNeedsDeclaration(t)) {
-            declarations.push(new Declaration("define", t));
-            visitedTypes = visitedTypes.add(t);
-        }
+function findBreaker(t: Type, path: List<Type>, canBreak: ((t: Type) => boolean) | undefined): Type | undefined {
+    const index = path.indexOf(t);
+    if (index < 0) return undefined;
+    if (canBreak === undefined) {
+        return path.get(index);
     }
-
-    let topLevels = graph.topLevels;
-    if (needsForwardDeclarations) {
-        topLevels = topLevels.reverse();
+    const potentialBreakers = path.take(index + 1).reverse();
+    const maybeBreaker = potentialBreakers.find(canBreak);
+    if (maybeBreaker === undefined) {
+        return panic("Found a cycle that cannot be broken");
     }
-
-    topLevels.forEach(t => visit(t, Set()));
-
-    let declarationsList = List(declarations);
-    if (!needsForwardDeclarations) {
-        declarationsList = declarationsList.reverse();
-    }
-
-    return new DeclarationIR(declarationsList, forwardedTypes);
+    return maybeBreaker;
 }
 
-export function cycleBreakerTypesForGraph(graph: TypeGraph, isImplicitCycleBreaker: (t: Type) => boolean): Set<Type> {
+export function cycleBreakerTypesForGraph(
+    graph: TypeGraph,
+    isImplicitCycleBreaker: (t: Type) => boolean,
+    canBreakCycles: (t: Type) => boolean
+): Set<Type> {
     let visitedTypes = Set();
     let cycleBreakerTypes: Set<Type> = Set();
     const queue: Type[] = graph.topLevels.valueSeq().toArray();
 
-    function visit(t: Type, path: Set<Type>): void {
+    function visit(t: Type, path: List<Type>): void {
         if (visitedTypes.has(t)) return;
 
         if (isImplicitCycleBreaker(t)) {
             queue.push(...t.children.toArray());
         } else {
-            if (path.has(t)) {
-                cycleBreakerTypes = cycleBreakerTypes.add(t);
+            const maybeBreaker = findBreaker(t, path, canBreakCycles);
+            if (maybeBreaker !== undefined) {
+                cycleBreakerTypes = cycleBreakerTypes.add(maybeBreaker);
                 return;
             }
 
-            const pathForChildren = path.add(t);
+            const pathForChildren = path.unshift(t);
             t.children.forEach(c => visit(c, pathForChildren));
         }
 
@@ -97,8 +72,108 @@ export function cycleBreakerTypesForGraph(graph: TypeGraph, isImplicitCycleBreak
     for (;;) {
         const maybeType = queue.pop();
         if (maybeType === undefined) break;
-        visit(maybeType, Set());
+        visit(maybeType, List());
     }
 
     return cycleBreakerTypes;
+}
+
+export function declarationsForGraph(
+    typeGraph: TypeGraph,
+    canBeForwardDeclared: ((t: Type) => boolean) | undefined,
+    childrenOfType: (t: Type) => OrderedSet<Type>,
+    needsDeclaration: (t: Type) => boolean
+): DeclarationIR {
+    /*
+    function nodeTitle(t: Type): string {
+        const indexAndKind = `${t.typeRef.getIndex()} ${t.kind}`;
+        if (t.hasNames) {
+            return `${indexAndKind} ${t.getCombinedName()}`;
+        } else {
+            return indexAndKind;
+        }
+    }
+    function componentName(c: OrderedSet<Type>): string {
+        return c.map(nodeTitle).join(", ");
+    }
+    */
+
+    const topDown = canBeForwardDeclared === undefined;
+    const declarations: Declaration[] = [];
+    let forwardedTypes: Set<Type> = Set();
+
+    function processGraph(graph: Graph<Type>, _writeComponents: boolean): void {
+        const componentsGraph = graph.stronglyConnectedComponents();
+        function visitComponent(component: OrderedSet<Type>): void {
+            // console.log(`visiting component ${componentName(component)}`);
+
+            const declarationNeeded = component.filter(needsDeclaration);
+
+            // 1. Only one node in the cycle needs a declaration, in which
+            // case it's the breaker, and no forward declaration is necessary.
+            if (declarationNeeded.size === 1) {
+                declarations.push(new Declaration("define", defined(declarationNeeded.first())));
+                return;
+            }
+
+            // 2. No node in the cycle needs a declaration, but it's also
+            // the only node, so we don't actually need a declaration at all.
+            if (declarationNeeded.isEmpty() && component.size === 1) {
+                return;
+            }
+
+            // 3. No node in the cycle needs a declaration, but there's more.
+            // than one node total.  We have to pick a node to make a
+            // declaration, so we can pick any one. This is not a forward
+            // declaration, either.
+            if (declarationNeeded.isEmpty()) {
+                declarations.push(new Declaration("define", defined(component.first())));
+                return;
+            }
+
+            // 4. More than one node needs a declaration, and we don't need
+            // forward declarations.  Just declare all of them and be done
+            // with it.
+            if (canBeForwardDeclared === undefined) {
+                declarationNeeded.forEach(t => {
+                    declarations.push(new Declaration("define", t));
+                });
+                return;
+            }
+
+            // 5. More than one node needs a declaration, and we have
+            // to make forward declarations.  We do the simple thing and first
+            // forward-declare all forward-declarable types in the SCC.  If
+            // there are none, we're stuck.  If there are, we take them out of
+            // the component and try the whole thing again recursively.  Then
+            // we declare the types we previously forward-declared.
+            const forwardDeclarable = component.filter(canBeForwardDeclared);
+            if (forwardDeclarable.isEmpty()) {
+                return panic("Cannot resolve cycle because it doesn't contain types that can be forward declared");
+            }
+            forwardDeclarable.forEach(t => {
+                declarations.push(new Declaration("forward", t));
+            });
+            forwardedTypes = forwardedTypes.union(forwardDeclarable);
+            const rest = component.subtract(forwardDeclarable);
+            const restGraph = new Graph(rest.toArray(), true, t => childrenOfType(t).intersect(rest));
+            processGraph(restGraph, false);
+            forwardDeclarable.forEach(t => {
+                declarations.push(new Declaration("define", t));
+            });
+            return;
+        }
+
+        const rootsUnordered = componentsGraph.findRoots();
+        const roots = rootsUnordered;
+        roots.forEach(component => {
+            componentsGraph.dfsTraversal(component, topDown, visitComponent);
+        });
+    }
+
+    const fullGraph = typeGraph.makeGraph(false, childrenOfType);
+    //fs.writeFileSync("graph.dot", fullGraph.makeDot(t => !(t instanceof PrimitiveType), nodeTitle));
+    processGraph(fullGraph, true);
+
+    return new DeclarationIR(List(declarations), forwardedTypes);
 }

@@ -156,7 +156,8 @@ export class Run {
             });
         }
 
-        let graph = typeBuilder.finish();
+        const originalGraph = typeBuilder.finish();
+        let graph = originalGraph;
         const doCombineClasses = this._options.combineClasses;
         if (doCombineClasses) {
             graph = combineClasses(graph, stringTypeMapping);
@@ -169,6 +170,12 @@ export class Run {
             graph = inferMaps(graph, stringTypeMapping);
         }
         graph = noneToAny(graph, stringTypeMapping);
+        if (Object.keys(this._allInputs.schemas).length > 0 && graph === originalGraph) {
+            // JSON Schema input can leave unreachable classes in the graph when it
+            // unifies, which can trip is up, so we remove them here.
+            graph = graph.garbageCollect();
+        }
+
         gatherNames(graph);
 
         return graph;

@@ -93,7 +93,7 @@ function makeCPlusPlusLanguage(rendererOptions: {
     output: "quicktype.hpp",
     topLevel: "TopLevel",
     skipJSON: ["recursive.json", "list.json"],
-    skipSchema: ["union-list.schema"],
+    skipSchema: [],
     rendererOptions: rendererOptions,
     quickTestRendererOptions: [{ unions: "indirection" }]
   };
