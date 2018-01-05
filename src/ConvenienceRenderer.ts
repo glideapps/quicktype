@@ -318,13 +318,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this._declarationIR.forwardedTypes.has(t);
     }
 
-    protected canBeCycleBreakerType(_t: Type): boolean {
+    protected isImplicitCycleBreaker(_t: Type): boolean {
         return panic("A renderer that invokes isCycleBreakerType must implement canBeCycleBreakerType");
     }
 
     protected isCycleBreakerType(t: Type): boolean {
         if (this._cycleBreakerTypes === undefined) {
-            this._cycleBreakerTypes = cycleBreakerTypesForGraph(this.typeGraph, s => this.canBeCycleBreakerType(s));
+            this._cycleBreakerTypes = cycleBreakerTypesForGraph(this.typeGraph, s => this.isImplicitCycleBreaker(s));
         }
         return this._cycleBreakerTypes.has(t);
     }

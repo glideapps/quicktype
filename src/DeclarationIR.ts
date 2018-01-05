@@ -71,7 +71,7 @@ export function declarationsForGraph(
     return new DeclarationIR(declarationsList, forwardedTypes);
 }
 
-export function cycleBreakerTypesForGraph(graph: TypeGraph, canBeCycleBreaker: (t: Type) => boolean): Set<Type> {
+export function cycleBreakerTypesForGraph(graph: TypeGraph, isImplicitCycleBreaker: (t: Type) => boolean): Set<Type> {
     let visitedTypes = Set();
     let cycleBreakerTypes: Set<Type> = Set();
     const queue: Type[] = graph.topLevels.valueSeq().toArray();
@@ -79,7 +79,9 @@ export function cycleBreakerTypesForGraph(graph: TypeGraph, canBeCycleBreaker: (
     function visit(t: Type, path: Set<Type>): void {
         if (visitedTypes.has(t)) return;
 
-        if (canBeCycleBreaker(t)) {
+        if (isImplicitCycleBreaker(t)) {
+            queue.push(...t.children.toArray());
+        } else {
             if (path.has(t)) {
                 cycleBreakerTypes = cycleBreakerTypes.add(t);
                 return;
@@ -87,8 +89,6 @@ export function cycleBreakerTypesForGraph(graph: TypeGraph, canBeCycleBreaker: (
 
             const pathForChildren = path.add(t);
             t.children.forEach(c => visit(c, pathForChildren));
-        } else {
-            queue.push(...t.children.toArray());
         }
 
         visitedTypes = visitedTypes.add(t);
