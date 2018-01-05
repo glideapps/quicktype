@@ -15,7 +15,7 @@ import {
     isNamedType
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
+import { Namespace, Name, Namer, funPrefixNamer, keywordNamespace } from "../Naming";
 import { BooleanOption, EnumOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -219,6 +219,7 @@ const lowerNamingFunction = funPrefixNamer(s => swiftNameStyle(false, s));
 class SwiftRenderer extends ConvenienceRenderer {
     private _needAny: boolean = false;
     private _needNull: boolean = false;
+    private _propertyForbiddenNamespace: Namespace;
 
     constructor(
         graph: TypeGraph,
@@ -232,6 +233,11 @@ class SwiftRenderer extends ConvenienceRenderer {
         super(graph, leadingComments);
     }
 
+    protected setUpNaming(): Namespace[] {
+        this._propertyForbiddenNamespace = keywordNamespace("forbidden-for-properties", ["fromURL"]);
+        return super.setUpNaming().concat([this._propertyForbiddenNamespace]);
+    }
+
     protected get forbiddenNamesForGlobalNamespace(): string[] {
         return keywords;
     }
@@ -240,7 +246,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         _c: ClassType,
         _classNamed: Name
     ): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.globalNamespace] };
+        return { names: [], namespaces: [this.globalNamespace, this._propertyForbiddenNamespace] };
     }
 
     protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
@@ -491,7 +497,7 @@ class SwiftRenderer extends ConvenienceRenderer {
     self.init(data: data)
 }`);
                 this.ensureBlankLine();
-                this.emitMultiline(`convenience init?(url: String) {
+                this.emitMultiline(`convenience init?(fromURL url: String) {
     guard let url = URL(string: url) else { return nil }
     guard let data = try? Data(contentsOf: url) else { return nil }
     self.init(data: data)
@@ -512,7 +518,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                     this.emitLine("self.init(data: data)");
                 });
                 this.ensureBlankLine();
-                this.emitMultiline(`init?(url: String) {
+                this.emitMultiline(`init?(fromURL url: String) {
     guard let url = URL(string: url) else { return nil }
     guard let data = try? Data(contentsOf: url) else { return nil }
     self.init(data: data)
@@ -629,7 +635,7 @@ var json: String? {
                 this.emitLine("self.init(data: data)");
             });
             this.ensureBlankLine();
-            this.emitMultiline(`init?(url: String) {
+            this.emitMultiline(`init?(fromURL url: String) {
     guard let url = URL(string: url) else { return nil }
     guard let data = try? Data(contentsOf: url) else { return nil }
     self.init(data: data)
@@ -925,7 +931,10 @@ class JSONAny: Codable {
                     () => undefined
                 );
                 this.ensureBlankLine();
-                this.forEachTopLevel("leading-and-interposing", this.emitTopLevelMapAndArrayConvenienceInitializerExtensions);
+                this.forEachTopLevel(
+                    "leading-and-interposing",
+                    this.emitTopLevelMapAndArrayConvenienceInitializerExtensions
+                );
             }
 
             this.ensureBlankLine();
