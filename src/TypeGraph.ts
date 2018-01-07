@@ -64,15 +64,16 @@ export class TypeGraph {
             if (seen.has(t)) return;
             seen = seen.add(t);
 
-            const children = childrenOfType ? childrenOfType(t) : t.children;
-            children.forEach(addFromType);
             if (predicate(t)) {
                 types = types.push(t);
             }
+
+            const children = childrenOfType ? childrenOfType(t) : t.children;
+            children.forEach(addFromType);
         }
 
         this.topLevels.forEach(addFromType);
-        return types.reverse().toOrderedSet();
+        return types.toOrderedSet();
     }
 
     allNamedTypes = (childrenOfType?: (t: Type) => Collection<any, Type>): OrderedSet<Type> => {
