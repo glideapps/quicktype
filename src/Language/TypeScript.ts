@@ -4,7 +4,7 @@ import { Type, ArrayType, UnionType, ClassType, nullableFromUnion, matchType, En
 import { TypeGraph } from "../TypeGraph";
 import {
     utf16LegalizeCharacters,
-    stringEscape,
+    utf16StringEscape,
     splitIntoWords,
     combineWords,
     firstUpperWordStyle,
@@ -70,7 +70,7 @@ function typeNameStyle(original: string): string {
 }
 
 function propertyNameStyle(original: string): string {
-    const escaped = stringEscape(original);
+    const escaped = utf16StringEscape(original);
     const quoted = `"${escaped}"`;
 
     if (original.length === 0) {
@@ -130,7 +130,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     private emitEnum = (e: EnumType, enumName: Name): void => {
         this.emitBlock(["export enum ", enumName], "", () => {
             this.forEachEnumCase(e, "none", (name, jsonName) => {
-                this.emitLine(name, ` = "${stringEscape(jsonName)}",`);
+                this.emitLine(name, ` = "${utf16StringEscape(jsonName)}",`);
             });
         });
     };
@@ -177,7 +177,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         return matchType<Sourcelike>(
             t,
             _anyType => `undefined`,
-            _nullType => `undefined`,
+            _nullType => `null`,
             _boolType => `false`,
             _integerType => `0`,
             _doubleType => `3.14`,
@@ -237,10 +237,6 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             this.emitMultiline(`// and asserts the results of JSON.parse at runtime`);
         }
         this.emitBlock("export module Convert", "", () => {
-            if (this._runtimeTypecheck) {
-                this.emitLine("let path: string[] = [];");
-                this.ensureBlankLine();
-            }
             this.forEachTopLevel("interposing", (t, name) => {
                 this.emitBlock(["export function to", name, "(json: string): ", this.sourceFor(t)], "", () => {
                     if (this._runtimeTypecheck) {
@@ -263,14 +259,15 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             if (this._runtimeTypecheck) {
                 this.emitMultiline(`
 function cast<T>(obj: any, typ: any): T {
-    path = [];
     if (!isValid(typ, obj)) {
-        throw \`Invalid value: obj$\{path.join("")\}\`;
+        throw \`Invalid value\`;
     }
     return obj;
 }
 
 function isValid(typ: any, val: any): boolean {
+    if (typ === undefined) return true;
+    if (typ === null) return val === null || val === undefined;
     return typ.isUnion  ? isValidUnion(typ.typs, val)
             : typ.isArray  ? isValidArray(typ.typ, val)
             : typ.isMap    ? isValidMap(typ.typ, val)
@@ -295,41 +292,27 @@ function isValidEnum(enumName: string, val: any): boolean {
 
 function isValidArray(typ: any, val: any): boolean {
     // val must be an array with no invalid elements
-    return Array.isArray(val) && !val.find((element, i) => {
-        path.push(\`[$\{i}\]\`);
-        if (isValid(typ, element)) {
-            path.pop();
-            return false;
-        } else {
-            return true;
-        }
+    return Array.isArray(val) && val.every((element, i) => {
+        return isValid(typ, element);
     });
 }
 
 function isValidMap(typ: any, val: any): boolean {
+    if (val === null || typeof val !== "object" || Array.isArray(val)) return false;
     // all values in the map must be typ
-    for (const prop in val) {
-        if (!!prop) continue;
-        path.push(\`["$\{prop\}"]\`);
-        if (!isValid(typ, val[prop]))
-            return false;
-        path.pop();
-    }
-    return true;
+    return Object.keys(val).every(prop => {
+        if (!Object.prototype.hasOwnProperty.call(val, prop)) return true;
+        return isValid(typ, val[prop]);
+    });
 }
 
 function isValidObject(className: string, val: any): boolean {
+    if (val === null || typeof val !== "object" || Array.isArray(val)) return false;
     let typeRep = typeMap[className];
-    
-    for (const prop in typeRep) {
-        if (!!prop) continue;
-        path.push(\`.$\{prop\}\`);
-        if (!isValid(typeRep[prop], val[prop]))
-            return false;
-        path.pop();
-    }
-
-    return true;
+    return Object.keys(typeRep).every(prop => {
+        if (!Object.prototype.hasOwnProperty.call(typeRep, prop)) return true;
+        return isValid(typeRep[prop], val[prop]);
+    });
 }
 
 function A(typ: any) {

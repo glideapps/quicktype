@@ -113,7 +113,7 @@ export class Namer {
             const maybeUniqueName = proposedNames.find(proposed =>
                 namesToAssign.every(n => n === name || !n.proposeUnstyledNames(names).contains(proposed))
             );
-            if (maybeUniqueName) {
+            if (maybeUniqueName !== undefined) {
                 const styledName = this.nameStyle(maybeUniqueName);
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned) {
