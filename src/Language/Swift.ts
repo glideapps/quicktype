@@ -268,9 +268,9 @@ class SwiftRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    protected canBeCycleBreakerType(t: Type): boolean {
+    protected isImplicitCycleBreaker(t: Type): boolean {
         const kind = t.kind;
-        return kind !== "array" && kind !== "map";
+        return kind === "array" || kind === "map";
     }
 
     private emitBlock = (line: Sourcelike, f: () => void): void => {

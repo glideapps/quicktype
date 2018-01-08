@@ -56,3 +56,19 @@ export const hashCodeInit = 17;
 export function addHashCode(acc: number, h: number): number {
     return (acc * 31 + (h | 0)) | 0;
 }
+
+export function repeated<T>(n: number, value: T): T[] {
+    const arr: T[] = [];
+    for (let i = 0; i < n; i++) {
+        arr.push(value);
+    }
+    return arr;
+}
+
+export function repeatedCall<T>(n: number, producer: () => T): T[] {
+    const arr: T[] = [];
+    for (let i = 0; i < n; i++) {
+        arr.push(producer());
+    }
+    return arr;
+}

@@ -3,9 +3,10 @@
 import { Map, List, Set, OrderedSet, Collection } from "immutable";
 
 import { Type, separateNamedTypes, SeparatedNamedTypes, isNamedType } from "./Type";
-import { defined, assert } from "./Support";
-import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
+import { defined, assert, panic } from "./Support";
+import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
+import { Graph } from "./Graph";
 
 export class TypeGraph {
     private _typeBuilder?: TypeBuilder;
@@ -54,8 +55,9 @@ export class TypeGraph {
     }
 
     filterTypes(
-        predicate: (t: Type) => boolean,
-        childrenOfType?: (t: Type) => Collection<any, Type>
+        predicate: ((t: Type) => boolean) | undefined,
+        childrenOfType: ((t: Type) => Collection<any, Type>) | undefined,
+        topDown: boolean
     ): OrderedSet<Type> {
         let seen = Set<Type>();
         let types = List<Type>();
@@ -64,12 +66,18 @@ export class TypeGraph {
             if (seen.has(t)) return;
             seen = seen.add(t);
 
-            if (predicate(t)) {
+            const required = predicate === undefined || predicate(t);
+
+            if (topDown && required) {
                 types = types.push(t);
             }
 
             const children = childrenOfType ? childrenOfType(t) : t.children;
             children.forEach(addFromType);
+
+            if (!topDown && required) {
+                types = types.push(t);
+            }
         }
 
         this.topLevels.forEach(addFromType);
@@ -77,7 +85,7 @@ export class TypeGraph {
     }
 
     allNamedTypes = (childrenOfType?: (t: Type) => Collection<any, Type>): OrderedSet<Type> => {
-        return this.filterTypes(isNamedType, childrenOfType);
+        return this.filterTypes(isNamedType, childrenOfType, true);
     };
 
     allNamedTypesSeparated = (childrenOfType?: (t: Type) => Collection<any, Type>): SeparatedNamedTypes => {
@@ -100,10 +108,20 @@ export class TypeGraph {
         return new GraphRewriteBuilder(this, stringTypeMapping, replacementGroups, replacer).finish();
     }
 
+    garbageCollect(): TypeGraph {
+        return new GraphRewriteBuilder(this, NoStringTypeMapping, [], (_t, _b) =>
+            panic("This shouldn't be called")
+        ).finish();
+    }
+
     allTypesUnordered = (): Set<Type> => {
         assert(this.isFrozen, "Tried to get all graph types before it was frozen");
         return Set(defined(this._types));
     };
+
+    makeGraph(invertDirection: boolean, childrenOfType: (t: Type) => OrderedSet<Type>): Graph<Type> {
+        return new Graph(defined(this._types), invertDirection, childrenOfType);
+    }
 }
 
 export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {

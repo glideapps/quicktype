@@ -115,6 +115,12 @@ export type StringTypeMapping = {
     dateTime: PrimitiveStringTypeKind;
 };
 
+export const NoStringTypeMapping: StringTypeMapping = {
+    date: "date",
+    time: "time",
+    dateTime: "date-time"
+};
+
 export abstract class TypeBuilder {
     readonly typeGraph: TypeGraph = new TypeGraph(this);
 

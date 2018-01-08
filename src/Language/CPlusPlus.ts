@@ -30,10 +30,11 @@ import {
     allUpperWordStyle,
     allLowerWordStyle
 } from "../Strings";
-import { defined, assertNever } from "../Support";
+import { defined, assertNever, panic } from "../Support";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { StringOption, EnumOption, BooleanOption } from "../RendererOptions";
 import { assert } from "../Support";
+import { Declaration } from "../DeclarationIR";
 
 type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
@@ -66,10 +67,6 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
         "Naming style for enumerators",
         [upperUnderscoreValue, underscoreValue, pascalValue, camelValue]
     );
-    private readonly _uniquePtrOption = new EnumOption("unions", "Use containment or indirection for unions", [
-        ["containment", false],
-        ["indirection", true]
-    ]);
 
     constructor() {
         super("C++", ["c++", "cpp", "cplusplus"], "cpp");
@@ -78,8 +75,7 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
             this._namespaceOption,
             this._typeNamingStyleOption,
             this._memberNamingStyleOption,
-            this._enumeratorNamingStyleOption,
-            this._uniquePtrOption
+            this._enumeratorNamingStyleOption
         ]);
     }
 
@@ -242,12 +238,13 @@ const keywords = [
     "transaction_safe_dynamic"
 ];
 
+const optionalType = "std::unique_ptr";
+
 class CPlusPlusRenderer extends ConvenienceRenderer {
     private readonly _typeNameStyle: (rawName: string) => string;
     private readonly _typeNamingFunction: Namer;
     private readonly _memberNamingFunction: Namer;
     private readonly _caseNamingFunction: Namer;
-    private readonly _optionalType: string;
 
     constructor(
         graph: TypeGraph,
@@ -256,8 +253,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         private readonly _namespaceName: string,
         _typeNamingStyle: NamingStyle,
         _memberNamingStyle: NamingStyle,
-        _enumeratorNamingStyle: NamingStyle,
-        private readonly _uniquePtr: boolean
+        _enumeratorNamingStyle: NamingStyle
     ) {
         super(graph, leadingComments);
 
@@ -265,7 +261,6 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         this._typeNamingFunction = funPrefixNamer(this._typeNameStyle);
         this._memberNamingFunction = funPrefixNamer(cppNameStyle(_memberNamingStyle));
         this._caseNamingFunction = funPrefixNamer(cppNameStyle(_enumeratorNamingStyle));
-        this._optionalType = _uniquePtr ? "std::unique_ptr" : "boost::optional";
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -314,6 +309,11 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return true;
     }
 
+    protected canBeForwardDeclared(t: Type): boolean {
+        const kind = t.kind;
+        return kind === "class";
+    }
+
     private emitBlock = (line: Sourcelike, withSemicolon: boolean, f: () => void): void => {
         this.emitLine(line, " {");
         this.indent(f);
@@ -353,7 +353,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         if (!hasNull) {
             return variant;
         }
-        return [this._optionalType, "<", variant, ">"];
+        return [optionalType, "<", variant, ">"];
     };
 
     private ourQualifier = (inJsonNamespace: boolean): Sourcelike => {
@@ -364,8 +364,8 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return inJsonNamespace ? [] : "nlohmann::";
     };
 
-    private variantIndirection = (inVariant: boolean, typeSrc: Sourcelike): Sourcelike => {
-        if (!inVariant || !this._uniquePtr) return typeSrc;
+    private variantIndirection = (needIndirection: boolean, typeSrc: Sourcelike): Sourcelike => {
+        if (!needIndirection) return typeSrc;
         return ["std::unique_ptr<", typeSrc, ">"];
     };
 
@@ -382,7 +382,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             _stringType => "std::string",
             arrayType => ["std::vector<", this.cppType(arrayType.items, false, inJsonNamespace, withIssues), ">"],
             classType =>
-                this.variantIndirection(inVariant, [
+                this.variantIndirection(inVariant && this.isForwardDeclaredType(classType), [
                     "struct ",
                     this.ourQualifier(inJsonNamespace),
                     this.nameForNamedType(classType)
@@ -396,7 +396,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (!nullable) return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
-                return [this._optionalType, "<", this.cppType(nullable, false, inJsonNamespace, withIssues), ">"];
+                return [optionalType, "<", this.cppType(nullable, false, inJsonNamespace, withIssues), ">"];
             }
         );
     };
@@ -562,8 +562,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     private emitOptionalHelpers = (): void => {
         this.emitLine("template <typename T>");
-        if (this._uniquePtr) {
-            this.emitMultiline(`struct adl_serializer<std::unique_ptr<T>> {
+        this.emitMultiline(`struct adl_serializer<std::unique_ptr<T>> {
     static void to_json(json& j, const std::unique_ptr<T>& opt) {
         if (!opt)
             j = nullptr;
@@ -578,31 +577,34 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             return std::unique_ptr<T>(new T(j.get<T>()));
     }
 };`);
-        } else {
-            this.emitMultiline(`struct adl_serializer<boost::optional<T>> {
-    static void to_json(json& j, const boost::optional<T>& opt) {
-        if (opt == boost::none)
-            j = nullptr;
-        else
-            j = *opt;
-    }
-    
-    static void from_json(const json& j, boost::optional<T>& opt) {
-        if (j.is_null())
-            opt = boost::none;
-        else
-            opt = j.get<T>();
-    }
-};`);
-        }
     };
+
+    private emitDeclaration(decl: Declaration): void {
+        if (decl.kind === "forward") {
+            this.emitLine("struct ", this.nameForNamedType(decl.type), ";");
+        } else if (decl.kind === "define") {
+            const t = decl.type;
+            const name = this.nameForNamedType(t);
+            if (t instanceof ClassType) {
+                this.emitClass(t, name);
+            } else if (t instanceof EnumType) {
+                this.emitEnum(t, name);
+            } else if (t instanceof UnionType) {
+                this.emitUnionTypedefs(t, name);
+            } else {
+                return panic(`Cannot declare type ${t.kind}`);
+            }
+        } else {
+            return assertNever(decl.kind);
+        }
+    }
 
     private emitTypes = (): void => {
         if (!this._justTypes) {
             this.emitLine("using nlohmann::json;");
             this.ensureBlankLine();
         }
-        this.forEachNamedType("interposing", this.emitClass, this.emitEnum, this.emitUnionTypedefs);
+        this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
         if (this._justTypes) return;
         this.forEachTopLevel("leading", this.emitTopLevelTypedef, t => !this.namedTypeToNameForTopLevel(t));
         this.emitMultiline(`
@@ -615,10 +617,10 @@ inline json get_untyped(const json &j, const char *property) {
         if (this.haveUnions) {
             this.emitMultiline(`
 template <typename T>
-inline ${this._optionalType}<T> get_optional(const json &j, const char *property) {
+inline ${optionalType}<T> get_optional(const json &j, const char *property) {
     if (j.find(property) != j.end())
-        return j.at(property).get<${this._optionalType}<T>>();
-    return ${this._optionalType}<T>();
+        return j.at(property).get<${optionalType}<T>>();
+    return ${optionalType}<T>();
 }`);
         }
     };
@@ -650,7 +652,7 @@ inline ${this._optionalType}<T> get_optional(const json &j, const char *property
         const include = (name: string): void => {
             this.emitLine(`#include ${name}`);
         };
-        if (this.haveUnions && !this._uniquePtr) include("<boost/optional.hpp>");
+        if (this.haveUnions) include("<boost/optional.hpp>");
         if (this.haveNamedUnions) include("<boost/variant.hpp>");
         if (!this._justTypes) include('"json.hpp"');
         this.ensureBlankLine();

@@ -19,7 +19,7 @@ import { defined, panic, nonNull } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 import { trimEnd } from "lodash";
-import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph } from "./DeclarationIR";
+import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 
 export abstract class ConvenienceRenderer extends Renderer {
     protected globalNamespace: Namespace;
@@ -85,6 +85,10 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected get needsTypeDeclarationBeforeUse(): boolean {
         return false;
+    }
+
+    protected canBeForwardDeclared(_t: Type): boolean {
+        return panic("If needsTypeDeclarationBeforeUse returns true, canBeForwardDeclared must be implemented");
     }
 
     protected unionNeedsName(u: UnionType): boolean {
@@ -318,13 +322,21 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this._declarationIR.forwardedTypes.has(t);
     }
 
-    protected canBeCycleBreakerType(_t: Type): boolean {
+    protected isImplicitCycleBreaker(_t: Type): boolean {
         return panic("A renderer that invokes isCycleBreakerType must implement canBeCycleBreakerType");
+    }
+
+    protected canBreakCycles(_t: Type): boolean {
+        return true;
     }
 
     protected isCycleBreakerType(t: Type): boolean {
         if (this._cycleBreakerTypes === undefined) {
-            this._cycleBreakerTypes = cycleBreakerTypesForGraph(this.typeGraph, s => this.canBeCycleBreakerType(s));
+            this._cycleBreakerTypes = cycleBreakerTypesForGraph(
+                this.typeGraph,
+                s => this.isImplicitCycleBreaker(s),
+                s => this.canBreakCycles(s)
+            );
         }
         return this._cycleBreakerTypes.has(t);
     }
@@ -344,6 +356,10 @@ export abstract class ConvenienceRenderer extends Renderer {
             f(t, defined(this._topLevelNames.get(name)))
         );
     };
+
+    protected forEachDeclaration(blankLocations: BlankLineLocations, f: (decl: Declaration) => void) {
+        this.forEachWithBlankLines(this._declarationIR.declarations, blankLocations, f);
+    }
 
     setAlphabetizeProperties = (value: boolean): void => {
         this._alphabetizeProperties = value;
@@ -482,7 +498,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected emitSource(): void {
         this._declarationIR = declarationsForGraph(
             this.typeGraph,
-            this.needsTypeDeclarationBeforeUse,
+            this.needsTypeDeclarationBeforeUse ? t => this.canBeForwardDeclared(t) : undefined,
             this.childrenOfType,
             t => {
                 if (t instanceof UnionType) {
