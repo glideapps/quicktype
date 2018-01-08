@@ -4,7 +4,7 @@ import { Type, ArrayType, UnionType, ClassType, nullableFromUnion, matchType, En
 import { TypeGraph } from "../TypeGraph";
 import {
     utf16LegalizeCharacters,
-    stringEscape,
+    utf16StringEscape,
     splitIntoWords,
     combineWords,
     firstUpperWordStyle,
@@ -70,7 +70,7 @@ function typeNameStyle(original: string): string {
 }
 
 function propertyNameStyle(original: string): string {
-    const escaped = stringEscape(original);
+    const escaped = utf16StringEscape(original);
     const quoted = `"${escaped}"`;
 
     if (original.length === 0) {
@@ -130,7 +130,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     private emitEnum = (e: EnumType, enumName: Name): void => {
         this.emitBlock(["export enum ", enumName], "", () => {
             this.forEachEnumCase(e, "none", (name, jsonName) => {
-                this.emitLine(name, ` = "${stringEscape(jsonName)}",`);
+                this.emitLine(name, ` = "${utf16StringEscape(jsonName)}",`);
             });
         });
     };
