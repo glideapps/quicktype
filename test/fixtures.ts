@@ -545,13 +545,13 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.JavaLanguage),
   new JSONSchemaFixture(languages.GoLanguage),
-  new JSONSchemaFixture(languages.CPlusPlusIndirectionLanguage),
+  new JSONSchemaFixture(languages.CPlusPlusLanguage),
   new JSONSchemaFixture(languages.SwiftLanguage),
   new JSONSchemaFixture(languages.TypeScriptLanguage),
   new GraphQLFixture(languages.CSharpLanguage),
   new GraphQLFixture(languages.JavaLanguage),
   new GraphQLFixture(languages.GoLanguage),
-  new GraphQLFixture(languages.CPlusPlusIndirectionLanguage),
+  new GraphQLFixture(languages.CPlusPlusLanguage),
   new GraphQLFixture(languages.SwiftLanguage),
   new GraphQLFixture(languages.TypeScriptLanguage)
 ];

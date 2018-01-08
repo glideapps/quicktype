@@ -76,33 +76,24 @@ export const GoLanguage: Language = {
   quickTestRendererOptions: []
 };
 
-function makeCPlusPlusLanguage(rendererOptions: {
-  [name: string]: string;
-}): Language {
-  return {
-    name: "cplusplus",
-    base: "test/fixtures/cplusplus",
-    setupCommand:
-      "curl -o json.hpp https://raw.githubusercontent.com/nlohmann/json/87df1d6708915ffbfa26a051ad7562ecc22e5579/src/json.hpp",
-    compileCommand: "g++ -O0 -o quicktype -std=c++14 main.cpp",
-    runCommand(sample: string) {
-      return `./quicktype "${sample}"`;
-    },
-    diffViaSchema: true,
-    allowMissingNull: false,
-    output: "quicktype.hpp",
-    topLevel: "TopLevel",
-    skipJSON: ["recursive.json", "list.json"],
-    skipSchema: [],
-    rendererOptions: rendererOptions,
-    quickTestRendererOptions: [{ unions: "indirection" }]
-  };
-}
-
-export const CPlusPlusLanguage: Language = makeCPlusPlusLanguage({});
-export const CPlusPlusIndirectionLanguage: Language = makeCPlusPlusLanguage({
-  unions: "indirection"
-});
+export const CPlusPlusLanguage: Language = {
+  name: "cplusplus",
+  base: "test/fixtures/cplusplus",
+  setupCommand:
+    "curl -o json.hpp https://raw.githubusercontent.com/nlohmann/json/87df1d6708915ffbfa26a051ad7562ecc22e5579/src/json.hpp",
+  compileCommand: "g++ -O0 -o quicktype -std=c++14 main.cpp",
+  runCommand(sample: string) {
+    return `./quicktype "${sample}"`;
+  },
+  diffViaSchema: true,
+  allowMissingNull: false,
+  output: "quicktype.hpp",
+  topLevel: "TopLevel",
+  skipJSON: ["recursive.json", "list.json"],
+  skipSchema: [],
+  rendererOptions: {},
+  quickTestRendererOptions: [{ unions: "indirection" }]
+};
 
 export const ElmLanguage: Language = {
   name: "elm",
