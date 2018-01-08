@@ -552,6 +552,6 @@ export const allFixtures: Fixture[] = [
   new GraphQLFixture(languages.JavaLanguage),
   new GraphQLFixture(languages.GoLanguage),
   new GraphQLFixture(languages.CPlusPlusIndirectionLanguage),
-  new GraphQLFixture(languages.SwiftLanguage)
-  // new GraphQLFixture(languages.TypeScriptLanguage) // enable once we have enums in TS
+  new GraphQLFixture(languages.SwiftLanguage),
+  new GraphQLFixture(languages.TypeScriptLanguage)
 ];
