@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+LANGUAGE="types"
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -17,5 +19,5 @@ for fn in `find . -name '*.json'` ; do
     odir="$OUTPUT_DIR/$fdir"
     #echo $odir
     mkdir -p "$odir"
-    node "$__dir/../dist/cli.js" --lang types --declare-unions --quiet -o "$odir/$fbase.types" "$fn"
+    node "$__dir/../dist/cli.js" --lang "$LANGUAGE" --quiet -o "$odir/$fbase.$LANGUAGE" "$fn"
 done
