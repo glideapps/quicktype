@@ -52,6 +52,11 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         true
     );
 
+    private readonly _classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
+        ["struct", false],
+        ["class", true]
+    ]);
+
     private readonly _versionOption = new EnumOption<Version>("swift-version", "Swift version", [
         ["4", 4],
         ["4.1", 4.1]
@@ -61,7 +66,13 @@ export default class SwiftTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
-        this.setOptions([this._justTypesOption, this._denseOption, this._versionOption, this._convenienceInitializers]);
+        this.setOptions([
+            this._justTypesOption,
+            this._classOption,
+            this._denseOption,
+            this._versionOption,
+            this._convenienceInitializers
+        ]);
     }
 
     protected get rendererClass(): new (
@@ -214,6 +225,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
+        private readonly _useClasses: boolean,
         private readonly _dense: boolean,
         private readonly _version: Version,
         private readonly _convenienceInitializers: Boolean
@@ -390,7 +402,7 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private renderClassDefinition = (c: ClassType, className: Name): void => {
-        const isClass = this.isCycleBreakerType(c);
+        const isClass = this._useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
         this.emitBlock([structOrClass, " ", className, this.getProtocolString()], () => {
             if (this._dense) {
@@ -469,7 +481,7 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private emitConvenienceInitializersExtension = (c: ClassType, className: Name): void => {
-        const isClass = this.isCycleBreakerType(c);
+        const isClass = this._useClasses || this.isCycleBreakerType(c);
         this.emitBlock(["extension ", className], () => {
             if (isClass) {
                 // Convenience initializers for Json string and data
