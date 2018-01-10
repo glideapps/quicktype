@@ -536,8 +536,8 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             return;
         }
         if (options.version) {
-            console.log(`quicktype, version ${packageJSON.version}`);
-            console.log("Visit https://quicktype.io/ for more information.");
+            console.log(`quicktype version ${packageJSON.version}`);
+            console.log("Visit quicktype.io for more info.");
             return;
         }
 
