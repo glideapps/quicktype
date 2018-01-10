@@ -22,6 +22,7 @@ import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 
 export abstract class ConvenienceRenderer extends Renderer {
+    protected forbiddenWordsNamespace: Namespace;
     protected globalNamespace: Namespace;
     private _topLevelNames: Map<string, Name>;
     private _namesForNamedTypes: Map<Type, Name>;
@@ -96,7 +97,8 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected setUpNaming(): Namespace[] {
-        this.globalNamespace = keywordNamespace("global", this.forbiddenNamesForGlobalNamespace);
+        this.forbiddenWordsNamespace = keywordNamespace("forbidden", this.forbiddenNamesForGlobalNamespace);
+        this.globalNamespace = new Namespace("global", undefined, Set([this.forbiddenWordsNamespace]), Set());
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
         this._namesForNamedTypes = Map();
@@ -116,7 +118,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             const name = this.addNamedForNamedType(u);
             this.addUnionMemberNames(u, name);
         });
-        return [this.globalNamespace];
+        return [this.forbiddenWordsNamespace, this.globalNamespace];
     }
 
     private addDependenciesForNamedType = (type: Type, named: Name): void => {

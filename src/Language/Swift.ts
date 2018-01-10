@@ -234,11 +234,11 @@ class SwiftRenderer extends ConvenienceRenderer {
         _c: ClassType,
         _classNamed: Name
     ): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.globalNamespace, this._propertyForbiddenNamespace] };
+        return { names: [], namespaces: [this.forbiddenWordsNamespace, this._propertyForbiddenNamespace] };
     }
 
     protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.globalNamespace] };
+        return { names: [], namespaces: [this.forbiddenWordsNamespace] };
     }
 
     protected topLevelNameStyle(rawName: string): string {

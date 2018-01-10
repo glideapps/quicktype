@@ -271,11 +271,11 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         _c: ClassType,
         _classNamed: Name
     ): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.globalNamespace] };
+        return { names: [], namespaces: [this.forbiddenWordsNamespace] };
     }
 
     protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.globalNamespace] };
+        return { names: [], namespaces: [this.forbiddenWordsNamespace] };
     }
 
     protected topLevelNameStyle(rawName: string): string {
