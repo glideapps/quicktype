@@ -30,6 +30,11 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _memberNames: Map<UnionType, Map<Type, Name>>;
     private _caseNames: Map<EnumType, Map<string, Name>>;
 
+    private _namedTypeNamer: Namer;
+    private _classPropertyNamer: Namer | null;
+    private _unionMemberNamer: Namer | null;
+    private _enumCaseNamer: Namer | null;
+
     private _declarationIR: DeclarationIR;
     private _namedTypes: List<Type>;
     private _namedClasses: OrderedSet<ClassType>;
@@ -69,10 +74,10 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected abstract topLevelNameStyle(rawName: string): string;
-    protected abstract get namedTypeNamer(): Namer;
-    protected abstract get classPropertyNamer(): Namer | null;
-    protected abstract get unionMemberNamer(): Namer | null;
-    protected abstract get enumCaseNamer(): Namer | null;
+    protected abstract makeNamedTypeNamer(): Namer;
+    protected abstract makeClassPropertyNamer(): Namer | null;
+    protected abstract makeUnionMemberNamer(): Namer | null;
+    protected abstract makeEnumCaseNamer(): Namer | null;
     protected abstract namedTypeToNameForTopLevel(type: Type): Type | null;
     protected abstract emitSourceStructure(): void;
 
@@ -97,6 +102,11 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected setUpNaming(): Namespace[] {
+        this._namedTypeNamer = this.makeNamedTypeNamer();
+        this._classPropertyNamer = this.makeClassPropertyNamer();
+        this._unionMemberNamer = this.makeUnionMemberNamer();
+        this._enumCaseNamer = this.makeEnumCaseNamer();
+
         this.forbiddenWordsNamespace = keywordNamespace("forbidden", this.forbiddenNamesForGlobalNamespace);
         this.globalNamespace = new Namespace("global", undefined, Set([this.forbiddenWordsNamespace]), Set());
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
@@ -132,7 +142,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         const maybeNamedType = this.namedTypeToNameForTopLevel(type);
         let styledName: string;
         if (maybeNamedType) {
-            styledName = this.namedTypeNamer.nameStyle(name);
+            styledName = this._namedTypeNamer.nameStyle(name);
         } else {
             styledName = this.topLevelNameStyle(name);
         }
@@ -154,7 +164,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private addNamedForNamedType = (type: Type): Name => {
         const existing = this._namesForNamedTypes.get(type);
         if (existing !== undefined) return existing;
-        const named = this.globalNamespace.add(new SimpleName(type.getProposedNames(), this.namedTypeNamer));
+        const named = this.globalNamespace.add(new SimpleName(type.getProposedNames(), this._namedTypeNamer));
 
         this.addDependenciesForNamedType(type, named);
 
@@ -163,7 +173,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     private addPropertyNames = (c: ClassType, className: Name): void => {
-        const propertyNamer = this.classPropertyNamer;
+        const propertyNamer = this._classPropertyNamer;
         if (propertyNamer === null) return;
 
         const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForClassProperties(
@@ -195,13 +205,13 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     private makeUnionMemberName(u: UnionType, unionName: Name, t: Type): Name {
-        return new DependencyName(nonNull(this.unionMemberNamer), lookup =>
+        return new DependencyName(nonNull(this._unionMemberNamer), lookup =>
             this.proposeUnionMemberName(u, unionName, t, lookup)
         );
     }
 
     private addUnionMemberNames = (u: UnionType, unionName: Name): void => {
-        const memberNamer = this.unionMemberNamer;
+        const memberNamer = this._unionMemberNamer;
         if (memberNamer === null) return;
 
         const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForUnionMembers(u, unionName);
@@ -221,7 +231,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     // FIXME: this is very similar to addPropertyNameds and addUnionMemberNames
     private addEnumCaseNames = (e: EnumType, enumName: Name): void => {
-        const caseNamer = this.enumCaseNamer;
+        const caseNamer = this._enumCaseNamer;
         if (caseNamer === null) return;
 
         const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForEnumCases(e, enumName);
@@ -243,7 +253,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     private childrenOfType = (t: Type): OrderedSet<Type> => {
         const names = this.names;
-        if (t instanceof ClassType && this.classPropertyNamer !== null) {
+        if (t instanceof ClassType && this._classPropertyNamer !== null) {
             const propertyNameds = defined(this._propertyNames.get(t));
             return t.properties
                 .sortBy((_, n: string): string => defined(names.get(defined(propertyNameds.get(n)))))

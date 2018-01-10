@@ -96,19 +96,19 @@ class GoRenderer extends ConvenienceRenderer {
         return goNameStyle(rawName);
     }
 
-    protected get namedTypeNamer(): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return namingFunction;
     }
 
-    protected get classPropertyNamer(): Namer {
+    protected makeClassPropertyNamer(): Namer {
         return namingFunction;
     }
 
-    protected get unionMemberNamer(): Namer {
+    protected makeUnionMemberNamer(): Namer {
         return namingFunction;
     }
 
-    protected get enumCaseNamer(): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return namingFunction;
     }
 

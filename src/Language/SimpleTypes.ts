@@ -81,19 +81,19 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
         return simpleNameStyle(rawName, true);
     }
 
-    protected get namedTypeNamer(): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return new Namer(n => simpleNameStyle(n, true), []);
     }
 
-    protected get classPropertyNamer(): Namer {
+    protected makeClassPropertyNamer(): Namer {
         return new Namer(n => simpleNameStyle(n, false), []);
     }
 
-    protected get unionMemberNamer(): null {
+    protected makeUnionMemberNamer(): null {
         return null;
     }
 
-    protected get enumCaseNamer(): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return new Namer(n => simpleNameStyle(n, true), []);
     }
 
