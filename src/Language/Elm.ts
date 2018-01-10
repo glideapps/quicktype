@@ -185,7 +185,7 @@ class ElmRenderer extends ConvenienceRenderer {
         return [encoder];
     }
 
-    protected get namedTypeNamer(): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return upperNamingFunction;
     }
 
@@ -196,7 +196,7 @@ class ElmRenderer extends ConvenienceRenderer {
         return [encoder, decoder];
     }
 
-    protected get classPropertyNamer(): Namer {
+    protected makeClassPropertyNamer(): Namer {
         return lowerNamingFunction;
     }
 
@@ -207,7 +207,7 @@ class ElmRenderer extends ConvenienceRenderer {
         return { names: [], namespaces: [this.forbiddenWordsNamespace] };
     }
 
-    protected get unionMemberNamer(): Namer {
+    protected makeUnionMemberNamer(): Namer {
         return upperNamingFunction;
     }
 
@@ -215,7 +215,7 @@ class ElmRenderer extends ConvenienceRenderer {
         return true;
     }
 
-    protected get enumCaseNamer(): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return upperNamingFunction;
     }
 

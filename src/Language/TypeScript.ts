@@ -104,19 +104,19 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         return typeNameStyle(rawName);
     }
 
-    protected get namedTypeNamer(): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return new Namer(typeNameStyle, []);
     }
 
-    protected get classPropertyNamer(): Namer {
+    protected makeClassPropertyNamer(): Namer {
         return new Namer(propertyNameStyle, []);
     }
 
-    protected get unionMemberNamer(): null {
+    protected makeUnionMemberNamer(): null {
         return null;
     }
 
-    protected get enumCaseNamer(): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return new Namer(typeNameStyle, []);
     }
 

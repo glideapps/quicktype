@@ -55,19 +55,19 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return jsonNameStyle(rawName);
     }
 
-    protected get namedTypeNamer(): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return namingFunction;
     }
 
-    protected get classPropertyNamer(): null {
+    protected makeClassPropertyNamer(): null {
         return null;
     }
 
-    protected get unionMemberNamer(): null {
+    protected makeUnionMemberNamer(): null {
         return null;
     }
 
-    protected get enumCaseNamer(): null {
+    protected makeEnumCaseNamer(): null {
         return null;
     }
 

@@ -245,19 +245,19 @@ class SwiftRenderer extends ConvenienceRenderer {
         return swiftNameStyle(true, rawName);
     }
 
-    protected get namedTypeNamer(): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return upperNamingFunction;
     }
 
-    protected get classPropertyNamer(): Namer {
+    protected makeClassPropertyNamer(): Namer {
         return lowerNamingFunction;
     }
 
-    protected get unionMemberNamer(): Namer {
+    protected makeUnionMemberNamer(): Namer {
         return lowerNamingFunction;
     }
 
-    protected get enumCaseNamer(): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return lowerNamingFunction;
     }
 

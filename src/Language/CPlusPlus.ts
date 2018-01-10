@@ -282,19 +282,19 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return this._typeNameStyle(rawName);
     }
 
-    protected get namedTypeNamer(): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return this._typeNamingFunction;
     }
 
-    protected get classPropertyNamer(): Namer {
+    protected makeClassPropertyNamer(): Namer {
         return this._memberNamingFunction;
     }
 
-    protected get unionMemberNamer(): null {
+    protected makeUnionMemberNamer(): null {
         return null;
     }
 
-    protected get enumCaseNamer(): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return this._caseNamingFunction;
     }
 

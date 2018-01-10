@@ -193,19 +193,19 @@ class JavaRenderer extends ConvenienceRenderer {
         return javaNameStyle(true, false, rawName);
     }
 
-    protected get namedTypeNamer(): Namer {
+    protected makeNamedTypeNamer(): Namer {
         return typeNamingFunction;
     }
 
-    protected get classPropertyNamer(): Namer {
+    protected makeClassPropertyNamer(): Namer {
         return propertyNamingFunction;
     }
 
-    protected get unionMemberNamer(): Namer {
+    protected makeUnionMemberNamer(): Namer {
         return propertyNamingFunction;
     }
 
-    protected get enumCaseNamer(): Namer {
+    protected makeEnumCaseNamer(): Namer {
         return enumCaseNamingFunction;
     }
 
