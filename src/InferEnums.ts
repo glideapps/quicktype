@@ -21,12 +21,12 @@ function shouldBeEnum(t: StringType): OrderedMap<string, number> | undefined {
     return undefined;
 }
 
-function replaceString(t: StringType, builder: GraphRewriteBuilder<StringType | UnionType>): TypeRef {
+function replaceString(t: StringType, builder: GraphRewriteBuilder<StringType | UnionType>, forwardingRef: TypeRef): TypeRef {
     const maybeEnumCases = shouldBeEnum(t);
     if (maybeEnumCases !== undefined) {
-        return builder.getEnumType(t.getNames(), maybeEnumCases.keySeq().toOrderedSet());
+        return builder.getEnumType(t.getNames(), maybeEnumCases.keySeq().toOrderedSet(), forwardingRef);
     }
-    return builder.getStringType(undefined, undefined);
+    return builder.getStringType(undefined, undefined, forwardingRef);
 }
 
 function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {
@@ -37,7 +37,7 @@ function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {
     return stringMembers;
 }
 
-function replaceUnion(u: UnionType, builder: GraphRewriteBuilder<StringType | UnionType>): TypeRef {
+function replaceUnion(u: UnionType, builder: GraphRewriteBuilder<StringType | UnionType>, forwardingRef: TypeRef): TypeRef {
     const stringMembers = defined(unionNeedsReplacing(u));
     const types: TypeRef[] = [];
     u.members.forEach(t => {
@@ -45,24 +45,25 @@ function replaceUnion(u: UnionType, builder: GraphRewriteBuilder<StringType | Un
         types.push(builder.reconstituteType(t));
     });
     // FIXME: add names
-    const stringType = builder.getStringType(undefined, undefined);
+    const stringType = builder.getStringType(undefined, undefined, forwardingRef);
     if (types.length === 0) {
         return stringType;
     }
     types.push(stringType);
-    return builder.getUnionType(u.getNames(), OrderedSet(types));
+    return builder.getUnionType(u.getNames(), OrderedSet(types), forwardingRef);
 }
 
 function replace(
     setOfStringOrUnion: Set<StringType | UnionType>,
-    builder: GraphRewriteBuilder<StringType | UnionType>
+    builder: GraphRewriteBuilder<StringType | UnionType>,
+    forwardingRef: TypeRef
 ): TypeRef {
     assert(setOfStringOrUnion.size === 1);
     const t = defined(setOfStringOrUnion.first());
     if (t instanceof StringType) {
-        return replaceString(t, builder);
+        return replaceString(t, builder, forwardingRef);
     } else if (t instanceof UnionType) {
-        return replaceUnion(t, builder);
+        return replaceUnion(t, builder, forwardingRef);
     } else {
         return assertNever(t);
     }

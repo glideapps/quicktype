@@ -102,7 +102,7 @@ export class TypeGraph {
     rewrite<T extends Type>(
         stringTypeMapping: StringTypeMapping,
         replacementGroups: T[][],
-        replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>) => TypeRef
+        replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef
     ): TypeGraph {
         if (replacementGroups.length === 0) return this;
         return new GraphRewriteBuilder(this, stringTypeMapping, replacementGroups, replacer).finish();
@@ -130,7 +130,7 @@ export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping
         return graph;
     }
     assert(noneTypes.size === 1, "Cannot have more than one none type");
-    return graph.rewrite(stringTypeMapping, [noneTypes.toArray()], (_, builder) => {
-        return builder.getPrimitiveType("any");
+    return graph.rewrite(stringTypeMapping, [noneTypes.toArray()], (_, builder, forwardingRef) => {
+        return builder.getPrimitiveType("any", forwardingRef);
     });
 }

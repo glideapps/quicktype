@@ -121,10 +121,14 @@ export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMa
         unprocessedClasses = classesLeft;
     }
 
-    function makeCliqueClass(clique: Set<ClassType>, builder: GraphRewriteBuilder<ClassType>): TypeRef {
+    function makeCliqueClass(
+        clique: Set<ClassType>,
+        builder: GraphRewriteBuilder<ClassType>,
+        forwardingRef: TypeRef
+    ): TypeRef {
         assert(clique.size > 0, "Clique can't be empty");
         const allNames = clique.map(c => c.getNames());
-        return unifyTypes(clique, typeNamesUnion(allNames), builder, false, false);
+        return unifyTypes(clique, typeNamesUnion(allNames), builder, false, false, forwardingRef);
     }
 
     return graph.rewrite(stringTypeMapping, cliques, makeCliqueClass);

@@ -58,7 +58,11 @@ function shouldBeMap(properties: Map<string, Type>): Set<Type> | undefined {
     return allCases;
 }
 
-function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewriteBuilder<ClassType>): TypeRef {
+function replaceClass(
+    setOfOneClass: Set<ClassType>,
+    builder: GraphRewriteBuilder<ClassType>,
+    forwardingRef: TypeRef
+): TypeRef {
     const c = defined(setOfOneClass.first());
     const properties = c.properties;
 
@@ -73,7 +77,7 @@ function replaceClass(setOfOneClass: Set<ClassType>, builder: GraphRewriteBuilde
     // Reconstituting a type means generating the "same" type in the new
     // type graph.  Except we don't get Type objects but TypeRef objects,
     // which is a type-to-be.
-    return builder.getMapType(unifyTypes(shouldBe, c.getNames(), builder, false, false));
+    return builder.getMapType(unifyTypes(shouldBe, c.getNames(), builder, false, false), forwardingRef);
 }
 
 export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {

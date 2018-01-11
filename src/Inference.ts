@@ -37,9 +37,10 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         typeBuilder: TypeBuilder,
         typeNames: TypeNames,
         private readonly _typeInference: TypeInference,
-        private readonly _cjson: CompressedJSON
+        private readonly _cjson: CompressedJSON,
+        forwardingRef?: TypeRef
     ) {
-        super(typeBuilder, typeNames);
+        super(typeBuilder, typeNames, forwardingRef);
     }
 
     setNumValues = (n: number): void => {
@@ -51,17 +52,17 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
 
     protected makeEnum(cases: string[], counts: { [name: string]: number }): TypeRef {
         const caseMap = OrderedMap(cases.map((c: string): [string, number] => [c, counts[c]]));
-        return this.typeBuilder.getStringType(this.typeNames, caseMap);
+        return this.typeBuilder.getStringType(this.typeNames, caseMap, this.forwardingRef);
     }
 
     protected makeClass(classes: NestedValueArray, maps: any[]): TypeRef {
         assert(maps.length === 0);
-        return this._typeInference.inferClassType(this._cjson, this.typeNames, classes);
+        return this._typeInference.inferClassType(this._cjson, this.typeNames, classes, this.forwardingRef);
     }
 
     protected makeArray(arrays: NestedValueArray): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, this.typeNames.singularize(), arrays)
+            this._typeInference.inferType(this._cjson, this.typeNames.singularize(), arrays, this.forwardingRef)
         );
     }
 }
@@ -74,8 +75,8 @@ function canBeEnumCase(s: string): boolean {
 export class TypeInference {
     constructor(private readonly _typeBuilder: TypeBuilder, private readonly _inferEnums: boolean) {}
 
-    inferType = (cjson: CompressedJSON, typeNames: TypeNames, valueArray: NestedValueArray): TypeRef => {
-        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeNames, this, cjson);
+    inferType = (cjson: CompressedJSON, typeNames: TypeNames, valueArray: NestedValueArray, forwardingRef?: TypeRef): TypeRef => {
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeNames, this, cjson, forwardingRef);
         let numValues = 0;
 
         forEachValueInNestedValueArray(valueArray, value => {
@@ -134,7 +135,12 @@ export class TypeInference {
         return unionBuilder.buildUnion(false);
     };
 
-    inferClassType = (cjson: CompressedJSON, typeNames: TypeNames, objects: NestedValueArray): TypeRef => {
+    inferClassType = (
+        cjson: CompressedJSON,
+        typeNames: TypeNames,
+        objects: NestedValueArray,
+        forwardingRef?: TypeRef
+    ): TypeRef => {
         const propertyNames: string[] = [];
         const propertyValues: { [name: string]: Value[] } = {};
 
@@ -161,6 +167,6 @@ export class TypeInference {
         }
 
         const propertyMap = OrderedMap(properties);
-        return this._typeBuilder.getClassType(typeNames, propertyMap);
+        return this._typeBuilder.getClassType(typeNames, propertyMap, forwardingRef);
     };
 }
