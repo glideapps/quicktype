@@ -3,16 +3,7 @@
 import { OrderedSet } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import {
-    Type,
-    ClassType,
-    EnumType,
-    UnionType,
-    nullableFromUnion,
-    matchType,
-    removeNullFromUnion,
-    isNamedType
-} from "../Type";
+import { Type, ClassType, EnumType, UnionType, nullableFromUnion, matchType, removeNullFromUnion } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
@@ -296,13 +287,6 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected makeEnumCaseNamer(): Namer {
         return this._caseNamingFunction;
-    }
-
-    protected namedTypeToNameForTopLevel(type: Type): Type | null {
-        if (isNamedType(type)) {
-            return type;
-        }
-        return null;
     }
 
     protected get needsTypeDeclarationBeforeUse(): boolean {

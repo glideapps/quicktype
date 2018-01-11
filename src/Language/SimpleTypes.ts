@@ -2,7 +2,15 @@
 
 import * as _ from "lodash";
 
-import { Type, EnumType, UnionType, ClassType, nullableFromUnion, matchTypeExhaustive, isNamedType } from "../Type";
+import {
+    Type,
+    EnumType,
+    UnionType,
+    ClassType,
+    nullableFromUnion,
+    matchTypeExhaustive,
+    directlyReachableSingleNamedType
+} from "../Type";
 import { TypeGraph } from "../TypeGraph";
 
 import { Sourcelike } from "../Source";
@@ -97,11 +105,8 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
         return new Namer(n => simpleNameStyle(n, true), []);
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): Type | null {
-        if (isNamedType(type)) {
-            return type;
-        }
-        return null;
+    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
+        return directlyReachableSingleNamedType(type);
     }
 
     sourceFor = (t: Type): Sourcelike => {

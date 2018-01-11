@@ -78,8 +78,14 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected abstract makeClassPropertyNamer(): Namer | null;
     protected abstract makeUnionMemberNamer(): Namer | null;
     protected abstract makeEnumCaseNamer(): Namer | null;
-    protected abstract namedTypeToNameForTopLevel(type: Type): Type | null;
     protected abstract emitSourceStructure(): void;
+
+    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
+        if (isNamedType(type)) {
+            return type;
+        }
+        return undefined;
+    }
 
     protected get unionMembersInGlobalNamespace(): boolean {
         return false;
@@ -141,7 +147,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private nameForTopLevel = (type: Type, name: string): FixedName => {
         const maybeNamedType = this.namedTypeToNameForTopLevel(type);
         let styledName: string;
-        if (maybeNamedType) {
+        if (maybeNamedType !== undefined) {
             styledName = this._namedTypeNamer.nameStyle(name);
         } else {
             styledName = this.topLevelNameStyle(name);
@@ -153,7 +159,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             this.globalNamespace.add(dn);
         }
 
-        if (maybeNamedType) {
+        if (maybeNamedType !== undefined) {
             this.addDependenciesForNamedType(maybeNamedType, named);
             this._namesForNamedTypes = this._namesForNamedTypes.set(maybeNamedType, named);
         }

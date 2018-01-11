@@ -11,8 +11,7 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-    TypeKind,
-    isNamedType
+    TypeKind
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Namespace, Name, Namer, funPrefixNamer, keywordNamespace } from "../Naming";
@@ -271,13 +270,6 @@ class SwiftRenderer extends ConvenienceRenderer {
 
     protected makeEnumCaseNamer(): Namer {
         return lowerNamingFunction;
-    }
-
-    protected namedTypeToNameForTopLevel(type: Type): Type | null {
-        if (isNamedType(type)) {
-            return type;
-        }
-        return null;
     }
 
     protected isImplicitCycleBreaker(t: Type): boolean {

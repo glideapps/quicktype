@@ -10,8 +10,7 @@ import {
     UnionType,
     nullableFromUnion,
     matchType,
-    removeNullFromUnion,
-    isNamedType
+    removeNullFromUnion
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
@@ -114,13 +113,6 @@ class GoRenderer extends ConvenienceRenderer {
 
     protected get enumCasesInGlobalNamespace(): boolean {
         return true;
-    }
-
-    protected namedTypeToNameForTopLevel(type: Type): Type | null {
-        if (isNamedType(type)) {
-            return type;
-        }
-        return null;
     }
 
     protected topLevelDependencyNames(_: Type, topLevelName: Name): DependencyName[] {
