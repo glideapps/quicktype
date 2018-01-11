@@ -1,6 +1,16 @@
 import * as _ from "lodash";
 
-import { Type, ArrayType, UnionType, ClassType, nullableFromUnion, matchType, EnumType, isNamedType } from "../Type";
+import {
+    Type,
+    ArrayType,
+    UnionType,
+    ClassType,
+    nullableFromUnion,
+    matchType,
+    EnumType,
+    isNamedType,
+    directlyReachableSingleNamedType
+} from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import {
     utf16LegalizeCharacters,
@@ -120,11 +130,8 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         return new Namer(typeNameStyle, []);
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): Type | null {
-        if (isNamedType(type)) {
-            return type;
-        }
-        return null;
+    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
+        return directlyReachableSingleNamedType(type);
     }
 
     private emitEnum = (e: EnumType, enumName: Name): void => {

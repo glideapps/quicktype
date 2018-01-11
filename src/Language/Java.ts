@@ -1,6 +1,5 @@
 "use strict";
 
-import { OrderedSet } from "immutable";
 import {
     TypeKind,
     Type,
@@ -12,7 +11,7 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-    isNamedType
+    directlyReachableSingleNamedType
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -31,7 +30,6 @@ import {
     firstUpperWordStyle,
     allLowerWordStyle
 } from "../Strings";
-import { assert } from "../Support";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
@@ -213,23 +211,11 @@ class JavaRenderer extends ConvenienceRenderer {
         return !nullableFromUnion(u);
     }
 
-    // FIXME: This is the same as for C#.
-    protected namedTypeToNameForTopLevel(type: Type): Type | null {
-        const definedTypes = type.directlyReachableTypes(t => {
-            if ((!(t instanceof UnionType) && isNamedType(t)) || (t instanceof UnionType && !nullableFromUnion(t))) {
-                return OrderedSet([t]);
-            }
-            return null;
-        });
-        assert(definedTypes.size <= 1, "Cannot have more than one defined type per top-level");
-
+    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
         // If the top-level type doesn't contain any classes or unions
         // we have to define a class just for the `FromJson` method, in
         // emitFromJsonForTopLevel.
-
-        const first = definedTypes.first();
-        if (first === undefined) return null;
-        return first;
+        return directlyReachableSingleNamedType(type);
     }
 
     fieldOrMethodName = (methodName: string, topLevelName: Name): Sourcelike => {

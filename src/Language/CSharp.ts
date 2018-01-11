@@ -10,7 +10,7 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-    isNamedType
+    directlyReachableSingleNamedType
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated } from "../Source";
@@ -165,22 +165,11 @@ class CSharpRenderer extends ConvenienceRenderer {
         return !nullableFromUnion(u);
     }
 
-    protected namedTypeToNameForTopLevel(type: Type): Type | null {
-        const definedTypes = type.directlyReachableTypes(t => {
-            if ((!(t instanceof UnionType) && isNamedType(t)) || (t instanceof UnionType && !nullableFromUnion(t))) {
-                return OrderedSet([t]);
-            }
-            return null;
-        });
-        assert(definedTypes.size <= 1, "Cannot have more than one defined type per top-level");
-
+    protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
         // If the top-level type doesn't contain any classes or unions
         // we have to define a class just for the `FromJson` method, in
         // emitFromJsonForTopLevel.
-
-        const first = definedTypes.first();
-        if (first === undefined) return null;
-        return first;
+        return directlyReachableSingleNamedType(type);
     }
 
     protected namedTypeDependencyNames(t: Type, name: Name): DependencyName[] {

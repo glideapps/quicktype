@@ -3,7 +3,7 @@
 import { Collection } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, UnionType, ClassType, matchTypeExhaustive, isNamedType } from "../Type";
+import { Type, UnionType, ClassType, matchTypeExhaustive } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
@@ -68,13 +68,6 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): null {
-        return null;
-    }
-
-    protected namedTypeToNameForTopLevel(type: Type): Type | null {
-        if (isNamedType(type)) {
-            return type;
-        }
         return null;
     }
 

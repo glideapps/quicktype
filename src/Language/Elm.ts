@@ -4,7 +4,7 @@ import { Map, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption, BooleanOption } from "../RendererOptions";
-import { Type, matchType, nullableFromUnion, ClassType, UnionType, EnumType, isNamedType } from "../Type";
+import { Type, matchType, nullableFromUnion, ClassType, UnionType, EnumType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, Name, DependencyName, funPrefixNamer, Namespace } from "../Naming";
@@ -221,13 +221,6 @@ class ElmRenderer extends ConvenienceRenderer {
 
     protected get enumCasesInGlobalNamespace(): boolean {
         return true;
-    }
-
-    protected namedTypeToNameForTopLevel(type: Type): Type | null {
-        if (isNamedType(type)) {
-            return type;
-        }
-        return null;
     }
 
     protected proposeUnionMemberName(

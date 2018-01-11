@@ -501,6 +501,17 @@ export function separateNamedTypes(types: Collection<any, Type>): SeparatedNamed
     return { classes, enums, unions };
 }
 
+export function directlyReachableSingleNamedType(type: Type): Type | undefined {
+    const definedTypes = type.directlyReachableTypes(t => {
+        if ((!(t instanceof UnionType) && isNamedType(t)) || (t instanceof UnionType && !nullableFromUnion(t))) {
+            return OrderedSet([t]);
+        }
+        return null;
+    });
+    assert(definedTypes.size <= 1, "Cannot have more than one defined type per top-level");
+    return definedTypes.first();
+}
+
 export type StringTypeMatchers<U> = {
     dateType?: (dateType: PrimitiveType) => U;
     timeType?: (timeType: PrimitiveType) => U;
