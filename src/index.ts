@@ -170,11 +170,12 @@ export class Run {
             graph = inferMaps(graph, stringTypeMapping);
         }
         graph = noneToAny(graph, stringTypeMapping);
-        if (Object.keys(this._allInputs.schemas).length > 0 && graph === originalGraph) {
-            // JSON Schema input can leave unreachable classes in the graph when it
-            // unifies, which can trip is up, so we remove them here.
-            graph = graph.garbageCollect();
-        }
+        // JSON Schema input can leave unreachable classes in the graph when it
+        // unifies, which can trip is up, so we remove them here.  Also, sometimes
+        // we combine classes in ways that will the order come out differently
+        // compared to what it would be from the equivalent schema, so we always
+        // just garbage collect to get a defined order and be done with it.
+        graph = graph.garbageCollect();
 
         gatherNames(graph);
 
