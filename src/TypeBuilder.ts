@@ -50,6 +50,7 @@ export class TypeRef {
             const tref = this.follow();
             if (tref._allocatingTypeBuilder !== undefined) {
                 const allocated = tref._allocatingTypeBuilder.reserveTypeRef();
+                assert(allocated.follow() !== this, "Tried to create a TypeRef cycle");
                 tref._maybeIndexOrRef = allocated;
                 tref._allocatingTypeBuilder = undefined;
                 return allocated.getIndex();
@@ -79,10 +80,9 @@ export class TypeRef {
                 this.maybeIndex === tref.maybeIndex,
                 "Trying to resolve an allocated type reference with an incompatible one"
             );
-        } else {
-            assert(tref.follow() !== this, "Tried to create a TypeRef cycle");
         }
-        this._maybeIndexOrRef = tref;
+        assert(tref.follow() !== this, "Tried to create a TypeRef cycle");
+        this._maybeIndexOrRef = tref.follow();
         this._allocatingTypeBuilder = undefined;
         if (this._callbacks !== undefined) {
             for (const cb of this._callbacks) {
