@@ -8,18 +8,73 @@ import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringT
 import { TypeNames } from "./TypeNames";
 import { Graph } from "./Graph";
 
+export type AttributeVerifier = (x: any) => boolean;
+
+export class TypeAttributeStore {
+    private _attributeKinds: Map<string, AttributeVerifier> = Map();
+    private _values: (Map<string, any> | undefined)[] = [];
+
+    constructor(private readonly _typeGraph: TypeGraph) {}
+
+    registerAttributeKind(name: string, verifier: AttributeVerifier): void {
+        assert(!this._attributeKinds.has(name), "Cannot register a type attribute more than once");
+        this._attributeKinds = this._attributeKinds.set(name, verifier);
+    }
+
+    private getTypeIndex(t: Type): number {
+        const tref = t.typeRef;
+        assert(tref.graph === this._typeGraph, "Using the wrong type attribute store");
+        return tref.getIndex();
+    }
+
+    set<T>(name: string, t: Type, value: T): void {
+        const verifier = this._attributeKinds.get(name);
+        if (verifier === undefined) {
+            return panic(`Unknown attribute ${name}`);
+        }
+        assert(verifier(value), `Invalid value for attribute ${name}`);
+
+        const index = this.getTypeIndex(t);
+        while (index >= this._values.length) {
+            this._values.push(undefined);
+        }
+        let values = this._values[index];
+        if (values === undefined) {
+            values = Map<string, any>();
+            this._values[index] = values;
+        }
+        values = values.set(name, value);
+        this._values[index] = values;
+    }
+
+    get<T>(name: string, t: Type): T | undefined {
+        assert(this._attributeKinds.has(name), `Attribute ${name} not defined`);
+        const index = this.getTypeIndex(t);
+        const maybeMap = this._values[index];
+        if (maybeMap === undefined) {
+            return undefined;
+        }
+        return maybeMap.get(name);
+    }
+}
+
+const typeNamesAttributeKind = "names";
+
 export class TypeGraph {
     private _typeBuilder?: TypeBuilder;
+    private readonly _attributeStore: TypeAttributeStore;
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
     private _topLevels?: Map<string, Type> = Map();
 
     private _types?: Type[];
-    private _typeNames?: (TypeNames | undefined)[];
 
     constructor(typeBuilder: TypeBuilder) {
         this._typeBuilder = typeBuilder;
+
+        this._attributeStore = new TypeAttributeStore(this);
+        this._attributeStore.registerAttributeKind(typeNamesAttributeKind, v => v instanceof TypeNames);
     }
 
     private get isFrozen(): boolean {
@@ -37,9 +92,14 @@ export class TypeGraph {
         // before, also, because the deref will call into typeAtIndex, which requires
         // either a _typeBuilder or a _types.
         this._types = types;
-        this._typeNames = typeNames;
         this._typeBuilder = undefined;
         this._topLevels = topLevels.map(tref => tref.deref()[0]);
+
+        for (let i = 0; i < types.length; i++) {
+            const maybeNames = typeNames[i];
+            if (maybeNames === undefined) continue;
+            this._attributeStore.set(typeNamesAttributeKind, types[i], maybeNames);
+        }
     };
 
     get topLevels(): Map<string, Type> {
@@ -51,7 +111,8 @@ export class TypeGraph {
         if (this._typeBuilder !== undefined) {
             return this._typeBuilder.atIndex(index);
         }
-        return [defined(this._types)[index], defined(this._typeNames)[index]];
+        const t = defined(this._types)[index];
+        return [t, this._attributeStore.get(typeNamesAttributeKind, t)];
     }
 
     filterTypes(
