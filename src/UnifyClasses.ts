@@ -41,16 +41,17 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
         typeNames: TypeNames,
         private readonly _makeEnums: boolean,
         private readonly _makeClassesFixed: boolean,
+        forwardingRef: TypeRef | undefined,
         private readonly _unifyTypes: (typesToUnify: TypeRef[], typeNames: TypeNames) => TypeRef
     ) {
-        super(typeBuilder, typeNames);
+        super(typeBuilder, typeNames, forwardingRef);
     }
 
     protected makeEnum(enumCases: string[], counts: { [name: string]: number }): TypeRef {
         if (this._makeEnums) {
-            return this.typeBuilder.getEnumType(this.typeNames, OrderedSet(enumCases));
+            return this.typeBuilder.getEnumType(this.typeNames, OrderedSet(enumCases), this.forwardingRef);
         } else {
-            return this.typeBuilder.getStringType(this.typeNames, OrderedMap(counts));
+            return this.typeBuilder.getStringType(this.typeNames, OrderedMap(counts), this.forwardingRef);
         }
     }
 
@@ -59,7 +60,7 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
             return panic("Cannot handle a class type that's also a map");
         }
         if (maps.length > 0) {
-            return this.typeBuilder.getMapType(this._unifyTypes(maps, this.typeNames));
+            return this.typeBuilder.getMapType(this._unifyTypes(maps, this.typeNames), this.forwardingRef);
         }
         if (classes.length === 1) {
             return this.typeBuilder.lookupTypeRef(classes[0]);
@@ -70,6 +71,14 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
         }
 
         const actualClasses: ClassType[] = classes.map(c => assertIsClass(c.deref()[0]));
+
+        let ref: TypeRef;
+        ref = this.typeBuilder.getUniqueClassType(
+            this.typeNames,
+            this._makeClassesFixed,
+            undefined,
+            this.forwardingRef
+        );
 
         const properties = getCliqueProperties(actualClasses, (names, types, isNullable) => {
             if (types.size === 0) {
@@ -82,11 +91,10 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
             }
             return tref;
         });
-        if (this._makeClassesFixed) {
-            return this.typeBuilder.getUniqueClassType(this.typeNames, properties);
-        } else {
-            return this.typeBuilder.getClassType(this.typeNames, properties);
-        }
+
+        (ref.deref()[0] as ClassType).setProperties(properties);
+
+        return ref;
     }
 
     protected makeArray(arrays: TypeRef[]): TypeRef {
@@ -99,7 +107,8 @@ export function unifyTypes(
     typeNames: TypeNames,
     typeBuilder: TypeBuilder & TypeLookerUp,
     makeEnums: boolean,
-    makeClassesFixed: boolean
+    makeClassesFixed: boolean,
+    forwardingRef?: TypeRef
 ): TypeRef {
     if (types.isEmpty()) {
         return panic("Cannot unify empty set of types");
@@ -112,8 +121,14 @@ export function unifyTypes(
         return maybeTypeRef;
     }
 
-    const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeNames, makeEnums, makeClassesFixed, (trefs, names) =>
-        unifyTypes(Set(trefs.map(tref => tref.deref()[0])), names, typeBuilder, makeEnums, makeClassesFixed)
+    const unionBuilder = new UnifyUnionBuilder(
+        typeBuilder,
+        typeNames,
+        makeEnums,
+        makeClassesFixed,
+        forwardingRef,
+        (trefs, names) =>
+            unifyTypes(Set(trefs.map(tref => tref.deref()[0])), names, typeBuilder, makeEnums, makeClassesFixed)
     );
 
     const addType = (t: Type): void => {

@@ -167,18 +167,16 @@ function findRoots(successors: number[][]): number[] {
 }
 
 export class Graph<T> {
-    private readonly _nodes: T[];
     private readonly _indexByNode: Map<T, number>;
     private readonly _successors: number[][];
 
-    constructor(nodes: T[], invertDirection: boolean, edges: number[][] | ((node: T) => Set<T>)) {
-        this._nodes = nodes;
-        this._indexByNode = Map(nodes.map((n, i): [T, number] => [n, i]));
+    constructor(private readonly _nodes: T[], invertDirection: boolean, edges: number[][] | ((node: T) => Set<T>)) {
+        this._indexByNode = Map(_nodes.map((n, i): [T, number] => [n, i]));
         let edgesArray: number[][];
         if (Array.isArray(edges)) {
             edgesArray = edges;
         } else {
-            edgesArray = nodes.map(n =>
+            edgesArray = _nodes.map(n =>
                 edges(n)
                     .toArray()
                     .map(s => defined(this._indexByNode.get(s)))

@@ -50,6 +50,7 @@ export class TypeRef {
             const tref = this.follow();
             if (tref._allocatingTypeBuilder !== undefined) {
                 const allocated = tref._allocatingTypeBuilder.reserveTypeRef();
+                assert(allocated.follow() !== this, "Tried to create a TypeRef cycle");
                 tref._maybeIndexOrRef = allocated;
                 tref._allocatingTypeBuilder = undefined;
                 return allocated.getIndex();
@@ -79,10 +80,9 @@ export class TypeRef {
                 this.maybeIndex === tref.maybeIndex,
                 "Trying to resolve an allocated type reference with an incompatible one"
             );
-        } else {
-            assert(tref.follow() !== this, "Tried to create a TypeRef cycle");
         }
-        this._maybeIndexOrRef = tref;
+        assert(tref.follow() !== this, "Tried to create a TypeRef cycle");
+        this._maybeIndexOrRef = tref.follow();
         this._allocatingTypeBuilder = undefined;
         if (this._callbacks !== undefined) {
             for (const cb of this._callbacks) {
@@ -313,10 +313,11 @@ export abstract class TypeBuilder {
     // via a flag?  That would make `ClassType.map` simpler.
     getUniqueClassType = (
         names: TypeNames,
+        isFixed: boolean,
         properties?: OrderedMap<string, TypeRef>,
         forwardingRef?: TypeRef
     ): TypeRef => {
-        return this.addType(forwardingRef, tref => new ClassType(tref, true, properties), names);
+        return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties), names);
     };
 
     getUnionType(names: TypeNames, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
@@ -425,8 +426,8 @@ export class TypeReconstituter {
         return this.useBuilder().getClassType(defined(this._typeNames), properties, this._forwardingRef);
     };
 
-    getUniqueClassType = (properties?: OrderedMap<string, TypeRef>): TypeRef => {
-        return this.useBuilder().getUniqueClassType(defined(this._typeNames), properties, this._forwardingRef);
+    getUniqueClassType = (isFixed: boolean, properties?: OrderedMap<string, TypeRef>): TypeRef => {
+        return this.useBuilder().getUniqueClassType(defined(this._typeNames), isFixed, properties, this._forwardingRef);
     };
 
     getUnionType = (members: OrderedSet<TypeRef>): TypeRef => {
@@ -442,7 +443,11 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         private readonly _originalGraph: TypeGraph,
         stringTypeMapping: StringTypeMapping,
         setsToReplace: T[][],
-        private readonly _replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>) => TypeRef
+        private readonly _replacer: (
+            typesToReplace: Set<T>,
+            builder: GraphRewriteBuilder<T>,
+            forwardingRef: TypeRef
+        ) => TypeRef
     ) {
         super(stringTypeMapping);
         this._setsToReplaceByMember = Map();
@@ -489,7 +494,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
                 this._reconstitutedTypes = this._reconstitutedTypes.set(index, forwardingRef);
                 this._setsToReplaceByMember = this._setsToReplaceByMember.remove(index);
             });
-            return this._replacer(typesToReplace, this);
+            return this._replacer(typesToReplace, this, forwardingRef);
         });
     }
 
@@ -581,7 +586,11 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
     private _enumCaseMap: { [name: string]: number } = {};
     private _enumCases: string[] = [];
 
-    constructor(protected readonly typeBuilder: TBuilder, protected readonly typeNames: TypeNames) {}
+    constructor(
+        protected readonly typeBuilder: TBuilder,
+        protected readonly typeNames: TypeNames,
+        protected readonly forwardingRef?: TypeRef
+    ) {}
 
     get haveString(): boolean {
         return this._stringTypes.has("string");
@@ -647,24 +656,24 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         const types: TypeRef[] = [];
 
         if (this._haveAny) {
-            return this.typeBuilder.getPrimitiveType("any");
+            return this.typeBuilder.getPrimitiveType("any", this.forwardingRef);
         }
         if (this._haveNull) {
-            types.push(this.typeBuilder.getPrimitiveType("null"));
+            types.push(this.typeBuilder.getPrimitiveType("null", this.forwardingRef));
         }
         if (this._haveBool) {
-            types.push(this.typeBuilder.getPrimitiveType("bool"));
+            types.push(this.typeBuilder.getPrimitiveType("bool", this.forwardingRef));
         }
         if (this._haveDouble) {
-            types.push(this.typeBuilder.getPrimitiveType("double"));
+            types.push(this.typeBuilder.getPrimitiveType("double", this.forwardingRef));
         } else if (this._haveInteger) {
-            types.push(this.typeBuilder.getPrimitiveType("integer"));
+            types.push(this.typeBuilder.getPrimitiveType("integer", this.forwardingRef));
         }
         this._stringTypes.forEach(kind => {
             types.push(
                 kind === "string"
-                    ? this.typeBuilder.getStringType(this.typeNames, undefined)
-                    : this.typeBuilder.getPrimitiveType(kind)
+                    ? this.typeBuilder.getStringType(this.typeNames, undefined, this.forwardingRef)
+                    : this.typeBuilder.getPrimitiveType(kind, this.forwardingRef)
             );
         });
         if (this._enumCases.length > 0) {
@@ -678,7 +687,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         }
 
         if (types.length === 0) {
-            return this.typeBuilder.getPrimitiveType("none");
+            return this.typeBuilder.getPrimitiveType("none", this.forwardingRef);
         }
         if (types.length === 1) {
             this.typeBuilder.addNames(types[0], this.typeNames);
@@ -686,9 +695,10 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         }
         const typesSet = OrderedSet(types);
         if (unique) {
+            assert(this.forwardingRef === undefined, "Cannot build unique union type with forwarding ref"); // FIXME: why not?
             return this.typeBuilder.getUniqueUnionType(this.typeNames, typesSet);
         } else {
-            return this.typeBuilder.getUnionType(this.typeNames, typesSet);
+            return this.typeBuilder.getUnionType(this.typeNames, typesSet, this.forwardingRef);
         }
     };
 }

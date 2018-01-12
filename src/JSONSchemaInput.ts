@@ -162,7 +162,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
         requiredArray: string[]
     ): TypeRef {
         const required = Set(requiredArray);
-        const result = typeBuilder.getUniqueClassType(getName(schema, typeNames));
+        const result = typeBuilder.getUniqueClassType(getName(schema, typeNames), true);
         const c = assertIsClass(getHopefullyFinishedType(typeBuilder, result));
         setTypeForPath(path, result);
         // FIXME: We're using a Map instead of an OrderedMap here because we represent

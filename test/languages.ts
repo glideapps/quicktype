@@ -112,6 +112,8 @@ export const ElmLanguage: Language = {
     "simple-identifiers.json",
     "blns-object.json",
     "recursive.json",
+    "direct-recursive.json",
+    "bug427.json",
     "list.json"
   ],
   skipSchema: [], // All of them currently fail, so we don't even run it.
