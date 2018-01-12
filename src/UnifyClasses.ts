@@ -72,6 +72,14 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
 
         const actualClasses: ClassType[] = classes.map(c => assertIsClass(c.deref()[0]));
 
+        let ref: TypeRef;
+        ref = this.typeBuilder.getUniqueClassType(
+            this.typeNames,
+            this._makeClassesFixed,
+            undefined,
+            this.forwardingRef
+        );
+
         const properties = getCliqueProperties(actualClasses, (names, types, isNullable) => {
             if (types.size === 0) {
                 assert(isNullable, "Property has no type");
@@ -83,11 +91,10 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
             }
             return tref;
         });
-        if (this._makeClassesFixed) {
-            return this.typeBuilder.getUniqueClassType(this.typeNames, properties, this.forwardingRef);
-        } else {
-            return this.typeBuilder.getClassType(this.typeNames, properties, this.forwardingRef);
-        }
+
+        (ref.deref()[0] as ClassType).setProperties(properties);
+
+        return ref;
     }
 
     protected makeArray(arrays: TypeRef[]): TypeRef {
@@ -114,8 +121,14 @@ export function unifyTypes(
         return maybeTypeRef;
     }
 
-    const unionBuilder = new UnifyUnionBuilder(typeBuilder, typeNames, makeEnums, makeClassesFixed, forwardingRef, (trefs, names) =>
-        unifyTypes(Set(trefs.map(tref => tref.deref()[0])), names, typeBuilder, makeEnums, makeClassesFixed)
+    const unionBuilder = new UnifyUnionBuilder(
+        typeBuilder,
+        typeNames,
+        makeEnums,
+        makeClassesFixed,
+        forwardingRef,
+        (trefs, names) =>
+            unifyTypes(Set(trefs.map(tref => tref.deref()[0])), names, typeBuilder, makeEnums, makeClassesFixed)
     );
 
     const addType = (t: Type): void => {
