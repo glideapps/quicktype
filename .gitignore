@@ -21,3 +21,6 @@ test/elm/QuickType.elm
 /test/runs
 test/fixtures/cplusplus/json.hpp
 /dist
+test/fixtures/objective-c/quicktype
+*.xcbkptlist
+*.xcuserstate

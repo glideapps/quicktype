@@ -144,6 +144,31 @@ export const SwiftLanguage: Language = {
   ]
 };
 
+export const ObjectiveCLanguage: Language = {
+  name: "objective-c",
+  base: "test/fixtures/objective-c",
+  compileCommand: `clang -framework Foundation main.m -o test`,
+  runCommand(sample: string) {
+    return `cp "${sample}" sample.json && ./test sample.json`;
+  },
+  diffViaSchema: true,
+  allowMissingNull: true,
+  output: "QTTopLevel.h",
+  topLevel: "QTTopLevel",
+  skipJSON: [
+    // Almost all strings work except any containing \u001b
+    // See https://goo.gl/L8HfUP
+    "blns-object.json",
+    // NSJSONSerialization can read but not write top-level primitives
+    "no-classes.json",
+    // TODO
+    "combinations.json"
+  ],
+  skipSchema: [],
+  rendererOptions: {},
+  quickTestRendererOptions: []
+};
+
 export const TypeScriptLanguage: Language = {
   name: "typescript",
   base: "test/fixtures/typescript",

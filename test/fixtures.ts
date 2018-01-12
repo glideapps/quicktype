@@ -540,6 +540,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.CPlusPlusLanguage),
   new JSONFixture(languages.ElmLanguage),
   new JSONFixture(languages.SwiftLanguage),
+  new JSONFixture(languages.ObjectiveCLanguage),
   new JSONFixture(languages.TypeScriptLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
