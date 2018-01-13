@@ -22,12 +22,12 @@ import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 
 const assignedNameAttributeKind = "assignedName";
+const assignedPropertyNamesAttributeKind = "assignedPropertyNames";
 
 export abstract class ConvenienceRenderer extends Renderer {
     protected forbiddenWordsNamespace: Namespace;
     protected globalNamespace: Namespace;
     private _topLevelNames: Map<string, Name>;
-    private _propertyNames: Map<ClassType, Map<string, Name>>;
     private _memberNames: Map<UnionType, Map<Type, Name>>;
     private _caseNames: Map<EnumType, Map<string, Name>>;
 
@@ -110,6 +110,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected setUpNaming(): Namespace[] {
         this.typeGraph.attributeStore.registerAttributeKind(assignedNameAttributeKind, v => v instanceof Name);
+        this.typeGraph.attributeStore.registerAttributeKind(assignedPropertyNamesAttributeKind, v => Map.isMap(v));
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._classPropertyNamer = this.makeClassPropertyNamer();
@@ -120,7 +121,6 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.globalNamespace = new Namespace("global", undefined, Set([this.forbiddenWordsNamespace]), Set());
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
-        this._propertyNames = Map();
         this._memberNames = Map();
         this._caseNames = Map();
         this._topLevelNames = this.topLevels.map(this.nameForTopLevel).toMap();
@@ -209,7 +209,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 return ns.add(new SimpleName(OrderedSet([name, alternative]), propertyNamer));
             })
             .toMap();
-        this._propertyNames = this._propertyNames.set(c, names);
+        this.typeGraph.attributeStore.set(assignedPropertyNamesAttributeKind, c, names);
     };
 
     private makeUnionMemberName(u: UnionType, unionName: Name, t: Type): Name {
@@ -262,7 +262,9 @@ export abstract class ConvenienceRenderer extends Renderer {
     private childrenOfType = (t: Type): OrderedSet<Type> => {
         const names = this.names;
         if (t instanceof ClassType && this._classPropertyNamer !== null) {
-            const propertyNameds = defined(this._propertyNames.get(t));
+            const propertyNameds = defined(
+                this.typeGraph.attributeStore.get<Map<string, Name>>(assignedPropertyNamesAttributeKind, t)
+            );
             return t.properties
                 .sortBy((_, n: string): string => defined(names.get(defined(propertyNameds.get(n)))))
                 .toOrderedSet();
@@ -390,7 +392,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         blankLocations: BlankLineLocations,
         f: (name: Name, jsonName: string, t: Type) => void
     ): void => {
-        const propertyNames = defined(this._propertyNames.get(c));
+        const propertyNames = defined(
+            this.typeGraph.attributeStore.get<Map<string, Name>>(assignedPropertyNamesAttributeKind, c)
+        );
         if (this._alphabetizeProperties) {
             const alphabetizedPropertyNames = propertyNames.sortBy(n => this.names.get(n)).toOrderedMap();
             this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName) => {
