@@ -47,7 +47,7 @@ export class TypeAttributeStore {
         this._values[index] = values;
     }
 
-    get<T>(name: string, t: Type): T | undefined {
+    tryGet<T>(name: string, t: Type): T | undefined {
         assert(this._attributeKinds.has(name), `Attribute ${name} not defined`);
         const index = this.getTypeIndex(t);
         const maybeMap = this._values[index];
@@ -58,11 +58,32 @@ export class TypeAttributeStore {
     }
 }
 
-const typeNamesAttributeKind = "names";
+export class TypeAttributeStoreView<T> {
+    constructor(
+        private readonly _attributeStore: TypeAttributeStore,
+        private readonly _attributeName: string,
+        verifier: AttributeVerifier
+    ) {
+        _attributeStore.registerAttributeKind(_attributeName, verifier);
+    }
+
+    set(t: Type, value: T): void {
+        this._attributeStore.set(this._attributeName, t, value);
+    }
+
+    tryGet(t: Type): T | undefined {
+        return this._attributeStore.tryGet(this._attributeName, t);
+    }
+
+    get(t: Type): T {
+        return defined(this.tryGet(t));
+    }
+}
 
 export class TypeGraph {
     private _typeBuilder?: TypeBuilder;
     readonly attributeStore: TypeAttributeStore;
+    private readonly _namesStoreView: TypeAttributeStoreView<TypeNames>;
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
@@ -74,7 +95,7 @@ export class TypeGraph {
         this._typeBuilder = typeBuilder;
 
         this.attributeStore = new TypeAttributeStore(this);
-        this.attributeStore.registerAttributeKind(typeNamesAttributeKind, v => v instanceof TypeNames);
+        this._namesStoreView = new TypeAttributeStoreView(this.attributeStore, "names", v => v instanceof TypeNames);
     }
 
     private get isFrozen(): boolean {
@@ -98,7 +119,7 @@ export class TypeGraph {
         for (let i = 0; i < types.length; i++) {
             const maybeNames = typeNames[i];
             if (maybeNames === undefined) continue;
-            this.attributeStore.set(typeNamesAttributeKind, types[i], maybeNames);
+            this._namesStoreView.set(types[i], maybeNames);
         }
     };
 
@@ -112,7 +133,7 @@ export class TypeGraph {
             return this._typeBuilder.atIndex(index);
         }
         const t = defined(this._types)[index];
-        return [t, this.attributeStore.get(typeNamesAttributeKind, t)];
+        return [t, this._namesStoreView.tryGet(t)];
     }
 
     filterTypes(

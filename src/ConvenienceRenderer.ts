@@ -20,14 +20,14 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 
 import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
-
-const assignedNameAttributeKind = "assignedName";
-const assignedPropertyNamesAttributeKind = "assignedPropertyNames";
+import { TypeAttributeStoreView } from "./TypeGraph";
 
 export abstract class ConvenienceRenderer extends Renderer {
     protected forbiddenWordsNamespace: Namespace;
     protected globalNamespace: Namespace;
     private _topLevelNames: Map<string, Name>;
+    private _nameStoreView: TypeAttributeStoreView<Name>;
+    private _propertyNamesStoreView: TypeAttributeStoreView<Map<string, Name>>;
     private _memberNames: Map<UnionType, Map<Type, Name>>;
     private _caseNames: Map<EnumType, Map<string, Name>>;
 
@@ -109,8 +109,16 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected setUpNaming(): Namespace[] {
-        this.typeGraph.attributeStore.registerAttributeKind(assignedNameAttributeKind, v => v instanceof Name);
-        this.typeGraph.attributeStore.registerAttributeKind(assignedPropertyNamesAttributeKind, v => Map.isMap(v));
+        this._nameStoreView = new TypeAttributeStoreView(
+            this.typeGraph.attributeStore,
+            "assignedName",
+            v => v instanceof Name
+        );
+        this._propertyNamesStoreView = new TypeAttributeStoreView(
+            this.typeGraph.attributeStore,
+            "assignedPropertyNames",
+            v => Map.isMap(v)
+        );
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._classPropertyNamer = this.makeClassPropertyNamer();
@@ -163,20 +171,20 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         if (maybeNamedType !== undefined) {
             this.addDependenciesForNamedType(maybeNamedType, named);
-            this.typeGraph.attributeStore.set(assignedNameAttributeKind, maybeNamedType, named);
+            this._nameStoreView.set(maybeNamedType, named);
         }
 
         return named;
     };
 
     private addNamedForNamedType = (type: Type): Name => {
-        const existing = this.typeGraph.attributeStore.get<Name>(assignedNameAttributeKind, type);
+        const existing = this._nameStoreView.tryGet(type);
         if (existing !== undefined) return existing;
         const named = this.globalNamespace.add(new SimpleName(type.getProposedNames(), this._namedTypeNamer));
 
         this.addDependenciesForNamedType(type, named);
 
-        this.typeGraph.attributeStore.set(assignedNameAttributeKind, type, named);
+        this._nameStoreView.set(type, named);
         return named;
     };
 
@@ -209,7 +217,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 return ns.add(new SimpleName(OrderedSet([name, alternative]), propertyNamer));
             })
             .toMap();
-        this.typeGraph.attributeStore.set(assignedPropertyNamesAttributeKind, c, names);
+        this._propertyNamesStoreView.set(c, names);
     };
 
     private makeUnionMemberName(u: UnionType, unionName: Name, t: Type): Name {
@@ -262,9 +270,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private childrenOfType = (t: Type): OrderedSet<Type> => {
         const names = this.names;
         if (t instanceof ClassType && this._classPropertyNamer !== null) {
-            const propertyNameds = defined(
-                this.typeGraph.attributeStore.get<Map<string, Name>>(assignedPropertyNamesAttributeKind, t)
-            );
+            const propertyNameds = this._propertyNamesStoreView.get(t);
             return t.properties
                 .sortBy((_, n: string): string => defined(names.get(defined(propertyNameds.get(n)))))
                 .toOrderedSet();
@@ -333,11 +339,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected nameForNamedType = (t: Type): Name => {
-        const name = this.typeGraph.attributeStore.get<Name>(assignedNameAttributeKind, t);
-        if (name === undefined) {
-            return panic("Named type does not exist.");
-        }
-        return name;
+        return this._nameStoreView.get(t);
     };
 
     protected isForwardDeclaredType(t: Type): boolean {
@@ -392,9 +394,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         blankLocations: BlankLineLocations,
         f: (name: Name, jsonName: string, t: Type) => void
     ): void => {
-        const propertyNames = defined(
-            this.typeGraph.attributeStore.get<Map<string, Name>>(assignedPropertyNamesAttributeKind, c)
-        );
+        const propertyNames = this._propertyNamesStoreView.get(c);
         if (this._alphabetizeProperties) {
             const alphabetizedPropertyNames = propertyNames.sortBy(n => this.names.get(n)).toOrderedMap();
             this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName) => {
