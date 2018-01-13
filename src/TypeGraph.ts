@@ -13,6 +13,7 @@ export type AttributeVerifier = (x: any) => boolean;
 export class TypeAttributeStore {
     private _attributeKinds: Map<string, AttributeVerifier> = Map();
     private _values: (Map<string, any> | undefined)[] = [];
+    private _topLevelValues: Map<string, Map<string, any>> = Map();
 
     constructor(private readonly _typeGraph: TypeGraph) {}
 
@@ -27,34 +28,48 @@ export class TypeAttributeStore {
         return tref.getIndex();
     }
 
-    set<T>(name: string, t: Type, value: T): void {
+    private setInMap<T>(maybeMap: Map<string, any> | undefined, name: string, value: T): Map<string, any> {
         const verifier = this._attributeKinds.get(name);
         if (verifier === undefined) {
             return panic(`Unknown attribute ${name}`);
         }
         assert(verifier(value), `Invalid value for attribute ${name}`);
 
+        if (maybeMap === undefined) {
+            maybeMap = Map<string, any>();
+        }
+        maybeMap = maybeMap.set(name, value);
+        return maybeMap;
+    }
+
+    set<T>(name: string, t: Type, value: T): void {
         const index = this.getTypeIndex(t);
         while (index >= this._values.length) {
             this._values.push(undefined);
         }
-        let values = this._values[index];
-        if (values === undefined) {
-            values = Map<string, any>();
-            this._values[index] = values;
-        }
-        values = values.set(name, value);
-        this._values[index] = values;
+        this._values[index] = this.setInMap(this._values[index], name, value);
     }
 
-    tryGet<T>(name: string, t: Type): T | undefined {
+    setForTopLevel<T>(attributeName: string, topLevelName: string, value: T): void {
+        const maybeMap = this._topLevelValues.get(topLevelName);
+        this._topLevelValues = this._topLevelValues.set(topLevelName, this.setInMap(maybeMap, attributeName, value));
+    }
+
+    private tryGetInMap<T>(maybeMap: Map<string, any> | undefined, name: string): T | undefined {
         assert(this._attributeKinds.has(name), `Attribute ${name} not defined`);
-        const index = this.getTypeIndex(t);
-        const maybeMap = this._values[index];
         if (maybeMap === undefined) {
             return undefined;
         }
         return maybeMap.get(name);
+    }
+
+    tryGet<T>(name: string, t: Type): T | undefined {
+        const index = this.getTypeIndex(t);
+        return this.tryGetInMap(this._values[index], name);
+    }
+
+    tryGetForTopLevel<T>(attributeName: string, topLevelName: string): T | undefined {
+        return this.tryGetInMap(this._topLevelValues.get(topLevelName), attributeName);
     }
 }
 
@@ -71,12 +86,24 @@ export class TypeAttributeStoreView<T> {
         this._attributeStore.set(this._attributeName, t, value);
     }
 
+    setForTopLevel(name: string, value: T): void {
+        this._attributeStore.setForTopLevel(this._attributeName, name, value);
+    }
+
     tryGet(t: Type): T | undefined {
         return this._attributeStore.tryGet(this._attributeName, t);
     }
 
     get(t: Type): T {
         return defined(this.tryGet(t));
+    }
+
+    tryGetForTopLevel(name: string): T | undefined {
+        return this._attributeStore.tryGetForTopLevel(this._attributeName, name);
+    }
+
+    getForTopLevel(name: string): T {
+        return defined(this.tryGetForTopLevel(name));
     }
 }
 

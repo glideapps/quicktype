@@ -25,7 +25,6 @@ import { TypeAttributeStoreView } from "./TypeGraph";
 export abstract class ConvenienceRenderer extends Renderer {
     protected forbiddenWordsNamespace: Namespace;
     protected globalNamespace: Namespace;
-    private _topLevelNames: Map<string, Name>;
     private _nameStoreView: TypeAttributeStoreView<Name>;
     private _propertyNamesStoreView: TypeAttributeStoreView<Map<string, Name>>;
     private _memberNamesStoreView: TypeAttributeStoreView<Map<Type, Name>>;
@@ -139,7 +138,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.globalNamespace = new Namespace("global", undefined, Set([this.forbiddenWordsNamespace]), Set());
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
-        this._topLevelNames = this.topLevels.map(this.nameForTopLevel).toMap();
+        this.topLevels.forEach((t, name) => {
+            this._nameStoreView.setForTopLevel(name, this.nameForTopLevel(t, name));
+        });
         classes.forEach((c: ClassType) => {
             const name = this.addNamedForNamedType(c);
             this.addPropertyNames(c, name);
@@ -385,7 +386,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             topLevels = this.topLevels;
         }
         this.forEachWithBlankLines(topLevels, blankLocations, (t: Type, name: string) =>
-            f(t, defined(this._topLevelNames.get(name)))
+            f(t, this._nameStoreView.getForTopLevel(name))
         );
     };
 
