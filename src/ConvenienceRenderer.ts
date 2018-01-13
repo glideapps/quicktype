@@ -21,6 +21,7 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 import { TypeAttributeStoreView } from "./TypeGraph";
+import { TypeNames } from "./TypeNames";
 
 export abstract class ConvenienceRenderer extends Renderer {
     protected forbiddenWordsNamespace: Namespace;
@@ -528,7 +529,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
     };
 
-    protected emitSource(): void {
+    private processGraph(): void {
         this._declarationIR = declarationsForGraph(
             this.typeGraph,
             this.needsTypeDeclarationBeforeUse ? t => this.canBeForwardDeclared(t) : undefined,
@@ -548,6 +549,42 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._namedClasses = classes;
         this._namedEnums = enums;
         this._namedUnions = unions;
+    }
+
+    protected emitSource(): void {
+        this.processGraph();
         this.emitSourceStructure();
+    }
+
+    private makeContextValue(x: any): any {
+        if (x instanceof Name) {
+            return defined(this.names.get(x));
+        }
+        if (x instanceof TypeNames) {
+            return { combinedName: x.combinedName };
+        }
+        if (Map.isMap(x)) {
+            return x.map(v => this.makeContextValue(v)).toObject();
+        }
+        if (typeof x === "string") {
+            return x;
+        }
+        return panic("Cannot convert value for handlebars context");
+    }
+
+    protected makeHandlebarsContext(): any {
+        this.processGraph();
+
+        const namedTypes: any[] = [];
+        const makeForType = (t: Type): void => {
+            namedTypes.push(
+                this.typeGraph.attributeStore.makeHandlebarsContextForType(t, x => this.makeContextValue(x))
+            );
+        };
+        this.forEachNamedType("none", makeForType, makeForType, makeForType);
+        return {
+            topLevels: this.typeGraph.attributeStore.makeHandlebarsContextForTopLevels(x => this.makeContextValue(x)),
+            namedTypes
+        };
     }
 }

@@ -17,6 +17,7 @@
     "command-line-args": "^4.0.6",
     "command-line-usage": "^4.0.0",
     "graphql": "^0.11.7",
+    "handlebars": "^4.0.11",
     "immutable": "^4.0.0-rc.9",
     "is-url": "^1.2.2",
     "lodash": "^4.17.4",
@@ -30,12 +31,13 @@
   },
   "devDependencies": {
     "@types/graphql": "^0.11.7",
+    "@types/handlebars": "^4.0.36",
+    "@types/is-url": "^1.2.28",
     "@types/lodash": "^4.14.72",
     "@types/node": "^8.0.19",
     "@types/pluralize": "0.0.28",
     "@types/shelljs": "^0.7.6",
     "@types/string-hash": "^1.1.1",
-    "@types/is-url": "^1.2.28",
     "ajv": "^5.2.2",
     "compare-versions": "^3.1.0",
     "deep-equal": "^1.0.1",
@@ -49,6 +51,8 @@
     "uglify-js": "^3.0.26",
     "watch": "^1.0.2"
   },
-  "files": ["dist/**"],
+  "files": [
+    "dist/**"
+  ],
   "bin": "dist/cli.js"
 }

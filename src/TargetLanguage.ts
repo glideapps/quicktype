@@ -7,6 +7,7 @@ import { serializeRenderResult, SerializedRenderResult } from "./Source";
 import { StringTypeMapping } from "./TypeBuilder";
 import { assert, panic } from "./Support";
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
+import { List } from "immutable";
 
 export abstract class TargetLanguage {
     private _options?: Option<any>[];
@@ -31,6 +32,17 @@ export abstract class TargetLanguage {
         ...optionValues: any[]
     ) => Renderer;
 
+    private makeRenderer(
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        rendererOptions: { [name: string]: any }
+    ): Renderer {
+        if (this._options === undefined) {
+            return panic(`Target language ${this.displayName} did not set its options`);
+        }
+        return new this.rendererClass(graph, leadingComments, ...this._options.map(o => o.getValue(rendererOptions)));
+    }
+
     renderGraphAndSerialize(
         graph: TypeGraph,
         alphabetizeProperties: boolean,
@@ -38,22 +50,25 @@ export abstract class TargetLanguage {
         rendererOptions: { [name: string]: any },
         indentation?: string
     ): SerializedRenderResult {
-        if (this._options === undefined) {
-            return panic(`Target language ${this.displayName} did not set its options`);
-        }
         if (indentation === undefined) {
             indentation = this.defaultIndentation;
         }
-        const renderer = new this.rendererClass(
-            graph,
-            leadingComments,
-            ...this._options.map(o => o.getValue(rendererOptions))
-        );
+        const renderer = this.makeRenderer(graph, leadingComments, rendererOptions);
         if ((renderer as any).setAlphabetizeProperties !== undefined) {
             (renderer as ConvenienceRenderer).setAlphabetizeProperties(alphabetizeProperties);
         }
         const renderResult = renderer.render();
         return serializeRenderResult(renderResult, indentation);
+    }
+
+    processHandlebarsTemplate(
+        graph: TypeGraph,
+        rendererOptions: { [name: string]: any },
+        template: string
+    ): SerializedRenderResult {
+        const renderer = this.makeRenderer(graph, undefined, rendererOptions);
+        const output = renderer.processHandlebarsTemplate(template);
+        return { lines: output.split("\n"), annotations: List() };
     }
 
     protected get defaultIndentation(): string {

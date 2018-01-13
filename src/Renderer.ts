@@ -1,6 +1,8 @@
 "use strict";
 
 import { Map, Collection, OrderedSet, List } from "immutable";
+import * as handlebars from "handlebars";
+
 import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
 import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newline } from "./Source";
@@ -161,12 +163,28 @@ export abstract class Renderer {
 
     protected abstract setUpNaming(): Namespace[];
     protected abstract emitSource(): void;
+    protected abstract makeHandlebarsContext(): any;
+
+    private assignNames(): Map<Name, string> {
+        return assignNames(OrderedSet(this.setUpNaming()));
+    }
 
     render = (): RenderResult => {
-        this._names = assignNames(OrderedSet(this.setUpNaming()));
+        this._names = this.assignNames();
         this.emitSource();
         return { rootSource: this.finishedSource(), names: this._names };
     };
+
+    processHandlebarsTemplate(template: string): string {
+        handlebars.registerHelper("if_eq", function(this: any, a: any, b: any, options: any): void {
+            if (a === b) {
+                return options.fn(this);
+            }
+        });
+        this._names = this.assignNames();
+        const compiledTemplate = handlebars.compile(template);
+        return compiledTemplate(this.makeHandlebarsContext());
+    }
 
     get names(): Map<Name, string> {
         if (this._names === undefined) {

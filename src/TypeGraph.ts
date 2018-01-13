@@ -71,6 +71,18 @@ export class TypeAttributeStore {
     tryGetForTopLevel<T>(attributeName: string, topLevelName: string): T | undefined {
         return this.tryGetInMap(this._topLevelValues.get(topLevelName), attributeName);
     }
+
+    makeHandlebarsContextForTopLevels(makeContextValue: (x: any) => any): { [name: string]: { [name: string]: any } } {
+        return this._topLevelValues.map(values => values.map(makeContextValue).toObject()).toObject();
+    }
+
+    makeHandlebarsContextForType(t: Type, makeContextValue: (x: any) => any): { [name: string]: any } {
+        const values = this._values[this.getTypeIndex(t)];
+        if (values === undefined) return {};
+        let result = values.map(makeContextValue).toObject();
+        result.type = { kind: t.kind };
+        return result;
+    }
 }
 
 export class TypeAttributeStoreView<T> {
