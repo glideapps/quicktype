@@ -21,11 +21,12 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 
+const assignedNameAttributeKind = "assignedName";
+
 export abstract class ConvenienceRenderer extends Renderer {
     protected forbiddenWordsNamespace: Namespace;
     protected globalNamespace: Namespace;
     private _topLevelNames: Map<string, Name>;
-    private _namesForNamedTypes: Map<Type, Name>;
     private _propertyNames: Map<ClassType, Map<string, Name>>;
     private _memberNames: Map<UnionType, Map<Type, Name>>;
     private _caseNames: Map<EnumType, Map<string, Name>>;
@@ -108,6 +109,8 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected setUpNaming(): Namespace[] {
+        this.typeGraph.attributeStore.registerAttributeKind(assignedNameAttributeKind, v => v instanceof Name);
+
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._classPropertyNamer = this.makeClassPropertyNamer();
         this._unionMemberNamer = this.makeUnionMemberNamer();
@@ -117,7 +120,6 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.globalNamespace = new Namespace("global", undefined, Set([this.forbiddenWordsNamespace]), Set());
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
-        this._namesForNamedTypes = Map();
         this._propertyNames = Map();
         this._memberNames = Map();
         this._caseNames = Map();
@@ -161,20 +163,20 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         if (maybeNamedType !== undefined) {
             this.addDependenciesForNamedType(maybeNamedType, named);
-            this._namesForNamedTypes = this._namesForNamedTypes.set(maybeNamedType, named);
+            this.typeGraph.attributeStore.set(assignedNameAttributeKind, maybeNamedType, named);
         }
 
         return named;
     };
 
     private addNamedForNamedType = (type: Type): Name => {
-        const existing = this._namesForNamedTypes.get(type);
+        const existing = this.typeGraph.attributeStore.get<Name>(assignedNameAttributeKind, type);
         if (existing !== undefined) return existing;
         const named = this.globalNamespace.add(new SimpleName(type.getProposedNames(), this._namedTypeNamer));
 
         this.addDependenciesForNamedType(type, named);
 
-        this._namesForNamedTypes = this._namesForNamedTypes.set(type, named);
+        this.typeGraph.attributeStore.set(assignedNameAttributeKind, type, named);
         return named;
     };
 
@@ -329,7 +331,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected nameForNamedType = (t: Type): Name => {
-        const name = this._namesForNamedTypes.get(t);
+        const name = this.typeGraph.attributeStore.get<Name>(assignedNameAttributeKind, t);
         if (name === undefined) {
             return panic("Named type does not exist.");
         }
@@ -434,7 +436,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected callForNamedType<T extends Type>(t: T, f: (t: T, name: Name) => void): void {
-        f(t, defined(this._namesForNamedTypes.get(t)));
+        f(t, this.nameForNamedType(t));
     }
 
     protected forEachSpecificNamedType<T extends Type>(

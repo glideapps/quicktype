@@ -62,7 +62,7 @@ const typeNamesAttributeKind = "names";
 
 export class TypeGraph {
     private _typeBuilder?: TypeBuilder;
-    private readonly _attributeStore: TypeAttributeStore;
+    readonly attributeStore: TypeAttributeStore;
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
@@ -73,8 +73,8 @@ export class TypeGraph {
     constructor(typeBuilder: TypeBuilder) {
         this._typeBuilder = typeBuilder;
 
-        this._attributeStore = new TypeAttributeStore(this);
-        this._attributeStore.registerAttributeKind(typeNamesAttributeKind, v => v instanceof TypeNames);
+        this.attributeStore = new TypeAttributeStore(this);
+        this.attributeStore.registerAttributeKind(typeNamesAttributeKind, v => v instanceof TypeNames);
     }
 
     private get isFrozen(): boolean {
@@ -98,7 +98,7 @@ export class TypeGraph {
         for (let i = 0; i < types.length; i++) {
             const maybeNames = typeNames[i];
             if (maybeNames === undefined) continue;
-            this._attributeStore.set(typeNamesAttributeKind, types[i], maybeNames);
+            this.attributeStore.set(typeNamesAttributeKind, types[i], maybeNames);
         }
     };
 
@@ -112,7 +112,7 @@ export class TypeGraph {
             return this._typeBuilder.atIndex(index);
         }
         const t = defined(this._types)[index];
-        return [t, this._attributeStore.get(typeNamesAttributeKind, t)];
+        return [t, this.attributeStore.get(typeNamesAttributeKind, t)];
     }
 
     filterTypes(
