@@ -29,7 +29,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _nameStoreView: TypeAttributeStoreView<Name>;
     private _propertyNamesStoreView: TypeAttributeStoreView<Map<string, Name>>;
     private _memberNamesStoreView: TypeAttributeStoreView<Map<Type, Name>>;
-    private _caseNames: Map<EnumType, Map<string, Name>>;
+    private _caseNamesStoreView: TypeAttributeStoreView<Map<string, Name>>;
 
     private _namedTypeNamer: Namer;
     private _classPropertyNamer: Namer | null;
@@ -124,6 +124,11 @@ export abstract class ConvenienceRenderer extends Renderer {
             "assignedMemberNames",
             Map.isMap
         );
+        this._caseNamesStoreView = new TypeAttributeStoreView(
+            this.typeGraph.attributeStore,
+            "assignedCaseNames",
+            Map.isMap
+        );
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._classPropertyNamer = this.makeClassPropertyNamer();
@@ -134,7 +139,6 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.globalNamespace = new Namespace("global", undefined, Set([this.forbiddenWordsNamespace]), Set());
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
-        this._caseNames = Map();
         this._topLevelNames = this.topLevels.map(this.nameForTopLevel).toMap();
         classes.forEach((c: ClassType) => {
             const name = this.addNamedForNamedType(c);
@@ -268,7 +272,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             const alternative = `${e.getCombinedName()}_${name}`;
             names = names.set(name, ns.add(new SimpleName(OrderedSet([name, alternative]), caseNamer)));
         });
-        this._caseNames = this._caseNames.set(e, names);
+        this._caseNamesStoreView.set(e, names);
     };
 
     private childrenOfType = (t: Type): OrderedSet<Type> => {
@@ -438,7 +442,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         blankLocations: BlankLineLocations,
         f: (name: Name, jsonName: string) => void
     ): void => {
-        const caseNames = defined(this._caseNames.get(e));
+        const caseNames = this._caseNamesStoreView.get(e);
         const sortedCaseNames = caseNames.sortBy(n => this.names.get(n)).toOrderedMap();
         this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
     };
