@@ -28,7 +28,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _topLevelNames: Map<string, Name>;
     private _nameStoreView: TypeAttributeStoreView<Name>;
     private _propertyNamesStoreView: TypeAttributeStoreView<Map<string, Name>>;
-    private _memberNames: Map<UnionType, Map<Type, Name>>;
+    private _memberNamesStoreView: TypeAttributeStoreView<Map<Type, Name>>;
     private _caseNames: Map<EnumType, Map<string, Name>>;
 
     private _namedTypeNamer: Namer;
@@ -117,7 +117,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._propertyNamesStoreView = new TypeAttributeStoreView(
             this.typeGraph.attributeStore,
             "assignedPropertyNames",
-            v => Map.isMap(v)
+            Map.isMap
+        );
+        this._memberNamesStoreView = new TypeAttributeStoreView(
+            this.typeGraph.attributeStore,
+            "assignedMemberNames",
+            Map.isMap
         );
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
@@ -129,7 +134,6 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.globalNamespace = new Namespace("global", undefined, Set([this.forbiddenWordsNamespace]), Set());
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
-        this._memberNames = Map();
         this._caseNames = Map();
         this._topLevelNames = this.topLevels.map(this.nameForTopLevel).toMap();
         classes.forEach((c: ClassType) => {
@@ -242,7 +246,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             const name = this.makeUnionMemberName(u, unionName, t);
             names = names.set(t, ns.add(name));
         });
-        this._memberNames = this._memberNames.set(u, names);
+        this._memberNamesStoreView.set(u, names);
     };
 
     // FIXME: this is very similar to addPropertyNameds and addUnionMemberNames
@@ -410,7 +414,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected nameForUnionMember = (u: UnionType, t: Type): Name => {
-        return defined(defined(this._memberNames.get(u)).get(t));
+        return defined(this._memberNamesStoreView.get(u).get(t));
     };
 
     protected forEachUnionMember = (
@@ -424,7 +428,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (sortOrder === null) {
             sortOrder = n => defined(this.names.get(n));
         }
-        const memberNames = defined(this._memberNames.get(u)).filter((_, t) => iterateMembers.has(t));
+        const memberNames = this._memberNamesStoreView.get(u).filter((_, t) => iterateMembers.has(t));
         const sortedMemberNames = memberNames.sortBy(sortOrder).toOrderedMap();
         this.forEachWithBlankLines(sortedMemberNames, blankLocations, f);
     };
