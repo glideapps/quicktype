@@ -21,7 +21,7 @@ import {
     combineWords,
     firstUpperWordStyle
 } from "../Strings";
-import { intercalate, defined, assert, panic } from "../Support";
+import { intercalate, defined, assert, panic, StringMap } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
@@ -618,5 +618,11 @@ class CSharpRenderer extends ConvenienceRenderer {
         } else {
             this.emitTypesAndSupport();
         }
+    }
+
+    protected makeHandlebarsContextForType(t: Type): StringMap {
+        const ctx = super.makeHandlebarsContextForType(t);
+        ctx.csType = this.sourcelikeToString(this.csType(t));
+        return ctx;
     }
 }
