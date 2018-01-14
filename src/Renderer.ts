@@ -175,12 +175,16 @@ export abstract class Renderer {
         return { rootSource: this.finishedSource(), names: this._names };
     };
 
-    processHandlebarsTemplate(template: string): string {
+    protected registerHandlebarsHelpers(): void {
         handlebars.registerHelper("if_eq", function(this: any, a: any, b: any, options: any): void {
             if (a === b) {
                 return options.fn(this);
             }
         });
+    }
+
+    processHandlebarsTemplate(template: string): string {
+        this.registerHandlebarsHelpers();
         this._names = this.assignNames();
         const compiledTemplate = handlebars.compile(template);
         return compiledTemplate(this.makeHandlebarsContext());

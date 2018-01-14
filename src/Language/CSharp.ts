@@ -1,6 +1,8 @@
 "use strict";
 
 import { OrderedSet, Map } from "immutable";
+import * as handlebars from "handlebars";
+
 import {
     TypeKind,
     Type,
@@ -618,6 +620,11 @@ class CSharpRenderer extends ConvenienceRenderer {
         } else {
             this.emitTypesAndSupport();
         }
+    }
+
+    protected registerHandlebarsHelpers(): void {
+        super.registerHandlebarsHelpers();
+        handlebars.registerHelper("string_escape", utf16StringEscape);
     }
 
     protected makeHandlebarsContextForType(t: Type): StringMap {
