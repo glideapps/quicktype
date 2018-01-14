@@ -15,7 +15,7 @@ import {
 } from "./Type";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
-import { defined, panic, nonNull } from "./Support";
+import { defined, panic, nonNull, StringMap } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 import { trimEnd } from "lodash";
@@ -576,15 +576,37 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.processGraph();
 
         const namedTypes: any[] = [];
-        const makeForType = (t: Type): void => {
-            namedTypes.push(
-                this.typeGraph.attributeStore.makeHandlebarsContextForType(t, x => this.makeContextValue(x))
-            );
+        const makeForType = (t: Type): StringMap => {
+            const value: StringMap = { type: { kind: t.kind } };
+            const maybeName = this._nameStoreView.tryGet(t);
+            if (maybeName !== undefined) {
+                value.assignedName = this.names.get(maybeName);
+            }
+            return value;
         };
-        this.forEachNamedType("none", makeForType, makeForType, makeForType);
-        return {
-            topLevels: this.typeGraph.attributeStore.makeHandlebarsContextForTopLevels(x => this.makeContextValue(x)),
-            namedTypes
+        const addForClass = (c: ClassType): void => {
+            const value = makeForType(c);
+            const properties: StringMap = {};
+            this.forEachClassProperty(c, "none", (name, jsonName, t) => {
+                const propertyValue = makeForType(t);
+                propertyValue.assignedName = defined(this.names.get(name));
+                properties[jsonName] = propertyValue;
+            });
+            value.properties = properties;
+            namedTypes.push(value);
         };
+        const addForEnum = (e: EnumType): void => {
+            namedTypes.push(makeForType(e));
+        };
+        const addForUnion = (u: UnionType): void => {
+            namedTypes.push(makeForType(u));
+        };
+        this.forEachNamedType("none", addForClass, addForEnum, addForUnion);
+
+        const topLevels: StringMap = {};
+        this.topLevels.forEach((_, name) => {
+            topLevels[name] = { assignedName: this._nameStoreView.getForTopLevel(name) };
+        });
+        return { topLevels, namedTypes };
     }
 }
