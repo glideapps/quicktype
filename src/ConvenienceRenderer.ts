@@ -556,22 +556,6 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.emitSourceStructure();
     }
 
-    private makeContextValue(x: any): any {
-        if (x instanceof Name) {
-            return defined(this.names.get(x));
-        }
-        if (x instanceof TypeNames) {
-            return { combinedName: x.combinedName };
-        }
-        if (Map.isMap(x)) {
-            return x.map(v => this.makeContextValue(v)).toObject();
-        }
-        if (typeof x === "string") {
-            return x;
-        }
-        return panic("Cannot convert value for handlebars context");
-    }
-
     protected makeHandlebarsContext(): any {
         this.processGraph();
 
@@ -596,16 +580,30 @@ export abstract class ConvenienceRenderer extends Renderer {
             namedTypes.push(value);
         };
         const addForEnum = (e: EnumType): void => {
-            namedTypes.push(makeForType(e));
+            const value = makeForType(e);
+            const cases: StringMap = {};
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
+                cases[jsonName] = { assignedName: defined(this.names.get(name)) };
+            });
+            value.cases = cases;
+            namedTypes.push(value);
         };
         const addForUnion = (u: UnionType): void => {
-            namedTypes.push(makeForType(u));
+            const value = makeForType(u);
+            const members: StringMap[] = [];
+            this.forEachUnionMember(u, null, "none", null, (name, t) => {
+                const memberValue = makeForType(t);
+                memberValue.assignedName = defined(this.names.get(name));
+                members.push(memberValue);
+            });
+            value.members = members;
+            namedTypes.push(value);
         };
         this.forEachNamedType("none", addForClass, addForEnum, addForUnion);
 
         const topLevels: StringMap = {};
         this.topLevels.forEach((_, name) => {
-            topLevels[name] = { assignedName: this._nameStoreView.getForTopLevel(name) };
+            topLevels[name] = { assignedName: this.names.get(this._nameStoreView.getForTopLevel(name)) };
         });
         return { topLevels, namedTypes };
     }
