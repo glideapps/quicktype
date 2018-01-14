@@ -630,6 +630,16 @@ class CSharpRenderer extends ConvenienceRenderer {
     protected makeHandlebarsContextForType(t: Type): StringMap {
         const ctx = super.makeHandlebarsContextForType(t);
         ctx.csType = this.sourcelikeToString(this.csType(t));
+        if (t.kind === "enum") {
+            const name = this.nameForNamedType(t);
+            ctx.extensionsName = defined(this.names.get(defined(this._enumExtensionsNames.get(name))));
+        }
         return ctx;
+    }
+
+    protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
+        const value = super.makeHandlebarsContextForUnionMember(t, name);
+        value.nullableCSType = this.sourcelikeToString(this.nullableCSType(t));
+        return value;
     }
 }

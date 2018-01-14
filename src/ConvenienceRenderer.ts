@@ -551,6 +551,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         return value;
     }
 
+    protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
+        const value = this.makeHandlebarsContextForType(t);
+        value.assignedName = defined(this.names.get(name));
+        return value;
+    }
+
     protected makeHandlebarsContext(): any {
         this.processGraph();
 
@@ -579,8 +585,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             const value = this.makeHandlebarsContextForType(u);
             const members: StringMap[] = [];
             this.forEachUnionMember(u, null, "none", null, (name, t) => {
-                const memberValue = this.makeHandlebarsContextForType(t);
-                memberValue.assignedName = defined(this.names.get(name));
+                const memberValue = this.makeHandlebarsContextForUnionMember(t, name);
                 members.push(memberValue);
             });
             value.members = members;
@@ -589,8 +594,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.forEachNamedType("none", addForClass, addForEnum, addForUnion);
 
         const topLevels: StringMap = {};
-        this.topLevels.forEach((_, name) => {
-            topLevels[name] = { assignedName: this.names.get(this._nameStoreView.getForTopLevel(name)) };
+        this.topLevels.forEach((t, name) => {
+            const value = this.makeHandlebarsContextForType(t);
+            value.assignedName = this.names.get(this._nameStoreView.getForTopLevel(name));
+            topLevels[name] = value;
         });
         return { topLevels, namedTypes };
     }
