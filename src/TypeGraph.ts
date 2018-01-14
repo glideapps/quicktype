@@ -8,18 +8,16 @@ import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringT
 import { TypeNames } from "./TypeNames";
 import { Graph } from "./Graph";
 
-export type AttributeVerifier = (x: any) => boolean;
-
 export class TypeAttributeStore {
-    private _attributeKinds: Map<string, AttributeVerifier> = Map();
+    private _attributeKinds: Set<string> = Set();
     private _values: (Map<string, any> | undefined)[] = [];
     private _topLevelValues: Map<string, Map<string, any>> = Map();
 
     constructor(private readonly _typeGraph: TypeGraph) {}
 
-    registerAttributeKind(name: string, verifier: AttributeVerifier): void {
+    registerAttributeKind(name: string): void {
         assert(!this._attributeKinds.has(name), "Cannot register a type attribute more than once");
-        this._attributeKinds = this._attributeKinds.set(name, verifier);
+        this._attributeKinds = this._attributeKinds.add(name);
     }
 
     private getTypeIndex(t: Type): number {
@@ -29,11 +27,9 @@ export class TypeAttributeStore {
     }
 
     private setInMap<T>(maybeMap: Map<string, any> | undefined, name: string, value: T): Map<string, any> {
-        const verifier = this._attributeKinds.get(name);
-        if (verifier === undefined) {
+        if (!this._attributeKinds.has(name)) {
             return panic(`Unknown attribute ${name}`);
         }
-        assert(verifier(value), `Invalid value for attribute ${name}`);
 
         if (maybeMap === undefined) {
             maybeMap = Map<string, any>();
@@ -74,12 +70,8 @@ export class TypeAttributeStore {
 }
 
 export class TypeAttributeStoreView<T> {
-    constructor(
-        private readonly _attributeStore: TypeAttributeStore,
-        private readonly _attributeName: string,
-        verifier: AttributeVerifier
-    ) {
-        _attributeStore.registerAttributeKind(_attributeName, verifier);
+    constructor(private readonly _attributeStore: TypeAttributeStore, private readonly _attributeName: string) {
+        _attributeStore.registerAttributeKind(_attributeName);
     }
 
     set(t: Type, value: T): void {
@@ -122,7 +114,7 @@ export class TypeGraph {
         this._typeBuilder = typeBuilder;
 
         this.attributeStore = new TypeAttributeStore(this);
-        this._namesStoreView = new TypeAttributeStoreView(this.attributeStore, "names", v => v instanceof TypeNames);
+        this._namesStoreView = new TypeAttributeStoreView(this.attributeStore, "names");
     }
 
     private get isFrozen(): boolean {

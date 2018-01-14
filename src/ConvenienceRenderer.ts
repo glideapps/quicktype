@@ -21,7 +21,6 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 import { TypeAttributeStoreView } from "./TypeGraph";
-import { TypeNames } from "./TypeNames";
 
 export abstract class ConvenienceRenderer extends Renderer {
     protected forbiddenWordsNamespace: Namespace;
@@ -109,26 +108,13 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected setUpNaming(): Namespace[] {
-        this._nameStoreView = new TypeAttributeStoreView(
-            this.typeGraph.attributeStore,
-            "assignedName",
-            v => v instanceof Name
-        );
+        this._nameStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedName");
         this._propertyNamesStoreView = new TypeAttributeStoreView(
             this.typeGraph.attributeStore,
-            "assignedPropertyNames",
-            Map.isMap
+            "assignedPropertyNames"
         );
-        this._memberNamesStoreView = new TypeAttributeStoreView(
-            this.typeGraph.attributeStore,
-            "assignedMemberNames",
-            Map.isMap
-        );
-        this._caseNamesStoreView = new TypeAttributeStoreView(
-            this.typeGraph.attributeStore,
-            "assignedCaseNames",
-            Map.isMap
-        );
+        this._memberNamesStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedMemberNames");
+        this._caseNamesStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedCaseNames");
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._classPropertyNamer = this.makeClassPropertyNamer();
