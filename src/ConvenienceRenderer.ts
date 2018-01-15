@@ -542,8 +542,14 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.emitSourceStructure();
     }
 
+    protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
+        const value = this.makeHandlebarsContextForType(t);
+        value.assignedName = defined(this.names.get(name));
+        return value;
+    }
+
     protected makeHandlebarsContextForType(t: Type): StringMap {
-        const value: StringMap = { type: { kind: t.kind } };
+        const value: StringMap = { type: { kind: t.kind, index: t.typeRef.getIndex() } };
         const maybeName = this._nameStoreView.tryGet(t);
         if (maybeName !== undefined) {
             value.assignedName = this.names.get(maybeName);
@@ -551,52 +557,58 @@ export abstract class ConvenienceRenderer extends Renderer {
         return value;
     }
 
-    protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
-        const value = this.makeHandlebarsContextForType(t);
-        value.assignedName = defined(this.names.get(name));
-        return value;
-    }
-
     protected makeHandlebarsContext(): any {
         this.processGraph();
 
+        const allTypes: any[] = [];
+        this.typeGraph.allTypesUnordered().forEach(t => {
+            const value = this.makeHandlebarsContextForType(t);
+            if (t instanceof ClassType) {
+                const properties: StringMap = {};
+                this.forEachClassProperty(t, "none", (name, jsonName, t) => {
+                    const propertyValue = this.makeHandlebarsContextForType(t);
+                    propertyValue.assignedName = defined(this.names.get(name));
+                    properties[jsonName] = propertyValue;
+                });
+                value.properties = properties;
+            } else if (t instanceof EnumType) {
+                const cases: StringMap = {};
+                this.forEachEnumCase(t, "none", (name, jsonName) => {
+                    cases[jsonName] = { assignedName: defined(this.names.get(name)) };
+                });
+                value.cases = cases;
+            } else if (t instanceof UnionType) {
+                const members: StringMap[] = [];
+                // FIXME: It's a bit ugly to have these two cases.
+                if (this._memberNamesStoreView.tryGet(t) === undefined) {
+                    t.members.forEach(t => {
+                        members.push(this.makeHandlebarsContextForType(t));
+                    });
+                } else {
+                    this.forEachUnionMember(t, null, "none", null, (name, t) => {
+                        members.push(this.makeHandlebarsContextForUnionMember(t, name));
+                    });
+                }
+                value.members = members;
+            }
+
+            const index = t.typeRef.getIndex();
+            while (allTypes.length <= index) {
+                allTypes.push(undefined);
+            }
+            allTypes[index] = value;
+        });
+
         const namedTypes: any[] = [];
-        const addForClass = (c: ClassType): void => {
-            const value = this.makeHandlebarsContextForType(c);
-            const properties: StringMap = {};
-            this.forEachClassProperty(c, "none", (name, jsonName, t) => {
-                const propertyValue = this.makeHandlebarsContextForType(t);
-                propertyValue.assignedName = defined(this.names.get(name));
-                properties[jsonName] = propertyValue;
-            });
-            value.properties = properties;
-            namedTypes.push(value);
+        const addNamedType = (t: Type): void => {
+            namedTypes.push(allTypes[t.typeRef.getIndex()]);
         };
-        const addForEnum = (e: EnumType): void => {
-            const value = this.makeHandlebarsContextForType(e);
-            const cases: StringMap = {};
-            this.forEachEnumCase(e, "none", (name, jsonName) => {
-                cases[jsonName] = { assignedName: defined(this.names.get(name)) };
-            });
-            value.cases = cases;
-            namedTypes.push(value);
-        };
-        const addForUnion = (u: UnionType): void => {
-            const value = this.makeHandlebarsContextForType(u);
-            const members: StringMap[] = [];
-            this.forEachUnionMember(u, null, "none", null, (name, t) => {
-                const memberValue = this.makeHandlebarsContextForUnionMember(t, name);
-                members.push(memberValue);
-            });
-            value.members = members;
-            namedTypes.push(value);
-        };
-        this.forEachNamedType("none", addForClass, addForEnum, addForUnion);
+        this.forEachNamedType("none", addNamedType, addNamedType, addNamedType);
 
         const topLevels: StringMap = {};
         this.topLevels.forEach((t, name) => {
-            const value = this.makeHandlebarsContextForType(t);
-            value.assignedName = this.names.get(this._nameStoreView.getForTopLevel(name));
+            const value = allTypes[t.typeRef.getIndex()];
+            value.assignedTopLevelName = this.names.get(this._nameStoreView.getForTopLevel(name));
             topLevels[name] = value;
         });
         return { topLevels, namedTypes };
