@@ -15,20 +15,20 @@ import {
 } from "./Type";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
-import { defined, panic, nonNull } from "./Support";
+import { defined, panic, nonNull, StringMap } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
+import { TypeAttributeStoreView } from "./TypeGraph";
 
 export abstract class ConvenienceRenderer extends Renderer {
     protected forbiddenWordsNamespace: Namespace;
     protected globalNamespace: Namespace;
-    private _topLevelNames: Map<string, Name>;
-    private _namesForNamedTypes: Map<Type, Name>;
-    private _propertyNames: Map<ClassType, Map<string, Name>>;
-    private _memberNames: Map<UnionType, Map<Type, Name>>;
-    private _caseNames: Map<EnumType, Map<string, Name>>;
+    private _nameStoreView: TypeAttributeStoreView<Name>;
+    private _propertyNamesStoreView: TypeAttributeStoreView<Map<string, Name>>;
+    private _memberNamesStoreView: TypeAttributeStoreView<Map<Type, Name>>;
+    private _caseNamesStoreView: TypeAttributeStoreView<Map<string, Name>>;
 
     private _namedTypeNamer: Namer;
     private _classPropertyNamer: Namer | null;
@@ -108,6 +108,14 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected setUpNaming(): Namespace[] {
+        this._nameStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedName");
+        this._propertyNamesStoreView = new TypeAttributeStoreView(
+            this.typeGraph.attributeStore,
+            "assignedPropertyNames"
+        );
+        this._memberNamesStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedMemberNames");
+        this._caseNamesStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedCaseNames");
+
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._classPropertyNamer = this.makeClassPropertyNamer();
         this._unionMemberNamer = this.makeUnionMemberNamer();
@@ -117,11 +125,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.globalNamespace = new Namespace("global", undefined, Set([this.forbiddenWordsNamespace]), Set());
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
-        this._namesForNamedTypes = Map();
-        this._propertyNames = Map();
-        this._memberNames = Map();
-        this._caseNames = Map();
-        this._topLevelNames = this.topLevels.map(this.nameForTopLevel).toMap();
+        this.topLevels.forEach((t, name) => {
+            this._nameStoreView.setForTopLevel(name, this.nameForTopLevel(t, name));
+        });
         classes.forEach((c: ClassType) => {
             const name = this.addNamedForNamedType(c);
             this.addPropertyNames(c, name);
@@ -161,20 +167,20 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         if (maybeNamedType !== undefined) {
             this.addDependenciesForNamedType(maybeNamedType, named);
-            this._namesForNamedTypes = this._namesForNamedTypes.set(maybeNamedType, named);
+            this._nameStoreView.set(maybeNamedType, named);
         }
 
         return named;
     };
 
     private addNamedForNamedType = (type: Type): Name => {
-        const existing = this._namesForNamedTypes.get(type);
+        const existing = this._nameStoreView.tryGet(type);
         if (existing !== undefined) return existing;
         const named = this.globalNamespace.add(new SimpleName(type.getProposedNames(), this._namedTypeNamer));
 
         this.addDependenciesForNamedType(type, named);
 
-        this._namesForNamedTypes = this._namesForNamedTypes.set(type, named);
+        this._nameStoreView.set(type, named);
         return named;
     };
 
@@ -207,7 +213,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 return ns.add(new SimpleName(OrderedSet([name, alternative]), propertyNamer));
             })
             .toMap();
-        this._propertyNames = this._propertyNames.set(c, names);
+        this._propertyNamesStoreView.set(c, names);
     };
 
     private makeUnionMemberName(u: UnionType, unionName: Name, t: Type): Name {
@@ -232,7 +238,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             const name = this.makeUnionMemberName(u, unionName, t);
             names = names.set(t, ns.add(name));
         });
-        this._memberNames = this._memberNames.set(u, names);
+        this._memberNamesStoreView.set(u, names);
     };
 
     // FIXME: this is very similar to addPropertyNameds and addUnionMemberNames
@@ -254,13 +260,13 @@ export abstract class ConvenienceRenderer extends Renderer {
             const alternative = `${e.getCombinedName()}_${name}`;
             names = names.set(name, ns.add(new SimpleName(OrderedSet([name, alternative]), caseNamer)));
         });
-        this._caseNames = this._caseNames.set(e, names);
+        this._caseNamesStoreView.set(e, names);
     };
 
     private childrenOfType = (t: Type): OrderedSet<Type> => {
         const names = this.names;
         if (t instanceof ClassType && this._classPropertyNamer !== null) {
-            const propertyNameds = defined(this._propertyNames.get(t));
+            const propertyNameds = this._propertyNamesStoreView.get(t);
             return t.properties
                 .sortBy((_, n: string): string => defined(names.get(defined(propertyNameds.get(n)))))
                 .toOrderedSet();
@@ -329,11 +335,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected nameForNamedType = (t: Type): Name => {
-        const name = this._namesForNamedTypes.get(t);
-        if (name === undefined) {
-            return panic("Named type does not exist.");
-        }
-        return name;
+        return this._nameStoreView.get(t);
     };
 
     protected isForwardDeclaredType(t: Type): boolean {
@@ -371,7 +373,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             topLevels = this.topLevels;
         }
         this.forEachWithBlankLines(topLevels, blankLocations, (t: Type, name: string) =>
-            f(t, defined(this._topLevelNames.get(name)))
+            f(t, this._nameStoreView.getForTopLevel(name))
         );
     };
 
@@ -388,7 +390,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         blankLocations: BlankLineLocations,
         f: (name: Name, jsonName: string, t: Type) => void
     ): void => {
-        const propertyNames = defined(this._propertyNames.get(c));
+        const propertyNames = this._propertyNamesStoreView.get(c);
         if (this._alphabetizeProperties) {
             const alphabetizedPropertyNames = propertyNames.sortBy(n => this.names.get(n)).toOrderedMap();
             this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName) => {
@@ -404,7 +406,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected nameForUnionMember = (u: UnionType, t: Type): Name => {
-        return defined(defined(this._memberNames.get(u)).get(t));
+        return defined(this._memberNamesStoreView.get(u).get(t));
     };
 
     protected forEachUnionMember = (
@@ -418,7 +420,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (sortOrder === null) {
             sortOrder = n => defined(this.names.get(n));
         }
-        const memberNames = defined(this._memberNames.get(u)).filter((_, t) => iterateMembers.has(t));
+        const memberNames = this._memberNamesStoreView.get(u).filter((_, t) => iterateMembers.has(t));
         const sortedMemberNames = memberNames.sortBy(sortOrder).toOrderedMap();
         this.forEachWithBlankLines(sortedMemberNames, blankLocations, f);
     };
@@ -428,13 +430,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         blankLocations: BlankLineLocations,
         f: (name: Name, jsonName: string) => void
     ): void => {
-        const caseNames = defined(this._caseNames.get(e));
+        const caseNames = this._caseNamesStoreView.get(e);
         const sortedCaseNames = caseNames.sortBy(n => this.names.get(n)).toOrderedMap();
         this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
     };
 
     protected callForNamedType<T extends Type>(t: T, f: (t: T, name: Name) => void): void {
-        f(t, defined(this._namesForNamedTypes.get(t)));
+        f(t, this.nameForNamedType(t));
     }
 
     protected forEachSpecificNamedType<T extends Type>(
@@ -513,7 +515,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
     };
 
-    protected emitSource(): void {
+    private processGraph(): void {
         this._declarationIR = declarationsForGraph(
             this.typeGraph,
             this.needsTypeDeclarationBeforeUse ? t => this.canBeForwardDeclared(t) : undefined,
@@ -533,6 +535,70 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._namedClasses = classes;
         this._namedEnums = enums;
         this._namedUnions = unions;
+    }
+
+    protected emitSource(): void {
+        this.processGraph();
         this.emitSourceStructure();
+    }
+
+    protected makeHandlebarsContextForType(t: Type): StringMap {
+        const value: StringMap = { type: { kind: t.kind } };
+        const maybeName = this._nameStoreView.tryGet(t);
+        if (maybeName !== undefined) {
+            value.assignedName = this.names.get(maybeName);
+        }
+        return value;
+    }
+
+    protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
+        const value = this.makeHandlebarsContextForType(t);
+        value.assignedName = defined(this.names.get(name));
+        return value;
+    }
+
+    protected makeHandlebarsContext(): any {
+        this.processGraph();
+
+        const namedTypes: any[] = [];
+        const addForClass = (c: ClassType): void => {
+            const value = this.makeHandlebarsContextForType(c);
+            const properties: StringMap = {};
+            this.forEachClassProperty(c, "none", (name, jsonName, t) => {
+                const propertyValue = this.makeHandlebarsContextForType(t);
+                propertyValue.assignedName = defined(this.names.get(name));
+                properties[jsonName] = propertyValue;
+            });
+            value.properties = properties;
+            namedTypes.push(value);
+        };
+        const addForEnum = (e: EnumType): void => {
+            const value = this.makeHandlebarsContextForType(e);
+            const cases: StringMap = {};
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
+                cases[jsonName] = { assignedName: defined(this.names.get(name)) };
+            });
+            value.cases = cases;
+            namedTypes.push(value);
+        };
+        const addForUnion = (u: UnionType): void => {
+            const value = this.makeHandlebarsContextForType(u);
+            const members: StringMap[] = [];
+            this.forEachUnionMember(u, null, "none", null, (name, t) => {
+                const memberValue = this.makeHandlebarsContextForUnionMember(t, name);
+                members.push(memberValue);
+            });
+            value.members = members;
+            namedTypes.push(value);
+        };
+        this.forEachNamedType("none", addForClass, addForEnum, addForUnion);
+
+        const topLevels: StringMap = {};
+        this.topLevels.forEach((t, name) => {
+            const value = this.makeHandlebarsContextForType(t);
+            value.assignedName = this.names.get(this._nameStoreView.getForTopLevel(name));
+            topLevels[name] = value;
+        });
+        return { topLevels, namedTypes };
     }
 }

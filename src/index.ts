@@ -72,6 +72,7 @@ export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource;
 export interface Options {
     lang: string;
     sources: TypeSource[];
+    handlebarsTemplate: string | undefined;
     inferMaps: boolean;
     inferEnums: boolean;
     alphabetizeProperties: boolean;
@@ -85,6 +86,7 @@ export interface Options {
 const defaultOptions: Options = {
     lang: "ts",
     sources: [],
+    handlebarsTemplate: undefined,
     inferMaps: true,
     inferEnums: true,
     alphabetizeProperties: false,
@@ -216,13 +218,21 @@ export class Run {
             return { lines: ["Done.", ""], annotations: List() };
         }
 
-        return targetLanguage.renderGraphAndSerialize(
-            graph,
-            this._options.alphabetizeProperties,
-            this._options.leadingComments,
-            this._options.rendererOptions,
-            this._options.indentation
-        );
+        if (this._options.handlebarsTemplate !== undefined) {
+            return targetLanguage.processHandlebarsTemplate(
+                graph,
+                this._options.rendererOptions,
+                this._options.handlebarsTemplate
+            );
+        } else {
+            return targetLanguage.renderGraphAndSerialize(
+                graph,
+                this._options.alphabetizeProperties,
+                this._options.leadingComments,
+                this._options.rendererOptions,
+                this._options.indentation
+            );
+        }
     };
 }
 

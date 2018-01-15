@@ -1,6 +1,8 @@
 "use strict";
 
 import { OrderedSet, Map } from "immutable";
+import * as handlebars from "handlebars";
+
 import {
     TypeKind,
     Type,
@@ -21,7 +23,7 @@ import {
     combineWords,
     firstUpperWordStyle
 } from "../Strings";
-import { intercalate, defined, assert, panic } from "../Support";
+import { intercalate, defined, assert, panic, StringMap } from "../Support";
 import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
@@ -618,5 +620,26 @@ class CSharpRenderer extends ConvenienceRenderer {
         } else {
             this.emitTypesAndSupport();
         }
+    }
+
+    protected registerHandlebarsHelpers(): void {
+        super.registerHandlebarsHelpers();
+        handlebars.registerHelper("string_escape", utf16StringEscape);
+    }
+
+    protected makeHandlebarsContextForType(t: Type): StringMap {
+        const ctx = super.makeHandlebarsContextForType(t);
+        ctx.csType = this.sourcelikeToString(this.csType(t));
+        if (t.kind === "enum") {
+            const name = this.nameForNamedType(t);
+            ctx.extensionsName = defined(this.names.get(defined(this._enumExtensionsNames.get(name))));
+        }
+        return ctx;
+    }
+
+    protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
+        const value = super.makeHandlebarsContextForUnionMember(t, name);
+        value.nullableCSType = this.sourcelikeToString(this.nullableCSType(t));
+        return value;
     }
 }

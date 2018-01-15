@@ -47,6 +47,7 @@ export interface CLIOptions {
     graphqlSchema?: string;
     graphqlIntrospect?: string;
     graphqlServerHeader?: string[];
+    template?: string;
     out?: string;
 
     noMaps: boolean;
@@ -237,7 +238,8 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         out: opts.out,
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
-        graphqlServerHeader: opts.graphqlServerHeader
+        graphqlServerHeader: opts.graphqlServerHeader,
+        template: opts.template
     };
 }
 
@@ -307,6 +309,12 @@ const optionDefinitions: OptionDefinition[] = [
         type: String,
         multiple: true,
         description: "HTTP header for the GraphQL introspection query."
+    },
+    {
+        name: "template",
+        type: String,
+        typeLabel: "FILE",
+        description: "Handlebars template file."
     },
     {
         name: "no-maps",
@@ -601,6 +609,11 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                 break;
         }
 
+        let handlebarsTemplate: string | undefined = undefined;
+        if (options.template !== undefined) {
+            handlebarsTemplate = fs.readFileSync(options.template, "utf8");
+        }
+
         let run = new Run({
             lang: options.lang,
             sources,
@@ -609,7 +622,8 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             alphabetizeProperties: options.alphabetizeProperties,
             combineClasses: !options.noCombineClasses,
             noRender: options.noRender,
-            rendererOptions: options.rendererOptions
+            rendererOptions: options.rendererOptions,
+            handlebarsTemplate
         });
 
         const { lines, annotations } = await run.run();
