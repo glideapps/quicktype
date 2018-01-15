@@ -1,6 +1,7 @@
 "use strict";
 
 import { Map, Set, List, OrderedSet, OrderedMap, Collection } from "immutable";
+import * as handlebars from "handlebars";
 
 import {
     Type,
@@ -557,7 +558,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return value;
     }
 
-    protected makeHandlebarsContext(): any {
+    protected makeHandlebarsContext(): StringMap {
         this.processGraph();
 
         const allTypes: any[] = [];
@@ -611,6 +612,14 @@ export abstract class ConvenienceRenderer extends Renderer {
             value.assignedTopLevelName = this.names.get(this._nameStoreView.getForTopLevel(name));
             topLevels[name] = value;
         });
-        return { topLevels, namedTypes };
+        return { allTypes, topLevels, namedTypes };
+    }
+
+    protected registerHandlebarsHelpers(context: StringMap): void {
+        super.registerHandlebarsHelpers(context);
+
+        handlebars.registerHelper("with_type", function(t: any, options: any): any {
+            return options.fn(context.allTypes[t.index]);
+        });
     }
 }
