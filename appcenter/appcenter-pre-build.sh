@@ -16,8 +16,7 @@ npm run build
 brew install go boost
 
 # TODO run full test suite when we deprecate Travis
-export CI=true
-export FIXTURE=swift
+export FIXTURE=swift,objective-c
 if script/test; then
     slack_notify_build_passed
 else
