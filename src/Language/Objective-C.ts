@@ -368,13 +368,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private safePropertyName = (propertyName: Name) => {
-        return modifySource(serialized => {
-            if (includes(propertySafeKeywords, serialized)) {
-                return `self.${serialized}`;
-            } else {
-                return serialized;
-            }
-        }, propertyName);
+        const isKeyword = includes(propertySafeKeywords, this.sourcelikeToString(propertyName));
+        return isKeyword ? ["self.", propertyName] : propertyName;
     };
 
     private emitPropertyAssignment = (propertyName: Name, _json: string, propertyType: Type) => {
