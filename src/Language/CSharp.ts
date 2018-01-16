@@ -622,8 +622,8 @@ class CSharpRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected registerHandlebarsHelpers(): void {
-        super.registerHandlebarsHelpers();
+    protected registerHandlebarsHelpers(context: StringMap): void {
+        super.registerHandlebarsHelpers(context);
         handlebars.registerHelper("string_escape", utf16StringEscape);
     }
 

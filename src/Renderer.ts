@@ -7,7 +7,7 @@ import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
 import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newline } from "./Source";
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
-import { assert, panic } from "./Support";
+import { assert, panic, StringMap } from "./Support";
 
 export type RenderResult = { rootSource: Source; names: Map<Name, string> };
 
@@ -163,7 +163,7 @@ export abstract class Renderer {
 
     protected abstract setUpNaming(): Namespace[];
     protected abstract emitSource(): void;
-    protected abstract makeHandlebarsContext(): any;
+    protected abstract makeHandlebarsContext(): StringMap;
 
     private assignNames(): Map<Name, string> {
         return assignNames(OrderedSet(this.setUpNaming()));
@@ -175,8 +175,8 @@ export abstract class Renderer {
         return { rootSource: this.finishedSource(), names: this._names };
     };
 
-    protected registerHandlebarsHelpers(): void {
-        handlebars.registerHelper("if_eq", function(this: any, a: any, b: any, options: any): void {
+    protected registerHandlebarsHelpers(_context: StringMap): void {
+        handlebars.registerHelper("if_eq", function(this: any, a: any, b: any, options: any): any {
             if (a === b) {
                 return options.fn(this);
             }
@@ -184,10 +184,11 @@ export abstract class Renderer {
     }
 
     processHandlebarsTemplate(template: string): string {
-        this.registerHandlebarsHelpers();
         this._names = this.assignNames();
+        const context = this.makeHandlebarsContext();
+        this.registerHandlebarsHelpers(context);
         const compiledTemplate = handlebars.compile(template);
-        return compiledTemplate(this.makeHandlebarsContext());
+        return compiledTemplate(context);
     }
 
     get names(): Map<Name, string> {
