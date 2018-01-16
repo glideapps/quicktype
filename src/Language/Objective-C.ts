@@ -161,6 +161,10 @@ function isPartCharacter(utf16Unit: number): boolean {
 
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
+function isAnyOrNull(t: Type): boolean {
+    return t.kind === "any" || t.kind === "null";
+}
+
 class ObjectiveCRenderer extends ConvenienceRenderer {
     constructor(
         graph: TypeGraph,
@@ -226,54 +230,54 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         }
     };
 
-    private objcType = (t: Type): Sourcelike => {
-        return matchType<Sourcelike>(
+    private objcType = (t: Type): [Sourcelike, string] => {
+        return matchType<[Sourcelike, string]>(
             t,
-            _anyType => "id",
+            _anyType => ["id", ""],
             // For now, we're treating nulls just like any
-            _nullType => "id",
-            _boolType => "NSBoolean *",
-            _integerType => "NSNumber *",
-            _doubleType => "NSNumber *",
-            _stringType => "NSString *",
+            _nullType => ["id", ""],
+            _boolType => ["NSBoolean", " *"],
+            _integerType => ["NSNumber", " *"],
+            _doubleType => ["NSNumber", " *"],
+            _stringType => ["NSString", " *"],
             arrayType => {
                 const itemType = arrayType.items;
                 const itemTypeName = this.objcType(itemType);
                 // NSArray<id>* === NSArray*
-                if (this.sourcelikeToString(itemTypeName) === "id") {
-                    return "NSArray *";
+                if (isAnyOrNull(itemType)) {
+                    return ["NSArray", " *"];
                 }
-                return ["NSArray<", itemTypeName, "> *"];
+                return [["NSArray<", itemTypeName, ">"], " *"];
             },
             classType => [this.nameForNamedType(classType), " *"],
-            mapType => ["NSDictionary<NSString *, ", this.objcType(mapType.values), "> *"],
+            mapType => [["NSDictionary<NSString *, ", this.objcType(mapType.values), ">"], " *"],
             // TODO Support enums
-            _enumType => "NSString *",
+            _enumType => ["NSString", " *"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                return nullable ? this.objcType(nullable) : "id";
+                return nullable !== null ? this.objcType(nullable) : ["id", ""];
             }
         );
     };
 
-    private jsonType = (t: Type): Sourcelike => {
-        return matchType<Sourcelike>(
+    private jsonType = (t: Type): [Sourcelike, string] => {
+        return matchType<[Sourcelike, string]>(
             t,
-            _anyType => "id",
+            _anyType => ["id", ""],
             // For now, we're treating nulls just like any
-            _nullType => "id",
-            _boolType => "NSBoolean *",
-            _integerType => "NSNumber *",
-            _doubleType => "NSNumber *",
-            _stringType => "NSString *",
-            _arrayType => "NSArray *",
-            _classType => "NSDictionary<NSString *, id> *",
-            mapType => ["NSDictionary<NSString *, ", this.jsonType(mapType.values), "> *"],
+            _nullType => ["id", ""],
+            _boolType => ["NSBoolean", " *"],
+            _integerType => ["NSNumber", " *"],
+            _doubleType => ["NSNumber", " *"],
+            _stringType => ["NSString", " *"],
+            _arrayType => ["NSArray", " *"],
+            _classType => ["NSDictionary<NSString *, id>", " *"],
+            mapType => [["NSDictionary<NSString *, ", this.jsonType(mapType.values), ">"], " *"],
             // TODO Support enums
-            _enumType => "NSString *",
+            _enumType => ["NSString", " *"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                return nullable ? this.jsonType(nullable) : "id";
+                return nullable !== null ? this.jsonType(nullable) : ["id", ""];
             }
         );
     };
@@ -294,7 +298,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             _enumType => dynamic,
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                return nullable ? this.fromDynamicExpression(nullable, dynamic) : dynamic;
+                return nullable !== null ? this.fromDynamicExpression(nullable, dynamic) : dynamic;
             }
         );
     };
@@ -364,8 +368,13 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private safePropertyName = (propertyName: Name) => {
-        const isKeyword = includes(propertySafeKeywords, this.sourcelikeToString(propertyName));
-        return isKeyword ? ["self.", propertyName] : propertyName;
+        return modifySource(serialized => {
+            if (includes(propertySafeKeywords, serialized)) {
+                return `self.${serialized}`;
+            } else {
+                return serialized;
+            }
+        }, propertyName);
     };
 
     private emitPropertyAssignment = (propertyName: Name, _json: string, propertyType: Type) => {
@@ -432,7 +441,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     itemType.kind === "enum" ||
                     // Before union support, we have a lot of untyped data
                     // This ensures that we don't map over unknown elements
-                    this.sourcelikeToString(this.objcType(itemType)) === "id"
+                    isAnyOrNull(itemType)
                 ) {
                     // TODO check each value type
                     this.emitLine(name, ' = [dict dictionaryForKey:@"', key, '"];');
@@ -473,7 +482,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     );
                 }
 
-                return nullable ? this.objcType(nullable) : "id";
+                return nullable !== null ? this.objcType(nullable) : "id";
             }
         );
     };
@@ -485,14 +494,14 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     };
 
-    private pointerAwareTypeName(t: Type | Sourcelike): Sourcelike {
+    private pointerAwareTypeName(t: Type | [Sourcelike, string]): Sourcelike {
         const name = t instanceof Type ? this.objcType(t) : t;
-        const isPointer = this.sourcelikeToString(name).endsWith("*");
+        const isPointer = name[1] !== "";
         return isPointer ? name : [name, " "];
     }
 
     private emitNonClassTopLevelTypedef(t: Type, name: Name): void {
-        let nonPointerTypeName = this.sourcelikeToString(this.objcType(t)).replace(/[\s\*]*$/, "");
+        let nonPointerTypeName = this.objcType(t)[0];
         this.emitLine("typedef ", nonPointerTypeName, " ", name, ";");
     }
 
