@@ -335,13 +335,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     if (this.isJSONSafe(nullable)) {
                         return ["NSNullify(", dynamic, ")"];
                     } else {
-                        return [
-                            "NSNullMap(",
-                            ["NSNullify(", dynamic, ")"],
-                            ", λ(id x, ",
-                            this.toDynamicExpression(nullable, "x"),
-                            "))"
-                        ];
+                        return ["NSNullify(", this.toDynamicExpression(nullable, dynamic), ")"];
                     }
                 } else {
                     // TODO support unions
@@ -463,7 +457,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     this.ensureBlankLine();
-                    this.emitBlock(['if (!NSNullOrNil([dict objectForKey:@"', key, '"]))'], () => {
+                    // We used to have a NSNullOrNil macro to make this clearer, but we can rely on the
+                    // the fact that [nil isNotEqualTo:[NSNull null]] is *false* to not use it
+                    this.emitBlock(['if ([[dict objectForKey:@"', key, '"] isNotEqualTo:[NSNull null]])'], () => {
                         this.emitPropertyAssignment(propertyName, _json, nullable);
                     });
                     this.ensureBlankLine();
@@ -780,32 +776,12 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             if (!this._justTypes) {
                 this.emitExtraComments("Shorthand for simple blocks");
                 this.emitLine(`#define λ(decl, expr) (^(decl) { return (expr); })`);
+                this.emitLine("#define NSNullify(x) ([x isNotEqualTo:[NSNull null]] ? x : [NSNull null])");
 
                 this.ensureBlankLine();
                 this.emitLine("NS_ASSUME_NONNULL_BEGIN");
                 this.ensureBlankLine();
 
-                if (this._extraComments) {
-                    this.emitMark("Null checks and conversion");
-                }
-
-                this.emitExtraComments(
-                    "NSJSONSerialization uses NSNull instead of nil, but we want nil in our models."
-                );
-                this.emitMultiline(`id NSNullify(id _Nullable nullable) {
-    BOOL isNull = nullable == nil || [nullable isEqualTo:[NSNull null]];
-    return isNull ? [NSNull null] : nullable;
-}
-
-id NSNullMap(id _Nullable nullable,  id (^f)(id element)) {
-    BOOL isNull = [NSNullify(nullable) isEqualTo:[NSNull null]];
-    return isNull ? [NSNull null] : f(nullable);
-}`);
-
-                this.ensureBlankLine();
-                this.emitLine("#define NSNullOrNil(x) [NSNullify(x) isEqualTo:[NSNull null]]");
-
-                this.ensureBlankLine();
                 this.emitDictionaryAndArrayExtensions();
 
                 // We wouldn't need to emit these private iterfaces if we emitted implementations in forward-order
