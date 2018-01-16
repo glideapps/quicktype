@@ -23,6 +23,7 @@ Try `quicktype` in your browser at [app.quicktype.io](https://app.quicktype.io).
 * Java
 * TypeScript
 * Swift
+* Objective-C
 * Elm
 * JSON Schema
 * Simple Types
