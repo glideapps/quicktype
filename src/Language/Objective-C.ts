@@ -852,7 +852,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                                     userInfo:@{ @"dictionary":self, @"key":key }];
 }
 
-- (NSString *)objectForKey:(NSString *)key withClass:(Class)cls {
+- (id)objectForKey:(NSString *)key withClass:(Class)cls {
     id value = [self objectForKey:key];
     if ([value isKindOfClass:cls]) return value;
     else @throw [self exceptionForKey:key type:NSStringFromClass(cls)];
