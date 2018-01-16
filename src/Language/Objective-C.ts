@@ -382,7 +382,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitLine(
                     name,
                     " = ",
-                    this.fromDynamicExpression(nullType, '[dict objectForKey:@"', key, '"]'),
+                    this.fromDynamicExpression(nullType, '[dict objectForKey:@"', key, '" withClass:[NSNull class]]'),
                     ";"
                 ),
             boolType =>
@@ -391,35 +391,55 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitLine(
                     name,
                     " = ",
-                    this.fromDynamicExpression(integerType, '[dict numberForKey:@"', key, '"]'),
+                    this.fromDynamicExpression(
+                        integerType,
+                        '[dict objectForKey:@"',
+                        key,
+                        '" withClass:[NSNumber class]]'
+                    ),
                     ";"
                 ),
             doubleType =>
                 this.emitLine(
                     name,
                     " = ",
-                    this.fromDynamicExpression(doubleType, '[dict numberForKey:@"', key, '"]'),
+                    this.fromDynamicExpression(
+                        doubleType,
+                        '[dict objectForKey:@"',
+                        key,
+                        '" withClass:[NSNumber class]]'
+                    ),
                     ";"
                 ),
             stringType =>
                 this.emitLine(
                     name,
                     " = ",
-                    this.fromDynamicExpression(stringType, '[dict stringForKey:@"', key, '"]'),
+                    this.fromDynamicExpression(
+                        stringType,
+                        '[dict objectForKey:@"',
+                        key,
+                        '" withClass:[NSString class]]'
+                    ),
                     ";"
                 ),
             arrayType =>
                 this.emitLine(
                     name,
                     " = ",
-                    this.fromDynamicExpression(arrayType, '[dict arrayForKey:@"', key, '"]'),
+                    this.fromDynamicExpression(arrayType, '[dict objectForKey:@"', key, '" withClass:[NSArray class]]'),
                     ";"
                 ),
             classType =>
                 this.emitLine(
                     name,
                     " = ",
-                    this.fromDynamicExpression(classType, '[dict dictionaryForKey:@"', key, '"]'),
+                    this.fromDynamicExpression(
+                        classType,
+                        '[dict objectForKey:@"',
+                        key,
+                        '" withClass:[NSDictionary class]]'
+                    ),
                     ";"
                 ),
             mapType => {
@@ -433,13 +453,13 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     isAnyOrNull(itemType)
                 ) {
                     // TODO check each value type
-                    this.emitLine(name, ' = [dict dictionaryForKey:@"', key, '"];');
+                    this.emitLine(name, ' = [dict objectForKey:@"', key, '" withClass:[NSDictionary class]];');
                 } else {
                     this.emitLine(
                         name,
-                        ' = [[dict dictionaryForKey:@"',
+                        ' = [[dict objectForKey:@"',
                         key,
-                        '"] map:',
+                        '" withClass:[NSDictionary class]] map:',
                         ["λ(id x, ", this.fromDynamicExpression(itemType, "x"), ")"],
                         "];"
                     );
@@ -450,7 +470,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitLine(
                     name,
                     " = ",
-                    this.fromDynamicExpression(enumType, '[dict stringForKey:@"', key, '"]'),
+                    this.fromDynamicExpression(enumType, '[dict objectForKey:@"', key, '" withClass:[NSString class]]'),
                     ";"
                 ),
             unionType => {
@@ -832,50 +852,16 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                                     userInfo:@{ @"dictionary":self, @"key":key }];
 }
 
-- (NSString *)stringForKey:(NSString *)key {
+- (NSString *)objectForKey:(NSString *)key withClass:(Class)cls {
     id value = [self objectForKey:key];
-    if ([value isKindOfClass:[NSString class]]) {
-        return value;
-    } else {
-        @throw [self exceptionForKey:key type:@"string"];
-    }
-}
-
-- (NSNumber *)numberForKey:(NSString *)key {
-    id value = [self objectForKey:key];
-    // TODO Could this check be more precise?
-    if ([value isKindOfClass:[NSNumber class]]) {
-        return value;
-    } else {
-        @throw [self exceptionForKey:key type:@"number"];
-    }
+    if ([value isKindOfClass:cls]) return value;
+    else @throw [self exceptionForKey:key type:NSStringFromClass(cls)];
 }
 
 - (NSBoolean *)boolForKey:(NSString *)key {
     id value = [self objectForKey:key];
-    if ([value isEqual:@(YES)] || [value isEqual:@(NO)]) {
-        return value;
-    } else {
-        @throw [self exceptionForKey:key type:@"bool"];
-    }
-}
-
-- (NSArray *)arrayForKey:(NSString *)key {
-    id value = [self objectForKey:key];
-    if ([value isKindOfClass:[NSArray class]]) {
-        return value;
-    } else {
-        @throw [self exceptionForKey:key type:@"array"];
-    }
-}
-
-- (NSDictionary *)dictionaryForKey:(NSString *)key {
-    id value = [self objectForKey:key];
-    if ([value isKindOfClass:[NSDictionary class]]) {
-        return value;
-    } else {
-        @throw [self exceptionForKey:key type:@"dictionary"];
-    }
+    if ([value isEqual:@(YES)] || [value isEqual:@(NO)]) return value;
+    else @throw [self exceptionForKey:key type:@"bool"];
 }
 @end`);
     };
