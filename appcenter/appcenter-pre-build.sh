@@ -13,7 +13,8 @@ npm run build
 ### Test ###
 ############
 
-brew install go boost
+# TODO re-enable these when we run go and C++ fixtures
+# brew install go boost
 
 # TODO run full test suite when we deprecate Travis
 export FIXTURE=swift,objective-c
