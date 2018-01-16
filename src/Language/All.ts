@@ -5,6 +5,7 @@ import { TargetLanguage } from "../TargetLanguage";
 import CSharpTargetLanguage from "./CSharp";
 import GoTargetLanguage from "./Golang";
 import CPlusPlusTargetLanguage from "./CPlusPlus";
+import ObjectiveCTargetLanguage from "./Objective-C";
 import JavaTargetLanguage from "./Java";
 import SimpleTypesTargetLanguage from "./SimpleTypes";
 import TypeScriptTargetLanguage from "./TypeScript";
@@ -16,6 +17,7 @@ export const all: TargetLanguage[] = [
     new CSharpTargetLanguage(),
     new GoTargetLanguage(),
     new CPlusPlusTargetLanguage(),
+    new ObjectiveCTargetLanguage(),
     new JavaTargetLanguage(),
     new TypeScriptTargetLanguage(),
     new SwiftTargetLanguage(),
@@ -25,5 +27,5 @@ export const all: TargetLanguage[] = [
 ];
 
 export function languageNamed(name: string): TargetLanguage | undefined {
-    return find(all, l => includes(l.names, name) || l.displayName === name);
+    return find(all, l => includes(l.names, name) || l.displayName === name || l.extension === name);
 }
