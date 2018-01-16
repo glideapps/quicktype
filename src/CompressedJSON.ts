@@ -255,7 +255,7 @@ export class CompressedJSON {
             if (str.length > 0 && "0123456789".indexOf(str[0]) >= 0) {
                 if (this._makeDate && isDate(str)) {
                     value = makeValue(Tag.Date, 0);
-                } else if (this._makeTime && isTime(str, false)) {
+                } else if (this._makeTime && isTime(str)) {
                     value = makeValue(Tag.Time, 0);
                 } else if (this._makeDateTime && isDateTime(str)) {
                     value = makeValue(Tag.DateTime, 0);
