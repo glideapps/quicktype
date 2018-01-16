@@ -1,0 +1,40 @@
+language: node_js
+node_js: node
+sudo: required
+env:
+  - FIXTURE=golang,cplusplus,schema,graphql
+  - FIXTURE=swift,java,schema-json-csharp
+  - FIXTURE=elm,typescript,csharp
+services:
+  - docker
+before_install:
+  - docker pull dvdsgl/quicktype:latest
+  - docker build --cache-from dvdsgl/quicktype:latest --tag dvdsgl/quicktype:latest .
+script: |
+  docker run \
+    -e FIXTURE \
+    -e CI \
+    -e TRAVIS_BRANCH \
+    -e TRAVIS_EVENT_TYPE \
+    -e TRAVIS_PULL_REQUEST \
+    -e CPUs=2 \
+    dvdsgl/quicktype npm test
+jobs:
+  include:
+    - stage: deploy
+      if: branch == master AND type IN (push, api, cron)
+      env:
+        - FIXTURE=none
+      before_install: true
+      install: true
+      after_success: true
+      script: |
+        if [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
+          npm install -g appcenter-cli;
+          appcenter build queue --app quicktype/quicktype --branch master --token $APPCENTER_TOKEN;
+        fi
+notifications:
+  email:
+    on_success: never
+  slack:
+    secure: iyS16BnUyjRuVbNI4tNL0xPv/Kx8TEGW2oErsljn9ZR5omy+PDif+QW0C4pzFZLxoCmjDDswHnEm/LUQ0QbDcN8CnJPHJGoDl7Wc6IO+RWLC4NDD1IRyz6qj8yN3wgnRvBxmtEq4xUFjYpeaKLo+jKESlziCVLl8oQotrTXG/u3KfMM9vBggQtrzUK/ttCKXFIV8z70CB3uWy4getL5+nhHqShKEM5IU4tD+gVxlH1L4rzQVR3aX9UQ+1UQY1k115adz4nFHC6on7gPICUJR7N+0tsamz1X7wgdDs5meRMQWljPtxUme/9ri29rTWlyaRyB+ih0GtC2ww4WA8zg2tuTN2H3diZkMkDJSZLQlvyzh6B4wmqs/gMPbmkmAQl/pSKoYZ9xZ+2fFpfETywLSOxWuq+uul+0xaqvwpdPCNIeyEMBrFVnxUZik2o1PpSDRLjUodW2/ltDxr1LwFqq6q4mG3MM4XvH6zTLlazeVgaWV+t3zMNvDgKLie8xOQ9iJAtKoNTnsvpouxCuvR9okF3S8dGXUvkPwTHACS8UNhSV8tw7I8ftO3M0rR57HZbTsAaWA0TKoK/bcxo5t0BVGiqCPsJqpiDPQbTzNwg7PnpZtMA16+Jyc/jgCJIemSogP57kQjheNzoSrzifOsS9SRNIL/2LggLgqDxiwtND5Wpw=
