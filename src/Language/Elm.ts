@@ -134,7 +134,7 @@ function requiredOrOptional(t: Type): RequiredOrOptional {
     if (t.kind === "null") {
         return optional(" ()");
     }
-    if (t instanceof UnionType && nullableFromUnion(t)) {
+    if (t instanceof UnionType && nullableFromUnion(t) !== null) {
         return optional(" Nothing");
     }
     return { reqOrOpt: "Jpipe.required", fallback: "" };
@@ -175,7 +175,7 @@ class ElmRenderer extends ConvenienceRenderer {
     protected topLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
         const encoder = new DependencyName(lowerNamingFunction, lookup => `${lookup(topLevelName)}_to_string`);
         let decoder: DependencyName | undefined = undefined;
-        if (!this.namedTypeToNameForTopLevel(t)) {
+        if (this.namedTypeToNameForTopLevel(t) === undefined) {
             decoder = new DependencyName(lowerNamingFunction, lookup => lookup(topLevelName));
         }
         this._topLevelDependents = this._topLevelDependents.set(topLevelName, { encoder, decoder });
@@ -252,7 +252,7 @@ class ElmRenderer extends ConvenienceRenderer {
             enumType => singleWord(this.nameForNamedType(enumType)),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable) return multiWord("Maybe", parenIfNeeded(this.elmType(nullable, withIssues)));
+                if (nullable !== null) return multiWord("Maybe", parenIfNeeded(this.elmType(nullable, withIssues)));
                 return singleWord(this.nameForNamedType(unionType));
             }
         );
@@ -282,7 +282,8 @@ class ElmRenderer extends ConvenienceRenderer {
             enumType => singleWord(this.decoderNameForNamedType(enumType)),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable) return multiWord("Jdec.nullable", parenIfNeeded(this.decoderNameForType(nullable)));
+                if (nullable !== null)
+                    return multiWord("Jdec.nullable", parenIfNeeded(this.decoderNameForType(nullable)));
                 return singleWord(this.decoderNameForNamedType(unionType));
             }
         );
@@ -309,7 +310,8 @@ class ElmRenderer extends ConvenienceRenderer {
             enumType => singleWord(this.encoderNameForNamedType(enumType)),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable) return multiWord("makeNullableEncoder", parenIfNeeded(this.encoderNameForType(nullable)));
+                if (nullable !== null)
+                    return multiWord("makeNullableEncoder", parenIfNeeded(this.encoderNameForType(nullable)));
                 return singleWord(this.encoderNameForNamedType(unionType));
             }
         );
@@ -364,7 +366,7 @@ class ElmRenderer extends ConvenienceRenderer {
 
     private emitTopLevelFunctions = (t: Type, topLevelName: Name): void => {
         const { encoder, decoder } = defined(this._topLevelDependents.get(topLevelName));
-        if (!this.namedTypeToNameForTopLevel(t)) {
+        if (this.namedTypeToNameForTopLevel(t) === undefined) {
             this.emitLine(defined(decoder), " : Jdec.Decoder ", topLevelName);
             this.emitLine(defined(decoder), " = ", this.decoderNameForType(t).source);
             this.ensureBlankLine();
@@ -564,7 +566,7 @@ import Dict exposing (Dict, map, toList)`);
         this.forEachTopLevel(
             "leading-and-interposing",
             this.emitTopLevelDefinition,
-            t => !this.namedTypeToNameForTopLevel(t)
+            t => this.namedTypeToNameForTopLevel(t) === undefined
         );
         this.forEachNamedType(
             "leading-and-interposing",

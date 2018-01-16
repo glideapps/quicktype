@@ -208,7 +208,7 @@ class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected unionNeedsName(u: UnionType): boolean {
-        return !nullableFromUnion(u);
+        return nullableFromUnion(u) === null;
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
@@ -289,7 +289,7 @@ class JavaRenderer extends ConvenienceRenderer {
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable) return this.javaType(true, nullable, withIssues);
+                if (nullable !== null) return this.javaType(true, nullable, withIssues);
                 return this.nameForNamedType(unionType);
             }
         );
@@ -302,7 +302,7 @@ class JavaRenderer extends ConvenienceRenderer {
             return "Map";
         } else if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
-            if (nullable) return this.javaTypeWithoutGenerics(true, nullable);
+            if (nullable !== null) return this.javaTypeWithoutGenerics(true, nullable);
             return this.nameForNamedType(t);
         } else {
             return this.javaType(reference, t);
@@ -366,7 +366,7 @@ class JavaRenderer extends ConvenienceRenderer {
 
         const emitDeserializer = (tokenTypes: string[], kind: TypeKind): void => {
             const t = u.findMember(kind);
-            if (!t) return;
+            if (t === undefined) return;
 
             for (const tokenType of tokenTypes) {
                 tokenCase(tokenType);
@@ -376,9 +376,9 @@ class JavaRenderer extends ConvenienceRenderer {
 
         const emitDoubleSerializer = (): void => {
             const t = u.findMember("double");
-            if (!t) return;
+            if (t === undefined) return;
 
-            if (!u.findMember("integer")) tokenCase("VALUE_NUMBER_INT");
+            if (u.findMember("integer") === undefined) tokenCase("VALUE_NUMBER_INT");
             tokenCase("VALUE_NUMBER_FLOAT");
             this.indent(() => emitDeserializeType(t));
         };
@@ -412,7 +412,7 @@ class JavaRenderer extends ConvenienceRenderer {
                     () => {
                         this.emitLine(unionName, " value = new ", unionName, "();");
                         this.emitLine("switch (jsonParser.getCurrentToken()) {");
-                        if (maybeNull) emitNullDeserializer();
+                        if (maybeNull !== null) emitNullDeserializer();
                         emitDeserializer(["VALUE_NUMBER_INT"], "integer");
                         emitDoubleSerializer();
                         emitDeserializer(["VALUE_TRUE", "VALUE_FALSE"], "bool");
@@ -444,7 +444,7 @@ class JavaRenderer extends ConvenienceRenderer {
                                 this.emitLine("return;");
                             });
                         });
-                        if (maybeNull) {
+                        if (maybeNull !== null) {
                             this.emitLine("jsonGenerator.writeNull();");
                         } else {
                             this.emitLine('throw new IOException("', unionName, ' must not be null");');

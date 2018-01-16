@@ -127,7 +127,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable) return ["Maybe<", this.sourceFor(nullable), ">"];
+                if (nullable !== null) return ["Maybe<", this.sourceFor(nullable), ">"];
 
                 if (this.inlineUnions) {
                     const children = unionType.children.map((c: Type) => this.sourceFor(c));

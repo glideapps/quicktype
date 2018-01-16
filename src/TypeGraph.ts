@@ -173,7 +173,7 @@ export class TypeGraph {
                 types = types.push(t);
             }
 
-            const children = childrenOfType ? childrenOfType(t) : t.children;
+            const children = childrenOfType !== undefined ? childrenOfType(t) : t.children;
             children.forEach(addFromType);
 
             if (!topDown && required) {

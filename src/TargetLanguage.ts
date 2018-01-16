@@ -81,10 +81,12 @@ export abstract class TargetLanguage {
 
     get stringTypeMapping(): StringTypeMapping {
         const partial = this.partialStringTypeMapping;
+        /* tslint:disable:strict-boolean-expressions */
         return {
             date: partial.date || "string",
             time: partial.time || "string",
             dateTime: partial.dateTime || "string"
         };
+        /* tslint:enable */
     }
 }

@@ -159,7 +159,7 @@ class GoRenderer extends ConvenienceRenderer {
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable) return this.nullableGoType(nullable, withIssues);
+                if (nullable !== null) return this.nullableGoType(nullable, withIssues);
                 return this.nameForNamedType(unionType);
             }
         );
@@ -167,7 +167,7 @@ class GoRenderer extends ConvenienceRenderer {
 
     private emitTopLevel = (t: Type, name: Name): void => {
         const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
-        if (!this.namedTypeToNameForTopLevel(t)) {
+        if (this.namedTypeToNameForTopLevel(t) === undefined) {
             this.emitLine("type ", name, " ", this.goType(t));
         }
 
@@ -207,7 +207,7 @@ class GoRenderer extends ConvenienceRenderer {
 
     private emitUnion = (u: UnionType, unionName: Name): void => {
         const [hasNull, nonNulls] = removeNullFromUnion(u);
-        const isNullableArg = hasNull ? "true" : "false";
+        const isNullableArg = hasNull !== null ? "true" : "false";
 
         const ifMember: <T, U>(
             kind: TypeKind,
@@ -215,7 +215,7 @@ class GoRenderer extends ConvenienceRenderer {
             f: (t: Type, fieldName: Name, goType: Sourcelike) => T
         ) => T | U = (kind, ifNotMember, f) => {
             const maybeType = u.findMember(kind);
-            if (!maybeType) return ifNotMember;
+            if (maybeType === undefined) return ifNotMember;
             return f(maybeType, this.nameForUnionMember(u, maybeType), this.goType(maybeType));
         };
 
@@ -311,7 +311,7 @@ class GoRenderer extends ConvenienceRenderer {
         this.forEachTopLevel(
             "leading-and-interposing",
             this.emitTopLevel,
-            t => !this._justTypes || !this.namedTypeToNameForTopLevel(t)
+            t => !this._justTypes || this.namedTypeToNameForTopLevel(t) === undefined
         );
         this.forEachClass("leading-and-interposing", this.emitClass);
         this.forEachEnum("leading-and-interposing", this.emitEnum);
