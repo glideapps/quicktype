@@ -69,7 +69,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
 
 function canBeEnumCase(s: string): boolean {
     if (s.length === 0) return true; // FIXME: Do we really want this?
-    return !isDate(s) && !isTime(s, false) && !isDateTime(s);
+    return !isDate(s) && !isTime(s) && !isDateTime(s);
 }
 
 export class TypeInference {

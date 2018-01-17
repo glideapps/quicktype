@@ -40,20 +40,19 @@ export function isDate(str: string) {
     return month >= 1 && month <= 12 && day >= 1 && day <= DAYS[month];
 }
 
-export function isTime(str: string, full: boolean): boolean {
+export function isTime(str: string): boolean {
     const matches = str.match(TIME);
     if (!matches) return false;
 
     const hour = +matches[1];
     const minute = +matches[2];
     const second = +matches[3];
-    const timeZone = matches[5];
-    return hour <= 23 && minute <= 59 && second <= 59 && (!full || !!timeZone);
+    return hour <= 23 && minute <= 59 && second <= 59;
 }
 
 const DATE_TIME_SEPARATOR = /t|\s/i;
 export function isDateTime(str: string): boolean {
     // http://tools.ietf.org/html/rfc3339#section-5.6
     const dateTime = str.split(DATE_TIME_SEPARATOR);
-    return dateTime.length === 2 && isDate(dateTime[0]) && isTime(dateTime[1], true);
+    return dateTime.length === 2 && isDate(dateTime[0]) && isTime(dateTime[1]);
 }

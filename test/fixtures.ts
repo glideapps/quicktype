@@ -25,6 +25,7 @@ import {
 import * as languages from "./languages";
 import { RendererOptions } from "../dist";
 import { panic } from "../dist/Support";
+import { isDateTime } from "../dist/DateTime";
 
 const chalk = require("chalk");
 const shell = require("shelljs");
@@ -354,6 +355,8 @@ class JSONSchemaJSONFixture extends JSONFixture {
     let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
 
     let ajv = new Ajv({ format: "full" });
+    // Make Ajv's date-time compatible with what we recognize
+    ajv.addFormat("date-time", isDateTime);
     let valid = ajv.validate(schema, input);
     if (!valid) {
       failWith("Generated schema does not validate input JSON.", {
