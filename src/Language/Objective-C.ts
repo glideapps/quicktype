@@ -641,7 +641,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
                 this.emitBlock("+ (_Nullable instancetype)fromJSON:(NSString *)json", () => {
                     this.emitLine("NSError *error;");
-                    this.emitLine("return ", className, "FromJSON(json, NSUTF8StringEncoding, error);");
+                    this.emitLine("return ", className, "FromJSON(json, NSUTF8StringEncoding, &error);");
                 });
             }
 
