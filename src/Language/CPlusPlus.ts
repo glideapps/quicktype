@@ -636,7 +636,6 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
         const include = (name: string): void => {
             this.emitLine(`#include ${name}`);
         };
-        if (this.haveUnions) include("<boost/optional.hpp>");
         if (this.haveNamedUnions) include("<boost/variant.hpp>");
         if (!this._justTypes) include('"json.hpp"');
         this.ensureBlankLine();
