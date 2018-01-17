@@ -170,7 +170,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             mapType => ["{ [key: string]: ", this.sourceFor(mapType.values), " }"],
             enumType => this.nameForNamedType(enumType),
             unionType => {
-                if (this._inlineUnions || nullableFromUnion(unionType)) {
+                if (this._inlineUnions || nullableFromUnion(unionType) !== null) {
                     const children = unionType.children.map(this.sourceFor);
                     return intercalate(" | ", children).toArray();
                 } else {
@@ -231,8 +231,11 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         this.emitBlock(["export interface ", className], "", () => {
             const table: Sourcelike[][] = [];
             this.forEachClassProperty(c, "none", (name, _jsonName, t) => {
-                const nullable = t instanceof UnionType && nullableFromUnion(t);
-                table.push([[name, nullable ? "?" : "", ": "], [this.sourceFor(nullable || t), ";"]]);
+                const nullable = t instanceof UnionType ? nullableFromUnion(t) : null;
+                table.push([
+                    [name, nullable !== null ? "?" : "", ": "],
+                    [this.sourceFor(nullable !== null ? nullable : t), ";"]
+                ]);
             });
             this.emitTable(table);
         });

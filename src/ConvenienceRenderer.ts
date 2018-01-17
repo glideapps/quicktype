@@ -105,7 +105,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected unionNeedsName(u: UnionType): boolean {
-        return !nullableFromUnion(u);
+        return nullableFromUnion(u) === null;
     }
 
     protected setUpNaming(): Namespace[] {
@@ -368,7 +368,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         predicate?: (t: Type) => boolean
     ): void => {
         let topLevels: Collection<string, Type>;
-        if (predicate) {
+        if (predicate !== undefined) {
             topLevels = this.topLevels.filter(predicate);
         } else {
             topLevels = this.topLevels;

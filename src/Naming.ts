@@ -24,7 +24,7 @@ export class Namespace {
         this.additionalForbidden = additionalForbidden;
         this._children = OrderedSet();
         this._members = OrderedSet();
-        if (parent) {
+        if (parent !== undefined) {
             this._parent = parent;
             parent.addChild(this);
         }
@@ -60,7 +60,7 @@ export class Namespace {
 
     hashCode(): number {
         let hash = stringHash(this._name);
-        if (this._parent) {
+        if (this._parent !== undefined) {
             hash += this._parent.hashCode();
         }
         return hash | 0;
@@ -371,7 +371,7 @@ class NamingContext {
                 return false;
             }
         });
-        return !!conflicting;
+        return conflicting !== undefined;
     };
 
     assign = (named: Name, namedNamespace: Namespace, name: string): void => {

@@ -227,7 +227,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         private readonly _useClasses: boolean,
         private readonly _dense: boolean,
         private readonly _version: Version,
-        private readonly _convenienceInitializers: Boolean
+        private readonly _convenienceInitializers: boolean
     ) {
         super(graph, leadingComments);
     }
@@ -309,7 +309,7 @@ class SwiftRenderer extends ConvenienceRenderer {
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable) return [this.swiftType(nullable, withIssues), "?"];
+                if (nullable !== null) return [this.swiftType(nullable, withIssues), "?"];
                 return this.nameForNamedType(unionType);
             }
         );
@@ -362,7 +362,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         if (!this._justTypes) {
             protocols.push("Codable");
         }
-        return protocols.length ? ": " + protocols.join(", ") : "";
+        return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     };
 
     getEnumPropertyGroups = (c: ClassType) => {
@@ -415,7 +415,9 @@ class SwiftRenderer extends ConvenienceRenderer {
                 };
 
                 this.forEachClassProperty(c, "none", (name, _, t) => {
-                    lastType = lastType || t;
+                    if (lastType === undefined) {
+                        lastType = t;
+                    }
                     if (t.equals(lastType) && lastNames.length < MAX_SAMELINE_PROPERTIES) {
                         lastNames.push(name);
                     } else {
@@ -567,7 +569,7 @@ var json: String? {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });
-            if (maybeNull) {
+            if (maybeNull !== null) {
                 this.emitLine("case ", this.nameForUnionMember(u, maybeNull));
             }
 
@@ -576,14 +578,14 @@ var json: String? {
                 this.emitBlock("init(from decoder: Decoder) throws", () => {
                     this.emitLine("let container = try decoder.singleValueContainer()");
                     const boolMember = u.findMember("bool");
-                    if (boolMember) renderUnionCase(boolMember);
+                    if (boolMember !== undefined) renderUnionCase(boolMember);
                     const integerMember = u.findMember("integer");
-                    if (integerMember) renderUnionCase(integerMember);
+                    if (integerMember !== undefined) renderUnionCase(integerMember);
                     nonNulls.forEach(t => {
                         if (t.kind === "bool" || t.kind === "integer") return;
                         renderUnionCase(t);
                     });
-                    if (maybeNull) {
+                    if (maybeNull !== null) {
                         this.emitBlock("if container.decodeNil()", () => {
                             this.emitLine("self = .", this.nameForUnionMember(u, maybeNull));
                             this.emitLine("return");
@@ -599,7 +601,7 @@ var json: String? {
                         this.emitLine("case .", name, "(let x):");
                         this.indent(() => this.emitLine("try container.encode(x)"));
                     });
-                    if (maybeNull) {
+                    if (maybeNull !== null) {
                         this.emitLine("case .", this.nameForUnionMember(u, maybeNull), ":");
                         this.indent(() => this.emitLine("try container.encodeNil()"));
                     }
@@ -909,7 +911,11 @@ class JSONAny: Codable {
     protected emitSourceStructure(): void {
         this.renderHeader();
 
-        this.forEachTopLevel("leading", this.renderTopLevelAlias, t => !this.namedTypeToNameForTopLevel(t));
+        this.forEachTopLevel(
+            "leading",
+            this.renderTopLevelAlias,
+            t => this.namedTypeToNameForTopLevel(t) === undefined
+        );
 
         this.forEachNamedType(
             "leading-and-interposing",

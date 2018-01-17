@@ -72,3 +72,10 @@ export function repeatedCall<T>(n: number, producer: () => T): T[] {
     }
     return arr;
 }
+
+export function withDefault<T>(x: T | null | undefined, theDefault: T): T {
+    if (x !== null && x !== undefined) {
+        return x;
+    }
+    return theDefault;
+}

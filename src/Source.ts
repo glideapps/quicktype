@@ -6,7 +6,7 @@ import { List, Map, Range } from "immutable";
 
 import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
-import { intercalate, defined, assertNever, panic, assert } from "./Support";
+import { intercalate, defined, assertNever, panic, assert, withDefault } from "./Support";
 import { RenderResult } from "./Renderer";
 
 export type Source =
@@ -206,19 +206,17 @@ export function serializeRenderResult(
                 indentNeeded = indent;
                 break;
             case "sequence":
-                source.sequence.forEach((s: Source) => serializeToStringArray(s));
+                source.sequence.forEach(s => serializeToStringArray(s));
                 break;
             case "table":
                 const t = source.table;
-                const widths = t
-                    .map((l: List<Source>) => l.map((s: Source) => sourceLineLength(s, names)).toList())
-                    .toList();
+                const widths = t.map(l => l.map(s => sourceLineLength(s, names)).toList()).toList();
                 const numRows = t.size;
                 if (numRows === 0) break;
-                const numColumns = defined(t.map((l: List<Source>) => l.size).max());
+                const numColumns = defined(t.map(l => l.size).max());
                 if (numColumns === 0) break;
                 const columnWidths = defined(
-                    Range(0, numColumns).map((i: number) => widths.map((l: List<number>) => l.get(i) || 0).max())
+                    Range(0, numColumns).map(i => widths.map(l => withDefault<number>(l.get(i), 0)).max())
                 );
                 for (let y = 0; y < numRows; y++) {
                     indentIfNeeded();
@@ -226,8 +224,8 @@ export function serializeRenderResult(
                     const rowWidths = defined(widths.get(y));
                     for (let x = 0; x < numColumns; x++) {
                         const colWidth = defined(columnWidths.get(x));
-                        const src = row.get(x) || { kind: "text", text: "" };
-                        const srcWidth = rowWidths.get(x) || 0;
+                        const src = withDefault<Source>(row.get(x), { kind: "text", text: "" });
+                        const srcWidth = withDefault<number>(rowWidths.get(x), 0);
                         serializeToStringArray(src);
                         if (x < numColumns - 1 && srcWidth < colWidth) {
                             currentLine.push(_.repeat(" ", colWidth - srcWidth));

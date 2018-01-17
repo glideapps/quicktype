@@ -285,7 +285,7 @@ export class CompressedJSON {
         if (defined(this._ctx).currentNumberIsDouble === undefined) {
             throw "Number ended but not started";
         }
-        const numberTag = defined(this._ctx).currentNumberIsDouble ? Tag.Double : Tag.Integer;
+        const numberTag = defined(this._ctx).currentNumberIsDouble !== undefined ? Tag.Double : Tag.Integer;
         this.popContext();
         this.commitValue(makeValue(numberTag, 0));
     };

@@ -207,7 +207,7 @@ export abstract class TypeBuilder {
             return this.getUnionType(typeNames, OrderedSet([tref, nullType]));
         }
         const [maybeNull, nonNulls] = removeNullFromUnion(t);
-        if (maybeNull) return tref;
+        if (maybeNull !== null) return tref;
         return this.getUnionType(typeNames, nonNulls.map(nn => nn.typeRef).add(nullType));
     };
 

@@ -1,7 +1,7 @@
 "use strict";
 
 import { OrderedSet, OrderedMap, Collection } from "immutable";
-import { defined, panic, assert } from "./Support";
+import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
 
@@ -445,7 +445,7 @@ export function unionCasesEqual(
 
 export function removeNullFromUnion(t: UnionType): [PrimitiveType | null, OrderedSet<Type>] {
     const nullType = t.findMember("null");
-    if (!nullType) {
+    if (nullType === undefined) {
         return [null, t.members];
     }
     return [nullType as PrimitiveType, t.members.filterNot(isNull).toOrderedSet()];
@@ -463,7 +463,7 @@ export function removeNullFromType(t: Type): [PrimitiveType | null, OrderedSet<T
 
 export function nullableFromUnion(t: UnionType): Type | null {
     const [hasNull, nonNulls] = removeNullFromUnion(t);
-    if (!hasNull) return null;
+    if (hasNull === null) return null;
     if (nonNulls.size !== 1) return null;
     return defined(nonNulls.first());
 }
@@ -503,7 +503,10 @@ export function separateNamedTypes(types: Collection<any, Type>): SeparatedNamed
 
 export function directlyReachableSingleNamedType(type: Type): Type | undefined {
     const definedTypes = type.directlyReachableTypes(t => {
-        if ((!(t instanceof UnionType) && isNamedType(t)) || (t instanceof UnionType && !nullableFromUnion(t))) {
+        if (
+            (!(t instanceof UnionType) && isNamedType(t)) ||
+            (t instanceof UnionType && nullableFromUnion(t) === null)
+        ) {
             return OrderedSet([t]);
         }
         return null;
@@ -549,8 +552,8 @@ export function matchTypeExhaustive<U>(
             time: timeType,
             "date-time": dateTimeType
         }[t.kind];
-        if (f) return f(t);
-        return panic(`Unsupported PrimitiveType: ${t.kind}`);
+        if (f !== undefined) return f(t);
+        return assertNever(f);
     } else if (t instanceof ArrayType) return arrayType(t);
     else if (t instanceof ClassType) return classType(t);
     else if (t instanceof MapType) return mapType(t);
@@ -581,6 +584,7 @@ export function matchType<U>(
     if (stringTypeMatchers === undefined) {
         stringTypeMatchers = {};
     }
+    /* tslint:disable:strict-boolean-expressions */
     return matchTypeExhaustive(
         t,
         typeNotSupported,
@@ -599,6 +603,7 @@ export function matchType<U>(
         stringTypeMatchers.timeType || typeNotSupported,
         stringTypeMatchers.dateTimeType || typeNotSupported
     );
+    /* tslint:enable */
 }
 
 export function matchCompoundType(

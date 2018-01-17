@@ -164,7 +164,7 @@ class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected unionNeedsName(u: UnionType): boolean {
-        return !nullableFromUnion(u);
+        return nullableFromUnion(u) === null;
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
@@ -210,7 +210,7 @@ class CSharpRenderer extends ConvenienceRenderer {
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable) return this.nullableCSType(nullable);
+                if (nullable !== null) return this.nullableCSType(nullable);
                 return this.nameForNamedType(unionType);
             },
             {
@@ -299,7 +299,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         let partial: string;
         let typeKind: string;
         const definedType = this.namedTypeToNameForTopLevel(t);
-        if (definedType) {
+        if (definedType !== undefined) {
             partial = "partial ";
             typeKind = definedType instanceof ClassType ? "class" : "struct";
         } else {
@@ -378,7 +378,7 @@ class CSharpRenderer extends ConvenienceRenderer {
 
         const emitDeserializer = (tokenType: string, kind: TypeKind): void => {
             const t = u.findMember(kind);
-            if (!t) return;
+            if (t === undefined) return;
 
             tokenCase(tokenType);
             this.indent(() => emitDeserializeType(t));
@@ -386,9 +386,9 @@ class CSharpRenderer extends ConvenienceRenderer {
 
         const emitDoubleDeserializer = (): void => {
             const t = u.findMember("double");
-            if (!t) return;
+            if (t === undefined) return;
 
-            if (!u.findMember("integer")) tokenCase("Integer");
+            if (u.findMember("integer") === undefined) tokenCase("Integer");
             tokenCase("Float");
             this.indent(() => emitDeserializeType(t));
         };
@@ -438,7 +438,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
                 this.emitLine("switch (reader.TokenType)");
                 this.emitBlock(() => {
-                    if (hasNull) emitNullDeserializer();
+                    if (hasNull !== null) emitNullDeserializer();
                     emitDeserializer("Integer", "integer");
                     emitDoubleDeserializer();
                     emitDeserializer("Boolean", "bool");
@@ -459,7 +459,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                         this.emitLine("return;");
                     });
                 });
-                if (hasNull) {
+                if (hasNull !== null) {
                     this.emitLine("writer.WriteNull();");
                 } else {
                     this.emitLine('throw new Exception("Union must not be null");');

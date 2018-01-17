@@ -33,7 +33,7 @@ const TIME = /^(\d\d):(\d\d):(\d\d)(\.\d+)?(z|[+-]\d\d:\d\d)?$/i;
 export function isDate(str: string) {
     // full-date from http://tools.ietf.org/html/rfc3339#section-5.6
     const matches = str.match(DATE);
-    if (!matches) return false;
+    if (matches === null) return false;
 
     const month = +matches[2];
     const day = +matches[3];
@@ -42,7 +42,7 @@ export function isDate(str: string) {
 
 export function isTime(str: string): boolean {
     const matches = str.match(TIME);
-    if (!matches) return false;
+    if (matches === null) return false;
 
     const hour = +matches[1];
     const minute = +matches[2];

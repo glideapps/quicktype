@@ -29,7 +29,7 @@ const stringToStream = require("string-to-stream");
 
 export function getTargetLanguage(name: string): TargetLanguage {
     const language = targetLanguages.languageNamed(name);
-    if (language) {
+    if (language !== undefined) {
         return language;
     }
     throw new Error(`'${name}' is not yet supported as an output language.`);

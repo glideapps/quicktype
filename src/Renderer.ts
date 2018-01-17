@@ -119,7 +119,7 @@ export abstract class Renderer {
     };
 
     private changeIndent(offset: number): void {
-        if (!this._lastNewline) {
+        if (this._lastNewline === undefined) {
             return panic("Cannot change indent for the first line");
         }
         this._lastNewline.indentationChange += offset;

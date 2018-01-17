@@ -331,10 +331,10 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     };
 
     private variantType = (u: UnionType, inJsonNamespace: boolean): Sourcelike => {
-        const [hasNull, nonNulls] = removeNullFromUnion(u);
+        const [maybeNull, nonNulls] = removeNullFromUnion(u);
         assert(nonNulls.size >= 2, "Variant not needed for less than two types.");
         const variant = this.cppTypeInOptional(nonNulls, inJsonNamespace, true);
-        if (!hasNull) {
+        if (maybeNull === null) {
             return variant;
         }
         return [optionalType, "<", variant, ">"];
@@ -379,7 +379,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             enumType => [this.ourQualifier(inJsonNamespace), this.nameForNamedType(enumType)],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (!nullable) return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
+                if (nullable === null) return [this.ourQualifier(inJsonNamespace), this.nameForNamedType(unionType)];
                 return [optionalType, "<", this.cppType(nullable, false, inJsonNamespace, withIssues), ">"];
             }
         );
@@ -401,8 +401,8 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             () => {
                 this.forEachClassProperty(c, "none", (name, json, t) => {
                     if (t instanceof UnionType) {
-                        const [hasNull, nonNulls] = removeNullFromUnion(t);
-                        if (hasNull) {
+                        const [maybeNull, nonNulls] = removeNullFromUnion(t);
+                        if (maybeNull !== null) {
                             this.emitLine(
                                 "_x.",
                                 name,
@@ -590,7 +590,11 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         }
         this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
         if (this._justTypes) return;
-        this.forEachTopLevel("leading", this.emitTopLevelTypedef, t => !this.namedTypeToNameForTopLevel(t));
+        this.forEachTopLevel(
+            "leading",
+            this.emitTopLevelTypedef,
+            t => this.namedTypeToNameForTopLevel(t) === undefined
+        );
         this.emitMultiline(`
 inline json get_untyped(const json &j, const char *property) {
     if (j.find(property) != j.end()) {

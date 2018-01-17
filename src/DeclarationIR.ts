@@ -172,7 +172,7 @@ export function declarationsForGraph(
     }
 
     const fullGraph = typeGraph.makeGraph(false, childrenOfType);
-    //fs.writeFileSync("graph.dot", fullGraph.makeDot(t => !(t instanceof PrimitiveType), nodeTitle));
+    // fs.writeFileSync("graph.dot", fullGraph.makeDot(t => !(t instanceof PrimitiveType), nodeTitle));
     processGraph(fullGraph, true);
 
     return new DeclarationIR(List(declarations), forwardedTypes);

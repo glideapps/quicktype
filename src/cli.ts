@@ -24,7 +24,7 @@ import { urlsFromURLGrammar } from "./URLGrammar";
 import { Annotation } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
 import { Readable } from "stream";
-import { panic, assert, defined } from "./Support";
+import { panic, assert, defined, withDefault } from "./Support";
 import { introspectServer } from "./GraphQLIntrospection";
 import { getStream } from "./get-stream/index";
 
@@ -178,7 +178,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
 
 function inferLang(options: Partial<CLIOptions>): string {
     // Output file extension determines the language if language is undefined
-    if (options.out) {
+    if (options.out !== undefined) {
         let extension = path.extname(options.out);
         if (extension === "") {
             throw new Error("Please specify a language (--lang) or an output file extension.");
@@ -191,14 +191,14 @@ function inferLang(options: Partial<CLIOptions>): string {
 
 function inferTopLevel(options: Partial<CLIOptions>): string {
     // Output file name determines the top-level if undefined
-    if (options.out) {
+    if (options.out !== undefined) {
         let extension = path.extname(options.out);
         let without = path.basename(options.out).replace(extension, "");
         return without;
     }
 
     // Source determines the top-level if undefined
-    if (options.src && options.src.length === 1) {
+    if (options.src !== undefined && options.src.length === 1) {
         let src = options.src[0];
         let extension = path.extname(src);
         let without = path.basename(src).replace(extension, "");
@@ -218,9 +218,10 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         srcLang = "graphql";
     } else {
         assert(srcLang !== "graphql", "Please specify a GraphQL schema with --graphql-schema or --graphql-introspect");
-        srcLang = srcLang || "json";
+        srcLang = withDefault<string>(srcLang, "json");
     }
 
+    /* tslint:disable:strict-boolean-expressions */
     return {
         src: opts.src || [],
         srcLang: srcLang,
@@ -241,6 +242,7 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         graphqlServerHeader: opts.graphqlServerHeader,
         template: opts.template
     };
+    /* tslint:enable */
 }
 
 const optionDefinitions: OptionDefinition[] = [
@@ -439,7 +441,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
     definitions.forEach(o => {
         if (!(o.name in opts)) return;
         const v = opts[o.name];
-        if (o.renderer) options.rendererOptions[o.name] = v;
+        if (o.renderer !== undefined) options.rendererOptions[o.name] = v;
         else {
             const k = _.lowerFirst(
                 o.name
@@ -502,7 +504,7 @@ function splitAndWriteJava(dir: string, str: string) {
 }
 
 async function getSources(options: CLIOptions): Promise<TypeSource[]> {
-    if (options.srcUrls) {
+    if (options.srcUrls !== undefined) {
         const json = JSON.parse(fs.readFileSync(options.srcUrls, "utf8"));
         const jsonMap = urlsFromURLGrammar(json);
         const topLevels = Object.getOwnPropertyNames(jsonMap);
@@ -555,7 +557,10 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                 let schemaString: string | undefined = undefined;
                 let wroteSchemaToFile = false;
                 if (options.graphqlIntrospect !== undefined) {
-                    schemaString = await introspectServer(options.graphqlIntrospect, options.graphqlServerHeader || []);
+                    schemaString = await introspectServer(
+                        options.graphqlIntrospect,
+                        withDefault<string[]>(options.graphqlServerHeader, [])
+                    );
                     if (options.graphqlSchema !== undefined) {
                         fs.writeFileSync(options.graphqlSchema, schemaString);
                         wroteSchemaToFile = true;
@@ -629,7 +634,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
         const { lines, annotations } = await run.run();
         const output = lines.join("\n");
 
-        if (options.out) {
+        if (options.out !== undefined) {
             if (options.lang === "java") {
                 splitAndWriteJava(path.dirname(options.out), output);
             } else {
