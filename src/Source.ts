@@ -7,7 +7,6 @@ import { List, Map, Range } from "immutable";
 import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
 import { intercalate, defined, assertNever, panic, assert, withDefault } from "./Support";
-import { RenderResult } from "./Renderer";
 
 export type Source =
     | TextSource
@@ -156,14 +155,15 @@ function sourceLineLength(source: Source, names: Map<Name, string>): number {
         case "name":
             return defined(names.get(source.named)).length;
         case "modified":
-            return serializeRenderResult({ rootSource: source, names }, "").lines.join("\n").length;
+            return serializeRenderResult(source, names, "").lines.join("\n").length;
         default:
             return assertNever(source);
     }
 }
 
 export function serializeRenderResult(
-    { rootSource, names }: RenderResult,
+    rootSource: Source,
+    names: Map<Name, string>,
     indentation: string
 ): SerializedRenderResult {
     let indent = 0;
@@ -250,7 +250,7 @@ export function serializeRenderResult(
                 break;
             case "modified":
                 indentIfNeeded();
-                const serialized = serializeRenderResult({ rootSource: source.source, names }, indentation).lines;
+                const serialized = serializeRenderResult(source.source, names, indentation).lines;
                 assert(serialized.length === 1, "Cannot modify more than one line.");
                 currentLine.push(source.modifier(serialized[0]));
                 break;

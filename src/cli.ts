@@ -473,36 +473,6 @@ function usage() {
     console.log(getUsage(sections));
 }
 
-function splitAndWriteJava(dir: string, str: string) {
-    const lines = str.split("\n");
-    let filename: string | null = null;
-    let currentFileContents: string = "";
-
-    const writeFile = () => {
-        if (filename != null) {
-            fs.writeFileSync(path.join(dir, filename), currentFileContents);
-        }
-        filename = null;
-        currentFileContents = "";
-    };
-
-    let i = 0;
-    while (i < lines.length) {
-        const line = lines[i];
-        i += 1;
-
-        const results = line.match("^// (.+\\.java)$");
-        if (results == null) {
-            currentFileContents += line + "\n";
-        } else {
-            writeFile();
-            filename = results[1];
-            while (lines[i] === "") i++;
-        }
-    }
-    writeFile();
-}
-
 async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     if (options.srcUrls !== undefined) {
         const json = JSON.parse(fs.readFileSync(options.srcUrls, "utf8"));
@@ -628,31 +598,36 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             combineClasses: !options.noCombineClasses,
             noRender: options.noRender,
             rendererOptions: options.rendererOptions,
-            handlebarsTemplate
+            handlebarsTemplate,
+            outputFilename: options.out !== undefined ? path.basename(options.out) : undefined
         });
 
-        const { lines, annotations } = await run.run();
-        const output = lines.join("\n");
+        const resultsByFilename = await run.run();
+        let onFirst = true;
+        resultsByFilename.forEach(({ lines, annotations }, filename) => {
+            const output = lines.join("\n");
 
-        if (options.out !== undefined) {
-            if (options.lang === "java") {
-                splitAndWriteJava(path.dirname(options.out), output);
+            if (options.out !== undefined) {
+                fs.writeFileSync(path.join(path.dirname(options.out), filename), output);
             } else {
-                fs.writeFileSync(options.out, output);
+                if (!onFirst) {
+                    process.stdout.write("\n");
+                }
+                process.stdout.write(output);
             }
-        } else {
-            process.stdout.write(output);
-        }
-        if (options.quiet) {
-            return;
-        }
-        annotations.forEach((sa: Annotation) => {
-            const annotation = sa.annotation;
-            if (!(annotation instanceof IssueAnnotationData)) return;
-            const lineNumber = sa.span.start.line;
-            const humanLineNumber = lineNumber + 1;
-            console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
-            console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
+            if (options.quiet) {
+                return;
+            }
+            annotations.forEach((sa: Annotation) => {
+                const annotation = sa.annotation;
+                if (!(annotation instanceof IssueAnnotationData)) return;
+                const lineNumber = sa.span.start.line;
+                const humanLineNumber = lineNumber + 1;
+                console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
+                console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
+            });
+
+            onFirst = false;
         });
     }
 }
