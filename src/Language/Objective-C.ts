@@ -6,7 +6,7 @@ import * as pluralize from "pluralize";
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, nullableFromUnion, matchType, ArrayType, MapType, UnionType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
+import { Namespace, Name, Namer, funPrefixNamer, keywordNamespace } from "../Naming";
 import { Sourcelike, modifySource } from "../Source";
 import {
     splitIntoWords,
@@ -131,26 +131,7 @@ const keywords = [
     "while"
 ];
 
-const propertySafeKeywords = [
-    "BOOL",
-    "Class",
-    "bycopy",
-    "byref",
-    "decimal",
-    "id",
-    "IMP",
-    "in",
-    "inout",
-    "NO",
-    "NULL",
-    "oneway",
-    "out",
-    "Protocol",
-    "SEL",
-    "self",
-    "super",
-    "YES"
-];
+const forbiddenPropertyNames = ["hash", "description", "init", "copy", "mutableCopy", "superclass", "debugDescription"];
 
 function isStartCharacter(utf16Unit: number): boolean {
     return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
@@ -173,6 +154,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     // support 'natural' enums (NSUInteger) but this isn't implemented yet.
     pseudoEnums: Set<EnumType>;
 
+    private _propertyForbiddenNamespace: Namespace;
+
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
@@ -187,6 +170,11 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             .allTypesUnordered()
             .filter(t => t instanceof EnumType && this.enumOccursInArrayOrMap(t))
             .map(t => t as EnumType);
+    }
+
+    protected setUpNaming(): Namespace[] {
+        this._propertyForbiddenNamespace = keywordNamespace("forbidden-for-properties", forbiddenPropertyNames);
+        return super.setUpNaming().concat([this._propertyForbiddenNamespace]);
     }
 
     private enumOccursInArrayOrMap(enumType: EnumType): boolean {
