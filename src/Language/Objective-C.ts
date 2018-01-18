@@ -198,7 +198,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         _c: ClassType,
         _classNamed: Name
     ): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.forbiddenWordsNamespace] };
+        return { names: [], namespaces: [this.forbiddenWordsNamespace, this._propertyForbiddenNamespace] };
     }
 
     protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
@@ -312,7 +312,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             arrayType => ["[", dynamic, " map:λ(id x, ", this.fromDynamicExpression(arrayType.items, "x"), ")]"],
             classType => ["[", this.nameForNamedType(classType), " fromJSONDictionary:", dynamic, "]"],
             mapType => ["[", dynamic, " map:λ(id x, ", this.fromDynamicExpression(mapType.values, "x"), ")]"],
-            enumType => ["NOT_NIL([", this.nameForNamedType(enumType), " withValue:", dynamic, "])"],
+            enumType => ["NotNil([", this.nameForNamedType(enumType), " withValue:", dynamic, "])"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.fromDynamicExpression(nullable, dynamic) : dynamic;
@@ -862,11 +862,21 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             if (!this._justTypes) {
                 this.emitExtraComments("Shorthand for simple blocks");
                 this.emitLine(`#define λ(decl, expr) (^(decl) { return (expr); })`);
-                this.emitLine("#define NSNullify(x) ([x isNotEqualTo:[NSNull null]] ? x : [NSNull null])");
                 this.emitLine();
-                this.emitMultiline(`id _Nonnull NOT_NIL(id _Nullable x) {
-    if (nil == x) @throw [NSException exceptionWithName:@"UnexpectedNil" reason:nil userInfo:nil];
-    return x;
+                this.emitExtraComments("NSNull → nil conversion and assertion");
+                this.emitLine("#define NSNullify(x) ([x isNotEqualTo:[NSNull null]] ? x : [NSNull null])");
+                this.emitLine(`#define NotNil(x) (x ? x : throw(@"Unexpected nil"))`);
+                this.emitLine();
+                this.emitExtraComments(
+                    "Allows us to create throw expressions.",
+                    "",
+                    "Although exceptions are rarely used in Objective-C, they're used internally",
+                    "here to short-circuit recursive JSON processing. Soon they will be caught at",
+                    "the API boundary and convered to NSError."
+                );
+                this.emitMultiline(`id _Nullable throw(NSString * _Nullable reason) {
+    @throw [NSException exceptionWithName:@"JSONSerialization" reason:reason userInfo:nil];
+    return nil;
 }`);
                 this.ensureBlankLine();
                 this.emitLine("NS_ASSUME_NONNULL_BEGIN");
@@ -920,22 +930,16 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     return result;
 }
 
-- (NSException *)exceptionForKey:(id)key type:(NSString *)type {
-    return [NSException exceptionWithName:@"TypeException"
-                                    reason:[NSString stringWithFormat:@"Expected a %@", type]
-                                    userInfo:@{ @"dictionary":self, @"key":key }];
-}
-
 - (id)objectForKey:(NSString *)key withClass:(Class)cls {
     id value = [self objectForKey:key];
     if ([value isKindOfClass:cls]) return value;
-    else @throw [self exceptionForKey:key type:NSStringFromClass(cls)];
+    else return throw([NSString stringWithFormat:@"Expected a %@", cls]);
 }
 
 - (NSBoolean *)boolForKey:(NSString *)key {
     id value = [self objectForKey:key];
     if ([value isEqual:@YES] || [value isEqual:@NO]) return value;
-    else @throw [self exceptionForKey:key type:@"bool"];
+    else return throw(@"Expected bool");
 }
 @end`);
     };

@@ -100,11 +100,19 @@ NS_ASSUME_NONNULL_END
 
 // Shorthand for simple blocks
 #define λ(decl, expr) (^(decl) { return (expr); })
-#define NSNullify(x) ([x isNotEqualTo:[NSNull null]] ? x : [NSNull null])
 
-id _Nonnull NOT_NIL(id _Nullable x) {
-    if (nil == x) @throw [NSException exceptionWithName:@"UnexpectedNil" reason:nil userInfo:nil];
-    return x;
+// NSNull → nil conversion and assertion
+#define NSNullify(x) ([x isNotEqualTo:[NSNull null]] ? x : [NSNull null])
+#define NotNil(x) (x ? x : throw(@"Unexpected nil"))
+
+// Allows us to create throw expressions.
+// 
+// Although exceptions are rarely used in Objective-C, they're used internally
+// here to short-circuit recursive JSON processing. Soon they will be caught at
+// the API boundary and convered to NSError.
+id _Nullable throw(NSString * _Nullable reason) {
+    @throw [NSException exceptionWithName:@"JSONSerialization" reason:reason userInfo:nil];
+    return nil;
 }
 
 NS_ASSUME_NONNULL_BEGIN
@@ -124,22 +132,16 @@ NS_ASSUME_NONNULL_BEGIN
     return result;
 }
 
-- (NSException *)exceptionForKey:(id)key type:(NSString *)type {
-    return [NSException exceptionWithName:@"TypeException"
-                                    reason:[NSString stringWithFormat:@"Expected a %@", type]
-                                    userInfo:@{ @"dictionary":self, @"key":key }];
-}
-
 - (id)objectForKey:(NSString *)key withClass:(Class)cls {
     id value = [self objectForKey:key];
     if ([value isKindOfClass:cls]) return value;
-    else @throw [self exceptionForKey:key type:NSStringFromClass(cls)];
+    else return throw([NSString stringWithFormat:@"Expected a %@", cls]);
 }
 
 - (NSBoolean *)boolForKey:(NSString *)key {
     id value = [self objectForKey:key];
     if ([value isEqual:@YES] || [value isEqual:@NO]) return value;
-    else @throw [self exceptionForKey:key type:@"bool"];
+    else return throw(@"Expected bool");
 }
 @end
 
@@ -341,7 +343,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
             _candyCount = [dict objectForKey:@"candy_count" withClass:[NSNumber class]];
         }
 
-        _egg = NOT_NIL([QTEgg withValue:[dict objectForKey:@"egg" withClass:[NSString class]]]);
+        _egg = NotNil([QTEgg withValue:[dict objectForKey:@"egg" withClass:[NSString class]]]);
         _spawnChance = [dict objectForKey:@"spawn_chance" withClass:[NSNumber class]];
         _avgSpawns = [dict objectForKey:@"avg_spawns" withClass:[NSNumber class]];
         _spawnTime = [dict objectForKey:@"spawn_time" withClass:[NSString class]];
@@ -350,7 +352,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
             _multipliers = [[dict objectForKey:@"multipliers" withClass:[NSArray class]] map:λ(id x, x)];
         }
 
-        _weaknesses = [[dict objectForKey:@"weaknesses" withClass:[NSArray class]] map:λ(id x, NOT_NIL([QTWeakness withValue:x]))];
+        _weaknesses = [[dict objectForKey:@"weaknesses" withClass:[NSArray class]] map:λ(id x, NotNil([QTWeakness withValue:x]))];
 
         if ([[dict objectForKey:@"next_evolution"] isNotEqualTo:[NSNull null]]) {
             _nextEvolution = [[dict objectForKey:@"next_evolution" withClass:[NSArray class]] map:λ(id x, [QTEvolution fromJSONDictionary:x])];
