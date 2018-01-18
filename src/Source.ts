@@ -249,6 +249,7 @@ export function serializeRenderResult(
                 currentLine.push(defined(names.get(source.named)));
                 break;
             case "modified":
+                indentIfNeeded();
                 const serialized = serializeRenderResult({ rootSource: source.source, names }, indentation).lines;
                 assert(serialized.length === 1, "Cannot modify more than one line.");
                 currentLine.push(source.modifier(serialized[0]));
