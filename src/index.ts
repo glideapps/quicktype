@@ -1,11 +1,11 @@
 import { getStream } from "./get-stream";
 import * as _ from "lodash";
-import { List, Map } from "immutable";
+import { List, Map, OrderedMap } from "immutable";
 import { Readable } from "stream";
 
 import * as targetLanguages from "./Language/All";
 import { TargetLanguage } from "./TargetLanguage";
-import { SerializedRenderResult } from "./Source";
+import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
 import { assertNever } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { combineClasses } from "./CombineClasses";
@@ -81,6 +81,7 @@ export interface Options {
     leadingComments: string[] | undefined;
     rendererOptions: RendererOptions;
     indentation: string | undefined;
+    outputFilename: string;
 }
 
 const defaultOptions: Options = {
@@ -94,7 +95,8 @@ const defaultOptions: Options = {
     noRender: false,
     leadingComments: undefined,
     rendererOptions: {},
-    indentation: undefined
+    indentation: undefined,
+    outputFilename: "stdout"
 };
 
 type InputData = {
@@ -184,7 +186,7 @@ export class Run {
         return graph;
     };
 
-    public run = async (): Promise<SerializedRenderResult> => {
+    public run = async (): Promise<OrderedMap<string, SerializedRenderResult>> => {
         const targetLanguage = getTargetLanguage(this._options.lang);
 
         for (const source of this._options.sources) {
@@ -215,18 +217,27 @@ export class Run {
         const graph = this.makeGraph();
 
         if (this._options.noRender) {
-            return { lines: ["Done.", ""], annotations: List() };
+            return OrderedMap([[this._options.outputFilename, { lines: ["Done.", ""], annotations: List() }]] as [
+                string,
+                SerializedRenderResult
+            ][]);
         }
 
         if (this._options.handlebarsTemplate !== undefined) {
-            return targetLanguage.processHandlebarsTemplate(
-                graph,
-                this._options.rendererOptions,
-                this._options.handlebarsTemplate
-            );
+            return OrderedMap([
+                [
+                    this._options.outputFilename,
+                    targetLanguage.processHandlebarsTemplate(
+                        graph,
+                        this._options.rendererOptions,
+                        this._options.handlebarsTemplate
+                    )
+                ]
+            ] as [string, SerializedRenderResult][]);
         } else {
             return targetLanguage.renderGraphAndSerialize(
                 graph,
+                this._options.outputFilename,
                 this._options.alphabetizeProperties,
                 this._options.leadingComments,
                 this._options.rendererOptions,
@@ -236,6 +247,35 @@ export class Run {
     };
 }
 
-export function quicktype(options: Partial<Options>) {
+export function quicktypeMultiFile(options: Partial<Options>): Promise<Map<string, SerializedRenderResult>> {
     return new Run(options).run();
+}
+
+function offsetLocation(loc: Location, lineOffset: number): Location {
+    return { line: loc.line + lineOffset, column: loc.column };
+}
+
+function offsetSpan(span: Span, lineOffset: number): Span {
+    return { start: offsetLocation(span.start, lineOffset), end: offsetLocation(span.end, lineOffset) };
+}
+
+export async function quicktype(options: Partial<Options>): Promise<SerializedRenderResult> {
+    const result = await quicktypeMultiFile(options);
+    if (result.size <= 1) {
+        const first = result.first();
+        if (first === undefined) {
+            return { lines: [], annotations: List<Annotation>() };
+        }
+        return first;
+    }
+    let lines: string[] = [];
+    let annotations: Annotation[] = [];
+    result.forEach((srr, filename) => {
+        const offset = lines.length + 2;
+        lines = lines.concat([`// ${filename}`, ""], srr.lines);
+        annotations = annotations.concat(
+            srr.annotations.map(ann => ({ annotation: ann.annotation, span: offsetSpan(ann.span, offset) })).toArray()
+        );
+    });
+    return { lines, annotations: List(annotations) };
 }

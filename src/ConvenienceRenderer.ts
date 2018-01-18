@@ -79,7 +79,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected abstract makeClassPropertyNamer(): Namer | null;
     protected abstract makeUnionMemberNamer(): Namer | null;
     protected abstract makeEnumCaseNamer(): Namer | null;
-    protected abstract emitSourceStructure(): void;
+    protected abstract emitSourceStructure(givenOutputFilename: string): void;
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
         if (isNamedType(type)) {
@@ -500,14 +500,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     // code.  If you need to modify a Name, for example to change its casing,
     // use `modifySource`.
     protected sourcelikeToString = (src: Sourcelike): string => {
-        return serializeRenderResult(
-            {
-                rootSource: sourcelikeToSource(src),
-                names: this.names
-            },
-            // FIXME: Use proper indentation.
-            ""
-        ).lines.join("\n");
+        return serializeRenderResult(sourcelikeToSource(src), this.names, "").lines.join("\n");
     };
 
     protected emitCommentLines = (commentStart: string, lines: string[]): void => {
@@ -538,9 +531,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._namedUnions = unions;
     }
 
-    protected emitSource(): void {
+    protected emitSource(givenOutputFilename: string): void {
         this.processGraph();
-        this.emitSourceStructure();
+        this.emitSourceStructure(givenOutputFilename);
     }
 
     protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
@@ -566,8 +559,8 @@ export abstract class ConvenienceRenderer extends Renderer {
             const value = this.makeHandlebarsContextForType(t);
             if (t instanceof ClassType) {
                 const properties: StringMap = {};
-                this.forEachClassProperty(t, "none", (name, jsonName, t) => {
-                    const propertyValue = this.makeHandlebarsContextForType(t);
+                this.forEachClassProperty(t, "none", (name, jsonName, m) => {
+                    const propertyValue = this.makeHandlebarsContextForType(m);
                     propertyValue.assignedName = defined(this.names.get(name));
                     properties[jsonName] = propertyValue;
                 });
@@ -582,12 +575,12 @@ export abstract class ConvenienceRenderer extends Renderer {
                 const members: StringMap[] = [];
                 // FIXME: It's a bit ugly to have these two cases.
                 if (this._memberNamesStoreView.tryGet(t) === undefined) {
-                    t.members.forEach(t => {
-                        members.push(this.makeHandlebarsContextForType(t));
+                    t.members.forEach(m => {
+                        members.push(this.makeHandlebarsContextForType(m));
                     });
                 } else {
-                    this.forEachUnionMember(t, null, "none", null, (name, t) => {
-                        members.push(this.makeHandlebarsContextForUnionMember(t, name));
+                    this.forEachUnionMember(t, null, "none", null, (name, m) => {
+                        members.push(this.makeHandlebarsContextForUnionMember(m, name));
                     });
                 }
                 value.members = members;

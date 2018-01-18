@@ -35,6 +35,7 @@ import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { defined, assert } from "../Support";
 
 export default class JavaTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
@@ -167,6 +168,8 @@ function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
 }
 
 class JavaRenderer extends ConvenienceRenderer {
+    private _currentFilename: string | undefined;
+
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
@@ -248,9 +251,16 @@ class JavaRenderer extends ConvenienceRenderer {
         return this.methodName("get", "ObjectWriter", topLevelName);
     };
 
-    emitFileComment = (filename: Sourcelike): void => {
-        this.emitLine("// ", filename, ".java");
-    };
+    startFile(basename: Sourcelike): void {
+        assert(this._currentFilename === undefined, "Previous file wasn't finished");
+        // FIXME: The filenames should actually be Sourcelikes, too
+        this._currentFilename = `${this.sourcelikeToString(basename)}.java`;
+    }
+
+    finishFile(): void {
+        super.finishFile(defined(this._currentFilename));
+        this._currentFilename = undefined;
+    }
 
     emitPackageAndImports = (imports: string[]): void => {
         const allImports = ["java.util.Map"].concat(this._justTypes ? [] : imports);
@@ -262,7 +272,7 @@ class JavaRenderer extends ConvenienceRenderer {
     };
 
     emitFileHeader = (fileName: Sourcelike, imports: string[]): void => {
-        this.emitFileComment(fileName);
+        this.startFile(fileName);
         this.ensureBlankLine();
         this.emitPackageAndImports(imports);
         this.ensureBlankLine();
@@ -334,6 +344,7 @@ class JavaRenderer extends ConvenienceRenderer {
                 );
             });
         });
+        this.finishFile();
     };
 
     unionField = (
@@ -453,6 +464,7 @@ class JavaRenderer extends ConvenienceRenderer {
                 );
             });
         });
+        this.finishFile();
     };
 
     emitEnumDefinition = (e: EnumType, enumName: Name): void => {
@@ -484,10 +496,11 @@ class JavaRenderer extends ConvenienceRenderer {
                 this.emitLine('throw new IOException("Cannot deserialize ', enumName, '");');
             });
         });
+        this.finishFile();
     };
 
     emitConverterClass = (): void => {
-        this.emitFileComment("Converter");
+        this.startFile("Converter");
         this.ensureBlankLine();
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
@@ -578,6 +591,7 @@ class JavaRenderer extends ConvenienceRenderer {
                 });
             });
         });
+        this.finishFile();
     };
 
     protected emitSourceStructure(): void {

@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, Collection, OrderedSet, List } from "immutable";
+import { Map, Collection, OrderedSet, List, OrderedMap } from "immutable";
 import * as handlebars from "handlebars";
 
 import { TypeGraph } from "./TypeGraph";
@@ -9,7 +9,10 @@ import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newli
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
 import { assert, panic, StringMap } from "./Support";
 
-export type RenderResult = { rootSource: Source; names: Map<Name, string> };
+export type RenderResult = {
+    sources: OrderedMap<string, Source>;
+    names: Map<Name, string>;
+};
 
 export type BlankLineLocations = "none" | "interposing" | "leading" | "leading-and-interposing";
 
@@ -31,6 +34,7 @@ function lineIndentation(line: string): { indent: number; text: string | null } 
 
 export abstract class Renderer {
     private _names: Map<Name, string> | undefined;
+    private _finishedFiles: OrderedMap<string, Source>;
 
     private _lastNewline?: NewlineSource;
     private _emitted: Sourcelike[];
@@ -38,6 +42,11 @@ export abstract class Renderer {
     private _needBlankLine: boolean;
 
     constructor(protected readonly typeGraph: TypeGraph, protected readonly leadingComments: string[] | undefined) {
+        this._finishedFiles = Map();
+        this.startEmit();
+    }
+
+    private startEmit(): void {
         this._currentEmitTarget = this._emitted = [];
         this._needBlankLine = false;
     }
@@ -157,23 +166,30 @@ export abstract class Renderer {
         this.changeIndent(-1);
     }
 
-    finishedSource = (): Source => {
-        return sourcelikeToSource(this._emitted);
-    };
-
     protected abstract setUpNaming(): Namespace[];
-    protected abstract emitSource(): void;
+    protected abstract emitSource(givenOutputFilename: string): void;
     protected abstract makeHandlebarsContext(): StringMap;
 
     private assignNames(): Map<Name, string> {
         return assignNames(OrderedSet(this.setUpNaming()));
     }
 
-    render = (): RenderResult => {
+    finishFile(filename: string): void {
+        assert(this._emitted.length > 0, `Tried to emit empty file ${filename}`);
+        assert(!this._finishedFiles.has(filename), `Tried to emit file ${filename} more than once`);
+        const source = sourcelikeToSource(this._emitted);
+        this._finishedFiles = this._finishedFiles.set(filename, source);
+        this.startEmit();
+    }
+
+    render(givenOutputFilename: string): RenderResult {
         this._names = this.assignNames();
-        this.emitSource();
-        return { rootSource: this.finishedSource(), names: this._names };
-    };
+        this.emitSource(givenOutputFilename);
+        if (this._emitted.length > 0) {
+            this.finishFile(givenOutputFilename);
+        }
+        return { sources: this._finishedFiles, names: this._names };
+    }
 
     protected registerHandlebarsHelpers(_context: StringMap): void {
         handlebars.registerHelper("if_eq", function(this: any, a: any, b: any, options: any): any {

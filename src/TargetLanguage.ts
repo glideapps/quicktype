@@ -1,13 +1,14 @@
 "use strict";
 
+import { List, OrderedMap } from "immutable";
+
 import { TypeGraph } from "./TypeGraph";
 import { Renderer } from "./Renderer";
 import { OptionDefinition, Option } from "./RendererOptions";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
 import { StringTypeMapping } from "./TypeBuilder";
-import { assert, panic } from "./Support";
+import { assert, panic, defined } from "./Support";
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
-import { List } from "immutable";
 
 export abstract class TargetLanguage {
     private _options?: Option<any>[];
@@ -45,11 +46,12 @@ export abstract class TargetLanguage {
 
     renderGraphAndSerialize(
         graph: TypeGraph,
+        givenOutputFilename: string,
         alphabetizeProperties: boolean,
         leadingComments: string[] | undefined,
         rendererOptions: { [name: string]: any },
         indentation?: string
-    ): SerializedRenderResult {
+    ): OrderedMap<string, SerializedRenderResult> {
         if (indentation === undefined) {
             indentation = this.defaultIndentation;
         }
@@ -57,8 +59,8 @@ export abstract class TargetLanguage {
         if ((renderer as any).setAlphabetizeProperties !== undefined) {
             (renderer as ConvenienceRenderer).setAlphabetizeProperties(alphabetizeProperties);
         }
-        const renderResult = renderer.render();
-        return serializeRenderResult(renderResult, indentation);
+        const renderResult = renderer.render(givenOutputFilename);
+        return renderResult.sources.map(s => serializeRenderResult(s, renderResult.names, defined(indentation)));
     }
 
     processHandlebarsTemplate(
