@@ -1,9 +1,10 @@
 "use strict";
 
 import { includes, startsWith } from "lodash";
+import * as pluralize from "pluralize";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, ClassType, EnumType, nullableFromUnion, matchType, ArrayType, MapType } from "../Type";
+import { Type, ClassType, EnumType, nullableFromUnion, matchType, ArrayType, MapType, UnionType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, modifySource } from "../Source";
@@ -19,6 +20,7 @@ import {
 } from "../Strings";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { StringOption, BooleanOption, EnumOption } from "../RendererOptions";
+import { Set } from "immutable";
 
 const unicode = require("unicode-properties");
 
@@ -166,6 +168,11 @@ function isAnyOrNull(t: Type): boolean {
 }
 
 class ObjectiveCRenderer extends ConvenienceRenderer {
+    // enums contained in NSArray or NSDictionary are represented
+    // as 'pseudo-enum' reference types. Eventually we may want to
+    // support 'natural' enums (NSUInteger) but this isn't implemented yet.
+    pseudoEnums: Set<EnumType>;
+
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
@@ -175,6 +182,24 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         private readonly _extraComments: boolean
     ) {
         super(graph, leadingComments);
+
+        this.pseudoEnums = graph
+            .allTypesUnordered()
+            .filter(t => t instanceof EnumType && this.enumOccursInArrayOrMap(t))
+            .map(t => t as EnumType);
+    }
+
+    private enumOccursInArrayOrMap(enumType: EnumType): boolean {
+        function containedBy(t: Type): boolean {
+            return (
+                (t instanceof ArrayType && t.items.equals(enumType)) ||
+                (t instanceof MapType && t.values.equals(enumType)) ||
+                (t instanceof ClassType && t.properties.some(containedBy)) ||
+                // TODO support unions
+                (t instanceof UnionType && false)
+            );
+        }
+        return this.typeGraph.allTypesUnordered().some(containedBy);
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -223,6 +248,13 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     };
 
+    private emitMethod(declaration: Sourcelike, f: () => void) {
+        this.emitLine(declaration);
+        this.emitLine("{");
+        this.indent(f);
+        this.emitLine("}");
+    }
+
     private emitExtraComments = (...comments: Sourcelike[]) => {
         if (!this._extraComments) return;
         for (const comment of comments) {
@@ -251,8 +283,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             },
             classType => [this.nameForNamedType(classType), " *"],
             mapType => [["NSDictionary<NSString *, ", this.objcType(mapType.values), ">"], " *"],
-            // TODO Support enums
-            _enumType => ["NSString", " *"],
+            enumType => [this.nameForNamedType(enumType), " *"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.objcType(nullable) : ["id", ""];
@@ -273,7 +304,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             _arrayType => ["NSArray", " *"],
             _classType => ["NSDictionary<NSString *, id>", " *"],
             mapType => [["NSDictionary<NSString *, ", this.jsonType(mapType.values), ">"], " *"],
-            // TODO Support enums
             _enumType => ["NSString", " *"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -294,8 +324,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             arrayType => ["[", dynamic, " map:λ(id x, ", this.fromDynamicExpression(arrayType.items, "x"), ")]"],
             classType => ["[", this.nameForNamedType(classType), " fromJSONDictionary:", dynamic, "]"],
             mapType => ["[", dynamic, " map:λ(id x, ", this.fromDynamicExpression(mapType.values, "x"), ")]"],
-            // TODO Support enums
-            _enumType => dynamic,
+            enumType => ["NOT_NIL([", this.nameForNamedType(enumType), " withValue:", dynamic, "])"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.fromDynamicExpression(nullable, dynamic) : dynamic;
@@ -327,8 +356,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 }
                 return ["[", dynamic, " map:λ(id x, ", this.toDynamicExpression(mapType.values, "x"), ")]"];
             },
-            // TODO Support enums
-            _enumType => dynamic,
+            _enumType => ["[", dynamic, " value]"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
@@ -349,7 +377,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         if (t instanceof ClassType) {
             return false;
         } else if (t instanceof EnumType) {
-            return true;
+            return false;
         } else if (t instanceof ArrayType) {
             return this.isJSONSafe(t.items);
         } else if (t instanceof MapType) {
@@ -451,8 +479,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 const itemType = mapType.values;
                 if (
                     itemType.isPrimitive() ||
-                    // TODO once enums are supported, this will change
-                    itemType.kind === "enum" ||
                     // Before union support, we have a lot of untyped data
                     // This ensures that we don't map over unknown elements
                     isAnyOrNull(itemType)
@@ -497,7 +523,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                         ";"
                     );
                 }
-
                 return nullable !== null ? this.objcType(nullable) : "id";
             }
         );
@@ -729,6 +754,76 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         return camelCaseName;
     }
 
+    private emitPseudoEnumInterface(enumType: EnumType, enumName: Name) {
+        this.emitLine("@interface ", enumName, " : NSObject");
+        this.emitLine("@property (nonatomic, readonly, copy) NSString *value;");
+        this.emitLine("+ (instancetype _Nullable)withValue:(NSString *)value;");
+        this.forEachEnumCase(enumType, "none", (name, _) => {
+            this.emitLine("+ (", enumName, " *)", name, ";");
+        });
+        this.emitLine("@end");
+    }
+
+    private emitPseudoEnumImplementation(enumType: EnumType, enumName: Name) {
+        this.emitLine("@implementation ", enumName);
+        this.emitLine();
+
+        const instances = modifySource(
+            s => pluralize.plural(this._classPrefix.toLocaleLowerCase() + s.substring(this._classPrefix.length)),
+            enumName
+        );
+
+        this.emitLine("static NSMutableDictionary<NSString *, ", enumName, " *> *", instances, ";");
+        this.emitLine("@synthesize value;");
+
+        this.ensureBlankLine();
+        this.forEachEnumCase(enumType, "none", (name, jsonValue) => {
+            this.emitLine(
+                "+ (",
+                enumName,
+                " *)",
+                name,
+                " { return ",
+                instances,
+                '[@"',
+                stringEscape(jsonValue),
+                '"]; }'
+            );
+        });
+        this.ensureBlankLine();
+
+        this.emitMethod("+ (void)initialize", () => {
+            this.emitLine("NSArray<NSString *> *values = @[");
+            this.indent(() => {
+                this.forEachEnumCase(enumType, "none", (_, jsonValue) => {
+                    this.emitLine('@"', stringEscape(jsonValue), '",');
+                });
+            });
+            this.emitLine("];");
+            this.emitLine(instances, " = [NSMutableDictionary dictionaryWithCapacity:values.count];");
+            this.emitLine(
+                "for (NSString *value in values) ",
+                instances,
+                "[value] = [[",
+                enumName,
+                " alloc] initWithValue:value];"
+            );
+        });
+        this.ensureBlankLine();
+
+        this.emitLine("+ (instancetype _Nullable)withValue:(NSString *)value { return ", instances, "[value]; }");
+
+        this.ensureBlankLine();
+        this.emitMethod("- (instancetype)initWithValue:(NSString *)val", () => {
+            this.emitLine("if (self = [super init]) value = val;");
+            this.emitLine("return self;");
+        });
+        this.ensureBlankLine();
+
+        this.emitLine("- (NSUInteger)hash { return value.hash; }");
+        this.emitLine("@end");
+    }
+
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines("// ", this.leadingComments);
@@ -770,12 +865,19 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
             // Emit @class declarations for top-level array+maps and classes
             this.ensureBlankLine();
-            this.forEachClass("none", (_, name) => this.emitLine("@class ", name, ";"));
+            this.forEachNamedType(
+                "none",
+                (_, className) => this.emitLine("@class ", className, ";"),
+                (_, enumName) => this.emitLine("@class ", enumName, ";"),
+                () => null
+            );
             this.ensureBlankLine();
 
             this.ensureBlankLine();
             this.emitLine("NS_ASSUME_NONNULL_BEGIN");
             this.ensureBlankLine();
+
+            this.forEachEnum("leading-and-interposing", (t, n) => this.emitPseudoEnumInterface(t, n));
 
             // Emit interfaces for top-level array+maps and classes
             this.forEachTopLevel(
@@ -802,7 +904,11 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitExtraComments("Shorthand for simple blocks");
                 this.emitLine(`#define λ(decl, expr) (^(decl) { return (expr); })`);
                 this.emitLine("#define NSNullify(x) ([x isNotEqualTo:[NSNull null]] ? x : [NSNull null])");
-
+                this.emitLine();
+                this.emitMultiline(`id _Nonnull NOT_NIL(id _Nullable x) {
+    if (nil == x) @throw [NSException exceptionWithName:@"UnexpectedNil" reason:nil userInfo:nil];
+    return x;
+}`);
                 this.ensureBlankLine();
                 this.emitLine("NS_ASSUME_NONNULL_BEGIN");
                 this.ensureBlankLine();
@@ -821,6 +927,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     () => null,
                     () => null
                 );
+
+                this.emitMark("Pseudo-enum implementations");
+
+                this.forEachEnum("leading-and-interposing", (t, n) => this.emitPseudoEnumImplementation(t, n));
 
                 this.emitMark("JSON serialization implementations");
                 this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitTopLevelFunctions(t, n));

@@ -11,9 +11,11 @@ typedef NSNumber NSBoolean;
 
 @class QTPurpleTopLevel;
 @class QTActor;
+@class QTGravatarID;
 @class QTPayload;
 @class QTComment;
 @class QTUser;
+@class QTType;
 @class QTCommit;
 @class QTAuthor;
 @class QTIssue;
@@ -28,6 +30,19 @@ typedef NSNumber NSBoolean;
 @class QTTopLevelRepo;
 
 NS_ASSUME_NONNULL_BEGIN
+
+@interface QTGravatarID : NSObject
+@property (nonatomic, readonly, copy) NSString *value;
++ (instancetype _Nullable)withValue:(NSString *)value;
++ (QTGravatarID *)empty;
+@end
+
+@interface QTType : NSObject
+@property (nonatomic, readonly, copy) NSString *value;
++ (instancetype _Nullable)withValue:(NSString *)value;
++ (QTType *)organization;
++ (QTType *)user;
+@end
 
 typedef NSArray<QTPurpleTopLevel *> QTTopLevel;
 
@@ -53,7 +68,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 @property (nonatomic) NSNumber *id;
 @property (nonatomic) NSString *login;
 @property (nonatomic, nullable) NSString *displayLogin;
-@property (nonatomic) NSString *gravatarID;
+@property (nonatomic) QTGravatarID *gravatarID;
 @property (nonatomic) NSString *url;
 @property (nonatomic) NSString *avatarURL;
 @end
@@ -92,7 +107,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 @property (nonatomic) NSString *login;
 @property (nonatomic) NSNumber *id;
 @property (nonatomic) NSString *avatarURL;
-@property (nonatomic) NSString *gravatarID;
+@property (nonatomic) QTGravatarID *gravatarID;
 @property (nonatomic) NSString *url;
 @property (nonatomic) NSString *htmlURL;
 @property (nonatomic) NSString *followersURL;
@@ -104,7 +119,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 @property (nonatomic) NSString *reposURL;
 @property (nonatomic) NSString *eventsURL;
 @property (nonatomic) NSString *receivedEventsURL;
-@property (nonatomic) NSString *type;
+@property (nonatomic) QTType *type;
 @property (nonatomic) NSBoolean *siteAdmin;
 @end
 
@@ -323,28 +338,23 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 @property (nonatomic) NSString *name;
 @property (nonatomic) NSString *url;
 @end
+
 NS_ASSUME_NONNULL_END
 
 // MARK: Implementation
 
 #define λ(decl, expr) (^(decl) { return (expr); })
+#define NSNullify(x) ([x isNotEqualTo:[NSNull null]] ? x : [NSNull null])
+
+id _Nonnull NOT_NIL(id _Nullable x) {
+    if (nil == x) @throw [NSException exceptionWithName:@"UnexpectedNil" reason:nil userInfo:nil];
+    return x;
+}
 
 NS_ASSUME_NONNULL_BEGIN
 
-id NSNullify(id _Nullable nullable) {
-    BOOL isNull = nullable == nil || [nullable isEqualTo:[NSNull null]];
-    return isNull ? [NSNull null] : nullable;
-}
-
-id NSNullMap(id _Nullable nullable,  id (^f)( id element)) {
-    BOOL isNull = [NSNullify(nullable) isEqualTo:[NSNull null]];
-    return isNull ? [NSNull null] : f(nullable);
-}
-
-#define NSNullOrNil(x) [NSNullify(x) isEqualTo:[NSNull null]]
-
 @implementation NSArray (JSONConversion)
-- (NSArray *)map:( id (^)( id element))f {
+- (NSArray *)map:(id (^)(id element))f {
     id result = [NSMutableArray arrayWithCapacity:self.count];
     for (id x in self) [result addObject:f(x)];
     return result;
@@ -352,62 +362,28 @@ id NSNullMap(id _Nullable nullable,  id (^f)( id element)) {
 @end
 
 @implementation NSDictionary (JSONConversion)
-- (NSDictionary *)map:( id (^)( id value))f {
+- (NSDictionary *)map:(id (^)(id value))f {
     id result = [NSMutableDictionary dictionaryWithCapacity:self.count];
     for (id key in self) [result setObject:f([self objectForKey:key]) forKey:key];
     return result;
 }
 
-- (NSException *)exceptionForKey:(id )key type:(NSString *)type {
+- (NSException *)exceptionForKey:(id)key type:(NSString *)type {
     return [NSException exceptionWithName:@"TypeException"
                                    reason:[NSString stringWithFormat:@"Expected a %@", type]
                                  userInfo:@{ @"dictionary":self, @"key":key }];
 }
 
-- (NSString *)stringForKey:(NSString *)key {
+- (id)objectForKey:(NSString *)key withClass:(Class)cls {
     id value = [self objectForKey:key];
-    if ([value isKindOfClass:[NSString class]]) {
-        return value;
-    } else {
-        @throw [self exceptionForKey:key type:@"string"];
-    }
-}
-
-- (NSNumber *)numberForKey:(NSString *)key {
-    id value = [self objectForKey:key];
-    // TODO Could this check be more precise?
-    if ([value isKindOfClass:[NSNumber class]]) {
-        return value;
-    } else {
-        @throw [self exceptionForKey:key type:@"number"];
-    }
+    if ([value isKindOfClass:cls]) return value;
+    else @throw [self exceptionForKey:key type:NSStringFromClass(cls)];
 }
 
 - (NSBoolean *)boolForKey:(NSString *)key {
     id value = [self objectForKey:key];
-    if ([value isEqual:@(YES)] || [value isEqual:@(NO)]) {
-        return value;
-    } else {
-        @throw [self exceptionForKey:key type:@"bool"];
-    }
-}
-
-- (NSArray *)arrayForKey:(NSString *)key {
-    id value = [self objectForKey:key];
-    if ([value isKindOfClass:[NSArray class]]) {
-        return value;
-    } else {
-        @throw [self exceptionForKey:key type:@"array"];
-    }
-}
-
-- (NSDictionary *)dictionaryForKey:(NSString *)key {
-    id value = [self objectForKey:key];
-    if ([value isKindOfClass:[NSDictionary class]]) {
-        return value;
-    } else {
-        @throw [self exceptionForKey:key type:@"dictionary"];
-    }
+    if ([value isEqual:@(YES)] || [value isEqual:@(NO)]) return value;
+    else @throw [self exceptionForKey:key type:@"bool"];
 }
 @end
 
@@ -496,6 +472,64 @@ id NSNullMap(id _Nullable nullable,  id (^f)( id element)) {
 - (NSDictionary *)JSONDictionary;
 @end
 
+// MARK: Pseudo-enum implementations
+
+@implementation QTGravatarID
+
+static NSMutableDictionary<NSString *, QTGravatarID *> *qtGravatarIDS;
+@synthesize value;
+
++ (QTGravatarID *)empty { return qtGravatarIDS[@""]; }
+
++ (void)initialize
+{
+    NSArray<NSString *> *values = @[
+                                    @"",
+                                    ];
+    qtGravatarIDS = [NSMutableDictionary dictionaryWithCapacity:values.count];
+    for (NSString *value in values) qtGravatarIDS[value] = [[QTGravatarID alloc] initWithValue:value];
+}
+
++ (instancetype _Nullable)withValue:(NSString *)value { return qtGravatarIDS[value]; }
+
+- (instancetype)initWithValue:(NSString *)val
+{
+    if (self = [super init]) value = val;
+    return self;
+}
+
+- (NSUInteger)hash { return value.hash; }
+@end
+
+@implementation QTType
+
+static NSMutableDictionary<NSString *, QTType *> *qtTypes;
+@synthesize value;
+
++ (QTType *)organization { return qtTypes[@"Organization"]; }
++ (QTType *)user { return qtTypes[@"User"]; }
+
++ (void)initialize
+{
+    NSArray<NSString *> *values = @[
+                                    @"Organization",
+                                    @"User",
+                                    ];
+    qtTypes = [NSMutableDictionary dictionaryWithCapacity:values.count];
+    for (NSString *value in values) qtTypes[value] = [[QTType alloc] initWithValue:value];
+}
+
++ (instancetype _Nullable)withValue:(NSString *)value { return qtTypes[value]; }
+
+- (instancetype)initWithValue:(NSString *)val
+{
+    if (self = [super init]) value = val;
+    return self;
+}
+
+- (NSUInteger)hash { return value.hash; }
+@end
+
 // MARK: JSON serialization implementations
 
 QTTopLevel *QTTopLevelFromData(NSData *data, NSError **error) {
@@ -528,16 +562,16 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        self.id = [dict stringForKey:@"id"];
-        type = [dict stringForKey:@"type"];
-        actor = [QTActor fromJSONDictionary:[dict dictionaryForKey:@"actor"]];
-        repo = [QTTopLevelRepo fromJSONDictionary:[dict dictionaryForKey:@"repo"]];
-        payload = [QTPayload fromJSONDictionary:[dict dictionaryForKey:@"payload"]];
+        self.id = [dict objectForKey:@"id" withClass:[NSString class]];
+        type = [dict objectForKey:@"type" withClass:[NSString class]];
+        actor = [QTActor fromJSONDictionary:[dict objectForKey:@"actor" withClass:[NSDictionary class]]];
+        repo = [QTTopLevelRepo fromJSONDictionary:[dict objectForKey:@"repo" withClass:[NSDictionary class]]];
+        payload = [QTPayload fromJSONDictionary:[dict objectForKey:@"payload" withClass:[NSDictionary class]]];
         public = [dict boolForKey:@"public"];
-        createdAt = [dict stringForKey:@"created_at"];
+        createdAt = [dict objectForKey:@"created_at" withClass:[NSString class]];
         
-        if (!NSNullOrNil([dict objectForKey:@"org"])) {
-            org = [QTActor fromJSONDictionary:[dict dictionaryForKey:@"org"]];
+        if ([[dict objectForKey:@"org"] isNotEqualTo:[NSNull null]]) {
+            org = [QTActor fromJSONDictionary:[dict objectForKey:@"org" withClass:[NSDictionary class]]];
         }
         
     }
@@ -553,7 +587,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
              @"payload": [payload JSONDictionary],
              @"public": public,
              @"created_at": createdAt,
-             @"org": NSNullMap(NSNullify(org), λ(id x, [x JSONDictionary])),
+             @"org": NSNullify([org JSONDictionary]),
              };
 }
 @end
@@ -568,16 +602,16 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        self.id = [dict numberForKey:@"id"];
-        login = [dict stringForKey:@"login"];
+        self.id = [dict objectForKey:@"id" withClass:[NSNumber class]];
+        login = [dict objectForKey:@"login" withClass:[NSString class]];
         
-        if (!NSNullOrNil([dict objectForKey:@"display_login"])) {
-            displayLogin = [dict stringForKey:@"display_login"];
+        if ([[dict objectForKey:@"display_login"] isNotEqualTo:[NSNull null]]) {
+            displayLogin = [dict objectForKey:@"display_login" withClass:[NSString class]];
         }
         
-        gravatarID = [dict stringForKey:@"gravatar_id"];
-        url = [dict stringForKey:@"url"];
-        avatarURL = [dict stringForKey:@"avatar_url"];
+        gravatarID = NOT_NIL([QTGravatarID withValue:[dict objectForKey:@"gravatar_id" withClass:[NSString class]]]);
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
+        avatarURL = [dict objectForKey:@"avatar_url" withClass:[NSString class]];
     }
     return self;
 }
@@ -587,7 +621,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
              @"id": self.id,
              @"login": login,
              @"display_login": NSNullify(displayLogin),
-             @"gravatar_id": gravatarID,
+             @"gravatar_id": [gravatarID value],
              @"url": url,
              @"avatar_url": avatarURL,
              };
@@ -607,68 +641,68 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
         
-        if (!NSNullOrNil([dict objectForKey:@"push_id"])) {
-            pushID = [dict numberForKey:@"push_id"];
+        if ([[dict objectForKey:@"push_id"] isNotEqualTo:[NSNull null]]) {
+            pushID = [dict objectForKey:@"push_id" withClass:[NSNumber class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"size"])) {
-            size = [dict numberForKey:@"size"];
+        if ([[dict objectForKey:@"size"] isNotEqualTo:[NSNull null]]) {
+            size = [dict objectForKey:@"size" withClass:[NSNumber class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"distinct_size"])) {
-            distinctSize = [dict numberForKey:@"distinct_size"];
+        if ([[dict objectForKey:@"distinct_size"] isNotEqualTo:[NSNull null]]) {
+            distinctSize = [dict objectForKey:@"distinct_size" withClass:[NSNumber class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"ref"])) {
-            ref = [dict stringForKey:@"ref"];
+        if ([[dict objectForKey:@"ref"] isNotEqualTo:[NSNull null]]) {
+            ref = [dict objectForKey:@"ref" withClass:[NSString class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"head"])) {
-            head = [dict stringForKey:@"head"];
+        if ([[dict objectForKey:@"head"] isNotEqualTo:[NSNull null]]) {
+            head = [dict objectForKey:@"head" withClass:[NSString class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"before"])) {
-            before = [dict stringForKey:@"before"];
+        if ([[dict objectForKey:@"before"] isNotEqualTo:[NSNull null]]) {
+            before = [dict objectForKey:@"before" withClass:[NSString class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"commits"])) {
-            commits = [[dict arrayForKey:@"commits"] map:λ(id x, [QTCommit fromJSONDictionary:x])];
+        if ([[dict objectForKey:@"commits"] isNotEqualTo:[NSNull null]]) {
+            commits = [[dict objectForKey:@"commits" withClass:[NSArray class]] map:λ(id x, [QTCommit fromJSONDictionary:x])];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"action"])) {
-            action = [dict stringForKey:@"action"];
+        if ([[dict objectForKey:@"action"] isNotEqualTo:[NSNull null]]) {
+            action = [dict objectForKey:@"action" withClass:[NSString class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"issue"])) {
-            issue = [QTIssue fromJSONDictionary:[dict dictionaryForKey:@"issue"]];
+        if ([[dict objectForKey:@"issue"] isNotEqualTo:[NSNull null]]) {
+            issue = [QTIssue fromJSONDictionary:[dict objectForKey:@"issue" withClass:[NSDictionary class]]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"comment"])) {
-            comment = [QTComment fromJSONDictionary:[dict dictionaryForKey:@"comment"]];
+        if ([[dict objectForKey:@"comment"] isNotEqualTo:[NSNull null]]) {
+            comment = [QTComment fromJSONDictionary:[dict objectForKey:@"comment" withClass:[NSDictionary class]]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"ref_type"])) {
-            refType = [dict stringForKey:@"ref_type"];
+        if ([[dict objectForKey:@"ref_type"] isNotEqualTo:[NSNull null]]) {
+            refType = [dict objectForKey:@"ref_type" withClass:[NSString class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"master_branch"])) {
-            masterBranch = [dict stringForKey:@"master_branch"];
+        if ([[dict objectForKey:@"master_branch"] isNotEqualTo:[NSNull null]]) {
+            masterBranch = [dict objectForKey:@"master_branch" withClass:[NSString class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"description"])) {
-            description = [dict stringForKey:@"description"];
+        if ([[dict objectForKey:@"description"] isNotEqualTo:[NSNull null]]) {
+            description = [dict objectForKey:@"description" withClass:[NSString class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"pusher_type"])) {
-            pusherType = [dict stringForKey:@"pusher_type"];
+        if ([[dict objectForKey:@"pusher_type"] isNotEqualTo:[NSNull null]]) {
+            pusherType = [dict objectForKey:@"pusher_type" withClass:[NSString class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"number"])) {
-            number = [dict numberForKey:@"number"];
+        if ([[dict objectForKey:@"number"] isNotEqualTo:[NSNull null]]) {
+            number = [dict objectForKey:@"number" withClass:[NSNumber class]];
         }
         
-        if (!NSNullOrNil([dict objectForKey:@"pull_request"])) {
-            pullRequest = [QTPayloadPullRequest fromJSONDictionary:[dict dictionaryForKey:@"pull_request"]];
+        if ([[dict objectForKey:@"pull_request"] isNotEqualTo:[NSNull null]]) {
+            pullRequest = [QTPayloadPullRequest fromJSONDictionary:[dict objectForKey:@"pull_request" withClass:[NSDictionary class]]];
         }
         
     }
@@ -683,16 +717,16 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
              @"ref": NSNullify(ref),
              @"head": NSNullify(head),
              @"before": NSNullify(before),
-             @"commits": NSNullMap(NSNullify(commits), λ(id x, [x map:λ(id x, [x JSONDictionary])])),
+             @"commits": NSNullify([commits map:λ(id x, [x JSONDictionary])]),
              @"action": NSNullify(action),
-             @"issue": NSNullMap(NSNullify(issue), λ(id x, [x JSONDictionary])),
-             @"comment": NSNullMap(NSNullify(comment), λ(id x, [x JSONDictionary])),
+             @"issue": NSNullify([issue JSONDictionary]),
+             @"comment": NSNullify([comment JSONDictionary]),
              @"ref_type": NSNullify(refType),
              @"master_branch": NSNullify(masterBranch),
              @"description": NSNullify(description),
              @"pusher_type": NSNullify(pusherType),
              @"number": NSNullify(number),
-             @"pull_request": NSNullMap(NSNullify(pullRequest), λ(id x, [x JSONDictionary])),
+             @"pull_request": NSNullify([pullRequest JSONDictionary]),
              };
 }
 @end
@@ -707,14 +741,14 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        url = [dict stringForKey:@"url"];
-        htmlURL = [dict stringForKey:@"html_url"];
-        issueURL = [dict stringForKey:@"issue_url"];
-        self.id = [dict numberForKey:@"id"];
-        user = [QTUser fromJSONDictionary:[dict dictionaryForKey:@"user"]];
-        createdAt = [dict stringForKey:@"created_at"];
-        updatedAt = [dict stringForKey:@"updated_at"];
-        body = [dict stringForKey:@"body"];
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
+        htmlURL = [dict objectForKey:@"html_url" withClass:[NSString class]];
+        issueURL = [dict objectForKey:@"issue_url" withClass:[NSString class]];
+        self.id = [dict objectForKey:@"id" withClass:[NSNumber class]];
+        user = [QTUser fromJSONDictionary:[dict objectForKey:@"user" withClass:[NSDictionary class]]];
+        createdAt = [dict objectForKey:@"created_at" withClass:[NSString class]];
+        updatedAt = [dict objectForKey:@"updated_at" withClass:[NSString class]];
+        body = [dict objectForKey:@"body" withClass:[NSString class]];
     }
     return self;
 }
@@ -745,22 +779,22 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        login = [dict stringForKey:@"login"];
-        self.id = [dict numberForKey:@"id"];
-        avatarURL = [dict stringForKey:@"avatar_url"];
-        gravatarID = [dict stringForKey:@"gravatar_id"];
-        url = [dict stringForKey:@"url"];
-        htmlURL = [dict stringForKey:@"html_url"];
-        followersURL = [dict stringForKey:@"followers_url"];
-        followingURL = [dict stringForKey:@"following_url"];
-        gistsURL = [dict stringForKey:@"gists_url"];
-        starredURL = [dict stringForKey:@"starred_url"];
-        subscriptionsURL = [dict stringForKey:@"subscriptions_url"];
-        organizationsURL = [dict stringForKey:@"organizations_url"];
-        reposURL = [dict stringForKey:@"repos_url"];
-        eventsURL = [dict stringForKey:@"events_url"];
-        receivedEventsURL = [dict stringForKey:@"received_events_url"];
-        type = [dict stringForKey:@"type"];
+        login = [dict objectForKey:@"login" withClass:[NSString class]];
+        self.id = [dict objectForKey:@"id" withClass:[NSNumber class]];
+        avatarURL = [dict objectForKey:@"avatar_url" withClass:[NSString class]];
+        gravatarID = NOT_NIL([QTGravatarID withValue:[dict objectForKey:@"gravatar_id" withClass:[NSString class]]]);
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
+        htmlURL = [dict objectForKey:@"html_url" withClass:[NSString class]];
+        followersURL = [dict objectForKey:@"followers_url" withClass:[NSString class]];
+        followingURL = [dict objectForKey:@"following_url" withClass:[NSString class]];
+        gistsURL = [dict objectForKey:@"gists_url" withClass:[NSString class]];
+        starredURL = [dict objectForKey:@"starred_url" withClass:[NSString class]];
+        subscriptionsURL = [dict objectForKey:@"subscriptions_url" withClass:[NSString class]];
+        organizationsURL = [dict objectForKey:@"organizations_url" withClass:[NSString class]];
+        reposURL = [dict objectForKey:@"repos_url" withClass:[NSString class]];
+        eventsURL = [dict objectForKey:@"events_url" withClass:[NSString class]];
+        receivedEventsURL = [dict objectForKey:@"received_events_url" withClass:[NSString class]];
+        type = NOT_NIL([QTType withValue:[dict objectForKey:@"type" withClass:[NSString class]]]);
         siteAdmin = [dict boolForKey:@"site_admin"];
     }
     return self;
@@ -771,7 +805,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
              @"login": login,
              @"id": self.id,
              @"avatar_url": avatarURL,
-             @"gravatar_id": gravatarID,
+             @"gravatar_id": [gravatarID value],
              @"url": url,
              @"html_url": htmlURL,
              @"followers_url": followersURL,
@@ -783,7 +817,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
              @"repos_url": reposURL,
              @"events_url": eventsURL,
              @"received_events_url": receivedEventsURL,
-             @"type": type,
+             @"type": [type value],
              @"site_admin": siteAdmin,
              };
 }
@@ -798,11 +832,11 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        sha = [dict stringForKey:@"sha"];
-        author = [QTAuthor fromJSONDictionary:[dict dictionaryForKey:@"author"]];
-        message = [dict stringForKey:@"message"];
+        sha = [dict objectForKey:@"sha" withClass:[NSString class]];
+        author = [QTAuthor fromJSONDictionary:[dict objectForKey:@"author" withClass:[NSDictionary class]]];
+        message = [dict objectForKey:@"message" withClass:[NSString class]];
         distinct = [dict boolForKey:@"distinct"];
-        url = [dict stringForKey:@"url"];
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
     }
     return self;
 }
@@ -827,8 +861,8 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        email = [dict stringForKey:@"email"];
-        name = [dict stringForKey:@"name"];
+        email = [dict objectForKey:@"email" withClass:[NSString class]];
+        name = [dict objectForKey:@"name" withClass:[NSString class]];
     }
     return self;
 }
@@ -854,38 +888,38 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        url = [dict stringForKey:@"url"];
-        repositoryURL = [dict stringForKey:@"repository_url"];
-        labelsURL = [dict stringForKey:@"labels_url"];
-        commentsURL = [dict stringForKey:@"comments_url"];
-        eventsURL = [dict stringForKey:@"events_url"];
-        htmlURL = [dict stringForKey:@"html_url"];
-        self.id = [dict numberForKey:@"id"];
-        number = [dict numberForKey:@"number"];
-        title = [dict stringForKey:@"title"];
-        user = [QTUser fromJSONDictionary:[dict dictionaryForKey:@"user"]];
-        labels = [[dict arrayForKey:@"labels"] map:λ(id x, [QTLabel fromJSONDictionary:x])];
-        state = [dict stringForKey:@"state"];
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
+        repositoryURL = [dict objectForKey:@"repository_url" withClass:[NSString class]];
+        labelsURL = [dict objectForKey:@"labels_url" withClass:[NSString class]];
+        commentsURL = [dict objectForKey:@"comments_url" withClass:[NSString class]];
+        eventsURL = [dict objectForKey:@"events_url" withClass:[NSString class]];
+        htmlURL = [dict objectForKey:@"html_url" withClass:[NSString class]];
+        self.id = [dict objectForKey:@"id" withClass:[NSNumber class]];
+        number = [dict objectForKey:@"number" withClass:[NSNumber class]];
+        title = [dict objectForKey:@"title" withClass:[NSString class]];
+        user = [QTUser fromJSONDictionary:[dict objectForKey:@"user" withClass:[NSDictionary class]]];
+        labels = [[dict objectForKey:@"labels" withClass:[NSArray class]] map:λ(id x, [QTLabel fromJSONDictionary:x])];
+        state = [dict objectForKey:@"state" withClass:[NSString class]];
         locked = [dict boolForKey:@"locked"];
-        assignee = [dict objectForKey:@"assignee"];
-        assignees = [[dict arrayForKey:@"assignees"] map:λ(id x, x)];
+        assignee = [dict objectForKey:@"assignee" withClass:[NSNull class]];
+        assignees = [[dict objectForKey:@"assignees" withClass:[NSArray class]] map:λ(id x, x)];
         
-        if (!NSNullOrNil([dict objectForKey:@"milestone"])) {
-            milestone = [QTMilestone fromJSONDictionary:[dict dictionaryForKey:@"milestone"]];
+        if ([[dict objectForKey:@"milestone"] isNotEqualTo:[NSNull null]]) {
+            milestone = [QTMilestone fromJSONDictionary:[dict objectForKey:@"milestone" withClass:[NSDictionary class]]];
         }
         
-        comments = [dict numberForKey:@"comments"];
-        createdAt = [dict stringForKey:@"created_at"];
-        updatedAt = [dict stringForKey:@"updated_at"];
+        comments = [dict objectForKey:@"comments" withClass:[NSNumber class]];
+        createdAt = [dict objectForKey:@"created_at" withClass:[NSString class]];
+        updatedAt = [dict objectForKey:@"updated_at" withClass:[NSString class]];
         
-        if (!NSNullOrNil([dict objectForKey:@"closed_at"])) {
-            closedAt = [dict stringForKey:@"closed_at"];
+        if ([[dict objectForKey:@"closed_at"] isNotEqualTo:[NSNull null]]) {
+            closedAt = [dict objectForKey:@"closed_at" withClass:[NSString class]];
         }
         
-        body = [dict stringForKey:@"body"];
+        body = [dict objectForKey:@"body" withClass:[NSString class]];
         
-        if (!NSNullOrNil([dict objectForKey:@"pull_request"])) {
-            pullRequest = [QTIssuePullRequest fromJSONDictionary:[dict dictionaryForKey:@"pull_request"]];
+        if ([[dict objectForKey:@"pull_request"] isNotEqualTo:[NSNull null]]) {
+            pullRequest = [QTIssuePullRequest fromJSONDictionary:[dict objectForKey:@"pull_request" withClass:[NSDictionary class]]];
         }
         
     }
@@ -909,13 +943,13 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
              @"locked": locked,
              @"assignee": NSNullify(assignee),
              @"assignees": assignees,
-             @"milestone": NSNullMap(NSNullify(milestone), λ(id x, [x JSONDictionary])),
+             @"milestone": NSNullify([milestone JSONDictionary]),
              @"comments": comments,
              @"created_at": createdAt,
              @"updated_at": updatedAt,
              @"closed_at": NSNullify(closedAt),
              @"body": body,
-             @"pull_request": NSNullMap(NSNullify(pullRequest), λ(id x, [x JSONDictionary])),
+             @"pull_request": NSNullify([pullRequest JSONDictionary]),
              };
 }
 @end
@@ -929,10 +963,10 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        self.id = [dict numberForKey:@"id"];
-        url = [dict stringForKey:@"url"];
-        name = [dict stringForKey:@"name"];
-        color = [dict stringForKey:@"color"];
+        self.id = [dict objectForKey:@"id" withClass:[NSNumber class]];
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
+        name = [dict objectForKey:@"name" withClass:[NSString class]];
+        color = [dict objectForKey:@"color" withClass:[NSString class]];
         theDefault = [dict boolForKey:@"default"];
     }
     return self;
@@ -960,25 +994,25 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        url = [dict stringForKey:@"url"];
-        htmlURL = [dict stringForKey:@"html_url"];
-        labelsURL = [dict stringForKey:@"labels_url"];
-        self.id = [dict numberForKey:@"id"];
-        number = [dict numberForKey:@"number"];
-        title = [dict stringForKey:@"title"];
-        description = [dict stringForKey:@"description"];
-        creator = [QTUser fromJSONDictionary:[dict dictionaryForKey:@"creator"]];
-        openIssues = [dict numberForKey:@"open_issues"];
-        closedIssues = [dict numberForKey:@"closed_issues"];
-        state = [dict stringForKey:@"state"];
-        createdAt = [dict stringForKey:@"created_at"];
-        updatedAt = [dict stringForKey:@"updated_at"];
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
+        htmlURL = [dict objectForKey:@"html_url" withClass:[NSString class]];
+        labelsURL = [dict objectForKey:@"labels_url" withClass:[NSString class]];
+        self.id = [dict objectForKey:@"id" withClass:[NSNumber class]];
+        number = [dict objectForKey:@"number" withClass:[NSNumber class]];
+        title = [dict objectForKey:@"title" withClass:[NSString class]];
+        description = [dict objectForKey:@"description" withClass:[NSString class]];
+        creator = [QTUser fromJSONDictionary:[dict objectForKey:@"creator" withClass:[NSDictionary class]]];
+        openIssues = [dict objectForKey:@"open_issues" withClass:[NSNumber class]];
+        closedIssues = [dict objectForKey:@"closed_issues" withClass:[NSNumber class]];
+        state = [dict objectForKey:@"state" withClass:[NSString class]];
+        createdAt = [dict objectForKey:@"created_at" withClass:[NSString class]];
+        updatedAt = [dict objectForKey:@"updated_at" withClass:[NSString class]];
         
-        if (!NSNullOrNil([dict objectForKey:@"due_on"])) {
-            dueOn = [dict stringForKey:@"due_on"];
+        if ([[dict objectForKey:@"due_on"] isNotEqualTo:[NSNull null]]) {
+            dueOn = [dict objectForKey:@"due_on" withClass:[NSString class]];
         }
         
-        closedAt = [dict objectForKey:@"closed_at"];
+        closedAt = [dict objectForKey:@"closed_at" withClass:[NSNull class]];
     }
     return self;
 }
@@ -1013,10 +1047,10 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        url = [dict stringForKey:@"url"];
-        htmlURL = [dict stringForKey:@"html_url"];
-        diffURL = [dict stringForKey:@"diff_url"];
-        patchURL = [dict stringForKey:@"patch_url"];
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
+        htmlURL = [dict objectForKey:@"html_url" withClass:[NSString class]];
+        diffURL = [dict objectForKey:@"diff_url" withClass:[NSString class]];
+        patchURL = [dict objectForKey:@"patch_url" withClass:[NSString class]];
     }
     return self;
 }
@@ -1048,47 +1082,47 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        url = [dict stringForKey:@"url"];
-        self.id = [dict numberForKey:@"id"];
-        htmlURL = [dict stringForKey:@"html_url"];
-        diffURL = [dict stringForKey:@"diff_url"];
-        patchURL = [dict stringForKey:@"patch_url"];
-        issueURL = [dict stringForKey:@"issue_url"];
-        number = [dict numberForKey:@"number"];
-        state = [dict stringForKey:@"state"];
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
+        self.id = [dict objectForKey:@"id" withClass:[NSNumber class]];
+        htmlURL = [dict objectForKey:@"html_url" withClass:[NSString class]];
+        diffURL = [dict objectForKey:@"diff_url" withClass:[NSString class]];
+        patchURL = [dict objectForKey:@"patch_url" withClass:[NSString class]];
+        issueURL = [dict objectForKey:@"issue_url" withClass:[NSString class]];
+        number = [dict objectForKey:@"number" withClass:[NSNumber class]];
+        state = [dict objectForKey:@"state" withClass:[NSString class]];
         locked = [dict boolForKey:@"locked"];
-        title = [dict stringForKey:@"title"];
-        user = [QTUser fromJSONDictionary:[dict dictionaryForKey:@"user"]];
-        body = [dict stringForKey:@"body"];
-        createdAt = [dict stringForKey:@"created_at"];
-        updatedAt = [dict stringForKey:@"updated_at"];
-        closedAt = [dict stringForKey:@"closed_at"];
-        mergedAt = [dict stringForKey:@"merged_at"];
-        mergeCommitSHA = [dict stringForKey:@"merge_commit_sha"];
-        assignee = [dict objectForKey:@"assignee"];
-        assignees = [[dict arrayForKey:@"assignees"] map:λ(id x, x)];
-        requestedReviewers = [[dict arrayForKey:@"requested_reviewers"] map:λ(id x, x)];
-        milestone = [dict objectForKey:@"milestone"];
-        commitsURL = [dict stringForKey:@"commits_url"];
-        reviewCommentsURL = [dict stringForKey:@"review_comments_url"];
-        reviewCommentURL = [dict stringForKey:@"review_comment_url"];
-        commentsURL = [dict stringForKey:@"comments_url"];
-        statusesURL = [dict stringForKey:@"statuses_url"];
-        head = [QTBase fromJSONDictionary:[dict dictionaryForKey:@"head"]];
-        base = [QTBase fromJSONDictionary:[dict dictionaryForKey:@"base"]];
-        links = [QTLinks fromJSONDictionary:[dict dictionaryForKey:@"_links"]];
+        title = [dict objectForKey:@"title" withClass:[NSString class]];
+        user = [QTUser fromJSONDictionary:[dict objectForKey:@"user" withClass:[NSDictionary class]]];
+        body = [dict objectForKey:@"body" withClass:[NSString class]];
+        createdAt = [dict objectForKey:@"created_at" withClass:[NSString class]];
+        updatedAt = [dict objectForKey:@"updated_at" withClass:[NSString class]];
+        closedAt = [dict objectForKey:@"closed_at" withClass:[NSString class]];
+        mergedAt = [dict objectForKey:@"merged_at" withClass:[NSString class]];
+        mergeCommitSHA = [dict objectForKey:@"merge_commit_sha" withClass:[NSString class]];
+        assignee = [dict objectForKey:@"assignee" withClass:[NSNull class]];
+        assignees = [[dict objectForKey:@"assignees" withClass:[NSArray class]] map:λ(id x, x)];
+        requestedReviewers = [[dict objectForKey:@"requested_reviewers" withClass:[NSArray class]] map:λ(id x, x)];
+        milestone = [dict objectForKey:@"milestone" withClass:[NSNull class]];
+        commitsURL = [dict objectForKey:@"commits_url" withClass:[NSString class]];
+        reviewCommentsURL = [dict objectForKey:@"review_comments_url" withClass:[NSString class]];
+        reviewCommentURL = [dict objectForKey:@"review_comment_url" withClass:[NSString class]];
+        commentsURL = [dict objectForKey:@"comments_url" withClass:[NSString class]];
+        statusesURL = [dict objectForKey:@"statuses_url" withClass:[NSString class]];
+        head = [QTBase fromJSONDictionary:[dict objectForKey:@"head" withClass:[NSDictionary class]]];
+        base = [QTBase fromJSONDictionary:[dict objectForKey:@"base" withClass:[NSDictionary class]]];
+        links = [QTLinks fromJSONDictionary:[dict objectForKey:@"_links" withClass:[NSDictionary class]]];
         merged = [dict boolForKey:@"merged"];
-        mergeable = [dict objectForKey:@"mergeable"];
-        rebaseable = [dict objectForKey:@"rebaseable"];
-        mergeableState = [dict stringForKey:@"mergeable_state"];
-        mergedBy = [QTUser fromJSONDictionary:[dict dictionaryForKey:@"merged_by"]];
-        comments = [dict numberForKey:@"comments"];
-        reviewComments = [dict numberForKey:@"review_comments"];
+        mergeable = [dict objectForKey:@"mergeable" withClass:[NSNull class]];
+        rebaseable = [dict objectForKey:@"rebaseable" withClass:[NSNull class]];
+        mergeableState = [dict objectForKey:@"mergeable_state" withClass:[NSString class]];
+        mergedBy = [QTUser fromJSONDictionary:[dict objectForKey:@"merged_by" withClass:[NSDictionary class]]];
+        comments = [dict objectForKey:@"comments" withClass:[NSNumber class]];
+        reviewComments = [dict objectForKey:@"review_comments" withClass:[NSNumber class]];
         maintainerCanModify = [dict boolForKey:@"maintainer_can_modify"];
-        commits = [dict numberForKey:@"commits"];
-        additions = [dict numberForKey:@"additions"];
-        deletions = [dict numberForKey:@"deletions"];
-        changedFiles = [dict numberForKey:@"changed_files"];
+        commits = [dict objectForKey:@"commits" withClass:[NSNumber class]];
+        additions = [dict objectForKey:@"additions" withClass:[NSNumber class]];
+        deletions = [dict objectForKey:@"deletions" withClass:[NSNumber class]];
+        changedFiles = [dict objectForKey:@"changed_files" withClass:[NSNumber class]];
     }
     return self;
 }
@@ -1149,11 +1183,11 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        label = [dict stringForKey:@"label"];
-        ref = [dict stringForKey:@"ref"];
-        sha = [dict stringForKey:@"sha"];
-        user = [QTUser fromJSONDictionary:[dict dictionaryForKey:@"user"]];
-        repo = [QTBaseRepo fromJSONDictionary:[dict dictionaryForKey:@"repo"]];
+        label = [dict objectForKey:@"label" withClass:[NSString class]];
+        ref = [dict objectForKey:@"ref" withClass:[NSString class]];
+        sha = [dict objectForKey:@"sha" withClass:[NSString class]];
+        user = [QTUser fromJSONDictionary:[dict objectForKey:@"user" withClass:[NSDictionary class]]];
+        repo = [QTBaseRepo fromJSONDictionary:[dict objectForKey:@"repo" withClass:[NSDictionary class]]];
     }
     return self;
 }
@@ -1191,75 +1225,75 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        self.id = [dict numberForKey:@"id"];
-        name = [dict stringForKey:@"name"];
-        fullName = [dict stringForKey:@"full_name"];
-        owner = [QTUser fromJSONDictionary:[dict dictionaryForKey:@"owner"]];
+        self.id = [dict objectForKey:@"id" withClass:[NSNumber class]];
+        name = [dict objectForKey:@"name" withClass:[NSString class]];
+        fullName = [dict objectForKey:@"full_name" withClass:[NSString class]];
+        owner = [QTUser fromJSONDictionary:[dict objectForKey:@"owner" withClass:[NSDictionary class]]];
         private = [dict boolForKey:@"private"];
-        htmlURL = [dict stringForKey:@"html_url"];
-        description = [dict stringForKey:@"description"];
+        htmlURL = [dict objectForKey:@"html_url" withClass:[NSString class]];
+        description = [dict objectForKey:@"description" withClass:[NSString class]];
         fork = [dict boolForKey:@"fork"];
-        url = [dict stringForKey:@"url"];
-        forksURL = [dict stringForKey:@"forks_url"];
-        keysURL = [dict stringForKey:@"keys_url"];
-        collaboratorsURL = [dict stringForKey:@"collaborators_url"];
-        teamsURL = [dict stringForKey:@"teams_url"];
-        hooksURL = [dict stringForKey:@"hooks_url"];
-        issueEventsURL = [dict stringForKey:@"issue_events_url"];
-        eventsURL = [dict stringForKey:@"events_url"];
-        assigneesURL = [dict stringForKey:@"assignees_url"];
-        branchesURL = [dict stringForKey:@"branches_url"];
-        tagsURL = [dict stringForKey:@"tags_url"];
-        blobsURL = [dict stringForKey:@"blobs_url"];
-        gitTagsURL = [dict stringForKey:@"git_tags_url"];
-        gitRefsURL = [dict stringForKey:@"git_refs_url"];
-        treesURL = [dict stringForKey:@"trees_url"];
-        statusesURL = [dict stringForKey:@"statuses_url"];
-        languagesURL = [dict stringForKey:@"languages_url"];
-        stargazersURL = [dict stringForKey:@"stargazers_url"];
-        contributorsURL = [dict stringForKey:@"contributors_url"];
-        subscribersURL = [dict stringForKey:@"subscribers_url"];
-        subscriptionURL = [dict stringForKey:@"subscription_url"];
-        commitsURL = [dict stringForKey:@"commits_url"];
-        gitCommitsURL = [dict stringForKey:@"git_commits_url"];
-        commentsURL = [dict stringForKey:@"comments_url"];
-        issueCommentURL = [dict stringForKey:@"issue_comment_url"];
-        contentsURL = [dict stringForKey:@"contents_url"];
-        compareURL = [dict stringForKey:@"compare_url"];
-        mergesURL = [dict stringForKey:@"merges_url"];
-        archiveURL = [dict stringForKey:@"archive_url"];
-        downloadsURL = [dict stringForKey:@"downloads_url"];
-        issuesURL = [dict stringForKey:@"issues_url"];
-        pullsURL = [dict stringForKey:@"pulls_url"];
-        milestonesURL = [dict stringForKey:@"milestones_url"];
-        notificationsURL = [dict stringForKey:@"notifications_url"];
-        labelsURL = [dict stringForKey:@"labels_url"];
-        releasesURL = [dict stringForKey:@"releases_url"];
-        deploymentsURL = [dict stringForKey:@"deployments_url"];
-        createdAt = [dict stringForKey:@"created_at"];
-        updatedAt = [dict stringForKey:@"updated_at"];
-        pushedAt = [dict stringForKey:@"pushed_at"];
-        gitURL = [dict stringForKey:@"git_url"];
-        sshURL = [dict stringForKey:@"ssh_url"];
-        cloneURL = [dict stringForKey:@"clone_url"];
-        svnURL = [dict stringForKey:@"svn_url"];
-        homepage = [dict stringForKey:@"homepage"];
-        size = [dict numberForKey:@"size"];
-        stargazersCount = [dict numberForKey:@"stargazers_count"];
-        watchersCount = [dict numberForKey:@"watchers_count"];
-        language = [dict stringForKey:@"language"];
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
+        forksURL = [dict objectForKey:@"forks_url" withClass:[NSString class]];
+        keysURL = [dict objectForKey:@"keys_url" withClass:[NSString class]];
+        collaboratorsURL = [dict objectForKey:@"collaborators_url" withClass:[NSString class]];
+        teamsURL = [dict objectForKey:@"teams_url" withClass:[NSString class]];
+        hooksURL = [dict objectForKey:@"hooks_url" withClass:[NSString class]];
+        issueEventsURL = [dict objectForKey:@"issue_events_url" withClass:[NSString class]];
+        eventsURL = [dict objectForKey:@"events_url" withClass:[NSString class]];
+        assigneesURL = [dict objectForKey:@"assignees_url" withClass:[NSString class]];
+        branchesURL = [dict objectForKey:@"branches_url" withClass:[NSString class]];
+        tagsURL = [dict objectForKey:@"tags_url" withClass:[NSString class]];
+        blobsURL = [dict objectForKey:@"blobs_url" withClass:[NSString class]];
+        gitTagsURL = [dict objectForKey:@"git_tags_url" withClass:[NSString class]];
+        gitRefsURL = [dict objectForKey:@"git_refs_url" withClass:[NSString class]];
+        treesURL = [dict objectForKey:@"trees_url" withClass:[NSString class]];
+        statusesURL = [dict objectForKey:@"statuses_url" withClass:[NSString class]];
+        languagesURL = [dict objectForKey:@"languages_url" withClass:[NSString class]];
+        stargazersURL = [dict objectForKey:@"stargazers_url" withClass:[NSString class]];
+        contributorsURL = [dict objectForKey:@"contributors_url" withClass:[NSString class]];
+        subscribersURL = [dict objectForKey:@"subscribers_url" withClass:[NSString class]];
+        subscriptionURL = [dict objectForKey:@"subscription_url" withClass:[NSString class]];
+        commitsURL = [dict objectForKey:@"commits_url" withClass:[NSString class]];
+        gitCommitsURL = [dict objectForKey:@"git_commits_url" withClass:[NSString class]];
+        commentsURL = [dict objectForKey:@"comments_url" withClass:[NSString class]];
+        issueCommentURL = [dict objectForKey:@"issue_comment_url" withClass:[NSString class]];
+        contentsURL = [dict objectForKey:@"contents_url" withClass:[NSString class]];
+        compareURL = [dict objectForKey:@"compare_url" withClass:[NSString class]];
+        mergesURL = [dict objectForKey:@"merges_url" withClass:[NSString class]];
+        archiveURL = [dict objectForKey:@"archive_url" withClass:[NSString class]];
+        downloadsURL = [dict objectForKey:@"downloads_url" withClass:[NSString class]];
+        issuesURL = [dict objectForKey:@"issues_url" withClass:[NSString class]];
+        pullsURL = [dict objectForKey:@"pulls_url" withClass:[NSString class]];
+        milestonesURL = [dict objectForKey:@"milestones_url" withClass:[NSString class]];
+        notificationsURL = [dict objectForKey:@"notifications_url" withClass:[NSString class]];
+        labelsURL = [dict objectForKey:@"labels_url" withClass:[NSString class]];
+        releasesURL = [dict objectForKey:@"releases_url" withClass:[NSString class]];
+        deploymentsURL = [dict objectForKey:@"deployments_url" withClass:[NSString class]];
+        createdAt = [dict objectForKey:@"created_at" withClass:[NSString class]];
+        updatedAt = [dict objectForKey:@"updated_at" withClass:[NSString class]];
+        pushedAt = [dict objectForKey:@"pushed_at" withClass:[NSString class]];
+        gitURL = [dict objectForKey:@"git_url" withClass:[NSString class]];
+        sshURL = [dict objectForKey:@"ssh_url" withClass:[NSString class]];
+        cloneURL = [dict objectForKey:@"clone_url" withClass:[NSString class]];
+        svnURL = [dict objectForKey:@"svn_url" withClass:[NSString class]];
+        homepage = [dict objectForKey:@"homepage" withClass:[NSString class]];
+        size = [dict objectForKey:@"size" withClass:[NSNumber class]];
+        stargazersCount = [dict objectForKey:@"stargazers_count" withClass:[NSNumber class]];
+        watchersCount = [dict objectForKey:@"watchers_count" withClass:[NSNumber class]];
+        language = [dict objectForKey:@"language" withClass:[NSString class]];
         hasIssues = [dict boolForKey:@"has_issues"];
         hasProjects = [dict boolForKey:@"has_projects"];
         hasDownloads = [dict boolForKey:@"has_downloads"];
         hasWiki = [dict boolForKey:@"has_wiki"];
         hasPages = [dict boolForKey:@"has_pages"];
-        forksCount = [dict numberForKey:@"forks_count"];
-        mirrorURL = [dict objectForKey:@"mirror_url"];
-        openIssuesCount = [dict numberForKey:@"open_issues_count"];
-        forks = [dict numberForKey:@"forks"];
-        openIssues = [dict numberForKey:@"open_issues"];
-        watchers = [dict numberForKey:@"watchers"];
-        defaultBranch = [dict stringForKey:@"default_branch"];
+        forksCount = [dict objectForKey:@"forks_count" withClass:[NSNumber class]];
+        mirrorURL = [dict objectForKey:@"mirror_url" withClass:[NSNull class]];
+        openIssuesCount = [dict objectForKey:@"open_issues_count" withClass:[NSNumber class]];
+        forks = [dict objectForKey:@"forks" withClass:[NSNumber class]];
+        openIssues = [dict objectForKey:@"open_issues" withClass:[NSNumber class]];
+        watchers = [dict objectForKey:@"watchers" withClass:[NSNumber class]];
+        defaultBranch = [dict objectForKey:@"default_branch" withClass:[NSString class]];
     }
     return self;
 }
@@ -1349,14 +1383,14 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        self.self = [QTComments fromJSONDictionary:[dict dictionaryForKey:@"self"]];
-        html = [QTComments fromJSONDictionary:[dict dictionaryForKey:@"html"]];
-        issue = [QTComments fromJSONDictionary:[dict dictionaryForKey:@"issue"]];
-        comments = [QTComments fromJSONDictionary:[dict dictionaryForKey:@"comments"]];
-        reviewComments = [QTComments fromJSONDictionary:[dict dictionaryForKey:@"review_comments"]];
-        reviewComment = [QTComments fromJSONDictionary:[dict dictionaryForKey:@"review_comment"]];
-        commits = [QTComments fromJSONDictionary:[dict dictionaryForKey:@"commits"]];
-        statuses = [QTComments fromJSONDictionary:[dict dictionaryForKey:@"statuses"]];
+        self.self = [QTComments fromJSONDictionary:[dict objectForKey:@"self" withClass:[NSDictionary class]]];
+        html = [QTComments fromJSONDictionary:[dict objectForKey:@"html" withClass:[NSDictionary class]]];
+        issue = [QTComments fromJSONDictionary:[dict objectForKey:@"issue" withClass:[NSDictionary class]]];
+        comments = [QTComments fromJSONDictionary:[dict objectForKey:@"comments" withClass:[NSDictionary class]]];
+        reviewComments = [QTComments fromJSONDictionary:[dict objectForKey:@"review_comments" withClass:[NSDictionary class]]];
+        reviewComment = [QTComments fromJSONDictionary:[dict objectForKey:@"review_comment" withClass:[NSDictionary class]]];
+        commits = [QTComments fromJSONDictionary:[dict objectForKey:@"commits" withClass:[NSDictionary class]]];
+        statuses = [QTComments fromJSONDictionary:[dict objectForKey:@"statuses" withClass:[NSDictionary class]]];
     }
     return self;
 }
@@ -1384,7 +1418,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        href = [dict stringForKey:@"href"];
+        href = [dict objectForKey:@"href" withClass:[NSString class]];
     }
     return self;
 }
@@ -1405,9 +1439,9 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 
 - (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
     if (self = [super init]) {
-        self.id = [dict numberForKey:@"id"];
-        name = [dict stringForKey:@"name"];
-        url = [dict stringForKey:@"url"];
+        self.id = [dict objectForKey:@"id" withClass:[NSNumber class]];
+        name = [dict objectForKey:@"name" withClass:[NSString class]];
+        url = [dict objectForKey:@"url" withClass:[NSString class]];
     }
     return self;
 }
@@ -1420,4 +1454,6 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
              };
 }
 @end
+
 NS_ASSUME_NONNULL_END
+
