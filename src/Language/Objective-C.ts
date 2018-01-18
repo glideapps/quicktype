@@ -332,42 +332,42 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         );
     };
 
-    private toDynamicExpression = (t: Type, dynamic: Sourcelike): Sourcelike => {
+    private toDynamicExpression = (t: Type, typed: Sourcelike): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            _anyType => ["NSNullify(", dynamic, ")"],
-            _nullType => ["NSNullify(", dynamic, ")"],
-            _boolType => dynamic,
-            _integerType => dynamic,
-            _doubleType => dynamic,
-            _stringType => dynamic,
+            _anyType => ["NSNullify(", typed, ")"],
+            _nullType => ["NSNullify(", typed, ")"],
+            _boolType => typed,
+            _integerType => typed,
+            _doubleType => typed,
+            _stringType => typed,
             arrayType => {
                 if (this.isJSONSafe(arrayType)) {
                     // TODO check each value type
-                    return dynamic;
+                    return typed;
                 }
-                return ["[", dynamic, " map:λ(id x, ", this.toDynamicExpression(arrayType.items, "x"), ")]"];
+                return ["[", typed, " map:λ(id x, ", this.toDynamicExpression(arrayType.items, "x"), ")]"];
             },
-            _classType => ["[", dynamic, " JSONDictionary]"],
+            _classType => ["[", typed, " JSONDictionary]"],
             mapType => {
                 if (this.isJSONSafe(mapType)) {
                     // TODO check each value type
-                    return dynamic;
+                    return typed;
                 }
-                return ["[", dynamic, " map:λ(id x, ", this.toDynamicExpression(mapType.values, "x"), ")]"];
+                return ["[", typed, " map:λ(id x, ", this.toDynamicExpression(mapType.values, "x"), ")]"];
             },
-            _enumType => ["[", dynamic, " value]"],
+            _enumType => ["[", typed, " value]"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     if (this.isJSONSafe(nullable)) {
-                        return ["NSNullify(", dynamic, ")"];
+                        return ["NSNullify(", typed, ")"];
                     } else {
-                        return ["NSNullify(", this.toDynamicExpression(nullable, dynamic), ")"];
+                        return ["NSNullify(", this.toDynamicExpression(nullable, typed), ")"];
                     }
                 } else {
                     // TODO support unions
-                    return dynamic;
+                    return typed;
                 }
             }
         );
