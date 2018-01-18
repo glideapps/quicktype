@@ -975,7 +975,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
 - (NSBoolean *)boolForKey:(NSString *)key {
     id value = [self objectForKey:key];
-    if ([value isEqual:@(YES)] || [value isEqual:@(NO)]) return value;
+    if ([value isEqual:@YES] || [value isEqual:@NO]) return value;
     else @throw [self exceptionForKey:key type:@"bool"];
 }
 @end`);
