@@ -389,19 +389,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         }
     }
 
-    private safePropertyName = (propertyName: Name) => {
-        return modifySource(serialized => {
-            if (includes(propertySafeKeywords, serialized)) {
-                return `self.${serialized}`;
-            } else {
-                return serialized;
-            }
-        }, propertyName);
-    };
-
     private emitPropertyAssignment = (propertyName: Name, _json: string, propertyType: Type) => {
         const key = stringEscape(_json);
-        const name = this.safePropertyName(propertyName);
+        const name = ["_", propertyName];
         matchType<void>(
             propertyType,
             anyType =>
@@ -651,25 +641,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     private emitClassImplementation = (t: ClassType, className: Name): void => {
         const isTopLevel = this.topLevels.valueSeq().contains(t);
         this.emitLine("@implementation ", className);
-
-        let propertyNames: Sourcelike[] = [];
-        this.forEachClassProperty(t, "none", name => {
-            if (propertyNames.length !== 0) {
-                propertyNames.push(", ");
-            }
-            propertyNames.push(name);
-
-            if (propertyNames.length === 5 * 2 - 1) {
-                this.emitLine("@synthesize ", propertyNames, ";");
-                propertyNames = [];
-            }
-        });
-        if (propertyNames.length !== 0) {
-            this.emitLine("@synthesize ", propertyNames, ";");
-        }
-
         if (!this._justTypes) {
-            this.ensureBlankLine();
             if (isTopLevel) {
                 this.emitBlock(
                     "+ (_Nullable instancetype)fromData:(NSData *)data error:(NSError *_Nullable *)error",
@@ -689,9 +661,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.emitLine("NSError *error;");
                     this.emitLine("return ", className, "FromJSON(json, NSUTF8StringEncoding, &error);");
                 });
+                this.ensureBlankLine();
             }
 
-            this.ensureBlankLine();
             this.emitBlock("+ (instancetype)fromJSONDictionary:(NSDictionary *)dict", () => {
                 this.emitLine("return [[", className, " alloc] initWithJSONDictionary:dict];");
             });
@@ -708,7 +680,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.indent(() => {
                     this.forEachClassProperty(t, "none", (propertyName, jsonKey, propertyType) => {
                         const key = stringEscape(jsonKey);
-                        const name = this.safePropertyName(propertyName);
+                        const name = ["_", propertyName];
                         this.emitLine('@"', key, '": ', this.toDynamicExpression(propertyType, name), ",");
                     });
                 });
@@ -774,7 +746,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         );
 
         this.emitLine("static NSMutableDictionary<NSString *, ", enumName, " *> *", instances, ";");
-        this.emitLine("@synthesize value;");
 
         this.ensureBlankLine();
         this.forEachEnumCase(enumType, "none", (name, jsonValue) => {
@@ -814,13 +785,13 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("+ (instancetype _Nullable)withValue:(NSString *)value { return ", instances, "[value]; }");
 
         this.ensureBlankLine();
-        this.emitMethod("- (instancetype)initWithValue:(NSString *)val", () => {
-            this.emitLine("if (self = [super init]) value = val;");
+        this.emitMethod("- (instancetype)initWithValue:(NSString *)value", () => {
+            this.emitLine("if (self = [super init]) _value = value;");
             this.emitLine("return self;");
         });
         this.ensureBlankLine();
 
-        this.emitLine("- (NSUInteger)hash { return value.hash; }");
+        this.emitLine("- (NSUInteger)hash { return _value.hash; }");
         this.emitLine("@end");
     }
 
