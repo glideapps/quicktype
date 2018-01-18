@@ -2,7 +2,7 @@
 
 import * as stream from "stream";
 
-import { defined, hashCodeInit, addHashCode } from "./Support";
+import { defined, hashCodeInit, addHashCode, panic } from "./Support";
 import { isDate, isTime, isDateTime } from "./DateTime";
 
 const Combo = require("stream-json/Combo");
@@ -282,10 +282,11 @@ export class CompressedJSON {
     };
 
     private handleEndNumber = (): void => {
-        if (defined(this._ctx).currentNumberIsDouble === undefined) {
-            throw "Number ended but not started";
+        const isDouble = defined(this._ctx).currentNumberIsDouble;
+        if (isDouble === undefined) {
+            return panic("Number ended but not started");
         }
-        const numberTag = defined(this._ctx).currentNumberIsDouble !== undefined ? Tag.Double : Tag.Integer;
+        const numberTag = isDouble ? Tag.Double : Tag.Integer;
         this.popContext();
         this.commitValue(makeValue(numberTag, 0));
     };
