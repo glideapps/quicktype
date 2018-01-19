@@ -474,13 +474,14 @@ function graphQLSchemaFilename(baseName: string): string {
 class GraphQLFixture extends LanguageFixture {
   constructor(
     language: languages.Language,
+    private readonly _onlyExactName: boolean = false,
     readonly name: string = `graphql-${language.name}`
   ) {
     super(language);
   }
 
   runForName(name: string): boolean {
-    return this.name === name || name === "graphql";
+    return this.name === name || (!this._onlyExactName && name === "graphql");
   }
 
   getSamples(sources: string[]): { priority: Sample[]; others: Sample[] } {
@@ -557,5 +558,6 @@ export const allFixtures: Fixture[] = [
   new GraphQLFixture(languages.GoLanguage),
   new GraphQLFixture(languages.CPlusPlusLanguage),
   new GraphQLFixture(languages.SwiftLanguage),
+  new GraphQLFixture(languages.ObjectiveCLanguage, true),
   new GraphQLFixture(languages.TypeScriptLanguage)
 ];

@@ -12,7 +12,8 @@ import {
     nullableFromUnion,
     matchTypeExhaustive,
     TypeKind,
-    isNamedType
+    isNamedType,
+    ClassProperty
 } from "./Type";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
@@ -42,6 +43,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _namedEnums: OrderedSet<EnumType>;
     private _namedUnions: OrderedSet<UnionType>;
     private _haveUnions: boolean;
+    private _haveOptionalProperties: boolean;
     private _cycleBreakerTypes?: Set<Type>;
 
     private _alphabetizeProperties = false;
@@ -200,7 +202,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             Set(forbiddenNames)
         );
         const names = c.sortedProperties
-            .map((_: Type, name: string) => {
+            .map((_, name) => {
                 // FIXME: This alternative should really depend on what the
                 // actual name of the class ends up being.  We can do this
                 // with a DependencyName.
@@ -268,9 +270,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         const names = this.names;
         if (t instanceof ClassType && this._classPropertyNamer !== null) {
             const propertyNameds = this._propertyNamesStoreView.get(t);
-            return t.properties
-                .sortBy((_, n: string): string => defined(names.get(defined(propertyNameds.get(n)))))
-                .toOrderedSet();
+            const sortedMap = t.properties
+                .map(p => p.type)
+                .sortBy((_, n) => defined(names.get(defined(propertyNameds.get(n)))));
+            return sortedMap.toOrderedSet();
         }
         return t.children.toOrderedSet();
     };
@@ -285,6 +288,10 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected get haveUnions(): boolean {
         return this._haveUnions;
+    }
+
+    protected get haveOptionalProperties(): boolean {
+        return this._haveOptionalProperties;
     }
 
     protected get enums(): OrderedSet<EnumType> {
@@ -389,19 +396,19 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected forEachClassProperty = (
         c: ClassType,
         blankLocations: BlankLineLocations,
-        f: (name: Name, jsonName: string, t: Type) => void
+        f: (name: Name, jsonName: string, p: ClassProperty) => void
     ): void => {
         const propertyNames = this._propertyNamesStoreView.get(c);
         if (this._alphabetizeProperties) {
             const alphabetizedPropertyNames = propertyNames.sortBy(n => this.names.get(n)).toOrderedMap();
             this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName) => {
-                const t = defined(c.properties.get(jsonName));
-                f(name, jsonName, t);
+                const p = defined(c.properties.get(jsonName));
+                f(name, jsonName, p);
             });
         } else {
-            this.forEachWithBlankLines(c.properties, blankLocations, (t, jsonName) => {
+            this.forEachWithBlankLines(c.properties, blankLocations, (p, jsonName) => {
                 const name = defined(propertyNames.get(jsonName));
-                f(name, jsonName, t);
+                f(name, jsonName, p);
             });
         }
     };
@@ -524,6 +531,9 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         const types = this.typeGraph.allTypesUnordered();
         this._haveUnions = types.some(t => t instanceof UnionType);
+        this._haveOptionalProperties = types
+            .filter(t => t instanceof ClassType)
+            .some(c => (c as ClassType).properties.some(p => p.isOptional));
         this._namedTypes = this._declarationIR.declarations.filter(d => d.kind === "define").map(d => d.type);
         const { classes, enums, unions } = separateNamedTypes(this._namedTypes);
         this._namedClasses = classes;
@@ -559,8 +569,9 @@ export abstract class ConvenienceRenderer extends Renderer {
             const value = this.makeHandlebarsContextForType(t);
             if (t instanceof ClassType) {
                 const properties: StringMap = {};
-                this.forEachClassProperty(t, "none", (name, jsonName, m) => {
-                    const propertyValue = this.makeHandlebarsContextForType(m);
+                this.forEachClassProperty(t, "none", (name, jsonName, p) => {
+                    const propertyValue = this.makeHandlebarsContextForType(p.type);
+                    propertyValue.isOptional = p.isOptional;
                     propertyValue.assignedName = defined(this.names.get(name));
                     properties[jsonName] = propertyValue;
                 });

@@ -414,7 +414,8 @@ class SwiftRenderer extends ConvenienceRenderer {
                     }
                 };
 
-                this.forEachClassProperty(c, "none", (name, _, t) => {
+                this.forEachClassProperty(c, "none", (name, _, p) => {
+                    const t = p.type;
                     if (lastType === undefined) {
                         lastType = t;
                     }
@@ -428,8 +429,8 @@ class SwiftRenderer extends ConvenienceRenderer {
                 });
                 emitLastType();
             } else {
-                this.forEachClassProperty(c, "none", (name, _, t) => {
-                    this.emitLine("let ", name, ": ", this.swiftType(t, true));
+                this.forEachClassProperty(c, "none", (name, _, p) => {
+                    this.emitLine("let ", name, ": ", this.swiftType(p.type, true));
                 });
             }
 
@@ -461,9 +462,9 @@ class SwiftRenderer extends ConvenienceRenderer {
                 // Make an initializer that initalizes all fields
                 this.ensureBlankLine();
                 let properties: Sourcelike[] = [];
-                this.forEachClassProperty(c, "none", (name, _, t) => {
+                this.forEachClassProperty(c, "none", (name, _, p) => {
                     if (properties.length > 0) properties.push(", ");
-                    properties.push(name, ": ", this.swiftType(t, true));
+                    properties.push(name, ": ", this.swiftType(p.type, true));
                 });
                 this.emitBlock(["init(", ...properties, ")"], () => {
                     this.forEachClassProperty(c, "none", name => {

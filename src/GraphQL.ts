@@ -4,7 +4,7 @@
 
 import { List, Map, OrderedSet, OrderedMap } from "immutable";
 
-import { removeNullFromUnion, UnionType } from "./Type";
+import { removeNullFromUnion, UnionType, ClassProperty } from "./Type";
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
 import {
     DocumentNode,
@@ -262,7 +262,7 @@ class GQLQuery {
             return panic("Object, interface, or union type doesn't have a name.");
         }
         const nameOrOverride = overrideName || gqlType.name;
-        let properties = Map<string, TypeRef>();
+        let properties = Map<string, ClassProperty>();
         let selections = expandSelectionSet(selectionSet, gqlType, false);
         for (;;) {
             const nextItem = selections.pop();
@@ -277,7 +277,7 @@ class GQLQuery {
                     if (optional) {
                         fieldType = makeNullable(builder, fieldType, givenName, null, nameOrOverride);
                     }
-                    properties = properties.set(givenName, fieldType);
+                    properties = properties.set(givenName, new ClassProperty(fieldType, false));
                     break;
                 case "FragmentSpread": {
                     const fragment = this.getFragment(selection.name.value);
@@ -422,7 +422,7 @@ export function makeGraphQLQueryTypes(
         const dataType = query.makeType(builder, odn, queryName);
         const errorType = builder.getClassType(
             new TypeNames(OrderedSet(["error"]), OrderedSet(["graphQLError"]), false),
-            OrderedMap({ message: builder.getStringType(undefined, undefined) })
+            OrderedMap({ message: new ClassProperty(builder.getStringType(undefined, undefined), false) })
         );
         const optionalErrorArray = builder.makeNullable(
             builder.getArrayType(errorType),
@@ -430,7 +430,10 @@ export function makeGraphQLQueryTypes(
         );
         const t = builder.getClassType(
             makeTypeNames(queryName, false),
-            OrderedMap({ data: dataType, errors: optionalErrorArray })
+            OrderedMap({
+                data: new ClassProperty(dataType, false),
+                errors: new ClassProperty(optionalErrorArray, false)
+            })
         );
         types = types.set(queryName, t);
     });

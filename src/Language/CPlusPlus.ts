@@ -387,8 +387,8 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     private emitClass = (c: ClassType, className: Name): void => {
         this.emitBlock(["struct ", className], true, () => {
-            this.forEachClassProperty(c, "none", (name, _json, propertyType) => {
-                this.emitLine(this.cppType(propertyType, false, false, true), " ", name, ";");
+            this.forEachClassProperty(c, "none", (name, _json, property) => {
+                this.emitLine(this.cppType(property.type, false, false, true), " ", name, ";");
             });
         });
     };
@@ -399,7 +399,8 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             ["inline void from_json(const json& _j, struct ", ourQualifier, className, "& _x)"],
             false,
             () => {
-                this.forEachClassProperty(c, "none", (name, json, t) => {
+                this.forEachClassProperty(c, "none", (name, json, p) => {
+                    const t = p.type;
                     if (t instanceof UnionType) {
                         const [maybeNull, nonNulls] = removeNullFromUnion(t);
                         if (maybeNull !== null) {

@@ -9,7 +9,8 @@ import {
     matchType,
     EnumType,
     isNamedType,
-    directlyReachableSingleNamedType
+    directlyReachableSingleNamedType,
+    ClassProperty
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import {
@@ -43,6 +44,10 @@ export default class L extends TargetLanguage {
     constructor() {
         super("TypeScript", ["typescript", "ts", "tsx"], "ts");
         this.setOptions([this._justTypes, this._declareUnions, this._runtimeTypecheck]);
+    }
+
+    get supportsOptionalClassProperties(): boolean {
+        return true;
     }
 
     protected get rendererClass(): new (
@@ -200,6 +205,13 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         );
     };
 
+    typeMapTypeForProperty(p: ClassProperty): Sourcelike {
+        if (!p.isOptional || p.type.isNullable) {
+            return this.typeMapTypeFor(p.type);
+        }
+        return ["U(null, ", this.typeMapTypeFor(p.type), ")"];
+    }
+
     emitBlock = (source: Sourcelike, end: string, emit: () => void) => {
         this.emitLine(source, " {");
         this.indent(emit);
@@ -210,8 +222,8 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         this.emitBlock("const typeMap: any =", ";", () => {
             this.forEachClass("none", (t, name) => {
                 this.emitBlock(['"', name, '":'], ",", () => {
-                    this.forEachClassProperty(t, "none", (propName, _propJsonName, propType) => {
-                        this.emitLine(propName, ": ", this.typeMapTypeFor(propType), ",");
+                    this.forEachClassProperty(t, "none", (propName, _propJsonName, property) => {
+                        this.emitLine(propName, ": ", this.typeMapTypeForProperty(property), ",");
                     });
                 });
             });
@@ -230,8 +242,12 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     private emitClass = (c: ClassType, className: Name) => {
         this.emitBlock(["export interface ", className], "", () => {
             const table: Sourcelike[][] = [];
-            this.forEachClassProperty(c, "none", (name, _jsonName, t) => {
-                const nullable = t instanceof UnionType ? nullableFromUnion(t) : null;
+            this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+                const t = p.type;
+                let nullable = t instanceof UnionType ? nullableFromUnion(t) : null;
+                if (p.isOptional && nullable === null) {
+                    nullable = t;
+                }
                 table.push([
                     [name, nullable !== null ? "?" : "", ": "],
                     [this.sourceFor(nullable !== null ? nullable : t), ";"]

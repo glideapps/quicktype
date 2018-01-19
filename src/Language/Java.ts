@@ -325,12 +325,12 @@ class JavaRenderer extends ConvenienceRenderer {
             this.emitLine("@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)");
         }
         this.emitBlock(["public class ", className], () => {
-            this.forEachClassProperty(c, "none", (name, _, t) => {
-                this.emitLine("private ", this.javaType(false, t, true), " ", name, ";");
+            this.forEachClassProperty(c, "none", (name, _, p) => {
+                this.emitLine("private ", this.javaType(false, p.type, true), " ", name, ";");
             });
-            this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, t) => {
+            this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
                 if (!this._justTypes) this.emitLine('@JsonProperty("', stringEscape(jsonName), '")');
-                const rendered = this.javaType(false, t);
+                const rendered = this.javaType(false, p.type);
                 this.emitLine("public ", rendered, " get", modifySource(capitalize, name), "() { return ", name, "; }");
                 if (!this._justTypes) this.emitLine('@JsonProperty("', stringEscape(jsonName), '")');
                 this.emitLine(

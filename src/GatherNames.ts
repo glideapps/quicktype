@@ -40,8 +40,8 @@ export function gatherNames(graph: TypeGraph): void {
             },
             classType => {
                 const properties = classType.properties.sortBy((_, n) => n);
-                properties.forEach((propertyType, propertyName) => {
-                    processType(propertyType, OrderedSet([propertyName]), names);
+                properties.forEach((property, propertyName) => {
+                    processType(property.type, OrderedSet([propertyName]), names);
                 });
             },
             mapType => {

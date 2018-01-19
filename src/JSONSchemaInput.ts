@@ -3,9 +3,9 @@
 import { List, OrderedSet, Map, fromJS, Set } from "immutable";
 import * as pluralize from "pluralize";
 
-import { MapType, assertIsClass } from "./Type";
+import { MapType, ClassProperty } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "./Support";
-import { TypeGraphBuilder, TypeRef, getHopefullyFinishedType } from "./TypeBuilder";
+import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames, makeTypeNames } from "./TypeNames";
 import { unifyTypes } from "./UnifyClasses";
 
@@ -163,23 +163,20 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
     ): TypeRef {
         const required = Set(requiredArray);
         const result = typeBuilder.getUniqueClassType(getName(schema, typeNames), true);
-        const c = assertIsClass(getHopefullyFinishedType(typeBuilder, result));
         setTypeForPath(path, result);
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
         // we would use a JSON parser that preserves order.
         const props = Map(properties).map((propSchema, propName) => {
-            let t = toType(
+            const t = toType(
                 checkStringMap(propSchema),
                 path.push({ kind: PathElementKind.Property, name: propName }),
                 makeTypeNames(pluralize.singular(propName), true)
             );
-            if (!required.has(propName)) {
-                return typeBuilder.makeNullable(t, makeTypeNames(propName, true));
-            }
-            return t;
+            const isOptional = !required.has(propName);
+            return new ClassProperty(t, isOptional);
         });
-        c.setProperties(props.toOrderedMap());
+        typeBuilder.setClassProperties(result, props.toOrderedMap());
         return result;
     }
 

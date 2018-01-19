@@ -46,6 +46,10 @@ export default class SimpleTypesTargetLanguage extends TargetLanguage {
         return { date: "date", time: "time", dateTime: "date-time" };
     }
 
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
     protected get rendererClass(): new (
         graph: TypeGraph,
         leadingComments: string[] | undefined,
@@ -145,8 +149,8 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     private emitClass = (c: ClassType, className: Name) => {
         this.emitLine("class ", className, " {");
         this.indent(() => {
-            this.forEachClassProperty(c, "none", (name, _jsonName, t) => {
-                this.emitLine(name, ": ", this.sourceFor(t));
+            this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+                this.emitLine(name, p.isOptional ? "?" : "", ": ", this.sourceFor(p.type));
             });
         });
         this.emitLine("}");
