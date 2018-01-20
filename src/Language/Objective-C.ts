@@ -1,6 +1,6 @@
 "use strict";
 
-import { includes, startsWith } from "lodash";
+import { includes, startsWith, repeat } from "lodash";
 import * as pluralize from "pluralize";
 
 import { TargetLanguage } from "../TargetLanguage";
@@ -532,22 +532,24 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         return [name, " *", name, "FromJSON(NSString *json, NSStringEncoding encoding, NSError **error)"];
     }
 
-    private topLevelToDataPrototype(name: Name): Sourcelike {
+    private topLevelToDataPrototype(name: Name, pad: boolean = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
-        return ["NSData *", name, "ToData(", name, " *", parameter, ", NSError **error)"];
+        const padding = pad ? repeat(" ", this.sourcelikeToString(name).length - "NSData".length) : "";
+        return ["NSData", padding, " *", name, "ToData(", name, " *", parameter, ", NSError **error)"];
     }
 
-    private topLevelToJSONPrototype(name: Name): Sourcelike {
+    private topLevelToJSONPrototype(name: Name, pad: boolean = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
-        return ["NSString *", name, "ToJSON(", name, " *", parameter, ", NSStringEncoding encoding, NSError **error)"];
+        const padding = pad ? repeat(" ", this.sourcelikeToString(name).length - "NSString".length) : "";
+        return ["NSString", padding, " *", name, "ToJSON(", name, " *", parameter, ", NSStringEncoding encoding, NSError **error)"];
     }
 
     private emitTopLevelFunctionDeclarations(_: Type, name: Name): void {
         this.emitExtraComments(name);
         this.emitLine(this.topLevelFromDataPrototype(name), ";");
         this.emitLine(this.topLevelFromJSONPrototype(name), ";");
-        this.emitLine(this.topLevelToDataPrototype(name), ";");
-        this.emitLine(this.topLevelToJSONPrototype(name), ";");
+        this.emitLine(this.topLevelToDataPrototype(name, true), ";");
+        this.emitLine(this.topLevelToJSONPrototype(name, true), ";");
     }
     private emitTopLevelFunctions(t: Type, name: Name): void {
         const parameter = this.variableNameForTopLevel(name);
