@@ -551,16 +551,29 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine(this.topLevelToDataPrototype(name, true), ";");
         this.emitLine(this.topLevelToJSONPrototype(name, true), ";");
     }
+
+    private emitTryCatchAsError(inTry: () => void, inCatch: () => void) {
+        this.emitLine("@try {");
+        this.indent(inTry);
+        this.emitLine("} @catch (NSException *exception) {");
+        this.indent(() => {
+            this.emitLine(`*error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];`);
+            inCatch();
+        });
+        this.emitLine("}");
+    }
+
     private emitTopLevelFunctions(t: Type, name: Name): void {
         const parameter = this.variableNameForTopLevel(name);
 
         this.ensureBlankLine();
         this.emitBlock(this.topLevelFromDataPrototype(name), () => {
-            this.emitLine(
-                this.pointerAwareTypeName(this.jsonType(t)),
-                "json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];"
-            );
-            this.emitLine("return *error ? nil : ", this.fromDynamicExpression(t, "json"), ";");
+            this.emitTryCatchAsError(() => {
+                this.emitLine(
+                    "id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];"
+                );
+                this.emitLine("return *error ? nil : ", this.fromDynamicExpression(t, "json"), ";");
+            }, () => this.emitLine("return nil;"));
         });
 
         this.ensureBlankLine();
@@ -570,16 +583,17 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
         this.ensureBlankLine();
         this.emitBlock(this.topLevelToDataPrototype(name), () => {
-            this.emitLine(
-                this.pointerAwareTypeName(this.jsonType(t)),
-                "json = ",
-                this.toDynamicExpression(t, parameter),
-                ";"
-            );
-            this.emitLine(
-                "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];"
-            );
-            this.emitLine("return *error ? nil : data;");
+            this.emitTryCatchAsError(() => {
+                this.emitLine(
+                    "id json = ",
+                    this.toDynamicExpression(t, parameter),
+                    ";"
+                );
+                this.emitLine(
+                    "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];"
+                );
+                this.emitLine("return *error ? nil : data;");
+            }, () => this.emitLine("return nil;"));
         });
 
         this.ensureBlankLine();
