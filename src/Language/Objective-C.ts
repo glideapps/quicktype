@@ -889,8 +889,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     "Allows us to create throw expressions.",
                     "",
                     "Although exceptions are rarely used in Objective-C, they're used internally",
-                    "here to short-circuit recursive JSON processing. Soon they will be caught at",
-                    "the API boundary and convered to NSError."
+                    "here to short-circuit recursive JSON processing, then caught at the API",
+                    "boundary and convered to NSError."
                 );
                 this.emitMultiline(`static id _Nullable throw(NSString * _Nullable reason) {
     @throw [NSException exceptionWithName:@"JSONSerialization" reason:reason userInfo:nil];
