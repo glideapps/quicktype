@@ -809,9 +809,11 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             });
         }
 
-        this.ensureBlankLine();
-        this.emitLine(`#import <Foundation/Foundation.h>`);
-        this.ensureBlankLine();
+        if (!this._features.implementation) {
+            this.ensureBlankLine();
+            this.emitLine(`#import <Foundation/Foundation.h>`);
+            this.ensureBlankLine();
+        }
 
         if (this._features.interface) {
             if (this._features.implementation) {
