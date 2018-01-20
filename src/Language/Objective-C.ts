@@ -876,7 +876,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     "here to short-circuit recursive JSON processing. Soon they will be caught at",
                     "the API boundary and convered to NSError."
                 );
-                this.emitMultiline(`id _Nullable throw(NSString * _Nullable reason) {
+                this.emitMultiline(`static id _Nullable throw(NSString * _Nullable reason) {
     @throw [NSException exceptionWithName:@"JSONSerialization" reason:reason userInfo:nil];
     return nil;
 }`);
