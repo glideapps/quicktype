@@ -541,7 +541,17 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     private topLevelToJSONPrototype(name: Name, pad: boolean = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
         const padding = pad ? repeat(" ", this.sourcelikeToString(name).length - "NSString".length) : "";
-        return ["NSString", padding, " *", name, "ToJSON(", name, " *", parameter, ", NSStringEncoding encoding, NSError **error)"];
+        return [
+            "NSString",
+            padding,
+            " *",
+            name,
+            "ToJSON(",
+            name,
+            " *",
+            parameter,
+            ", NSStringEncoding encoding, NSError **error)"
+        ];
     }
 
     private emitTopLevelFunctionDeclarations(_: Type, name: Name): void {
@@ -556,7 +566,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this.indent(inTry);
         this.emitLine("} @catch (NSException *exception) {");
         this.indent(() => {
-            this.emitLine(`*error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];`);
+            this.emitLine(
+                `*error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];`
+            );
             inCatch();
         });
         this.emitLine("}");
@@ -567,12 +579,15 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
         this.ensureBlankLine();
         this.emitBlock(this.topLevelFromDataPrototype(name), () => {
-            this.emitTryCatchAsError(() => {
-                this.emitLine(
-                    "id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];"
-                );
-                this.emitLine("return *error ? nil : ", this.fromDynamicExpression(t, "json"), ";");
-            }, () => this.emitLine("return nil;"));
+            this.emitTryCatchAsError(
+                () => {
+                    this.emitLine(
+                        "id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];"
+                    );
+                    this.emitLine("return *error ? nil : ", this.fromDynamicExpression(t, "json"), ";");
+                },
+                () => this.emitLine("return nil;")
+            );
         });
 
         this.ensureBlankLine();
@@ -582,17 +597,16 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
         this.ensureBlankLine();
         this.emitBlock(this.topLevelToDataPrototype(name), () => {
-            this.emitTryCatchAsError(() => {
-                this.emitLine(
-                    "id json = ",
-                    this.toDynamicExpression(t, parameter),
-                    ";"
-                );
-                this.emitLine(
-                    "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];"
-                );
-                this.emitLine("return *error ? nil : data;");
-            }, () => this.emitLine("return nil;"));
+            this.emitTryCatchAsError(
+                () => {
+                    this.emitLine("id json = ", this.toDynamicExpression(t, parameter), ";");
+                    this.emitLine(
+                        "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];"
+                    );
+                    this.emitLine("return *error ? nil : data;");
+                },
+                () => this.emitLine("return nil;")
+            );
         });
 
         this.ensureBlankLine();
