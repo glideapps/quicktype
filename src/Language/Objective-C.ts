@@ -545,7 +545,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private emitTopLevelFunctionDeclarations(_: Type, name: Name): void {
-        this.emitExtraComments(name);
         this.emitLine(this.topLevelFromDataPrototype(name), ";");
         this.emitLine(this.topLevelFromJSONPrototype(name), ";");
         this.emitLine(this.topLevelToDataPrototype(name, true), ";");
@@ -863,9 +862,17 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 t => !(t instanceof ClassType)
             );
 
-            if (!this._justTypes) {
-                this.emitMark("Top-level marshalling functions");
-                this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitTopLevelFunctionDeclarations(t, n));
+            const hasTopLevelNonClassTypes = this.topLevels.some(t => !(t instanceof ClassType));
+            if (!this._justTypes && hasTopLevelNonClassTypes) {
+                this.ensureBlankLine();
+                this.emitExtraComments("Marshalling functions for non-object top-level types.");
+                this.forEachTopLevel(
+                    "leading-and-interposing",
+                    (t, n) => this.emitTopLevelFunctionDeclarations(t, n),
+                    // Objective-C developers get freaked out by C functions, so we don't
+                    // declare them for top-level object types (we always need them for non-object types)
+                    t => !(t instanceof ClassType)
+                );
             }
             this.forEachNamedType("leading-and-interposing", this.emitClassInterface, () => null, () => null);
 
