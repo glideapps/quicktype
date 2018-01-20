@@ -640,12 +640,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         if (!this._justTypes && isTopLevel) {
             if (t.properties.count() > 0) this.ensureBlankLine();
 
-            this.emitLine("+ (_Nullable instancetype)fromJSON:(NSString *)json;");
             this.emitLine(
                 "+ (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;"
             );
             this.emitLine("+ (_Nullable instancetype)fromData:(NSData *)data error:(NSError *_Nullable *)error;");
-            this.emitLine("- (NSString *_Nullable)toJSON;");
             this.emitLine(
                 "- (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;"
             );
@@ -673,11 +671,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                         this.emitLine("return ", className, "FromJSON(json, encoding, error);");
                     }
                 );
-                this.ensureBlankLine();
-                this.emitBlock("+ (_Nullable instancetype)fromJSON:(NSString *)json", () => {
-                    this.emitLine("NSError *error;");
-                    this.emitLine("return ", className, "FromJSON(json, NSUTF8StringEncoding, &error);");
-                });
                 this.ensureBlankLine();
             }
 
@@ -716,11 +709,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                         this.emitLine("return ", className, "ToJSON(self, encoding, error);");
                     }
                 );
-                this.ensureBlankLine();
-                this.emitBlock(`- (NSString *_Nullable)toJSON`, () => {
-                    this.emitLine("NSError *error;");
-                    this.emitLine("return ", className, "ToJSON(self, NSUTF8StringEncoding, &error);");
-                });
             }
         }
 
