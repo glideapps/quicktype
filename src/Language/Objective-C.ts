@@ -541,11 +541,20 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     private topLevelToJSONPrototype(name: Name, pad: boolean = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
         const padding = pad ? repeat(" ", this.sourcelikeToString(name).length - "NSString".length) : "";
-        return ["NSString", padding, " *", name, "ToJSON(", name, " *", parameter, ", NSStringEncoding encoding, NSError **error)"];
+        return [
+            "NSString",
+            padding,
+            " *",
+            name,
+            "ToJSON(",
+            name,
+            " *",
+            parameter,
+            ", NSStringEncoding encoding, NSError **error)"
+        ];
     }
 
     private emitTopLevelFunctionDeclarations(_: Type, name: Name): void {
-        this.emitExtraComments(name);
         this.emitLine(this.topLevelFromDataPrototype(name), ";");
         this.emitLine(this.topLevelFromJSONPrototype(name), ";");
         this.emitLine(this.topLevelToDataPrototype(name, true), ";");
@@ -557,7 +566,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this.indent(inTry);
         this.emitLine("} @catch (NSException *exception) {");
         this.indent(() => {
-            this.emitLine(`*error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];`);
+            this.emitLine(
+                `*error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];`
+            );
             inCatch();
         });
         this.emitLine("}");
@@ -568,12 +579,15 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
         this.ensureBlankLine();
         this.emitBlock(this.topLevelFromDataPrototype(name), () => {
-            this.emitTryCatchAsError(() => {
-                this.emitLine(
-                    "id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];"
-                );
-                this.emitLine("return *error ? nil : ", this.fromDynamicExpression(t, "json"), ";");
-            }, () => this.emitLine("return nil;"));
+            this.emitTryCatchAsError(
+                () => {
+                    this.emitLine(
+                        "id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];"
+                    );
+                    this.emitLine("return *error ? nil : ", this.fromDynamicExpression(t, "json"), ";");
+                },
+                () => this.emitLine("return nil;")
+            );
         });
 
         this.ensureBlankLine();
@@ -583,17 +597,16 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
         this.ensureBlankLine();
         this.emitBlock(this.topLevelToDataPrototype(name), () => {
-            this.emitTryCatchAsError(() => {
-                this.emitLine(
-                    "id json = ",
-                    this.toDynamicExpression(t, parameter),
-                    ";"
-                );
-                this.emitLine(
-                    "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];"
-                );
-                this.emitLine("return *error ? nil : data;");
-            }, () => this.emitLine("return nil;"));
+            this.emitTryCatchAsError(
+                () => {
+                    this.emitLine("id json = ", this.toDynamicExpression(t, parameter), ";");
+                    this.emitLine(
+                        "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];"
+                    );
+                    this.emitLine("return *error ? nil : data;");
+                },
+                () => this.emitLine("return nil;")
+            );
         });
 
         this.ensureBlankLine();
@@ -627,12 +640,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         if (!this._justTypes && isTopLevel) {
             if (t.properties.count() > 0) this.ensureBlankLine();
 
-            this.emitLine("+ (_Nullable instancetype)fromJSON:(NSString *)json;");
             this.emitLine(
                 "+ (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;"
             );
             this.emitLine("+ (_Nullable instancetype)fromData:(NSData *)data error:(NSError *_Nullable *)error;");
-            this.emitLine("- (NSString *_Nullable)toJSON;");
             this.emitLine(
                 "- (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;"
             );
@@ -660,11 +671,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                         this.emitLine("return ", className, "FromJSON(json, encoding, error);");
                     }
                 );
-                this.ensureBlankLine();
-                this.emitBlock("+ (_Nullable instancetype)fromJSON:(NSString *)json", () => {
-                    this.emitLine("NSError *error;");
-                    this.emitLine("return ", className, "FromJSON(json, NSUTF8StringEncoding, &error);");
-                });
                 this.ensureBlankLine();
             }
 
@@ -703,11 +709,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                         this.emitLine("return ", className, "ToJSON(self, encoding, error);");
                     }
                 );
-                this.ensureBlankLine();
-                this.emitBlock(`- (NSString *_Nullable)toJSON`, () => {
-                    this.emitLine("NSError *error;");
-                    this.emitLine("return ", className, "ToJSON(self, NSUTF8StringEncoding, &error);");
-                });
             }
         }
 
@@ -863,9 +864,17 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 t => !(t instanceof ClassType)
             );
 
-            if (!this._justTypes) {
-                this.emitMark("Top-level marshalling functions");
-                this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitTopLevelFunctionDeclarations(t, n));
+            const hasTopLevelNonClassTypes = this.topLevels.some(t => !(t instanceof ClassType));
+            if (!this._justTypes && hasTopLevelNonClassTypes) {
+                this.ensureBlankLine();
+                this.emitExtraComments("Marshalling functions for non-object top-level types.");
+                this.forEachTopLevel(
+                    "leading-and-interposing",
+                    (t, n) => this.emitTopLevelFunctionDeclarations(t, n),
+                    // Objective-C developers get freaked out by C functions, so we don't
+                    // declare them for top-level object types (we always need them for non-object types)
+                    t => !(t instanceof ClassType)
+                );
             }
             this.forEachNamedType("leading-and-interposing", this.emitClassInterface, () => null, () => null);
 
