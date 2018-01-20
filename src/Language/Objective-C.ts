@@ -1,6 +1,6 @@
 "use strict";
 
-import { includes, startsWith } from "lodash";
+import { includes, startsWith, repeat } from "lodash";
 import * as pluralize from "pluralize";
 
 import { TargetLanguage } from "../TargetLanguage";
@@ -532,33 +532,48 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         return [name, " *", name, "FromJSON(NSString *json, NSStringEncoding encoding, NSError **error)"];
     }
 
-    private topLevelToDataPrototype(name: Name): Sourcelike {
+    private topLevelToDataPrototype(name: Name, pad: boolean = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
-        return ["NSData *", name, "ToData(", name, " *", parameter, ", NSError **error)"];
+        const padding = pad ? repeat(" ", this.sourcelikeToString(name).length - "NSData".length) : "";
+        return ["NSData", padding, " *", name, "ToData(", name, " *", parameter, ", NSError **error)"];
     }
 
-    private topLevelToJSONPrototype(name: Name): Sourcelike {
+    private topLevelToJSONPrototype(name: Name, pad: boolean = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
-        return ["NSString *", name, "ToJSON(", name, " *", parameter, ", NSStringEncoding encoding, NSError **error)"];
+        const padding = pad ? repeat(" ", this.sourcelikeToString(name).length - "NSString".length) : "";
+        return ["NSString", padding, " *", name, "ToJSON(", name, " *", parameter, ", NSStringEncoding encoding, NSError **error)"];
     }
 
     private emitTopLevelFunctionDeclarations(_: Type, name: Name): void {
         this.emitExtraComments(name);
         this.emitLine(this.topLevelFromDataPrototype(name), ";");
         this.emitLine(this.topLevelFromJSONPrototype(name), ";");
-        this.emitLine(this.topLevelToDataPrototype(name), ";");
-        this.emitLine(this.topLevelToJSONPrototype(name), ";");
+        this.emitLine(this.topLevelToDataPrototype(name, true), ";");
+        this.emitLine(this.topLevelToJSONPrototype(name, true), ";");
     }
+
+    private emitTryCatchAsError(inTry: () => void, inCatch: () => void) {
+        this.emitLine("@try {");
+        this.indent(inTry);
+        this.emitLine("} @catch (NSException *exception) {");
+        this.indent(() => {
+            this.emitLine(`*error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];`);
+            inCatch();
+        });
+        this.emitLine("}");
+    }
+
     private emitTopLevelFunctions(t: Type, name: Name): void {
         const parameter = this.variableNameForTopLevel(name);
 
         this.ensureBlankLine();
         this.emitBlock(this.topLevelFromDataPrototype(name), () => {
-            this.emitLine(
-                this.pointerAwareTypeName(this.jsonType(t)),
-                "json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];"
-            );
-            this.emitLine("return *error ? nil : ", this.fromDynamicExpression(t, "json"), ";");
+            this.emitTryCatchAsError(() => {
+                this.emitLine(
+                    "id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];"
+                );
+                this.emitLine("return *error ? nil : ", this.fromDynamicExpression(t, "json"), ";");
+            }, () => this.emitLine("return nil;"));
         });
 
         this.ensureBlankLine();
@@ -568,16 +583,17 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
         this.ensureBlankLine();
         this.emitBlock(this.topLevelToDataPrototype(name), () => {
-            this.emitLine(
-                this.pointerAwareTypeName(this.jsonType(t)),
-                "json = ",
-                this.toDynamicExpression(t, parameter),
-                ";"
-            );
-            this.emitLine(
-                "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];"
-            );
-            this.emitLine("return *error ? nil : data;");
+            this.emitTryCatchAsError(() => {
+                this.emitLine(
+                    "id json = ",
+                    this.toDynamicExpression(t, parameter),
+                    ";"
+                );
+                this.emitLine(
+                    "NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];"
+                );
+                this.emitLine("return *error ? nil : data;");
+            }, () => this.emitLine("return nil;"));
         });
 
         this.ensureBlankLine();
@@ -809,9 +825,11 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             });
         }
 
-        this.ensureBlankLine();
-        this.emitLine(`#import <Foundation/Foundation.h>`);
-        this.ensureBlankLine();
+        if (!this._features.implementation) {
+            this.ensureBlankLine();
+            this.emitLine(`#import <Foundation/Foundation.h>`);
+            this.ensureBlankLine();
+        }
 
         if (this._features.interface) {
             if (this._features.implementation) {
@@ -874,7 +892,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     "here to short-circuit recursive JSON processing. Soon they will be caught at",
                     "the API boundary and convered to NSError."
                 );
-                this.emitMultiline(`id _Nullable throw(NSString * _Nullable reason) {
+                this.emitMultiline(`static id _Nullable throw(NSString * _Nullable reason) {
     @throw [NSException exceptionWithName:@"JSONSerialization" reason:reason userInfo:nil];
     return nil;
 }`);
