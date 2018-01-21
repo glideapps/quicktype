@@ -380,7 +380,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     private emitPropertyAssignment = (propertyName: Name, _json: string, propertyType: Type) => {
         const key = stringEscape(_json);
         const name = ["_", propertyName];
-        matchType<void>(
+        matchType(
             propertyType,
             anyType =>
                 this.emitLine(
@@ -474,7 +474,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     );
                 }
             },
-            // TODO Support enums
             enumType =>
                 this.emitLine(
                     name,
@@ -501,7 +500,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                         ";"
                     );
                 }
-                return nullable !== null ? this.objcType(nullable) : "id";
             }
         );
     };
