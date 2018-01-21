@@ -309,9 +309,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             _integerType => dynamic,
             _doubleType => dynamic,
             _stringType => dynamic,
-            arrayType => ["[", dynamic, " map:λ(id x, ", this.fromDynamicExpression(arrayType.items, "x"), ")]"],
+            arrayType => ["map(", dynamic, ", λ(id x, ", this.fromDynamicExpression(arrayType.items, "x"), "))"],
             classType => ["[", this.nameForNamedType(classType), " fromJSONDictionary:", dynamic, "]"],
-            mapType => ["[", dynamic, " map:λ(id x, ", this.fromDynamicExpression(mapType.values, "x"), ")]"],
+            mapType => ["map(", dynamic, ", λ(id x, ", this.fromDynamicExpression(mapType.values, "x"), "))"],
             enumType => ["NotNil([", this.nameForNamedType(enumType), " withValue:", dynamic, "])"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -334,7 +334,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     // TODO check each value type
                     return typed;
                 }
-                return ["[", typed, " map:λ(id x, ", this.toDynamicExpression(arrayType.items, "x"), ")]"];
+                return ["map(", typed, ", λ(id x, ", this.toDynamicExpression(arrayType.items, "x"), "))"];
             },
             _classType => ["[", typed, " JSONDictionary]"],
             mapType => {
@@ -342,7 +342,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     // TODO check each value type
                     return typed;
                 }
-                return ["[", typed, " map:λ(id x, ", this.toDynamicExpression(mapType.values, "x"), ")]"];
+                return ["map(", typed, ", λ(id x, ", this.toDynamicExpression(mapType.values, "x"), "))"];
             },
             _enumType => ["[", typed, " value]"],
             unionType => {
@@ -466,11 +466,11 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 } else {
                     this.emitLine(
                         name,
-                        ' = [[dict objectForKey:@"',
+                        ' = map([dict objectForKey:@"',
                         key,
-                        '" withClass:[NSDictionary class]] map:',
+                        '" withClass:[NSDictionary class]], ',
                         ["λ(id x, ", this.fromDynamicExpression(itemType, "x"), ")"],
-                        "];"
+                        ");"
                     );
                 }
             },
@@ -940,21 +940,19 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private emitDictionaryAndArrayExtensions = () => {
-        this.emitMultiline(`@implementation NSArray (JSONConversion)
-- (NSArray *)map:(id (^)(id element))f {
-    id result = [NSMutableArray arrayWithCapacity:self.count];
-    for (id x in self) [result addObject:f(x)];
+        this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
+    id result = nil;
+    if ([collection isKindOfClass:[NSArray class]]) {
+        result = [NSMutableArray arrayWithCapacity:[collection count]];
+        for (id x in collection) [result addObject:f(x)];
+    } else if ([collection isKindOfClass:[NSDictionary class]]) {
+        result = [NSMutableDictionary dictionaryWithCapacity:[collection count]];
+        for (id key in collection) [result setObject:f([collection objectForKey:key]) forKey:key];
+    }
     return result;
 }
-@end
 
 @implementation NSDictionary (JSONConversion)
-- (NSDictionary *)map:(id (^)(id value))f {
-    id result = [NSMutableDictionary dictionaryWithCapacity:self.count];
-    for (id key in self) [result setObject:f([self objectForKey:key]) forKey:key];
-    return result;
-}
-
 - (id)objectForKey:(NSString *)key withClass:(Class)cls {
     id value = [self objectForKey:key];
     if ([value isKindOfClass:cls]) return value;
