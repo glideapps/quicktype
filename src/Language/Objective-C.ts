@@ -1,6 +1,8 @@
 "use strict";
 
+import * as lo from "lodash";
 import { includes, startsWith, repeat } from "lodash";
+
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, nullableFromUnion, matchType, ArrayType, MapType, UnionType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
@@ -19,12 +21,14 @@ import {
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { StringOption, BooleanOption, EnumOption } from "../RendererOptions";
 import { Set } from "immutable";
+import { assert, defined } from "../Support";
 
 const unicode = require("unicode-properties");
 
 type OutputFeatures = { interface: boolean; implementation: boolean };
 
 const DEBUG = false;
+const DEFAULT_CLASS_PREFIX = "QT";
 
 export default class ObjectiveCTargetLanguage extends TargetLanguage {
     private readonly _featuresOption = new EnumOption("features", "Interface and implementation", [
@@ -33,7 +37,13 @@ export default class ObjectiveCTargetLanguage extends TargetLanguage {
         ["implementation", { interface: false, implementation: true }]
     ]);
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-    private readonly _classPrefixOption = new StringOption("class-prefix", "Class prefix", "PREFIX", "QT");
+    private readonly _emitMarshallingFunctions = new BooleanOption("functions", "C-style functions", false);
+    private readonly _classPrefixOption = new StringOption(
+        "class-prefix",
+        "Class prefix",
+        "PREFIX",
+        DEFAULT_CLASS_PREFIX
+    );
     private readonly _extraCommentsOption = new BooleanOption("extra-comments", "Extra comments", false);
 
     constructor() {
@@ -42,7 +52,8 @@ export default class ObjectiveCTargetLanguage extends TargetLanguage {
             this._justTypesOption,
             this._classPrefixOption,
             this._featuresOption,
-            this._extraCommentsOption
+            this._extraCommentsOption,
+            this._emitMarshallingFunctions
         ]);
     }
 
@@ -151,6 +162,8 @@ function isAnyOrNull(t: Type): boolean {
 const staticEnumValuesIdentifier = "values";
 
 class ObjectiveCRenderer extends ConvenienceRenderer {
+    private _currentFilename: string | undefined;
+
     // enums contained in NSArray or NSDictionary are represented
     // as 'pseudo-enum' reference types. Eventually we may want to
     // support 'natural' enums (NSUInteger) but this isn't implemented yet.
@@ -163,16 +176,28 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
-        private readonly _classPrefix: string,
+        private _classPrefix: string,
         private readonly _features: OutputFeatures,
-        private readonly _extraComments: boolean
+        private readonly _extraComments: boolean,
+        private readonly _marshalingFunctions: boolean
     ) {
         super(graph, leadingComments);
+
+        // Infer the class prefix from a top-level name if it's not given
+        if (this._classPrefix === DEFAULT_CLASS_PREFIX) {
+            const aTopLevel = defined(this.topLevels.keySeq().first());
+            this._classPrefix = this.inferClassPrefix(aTopLevel);
+        }
 
         this.pseudoEnums = graph
             .allTypesUnordered()
             .filter(t => t instanceof EnumType && this.enumOccursInArrayOrMap(t))
             .map(t => t as EnumType);
+    }
+
+    private inferClassPrefix(name: string): string {
+        const caps = lo.initial(lo.takeWhile(name, s => s === s.toLocaleUpperCase())).join("");
+        return caps.length === 0 ? DEFAULT_CLASS_PREFIX : caps;
     }
 
     protected setUpNaming(): Namespace[] {
@@ -253,6 +278,17 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             this.emitLine("// ", comment);
         }
     };
+
+    startFile(basename: Sourcelike, extension: string): void {
+        assert(this._currentFilename === undefined, "Previous file wasn't finished");
+        // FIXME: The filenames should actually be Sourcelikes, too
+        this._currentFilename = `${this.sourcelikeToString(basename)}.${extension}`;
+    }
+
+    finishFile(): void {
+        super.finishFile(defined(this._currentFilename));
+        this._currentFilename = undefined;
+    }
 
     private objcType = (t: Type, nullableOrBoxed: boolean = false): [Sourcelike, string] => {
         return matchType<[Sourcelike, string]>(
@@ -786,41 +822,50 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     }
 
-    protected emitSourceStructure(): void {
-        if (this.leadingComments !== undefined) {
-            this.emitCommentLines("// ", this.leadingComments);
-        } else if (!this._justTypes && !this._features.interface) {
-            this.emitLine("// Remember to import the companion header like:");
-            this.emitLine("// ");
-            this.emitLine('//   #import "', this._classPrefix, 'Header.h"');
-        } else if (!this._justTypes) {
-            this.emitCommentLines("// ", ["To parse this JSON:", ""]);
-            this.emitLine("//   NSError *error;");
-            this.forEachTopLevel("none", (t, topLevelName) => {
-                const fromJsonExpression =
-                    t instanceof ClassType
-                        ? ["[", topLevelName, " fromJSON:json encoding:NSUTF8Encoding error:&error]"]
-                        : [topLevelName, "FromJSON(json, NSUTF8Encoding, &error);"];
-                this.emitLine(
-                    "//   ",
-                    topLevelName,
-                    " *",
-                    this.variableNameForTopLevel(topLevelName),
-                    " = ",
-                    fromJsonExpression
-                );
-            });
-        }
+    splitExtension(filename: string): [string, string] {
+        const i = filename.lastIndexOf(".");
+        const extension = i !== -1 ? filename.split(".").pop() : "m";
+        filename = i !== -1 ? filename.substr(0, i) : filename;
+        return [filename, extension || "m"];
+    }
 
-        if (!this._features.implementation) {
+    protected emitSourceStructure(proposedFilename: string): void {
+        const fileMode = proposedFilename !== "stdout";
+        if (!fileMode) {
+            // We don't have a filename, so we use a top-level name
+            proposedFilename = this.sourcelikeToString(this.nameForNamedType(defined(this.topLevels.first()))) + ".m";
+        }
+        const [filename, extension] = this.splitExtension(proposedFilename);
+
+        if (this._features.interface) {
+            this.startFile(filename, "h");
+
+            if (this.leadingComments !== undefined) {
+                this.emitCommentLines("// ", this.leadingComments);
+            } else if (!this._justTypes) {
+                this.emitCommentLines("// ", ["To parse this JSON:", ""]);
+                this.emitLine("//   NSError *error;");
+                this.forEachTopLevel("none", (t, topLevelName) => {
+                    const fromJsonExpression =
+                        t instanceof ClassType
+                            ? ["[", topLevelName, " fromJSON:json encoding:NSUTF8Encoding error:&error]"]
+                            : [topLevelName, "FromJSON(json, NSUTF8Encoding, &error);"];
+                    this.emitLine(
+                        "//   ",
+                        topLevelName,
+                        " *",
+                        this.variableNameForTopLevel(topLevelName),
+                        " = ",
+                        fromJsonExpression
+                    );
+                });
+            }
+
             this.ensureBlankLine();
             this.emitLine(`#import <Foundation/Foundation.h>`);
             this.ensureBlankLine();
-        }
 
-        if (this._features.interface) {
             // Emit @class declarations for top-level array+maps and classes
-            this.ensureBlankLine();
             this.forEachNamedType(
                 "none",
                 (_, className) => this.emitLine("@class ", className, ";"),
@@ -843,27 +888,30 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             );
 
             const hasTopLevelNonClassTypes = this.topLevels.some(t => !(t instanceof ClassType));
-            if (!this._justTypes && hasTopLevelNonClassTypes) {
+            if (!this._justTypes && (hasTopLevelNonClassTypes || this._marshalingFunctions)) {
                 this.ensureBlankLine();
-                this.emitExtraComments("Marshalling functions for non-object top-level types.");
+                this.emitExtraComments("Marshalling functions for top-level types.");
                 this.forEachTopLevel(
                     "leading-and-interposing",
                     (t, n) => this.emitTopLevelFunctionDeclarations(t, n),
                     // Objective-C developers get freaked out by C functions, so we don't
                     // declare them for top-level object types (we always need them for non-object types)
-                    t => !(t instanceof ClassType)
+                    t => this._marshalingFunctions || !(t instanceof ClassType)
                 );
             }
             this.forEachNamedType("leading-and-interposing", this.emitClassInterface, () => null, () => null);
 
             this.ensureBlankLine();
             this.emitLine("NS_ASSUME_NONNULL_END");
+            this.finishFile();
         }
 
         if (this._features.implementation) {
-            if (this._features.interface) {
-                this.emitMark("Implementation");
-            }
+            this.startFile(filename, extension);
+
+            this.emitLine(`#import "${filename}.h"`);
+            this.ensureBlankLine();
+
             if (!this._justTypes) {
                 this.ensureBlankLine();
                 this.emitExtraComments("Shorthand for simple blocks");
@@ -876,8 +924,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
                 this.emitLine("NS_ASSUME_NONNULL_BEGIN");
                 this.ensureBlankLine();
-
-                this.emitDictionaryAndArrayExtensions();
 
                 // We wouldn't need to emit these private iterfaces if we emitted implementations in forward-order
                 // but the code is more readable and explicit if we do this.
@@ -892,9 +938,21 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     () => null
                 );
 
-                this.emitMark("Pseudo-enum implementations");
+                if (this.haveEnums) {
+                    if (this._extraComments) {
+                        this.ensureBlankLine();
+                        this.emitExtraComments(
+                            "These enum-like reference types are needed so that enum",
+                            "values can be contained by NSArray and NSDictionary."
+                        );
+                        this.ensureBlankLine();
+                    }
+                    this.forEachEnum("leading-and-interposing", (t, n) => this.emitPseudoEnumImplementation(t, n));
+                }
 
-                this.forEachEnum("leading-and-interposing", (t, n) => this.emitPseudoEnumImplementation(t, n));
+                this.ensureBlankLine();
+                this.emitMapFunction();
+                this.ensureBlankLine();
 
                 this.emitMark("JSON serialization implementations");
                 this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitTopLevelFunctions(t, n));
@@ -906,11 +964,25 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
                 this.emitLine("NS_ASSUME_NONNULL_END");
             }
+
+            this.finishFile();
         }
     }
+    private get needsMap(): boolean {
+        // TODO this isn't complete (needs union support, for example)
+        function needsMap(t: Type): boolean {
+            return (
+                t instanceof MapType ||
+                t instanceof ArrayType ||
+                (t instanceof ClassType && t.properties.some(needsMap))
+            );
+        }
+        return this.typeGraph.allTypesUnordered().some(needsMap);
+    }
 
-    private emitDictionaryAndArrayExtensions = () => {
-        this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
+    private emitMapFunction = () => {
+        if (this.needsMap) {
+            this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
     id result = nil;
     if ([collection isKindOfClass:[NSArray class]]) {
         result = [NSMutableArray arrayWithCapacity:[collection count]];
@@ -921,5 +993,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
     return result;
 }`);
+        }
     };
 }
