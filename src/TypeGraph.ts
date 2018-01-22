@@ -2,7 +2,15 @@
 
 import { Map, List, Set, OrderedSet, Collection } from "immutable";
 
-import { Type, separateNamedTypes, SeparatedNamedTypes, isNamedType } from "./Type";
+import {
+    Type,
+    separateNamedTypes,
+    SeparatedNamedTypes,
+    isNamedType,
+    ClassType,
+    ClassProperty,
+    UnionType
+} from "./Type";
 import { defined, assert, panic } from "./Support";
 import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
@@ -202,15 +210,23 @@ export class TypeGraph {
     // carefully.
     rewrite<T extends Type>(
         stringTypeMapping: StringTypeMapping,
+        alphabetizeProperties: boolean,
         replacementGroups: T[][],
         replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef
     ): TypeGraph {
         if (replacementGroups.length === 0) return this;
-        return new GraphRewriteBuilder(this, stringTypeMapping, replacementGroups, replacer).finish();
+        return new GraphRewriteBuilder(
+            this,
+            stringTypeMapping,
+            alphabetizeProperties,
+            replacementGroups,
+            replacer
+        ).finish();
     }
 
     garbageCollect(): TypeGraph {
-        return new GraphRewriteBuilder(this, NoStringTypeMapping, [], (_t, _b) =>
+        // console.log("GC");
+        return new GraphRewriteBuilder(this, NoStringTypeMapping, true, [], (_t, _b) =>
             panic("This shouldn't be called")
         ).finish();
     }
@@ -231,7 +247,48 @@ export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping
         return graph;
     }
     assert(noneTypes.size === 1, "Cannot have more than one none type");
-    return graph.rewrite(stringTypeMapping, [noneTypes.toArray()], (_, builder, forwardingRef) => {
+    return graph.rewrite(stringTypeMapping, false, [noneTypes.toArray()], (_, builder, forwardingRef) => {
         return builder.getPrimitiveType("any", forwardingRef);
+    });
+}
+
+export function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
+    function rewriteClass(c: ClassType, builder: GraphRewriteBuilder<ClassType>, forwardingRef: TypeRef): TypeRef {
+        const properties = c.properties.map((p, name) => {
+            const t = p.type;
+            let ref: TypeRef;
+            if (!p.isOptional || t.isNullable) {
+                ref = builder.reconstituteType(t);
+            } else {
+                const nullType = builder.getPrimitiveType("null");
+                let members: OrderedSet<TypeRef>;
+                if (t instanceof UnionType) {
+                    members = t.members.map(t => builder.reconstituteType(t)).add(nullType);
+                } else {
+                    members = OrderedSet([builder.reconstituteType(t), nullType]);
+                }
+                const names = t.hasNames ? t.getNames() : new TypeNames(OrderedSet([name]), OrderedSet(), true);
+                ref = builder.getUnionType(names, members);
+            }
+            return new ClassProperty(ref, false);
+        });
+        if (c.isFixed) {
+            return builder.getUniqueClassType(c.getNames(), true, properties, forwardingRef);
+        } else {
+            return builder.getClassType(c.getNames(), properties, forwardingRef);
+        }
+    }
+
+    const classesWithOptional = graph
+        .allTypesUnordered()
+        .filter(t => t instanceof ClassType && t.properties.some(p => p.isOptional));
+    const replacementGroups = classesWithOptional.map(c => [c as ClassType]).toArray();
+    if (classesWithOptional.size === 0) {
+        return graph;
+    }
+    return graph.rewrite(stringTypeMapping, false, replacementGroups, (setOfClass, builder, forwardingRef) => {
+        assert(setOfClass.size === 1);
+        const c = defined(setOfClass.first());
+        return rewriteClass(c, builder, forwardingRef);
     });
 }

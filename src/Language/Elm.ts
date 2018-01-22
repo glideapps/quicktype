@@ -327,8 +327,8 @@ class ElmRenderer extends ConvenienceRenderer {
         this.emitLine("type alias ", className, " =");
         this.indent(() => {
             let onFirst = true;
-            this.forEachClassProperty(c, "none", (name, _, t) => {
-                this.emitLine(onFirst ? "{" : ",", " ", name, " : ", this.elmType(t).source);
+            this.forEachClassProperty(c, "none", (name, _, p) => {
+                this.emitLine(onFirst ? "{" : ",", " ", name, " : ", this.elmType(p.type).source);
                 onFirst = false;
             });
             if (onFirst) {
@@ -384,9 +384,9 @@ class ElmRenderer extends ConvenienceRenderer {
         this.indent(() => {
             this.emitLine("Jpipe.decode ", className);
             this.indent(() => {
-                this.forEachClassProperty(c, "none", (_, jsonName, t) => {
-                    const propDecoder = parenIfNeeded(this.decoderNameForType(t));
-                    const { reqOrOpt, fallback } = requiredOrOptional(t);
+                this.forEachClassProperty(c, "none", (_, jsonName, p) => {
+                    const propDecoder = parenIfNeeded(this.decoderNameForType(p.type));
+                    const { reqOrOpt, fallback } = requiredOrOptional(p.type);
                     this.emitLine("|> ", reqOrOpt, ' "', stringEscape(jsonName), '" ', propDecoder, fallback);
                 });
             });
@@ -400,9 +400,9 @@ class ElmRenderer extends ConvenienceRenderer {
             this.emitLine("Jenc.object");
             this.indent(() => {
                 let onFirst = true;
-                this.forEachClassProperty(c, "none", (name, jsonName, t) => {
+                this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const bracketOrComma = onFirst ? "[" : ",";
-                    const propEncoder = this.encoderNameForType(t).source;
+                    const propEncoder = this.encoderNameForType(p.type).source;
                     this.emitLine(bracketOrComma, ' ("', stringEscape(jsonName), '", ', propEncoder, " x.", name, ")");
                     onFirst = false;
                 });

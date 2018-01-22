@@ -2,7 +2,7 @@
 
 import { Map, Set, OrderedSet } from "immutable";
 
-import { ClassType, Type, nonNullTypeCases } from "./Type";
+import { ClassType, Type, nonNullTypeCases, ClassProperty } from "./Type";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
@@ -37,8 +37,8 @@ function canBeCombined(c1: ClassType, c2: ClassType): boolean {
     if (p1.size < p2.size * REQUIRED_OVERLAP || p2.size < p1.size * REQUIRED_OVERLAP) {
         return false;
     }
-    let larger: Map<string, Type>;
-    let smaller: Map<string, Type>;
+    let larger: Map<string, ClassProperty>;
+    let smaller: Map<string, ClassProperty>;
     if (p1.size > p2.size) {
         larger = p1;
         smaller = p2;
@@ -66,8 +66,8 @@ function canBeCombined(c1: ClassType, c2: ClassType): boolean {
         if (ts === undefined || tl === undefined) {
             return panic("Both of these should have this property");
         }
-        const tsCases = nonNullTypeCases(ts);
-        const tlCases = nonNullTypeCases(tl);
+        const tsCases = nonNullTypeCases(ts.type);
+        const tlCases = nonNullTypeCases(tl.type);
         if (!tsCases.isEmpty() && !tlCases.isEmpty() && !typeSetsCanBeCombined(tsCases, tlCases)) {
             return false;
         }
@@ -92,7 +92,11 @@ function tryAddToClique(c: ClassType, clique: Clique): boolean {
     return false;
 }
 
-export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
+export function combineClasses(
+    graph: TypeGraph,
+    stringTypeMapping: StringTypeMapping,
+    alphabetizeProperties: boolean
+): TypeGraph {
     let unprocessedClasses = graph
         .allNamedTypesSeparated()
         .classes.filter(c => !c.isFixed)
@@ -131,5 +135,5 @@ export function combineClasses(graph: TypeGraph, stringTypeMapping: StringTypeMa
         return unifyTypes(clique, typeNamesUnion(allNames), builder, false, false, forwardingRef);
     }
 
-    return graph.rewrite(stringTypeMapping, cliques, makeCliqueClass);
+    return graph.rewrite(stringTypeMapping, alphabetizeProperties, cliques, makeCliqueClass);
 }

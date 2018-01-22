@@ -1,6 +1,7 @@
 "use strict";
 
 import { OrderedSet, OrderedMap, Collection } from "immutable";
+
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
@@ -15,6 +16,13 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     if (x.kind === "none" || y.kind === "none") return true;
     return false;
 }
+
+/*
+const mapPath: string[] = ["#"];
+function mapIndentation(): string {
+    return "  ".repeat(mapPath.length);
+}
+*/
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
@@ -136,6 +144,7 @@ export class PrimitiveType extends Type {
     }
 
     map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
+        // console.log(`${mapIndentation()}mapping ${this.kind}`);
         return builder.getPrimitiveType(this.kind);
     }
 
@@ -154,6 +163,7 @@ export class StringType extends PrimitiveType {
     }
 
     map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
+        // console.log(`${mapIndentation()}mapping ${this.kind}`);
         return builder.getStringType(this.enumCases);
     }
 
@@ -200,7 +210,11 @@ export class ArrayType extends Type {
     }
 
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getArrayType(f(this.getItemsRef()));
+        // console.log(`${mapIndentation()}mapping ${this.kind}`);
+        // mapPath.push("[]");
+        const result = builder.getArrayType(f(this.getItemsRef()));
+        // mapPath.pop();
+        return result;
     }
 
     protected structuralEqualityStep(other: ArrayType, queue: (a: Type, b: Type) => boolean): boolean {
@@ -246,7 +260,11 @@ export class MapType extends Type {
     }
 
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        return builder.getMapType(f(this.getValuesRef()));
+        // console.log(`${mapIndentation()}mapping ${this.kind}`);
+        // mapPath.push("{}");
+        const result = builder.getMapType(f(this.getValuesRef()));
+        // mapPath.pop();
+        return result;
     }
 
     protected structuralEqualityStep(other: MapType, queue: (a: Type, b: Type) => boolean): boolean {
@@ -254,44 +272,69 @@ export class MapType extends Type {
     }
 }
 
+export class ClassProperty {
+    constructor(readonly typeRef: TypeRef, readonly isOptional: boolean) {}
+
+    get type(): Type {
+        return this.typeRef.deref()[0];
+    }
+
+    equals(other: any): boolean {
+        if (!(other instanceof ClassProperty)) {
+            return false;
+        }
+        return this.typeRef.equals(other.typeRef) && this.isOptional === other.isOptional;
+    }
+
+    hashCode(): number {
+        return this.typeRef.hashCode() + (this.isOptional ? 17 : 23);
+    }
+}
+
+function propertiesAreSorted(_props: OrderedMap<string, ClassProperty>): boolean {
+    /*
+    const keys = props.keySeq().toArray();
+    for (let i = 1; i < keys.length; i++) {
+        if (keys[i - 1] > keys[i]) return false;
+    }
+*/
+    return true;
+}
+
 export class ClassType extends Type {
     kind: "class";
-    private _propertyTypes: OrderedMap<string, Type> | undefined;
 
-    constructor(typeRef: TypeRef, readonly isFixed: boolean, private _propertyRefs?: OrderedMap<string, TypeRef>) {
+    constructor(typeRef: TypeRef, readonly isFixed: boolean, private _properties?: OrderedMap<string, ClassProperty>) {
         super(typeRef, "class");
+        if (_properties !== undefined) {
+            assert(propertiesAreSorted(_properties));
+        }
     }
 
-    setProperties(propertyRefs: OrderedMap<string, TypeRef>): void {
-        if (this._propertyRefs !== undefined) {
+    setProperties(properties: OrderedMap<string, ClassProperty>): void {
+        assert(propertiesAreSorted(properties));
+        if (this._properties !== undefined) {
             return panic("Can only set class properties once");
         }
-        this._propertyRefs = propertyRefs;
+        this._properties = properties;
     }
 
-    private getPropertyRefs(): OrderedMap<string, TypeRef> {
-        if (this._propertyRefs === undefined) {
-            return panic("Class properties accessed before they were set");
+    get properties(): OrderedMap<string, ClassProperty> {
+        if (this._properties === undefined) {
+            return panic("Properties are not set yet");
         }
-        return this._propertyRefs;
+        return this._properties;
     }
 
-    get properties(): OrderedMap<string, Type> {
-        if (this._propertyTypes === undefined) {
-            this._propertyTypes = this.getPropertyRefs().map(tref => tref.deref()[0]);
-        }
-        return this._propertyTypes;
-    }
-
-    get sortedProperties(): OrderedMap<string, Type> {
+    get sortedProperties(): OrderedMap<string, ClassProperty> {
         const properties = this.properties;
         const sortedKeys = properties.keySeq().sort();
-        const props = sortedKeys.map((k: string): [string, Type] => [k, defined(properties.get(k))]);
+        const props = sortedKeys.map((k: string): [string, ClassProperty] => [k, defined(properties.get(k))]);
         return OrderedMap(props);
     }
 
     get children(): OrderedSet<Type> {
-        return this.sortedProperties.toOrderedSet();
+        return this.sortedProperties.map(p => p.type).toOrderedSet();
     }
 
     get isNullable(): boolean {
@@ -303,7 +346,16 @@ export class ClassType extends Type {
     }
 
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        const properties = this.getPropertyRefs().map(f);
+        // const indent = "  ".repeat(mapPath.length);
+        // const path = mapPath.join(".");
+        // console.log(`${indent} mapping class ${this.getCombinedName()} at ${path}`);
+        const properties = this.properties.map((p, _n) => {
+            // console.log(`${indent}  property ${path}.${n}`);
+            // mapPath.push(n);
+            const result = new ClassProperty(f(p.typeRef), p.isOptional);
+            // mapPath.pop();
+            return result;
+        });
         if (this.isFixed) {
             return builder.getUniqueClassType(true, properties);
         } else {
@@ -316,9 +368,9 @@ export class ClassType extends Type {
         const pb = other.properties;
         if (pa.size !== pb.size) return false;
         let failed = false;
-        pa.forEach((ta, name) => {
-            const tb = pb.get(name);
-            if (tb === undefined || !queue(ta, tb)) {
+        pa.forEach((cpa, name) => {
+            const cpb = pb.get(name);
+            if (cpb === undefined || cpa.isOptional !== cpb.isOptional || !queue(cpa.type, cpb.type)) {
                 failed = true;
                 return false;
             }
@@ -354,6 +406,7 @@ export class EnumType extends Type {
     }
 
     map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
+        // console.log(`${mapIndentation()}mapping ${this.kind}`);
         return builder.getEnumType(this.cases);
     }
 
@@ -412,7 +465,15 @@ export class UnionType extends Type {
     }
 
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        const members = this.getMemberRefs().map(f);
+        // console.log(`${mapIndentation()}mapping union ${this.getCombinedName()}`);
+        const members = this.getMemberRefs().map(t => {
+            // const kind = t.deref()[0].kind;
+            // console.log(`${mapIndentation()}  member ${kind}`);
+            // mapPath.push(kind);
+            const result = f(t);
+            // mapPath.pop();
+            return result;
+        });
         return builder.getUnionType(members);
     }
 
@@ -443,6 +504,13 @@ export function unionCasesEqual(
     return !failed;
 }
 
+export function allTypeCases(t: Type): OrderedSet<Type> {
+    if (t instanceof UnionType) {
+        return t.members;
+    }
+    return OrderedSet([t]);
+}
+
 export function removeNullFromUnion(t: UnionType): [PrimitiveType | null, OrderedSet<Type>] {
     const nullType = t.findMember("null");
     if (nullType === undefined) {
@@ -470,6 +538,14 @@ export function nullableFromUnion(t: UnionType): Type | null {
 
 export function nonNullTypeCases(t: Type): OrderedSet<Type> {
     return removeNullFromType(t)[1];
+}
+
+export function getNullAsOptional(cp: ClassProperty): [boolean, OrderedSet<Type>] {
+    const [maybeNull, nonNulls] = removeNullFromType(cp.type);
+    if (cp.isOptional) {
+        return [true, nonNulls];
+    }
+    return [maybeNull !== null, nonNulls];
 }
 
 // FIXME: The outer OrderedSet should be some Collection, but I can't figure out

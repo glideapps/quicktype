@@ -2,20 +2,23 @@
 
 import { Map, Set, OrderedSet } from "immutable";
 
-import { Type, ClassType, unionCasesEqual, removeNullFromType } from "./Type";
-import { defined, assert, panic } from "./Support";
+import { Type, ClassType, unionCasesEqual, removeNullFromType, ClassProperty, allTypeCases } from "./Type";
+import { defined, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { unifyTypes } from "./UnifyClasses";
 
 const mapSizeThreshold = 20;
 
-function shouldBeMap(properties: Map<string, Type>): Set<Type> | undefined {
+function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefined {
     // Only classes with a certain number of properties are inferred
     // as maps.
     if (properties.size < mapSizeThreshold) {
         return undefined;
     }
+
+    // FIXME: simplify this - it's no longer necessary with the new
+    // class properties.
 
     // We need to handle three cases for maps (and the fourth case
     // where we leave the class as is):
@@ -25,12 +28,11 @@ function shouldBeMap(properties: Map<string, Type>): Set<Type> | undefined {
     // 3. No property types are null or nullable.
     let firstNonNullCases: OrderedSet<Type> | undefined = undefined;
     let allCases: Set<Type> = Set();
-    let isNullable = false;
     let canBeMap = true;
     // Check that all the property types are the same, modulo nullability.
-    properties.forEach(t => {
+    properties.forEach(p => {
         // The set of types first property can be, minus null.
-        const [maybeNull, nn] = removeNullFromType(t);
+        const nn = removeNullFromType(p.type)[1];
         if (!nn.isEmpty()) {
             if (firstNonNullCases !== undefined) {
                 // The set of non-null cases for all other properties must
@@ -43,17 +45,10 @@ function shouldBeMap(properties: Map<string, Type>): Set<Type> | undefined {
                 firstNonNullCases = nn;
             }
         }
-        allCases = allCases.union(nn.toSet());
-        if (maybeNull !== null) {
-            allCases = allCases.add(maybeNull);
-            isNullable = true;
-        }
+        allCases = allCases.union(allTypeCases(p.type));
     });
     if (!canBeMap) {
         return undefined;
-    }
-    if (firstNonNullCases === undefined) {
-        assert(isNullable, "Non-nullable map candidate with no types");
     }
     return allCases;
 }
@@ -83,5 +78,5 @@ function replaceClass(
 export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
     const allClasses = graph.allNamedTypesSeparated().classes;
     const classesToReplace = allClasses.filter(c => !c.isFixed && shouldBeMap(c.properties) !== undefined).toArray();
-    return graph.rewrite(stringTypeMapping, classesToReplace.map(c => [c]), replaceClass);
+    return graph.rewrite(stringTypeMapping, false, classesToReplace.map(c => [c]), replaceClass);
 }

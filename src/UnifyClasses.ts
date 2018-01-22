@@ -2,36 +2,35 @@
 
 import { Set, OrderedMap, OrderedSet } from "immutable";
 
-import { ClassType, Type, nonNullTypeCases, matchTypeExhaustive, assertIsClass } from "./Type";
+import { ClassType, Type, matchTypeExhaustive, assertIsClass, ClassProperty, allTypeCases } from "./Type";
 import { TypeRef, UnionBuilder, TypeBuilder, TypeLookerUp } from "./TypeBuilder";
 import { TypeNames, makeTypeNames, typeNamesUnion } from "./TypeNames";
 import { panic, assert, defined } from "./Support";
 
 function getCliqueProperties(
     clique: ClassType[],
-    makePropertyType: (names: TypeNames, types: OrderedSet<Type>, isNullable: boolean) => TypeRef
-): OrderedMap<string, TypeRef> {
+    makePropertyType: (names: TypeNames, types: OrderedSet<Type>) => TypeRef
+): OrderedMap<string, ClassProperty> {
     let properties = OrderedMap<string, [OrderedSet<Type>, number, boolean]>();
     for (const c of clique) {
-        c.properties.forEach((t, name) => {
+        c.properties.forEach((cp, name) => {
             let p = properties.get(name);
             if (p === undefined) {
                 p = [OrderedSet(), 0, false];
                 properties = properties.set(name, p);
             }
             p[1] += 1;
-            p[0] = p[0].union(nonNullTypeCases(t));
-            if (t.isNullable) {
+            p[0] = p[0].union(allTypeCases(cp.type));
+            if (cp.isOptional) {
                 p[2] = true;
             }
         });
     }
-    return properties.map(([types, count, haveNullable], name) => {
-        assert(!types.some(t => t.isNullable), "Nullable types are not allowed in non-nullable properties");
-        const isNullable = haveNullable || count < clique.length;
+    return properties.map(([types, count, isOptional], name) => {
+        isOptional = isOptional || count < clique.length;
         const allNames = types.filter(t => t.hasNames).map(t => t.getNames());
         const typeNames = allNames.isEmpty() ? makeTypeNames(name, true) : typeNamesUnion(allNames);
-        return makePropertyType(typeNames, types, isNullable);
+        return new ClassProperty(makePropertyType(typeNames, types), isOptional);
     });
 }
 
@@ -80,19 +79,12 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
             this.forwardingRef
         );
 
-        const properties = getCliqueProperties(actualClasses, (names, types, isNullable) => {
-            if (types.size === 0) {
-                assert(isNullable, "Property has no type");
-                return this.typeBuilder.getPrimitiveType("null");
-            }
-            const tref = this._unifyTypes(types.map(t => t.typeRef).toArray(), names);
-            if (isNullable) {
-                return this.typeBuilder.makeNullable(tref, names);
-            }
-            return tref;
+        const properties = getCliqueProperties(actualClasses, (names, types) => {
+            assert(types.size > 0, "Property has no type");
+            return this._unifyTypes(types.map(t => t.typeRef).toArray(), names);
         });
 
-        (ref.deref()[0] as ClassType).setProperties(properties);
+        this.typeBuilder.setClassProperties(ref, properties);
 
         return ref;
     }

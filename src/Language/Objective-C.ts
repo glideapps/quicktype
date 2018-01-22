@@ -207,7 +207,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             return (
                 (t instanceof ArrayType && t.items.equals(enumType)) ||
                 (t instanceof MapType && t.values.equals(enumType)) ||
-                (t instanceof ClassType && t.properties.some(containedBy)) ||
+                (t instanceof ClassType && t.properties.some(p => containedBy(p.type))) ||
                 // TODO support unions
                 (t instanceof UnionType && false)
             );
@@ -569,18 +569,18 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
         this.emitLine("@interface ", className, " : NSObject");
         if (DEBUG) this.emitLine("@property NSDictionary<NSString *, id> *_json;");
-        this.forEachClassProperty(t, "none", (name, _json, propertyType) => {
+        this.forEachClassProperty(t, "none", (name, _json, property) => {
             let attributes = ["nonatomic"];
             // TODO offer a 'readonly' option
             // TODO We must add "copy" if it's NSCopy, otherwise "strong"
-            if (propertyType.isNullable) {
+            if (property.type.isNullable) {
                 attributes.push("nullable");
             }
             this.emitLine(
                 "@property ",
                 ["(", attributes.join(", "), ")"],
                 " ",
-                this.pointerAwareTypeName(propertyType),
+                this.pointerAwareTypeName(property.type),
                 name,
                 ";"
             );
@@ -608,8 +608,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         const [hasIrregularProperties, hasUnsafeProperties] = (() => {
             let irregular = false;
             let unsafe = false;
-            this.forEachClassProperty(t, "none", (name, jsonName, propType) => {
-                unsafe = unsafe || !this.isJSONOutputSafe(propType);
+            this.forEachClassProperty(t, "none", (name, jsonName, property) => {
+                unsafe = unsafe || !this.isJSONOutputSafe(property.type);
                 irregular = irregular || stringEscape(jsonName) !== this.sourcelikeToString(name);
             });
             return [irregular, unsafe];
@@ -655,9 +655,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     if (DEBUG) this.emitLine("__json = dict;");
 
                     this.emitLine("[self setValuesForKeysWithDictionary:dict];");
-                    this.forEachClassProperty(t, "none", (name, jsonName, propertyType) => {
-                        if (!this.isJSONSafe(propertyType)) {
-                            this.emitPropertyAssignment(name, jsonName, propertyType);
+                    this.forEachClassProperty(t, "none", (name, jsonName, property) => {
+                        if (!this.isJSONSafe(property.type)) {
+                            this.emitPropertyAssignment(name, jsonName, property.type);
                         }
                     });
                 });
@@ -701,11 +701,11 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.emitExtraComments("Map values that need translation");
                     this.emitLine("[dict addEntriesFromDictionary:@{");
                     this.indent(() => {
-                        this.forEachClassProperty(t, "none", (propertyName, jsonKey, propertyType) => {
-                            if (!this.isJSONOutputSafe(propertyType)) {
+                        this.forEachClassProperty(t, "none", (propertyName, jsonKey, property) => {
+                            if (!this.isJSONOutputSafe(property.type)) {
                                 const key = stringEscape(jsonKey);
                                 const name = ["_", propertyName];
-                                this.emitLine('@"', key, '": ', this.toDynamicExpression(propertyType, name), ",");
+                                this.emitLine('@"', key, '": ', this.toDynamicExpression(property.type, name), ",");
                             }
                         });
                     });
@@ -967,7 +967,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             return (
                 t instanceof MapType ||
                 t instanceof ArrayType ||
-                (t instanceof ClassType && t.properties.some(needsMap))
+                (t instanceof ClassType && t.properties.some(p => needsMap(p.type)))
             );
         }
         return this.typeGraph.allTypesUnordered().some(needsMap);

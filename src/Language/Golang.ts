@@ -187,8 +187,8 @@ class GoRenderer extends ConvenienceRenderer {
 
     private emitClass = (c: ClassType, className: Name): void => {
         let columns: Sourcelike[][] = [];
-        this.forEachClassProperty(c, "none", (name, jsonName, t) => {
-            const goType = this.goType(t, true);
+        this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            const goType = this.goType(p.type, true);
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`']]);
         });
         this.emitStruct(className, columns);

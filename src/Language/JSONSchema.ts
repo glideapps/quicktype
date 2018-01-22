@@ -21,6 +21,10 @@ export default class JSONSchemaTargetLanguage extends TargetLanguage {
         return { date: "date", time: "time", dateTime: "date-time" };
     }
 
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
     protected get rendererClass(): new (
         graph: TypeGraph,
         leadingComments: string[] | undefined,
@@ -118,9 +122,9 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
     private definitionForClass = (c: ClassType): Schema => {
         const properties: Schema = {};
         const required: string[] = [];
-        c.properties.forEach((t, name) => {
-            properties[name] = this.schemaForType(t);
-            if (!t.isNullable) {
+        c.properties.forEach((p, name) => {
+            properties[name] = this.schemaForType(p.type);
+            if (!p.isOptional) {
                 required.push(name);
             }
         });

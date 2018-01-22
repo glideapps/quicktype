@@ -13,7 +13,7 @@ import { schemaToType } from "./JSONSchemaInput";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
-import { TypeGraph, noneToAny } from "./TypeGraph";
+import { TypeGraph, noneToAny, optionalToNullable } from "./TypeGraph";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
 import { makeTypeNames } from "./TypeNames";
@@ -130,8 +130,9 @@ export class Run {
     }
 
     private makeGraph = (): TypeGraph => {
-        const stringTypeMapping = getTargetLanguage(this._options.lang).stringTypeMapping;
-        const typeBuilder = new TypeGraphBuilder(stringTypeMapping);
+        const targetLanguage = getTargetLanguage(this._options.lang);
+        const stringTypeMapping = targetLanguage.stringTypeMapping;
+        const typeBuilder = new TypeGraphBuilder(stringTypeMapping, this._options.alphabetizeProperties);
 
         // JSON Schema
         Map(this._allInputs.schemas).forEach((schema, name) => {
@@ -162,23 +163,27 @@ export class Run {
 
         const originalGraph = typeBuilder.finish();
         let graph = originalGraph;
-        const doCombineClasses = this._options.combineClasses;
-        if (doCombineClasses) {
-            graph = combineClasses(graph, stringTypeMapping);
+        if (this._options.combineClasses) {
+            graph = combineClasses(graph, stringTypeMapping, this._options.alphabetizeProperties);
         }
         if (doInferEnums) {
             graph = inferEnums(graph, stringTypeMapping);
         }
-        const doInferMaps = this._options.inferMaps;
-        if (doInferMaps) {
+        if (this._options.inferMaps) {
             graph = inferMaps(graph, stringTypeMapping);
         }
         graph = noneToAny(graph, stringTypeMapping);
+        if (!targetLanguage.supportsOptionalClassProperties) {
+            graph = optionalToNullable(graph, stringTypeMapping);
+        }
         // JSON Schema input can leave unreachable classes in the graph when it
         // unifies, which can trip is up, so we remove them here.  Also, sometimes
         // we combine classes in ways that will the order come out differently
         // compared to what it would be from the equivalent schema, so we always
         // just garbage collect to get a defined order and be done with it.
+        // FIXME: We don't actually have to do this if any of the above graph
+        // rewrites did anything.  We could just check whether the current graph
+        // is different from the one we started out with.
         graph = graph.garbageCollect();
 
         gatherNames(graph);

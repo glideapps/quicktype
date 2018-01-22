@@ -21,7 +21,11 @@ function shouldBeEnum(t: StringType): OrderedMap<string, number> | undefined {
     return undefined;
 }
 
-function replaceString(t: StringType, builder: GraphRewriteBuilder<StringType | UnionType>, forwardingRef: TypeRef): TypeRef {
+function replaceString(
+    t: StringType,
+    builder: GraphRewriteBuilder<StringType | UnionType>,
+    forwardingRef: TypeRef
+): TypeRef {
     const maybeEnumCases = shouldBeEnum(t);
     if (maybeEnumCases !== undefined) {
         return builder.getEnumType(t.getNames(), maybeEnumCases.keySeq().toOrderedSet(), forwardingRef);
@@ -37,19 +41,22 @@ function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {
     return stringMembers;
 }
 
-function replaceUnion(u: UnionType, builder: GraphRewriteBuilder<StringType | UnionType>, forwardingRef: TypeRef): TypeRef {
+function replaceUnion(
+    u: UnionType,
+    builder: GraphRewriteBuilder<StringType | UnionType>,
+    forwardingRef: TypeRef
+): TypeRef {
     const stringMembers = defined(unionNeedsReplacing(u));
     const types: TypeRef[] = [];
     u.members.forEach(t => {
         if (stringMembers.has(t)) return;
         types.push(builder.reconstituteType(t));
     });
-    // FIXME: add names
-    const stringType = builder.getStringType(undefined, undefined, forwardingRef);
+    // FIXME: add names to string type
     if (types.length === 0) {
-        return stringType;
+        return builder.getStringType(undefined, undefined, forwardingRef);
     }
-    types.push(stringType);
+    types.push(builder.getStringType(undefined, undefined));
     return builder.getUnionType(u.getNames(), OrderedSet(types), forwardingRef);
 }
 
@@ -81,5 +88,5 @@ export function inferEnums(graph: TypeGraph, stringTypeMapping: StringTypeMappin
         .map(t => [t])
         .toArray();
     const typesToReplace = ([] as (StringType | UnionType)[][]).concat(allStrings, unionsToReplace);
-    return graph.rewrite(stringTypeMapping, typesToReplace, replace);
+    return graph.rewrite(stringTypeMapping, false, typesToReplace, replace);
 }

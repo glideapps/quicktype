@@ -257,8 +257,8 @@ class CSharpRenderer extends ConvenienceRenderer {
             if (c.properties.isEmpty()) return;
             const maxWidth = defined(c.properties.map((_, name: string) => utf16StringEscape(name).length).max());
             const blankLines = this._needAttributes && !this._dense ? "interposing" : "none";
-            this.forEachClassProperty(c, blankLines, (name, jsonName, t) => {
-                const csType = this.csType(t, true);
+            this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
+                const csType = this.csType(p.type, true);
                 const escapedName = utf16StringEscape(jsonName);
                 const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
                 const property = ["public ", csType, " ", name, " { get; set; }"];

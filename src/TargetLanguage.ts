@@ -91,4 +91,8 @@ export abstract class TargetLanguage {
         };
         /* tslint:enable */
     }
+
+    get supportsOptionalClassProperties(): boolean {
+        return false;
+    }
 }

@@ -13,7 +13,8 @@ import {
     UnionType,
     removeNullFromUnion,
     PrimitiveStringTypeKind,
-    StringType
+    StringType,
+    ClassProperty
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { defined, assert, panic } from "./Support";
@@ -128,7 +129,7 @@ export abstract class TypeBuilder {
     protected readonly types: (Type | undefined)[] = [];
     private readonly typeNames: (TypeNames | undefined)[] = [];
 
-    constructor(private readonly _stringTypeMapping: StringTypeMapping) {}
+    constructor(private readonly _stringTypeMapping: StringTypeMapping, readonly alphabetizeProperties: boolean) {}
 
     addTopLevel(name: string, tref: TypeRef): void {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
@@ -139,6 +140,7 @@ export abstract class TypeBuilder {
 
     reserveTypeRef(): TypeRef {
         const index = this.types.length;
+        // console.log(`reserving ${index}`);
         this.types.push(undefined);
         this.typeNames.push(undefined);
         return new TypeRef(this.typeGraph, index, undefined);
@@ -146,6 +148,8 @@ export abstract class TypeBuilder {
 
     private commitType = (tref: TypeRef, t: Type, names: TypeNames | undefined): void => {
         const index = tref.getIndex();
+        // const name = names !== undefined ? ` ${names.combinedName}` : "";
+        // console.log(`committing ${t.kind}${name} to ${index}`);
         assert(this.types[index] === undefined, "A type index was committed twice");
         this.types[index] = t;
         this.typeNames[index] = names;
@@ -161,6 +165,9 @@ export abstract class TypeBuilder {
             // in `gatherNames`, and the caller doesn't guarantee that
             // this one is unique for this type.
             names = names.copy();
+        }
+        if (forwardingRef !== undefined && forwardingRef.maybeIndex !== undefined) {
+            assert(this.types[forwardingRef.maybeIndex] === undefined);
         }
         const tref =
             forwardingRef !== undefined && forwardingRef.maybeIndex !== undefined
@@ -222,7 +229,7 @@ export abstract class TypeBuilder {
     private _mapTypes: Map<TypeRef, TypeRef> = Map();
     private _arrayTypes: Map<TypeRef, TypeRef> = Map();
     private _enumTypes: Map<Set<string>, TypeRef> = Map();
-    private _classTypes: Map<Map<string, TypeRef>, TypeRef> = Map();
+    private _classTypes: Map<Map<string, ClassProperty>, TypeRef> = Map();
     private _unionTypes: Map<Set<TypeRef>, TypeRef> = Map();
 
     getPrimitiveType(kind: PrimitiveTypeKind, forwardingRef?: TypeRef): TypeRef {
@@ -295,7 +302,13 @@ export abstract class TypeBuilder {
         return tref;
     }
 
-    getClassType(names: TypeNames, properties: OrderedMap<string, TypeRef>, forwardingRef?: TypeRef): TypeRef {
+    sortPropertiesIfNecessary(properties: OrderedMap<string, ClassProperty>): OrderedMap<string, ClassProperty> {
+        if (!this.alphabetizeProperties) return properties;
+        return properties.sortBy((_, n) => n);
+    }
+
+    getClassType(names: TypeNames, properties: OrderedMap<string, ClassProperty>, forwardingRef?: TypeRef): TypeRef {
+        properties = this.sortPropertiesIfNecessary(properties);
         let tref = this._classTypes.get(properties.toMap());
         // FIXME: It's not clear to me that the `forwardingRef` condition here
         // might actually ever be true.  And if it can, shouldn't we also have
@@ -314,11 +327,20 @@ export abstract class TypeBuilder {
     getUniqueClassType = (
         names: TypeNames,
         isFixed: boolean,
-        properties?: OrderedMap<string, TypeRef>,
+        properties?: OrderedMap<string, ClassProperty>,
         forwardingRef?: TypeRef
     ): TypeRef => {
         return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties), names);
     };
+
+    setClassProperties(ref: TypeRef, properties: OrderedMap<string, ClassProperty>): void {
+        const type = ref.deref()[0];
+        if (!(type instanceof ClassType)) {
+            return panic("Tried to set properties of non-class type");
+        }
+        properties = this.sortPropertiesIfNecessary(properties);
+        type.setProperties(properties);
+    }
 
     getUnionType(names: TypeNames, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
         const unorderedMembers = members.toSet();
@@ -392,6 +414,7 @@ export class TypeReconstituter {
 
     constructor(
         private readonly _typeBuilder: TypeBuilder,
+        private readonly _makeClassUnique: boolean,
         private readonly _typeNames: TypeNames | undefined,
         private readonly _forwardingRef: TypeRef
     ) {}
@@ -422,11 +445,14 @@ export class TypeReconstituter {
         return this.useBuilder().getArrayType(items, this._forwardingRef);
     };
 
-    getClassType = (properties: OrderedMap<string, TypeRef>): TypeRef => {
+    getClassType = (properties: OrderedMap<string, ClassProperty>): TypeRef => {
+        if (this._makeClassUnique) {
+            return this.getUniqueClassType(false, properties);
+        }
         return this.useBuilder().getClassType(defined(this._typeNames), properties, this._forwardingRef);
     };
 
-    getUniqueClassType = (isFixed: boolean, properties?: OrderedMap<string, TypeRef>): TypeRef => {
+    getUniqueClassType = (isFixed: boolean, properties?: OrderedMap<string, ClassProperty>): TypeRef => {
         return this.useBuilder().getUniqueClassType(defined(this._typeNames), isFixed, properties, this._forwardingRef);
     };
 
@@ -442,6 +468,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
     constructor(
         private readonly _originalGraph: TypeGraph,
         stringTypeMapping: StringTypeMapping,
+        alphabetizeProperties: boolean,
         setsToReplace: T[][],
         private readonly _replacer: (
             typesToReplace: Set<T>,
@@ -449,7 +476,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
             forwardingRef: TypeRef
         ) => TypeRef
     ) {
-        super(stringTypeMapping);
+        super(stringTypeMapping, alphabetizeProperties);
         this._setsToReplaceByMember = Map();
         for (const types of setsToReplace) {
             const set = Set(types);
@@ -512,7 +539,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
             this._reconstitutedTypes = this._reconstitutedTypes.set(index, forwardingRef);
             const [originalType, originalNames] = originalRef.deref();
             return originalType.map(
-                new TypeReconstituter(this, originalNames, forwardingRef),
+                new TypeReconstituter(this, this.alphabetizeProperties, originalNames, forwardingRef),
                 this.getReconstitutedType
             );
         });

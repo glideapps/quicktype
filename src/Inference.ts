@@ -7,6 +7,7 @@ import { assertNever, assert, panic } from "./Support";
 import { TypeBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { makeTypeNames, TypeNames } from "./TypeNames";
+import { ClassProperty } from "./Type";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
@@ -75,7 +76,12 @@ function canBeEnumCase(s: string): boolean {
 export class TypeInference {
     constructor(private readonly _typeBuilder: TypeBuilder, private readonly _inferEnums: boolean) {}
 
-    inferType = (cjson: CompressedJSON, typeNames: TypeNames, valueArray: NestedValueArray, forwardingRef?: TypeRef): TypeRef => {
+    inferType = (
+        cjson: CompressedJSON,
+        typeNames: TypeNames,
+        valueArray: NestedValueArray,
+        forwardingRef?: TypeRef
+    ): TypeRef => {
         const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeNames, this, cjson, forwardingRef);
         let numValues = 0;
 
@@ -156,14 +162,12 @@ export class TypeInference {
             }
         });
 
-        const properties: [string, TypeRef][] = [];
+        const properties: [string, ClassProperty][] = [];
         for (const key of propertyNames) {
             const values = propertyValues[key];
-            let t = this.inferType(cjson, makeTypeNames(key, true), values);
-            if (values.length < objects.length) {
-                t = this._typeBuilder.makeNullable(t, makeTypeNames(key, true));
-            }
-            properties.push([key, t]);
+            const t = this.inferType(cjson, makeTypeNames(key, true), values);
+            const isOptional = values.length < objects.length;
+            properties.push([key, new ClassProperty(t, isOptional)]);
         }
 
         const propertyMap = OrderedMap(properties);
