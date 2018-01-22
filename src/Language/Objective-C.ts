@@ -1,8 +1,6 @@
 "use strict";
 
 import { includes, startsWith, repeat } from "lodash";
-import * as pluralize from "pluralize";
-
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, nullableFromUnion, matchType, ArrayType, MapType, UnionType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
@@ -25,6 +23,8 @@ import { Set } from "immutable";
 const unicode = require("unicode-properties");
 
 type OutputFeatures = { interface: boolean; implementation: boolean };
+
+const DEBUG = false;
 
 export default class ObjectiveCTargetLanguage extends TargetLanguage {
     private readonly _featuresOption = new EnumOption("features", "Interface and implementation", [
@@ -148,6 +148,8 @@ function isAnyOrNull(t: Type): boolean {
     return t.kind === "any" || t.kind === "null";
 }
 
+const staticEnumValuesIdentifier = "values";
+
 class ObjectiveCRenderer extends ConvenienceRenderer {
     // enums contained in NSArray or NSDictionary are represented
     // as 'pseudo-enum' reference types. Eventually we may want to
@@ -155,6 +157,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     pseudoEnums: Set<EnumType>;
 
     private _propertyForbiddenNamespace: Namespace;
+    private _enumCaseForbiddenNamespace: Namespace;
 
     constructor(
         graph: TypeGraph,
@@ -174,7 +177,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
     protected setUpNaming(): Namespace[] {
         this._propertyForbiddenNamespace = keywordNamespace("forbidden-for-properties", forbiddenPropertyNames);
-        return super.setUpNaming().concat([this._propertyForbiddenNamespace]);
+        this._enumCaseForbiddenNamespace = keywordNamespace("forbidden-for-enum-cases", [staticEnumValuesIdentifier]);
+        return super.setUpNaming().concat([this._propertyForbiddenNamespace, this._enumCaseForbiddenNamespace]);
     }
 
     private enumOccursInArrayOrMap(enumType: EnumType): boolean {
@@ -202,7 +206,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.forbiddenWordsNamespace] };
+        return { names: [], namespaces: [this.forbiddenWordsNamespace, this._enumCaseForbiddenNamespace] };
     }
 
     protected topLevelNameStyle(rawName: string): string {
@@ -250,19 +254,19 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         }
     };
 
-    private objcType = (t: Type): [Sourcelike, string] => {
+    private objcType = (t: Type, nullableOrBoxed: boolean = false): [Sourcelike, string] => {
         return matchType<[Sourcelike, string]>(
             t,
             _anyType => ["id", ""],
             // For now, we're treating nulls just like any
             _nullType => ["id", ""],
-            _boolType => ["NSBoolean", " *"],
-            _integerType => ["NSNumber", " *"],
-            _doubleType => ["NSNumber", " *"],
+            _boolType => (nullableOrBoxed ? ["NSNumber", " *"] : ["BOOL", ""]),
+            _integerType => (nullableOrBoxed ? ["NSNumber", " *"] : ["NSInteger", ""]),
+            _doubleType => (nullableOrBoxed ? ["NSNumber", " *"] : ["double", ""]),
             _stringType => ["NSString", " *"],
             arrayType => {
                 const itemType = arrayType.items;
-                const itemTypeName = this.objcType(itemType);
+                const itemTypeName = this.objcType(itemType, true);
                 // NSArray<id>* === NSArray*
                 if (isAnyOrNull(itemType)) {
                     return ["NSArray", " *"];
@@ -270,11 +274,11 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 return [["NSArray<", itemTypeName, ">"], " *"];
             },
             classType => [this.nameForNamedType(classType), " *"],
-            mapType => [["NSDictionary<NSString *, ", this.objcType(mapType.values), ">"], " *"],
+            mapType => [["NSDictionary<NSString *, ", this.objcType(mapType.values, true), ">"], " *"],
             enumType => [this.nameForNamedType(enumType), " *"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                return nullable !== null ? this.objcType(nullable) : ["id", ""];
+                return nullable !== null ? this.objcType(nullable, true) : ["id", ""];
             }
         );
     };
@@ -285,7 +289,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             _anyType => ["id", ""],
             // For now, we're treating nulls just like any
             _nullType => ["id", ""],
-            _boolType => ["NSBoolean", " *"],
+            _boolType => ["NSNumber", " *"],
             _integerType => ["NSNumber", " *"],
             _doubleType => ["NSNumber", " *"],
             _stringType => ["NSString", " *"],
@@ -309,10 +313,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             _integerType => dynamic,
             _doubleType => dynamic,
             _stringType => dynamic,
-            arrayType => ["[", dynamic, " map:λ(id x, ", this.fromDynamicExpression(arrayType.items, "x"), ")]"],
+            arrayType => ["map(", dynamic, ", λ(id x, ", this.fromDynamicExpression(arrayType.items, "x"), "))"],
             classType => ["[", this.nameForNamedType(classType), " fromJSONDictionary:", dynamic, "]"],
-            mapType => ["[", dynamic, " map:λ(id x, ", this.fromDynamicExpression(mapType.values, "x"), ")]"],
-            enumType => ["NotNil([", this.nameForNamedType(enumType), " withValue:", dynamic, "])"],
+            mapType => ["map(", dynamic, ", λ(id x, ", this.fromDynamicExpression(mapType.values, "x"), "))"],
+            enumType => ["[", this.nameForNamedType(enumType), " withValue:", dynamic, "]"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.fromDynamicExpression(nullable, dynamic) : dynamic;
@@ -325,7 +329,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             t,
             _anyType => ["NSNullify(", typed, ")"],
             _nullType => ["NSNullify(", typed, ")"],
-            _boolType => typed,
+            // Sadly, KVC
+            _boolType => [typed, ` ? @YES : @NO`],
             _integerType => typed,
             _doubleType => typed,
             _stringType => typed,
@@ -334,7 +339,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     // TODO check each value type
                     return typed;
                 }
-                return ["[", typed, " map:λ(id x, ", this.toDynamicExpression(arrayType.items, "x"), ")]"];
+                return ["map(", typed, ", λ(id x, ", this.toDynamicExpression(arrayType.items, "x"), "))"];
             },
             _classType => ["[", typed, " JSONDictionary]"],
             mapType => {
@@ -342,7 +347,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     // TODO check each value type
                     return typed;
                 }
-                return ["[", typed, " map:λ(id x, ", this.toDynamicExpression(mapType.values, "x"), ")]"];
+                return ["map(", typed, ", λ(id x, ", this.toDynamicExpression(mapType.values, "x"), "))"];
             },
             _enumType => ["[", typed, " value]"],
             unionType => {
@@ -372,136 +377,50 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             return this.isJSONSafe(t.values);
         } else if (t.isPrimitive()) {
             return true;
+        } else if (t instanceof UnionType) {
+            const nullable = nullableFromUnion(t);
+            return nullable !== null && this.isJSONSafe(nullable);
         } else {
             return false;
         }
     }
 
-    private emitPropertyAssignment = (propertyName: Name, _json: string, propertyType: Type) => {
-        const key = stringEscape(_json);
+    private isJSONOutputSafe(t: Type): boolean {
+        return this.isJSONSafe(t) && "bool" !== t.kind;
+    }
+
+    private emitPropertyAssignment = (propertyName: Name, jsonName: string, propertyType: Type) => {
         const name = ["_", propertyName];
-        matchType<void>(
+        matchType(
             propertyType,
-            anyType =>
-                this.emitLine(
-                    name,
-                    " = ",
-                    this.fromDynamicExpression(anyType, '[dict objectForKey:@"', key, '"]'),
-                    ";"
-                ),
-            nullType =>
-                this.emitLine(
-                    name,
-                    " = ",
-                    this.fromDynamicExpression(nullType, '[dict objectForKey:@"', key, '" withClass:[NSNull class]]'),
-                    ";"
-                ),
-            boolType =>
-                this.emitLine(name, " = ", this.fromDynamicExpression(boolType, '[dict boolForKey:@"', key, '"]'), ";"),
-            integerType =>
-                this.emitLine(
-                    name,
-                    " = ",
-                    this.fromDynamicExpression(
-                        integerType,
-                        '[dict objectForKey:@"',
-                        key,
-                        '" withClass:[NSNumber class]]'
-                    ),
-                    ";"
-                ),
-            doubleType =>
-                this.emitLine(
-                    name,
-                    " = ",
-                    this.fromDynamicExpression(
-                        doubleType,
-                        '[dict objectForKey:@"',
-                        key,
-                        '" withClass:[NSNumber class]]'
-                    ),
-                    ";"
-                ),
-            stringType =>
-                this.emitLine(
-                    name,
-                    " = ",
-                    this.fromDynamicExpression(
-                        stringType,
-                        '[dict objectForKey:@"',
-                        key,
-                        '" withClass:[NSString class]]'
-                    ),
-                    ";"
-                ),
-            arrayType =>
-                this.emitLine(
-                    name,
-                    " = ",
-                    this.fromDynamicExpression(arrayType, '[dict objectForKey:@"', key, '" withClass:[NSArray class]]'),
-                    ";"
-                ),
-            classType =>
-                this.emitLine(
-                    name,
-                    " = ",
-                    this.fromDynamicExpression(
-                        classType,
-                        '[dict objectForKey:@"',
-                        key,
-                        '" withClass:[NSDictionary class]]'
-                    ),
-                    ";"
-                ),
+            anyType => this.emitLine(name, " = ", this.fromDynamicExpression(anyType, name), ";"),
+            nullType => this.emitLine(name, " = ", this.fromDynamicExpression(nullType, name), ";"),
+            boolType => this.emitLine(name, " = ", this.fromDynamicExpression(boolType, name), ";"),
+            integerType => this.emitLine(name, " = ", this.fromDynamicExpression(integerType, name), ";"),
+            doubleType => this.emitLine(name, " = ", this.fromDynamicExpression(doubleType, name), ";"),
+            stringType => this.emitLine(name, " = ", this.fromDynamicExpression(stringType, name), ";"),
+            arrayType => this.emitLine(name, " = ", this.fromDynamicExpression(arrayType, name), ";"),
+            classType => this.emitLine(name, " = ", this.fromDynamicExpression(classType, ["(id)", name]), ";"),
             mapType => {
                 const itemType = mapType.values;
-                if (
-                    itemType.isPrimitive() ||
-                    // Before union support, we have a lot of untyped data
-                    // This ensures that we don't map over unknown elements
-                    isAnyOrNull(itemType)
-                ) {
-                    // TODO check each value type
-                    this.emitLine(name, ' = [dict objectForKey:@"', key, '" withClass:[NSDictionary class]];');
-                } else {
-                    this.emitLine(
-                        name,
-                        ' = [[dict objectForKey:@"',
-                        key,
-                        '" withClass:[NSDictionary class]] map:',
-                        ["λ(id x, ", this.fromDynamicExpression(itemType, "x"), ")"],
-                        "];"
-                    );
-                }
-            },
-            // TODO Support enums
-            enumType =>
                 this.emitLine(
                     name,
-                    " = ",
-                    this.fromDynamicExpression(enumType, '[dict objectForKey:@"', key, '" withClass:[NSString class]]'),
-                    ";"
-                ),
+                    " = map(",
+                    name,
+                    ", ",
+                    ["λ(id x, ", this.fromDynamicExpression(itemType, "x"), ")"],
+                    ");"
+                );
+            },
+            enumType => this.emitLine(name, " = ", this.fromDynamicExpression(enumType, ["(id)", name]), ";"),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    this.ensureBlankLine();
-                    // We used to have a NSNullOrNil macro to make this clearer, but we can rely on the
-                    // the fact that [nil isNotEqualTo:[NSNull null]] is *false* to not use it
-                    this.emitBlock(['if ([[dict objectForKey:@"', key, '"] isNotEqualTo:[NSNull null]])'], () => {
-                        this.emitPropertyAssignment(propertyName, _json, nullable);
-                    });
-                    this.ensureBlankLine();
+                    this.emitPropertyAssignment(propertyName, jsonName, nullable);
                 } else {
                     // TODO This is a union, but for now we just leave it dynamic
-                    this.emitLine(
-                        name,
-                        " = ",
-                        this.fromDynamicExpression(unionType, '[dict objectForKey:@"', key, '"]'),
-                        ";"
-                    );
+                    this.emitLine(name, " = ", this.fromDynamicExpression(unionType, name), ";");
                 }
-                return nullable !== null ? this.objcType(nullable) : "id";
             }
         );
     };
@@ -578,7 +497,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         const parameter = this.variableNameForTopLevel(name);
 
         this.ensureBlankLine();
-        this.emitBlock(this.topLevelFromDataPrototype(name), () => {
+        this.emitMethod(this.topLevelFromDataPrototype(name), () => {
             this.emitTryCatchAsError(
                 () => {
                     this.emitLine(
@@ -591,12 +510,12 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         });
 
         this.ensureBlankLine();
-        this.emitBlock(this.topLevelFromJSONPrototype(name), () => {
+        this.emitMethod(this.topLevelFromJSONPrototype(name), () => {
             this.emitLine("return ", name, "FromData([json dataUsingEncoding:encoding], error);");
         });
 
         this.ensureBlankLine();
-        this.emitBlock(this.topLevelToDataPrototype(name), () => {
+        this.emitMethod(this.topLevelToDataPrototype(name), () => {
             this.emitTryCatchAsError(
                 () => {
                     this.emitLine("id json = ", this.toDynamicExpression(t, parameter), ";");
@@ -610,7 +529,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         });
 
         this.ensureBlankLine();
-        this.emitBlock(this.topLevelToJSONPrototype(name), () => {
+        this.emitMethod(this.topLevelToJSONPrototype(name), () => {
             this.emitLine("NSData *data = ", name, "ToData(", parameter, ", error);");
             this.emitLine("return data ? [[NSString alloc] initWithData:data encoding:encoding] : nil;");
         });
@@ -620,6 +539,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         const isTopLevel = this.topLevels.valueSeq().contains(t);
 
         this.emitLine("@interface ", className, " : NSObject");
+        if (DEBUG) this.emitLine("@property NSDictionary<NSString *, id> *_json;");
         this.forEachClassProperty(t, "none", (name, _json, propertyType) => {
             let attributes = ["nonatomic"];
             // TODO offer a 'readonly' option
@@ -655,18 +575,41 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     // TODO Implement NSCopying
     private emitClassImplementation = (t: ClassType, className: Name): void => {
         const isTopLevel = this.topLevels.valueSeq().contains(t);
+
+        const [hasIrregularProperties, hasUnsafeProperties] = (() => {
+            let irregular = false;
+            let unsafe = false;
+            this.forEachClassProperty(t, "none", (name, jsonName, propType) => {
+                unsafe = unsafe || !this.isJSONOutputSafe(propType);
+                irregular = irregular || stringEscape(jsonName) !== this.sourcelikeToString(name);
+            });
+            return [irregular, unsafe];
+        })();
+
         this.emitLine("@implementation ", className);
         if (!this._justTypes) {
+            this.emitMethod("+(NSDictionary<NSString *, NSString *> *)properties", () => {
+                this.emitLine("static NSDictionary<NSString *, NSString *> *properties;");
+                this.emitLine("return properties = properties ? properties : @{");
+                this.indent(() => {
+                    this.forEachClassProperty(t, "none", (name, jsonName) =>
+                        this.emitLine(`@"${stringEscape(jsonName)}": @"`, name, `",`)
+                    );
+                });
+                this.emitLine("};");
+            });
+            this.ensureBlankLine();
+
             if (isTopLevel) {
-                this.emitBlock(
+                this.emitMethod(
                     "+ (_Nullable instancetype)fromData:(NSData *)data error:(NSError *_Nullable *)error",
                     () => {
                         this.emitLine("return ", className, "FromData(data, error);");
                     }
                 );
                 this.ensureBlankLine();
-                this.emitBlock(
-                    "+ (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;",
+                this.emitMethod(
+                    "+ (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error",
                     () => {
                         this.emitLine("return ", className, "FromJSON(json, encoding, error);");
                     }
@@ -674,36 +617,83 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.ensureBlankLine();
             }
 
-            this.emitBlock("+ (instancetype)fromJSONDictionary:(NSDictionary *)dict", () => {
-                this.emitLine("return [[", className, " alloc] initWithJSONDictionary:dict];");
+            this.emitMethod("+ (instancetype)fromJSONDictionary:(NSDictionary *)dict", () => {
+                this.emitLine("return dict ? [[", className, " alloc] initWithJSONDictionary:dict] : nil;");
             });
             this.ensureBlankLine();
-            this.emitBlock("- (instancetype)initWithJSONDictionary:(NSDictionary *)dict", () => {
+            this.emitMethod("- (instancetype)initWithJSONDictionary:(NSDictionary *)dict", () => {
                 this.emitBlock("if (self = [super init])", () => {
-                    this.forEachClassProperty(t, "none", this.emitPropertyAssignment);
+                    if (DEBUG) this.emitLine("__json = dict;");
+
+                    this.emitLine("[self setValuesForKeysWithDictionary:dict];");
+                    this.forEachClassProperty(t, "none", (name, jsonName, propertyType) => {
+                        if (!this.isJSONSafe(propertyType)) {
+                            this.emitPropertyAssignment(name, jsonName, propertyType);
+                        }
+                    });
                 });
                 this.emitLine("return self;");
             });
-            this.ensureBlankLine();
-            this.emitBlock("- (NSDictionary *)JSONDictionary", () => {
-                this.emitLine("return @{");
-                this.indent(() => {
-                    this.forEachClassProperty(t, "none", (propertyName, jsonKey, propertyType) => {
-                        const key = stringEscape(jsonKey);
-                        const name = ["_", propertyName];
-                        this.emitLine('@"', key, '": ', this.toDynamicExpression(propertyType, name), ",");
-                    });
+
+            if (hasIrregularProperties) {
+                this.ensureBlankLine();
+                this.emitMethod("-(void)setValue:(nullable id)value forKey:(NSString *)key", () => {
+                    this.emitLine("[super setValue:value forKey:", className, ".properties[key]];");
                 });
-                this.emitLine("};");
+            }
+
+            this.ensureBlankLine();
+            this.emitMethod("- (NSDictionary *)JSONDictionary", () => {
+                if (!hasIrregularProperties && !hasUnsafeProperties) {
+                    this.emitLine("return [self dictionaryWithValuesForKeys:", className, ".properties.allValues];");
+                    return;
+                }
+
+                this.emitLine(
+                    "id dict = [[self dictionaryWithValuesForKeys:",
+                    className,
+                    ".properties.allValues] mutableCopy];"
+                );
+                this.ensureBlankLine();
+
+                if (hasIrregularProperties) {
+                    this.emitExtraComments("Rewrite property names that differ in JSON");
+                    this.emitBlock(["for (id jsonName in ", className, ".properties)"], () => {
+                        this.emitLine(`id propertyName = `, className, `.properties[jsonName];`);
+                        this.emitBlock(`if (![jsonName isEqualToString:propertyName])`, () => {
+                            this.emitLine(`dict[jsonName] = dict[propertyName];`);
+                            this.emitLine(`[dict removeObjectForKey:propertyName];`);
+                        });
+                    });
+                }
+
+                if (hasUnsafeProperties) {
+                    this.ensureBlankLine();
+                    this.emitExtraComments("Map values that need translation");
+                    this.emitLine("[dict addEntriesFromDictionary:@{");
+                    this.indent(() => {
+                        this.forEachClassProperty(t, "none", (propertyName, jsonKey, propertyType) => {
+                            if (!this.isJSONOutputSafe(propertyType)) {
+                                const key = stringEscape(jsonKey);
+                                const name = ["_", propertyName];
+                                this.emitLine('@"', key, '": ', this.toDynamicExpression(propertyType, name), ",");
+                            }
+                        });
+                    });
+                    this.emitLine("}];");
+                }
+
+                this.ensureBlankLine();
+                this.emitLine("return dict;");
             });
 
             if (isTopLevel) {
                 this.ensureBlankLine();
-                this.emitBlock(`- (NSData *_Nullable)toData:(NSError *_Nullable *)error`, () => {
+                this.emitMethod(`- (NSData *_Nullable)toData:(NSError *_Nullable *)error`, () => {
                     this.emitLine("return ", className, "ToData(self, error);");
                 });
                 this.ensureBlankLine();
-                this.emitBlock(
+                this.emitMethod(
                     `- (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error`,
                     () => {
                         this.emitLine("return ", className, "ToJSON(self, encoding, error);");
@@ -743,14 +733,27 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
     private emitPseudoEnumImplementation(enumType: EnumType, enumName: Name) {
         this.emitLine("@implementation ", enumName);
-        this.emitLine();
 
-        const instances = modifySource(
-            s => pluralize.plural(this._classPrefix.toLocaleLowerCase() + s.substring(this._classPrefix.length)),
-            enumName
-        );
-
-        this.emitLine("static NSMutableDictionary<NSString *, ", enumName, " *> *", instances, ";");
+        const instances = [enumName, ".", staticEnumValuesIdentifier];
+        this.emitMethod(["+ (NSDictionary<NSString *, ", enumName, " *> *)", staticEnumValuesIdentifier], () => {
+            this.emitLine("static NSDictionary<NSString *, ", enumName, " *> *", staticEnumValuesIdentifier, ";");
+            this.emitLine(
+                "return ",
+                staticEnumValuesIdentifier,
+                " = ",
+                staticEnumValuesIdentifier,
+                " ? ",
+                staticEnumValuesIdentifier,
+                " : @{"
+            );
+            this.indent(() => {
+                this.forEachEnumCase(enumType, "none", (_, jsonValue) => {
+                    const value = ['@"', stringEscape(jsonValue), '"'];
+                    this.emitLine(value, ": [[", enumName, " alloc] initWithValue:", value, "],");
+                });
+            });
+            this.emitLine("};");
+        });
 
         this.ensureBlankLine();
         this.forEachEnumCase(enumType, "none", (name, jsonValue) => {
@@ -768,26 +771,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         });
         this.ensureBlankLine();
 
-        this.emitMethod("+ (void)initialize", () => {
-            this.emitLine("NSArray<NSString *> *values = @[");
-            this.indent(() => {
-                this.forEachEnumCase(enumType, "none", (_, jsonValue) => {
-                    this.emitLine('@"', stringEscape(jsonValue), '",');
-                });
-            });
-            this.emitLine("];");
-            this.emitLine(instances, " = [NSMutableDictionary dictionaryWithCapacity:values.count];");
-            this.emitLine(
-                "for (NSString *value in values) ",
-                instances,
-                "[value] = [[",
-                enumName,
-                " alloc] initWithValue:value];"
-            );
-        });
-        this.ensureBlankLine();
-
-        this.emitLine("+ (instancetype _Nullable)withValue:(NSString *)value { return ", instances, "[value]; }");
+        this.emitMethod("+ (instancetype _Nullable)withValue:(NSString *)value", () =>
+            this.emitLine("return ", instances, "[value];")
+        );
 
         this.ensureBlankLine();
         this.emitMethod("- (instancetype)initWithValue:(NSString *)value", () => {
@@ -833,14 +819,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         }
 
         if (this._features.interface) {
-            if (this._features.implementation) {
-                this.emitMark("Types");
-            }
-
-            this.ensureBlankLine();
-            this.emitExtraComments("This clarifies which properties are JSON booleans");
-            this.emitLine("typedef NSNumber NSBoolean;");
-
             // Emit @class declarations for top-level array+maps and classes
             this.ensureBlankLine();
             this.forEachNamedType(
@@ -889,22 +867,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             if (!this._justTypes) {
                 this.emitExtraComments("Shorthand for simple blocks");
                 this.emitLine(`#define λ(decl, expr) (^(decl) { return (expr); })`);
-                this.emitLine();
-                this.emitExtraComments("NSNull → nil conversion and assertion");
+                this.emitExtraComments("nil → NSNull conversion for JSON dictionaries");
                 this.emitLine("#define NSNullify(x) ([x isNotEqualTo:[NSNull null]] ? x : [NSNull null])");
-                this.emitLine(`#define NotNil(x) (x ? x : throw(@"Unexpected nil"))`);
-                this.emitLine();
-                this.emitExtraComments(
-                    "Allows us to create throw expressions.",
-                    "",
-                    "Although exceptions are rarely used in Objective-C, they're used internally",
-                    "here to short-circuit recursive JSON processing, then caught at the API",
-                    "boundary and convered to NSError."
-                );
-                this.emitMultiline(`static id _Nullable throw(NSString * _Nullable reason) {
-    @throw [NSException exceptionWithName:@"JSONSerialization" reason:reason userInfo:nil];
-    return nil;
-}`);
                 this.ensureBlankLine();
                 this.emitLine("NS_ASSUME_NONNULL_BEGIN");
                 this.ensureBlankLine();
@@ -942,32 +906,16 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private emitDictionaryAndArrayExtensions = () => {
-        this.emitMultiline(`@implementation NSArray (JSONConversion)
-- (NSArray *)map:(id (^)(id element))f {
-    id result = [NSMutableArray arrayWithCapacity:self.count];
-    for (id x in self) [result addObject:f(x)];
+        this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
+    id result = nil;
+    if ([collection isKindOfClass:[NSArray class]]) {
+        result = [NSMutableArray arrayWithCapacity:[collection count]];
+        for (id x in collection) [result addObject:f(x)];
+    } else if ([collection isKindOfClass:[NSDictionary class]]) {
+        result = [NSMutableDictionary dictionaryWithCapacity:[collection count]];
+        for (id key in collection) [result setObject:f([collection objectForKey:key]) forKey:key];
+    }
     return result;
-}
-@end
-
-@implementation NSDictionary (JSONConversion)
-- (NSDictionary *)map:(id (^)(id value))f {
-    id result = [NSMutableDictionary dictionaryWithCapacity:self.count];
-    for (id key in self) [result setObject:f([self objectForKey:key]) forKey:key];
-    return result;
-}
-
-- (id)objectForKey:(NSString *)key withClass:(Class)cls {
-    id value = [self objectForKey:key];
-    if ([value isKindOfClass:cls]) return value;
-    else return throw([NSString stringWithFormat:@"Expected a %@", cls]);
-}
-
-- (NSBoolean *)boolForKey:(NSString *)key {
-    id value = [self objectForKey:key];
-    if ([value isEqual:@YES] || [value isEqual:@NO]) return value;
-    else return throw(@"Expected bool");
-}
-@end`);
+}`);
     };
 }
