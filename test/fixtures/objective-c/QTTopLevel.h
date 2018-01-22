@@ -3,95 +3,206 @@
 //   NSError *error;
 //   QTTopLevel *topLevel = [QTTopLevel fromJSON:json encoding:NSUTF8Encoding error:&error]
 
-#import <Foundation/Foundation.h>
-
-// MARK: Types
-
-// This clarifies which properties are JSON booleans
-typedef NSNumber NSBoolean;
-
 @class QTTopLevel;
-@class QTPokemon;
-@class QTEgg;
-@class QTEvolution;
-@class QTWeakness;
+@class QTTopLevelData;
+@class QTChild;
+@class QTChildData;
+@class QTDomain;
+@class QTMediaEmbed;
+@class QTWhitelistStatus;
+@class QTPostHint;
+@class QTPreview;
+@class QTImage;
+@class QTResolution;
+@class QTVariants;
+@class QTGIF;
+@class QTSelftext;
+@class QTSubreddit;
+@class QTSubredditID;
+@class QTSubredditNamePrefixed;
+@class QTSubredditType;
+@class QTKind;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface QTEgg : NSObject
+@interface QTDomain : NSObject
 @property (nonatomic, readonly, copy) NSString *value;
 + (instancetype _Nullable)withValue:(NSString *)value;
-+ (QTEgg *)notInEggs;
-+ (QTEgg *)omanyteCandy;
-+ (QTEgg *)the10KM;
-+ (QTEgg *)the2KM;
-+ (QTEgg *)the5KM;
++ (QTDomain *)iImgurCOM;
++ (QTDomain *)iReddIt;
++ (QTDomain *)imgurCOM;
++ (QTDomain *)redditCOM;
 @end
 
-@interface QTWeakness : NSObject
+@interface QTWhitelistStatus : NSObject
 @property (nonatomic, readonly, copy) NSString *value;
 + (instancetype _Nullable)withValue:(NSString *)value;
-+ (QTWeakness *)bug;
-+ (QTWeakness *)dark;
-+ (QTWeakness *)dragon;
-+ (QTWeakness *)electric;
-+ (QTWeakness *)fairy;
-+ (QTWeakness *)fighting;
-+ (QTWeakness *)fire;
-+ (QTWeakness *)flying;
-+ (QTWeakness *)ghost;
-+ (QTWeakness *)grass;
-+ (QTWeakness *)ground;
-+ (QTWeakness *)ice;
-+ (QTWeakness *)poison;
-+ (QTWeakness *)psychic;
-+ (QTWeakness *)rock;
-+ (QTWeakness *)steel;
-+ (QTWeakness *)water;
++ (QTWhitelistStatus *)allAds;
 @end
 
-// MARK: Top-level marshalling functions
+@interface QTPostHint : NSObject
+@property (nonatomic, readonly, copy) NSString *value;
++ (instancetype _Nullable)withValue:(NSString *)value;
++ (QTPostHint *)image;
++ (QTPostHint *)link;
+@end
 
-// QTTopLevel
-QTTopLevel *QTTopLevelFromData(NSData *data, NSError **error);
-QTTopLevel *QTTopLevelFromJSON(NSString *json, NSStringEncoding encoding, NSError **error);
-NSData *QTTopLevelToData(QTTopLevel *topLevel, NSError **error);
-NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSError **error);
+@interface QTSelftext : NSObject
+@property (nonatomic, readonly, copy) NSString *value;
++ (instancetype _Nullable)withValue:(NSString *)value;
++ (QTSelftext *)empty;
+@end
+
+@interface QTSubreddit : NSObject
+@property (nonatomic, readonly, copy) NSString *value;
++ (instancetype _Nullable)withValue:(NSString *)value;
++ (QTSubreddit *)funny;
+@end
+
+@interface QTSubredditID : NSObject
+@property (nonatomic, readonly, copy) NSString *value;
++ (instancetype _Nullable)withValue:(NSString *)value;
++ (QTSubredditID *)t52Qh33;
+@end
+
+@interface QTSubredditNamePrefixed : NSObject
+@property (nonatomic, readonly, copy) NSString *value;
++ (instancetype _Nullable)withValue:(NSString *)value;
++ (QTSubredditNamePrefixed *)rFunny;
+@end
+
+@interface QTSubredditType : NSObject
+@property (nonatomic, readonly, copy) NSString *value;
++ (instancetype _Nullable)withValue:(NSString *)value;
++ (QTSubredditType *)public;
+@end
+
+@interface QTKind : NSObject
+@property (nonatomic, readonly, copy) NSString *value;
++ (instancetype _Nullable)withValue:(NSString *)value;
++ (QTKind *)t3;
+@end
 
 @interface QTTopLevel : NSObject
-@property (nonatomic) NSArray<QTPokemon *> *pokemon;
+@property (nonatomic) NSString *kind;
+@property (nonatomic) QTTopLevelData *data;
 
-+ (_Nullable instancetype)fromJSON:(NSString *)json;
 + (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;
 + (_Nullable instancetype)fromData:(NSData *)data error:(NSError *_Nullable *)error;
-- (NSString *_Nullable)toJSON;
 - (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;
 - (NSData *_Nullable)toData:(NSError *_Nullable *)error;
 @end
 
-@interface QTPokemon : NSObject
-@property (nonatomic) NSNumber *id;
-@property (nonatomic) NSString *num;
-@property (nonatomic) NSString *name;
-@property (nonatomic) NSString *img;
-@property (nonatomic) NSArray<NSString *> *type;
-@property (nonatomic) NSString *height;
-@property (nonatomic) NSString *weight;
-@property (nonatomic) NSString *candy;
-@property (nonatomic, nullable) NSNumber *candyCount;
-@property (nonatomic) QTEgg *egg;
-@property (nonatomic) NSNumber *spawnChance;
-@property (nonatomic) NSNumber *avgSpawns;
-@property (nonatomic) NSString *spawnTime;
-@property (nonatomic, nullable) NSArray<NSNumber *> *multipliers;
-@property (nonatomic) NSArray<QTWeakness *> *weaknesses;
-@property (nonatomic, nullable) NSArray<QTEvolution *> *nextEvolution;
-@property (nonatomic, nullable) NSArray<QTEvolution *> *prevEvolution;
+@interface QTTopLevelData : NSObject
+@property (nonatomic) NSString *modhash;
+@property (nonatomic) NSArray<QTChild *> *children;
+@property (nonatomic) NSString *after;
+@property (nonatomic, nullable) id before;
 @end
 
-@interface QTEvolution : NSObject
-@property (nonatomic) NSString *num;
+@interface QTChild : NSObject
+@property (nonatomic) QTKind *kind;
+@property (nonatomic) QTChildData *data;
+@end
+
+@interface QTChildData : NSObject
+@property (nonatomic) QTDomain *domain;
+@property (nonatomic, nullable) id approvedAtUTC;
+@property (nonatomic, nullable) id bannedBy;
+@property (nonatomic) QTMediaEmbed *mediaEmbed;
+@property (nonatomic) NSInteger thumbnailWidth;
+@property (nonatomic) QTSubreddit *subreddit;
+@property (nonatomic, nullable) id selftextHTML;
+@property (nonatomic) QTSelftext *selftext;
+@property (nonatomic, nullable) id likes;
+@property (nonatomic, nullable) id suggestedSort;
+@property (nonatomic) NSArray *userReports;
+@property (nonatomic, nullable) id secureMedia;
+@property (nonatomic, nullable) NSString *linkFlairText;
+@property (nonatomic) NSString *id;
+@property (nonatomic, nullable) id bannedAtUTC;
+@property (nonatomic, nullable) id viewCount;
+@property (nonatomic) BOOL archived;
+@property (nonatomic) BOOL clicked;
+@property (nonatomic, nullable) id reportReasons;
+@property (nonatomic) NSString *title;
+@property (nonatomic, nullable) id media;
+@property (nonatomic) NSArray *modReports;
+@property (nonatomic) BOOL canModPost;
+@property (nonatomic, nullable) NSString *authorFlairText;
+@property (nonatomic) NSInteger score;
+@property (nonatomic, nullable) id approvedBy;
+@property (nonatomic) BOOL over18;
+@property (nonatomic) BOOL hidden;
+@property (nonatomic) QTPreview *preview;
+@property (nonatomic) NSString *thumbnail;
+@property (nonatomic) QTSubredditID *subredditID;
+@property (nonatomic) BOOL edited;
+@property (nonatomic, nullable) NSString *linkFlairCSSClass;
+@property (nonatomic, nullable) NSString *authorFlairCSSClass;
+@property (nonatomic) BOOL contestMode;
+@property (nonatomic) NSInteger gilded;
+@property (nonatomic) NSInteger downs;
+@property (nonatomic) BOOL brandSafe;
+@property (nonatomic) QTMediaEmbed *secureMediaEmbed;
+@property (nonatomic) BOOL saved;
+@property (nonatomic, nullable) id removalReason;
+@property (nonatomic) QTPostHint *postHint;
+@property (nonatomic) BOOL stickied;
+@property (nonatomic) BOOL canGild;
+@property (nonatomic) NSInteger thumbnailHeight;
+@property (nonatomic) QTWhitelistStatus *parentWhitelistStatus;
 @property (nonatomic) NSString *name;
+@property (nonatomic) BOOL spoiler;
+@property (nonatomic) NSString *permalink;
+@property (nonatomic) QTSubredditType *subredditType;
+@property (nonatomic) BOOL locked;
+@property (nonatomic) BOOL hideScore;
+@property (nonatomic) NSInteger created;
+@property (nonatomic) NSString *url;
+@property (nonatomic) QTWhitelistStatus *whitelistStatus;
+@property (nonatomic) BOOL quarantine;
+@property (nonatomic) NSString *author;
+@property (nonatomic) NSInteger createdUTC;
+@property (nonatomic) QTSubredditNamePrefixed *subredditNamePrefixed;
+@property (nonatomic) NSInteger ups;
+@property (nonatomic) NSInteger numComments;
+@property (nonatomic) BOOL isSelf;
+@property (nonatomic) BOOL visited;
+@property (nonatomic, nullable) id numReports;
+@property (nonatomic) BOOL isVideo;
+@property (nonatomic, nullable) NSString *distinguished;
+@end
+
+@interface QTMediaEmbed : NSObject
+@end
+
+@interface QTPreview : NSObject
+@property (nonatomic) NSArray<QTImage *> *images;
+@property (nonatomic) BOOL enabled;
+@end
+
+@interface QTImage : NSObject
+@property (nonatomic) QTResolution *source;
+@property (nonatomic) NSArray<QTResolution *> *resolutions;
+@property (nonatomic) QTVariants *variants;
+@property (nonatomic) NSString *id;
+@end
+
+@interface QTResolution : NSObject
+@property (nonatomic) NSString *url;
+@property (nonatomic) NSInteger width;
+@property (nonatomic) NSInteger height;
+@end
+
+@interface QTVariants : NSObject
+@property (nonatomic, nullable) QTGIF *gif;
+@property (nonatomic, nullable) QTGIF *mp4;
+@end
+
+@interface QTGIF : NSObject
+@property (nonatomic) QTResolution *source;
+@property (nonatomic) NSArray<QTResolution *> *resolutions;
 @end
 
 NS_ASSUME_NONNULL_END
@@ -100,50 +211,22 @@ NS_ASSUME_NONNULL_END
 
 // Shorthand for simple blocks
 #define λ(decl, expr) (^(decl) { return (expr); })
-
-// NSNull → nil conversion and assertion
+// nil → NSNull conversion for JSON dictionaries
 #define NSNullify(x) ([x isNotEqualTo:[NSNull null]] ? x : [NSNull null])
-#define NotNil(x) (x ? x : throw(@"Unexpected nil"))
-
-// Allows us to create throw expressions.
-// 
-// Although exceptions are rarely used in Objective-C, they're used internally
-// here to short-circuit recursive JSON processing. Soon they will be caught at
-// the API boundary and convered to NSError.
-id _Nullable throw(NSString * _Nullable reason) {
-    @throw [NSException exceptionWithName:@"JSONSerialization" reason:reason userInfo:nil];
-    return nil;
-}
 
 NS_ASSUME_NONNULL_BEGIN
 
-@implementation NSArray (JSONConversion)
-- (NSArray *)map:(id (^)(id element))f {
-    id result = [NSMutableArray arrayWithCapacity:self.count];
-    for (id x in self) [result addObject:f(x)];
+static id map(id collection, id (^f)(id value)) {
+    id result = nil;
+    if ([collection isKindOfClass:[NSArray class]]) {
+        result = [NSMutableArray arrayWithCapacity:[collection count]];
+        for (id x in collection) [result addObject:f(x)];
+    } else if ([collection isKindOfClass:[NSDictionary class]]) {
+        result = [NSMutableDictionary dictionaryWithCapacity:[collection count]];
+        for (id key in collection) [result setObject:f([collection objectForKey:key]) forKey:key];
+    }
     return result;
 }
-@end
-
-@implementation NSDictionary (JSONConversion)
-- (NSDictionary *)map:(id (^)(id value))f {
-    id result = [NSMutableDictionary dictionaryWithCapacity:self.count];
-    for (id key in self) [result setObject:f([self objectForKey:key]) forKey:key];
-    return result;
-}
-
-- (id)objectForKey:(NSString *)key withClass:(Class)cls {
-    id value = [self objectForKey:key];
-    if ([value isKindOfClass:cls]) return value;
-    else return throw([NSString stringWithFormat:@"Expected a %@", cls]);
-}
-
-- (NSBoolean *)boolForKey:(NSString *)key {
-    id value = [self objectForKey:key];
-    if ([value isEqual:@YES] || [value isEqual:@NO]) return value;
-    else return throw(@"Expected bool");
-}
-@end
 
 // MARK: Private model interfaces
 
@@ -152,42 +235,74 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary *)JSONDictionary;
 @end
 
-@interface QTPokemon (JSONConversion)
+@interface QTTopLevelData (JSONConversion)
 + (instancetype)fromJSONDictionary:(NSDictionary *)dict;
 - (NSDictionary *)JSONDictionary;
 @end
 
-@interface QTEvolution (JSONConversion)
+@interface QTChild (JSONConversion)
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict;
+- (NSDictionary *)JSONDictionary;
+@end
+
+@interface QTChildData (JSONConversion)
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict;
+- (NSDictionary *)JSONDictionary;
+@end
+
+@interface QTMediaEmbed (JSONConversion)
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict;
+- (NSDictionary *)JSONDictionary;
+@end
+
+@interface QTPreview (JSONConversion)
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict;
+- (NSDictionary *)JSONDictionary;
+@end
+
+@interface QTImage (JSONConversion)
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict;
+- (NSDictionary *)JSONDictionary;
+@end
+
+@interface QTResolution (JSONConversion)
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict;
+- (NSDictionary *)JSONDictionary;
+@end
+
+@interface QTVariants (JSONConversion)
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict;
+- (NSDictionary *)JSONDictionary;
+@end
+
+@interface QTGIF (JSONConversion)
 + (instancetype)fromJSONDictionary:(NSDictionary *)dict;
 - (NSDictionary *)JSONDictionary;
 @end
 
 // MARK: Pseudo-enum implementations
 
-@implementation QTEgg
-
-static NSMutableDictionary<NSString *, QTEgg *> *qtEggs;
-
-+ (QTEgg *)notInEggs { return qtEggs[@"Not in Eggs"]; }
-+ (QTEgg *)omanyteCandy { return qtEggs[@"Omanyte Candy"]; }
-+ (QTEgg *)the10KM { return qtEggs[@"10 km"]; }
-+ (QTEgg *)the2KM { return qtEggs[@"2 km"]; }
-+ (QTEgg *)the5KM { return qtEggs[@"5 km"]; }
-
-+ (void)initialize
+@implementation QTDomain
++ (NSDictionary<NSString *, QTDomain *> *)values
 {
-    NSArray<NSString *> *values = @[
-        @"Not in Eggs",
-        @"Omanyte Candy",
-        @"10 km",
-        @"2 km",
-        @"5 km",
-    ];
-    qtEggs = [NSMutableDictionary dictionaryWithCapacity:values.count];
-    for (NSString *value in values) qtEggs[value] = [[QTEgg alloc] initWithValue:value];
+    static NSDictionary<NSString *, QTDomain *> *values;
+    return values = values ? values : @{
+        @"i.imgur.com": [[QTDomain alloc] initWithValue:@"i.imgur.com"],
+        @"i.redd.it": [[QTDomain alloc] initWithValue:@"i.redd.it"],
+        @"imgur.com": [[QTDomain alloc] initWithValue:@"imgur.com"],
+        @"reddit.com": [[QTDomain alloc] initWithValue:@"reddit.com"],
+    };
 }
 
-+ (instancetype _Nullable)withValue:(NSString *)value { return qtEggs[value]; }
++ (QTDomain *)iImgurCOM { return QTDomain.values[@"i.imgur.com"]; }
++ (QTDomain *)iReddIt { return QTDomain.values[@"i.redd.it"]; }
++ (QTDomain *)imgurCOM { return QTDomain.values[@"imgur.com"]; }
++ (QTDomain *)redditCOM { return QTDomain.values[@"reddit.com"]; }
+
++ (instancetype _Nullable)withValue:(NSString *)value
+{
+    return QTDomain.values[value];
+}
 
 - (instancetype)initWithValue:(NSString *)value
 {
@@ -198,54 +313,198 @@ static NSMutableDictionary<NSString *, QTEgg *> *qtEggs;
 - (NSUInteger)hash { return _value.hash; }
 @end
 
-@implementation QTWeakness
-
-static NSMutableDictionary<NSString *, QTWeakness *> *qtWeaknesses;
-
-+ (QTWeakness *)bug { return qtWeaknesses[@"Bug"]; }
-+ (QTWeakness *)dark { return qtWeaknesses[@"Dark"]; }
-+ (QTWeakness *)dragon { return qtWeaknesses[@"Dragon"]; }
-+ (QTWeakness *)electric { return qtWeaknesses[@"Electric"]; }
-+ (QTWeakness *)fairy { return qtWeaknesses[@"Fairy"]; }
-+ (QTWeakness *)fighting { return qtWeaknesses[@"Fighting"]; }
-+ (QTWeakness *)fire { return qtWeaknesses[@"Fire"]; }
-+ (QTWeakness *)flying { return qtWeaknesses[@"Flying"]; }
-+ (QTWeakness *)ghost { return qtWeaknesses[@"Ghost"]; }
-+ (QTWeakness *)grass { return qtWeaknesses[@"Grass"]; }
-+ (QTWeakness *)ground { return qtWeaknesses[@"Ground"]; }
-+ (QTWeakness *)ice { return qtWeaknesses[@"Ice"]; }
-+ (QTWeakness *)poison { return qtWeaknesses[@"Poison"]; }
-+ (QTWeakness *)psychic { return qtWeaknesses[@"Psychic"]; }
-+ (QTWeakness *)rock { return qtWeaknesses[@"Rock"]; }
-+ (QTWeakness *)steel { return qtWeaknesses[@"Steel"]; }
-+ (QTWeakness *)water { return qtWeaknesses[@"Water"]; }
-
-+ (void)initialize
+@implementation QTWhitelistStatus
++ (NSDictionary<NSString *, QTWhitelistStatus *> *)values
 {
-    NSArray<NSString *> *values = @[
-        @"Bug",
-        @"Dark",
-        @"Dragon",
-        @"Electric",
-        @"Fairy",
-        @"Fighting",
-        @"Fire",
-        @"Flying",
-        @"Ghost",
-        @"Grass",
-        @"Ground",
-        @"Ice",
-        @"Poison",
-        @"Psychic",
-        @"Rock",
-        @"Steel",
-        @"Water",
-    ];
-    qtWeaknesses = [NSMutableDictionary dictionaryWithCapacity:values.count];
-    for (NSString *value in values) qtWeaknesses[value] = [[QTWeakness alloc] initWithValue:value];
+    static NSDictionary<NSString *, QTWhitelistStatus *> *values;
+    return values = values ? values : @{
+        @"all_ads": [[QTWhitelistStatus alloc] initWithValue:@"all_ads"],
+    };
 }
 
-+ (instancetype _Nullable)withValue:(NSString *)value { return qtWeaknesses[value]; }
++ (QTWhitelistStatus *)allAds { return QTWhitelistStatus.values[@"all_ads"]; }
+
++ (instancetype _Nullable)withValue:(NSString *)value
+{
+    return QTWhitelistStatus.values[value];
+}
+
+- (instancetype)initWithValue:(NSString *)value
+{
+    if (self = [super init]) _value = value;
+    return self;
+}
+
+- (NSUInteger)hash { return _value.hash; }
+@end
+
+@implementation QTPostHint
++ (NSDictionary<NSString *, QTPostHint *> *)values
+{
+    static NSDictionary<NSString *, QTPostHint *> *values;
+    return values = values ? values : @{
+        @"image": [[QTPostHint alloc] initWithValue:@"image"],
+        @"link": [[QTPostHint alloc] initWithValue:@"link"],
+    };
+}
+
++ (QTPostHint *)image { return QTPostHint.values[@"image"]; }
++ (QTPostHint *)link { return QTPostHint.values[@"link"]; }
+
++ (instancetype _Nullable)withValue:(NSString *)value
+{
+    return QTPostHint.values[value];
+}
+
+- (instancetype)initWithValue:(NSString *)value
+{
+    if (self = [super init]) _value = value;
+    return self;
+}
+
+- (NSUInteger)hash { return _value.hash; }
+@end
+
+@implementation QTSelftext
++ (NSDictionary<NSString *, QTSelftext *> *)values
+{
+    static NSDictionary<NSString *, QTSelftext *> *values;
+    return values = values ? values : @{
+        @"": [[QTSelftext alloc] initWithValue:@""],
+    };
+}
+
++ (QTSelftext *)empty { return QTSelftext.values[@""]; }
+
++ (instancetype _Nullable)withValue:(NSString *)value
+{
+    return QTSelftext.values[value];
+}
+
+- (instancetype)initWithValue:(NSString *)value
+{
+    if (self = [super init]) _value = value;
+    return self;
+}
+
+- (NSUInteger)hash { return _value.hash; }
+@end
+
+@implementation QTSubreddit
++ (NSDictionary<NSString *, QTSubreddit *> *)values
+{
+    static NSDictionary<NSString *, QTSubreddit *> *values;
+    return values = values ? values : @{
+        @"funny": [[QTSubreddit alloc] initWithValue:@"funny"],
+    };
+}
+
++ (QTSubreddit *)funny { return QTSubreddit.values[@"funny"]; }
+
++ (instancetype _Nullable)withValue:(NSString *)value
+{
+    return QTSubreddit.values[value];
+}
+
+- (instancetype)initWithValue:(NSString *)value
+{
+    if (self = [super init]) _value = value;
+    return self;
+}
+
+- (NSUInteger)hash { return _value.hash; }
+@end
+
+@implementation QTSubredditID
++ (NSDictionary<NSString *, QTSubredditID *> *)values
+{
+    static NSDictionary<NSString *, QTSubredditID *> *values;
+    return values = values ? values : @{
+        @"t5_2qh33": [[QTSubredditID alloc] initWithValue:@"t5_2qh33"],
+    };
+}
+
++ (QTSubredditID *)t52Qh33 { return QTSubredditID.values[@"t5_2qh33"]; }
+
++ (instancetype _Nullable)withValue:(NSString *)value
+{
+    return QTSubredditID.values[value];
+}
+
+- (instancetype)initWithValue:(NSString *)value
+{
+    if (self = [super init]) _value = value;
+    return self;
+}
+
+- (NSUInteger)hash { return _value.hash; }
+@end
+
+@implementation QTSubredditNamePrefixed
++ (NSDictionary<NSString *, QTSubredditNamePrefixed *> *)values
+{
+    static NSDictionary<NSString *, QTSubredditNamePrefixed *> *values;
+    return values = values ? values : @{
+        @"r/funny": [[QTSubredditNamePrefixed alloc] initWithValue:@"r/funny"],
+    };
+}
+
++ (QTSubredditNamePrefixed *)rFunny { return QTSubredditNamePrefixed.values[@"r/funny"]; }
+
++ (instancetype _Nullable)withValue:(NSString *)value
+{
+    return QTSubredditNamePrefixed.values[value];
+}
+
+- (instancetype)initWithValue:(NSString *)value
+{
+    if (self = [super init]) _value = value;
+    return self;
+}
+
+- (NSUInteger)hash { return _value.hash; }
+@end
+
+@implementation QTSubredditType
++ (NSDictionary<NSString *, QTSubredditType *> *)values
+{
+    static NSDictionary<NSString *, QTSubredditType *> *values;
+    return values = values ? values : @{
+        @"public": [[QTSubredditType alloc] initWithValue:@"public"],
+    };
+}
+
++ (QTSubredditType *)public { return QTSubredditType.values[@"public"]; }
+
++ (instancetype _Nullable)withValue:(NSString *)value
+{
+    return QTSubredditType.values[value];
+}
+
+- (instancetype)initWithValue:(NSString *)value
+{
+    if (self = [super init]) _value = value;
+    return self;
+}
+
+- (NSUInteger)hash { return _value.hash; }
+@end
+
+@implementation QTKind
++ (NSDictionary<NSString *, QTKind *> *)values
+{
+    static NSDictionary<NSString *, QTKind *> *values;
+    return values = values ? values : @{
+        @"t3": [[QTKind alloc] initWithValue:@"t3"],
+    };
+}
+
++ (QTKind *)t3 { return QTKind.values[@"t3"]; }
+
++ (instancetype _Nullable)withValue:(NSString *)value
+{
+    return QTKind.values[value];
+}
 
 - (instancetype)initWithValue:(NSString *)value
 {
@@ -258,155 +517,543 @@ static NSMutableDictionary<NSString *, QTWeakness *> *qtWeaknesses;
 
 // MARK: JSON serialization implementations
 
-QTTopLevel *QTTopLevelFromData(NSData *data, NSError **error) {
-    NSDictionary<NSString *, id> *json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];
-    return *error ? nil : [QTTopLevel fromJSONDictionary:json];
+QTTopLevel *QTTopLevelFromData(NSData *data, NSError **error)
+{
+    @try {
+        id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];
+        return *error ? nil : [QTTopLevel fromJSONDictionary:(id)json];
+    } @catch (NSException *exception) {
+        *error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];
+        return nil;
+    }
 }
 
-QTTopLevel *QTTopLevelFromJSON(NSString *json, NSStringEncoding encoding, NSError **error) {
+QTTopLevel *QTTopLevelFromJSON(NSString *json, NSStringEncoding encoding, NSError **error)
+{
     return QTTopLevelFromData([json dataUsingEncoding:encoding], error);
 }
 
-NSData *QTTopLevelToData(QTTopLevel *topLevel, NSError **error) {
-    NSDictionary<NSString *, id> *json = [topLevel JSONDictionary];
-    NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];
-    return *error ? nil : data;
+NSData *QTTopLevelToData(QTTopLevel *topLevel, NSError **error)
+{
+    @try {
+        id json = [topLevel JSONDictionary];
+        NSData *data = [NSJSONSerialization dataWithJSONObject:json options:kNilOptions error:error];
+        return *error ? nil : data;
+    } @catch (NSException *exception) {
+        *error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];
+        return nil;
+    }
 }
 
-NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSError **error) {
+NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSError **error)
+{
     NSData *data = QTTopLevelToData(topLevel, error);
     return data ? [[NSString alloc] initWithData:data encoding:encoding] : nil;
 }
 
 @implementation QTTopLevel
-+ (_Nullable instancetype)fromData:(NSData *)data error:(NSError *_Nullable *)error {
++(NSDictionary<NSString *, NSString *> *)properties
+{
+    static NSDictionary<NSString *, NSString *> *properties;
+    return properties = properties ? properties : @{
+        @"kind": @"kind",
+        @"data": @"data",
+    };
+}
+
++ (_Nullable instancetype)fromData:(NSData *)data error:(NSError *_Nullable *)error
+{
     return QTTopLevelFromData(data, error);
 }
 
-+ (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error; {
++ (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error
+{
     return QTTopLevelFromJSON(json, encoding, error);
 }
 
-+ (_Nullable instancetype)fromJSON:(NSString *)json {
-    NSError *error;
-    return QTTopLevelFromJSON(json, NSUTF8StringEncoding, &error);
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict
+{
+    return dict ? [[QTTopLevel alloc] initWithJSONDictionary:dict] : nil;
 }
 
-+ (instancetype)fromJSONDictionary:(NSDictionary *)dict {
-    return [[QTTopLevel alloc] initWithJSONDictionary:dict];
-}
-
-- (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
+- (instancetype)initWithJSONDictionary:(NSDictionary *)dict
+{
     if (self = [super init]) {
-        _pokemon = [[dict objectForKey:@"pokemon" withClass:[NSArray class]] map:λ(id x, [QTPokemon fromJSONDictionary:x])];
+        [self setValuesForKeysWithDictionary:dict];
+        _data = [QTTopLevelData fromJSONDictionary:(id)_data];
     }
     return self;
 }
 
-- (NSDictionary *)JSONDictionary {
-    return @{
-        @"pokemon": [_pokemon map:λ(id x, [x JSONDictionary])],
-    };
+- (NSDictionary *)JSONDictionary
+{
+    id dict = [[self dictionaryWithValuesForKeys:QTTopLevel.properties.allValues] mutableCopy];
+
+    // Map values that need translation
+    [dict addEntriesFromDictionary:@{
+        @"data": [_data JSONDictionary],
+    }];
+
+    return dict;
 }
 
-- (NSData *_Nullable)toData:(NSError *_Nullable *)error {
+- (NSData *_Nullable)toData:(NSError *_Nullable *)error
+{
     return QTTopLevelToData(self, error);
 }
 
-- (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error {
+- (NSString *_Nullable)toJSON:(NSStringEncoding)encoding error:(NSError *_Nullable *)error
+{
     return QTTopLevelToJSON(self, encoding, error);
 }
-
-- (NSString *_Nullable)toJSON {
-    NSError *error;
-    return QTTopLevelToJSON(self, NSUTF8StringEncoding, &error);
-}
 @end
 
-@implementation QTPokemon
-+ (instancetype)fromJSONDictionary:(NSDictionary *)dict {
-    return [[QTPokemon alloc] initWithJSONDictionary:dict];
+@implementation QTTopLevelData
++(NSDictionary<NSString *, NSString *> *)properties
+{
+    static NSDictionary<NSString *, NSString *> *properties;
+    return properties = properties ? properties : @{
+        @"modhash": @"modhash",
+        @"children": @"children",
+        @"after": @"after",
+        @"before": @"before",
+    };
 }
 
-- (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict
+{
+    return dict ? [[QTTopLevelData alloc] initWithJSONDictionary:dict] : nil;
+}
+
+- (instancetype)initWithJSONDictionary:(NSDictionary *)dict
+{
     if (self = [super init]) {
-        _id = [dict objectForKey:@"id" withClass:[NSNumber class]];
-        _num = [dict objectForKey:@"num" withClass:[NSString class]];
-        _name = [dict objectForKey:@"name" withClass:[NSString class]];
-        _img = [dict objectForKey:@"img" withClass:[NSString class]];
-        _type = [[dict objectForKey:@"type" withClass:[NSArray class]] map:λ(id x, x)];
-        _height = [dict objectForKey:@"height" withClass:[NSString class]];
-        _weight = [dict objectForKey:@"weight" withClass:[NSString class]];
-        _candy = [dict objectForKey:@"candy" withClass:[NSString class]];
-
-        if ([[dict objectForKey:@"candy_count"] isNotEqualTo:[NSNull null]]) {
-            _candyCount = [dict objectForKey:@"candy_count" withClass:[NSNumber class]];
-        }
-
-        _egg = NotNil([QTEgg withValue:[dict objectForKey:@"egg" withClass:[NSString class]]]);
-        _spawnChance = [dict objectForKey:@"spawn_chance" withClass:[NSNumber class]];
-        _avgSpawns = [dict objectForKey:@"avg_spawns" withClass:[NSNumber class]];
-        _spawnTime = [dict objectForKey:@"spawn_time" withClass:[NSString class]];
-
-        if ([[dict objectForKey:@"multipliers"] isNotEqualTo:[NSNull null]]) {
-            _multipliers = [[dict objectForKey:@"multipliers" withClass:[NSArray class]] map:λ(id x, x)];
-        }
-
-        _weaknesses = [[dict objectForKey:@"weaknesses" withClass:[NSArray class]] map:λ(id x, NotNil([QTWeakness withValue:x]))];
-
-        if ([[dict objectForKey:@"next_evolution"] isNotEqualTo:[NSNull null]]) {
-            _nextEvolution = [[dict objectForKey:@"next_evolution" withClass:[NSArray class]] map:λ(id x, [QTEvolution fromJSONDictionary:x])];
-        }
-
-        if ([[dict objectForKey:@"prev_evolution"] isNotEqualTo:[NSNull null]]) {
-            _prevEvolution = [[dict objectForKey:@"prev_evolution" withClass:[NSArray class]] map:λ(id x, [QTEvolution fromJSONDictionary:x])];
-        }
-
+        [self setValuesForKeysWithDictionary:dict];
+        _children = map(_children, λ(id x, [QTChild fromJSONDictionary:(id)x]));
     }
     return self;
 }
 
-- (NSDictionary *)JSONDictionary {
-    return @{
-        @"id": _id,
-        @"num": _num,
-        @"name": _name,
-        @"img": _img,
-        @"type": _type,
-        @"height": _height,
-        @"weight": _weight,
-        @"candy": _candy,
-        @"candy_count": NSNullify(_candyCount),
-        @"egg": [_egg value],
-        @"spawn_chance": _spawnChance,
-        @"avg_spawns": _avgSpawns,
-        @"spawn_time": _spawnTime,
-        @"multipliers": NSNullify(_multipliers),
-        @"weaknesses": [_weaknesses map:λ(id x, [x value])],
-        @"next_evolution": NSNullify([_nextEvolution map:λ(id x, [x JSONDictionary])]),
-        @"prev_evolution": NSNullify([_prevEvolution map:λ(id x, [x JSONDictionary])]),
-    };
+- (NSDictionary *)JSONDictionary
+{
+    id dict = [[self dictionaryWithValuesForKeys:QTTopLevelData.properties.allValues] mutableCopy];
+
+    // Map values that need translation
+    [dict addEntriesFromDictionary:@{
+        @"children": map(_children, λ(id x, [x JSONDictionary])),
+    }];
+
+    return dict;
 }
 @end
 
-@implementation QTEvolution
-+ (instancetype)fromJSONDictionary:(NSDictionary *)dict {
-    return [[QTEvolution alloc] initWithJSONDictionary:dict];
+@implementation QTChild
++(NSDictionary<NSString *, NSString *> *)properties
+{
+    static NSDictionary<NSString *, NSString *> *properties;
+    return properties = properties ? properties : @{
+        @"kind": @"kind",
+        @"data": @"data",
+    };
 }
 
-- (instancetype)initWithJSONDictionary:(NSDictionary *)dict {
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict
+{
+    return dict ? [[QTChild alloc] initWithJSONDictionary:dict] : nil;
+}
+
+- (instancetype)initWithJSONDictionary:(NSDictionary *)dict
+{
     if (self = [super init]) {
-        _num = [dict objectForKey:@"num" withClass:[NSString class]];
-        _name = [dict objectForKey:@"name" withClass:[NSString class]];
+        [self setValuesForKeysWithDictionary:dict];
+        _kind = [QTKind withValue:(id)_kind];
+        _data = [QTChildData fromJSONDictionary:(id)_data];
     }
     return self;
 }
 
-- (NSDictionary *)JSONDictionary {
-    return @{
-        @"num": _num,
-        @"name": _name,
+- (NSDictionary *)JSONDictionary
+{
+    id dict = [[self dictionaryWithValuesForKeys:QTChild.properties.allValues] mutableCopy];
+
+    // Map values that need translation
+    [dict addEntriesFromDictionary:@{
+        @"kind": [_kind value],
+        @"data": [_data JSONDictionary],
+    }];
+
+    return dict;
+}
+@end
+
+@implementation QTChildData
++(NSDictionary<NSString *, NSString *> *)properties
+{
+    static NSDictionary<NSString *, NSString *> *properties;
+    return properties = properties ? properties : @{
+        @"domain": @"domain",
+        @"approved_at_utc": @"approvedAtUTC",
+        @"banned_by": @"bannedBy",
+        @"media_embed": @"mediaEmbed",
+        @"thumbnail_width": @"thumbnailWidth",
+        @"subreddit": @"subreddit",
+        @"selftext_html": @"selftextHTML",
+        @"selftext": @"selftext",
+        @"likes": @"likes",
+        @"suggested_sort": @"suggestedSort",
+        @"user_reports": @"userReports",
+        @"secure_media": @"secureMedia",
+        @"link_flair_text": @"linkFlairText",
+        @"id": @"id",
+        @"banned_at_utc": @"bannedAtUTC",
+        @"view_count": @"viewCount",
+        @"archived": @"archived",
+        @"clicked": @"clicked",
+        @"report_reasons": @"reportReasons",
+        @"title": @"title",
+        @"media": @"media",
+        @"mod_reports": @"modReports",
+        @"can_mod_post": @"canModPost",
+        @"author_flair_text": @"authorFlairText",
+        @"score": @"score",
+        @"approved_by": @"approvedBy",
+        @"over_18": @"over18",
+        @"hidden": @"hidden",
+        @"preview": @"preview",
+        @"thumbnail": @"thumbnail",
+        @"subreddit_id": @"subredditID",
+        @"edited": @"edited",
+        @"link_flair_css_class": @"linkFlairCSSClass",
+        @"author_flair_css_class": @"authorFlairCSSClass",
+        @"contest_mode": @"contestMode",
+        @"gilded": @"gilded",
+        @"downs": @"downs",
+        @"brand_safe": @"brandSafe",
+        @"secure_media_embed": @"secureMediaEmbed",
+        @"saved": @"saved",
+        @"removal_reason": @"removalReason",
+        @"post_hint": @"postHint",
+        @"stickied": @"stickied",
+        @"can_gild": @"canGild",
+        @"thumbnail_height": @"thumbnailHeight",
+        @"parent_whitelist_status": @"parentWhitelistStatus",
+        @"name": @"name",
+        @"spoiler": @"spoiler",
+        @"permalink": @"permalink",
+        @"subreddit_type": @"subredditType",
+        @"locked": @"locked",
+        @"hide_score": @"hideScore",
+        @"created": @"created",
+        @"url": @"url",
+        @"whitelist_status": @"whitelistStatus",
+        @"quarantine": @"quarantine",
+        @"author": @"author",
+        @"created_utc": @"createdUTC",
+        @"subreddit_name_prefixed": @"subredditNamePrefixed",
+        @"ups": @"ups",
+        @"num_comments": @"numComments",
+        @"is_self": @"isSelf",
+        @"visited": @"visited",
+        @"num_reports": @"numReports",
+        @"is_video": @"isVideo",
+        @"distinguished": @"distinguished",
     };
+}
+
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict
+{
+    return dict ? [[QTChildData alloc] initWithJSONDictionary:dict] : nil;
+}
+
+- (instancetype)initWithJSONDictionary:(NSDictionary *)dict
+{
+    if (self = [super init]) {
+        [self setValuesForKeysWithDictionary:dict];
+        _domain = [QTDomain withValue:(id)_domain];
+        _mediaEmbed = [QTMediaEmbed fromJSONDictionary:(id)_mediaEmbed];
+        _subreddit = [QTSubreddit withValue:(id)_subreddit];
+        _selftext = [QTSelftext withValue:(id)_selftext];
+        _preview = [QTPreview fromJSONDictionary:(id)_preview];
+        _subredditID = [QTSubredditID withValue:(id)_subredditID];
+        _secureMediaEmbed = [QTMediaEmbed fromJSONDictionary:(id)_secureMediaEmbed];
+        _postHint = [QTPostHint withValue:(id)_postHint];
+        _parentWhitelistStatus = [QTWhitelistStatus withValue:(id)_parentWhitelistStatus];
+        _subredditType = [QTSubredditType withValue:(id)_subredditType];
+        _whitelistStatus = [QTWhitelistStatus withValue:(id)_whitelistStatus];
+        _subredditNamePrefixed = [QTSubredditNamePrefixed withValue:(id)_subredditNamePrefixed];
+    }
+    return self;
+}
+
+-(void)setValue:(nullable id)value forKey:(NSString *)key
+{
+    [super setValue:value forKey:QTChildData.properties[key]];
+}
+
+- (NSDictionary *)JSONDictionary
+{
+    id dict = [[self dictionaryWithValuesForKeys:QTChildData.properties.allValues] mutableCopy];
+
+    // Rewrite property names that differ in JSON
+    for (id jsonName in QTChildData.properties) {
+        id propertyName = QTChildData.properties[jsonName];
+        if (![jsonName isEqualToString:propertyName]) {
+            dict[jsonName] = dict[propertyName];
+            [dict removeObjectForKey:propertyName];
+        }
+    }
+
+    // Map values that need translation
+    [dict addEntriesFromDictionary:@{
+        @"domain": [_domain value],
+        @"media_embed": [_mediaEmbed JSONDictionary],
+        @"subreddit": [_subreddit value],
+        @"selftext": [_selftext value],
+        @"archived": _archived ? @YES : @NO,
+        @"clicked": _clicked ? @YES : @NO,
+        @"can_mod_post": _canModPost ? @YES : @NO,
+        @"over_18": _over18 ? @YES : @NO,
+        @"hidden": _hidden ? @YES : @NO,
+        @"preview": [_preview JSONDictionary],
+        @"subreddit_id": [_subredditID value],
+        @"edited": _edited ? @YES : @NO,
+        @"contest_mode": _contestMode ? @YES : @NO,
+        @"brand_safe": _brandSafe ? @YES : @NO,
+        @"secure_media_embed": [_secureMediaEmbed JSONDictionary],
+        @"saved": _saved ? @YES : @NO,
+        @"post_hint": [_postHint value],
+        @"stickied": _stickied ? @YES : @NO,
+        @"can_gild": _canGild ? @YES : @NO,
+        @"parent_whitelist_status": [_parentWhitelistStatus value],
+        @"spoiler": _spoiler ? @YES : @NO,
+        @"subreddit_type": [_subredditType value],
+        @"locked": _locked ? @YES : @NO,
+        @"hide_score": _hideScore ? @YES : @NO,
+        @"whitelist_status": [_whitelistStatus value],
+        @"quarantine": _quarantine ? @YES : @NO,
+        @"subreddit_name_prefixed": [_subredditNamePrefixed value],
+        @"is_self": _isSelf ? @YES : @NO,
+        @"visited": _visited ? @YES : @NO,
+        @"is_video": _isVideo ? @YES : @NO,
+    }];
+
+    return dict;
+}
+@end
+
+@implementation QTMediaEmbed
++(NSDictionary<NSString *, NSString *> *)properties
+{
+    static NSDictionary<NSString *, NSString *> *properties;
+    return properties = properties ? properties : @{
+    };
+}
+
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict
+{
+    return dict ? [[QTMediaEmbed alloc] initWithJSONDictionary:dict] : nil;
+}
+
+- (instancetype)initWithJSONDictionary:(NSDictionary *)dict
+{
+    if (self = [super init]) {
+        [self setValuesForKeysWithDictionary:dict];
+    }
+    return self;
+}
+
+- (NSDictionary *)JSONDictionary
+{
+    return [self dictionaryWithValuesForKeys:QTMediaEmbed.properties.allValues];
+}
+@end
+
+@implementation QTPreview
++(NSDictionary<NSString *, NSString *> *)properties
+{
+    static NSDictionary<NSString *, NSString *> *properties;
+    return properties = properties ? properties : @{
+        @"images": @"images",
+        @"enabled": @"enabled",
+    };
+}
+
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict
+{
+    return dict ? [[QTPreview alloc] initWithJSONDictionary:dict] : nil;
+}
+
+- (instancetype)initWithJSONDictionary:(NSDictionary *)dict
+{
+    if (self = [super init]) {
+        [self setValuesForKeysWithDictionary:dict];
+        _images = map(_images, λ(id x, [QTImage fromJSONDictionary:(id)x]));
+    }
+    return self;
+}
+
+- (NSDictionary *)JSONDictionary
+{
+    id dict = [[self dictionaryWithValuesForKeys:QTPreview.properties.allValues] mutableCopy];
+
+    // Map values that need translation
+    [dict addEntriesFromDictionary:@{
+        @"images": map(_images, λ(id x, [x JSONDictionary])),
+        @"enabled": _enabled ? @YES : @NO,
+    }];
+
+    return dict;
+}
+@end
+
+@implementation QTImage
++(NSDictionary<NSString *, NSString *> *)properties
+{
+    static NSDictionary<NSString *, NSString *> *properties;
+    return properties = properties ? properties : @{
+        @"source": @"source",
+        @"resolutions": @"resolutions",
+        @"variants": @"variants",
+        @"id": @"id",
+    };
+}
+
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict
+{
+    return dict ? [[QTImage alloc] initWithJSONDictionary:dict] : nil;
+}
+
+- (instancetype)initWithJSONDictionary:(NSDictionary *)dict
+{
+    if (self = [super init]) {
+        [self setValuesForKeysWithDictionary:dict];
+        _source = [QTResolution fromJSONDictionary:(id)_source];
+        _resolutions = map(_resolutions, λ(id x, [QTResolution fromJSONDictionary:(id)x]));
+        _variants = [QTVariants fromJSONDictionary:(id)_variants];
+    }
+    return self;
+}
+
+- (NSDictionary *)JSONDictionary
+{
+    id dict = [[self dictionaryWithValuesForKeys:QTImage.properties.allValues] mutableCopy];
+
+    // Map values that need translation
+    [dict addEntriesFromDictionary:@{
+        @"source": [_source JSONDictionary],
+        @"resolutions": map(_resolutions, λ(id x, [x JSONDictionary])),
+        @"variants": [_variants JSONDictionary],
+    }];
+
+    return dict;
+}
+@end
+
+@implementation QTResolution
++(NSDictionary<NSString *, NSString *> *)properties
+{
+    static NSDictionary<NSString *, NSString *> *properties;
+    return properties = properties ? properties : @{
+        @"url": @"url",
+        @"width": @"width",
+        @"height": @"height",
+    };
+}
+
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict
+{
+    return dict ? [[QTResolution alloc] initWithJSONDictionary:dict] : nil;
+}
+
+- (instancetype)initWithJSONDictionary:(NSDictionary *)dict
+{
+    if (self = [super init]) {
+        [self setValuesForKeysWithDictionary:dict];
+    }
+    return self;
+}
+
+- (NSDictionary *)JSONDictionary
+{
+    return [self dictionaryWithValuesForKeys:QTResolution.properties.allValues];
+}
+@end
+
+@implementation QTVariants
++(NSDictionary<NSString *, NSString *> *)properties
+{
+    static NSDictionary<NSString *, NSString *> *properties;
+    return properties = properties ? properties : @{
+        @"gif": @"gif",
+        @"mp4": @"mp4",
+    };
+}
+
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict
+{
+    return dict ? [[QTVariants alloc] initWithJSONDictionary:dict] : nil;
+}
+
+- (instancetype)initWithJSONDictionary:(NSDictionary *)dict
+{
+    if (self = [super init]) {
+        [self setValuesForKeysWithDictionary:dict];
+        _gif = [QTGIF fromJSONDictionary:(id)_gif];
+        _mp4 = [QTGIF fromJSONDictionary:(id)_mp4];
+    }
+    return self;
+}
+
+- (NSDictionary *)JSONDictionary
+{
+    id dict = [[self dictionaryWithValuesForKeys:QTVariants.properties.allValues] mutableCopy];
+
+    // Map values that need translation
+    [dict addEntriesFromDictionary:@{
+        @"gif": NSNullify([_gif JSONDictionary]),
+        @"mp4": NSNullify([_mp4 JSONDictionary]),
+    }];
+
+    return dict;
+}
+@end
+
+@implementation QTGIF
++(NSDictionary<NSString *, NSString *> *)properties
+{
+    static NSDictionary<NSString *, NSString *> *properties;
+    return properties = properties ? properties : @{
+        @"source": @"source",
+        @"resolutions": @"resolutions",
+    };
+}
+
++ (instancetype)fromJSONDictionary:(NSDictionary *)dict
+{
+    return dict ? [[QTGIF alloc] initWithJSONDictionary:dict] : nil;
+}
+
+- (instancetype)initWithJSONDictionary:(NSDictionary *)dict
+{
+    if (self = [super init]) {
+        [self setValuesForKeysWithDictionary:dict];
+        _source = [QTResolution fromJSONDictionary:(id)_source];
+        _resolutions = map(_resolutions, λ(id x, [QTResolution fromJSONDictionary:(id)x]));
+    }
+    return self;
+}
+
+- (NSDictionary *)JSONDictionary
+{
+    id dict = [[self dictionaryWithValuesForKeys:QTGIF.properties.allValues] mutableCopy];
+
+    // Map values that need translation
+    [dict addEntriesFromDictionary:@{
+        @"source": [_source JSONDictionary],
+        @"resolutions": map(_resolutions, λ(id x, [x JSONDictionary])),
+    }];
+
+    return dict;
 }
 @end
 
