@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		63729AF1201594A8009BD732 /* QTTopLevel.m in Sources */ = {isa = PBXBuildFile; fileRef = 63729AE8201592E5009BD732 /* QTTopLevel.m */; };
 		6397CF1F200AE512007A298C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 6397CF1E200AE512007A298C /* main.m */; };
 /* End PBXBuildFile section */
 
@@ -23,6 +24,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		63729AE8201592E5009BD732 /* QTTopLevel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = QTTopLevel.m; sourceTree = "<group>"; };
 		6397CF1B200AE512007A298C /* ObjectiveCFixture */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ObjectiveCFixture; sourceTree = BUILT_PRODUCTS_DIR; };
 		6397CF1E200AE512007A298C /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		6397CF25200AE52B007A298C /* QTTopLevel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = QTTopLevel.h; sourceTree = "<group>"; };
@@ -44,8 +46,9 @@
 			isa = PBXGroup;
 			children = (
 				63FDAA39200BCDC8009F1003 /* sample.json */,
-				6397CF1E200AE512007A298C /* main.m */,
 				6397CF25200AE52B007A298C /* QTTopLevel.h */,
+				63729AE8201592E5009BD732 /* QTTopLevel.m */,
+				6397CF1E200AE512007A298C /* main.m */,
 				6397CF1C200AE512007A298C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -116,6 +119,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6397CF1F200AE512007A298C /* main.m in Sources */,
+				63729AF1201594A8009BD732 /* QTTopLevel.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -126,6 +130,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -181,6 +186,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -230,6 +236,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = W9D824R4EW;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -239,6 +246,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = W9D824R4EW;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

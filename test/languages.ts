@@ -147,13 +147,13 @@ export const SwiftLanguage: Language = {
 export const ObjectiveCLanguage: Language = {
   name: "objective-c",
   base: "test/fixtures/objective-c",
-  compileCommand: `clang -framework Foundation main.m -o test`,
+  compileCommand: `clang -framework Foundation *.m -o test`,
   runCommand(sample: string) {
     return `cp "${sample}" sample.json && ./test sample.json`;
   },
   diffViaSchema: true,
   allowMissingNull: true,
-  output: "QTTopLevel.h",
+  output: "QTTopLevel.m",
   topLevel: "QTTopLevel",
   skipJSON: [
     // Almost all strings work except any containing \u001b
@@ -165,7 +165,7 @@ export const ObjectiveCLanguage: Language = {
     "combinations.json"
   ],
   skipSchema: [],
-  rendererOptions: {},
+  rendererOptions: { functions: "true" },
   quickTestRendererOptions: []
 };
 
