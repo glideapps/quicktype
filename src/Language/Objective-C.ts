@@ -925,8 +925,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitLine("NS_ASSUME_NONNULL_BEGIN");
                 this.ensureBlankLine();
 
-                this.emitDictionaryAndArrayExtensions();
-
                 // We wouldn't need to emit these private iterfaces if we emitted implementations in forward-order
                 // but the code is more readable and explicit if we do this.
                 if (this._extraComments) {
@@ -952,6 +950,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.forEachEnum("leading-and-interposing", (t, n) => this.emitPseudoEnumImplementation(t, n));
                 }
 
+                this.ensureBlankLine();
+                this.emitMapFunction();
+                this.ensureBlankLine();
+
                 this.emitMark("JSON serialization implementations");
                 this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitTopLevelFunctions(t, n));
             }
@@ -966,9 +968,21 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             this.finishFile();
         }
     }
+    private get needsMap(): boolean {
+        // TODO this isn't complete (needs union support, for example)
+        function needsMap(t: Type): boolean {
+            return (
+                t instanceof MapType ||
+                t instanceof ArrayType ||
+                (t instanceof ClassType && t.properties.some(needsMap))
+            );
+        }
+        return this.typeGraph.allTypesUnordered().some(needsMap);
+    }
 
-    private emitDictionaryAndArrayExtensions = () => {
-        this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
+    private emitMapFunction = () => {
+        if (this.needsMap) {
+            this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
     id result = nil;
     if ([collection isKindOfClass:[NSArray class]]) {
         result = [NSMutableArray arrayWithCapacity:[collection count]];
@@ -979,5 +993,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
     return result;
 }`);
+        }
     };
 }

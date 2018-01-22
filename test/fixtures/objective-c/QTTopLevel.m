@@ -8,18 +8,6 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-static id map(id collection, id (^f)(id value)) {
-    id result = nil;
-    if ([collection isKindOfClass:[NSArray class]]) {
-        result = [NSMutableArray arrayWithCapacity:[collection count]];
-        for (id x in collection) [result addObject:f(x)];
-    } else if ([collection isKindOfClass:[NSDictionary class]]) {
-        result = [NSMutableDictionary dictionaryWithCapacity:[collection count]];
-        for (id key in collection) [result setObject:f([collection objectForKey:key]) forKey:key];
-    }
-    return result;
-}
-
 // MARK: Private model interfaces
 
 @interface QTTopLevel (JSONConversion)
@@ -307,6 +295,18 @@ static id map(id collection, id (^f)(id value)) {
 
 - (NSUInteger)hash { return _value.hash; }
 @end
+
+static id map(id collection, id (^f)(id value)) {
+    id result = nil;
+    if ([collection isKindOfClass:[NSArray class]]) {
+        result = [NSMutableArray arrayWithCapacity:[collection count]];
+        for (id x in collection) [result addObject:f(x)];
+    } else if ([collection isKindOfClass:[NSDictionary class]]) {
+        result = [NSMutableDictionary dictionaryWithCapacity:[collection count]];
+        for (id key in collection) [result setObject:f([collection objectForKey:key]) forKey:key];
+    }
+    return result;
+}
 
 // MARK: JSON serialization implementations
 
