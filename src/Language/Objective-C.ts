@@ -314,9 +314,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             _doubleType => dynamic,
             _stringType => dynamic,
             arrayType => ["map(", dynamic, ", λ(id x, ", this.fromDynamicExpression(arrayType.items, "x"), "))"],
-            classType => ["[", this.nameForNamedType(classType), " fromJSONDictionary:(id)", dynamic, "]"],
+            classType => ["[", this.nameForNamedType(classType), " fromJSONDictionary:", dynamic, "]"],
             mapType => ["map(", dynamic, ", λ(id x, ", this.fromDynamicExpression(mapType.values, "x"), "))"],
-            enumType => ["[", this.nameForNamedType(enumType), " withValue:(id)", dynamic, "]"],
+            enumType => ["[", this.nameForNamedType(enumType), " withValue:", dynamic, "]"],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.fromDynamicExpression(nullable, dynamic) : dynamic;
@@ -400,7 +400,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             doubleType => this.emitLine(name, " = ", this.fromDynamicExpression(doubleType, name), ";"),
             stringType => this.emitLine(name, " = ", this.fromDynamicExpression(stringType, name), ";"),
             arrayType => this.emitLine(name, " = ", this.fromDynamicExpression(arrayType, name), ";"),
-            classType => this.emitLine(name, " = ", this.fromDynamicExpression(classType, name), ";"),
+            classType => this.emitLine(name, " = ", this.fromDynamicExpression(classType, ["(id)", name]), ";"),
             mapType => {
                 const itemType = mapType.values;
                 this.emitLine(
@@ -412,7 +412,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     ");"
                 );
             },
-            enumType => this.emitLine(name, " = ", this.fromDynamicExpression(enumType, name), ";"),
+            enumType => this.emitLine(name, " = ", this.fromDynamicExpression(enumType, ["(id)", name]), ";"),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {

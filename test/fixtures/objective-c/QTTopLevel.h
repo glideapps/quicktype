@@ -521,7 +521,7 @@ QTTopLevel *QTTopLevelFromData(NSData *data, NSError **error)
 {
     @try {
         id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];
-        return *error ? nil : [QTTopLevel fromJSONDictionary:(id)json];
+        return *error ? nil : [QTTopLevel fromJSONDictionary:json];
     } @catch (NSException *exception) {
         *error = [NSError errorWithDomain:@"JSONSerialization" code:-1 userInfo:@{ @"exception": exception }];
         return nil;
@@ -629,7 +629,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 {
     if (self = [super init]) {
         [self setValuesForKeysWithDictionary:dict];
-        _children = map(_children, λ(id x, [QTChild fromJSONDictionary:(id)x]));
+        _children = map(_children, λ(id x, [QTChild fromJSONDictionary:x]));
     }
     return self;
 }
@@ -887,7 +887,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
 {
     if (self = [super init]) {
         [self setValuesForKeysWithDictionary:dict];
-        _images = map(_images, λ(id x, [QTImage fromJSONDictionary:(id)x]));
+        _images = map(_images, λ(id x, [QTImage fromJSONDictionary:x]));
     }
     return self;
 }
@@ -928,7 +928,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
     if (self = [super init]) {
         [self setValuesForKeysWithDictionary:dict];
         _source = [QTResolution fromJSONDictionary:(id)_source];
-        _resolutions = map(_resolutions, λ(id x, [QTResolution fromJSONDictionary:(id)x]));
+        _resolutions = map(_resolutions, λ(id x, [QTResolution fromJSONDictionary:x]));
         _variants = [QTVariants fromJSONDictionary:(id)_variants];
     }
     return self;
@@ -1038,7 +1038,7 @@ NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSEr
     if (self = [super init]) {
         [self setValuesForKeysWithDictionary:dict];
         _source = [QTResolution fromJSONDictionary:(id)_source];
-        _resolutions = map(_resolutions, λ(id x, [QTResolution fromJSONDictionary:(id)x]));
+        _resolutions = map(_resolutions, λ(id x, [QTResolution fromJSONDictionary:x]));
     }
     return self;
 }
