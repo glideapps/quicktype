@@ -192,6 +192,10 @@ class JSONFixture extends LanguageFixture {
     super(language);
   }
 
+  runForName(name: string): boolean {
+    return this.name === name || name === "json";
+  }
+
   async runQuicktype(
     sample: string,
     additionalRendererOptions: RendererOptions

@@ -6,8 +6,8 @@ import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption, BooleanOption } from "../RendererOptions";
 import { Type, matchType, nullableFromUnion, ClassType, UnionType, EnumType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { Namer, Name, DependencyName, funPrefixNamer, Namespace } from "../Naming";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { Namer, Name, DependencyName, funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,
     isLetterOrUnderscoreOrDigit,
@@ -56,6 +56,7 @@ const forbiddenNames = [
     "of",
     "let",
     "in",
+    "infix",
     "type",
     "module",
     "where",
@@ -80,7 +81,11 @@ const forbiddenNames = [
     "toList",
     "makeArrayEncoder",
     "makeDictEncoder",
-    "makeNullableEncoder"
+    "makeNullableEncoder",
+    "Int",
+    "True",
+    "False",
+    "String"
 ];
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
@@ -200,11 +205,8 @@ class ElmRenderer extends ConvenienceRenderer {
         return lowerNamingFunction;
     }
 
-    protected forbiddenForClassProperties(
-        _c: ClassType,
-        _classNamed: Name
-    ): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.forbiddenWordsNamespace] };
+    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
     }
 
     protected makeUnionMemberNamer(): Namer {

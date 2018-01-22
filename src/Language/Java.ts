@@ -30,8 +30,8 @@ import {
     firstUpperWordStyle,
     allLowerWordStyle
 } from "../Strings";
-import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { Name, Namer, funPrefixNamer } from "../Naming";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -183,11 +183,8 @@ class JavaRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForClassProperties(
-        _c: ClassType,
-        _classNamed: Name
-    ): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.forbiddenWordsNamespace] };
+    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
     }
 
     protected topLevelNameStyle(rawName: string): string {

@@ -166,12 +166,12 @@ export abstract class Renderer {
         this.changeIndent(-1);
     }
 
-    protected abstract setUpNaming(): Namespace[];
+    protected abstract setUpNaming(): OrderedSet<Namespace>;
     protected abstract emitSource(givenOutputFilename: string): void;
     protected abstract makeHandlebarsContext(): StringMap;
 
     private assignNames(): Map<Name, string> {
-        return assignNames(OrderedSet(this.setUpNaming()));
+        return assignNames(this.setUpNaming());
     }
 
     finishFile(filename: string): void {

@@ -6,7 +6,7 @@ import { includes, startsWith, repeat } from "lodash";
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, nullableFromUnion, matchType, ArrayType, MapType, UnionType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Namespace, Name, Namer, funPrefixNamer, keywordNamespace } from "../Naming";
+import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, modifySource } from "../Source";
 import {
     splitIntoWords,
@@ -18,7 +18,7 @@ import {
     utf16LegalizeCharacters,
     stringEscape
 } from "../Strings";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { StringOption, BooleanOption, EnumOption } from "../RendererOptions";
 import { Set } from "immutable";
 import { assert, defined } from "../Support";
@@ -97,13 +97,17 @@ function propertyNameStyle(original: string): string {
 }
 
 const keywords = [
+    /*
     "_Bool",
     "_Complex",
     "_Imaginary",
+    */
+    "asm",
     "atomic",
     "auto",
+    "bool",
     "break",
-    "case ",
+    "case",
     "char",
     "const",
     "continue",
@@ -114,8 +118,8 @@ const keywords = [
     "enum",
     "extern",
     "false",
-    "float ",
-    "for ",
+    "float",
+    "for",
     "goto",
     "if",
     "inline",
@@ -134,6 +138,7 @@ const keywords = [
     "struct",
     "switch",
     "typedef",
+    "typeof",
     "true",
     "union",
     "unsigned",
@@ -169,9 +174,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     // support 'natural' enums (NSUInteger) but this isn't implemented yet.
     pseudoEnums: Set<EnumType>;
 
-    private _propertyForbiddenNamespace: Namespace;
-    private _enumCaseForbiddenNamespace: Namespace;
-
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
@@ -200,12 +202,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         return caps.length === 0 ? DEFAULT_CLASS_PREFIX : caps;
     }
 
-    protected setUpNaming(): Namespace[] {
-        this._propertyForbiddenNamespace = keywordNamespace("forbidden-for-properties", forbiddenPropertyNames);
-        this._enumCaseForbiddenNamespace = keywordNamespace("forbidden-for-enum-cases", [staticEnumValuesIdentifier]);
-        return super.setUpNaming().concat([this._propertyForbiddenNamespace, this._enumCaseForbiddenNamespace]);
-    }
-
     private enumOccursInArrayOrMap(enumType: EnumType): boolean {
         function containedBy(t: Type): boolean {
             return (
@@ -223,15 +219,12 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForClassProperties(
-        _c: ClassType,
-        _classNamed: Name
-    ): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.forbiddenWordsNamespace, this._propertyForbiddenNamespace] };
+    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+        return { names: forbiddenPropertyNames, includeGlobalForbidden: true };
     }
 
-    protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.forbiddenWordsNamespace, this._enumCaseForbiddenNamespace] };
+    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+        return { names: [staticEnumValuesIdentifier], includeGlobalForbidden: true };
     }
 
     protected topLevelNameStyle(rawName: string): string {

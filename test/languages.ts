@@ -114,7 +114,8 @@ export const ElmLanguage: Language = {
     "recursive.json",
     "direct-recursive.json",
     "bug427.json",
-    "list.json"
+    "list.json",
+    "keywords.json" // stack overflow
   ],
   skipSchema: [], // All of them currently fail, so we don't even run it.
   rendererOptions: {},

@@ -24,8 +24,8 @@ import {
     firstUpperWordStyle
 } from "../Strings";
 import { intercalate, defined, assert, panic, StringMap } from "../Support";
-import { Namespace, Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { StringOption, EnumOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -136,11 +136,22 @@ class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
-        return ["QuickType", "Converter", "JsonConverter", "Type", "Serialize"];
+        return [
+            "QuickType",
+            "Converter",
+            "JsonConverter",
+            "Type",
+            "Serialize",
+            "System",
+            "Newtonsoft",
+            "Console",
+            "MetadataPropertyHandling",
+            "DateParseHandling"
+        ];
     }
 
-    protected forbiddenForClassProperties(_: ClassType, classNamed: Name): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [classNamed], namespaces: [] };
+    protected forbiddenForClassProperties(_: ClassType, classNamed: Name): ForbiddenWordsInfo {
+        return { names: [classNamed, "FromJson"], includeGlobalForbidden: true };
     }
 
     protected topLevelNameStyle(rawName: string): string {

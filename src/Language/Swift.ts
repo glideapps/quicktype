@@ -14,11 +14,11 @@ import {
     TypeKind
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Namespace, Name, Namer, funPrefixNamer, keywordNamespace } from "../Naming";
+import { Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, EnumOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
     isLetterOrUnderscore,
@@ -218,7 +218,6 @@ const lowerNamingFunction = funPrefixNamer(s => swiftNameStyle(false, s));
 class SwiftRenderer extends ConvenienceRenderer {
     private _needAny: boolean = false;
     private _needNull: boolean = false;
-    private _propertyForbiddenNamespace: Namespace;
 
     constructor(
         graph: TypeGraph,
@@ -232,24 +231,16 @@ class SwiftRenderer extends ConvenienceRenderer {
         super(graph, leadingComments);
     }
 
-    protected setUpNaming(): Namespace[] {
-        this._propertyForbiddenNamespace = keywordNamespace("forbidden-for-properties", ["fromURL"]);
-        return super.setUpNaming().concat([this._propertyForbiddenNamespace]);
-    }
-
     protected get forbiddenNamesForGlobalNamespace(): string[] {
         return keywords;
     }
 
-    protected forbiddenForClassProperties(
-        _c: ClassType,
-        _classNamed: Name
-    ): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.forbiddenWordsNamespace, this._propertyForbiddenNamespace] };
+    protected forbiddenForClassProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
+        return { names: ["fromURL", "json"], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.forbiddenWordsNamespace] };
+    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
     }
 
     protected topLevelNameStyle(rawName: string): string {
