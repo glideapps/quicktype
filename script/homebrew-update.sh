@@ -6,4 +6,4 @@
 
 URL=$(npm info quicktype --json | jq -r .dist.tarball)
 SHA=$(curl $URL | shasum -a 256)
-brew bump-formula-pr --strict quicktype --url="$URL --sha256="$SHA"
+brew bump-formula-pr --strict quicktype --url="$URL" --sha256="$SHA"
