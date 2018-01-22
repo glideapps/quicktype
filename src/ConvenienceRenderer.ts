@@ -23,9 +23,12 @@ import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 import { TypeAttributeStoreView } from "./TypeGraph";
 
+export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
+
 export abstract class ConvenienceRenderer extends Renderer {
-    protected forbiddenWordsNamespace: Namespace;
-    protected globalNamespace: Namespace;
+    private _globalForbiddenNamespace: Namespace;
+    private _otherForbiddenNamespaces: Map<string, Namespace>;
+    private _globalNamespace: Namespace;
     private _nameStoreView: TypeAttributeStoreView<Name>;
     private _propertyNamesStoreView: TypeAttributeStoreView<Map<string, Name>>;
     private _memberNamesStoreView: TypeAttributeStoreView<Map<Type, Name>>;
@@ -54,16 +57,20 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [];
     }
 
-    protected forbiddenForClassProperties(_c: ClassType, _className: Name): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [] };
+    protected get forbiddenNamesForClassProperties(): string[] | undefined {
+        return undefined;
     }
 
-    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [] };
+    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: false };
     }
 
-    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [] };
+    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: false };
+    }
+
+    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: false };
     }
 
     protected topLevelDependencyNames(_t: Type, _topLevelName: Name): DependencyName[] {
@@ -108,7 +115,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return nullableFromUnion(u) === null;
     }
 
-    protected setUpNaming(): Namespace[] {
+    protected setUpNaming(): OrderedSet<Namespace> {
         this._nameStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedName");
         this._propertyNamesStoreView = new TypeAttributeStoreView(
             this.typeGraph.attributeStore,
@@ -122,8 +129,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._unionMemberNamer = this.makeUnionMemberNamer();
         this._enumCaseNamer = this.makeEnumCaseNamer();
 
-        this.forbiddenWordsNamespace = keywordNamespace("forbidden", this.forbiddenNamesForGlobalNamespace);
-        this.globalNamespace = new Namespace("global", undefined, Set([this.forbiddenWordsNamespace]), Set());
+        this._globalForbiddenNamespace = keywordNamespace("forbidden", this.forbiddenNamesForGlobalNamespace);
+        this._otherForbiddenNamespaces = Map();
+        this._globalNamespace = new Namespace("global", undefined, Set([this._globalForbiddenNamespace]), Set());
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
         this.topLevels.forEach((t, name) => {
@@ -141,13 +149,15 @@ export abstract class ConvenienceRenderer extends Renderer {
             const name = this.addNamedForNamedType(u);
             this.addUnionMemberNames(u, name);
         });
-        return [this.forbiddenWordsNamespace, this.globalNamespace];
+        return OrderedSet([this._globalForbiddenNamespace, this._globalNamespace]).union(
+            this._otherForbiddenNamespaces.valueSeq()
+        );
     }
 
     private addDependenciesForNamedType = (type: Type, named: Name): void => {
         const dependencyNames = this.namedTypeDependencyNames(type, named);
         for (const dn of dependencyNames) {
-            this.globalNamespace.add(dn);
+            this._globalNamespace.add(dn);
         }
     };
 
@@ -160,10 +170,10 @@ export abstract class ConvenienceRenderer extends Renderer {
             styledName = this.topLevelNameStyle(name);
         }
 
-        const named = this.globalNamespace.add(new FixedName(styledName));
+        const named = this._globalNamespace.add(new FixedName(styledName));
         const dependencyNames = this.topLevelDependencyNames(type, named);
         for (const dn of dependencyNames) {
-            this.globalNamespace.add(dn);
+            this._globalNamespace.add(dn);
         }
 
         if (maybeNamedType !== undefined) {
@@ -177,7 +187,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private addNamedForNamedType = (type: Type): Name => {
         const existing = this._nameStoreView.tryGet(type);
         if (existing !== undefined) return existing;
-        const named = this.globalNamespace.add(new SimpleName(type.getProposedNames(), this._namedTypeNamer));
+        const named = this._globalNamespace.add(new SimpleName(type.getProposedNames(), this._namedTypeNamer));
 
         this.addDependenciesForNamedType(type, named);
 
@@ -185,20 +195,45 @@ export abstract class ConvenienceRenderer extends Renderer {
         return named;
     };
 
+    private processForbiddenWordsInfo(
+        info: ForbiddenWordsInfo,
+        namespaceName: string
+    ): { forbiddenNames: Set<Name>; forbiddenNamespaces: Set<Namespace> } {
+        const forbiddenNames: Name[] = [];
+        const forbiddenStrings: string[] = [];
+        for (const nameOrString of info.names) {
+            if (typeof nameOrString === "string") {
+                forbiddenStrings.push(nameOrString);
+            } else {
+                forbiddenNames.push(nameOrString);
+            }
+        }
+        let namespace = this._otherForbiddenNamespaces.get(namespaceName);
+        if (forbiddenStrings.length > 0 && namespace === undefined) {
+            namespace = keywordNamespace(namespaceName, forbiddenStrings);
+            this._otherForbiddenNamespaces = this._otherForbiddenNamespaces.set(namespaceName, namespace);
+        }
+        let forbiddenNamespaces: Set<Namespace> = Set();
+        if (info.includeGlobalForbidden) {
+            forbiddenNamespaces = forbiddenNamespaces.add(this._globalForbiddenNamespace);
+        }
+        if (namespace !== undefined) {
+            forbiddenNamespaces = forbiddenNamespaces.add(namespace);
+        }
+
+        return { forbiddenNames: Set(forbiddenNames), forbiddenNamespaces };
+    }
+
     private addPropertyNames = (c: ClassType, className: Name): void => {
         const propertyNamer = this._classPropertyNamer;
         if (propertyNamer === null) return;
 
-        const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForClassProperties(
-            c,
-            className
+        const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
+            this.forbiddenForClassProperties(c, className),
+            "forbidden-for-properties"
         );
-        const ns = new Namespace(
-            c.getCombinedName(),
-            this.globalNamespace,
-            Set(forbiddenNamespace),
-            Set(forbiddenNames)
-        );
+
+        const ns = new Namespace(c.getCombinedName(), this._globalNamespace, forbiddenNamespaces, forbiddenNames);
         const names = c.sortedProperties
             .map((_: Type, name: string) => {
                 // FIXME: This alternative should really depend on what the
@@ -227,12 +262,16 @@ export abstract class ConvenienceRenderer extends Renderer {
         const memberNamer = this._unionMemberNamer;
         if (memberNamer === null) return;
 
-        const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForUnionMembers(u, unionName);
+        const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
+            this.forbiddenForUnionMembers(u, unionName),
+            "forbidden-for-union-members"
+        );
+
         let ns: Namespace;
         if (this.unionMembersInGlobalNamespace) {
-            ns = this.globalNamespace;
+            ns = this._globalNamespace;
         } else {
-            ns = new Namespace(u.getCombinedName(), this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
+            ns = new Namespace(u.getCombinedName(), this._globalNamespace, forbiddenNamespaces, forbiddenNames);
         }
         let names = Map<Type, Name>();
         u.members.forEach(t => {
@@ -247,12 +286,16 @@ export abstract class ConvenienceRenderer extends Renderer {
         const caseNamer = this._enumCaseNamer;
         if (caseNamer === null) return;
 
-        const { names: forbiddenNames, namespaces: forbiddenNamespace } = this.forbiddenForEnumCases(e, enumName);
+        const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
+            this.forbiddenForEnumCases(e, enumName),
+            "forbidden-for-enum-cases"
+        );
+
         let ns: Namespace;
         if (this.enumCasesInGlobalNamespace) {
-            ns = this.globalNamespace;
+            ns = this._globalNamespace;
         } else {
-            ns = new Namespace(e.getCombinedName(), this.globalNamespace, Set(forbiddenNamespace), Set(forbiddenNames));
+            ns = new Namespace(e.getCombinedName(), this._globalNamespace, forbiddenNamespaces, forbiddenNames);
         }
         let names = Map<string, Name>();
         e.cases.forEach(name => {

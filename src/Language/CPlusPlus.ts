@@ -5,7 +5,7 @@ import { OrderedSet } from "immutable";
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, UnionType, nullableFromUnion, matchType, removeNullFromUnion } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Namespace, Name, Namer, funPrefixNamer } from "../Naming";
+import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import {
@@ -22,7 +22,7 @@ import {
     allLowerWordStyle
 } from "../Strings";
 import { defined, assertNever, panic } from "../Support";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { StringOption, EnumOption, BooleanOption } from "../RendererOptions";
 import { assert } from "../Support";
 import { Declaration } from "../DeclarationIR";
@@ -258,15 +258,12 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForClassProperties(
-        _c: ClassType,
-        _classNamed: Name
-    ): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.forbiddenWordsNamespace] };
+    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
     }
 
-    protected forbiddenForEnumCases(_e: EnumType, _enumNamed: Name): { names: Name[]; namespaces: Namespace[] } {
-        return { names: [], namespaces: [this.forbiddenWordsNamespace] };
+    protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
     }
 
     protected topLevelNameStyle(rawName: string): string {
