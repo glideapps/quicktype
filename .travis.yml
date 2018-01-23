@@ -19,20 +19,6 @@ script: |
     -e TRAVIS_PULL_REQUEST \
     -e CPUs=2 \
     dvdsgl/quicktype npm test
-jobs:
-  include:
-    - stage: deploy
-      if: branch == master AND type IN (push, api, cron)
-      env:
-        - FIXTURE=none
-      before_install: true
-      install: true
-      after_success: true
-      script: |
-        if [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
-          npm install -g appcenter-cli;
-          appcenter build queue --app quicktype/quicktype --branch master --token $APPCENTER_TOKEN;
-        fi
 notifications:
   email:
     on_success: never
