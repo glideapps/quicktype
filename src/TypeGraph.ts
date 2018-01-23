@@ -263,7 +263,7 @@ export function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTy
                 const nullType = builder.getPrimitiveType("null");
                 let members: OrderedSet<TypeRef>;
                 if (t instanceof UnionType) {
-                    members = t.members.map(t => builder.reconstituteType(t)).add(nullType);
+                    members = t.members.map(m => builder.reconstituteType(m)).add(nullType);
                 } else {
                     members = OrderedSet([builder.reconstituteType(t), nullType]);
                 }
