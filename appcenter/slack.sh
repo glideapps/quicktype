@@ -35,3 +35,7 @@ slack_notify_build_failed() {
 slack_notify_deployed() {
     slack_notify message="✓ <$build_url|$APP v`version`> released to npm"
 }
+
+slack_notify_homebrew_bump() {
+    slack_notify message="✓ <https://github.com/Homebrew/homebrew-core/pulls|$APP v`version`> bump PR sent to Homebrew"
+}

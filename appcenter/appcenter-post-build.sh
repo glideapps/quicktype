@@ -56,5 +56,6 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
     # We only submit PRs when patch version ends in 0
     if [[ `npm show quicktype version` == *0 ]]; then
         script/homebrew-update.sh
+        slack_notify_homebrew_bump
     fi
 fi

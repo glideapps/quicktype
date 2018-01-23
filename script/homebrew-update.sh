@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash -e
 
 # Create a GitHub token with public_repo scope: https://github.com/settings/tokens/new
 # Then set it as:
