@@ -10,7 +10,8 @@
     "prepare": "npm run build",
     "build": "script/build.ts",
     "test": "npm run build && script/test",
-    "start": "script/watch"
+    "start": "script/watch",
+    "tslint": "tslint --project src"
   },
   "dependencies": {
     "chalk": "^2.1.0",

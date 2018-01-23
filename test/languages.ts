@@ -163,7 +163,9 @@ export const ObjectiveCLanguage: Language = {
     // NSJSONSerialization can read but not write top-level primitives
     "no-classes.json",
     // TODO
-    "combinations.json"
+    "combinations.json",
+    // Needs to distinguish between optional and null properties
+    "optional-union.json"
   ],
   skipSchema: [],
   rendererOptions: { functions: "true" },

@@ -819,7 +819,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         const i = filename.lastIndexOf(".");
         const extension = i !== -1 ? filename.split(".").pop() : "m";
         filename = i !== -1 ? filename.substr(0, i) : filename;
-        return [filename, extension || "m"];
+        return [filename, extension === undefined ? "m" : extension];
     }
 
     protected emitSourceStructure(proposedFilename: string): void {

@@ -11,7 +11,8 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-    TypeKind
+    TypeKind,
+    ClassProperty
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Name, Namer, funPrefixNamer } from "../Naming";
@@ -72,6 +73,10 @@ export default class SwiftTargetLanguage extends TargetLanguage {
             this._versionOption,
             this._convenienceInitializers
         ]);
+    }
+
+    get supportsOptionalClassProperties(): boolean {
+        return true;
     }
 
     protected get rendererClass(): new (
@@ -279,16 +284,25 @@ class SwiftRenderer extends ConvenienceRenderer {
         else return notJustTypes;
     };
 
-    private swiftType = (t: Type, withIssues: boolean = false): Sourcelike => {
+    private swiftType = (t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike => {
+        const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
             _anyType => {
                 this._needAny = true;
-                return maybeAnnotated(withIssues, anyTypeIssueAnnotation, this.justTypesCase("Any?", "JSONAny"));
+                return maybeAnnotated(
+                    withIssues,
+                    anyTypeIssueAnnotation,
+                    this.justTypesCase(["Any", optional], "JSONAny")
+                );
             },
             _nullType => {
                 this._needNull = true;
-                return maybeAnnotated(withIssues, nullTypeIssueAnnotation, this.justTypesCase("NSNull", "JSONNull?"));
+                return maybeAnnotated(
+                    withIssues,
+                    nullTypeIssueAnnotation,
+                    this.justTypesCase("NSNull", ["JSONNull", optional])
+                );
             },
             _boolType => "Bool",
             _integerType => "Int",
@@ -300,7 +314,7 @@ class SwiftRenderer extends ConvenienceRenderer {
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return [this.swiftType(nullable, withIssues), "?"];
+                if (nullable !== null) return [this.swiftType(nullable, withIssues), optional];
                 return this.nameForNamedType(unionType);
             }
         );
@@ -385,43 +399,50 @@ class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private renderClassDefinition = (c: ClassType, className: Name): void => {
+        const swiftType = (p: ClassProperty) => {
+            if (p.isOptional) {
+                return [this.swiftType(p.type, true, true), "?"];
+            } else {
+                return this.swiftType(p.type, true);
+            }
+        };
+
         const isClass = this._useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
         this.emitBlock([structOrClass, " ", className, this.getProtocolString()], () => {
             if (this._dense) {
-                let lastType: Type | undefined = undefined;
+                let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
 
-                const emitLastType = () => {
-                    if (lastType !== undefined) {
+                const emitLastProperty = () => {
+                    if (lastProperty !== undefined) {
                         let sources: Sourcelike[] = ["let "];
                         lastNames.forEach((n, i) => {
                             if (i > 0) sources.push(", ");
                             sources.push(n);
                         });
                         sources.push(": ");
-                        sources.push(this.swiftType(lastType, true));
+                        sources.push(swiftType(lastProperty));
                         this.emitLine(sources);
                     }
                 };
 
                 this.forEachClassProperty(c, "none", (name, _, p) => {
-                    const t = p.type;
-                    if (lastType === undefined) {
-                        lastType = t;
+                    if (lastProperty === undefined) {
+                        lastProperty = p;
                     }
-                    if (t.equals(lastType) && lastNames.length < MAX_SAMELINE_PROPERTIES) {
+                    if (p.equals(lastProperty) && lastNames.length < MAX_SAMELINE_PROPERTIES) {
                         lastNames.push(name);
                     } else {
-                        emitLastType();
-                        lastType = t;
+                        emitLastProperty();
+                        lastProperty = p;
                         lastNames = [name];
                     }
                 });
-                emitLastType();
+                emitLastProperty();
             } else {
                 this.forEachClassProperty(c, "none", (name, _, p) => {
-                    this.emitLine("let ", name, ": ", this.swiftType(p.type, true));
+                    this.emitLine("let ", name, ": ", swiftType(p));
                 });
             }
 
@@ -455,7 +476,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                 let properties: Sourcelike[] = [];
                 this.forEachClassProperty(c, "none", (name, _, p) => {
                     if (properties.length > 0) properties.push(", ");
-                    properties.push(name, ": ", this.swiftType(p.type, true));
+                    properties.push(name, ": ", swiftType(p));
                 });
                 this.emitBlock(["init(", ...properties, ")"], () => {
                     this.forEachClassProperty(c, "none", name => {
