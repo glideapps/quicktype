@@ -248,6 +248,10 @@ class SwiftRenderer extends ConvenienceRenderer {
         return { names: [], includeGlobalForbidden: true };
     }
 
+    protected forbiddenForUnionMembers(_u: UnionType, _unionName: Name): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
+    }
+
     protected topLevelNameStyle(rawName: string): string {
         return swiftNameStyle(true, rawName);
     }

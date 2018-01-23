@@ -1,0 +1,1931 @@
+{
+    "type": "object",
+    "properties": {
+        "_": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "_" }
+            ],
+            "title": "union__"
+        },
+        "_Bool": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "_Bool" }
+            ],
+            "title": "union__Bool"
+        },
+        "_Complex": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "_Complex" }
+            ],
+            "title": "union__Complex"
+        },
+        "_Imaginery": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "_Imaginery" }
+            ],
+            "title": "union__Imaginery"
+        },
+        "abstract": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "abstract" }
+            ],
+            "title": "union_abstract"
+        },
+        "alignas": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "alignas" }
+            ],
+            "title": "union_alignas"
+        },
+        "alignof": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "alignof" }
+            ],
+            "title": "union_alignof"
+        },
+        "and": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "and" }
+            ],
+            "title": "union_and"
+        },
+        "and_eq": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "and_eq" }
+            ],
+            "title": "union_and_eq"
+        },
+        "any": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "any" }
+            ],
+            "title": "union_any"
+        },
+        "Any": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Any" }
+            ],
+            "title": "union_Any"
+        },
+        "array": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "array" }
+            ],
+            "title": "union_array"
+        },
+        "as": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "as" }
+            ],
+            "title": "union_as"
+        },
+        "asm": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "asm" }
+            ],
+            "title": "union_asm"
+        },
+        "assert": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "assert" }
+            ],
+            "title": "union_assert"
+        },
+        "associatedtype": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "associatedtype" }
+            ],
+            "title": "union_associatedtype"
+        },
+        "associativity": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "associativity" }
+            ],
+            "title": "union_associativity"
+        },
+        "async": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "async" }
+            ],
+            "title": "union_async"
+        },
+        "atomic": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "atomic" }
+            ],
+            "title": "union_atomic"
+        },
+        "atomic_cancel": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "atomic_cancel" }
+            ],
+            "title": "union_atomic_cancel"
+        },
+        "atomic_commit": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "atomic_commit" }
+            ],
+            "title": "union_atomic_commit"
+        },
+        "atomic_noexcept": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "atomic_noexcept" }
+            ],
+            "title": "union_atomic_noexcept"
+        },
+        "auto": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "auto" }
+            ],
+            "title": "union_auto"
+        },
+        "await": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "await" }
+            ],
+            "title": "union_await"
+        },
+        "base": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "base" }
+            ],
+            "title": "union_base"
+        },
+        "bitand": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "bitand" }
+            ],
+            "title": "union_bitand"
+        },
+        "bitor": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "bitor" }
+            ],
+            "title": "union_bitor"
+        },
+        "BOOL": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "BOOL" }
+            ],
+            "title": "union_BOOL"
+        },
+        "bool": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "bool" }
+            ],
+            "title": "union_bool"
+        },
+        "boolean": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "boolean" }
+            ],
+            "title": "union_boolean"
+        },
+        "break": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "break" }
+            ],
+            "title": "union_break"
+        },
+        "bycopy": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "bycopy" }
+            ],
+            "title": "union_bycopy"
+        },
+        "byref": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "byref" }
+            ],
+            "title": "union_byref"
+        },
+        "byte": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "byte" }
+            ],
+            "title": "union_byte"
+        },
+        "case": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "case" }
+            ],
+            "title": "union_case"
+        },
+        "catch": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "catch" }
+            ],
+            "title": "union_catch"
+        },
+        "chan": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "chan" }
+            ],
+            "title": "union_chan"
+        },
+        "char": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "char" }
+            ],
+            "title": "union_char"
+        },
+        "char16_t": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "char16_t" }
+            ],
+            "title": "union_char16_t"
+        },
+        "char32_t": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "char32_t" }
+            ],
+            "title": "union_char32_t"
+        },
+        "checked": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "checked" }
+            ],
+            "title": "union_checked"
+        },
+        "class": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "class" }
+            ],
+            "title": "union_class"
+        },
+        "Class": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Class" }
+            ],
+            "title": "union_Class"
+        },
+        "co_await": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "co_await" }
+            ],
+            "title": "union_co_await"
+        },
+        "co_return": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "co_return" }
+            ],
+            "title": "union_co_return"
+        },
+        "co_yield": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "co_yield" }
+            ],
+            "title": "union_co_yield"
+        },
+        "compl": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "compl" }
+            ],
+            "title": "union_compl"
+        },
+        "concept": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "concept" }
+            ],
+            "title": "union_concept"
+        },
+        "console": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "console" }
+            ],
+            "title": "union_console"
+        },
+        "const": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "const" }
+            ],
+            "title": "union_const"
+        },
+        "const_cast": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "const_cast" }
+            ],
+            "title": "union_const_cast"
+        },
+        "constexpr": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "constexpr" }
+            ],
+            "title": "union_constexpr"
+        },
+        "constructor": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "constructor" }
+            ],
+            "title": "union_constructor"
+        },
+        "continue": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "continue" }
+            ],
+            "title": "union_continue"
+        },
+        "convenience": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "convenience" }
+            ],
+            "title": "union_convenience"
+        },
+        "convert": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "convert" }
+            ],
+            "title": "union_convert"
+        },
+        "converter": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "converter" }
+            ],
+            "title": "union_converter"
+        },
+        "date": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "date" }
+            ],
+            "title": "union_date"
+        },
+        "date_parse_handling": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "date_parse_handling" }
+            ],
+            "title": "union_date_parse_handling"
+        },
+        "debugger": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "debugger" }
+            ],
+            "title": "union_debugger"
+        },
+        "decimal": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "decimal" }
+            ],
+            "title": "union_decimal"
+        },
+        "declare": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "declare" }
+            ],
+            "title": "union_declare"
+        },
+        "decltype": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "decltype" }
+            ],
+            "title": "union_decltype"
+        },
+        "decode_string": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "decode_string" }
+            ],
+            "title": "union_decode_string"
+        },
+        "def": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "def" }
+            ],
+            "title": "union_def"
+        },
+        "default": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "default" }
+            ],
+            "title": "union_default"
+        },
+        "defer": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "defer" }
+            ],
+            "title": "union_defer"
+        },
+        "deinit": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "deinit" }
+            ],
+            "title": "union_deinit"
+        },
+        "del": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "del" }
+            ],
+            "title": "union_del"
+        },
+        "delegate": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "delegate" }
+            ],
+            "title": "union_delegate"
+        },
+        "delete": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "delete" }
+            ],
+            "title": "union_delete"
+        },
+        "dict": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "dict" }
+            ],
+            "title": "union_dict"
+        },
+        "dictionary": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "dictionary" }
+            ],
+            "title": "union_dictionary"
+        },
+        "didSet": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "didSet" }
+            ],
+            "title": "union_didSet"
+        },
+        "do": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "do" }
+            ],
+            "title": "union_do"
+        },
+        "double": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "double" }
+            ],
+            "title": "union_double"
+        },
+        "dynamic": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "dynamic" }
+            ],
+            "title": "union_dynamic"
+        },
+        "dynamic_cast": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "dynamic_cast" }
+            ],
+            "title": "union_dynamic_cast"
+        },
+        "elif": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "elif" }
+            ],
+            "title": "union_elif"
+        },
+        "else": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "else" }
+            ],
+            "title": "union_else"
+        },
+        "encode_quick_type": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "encode_quick_type" }
+            ],
+            "title": "union_encode_quick_type"
+        },
+        "enum": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "enum" }
+            ],
+            "title": "union_enum"
+        },
+        "event": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "event" }
+            ],
+            "title": "union_event"
+        },
+        "except": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "except" }
+            ],
+            "title": "union_except"
+        },
+        "exception": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "exception" }
+            ],
+            "title": "union_exception"
+        },
+        "explicit": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "explicit" }
+            ],
+            "title": "union_explicit"
+        },
+        "export": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "export" }
+            ],
+            "title": "union_export"
+        },
+        "exposing": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "exposing" }
+            ],
+            "title": "union_exposing"
+        },
+        "extends": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "extends" }
+            ],
+            "title": "union_extends"
+        },
+        "extension": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "extension" }
+            ],
+            "title": "union_extension"
+        },
+        "extern": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "extern" }
+            ],
+            "title": "union_extern"
+        },
+        "fallthrough": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "fallthrough" }
+            ],
+            "title": "union_fallthrough"
+        },
+        "false": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "false" }
+            ],
+            "title": "union_false"
+        },
+        "False": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "False" }
+            ],
+            "title": "union_False"
+        },
+        "fileprivate": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "fileprivate" }
+            ],
+            "title": "union_fileprivate"
+        },
+        "final": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "final" }
+            ],
+            "title": "union_final"
+        },
+        "finally": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "finally" }
+            ],
+            "title": "union_finally"
+        },
+        "fixed": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "fixed" }
+            ],
+            "title": "union_fixed"
+        },
+        "float": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "float" }
+            ],
+            "title": "union_float"
+        },
+        "for": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "for" }
+            ],
+            "title": "union_for"
+        },
+        "foreach": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "foreach" }
+            ],
+            "title": "union_foreach"
+        },
+        "friend": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "friend" }
+            ],
+            "title": "union_friend"
+        },
+        "from": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "from" }
+            ],
+            "title": "union_from"
+        },
+        "from_json": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "from_json" }
+            ],
+            "title": "union_from_json"
+        },
+        "func": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "func" }
+            ],
+            "title": "union_func"
+        },
+        "function": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "function" }
+            ],
+            "title": "union_function"
+        },
+        "get": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "get" }
+            ],
+            "title": "union_get"
+        },
+        "global": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "global" }
+            ],
+            "title": "union_global"
+        },
+        "go": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "go" }
+            ],
+            "title": "union_go"
+        },
+        "goto": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "goto" }
+            ],
+            "title": "union_goto"
+        },
+        "guard": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "guard" }
+            ],
+            "title": "union_guard"
+        },
+        "hasOwnProperty": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "hasOwnProperty" }
+            ],
+            "title": "union_hasOwnProperty"
+        },
+        "id": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "id" }
+            ],
+            "title": "union_id"
+        },
+        "if": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "if" }
+            ],
+            "title": "union_if"
+        },
+        "IMP": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "IMP" }
+            ],
+            "title": "union_IMP"
+        },
+        "implements": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "implements" }
+            ],
+            "title": "union_implements"
+        },
+        "implicit": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "implicit" }
+            ],
+            "title": "union_implicit"
+        },
+        "import": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "import" }
+            ],
+            "title": "union_import"
+        },
+        "in": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "in" }
+            ],
+            "title": "union_in"
+        },
+        "indirect": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "indirect" }
+            ],
+            "title": "union_indirect"
+        },
+        "infix": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "infix" }
+            ],
+            "title": "union_infix"
+        },
+        "init": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "init" }
+            ],
+            "title": "union_init"
+        },
+        "inline": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "inline" }
+            ],
+            "title": "union_inline"
+        },
+        "inout": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "inout" }
+            ],
+            "title": "union_inout"
+        },
+        "instanceof": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "instanceof" }
+            ],
+            "title": "union_instanceof"
+        },
+        "int": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "int" }
+            ],
+            "title": "union_int"
+        },
+        "interface": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "interface" }
+            ],
+            "title": "union_interface"
+        },
+        "internal": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "internal" }
+            ],
+            "title": "union_internal"
+        },
+        "is": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "is" }
+            ],
+            "title": "union_is"
+        },
+        "jdec": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "jdec" }
+            ],
+            "title": "union_jdec"
+        },
+        "jenc": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "jenc" }
+            ],
+            "title": "union_jenc"
+        },
+        "jpipe": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "jpipe" }
+            ],
+            "title": "union_jpipe"
+        },
+        "json": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "json" }
+            ],
+            "title": "union_json"
+        },
+        "json_converter": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "json_converter" }
+            ],
+            "title": "union_json_converter"
+        },
+        "json_serializer": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "json_serializer" }
+            ],
+            "title": "union_json_serializer"
+        },
+        "json_token": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "json_token" }
+            ],
+            "title": "union_json_token"
+        },
+        "json_writer": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "json_writer" }
+            ],
+            "title": "union_json_writer"
+        },
+        "lambda": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "lambda" }
+            ],
+            "title": "union_lambda"
+        },
+        "lazy": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "lazy" }
+            ],
+            "title": "union_lazy"
+        },
+        "left": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "left" }
+            ],
+            "title": "union_left"
+        },
+        "let": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "let" }
+            ],
+            "title": "union_let"
+        },
+        "list": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "list" }
+            ],
+            "title": "union_list"
+        },
+        "lock": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "lock" }
+            ],
+            "title": "union_lock"
+        },
+        "long": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "long" }
+            ],
+            "title": "union_long"
+        },
+        "map": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "map" }
+            ],
+            "title": "union_map"
+        },
+        "metadata_property_handling": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "metadata_property_handling" }
+            ],
+            "title": "union_metadata_property_handling"
+        },
+        "module": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "module" }
+            ],
+            "title": "union_module"
+        },
+        "mutable": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "mutable" }
+            ],
+            "title": "union_mutable"
+        },
+        "mutating": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "mutating" }
+            ],
+            "title": "union_mutating"
+        },
+        "namespace": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "namespace" }
+            ],
+            "title": "union_namespace"
+        },
+        "native": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "native" }
+            ],
+            "title": "union_native"
+        },
+        "new": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "new" }
+            ],
+            "title": "union_new"
+        },
+        "newtonsoft": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "newtonsoft" }
+            ],
+            "title": "union_newtonsoft"
+        },
+        "nil": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "nil" }
+            ],
+            "title": "union_nil"
+        },
+        "NO": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "NO" }
+            ],
+            "title": "union_NO"
+        },
+        "noexcept": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "noexcept" }
+            ],
+            "title": "union_noexcept"
+        },
+        "nonatomic": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "nonatomic" }
+            ],
+            "title": "union_nonatomic"
+        },
+        "none": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "none" }
+            ],
+            "title": "union_none"
+        },
+        "None": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "None" }
+            ],
+            "title": "union_None"
+        },
+        "nonlocal": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "nonlocal" }
+            ],
+            "title": "union_nonlocal"
+        },
+        "nonmutating": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "nonmutating" }
+            ],
+            "title": "union_nonmutating"
+        },
+        "not": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "not" }
+            ],
+            "title": "union_not"
+        },
+        "not_eq": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "not_eq" }
+            ],
+            "title": "union_not_eq"
+        },
+        "NSString": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "NSString" }
+            ],
+            "title": "union_NSString"
+        },
+        "NULL": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "NULL" }
+            ],
+            "title": "union_NULL"
+        },
+        "null": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "null" }
+            ],
+            "title": "union_null"
+        },
+        "nullptr": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "nullptr" }
+            ],
+            "title": "union_nullptr"
+        },
+        "number": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "number" }
+            ],
+            "title": "union_number"
+        },
+        "object": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "object" }
+            ],
+            "title": "union_object"
+        },
+        "of": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "of" }
+            ],
+            "title": "union_of"
+        },
+        "oneway": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "oneway" }
+            ],
+            "title": "union_oneway"
+        },
+        "open": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "open" }
+            ],
+            "title": "union_open"
+        },
+        "operator": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "operator" }
+            ],
+            "title": "union_operator"
+        },
+        "optional": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "optional" }
+            ],
+            "title": "union_optional"
+        },
+        "or": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "or" }
+            ],
+            "title": "union_or"
+        },
+        "or_eq": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "or_eq" }
+            ],
+            "title": "union_or_eq"
+        },
+        "out": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "out" }
+            ],
+            "title": "union_out"
+        },
+        "override": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "override" }
+            ],
+            "title": "union_override"
+        },
+        "package": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "package" }
+            ],
+            "title": "union_package"
+        },
+        "params": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "params" }
+            ],
+            "title": "union_params"
+        },
+        "pass": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "pass" }
+            ],
+            "title": "union_pass"
+        },
+        "port": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "port" }
+            ],
+            "title": "union_port"
+        },
+        "postfix": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "postfix" }
+            ],
+            "title": "union_postfix"
+        },
+        "precedence": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "precedence" }
+            ],
+            "title": "union_precedence"
+        },
+        "prefix": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "prefix" }
+            ],
+            "title": "union_prefix"
+        },
+        "print": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "print" }
+            ],
+            "title": "union_print"
+        },
+        "printf": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "printf" }
+            ],
+            "title": "union_printf"
+        },
+        "private": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "private" }
+            ],
+            "title": "union_private"
+        },
+        "protected": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "protected" }
+            ],
+            "title": "union_protected"
+        },
+        "Protocol": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Protocol" }
+            ],
+            "title": "union_Protocol"
+        },
+        "protocol": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "protocol" }
+            ],
+            "title": "union_protocol"
+        },
+        "public": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "public" }
+            ],
+            "title": "union_public"
+        },
+        "quicktype": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "quicktype" }
+            ],
+            "title": "union_quicktype"
+        },
+        "raise": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "raise" }
+            ],
+            "title": "union_raise"
+        },
+        "range": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "range" }
+            ],
+            "title": "union_range"
+        },
+        "readonly": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "readonly" }
+            ],
+            "title": "union_readonly"
+        },
+        "ref": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "ref" }
+            ],
+            "title": "union_ref"
+        },
+        "register": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "register" }
+            ],
+            "title": "union_register"
+        },
+        "reinterpret_cast": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "reinterpret_cast" }
+            ],
+            "title": "union_reinterpret_cast"
+        },
+        "repeat": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "repeat" }
+            ],
+            "title": "union_repeat"
+        },
+        "require": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "require" }
+            ],
+            "title": "union_require"
+        },
+        "required": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "required" }
+            ],
+            "title": "union_required"
+        },
+        "requires": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "requires" }
+            ],
+            "title": "union_requires"
+        },
+        "restrict": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "restrict" }
+            ],
+            "title": "union_restrict"
+        },
+        "retain": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "retain" }
+            ],
+            "title": "union_retain"
+        },
+        "rethrows": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "rethrows" }
+            ],
+            "title": "union_rethrows"
+        },
+        "return": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "return" }
+            ],
+            "title": "union_return"
+        },
+        "right": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "right" }
+            ],
+            "title": "union_right"
+        },
+        "sbyte": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "sbyte" }
+            ],
+            "title": "union_sbyte"
+        },
+        "sealed": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "sealed" }
+            ],
+            "title": "union_sealed"
+        },
+        "SEL": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "SEL" }
+            ],
+            "title": "union_SEL"
+        },
+        "select": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "select" }
+            ],
+            "title": "union_select"
+        },
+        "Self": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Self" }
+            ],
+            "title": "union_Self"
+        },
+        "self": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "self" }
+            ],
+            "title": "union_self"
+        },
+        "serialize": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "serialize" }
+            ],
+            "title": "union_serialize"
+        },
+        "set": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "set" }
+            ],
+            "title": "union_set"
+        },
+        "short": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "short" }
+            ],
+            "title": "union_short"
+        },
+        "signed": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "signed" }
+            ],
+            "title": "union_signed"
+        },
+        "sizeof": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "sizeof" }
+            ],
+            "title": "union_sizeof"
+        },
+        "stackalloc": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "stackalloc" }
+            ],
+            "title": "union_stackalloc"
+        },
+        "static": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "static" }
+            ],
+            "title": "union_static"
+        },
+        "static_assert": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "static_assert" }
+            ],
+            "title": "union_static_assert"
+        },
+        "static_cast": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "static_cast" }
+            ],
+            "title": "union_static_cast"
+        },
+        "strictfp": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "strictfp" }
+            ],
+            "title": "union_strictfp"
+        },
+        "string": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "string" }
+            ],
+            "title": "union_string"
+        },
+        "struct": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "struct" }
+            ],
+            "title": "union_struct"
+        },
+        "subscript": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "subscript" }
+            ],
+            "title": "union_subscript"
+        },
+        "super": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "super" }
+            ],
+            "title": "union_super"
+        },
+        "switch": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "switch" }
+            ],
+            "title": "union_switch"
+        },
+        "symbol": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "symbol" }
+            ],
+            "title": "union_symbol"
+        },
+        "synchronized": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "synchronized" }
+            ],
+            "title": "union_synchronized"
+        },
+        "system": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "system" }
+            ],
+            "title": "union_system"
+        },
+        "template": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "template" }
+            ],
+            "title": "union_template"
+        },
+        "then": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "then" }
+            ],
+            "title": "union_then"
+        },
+        "this": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "this" }
+            ],
+            "title": "union_this"
+        },
+        "thread_local": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "thread_local" }
+            ],
+            "title": "union_thread_local"
+        },
+        "throw": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "throw" }
+            ],
+            "title": "union_throw"
+        },
+        "throws": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "throws" }
+            ],
+            "title": "union_throws"
+        },
+        "to_json": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "to_json" }
+            ],
+            "title": "union_to_json"
+        },
+        "top_level": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "top_level" }
+            ],
+            "title": "union_top_level"
+        },
+        "transient": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "transient" }
+            ],
+            "title": "union_transient"
+        },
+        "True": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "True" }
+            ],
+            "title": "union_True"
+        },
+        "true": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "true" }
+            ],
+            "title": "union_true"
+        },
+        "try": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "try" }
+            ],
+            "title": "union_try"
+        },
+        "Type": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Type" }
+            ],
+            "title": "union_Type"
+        },
+        "type": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "type" }
+            ],
+            "title": "union_type"
+        },
+        "typealias": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "typealias" }
+            ],
+            "title": "union_typealias"
+        },
+        "typedef": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "typedef" }
+            ],
+            "title": "union_typedef"
+        },
+        "typeid": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "typeid" }
+            ],
+            "title": "union_typeid"
+        },
+        "typename": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "typename" }
+            ],
+            "title": "union_typename"
+        },
+        "typeof": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "typeof" }
+            ],
+            "title": "union_typeof"
+        },
+        "uint": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "uint" }
+            ],
+            "title": "union_uint"
+        },
+        "ulong": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "ulong" }
+            ],
+            "title": "union_ulong"
+        },
+        "unchecked": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "unchecked" }
+            ],
+            "title": "union_unchecked"
+        },
+        "undefined": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "undefined" }
+            ],
+            "title": "union_undefined"
+        },
+        "union": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "union" }
+            ],
+            "title": "union_union"
+        },
+        "unowned": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "unowned" }
+            ],
+            "title": "union_unowned"
+        },
+        "unsafe": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "unsafe" }
+            ],
+            "title": "union_unsafe"
+        },
+        "unsigned": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "unsigned" }
+            ],
+            "title": "union_unsigned"
+        },
+        "ushort": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "ushort" }
+            ],
+            "title": "union_ushort"
+        },
+        "using": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "using" }
+            ],
+            "title": "union_using"
+        },
+        "var": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "var" }
+            ],
+            "title": "union_var"
+        },
+        "virtual": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "virtual" }
+            ],
+            "title": "union_virtual"
+        },
+        "void": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "void" }
+            ],
+            "title": "union_void"
+        },
+        "volatile": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "volatile" }
+            ],
+            "title": "union_volatile"
+        },
+        "wchar_t": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "wchar_t" }
+            ],
+            "title": "union_wchar_t"
+        },
+        "weak": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "weak" }
+            ],
+            "title": "union_weak"
+        },
+        "where": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "where" }
+            ],
+            "title": "union_where"
+        },
+        "while": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "while" }
+            ],
+            "title": "union_while"
+        },
+        "willSet": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "willSet" }
+            ],
+            "title": "union_willSet"
+        },
+        "with": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "with" }
+            ],
+            "title": "union_with"
+        },
+        "xor": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "xor" }
+            ],
+            "title": "union_xor"
+        },
+        "xor_eq": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "xor_eq" }
+            ],
+            "title": "union_xor_eq"
+        },
+        "YES": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "YES" }
+            ],
+            "title": "union_YES"
+        },
+        "yield": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "yield" }
+            ],
+            "title": "union_yield"
+        },
+        "dummy": { "type": "number" }
+    }
+}

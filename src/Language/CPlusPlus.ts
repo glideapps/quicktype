@@ -226,7 +226,8 @@ const keywords = [
     "override",
     "final",
     "transaction_safe",
-    "transaction_safe_dynamic"
+    "transaction_safe_dynamic",
+    "NULL"
 ];
 
 const optionalType = "std::unique_ptr";

@@ -140,11 +140,15 @@ class CSharpRenderer extends ConvenienceRenderer {
             "QuickType",
             "Converter",
             "JsonConverter",
+            "JsonSerializer",
+            "JsonWriter",
+            "JsonToken",
             "Type",
             "Serialize",
             "System",
             "Newtonsoft",
             "Console",
+            "Exception",
             "MetadataPropertyHandling",
             "DateParseHandling"
         ];
@@ -152,6 +156,10 @@ class CSharpRenderer extends ConvenienceRenderer {
 
     protected forbiddenForClassProperties(_: ClassType, classNamed: Name): ForbiddenWordsInfo {
         return { names: [classNamed, "FromJson"], includeGlobalForbidden: true };
+    }
+
+    protected forbiddenForUnionMembers(_: UnionType, unionNamed: Name): ForbiddenWordsInfo {
+        return { names: [unionNamed], includeGlobalForbidden: true };
     }
 
     protected topLevelNameStyle(rawName: string): string {
@@ -225,7 +233,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                 return this.nameForNamedType(unionType);
             },
             {
-                dateTimeType: _ => "DateTime"
+                dateTimeType: _ => "System.DateTime"
             }
         );
     };
@@ -425,7 +433,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                             this.emitLine("return;");
                         });
                     } else if (t.kind === "date-time") {
-                        this.emitLine("DateTime dt;");
+                        this.emitLine("System.DateTime dt;");
                         this.emitLine("if (System.DateTime.TryParse(str, out dt))");
                         this.emitBlock(() => {
                             this.emitLine(fieldName, " = dt;");

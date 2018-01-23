@@ -83,6 +83,7 @@
   "enum": { "enum": 123 },
   "event": { "event": 123 },
   "except": { "except": 123 },
+  "exception": { "exception": 123 },
   "explicit": { "explicit": 123 },
   "export": { "export": 123 },
   "exposing": { "exposing": 123 },
@@ -109,6 +110,7 @@
   "go": { "go": 123 },
   "goto": { "goto": 123 },
   "guard": { "guard": 123 },
+  "hasOwnProperty": { "hasOwnProperty": 123 },
   "id": { "id": 123 },
   "if": { "if": 123 },
   "IMP": { "IMP": 123 },
@@ -251,6 +253,7 @@
   "uint": { "uint": 123 },
   "ulong": { "ulong": 123 },
   "unchecked": { "unchecked": 123 },
+  "undefined": { "undefined": 123 },
   "union": { "union": 123 },
   "unowned": { "unowned": 123 },
   "unsafe": { "unsafe": 123 },
@@ -270,5 +273,6 @@
   "xor": { "xor": 123 },
   "xor_eq": { "xor_eq": 123 },
   "YES": { "YES": 123 },
-  "yield": { "yield": 123 }
+  "yield": { "yield": 123 },
+  "dummy": 123
 }

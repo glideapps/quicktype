@@ -55,7 +55,7 @@ export const JavaLanguage: Language = {
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json"],
-  skipSchema: [],
+  skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
   rendererOptions: {},
   quickTestRendererOptions: []
 };
@@ -186,7 +186,7 @@ export const TypeScriptLanguage: Language = {
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: [],
-  skipSchema: [],
+  skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: { "runtime-typecheck": "yes", "explicit-unions": "yes" },
   quickTestRendererOptions: []
 };
