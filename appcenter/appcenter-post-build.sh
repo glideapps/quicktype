@@ -57,3 +57,14 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
         --branch master \
         --token $APPCENTER_TOKEN
 fi
+
+###############################
+### Submit a PR to Homebrew ###
+###############################
+
+if [ "$APPCENTER_BRANCH" == "master" ]; then
+    # We only submit PRs when patch version ends in 0
+    if [[ `npm show quicktype version` == *0 ]]; then
+        script/homebrew-update.sh
+    fi
+fi
