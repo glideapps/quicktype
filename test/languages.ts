@@ -54,8 +54,12 @@ export const JavaLanguage: Language = {
   allowMissingNull: false,
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
-  skipJSON: ["identifiers.json", "simple-identifiers.json"],
-  skipSchema: [],
+  skipJSON: [
+    "identifiers.json",
+    "simple-identifiers.json",
+    "nst-test-suite.json"
+  ],
+  skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
   rendererOptions: {},
   quickTestRendererOptions: []
 };
@@ -70,7 +74,12 @@ export const GoLanguage: Language = {
   allowMissingNull: false,
   output: "quicktype.go",
   topLevel: "TopLevel",
-  skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json"],
+  skipJSON: [
+    "identifiers.json",
+    "simple-identifiers.json",
+    "blns-object.json",
+    "nst-test-suite.json"
+  ],
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: []
@@ -89,7 +98,12 @@ export const CPlusPlusLanguage: Language = {
   allowMissingNull: false,
   output: "quicktype.hpp",
   topLevel: "TopLevel",
-  skipJSON: ["recursive.json", "list.json"],
+  skipJSON: [
+    // fails on a string containing null
+    "nst-test-suite.json",
+    // takes too long to compile
+    "combinations.json"
+  ],
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [{ unions: "indirection" }]
@@ -115,6 +129,7 @@ export const ElmLanguage: Language = {
     "direct-recursive.json",
     "bug427.json",
     "list.json",
+    "nst-test-suite.json",
     "keywords.json" // stack overflow
   ],
   skipSchema: [], // All of them currently fail, so we don't even run it.
@@ -133,9 +148,14 @@ export const SwiftLanguage: Language = {
   allowMissingNull: true,
   output: "quicktype.swift",
   topLevel: "TopLevel",
-  // list.json crashes the Swift compiler
-  // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
-  skipJSON: ["no-classes.json", "blns-object.json"],
+  skipJSON: [
+    // Swift only supports top-level arrays and objects
+    "no-classes.json",
+    // This at least is keeping blns-object from working: https://bugs.swift.org/browse/SR-6314
+    "blns-object.json",
+    // Doesn't seem to work on Linux, works on MacOS
+    "nst-test-suite.json"
+  ],
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [
@@ -165,7 +185,9 @@ export const ObjectiveCLanguage: Language = {
     // TODO
     "combinations.json",
     // Needs to distinguish between optional and null properties
-    "optional-union.json"
+    "optional-union.json",
+    // Compile error
+    "nst-test-suite.json"
   ],
   skipSchema: [],
   rendererOptions: { functions: "true" },
@@ -186,7 +208,7 @@ export const TypeScriptLanguage: Language = {
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: [],
-  skipSchema: [],
+  skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: { "runtime-typecheck": "yes", "explicit-unions": "yes" },
   quickTestRendererOptions: []
 };

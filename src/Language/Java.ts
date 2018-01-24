@@ -77,6 +77,7 @@ const keywords = [
     "DeserializationContext",
     "SerializerProvider",
     "Converter",
+    "Override",
     "abstract",
     "continue",
     "for",

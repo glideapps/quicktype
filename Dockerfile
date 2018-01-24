@@ -9,10 +9,10 @@ RUN apt-get update --fix-missing
 RUN apt-get install curl git apt-transport-https --assume-yes
 
 # Install Swift
-RUN curl -o swift.tar.gz https://swift.org/builds/swift-4.0-release/ubuntu1604/swift-4.0-RELEASE/swift-4.0-RELEASE-ubuntu16.04.tar.gz
+RUN curl -o swift.tar.gz https://swift.org/builds/swift-4.0.3-release/ubuntu1604/swift-4.0.3-RELEASE/swift-4.0.3-RELEASE-ubuntu16.04.tar.gz
 RUN tar -zxf swift.tar.gz
 RUN rm swift.tar.gz
-ENV PATH="${workdir}/swift-4.0-RELEASE-ubuntu16.04/usr/bin:${PATH}"
+ENV PATH="${workdir}/swift-4.0.3-RELEASE-ubuntu16.04/usr/bin:${PATH}"
 
 # Add nodejs package source
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
