@@ -98,7 +98,12 @@ export const CPlusPlusLanguage: Language = {
   allowMissingNull: false,
   output: "quicktype.hpp",
   topLevel: "TopLevel",
-  skipJSON: ["recursive.json", "list.json", "nst-test-suite.json"],
+  skipJSON: [
+    // fails on a string containing null
+    "nst-test-suite.json",
+    // takes too long to compile
+    "combinations.json"
+  ],
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [{ unions: "indirection" }]
