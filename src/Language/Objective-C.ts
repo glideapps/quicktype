@@ -25,6 +25,7 @@ import { assert, defined } from "../Support";
 
 const unicode = require("unicode-properties");
 
+type MemoryAttribute = "assign" | "strong" | "copy";
 type OutputFeatures = { interface: boolean; implementation: boolean };
 
 const DEBUG = false;
@@ -300,20 +301,23 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this._currentFilename = undefined;
     }
 
-    private memoryManagementAttribute(t: Type): "assign" | "strong" | "copy" {
-        return matchType<"assign" | "strong" | "copy">(
+    private memoryAttribute(t: Type, isNullable: boolean): MemoryAttribute {
+        return matchType<MemoryAttribute>(
             t,
             _anyType => "copy",
             _nullType => "copy",
-            _boolType => "assign",
-            _integerType => "assign",
-            _doubleType => "assign",
+            _boolType => (isNullable ? "strong" : "assign"),
+            _integerType => (isNullable ? "strong" : "assign"),
+            _doubleType => (isNullable ? "strong" : "assign"),
             _stringType => "copy",
             _arrayType => "copy",
             _classType => "strong",
             _mapType => "copy",
             _enumType => "assign",
-            _unionType => "copy"
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                return nullable !== null ? this.memoryAttribute(nullable, true) : "copy";
+            }
         );
     }
 
@@ -615,7 +619,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             if (property.type.isNullable) {
                 attributes.push("nullable");
             }
-            attributes.push(this.memoryManagementAttribute(property.type));
+            attributes.push(this.memoryAttribute(property.type, property.type.isNullable));
             this.emitLine(
                 "@property ",
                 ["(", attributes.join(", "), ")"],
