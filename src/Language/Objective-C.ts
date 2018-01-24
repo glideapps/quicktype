@@ -25,6 +25,7 @@ import { assert, defined } from "../Support";
 
 const unicode = require("unicode-properties");
 
+type MemoryAttribute = "assign" | "strong" | "copy";
 type OutputFeatures = { interface: boolean; implementation: boolean };
 
 const DEBUG = false;
@@ -83,7 +84,14 @@ function typeNameStyle(prefix: string, original: string): string {
 }
 
 function propertyNameStyle(original: string): string {
-    const words = splitIntoWords(original);
+    let words = splitIntoWords(original);
+
+    // Properties cannot even begin with any of the forbidden names
+    // For example, properies named new* are treated differently by ARC
+    if (words.length > 0 && includes(forbiddenPropertyNames, words[0].word)) {
+        words = [{ word: "the", isAcronym: false }, ...words];
+    }
+
     return combineWords(
         words,
         legalizeName,
@@ -147,7 +155,16 @@ const keywords = [
     "while"
 ];
 
-const forbiddenPropertyNames = ["hash", "description", "init", "copy", "mutableCopy", "superclass", "debugDescription"];
+const forbiddenPropertyNames = [
+    "hash",
+    "description",
+    "init",
+    "copy",
+    "mutableCopy",
+    "superclass",
+    "debugDescription",
+    "new"
+];
 
 function isStartCharacter(utf16Unit: number): boolean {
     return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
@@ -165,6 +182,7 @@ function isAnyOrNull(t: Type): boolean {
 }
 
 const staticEnumValuesIdentifier = "values";
+const forbiddenForEnumCases = ["new", staticEnumValuesIdentifier];
 
 class ObjectiveCRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
@@ -224,7 +242,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
-        return { names: [staticEnumValuesIdentifier], includeGlobalForbidden: true };
+        return { names: forbiddenForEnumCases, includeGlobalForbidden: true };
     }
 
     protected topLevelNameStyle(rawName: string): string {
@@ -281,6 +299,26 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     finishFile(): void {
         super.finishFile(defined(this._currentFilename));
         this._currentFilename = undefined;
+    }
+
+    private memoryAttribute(t: Type, isNullable: boolean): MemoryAttribute {
+        return matchType<MemoryAttribute>(
+            t,
+            _anyType => "copy",
+            _nullType => "copy",
+            _boolType => (isNullable ? "strong" : "assign"),
+            _integerType => (isNullable ? "strong" : "assign"),
+            _doubleType => (isNullable ? "strong" : "assign"),
+            _stringType => "copy",
+            _arrayType => "copy",
+            _classType => "strong",
+            _mapType => "copy",
+            _enumType => "assign",
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                return nullable !== null ? this.memoryAttribute(nullable, true) : "copy";
+            }
+        );
     }
 
     private objcType = (t: Type, nullableOrBoxed: boolean = false): [Sourcelike, string] => {
@@ -364,7 +402,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             _doubleType => typed,
             _stringType => typed,
             arrayType => {
-                if (this.isJSONSafe(arrayType)) {
+                if (this.implicitlyConvertsFromJSON(arrayType)) {
                     // TODO check each value type
                     return typed;
                 }
@@ -372,7 +410,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             },
             _classType => ["[", typed, " JSONDictionary]"],
             mapType => {
-                if (this.isJSONSafe(mapType)) {
+                if (this.implicitlyConvertsFromJSON(mapType)) {
                     // TODO check each value type
                     return typed;
                 }
@@ -382,7 +420,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    if (this.isJSONSafe(nullable)) {
+                    if (this.implicitlyConvertsFromJSON(nullable)) {
                         return ["NSNullify(", typed, ")"];
                     } else {
                         return ["NSNullify(", this.toDynamicExpression(nullable, typed), ")"];
@@ -395,27 +433,32 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         );
     };
 
-    private isJSONSafe(t: Type): boolean {
+    private implicitlyConvertsFromJSON(t: Type): boolean {
         if (t instanceof ClassType) {
             return false;
         } else if (t instanceof EnumType) {
             return false;
         } else if (t instanceof ArrayType) {
-            return this.isJSONSafe(t.items);
+            return this.implicitlyConvertsFromJSON(t.items);
         } else if (t instanceof MapType) {
-            return this.isJSONSafe(t.values);
+            return this.implicitlyConvertsFromJSON(t.values);
         } else if (t.isPrimitive()) {
             return true;
         } else if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
-            return nullable !== null && this.isJSONSafe(nullable);
+            if (nullable !== null) {
+                return this.implicitlyConvertsFromJSON(nullable);
+            } else {
+                // We don't support unions yet, so this is just untyped
+                return true;
+            }
         } else {
             return false;
         }
     }
 
-    private isJSONOutputSafe(t: Type): boolean {
-        return this.isJSONSafe(t) && "bool" !== t.kind;
+    private implicitlyConvertsToJSON(t: Type): boolean {
+        return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
     }
 
     private emitPropertyAssignment = (propertyName: Name, jsonName: string, propertyType: Type) => {
@@ -473,17 +516,17 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private topLevelFromDataPrototype(name: Name): Sourcelike {
-        return [name, " *", name, "FromData(NSData *data, NSError **error)"];
+        return [name, " *_Nullable ", name, "FromData(NSData *data, NSError **error)"];
     }
 
     private topLevelFromJSONPrototype(name: Name): Sourcelike {
-        return [name, " *", name, "FromJSON(NSString *json, NSStringEncoding encoding, NSError **error)"];
+        return [name, " *_Nullable ", name, "FromJSON(NSString *json, NSStringEncoding encoding, NSError **error)"];
     }
 
     private topLevelToDataPrototype(name: Name, pad: boolean = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
         const padding = pad ? repeat(" ", this.sourcelikeToString(name).length - "NSData".length) : "";
-        return ["NSData", padding, " *", name, "ToData(", name, " *", parameter, ", NSError **error)"];
+        return ["NSData", padding, " *_Nullable ", name, "ToData(", name, " *", parameter, ", NSError **error)"];
     }
 
     private topLevelToJSONPrototype(name: Name, pad: boolean = false): Sourcelike {
@@ -492,7 +535,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         return [
             "NSString",
             padding,
-            " *",
+            " *_Nullable ",
             name,
             "ToJSON(",
             name,
@@ -576,6 +619,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             if (property.type.isNullable) {
                 attributes.push("nullable");
             }
+            attributes.push(this.memoryAttribute(property.type, property.type.isNullable));
             this.emitLine(
                 "@property ",
                 ["(", attributes.join(", "), ")"],
@@ -609,7 +653,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             let irregular = false;
             let unsafe = false;
             this.forEachClassProperty(t, "none", (name, jsonName, property) => {
-                unsafe = unsafe || !this.isJSONOutputSafe(property.type);
+                unsafe = unsafe || !this.implicitlyConvertsToJSON(property.type);
                 irregular = irregular || stringEscape(jsonName) !== this.sourcelikeToString(name);
             });
             return [irregular, unsafe];
@@ -656,7 +700,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
                     this.emitLine("[self setValuesForKeysWithDictionary:dict];");
                     this.forEachClassProperty(t, "none", (name, jsonName, property) => {
-                        if (!this.isJSONSafe(property.type)) {
+                        if (!this.implicitlyConvertsFromJSON(property.type)) {
                             this.emitPropertyAssignment(name, jsonName, property.type);
                         }
                     });
@@ -702,7 +746,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.emitLine("[dict addEntriesFromDictionary:@{");
                     this.indent(() => {
                         this.forEachClassProperty(t, "none", (propertyName, jsonKey, property) => {
-                            if (!this.isJSONOutputSafe(property.type)) {
+                            if (!this.implicitlyConvertsToJSON(property.type)) {
                                 const key = stringEscape(jsonKey);
                                 const name = ["_", propertyName];
                                 this.emitLine('@"', key, '": ', this.toDynamicExpression(property.type, name), ",");
@@ -736,7 +780,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
     private emitMark = (label: string) => {
         this.ensureBlankLine();
-        this.emitLine(`// MARK: ${label}`);
+        this.emitLine(`#pragma mark - ${label}`);
         this.ensureBlankLine();
     };
 
@@ -871,7 +915,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             this.emitLine("NS_ASSUME_NONNULL_BEGIN");
             this.ensureBlankLine();
 
-            this.forEachEnum("leading-and-interposing", (t, n) => this.emitPseudoEnumInterface(t, n));
+            if (this.haveEnums) {
+                this.emitMark("Boxed enums");
+                this.forEachEnum("leading-and-interposing", (t, n) => this.emitPseudoEnumInterface(t, n));
+            }
 
             // Emit interfaces for top-level array+maps and classes
             this.forEachTopLevel(
@@ -883,7 +930,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             const hasTopLevelNonClassTypes = this.topLevels.some(t => !(t instanceof ClassType));
             if (!this._justTypes && (hasTopLevelNonClassTypes || this._marshalingFunctions)) {
                 this.ensureBlankLine();
-                this.emitExtraComments("Marshalling functions for top-level types.");
+                this.emitMark("Top-level marshaling functions");
                 this.forEachTopLevel(
                     "leading-and-interposing",
                     (t, n) => this.emitTopLevelFunctionDeclarations(t, n),
@@ -892,6 +939,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     t => this._marshalingFunctions || !(t instanceof ClassType)
                 );
             }
+
+            this.emitMark("Object interfaces");
             this.forEachNamedType("leading-and-interposing", this.emitClassInterface, () => null, () => null);
 
             this.ensureBlankLine();
@@ -947,7 +996,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitMapFunction();
                 this.ensureBlankLine();
 
-                this.emitMark("JSON serialization implementations");
+                this.emitMark("JSON serialization");
                 this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitTopLevelFunctions(t, n));
             }
 

@@ -168,7 +168,7 @@ export const SwiftLanguage: Language = {
 export const ObjectiveCLanguage: Language = {
   name: "objective-c",
   base: "test/fixtures/objective-c",
-  compileCommand: `clang -framework Foundation *.m -o test`,
+  compileCommand: `clang -Werror -framework Foundation *.m -o test`,
   runCommand(sample: string) {
     return `cp "${sample}" sample.json && ./test sample.json`;
   },

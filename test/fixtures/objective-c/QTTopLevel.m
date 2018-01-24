@@ -310,7 +310,7 @@ static id map(id collection, id (^f)(id value)) {
 
 // MARK: JSON serialization implementations
 
-QTTopLevel *QTTopLevelFromData(NSData *data, NSError **error)
+QTTopLevel *_Nullable QTTopLevelFromData(NSData *data, NSError **error)
 {
     @try {
         id json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:error];
@@ -321,12 +321,12 @@ QTTopLevel *QTTopLevelFromData(NSData *data, NSError **error)
     }
 }
 
-QTTopLevel *QTTopLevelFromJSON(NSString *json, NSStringEncoding encoding, NSError **error)
+QTTopLevel *_Nullable QTTopLevelFromJSON(NSString *json, NSStringEncoding encoding, NSError **error)
 {
     return QTTopLevelFromData([json dataUsingEncoding:encoding], error);
 }
 
-NSData *QTTopLevelToData(QTTopLevel *topLevel, NSError **error)
+NSData *_Nullable QTTopLevelToData(QTTopLevel *topLevel, NSError **error)
 {
     @try {
         id json = [topLevel JSONDictionary];
@@ -338,7 +338,7 @@ NSData *QTTopLevelToData(QTTopLevel *topLevel, NSError **error)
     }
 }
 
-NSString *QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSError **error)
+NSString *_Nullable QTTopLevelToJSON(QTTopLevel *topLevel, NSStringEncoding encoding, NSError **error)
 {
     NSData *data = QTTopLevelToData(topLevel, error);
     return data ? [[NSString alloc] initWithData:data encoding:encoding] : nil;
