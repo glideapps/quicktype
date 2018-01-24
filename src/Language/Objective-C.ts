@@ -490,17 +490,17 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private topLevelFromDataPrototype(name: Name): Sourcelike {
-        return [name, " *", name, "FromData(NSData *data, NSError **error)"];
+        return [name, " *_Nullable ", name, "FromData(NSData *data, NSError **error)"];
     }
 
     private topLevelFromJSONPrototype(name: Name): Sourcelike {
-        return [name, " *", name, "FromJSON(NSString *json, NSStringEncoding encoding, NSError **error)"];
+        return [name, " *_Nullable ", name, "FromJSON(NSString *json, NSStringEncoding encoding, NSError **error)"];
     }
 
     private topLevelToDataPrototype(name: Name, pad: boolean = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
         const padding = pad ? repeat(" ", this.sourcelikeToString(name).length - "NSData".length) : "";
-        return ["NSData", padding, " *", name, "ToData(", name, " *", parameter, ", NSError **error)"];
+        return ["NSData", padding, " *_Nullable ", name, "ToData(", name, " *", parameter, ", NSError **error)"];
     }
 
     private topLevelToJSONPrototype(name: Name, pad: boolean = false): Sourcelike {
@@ -509,7 +509,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         return [
             "NSString",
             padding,
-            " *",
+            " *_Nullable ",
             name,
             "ToJSON(",
             name,
