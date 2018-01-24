@@ -776,7 +776,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
     private emitMark = (label: string) => {
         this.ensureBlankLine();
-        this.emitLine(`// MARK: ${label}`);
+        this.emitLine(`#pragma mark - ${label}`);
         this.ensureBlankLine();
     };
 
@@ -911,7 +911,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             this.emitLine("NS_ASSUME_NONNULL_BEGIN");
             this.ensureBlankLine();
 
-            this.forEachEnum("leading-and-interposing", (t, n) => this.emitPseudoEnumInterface(t, n));
+            if (this.haveEnums) {
+                this.emitMark("Boxed enums");
+                this.forEachEnum("leading-and-interposing", (t, n) => this.emitPseudoEnumInterface(t, n));
+            }
 
             // Emit interfaces for top-level array+maps and classes
             this.forEachTopLevel(
@@ -923,7 +926,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             const hasTopLevelNonClassTypes = this.topLevels.some(t => !(t instanceof ClassType));
             if (!this._justTypes && (hasTopLevelNonClassTypes || this._marshalingFunctions)) {
                 this.ensureBlankLine();
-                this.emitExtraComments("Marshalling functions for top-level types.");
+                this.emitMark("Top-level marshaling functions");
                 this.forEachTopLevel(
                     "leading-and-interposing",
                     (t, n) => this.emitTopLevelFunctionDeclarations(t, n),
@@ -932,6 +935,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     t => this._marshalingFunctions || !(t instanceof ClassType)
                 );
             }
+
+            this.emitMark("Object interfaces");
             this.forEachNamedType("leading-and-interposing", this.emitClassInterface, () => null, () => null);
 
             this.ensureBlankLine();
@@ -987,7 +992,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitMapFunction();
                 this.ensureBlankLine();
 
-                this.emitMark("JSON serialization implementations");
+                this.emitMark("JSON serialization");
                 this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitTopLevelFunctions(t, n));
             }
 
