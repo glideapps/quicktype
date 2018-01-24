@@ -83,7 +83,14 @@ function typeNameStyle(prefix: string, original: string): string {
 }
 
 function propertyNameStyle(original: string): string {
-    const words = splitIntoWords(original);
+    let words = splitIntoWords(original);
+
+    // Properties cannot even begin with any of the forbidden names
+    // For example, properies named new* are treated differently by ARC
+    if (words.length > 0 && includes(forbiddenPropertyNames, words[0].word)) {
+        words = [{ word: "the", isAcronym: false }, ...words];
+    }
+
     return combineWords(
         words,
         legalizeName,
@@ -147,7 +154,16 @@ const keywords = [
     "while"
 ];
 
-const forbiddenPropertyNames = ["hash", "description", "init", "copy", "mutableCopy", "superclass", "debugDescription"];
+const forbiddenPropertyNames = [
+    "hash",
+    "description",
+    "init",
+    "copy",
+    "mutableCopy",
+    "superclass",
+    "debugDescription",
+    "new"
+];
 
 function isStartCharacter(utf16Unit: number): boolean {
     return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
