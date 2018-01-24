@@ -165,6 +165,7 @@ function isAnyOrNull(t: Type): boolean {
 }
 
 const staticEnumValuesIdentifier = "values";
+const forbiddenForEnumCases = ["new", staticEnumValuesIdentifier];
 
 class ObjectiveCRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
@@ -224,7 +225,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenForEnumCases(_e: EnumType, _enumName: Name): ForbiddenWordsInfo {
-        return { names: [staticEnumValuesIdentifier], includeGlobalForbidden: true };
+        return { names: forbiddenForEnumCases, includeGlobalForbidden: true };
     }
 
     protected topLevelNameStyle(rawName: string): string {
