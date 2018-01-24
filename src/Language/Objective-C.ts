@@ -300,8 +300,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this._currentFilename = undefined;
     }
 
-    private assignRetainOrCopy(t: Type): "assign" | "retain" | "copy" {
-        return matchType<"assign" | "retain" | "copy">(
+    private memoryManagementAttribute(t: Type): "assign" | "strong" | "copy" {
+        return matchType<"assign" | "strong" | "copy">(
             t,
             _anyType => "copy",
             _nullType => "copy",
@@ -309,10 +309,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             _integerType => "assign",
             _doubleType => "assign",
             _stringType => "copy",
-            _arrayType => "assign",
-            _classType => "retain",
-            _mapType => "assign",
-            _enumType => "copy",
+            _arrayType => "copy",
+            _classType => "strong",
+            _mapType => "copy",
+            _enumType => "assign",
             _unionType => "copy"
         );
     }
@@ -615,7 +615,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             if (property.type.isNullable) {
                 attributes.push("nullable");
             }
-            attributes.push(this.assignRetainOrCopy(property.type));
+            attributes.push(this.memoryManagementAttribute(property.type));
             this.emitLine(
                 "@property ",
                 ["(", attributes.join(", "), ")"],
