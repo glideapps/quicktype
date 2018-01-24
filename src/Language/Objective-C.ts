@@ -283,6 +283,23 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this._currentFilename = undefined;
     }
 
+    private assignRetainOrCopy(t: Type): "assign" | "retain" | "copy" {
+        return matchType<"assign" | "retain" | "copy">(
+            t,
+            _anyType => "copy",
+            _nullType => "copy",
+            _boolType => "assign",
+            _integerType => "assign",
+            _doubleType => "assign",
+            _stringType => "copy",
+            _arrayType => "assign",
+            _classType => "retain",
+            _mapType => "assign",
+            _enumType => "copy",
+            _unionType => "copy"
+        );
+    }
+
     private objcType = (t: Type, nullableOrBoxed: boolean = false): [Sourcelike, string] => {
         return matchType<[Sourcelike, string]>(
             t,
@@ -576,6 +593,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             if (property.type.isNullable) {
                 attributes.push("nullable");
             }
+            attributes.push(this.assignRetainOrCopy(property.type));
             this.emitLine(
                 "@property ",
                 ["(", attributes.join(", "), ")"],
