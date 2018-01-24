@@ -398,7 +398,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             _doubleType => typed,
             _stringType => typed,
             arrayType => {
-                if (this.isJSONSafe(arrayType)) {
+                if (this.implicitlyConvertsFromJSON(arrayType)) {
                     // TODO check each value type
                     return typed;
                 }
@@ -406,7 +406,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             },
             _classType => ["[", typed, " JSONDictionary]"],
             mapType => {
-                if (this.isJSONSafe(mapType)) {
+                if (this.implicitlyConvertsFromJSON(mapType)) {
                     // TODO check each value type
                     return typed;
                 }
@@ -416,7 +416,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    if (this.isJSONSafe(nullable)) {
+                    if (this.implicitlyConvertsFromJSON(nullable)) {
                         return ["NSNullify(", typed, ")"];
                     } else {
                         return ["NSNullify(", this.toDynamicExpression(nullable, typed), ")"];
@@ -429,21 +429,21 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         );
     };
 
-    private isJSONSafe(t: Type): boolean {
+    private implicitlyConvertsFromJSON(t: Type): boolean {
         if (t instanceof ClassType) {
             return false;
         } else if (t instanceof EnumType) {
             return false;
         } else if (t instanceof ArrayType) {
-            return this.isJSONSafe(t.items);
+            return this.implicitlyConvertsFromJSON(t.items);
         } else if (t instanceof MapType) {
-            return this.isJSONSafe(t.values);
+            return this.implicitlyConvertsFromJSON(t.values);
         } else if (t.isPrimitive()) {
             return true;
         } else if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
             if (nullable !== null) {
-                return this.isJSONSafe(nullable);
+                return this.implicitlyConvertsFromJSON(nullable);
             } else {
                 // We don't support unions yet, so this is just untyped
                 return true;
@@ -453,8 +453,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         }
     }
 
-    private isJSONOutputSafe(t: Type): boolean {
-        return this.isJSONSafe(t) && "bool" !== t.kind;
+    private implicitlyConvertsToJSON(t: Type): boolean {
+        return this.implicitlyConvertsFromJSON(t) && "bool" !== t.kind;
     }
 
     private emitPropertyAssignment = (propertyName: Name, jsonName: string, propertyType: Type) => {
@@ -649,7 +649,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             let irregular = false;
             let unsafe = false;
             this.forEachClassProperty(t, "none", (name, jsonName, property) => {
-                unsafe = unsafe || !this.isJSONOutputSafe(property.type);
+                unsafe = unsafe || !this.implicitlyConvertsToJSON(property.type);
                 irregular = irregular || stringEscape(jsonName) !== this.sourcelikeToString(name);
             });
             return [irregular, unsafe];
@@ -696,7 +696,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
                     this.emitLine("[self setValuesForKeysWithDictionary:dict];");
                     this.forEachClassProperty(t, "none", (name, jsonName, property) => {
-                        if (!this.isJSONSafe(property.type)) {
+                        if (!this.implicitlyConvertsFromJSON(property.type)) {
                             this.emitPropertyAssignment(name, jsonName, property.type);
                         }
                     });
@@ -742,7 +742,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.emitLine("[dict addEntriesFromDictionary:@{");
                     this.indent(() => {
                         this.forEachClassProperty(t, "none", (propertyName, jsonKey, property) => {
-                            if (!this.isJSONOutputSafe(property.type)) {
+                            if (!this.implicitlyConvertsToJSON(property.type)) {
                                 const key = stringEscape(jsonKey);
                                 const name = ["_", propertyName];
                                 this.emitLine('@"', key, '": ', this.toDynamicExpression(property.type, name), ",");
