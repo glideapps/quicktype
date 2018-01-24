@@ -425,7 +425,12 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             return true;
         } else if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
-            return nullable !== null && this.isJSONSafe(nullable);
+            if (nullable !== null) {
+                return this.isJSONSafe(nullable);
+            } else {
+                // We don't support unions yet, so this is just untyped
+                return true;
+            }
         } else {
             return false;
         }
