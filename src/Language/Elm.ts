@@ -108,8 +108,8 @@ function elmNameStyle(original: string, upper: boolean): string {
     );
 }
 
-const upperNamingFunction = funPrefixNamer(n => elmNameStyle(n, true));
-const lowerNamingFunction = funPrefixNamer(n => elmNameStyle(n, false));
+const upperNamingFunction = funPrefixNamer("upper", n => elmNameStyle(n, true));
+const lowerNamingFunction = funPrefixNamer("lower", n => elmNameStyle(n, false));
 
 type MultiWord = {
     source: Sourcelike;
@@ -206,7 +206,7 @@ class ElmRenderer extends ConvenienceRenderer {
         return [encoder, decoder];
     }
 
-    protected makeClassPropertyNamer(): Namer {
+    protected namerForClassProperty(): Namer {
         return lowerNamingFunction;
     }
 

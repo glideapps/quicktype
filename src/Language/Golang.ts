@@ -53,7 +53,7 @@ export default class GoTargetLanguage extends TargetLanguage {
     }
 }
 
-const namingFunction = funPrefixNamer(goNameStyle);
+const namingFunction = funPrefixNamer("namer", goNameStyle);
 
 const legalizeName = legalizeCharacters(isLetterOrUnderscoreOrDigit);
 
@@ -99,7 +99,7 @@ class GoRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected makeClassPropertyNamer(): Namer {
+    protected namerForClassProperty(): Namer {
         return namingFunction;
     }
 

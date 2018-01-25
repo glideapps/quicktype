@@ -76,7 +76,7 @@ export default class CSharpTargetLanguage extends TargetLanguage {
     }
 }
 
-const namingFunction = funPrefixNamer(csNameStyle);
+const namingFunction = funPrefixNamer("namer", csNameStyle);
 
 // FIXME: Make a Named?
 const denseJsonPropertyName = "J";
@@ -170,7 +170,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected makeClassPropertyNamer(): Namer {
+    protected namerForClassProperty(): Namer {
         return namingFunction;
     }
 

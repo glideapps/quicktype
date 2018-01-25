@@ -120,11 +120,11 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return new Namer(typeNameStyle, []);
+        return new Namer("types", typeNameStyle, []);
     }
 
-    protected makeClassPropertyNamer(): Namer {
-        return new Namer(propertyNameStyle, []);
+    protected namerForClassProperty(): Namer {
+        return new Namer("properties", propertyNameStyle, []);
     }
 
     protected makeUnionMemberNamer(): null {
@@ -132,7 +132,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return new Namer(typeNameStyle, []);
+        return new Namer("enum-cases", typeNameStyle, []);
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {

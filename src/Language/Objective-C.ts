@@ -250,12 +250,12 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer(rawName => typeNameStyle(this._classPrefix, rawName));
+        return funPrefixNamer("types", rawName => typeNameStyle(this._classPrefix, rawName));
     }
 
-    protected makeClassPropertyNamer(): Namer {
+    protected namerForClassProperty(): Namer {
         // TODO why is underscore being removed?
-        return new Namer(s => propertyNameStyle(s), ["_", "the", "one", "some", "another"]);
+        return new Namer("properties", s => propertyNameStyle(s), ["_", "the", "one", "some", "another"]);
     }
 
     protected makeUnionMemberNamer(): null {
@@ -263,7 +263,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return new Namer(propertyNameStyle, []);
+        return new Namer("enum-cases", propertyNameStyle, []);
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
