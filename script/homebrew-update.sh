@@ -5,5 +5,5 @@
 # HOMEBREW_GITHUB_TOKEN=...
 
 URL=$(npm info quicktype --json | jq -r .dist.tarball)
-SHA=$(curl $URL | shasum -a 256)
+SHA=$(curl $URL | shasum -a 256 | cut -d " " -f1)
 brew bump-formula-pr --strict quicktype --url="$URL" --sha256="$SHA"
