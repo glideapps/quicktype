@@ -119,7 +119,7 @@ export class Run {
     private _options: Options;
 
     constructor(options: Partial<Options>) {
-        this._options = _.assign(_.clone(defaultOptions), options);
+        this._options = _.mergeWith(_.clone(options), defaultOptions, (o, s) => (o === undefined ? s : o));
         this._allInputs = { samples: {}, schemas: {}, graphQLs: {} };
 
         const mapping = getTargetLanguage(this._options.lang).stringTypeMapping;
