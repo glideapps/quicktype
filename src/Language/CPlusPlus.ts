@@ -250,9 +250,9 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         super(graph, leadingComments);
 
         this._typeNameStyle = cppNameStyle(_typeNamingStyle);
-        this._typeNamingFunction = funPrefixNamer(this._typeNameStyle);
-        this._memberNamingFunction = funPrefixNamer(cppNameStyle(_memberNamingStyle));
-        this._caseNamingFunction = funPrefixNamer(cppNameStyle(_enumeratorNamingStyle));
+        this._typeNamingFunction = funPrefixNamer("types", this._typeNameStyle);
+        this._memberNamingFunction = funPrefixNamer("members", cppNameStyle(_memberNamingStyle));
+        this._caseNamingFunction = funPrefixNamer("enumerators", cppNameStyle(_enumeratorNamingStyle));
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -275,7 +275,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return this._typeNamingFunction;
     }
 
-    protected makeClassPropertyNamer(): Namer {
+    protected namerForClassProperty(): Namer {
         return this._memberNamingFunction;
     }
 

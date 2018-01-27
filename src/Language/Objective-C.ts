@@ -4,7 +4,17 @@ import * as lo from "lodash";
 import { includes, startsWith, repeat } from "lodash";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, ClassType, EnumType, nullableFromUnion, matchType, ArrayType, MapType, UnionType } from "../Type";
+import {
+    Type,
+    ClassType,
+    EnumType,
+    nullableFromUnion,
+    matchType,
+    ArrayType,
+    MapType,
+    UnionType,
+    ClassProperty
+} from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, modifySource } from "../Source";
@@ -83,8 +93,16 @@ function typeNameStyle(prefix: string, original: string): string {
     return startsWith(result, prefix) ? result : prefix + result;
 }
 
-function propertyNameStyle(original: string): string {
+function propertyNameStyle(original: string, isBool: boolean = false): string {
     let words = splitIntoWords(original);
+
+    if (isBool) {
+        if (words.length === 0) {
+            words = [{ word: "flag", isAcronym: false }];
+        } else if (!words[0].isAcronym && !includes(booleanPrefixes, words[0].word)) {
+            words = [{ word: "is", isAcronym: false }, ...words];
+        }
+    }
 
     // Properties cannot even begin with any of the forbidden names
     // For example, properies named new* are treated differently by ARC
@@ -165,6 +183,8 @@ const forbiddenPropertyNames = [
     "debugDescription",
     "new"
 ];
+
+const booleanPrefixes = ["is", "has", "have", "does", "do", "requires", "require", "needs", "need"];
 
 function isStartCharacter(utf16Unit: number): boolean {
     return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
@@ -250,12 +270,18 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer(rawName => typeNameStyle(this._classPrefix, rawName));
+        return funPrefixNamer("types", rawName => typeNameStyle(this._classPrefix, rawName));
     }
 
-    protected makeClassPropertyNamer(): Namer {
+    protected namerForClassProperty(_: ClassType, p: ClassProperty): Namer {
         // TODO why is underscore being removed?
-        return new Namer(s => propertyNameStyle(s), ["_", "the", "one", "some", "another"]);
+        return new Namer("properties", s => propertyNameStyle(s, p.type.kind === "bool"), [
+            "_",
+            "the",
+            "one",
+            "some",
+            "another"
+        ]);
     }
 
     protected makeUnionMemberNamer(): null {
@@ -263,7 +289,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return new Namer(propertyNameStyle, []);
+        return new Namer("enum-cases", propertyNameStyle, []);
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {

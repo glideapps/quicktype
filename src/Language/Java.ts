@@ -133,9 +133,9 @@ const keywords = [
     "true"
 ];
 
-const typeNamingFunction = funPrefixNamer(n => javaNameStyle(true, false, n));
-const propertyNamingFunction = funPrefixNamer(n => javaNameStyle(false, false, n));
-const enumCaseNamingFunction = funPrefixNamer(n => javaNameStyle(true, true, n));
+const typeNamingFunction = funPrefixNamer("types", n => javaNameStyle(true, false, n));
+const propertyNamingFunction = funPrefixNamer("properties", n => javaNameStyle(false, false, n));
+const enumCaseNamingFunction = funPrefixNamer("enum-cases", n => javaNameStyle(true, true, n));
 
 export const stringEscape = utf16ConcatMap(escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape));
 
@@ -196,7 +196,7 @@ class JavaRenderer extends ConvenienceRenderer {
         return typeNamingFunction;
     }
 
-    protected makeClassPropertyNamer(): Namer {
+    protected namerForClassProperty(): Namer {
         return propertyNamingFunction;
     }
 

@@ -94,11 +94,11 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return new Namer(n => simpleNameStyle(n, true), []);
+        return new Namer("types", n => simpleNameStyle(n, true), []);
     }
 
-    protected makeClassPropertyNamer(): Namer {
-        return new Namer(n => simpleNameStyle(n, false), []);
+    protected namerForClassProperty(): Namer {
+        return new Namer("properties", n => simpleNameStyle(n, false), []);
     }
 
     protected makeUnionMemberNamer(): null {
@@ -106,7 +106,7 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return new Namer(n => simpleNameStyle(n, true), []);
+        return new Namer("enum-cases", n => simpleNameStyle(n, true), []);
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {

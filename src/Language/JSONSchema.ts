@@ -34,7 +34,7 @@ export default class JSONSchemaTargetLanguage extends TargetLanguage {
     }
 }
 
-const namingFunction = funPrefixNamer(jsonNameStyle);
+const namingFunction = funPrefixNamer("namer", jsonNameStyle);
 
 const legalizeName = legalizeCharacters(cp => cp >= 32 && cp < 128 && cp !== 0x2f /* slash */);
 
@@ -63,7 +63,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected makeClassPropertyNamer(): null {
+    protected namerForClassProperty(): null {
         return null;
     }
 

@@ -217,8 +217,8 @@ function unicodeEscape(codePoint: number): string {
 
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
-const upperNamingFunction = funPrefixNamer(s => swiftNameStyle(true, s));
-const lowerNamingFunction = funPrefixNamer(s => swiftNameStyle(false, s));
+const upperNamingFunction = funPrefixNamer("upper", s => swiftNameStyle(true, s));
+const lowerNamingFunction = funPrefixNamer("lower", s => swiftNameStyle(false, s));
 
 class SwiftRenderer extends ConvenienceRenderer {
     private _needAny: boolean = false;
@@ -260,7 +260,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         return upperNamingFunction;
     }
 
-    protected makeClassPropertyNamer(): Namer {
+    protected namerForClassProperty(): Namer {
         return lowerNamingFunction;
     }
 

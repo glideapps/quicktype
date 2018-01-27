@@ -87,11 +87,11 @@ export type NameStyle = (rawName: string) => string;
 export class Namer {
     private readonly _prefixes: OrderedSet<string>;
 
-    constructor(readonly nameStyle: NameStyle, prefixes: string[]) {
+    constructor(readonly name: string, readonly nameStyle: NameStyle, prefixes: string[]) {
         this._prefixes = OrderedSet(prefixes);
     }
 
-    name(
+    assignNames(
         names: Map<Name, string>,
         forbiddenNames: Set<string>,
         namesToAssign: Collection<any, Name>
@@ -114,7 +114,7 @@ export class Namer {
                 namesToAssign.every(n => n === name || !n.proposeUnstyledNames(names).contains(proposed))
             );
             if (maybeUniqueName !== undefined) {
-                const styledName = this.nameStyle(maybeUniqueName);
+                const styledName = nonNull(name.namingFunction).nameStyle(maybeUniqueName);
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned) {
                     allAssignedNames = allAssignedNames.merge(assigned);
@@ -143,7 +143,7 @@ export class Namer {
                 nameToTry = `${originalName}_${suffixNumber.toString()}`;
                 suffixNumber++;
             }
-            const styledName = this.nameStyle(nameToTry);
+            const styledName = nonNull(name.namingFunction).nameStyle(nameToTry);
             const assigned = name.nameAssignments(forbiddenNames, styledName);
             if (assigned === null) continue;
             allAssignedNames = allAssignedNames.merge(assigned);
@@ -152,17 +152,6 @@ export class Namer {
         }
 
         return allAssignedNames;
-    }
-
-    equals(other: any): boolean {
-        if (!(other instanceof Namer)) {
-            return false;
-        }
-        return this.nameStyle === other.nameStyle && other._prefixes.equals(this._prefixes);
-    }
-
-    hashCode(): number {
-        return this._prefixes.hashCode();
     }
 }
 
@@ -182,8 +171,8 @@ const funPrefixes = [
     "Braggadocious"
 ];
 
-export function funPrefixNamer(nameStyle: NameStyle): Namer {
-    return new Namer(nameStyle, funPrefixes);
+export function funPrefixNamer(name: string, nameStyle: NameStyle): Namer {
+    return new Namer(name, nameStyle, funPrefixes);
 }
 
 // FIXME: I think the type hierarchy is somewhat wrong here.  `FixedName`
@@ -429,12 +418,12 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
         const byNamingFunction = readyNames.groupBy((n: Name) => nonNull(n.namingFunction));
         byNamingFunction.forEach((namedsForNamingFunction: Collection<any, Name>, namer: Namer) => {
             const byProposed = namedsForNamingFunction.groupBy((n: Name) =>
-                namer.nameStyle(n.firstProposedName(ctx.names))
+                nonNull(n.namingFunction).nameStyle(n.firstProposedName(ctx.names))
             );
             byProposed.forEach((nameds: Collection<any, Name>, _: string) => {
                 // 3. Use each set's naming function to name its members.
 
-                const names = namer.name(ctx.names, forbiddenNames, nameds);
+                const names = namer.assignNames(ctx.names, forbiddenNames, nameds);
                 names.forEach((assigned: string, name: Name) => ctx.assign(name, readyNamespace, assigned));
                 forbiddenNames = forbiddenNames.union(names.toSet());
             });

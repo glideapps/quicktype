@@ -36,7 +36,6 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _caseNamesStoreView: TypeAttributeStoreView<Map<string, Name>>;
 
     private _namedTypeNamer: Namer;
-    private _classPropertyNamer: Namer | null;
     private _unionMemberNamer: Namer | null;
     private _enumCaseNamer: Namer | null;
 
@@ -85,7 +84,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected abstract topLevelNameStyle(rawName: string): string;
     protected abstract makeNamedTypeNamer(): Namer;
-    protected abstract makeClassPropertyNamer(): Namer | null;
+    protected abstract namerForClassProperty(c: ClassType, p: ClassProperty): Namer | null;
     protected abstract makeUnionMemberNamer(): Namer | null;
     protected abstract makeEnumCaseNamer(): Namer | null;
     protected abstract emitSourceStructure(givenOutputFilename: string): void;
@@ -127,7 +126,6 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._caseNamesStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedCaseNames");
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
-        this._classPropertyNamer = this.makeClassPropertyNamer();
         this._unionMemberNamer = this.makeUnionMemberNamer();
         this._enumCaseNamer = this.makeEnumCaseNamer();
 
@@ -227,17 +225,15 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     private addPropertyNames = (c: ClassType, className: Name): void => {
-        const propertyNamer = this._classPropertyNamer;
-        if (propertyNamer === null) return;
-
         const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
             this.forbiddenForClassProperties(c, className),
             "forbidden-for-properties"
         );
 
-        const ns = new Namespace(c.getCombinedName(), this._globalNamespace, forbiddenNamespaces, forbiddenNames);
+        let ns: Namespace | undefined;
+
         const names = c.sortedProperties
-            .map((_, name) => {
+            .map((p, name) => {
                 // FIXME: This alternative should really depend on what the
                 // actual name of the class ends up being.  We can do this
                 // with a DependencyName.
@@ -248,9 +244,14 @@ export abstract class ConvenienceRenderer extends Renderer {
                 // maybe we'll need global properties for some weird language at
                 // some point.
                 const alternative = `${c.getCombinedName()}_${name}`;
-                return ns.add(new SimpleName(OrderedSet([name, alternative]), propertyNamer));
+                const namer = this.namerForClassProperty(c, p);
+                if (namer === null) return undefined;
+                if (ns === undefined) {
+                    ns = new Namespace(c.getCombinedName(), this._globalNamespace, forbiddenNamespaces, forbiddenNames);
+                }
+                return ns.add(new SimpleName(OrderedSet([name, alternative]), namer));
             })
-            .toMap();
+            .filter(v => v !== undefined) as OrderedMap<string, SimpleName>;
         this._propertyNamesStoreView.set(c, names);
     };
 
@@ -311,9 +312,10 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     private childrenOfType = (t: Type): OrderedSet<Type> => {
         const names = this.names;
-        if (t instanceof ClassType && this._classPropertyNamer !== null) {
+        if (t instanceof ClassType) {
             const propertyNameds = this._propertyNamesStoreView.get(t);
             const sortedMap = t.properties
+                .filter((_, n) => propertyNameds.get(n) !== undefined)
                 .map(p => p.type)
                 .sortBy((_, n) => defined(names.get(defined(propertyNameds.get(n)))));
             return sortedMap.toOrderedSet();
