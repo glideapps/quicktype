@@ -638,32 +638,28 @@ var json: String? {
         }
 
         this.emitBlock(["extension ", extensionSource], () => {
-            this.emitBlock(["init?(data: Data)"], () => {
-                this.emitLine(
-                    "guard let me = try? JSONDecoder().decode(",
-                    name,
-                    ".self, from: data) else { return nil }"
-                );
+            this.emitBlock(["init?(data: Data) throws"], () => {
+                this.emitLine("let me = try JSONDecoder().decode(", name, ".self, from: data)");
                 this.emitLine("self = me");
             });
             this.ensureBlankLine();
-            this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8)"], () => {
+            this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8) throws"], () => {
                 this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
-                this.emitLine("self.init(data: data)");
+                this.emitLine("try self.init(data: data)");
             });
             this.ensureBlankLine();
-            this.emitMultiline(`init?(fromURL url: String) {
+            this.emitMultiline(`init?(fromURL url: String) throws {
     guard let url = URL(string: url) else { return nil }
-    guard let data = try? Data(contentsOf: url) else { return nil }
-    self.init(data: data)
+    let data = try Data(contentsOf: url)
+    try self.init(data: data)
 }`);
             this.ensureBlankLine();
-            this.emitBlock("var jsonData: Data?", () => {
-                this.emitLine("return try? JSONEncoder().encode(self)");
+            this.emitBlock("func jsonData() throws -> Data", () => {
+                this.emitLine("return try JSONEncoder().encode(self)");
             });
             this.ensureBlankLine();
-            this.emitBlock("var json: String?", () => {
-                this.emitLine("guard let data = self.jsonData else { return nil }");
+            this.emitBlock("func jsonString() throws -> String?", () => {
+                this.emitLine("let data = try self.jsonData()");
                 this.emitLine("return String(data: data, encoding: .utf8)");
             });
         });
