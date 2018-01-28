@@ -543,13 +543,12 @@ class SwiftRenderer extends ConvenienceRenderer {
 
             // Convenience serializers
             this.ensureBlankLine();
-            this.emitMultiline(`var jsonData: Data? {
-    return try? JSONEncoder().encode(self)
+            this.emitMultiline(`func jsonData() throws -> Data {
+    return try JSONEncoder().encode(self)
 }
 
-var json: String? {
-    guard let data = self.jsonData else { return nil }
-    return String(data: data, encoding: .utf8)
+func jsonString() throws -> String? {
+    return String(data: try self.jsonData(), encoding: .utf8)
 }`);
         });
     };
