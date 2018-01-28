@@ -656,8 +656,7 @@ func jsonString() throws -> String? {
             });
             this.ensureBlankLine();
             this.emitBlock("func jsonString() throws -> String?", () => {
-                this.emitLine("let data = try self.jsonData()");
-                this.emitLine("return String(data: data, encoding: .utf8)");
+                this.emitLine("return String(data: try self.jsonData(), encoding: .utf8)");
             });
         });
     };
