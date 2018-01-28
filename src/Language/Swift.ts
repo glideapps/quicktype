@@ -502,7 +502,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         this.emitBlock(["extension ", className], () => {
             if (isClass) {
                 // Convenience initializers for Json string and data
-                this.emitBlock(["convenience init?(data: Data) throws"], () => {
+                this.emitBlock(["convenience init(data: Data) throws"], () => {
                     this.emitLine("let me = try JSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                     let args: Sourcelike[] = [];
                     this.forEachClassProperty(c, "none", name => {
@@ -524,9 +524,8 @@ class SwiftRenderer extends ConvenienceRenderer {
 }`);
             } else {
                 // 1. Two convenience initializers for Json string and data
-                this.emitBlock(["init?(data: Data) throws"], () => {
-                    this.emitLine("let me = try JSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
-                    this.emitLine("self = me");
+                this.emitBlock(["init(data: Data) throws"], () => {
+                    this.emitLine("self = try JSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                 });
                 this.ensureBlankLine();
                 this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8) throws"], () => {
@@ -637,9 +636,8 @@ func jsonString() throws -> String? {
         }
 
         this.emitBlock(["extension ", extensionSource], () => {
-            this.emitBlock(["init?(data: Data) throws"], () => {
-                this.emitLine("let me = try JSONDecoder().decode(", name, ".self, from: data)");
-                this.emitLine("self = me");
+            this.emitBlock(["init(data: Data) throws"], () => {
+                this.emitLine("self = try JSONDecoder().decode(", name, ".self, from: data)");
             });
             this.ensureBlankLine();
             this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8) throws"], () => {
