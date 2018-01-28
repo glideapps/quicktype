@@ -345,7 +345,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         "//   guard let ",
                         modifySource(camelCase, name),
-                        " = try ",
+                        " = try? ",
                         name,
                         "(json) else { ... }"
                     );
