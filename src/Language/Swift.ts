@@ -524,11 +524,15 @@ class SwiftRenderer extends ConvenienceRenderer {
                 // 1. Two convenience initializers for Json string and data
                 this.emitBlock(["init?(data: Data)"], () => {
                     this.emitLine(
-                        "guard let me = try? JSONDecoder().decode(",
+                        "do {
+                            self = try JSONDecoder().decode(",
                         this.swiftType(c),
-                        ".self, from: data) else { return nil }"
+                        ".self, from: data)
+                        }catch {
+                            print(error)
+                            return nil
+                        }"
                     );
-                    this.emitLine("self = me");
                 });
                 this.ensureBlankLine();
                 this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8)"], () => {
@@ -641,12 +645,16 @@ var json: String? {
 
         this.emitBlock(["extension ", extensionSource], () => {
             this.emitBlock(["init?(data: Data)"], () => {
-                this.emitLine(
-                    "guard let me = try? JSONDecoder().decode(",
-                    name,
-                    ".self, from: data) else { return nil }"
-                );
-                this.emitLine("self = me");
+               this.emitLine(
+                        "do {
+                            self = try JSONDecoder().decode(",
+                        this.swiftType(c),
+                        ".self, from: data)
+                        }catch {
+                            print(error)
+                            return nil
+                        }"
+                    );
             });
             this.ensureBlankLine();
             this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8)"], () => {
