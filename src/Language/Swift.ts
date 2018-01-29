@@ -518,7 +518,7 @@ class SwiftRenderer extends ConvenienceRenderer {
 }`);
                 this.ensureBlankLine();
                 this.emitMultiline(`convenience init(fromURL url: String) throws {
-    guard let url = URL(string: url) else { throw URLError.badURL }
+    guard let url = URL(string: url) else { throw URLError(.badURL) }
     let data = try Data(contentsOf: url)
     try self.init(data: data)
 }`);
@@ -534,7 +534,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                 });
                 this.ensureBlankLine();
                 this.emitMultiline(`init(fromURL url: String) throws {
-    guard let url = URL(string: url) else { throw URLError.badURL }
+    guard let url = URL(string: url) else { throw URLError(.badURL) }
     let data = try Data(contentsOf: url)
     try self.init(data: data)
 }`);
@@ -646,7 +646,7 @@ func jsonString() throws -> String? {
             });
             this.ensureBlankLine();
             this.emitMultiline(`init(fromURL url: String) throws {
-    guard let url = URL(string: url) else { throw URLError.badURL }
+    guard let url = URL(string: url) else { throw URLError(.badURL) }
     let data = try Data(contentsOf: url)
     try self.init(data: data)
 }`);
