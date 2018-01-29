@@ -7,12 +7,17 @@ guard let data = FileHandle(forReadingAtPath: filename)?.readDataToEndOfFile() e
     exit(1)
 }
 
-let obj = try TopLevel(data: data)
-
-guard let jsonString = try obj?.jsonString() else {
+do {
+    let obj = try TopLevel(data: data)
+    guard let jsonString = try obj.jsonString() else {
+        print("Error: Could not serialize")
+        exit(1)
+    }
+    print(jsonString)
+}catch{
     print("Error: Could not serialize")
     exit(1)
 }
 
-print(jsonString)
+
 
