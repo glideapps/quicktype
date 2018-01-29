@@ -547,6 +547,9 @@ class ElmRenderer extends ConvenienceRenderer {
         this.forEachClass("none", (t, name) => {
             if (!this.topLevels.contains(t)) exports.push(name);
         });
+        this.forEachEnum("none", (t, name) => {
+            if (!this.topLevels.contains(t)) exports.push([name, "(..)"]);
+        });
         this.forEachUnion("none", (t, name) => {
             if (!this.topLevels.contains(t)) exports.push([name, "(..)"]);
         });
