@@ -343,7 +343,7 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.forEachTopLevel("none", (_, name) => {
                 if (this._convenienceInitializers) {
                     this.emitLine(
-                        "//   guard let ",
+                        "//   let ",
                         modifySource(camelCase, name),
                         " = try ",
                         name,
@@ -518,7 +518,7 @@ class SwiftRenderer extends ConvenienceRenderer {
 }`);
                 this.ensureBlankLine();
                 this.emitMultiline(`convenience init(fromURL url: String) throws {
-    guard let url = URL(string: url) else { throw URLError.badURL}
+    guard let url = URL(string: url) else { throw URLError.badURL }
     let data = try Data(contentsOf: url)
     try self.init(data: data)
 }`);
