@@ -184,7 +184,25 @@ const forbiddenPropertyNames = [
     "new"
 ];
 
-const booleanPrefixes = ["is", "has", "have", "does", "do", "requires", "require", "needs", "need"];
+const booleanPrefixes = [
+    "is",
+    "are",
+    "were",
+    "was",
+    "will",
+    "all",
+    "some",
+    "many",
+    "has",
+    "have",
+    "had",
+    "does",
+    "do",
+    "requires",
+    "require",
+    "needs",
+    "need"
+];
 
 function isStartCharacter(utf16Unit: number): boolean {
     return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
