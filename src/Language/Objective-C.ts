@@ -687,7 +687,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
         this.emitLine("@implementation ", className);
         if (!this._justTypes) {
-            this.emitMethod("+(NSDictionary<NSString *, NSString *> *)properties", () => {
+            this.emitMethod("+ (NSDictionary<NSString *, NSString *> *)properties", () => {
                 this.emitLine("static NSDictionary<NSString *, NSString *> *properties;");
                 this.emitLine("return properties = properties ? properties : @{");
                 this.indent(() => {
@@ -736,7 +736,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
             if (hasIrregularProperties) {
                 this.ensureBlankLine();
-                this.emitMethod("-(void)setValue:(nullable id)value forKey:(NSString *)key", () => {
+                this.emitMethod("- (void)setValue:(nullable id)value forKey:(NSString *)key", () => {
                     this.emitLine("[super setValue:value forKey:", className, ".properties[key]];");
                 });
             }
