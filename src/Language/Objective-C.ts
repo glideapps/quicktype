@@ -184,7 +184,25 @@ const forbiddenPropertyNames = [
     "new"
 ];
 
-const booleanPrefixes = ["is", "has", "have", "does", "do", "requires", "require", "needs", "need"];
+const booleanPrefixes = [
+    "is",
+    "are",
+    "were",
+    "was",
+    "will",
+    "all",
+    "some",
+    "many",
+    "has",
+    "have",
+    "had",
+    "does",
+    "do",
+    "requires",
+    "require",
+    "needs",
+    "need"
+];
 
 function isStartCharacter(utf16Unit: number): boolean {
     return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
@@ -687,7 +705,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
         this.emitLine("@implementation ", className);
         if (!this._justTypes) {
-            this.emitMethod("+(NSDictionary<NSString *, NSString *> *)properties", () => {
+            this.emitMethod("+ (NSDictionary<NSString *, NSString *> *)properties", () => {
                 this.emitLine("static NSDictionary<NSString *, NSString *> *properties;");
                 this.emitLine("return properties = properties ? properties : @{");
                 this.indent(() => {
@@ -736,7 +754,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
             if (hasIrregularProperties) {
                 this.ensureBlankLine();
-                this.emitMethod("-(void)setValue:(nullable id)value forKey:(NSString *)key", () => {
+                this.emitMethod("- (void)setValue:(nullable id)value forKey:(NSString *)key", () => {
                     this.emitLine("[super setValue:value forKey:", className, ".properties[key]];");
                 });
             }
