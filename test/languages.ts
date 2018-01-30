@@ -209,6 +209,6 @@ export const TypeScriptLanguage: Language = {
   topLevel: "TopLevel",
   skipJSON: [],
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
-  rendererOptions: { "runtime-typecheck": "yes", "explicit-unions": "yes" },
+  rendererOptions: { "explicit-unions": "yes" },
   quickTestRendererOptions: []
 };
