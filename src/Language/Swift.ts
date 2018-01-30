@@ -346,13 +346,7 @@ class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("//");
             this.forEachTopLevel("none", (_, name) => {
                 if (this._convenienceInitializers) {
-                    this.emitLine(
-                        "//   guard let ",
-                        modifySource(camelCase, name),
-                        " = try ",
-                        name,
-                        "(json) else { ... }"
-                    );
+                    this.emitLine("//   let ", modifySource(camelCase, name), " = try ", name, "(json)");
                 } else {
                     this.emitLine(
                         "//   let ",
@@ -503,9 +497,10 @@ class SwiftRenderer extends ConvenienceRenderer {
 
     private emitConvenienceInitializersExtension = (c: ClassType, className: Name): void => {
         const isClass = this._useClasses || this.isCycleBreakerType(c);
+        const convenience = isClass ? "convenience " : "";
+
         this.emitBlock(["extension ", className], () => {
             if (isClass) {
-                // Convenience initializers for Json string and data
                 this.emitBlock(["convenience init(data: Data) throws"], () => {
                     this.emitLine("let me = try JSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                     let args: Sourcelike[] = [];
@@ -515,34 +510,25 @@ class SwiftRenderer extends ConvenienceRenderer {
                     });
                     this.emitLine("self.init(", ...args, ")");
                 });
-                this.ensureBlankLine();
-                this.emitMultiline(`convenience init?(_ json: String, using encoding: String.Encoding = .utf8) throws {
-    guard let data = json.data(using: encoding) else { return nil }
-    try self.init(data: data)
-}`);
-                this.ensureBlankLine();
-                this.emitMultiline(`convenience init?(fromURL url: String) throws {
-    guard let url = URL(string: url) else { return nil }
-    let data = try Data(contentsOf: url)
-    try self.init(data: data)
-}`);
             } else {
-                // 1. Two convenience initializers for Json string and data
                 this.emitBlock(["init(data: Data) throws"], () => {
                     this.emitLine("self = try JSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                 });
-                this.ensureBlankLine();
-                this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8) throws"], () => {
-                    this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
-                    this.emitLine("try self.init(data: data)");
-                });
-                this.ensureBlankLine();
-                this.emitMultiline(`init?(fromURL url: String) throws {
-    guard let url = URL(string: url) else { return nil }
-    let data = try Data(contentsOf: url)
-    try self.init(data: data)
-}`);
             }
+            this.ensureBlankLine();
+            this.emitBlock(
+                [convenience, "init(_ json: String, using encoding: String.Encoding = .utf8) throws"],
+                () => {
+                    this.emitBlock("guard let data = json.data(using: encoding) else", () => {
+                        this.emitLine(`throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)`);
+                    });
+                    this.emitLine("try self.init(data: data)");
+                }
+            );
+            this.ensureBlankLine();
+            this.emitBlock([convenience, `init(fromURL url: URL) throws`], () => {
+                this.emitLine("try self.init(data: try Data(contentsOf: url))");
+            });
 
             // Convenience serializers
             this.ensureBlankLine();
@@ -644,16 +630,16 @@ func jsonString() throws -> String? {
                 this.emitLine("self = try JSONDecoder().decode(", name, ".self, from: data)");
             });
             this.ensureBlankLine();
-            this.emitBlock(["init?(_ json: String, using encoding: String.Encoding = .utf8) throws"], () => {
-                this.emitLine("guard let data = json.data(using: encoding) else { return nil }");
+            this.emitBlock(["init(_ json: String, using encoding: String.Encoding = .utf8) throws"], () => {
+                this.emitBlock("guard let data = json.data(using: encoding) else", () => {
+                    this.emitLine(`throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)`);
+                });
                 this.emitLine("try self.init(data: data)");
             });
             this.ensureBlankLine();
-            this.emitMultiline(`init?(fromURL url: String) throws {
-    guard let url = URL(string: url) else { return nil }
-    let data = try Data(contentsOf: url)
-    try self.init(data: data)
-}`);
+            this.emitBlock(`init(fromURL url: URL) throws`, () => {
+                this.emitLine("try self.init(data: try Data(contentsOf: url))");
+            });
             this.ensureBlankLine();
             this.emitBlock("func jsonData() throws -> Data", () => {
                 this.emitLine("return try JSONEncoder().encode(self)");
