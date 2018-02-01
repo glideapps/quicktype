@@ -94,6 +94,12 @@ function typeNameStyle(prefix: string, original: string): string {
 }
 
 function propertyNameStyle(original: string, isBool: boolean = false): string {
+    // Objective-C developers are uncomfortable with property "id"
+    // so we use an alternate name in this special case.
+    if (original === "id") {
+        original = "identifier";
+    }
+
     let words = splitIntoWords(original);
 
     if (isBool) {
@@ -174,6 +180,7 @@ const keywords = [
 ];
 
 const forbiddenPropertyNames = [
+    "id",
     "hash",
     "description",
     "init",
