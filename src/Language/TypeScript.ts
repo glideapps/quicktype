@@ -158,14 +158,10 @@ class TypeScriptRenderer extends ConvenienceRenderer {
             _stringType => "string",
             arrayType => {
                 const itemType = this.sourceFor(arrayType.items);
-                if (this._inlineUnions && arrayType.items instanceof UnionType) {
-                    const nullable = nullableFromUnion(arrayType.items);
-                    if (nullable !== null) {
-                        return [this.sourceFor(nullable), "[]"];
-                    } else {
-                        return ["Array<", itemType, ">"];
-                    }
-                } else if (arrayType.items instanceof ArrayType) {
+                if (
+                    (arrayType.items instanceof UnionType && this._inlineUnions) ||
+                    arrayType.items instanceof ArrayType
+                ) {
                     return ["Array<", itemType, ">"];
                 } else {
                     return [itemType, "[]"];
