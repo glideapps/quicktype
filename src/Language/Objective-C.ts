@@ -32,6 +32,7 @@ import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer"
 import { StringOption, BooleanOption, EnumOption } from "../RendererOptions";
 import { Set } from "immutable";
 import { assert, defined } from "../Support";
+import { StringTypeMapping } from "../TypeBuilder";
 
 const unicode = require("unicode-properties");
 
@@ -57,6 +58,9 @@ export default class ObjectiveCTargetLanguage extends TargetLanguage {
     );
     private readonly _extraCommentsOption = new BooleanOption("extra-comments", "Extra comments", false);
 
+    private readonly _dateLocale = new StringOption("date-locale", "Date locale", "LOCALE", "en_US_POSIX");
+    private readonly _dateFormat = new StringOption("date-format", "Date format", "FORMAT", "yyyy-MM-dd'T'HH:mm:ssZ");
+
     constructor() {
         super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
         this.setOptions([
@@ -64,8 +68,14 @@ export default class ObjectiveCTargetLanguage extends TargetLanguage {
             this._classPrefixOption,
             this._featuresOption,
             this._extraCommentsOption,
-            this._emitMarshallingFunctions
+            this._emitMarshallingFunctions,
+            this._dateLocale,
+            this._dateFormat
         ]);
+    }
+
+    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
+        return { date: "date-time", time: "date-time", dateTime: "date-time" };
     }
 
     protected get rendererClass(): new (
@@ -127,6 +137,8 @@ function propertyNameStyle(original: string, isBool: boolean = false): string {
         isStartCharacter
     );
 }
+
+const DATE_FUNCTION = { FROM_STRING: "QTDateFromString", TO_STRING: "QTStringFromDate" };
 
 const keywords = [
     /*
@@ -244,7 +256,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         private _classPrefix: string,
         private readonly _features: OutputFeatures,
         private readonly _extraComments: boolean,
-        private readonly _marshalingFunctions: boolean
+        private readonly _marshalingFunctions: boolean,
+        private _dateLocale: string,
+        private _dateFormat: string
     ) {
         super(graph, leadingComments);
 
@@ -341,6 +355,33 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         }
     };
 
+    private emitDateFunctions() {
+        this.emitBlock("static NSDateFormatter *QTDateFormatter()", () => {
+            this.emitLine("static NSDateFormatter *_dateFormatter;");
+            this.emitBlock("if (_dateFormatter == nil)", () => {
+                this.emitLine("_dateFormatter = [NSDateFormatter new];");
+                this.emitLine(`_dateFormatter.locale = [NSLocale localeWithLocaleIdentifier:@"${this._dateLocale}"];`);
+                this.emitLine(`_dateFormatter.dateFormat = @"${this._dateFormat}";`);
+            });
+            this.emitLine("return _dateFormatter;");
+        });
+        this.ensureBlankLine();
+        this.emitBlock(`static NSDate *${DATE_FUNCTION.FROM_STRING}(NSString *string)`, () => {
+            this.emitLine("NSDate *date = [QTDateFormatter() dateFromString:string];");
+            this.emitBlock("if (date == nil)", () => {
+                this.emitLine(`[NSException raise:NSInvalidArgumentException`);
+                this.emitLine(
+                    `            format:@"Couldn't read date from string; please check locale and date format"];`
+                );
+            });
+            this.emitLine("return date;");
+        });
+        this.ensureBlankLine();
+        this.emitBlock(`static NSString *${DATE_FUNCTION.TO_STRING}(NSDate *date)`, () => {
+            this.emitLine("return [QTDateFormatter() stringFromDate:date];");
+        });
+    }
+
     startFile(basename: Sourcelike, extension: string): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         // FIXME: The filenames should actually be Sourcelikes, too
@@ -368,6 +409,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.memoryAttribute(nullable, true) : "copy";
+            },
+            {
+                dateTimeType: _ => "copy"
             }
         );
     }
@@ -397,6 +441,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.objcType(nullable, true) : ["id", ""];
+            },
+            {
+                dateTimeType: _ => ["NSDate", " *"]
             }
         );
     };
@@ -418,6 +465,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.jsonType(nullable) : ["id", ""];
+            },
+            {
+                dateTimeType: _ => ["NSString", " *"]
             }
         );
     };
@@ -438,6 +488,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 return nullable !== null ? this.fromDynamicExpression(nullable, dynamic) : dynamic;
+            },
+            {
+                dateTimeType: _ => [DATE_FUNCTION.FROM_STRING, "((NSString *)", dynamic, ")"]
             }
         );
     };
@@ -480,12 +533,17 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     // TODO support unions
                     return typed;
                 }
+            },
+            {
+                dateTimeType: _ => [DATE_FUNCTION.TO_STRING, "(", typed, ")"]
             }
         );
     };
 
     private implicitlyConvertsFromJSON(t: Type): boolean {
         if (t instanceof ClassType) {
+            return false;
+        } else if (includes(["date", "time", "date-time"], t.kind)) {
             return false;
         } else if (t instanceof EnumType) {
             return false;
@@ -544,6 +602,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     // TODO This is a union, but for now we just leave it dynamic
                     this.emitLine(name, " = ", this.fromDynamicExpression(unionType, name), ";");
                 }
+            },
+            {
+                dateTimeType: dateTimeType =>
+                    this.emitLine(name, " = ", this.fromDynamicExpression(dateTimeType, name), ";")
             }
         );
     };
@@ -667,7 +729,6 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this.forEachClassProperty(t, "none", (name, _json, property) => {
             let attributes = ["nonatomic"];
             // TODO offer a 'readonly' option
-            // TODO We must add "copy" if it's NSCopy, otherwise "strong"
             if (property.type.isNullable) {
                 attributes.push("nullable");
             }
@@ -1005,6 +1066,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
             if (!this._justTypes) {
                 this.ensureBlankLine();
+                this.emitLine("NS_ASSUME_NONNULL_BEGIN");
+                this.ensureBlankLine();
                 this.emitExtraComments("Shorthand for simple blocks");
                 this.emitLine(`#define λ(decl, expr) (^(decl) { return (expr); })`);
                 this.ensureBlankLine();
@@ -1012,9 +1075,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.emitBlock("static id NSNullify(id _Nullable x)", () =>
                     this.emitLine("return (x == nil || x == NSNull.null) ? NSNull.null : x;")
                 );
-                this.ensureBlankLine();
-                this.emitLine("NS_ASSUME_NONNULL_BEGIN");
-                this.ensureBlankLine();
+                if (this.hasDateTimes) {
+                    this.ensureBlankLine();
+                    this.emitDateFunctions();
+                }
 
                 // We wouldn't need to emit these private iterfaces if we emitted implementations in forward-order
                 // but the code is more readable and explicit if we do this.
@@ -1059,6 +1123,19 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             this.finishFile();
         }
     }
+
+    private someType(property: (t: Type) => boolean): boolean {
+        // TODO this isn't complete (needs union support, for example)
+        function matches(t: Type): boolean {
+            return property(t) || (t instanceof ClassType && t.properties.some(p => matches(p.type)));
+        }
+        return this.typeGraph.allTypesUnordered().some(matches);
+    }
+
+    private get hasDateTimes(): boolean {
+        return this.someType(t => includes(["date", "time", "date-time"], t.kind));
+    }
+
     private get needsMap(): boolean {
         // TODO this isn't complete (needs union support, for example)
         function needsMap(t: Type): boolean {
