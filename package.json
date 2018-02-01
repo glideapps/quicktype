@@ -11,6 +11,7 @@
     "build": "script/build.ts",
     "test": "npm run build && script/test",
     "start": "script/watch",
+    "pkg": "./pkg.sh",
     "tslint": "tslint --project src"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "lodash": "^4.17.4",
     "moment": "^2.19.3",
     "node-fetch": "^1.7.1",
+    "pkg": "^4.3.0",
     "pluralize": "^7.0.0",
     "stream-json": "0.5.2",
     "string-hash": "^1.1.3",
