@@ -53,6 +53,7 @@ export interface CLIOptions {
     noMaps: boolean;
     noEnums: boolean;
     alphabetizeProperties: boolean;
+    allPropertiesOptional: boolean;
     noCombineClasses: boolean;
     noRender: boolean;
 
@@ -232,6 +233,7 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         noCombineClasses: !!opts.noCombineClasses,
         noRender: !!opts.noRender,
         alphabetizeProperties: !!opts.alphabetizeProperties,
+        allPropertiesOptional: !!opts.allPropertiesOptional,
         rendererOptions: opts.rendererOptions || {},
         help: opts.help || false,
         quiet: opts.quiet || false,
@@ -337,6 +339,11 @@ const optionDefinitions: OptionDefinition[] = [
         name: "alphabetize-properties",
         type: Boolean,
         description: "Alphabetize order of class properties."
+    },
+    {
+        name: "all-properties-optional",
+        type: Boolean,
+        description: "Make all class properties optional."
     },
     {
         name: "quiet",
@@ -595,6 +602,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             inferMaps: !options.noMaps,
             inferEnums: !options.noEnums,
             alphabetizeProperties: options.alphabetizeProperties,
+            allPropertiesOptional: options.allPropertiesOptional,
             combineClasses: !options.noCombineClasses,
             noRender: options.noRender,
             rendererOptions: options.rendererOptions,
