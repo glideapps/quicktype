@@ -660,6 +660,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
     private emitClassInterface = (t: ClassType, className: Name): void => {
         const isTopLevel = this.topLevels.valueSeq().contains(t);
+        const propertyTable: Sourcelike[][] = [];
 
         this.emitLine("@interface ", className, " : NSObject");
         if (DEBUG) this.emitLine("@property NSDictionary<NSString *, id> *_json;");
@@ -671,15 +672,12 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 attributes.push("nullable");
             }
             attributes.push(this.memoryAttribute(property.type, property.type.isNullable));
-            this.emitLine(
-                "@property ",
-                ["(", attributes.join(", "), ")"],
-                " ",
-                this.pointerAwareTypeName(property.type),
-                name,
-                ";"
-            );
+            propertyTable.push([
+                ["@property ", ["(", attributes.join(", "), ")"], " "],
+                [this.pointerAwareTypeName(property.type), name, ";"]
+            ]);
         });
+        this.emitTable(propertyTable);
 
         if (!this._justTypes && isTopLevel) {
             if (t.properties.count() > 0) this.ensureBlankLine();
