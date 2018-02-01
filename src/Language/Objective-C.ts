@@ -1079,10 +1079,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         if (this.needsMap) {
             this.emitMultiline(`static id map(id collection, id (^f)(id value)) {
     id result = nil;
-    if ([collection isKindOfClass:[NSArray class]]) {
+    if ([collection isKindOfClass:NSArray.class]) {
         result = [NSMutableArray arrayWithCapacity:[collection count]];
         for (id x in collection) [result addObject:f(x)];
-    } else if ([collection isKindOfClass:[NSDictionary class]]) {
+    } else if ([collection isKindOfClass:NSDictionary.class]) {
         result = [NSMutableDictionary dictionaryWithCapacity:[collection count]];
         for (id key in collection) [result setObject:f([collection objectForKey:key]) forKey:key];
     }
