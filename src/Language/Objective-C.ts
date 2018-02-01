@@ -1013,7 +1013,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                     this.ensureBlankLine();
                 }
                 this.emitExtraComments("nil → NSNull conversion for JSON dictionaries");
-                this.emitLine("#define NSNullify(x) ([x isNotEqualTo:[NSNull null]] ? x : [NSNull null])");
+                this.emitBlock("static id NSNullify(id _Nullable x)", () =>
+                    this.emitLine("return (x == nil || x == NSNull.null) ? NSNull.null : x;")
+                );
                 this.ensureBlankLine();
                 this.emitLine("NS_ASSUME_NONNULL_BEGIN");
                 this.ensureBlankLine();
