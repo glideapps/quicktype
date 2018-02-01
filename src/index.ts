@@ -76,6 +76,7 @@ export interface Options {
     inferMaps: boolean;
     inferEnums: boolean;
     alphabetizeProperties: boolean;
+    allPropertiesOptional: boolean;
     combineClasses: boolean;
     noRender: boolean;
     leadingComments: string[] | undefined;
@@ -91,6 +92,7 @@ const defaultOptions: Options = {
     inferMaps: true,
     inferEnums: true,
     alphabetizeProperties: false,
+    allPropertiesOptional: false,
     combineClasses: true,
     noRender: false,
     leadingComments: undefined,
@@ -132,7 +134,11 @@ export class Run {
     private makeGraph = (): TypeGraph => {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = targetLanguage.stringTypeMapping;
-        const typeBuilder = new TypeGraphBuilder(stringTypeMapping, this._options.alphabetizeProperties);
+        const typeBuilder = new TypeGraphBuilder(
+            stringTypeMapping,
+            this._options.alphabetizeProperties,
+            this._options.allPropertiesOptional
+        );
 
         // JSON Schema
         Map(this._allInputs.schemas).forEach((schema, name) => {
