@@ -344,15 +344,14 @@ const optionDefinitions: OptionDefinition[] = [
         description: "Alphabetize order of class properties."
     },
     {
-<<<<<<< HEAD
         name: "all-properties-optional",
         type: Boolean,
         description: "Make all class properties optional."
-=======
+    },
+    {
         name: "markov-input-filename",
         type: String,
         description: "Markov corpus filename."
->>>>>>> WIP
     },
     {
         name: "quiet",
