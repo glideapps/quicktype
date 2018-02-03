@@ -27,12 +27,15 @@ export { OptionDefinition } from "./RendererOptions";
 
 const stringToStream = require("string-to-stream");
 
-export function getTargetLanguage(name: string): TargetLanguage {
-    const language = targetLanguages.languageNamed(name);
+export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
+    if (typeof nameOrInstance === "object") {
+        return nameOrInstance;
+    }
+    const language = targetLanguages.languageNamed(nameOrInstance);
     if (language !== undefined) {
         return language;
     }
-    throw new Error(`'${name}' is not yet supported as an output language.`);
+    throw new Error(`'${nameOrInstance}' is not yet supported as an output language.`);
 }
 
 export type RendererOptions = { [name: string]: string };
@@ -70,7 +73,7 @@ export function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource
 export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource;
 
 export interface Options {
-    lang: string;
+    lang: string | TargetLanguage;
     sources: TypeSource[];
     handlebarsTemplate: string | undefined;
     inferMaps: boolean;
