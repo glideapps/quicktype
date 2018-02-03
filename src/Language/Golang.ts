@@ -40,6 +40,10 @@ export default class GoTargetLanguage extends TargetLanguage {
         this.setOptions([this._justTypesOption, this._packageOption]);
     }
 
+    get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
     protected get rendererClass(): new (
         graph: TypeGraph,
         leadingComments: string[] | undefined,

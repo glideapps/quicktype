@@ -79,6 +79,10 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         return true;
     }
 
+    get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
     protected get rendererClass(): new (
         graph: TypeGraph,
         leadingComments: string[] | undefined,

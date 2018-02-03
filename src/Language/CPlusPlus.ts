@@ -70,6 +70,10 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
         ]);
     }
 
+    get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
     protected get rendererClass(): new (
         graph: TypeGraph,
         leadingComments: string[] | undefined,

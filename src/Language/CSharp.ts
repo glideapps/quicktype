@@ -67,6 +67,10 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         return { date: "date-time", time: "date-time", dateTime: "date-time" };
     }
 
+    get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
     protected get rendererClass(): new (
         graph: TypeGraph,
         leadingComments: string[] | undefined,
