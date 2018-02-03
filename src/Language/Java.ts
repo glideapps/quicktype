@@ -11,7 +11,8 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-    directlyReachableSingleNamedType
+    directlyReachableSingleNamedType,
+    ClassProperty
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -223,70 +224,70 @@ class JavaRenderer extends ConvenienceRenderer {
         return directlyReachableSingleNamedType(type);
     }
 
-    fieldOrMethodName = (methodName: string, topLevelName: Name): Sourcelike => {
+    private fieldOrMethodName(methodName: string, topLevelName: Name): Sourcelike {
         if (this.topLevels.size === 1) {
             return methodName;
         }
         return [topLevelName, capitalize(methodName)];
-    };
+    }
 
-    methodName = (prefix: string, suffix: string, topLevelName: Name): Sourcelike => {
+    private methodName(prefix: string, suffix: string, topLevelName: Name): Sourcelike {
         if (this.topLevels.size === 1) {
             return [prefix, suffix];
         }
         return [prefix, topLevelName, suffix];
-    };
+    }
 
-    decoderName = (topLevelName: Name): Sourcelike => {
+    private decoderName(topLevelName: Name): Sourcelike {
         return this.fieldOrMethodName("fromJsonString", topLevelName);
-    };
+    }
 
-    encoderName = (topLevelName: Name): Sourcelike => {
+    private encoderName(topLevelName: Name): Sourcelike {
         return this.fieldOrMethodName("toJsonString", topLevelName);
-    };
+    }
 
-    readerGetterName = (topLevelName: Name): Sourcelike => {
+    private readerGetterName(topLevelName: Name): Sourcelike {
         return this.methodName("get", "ObjectReader", topLevelName);
-    };
+    }
 
-    writerGetterName = (topLevelName: Name): Sourcelike => {
+    private writerGetterName(topLevelName: Name): Sourcelike {
         return this.methodName("get", "ObjectWriter", topLevelName);
-    };
+    }
 
-    startFile(basename: Sourcelike): void {
+    protected startFile(basename: Sourcelike): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         // FIXME: The filenames should actually be Sourcelikes, too
         this._currentFilename = `${this.sourcelikeToString(basename)}.java`;
     }
 
-    finishFile(): void {
+    protected finishFile(): void {
         super.finishFile(defined(this._currentFilename));
         this._currentFilename = undefined;
     }
 
-    emitPackageAndImports = (imports: string[]): void => {
+    protected emitPackageAndImports(imports: string[]): void {
         const allImports = ["java.util.Map"].concat(this._justTypes ? [] : imports);
         this.emitLine("package ", this._packageName, ";");
         this.ensureBlankLine();
         for (const pkg of allImports) {
             this.emitLine("import ", pkg, ";");
         }
-    };
+    }
 
-    emitFileHeader = (fileName: Sourcelike, imports: string[]): void => {
+    protected emitFileHeader(fileName: Sourcelike, imports: string[]): void {
         this.startFile(fileName);
         this.ensureBlankLine();
         this.emitPackageAndImports(imports);
         this.ensureBlankLine();
-    };
+    }
 
-    emitBlock = (line: Sourcelike, f: () => void): void => {
+    protected emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
         this.emitLine("}");
-    };
+    }
 
-    javaType = (reference: boolean, t: Type, withIssues: boolean = false): Sourcelike => {
+    protected javaType(reference: boolean, t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Object"),
@@ -305,9 +306,9 @@ class JavaRenderer extends ConvenienceRenderer {
                 return this.nameForNamedType(unionType);
             }
         );
-    };
+    }
 
-    javaTypeWithoutGenerics = (reference: boolean, t: Type): Sourcelike => {
+    protected javaTypeWithoutGenerics(reference: boolean, t: Type): Sourcelike {
         if (t instanceof ArrayType) {
             return [this.javaTypeWithoutGenerics(false, t.items), "[]"];
         } else if (t instanceof MapType) {
@@ -319,22 +320,38 @@ class JavaRenderer extends ConvenienceRenderer {
         } else {
             return this.javaType(reference, t);
         }
-    };
+    }
 
-    emitClassDefinition = (c: ClassType, className: Name): void => {
-        this.emitFileHeader(className, ["com.fasterxml.jackson.annotation.*"]);
+    protected emitClassAttributes(c: ClassType, _className: Name): void {
         if (c.properties.isEmpty() && !this._justTypes) {
             this.emitLine("@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)");
         }
+    }
+
+    protected emitAccessorAttributes(
+        _c: ClassType,
+        _className: Name,
+        _propertyName: Name,
+        jsonName: string,
+        _p: ClassProperty,
+        _isSetter: boolean
+    ): void {
+        if (!this._justTypes) {
+            this.emitLine('@JsonProperty("', stringEscape(jsonName), '")');
+        }
+    }
+
+    protected emitClassDefinition(c: ClassType, className: Name): void {
+        this.emitFileHeader(className, ["com.fasterxml.jackson.annotation.*"]);
         this.emitBlock(["public class ", className], () => {
             this.forEachClassProperty(c, "none", (name, _, p) => {
                 this.emitLine("private ", this.javaType(false, p.type, true), " ", name, ";");
             });
             this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
-                if (!this._justTypes) this.emitLine('@JsonProperty("', stringEscape(jsonName), '")');
+                this.emitAccessorAttributes(c, className, name, jsonName, p, false);
                 const rendered = this.javaType(false, p.type);
                 this.emitLine("public ", rendered, " get", modifySource(capitalize, name), "() { return ", name, "; }");
-                if (!this._justTypes) this.emitLine('@JsonProperty("', stringEscape(jsonName), '")');
+                this.emitAccessorAttributes(c, className, name, jsonName, p, true);
                 this.emitLine(
                     "public void set",
                     modifySource(capitalize, name),
@@ -347,20 +364,20 @@ class JavaRenderer extends ConvenienceRenderer {
             });
         });
         this.finishFile();
-    };
+    }
 
-    unionField = (
+    protected unionField(
         u: UnionType,
         t: Type,
         withIssues: boolean = false
-    ): { fieldType: Sourcelike; fieldName: Sourcelike } => {
+    ): { fieldType: Sourcelike; fieldName: Sourcelike } {
         const fieldType = this.javaType(true, t, withIssues);
         // FIXME: "Value" should be part of the name.
         const fieldName = [this.nameForUnionMember(u, t), "Value"];
         return { fieldType, fieldName };
-    };
+    }
 
-    emitUnionDefinition = (u: UnionType, unionName: Name): void => {
+    protected emitUnionDefinition(u: UnionType, unionName: Name): void {
         const tokenCase = (tokenType: string): void => {
             this.emitLine("case ", tokenType, ":");
         };
@@ -467,9 +484,9 @@ class JavaRenderer extends ConvenienceRenderer {
             });
         });
         this.finishFile();
-    };
+    }
 
-    emitEnumDefinition = (e: EnumType, enumName: Name): void => {
+    protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitFileHeader(enumName, ["java.io.IOException", "com.fasterxml.jackson.annotation.*"]);
         const caseNames: Sourcelike[] = [];
         this.forEachEnumCase(e, "none", name => {
@@ -499,9 +516,9 @@ class JavaRenderer extends ConvenienceRenderer {
             });
         });
         this.finishFile();
-    };
+    }
 
-    emitConverterClass = (): void => {
+    protected emitConverterClass(): void {
         this.startFile("Converter");
         this.ensureBlankLine();
         if (this.leadingComments !== undefined) {
@@ -594,7 +611,7 @@ class JavaRenderer extends ConvenienceRenderer {
             });
         });
         this.finishFile();
-    };
+    }
 
     protected emitSourceStructure(): void {
         if (!this._justTypes) {

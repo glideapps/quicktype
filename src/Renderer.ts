@@ -174,7 +174,7 @@ export abstract class Renderer {
         return assignNames(this.setUpNaming());
     }
 
-    finishFile(filename: string): void {
+    protected finishFile(filename: string): void {
         assert(this._emitted.length > 0, `Tried to emit empty file ${filename}`);
         assert(!this._finishedFiles.has(filename), `Tried to emit file ${filename} more than once`);
         const source = sourcelikeToSource(this._emitted);
