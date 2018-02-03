@@ -14,14 +14,8 @@
     "jsx-no-multiline-js": false,
     "label-position": true,
     "max-line-length": false,
-    "member-ordering": [
-      true,
-      // "public-before-private",
-      "static-before-instance"
-      //"variables-before-functions"
-    ],
+    "member-ordering": [true, "static-before-instance"],
 
-    // TODO Turn this back on eventually
     "no-any": false,
 
     "no-arg": true,

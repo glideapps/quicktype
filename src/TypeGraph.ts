@@ -224,9 +224,9 @@ export class TypeGraph {
         ).finish();
     }
 
-    garbageCollect(): TypeGraph {
+    garbageCollect(alphabetizeProperties: boolean): TypeGraph {
         // console.log("GC");
-        return new GraphRewriteBuilder(this, NoStringTypeMapping, true, [], (_t, _b) =>
+        return new GraphRewriteBuilder(this, NoStringTypeMapping, alphabetizeProperties, [], (_t, _b) =>
             panic("This shouldn't be called")
         ).finish();
     }
