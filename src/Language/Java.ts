@@ -47,6 +47,10 @@ export default class JavaTargetLanguage extends TargetLanguage {
         this.setOptions([this._packageOption, this._justTypesOption]);
     }
 
+    get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
     protected get rendererClass(): new (
         graph: TypeGraph,
         leadingComments: string[] | undefined,

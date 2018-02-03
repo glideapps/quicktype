@@ -95,4 +95,8 @@ export abstract class TargetLanguage {
     get supportsOptionalClassProperties(): boolean {
         return false;
     }
+
+    get supportsUnionsWithBothNumberTypes(): boolean {
+        return false;
+    }
 }

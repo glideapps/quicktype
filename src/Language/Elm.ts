@@ -43,6 +43,10 @@ export default class ElmTargetLanguage extends TargetLanguage {
         return true;
     }
 
+    get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
     protected get rendererClass(): new (
         graph: TypeGraph,
         leadingComments: string[] | undefined,
@@ -89,7 +93,8 @@ const forbiddenNames = [
     "Int",
     "True",
     "False",
-    "String"
+    "String",
+    "Float"
 ];
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
@@ -486,10 +491,12 @@ class ElmRenderer extends ConvenienceRenderer {
     };
 
     private emitUnionFunctions = (u: UnionType, unionName: Name): void => {
-        // We need arrays first, then strings.
+        // We need arrays first, then strings, and integers before doubles.
         function sortOrder(_: Name, t: Type): string {
             if (t.kind === "array") {
                 return "  array";
+            } else if (t.kind === "double") {
+                return " xdouble";
             } else if (t.isPrimitive()) {
                 return " " + t.kind;
             }

@@ -118,7 +118,12 @@ function makeImmutablePath(path: Ref): List<any> {
     return path.map(pe => fromJS(pe));
 }
 
-export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string, rootJson: any): TypeRef {
+export function schemaToType(
+    typeBuilder: TypeGraphBuilder,
+    topLevelName: string,
+    rootJson: any,
+    conflateNumbers: boolean
+): TypeRef {
     const root = checkStringMap(rootJson);
     let typeForPath = Map<List<any>, TypeRef>();
 
@@ -266,7 +271,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
             const types = cases.map(
                 (t, index) => toType(checkStringMap(t), path.push({ kind, index } as any), typeNames).deref()[0]
             );
-            return unifyTypes(OrderedSet(types), typeNames, typeBuilder, true, true);
+            return unifyTypes(OrderedSet(types), typeNames, typeBuilder, true, true, conflateNumbers);
         }
 
         if (schema.$ref !== undefined) {
@@ -281,7 +286,7 @@ export function schemaToType(typeBuilder: TypeGraphBuilder, topLevelName: string
                 return fromTypeName(schema, path, typeNames, defined(jsonTypes.first()));
             } else {
                 const types = jsonTypes.map(n => fromTypeName(schema, path, typeNames, n).deref()[0]);
-                return unifyTypes(types, typeNames, typeBuilder, true, true);
+                return unifyTypes(types, typeNames, typeBuilder, true, true, conflateNumbers);
             }
         } else if (schema.oneOf !== undefined) {
             return convertOneOrAnyOf(schema.oneOf, PathElementKind.OneOf);

@@ -134,6 +134,7 @@ export class Run {
     private makeGraph = (): TypeGraph => {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = targetLanguage.stringTypeMapping;
+        const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
         const typeBuilder = new TypeGraphBuilder(
             stringTypeMapping,
             this._options.alphabetizeProperties,
@@ -142,7 +143,7 @@ export class Run {
 
         // JSON Schema
         Map(this._allInputs.schemas).forEach((schema, name) => {
-            typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema));
+            typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema, conflateNumbers));
         });
 
         // GraphQL
@@ -170,13 +171,13 @@ export class Run {
         const originalGraph = typeBuilder.finish();
         let graph = originalGraph;
         if (this._options.combineClasses) {
-            graph = combineClasses(graph, stringTypeMapping, this._options.alphabetizeProperties);
+            graph = combineClasses(graph, stringTypeMapping, this._options.alphabetizeProperties, conflateNumbers);
         }
         if (doInferEnums) {
             graph = inferEnums(graph, stringTypeMapping);
         }
         if (this._options.inferMaps) {
-            graph = inferMaps(graph, stringTypeMapping);
+            graph = inferMaps(graph, stringTypeMapping, conflateNumbers);
         }
         graph = noneToAny(graph, stringTypeMapping);
         if (!targetLanguage.supportsOptionalClassProperties) {

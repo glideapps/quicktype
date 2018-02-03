@@ -132,7 +132,12 @@ export const ElmLanguage: Language = {
     "nst-test-suite.json",
     "keywords.json" // stack overflow
   ],
-  skipSchema: [], // All of them currently fail, so we don't even run it.
+  skipSchema: [
+    "union-list.schema", // recursion
+    "list.schema", // recursion
+    "mutually-recursive.schema", // recursion
+    "keyword-unions.schema" // can't handle "hasOwnProperty" for some reason
+  ],
   rendererOptions: {},
   quickTestRendererOptions: [{ "array-type": "list" }]
 };
