@@ -89,7 +89,8 @@ const forbiddenNames = [
     "Int",
     "True",
     "False",
-    "String"
+    "String",
+    "Float"
 ];
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
