@@ -6,7 +6,7 @@ import CSharpTargetLanguage from "./CSharp";
 import GoTargetLanguage from "./Golang";
 import CPlusPlusTargetLanguage from "./CPlusPlus";
 import ObjectiveCTargetLanguage from "./Objective-C";
-import JavaTargetLanguage from "./Java";
+import { JavaTargetLanguage } from "./Java";
 import SimpleTypesTargetLanguage from "./SimpleTypes";
 import TypeScriptTargetLanguage from "./TypeScript";
 import SwiftTargetLanguage from "./Swift";

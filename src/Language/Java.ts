@@ -38,7 +38,7 @@ import { BooleanOption, StringOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined, assert } from "../Support";
 
-export default class JavaTargetLanguage extends TargetLanguage {
+export class JavaTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
     // FIXME: Do this via a configurable named eventually.
     private readonly _packageOption = new StringOption("package", "Generated package name", "NAME", "io.quicktype");
@@ -173,7 +173,7 @@ function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
     );
 }
 
-class JavaRenderer extends ConvenienceRenderer {
+export class JavaRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
 
     constructor(
@@ -343,6 +343,7 @@ class JavaRenderer extends ConvenienceRenderer {
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitFileHeader(className, ["com.fasterxml.jackson.annotation.*"]);
+        this.emitClassAttributes(c, className);
         this.emitBlock(["public class ", className], () => {
             this.forEachClassProperty(c, "none", (name, _, p) => {
                 this.emitLine("private ", this.javaType(false, p.type, true), " ", name, ";");
@@ -619,9 +620,9 @@ class JavaRenderer extends ConvenienceRenderer {
         }
         this.forEachNamedType(
             "leading-and-interposing",
-            this.emitClassDefinition,
-            this.emitEnumDefinition,
-            this.emitUnionDefinition
+            (c, n) => this.emitClassDefinition(c, n),
+            (e, n) => this.emitEnumDefinition(e, n),
+            (u, n) => this.emitUnionDefinition(u, n)
         );
     }
 }
