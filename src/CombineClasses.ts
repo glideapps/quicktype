@@ -95,7 +95,8 @@ function tryAddToClique(c: ClassType, clique: Clique): boolean {
 export function combineClasses(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
-    alphabetizeProperties: boolean
+    alphabetizeProperties: boolean,
+    conflateNumbers: boolean
 ): TypeGraph {
     let unprocessedClasses = graph
         .allNamedTypesSeparated()
@@ -132,7 +133,7 @@ export function combineClasses(
     ): TypeRef {
         assert(clique.size > 0, "Clique can't be empty");
         const allNames = clique.map(c => c.getNames());
-        return unifyTypes(clique, typeNamesUnion(allNames), builder, false, false, forwardingRef);
+        return unifyTypes(clique, typeNamesUnion(allNames), builder, false, false, conflateNumbers, forwardingRef);
     }
 
     return graph.rewrite(stringTypeMapping, alphabetizeProperties, cliques, makeCliqueClass);

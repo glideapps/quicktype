@@ -129,7 +129,11 @@ export abstract class TypeBuilder {
     protected readonly types: (Type | undefined)[] = [];
     private readonly typeNames: (TypeNames | undefined)[] = [];
 
-    constructor(private readonly _stringTypeMapping: StringTypeMapping, readonly alphabetizeProperties: boolean, private readonly _allPropertiesOptional: boolean) {}
+    constructor(
+        private readonly _stringTypeMapping: StringTypeMapping,
+        readonly alphabetizeProperties: boolean,
+        private readonly _allPropertiesOptional: boolean
+    ) {}
 
     addTopLevel(name: string, tref: TypeRef): void {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
@@ -624,6 +628,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
     constructor(
         protected readonly typeBuilder: TBuilder,
         protected readonly typeNames: TypeNames,
+        private readonly _conflateNumbers: boolean,
         protected readonly forwardingRef?: TypeRef
     ) {}
 
@@ -701,7 +706,8 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         }
         if (this._haveDouble) {
             types.push(this.typeBuilder.getPrimitiveType("double", this.forwardingRef));
-        } else if (this._haveInteger) {
+        }
+        if (this._haveInteger && !(this._conflateNumbers && this._haveDouble)) {
             types.push(this.typeBuilder.getPrimitiveType("integer", this.forwardingRef));
         }
         this._stringTypes.forEach(kind => {

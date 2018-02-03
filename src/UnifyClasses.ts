@@ -40,10 +40,11 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
         typeNames: TypeNames,
         private readonly _makeEnums: boolean,
         private readonly _makeClassesFixed: boolean,
+        conflateNumbers: boolean,
         forwardingRef: TypeRef | undefined,
         private readonly _unifyTypes: (typesToUnify: TypeRef[], typeNames: TypeNames) => TypeRef
     ) {
-        super(typeBuilder, typeNames, forwardingRef);
+        super(typeBuilder, typeNames, conflateNumbers, forwardingRef);
     }
 
     protected makeEnum(enumCases: string[], counts: { [name: string]: number }): TypeRef {
@@ -100,6 +101,7 @@ export function unifyTypes(
     typeBuilder: TypeBuilder & TypeLookerUp,
     makeEnums: boolean,
     makeClassesFixed: boolean,
+    conflateNumbers: boolean,
     forwardingRef?: TypeRef
 ): TypeRef {
     if (types.isEmpty()) {
@@ -118,9 +120,17 @@ export function unifyTypes(
         typeNames,
         makeEnums,
         makeClassesFixed,
+        conflateNumbers,
         forwardingRef,
         (trefs, names) =>
-            unifyTypes(Set(trefs.map(tref => tref.deref()[0])), names, typeBuilder, makeEnums, makeClassesFixed)
+            unifyTypes(
+                Set(trefs.map(tref => tref.deref()[0])),
+                names,
+                typeBuilder,
+                makeEnums,
+                makeClassesFixed,
+                conflateNumbers
+            )
     );
 
     const addType = (t: Type): void => {

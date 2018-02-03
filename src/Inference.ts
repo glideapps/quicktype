@@ -41,7 +41,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         private readonly _cjson: CompressedJSON,
         forwardingRef?: TypeRef
     ) {
-        super(typeBuilder, typeNames, forwardingRef);
+        super(typeBuilder, typeNames, true, forwardingRef);
     }
 
     setNumValues = (n: number): void => {
