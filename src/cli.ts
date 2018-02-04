@@ -51,6 +51,7 @@ export interface CLIOptions {
     template?: string;
     out?: string;
     markovInputFilename?: string;
+    findSimilarClassesSchema?: string;
 
     noMaps: boolean;
     noEnums: boolean;
@@ -242,6 +243,7 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         version: opts.version || false,
         out: opts.out,
         markovInputFilename: opts.markovInputFilename,
+        findSimilarClassesSchema: opts.findSimilarClassesSchema,
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         graphqlServerHeader: opts.graphqlServerHeader,
@@ -354,6 +356,12 @@ const optionDefinitions: OptionDefinition[] = [
         description: "Markov corpus filename."
     },
     {
+        name: "find-similar-classes-schema",
+        type: String,
+        typeLabel: "FILE",
+        description: "Base schema for finding similar classes"
+    },
+    {
         name: "quiet",
         type: Boolean,
         description: "Don't show issues in the generated code."
@@ -391,7 +399,7 @@ const sectionsBeforeRenderers: UsageSection[] = [
     {
         header: "Options",
         optionList: optionDefinitions,
-        hide: ["no-render"]
+        hide: ["no-render", "find-similar-classes-schema"]
     }
 ];
 
@@ -609,6 +617,11 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             handlebarsTemplate = fs.readFileSync(options.template, "utf8");
         }
 
+        let findSimilarClassesSchema: string | undefined = undefined;
+        if (options.findSimilarClassesSchema !== undefined) {
+            findSimilarClassesSchema = fs.readFileSync(options.findSimilarClassesSchema, "utf8");
+        }
+
         let run = new Run({
             lang: options.lang,
             sources,
@@ -620,6 +633,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             noRender: options.noRender,
             rendererOptions: options.rendererOptions,
             handlebarsTemplate,
+            findSimilarClassesSchema,
             outputFilename: options.out !== undefined ? path.basename(options.out) : undefined
         });
 

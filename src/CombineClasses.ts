@@ -92,15 +92,10 @@ function tryAddToClique(c: ClassType, clique: Clique): boolean {
     return false;
 }
 
-export function combineClasses(
-    graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
-    alphabetizeProperties: boolean,
-    conflateNumbers: boolean
-): TypeGraph {
+export function findSimilarityCliques(graph: TypeGraph, includeFixedClasses: boolean): ClassType[][] {
     let unprocessedClasses = graph
         .allNamedTypesSeparated()
-        .classes.filter(c => !c.isFixed)
+        .classes.filter(c => includeFixedClasses || !c.isFixed)
         .toArray();
     const cliques: ClassType[][] = [];
 
@@ -125,6 +120,17 @@ export function combineClasses(
 
         unprocessedClasses = classesLeft;
     }
+
+    return cliques;
+}
+
+export function combineClasses(
+    graph: TypeGraph,
+    stringTypeMapping: StringTypeMapping,
+    alphabetizeProperties: boolean,
+    conflateNumbers: boolean
+): TypeGraph {
+    const cliques = findSimilarityCliques(graph, false);
 
     function makeCliqueClass(
         clique: Set<ClassType>,
