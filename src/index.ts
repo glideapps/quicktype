@@ -8,7 +8,7 @@ import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
 import { assertNever } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
-import { combineClasses } from "./CombineClasses";
+import { combineClasses, findSimilarityCliques } from "./CombineClasses";
 import { schemaToType } from "./JSONSchemaInput";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
@@ -73,6 +73,7 @@ export interface Options {
     lang: string;
     sources: TypeSource[];
     handlebarsTemplate: string | undefined;
+    findSimilarClassesSchema: string | undefined;
     inferMaps: boolean;
     inferEnums: boolean;
     alphabetizeProperties: boolean;
@@ -89,6 +90,7 @@ const defaultOptions: Options = {
     lang: "ts",
     sources: [],
     handlebarsTemplate: undefined,
+    findSimilarClassesSchema: undefined,
     inferMaps: true,
     inferEnums: true,
     alphabetizeProperties: false,
@@ -141,6 +143,12 @@ export class Run {
             this._options.allPropertiesOptional
         );
 
+        if (this._options.findSimilarClassesSchema !== undefined) {
+            const schema = JSON.parse(this._options.findSimilarClassesSchema);
+            const name = "ComparisonBaseRoot";
+            typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema, conflateNumbers));
+        }
+
         // JSON Schema
         Map(this._allInputs.schemas).forEach((schema, name) => {
             typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema, conflateNumbers));
@@ -169,6 +177,11 @@ export class Run {
         }
 
         const originalGraph = typeBuilder.finish();
+
+        if (this._options.findSimilarClassesSchema !== undefined) {
+            return originalGraph;
+        }
+
         let graph = originalGraph;
         if (this._options.combineClasses) {
             graph = combineClasses(graph, stringTypeMapping, this._options.alphabetizeProperties, conflateNumbers);
@@ -197,6 +210,13 @@ export class Run {
 
         return graph;
     };
+
+    private makeSimpleTextResult(lines: string[]): OrderedMap<string, SerializedRenderResult> {
+        return OrderedMap([[this._options.outputFilename, { lines, annotations: List() }]] as [
+            string,
+            SerializedRenderResult
+        ][]);
+    }
 
     public run = async (): Promise<OrderedMap<string, SerializedRenderResult>> => {
         const targetLanguage = getTargetLanguage(this._options.lang);
@@ -229,10 +249,21 @@ export class Run {
         const graph = this.makeGraph();
 
         if (this._options.noRender) {
-            return OrderedMap([[this._options.outputFilename, { lines: ["Done.", ""], annotations: List() }]] as [
-                string,
-                SerializedRenderResult
-            ][]);
+            return this.makeSimpleTextResult(["Done.", ""]);
+        }
+
+        if (this._options.findSimilarClassesSchema !== undefined) {
+            const cliques = findSimilarityCliques(graph, true);
+            const lines: string[] = [];
+            if (cliques.length === 0) {
+                lines.push("No similar classes found.");
+            } else {
+                for (let clique of cliques) {
+                    lines.push(`similar: ${clique.map(c => c.getCombinedName()).join(", ")}`);
+                }
+            }
+            lines.push("");
+            return this.makeSimpleTextResult(lines);
         }
 
         if (this._options.handlebarsTemplate !== undefined) {
