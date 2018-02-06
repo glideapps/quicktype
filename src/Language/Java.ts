@@ -1,5 +1,7 @@
 "use strict";
 
+import { Map } from "immutable";
+
 import {
     TypeKind,
     Type,
@@ -15,7 +17,7 @@ import {
     ClassProperty
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import { Sourcelike, maybeAnnotated } from "../Source";
 import {
     utf16LegalizeCharacters,
     escapeNonPrintableMapper,
@@ -31,7 +33,7 @@ import {
     firstUpperWordStyle,
     allLowerWordStyle
 } from "../Strings";
-import { Name, Namer, funPrefixNamer } from "../Naming";
+import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption } from "../RendererOptions";
@@ -175,6 +177,7 @@ function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
 
 export class JavaRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
+    private _gettersAndSettersForPropertyName: Map<Name, [Name, Name]>;
 
     constructor(
         graph: TypeGraph,
@@ -183,6 +186,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         private readonly _justTypes: boolean
     ) {
         super(graph, leadingComments);
+        this._gettersAndSettersForPropertyName = Map();
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -222,6 +226,30 @@ export class JavaRenderer extends ConvenienceRenderer {
         // we have to define a class just for the `FromJson` method, in
         // emitFromJsonForTopLevel.
         return directlyReachableSingleNamedType(type);
+    }
+
+    protected getterAndSetterNamesForProperty(
+        _c: ClassType,
+        _className: Name,
+        _p: ClassProperty,
+        _jsonName: string,
+        name: Name
+    ): [Name, Name] {
+        const getterName = new DependencyName(propertyNamingFunction, lookup => `get_${lookup(name)}`);
+        const setterName = new DependencyName(propertyNamingFunction, lookup => `set_${lookup(name)}`);
+        return [getterName, setterName];
+    }
+
+    protected propertyDependencyNames(
+        c: ClassType,
+        className: Name,
+        p: ClassProperty,
+        jsonName: string,
+        name: Name
+    ): Name[] {
+        const getterAndSetterNames = this.getterAndSetterNamesForProperty(c, className, p, jsonName, name);
+        this._gettersAndSettersForPropertyName = this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
+        return getterAndSetterNames;
     }
 
     private fieldOrMethodName(methodName: string, topLevelName: Name): Sourcelike {
@@ -349,19 +377,12 @@ export class JavaRenderer extends ConvenienceRenderer {
                 this.emitLine("private ", this.javaType(false, p.type, true), " ", name, ";");
             });
             this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
+                const [getterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
                 this.emitAccessorAttributes(c, className, name, jsonName, p, false);
                 const rendered = this.javaType(false, p.type);
-                this.emitLine("public ", rendered, " get", modifySource(capitalize, name), "() { return ", name, "; }");
+                this.emitLine("public ", rendered, " ", getterName, "() { return ", name, "; }");
                 this.emitAccessorAttributes(c, className, name, jsonName, p, true);
-                this.emitLine(
-                    "public void set",
-                    modifySource(capitalize, name),
-                    "(",
-                    rendered,
-                    " value) { this.",
-                    name,
-                    " = value; }"
-                );
+                this.emitLine("public void ", setterName, "(", rendered, " value) { this.", name, " = value; }");
             });
         });
         this.finishFile();

@@ -240,6 +240,16 @@ export abstract class ConvenienceRenderer extends Renderer {
         return new SimpleName(OrderedSet([jsonName, alternative]), namer);
     }
 
+    protected propertyDependencyNames(
+        _c: ClassType,
+        _className: Name,
+        _p: ClassProperty,
+        _jsonName: string,
+        _name: Name
+    ): Name[] {
+        return [];
+    }
+
     private addPropertyNames = (c: ClassType, className: Name): void => {
         const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
             this.forbiddenForClassProperties(c, className),
@@ -255,7 +265,11 @@ export abstract class ConvenienceRenderer extends Renderer {
                 if (ns === undefined) {
                     ns = new Namespace(c.getCombinedName(), this._globalNamespace, forbiddenNamespaces, forbiddenNames);
                 }
-                return ns.add(name);
+                ns.add(name);
+                for (const depName of this.propertyDependencyNames(c, className, p, jsonName, name)) {
+                    ns.add(depName);
+                }
+                return name;
             })
             .filter(v => v !== undefined) as OrderedMap<string, SimpleName>;
         this._propertyNamesStoreView.set(c, names);
