@@ -138,15 +138,15 @@ export abstract class ConvenienceRenderer extends Renderer {
             this._nameStoreView.setForTopLevel(name, this.nameForTopLevel(t, name));
         });
         classes.forEach((c: ClassType) => {
-            const name = this.addNamedForNamedType(c);
+            const name = this.addNameForNamedType(c);
             this.addPropertyNames(c, name);
         });
         enums.forEach((e: EnumType) => {
-            const name = this.addNamedForNamedType(e);
+            const name = this.addNameForNamedType(e);
             this.addEnumCaseNames(e, name);
         });
         namedUnions.forEach((u: UnionType) => {
-            const name = this.addNamedForNamedType(u);
+            const name = this.addNameForNamedType(u);
             this.addUnionMemberNames(u, name);
         });
         return OrderedSet([this._globalForbiddenNamespace, this._globalNamespace]).union(
@@ -184,7 +184,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return named;
     };
 
-    private addNamedForNamedType = (type: Type): Name => {
+    private addNameForNamedType = (type: Type): Name => {
         const existing = this._nameStoreView.tryGet(type);
         if (existing !== undefined) return existing;
         const named = this._globalNamespace.add(new SimpleName(type.getProposedNames(), this._namedTypeNamer));
