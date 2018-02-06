@@ -224,6 +224,22 @@ export abstract class ConvenienceRenderer extends Renderer {
         return { forbiddenNames: Set(forbiddenNames), forbiddenNamespaces };
     }
 
+    protected nameForProperty(c: ClassType, _className: Name, p: ClassProperty, jsonName: string): Name | undefined {
+        // FIXME: This alternative should really depend on what the
+        // actual name of the class ends up being.  We can do this
+        // with a DependencyName.
+        // Also, we currently don't have any languages where properties
+        // are global, so collisions here could only occur where two
+        // properties of the same class have the same name, in which case
+        // the alternative would also be the same, i.e. useless.  But
+        // maybe we'll need global properties for some weird language at
+        // some point.
+        const alternative = `${c.getCombinedName()}_${jsonName}`;
+        const namer = this.namerForClassProperty(c, p);
+        if (namer === null) return undefined;
+        return new SimpleName(OrderedSet([jsonName, alternative]), namer);
+    }
+
     private addPropertyNames = (c: ClassType, className: Name): void => {
         const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
             this.forbiddenForClassProperties(c, className),
@@ -233,23 +249,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         let ns: Namespace | undefined;
 
         const names = c.sortedProperties
-            .map((p, name) => {
-                // FIXME: This alternative should really depend on what the
-                // actual name of the class ends up being.  We can do this
-                // with a DependencyName.
-                // Also, we currently don't have any languages where properties
-                // are global, so collisions here could only occur where two
-                // properties of the same class have the same name, in which case
-                // the alternative would also be the same, i.e. useless.  But
-                // maybe we'll need global properties for some weird language at
-                // some point.
-                const alternative = `${c.getCombinedName()}_${name}`;
-                const namer = this.namerForClassProperty(c, p);
-                if (namer === null) return undefined;
+            .map((p, jsonName) => {
+                const name = this.nameForProperty(c, className, p, jsonName);
+                if (name === undefined) return undefined;
                 if (ns === undefined) {
                     ns = new Namespace(c.getCombinedName(), this._globalNamespace, forbiddenNamespaces, forbiddenNames);
                 }
-                return ns.add(new SimpleName(OrderedSet([name, alternative]), namer));
+                return ns.add(name);
             })
             .filter(v => v !== undefined) as OrderedMap<string, SimpleName>;
         this._propertyNamesStoreView.set(c, names);
