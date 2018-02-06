@@ -228,7 +228,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         return directlyReachableSingleNamedType(type);
     }
 
-    protected getterAndSetterNamesForProperty(
+    protected makeNamesForPropertyGetterAndSetter(
         _c: ClassType,
         _className: Name,
         _p: ClassProperty,
@@ -240,14 +240,14 @@ export class JavaRenderer extends ConvenienceRenderer {
         return [getterName, setterName];
     }
 
-    protected propertyDependencyNames(
+    protected makePropertyDependencyNames(
         c: ClassType,
         className: Name,
         p: ClassProperty,
         jsonName: string,
         name: Name
     ): Name[] {
-        const getterAndSetterNames = this.getterAndSetterNamesForProperty(c, className, p, jsonName, name);
+        const getterAndSetterNames = this.makeNamesForPropertyGetterAndSetter(c, className, p, jsonName, name);
         this._gettersAndSettersForPropertyName = this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
         return getterAndSetterNames;
     }

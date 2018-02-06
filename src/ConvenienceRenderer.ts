@@ -74,11 +74,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         return { names: [], includeGlobalForbidden: false };
     }
 
-    protected topLevelDependencyNames(_t: Type, _topLevelName: Name): DependencyName[] {
+    protected makeTopLevelDependencyNames(_t: Type, _topLevelName: Name): DependencyName[] {
         return [];
     }
 
-    protected namedTypeDependencyNames(_t: Type, _name: Name): DependencyName[] {
+    protected makeNamedTypeDependencyNames(_t: Type, _name: Name): DependencyName[] {
         return [];
     }
 
@@ -135,7 +135,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
         this.topLevels.forEach((t, name) => {
-            this._nameStoreView.setForTopLevel(name, this.nameForTopLevel(t, name));
+            this._nameStoreView.setForTopLevel(name, this.addNameForTopLevel(t, name));
         });
         classes.forEach((c: ClassType) => {
             const name = this.addNameForNamedType(c);
@@ -155,44 +155,54 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     private addDependenciesForNamedType = (type: Type, named: Name): void => {
-        const dependencyNames = this.namedTypeDependencyNames(type, named);
+        const dependencyNames = this.makeNamedTypeDependencyNames(type, named);
         for (const dn of dependencyNames) {
             this._globalNamespace.add(dn);
         }
     };
 
-    private nameForTopLevel = (type: Type, name: string): FixedName => {
-        const maybeNamedType = this.namedTypeToNameForTopLevel(type);
+    protected makeNameForTopLevel(_t: Type, givenName: string, maybeNamedType: Type | undefined): Name {
         let styledName: string;
         if (maybeNamedType !== undefined) {
-            styledName = this._namedTypeNamer.nameStyle(name);
+            styledName = this._namedTypeNamer.nameStyle(givenName);
         } else {
-            styledName = this.topLevelNameStyle(name);
+            styledName = this.topLevelNameStyle(givenName);
         }
 
-        const named = this._globalNamespace.add(new FixedName(styledName));
-        const dependencyNames = this.topLevelDependencyNames(type, named);
+        return new FixedName(styledName);
+    }
+
+    private addNameForTopLevel = (type: Type, givenName: string): Name => {
+        const maybeNamedType = this.namedTypeToNameForTopLevel(type);
+        const name = this.makeNameForTopLevel(type, givenName, maybeNamedType);
+        this._globalNamespace.add(name);
+        const dependencyNames = this.makeTopLevelDependencyNames(type, name);
         for (const dn of dependencyNames) {
             this._globalNamespace.add(dn);
         }
 
         if (maybeNamedType !== undefined) {
-            this.addDependenciesForNamedType(maybeNamedType, named);
-            this._nameStoreView.set(maybeNamedType, named);
+            this.addDependenciesForNamedType(maybeNamedType, name);
+            this._nameStoreView.set(maybeNamedType, name);
         }
 
-        return named;
+        return name;
     };
+
+    protected makeNameForNamedType(t: Type): Name {
+        return new SimpleName(t.getProposedNames(), this._namedTypeNamer);
+    }
 
     private addNameForNamedType = (type: Type): Name => {
         const existing = this._nameStoreView.tryGet(type);
         if (existing !== undefined) return existing;
-        const named = this._globalNamespace.add(new SimpleName(type.getProposedNames(), this._namedTypeNamer));
 
-        this.addDependenciesForNamedType(type, named);
+        const name = this._globalNamespace.add(this.makeNameForNamedType(type));
 
-        this._nameStoreView.set(type, named);
-        return named;
+        this.addDependenciesForNamedType(type, name);
+
+        this._nameStoreView.set(type, name);
+        return name;
     };
 
     private processForbiddenWordsInfo(
@@ -224,7 +234,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         return { forbiddenNames: Set(forbiddenNames), forbiddenNamespaces };
     }
 
-    protected nameForProperty(c: ClassType, _className: Name, p: ClassProperty, jsonName: string): Name | undefined {
+    protected makeNameForProperty(
+        c: ClassType,
+        _className: Name,
+        p: ClassProperty,
+        jsonName: string
+    ): Name | undefined {
         // FIXME: This alternative should really depend on what the
         // actual name of the class ends up being.  We can do this
         // with a DependencyName.
@@ -240,7 +255,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return new SimpleName(OrderedSet([jsonName, alternative]), namer);
     }
 
-    protected propertyDependencyNames(
+    protected makePropertyDependencyNames(
         _c: ClassType,
         _className: Name,
         _p: ClassProperty,
@@ -260,13 +275,13 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         const names = c.sortedProperties
             .map((p, jsonName) => {
-                const name = this.nameForProperty(c, className, p, jsonName);
+                const name = this.makeNameForProperty(c, className, p, jsonName);
                 if (name === undefined) return undefined;
                 if (ns === undefined) {
                     ns = new Namespace(c.getCombinedName(), this._globalNamespace, forbiddenNamespaces, forbiddenNames);
                 }
                 ns.add(name);
-                for (const depName of this.propertyDependencyNames(c, className, p, jsonName, name)) {
+                for (const depName of this.makePropertyDependencyNames(c, className, p, jsonName, name)) {
                     ns.add(depName);
                 }
                 return name;
@@ -275,7 +290,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._propertyNamesStoreView.set(c, names);
     };
 
-    private makeUnionMemberName(u: UnionType, unionName: Name, t: Type): Name {
+    protected makeNameForUnionMember(u: UnionType, unionName: Name, t: Type): Name {
         return new DependencyName(nonNull(this._unionMemberNamer), lookup =>
             this.proposeUnionMemberName(u, unionName, t, lookup)
         );
@@ -298,16 +313,22 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
         let names = Map<Type, Name>();
         u.members.forEach(t => {
-            const name = this.makeUnionMemberName(u, unionName, t);
+            const name = this.makeNameForUnionMember(u, unionName, t);
             names = names.set(t, ns.add(name));
         });
         this._memberNamesStoreView.set(u, names);
     };
 
+    protected makeNameForEnumCase(e: EnumType, _enumName: Name, caseName: string): Name {
+        // FIXME: See the FIXME in `makeNameForProperty`.  We do have global
+        // enum cases, though (in Go), so this is actually useful already.
+        const alternative = `${e.getCombinedName()}_${caseName}`;
+        return new SimpleName(OrderedSet([caseName, alternative]), nonNull(this._enumCaseNamer));
+    }
+
     // FIXME: this is very similar to addPropertyNameds and addUnionMemberNames
     private addEnumCaseNames = (e: EnumType, enumName: Name): void => {
-        const caseNamer = this._enumCaseNamer;
-        if (caseNamer === null) return;
+        if (this._enumCaseNamer === null) return;
 
         const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
             this.forbiddenForEnumCases(e, enumName),
@@ -321,11 +342,8 @@ export abstract class ConvenienceRenderer extends Renderer {
             ns = new Namespace(e.getCombinedName(), this._globalNamespace, forbiddenNamespaces, forbiddenNames);
         }
         let names = Map<string, Name>();
-        e.cases.forEach(name => {
-            // FIXME: See the FIXME in `addPropertyNameds`.  We do have global
-            // enum cases, though (in Go), so this is actually useful already.
-            const alternative = `${e.getCombinedName()}_${name}`;
-            names = names.set(name, ns.add(new SimpleName(OrderedSet([name, alternative]), caseNamer)));
+        e.cases.forEach(caseName => {
+            names = names.set(caseName, ns.add(this.makeNameForEnumCase(e, enumName, caseName)));
         });
         this._caseNamesStoreView.set(e, names);
     };
