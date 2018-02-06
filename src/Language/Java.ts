@@ -38,7 +38,7 @@ import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer"
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { defined, assert } from "../Support";
+import { defined, assert, assertNever } from "../Support";
 
 export class JavaTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
@@ -369,8 +369,26 @@ export class JavaRenderer extends ConvenienceRenderer {
         }
     }
 
+    protected importsForType(t: ClassType | UnionType | EnumType): string[] {
+        if (t instanceof ClassType) {
+            return ["com.fasterxml.jackson.annotation.*"];
+        }
+        if (t instanceof UnionType) {
+            return [
+                "java.io.IOException",
+                "com.fasterxml.jackson.core.*",
+                "com.fasterxml.jackson.databind.*",
+                "com.fasterxml.jackson.databind.annotation.*"
+            ];
+        }
+        if (t instanceof EnumType) {
+            return ["java.io.IOException", "com.fasterxml.jackson.annotation.*"];
+        }
+        return assertNever(t);
+    }
+
     protected emitClassDefinition(c: ClassType, className: Name): void {
-        this.emitFileHeader(className, ["com.fasterxml.jackson.annotation.*"]);
+        this.emitFileHeader(className, this.importsForType(c));
         this.emitClassAttributes(c, className);
         this.emitBlock(["public class ", className], () => {
             this.forEachClassProperty(c, "none", (name, _, p) => {
@@ -435,12 +453,7 @@ export class JavaRenderer extends ConvenienceRenderer {
             this.indent(() => emitDeserializeType(t));
         };
 
-        this.emitFileHeader(unionName, [
-            "java.io.IOException",
-            "com.fasterxml.jackson.core.*",
-            "com.fasterxml.jackson.databind.*",
-            "com.fasterxml.jackson.databind.annotation.*"
-        ]);
+        this.emitFileHeader(unionName, this.importsForType(u));
         if (!this._justTypes) {
             this.emitLine("@JsonDeserialize(using = ", unionName, ".Deserializer.class)");
             this.emitLine("@JsonSerialize(using = ", unionName, ".Serializer.class)");
@@ -509,7 +522,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
-        this.emitFileHeader(enumName, ["java.io.IOException", "com.fasterxml.jackson.annotation.*"]);
+        this.emitFileHeader(enumName, this.importsForType(e));
         const caseNames: Sourcelike[] = [];
         this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
