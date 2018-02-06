@@ -164,6 +164,19 @@ export function declarationsForGraph(
             return;
         }
 
+        /*
+        if (_writeComponents) {
+            componentsGraph.nodes.forEach(types => {
+                console.log(
+                    `scc: ${types
+                        .filter(t => t instanceof ClassType)
+                        .map(t => t.getCombinedName())
+                        .join(", ")}`
+                );
+            });
+        }
+        */
+
         const rootsUnordered = componentsGraph.findRoots();
         const roots = rootsUnordered;
         roots.forEach(component => {

@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, Set, OrderedSet } from "immutable";
+import { Map, Set, OrderedSet, List } from "immutable";
 import { defined, repeated, assert, repeatedCall } from "./Support";
 
 function countComponentGraphNodes(components: number[][]): number {
@@ -191,6 +191,10 @@ export class Graph<T> {
 
     get size(): number {
         return this._nodes.length;
+    }
+
+    get nodes(): List<T> {
+        return List(this._nodes);
     }
 
     findRoots(): OrderedSet<T> {
