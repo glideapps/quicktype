@@ -12,10 +12,12 @@ import TypeScriptTargetLanguage from "./TypeScript";
 import SwiftTargetLanguage from "./Swift";
 import ElmTargetLanguage from "./Elm";
 import JSONSchemaTargetLanguage from "./JSONSchema";
+import RustTargetLanguage from "./Rust";
 
 export const all: TargetLanguage[] = [
     new CSharpTargetLanguage(),
     new GoTargetLanguage(),
+    new RustTargetLanguage(),
     new CPlusPlusTargetLanguage(),
     new ObjectiveCTargetLanguage(),
     new JavaTargetLanguage(),

@@ -29,6 +29,10 @@ RUN apt-get install dotnet-sdk-2.0.0 --assume-yes
 # Install Boost for C++
 RUN apt-get install libboost-all-dev --assume-yes
 
+# Install Rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
 COPY . .

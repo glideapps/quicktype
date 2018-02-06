@@ -67,6 +67,25 @@ export const JavaLanguage: Language = {
   quickTestRendererOptions: []
 };
 
+export const RustLanguage: Language = {
+  name: "rust",
+  base: "test/fixtures/rust",
+  compileCommand: "cargo build",
+  runCommand(sample: string) {
+    return `./target/debug/quick_type_test "${sample}"`;
+  },
+  // FIXME: implement comparing multiple files
+  diffViaSchema: false,
+  allowMissingNull: false,
+  output: "module_under_test.rs",
+  topLevel: "TopLevel",
+  skipJSON: [],
+  skipSchema: [],
+  skipMiscJSON: true,
+  rendererOptions: {},
+  quickTestRendererOptions: []
+};
+
 export const GoLanguage: Language = {
   name: "golang",
   base: "test/fixtures/golang",

@@ -225,6 +225,10 @@ export function isNumeric(codePoint: number): boolean {
     return ["No", "Nd", "Nl"].indexOf(category) >= 0;
 }
 
+export function isLetterOrDigit(codePoint: number): boolean {
+    return isLetter(codePoint) || isDigit(codePoint);
+}
+
 export function isLetterOrUnderscore(codePoint: number): boolean {
     return isLetter(codePoint) || codePoint === 0x5f;
 }
