@@ -101,10 +101,14 @@ export function declarationsForGraph(
     const topDown = canBeForwardDeclared === undefined;
     const declarations: Declaration[] = [];
     let forwardedTypes: Set<Type> = Set();
+    let visitedComponents: Set<OrderedSet<Type>> = Set();
 
     function processGraph(graph: Graph<Type>, _writeComponents: boolean): void {
         const componentsGraph = graph.stronglyConnectedComponents();
         function visitComponent(component: OrderedSet<Type>): void {
+            if (visitedComponents.has(component)) return;
+            visitedComponents = visitedComponents.add(component);
+
             // console.log(`visiting component ${componentName(component)}`);
 
             const declarationNeeded = component.filter(needsDeclaration);
@@ -163,6 +167,19 @@ export function declarationsForGraph(
             });
             return;
         }
+
+        /*
+        if (_writeComponents) {
+            componentsGraph.nodes.forEach(types => {
+                console.log(
+                    `scc: ${types
+                        .filter(t => t instanceof ClassType)
+                        .map(t => t.getCombinedName())
+                        .join(", ")}`
+                );
+            });
+        }
+        */
 
         const rootsUnordered = componentsGraph.findRoots();
         const roots = rootsUnordered;
