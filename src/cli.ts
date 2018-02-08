@@ -27,7 +27,7 @@ import { Readable } from "stream";
 import { panic, assert, defined, withDefault } from "./Support";
 import { introspectServer } from "./GraphQLIntrospection";
 import { getStream } from "./get-stream/index";
-import { train, test } from "./MarkovChain";
+import { train } from "./MarkovChain";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -50,7 +50,7 @@ export interface CLIOptions {
     graphqlServerHeader?: string[];
     template?: string;
     out?: string;
-    markovInputFilename?: string;
+    buildMarkovChain?: string;
     findSimilarClassesSchema?: string;
 
     noMaps: boolean;
@@ -242,7 +242,7 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         quiet: opts.quiet || false,
         version: opts.version || false,
         out: opts.out,
-        markovInputFilename: opts.markovInputFilename,
+        buildMarkovChain: opts.buildMarkovChain,
         findSimilarClassesSchema: opts.findSimilarClassesSchema,
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
@@ -351,9 +351,10 @@ const optionDefinitions: OptionDefinition[] = [
         description: "Make all class properties optional."
     },
     {
-        name: "markov-input-filename",
+        name: "build-markov-chain",
         type: String,
-        description: "Markov corpus filename."
+        typeLabel: "FILE",
+        description: "Markov chain corpus filename."
     },
     {
         name: "find-similar-classes-schema",
@@ -399,7 +400,7 @@ const sectionsBeforeRenderers: UsageSection[] = [
     {
         header: "Options",
         optionList: optionDefinitions,
-        hide: ["no-render", "find-similar-classes-schema"]
+        hide: ["no-render", "build-markov-chain", "find-similar-classes-schema"]
     }
 ];
 
@@ -543,9 +544,11 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             console.log("Visit quicktype.io for more info.");
             return;
         }
-        if (options.markovInputFilename !== undefined) {
-            const mc = train(options.markovInputFilename, 3);
-            test(mc);
+        if (options.buildMarkovChain !== undefined) {
+            const contents = fs.readFileSync(options.buildMarkovChain).toString();
+            const lines = contents.split("\n");
+            const mc = train(lines, 3);
+            console.log(JSON.stringify(mc));
             return;
         }
 
