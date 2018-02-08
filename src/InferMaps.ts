@@ -7,14 +7,36 @@ import { defined, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { unifyTypes } from "./UnifyClasses";
+import { MarkovChain, load, evaluate } from "./MarkovChain";
 
 const mapSizeThreshold = 20;
+
+let markovChain: MarkovChain | undefined = undefined;
+
+function nameProbability(name: string): number {
+    if (markovChain === undefined) {
+        markovChain = load();
+    }
+    return evaluate(markovChain, name);
+}
 
 function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefined {
     // Only classes with a certain number of properties are inferred
     // as maps.
-    if (properties.size < mapSizeThreshold) {
-        return undefined;
+    const numProperties = properties.size;
+    if (numProperties === 0) return undefined;
+
+    if (numProperties < mapSizeThreshold) {
+        const names = properties.keySeq();
+        const product = names.map(nameProbability).reduce((a, b) => a * b, 1);
+        const probability = Math.pow(product, 1 / numProperties);
+        // The idea behind this is to have a probability around 0.0004 for
+        // n=1, up to around 1.0 for n=20.  I.e. when we only have a few
+        // properties, they need to look really weird to infer a map, but
+        // when we have more we'll accept more ordinary names.  The details
+        // of the formula are immaterial because I pulled it out of my ass.
+        const limit = 0.000006 * Math.pow(numProperties + 2, 3.9);
+        if (probability > limit) return undefined;
     }
 
     // FIXME: simplify this - it's no longer necessary with the new
