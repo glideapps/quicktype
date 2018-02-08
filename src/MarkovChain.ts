@@ -123,7 +123,9 @@ function testWord(mc: MarkovChain, word: string): void {
     console.log(`"${word}": ${evaluate(mc, word)}`);
 }
 
-export function test(mc: MarkovChain): void {
+export function test(): void {
+    const mc = load();
+
     testWord(mc, "url");
     testWord(mc, "json");
     testWord(mc, "my_property");
@@ -133,6 +135,16 @@ export function test(mc: MarkovChain): void {
     testWord(mc, "2BTZIqw0ntH9MvilQ3ewNY");
     testWord(mc, "0uBTNdNGb2OY5lou41iYL52LcDq2");
     testWord(mc, "-KpqHmWuDOUnr1hmAhxp");
+    testWord(mc, "granularity");
+    testWord(mc, "coverage");
+    testWord(mc, "postingFrequency");
+    testWord(mc, "dataFrequency");
+    testWord(mc, "units");
+    testWord(mc, "datasetOwner");
+    testWord(mc, "organization");
+    testWord(mc, "timePeriod");
+    testWord(mc, "contactInformation");
+
     testWord(
         mc,
         "\ud83d\udebe \ud83c\udd92 \ud83c\udd93 \ud83c\udd95 \ud83c\udd96 \ud83c\udd97 \ud83c\udd99 \ud83c\udfe7"
