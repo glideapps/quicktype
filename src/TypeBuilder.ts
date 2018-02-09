@@ -164,12 +164,6 @@ export abstract class TypeBuilder {
         creator: (tref: TypeRef) => T,
         names: TypeNames | undefined
     ): TypeRef {
-        if (names !== undefined) {
-            // We need to copy the names here because they're modified
-            // in `gatherNames`, and the caller doesn't guarantee that
-            // this one is unique for this type.
-            names = names.copy();
-        }
         if (forwardingRef !== undefined && forwardingRef.maybeIndex !== undefined) {
             assert(this.types[forwardingRef.maybeIndex] === undefined);
         }
@@ -199,12 +193,13 @@ export abstract class TypeBuilder {
 
     addNames = (tref: TypeRef, names: TypeNames): void => {
         tref.callWhenResolved(index => {
-            const tn = this.typeNames[index];
+            let tn = this.typeNames[index];
             if (tn === undefined) {
-                this.typeNames[index] = names;
+                tn = names;
             } else {
-                tn.add(names);
+                tn = tn.add(names);
             }
+            this.typeNames[index] = tn;
         });
     };
 

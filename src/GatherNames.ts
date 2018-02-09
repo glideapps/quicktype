@@ -10,7 +10,7 @@ import { TypeNames } from "./TypeNames";
 export function gatherNames(graph: TypeGraph): void {
     graph.allTypesUnordered().forEach(t => {
         if (t.hasNames) {
-            t.getNames().clearInferred();
+            graph.setNames(t, t.getNames().clearInferred());
         }
     });
 
@@ -28,7 +28,7 @@ export function gatherNames(graph: TypeGraph): void {
                     alternatives.push(...parentNames.map(pn => `${pn}_${name}_${t.kind}`).toArray());
                 }
             });
-            t.getNames().add(new TypeNames(names, OrderedSet(alternatives), true));
+            graph.setNames(t, t.getNames().add(new TypeNames(names, OrderedSet(alternatives), true)));
         }
         const processedEnry = List([t, names, parentNames]);
         if (processed.has(processedEnry)) return;
