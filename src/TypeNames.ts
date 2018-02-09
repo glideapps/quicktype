@@ -7,14 +7,6 @@ import { panic } from "./Support";
 
 export type NameOrNames = string | TypeNames;
 
-export function makeTypeNames(nameOrNames: NameOrNames, areNamesInferred: boolean): TypeNames {
-    if (typeof nameOrNames === "string") {
-        return new TypeNames(OrderedSet([nameOrNames]), OrderedSet(), areNamesInferred);
-    } else {
-        return nameOrNames as TypeNames;
-    }
-}
-
 // FIXME: In the case of overlapping prefixes and suffixes we will
 // produce a name that includes the overlap twice.  For example, for
 // the names "aaa" and "aaaa" we have the common prefix "aaa" and the

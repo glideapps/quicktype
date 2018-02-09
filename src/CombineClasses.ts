@@ -5,8 +5,7 @@ import { Map, Set, OrderedSet } from "immutable";
 import { ClassType, Type, nonNullTypeCases, ClassProperty } from "./Type";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { assert, panic } from "./Support";
-import { TypeGraph } from "./TypeGraph";
-import { typeNamesUnion } from "./TypeNames";
+import { TypeGraph, combineTypeAttributes } from "./TypeGraph";
 import { unifyTypes } from "./UnifyClasses";
 
 const REQUIRED_OVERLAP = 3 / 4;
@@ -138,8 +137,8 @@ export function combineClasses(
         forwardingRef: TypeRef
     ): TypeRef {
         assert(clique.size > 0, "Clique can't be empty");
-        const allNames = clique.map(c => c.getNames());
-        return unifyTypes(clique, typeNamesUnion(allNames), builder, false, false, conflateNumbers, forwardingRef);
+        const attributes = combineTypeAttributes(clique.map(c => c.getAttributes()).toArray());
+        return unifyTypes(clique, attributes, builder, false, false, conflateNumbers, forwardingRef);
     }
 
     return graph.rewrite(stringTypeMapping, alphabetizeProperties, cliques, makeCliqueClass);

@@ -23,9 +23,14 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 
 import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
-import { TypeAttributeStoreView } from "./TypeGraph";
+import { TypeAttributeStoreView, TypeAttributeKind } from "./TypeGraph";
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
+
+const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName", undefined);
+const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedPropertyNames", undefined);
+const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>("assignedMemberNames", undefined);
+const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedCaseNames", undefined);
 
 export abstract class ConvenienceRenderer extends Renderer {
     private _globalForbiddenNamespace: Namespace;
@@ -119,13 +124,19 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected setUpNaming(): OrderedSet<Namespace> {
-        this._nameStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedName");
+        this._nameStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, assignedNameAttributeKind);
         this._propertyNamesStoreView = new TypeAttributeStoreView(
             this.typeGraph.attributeStore,
-            "assignedPropertyNames"
+            assignedPropertyNamesAttributeKind
         );
-        this._memberNamesStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedMemberNames");
-        this._caseNamesStoreView = new TypeAttributeStoreView(this.typeGraph.attributeStore, "assignedCaseNames");
+        this._memberNamesStoreView = new TypeAttributeStoreView(
+            this.typeGraph.attributeStore,
+            assignedMemberNamesAttributeKind
+        );
+        this._caseNamesStoreView = new TypeAttributeStoreView(
+            this.typeGraph.attributeStore,
+            assignedCaseNamesAttributeKind
+        );
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._unionMemberNamer = this.makeUnionMemberNamer();

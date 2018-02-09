@@ -28,7 +28,7 @@ function replaceString(
 ): TypeRef {
     const maybeEnumCases = shouldBeEnum(t);
     if (maybeEnumCases !== undefined) {
-        return builder.getEnumType(t.getNames(), maybeEnumCases.keySeq().toOrderedSet(), forwardingRef);
+        return builder.getEnumType(t.getAttributes(), maybeEnumCases.keySeq().toOrderedSet(), forwardingRef);
     }
     return builder.getStringType(undefined, undefined, forwardingRef);
 }
@@ -57,7 +57,7 @@ function replaceUnion(
         return builder.getStringType(undefined, undefined, forwardingRef);
     }
     types.push(builder.getStringType(undefined, undefined));
-    return builder.getUnionType(u.getNames(), OrderedSet(types), forwardingRef);
+    return builder.getUnionType(u.getAttributes(), OrderedSet(types), forwardingRef);
 }
 
 function replace(
