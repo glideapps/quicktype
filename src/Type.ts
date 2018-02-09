@@ -5,6 +5,7 @@ import { OrderedSet, OrderedMap, Collection } from "immutable";
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
+import { TypeAttributes, namesTypeAttributeKind } from "./TypeGraph";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
@@ -35,12 +36,16 @@ export abstract class Type {
         return orderedSetUnion(this.children.map((t: Type) => t.directlyReachableTypes(setForType)));
     }
 
+    getAttributes(): TypeAttributes {
+        return this.typeRef.deref()[1];
+    }
+
     get hasNames(): boolean {
-        return this.typeRef.deref()[1] !== undefined;
+        return namesTypeAttributeKind.tryGetInAttributes(this.getAttributes()) !== undefined;
     }
 
     getNames(): TypeNames {
-        return defined(this.typeRef.deref()[1]);
+        return defined(namesTypeAttributeKind.tryGetInAttributes(this.getAttributes()));
     }
 
     getCombinedName(): string {

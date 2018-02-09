@@ -13,10 +13,9 @@ import { schemaToType } from "./JSONSchemaInput";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
-import { TypeGraph, noneToAny, optionalToNullable } from "./TypeGraph";
+import { TypeGraph, noneToAny, optionalToNullable, makeTypeNames } from "./TypeGraph";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
-import { makeTypeNames } from "./TypeNames";
 import { inferEnums } from "./InferEnums";
 
 // Re-export essential types and functions
