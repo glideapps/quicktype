@@ -162,6 +162,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         return {
             names: [
                 classNamed,
+                "ToJson",
                 "FromJson",
                 "ToString",
                 "GetHashCode",
