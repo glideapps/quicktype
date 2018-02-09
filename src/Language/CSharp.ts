@@ -159,7 +159,20 @@ class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenForClassProperties(_: ClassType, classNamed: Name): ForbiddenWordsInfo {
-        return { names: [classNamed, "FromJson"], includeGlobalForbidden: true };
+        return {
+            names: [
+                classNamed,
+                "FromJson",
+                "ToString",
+                "GetHashCode",
+                "Finalize",
+                "Equals",
+                "GetType",
+                "MemberwiseClone",
+                "ReferenceEquals"
+            ],
+            includeGlobalForbidden: false
+        };
     }
 
     protected forbiddenForUnionMembers(_: UnionType, unionNamed: Name): ForbiddenWordsInfo {
