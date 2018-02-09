@@ -103,20 +103,26 @@ export function load(): MarkovChain {
     return JSON.parse(pako.inflate(bytes, { to: "string" }));
 }
 
-export function evaluate(mc: MarkovChain, word: string): number {
+export function evaluateFull(mc: MarkovChain, word: string): [number, number[]] {
     const { trie, depth } = mc;
     if (word.length < depth) {
-        return 1;
+        return [1, []];
     }
     let p = 1;
+    const scores: number[] = [];
     for (let i = depth; i <= word.length; i++) {
         let cp = lookup(trie, word.substr(i - depth, depth), 0);
         if (cp === undefined) {
             cp = 0.0001;
         }
+        scores.push(cp);
         p = p * cp;
     }
-    return Math.pow(p, 1 / (word.length - depth + 1));
+    return [Math.pow(p, 1 / (word.length - depth + 1)), scores];
+}
+
+export function evaluate(mc: MarkovChain, word: string): number {
+    return evaluateFull(mc, word)[0];
 }
 
 function testWord(mc: MarkovChain, word: string): void {
