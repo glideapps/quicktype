@@ -57,66 +57,51 @@ function combineNames(names: Collection<any, string>): string {
 
 export class TypeNames {
     constructor(
-        private _names: OrderedSet<string>,
-        private _alternativeNames: OrderedSet<string>,
-        private _areInferred: boolean
+        private readonly names: OrderedSet<string>,
+        private readonly _alternativeNames: OrderedSet<string>,
+        readonly areInferred: boolean
     ) {}
 
-    copy = (): TypeNames => {
-        return new TypeNames(this._names, this._alternativeNames, this._areInferred);
-    };
-
-    get names(): OrderedSet<string> {
-        return this._names;
-    }
-
-    get areInferred(): boolean {
-        return this._areInferred;
-    }
-
-    add(names: TypeNames): void {
-        if (this._areInferred && !names._areInferred) {
-            this._names = names._names;
-            this._areInferred = false;
-        } else if (this._areInferred === names._areInferred) {
-            this._names = this._names.union(names._names);
+    add(names: TypeNames): TypeNames {
+        let newNames = this.names;
+        let newAreInferred = this.areInferred;
+        if (this.areInferred && !names.areInferred) {
+            newNames = names.names;
+            newAreInferred = false;
+        } else if (this.areInferred === names.areInferred) {
+            newNames = this.names.union(names.names);
         }
-        this._alternativeNames = this._alternativeNames.union(names._alternativeNames);
+        const newAlternativeNames = this._alternativeNames.union(names._alternativeNames);
+        return new TypeNames(newNames, newAlternativeNames, newAreInferred);
     }
 
-    union(names: TypeNames): TypeNames {
-        const copy = this.copy();
-        copy.add(names);
-        return copy;
+    clearInferred(): TypeNames {
+        const newNames = this.areInferred ? OrderedSet() : this.names;
+        return new TypeNames(newNames, OrderedSet(), this.areInferred);
     }
-
-    clearInferred = (): void => {
-        if (this._areInferred) {
-            this._names = OrderedSet();
-        }
-        this._alternativeNames = OrderedSet();
-    };
 
     get combinedName(): string {
-        return combineNames(this._names);
+        return combineNames(this.names);
     }
 
     get proposedNames(): OrderedSet<string> {
         return OrderedSet([this.combinedName]).union(this._alternativeNames);
     }
 
-    makeInferred = (): TypeNames => {
-        if (this._areInferred) return this;
-        return new TypeNames(this._names, this._alternativeNames, true);
-    };
+    makeInferred(): TypeNames {
+        if (this.areInferred) return this;
+        return new TypeNames(this.names, this._alternativeNames, true);
+    }
 
-    singularize = (): TypeNames => {
-        return new TypeNames(this._names.map(pluralize.singular), this._alternativeNames.map(pluralize.singular), true);
-    };
+    singularize(): TypeNames {
+        return new TypeNames(this.names.map(pluralize.singular), this._alternativeNames.map(pluralize.singular), true);
+    }
 }
 
 export function typeNamesUnion(c: Collection<any, TypeNames>): TypeNames {
-    const names = new TypeNames(OrderedSet(), OrderedSet(), true);
-    c.forEach(n => names.add(n));
+    let names = new TypeNames(OrderedSet(), OrderedSet(), true);
+    c.forEach(n => {
+        names = names.add(n);
+    });
     return names;
 }

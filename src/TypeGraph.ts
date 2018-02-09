@@ -163,6 +163,11 @@ export class TypeGraph {
         return [t, this._namesStoreView.tryGet(t)];
     }
 
+    setNames(t: Type, names: TypeNames): void {
+        assert(t.typeRef.graph === this, "Setting names for type not in graph");
+        this._namesStoreView.set(t, names);
+    }
+
     filterTypes(
         predicate: ((t: Type) => boolean) | undefined,
         childrenOfType: ((t: Type) => Collection<any, Type>) | undefined,
