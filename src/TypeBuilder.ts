@@ -150,13 +150,12 @@ export abstract class TypeBuilder {
         return new TypeRef(this.typeGraph, index, undefined);
     }
 
-    private commitType = (tref: TypeRef, t: Type, names: TypeNames | undefined): void => {
+    private commitType = (tref: TypeRef, t: Type): void => {
         const index = tref.getIndex();
         // const name = names !== undefined ? ` ${names.combinedName}` : "";
         // console.log(`committing ${t.kind}${name} to ${index}`);
         assert(this.types[index] === undefined, "A type index was committed twice");
         this.types[index] = t;
-        this.typeNames[index] = names;
     };
 
     protected addType<T extends Type>(
@@ -175,7 +174,7 @@ export abstract class TypeBuilder {
             this.addNames(tref, names);
         }
         const t = creator(tref);
-        this.commitType(tref, t, names);
+        this.commitType(tref, t);
         if (forwardingRef !== undefined && tref !== forwardingRef) {
             forwardingRef.resolve(tref);
         }
