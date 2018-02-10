@@ -331,6 +331,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         return !this._namedUnions.isEmpty();
     }
 
+    protected get haveNamedTypes(): boolean {
+        return !this._namedTypes.isEmpty();
+    }
+
     protected get haveUnions(): boolean {
         return this._haveUnions;
     }

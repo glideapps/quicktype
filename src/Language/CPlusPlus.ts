@@ -754,6 +754,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
             this.emitNamespace(this._namespaceName, this.emitTypes);
         }
         if (this._justTypes) return;
+        if (!this.haveNamedTypes) return;
 
         this.ensureBlankLine();
         this.emitNamespace("nlohmann", () => {
