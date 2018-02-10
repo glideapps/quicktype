@@ -536,8 +536,8 @@ class SwiftRenderer extends ConvenienceRenderer {
     return try JSONEncoder().encode(self)
 }
 
-func jsonString() throws -> String? {
-    return String(data: try self.jsonData(), encoding: .utf8)
+func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+    return String(data: try self.jsonData(), encoding: encoding)
 }`);
         });
     };
@@ -645,8 +645,8 @@ func jsonString() throws -> String? {
                 this.emitLine("return try JSONEncoder().encode(self)");
             });
             this.ensureBlankLine();
-            this.emitBlock("func jsonString() throws -> String?", () => {
-                this.emitLine("return String(data: try self.jsonData(), encoding: .utf8)");
+            this.emitBlock("func jsonString(encoding: String.Encoding = .utf8) throws -> String?", () => {
+                this.emitLine("return String(data: try self.jsonData(), encoding: encoding)");
             });
         });
     };
