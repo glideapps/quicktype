@@ -4,8 +4,8 @@ import { OrderedSet, OrderedMap, Collection } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
-import { TypeNames } from "./TypeNames";
-import { TypeAttributes, namesTypeAttributeKind } from "./TypeGraph";
+import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
+import { TypeAttributes } from "./TypeAttributes";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;

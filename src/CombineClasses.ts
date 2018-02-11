@@ -5,8 +5,9 @@ import { Map, Set, OrderedSet } from "immutable";
 import { ClassType, Type, nonNullTypeCases, ClassProperty } from "./Type";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { assert, panic } from "./Support";
-import { TypeGraph, combineTypeAttributes } from "./TypeGraph";
+import { TypeGraph } from "./TypeGraph";
 import { unifyTypes } from "./UnifyClasses";
+import { combineTypeAttributes } from "./TypeAttributes";
 
 const REQUIRED_OVERLAP = 3 / 4;
 

@@ -22,7 +22,8 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 
 import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
-import { TypeAttributeStoreView, TypeAttributeKind } from "./TypeGraph";
+import { TypeAttributeStoreView } from "./TypeGraph";
+import { TypeAttributeKind } from "./TypeAttributes";
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
 

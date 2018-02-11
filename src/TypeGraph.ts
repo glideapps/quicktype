@@ -13,81 +13,14 @@ import {
 } from "./Type";
 import { defined, assert, panic } from "./Support";
 import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping } from "./TypeBuilder";
-import { TypeNames, NameOrNames } from "./TypeNames";
+import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
-
-const stringHash = require("string-hash");
-
-// FIXME: Move this into `Type.ts`
-export class TypeAttributeKind<T> {
-    public readonly combine: (a: T, b: T) => T;
-
-    constructor(readonly name: string, combine: ((a: T, b: T) => T) | undefined) {
-        if (combine === undefined) {
-            combine = () => {
-                return panic(`Cannot combine type attribute ${name}`);
-            };
-        }
-        this.combine = combine;
-    }
-
-    makeAttributes(value: T): TypeAttributes {
-        const kvps: [this, T][] = [[this, value]];
-        return Map(kvps);
-    }
-
-    tryGetInAttributes(a: TypeAttributes): T | undefined {
-        return a.get(this);
-    }
-
-    setInAttributes(a: TypeAttributes, value: T): TypeAttributes {
-        return a.set(this, value);
-    }
-
-    modifyInAttributes(a: TypeAttributes, modify: (value: T | undefined) => T | undefined): TypeAttributes {
-        const modified = modify(this.tryGetInAttributes(a));
-        if (modified === undefined) {
-            return a.remove(this);
-        }
-        return this.setInAttributes(a, modified);
-    }
-
-    setDefaultInAttributes(a: TypeAttributes, makeDefault: () => T): TypeAttributes {
-        if (this.tryGetInAttributes(a) !== undefined) return a;
-        return this.modifyInAttributes(a, makeDefault);
-    }
-
-    equals(other: any): boolean {
-        if (!(other instanceof TypeAttributeKind)) {
-            return false;
-        }
-        return this.name === other.name;
-    }
-
-    hashCode(): number {
-        return stringHash(this.name);
-    }
-}
-
-export type TypeAttributes = Map<TypeAttributeKind<any>, any>;
-
-export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAttributes {
-    if (attributeArray.length === 0) return Map();
-    const first = attributeArray[0];
-    const rest = attributeArray.slice(1);
-    return first.mergeWith((aa, ab, kind) => kind.combine(aa, ab), ...rest);
-}
+import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 
 export class TypeAttributeStore {
-    private _attributeKinds: Set<TypeAttributeKind<any>> = Set();
     private _topLevelValues: Map<string, TypeAttributes> = Map();
 
     constructor(private readonly _typeGraph: TypeGraph, private _values: (TypeAttributes | undefined)[]) {}
-
-    registerAttributeKind<T>(kind: TypeAttributeKind<T>): void {
-        assert(!this._attributeKinds.has(kind), "Cannot register a type attribute kind more than once");
-        this._attributeKinds = this._attributeKinds.add(kind);
-    }
 
     private getTypeIndex(t: Type): number {
         const tref = t.typeRef;
@@ -113,11 +46,7 @@ export class TypeAttributeStore {
     }
 
     private setInMap<T>(attributes: TypeAttributes, kind: TypeAttributeKind<T>, value: T): TypeAttributes {
-        if (!this._attributeKinds.has(kind)) {
-            return panic(`Unknown attribute ${kind.name}`);
-        }
-        attributes = attributes.set(kind, value);
-        return attributes;
+        return attributes.set(kind, value);
     }
 
     set<T>(kind: TypeAttributeKind<T>, t: Type, value: T): void {
@@ -136,7 +65,6 @@ export class TypeAttributeStore {
     }
 
     private tryGetInMap<T>(attributes: TypeAttributes, kind: TypeAttributeKind<T>): T | undefined {
-        assert(this._attributeKinds.has(kind), `Attribute ${kind.name} not defined`);
         return attributes.get(kind);
     }
 
@@ -149,39 +77,11 @@ export class TypeAttributeStore {
     }
 }
 
-// FIXME: move this somehwere else, either `Types.ts` or `TypeNames.ts`
-export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>("names", (a, b) => a.add(b));
-
-export function modifyTypeNames(
-    attributes: TypeAttributes,
-    modifier: (tn: TypeNames | undefined) => TypeNames | undefined
-): TypeAttributes {
-    return namesTypeAttributeKind.modifyInAttributes(attributes, modifier);
-}
-
-export function singularizeTypeNames(attributes: TypeAttributes): TypeAttributes {
-    return modifyTypeNames(attributes, maybeNames => {
-        if (maybeNames === undefined) return undefined;
-        return maybeNames.singularize();
-    });
-}
-
-export function makeTypeNames(nameOrNames: NameOrNames, areNamesInferred?: boolean): TypeAttributes {
-    let typeNames: TypeNames;
-    if (typeof nameOrNames === "string") {
-        typeNames = new TypeNames(OrderedSet([nameOrNames]), OrderedSet(), defined(areNamesInferred));
-    } else {
-        typeNames = nameOrNames as TypeNames;
-    }
-    return namesTypeAttributeKind.makeAttributes(typeNames);
-}
-
 export class TypeAttributeStoreView<T> {
     constructor(
         private readonly _attributeStore: TypeAttributeStore,
         private readonly _definition: TypeAttributeKind<T>
     ) {
-        _attributeStore.registerAttributeKind(_definition);
     }
 
     set(t: Type, value: T): void {
@@ -212,7 +112,6 @@ export class TypeAttributeStoreView<T> {
 export class TypeGraph {
     private _typeBuilder?: TypeBuilder;
     private _attributeStore: TypeAttributeStore | undefined = undefined;
-    private _namesStoreView: TypeAttributeStoreView<TypeNames> | undefined = undefined;
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
@@ -240,7 +139,6 @@ export class TypeGraph {
         );
 
         this._attributeStore = new TypeAttributeStore(this, typeAttributes);
-        this._namesStoreView = new TypeAttributeStoreView(this._attributeStore, namesTypeAttributeKind);
 
         // The order of these three statements matters.  If we set _typeBuilder
         // to undefined before we deref the TypeRefs, then we need to set _types
@@ -262,11 +160,6 @@ export class TypeGraph {
         }
         const t = defined(this._types)[index];
         return [t, defined(this._attributeStore).attributesForType(t)];
-    }
-
-    setNames(t: Type, names: TypeNames): void {
-        assert(t.typeRef.graph === this, "Setting names for type not in graph");
-        defined(this._namesStoreView).set(t, names);
     }
 
     filterTypes(
