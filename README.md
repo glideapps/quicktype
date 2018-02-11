@@ -12,13 +12,15 @@
 
 ### Supported Inputs
 
-JSON | JSON API URLs | [JSON Schema](https://app.quicktype.io/#s=coordinate) | GraphQL queries
---- | --- | --- | ---
+| JSON | JSON API URLs | [JSON Schema](https://app.quicktype.io/#s=coordinate) | GraphQL queries |
+| ---- | ------------- | ----------------------------------------------------- | --------------- |
+
 
 ### Target Languages
 
-[C#](https://app.quicktype.io/#l=cs) | [Go](https://app.quicktype.io/#l=go) | [C++](https://app.quicktype.io/#l=cpp) | [Java](https://app.quicktype.io/#l=java) | [TypeScript](https://app.quicktype.io/#l=ts) | [Swift](https://app.quicktype.io/#l=swift) | [Objective-C](https://app.quicktype.io/#l=objc) | [Elm](https://app.quicktype.io/#l=elm) | [JSON Schema](https://app.quicktype.io/#l=schema)
---- | --- | --- | --- | --- | --- | --- | --- | --- 
+| [C#](https://app.quicktype.io/#l=cs) | [Go](https://app.quicktype.io/#l=go) | [C++](https://app.quicktype.io/#l=cpp) | [Java](https://app.quicktype.io/#l=java) | [TypeScript](https://app.quicktype.io/#l=ts) | [Swift](https://app.quicktype.io/#l=swift) | [Objective-C](https://app.quicktype.io/#l=objc) | [Elm](https://app.quicktype.io/#l=elm) | [JSON Schema](https://app.quicktype.io/#l=schema) |
+| ------------------------------------ | ------------------------------------ | -------------------------------------- | ---------------------------------------- | -------------------------------------------- | ------------------------------------------ | ----------------------------------------------- | -------------------------------------- | ------------------------------------------------- |
+
 
 _Missing your favorite language? Please implement it!_
 
@@ -93,11 +95,13 @@ quicktype -s schema schema.json -o src/nodejs/Models.ts
 # seamlessly.
 ```
 
-## Development
+## Contributing
 
-`quicktype` is open source so if you'd like additional options or a new target language, you can build it yourself and send a pull request. `quicktype` is implemented in TypeScript and requires `nodejs` and `npm` to build and run.
+`quicktype` is [Open Source](LICENSE) and we love contributors! In fact, we have a [list of issues](https://github.com/quicktype/quicktype/issues?utf8=✓&q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted) that are currently low priority for us but that we'd be very happy to accept contributions for. Support for new target languages is also always very welcome. If you'd like to help and need assistance with anything at all, or would just like to talk things over, come [join us on Slack](http://slack.quicktype.io).
 
 ### Setup, Build, Run
+
+`quicktype` is implemented in TypeScript and requires `nodejs` and `npm` to build and run.
 
 Clone this repo and do:
 
