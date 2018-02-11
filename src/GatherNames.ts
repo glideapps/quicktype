@@ -21,19 +21,18 @@ export function gatherNames(graph: TypeGraph): void {
     let processed: Set<List<any>> = Set();
 
     function processType(t: Type, names: OrderedSet<string>, parentNames: OrderedSet<string> | null) {
-        if (t.hasNames) {
-            const alternatives: string[] = [];
-            names.forEach(name => {
-                if (parentNames !== null) {
-                    alternatives.push(...parentNames.map(pn => `${pn}_${name}`).toArray());
-                }
-                alternatives.push(`${name}_${t.kind}`);
-                if (parentNames !== null) {
-                    alternatives.push(...parentNames.map(pn => `${pn}_${name}_${t.kind}`).toArray());
-                }
-            });
-            setNames(t, t.getNames().add(new TypeNames(names, OrderedSet(alternatives), true)));
-        }
+        const alternatives: string[] = [];
+        names.forEach(name => {
+            if (parentNames !== null) {
+                alternatives.push(...parentNames.map(pn => `${pn}_${name}`).toArray());
+            }
+            alternatives.push(`${name}_${t.kind}`);
+            if (parentNames !== null) {
+                alternatives.push(...parentNames.map(pn => `${pn}_${name}_${t.kind}`).toArray());
+            }
+        });
+        const newNames = new TypeNames(names, OrderedSet(alternatives), true);
+        setNames(t, t.hasNames ? t.getNames().add(newNames) : newNames);
         const processedEnry = List([t, names, parentNames]);
         if (processed.has(processedEnry)) return;
         processed = processed.add(processedEnry);

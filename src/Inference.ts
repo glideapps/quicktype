@@ -1,13 +1,12 @@
 "use strict";
 
-import { OrderedMap } from "immutable";
+import { OrderedMap, Map } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
-import { assertNever, assert, panic, defined } from "./Support";
+import { assertNever, assert, panic } from "./Support";
 import { TypeBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { ClassProperty } from "./Type";
-import { makeTypeNames, modifyTypeNames } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 
 // This should be the recursive type
@@ -63,9 +62,8 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
     }
 
     protected makeArray(arrays: NestedValueArray): TypeRef {
-        const attributes = modifyTypeNames(this.typeAttributes, tn => defined(tn).singularize());
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, attributes, arrays, this.forwardingRef)
+            this._typeInference.inferType(this._cjson, this.typeAttributes, arrays, this.forwardingRef)
         );
     }
 }
@@ -167,7 +165,7 @@ export class TypeInference {
         const properties: [string, ClassProperty][] = [];
         for (const key of propertyNames) {
             const values = propertyValues[key];
-            const t = this.inferType(cjson, makeTypeNames(key, true), values);
+            const t = this.inferType(cjson, Map(), values);
             const isOptional = values.length < objects.length;
             properties.push([key, new ClassProperty(t, isOptional)]);
         }
