@@ -37,8 +37,11 @@ export abstract class Renderer {
     private _finishedFiles: OrderedMap<string, Source>;
 
     private _lastNewline?: NewlineSource;
+    // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _emitted: Sourcelike[];
+    // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _currentEmitTarget: Sourcelike[];
+    // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _needBlankLine: boolean;
 
     constructor(protected readonly typeGraph: TypeGraph, protected readonly leadingComments: string[] | undefined) {

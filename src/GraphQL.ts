@@ -320,6 +320,7 @@ class GQLQuery {
 
 class GQLSchemaFromJSON implements GQLSchema {
     readonly types: { [name: string]: GQLType } = {};
+    // @ts-ignore: The constructor can return early, but only by throwing.
     readonly queryType: GQLType;
 
     constructor(json: any) {
@@ -341,7 +342,7 @@ class GQLSchemaFromJSON implements GQLSchema {
         }
 
         const queryType = this.types[schema.__schema.queryType.name];
-        if (!queryType) {
+        if (queryType === undefined) {
             return panic("Query type not found.");
         }
         // console.log(`query type ${queryType.name} is ${queryType.kind}`);
