@@ -16,7 +16,8 @@ import {
     StringType,
     ClassProperty
 } from "./Type";
-import { TypeGraph, TypeAttributes, combineTypeAttributes } from "./TypeGraph";
+import { TypeGraph } from "./TypeGraph";
+import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic } from "./Support";
 
 export type TypeRefCallback = (index: number) => void;

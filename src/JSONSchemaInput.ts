@@ -8,7 +8,8 @@ import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "
 import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
 import { unifyTypes } from "./UnifyClasses";
-import { makeTypeNames, TypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeGraph";
+import { makeTypeNames, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
+import { TypeAttributes } from "./TypeAttributes";
 
 enum PathElementKind {
     Root,

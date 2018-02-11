@@ -5,8 +5,8 @@ import { Set, OrderedMap, OrderedSet } from "immutable";
 import { ClassType, Type, matchTypeExhaustive, assertIsClass, ClassProperty, allTypeCases } from "./Type";
 import { TypeRef, UnionBuilder, TypeBuilder, TypeLookerUp } from "./TypeBuilder";
 import { panic, assert, defined } from "./Support";
-import { TypeAttributes, combineTypeAttributes, namesTypeAttributeKind, modifyTypeNames } from "./TypeGraph";
-import { TypeNames } from "./TypeNames";
+import { TypeNames, namesTypeAttributeKind, modifyTypeNames } from "./TypeNames";
+import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 
 function getCliqueProperties(
     clique: ClassType[],

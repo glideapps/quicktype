@@ -7,7 +7,8 @@ import { assertNever, assert, panic, defined } from "./Support";
 import { TypeBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { ClassProperty } from "./Type";
-import { makeTypeNames, TypeAttributes, modifyTypeNames } from "./TypeGraph";
+import { makeTypeNames, modifyTypeNames } from "./TypeNames";
+import { TypeAttributes } from "./TypeAttributes";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]

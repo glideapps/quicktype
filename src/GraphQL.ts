@@ -18,8 +18,8 @@ import {
 import { assertNever, panic, assert } from "./Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import * as graphql from "graphql/language";
-import { TypeNames } from "./TypeNames";
-import { namesTypeAttributeKind, TypeAttributes, makeTypeNames } from "./TypeGraph";
+import { TypeNames, makeTypeNames, namesTypeAttributeKind } from "./TypeNames";
+import { TypeAttributes } from "./TypeAttributes";
 
 interface GQLType {
     kind: TypeKind;

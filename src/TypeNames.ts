@@ -3,7 +3,8 @@
 import { OrderedSet, Collection } from "immutable";
 import * as pluralize from "pluralize";
 
-import { panic } from "./Support";
+import { panic, defined } from "./Support";
+import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 
 export type NameOrNames = string | TypeNames;
 
@@ -96,4 +97,30 @@ export function typeNamesUnion(c: Collection<any, TypeNames>): TypeNames {
         names = names.add(n);
     });
     return names;
+}
+
+export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>("names", (a, b) => a.add(b));
+
+export function modifyTypeNames(
+    attributes: TypeAttributes,
+    modifier: (tn: TypeNames | undefined) => TypeNames | undefined
+): TypeAttributes {
+    return namesTypeAttributeKind.modifyInAttributes(attributes, modifier);
+}
+
+export function singularizeTypeNames(attributes: TypeAttributes): TypeAttributes {
+    return modifyTypeNames(attributes, maybeNames => {
+        if (maybeNames === undefined) return undefined;
+        return maybeNames.singularize();
+    });
+}
+
+export function makeTypeNames(nameOrNames: NameOrNames, areNamesInferred?: boolean): TypeAttributes {
+    let typeNames: TypeNames;
+    if (typeof nameOrNames === "string") {
+        typeNames = new TypeNames(OrderedSet([nameOrNames]), OrderedSet(), defined(areNamesInferred));
+    } else {
+        typeNames = nameOrNames as TypeNames;
+    }
+    return namesTypeAttributeKind.makeAttributes(typeNames);
 }
