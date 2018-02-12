@@ -9,7 +9,7 @@ import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
 import { unifyTypes } from "./UnifyClasses";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
-import { TypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, descriptionTypeAttributeKind } from "./TypeAttributes";
 
 enum PathElementKind {
     Root,
@@ -85,8 +85,12 @@ function indexArray(cases: any, index: number): StringMap {
     return checkStringMap(cases[index]);
 }
 
-function getName(schema: StringMap, typeAttributes: TypeAttributes): TypeAttributes {
-    return modifyTypeNames(typeAttributes, maybeTypeNames => {
+function makeAttributes(schema: StringMap, attributes: TypeAttributes): TypeAttributes {
+    const maybeDescription = schema.description;
+    if (typeof maybeDescription === "string") {
+        attributes = descriptionTypeAttributeKind.setInAttributes(attributes, maybeDescription);
+    }
+    return modifyTypeNames(attributes, maybeTypeNames => {
         const typeNames = defined(maybeTypeNames);
         if (!typeNames.areInferred) {
             return typeNames;
@@ -164,15 +168,9 @@ export function schemaToType(
         }
     }
 
-    function makeClass(
-        schema: StringMap,
-        path: Ref,
-        typeAttributes: TypeAttributes,
-        properties: StringMap,
-        requiredArray: string[]
-    ): TypeRef {
+    function makeClass(path: Ref, attributes: TypeAttributes, properties: StringMap, requiredArray: string[]): TypeRef {
         const required = Set(requiredArray);
-        const result = typeBuilder.getUniqueClassType(getName(schema, typeAttributes), true);
+        const result = typeBuilder.getUniqueClassType(attributes, true);
         setTypeForPath(path, result);
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
@@ -207,7 +205,10 @@ export function schemaToType(
     }
 
     function fromTypeName(schema: StringMap, path: Ref, typeAttributes: TypeAttributes, typeName: string): TypeRef {
-        typeAttributes = getName(schema, modifyTypeNames(typeAttributes, tn => defined(tn).makeInferred()));
+        // FIXME: We seem to be overzealous in making attributes.  We get them from
+        // our caller, then we make them again here, and then we make them again
+        // in `makeClass`, potentially in other places, too.
+        typeAttributes = makeAttributes(schema, modifyTypeNames(typeAttributes, tn => defined(tn).makeInferred()));
         switch (typeName) {
             case "object":
                 let required: string[];
@@ -217,13 +218,13 @@ export function schemaToType(
                     required = checkStringArray(schema.required);
                 }
                 if (schema.properties !== undefined) {
-                    return makeClass(schema, path, typeAttributes, checkStringMap(schema.properties), required);
+                    return makeClass(path, typeAttributes, checkStringMap(schema.properties), required);
                 } else if (schema.additionalProperties !== undefined) {
                     const additional = schema.additionalProperties;
                     if (additional === true) {
                         return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
                     } else if (additional === false) {
-                        return makeClass(schema, path, typeAttributes, {}, required);
+                        return makeClass(path, typeAttributes, {}, required);
                     } else {
                         return makeMap(path, typeAttributes, checkStringMap(additional));
                     }
@@ -266,7 +267,7 @@ export function schemaToType(
     }
 
     function convertToType(schema: StringMap, path: Ref, typeAttributes: TypeAttributes): TypeRef {
-        typeAttributes = getName(schema, typeAttributes);
+        typeAttributes = makeAttributes(schema, typeAttributes);
 
         function convertOneOrAnyOf(cases: any, kind: PathElementKind.OneOf | PathElementKind.AnyOf): TypeRef {
             if (!Array.isArray(cases)) {

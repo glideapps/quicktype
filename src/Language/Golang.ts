@@ -169,6 +169,14 @@ class GoRenderer extends ConvenienceRenderer {
         );
     };
 
+    private emitDescription(description: string[] | undefined): void {
+        if (description === undefined) return;
+
+        for (const line of description) {
+            this.emitLine("// ", line);
+        }
+    }
+
     private emitTopLevel = (t: Type, name: Name): void => {
         const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
@@ -195,10 +203,12 @@ class GoRenderer extends ConvenienceRenderer {
             const goType = this.goType(p.type, true);
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`']]);
         });
+        this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
     };
 
     private emitEnum = (e: EnumType, enumName: Name): void => {
+        this.emitDescription(this.descriptionForType(e));
         this.emitLine("type ", enumName, " string");
         this.emitLine("const (");
         this.indent(() =>
@@ -251,6 +261,7 @@ class GoRenderer extends ConvenienceRenderer {
             const goType = this.nullableGoType(t, true);
             columns.push([[fieldName, " "], goType]);
         });
+        this.emitDescription(this.descriptionForType(u));
         this.emitStruct(unionName, columns);
 
         if (this._justTypes) return;

@@ -8,7 +8,8 @@
                     "$ref": "#/definitions/List"
                 }
             },
-            "title": "List"
+            "title": "List",
+            "description": "A recursive class type"
         }
     }
 }

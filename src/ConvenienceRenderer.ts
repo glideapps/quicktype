@@ -24,7 +24,7 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 import { TypeAttributeStoreView } from "./TypeGraph";
-import { TypeAttributeKind } from "./TypeAttributes";
+import { TypeAttributeKind, descriptionTypeAttributeKind } from "./TypeAttributes";
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
 
@@ -132,6 +132,14 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     private get nameStoreView(): TypeAttributeStoreView<Name> {
         return defined(this._nameStoreView);
+    }
+
+    protected descriptionForType(t: Type): string[] | undefined {
+        let description = this.typeGraph.attributeStore.tryGet(descriptionTypeAttributeKind, t);
+        if (description === undefined) return undefined;
+        description = description.trim();
+        if (description === "") return undefined;
+        return description.split("\n").map(l => l.trim());
     }
 
     protected setUpNaming(): OrderedSet<Namespace> {
