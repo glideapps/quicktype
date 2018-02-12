@@ -8,7 +8,7 @@ import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "
 import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
 import { unifyTypes } from "./UnifyClasses";
-import { makeTypeNames, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
+import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 
 enum PathElementKind {
@@ -181,7 +181,7 @@ export function schemaToType(
             const t = toType(
                 checkStringMap(propSchema),
                 path.push({ kind: PathElementKind.Property, name: propName }),
-                makeTypeNames(pluralize.singular(propName), true)
+                makeNamesTypeAttributes(pluralize.singular(propName), true)
             );
             const isOptional = !required.has(propName);
             return new ClassProperty(t, isOptional);
@@ -320,6 +320,6 @@ export function schemaToType(
     }
 
     const rootPathElement: PathElement = { kind: PathElementKind.Root };
-    const rootType = toType(root, List<PathElement>([rootPathElement]), makeTypeNames(topLevelName, false));
+    const rootType = toType(root, List<PathElement>([rootPathElement]), makeNamesTypeAttributes(topLevelName, false));
     return rootType;
 }

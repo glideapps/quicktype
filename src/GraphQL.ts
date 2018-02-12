@@ -18,7 +18,7 @@ import {
 import { assertNever, panic, assert } from "./Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import * as graphql from "graphql/language";
-import { TypeNames, makeTypeNames, namesTypeAttributeKind } from "./TypeNames";
+import { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 
 interface GQLType {
@@ -435,7 +435,7 @@ export function makeGraphQLQueryTypes(
             )
         );
         const t = builder.getClassType(
-            makeTypeNames(queryName, false),
+            makeNamesTypeAttributes(queryName, false),
             OrderedMap({
                 data: new ClassProperty(dataType, false),
                 errors: new ClassProperty(optionalErrorArray, false)

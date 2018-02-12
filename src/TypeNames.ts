@@ -115,7 +115,7 @@ export function singularizeTypeNames(attributes: TypeAttributes): TypeAttributes
     });
 }
 
-export function makeTypeNames(nameOrNames: NameOrNames, areNamesInferred?: boolean): TypeAttributes {
+export function makeNamesTypeAttributes(nameOrNames: NameOrNames, areNamesInferred?: boolean): TypeAttributes {
     let typeNames: TypeNames;
     if (typeof nameOrNames === "string") {
         typeNames = new TypeNames(OrderedSet([nameOrNames]), OrderedSet(), defined(areNamesInferred));
