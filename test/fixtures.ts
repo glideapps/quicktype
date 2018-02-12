@@ -268,7 +268,9 @@ class JSONFixture extends LanguageFixture {
       testsInDir("test/inputs/json/samples", "json")
     );
 
-    const miscSamples = testsInDir("test/inputs/json/misc", "json");
+    const miscSamples = this.language.skipMiscJSON
+      ? []
+      : testsInDir("test/inputs/json/misc", "json");
 
     let { priority, others } = samplesFromSources(
       sources,
@@ -337,6 +339,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
         "31189.json", // same here
         "ed095.json" // same here on Travis
       ],
+      skipMiscJSON: false,
       skipSchema: [],
       rendererOptions: {},
       quickTestRendererOptions: []

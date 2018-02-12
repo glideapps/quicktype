@@ -13,6 +13,7 @@ export interface Language {
   output: string;
   topLevel: string;
   skipJSON: string[];
+  skipMiscJSON: boolean;
   skipSchema: string[];
   rendererOptions: RendererOptions;
   quickTestRendererOptions: RendererOptions[];
@@ -33,6 +34,7 @@ export const CSharpLanguage: Language = {
   skipJSON: [
     "31189.json" // JSON.NET doesn't accept year 0000 as 1BC, though it should
   ],
+  skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [
@@ -59,6 +61,7 @@ export const JavaLanguage: Language = {
     "simple-identifiers.json",
     "nst-test-suite.json"
   ],
+  skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
   rendererOptions: {},
   quickTestRendererOptions: []
@@ -80,6 +83,7 @@ export const GoLanguage: Language = {
     "blns-object.json",
     "nst-test-suite.json"
   ],
+  skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: []
@@ -104,6 +108,7 @@ export const CPlusPlusLanguage: Language = {
     // takes too long to compile
     "combinations.json"
   ],
+  skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [{ unions: "indirection" }]
@@ -132,6 +137,7 @@ export const ElmLanguage: Language = {
     "nst-test-suite.json",
     "keywords.json" // stack overflow
   ],
+  skipMiscJSON: false,
   skipSchema: [
     "union-list.schema", // recursion
     "list.schema", // recursion
@@ -161,6 +167,7 @@ export const SwiftLanguage: Language = {
     // Doesn't seem to work on Linux, works on MacOS
     "nst-test-suite.json"
   ],
+  skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [
@@ -194,6 +201,7 @@ export const ObjectiveCLanguage: Language = {
     // Compile error
     "nst-test-suite.json"
   ],
+  skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: { functions: "true" },
   quickTestRendererOptions: []
@@ -213,6 +221,7 @@ export const TypeScriptLanguage: Language = {
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: [],
+  skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: { "explicit-unions": "yes" },
   quickTestRendererOptions: []
