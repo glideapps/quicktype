@@ -18,7 +18,8 @@ import {
 import { assertNever, panic, assert } from "./Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import * as graphql from "graphql/language";
-import { TypeNames, makeTypeNames } from "./TypeNames";
+import { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./TypeNames";
+import { TypeAttributes } from "./TypeAttributes";
 
 interface GQLType {
     kind: TypeKind;
@@ -61,12 +62,12 @@ function getField(t: GQLType, name: string): Field {
     return panic(`Required field ${name} not defined on type ${t.name}.`);
 }
 
-function makeNames(name: string, fieldName: string | null, containingTypeName: string | null): TypeNames {
+function makeNames(name: string, fieldName: string | null, containingTypeName: string | null): TypeAttributes {
     const alternatives: string[] = [];
     if (fieldName) alternatives.push(fieldName);
     if (containingTypeName) alternatives.push(`${containingTypeName}_${name}`);
     if (fieldName && containingTypeName) alternatives.push(`${containingTypeName}_${fieldName}`);
-    return new TypeNames(OrderedSet([name]), OrderedSet(alternatives), false);
+    return namesTypeAttributeKind.makeAttributes(new TypeNames(OrderedSet([name]), OrderedSet(alternatives), false));
 }
 
 function makeNullable(
@@ -95,7 +96,7 @@ function removeNull(builder: TypeBuilder, tref: TypeRef): TypeRef {
     const first = nonNulls.first();
     if (first) {
         if (nonNulls.size === 1) return first.typeRef;
-        return builder.getUnionType(t.getNames(), nonNulls.map(nn => nn.typeRef));
+        return builder.getUnionType(t.getAttributes(), nonNulls.map(nn => nn.typeRef));
     }
     return panic("Trying to remove null results in empty union.");
 }
@@ -319,6 +320,7 @@ class GQLQuery {
 
 class GQLSchemaFromJSON implements GQLSchema {
     readonly types: { [name: string]: GQLType } = {};
+    // @ts-ignore: The constructor can return early, but only by throwing.
     readonly queryType: GQLType;
 
     constructor(json: any) {
@@ -340,7 +342,7 @@ class GQLSchemaFromJSON implements GQLSchema {
         }
 
         const queryType = this.types[schema.__schema.queryType.name];
-        if (!queryType) {
+        if (queryType === undefined) {
             return panic("Query type not found.");
         }
         // console.log(`query type ${queryType.name} is ${queryType.kind}`);
@@ -421,15 +423,19 @@ export function makeGraphQLQueryTypes(
         }
         const dataType = query.makeType(builder, odn, queryName);
         const errorType = builder.getClassType(
-            new TypeNames(OrderedSet(["error"]), OrderedSet(["graphQLError"]), false),
+            namesTypeAttributeKind.makeAttributes(
+                new TypeNames(OrderedSet(["error"]), OrderedSet(["graphQLError"]), false)
+            ),
             OrderedMap({ message: new ClassProperty(builder.getStringType(undefined, undefined), false) })
         );
         const optionalErrorArray = builder.makeNullable(
             builder.getArrayType(errorType),
-            new TypeNames(OrderedSet(["errors"]), OrderedSet(["graphQLErrors"]), false)
+            namesTypeAttributeKind.makeAttributes(
+                new TypeNames(OrderedSet(["errors"]), OrderedSet(["graphQLErrors"]), false)
+            )
         );
         const t = builder.getClassType(
-            makeTypeNames(queryName, false),
+            makeNamesTypeAttributes(queryName, false),
             OrderedMap({
                 data: new ClassProperty(dataType, false),
                 errors: new ClassProperty(optionalErrorArray, false)

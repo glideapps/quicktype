@@ -107,7 +107,7 @@ export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping
         // type graph.  Except we don't get Type objects but TypeRef objects,
         // which is a type-to-be.
         return builder.getMapType(
-            unifyTypes(shouldBe, c.getNames(), builder, false, false, conflateNumbers),
+            unifyTypes(shouldBe, c.getAttributes(), builder, false, false, conflateNumbers),
             forwardingRef
         );
     }

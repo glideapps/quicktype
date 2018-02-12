@@ -108,13 +108,16 @@ export class Namer {
             remainingNamesToAssign = remainingNamesToAssign.rest();
 
             const proposedNames = name.proposeUnstyledNames(names);
+            const namingFunction = nonNull(name.namingFunction);
             // Find the first proposed name that isn't proposed by
-            // any of the other names.
-            const maybeUniqueName = proposedNames.find(proposed =>
-                namesToAssign.every(n => n === name || !n.proposeUnstyledNames(names).contains(proposed))
+            // any of the other names and that isn't already forbidden.
+            const maybeUniqueName = proposedNames.find(
+                proposed =>
+                    !forbiddenNames.has(namingFunction.nameStyle(proposed)) &&
+                    namesToAssign.every(n => n === name || !n.proposeUnstyledNames(names).contains(proposed))
             );
             if (maybeUniqueName !== undefined) {
-                const styledName = nonNull(name.namingFunction).nameStyle(maybeUniqueName);
+                const styledName = namingFunction.nameStyle(maybeUniqueName);
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned) {
                     allAssignedNames = allAssignedNames.merge(assigned);

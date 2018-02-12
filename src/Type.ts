@@ -4,7 +4,8 @@ import { OrderedSet, OrderedMap, Collection } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
-import { TypeNames } from "./TypeNames";
+import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
+import { TypeAttributes } from "./TypeAttributes";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
@@ -17,13 +18,6 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     return false;
 }
 
-/*
-const mapPath: string[] = ["#"];
-function mapIndentation(): string {
-    return "  ".repeat(mapPath.length);
-}
-*/
-
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
 
@@ -35,12 +29,16 @@ export abstract class Type {
         return orderedSetUnion(this.children.map((t: Type) => t.directlyReachableTypes(setForType)));
     }
 
+    getAttributes(): TypeAttributes {
+        return this.typeRef.deref()[1];
+    }
+
     get hasNames(): boolean {
-        return this.typeRef.deref()[1] !== undefined;
+        return namesTypeAttributeKind.tryGetInAttributes(this.getAttributes()) !== undefined;
     }
 
     getNames(): TypeNames {
-        return defined(this.typeRef.deref()[1]);
+        return defined(namesTypeAttributeKind.tryGetInAttributes(this.getAttributes()));
     }
 
     getCombinedName(): string {
@@ -122,6 +120,7 @@ export abstract class Type {
 }
 
 export class PrimitiveType extends Type {
+    // @ts-ignore: This is initialized in the Type constructor
     readonly kind: PrimitiveTypeKind;
 
     constructor(typeRef: TypeRef, kind: PrimitiveTypeKind, checkKind: boolean = true) {
@@ -173,6 +172,7 @@ export class StringType extends PrimitiveType {
 }
 
 export class ArrayType extends Type {
+    // @ts-ignore: This is initialized in the Type constructor
     readonly kind: "array";
 
     constructor(typeRef: TypeRef, private _itemsRef?: TypeRef) {
@@ -223,6 +223,7 @@ export class ArrayType extends Type {
 }
 
 export class MapType extends Type {
+    // @ts-ignore: This is initialized in the Type constructor
     readonly kind: "map";
 
     constructor(typeRef: TypeRef, private _valuesRef?: TypeRef) {
@@ -302,6 +303,7 @@ function propertiesAreSorted(_props: OrderedMap<string, ClassProperty>): boolean
 }
 
 export class ClassType extends Type {
+    // @ts-ignore: This is initialized in the Type constructor
     kind: "class";
 
     constructor(typeRef: TypeRef, readonly isFixed: boolean, private _properties?: OrderedMap<string, ClassProperty>) {
@@ -387,6 +389,7 @@ export function assertIsClass(t: Type): ClassType {
 }
 
 export class EnumType extends Type {
+    // @ts-ignore: This is initialized in the Type constructor
     kind: "enum";
 
     constructor(typeRef: TypeRef, readonly cases: OrderedSet<string>) {
@@ -416,6 +419,7 @@ export class EnumType extends Type {
 }
 
 export class UnionType extends Type {
+    // @ts-ignore: This is initialized in the Type constructor
     kind: "union";
 
     constructor(typeRef: TypeRef, private _memberRefs?: OrderedSet<TypeRef>) {
