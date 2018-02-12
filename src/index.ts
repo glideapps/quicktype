@@ -14,7 +14,7 @@ import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
 import { TypeGraph, noneToAny, optionalToNullable } from "./TypeGraph";
-import { makeTypeNames } from "./TypeNames";
+import { makeNamesTypeAttributes } from "./TypeNames";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
 import { inferEnums } from "./InferEnums";
@@ -174,7 +174,7 @@ export class Run {
             Map(this._allInputs.samples).forEach((cjson, name) => {
                 typeBuilder.addTopLevel(
                     name,
-                    inference.inferType(this._compressedJSON as CompressedJSON, makeTypeNames(name, false), cjson)
+                    inference.inferType(this._compressedJSON as CompressedJSON, makeNamesTypeAttributes(name, false), cjson)
                 );
             });
         }
