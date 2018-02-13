@@ -101,7 +101,7 @@ quicktype -s schema schema.json -o src/nodejs/Models.ts
 
 ## Contributing
 
-`quicktype` is [Open Source](LICENSE) and we love contributors! In fact, we have a [list of issues](https://github.com/quicktype/quicktype/issues?utf8=✓&q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted) that are currently low priority for us but that we'd be very happy to accept contributions for. Support for new target languages is also always very welcome. If you'd like to help and need assistance with anything at all, or would just like to talk things over, come [join us on Slack](http://slack.quicktype.io).
+`quicktype` is [Open Source](LICENSE) and we love contributors! In fact, we have a [list of issues](https://github.com/quicktype/quicktype/issues?utf8=✓&q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted) that are low-priority for us, but for which we'd happily accept contributions. Support for new target languages is also strongly desired. If you'd like to contribute, need help with anything at all, or would just like to talk things over, come [join us on Slack](http://slack.quicktype.io).
 
 ### Setup, Build, Run
 
