@@ -19,15 +19,26 @@ import { Name, Namer, funPrefixNamer } from "../Naming";
 import { UnionType, nullableFromUnion, Type, ClassType, matchType, removeNullFromUnion, EnumType } from "../Type";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { EnumOption } from "../RendererOptions";
+
+enum Density {
+    Normal,
+    Dense
+}
 
 export default class RustTargetLanguage extends TargetLanguage {
+    private readonly _denseOption = new EnumOption("density", "Density", [
+        ["normal", Density.Normal],
+        ["dense", Density.Dense]
+    ]);
+
     protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
         return RustRenderer;
     }
 
     constructor() {
         super("Rust", ["rs", "rust", "rustlang"], "rs");
-        this.setOptions([]);
+        this.setOptions([this._denseOption]);
     }
 }
 
@@ -152,6 +163,10 @@ const standardUnicodeRustEscape = (codePoint: number): string => {
 const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape));
 
 class RustRenderer extends ConvenienceRenderer {
+    constructor(graph: TypeGraph, leadingComments: string[] | undefined, private readonly _density: Density) {
+        super(graph, leadingComments);
+    }
+
     protected makeNamedTypeNamer(): Namer {
         return camelNamingFunction;
     }
@@ -235,15 +250,20 @@ class RustRenderer extends ConvenienceRenderer {
         return isCycleBreaker ? ["Box<", rustType, ">"] : rustType;
     };
 
+    private emitRenameAttribute(propName: Name, jsonName: string) {
+        const escapedName = rustStringEscape(jsonName);
+        const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
+        if (namesDiffer || this._density === Density.Normal) {
+            this.emitLine('#[serde(rename = "', escapedName, '")]');
+        }
+    }
+
     private emitStructDefinition = (c: ClassType, className: Name): void => {
         this.emitLine("#[derive(Serialize, Deserialize)]");
 
         const structBody = () =>
             this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
-                const escapedName = rustStringEscape(jsonName);
-
-                this.emitLine('#[serde(rename = "', escapedName, '")]');
-
+                this.emitRenameAttribute(name, jsonName);
                 this.emitLine(name, ": ", this.breakCycle(prop.type, true), ",");
             });
 
@@ -281,9 +301,7 @@ class RustRenderer extends ConvenienceRenderer {
 
         this.emitBlock(["pub enum ", enumName], () =>
             this.forEachEnumCase(e, "none", (name, jsonName) => {
-                const escapedName = rustStringEscape(jsonName);
-
-                this.emitLine('#[serde(rename = "', escapedName, '")]');
+                this.emitRenameAttribute(name, jsonName);
                 this.emitLine([name, ","]);
             })
         );
