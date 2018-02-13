@@ -13,7 +13,8 @@ import {
     matchTypeExhaustive,
     TypeKind,
     isNamedType,
-    ClassProperty
+    ClassProperty,
+    MapType
 } from "./Type";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
@@ -45,6 +46,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _namedEnums: OrderedSet<EnumType>;
     private _namedUnions: OrderedSet<UnionType>;
     private _haveUnions: boolean;
+    private _haveMaps: boolean;
     private _haveOptionalProperties: boolean;
     private _cycleBreakerTypes?: Set<Type>;
 
@@ -339,6 +341,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this._haveUnions;
     }
 
+    protected get haveMaps(): boolean {
+        return this._haveMaps;
+    }
+
     protected get haveOptionalProperties(): boolean {
         return this._haveOptionalProperties;
     }
@@ -580,6 +586,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         const types = this.typeGraph.allTypesUnordered();
         this._haveUnions = types.some(t => t instanceof UnionType);
+        this._haveMaps = types.some(t => t instanceof MapType);
         this._haveOptionalProperties = types
             .filter(t => t instanceof ClassType)
             .some(c => (c as ClassType).properties.some(p => p.isOptional));

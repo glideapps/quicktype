@@ -145,6 +145,7 @@ files, URLs, or add other options.
 * `golang` stack
 * `swift` compiler
 * `clang` and Objective-C Foundation (must be tested separately on macOS)
+* `rust` tools
 
 We've assembled all of these tools in a Docker container that you build and test within:
 

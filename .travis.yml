@@ -5,6 +5,7 @@ env:
   - FIXTURE=golang,cplusplus,schema,graphql
   - FIXTURE=swift,java,schema-json-csharp
   - FIXTURE=elm,typescript,csharp
+  - FIXTURE=rust
 services:
   - docker
 before_install:
