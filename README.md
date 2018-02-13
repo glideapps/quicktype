@@ -30,7 +30,7 @@ _Missing your favorite language? Please implement it!_
 
 ## Installation
 
-There are many ways to use `quicktype`. [app.quicktype.io](https://app.quicktype.io) is the most powerful & complete UI. The web app also works offline and doesn't send your sample data over the Internet, so paste away!
+There are many ways to use `quicktype`. [app.quicktype.io](https://app.quicktype.io) is the most powerful and complete UI. The web app also works offline and doesn't send your sample data over the Internet, so paste away!
 
 For the best CLI, we recommend installing `quicktype` globally via `npm`:
 
