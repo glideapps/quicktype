@@ -1,18 +1,18 @@
 "use strict";
 
-import { OrderedMap } from "immutable";
+import { OrderedMap, Map } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { assertNever, assert, panic } from "./Support";
 import { TypeBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
-import { makeTypeNames, TypeNames } from "./TypeNames";
 import { ClassProperty } from "./Type";
+import { TypeAttributes } from "./TypeAttributes";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
 // but TypeScript doesn't support that.
-type NestedValueArray = any;
+export type NestedValueArray = any;
 
 function forEachArrayInNestedValueArray(va: NestedValueArray, f: (va: Value[]) => void): void {
     if (va.length === 0) {
@@ -36,12 +36,12 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
 
     constructor(
         typeBuilder: TypeBuilder,
-        typeNames: TypeNames,
+        typeAttributes: TypeAttributes,
         private readonly _typeInference: TypeInference,
         private readonly _cjson: CompressedJSON,
         forwardingRef?: TypeRef
     ) {
-        super(typeBuilder, typeNames, true, forwardingRef);
+        super(typeBuilder, typeAttributes, true, forwardingRef);
     }
 
     setNumValues = (n: number): void => {
@@ -53,17 +53,17 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
 
     protected makeEnum(cases: string[], counts: { [name: string]: number }): TypeRef {
         const caseMap = OrderedMap(cases.map((c: string): [string, number] => [c, counts[c]]));
-        return this.typeBuilder.getStringType(this.typeNames, caseMap, this.forwardingRef);
+        return this.typeBuilder.getStringType(this.typeAttributes, caseMap, this.forwardingRef);
     }
 
     protected makeClass(classes: NestedValueArray, maps: any[]): TypeRef {
         assert(maps.length === 0);
-        return this._typeInference.inferClassType(this._cjson, this.typeNames, classes, this.forwardingRef);
+        return this._typeInference.inferClassType(this._cjson, this.typeAttributes, classes, this.forwardingRef);
     }
 
     protected makeArray(arrays: NestedValueArray): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, this.typeNames.singularize(), arrays, this.forwardingRef)
+            this._typeInference.inferType(this._cjson, this.typeAttributes, arrays, this.forwardingRef)
         );
     }
 }
@@ -76,13 +76,13 @@ function canBeEnumCase(s: string): boolean {
 export class TypeInference {
     constructor(private readonly _typeBuilder: TypeBuilder, private readonly _inferEnums: boolean) {}
 
-    inferType = (
+    inferType(
         cjson: CompressedJSON,
-        typeNames: TypeNames,
+        typeAttributes: TypeAttributes,
         valueArray: NestedValueArray,
         forwardingRef?: TypeRef
-    ): TypeRef => {
-        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeNames, this, cjson, forwardingRef);
+    ): TypeRef {
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeAttributes, this, cjson, forwardingRef);
         let numValues = 0;
 
         forEachValueInNestedValueArray(valueArray, value => {
@@ -139,14 +139,14 @@ export class TypeInference {
 
         unionBuilder.setNumValues(numValues);
         return unionBuilder.buildUnion(false);
-    };
+    }
 
-    inferClassType = (
+    inferClassType(
         cjson: CompressedJSON,
-        typeNames: TypeNames,
+        typeAttributes: TypeAttributes,
         objects: NestedValueArray,
         forwardingRef?: TypeRef
-    ): TypeRef => {
+    ): TypeRef {
         const propertyNames: string[] = [];
         const propertyValues: { [name: string]: Value[] } = {};
 
@@ -165,12 +165,12 @@ export class TypeInference {
         const properties: [string, ClassProperty][] = [];
         for (const key of propertyNames) {
             const values = propertyValues[key];
-            const t = this.inferType(cjson, makeTypeNames(key, true), values);
+            const t = this.inferType(cjson, Map(), values);
             const isOptional = values.length < objects.length;
             properties.push([key, new ClassProperty(t, isOptional)]);
         }
 
         const propertyMap = OrderedMap(properties);
-        return this._typeBuilder.getClassType(typeNames, propertyMap, forwardingRef);
-    };
+        return this._typeBuilder.getClassType(typeAttributes, propertyMap, forwardingRef);
+    }
 }

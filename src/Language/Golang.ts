@@ -83,6 +83,11 @@ function isValueType(t: Type): boolean {
     return primitiveValueTypeKinds.indexOf(kind) >= 0 || kind === "class" || kind === "enum";
 }
 
+function singleDescriptionComment(description: string[] | undefined): string {
+    if (description === undefined) return "";
+    return "// " + description.join("; ");
+}
+
 class GoRenderer extends ConvenienceRenderer {
     private _topLevelUnmarshalNames = Map<Name, Name>();
 
@@ -169,6 +174,14 @@ class GoRenderer extends ConvenienceRenderer {
         );
     };
 
+    private emitDescription(description: string[] | undefined): void {
+        if (description === undefined) return;
+
+        for (const line of description) {
+            this.emitLine("// ", line);
+        }
+    }
+
     private emitTopLevel = (t: Type, name: Name): void => {
         const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
@@ -193,12 +206,15 @@ class GoRenderer extends ConvenienceRenderer {
         let columns: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
             const goType = this.goType(p.type, true);
-            columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`']]);
+            const comment = singleDescriptionComment(this.descriptionForClassProperty(c, jsonName));
+            columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`'], comment]);
         });
+        this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
     };
 
     private emitEnum = (e: EnumType, enumName: Name): void => {
+        this.emitDescription(this.descriptionForType(e));
         this.emitLine("type ", enumName, " string");
         this.emitLine("const (");
         this.indent(() =>
@@ -251,6 +267,7 @@ class GoRenderer extends ConvenienceRenderer {
             const goType = this.nullableGoType(t, true);
             columns.push([[fieldName, " "], goType]);
         });
+        this.emitDescription(this.descriptionForType(u));
         this.emitStruct(unionName, columns);
 
         if (this._justTypes) return;

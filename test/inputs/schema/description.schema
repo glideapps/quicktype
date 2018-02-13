@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "description": "The top-level class",
+  "properties": {
+    "union": {
+      "type": ["number", "string"],
+      "description": "Either a number or a string"
+    },
+    "enum": {
+      "type": "string",
+      "enum": ["foo", "bar"],
+      "description": "An enumeration"
+    },
+    "foo": {
+      "type": "number"
+    },
+    "bar": {
+      "type": "boolean",
+      "description": "A pretty boolean"
+    }
+  },
+  "required": ["union", "enum"],
+  "additionalProperties": false
+}

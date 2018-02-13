@@ -13,20 +13,14 @@ import {
 } from "./Type";
 import { defined, assert, panic } from "./Support";
 import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping } from "./TypeBuilder";
-import { TypeNames } from "./TypeNames";
+import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
+import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 
 export class TypeAttributeStore {
-    private _attributeKinds: Set<string> = Set();
-    private _values: (Map<string, any> | undefined)[] = [];
-    private _topLevelValues: Map<string, Map<string, any>> = Map();
+    private _topLevelValues: Map<string, TypeAttributes> = Map();
 
-    constructor(private readonly _typeGraph: TypeGraph) {}
-
-    registerAttributeKind(name: string): void {
-        assert(!this._attributeKinds.has(name), "Cannot register a type attribute more than once");
-        this._attributeKinds = this._attributeKinds.add(name);
-    }
+    constructor(private readonly _typeGraph: TypeGraph, private _values: (TypeAttributes | undefined)[]) {}
 
     private getTypeIndex(t: Type): number {
         const tref = t.typeRef;
@@ -34,64 +28,72 @@ export class TypeAttributeStore {
         return tref.getIndex();
     }
 
-    private setInMap<T>(maybeMap: Map<string, any> | undefined, name: string, value: T): Map<string, any> {
-        if (!this._attributeKinds.has(name)) {
-            return panic(`Unknown attribute ${name}`);
+    attributesForType(t: Type): TypeAttributes {
+        const index = this.getTypeIndex(t);
+        const maybeAttributes = this._values[index];
+        if (maybeAttributes !== undefined) {
+            return maybeAttributes;
         }
-
-        if (maybeMap === undefined) {
-            maybeMap = Map<string, any>();
-        }
-        maybeMap = maybeMap.set(name, value);
-        return maybeMap;
+        return Map();
     }
 
-    set<T>(name: string, t: Type, value: T): void {
+    attributesForTopLevel(name: string): TypeAttributes {
+        const maybeAttributes = this._topLevelValues.get(name);
+        if (maybeAttributes !== undefined) {
+            return maybeAttributes;
+        }
+        return Map();
+    }
+
+    private setInMap<T>(attributes: TypeAttributes, kind: TypeAttributeKind<T>, value: T): TypeAttributes {
+        return attributes.set(kind, value);
+    }
+
+    set<T>(kind: TypeAttributeKind<T>, t: Type, value: T): void {
         const index = this.getTypeIndex(t);
         while (index >= this._values.length) {
             this._values.push(undefined);
         }
-        this._values[index] = this.setInMap(this._values[index], name, value);
+        this._values[index] = this.setInMap(this.attributesForType(t), kind, value);
     }
 
-    setForTopLevel<T>(attributeName: string, topLevelName: string, value: T): void {
-        const maybeMap = this._topLevelValues.get(topLevelName);
-        this._topLevelValues = this._topLevelValues.set(topLevelName, this.setInMap(maybeMap, attributeName, value));
+    setForTopLevel<T>(kind: TypeAttributeKind<T>, topLevelName: string, value: T): void {
+        this._topLevelValues = this._topLevelValues.set(
+            topLevelName,
+            this.setInMap(this.attributesForTopLevel(topLevelName), kind, value)
+        );
     }
 
-    private tryGetInMap<T>(maybeMap: Map<string, any> | undefined, name: string): T | undefined {
-        assert(this._attributeKinds.has(name), `Attribute ${name} not defined`);
-        if (maybeMap === undefined) {
-            return undefined;
-        }
-        return maybeMap.get(name);
+    private tryGetInMap<T>(attributes: TypeAttributes, kind: TypeAttributeKind<T>): T | undefined {
+        return attributes.get(kind);
     }
 
-    tryGet<T>(name: string, t: Type): T | undefined {
-        const index = this.getTypeIndex(t);
-        return this.tryGetInMap(this._values[index], name);
+    tryGet<T>(kind: TypeAttributeKind<T>, t: Type): T | undefined {
+        return this.tryGetInMap(this.attributesForType(t), kind);
     }
 
-    tryGetForTopLevel<T>(attributeName: string, topLevelName: string): T | undefined {
-        return this.tryGetInMap(this._topLevelValues.get(topLevelName), attributeName);
+    tryGetForTopLevel<T>(kind: TypeAttributeKind<T>, topLevelName: string): T | undefined {
+        return this.tryGetInMap(this.attributesForTopLevel(topLevelName), kind);
     }
 }
 
 export class TypeAttributeStoreView<T> {
-    constructor(private readonly _attributeStore: TypeAttributeStore, private readonly _attributeName: string) {
-        _attributeStore.registerAttributeKind(_attributeName);
+    constructor(
+        private readonly _attributeStore: TypeAttributeStore,
+        private readonly _definition: TypeAttributeKind<T>
+    ) {
     }
 
     set(t: Type, value: T): void {
-        this._attributeStore.set(this._attributeName, t, value);
+        this._attributeStore.set(this._definition, t, value);
     }
 
     setForTopLevel(name: string, value: T): void {
-        this._attributeStore.setForTopLevel(this._attributeName, name, value);
+        this._attributeStore.setForTopLevel(this._definition, name, value);
     }
 
     tryGet(t: Type): T | undefined {
-        return this._attributeStore.tryGet(this._attributeName, t);
+        return this._attributeStore.tryGet(this._definition, t);
     }
 
     get(t: Type): T {
@@ -99,7 +101,7 @@ export class TypeAttributeStoreView<T> {
     }
 
     tryGetForTopLevel(name: string): T | undefined {
-        return this._attributeStore.tryGetForTopLevel(this._attributeName, name);
+        return this._attributeStore.tryGetForTopLevel(this._definition, name);
     }
 
     getForTopLevel(name: string): T {
@@ -109,8 +111,7 @@ export class TypeAttributeStoreView<T> {
 
 export class TypeGraph {
     private _typeBuilder?: TypeBuilder;
-    readonly attributeStore: TypeAttributeStore;
-    private readonly _namesStoreView: TypeAttributeStoreView<TypeNames>;
+    private _attributeStore: TypeAttributeStore | undefined = undefined;
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
@@ -120,21 +121,25 @@ export class TypeGraph {
 
     constructor(typeBuilder: TypeBuilder) {
         this._typeBuilder = typeBuilder;
-
-        this.attributeStore = new TypeAttributeStore(this);
-        this._namesStoreView = new TypeAttributeStoreView(this.attributeStore, "names");
     }
 
     private get isFrozen(): boolean {
         return this._typeBuilder === undefined;
     }
 
-    freeze = (topLevels: Map<string, TypeRef>, types: Type[], typeNames: (TypeNames | undefined)[]): void => {
+    get attributeStore(): TypeAttributeStore {
+        return defined(this._attributeStore);
+    }
+
+    freeze(topLevels: Map<string, TypeRef>, types: Type[], typeAttributes: (TypeAttributes | undefined)[]): void {
         assert(!this.isFrozen, "Tried to freeze TypeGraph a second time");
         assert(
             types.every(t => t.typeRef.graph === this),
             "Trying to freeze a graph with types that don't belong in it"
         );
+
+        this._attributeStore = new TypeAttributeStore(this, typeAttributes);
+
         // The order of these three statements matters.  If we set _typeBuilder
         // to undefined before we deref the TypeRefs, then we need to set _types
         // before, also, because the deref will call into typeAtIndex, which requires
@@ -142,30 +147,19 @@ export class TypeGraph {
         this._types = types;
         this._typeBuilder = undefined;
         this._topLevels = topLevels.map(tref => tref.deref()[0]);
-
-        for (let i = 0; i < types.length; i++) {
-            const maybeNames = typeNames[i];
-            if (maybeNames === undefined) continue;
-            this._namesStoreView.set(types[i], maybeNames);
-        }
-    };
+    }
 
     get topLevels(): Map<string, Type> {
         assert(this.isFrozen, "Cannot get top-levels from a non-frozen graph");
         return defined(this._topLevels);
     }
 
-    atIndex(index: number): [Type, TypeNames | undefined] {
+    atIndex(index: number): [Type, TypeAttributes] {
         if (this._typeBuilder !== undefined) {
             return this._typeBuilder.atIndex(index);
         }
         const t = defined(this._types)[index];
-        return [t, this._namesStoreView.tryGet(t)];
-    }
-
-    setNames(t: Type, names: TypeNames): void {
-        assert(t.typeRef.graph === this, "Setting names for type not in graph");
-        this._namesStoreView.set(t, names);
+        return [t, defined(this._attributeStore).attributesForType(t)];
     }
 
     filterTypes(
@@ -272,15 +266,18 @@ export function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTy
                 } else {
                     members = OrderedSet([builder.reconstituteType(t), nullType]);
                 }
-                const names = t.hasNames ? t.getNames() : new TypeNames(OrderedSet([name]), OrderedSet(), true);
-                ref = builder.getUnionType(names, members);
+                const attributes = namesTypeAttributeKind.setDefaultInAttributes(
+                    t.getAttributes(),
+                    () => new TypeNames(OrderedSet([name]), OrderedSet(), true)
+                );
+                ref = builder.getUnionType(attributes, members);
             }
             return new ClassProperty(ref, false);
         });
         if (c.isFixed) {
-            return builder.getUniqueClassType(c.getNames(), true, properties, forwardingRef);
+            return builder.getUniqueClassType(c.getAttributes(), true, properties, forwardingRef);
         } else {
-            return builder.getClassType(c.getNames(), properties, forwardingRef);
+            return builder.getClassType(c.getAttributes(), properties, forwardingRef);
         }
     }
 

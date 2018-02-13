@@ -4,12 +4,13 @@ import { Set, OrderedMap, OrderedSet } from "immutable";
 
 import { ClassType, Type, matchTypeExhaustive, assertIsClass, ClassProperty, allTypeCases } from "./Type";
 import { TypeRef, UnionBuilder, TypeBuilder, TypeLookerUp } from "./TypeBuilder";
-import { TypeNames, makeTypeNames, typeNamesUnion } from "./TypeNames";
 import { panic, assert, defined } from "./Support";
+import { TypeNames, namesTypeAttributeKind, modifyTypeNames } from "./TypeNames";
+import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 
 function getCliqueProperties(
     clique: ClassType[],
-    makePropertyType: (names: TypeNames, types: OrderedSet<Type>) => TypeRef
+    makePropertyType: (attributes: TypeAttributes, types: OrderedSet<Type>) => TypeRef
 ): OrderedMap<string, ClassProperty> {
     let properties = OrderedMap<string, [OrderedSet<Type>, number, boolean]>();
     for (const c of clique) {
@@ -28,30 +29,33 @@ function getCliqueProperties(
     }
     return properties.map(([types, count, isOptional], name) => {
         isOptional = isOptional || count < clique.length;
-        const allNames = types.filter(t => t.hasNames).map(t => t.getNames());
-        const typeNames = allNames.isEmpty() ? makeTypeNames(name, true) : typeNamesUnion(allNames);
-        return new ClassProperty(makePropertyType(typeNames, types), isOptional);
+        let attributes = combineTypeAttributes(types.map(t => t.getAttributes()).toArray());
+        attributes = namesTypeAttributeKind.setDefaultInAttributes(
+            attributes,
+            () => new TypeNames(OrderedSet([name]), OrderedSet(), true)
+        );
+        return new ClassProperty(makePropertyType(attributes, types), isOptional);
     });
 }
 
 class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef> {
     constructor(
         typeBuilder: TypeBuilder & TypeLookerUp,
-        typeNames: TypeNames,
+        typeAttributes: TypeAttributes,
         private readonly _makeEnums: boolean,
         private readonly _makeClassesFixed: boolean,
         conflateNumbers: boolean,
         forwardingRef: TypeRef | undefined,
-        private readonly _unifyTypes: (typesToUnify: TypeRef[], typeNames: TypeNames) => TypeRef
+        private readonly _unifyTypes: (typesToUnify: TypeRef[], typeAttributes: TypeAttributes) => TypeRef
     ) {
-        super(typeBuilder, typeNames, conflateNumbers, forwardingRef);
+        super(typeBuilder, typeAttributes, conflateNumbers, forwardingRef);
     }
 
     protected makeEnum(enumCases: string[], counts: { [name: string]: number }): TypeRef {
         if (this._makeEnums) {
-            return this.typeBuilder.getEnumType(this.typeNames, OrderedSet(enumCases), this.forwardingRef);
+            return this.typeBuilder.getEnumType(this.typeAttributes, OrderedSet(enumCases), this.forwardingRef);
         } else {
-            return this.typeBuilder.getStringType(this.typeNames, OrderedMap(counts), this.forwardingRef);
+            return this.typeBuilder.getStringType(this.typeAttributes, OrderedMap(counts), this.forwardingRef);
         }
     }
 
@@ -60,7 +64,7 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
             return panic("Cannot handle a class type that's also a map");
         }
         if (maps.length > 0) {
-            return this.typeBuilder.getMapType(this._unifyTypes(maps, this.typeNames), this.forwardingRef);
+            return this.typeBuilder.getMapType(this._unifyTypes(maps, this.typeAttributes), this.forwardingRef);
         }
         if (classes.length === 1) {
             return this.typeBuilder.lookupTypeRef(classes[0]);
@@ -74,7 +78,7 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
 
         let ref: TypeRef;
         ref = this.typeBuilder.getUniqueClassType(
-            this.typeNames,
+            this.typeAttributes,
             this._makeClassesFixed,
             undefined,
             this.forwardingRef
@@ -91,13 +95,14 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
     }
 
     protected makeArray(arrays: TypeRef[]): TypeRef {
-        return this.typeBuilder.getArrayType(this._unifyTypes(arrays, this.typeNames.singularize()));
+        const attributes = modifyTypeNames(this.typeAttributes, tn => defined(tn).singularize());
+        return this.typeBuilder.getArrayType(this._unifyTypes(arrays, attributes));
     }
 }
 
 export function unifyTypes(
     types: Set<Type>,
-    typeNames: TypeNames,
+    typeAttributes: TypeAttributes,
     typeBuilder: TypeBuilder & TypeLookerUp,
     makeEnums: boolean,
     makeClassesFixed: boolean,
@@ -117,7 +122,7 @@ export function unifyTypes(
 
     const unionBuilder = new UnifyUnionBuilder(
         typeBuilder,
-        typeNames,
+        typeAttributes,
         makeEnums,
         makeClassesFixed,
         conflateNumbers,

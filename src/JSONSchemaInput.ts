@@ -6,8 +6,10 @@ import * as pluralize from "pluralize";
 import { MapType, ClassProperty } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "./Support";
 import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
-import { TypeNames, makeTypeNames } from "./TypeNames";
+import { TypeNames } from "./TypeNames";
 import { unifyTypes } from "./UnifyClasses";
+import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
+import { TypeAttributes, descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./TypeAttributes";
 
 enum PathElementKind {
     Root,
@@ -83,16 +85,23 @@ function indexArray(cases: any, index: number): StringMap {
     return checkStringMap(cases[index]);
 }
 
-function getName(schema: StringMap, typeNames: TypeNames): TypeNames {
-    if (!typeNames.areInferred) {
-        return typeNames;
+function makeAttributes(schema: StringMap, attributes: TypeAttributes): TypeAttributes {
+    const maybeDescription = schema.description;
+    if (typeof maybeDescription === "string") {
+        attributes = descriptionTypeAttributeKind.setInAttributes(attributes, maybeDescription);
     }
-    const title = schema.title;
-    if (typeof title === "string") {
-        return makeTypeNames(title, false);
-    } else {
-        return typeNames.makeInferred();
-    }
+    return modifyTypeNames(attributes, maybeTypeNames => {
+        const typeNames = defined(maybeTypeNames);
+        if (!typeNames.areInferred) {
+            return typeNames;
+        }
+        const title = schema.title;
+        if (typeof title === "string") {
+            return new TypeNames(OrderedSet([title]), OrderedSet(), false);
+        } else {
+            return typeNames.makeInferred();
+        }
+    });
 }
 
 function checkTypeList(typeOrTypes: any): OrderedSet<string> {
@@ -159,24 +168,31 @@ export function schemaToType(
         }
     }
 
-    function makeClass(
-        schema: StringMap,
-        path: Ref,
-        typeNames: TypeNames,
-        properties: StringMap,
-        requiredArray: string[]
-    ): TypeRef {
+    function makeClass(path: Ref, attributes: TypeAttributes, properties: StringMap, requiredArray: string[]): TypeRef {
         const required = Set(requiredArray);
-        const result = typeBuilder.getUniqueClassType(getName(schema, typeNames), true);
+        const propertiesMap = Map(properties);
+        const propertyDescriptions = propertiesMap.map(propSchema => {
+            if (typeof propSchema === "object") {
+                const desc = propSchema.description;
+                if (typeof desc === "string") {
+                    return desc;
+                }
+            }
+            return undefined;
+        }).filter(v => v !== undefined) as Map<string, string>;
+        if (!propertyDescriptions.isEmpty()) {
+            attributes = propertyDescriptionsTypeAttributeKind.setInAttributes(attributes, propertyDescriptions);
+        }
+        const result = typeBuilder.getUniqueClassType(attributes, true);
         setTypeForPath(path, result);
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
         // we would use a JSON parser that preserves order.
-        const props = Map(properties).map((propSchema, propName) => {
+        const props = propertiesMap.map((propSchema, propName) => {
             const t = toType(
                 checkStringMap(propSchema),
                 path.push({ kind: PathElementKind.Property, name: propName }),
-                makeTypeNames(pluralize.singular(propName), true)
+                makeNamesTypeAttributes(pluralize.singular(propName), true)
             );
             const isOptional = !required.has(propName);
             return new ClassProperty(t, isOptional);
@@ -185,7 +201,7 @@ export function schemaToType(
         return result;
     }
 
-    function makeMap(path: Ref, typeNames: TypeNames, additional: StringMap): TypeRef {
+    function makeMap(path: Ref, typeAttributes: TypeAttributes, additional: StringMap): TypeRef {
         let valuesType: TypeRef | undefined = undefined;
         let mustSet = false;
         const result = typeBuilder.getLazyMapType(() => {
@@ -194,15 +210,18 @@ export function schemaToType(
         });
         setTypeForPath(path, result);
         path = path.push({ kind: PathElementKind.AdditionalProperty });
-        valuesType = toType(additional, path, typeNames.singularize());
+        valuesType = toType(additional, path, singularizeTypeNames(typeAttributes));
         if (mustSet) {
             (result.deref()[0] as MapType).setValues(valuesType);
         }
         return result;
     }
 
-    function fromTypeName(schema: StringMap, path: Ref, typeNames: TypeNames, typeName: string): TypeRef {
-        typeNames = getName(schema, typeNames.makeInferred());
+    function fromTypeName(schema: StringMap, path: Ref, typeAttributes: TypeAttributes, typeName: string): TypeRef {
+        // FIXME: We seem to be overzealous in making attributes.  We get them from
+        // our caller, then we make them again here, and then we make them again
+        // in `makeClass`, potentially in other places, too.
+        typeAttributes = makeAttributes(schema, modifyTypeNames(typeAttributes, tn => defined(tn).makeInferred()));
         switch (typeName) {
             case "object":
                 let required: string[];
@@ -212,15 +231,15 @@ export function schemaToType(
                     required = checkStringArray(schema.required);
                 }
                 if (schema.properties !== undefined) {
-                    return makeClass(schema, path, typeNames, checkStringMap(schema.properties), required);
+                    return makeClass(path, typeAttributes, checkStringMap(schema.properties), required);
                 } else if (schema.additionalProperties !== undefined) {
                     const additional = schema.additionalProperties;
                     if (additional === true) {
                         return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
                     } else if (additional === false) {
-                        return makeClass(schema, path, typeNames, {}, required);
+                        return makeClass(path, typeAttributes, {}, required);
                     } else {
-                        return makeMap(path, typeNames, checkStringMap(additional));
+                        return makeMap(path, typeAttributes, checkStringMap(additional));
                     }
                 } else {
                     return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
@@ -229,7 +248,7 @@ export function schemaToType(
                 if (schema.items !== undefined) {
                     path = path.push({ kind: PathElementKind.Items });
                     return typeBuilder.getArrayType(
-                        toType(checkStringMap(schema.items), path, typeNames.singularize())
+                        toType(checkStringMap(schema.items), path, singularizeTypeNames(typeAttributes))
                     );
                 }
                 return typeBuilder.getArrayType(typeBuilder.getPrimitiveType("any"));
@@ -248,7 +267,7 @@ export function schemaToType(
                             return panic(`String format ${schema.format} not supported`);
                     }
                 }
-                return typeBuilder.getStringType(typeNames, undefined);
+                return typeBuilder.getStringType(typeAttributes, undefined);
             case "null":
                 return typeBuilder.getPrimitiveType("null");
             case "integer":
@@ -260,8 +279,8 @@ export function schemaToType(
         }
     }
 
-    function convertToType(schema: StringMap, path: Ref, typeNames: TypeNames): TypeRef {
-        typeNames = getName(schema, typeNames);
+    function convertToType(schema: StringMap, path: Ref, typeAttributes: TypeAttributes): TypeRef {
+        typeAttributes = makeAttributes(schema, typeAttributes);
 
         function convertOneOrAnyOf(cases: any, kind: PathElementKind.OneOf | PathElementKind.AnyOf): TypeRef {
             if (!Array.isArray(cases)) {
@@ -269,24 +288,28 @@ export function schemaToType(
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
             const types = cases.map(
-                (t, index) => toType(checkStringMap(t), path.push({ kind, index } as any), typeNames).deref()[0]
+                (t, index) => toType(checkStringMap(t), path.push({ kind, index } as any), typeAttributes).deref()[0]
             );
-            return unifyTypes(OrderedSet(types), typeNames, typeBuilder, true, true, conflateNumbers);
+            return unifyTypes(OrderedSet(types), typeAttributes, typeBuilder, true, true, conflateNumbers);
         }
 
         if (schema.$ref !== undefined) {
             const [ref, refName] = parseRef(schema.$ref);
             const [target, targetPath] = lookupRef(schema, path, ref);
-            return toType(target, targetPath, typeNames.areInferred ? makeTypeNames(refName, true) : typeNames);
+            const attributes = modifyTypeNames(typeAttributes, tn => {
+                if (!defined(tn).areInferred) return tn;
+                return new TypeNames(OrderedSet([refName]), OrderedSet(), true);
+            });
+            return toType(target, targetPath, attributes);
         } else if (schema.enum !== undefined) {
-            return typeBuilder.getEnumType(typeNames, OrderedSet(checkStringArray(schema.enum)));
+            return typeBuilder.getEnumType(typeAttributes, OrderedSet(checkStringArray(schema.enum)));
         } else if (schema.type !== undefined) {
             const jsonTypes = checkTypeList(schema.type);
             if (jsonTypes.size === 1) {
-                return fromTypeName(schema, path, typeNames, defined(jsonTypes.first()));
+                return fromTypeName(schema, path, typeAttributes, defined(jsonTypes.first()));
             } else {
-                const types = jsonTypes.map(n => fromTypeName(schema, path, typeNames, n).deref()[0]);
-                return unifyTypes(types, typeNames, typeBuilder, true, true, conflateNumbers);
+                const types = jsonTypes.map(n => fromTypeName(schema, path, typeAttributes, n).deref()[0]);
+                return unifyTypes(types, typeAttributes, typeBuilder, true, true, conflateNumbers);
             }
         } else if (schema.oneOf !== undefined) {
             return convertOneOrAnyOf(schema.oneOf, PathElementKind.OneOf);
@@ -297,7 +320,7 @@ export function schemaToType(
         }
     }
 
-    function toType(schema: StringMap, path: Ref, typeNames: TypeNames): TypeRef {
+    function toType(schema: StringMap, path: Ref, typeAttributes: TypeAttributes): TypeRef {
         // FIXME: This fromJS thing is ugly and inefficient.  Schemas aren't
         // big, so it most likely doesn't matter.
         const immutablePath = makeImmutablePath(path);
@@ -305,12 +328,12 @@ export function schemaToType(
         if (maybeType !== undefined) {
             return maybeType;
         }
-        const result = convertToType(schema, path, typeNames);
+        const result = convertToType(schema, path, typeAttributes);
         setTypeForPath(immutablePath, result);
         return result;
     }
 
     const rootPathElement: PathElement = { kind: PathElementKind.Root };
-    const rootType = toType(root, List<PathElement>([rootPathElement]), makeTypeNames(topLevelName, false));
+    const rootType = toType(root, List<PathElement>([rootPathElement]), makeNamesTypeAttributes(topLevelName, false));
     return rootType;
 }
