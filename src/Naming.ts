@@ -290,7 +290,10 @@ export class AssociatedName extends Name {
 export class DependencyName extends Name {
     private readonly _dependencies: OrderedSet<Name>;
 
-    constructor(namingFunction: Namer, private readonly _proposeUnstyledName: (lookup: (n: Name) => string) => string) {
+    constructor(
+        namingFunction: Namer | null,
+        private readonly _proposeUnstyledName: (lookup: (n: Name) => string) => string
+    ) {
         super(namingFunction);
         const dependencies: Name[] = [];
         _proposeUnstyledName(n => {

@@ -187,7 +187,7 @@ class ElmRenderer extends ConvenienceRenderer {
         return elmNameStyle(rawName, true);
     }
 
-    protected topLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
+    protected makeTopLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
         const encoder = new DependencyName(lowerNamingFunction, lookup => `${lookup(topLevelName)}_to_string`);
         let decoder: DependencyName | undefined = undefined;
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
@@ -204,7 +204,7 @@ class ElmRenderer extends ConvenienceRenderer {
         return upperNamingFunction;
     }
 
-    protected namedTypeDependencyNames(_: Type, typeName: Name): DependencyName[] {
+    protected makeNamedTypeDependencyNames(_: Type, typeName: Name): DependencyName[] {
         const encoder = new DependencyName(lowerNamingFunction, lookup => `encode_${lookup(typeName)}`);
         const decoder = new DependencyName(lowerNamingFunction, lookup => lookup(typeName));
         this._namedTypeDependents = this._namedTypeDependents.set(typeName, { encoder, decoder });

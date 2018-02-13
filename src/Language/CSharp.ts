@@ -211,7 +211,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         return directlyReachableSingleNamedType(type);
     }
 
-    protected namedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
+    protected makeNamedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
         if (!(t instanceof EnumType)) return [];
 
         const extensionsName = new DependencyName(namingFunction, lookup => `${lookup(name)}_extensions`);

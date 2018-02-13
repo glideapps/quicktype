@@ -1,5 +1,7 @@
 "use strict";
 
+import { Map } from "immutable";
+
 import {
     TypeKind,
     Type,
@@ -15,7 +17,7 @@ import {
     ClassProperty
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import { Sourcelike, maybeAnnotated } from "../Source";
 import {
     utf16LegalizeCharacters,
     escapeNonPrintableMapper,
@@ -31,12 +33,12 @@ import {
     firstUpperWordStyle,
     allLowerWordStyle
 } from "../Strings";
-import { Name, Namer, funPrefixNamer } from "../Naming";
+import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { defined, assert } from "../Support";
+import { defined, assert, assertNever } from "../Support";
 
 export class JavaTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
@@ -175,6 +177,7 @@ function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
 
 export class JavaRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
+    private _gettersAndSettersForPropertyName: Map<Name, [Name, Name]>;
 
     constructor(
         graph: TypeGraph,
@@ -183,6 +186,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         private readonly _justTypes: boolean
     ) {
         super(graph, leadingComments);
+        this._gettersAndSettersForPropertyName = Map();
     }
 
     protected get forbiddenNamesForGlobalNamespace(): string[] {
@@ -222,6 +226,30 @@ export class JavaRenderer extends ConvenienceRenderer {
         // we have to define a class just for the `FromJson` method, in
         // emitFromJsonForTopLevel.
         return directlyReachableSingleNamedType(type);
+    }
+
+    protected makeNamesForPropertyGetterAndSetter(
+        _c: ClassType,
+        _className: Name,
+        _p: ClassProperty,
+        _jsonName: string,
+        name: Name
+    ): [Name, Name] {
+        const getterName = new DependencyName(propertyNamingFunction, lookup => `get_${lookup(name)}`);
+        const setterName = new DependencyName(propertyNamingFunction, lookup => `set_${lookup(name)}`);
+        return [getterName, setterName];
+    }
+
+    protected makePropertyDependencyNames(
+        c: ClassType,
+        className: Name,
+        p: ClassProperty,
+        jsonName: string,
+        name: Name
+    ): Name[] {
+        const getterAndSetterNames = this.makeNamesForPropertyGetterAndSetter(c, className, p, jsonName, name);
+        this._gettersAndSettersForPropertyName = this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
+        return getterAndSetterNames;
     }
 
     private fieldOrMethodName(methodName: string, topLevelName: Name): Sourcelike {
@@ -341,27 +369,38 @@ export class JavaRenderer extends ConvenienceRenderer {
         }
     }
 
+    protected importsForType(t: ClassType | UnionType | EnumType): string[] {
+        if (t instanceof ClassType) {
+            return ["com.fasterxml.jackson.annotation.*"];
+        }
+        if (t instanceof UnionType) {
+            return [
+                "java.io.IOException",
+                "com.fasterxml.jackson.core.*",
+                "com.fasterxml.jackson.databind.*",
+                "com.fasterxml.jackson.databind.annotation.*"
+            ];
+        }
+        if (t instanceof EnumType) {
+            return ["java.io.IOException", "com.fasterxml.jackson.annotation.*"];
+        }
+        return assertNever(t);
+    }
+
     protected emitClassDefinition(c: ClassType, className: Name): void {
-        this.emitFileHeader(className, ["com.fasterxml.jackson.annotation.*"]);
+        this.emitFileHeader(className, this.importsForType(c));
         this.emitClassAttributes(c, className);
         this.emitBlock(["public class ", className], () => {
             this.forEachClassProperty(c, "none", (name, _, p) => {
                 this.emitLine("private ", this.javaType(false, p.type, true), " ", name, ";");
             });
             this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
+                const [getterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
                 this.emitAccessorAttributes(c, className, name, jsonName, p, false);
                 const rendered = this.javaType(false, p.type);
-                this.emitLine("public ", rendered, " get", modifySource(capitalize, name), "() { return ", name, "; }");
+                this.emitLine("public ", rendered, " ", getterName, "() { return ", name, "; }");
                 this.emitAccessorAttributes(c, className, name, jsonName, p, true);
-                this.emitLine(
-                    "public void set",
-                    modifySource(capitalize, name),
-                    "(",
-                    rendered,
-                    " value) { this.",
-                    name,
-                    " = value; }"
-                );
+                this.emitLine("public void ", setterName, "(", rendered, " value) { this.", name, " = value; }");
             });
         });
         this.finishFile();
@@ -414,12 +453,7 @@ export class JavaRenderer extends ConvenienceRenderer {
             this.indent(() => emitDeserializeType(t));
         };
 
-        this.emitFileHeader(unionName, [
-            "java.io.IOException",
-            "com.fasterxml.jackson.core.*",
-            "com.fasterxml.jackson.databind.*",
-            "com.fasterxml.jackson.databind.annotation.*"
-        ]);
+        this.emitFileHeader(unionName, this.importsForType(u));
         if (!this._justTypes) {
             this.emitLine("@JsonDeserialize(using = ", unionName, ".Deserializer.class)");
             this.emitLine("@JsonSerialize(using = ", unionName, ".Serializer.class)");
@@ -488,7 +522,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
-        this.emitFileHeader(enumName, ["java.io.IOException", "com.fasterxml.jackson.annotation.*"]);
+        this.emitFileHeader(enumName, this.importsForType(e));
         const caseNames: Sourcelike[] = [];
         this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
