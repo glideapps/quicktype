@@ -10,6 +10,13 @@
       "type": "string",
       "enum": ["foo", "bar"],
       "description": "An enumeration"
+    },
+    "foo": {
+      "type": "number"
+    },
+    "bar": {
+      "type": "boolean",
+      "description": "A pretty boolean"
     }
   },
   "required": ["union", "enum"],

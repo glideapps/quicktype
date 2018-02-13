@@ -9,7 +9,7 @@ import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
 import { unifyTypes } from "./UnifyClasses";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
-import { TypeAttributes, descriptionTypeAttributeKind } from "./TypeAttributes";
+import { TypeAttributes, descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./TypeAttributes";
 
 enum PathElementKind {
     Root,
@@ -170,12 +170,25 @@ export function schemaToType(
 
     function makeClass(path: Ref, attributes: TypeAttributes, properties: StringMap, requiredArray: string[]): TypeRef {
         const required = Set(requiredArray);
+        const propertiesMap = Map(properties);
+        const propertyDescriptions = propertiesMap.map(propSchema => {
+            if (typeof propSchema === "object") {
+                const desc = propSchema.description;
+                if (typeof desc === "string") {
+                    return desc;
+                }
+            }
+            return undefined;
+        }).filter(v => v !== undefined) as Map<string, string>;
+        if (!propertyDescriptions.isEmpty()) {
+            attributes = propertyDescriptionsTypeAttributeKind.setInAttributes(attributes, propertyDescriptions);
+        }
         const result = typeBuilder.getUniqueClassType(attributes, true);
         setTypeForPath(path, result);
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
         // we would use a JSON parser that preserves order.
-        const props = Map(properties).map((propSchema, propName) => {
+        const props = propertiesMap.map((propSchema, propName) => {
             const t = toType(
                 checkStringMap(propSchema),
                 path.push({ kind: PathElementKind.Property, name: propName }),

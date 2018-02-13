@@ -24,7 +24,14 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 import { TypeAttributeStoreView } from "./TypeGraph";
-import { TypeAttributeKind, descriptionTypeAttributeKind } from "./TypeAttributes";
+import { TypeAttributeKind, descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./TypeAttributes";
+
+function splitDescription(description: string | undefined): string[] | undefined {
+    if (description === undefined) return undefined;
+    description = description.trim();
+    if (description === "") return undefined;
+    return description.split("\n").map(l => l.trim());
+}
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
 
@@ -136,10 +143,13 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected descriptionForType(t: Type): string[] | undefined {
         let description = this.typeGraph.attributeStore.tryGet(descriptionTypeAttributeKind, t);
-        if (description === undefined) return undefined;
-        description = description.trim();
-        if (description === "") return undefined;
-        return description.split("\n").map(l => l.trim());
+        return splitDescription(description);
+    }
+
+    protected descriptionForClassProperty(c: ClassType, name: string): string[] | undefined {
+        const descriptions = this.typeGraph.attributeStore.tryGet(propertyDescriptionsTypeAttributeKind, c);
+        if (descriptions === undefined) return undefined;
+        return splitDescription(descriptions.get(name));
     }
 
     protected setUpNaming(): OrderedSet<Namespace> {

@@ -65,4 +65,12 @@ export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAtt
     return first.mergeWith((aa, ab, kind) => kind.combine(aa, ab), ...rest);
 }
 
-export const descriptionTypeAttributeKind = new TypeAttributeKind<string>("description", undefined);
+function combineDescriptions(a: string, b: string): string {
+    return a.trim() + "\n\n" + b.trim();
+}
+
+export const descriptionTypeAttributeKind = new TypeAttributeKind<string>("description", combineDescriptions);
+export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, string>>(
+    "propertyDescriptions",
+    (a, b) => a.mergeWith(combineDescriptions, b)
+);
