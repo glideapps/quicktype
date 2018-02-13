@@ -105,7 +105,7 @@ export const GoLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
-  quickTestRendererOptions: []
+  quickTestRendererOptions: [{ density: "dense" }]
 };
 
 export const CPlusPlusLanguage: Language = {
