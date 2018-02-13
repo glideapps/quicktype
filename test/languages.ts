@@ -83,7 +83,7 @@ export const RustLanguage: Language = {
   skipSchema: [],
   skipMiscJSON: true,
   rendererOptions: {},
-  quickTestRendererOptions: []
+  quickTestRendererOptions: [{ density: "dense" }]
 };
 
 export const GoLanguage: Language = {
@@ -105,7 +105,7 @@ export const GoLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
-  quickTestRendererOptions: [{ density: "dense" }]
+  quickTestRendererOptions: []
 };
 
 export const CPlusPlusLanguage: Language = {
