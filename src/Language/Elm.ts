@@ -179,7 +179,7 @@ class ElmRenderer extends ConvenienceRenderer {
         super(graph, leadingComments);
     }
 
-    protected get forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
         return forbiddenNames;
     }
 

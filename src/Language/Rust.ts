@@ -183,7 +183,7 @@ class RustRenderer extends ConvenienceRenderer {
         return camelNamingFunction;
     }
 
-    protected get forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
         return keywords;
     }
 

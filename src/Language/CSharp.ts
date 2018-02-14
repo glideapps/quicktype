@@ -32,7 +32,6 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { StringTypeMapping } from "../TypeBuilder";
 
 const unicode = require("unicode-properties");
-const lodash = require("lodash");
 
 type Version = 5 | 6;
 type OutputFeatures = { helpers: boolean; attributes: boolean };
@@ -76,7 +75,7 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         leadingComments: string[] | undefined,
         ...optionValues: any[]
     ) => ConvenienceRenderer {
-        return CSharpRenderer;
+        return NewtonsoftCSharpRenderer;
     }
 }
 
@@ -121,49 +120,31 @@ function isValueType(t: Type): boolean {
 }
 
 class CSharpRenderer extends ConvenienceRenderer {
-    private _enumExtensionsNames = Map<Name, Name>();
-    private readonly _needHelpers: boolean;
-    private readonly _needAttributes: boolean;
+    protected readonly needHelpers: boolean;
+    protected readonly needAttributes: boolean;
 
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
-        private readonly _namespaceName: string,
+        protected readonly namespaceName: string,
         private readonly _version: Version,
-        private readonly _dense: boolean,
+        protected readonly dense: boolean,
         private readonly _useList: boolean,
         outputFeatures: OutputFeatures
     ) {
         super(graph, leadingComments);
-        this._needHelpers = outputFeatures.helpers;
-        this._needAttributes = outputFeatures.attributes;
+        this.needHelpers = outputFeatures.helpers;
+        this.needAttributes = outputFeatures.attributes;
     }
 
-    protected get forbiddenNamesForGlobalNamespace(): string[] {
-        return [
-            "QuickType",
-            "Converter",
-            "JsonConverter",
-            "JsonSerializer",
-            "JsonWriter",
-            "JsonToken",
-            "Type",
-            "Serialize",
-            "System",
-            "Newtonsoft",
-            "Console",
-            "Exception",
-            "MetadataPropertyHandling",
-            "DateParseHandling"
-        ];
+    protected forbiddenNamesForGlobalNamespace(): string[] {
+        return ["QuickType", "Type", "System", "Console", "Exception"];
     }
 
     protected forbiddenForClassProperties(_: ClassType, classNamed: Name): ForbiddenWordsInfo {
         return {
             names: [
                 classNamed,
-                "ToJson",
-                "FromJson",
                 "ToString",
                 "GetHashCode",
                 "Finalize",
@@ -209,14 +190,6 @@ class CSharpRenderer extends ConvenienceRenderer {
         // we have to define a class just for the `FromJson` method, in
         // emitFromJsonForTopLevel.
         return directlyReachableSingleNamedType(type);
-    }
-
-    protected makeNamedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
-        if (!(t instanceof EnumType)) return [];
-
-        const extensionsName = new DependencyName(namingFunction, lookup => `${lookup(name)}_extensions`);
-        this._enumExtensionsNames = this._enumExtensionsNames.set(name, extensionsName);
-        return [extensionsName];
     }
 
     emitBlock = (f: () => void, semicolon: boolean = false): void => {
@@ -274,31 +247,36 @@ class CSharpRenderer extends ConvenienceRenderer {
     };
 
     get partialString(): string {
-        return this._needHelpers ? "partial " : "";
+        return this.needHelpers ? "partial " : "";
+    }
+
+    protected attributeForProperty(_jsonName: string): Sourcelike | undefined {
+        return undefined;
     }
 
     emitClassDefinition = (c: ClassType, className: Name): void => {
-        const jsonProperty = this._dense ? denseJsonPropertyName : "JsonProperty";
         this.emitClass(true, [this.partialString, "class"], className, () => {
             if (c.properties.isEmpty()) return;
-            const maxWidth = defined(c.properties.map((_, name: string) => utf16StringEscape(name).length).max());
-            const blankLines = this._needAttributes && !this._dense ? "interposing" : "none";
+            const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
+            let columns: Sourcelike[][] = [];
             this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
                 const csType = this.csType(p.type, true);
-                const escapedName = utf16StringEscape(jsonName);
-                const attribute = ["[", jsonProperty, '("', escapedName, '")]'];
+                const attribute = this.attributeForProperty(jsonName);
                 const property = ["public ", csType, " ", name, " { get; set; }"];
-                if (!this._needAttributes) {
+                if (!this.needAttributes) {
                     this.emitLine(property);
-                } else if (this._dense) {
-                    const indent = maxWidth - escapedName.length + 1;
-                    const whitespace = lodash.repeat(" ", indent);
-                    this.emitLine(attribute, whitespace, property);
+                } else if (this.dense && attribute !== undefined) {
+                    columns.push([attribute, property]);
                 } else {
-                    this.emitLine(attribute);
+                    if (attribute !== undefined) {
+                        this.emitLine(attribute);
+                    }
                     this.emitLine(property);
                 }
             });
+            if (columns.length > 0) {
+                this.emitTable(columns);
+            }
         });
     };
 
@@ -332,7 +310,154 @@ class CSharpRenderer extends ConvenienceRenderer {
         }
     }
 
-    emitFromJsonForTopLevel = (t: Type, name: Name): void => {
+    emitTypeSwitch<T extends Sourcelike>(
+        types: OrderedSet<T>,
+        condition: (t: T) => Sourcelike,
+        withBlock: boolean,
+        withReturn: boolean,
+        f: (t: T) => void
+    ): void {
+        assert(!withReturn || withBlock, "Can only have return with block");
+        types.forEach(t => {
+            this.emitLine("if (", condition(t), ")");
+            if (withBlock) {
+                this.emitBlock(() => {
+                    f(t);
+                    if (withReturn) {
+                        this.emitLine("return;");
+                    }
+                });
+            } else {
+                this.indent(() => f(t));
+            }
+        });
+    }
+
+    protected emitUsing(ns: Sourcelike): void {
+        this.emitLine("using ", ns, ";");
+    }
+
+    protected emitUsings(): void {
+        for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
+            this.emitUsing(ns);
+        }
+    }
+
+    protected emitRequiredHelpers(): void {
+        return;
+    }
+
+    private emitTypesAndSupport = (): void => {
+        if (this.needAttributes || this.needHelpers) {
+            this.emitUsings();
+        }
+        this.forEachClass("leading-and-interposing", this.emitClassDefinition);
+        this.forEachEnum("leading-and-interposing", this.emitEnumDefinition);
+        this.forEachUnion("leading-and-interposing", this.emitUnionDefinition);
+        this.emitRequiredHelpers();
+    };
+
+    protected emitDefaultLeadingComments(): void {
+        return;
+    }
+
+    protected emitSourceStructure(): void {
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines("// ", this.leadingComments);
+        } else if (this.needHelpers) {
+            this.emitDefaultLeadingComments();
+        }
+
+        this.ensureBlankLine();
+        if (this.needHelpers || this.needAttributes) {
+            this.emitLine("namespace ", this.namespaceName);
+            this.emitBlock(this.emitTypesAndSupport);
+        } else {
+            this.emitTypesAndSupport();
+        }
+    }
+
+    protected registerHandlebarsHelpers(context: StringMap): void {
+        super.registerHandlebarsHelpers(context);
+        handlebars.registerHelper("string_escape", utf16StringEscape);
+    }
+
+    protected makeHandlebarsContextForType(t: Type): StringMap {
+        const ctx = super.makeHandlebarsContextForType(t);
+        ctx.csType = this.sourcelikeToString(this.csType(t));
+        return ctx;
+    }
+
+    protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
+        const value = super.makeHandlebarsContextForUnionMember(t, name);
+        value.nullableCSType = this.sourcelikeToString(this.nullableCSType(t));
+        return value;
+    }
+}
+
+class NewtonsoftCSharpRenderer extends CSharpRenderer {
+    private _enumExtensionsNames = Map<Name, Name>();
+
+    protected forbiddenNamesForGlobalNamespace(): string[] {
+        return super
+            .forbiddenNamesForGlobalNamespace()
+            .concat([
+                "Converter",
+                "JsonConverter",
+                "JsonSerializer",
+                "JsonWriter",
+                "JsonToken",
+                "Serialize",
+                "Newtonsoft",
+                "MetadataPropertyHandling",
+                "DateParseHandling"
+            ]);
+    }
+
+    protected forbiddenForClassProperties(c: ClassType, className: Name): ForbiddenWordsInfo {
+        const result = super.forbiddenForClassProperties(c, className);
+        result.names = result.names.concat(["ToJson", "FromJson"]);
+        return result;
+    }
+
+    protected makeNamedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
+        if (!(t instanceof EnumType)) return [];
+
+        const extensionsName = new DependencyName(namingFunction, lookup => `${lookup(name)}_extensions`);
+        this._enumExtensionsNames = this._enumExtensionsNames.set(name, extensionsName);
+        return [extensionsName];
+    }
+
+    protected emitUsings(): void {
+        super.emitUsings();
+        this.ensureBlankLine();
+        this.emitUsing("Newtonsoft.Json");
+        if (this.dense) {
+            this.emitUsing([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
+        }
+    }
+
+    protected emitDefaultLeadingComments(): void {
+        this.emitLine(
+            "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do",
+            this.topLevels.size === 1 ? "" : " one of these",
+            ":"
+        );
+        this.emitLine("//");
+        this.emitLine("//    using ", this.namespaceName, ";");
+        this.forEachTopLevel("none", (_, topLevelName) => {
+            this.emitLine("//");
+            this.emitLine("//    var data = ", topLevelName, ".FromJson(jsonString);");
+        });
+    }
+
+    protected attributeForProperty(jsonName: string): Sourcelike {
+        const jsonProperty = this.dense ? denseJsonPropertyName : "JsonProperty";
+        const escapedName = utf16StringEscape(jsonName);
+        return ["[", jsonProperty, '("', escapedName, '")]'];
+    }
+
+    private emitFromJsonForTopLevel(t: Type, name: Name): void {
         let partial: string;
         let typeKind: string;
         const definedType = this.namedTypeToNameForTopLevel(t);
@@ -348,12 +473,12 @@ class CSharpRenderer extends ConvenienceRenderer {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
-                ["JsonConvert.DeserializeObject<", csType, ">(json, ", this._namespaceName, ".Converter.Settings)"]
+                ["JsonConvert.DeserializeObject<", csType, ">(json, ", this.namespaceName, ".Converter.Settings)"]
             );
         });
-    };
+    }
 
-    emitEnumExtension = (e: EnumType, enumName: Name): void => {
+    private emitEnumExtension(e: EnumType, enumName: Name): void {
         this.emitClass(false, "static class", defined(this._enumExtensionsNames.get(enumName)), () => {
             this.emitLine("public static ", enumName, "? ValueForString(string str)");
             this.emitBlock(() => {
@@ -396,9 +521,9 @@ class CSharpRenderer extends ConvenienceRenderer {
                 });
             });
         });
-    };
+    }
 
-    emitUnionJSONPartial = (u: UnionType, unionName: Name): void => {
+    private emitUnionJSONPartial(u: UnionType, unionName: Name): void {
         const tokenCase = (tokenType: string): void => {
             this.emitLine("case JsonToken.", tokenType, ":");
         };
@@ -503,45 +628,22 @@ class CSharpRenderer extends ConvenienceRenderer {
                 }
             });
         });
-    };
+    }
 
-    emitSerializeClass = (): void => {
+    private emitSerializeClass(): void {
         // FIXME: Make Serialize a Named
         this.emitClass(true, "static class", "Serialize", () => {
             this.topLevels.forEach((t: Type, _: string) => {
                 // FIXME: Make ToJson a Named
                 this.emitExpressionMember(
                     ["public static string ToJson(this ", this.csType(t), " self)"],
-                    ["JsonConvert.SerializeObject(self, ", this._namespaceName, ".Converter.Settings)"]
+                    ["JsonConvert.SerializeObject(self, ", this.namespaceName, ".Converter.Settings)"]
                 );
             });
         });
-    };
-
-    emitTypeSwitch<T extends Sourcelike>(
-        types: OrderedSet<T>,
-        condition: (t: T) => Sourcelike,
-        withBlock: boolean,
-        withReturn: boolean,
-        f: (t: T) => void
-    ): void {
-        assert(!withReturn || withBlock, "Can only have return with block");
-        types.forEach(t => {
-            this.emitLine("if (", condition(t), ")");
-            if (withBlock) {
-                this.emitBlock(() => {
-                    f(t);
-                    if (withReturn) {
-                        this.emitLine("return;");
-                    }
-                });
-            } else {
-                this.indent(() => f(t));
-            }
-        });
     }
 
-    emitConverterMembers = (): void => {
+    private emitConverterMembers(): void {
         const enumNames = this.enums.map(this.nameForNamedType);
         const unionNames = this.namedUnions.map(this.nameForNamedType);
         const allNames = enumNames.union(unionNames);
@@ -579,9 +681,9 @@ class CSharpRenderer extends ConvenienceRenderer {
             });
             this.emitLine('throw new Exception("Unknown type");');
         });
-    };
+    }
 
-    emitConverterClass = (): void => {
+    private emitConverterClass(): void {
         const jsonConverter = this.haveEnums || this.haveNamedUnions;
         // FIXME: Make Converter a Named
         let converterName: Sourcelike = ["Converter"];
@@ -600,83 +702,28 @@ class CSharpRenderer extends ConvenienceRenderer {
                 }
             }, true);
         });
-    };
+    }
 
-    private emitTypesAndSupport = (): void => {
-        const using = (ns: Sourcelike): void => {
-            this.emitLine("using ", ns, ";");
-        };
-
-        if (this._needAttributes || this._needHelpers) {
-            for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
-                using(ns);
-            }
-            this.ensureBlankLine();
-            using("Newtonsoft.Json");
-            if (this._dense) {
-                using([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
-            }
-        }
-        this.forEachClass("leading-and-interposing", this.emitClassDefinition);
-        this.forEachEnum("leading-and-interposing", this.emitEnumDefinition);
-        this.forEachUnion("leading-and-interposing", this.emitUnionDefinition);
-        if (this._needHelpers) {
-            this.forEachTopLevel("leading-and-interposing", this.emitFromJsonForTopLevel);
-            this.forEachEnum("leading-and-interposing", this.emitEnumExtension);
-            this.forEachUnion("leading-and-interposing", this.emitUnionJSONPartial);
+    protected emitRequiredHelpers(): void {
+        if (this.needHelpers) {
+            this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitFromJsonForTopLevel(t, n));
+            this.forEachEnum("leading-and-interposing", (e, n) => this.emitEnumExtension(e, n));
+            this.forEachUnion("leading-and-interposing", (u, n) => this.emitUnionJSONPartial(u, n));
             this.ensureBlankLine();
             this.emitSerializeClass();
         }
-        if (this._needHelpers || (this._needAttributes && (this.haveNamedUnions || this.haveEnums))) {
+        if (this.needHelpers || (this.needAttributes && (this.haveNamedUnions || this.haveEnums))) {
             this.ensureBlankLine();
             this.emitConverterClass();
         }
-    };
-
-    protected emitSourceStructure(): void {
-        if (this.leadingComments !== undefined) {
-            this.emitCommentLines("// ", this.leadingComments);
-        } else if (this._needHelpers) {
-            this.emitLine(
-                "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do",
-                this.topLevels.size === 1 ? "" : " one of these",
-                ":"
-            );
-            this.emitLine("//");
-            this.emitLine("//    using ", this._namespaceName, ";");
-            this.forEachTopLevel("none", (_, topLevelName) => {
-                this.emitLine("//");
-                this.emitLine("//    var data = ", topLevelName, ".FromJson(jsonString);");
-            });
-        }
-
-        this.ensureBlankLine();
-        if (this._needHelpers || this._needAttributes) {
-            this.emitLine("namespace ", this._namespaceName);
-            this.emitBlock(this.emitTypesAndSupport);
-        } else {
-            this.emitTypesAndSupport();
-        }
-    }
-
-    protected registerHandlebarsHelpers(context: StringMap): void {
-        super.registerHandlebarsHelpers(context);
-        handlebars.registerHelper("string_escape", utf16StringEscape);
     }
 
     protected makeHandlebarsContextForType(t: Type): StringMap {
         const ctx = super.makeHandlebarsContextForType(t);
-        ctx.csType = this.sourcelikeToString(this.csType(t));
         if (t.kind === "enum") {
             const name = this.nameForNamedType(t);
             ctx.extensionsName = defined(this.names.get(defined(this._enumExtensionsNames.get(name))));
         }
         return ctx;
-    }
-
-    protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
-        const value = super.makeHandlebarsContextForUnionMember(t, name);
-        value.nullableCSType = this.sourcelikeToString(this.nullableCSType(t));
-        return value;
     }
 }

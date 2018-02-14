@@ -278,7 +278,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         return this.typeGraph.allTypesUnordered().some(containedBy);
     }
 
-    protected get forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
         return keywords;
     }
 

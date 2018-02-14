@@ -189,7 +189,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         this._gettersAndSettersForPropertyName = Map();
     }
 
-    protected get forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
         return keywords;
     }
 
