@@ -24,7 +24,11 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 import { TypeAttributeStoreView } from "./TypeGraph";
-import { TypeAttributeKind, descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./TypeAttributes";
+import {
+    TypeAttributeKind,
+    descriptionTypeAttributeKind,
+    propertyDescriptionsTypeAttributeKind
+} from "./TypeAttributes";
 
 function splitDescription(description: string | undefined): string[] | undefined {
     if (description === undefined) return undefined;
@@ -71,12 +75,8 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this.typeGraph.topLevels;
     }
 
-    protected get forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
         return [];
-    }
-
-    protected get forbiddenNamesForClassProperties(): string[] | undefined {
-        return undefined;
     }
 
     protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
@@ -171,7 +171,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._unionMemberNamer = this.makeUnionMemberNamer();
         this._enumCaseNamer = this.makeEnumCaseNamer();
 
-        this._globalForbiddenNamespace = keywordNamespace("forbidden", this.forbiddenNamesForGlobalNamespace);
+        this._globalForbiddenNamespace = keywordNamespace("forbidden", this.forbiddenNamesForGlobalNamespace());
         this._otherForbiddenNamespaces = Map();
         this._globalNamespace = new Namespace("global", undefined, Set([this._globalForbiddenNamespace]), Set());
         const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();

@@ -265,7 +265,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         this._caseNamingFunction = funPrefixNamer("enumerators", cppNameStyle(_enumeratorNamingStyle));
     }
 
-    protected get forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
         return keywords;
     }
 

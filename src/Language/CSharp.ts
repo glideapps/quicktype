@@ -139,7 +139,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         this._needAttributes = outputFeatures.attributes;
     }
 
-    protected get forbiddenNamesForGlobalNamespace(): string[] {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
         return [
             "QuickType",
             "Converter",
