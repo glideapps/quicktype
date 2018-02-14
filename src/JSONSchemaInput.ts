@@ -11,7 +11,7 @@ import { unifyTypes } from "./UnifyClasses";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
 import { TypeAttributes, descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./TypeAttributes";
 
-enum PathElementKind {
+export enum PathElementKind {
     Root,
     Definition,
     OneOf,
@@ -21,7 +21,7 @@ enum PathElementKind {
     Items
 }
 
-type PathElement =
+export type PathElement =
     | { kind: PathElementKind.Root }
     | { kind: PathElementKind.Definition; name: string }
     | { kind: PathElementKind.OneOf; index: number }
@@ -30,7 +30,7 @@ type PathElement =
     | { kind: PathElementKind.AdditionalProperty }
     | { kind: PathElementKind.Items };
 
-type Ref = List<PathElement>;
+export type Ref = List<PathElement>;
 
 function checkStringArray(arr: any): string[] {
     if (!Array.isArray(arr)) {
@@ -127,12 +127,14 @@ function makeImmutablePath(path: Ref): List<any> {
     return path.map(pe => fromJS(pe));
 }
 
-export function schemaToType(
+export const rootRef: Ref = List([{ kind: PathElementKind.Root } as PathElement]);
+
+export function addTypesInSchema(
     typeBuilder: TypeGraphBuilder,
-    topLevelName: string,
     rootJson: any,
-    conflateNumbers: boolean
-): TypeRef {
+    conflateNumbers: boolean,
+    references: Map<string, Ref>
+): void {
     const root = checkStringMap(rootJson);
     let typeForPath = Map<List<any>, TypeRef>();
 
@@ -333,7 +335,18 @@ export function schemaToType(
         return result;
     }
 
-    const rootPathElement: PathElement = { kind: PathElementKind.Root };
-    const rootType = toType(root, List<PathElement>([rootPathElement]), makeNamesTypeAttributes(topLevelName, false));
-    return rootType;
+    references.forEach((topLevelRef, topLevelName) => {
+        const [target, targetPath] = lookupRef(root, rootRef, topLevelRef);
+        const t = toType(target, targetPath, makeNamesTypeAttributes(topLevelName, false));
+        typeBuilder.addTopLevel(topLevelName, t);
+    });
+}
+
+export function definitionRefsInSchema(rootJson: any): Map<string, Ref> {
+    if (typeof rootJson !== "object") return Map();
+    const definitions = rootJson.definitions;
+    if (typeof definitions !== "object") return Map();
+    return Map(Object.keys(definitions).map(name => {
+        return [name, rootRef.push({ kind: PathElementKind.Definition, name } as PathElement)] as [string, Ref];
+    }));
 }

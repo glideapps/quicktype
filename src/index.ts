@@ -6,10 +6,10 @@ import { Readable } from "stream";
 import * as targetLanguages from "./Language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assertNever } from "./Support";
+import { assertNever, assert } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { combineClasses, findSimilarityCliques } from "./CombineClasses";
-import { schemaToType } from "./JSONSchemaInput";
+import { addTypesInSchema, definitionRefsInSchema, Ref, rootRef } from "./JSONSchemaInput";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
@@ -54,6 +54,7 @@ export function isJSONSource(source: TypeSource): source is JSONTypeSource {
 export interface SchemaTypeSource {
     name: string;
     schema: StringInput;
+    topLevelRefs?: string[];
 }
 
 export function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
@@ -108,7 +109,7 @@ const defaultOptions: Options = {
 
 type InputData = {
     samples: { [name: string]: Value[] };
-    schemas: { [name: string]: any };
+    schemas: { [name: string]: { schema: any; topLevelRefs: string[] | undefined } };
     graphQLs: { [name: string]: { schema: any; query: string } };
 };
 
@@ -149,12 +150,20 @@ export class Run {
         if (this._options.findSimilarClassesSchema !== undefined) {
             const schema = JSON.parse(this._options.findSimilarClassesSchema);
             const name = "ComparisonBaseRoot";
-            typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema, conflateNumbers));
+            addTypesInSchema(typeBuilder, schema, conflateNumbers, Map([[name, rootRef] as [string, Ref]]));
         }
 
         // JSON Schema
-        Map(this._allInputs.schemas).forEach((schema, name) => {
-            typeBuilder.addTopLevel(name, schemaToType(typeBuilder, name, schema, conflateNumbers));
+        Map(this._allInputs.schemas).forEach(({ schema, topLevelRefs }, name) => {
+            let references: Map<string, Ref>;
+            if (topLevelRefs === undefined) {
+                references = Map([[name, rootRef] as [string, Ref]]);
+            } else {
+                assert(topLevelRefs.length === 1 && topLevelRefs[0] === "definitions/", "Schema top level refs must be `definitions/`");
+                references = definitionRefsInSchema(schema);
+                assert(references.size > 0, "No definitions in JSON Schema");
+            }
+            addTypesInSchema(typeBuilder, schema, conflateNumbers, references);
         });
 
         // GraphQL
@@ -238,12 +247,12 @@ export class Run {
                     this._allInputs.samples[name].push(input);
                 }
             } else if (isSchemaSource(source)) {
-                const { name, schema } = source;
+                const { name, schema, topLevelRefs } = source;
                 const input = JSON.parse(await toString(schema));
                 if (_.has(this._allInputs.schemas, name)) {
                     throw new Error(`More than one schema given for ${name}`);
                 }
-                this._allInputs.schemas[name] = input;
+                this._allInputs.schemas[name] = { schema: input, topLevelRefs };
             } else {
                 assertNever(source);
             }

@@ -48,6 +48,7 @@ export interface CLIOptions {
     graphqlSchema?: string;
     graphqlIntrospect?: string;
     graphqlServerHeader?: string[];
+    addSchemaTopLevel?: string;
     template?: string;
     out?: string;
     buildMarkovChain?: string;
@@ -88,7 +89,7 @@ function typeNameFromFilename(filename: string): string {
     return name.substr(0, name.lastIndexOf("."));
 }
 
-async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
+async function samplesFromDirectory(dataDir: string, schemaTopLevel: string | undefined): Promise<TypeSource[]> {
     async function readFilesOrURLsInDirectory(d: string): Promise<TypeSource[]> {
         const files = fs
             .readdirSync(d)
@@ -117,7 +118,8 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
             } else if (file.endsWith(".schema")) {
                 sourcesInDir.push({
                     name,
-                    schema: await readableFromFileOrUrl(fileOrUrl)
+                    schema: await readableFromFileOrUrl(fileOrUrl),
+                    topLevelRefs: schemaTopLevel === undefined ? undefined : [schemaTopLevel]
                 });
             } else if (file.endsWith(".gqlschema")) {
                 assert(graphQLSchema === undefined, `More than one GraphQL schema in ${dataDir}`);
@@ -247,6 +249,7 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         graphqlServerHeader: opts.graphqlServerHeader,
+        addSchemaTopLevel: opts.addSchemaTopLevel,
         template: opts.template
     };
     /* tslint:enable */
@@ -300,6 +303,12 @@ const optionDefinitions: OptionDefinition[] = [
         name: "no-combine-classes",
         type: Boolean,
         description: "Don't combine similar classes."
+    },
+    {
+        name: "add-schema-top-level",
+        type: String,
+        typeLabel: "REF",
+        description: "Use JSON Schema definitions as top-levels.  Must be `definitions/`."
     },
     {
         name: "graphql-schema",
@@ -461,7 +470,7 @@ function parseArgv(argv: string[]): CLIOptions {
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): CLIOptions {
     const opts: { [key: string]: any } = commandLineArgs(definitions, { argv, partial });
-    const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
+    const options: { rendererOptions: RendererOptions;[key: string]: any } = { rendererOptions: {} };
     definitions.forEach(o => {
         if (!(o.name in opts)) return;
         const v = opts[o.name];
@@ -516,7 +525,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
 
         let sources: TypeSource[] = [];
         for (const dataDir of directories) {
-            sources = sources.concat(await samplesFromDirectory(dataDir));
+            sources = sources.concat(await samplesFromDirectory(dataDir, options.addSchemaTopLevel));
         }
 
         // Every src that's not a directory is assumed to be a file or URL
@@ -603,7 +612,8 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                         assert(source.samples.length === 1, `Please specify one schema file for ${source.name}`);
                         sources.push({
                             name: source.name,
-                            schema: source.samples[0]
+                            schema: source.samples[0],
+                            topLevelRefs: options.addSchemaTopLevel === undefined ? undefined : [options.addSchemaTopLevel]
                         });
                     } else {
                         sources.push(source);
