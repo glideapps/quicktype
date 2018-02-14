@@ -1,0 +1,17 @@
+{
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "map": {
+            "type": "object",
+            "properties": {
+                "foo": {
+                    "type": "number"
+                }
+            },
+            "additionalProperties": {
+                "type": "boolean"
+            }
+        }
+    }
+}

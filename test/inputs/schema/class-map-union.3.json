@@ -1,0 +1,6 @@
+{
+    "union": {
+        "foo": true,
+        "bar": false
+    }
+}
