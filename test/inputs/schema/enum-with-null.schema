@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "enum": {
+      "type": ["string", "null"],
+      "enum": ["foo", "bar", null]
+    }
+  },
+  "required": ["enum"]
+}
