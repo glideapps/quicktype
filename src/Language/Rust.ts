@@ -258,11 +258,21 @@ class RustRenderer extends ConvenienceRenderer {
         }
     }
 
+    private emitDescriptionForMember(t: ClassType, jsonName: string) {
+        const comments = this.descriptionForClassProperty(t, jsonName);
+
+        if (comments !== undefined) {
+            this.emitCommentLines("/// ", comments);
+        }
+    }
+
     private emitStructDefinition = (c: ClassType, className: Name): void => {
+        this.emitDescription(this.descriptionForType(c));
         this.emitLine("#[derive(Serialize, Deserialize)]");
 
         const structBody = () =>
             this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
+                this.emitDescriptionForMember(c, jsonName);
                 this.emitRenameAttribute(name, jsonName);
                 this.emitLine(name, ": ", this.breakCycle(prop.type, true), ",");
             });
@@ -283,6 +293,7 @@ class RustRenderer extends ConvenienceRenderer {
             return;
         }
 
+        this.emitDescription(this.descriptionForType(u));
         this.emitLine("#[derive(Serialize, Deserialize)]");
         this.emitLine("#[serde(untagged)]");
 
@@ -297,6 +308,7 @@ class RustRenderer extends ConvenienceRenderer {
     };
 
     emitEnumDefinition = (e: EnumType, enumName: Name): void => {
+        this.emitDescription(this.descriptionForType(e));
         this.emitLine("#[derive(Serialize, Deserialize)]");
 
         this.emitBlock(["pub enum ", enumName], () =>
@@ -306,6 +318,14 @@ class RustRenderer extends ConvenienceRenderer {
             })
         );
     };
+
+    private emitDescription(description: string[] | undefined): void {
+        if (description === undefined) return;
+
+        for (const line of description) {
+            this.emitLine("/// ", line);
+        }
+    }
 
     emitTopLevelAlias = (t: Type, name: Name): void => {
         this.emitLine("pub type ", name, " = ", this.rustType(t), ";");
