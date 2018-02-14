@@ -173,15 +173,17 @@ export function addTypesInSchema(
     function makeClass(path: Ref, attributes: TypeAttributes, properties: StringMap, requiredArray: string[]): TypeRef {
         const required = Set(requiredArray);
         const propertiesMap = Map(properties);
-        const propertyDescriptions = propertiesMap.map(propSchema => {
-            if (typeof propSchema === "object") {
-                const desc = propSchema.description;
-                if (typeof desc === "string") {
-                    return desc;
+        const propertyDescriptions = propertiesMap
+            .map(propSchema => {
+                if (typeof propSchema === "object") {
+                    const desc = propSchema.description;
+                    if (typeof desc === "string") {
+                        return desc;
+                    }
                 }
-            }
-            return undefined;
-        }).filter(v => v !== undefined) as Map<string, string>;
+                return undefined;
+            })
+            .filter(v => v !== undefined) as Map<string, string>;
         if (!propertyDescriptions.isEmpty()) {
             attributes = propertyDescriptionsTypeAttributeKind.setInAttributes(attributes, propertyDescriptions);
         }
@@ -237,7 +239,7 @@ export function addTypesInSchema(
                 if (schema.properties !== undefined) {
                     classType = makeClass(path, typeAttributes, checkStringMap(schema.properties), required);
                 }
-                
+
                 let mapType: TypeRef | undefined = undefined;
                 if (schema.additionalProperties !== undefined) {
                     const additional = schema.additionalProperties;
@@ -251,9 +253,16 @@ export function addTypesInSchema(
                         mapType = makeMap(path, typeAttributes, checkStringMap(additional));
                     }
                 }
-                
+
                 if (classType !== undefined && mapType !== undefined) {
-                    return unifyTypes(Set([classType.deref()[0], mapType.deref()[0]]), typeAttributes, typeBuilder, true, true, conflateNumbers);
+                    return unifyTypes(
+                        Set([classType.deref()[0], mapType.deref()[0]]),
+                        typeAttributes,
+                        typeBuilder,
+                        true,
+                        true,
+                        conflateNumbers
+                    );
                 }
                 if (classType !== undefined) return classType;
                 if (mapType !== undefined) return mapType;
@@ -315,8 +324,19 @@ export function addTypesInSchema(
                 return new TypeNames(OrderedSet([refName]), OrderedSet(), true);
             });
             return toType(target, targetPath, attributes);
-        } else if (schema.enum !== undefined) {
-            return typeBuilder.getEnumType(typeAttributes, OrderedSet(checkStringArray(schema.enum)));
+        } else if (Array.isArray(schema.enum)) {
+            let cases = schema.enum as any[];
+            const haveNull = cases.indexOf(null) >= 0;
+            cases = cases.filter(c => c !== null);
+            const tref = typeBuilder.getEnumType(typeAttributes, OrderedSet(checkStringArray(cases)));
+            if (haveNull) {
+                return typeBuilder.getUnionType(
+                    typeAttributes,
+                    OrderedSet([tref, typeBuilder.getPrimitiveType("null")])
+                );
+            } else {
+                return tref;
+            }
         } else if (schema.type !== undefined) {
             const jsonTypes = checkTypeList(schema.type);
             if (jsonTypes.size === 1) {
@@ -358,7 +378,9 @@ export function definitionRefsInSchema(rootJson: any): Map<string, Ref> {
     if (typeof rootJson !== "object") return Map();
     const definitions = rootJson.definitions;
     if (typeof definitions !== "object") return Map();
-    return Map(Object.keys(definitions).map(name => {
-        return [name, rootRef.push({ kind: PathElementKind.Definition, name } as PathElement)] as [string, Ref];
-    }));
+    return Map(
+        Object.keys(definitions).map(name => {
+            return [name, rootRef.push({ kind: PathElementKind.Definition, name } as PathElement)] as [string, Ref];
+        })
+    );
 }
