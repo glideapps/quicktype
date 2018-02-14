@@ -164,7 +164,16 @@ class GoRenderer extends ConvenienceRenderer {
             _stringType => "string",
             arrayType => ["[]", this.goType(arrayType.items, withIssues)],
             classType => this.nameForNamedType(classType),
-            mapType => ["map[string]", this.goType(mapType.values, withIssues)],
+            mapType => {
+                let valueSource: Sourcelike;
+                const v = mapType.values;
+                if (v instanceof UnionType && nullableFromUnion(v) === null) {
+                    valueSource = ["*", this.nameForNamedType(v)];
+                } else {
+                    valueSource = this.goType(v, withIssues);
+                }
+                return ["map[string]", valueSource];
+            },
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
