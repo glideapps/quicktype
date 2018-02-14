@@ -232,20 +232,32 @@ export function addTypesInSchema(
                 } else {
                     required = checkStringArray(schema.required);
                 }
+
+                let classType: TypeRef | undefined = undefined;
                 if (schema.properties !== undefined) {
-                    return makeClass(path, typeAttributes, checkStringMap(schema.properties), required);
-                } else if (schema.additionalProperties !== undefined) {
+                    classType = makeClass(path, typeAttributes, checkStringMap(schema.properties), required);
+                }
+                
+                let mapType: TypeRef | undefined = undefined;
+                if (schema.additionalProperties !== undefined) {
                     const additional = schema.additionalProperties;
                     if (additional === true) {
                         return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
                     } else if (additional === false) {
-                        return makeClass(path, typeAttributes, {}, required);
+                        if (classType === undefined) {
+                            classType = makeClass(path, typeAttributes, {}, required);
+                        }
                     } else {
-                        return makeMap(path, typeAttributes, checkStringMap(additional));
+                        mapType = makeMap(path, typeAttributes, checkStringMap(additional));
                     }
-                } else {
-                    return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
                 }
+                
+                if (classType !== undefined && mapType !== undefined) {
+                    return unifyTypes(Set([classType.deref()[0], mapType.deref()[0]]), typeAttributes, typeBuilder, true, true, conflateNumbers);
+                }
+                if (classType !== undefined) return classType;
+                if (mapType !== undefined) return mapType;
+                return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
             case "array":
                 if (schema.items !== undefined) {
                     path = path.push({ kind: PathElementKind.Items });
