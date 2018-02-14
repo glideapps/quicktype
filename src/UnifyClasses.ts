@@ -60,11 +60,15 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
     }
 
     protected makeClass(classes: TypeRef[], maps: TypeRef[]): TypeRef {
-        if (classes.length > 0 && maps.length > 0) {
-            return panic("Cannot handle a class type that's also a map");
-        }
         if (maps.length > 0) {
-            return this.typeBuilder.getMapType(this._unifyTypes(maps, this.typeAttributes), this.forwardingRef);
+            const propertyTypes = maps.slice();
+            for (let classRef of classes) {
+                const c = assertIsClass(classRef.deref()[0]);
+                c.properties.forEach(cp => {
+                    propertyTypes.push(cp.typeRef);
+                });
+            }
+            return this.typeBuilder.getMapType(this._unifyTypes(propertyTypes, this.typeAttributes), this.forwardingRef);
         }
         if (classes.length === 1) {
             return this.typeBuilder.lookupTypeRef(classes[0]);

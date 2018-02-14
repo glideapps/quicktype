@@ -1,0 +1,45 @@
+{
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "union": {
+            "anyOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "foo": {
+                            "type": "number"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "bar": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "quux": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
