@@ -340,7 +340,7 @@ class SwiftRenderer extends ConvenienceRenderer {
 
     private renderHeader = (): void => {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines("// ", this.leadingComments);
+            this.emitCommentLines(this.leadingComments);
         } else if (!this._justTypes) {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");

@@ -651,11 +651,15 @@ export abstract class ConvenienceRenderer extends Renderer {
         return serializeRenderResult(sourcelikeToSource(src), this.names, "").lines.join("\n");
     };
 
-    protected emitCommentLines = (commentStart: string, lines: string[]): void => {
+    protected get commentLineStart(): string {
+        return "// ";
+    }
+
+    protected emitCommentLines(lines: string[]): void {
         for (const line of lines) {
-            this.emitLine(trimEnd(commentStart + line));
+            this.emitLine(trimEnd(this.commentLineStart + line));
         }
-    };
+    }
 
     private processGraph(): void {
         this._declarationIR = declarationsForGraph(
@@ -764,7 +768,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected registerHandlebarsHelpers(context: StringMap): void {
         super.registerHandlebarsHelpers(context);
 
-        handlebars.registerHelper("with_type", function (t: any, options: any): any {
+        handlebars.registerHelper("with_type", function(t: any, options: any): any {
             return options.fn(context.allTypes[t.index]);
         });
     }

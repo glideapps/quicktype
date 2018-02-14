@@ -927,9 +927,9 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
             this.startFile(filename, "h");
 
             if (this.leadingComments !== undefined) {
-                this.emitCommentLines("// ", this.leadingComments);
+                this.emitCommentLines(this.leadingComments);
             } else if (!this._justTypes) {
-                this.emitCommentLines("// ", ["To parse this JSON:", ""]);
+                this.emitCommentLines(["To parse this JSON:", ""]);
                 this.emitLine("//   NSError *error;");
                 this.forEachTopLevel("none", (t, topLevelName) => {
                     const fromJsonExpression =

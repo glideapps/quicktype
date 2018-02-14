@@ -372,7 +372,7 @@ function O(className: string) {
 
     protected emitSourceStructure() {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines("// ", this.leadingComments);
+            this.emitCommentLines(this.leadingComments);
         } else if (!this._justTypes) {
             this.emitMultiline(`// To parse this data:
 //`);

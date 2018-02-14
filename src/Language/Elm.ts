@@ -225,6 +225,10 @@ class ElmRenderer extends ConvenienceRenderer {
         return `${fieldName}_in_${lookup(unionName)}`;
     }
 
+    protected get commentLineStart(): string {
+        return "-- ";
+    }
+
     private get arrayType(): string {
         return this._useList ? "List" : "Array";
     }
@@ -542,9 +546,9 @@ class ElmRenderer extends ConvenienceRenderer {
         });
 
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines("-- ", this.leadingComments);
+            this.emitCommentLines(this.leadingComments);
         } else if (!this._justTypes) {
-            this.emitCommentLines("-- ", [
+            this.emitCommentLines([
                 "To decode the JSON data, add this file to your project, run",
                 "",
                 "    elm-package install NoRedInk/elm-decode-pipeline",

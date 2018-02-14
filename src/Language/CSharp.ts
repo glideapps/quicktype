@@ -363,7 +363,7 @@ class CSharpRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines("// ", this.leadingComments);
+            this.emitCommentLines(this.leadingComments);
         } else if (this.needHelpers) {
             this.emitDefaultLeadingComments();
         }
