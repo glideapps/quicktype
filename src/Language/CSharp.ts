@@ -266,7 +266,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                 if (!this.needAttributes) {
                     this.emitLine(property);
                 } else if (this.dense && attribute !== undefined) {
-                    columns.push([attribute, property]);
+                    columns.push([attribute, " ", property]);
                 } else {
                     if (attribute !== undefined) {
                         this.emitLine(attribute);
