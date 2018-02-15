@@ -204,6 +204,10 @@ class RustRenderer extends ConvenienceRenderer {
         return rustStyle(rawName, false);
     }
 
+    protected get commentLineStart(): string {
+        return "/// ";
+    }
+
     private nullableRustType = (t: Type, withIssues: boolean): Sourcelike => {
         return ["Option<", this.breakCycle(t, withIssues), ">"];
     };
@@ -263,7 +267,7 @@ class RustRenderer extends ConvenienceRenderer {
         const comments = this.descriptionForClassProperty(t, jsonName);
 
         if (comments !== undefined) {
-            this.emitCommentLines("/// ", comments);
+            this.emitCommentLines(comments);
         }
     }
 

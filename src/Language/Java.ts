@@ -557,9 +557,9 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.startFile("Converter");
         this.ensureBlankLine();
         if (this.leadingComments !== undefined) {
-            this.emitCommentLines("// ", this.leadingComments);
+            this.emitCommentLines(this.leadingComments);
         } else {
-            this.emitCommentLines("// ", [
+            this.emitCommentLines([
                 "To use this code, add the following Maven dependency to your project:",
                 "",
                 "    com.fasterxml.jackson.core : jackson-databind : 2.9.0",
