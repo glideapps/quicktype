@@ -66,7 +66,7 @@ export function newline(): NewlineSource {
 }
 
 export type Sourcelike = Source | string | Name | SourcelikeArray;
-export interface SourcelikeArray extends Array<Sourcelike> {}
+export interface SourcelikeArray extends Array<Sourcelike> { }
 
 export function sourcelikeToSource(sl: Sourcelike): Source {
     if (sl instanceof Array) {
@@ -262,4 +262,33 @@ export function serializeRenderResult(
     serializeToStringArray(rootSource);
     finishLine();
     return { lines, annotations: List(annotations) };
+}
+
+export type MultiWord = {
+    source: Sourcelike;
+    needsParens: boolean;
+};
+
+export function singleWord(source: Sourcelike): MultiWord {
+    return { source, needsParens: false };
+}
+
+export function multiWord(separator: Sourcelike, ...words: Sourcelike[]): MultiWord {
+    assert(words.length > 0, "Zero words is not multiple");
+    if (words.length === 1) {
+        return singleWord(words[0]);
+    }
+    const items: Sourcelike[] = [];
+    for (let i = 0; i < words.length; i++) {
+        if (i > 0) items.push(separator);
+        items.push(words[i]);
+    }
+    return { source: items, needsParens: true };
+}
+
+export function parenIfNeeded({ source, needsParens }: MultiWord): Sourcelike {
+    if (needsParens) {
+        return ["(", source, ")"];
+    }
+    return source;
 }

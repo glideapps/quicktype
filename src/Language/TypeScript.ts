@@ -24,7 +24,7 @@ import {
 } from "../Strings";
 import { intercalate } from "../Support";
 
-import { Sourcelike, modifySource } from "../Source";
+import { Sourcelike, modifySource, MultiWord, singleWord, parenIfNeeded, multiWord } from "../Source";
 import { Namer, Name } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
@@ -147,39 +147,39 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         });
     };
 
-    sourceFor = (t: Type): Sourcelike => {
-        return matchType<Sourcelike>(
+    private sourceFor(t: Type): MultiWord {
+        return matchType<MultiWord>(
             t,
-            _anyType => "any",
-            _nullType => "null",
-            _boolType => "boolean",
-            _integerType => "number",
-            _doubleType => "number",
-            _stringType => "string",
+            _anyType => singleWord("any"),
+            _nullType => singleWord("null"),
+            _boolType => singleWord("boolean"),
+            _integerType => singleWord("number"),
+            _doubleType => singleWord("number"),
+            _stringType => singleWord("string"),
             arrayType => {
                 const itemType = this.sourceFor(arrayType.items);
                 if (
                     (arrayType.items instanceof UnionType && this._inlineUnions) ||
                     arrayType.items instanceof ArrayType
                 ) {
-                    return ["Array<", itemType, ">"];
+                    return singleWord(["Array<", itemType.source, ">"]);
                 } else {
-                    return [itemType, "[]"];
+                    return singleWord([parenIfNeeded(itemType), "[]"]);
                 }
             },
-            classType => this.nameForNamedType(classType),
-            mapType => ["{ [key: string]: ", this.sourceFor(mapType.values), " }"],
-            enumType => this.nameForNamedType(enumType),
+            classType => singleWord(this.nameForNamedType(classType)),
+            mapType => singleWord(["{ [key: string]: ", this.sourceFor(mapType.values).source, " }"]),
+            enumType => singleWord(this.nameForNamedType(enumType)),
             unionType => {
                 if (this._inlineUnions || nullableFromUnion(unionType) !== null) {
-                    const children = unionType.children.map(this.sourceFor);
-                    return intercalate(" | ", children).toArray();
+                    const children = unionType.children.map(c => parenIfNeeded(this.sourceFor(c)));
+                    return multiWord(" | ", ...children.toArray());
                 } else {
-                    return this.nameForNamedType(unionType);
+                    return singleWord(this.nameForNamedType(unionType));
                 }
             }
         );
-    };
+    }
 
     typeMapTypeFor = (t: Type): Sourcelike => {
         return matchType<Sourcelike>(
@@ -246,7 +246,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
                 }
                 table.push([
                     [name, nullable !== null ? "?" : "", ": "],
-                    [this.sourceFor(nullable !== null ? nullable : t), ";"]
+                    [this.sourceFor(nullable !== null ? nullable : t).source, ";"]
                 ]);
             });
             this.emitTable(table);
@@ -260,7 +260,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         }
         this.emitBlock("export module Convert", "", () => {
             this.forEachTopLevel("interposing", (t, name) => {
-                this.emitBlock(["export function to", name, "(json: string): ", this.sourceFor(t)], "", () => {
+                this.emitBlock(["export function to", name, "(json: string): ", this.sourceFor(t).source], "", () => {
                     if (this._omitRuntimeTypecheck) {
                         this.emitLine("return JSON.parse(json);");
                     } else {
@@ -271,7 +271,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
 
                 const camelCaseName = modifySource(camelCase, name);
                 this.emitBlock(
-                    ["export function ", camelCaseName, "ToJson(value: ", this.sourceFor(t), "): string"],
+                    ["export function ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): string"],
                     "",
                     () => {
                         this.emitLine("return JSON.stringify(value, null, 2);");
@@ -366,8 +366,8 @@ function O(className: string) {
         if (this._inlineUnions) {
             return;
         }
-        const children = u.children.map(this.sourceFor);
-        this.emitLine("export type ", unionName, " = ", intercalate(" | ", children).toArray(), ";");
+        const children = multiWord(" | ", ...u.children.map(c => parenIfNeeded(this.sourceFor(c))).toArray());
+        this.emitLine("export type ", unionName, " = ", children.source, ";");
     };
 
     protected emitSourceStructure() {
