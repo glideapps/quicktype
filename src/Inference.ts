@@ -74,7 +74,11 @@ function canBeEnumCase(s: string): boolean {
 }
 
 export class TypeInference {
-    constructor(private readonly _typeBuilder: TypeBuilder, private readonly _inferEnums: boolean) {}
+    constructor(
+        private readonly _typeBuilder: TypeBuilder,
+        private readonly _inferEnums: boolean,
+        private readonly _inferDates: boolean
+    ) {}
 
     inferType(
         cjson: CompressedJSON,
@@ -124,13 +128,13 @@ export class TypeInference {
                     unionBuilder.addArray(cjson.getArrayForValue(value));
                     break;
                 case Tag.Date:
-                    unionBuilder.addStringType("date");
+                    unionBuilder.addStringType(this._inferDates ? "date" : "string");
                     break;
                 case Tag.Time:
-                    unionBuilder.addStringType("time");
+                    unionBuilder.addStringType(this._inferDates ? "time" : "string");
                     break;
                 case Tag.DateTime:
-                    unionBuilder.addStringType("date-time");
+                    unionBuilder.addStringType(this._inferDates ? "date-time" : "string");
                     break;
                 default:
                     return assertNever(t);
