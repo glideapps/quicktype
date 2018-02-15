@@ -80,6 +80,7 @@ export interface Options {
     findSimilarClassesSchema: string | undefined;
     inferMaps: boolean;
     inferEnums: boolean;
+    inferDates: boolean;
     alphabetizeProperties: boolean;
     allPropertiesOptional: boolean;
     combineClasses: boolean;
@@ -97,6 +98,7 @@ const defaultOptions: Options = {
     findSimilarClassesSchema: undefined,
     inferMaps: true,
     inferEnums: true,
+    inferDates: false,
     alphabetizeProperties: false,
     allPropertiesOptional: false,
     combineClasses: true,
@@ -178,7 +180,7 @@ export class Run {
         // JSON
         const doInferEnums = this._options.inferEnums;
         if (Object.keys(this._allInputs.samples).length > 0) {
-            const inference = new TypeInference(typeBuilder, doInferEnums);
+            const inference = new TypeInference(typeBuilder, doInferEnums, this._options.inferDates);
 
             Map(this._allInputs.samples).forEach((cjson, name) => {
                 typeBuilder.addTopLevel(
