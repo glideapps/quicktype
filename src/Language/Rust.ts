@@ -270,8 +270,9 @@ class RustRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(c));
         this.emitLine("#[derive(Serialize, Deserialize)]");
 
+        const blankLines = this._density === Density.Dense ? "none" : "interposing";
         const structBody = () =>
-            this.forEachClassProperty(c, "none", (name, jsonName, prop) => {
+            this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescriptionForMember(c, jsonName);
                 this.emitRenameAttribute(name, jsonName);
                 this.emitLine(name, ": ", this.breakCycle(prop.type, true), ",");
@@ -299,8 +300,9 @@ class RustRenderer extends ConvenienceRenderer {
 
         const [, nonNulls] = removeNullFromUnion(u);
 
+        const blankLines = this._density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", unionName], () =>
-            this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
+            this.forEachUnionMember(u, nonNulls, blankLines, null, (fieldName, t) => {
                 const rustType = this.breakCycle(t, true);
                 this.emitLine([fieldName, "(", rustType, "),"]);
             })
@@ -311,8 +313,9 @@ class RustRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("#[derive(Serialize, Deserialize)]");
 
+        const blankLines = this._density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
-            this.forEachEnumCase(e, "none", (name, jsonName) => {
+            this.forEachEnumCase(e, blankLines, (name, jsonName) => {
                 this.emitRenameAttribute(name, jsonName);
                 this.emitLine([name, ","]);
             })
