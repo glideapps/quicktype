@@ -22,7 +22,7 @@ import {
     allUpperWordStyle
 } from "../Strings";
 import { defined, intercalate } from "../Support";
-import { Sourcelike, annotated } from "../Source";
+import { Sourcelike, annotated, MultiWord, singleWord, multiWord, parenIfNeeded } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 
 export default class ElmTargetLanguage extends TargetLanguage {
@@ -115,26 +115,6 @@ function elmNameStyle(original: string, upper: boolean): string {
 
 const upperNamingFunction = funPrefixNamer("upper", n => elmNameStyle(n, true));
 const lowerNamingFunction = funPrefixNamer("lower", n => elmNameStyle(n, false));
-
-type MultiWord = {
-    source: Sourcelike;
-    needsParens: boolean;
-};
-
-function singleWord(source: Sourcelike): MultiWord {
-    return { source, needsParens: false };
-}
-
-function multiWord(a: Sourcelike, b: Sourcelike): MultiWord {
-    return { source: [a, " ", b], needsParens: true };
-}
-
-function parenIfNeeded({ source, needsParens }: MultiWord): Sourcelike {
-    if (needsParens) {
-        return ["(", source, ")"];
-    }
-    return source;
-}
 
 type RequiredOrOptional = {
     reqOrOpt: string;
@@ -258,16 +238,16 @@ class ElmRenderer extends ConvenienceRenderer {
             _integerType => singleWord("Int"),
             _doubleType => singleWord("Float"),
             _stringType => singleWord("String"),
-            arrayType => multiWord(this.arrayType, parenIfNeeded(this.elmType(arrayType.items))),
+            arrayType => multiWord(" ", this.arrayType, parenIfNeeded(this.elmType(arrayType.items))),
             classType => singleWord(this.nameForNamedType(classType)),
-            mapType => multiWord("Dict String", parenIfNeeded(this.elmType(mapType.values))),
+            mapType => multiWord(" ", "Dict String", parenIfNeeded(this.elmType(mapType.values))),
             enumType => singleWord(this.nameForNamedType(enumType)),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     const nullableType = this.elmType(nullable);
                     if (noOptional) return nullableType;
-                    return multiWord("Maybe", parenIfNeeded(nullableType));
+                    return multiWord(" ", "Maybe", parenIfNeeded(nullableType));
                 }
                 return singleWord(this.nameForNamedType(unionType));
             }
@@ -276,7 +256,7 @@ class ElmRenderer extends ConvenienceRenderer {
 
     private elmProperty(p: ClassProperty): Sourcelike {
         if (p.isOptional) {
-            return multiWord("Maybe", parenIfNeeded(this.elmType(p.type, true))).source;
+            return multiWord(" ", "Maybe", parenIfNeeded(this.elmType(p.type, true))).source;
         } else {
             return this.elmType(p.type).source;
         }
@@ -291,25 +271,25 @@ class ElmRenderer extends ConvenienceRenderer {
         return matchType<MultiWord>(
             t,
             _anyType => singleWord("Jdec.value"),
-            _nullType => multiWord("Jdec.null", "()"),
+            _nullType => multiWord(" ", "Jdec.null", "()"),
             _boolType => singleWord("Jdec.bool"),
             _integerType => singleWord("Jdec.int"),
             _doubleType => singleWord("Jdec.float"),
             _stringType => singleWord("Jdec.string"),
             arrayType =>
-                multiWord(
+                multiWord(" ", 
                     ["Jdec.", decapitalize(this.arrayType)],
                     parenIfNeeded(this.decoderNameForType(arrayType.items))
                 ),
             classType => singleWord(this.decoderNameForNamedType(classType)),
-            mapType => multiWord("Jdec.dict", parenIfNeeded(this.decoderNameForType(mapType.values))),
+            mapType => multiWord(" ", "Jdec.dict", parenIfNeeded(this.decoderNameForType(mapType.values))),
             enumType => singleWord(this.decoderNameForNamedType(enumType)),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     const nullableDecoder = this.decoderNameForType(nullable);
                     if (noOptional) return nullableDecoder;
-                    return multiWord("Jdec.nullable", parenIfNeeded(nullableDecoder));
+                    return multiWord(" ", "Jdec.nullable", parenIfNeeded(nullableDecoder));
                 }
                 return singleWord(this.decoderNameForNamedType(unionType));
             }
@@ -318,7 +298,7 @@ class ElmRenderer extends ConvenienceRenderer {
 
     private decoderNameForProperty(p: ClassProperty): MultiWord {
         if (p.isOptional) {
-            return multiWord("Jdec.nullable", parenIfNeeded(this.decoderNameForType(p.type, true)));
+            return multiWord(" ", "Jdec.nullable", parenIfNeeded(this.decoderNameForType(p.type, true)));
         } else {
             return this.decoderNameForType(p.type);
         }
@@ -333,22 +313,22 @@ class ElmRenderer extends ConvenienceRenderer {
         return matchType<MultiWord>(
             t,
             _anyType => singleWord("identity"),
-            _nullType => multiWord("always", "Jenc.null"),
+            _nullType => multiWord(" ", "always", "Jenc.null"),
             _boolType => singleWord("Jenc.bool"),
             _integerType => singleWord("Jenc.int"),
             _doubleType => singleWord("Jenc.float"),
             _stringType => singleWord("Jenc.string"),
             arrayType =>
-                multiWord(["make", this.arrayType, "Encoder"], parenIfNeeded(this.encoderNameForType(arrayType.items))),
+                multiWord(" ", ["make", this.arrayType, "Encoder"], parenIfNeeded(this.encoderNameForType(arrayType.items))),
             classType => singleWord(this.encoderNameForNamedType(classType)),
-            mapType => multiWord("makeDictEncoder", parenIfNeeded(this.encoderNameForType(mapType.values))),
+            mapType => multiWord(" ", "makeDictEncoder", parenIfNeeded(this.encoderNameForType(mapType.values))),
             enumType => singleWord(this.encoderNameForNamedType(enumType)),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
                     const nullableEncoder = this.encoderNameForType(nullable);
                     if (noOptional) return nullableEncoder;
-                    return multiWord("makeNullableEncoder", parenIfNeeded(nullableEncoder));
+                    return multiWord(" ", "makeNullableEncoder", parenIfNeeded(nullableEncoder));
                 }
                 return singleWord(this.encoderNameForNamedType(unionType));
             }
@@ -357,7 +337,7 @@ class ElmRenderer extends ConvenienceRenderer {
 
     private encoderNameForProperty(p: ClassProperty): MultiWord {
         if (p.isOptional) {
-            return multiWord("makeNullableEncoder", parenIfNeeded(this.encoderNameForType(p.type, true)));
+            return multiWord(" ", "makeNullableEncoder", parenIfNeeded(this.encoderNameForType(p.type, true)));
         } else {
             return this.encoderNameForType(p.type);
         }

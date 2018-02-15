@@ -764,7 +764,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected registerHandlebarsHelpers(context: StringMap): void {
         super.registerHandlebarsHelpers(context);
 
-        handlebars.registerHelper("with_type", function(t: any, options: any): any {
+        handlebars.registerHelper("with_type", function (t: any, options: any): any {
             return options.fn(context.allTypes[t.index]);
         });
     }
