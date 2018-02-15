@@ -20,6 +20,7 @@ import { UnionType, nullableFromUnion, Type, ClassType, matchType, removeNullFro
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { EnumOption } from "../RendererOptions";
+import { defined } from "../Support";
 
 enum Density {
     Normal,
@@ -335,27 +336,20 @@ class RustRenderer extends ConvenienceRenderer {
     };
 
     protected emitUsageExample(): void {
+        const topLevelName = defined(this.topLevels.keySeq().first());
         this.emitMultiline(
-            `/* Example code that deserializes and serializes the model.
-extern crate serde;
-
-#[macro_use]
-extern crate serde_derive;
-
-extern crate serde_json;
-
-use generated_module::TopLevel;
-
-fn main() {
-
-    let json = "{ answer: 42 }";
-
-    let top_level: TopLevel = serde_json::from_str(&json).unwrap();
-
-    let result = serde_json::to_string(&top_level).unwrap();
-
-    println!("{}", &result);
-}*/`
+            `// Example code that deserializes and serializes the model.
+// extern crate serde;
+// #[macro_use]
+// extern crate serde_derive;
+// extern crate serde_json;
+// 
+// use generated_module::${topLevelName};
+// 
+// fn main() {
+//     let json = r#"{"answer": 42}"#;
+//     let model: ${topLevelName} = serde_json::from_str(&json).unwrap();
+// }`
         );
     }
 
