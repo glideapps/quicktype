@@ -69,6 +69,8 @@ function jsonTestFiles(base: string): string[] {
 export abstract class Fixture {
   abstract name: string;
 
+  constructor(public language: languages.Language) {}
+
   runForName(name: string): boolean {
     return this.name === name;
   }
@@ -91,33 +93,36 @@ export abstract class Fixture {
     return `test/runs/${this.name}-${randomBytes(3).toString("hex")}`;
   }
 
-  printRunMessage(
+  runMessageStart(
     sample: Sample,
     index: number,
     total: number,
     cwd: string,
     shouldSkip: boolean
-  ): void {
+  ): string {
     const rendererOptions = _.map(
       sample.additionalRendererOptions,
       (v, k) => `${k}: ${v}`
     ).join(", ");
-    console.error(
+    const message = [
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
       chalk.magenta(this.name) + chalk.dim(`(${rendererOptions})`),
       path.join(cwd, chalk.cyan(path.basename(sample.path))),
       shouldSkip ? chalk.red("SKIP") : ""
-    );
+    ].join(" ");
+    console.time(message);
+    return message;
+}
+
+  runMessageEnd(message: string) {
+    console.timeEnd(message);
   }
 }
 
 abstract class LanguageFixture extends Fixture {
-  protected language: languages.Language;
-
   constructor(language: languages.Language) {
-    super();
-    this.language = language;
+    super(language);
   }
 
   async setup() {
@@ -154,7 +159,7 @@ abstract class LanguageFixture extends Fixture {
     let shouldSkip = this.shouldSkipTest(sample);
     const additionalFiles = this.additionalFiles(sample);
 
-    this.printRunMessage(sample, index, total, cwd, shouldSkip);
+    const message = this.runMessageStart(sample, index, total, cwd, shouldSkip);
 
     if (shouldSkip) {
       return;
@@ -181,6 +186,8 @@ abstract class LanguageFixture extends Fixture {
     });
 
     shell.rm("-rf", cwd);
+
+    this.runMessageEnd(message);
   }
 }
 
@@ -296,16 +303,12 @@ class JSONFixture extends LanguageFixture {
       priority = quickTestSamples.concat(priority);
     }
 
-    if (IS_CI && !IS_PR && !IS_BLESSED) {
-      // Run only priority sources on low-priority CI branches
-      others = [];
-    } else if (IS_CI) {
+    if (IS_CI) {
       // On CI, we run a maximum number of test samples. First we test
       // the priority samples to fail faster, then we continue testing
       // until testMax with random sources.
       const testMax = 100;
       others = _.chain(samplesFromPaths(miscSamples))
-        .shuffle()
         .take(testMax - prioritySamples.length)
         .value();
     }
@@ -342,7 +345,8 @@ class JSONSchemaJSONFixture extends JSONFixture {
       skipMiscJSON: false,
       skipSchema: [],
       rendererOptions: {},
-      quickTestRendererOptions: []
+      quickTestRendererOptions: [],
+      sourceFiles: language.sourceFiles
     };
     super(schemaLanguage);
     this.runLanguage = language;
