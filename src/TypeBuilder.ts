@@ -638,7 +638,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         protected readonly typeBuilder: TBuilder,
         protected readonly typeAttributes: TypeAttributes,
         private readonly _conflateNumbers: boolean,
-        protected readonly forwardingRef?: TypeRef
+        private readonly _forwardingRef?: TypeRef
     ) { }
 
     get haveString(): boolean {
@@ -697,9 +697,9 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         cases.forEach((count, name) => this.addEnumCase(name, count));
     };
 
-    protected abstract makeEnum(cases: string[], counts: { [name: string]: number }): TypeRef;
-    protected abstract makeClass(classes: TClass[], maps: TMap[]): TypeRef;
-    protected abstract makeArray(arrays: TArray[]): TypeRef;
+    protected abstract makeEnum(cases: string[], counts: { [name: string]: number }, forwardingRef: TypeRef | undefined): TypeRef;
+    protected abstract makeClass(classes: TClass[], maps: TMap[], forwardingRef: TypeRef | undefined): TypeRef;
+    protected abstract makeArray(arrays: TArray[], forwardingRef: TypeRef | undefined): TypeRef;
 
     getMemberKinds(): TypeKind[] {
         if (this._haveAny) {
@@ -708,7 +708,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
 
         const members: TypeKind[] = [];
 
-        if (this._haveNull)  members.push("null");
+        if (this._haveNull) members.push("null");
         if (this._haveBool) members.push("bool");
         if (this._haveDouble) members.push("double");
         if (this._haveInteger && !(this._conflateNumbers && this._haveDouble)) members.push("integer");
@@ -723,8 +723,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         return members;
     }
 
-    private makeTypeOfKind(kind: TypeKind): TypeRef {
-        // FIXME: forwarding ref only if it's the only type in the union
+    private makeTypeOfKind(kind: TypeKind, forwardingRef: TypeRef | undefined): TypeRef {
         switch (kind) {
             case "any":
             case "none":
@@ -735,15 +734,15 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
             case "date":
             case "time":
             case "date-time":
-                return this.typeBuilder.getPrimitiveType(kind, this.forwardingRef);
+                return this.typeBuilder.getPrimitiveType(kind, forwardingRef);
             case "string":
-                return this.typeBuilder.getStringType(this.typeAttributes, undefined, this.forwardingRef);
+                return this.typeBuilder.getStringType(this.typeAttributes, undefined, forwardingRef);
             case "enum":
-                return this.makeEnum(this._enumCases, this._enumCaseMap);
+                return this.makeEnum(this._enumCases, this._enumCaseMap, forwardingRef);
             case "class":
-                return this.makeClass(this._classes, this._maps);
+                return this.makeClass(this._classes, this._maps, forwardingRef);
             case "array":
-                return this.makeArray(this._arrays);
+                return this.makeArray(this._arrays, forwardingRef);
             default:
                 if (kind === "union" || kind === "map") {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
@@ -756,21 +755,21 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         const kinds = this.getMemberKinds();
 
         if (kinds.length === 1) {
-            const t = this.makeTypeOfKind(kinds[0]);
+            const t = this.makeTypeOfKind(kinds[0], this._forwardingRef);
             this.typeBuilder.addAttributes(t, this.typeAttributes);
             return t;
         }
 
         const types: TypeRef[] = [];
         for (const kind of kinds) {
-            types.push(this.makeTypeOfKind(kind));
+            types.push(this.makeTypeOfKind(kind, undefined));
         }
         const typesSet = OrderedSet(types);
         if (unique) {
-            assert(this.forwardingRef === undefined, "Cannot build unique union type with forwarding ref"); // FIXME: why not?
+            assert(this._forwardingRef === undefined, "Cannot build unique union type with forwarding ref"); // FIXME: why not?
             return this.typeBuilder.getUniqueUnionType(this.typeAttributes, typesSet);
         } else {
-            return this.typeBuilder.getUnionType(this.typeAttributes, typesSet, this.forwardingRef);
+            return this.typeBuilder.getUnionType(this.typeAttributes, typesSet, this._forwardingRef);
         }
     };
 }

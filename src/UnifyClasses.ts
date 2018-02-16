@@ -51,15 +51,15 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
         super(typeBuilder, typeAttributes, conflateNumbers, forwardingRef);
     }
 
-    protected makeEnum(enumCases: string[], counts: { [name: string]: number }): TypeRef {
+    protected makeEnum(enumCases: string[], counts: { [name: string]: number }, forwardingRef: TypeRef | undefined): TypeRef {
         if (this._makeEnums) {
-            return this.typeBuilder.getEnumType(this.typeAttributes, OrderedSet(enumCases), this.forwardingRef);
+            return this.typeBuilder.getEnumType(this.typeAttributes, OrderedSet(enumCases), forwardingRef);
         } else {
-            return this.typeBuilder.getStringType(this.typeAttributes, OrderedMap(counts), this.forwardingRef);
+            return this.typeBuilder.getStringType(this.typeAttributes, OrderedMap(counts), forwardingRef);
         }
     }
 
-    protected makeClass(classes: TypeRef[], maps: TypeRef[]): TypeRef {
+    protected makeClass(classes: TypeRef[], maps: TypeRef[], forwardingRef: TypeRef | undefined): TypeRef {
         if (maps.length > 0) {
             const propertyTypes = maps.slice();
             for (let classRef of classes) {
@@ -68,7 +68,7 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
                     propertyTypes.push(cp.typeRef);
                 });
             }
-            return this.typeBuilder.getMapType(this._unifyTypes(propertyTypes, this.typeAttributes), this.forwardingRef);
+            return this.typeBuilder.getMapType(this._unifyTypes(propertyTypes, this.typeAttributes), forwardingRef);
         }
         if (classes.length === 1) {
             return this.typeBuilder.lookupTypeRef(classes[0]);
@@ -85,7 +85,7 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
             this.typeAttributes,
             this._makeClassesFixed,
             undefined,
-            this.forwardingRef
+            forwardingRef
         );
 
         const properties = getCliqueProperties(actualClasses, (names, types) => {
@@ -98,9 +98,9 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
         return ref;
     }
 
-    protected makeArray(arrays: TypeRef[]): TypeRef {
+    protected makeArray(arrays: TypeRef[], forwardingRef: TypeRef | undefined): TypeRef {
         const attributes = modifyTypeNames(this.typeAttributes, tn => defined(tn).singularize());
-        return this.typeBuilder.getArrayType(this._unifyTypes(arrays, attributes));
+        return this.typeBuilder.getArrayType(this._unifyTypes(arrays, attributes), forwardingRef);
     }
 }
 
