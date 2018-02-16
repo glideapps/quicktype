@@ -15,6 +15,23 @@ const exit = require("exit");
 
 const CPUs = parseInt(process.env.CPUs || "0", 10) || os.cpus().length;
 
+function kite() {
+  function changedFiles(base: string, commit: string): string[] {
+    let diff = exec(`git diff --name-only ${base}..${commit}`).stdout;
+    return diff.trim().split("\n");
+  }
+
+  const {
+    BUILDKITE_PULL_REQUEST_BASE_BRANCH: base,
+    BUILDKITE_COMMIT: commit
+  } = process.env;
+  const changed =
+    base !== undefined && commit !== undefined
+      ? changedFiles(base, commit)
+      : [];
+  console.log({ base, commit, changed });
+}
+
 //////////////////////////////////////
 // Test driver
 /////////////////////////////////////
@@ -85,8 +102,10 @@ function testCLI() {
   qt(`https://blockchain.info/latestblock`);
 }
 
-// skip 2 `node` args
-main(process.argv.slice(2)).catch(reason => {
-  console.error(reason);
-  process.exit(1);
-});
+// // skip 2 `node` args
+// main(process.argv.slice(2)).catch(reason => {
+//   console.error(reason);
+//   process.exit(1);
+// });
+
+kite();
