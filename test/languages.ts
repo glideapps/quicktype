@@ -17,6 +17,7 @@ export interface Language {
   skipSchema: string[];
   rendererOptions: RendererOptions;
   quickTestRendererOptions: RendererOptions[];
+  sourceFiles?: string[];
 }
 
 export const CSharpLanguage: Language = {
@@ -41,7 +42,8 @@ export const CSharpLanguage: Language = {
     { "array-type": "list" },
     { "csharp-version": "5" },
     { density: "dense" }
-  ]
+  ],
+  sourceFiles: ["src/Language/CSharp.ts"]
 };
 
 export const JavaLanguage: Language = {

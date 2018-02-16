@@ -15,6 +15,19 @@ const exit = require("exit");
 
 const CPUs = parseInt(process.env.CPUs || "0", 10) || os.cpus().length;
 
+function affectedFixtures(changedFiles: string[]): Fixture[] {
+  // We can ignore changes in Markdown files
+  changedFiles = _.reject(changedFiles, file => _.endsWith(file, ".md"));
+
+  return allFixtures.filter(
+    fixture =>
+      // Fixtures that don't specify dependencies are always dirty
+      fixture.language.sourceFiles === undefined ||
+      // Fixtures for which .language.sourceFiles is a superset of changedFiles
+      changedFiles.every(file => _.includes(fixture.language.sourceFiles, file))
+  );
+}
+
 function kite() {
   function changedFiles(base: string, commit: string): string[] {
     let diff = exec(`git diff --name-only ${base}..${commit}`).stdout;
@@ -27,7 +40,8 @@ function kite() {
   } = process.env;
   const changed =
     commit !== undefined ? changedFiles(base || "master", commit) : [];
-  console.log({ base, commit, changed });
+  const fixtures = affectedFixtures(changed);
+  console.log({ base, commit, changed, fixtures: fixtures.map(f => f.name) });
 }
 
 //////////////////////////////////////
