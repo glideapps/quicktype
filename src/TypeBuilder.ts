@@ -363,8 +363,12 @@ export abstract class TypeBuilder {
         return tref;
     }
 
-    getUniqueUnionType(attributes: TypeAttributes, members?: OrderedSet<TypeRef>): TypeRef {
-        return this.addType(undefined, tref => new UnionType(tref, members), attributes);
+    getUniqueUnionType(
+        attributes: TypeAttributes,
+        members: OrderedSet<TypeRef> | undefined,
+        forwardingRef?: TypeRef
+    ): TypeRef {
+        return this.addType(forwardingRef, tref => new UnionType(tref, members), attributes);
     }
 
     setUnionMembers(ref: TypeRef, members: OrderedSet<TypeRef>): void {
@@ -573,8 +577,6 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
     };
 
     lookupTypeRefs(typeRefs: TypeRef[]): TypeRef | undefined {
-        assert(typeRefs.length >= 2, "Use lookupTypeRef to look up a single type");
-
         const maybeRef = this._reconstitutedTypes.get(typeRefs[0].getIndex());
         if (maybeRef !== undefined && maybeRef.maybeIndex !== undefined) {
             let allEqual = true;
@@ -756,10 +758,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
     TClass,
     TMap
 > {
-    constructor(
-        protected readonly typeBuilder: TBuilder,
-        conflateNumbers: boolean
-    ) {
+    constructor(protected readonly typeBuilder: TBuilder, conflateNumbers: boolean) {
         super(conflateNumbers);
     }
 
@@ -823,14 +822,18 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
             return t;
         }
 
+        const union = unique
+            ? this.typeBuilder.getUniqueUnionType(typeAttributes, undefined, forwardingRef)
+            : undefined;
+
         const types: TypeRef[] = [];
         for (const kind of kinds) {
             types.push(this.makeTypeOfKind(kind, Map(), undefined));
         }
         const typesSet = OrderedSet(types);
-        if (unique) {
-            assert(forwardingRef === undefined, "Cannot build unique union type with forwarding ref"); // FIXME: why not?
-            return this.typeBuilder.getUniqueUnionType(typeAttributes, typesSet);
+        if (union !== undefined) {
+            this.typeBuilder.setUnionMembers(union, typesSet);
+            return union;
         } else {
             return this.typeBuilder.getUnionType(typeAttributes, typesSet, forwardingRef);
         }

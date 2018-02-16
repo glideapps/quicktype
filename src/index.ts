@@ -19,6 +19,7 @@ import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
 import { inferEnums } from "./InferEnums";
 import { descriptionTypeAttributeKind } from "./TypeAttributes";
+import { flattenUnions } from "./FlattenUnions";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -154,7 +155,7 @@ export class Run {
         if (this._options.findSimilarClassesSchema !== undefined) {
             const schema = JSON.parse(this._options.findSimilarClassesSchema);
             const name = "ComparisonBaseRoot";
-            addTypesInSchema(typeBuilder, schema, conflateNumbers, Map([[name, rootRef] as [string, Ref]]));
+            addTypesInSchema(typeBuilder, schema, Map([[name, rootRef] as [string, Ref]]));
         }
 
         // JSON Schema
@@ -163,11 +164,14 @@ export class Run {
             if (topLevelRefs === undefined) {
                 references = Map([[name, rootRef] as [string, Ref]]);
             } else {
-                assert(topLevelRefs.length === 1 && topLevelRefs[0] === "definitions/", "Schema top level refs must be `definitions/`");
+                assert(
+                    topLevelRefs.length === 1 && topLevelRefs[0] === "definitions/",
+                    "Schema top level refs must be `definitions/`"
+                );
                 references = definitionRefsInSchema(schema);
                 assert(references.size > 0, "No definitions in JSON Schema");
             }
-            addTypesInSchema(typeBuilder, schema, conflateNumbers, references);
+            addTypesInSchema(typeBuilder, schema, references);
         });
 
         // GraphQL
@@ -198,13 +202,16 @@ export class Run {
             });
         }
 
-        const originalGraph = typeBuilder.finish();
+        let graph = typeBuilder.finish();
 
-        if (this._options.findSimilarClassesSchema !== undefined) {
-            return originalGraph;
+        if (Object.getOwnPropertyNames(this._allInputs.schemas).length > 0) {
+            graph = flattenUnions(graph, stringTypeMapping, conflateNumbers);
         }
 
-        let graph = originalGraph;
+        if (this._options.findSimilarClassesSchema !== undefined) {
+            return graph;
+        }
+
         if (this._options.combineClasses) {
             graph = combineClasses(graph, stringTypeMapping, this._options.alphabetizeProperties, conflateNumbers);
         }

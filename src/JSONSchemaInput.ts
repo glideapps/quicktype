@@ -7,7 +7,6 @@ import { MapType, ClassProperty } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "./Support";
 import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
-import { unifyTypes } from "./UnifyClasses";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
 import { TypeAttributes, descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./TypeAttributes";
 
@@ -129,12 +128,7 @@ function makeImmutablePath(path: Ref): List<any> {
 
 export const rootRef: Ref = List([{ kind: PathElementKind.Root } as PathElement]);
 
-export function addTypesInSchema(
-    typeBuilder: TypeGraphBuilder,
-    rootJson: any,
-    conflateNumbers: boolean,
-    references: Map<string, Ref>
-): void {
+export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, references: Map<string, Ref>): void {
     const root = checkStringMap(rootJson);
     let typeForPath = Map<List<any>, TypeRef>();
 
@@ -235,38 +229,34 @@ export function addTypesInSchema(
                     required = checkStringArray(schema.required);
                 }
 
-                let classType: TypeRef | undefined = undefined;
+                // FIXME: Don't put type attributes in the union AND its members.
+                const unionType = typeBuilder.getUniqueUnionType(typeAttributes, undefined);
+                setTypeForPath(path, unionType);
+
+                const typesInUnion: TypeRef[] = [];
+
                 if (schema.properties !== undefined) {
-                    classType = makeClass(path, typeAttributes, checkStringMap(schema.properties), required);
+                    typesInUnion.push(makeClass(path, typeAttributes, checkStringMap(schema.properties), required));
                 }
 
-                let mapType: TypeRef | undefined = undefined;
                 if (schema.additionalProperties !== undefined) {
                     const additional = schema.additionalProperties;
                     if (additional === true) {
                         return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
                     } else if (additional === false) {
-                        if (classType === undefined) {
-                            classType = makeClass(path, typeAttributes, {}, required);
+                        if (schema.properties === undefined) {
+                            typesInUnion.push(makeClass(path, typeAttributes, {}, required));
                         }
                     } else {
-                        mapType = makeMap(path, typeAttributes, checkStringMap(additional));
+                        typesInUnion.push(makeMap(path, typeAttributes, checkStringMap(additional)));
                     }
                 }
 
-                if (classType !== undefined && mapType !== undefined) {
-                    return unifyTypes(
-                        Set([classType.deref()[0], mapType.deref()[0]]),
-                        typeAttributes,
-                        typeBuilder,
-                        true,
-                        true,
-                        conflateNumbers
-                    );
+                if (typesInUnion.length === 0) {
+                    typesInUnion.push(typeBuilder.getMapType(typeBuilder.getPrimitiveType("any")));
                 }
-                if (classType !== undefined) return classType;
-                if (mapType !== undefined) return mapType;
-                return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
+                typeBuilder.setUnionMembers(unionType, OrderedSet(typesInUnion));
+                return unionType;
             case "array":
                 if (schema.items !== undefined) {
                     path = path.push({ kind: PathElementKind.Items });
@@ -311,11 +301,14 @@ export function addTypesInSchema(
             if (!Array.isArray(cases)) {
                 return panic(`oneOf or anyOf is not an array: ${cases}`);
             }
+            const unionType = typeBuilder.getUniqueUnionType(typeAttributes, undefined);
+            setTypeForPath(path, unionType);
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
-            const types = cases.map(
-                (t, index) => toType(checkStringMap(t), path.push({ kind, index } as any), typeAttributes).deref()[0]
+            const types = cases.map((t, index) =>
+                toType(checkStringMap(t), path.push({ kind, index } as any), typeAttributes)
             );
-            return unifyTypes(OrderedSet(types), typeAttributes, typeBuilder, true, true, conflateNumbers);
+            typeBuilder.setUnionMembers(unionType, OrderedSet(types));
+            return unionType;
         }
 
         if (schema.$ref !== undefined) {
@@ -344,8 +337,11 @@ export function addTypesInSchema(
             if (jsonTypes.size === 1) {
                 return fromTypeName(schema, path, typeAttributes, defined(jsonTypes.first()));
             } else {
-                const types = jsonTypes.map(n => fromTypeName(schema, path, typeAttributes, n).deref()[0]);
-                return unifyTypes(types, typeAttributes, typeBuilder, true, true, conflateNumbers);
+                const unionType = typeBuilder.getUniqueUnionType(typeAttributes, undefined);
+                setTypeForPath(path, unionType);
+                const types = jsonTypes.map(n => fromTypeName(schema, path, typeAttributes, n));
+                typeBuilder.setUnionMembers(unionType, OrderedSet(types));
+                return unionType;
             }
         } else if (schema.oneOf !== undefined) {
             return convertOneOrAnyOf(schema.oneOf, PathElementKind.OneOf);
