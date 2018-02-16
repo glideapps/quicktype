@@ -314,7 +314,7 @@ function isValidEnum(enumName: string, val: any): boolean {
 
 function isValidArray(typ: any, val: any): boolean {
     // val must be an array with no invalid elements
-    return Array.isArray(val) && val.every((element, i) => {
+    return Array.isArray(val) && val.every(element => {
         return isValid(typ, element);
     });
 }
