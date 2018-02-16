@@ -277,12 +277,22 @@ class CSharpRenderer extends ConvenienceRenderer {
             if (c.properties.isEmpty()) return;
             const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
             let columns: Sourcelike[][] = [];
+            let isFirstProperty = true;
+            let previousDescription: string[] | undefined = undefined;
             this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
                 const csType = this.csType(p.type, true);
                 const attribute = this.attributeForProperty(jsonName);
                 const description = this.descriptionForClassProperty(c, jsonName);
                 const property = ["public ", csType, " ", name, " { get; set; }"];
                 if (!this.needAttributes) {
+                    if (
+                        // Descriptions should be preceded by an empty line
+                        (!isFirstProperty && description !== undefined) ||
+                        // If the previous property has a description, leave an empty line
+                        previousDescription !== undefined
+                    ) {
+                        this.ensureBlankLine();
+                    }
                     this.emitDescription(description);
                     this.emitLine(property);
                 } else if (this.dense && attribute !== undefined) {
@@ -295,6 +305,9 @@ class CSharpRenderer extends ConvenienceRenderer {
                     }
                     this.emitLine(property);
                 }
+
+                isFirstProperty = false;
+                previousDescription = description;
             });
             if (columns.length > 0) {
                 this.emitTable(columns);
