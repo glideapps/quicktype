@@ -28,6 +28,7 @@ import { panic, assert, defined, withDefault } from "./Support";
 import { introspectServer } from "./GraphQLIntrospection";
 import { getStream } from "./get-stream/index";
 import { train } from "./MarkovChain";
+import { sourcesFromPostmanCollection } from "./PostmanCollection";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -284,7 +285,7 @@ const optionDefinitions: OptionDefinition[] = [
         alias: "s",
         type: String,
         defaultValue: undefined,
-        typeLabel: "json|schema|graphql",
+        typeLabel: "json|schema|graphql|postman-json",
         description: "The source language (default is json)."
     },
     {
@@ -608,6 +609,14 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                 break;
             case "json":
                 sources = await getSources(options);
+                break;
+            case "postman-json":
+                for (const collectionFile of options.src) {
+                    const collectionJSON = fs.readFileSync(collectionFile, "utf8");
+                    for (const src of sourcesFromPostmanCollection(collectionJSON)) {
+                        sources.push(src);
+                    }
+                }
                 break;
             case "schema":
                 // Collect sources as JSON, then map to schema data
