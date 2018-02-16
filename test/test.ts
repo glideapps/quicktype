@@ -26,9 +26,7 @@ function kite() {
     BUILDKITE_COMMIT: commit
   } = process.env;
   const changed =
-    base !== undefined && commit !== undefined
-      ? changedFiles(base, commit)
-      : [];
+    commit !== undefined ? changedFiles(base || "master", commit) : [];
   console.log({ base, commit, changed });
 }
 
