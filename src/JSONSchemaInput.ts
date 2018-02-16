@@ -287,7 +287,9 @@ export function addTypesInSchema(
                         case "date-time":
                             return typeBuilder.getPrimitiveType("date-time");
                         default:
-                            return panic(`String format ${schema.format} not supported`);
+                            // FIXME: Output a warning here instead to indicate that
+                            // the format is uninterpreted.
+                            return typeBuilder.getStringType(typeAttributes, undefined);
                     }
                 }
                 return typeBuilder.getStringType(typeAttributes, undefined);
