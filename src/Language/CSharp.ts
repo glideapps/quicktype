@@ -264,13 +264,14 @@ class CSharpRenderer extends ConvenienceRenderer {
     }
 
     private emitDescription(description: string[] | undefined): void {
-        if (description === undefined) return;
+        this.descriptionLines(description).forEach(line => this.emitLine(line));
+    }
 
-        this.emitLine("/// <summary>");
-        for (const line of description) {
-            this.emitLine("///   ", line);
-        }
-        this.emitLine("/// </summary>");
+    private descriptionLines(description: string[] | undefined): string[] {
+        if (description === undefined) return [];
+        return this.dense
+            ? [`/// <summary>${description.join("; ")}</summary>`]
+            : ["/// <summary>", ...description.map(d => `/// ${d}`), "/// </summary>"];
     }
 
     emitClassDefinition = (c: ClassType, className: Name): void => {
@@ -281,12 +282,16 @@ class CSharpRenderer extends ConvenienceRenderer {
             this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
                 const csType = this.csType(p.type, true);
                 const attribute = this.attributeForProperty(jsonName);
+                const description = this.descriptionForClassProperty(c, jsonName);
                 const property = ["public ", csType, " ", name, " { get; set; }"];
                 if (!this.needAttributes) {
+                    this.emitDescription(description);
                     this.emitLine(property);
                 } else if (this.dense && attribute !== undefined) {
-                    columns.push([attribute, " ", property]);
+                    const comment = description === undefined ? "" : ` // ${description.join("; ")}`;
+                    columns.push([attribute, " ", property, comment]);
                 } else {
+                    this.emitDescription(description);
                     if (attribute !== undefined) {
                         this.emitLine(attribute);
                     }
