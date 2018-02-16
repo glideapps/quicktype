@@ -1,6 +1,9 @@
 language: node_js
 node_js: node
 sudo: required
+branches:
+  except:
+    - /^bk-.*$/
 env:
   - FIXTURE=golang,cplusplus,schema,graphql
   - FIXTURE=swift,java,schema-json-csharp
