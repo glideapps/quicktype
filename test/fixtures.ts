@@ -93,24 +93,30 @@ export abstract class Fixture {
     return `test/runs/${this.name}-${randomBytes(3).toString("hex")}`;
   }
 
-  printRunMessage(
+  runMessageStart(
     sample: Sample,
     index: number,
     total: number,
     cwd: string,
     shouldSkip: boolean
-  ): void {
+  ): string {
     const rendererOptions = _.map(
       sample.additionalRendererOptions,
       (v, k) => `${k}: ${v}`
     ).join(", ");
-    console.error(
+    const message = [
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
       chalk.magenta(this.name) + chalk.dim(`(${rendererOptions})`),
       path.join(cwd, chalk.cyan(path.basename(sample.path))),
       shouldSkip ? chalk.red("SKIP") : ""
-    );
+    ].join(" ");
+    console.time(message);
+    return message;
+}
+
+  runMessageEnd(message: string) {
+    console.timeEnd(message);
   }
 }
 
@@ -153,7 +159,7 @@ abstract class LanguageFixture extends Fixture {
     let shouldSkip = this.shouldSkipTest(sample);
     const additionalFiles = this.additionalFiles(sample);
 
-    this.printRunMessage(sample, index, total, cwd, shouldSkip);
+    const message = this.runMessageStart(sample, index, total, cwd, shouldSkip);
 
     if (shouldSkip) {
       return;
@@ -180,6 +186,8 @@ abstract class LanguageFixture extends Fixture {
     });
 
     shell.rm("-rf", cwd);
+
+    this.runMessageEnd(message);
   }
 }
 
