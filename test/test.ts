@@ -41,13 +41,6 @@ function buildKiteAffectedFixtures(changedFiles: string[] | undefined = undefine
             _.some(changedFiles, f => _.includes(fixture.language.sourceFiles, f))
     );
 
-    if (allFixtures.length !== dirtyFixtures.length) {
-        console.error(`* Changed files: ${changedFiles.join(", ")}`);
-        console.error(
-            `* Running a subset of fixtures: ${dirtyFixtures.map(f => f.name).join(", ")}`
-        );
-    }
-
     return dirtyFixtures;
 }
 
@@ -67,6 +60,11 @@ async function main(sources: string[]) {
         );
     } else {
         fixtures = buildKiteAffectedFixtures();
+        if (allFixtures.length !== fixtures.length) {
+            console.error(
+                `* Running a subset of fixtures: ${fixtures.map(f => f.name).join(", ")}`
+            );
+        }
     }
     // Get an array of all { sample, fixtureName } objects we'll run.
     // We can't just put the fixture in there because these WorkItems
