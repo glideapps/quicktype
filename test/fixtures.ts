@@ -69,6 +69,8 @@ function jsonTestFiles(base: string): string[] {
 export abstract class Fixture {
   abstract name: string;
 
+  constructor(public language: languages.Language) {}
+
   runForName(name: string): boolean {
     return this.name === name;
   }
@@ -113,11 +115,8 @@ export abstract class Fixture {
 }
 
 abstract class LanguageFixture extends Fixture {
-  protected language: languages.Language;
-
   constructor(language: languages.Language) {
-    super();
-    this.language = language;
+    super(language);
   }
 
   async setup() {
@@ -342,7 +341,8 @@ class JSONSchemaJSONFixture extends JSONFixture {
       skipMiscJSON: false,
       skipSchema: [],
       rendererOptions: {},
-      quickTestRendererOptions: []
+      quickTestRendererOptions: [],
+      sourceFiles: language.sourceFiles
     };
     super(schemaLanguage);
     this.runLanguage = language;

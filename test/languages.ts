@@ -17,6 +17,7 @@ export interface Language {
   skipSchema: string[];
   rendererOptions: RendererOptions;
   quickTestRendererOptions: RendererOptions[];
+  sourceFiles?: string[];
 }
 
 export const CSharpLanguage: Language = {
@@ -41,7 +42,8 @@ export const CSharpLanguage: Language = {
     { "array-type": "list" },
     { "csharp-version": "5" },
     { density: "dense" }
-  ]
+  ],
+  sourceFiles: ["src/Language/CSharp.ts"]
 };
 
 export const JavaLanguage: Language = {
@@ -64,7 +66,8 @@ export const JavaLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
   rendererOptions: {},
-  quickTestRendererOptions: []
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Java.ts"]
 };
 
 export const RustLanguage: Language = {
@@ -83,7 +86,8 @@ export const RustLanguage: Language = {
   skipSchema: [],
   skipMiscJSON: true,
   rendererOptions: {},
-  quickTestRendererOptions: [{ density: "dense" }]
+  quickTestRendererOptions: [{ density: "dense" }],
+  sourceFiles: ["src/Language/Rust.ts"]
 };
 
 export const GoLanguage: Language = {
@@ -105,7 +109,8 @@ export const GoLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
-  quickTestRendererOptions: []
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Golang.ts"]
 };
 
 export const CPlusPlusLanguage: Language = {
@@ -130,7 +135,8 @@ export const CPlusPlusLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
-  quickTestRendererOptions: [{ unions: "indirection" }]
+  quickTestRendererOptions: [{ unions: "indirection" }],
+  sourceFiles: ["src/Language/CPlusPlus.ts"]
 };
 
 export const ElmLanguage: Language = {
@@ -164,7 +170,8 @@ export const ElmLanguage: Language = {
     "keyword-unions.schema" // can't handle "hasOwnProperty" for some reason
   ],
   rendererOptions: {},
-  quickTestRendererOptions: [{ "array-type": "list" }]
+  quickTestRendererOptions: [{ "array-type": "list" }],
+  sourceFiles: ["src/Language/Elm.ts"]
 };
 
 export const SwiftLanguage: Language = {
@@ -193,7 +200,8 @@ export const SwiftLanguage: Language = {
     { "struct-or-class": "class" },
     { density: "dense" },
     { density: "normal" }
-  ]
+  ],
+  sourceFiles: ["src/Language/Swift.ts"]
 };
 
 export const ObjectiveCLanguage: Language = {
@@ -223,7 +231,8 @@ export const ObjectiveCLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: { functions: "true" },
-  quickTestRendererOptions: []
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Objective-C.ts"]
 };
 
 export const TypeScriptLanguage: Language = {
@@ -243,5 +252,6 @@ export const TypeScriptLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: { "explicit-unions": "yes" },
-  quickTestRendererOptions: []
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/TypeScript.ts"]
 };

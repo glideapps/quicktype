@@ -6,29 +6,28 @@ import * as _ from "lodash";
 import { inParallel } from "./lib/multicore";
 import { exec, execAsync, Sample } from "./utils";
 import { Fixture, allFixtures } from "./fixtures";
+import { affectedFixtures, divideParallelJobs } from "./buildkite";
 
 const exit = require("exit");
-
-//////////////////////////////////////
-// Constants
-/////////////////////////////////////
-
 const CPUs = parseInt(process.env.CPUs || "0", 10) || os.cpus().length;
 
 //////////////////////////////////////
 // Test driver
 /////////////////////////////////////
 
-type WorkItem = { sample: Sample; fixtureName: string };
+export type WorkItem = { sample: Sample; fixtureName: string };
 
 async function main(sources: string[]) {
   let fixtures = allFixtures;
   const fixturesFromCmdline = process.env.FIXTURE;
   if (fixturesFromCmdline) {
     const fixtureNames = fixturesFromCmdline.split(",");
-    fixtures = _.filter(fixtures, fixture =>
-      _.some(fixtureNames, name => fixture.runForName(name))
-    );
+    fixtures = _.filter(fixtures, fixture => _.some(fixtureNames, name => fixture.runForName(name)));
+  } else {
+    fixtures = affectedFixtures();
+    if (allFixtures.length !== fixtures.length) {
+      console.error(`* Running a subset of fixtures: ${fixtures.map(f => f.name).join(", ")}`);
+    }
   }
   // Get an array of all { sample, fixtureName } objects we'll run.
   // We can't just put the fixture in there because these WorkItems
@@ -44,7 +43,7 @@ async function main(sources: string[]) {
     _.map(x.samples.others, s => ({ fixtureName: x.fixtureName, sample: s }))
   );
 
-  const tests = _.concat(_.shuffle(priority), _.shuffle(others));
+  const tests = divideParallelJobs(_.concat(priority, others));
 
   await inParallel({
     queue: tests,
