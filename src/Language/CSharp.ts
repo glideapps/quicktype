@@ -63,6 +63,7 @@ export default class CSharpTargetLanguage extends TargetLanguage {
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
+        // Meaningless change
         return { date: "date-time", time: "date-time", dateTime: "date-time" };
     }
 
