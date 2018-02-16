@@ -51,19 +51,19 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         this._numValues = n;
     };
 
-    protected makeEnum(cases: string[], counts: { [name: string]: number }, forwardingRef: TypeRef | undefined): TypeRef {
+    protected makeEnum(cases: string[], counts: { [name: string]: number }, typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
         const caseMap = OrderedMap(cases.map((c: string): [string, number] => [c, counts[c]]));
-        return this.typeBuilder.getStringType(this.typeAttributes, caseMap, forwardingRef);
+        return this.typeBuilder.getStringType(typeAttributes, caseMap, forwardingRef);
     }
 
-    protected makeClass(classes: NestedValueArray, maps: any[], forwardingRef: TypeRef | undefined): TypeRef {
+    protected makeClass(classes: NestedValueArray, maps: any[], typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
         assert(maps.length === 0);
-        return this._typeInference.inferClassType(this._cjson, this.typeAttributes, classes, forwardingRef);
+        return this._typeInference.inferClassType(this._cjson, typeAttributes, classes, forwardingRef);
     }
 
-    protected makeArray(arrays: NestedValueArray, forwardingRef: TypeRef | undefined): TypeRef {
+    protected makeArray(arrays: NestedValueArray, typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, this.typeAttributes, arrays, forwardingRef)
+            this._typeInference.inferType(this._cjson, typeAttributes, arrays, forwardingRef)
         );
     }
 }
