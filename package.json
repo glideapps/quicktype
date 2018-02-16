@@ -11,7 +11,7 @@
     "build": "script/build.ts",
     "test": "npm run build && script/test",
     "start": "script/watch",
-    "pkg": "./pkg.sh",
+    "pkg": "script/make-pkgs.sh",
     "tslint": "tslint --project src"
   },
   "dependencies": {
