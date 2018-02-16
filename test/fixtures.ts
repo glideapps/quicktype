@@ -303,10 +303,7 @@ class JSONFixture extends LanguageFixture {
       priority = quickTestSamples.concat(priority);
     }
 
-    if (IS_CI && !IS_PR && !IS_BLESSED) {
-      // Run only priority sources on low-priority CI branches
-      others = [];
-    } else if (IS_CI) {
+    if (IS_CI) {
       // On CI, we run a maximum number of test samples. First we test
       // the priority samples to fail faster, then we continue testing
       // until testMax with random sources.
