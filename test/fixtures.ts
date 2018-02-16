@@ -37,7 +37,7 @@ const IS_PR =
   process.env.TRAVIS_PULL_REQUEST &&
   process.env.TRAVIS_PULL_REQUEST !== "false";
 
-const MAX_TEST_RUNTIME_MS = 15 * 60 * 1000;
+const MAX_TEST_RUNTIME_MS = 30 * 60 * 1000;
 
 function pathWithoutExtension(fullPath: string, extension: string): string {
   return path.join(path.dirname(fullPath), path.basename(fullPath, extension));
