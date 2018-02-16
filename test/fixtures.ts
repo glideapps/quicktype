@@ -309,7 +309,6 @@ class JSONFixture extends LanguageFixture {
       // until testMax with random sources.
       const testMax = 100;
       others = _.chain(samplesFromPaths(miscSamples))
-        .shuffle()
         .take(testMax - prioritySamples.length)
         .value();
     }
