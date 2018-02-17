@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "description": "Postman collection",
+  "$ref": "#/definitions/collection",
+  "definitions": {
+    "group": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/collection"
+          }
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "response": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/response"
+          }
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "properties": {
+        "body": { "type": "string" }
+      }
+    },
+    "collection": {
+      "oneOf": [
+        { "$ref": "#/definitions/group" },
+        { "$ref": "#/definitions/item" }
+      ]
+    }
+  }
+}
