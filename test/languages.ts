@@ -1,6 +1,7 @@
 "use strict";
 
 import { RendererOptions } from "../dist";
+import * as process from "process";
 
 export interface Language {
   name: string;
@@ -142,7 +143,9 @@ export const ElmLanguage: Language = {
   name: "elm",
   base: "test/fixtures/elm",
   setupCommand: "rm -rf elm-stuff/build-artifacts && elm-make --yes",
-  compileCommand: "elm-make Main.elm QuickType.elm --output elm.js",
+  compileCommand: process.env.CI === "true"
+    ? "sysconfcpus -n 1 elm-make Main.elm QuickType.elm --output elm.js"
+    : "elm-make Main.elm QuickType.elm --output elm.js",
   runCommand(sample: string) {
     return `node ./runner.js "${sample}"`;
   },
