@@ -15,13 +15,14 @@ import {
     directlyReachableSingleNamedType
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
-import { Sourcelike, maybeAnnotated } from "../Source";
+import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     utf16LegalizeCharacters,
     utf16StringEscape,
     splitIntoWords,
     combineWords,
-    firstUpperWordStyle
+    firstUpperWordStyle,
+    camelCase
 } from "../Strings";
 import { intercalate, defined, assert, panic, StringMap } from "../Support";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
@@ -481,9 +482,15 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
         );
         this.emitLine("//");
         this.emitLine("//    using ", this.namespaceName, ";");
+        this.emitLine("//");
         this.forEachTopLevel("none", (_, topLevelName) => {
-            this.emitLine("//");
-            this.emitLine("//    var data = ", topLevelName, ".FromJson(jsonString);");
+            this.emitLine(
+                "//    var ",
+                modifySource(camelCase, topLevelName),
+                " = ",
+                topLevelName,
+                ".FromJson(jsonString);"
+            );
         });
     }
 
