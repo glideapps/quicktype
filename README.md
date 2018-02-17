@@ -1,7 +1,7 @@
 ![](quicktype-logo.svg)
 
 [![npm version](https://badge.fury.io/js/quicktype.svg)](https://badge.fury.io/js/quicktype)
-[![Build status](https://badge.buildkite.com/83f12d78ada06f22411648ef74867051591daa4973f7ee937c.svg)](https://buildkite.com/typeguard/quicktyp-slash-quicktype)
+[![Build status](https://badge.buildkite.com/147309f9f492c2af1ea53df922be7140ba4035dbb31f61ee1e.svg)](https://buildkite.com/typeguard/quicktype-slash-quicktype-master)
 [![Join us in Slack](http://slack.quicktype.io/badge.svg)](http://slack.quicktype.io/)
 
 `quicktype` generates strongly-typed models and serializers from JSON, JSON Schema, and [GraphQL queries](https://blog.quicktype.io/graphql-with-quicktype/), making it a breeze to work with JSON type-safely in any programming language.
