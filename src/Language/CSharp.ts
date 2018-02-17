@@ -481,8 +481,8 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
         );
         this.emitLine("//");
         this.emitLine("//    using ", this.namespaceName, ";");
+        this.emitLine("//");
         this.forEachTopLevel("none", (_, topLevelName) => {
-            this.emitLine("//");
             this.emitLine("//    var data = ", topLevelName, ".FromJson(jsonString);");
         });
     }
