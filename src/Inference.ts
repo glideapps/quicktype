@@ -51,19 +51,19 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         this._numValues = n;
     };
 
-    protected makeEnum(cases: string[], counts: { [name: string]: number }): TypeRef {
+    protected makeEnum(cases: string[], counts: { [name: string]: number }, typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
         const caseMap = OrderedMap(cases.map((c: string): [string, number] => [c, counts[c]]));
-        return this.typeBuilder.getStringType(this.typeAttributes, caseMap, this.forwardingRef);
+        return this.typeBuilder.getStringType(typeAttributes, caseMap, forwardingRef);
     }
 
-    protected makeClass(classes: NestedValueArray, maps: any[]): TypeRef {
+    protected makeClass(classes: NestedValueArray, maps: any[], typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
         assert(maps.length === 0);
-        return this._typeInference.inferClassType(this._cjson, this.typeAttributes, classes, this.forwardingRef);
+        return this._typeInference.inferClassType(this._cjson, typeAttributes, classes, forwardingRef);
     }
 
-    protected makeArray(arrays: NestedValueArray): TypeRef {
+    protected makeArray(arrays: NestedValueArray, typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, this.typeAttributes, arrays, this.forwardingRef)
+            this._typeInference.inferType(this._cjson, typeAttributes, arrays, forwardingRef)
         );
     }
 }
@@ -78,7 +78,7 @@ export class TypeInference {
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferEnums: boolean,
         private readonly _inferDates: boolean
-    ) {}
+    ) { }
 
     inferType(
         cjson: CompressedJSON,

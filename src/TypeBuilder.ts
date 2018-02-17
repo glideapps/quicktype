@@ -14,11 +14,12 @@ import {
     removeNullFromUnion,
     PrimitiveStringTypeKind,
     StringType,
-    ClassProperty
+    ClassProperty,
+    TypeKind
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
-import { defined, assert, panic } from "./Support";
+import { defined, assert, panic, assertNever } from "./Support";
 
 export type TypeRefCallback = (index: number) => void;
 
@@ -133,7 +134,7 @@ export abstract class TypeBuilder {
         private readonly _stringTypeMapping: StringTypeMapping,
         readonly alphabetizeProperties: boolean,
         private readonly _allPropertiesOptional: boolean
-    ) {}
+    ) { }
 
     addTopLevel(name: string, tref: TypeRef): void {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
@@ -361,8 +362,16 @@ export abstract class TypeBuilder {
         return tref;
     }
 
-    getUniqueUnionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>): TypeRef {
+    getUniqueUnionType(attributes: TypeAttributes, members?: OrderedSet<TypeRef>): TypeRef {
         return this.addType(undefined, tref => new UnionType(tref, members), attributes);
+    }
+
+    setUnionMembers(ref: TypeRef, members: OrderedSet<TypeRef>): void {
+        const type = ref.deref()[0];
+        if (!(type instanceof UnionType)) {
+            return panic("Tried to set members of non-union type");
+        }
+        type.setMembers(members);
     }
 }
 
@@ -424,7 +433,7 @@ export class TypeReconstituter {
         private readonly _makeClassUnique: boolean,
         private readonly _typeAttributes: TypeAttributes,
         private readonly _forwardingRef: TypeRef
-    ) {}
+    ) { }
 
     private useBuilder = (): TypeBuilder => {
         assert(!this._wasUsed, "TypeReconstituter used more than once");
@@ -627,10 +636,10 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
 
     constructor(
         protected readonly typeBuilder: TBuilder,
-        protected readonly typeAttributes: TypeAttributes,
+        private readonly _typeAttributes: TypeAttributes,
         private readonly _conflateNumbers: boolean,
-        protected readonly forwardingRef?: TypeRef
-    ) {}
+        private readonly _forwardingRef?: TypeRef
+    ) { }
 
     get haveString(): boolean {
         return this._stringTypes.has("string");
@@ -688,58 +697,80 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         cases.forEach((count, name) => this.addEnumCase(name, count));
     };
 
-    protected abstract makeEnum(cases: string[], counts: { [name: string]: number }): TypeRef;
-    protected abstract makeClass(classes: TClass[], maps: TMap[]): TypeRef;
-    protected abstract makeArray(arrays: TArray[]): TypeRef;
+    protected abstract makeEnum(cases: string[], counts: { [name: string]: number }, typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef;
+    protected abstract makeClass(classes: TClass[], maps: TMap[], typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef;
+    protected abstract makeArray(arrays: TArray[], typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef;
+
+    getMemberKinds(): TypeKind[] {
+        if (this._haveAny) {
+            return ["any"];
+        }
+
+        const members: TypeKind[] = [];
+
+        if (this._haveNull) members.push("null");
+        if (this._haveBool) members.push("bool");
+        if (this._haveDouble) members.push("double");
+        if (this._haveInteger && !(this._conflateNumbers && this._haveDouble)) members.push("integer");
+        this._stringTypes.forEach(kind => { members.push(kind); });
+        if (this._enumCases.length > 0) members.push("enum");
+        if (this._classes.length > 0 || this._maps.length > 0) members.push("class");
+        if (this._arrays.length > 0) members.push("array");
+
+        if (members.length === 0) {
+            return ["none"];
+        }
+        return members;
+    }
+
+    private makeTypeOfKind(kind: TypeKind, typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
+        switch (kind) {
+            case "any":
+            case "none":
+            case "null":
+            case "bool":
+            case "double":
+            case "integer":
+            case "date":
+            case "time":
+            case "date-time":
+                const t = this.typeBuilder.getPrimitiveType(kind, forwardingRef);
+                this.typeBuilder.addAttributes(t, typeAttributes);
+                return t;
+            case "string":
+                return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
+            case "enum":
+                return this.makeEnum(this._enumCases, this._enumCaseMap, typeAttributes, this._forwardingRef);
+            case "class":
+                return this.makeClass(this._classes, this._maps, typeAttributes, this._forwardingRef);
+            case "array":
+                return this.makeArray(this._arrays, typeAttributes, this._forwardingRef);
+            default:
+                if (kind === "union" || kind === "map") {
+                    return panic(`getMemberKinds() shouldn't return ${kind}`);
+                }
+                return assertNever(kind);
+        }
+    }
 
     buildUnion = (unique: boolean): TypeRef => {
+        const kinds = this.getMemberKinds();
+
+        if (kinds.length === 1) {
+            const t = this.makeTypeOfKind(kinds[0], this._typeAttributes, this._forwardingRef);
+            return t;
+        }
+
         const types: TypeRef[] = [];
-
-        if (this._haveAny) {
-            return this.typeBuilder.getPrimitiveType("any", this.forwardingRef);
-        }
-        if (this._haveNull) {
-            types.push(this.typeBuilder.getPrimitiveType("null", this.forwardingRef));
-        }
-        if (this._haveBool) {
-            types.push(this.typeBuilder.getPrimitiveType("bool", this.forwardingRef));
-        }
-        if (this._haveDouble) {
-            types.push(this.typeBuilder.getPrimitiveType("double", this.forwardingRef));
-        }
-        if (this._haveInteger && !(this._conflateNumbers && this._haveDouble)) {
-            types.push(this.typeBuilder.getPrimitiveType("integer", this.forwardingRef));
-        }
-        this._stringTypes.forEach(kind => {
-            types.push(
-                kind === "string"
-                    ? this.typeBuilder.getStringType(this.typeAttributes, undefined, this.forwardingRef)
-                    : this.typeBuilder.getPrimitiveType(kind, this.forwardingRef)
-            );
-        });
-        if (this._enumCases.length > 0) {
-            types.push(this.makeEnum(this._enumCases, this._enumCaseMap));
-        }
-        if (this._classes.length > 0 || this._maps.length > 0) {
-            types.push(this.makeClass(this._classes, this._maps));
-        }
-        if (this._arrays.length > 0) {
-            types.push(this.makeArray(this._arrays));
-        }
-
-        if (types.length === 0) {
-            return this.typeBuilder.getPrimitiveType("none", this.forwardingRef);
-        }
-        if (types.length === 1) {
-            this.typeBuilder.addAttributes(types[0], this.typeAttributes);
-            return types[0];
+        for (const kind of kinds) {
+            types.push(this.makeTypeOfKind(kind, Map(), undefined));
         }
         const typesSet = OrderedSet(types);
         if (unique) {
-            assert(this.forwardingRef === undefined, "Cannot build unique union type with forwarding ref"); // FIXME: why not?
-            return this.typeBuilder.getUniqueUnionType(this.typeAttributes, typesSet);
+            assert(this._forwardingRef === undefined, "Cannot build unique union type with forwarding ref"); // FIXME: why not?
+            return this.typeBuilder.getUniqueUnionType(this._typeAttributes, typesSet);
         } else {
-            return this.typeBuilder.getUnionType(this.typeAttributes, typesSet, this.forwardingRef);
+            return this.typeBuilder.getUnionType(this._typeAttributes, typesSet, this._forwardingRef);
         }
     };
 }
