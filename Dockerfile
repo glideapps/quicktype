@@ -33,6 +33,10 @@ RUN apt-get install libboost-all-dev --assume-yes
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# Tool to limit elm-make cores
+RUN git clone https://github.com/obmarg/libsysconfcpus.git
+RUN cd libsysconfcpus && ./configure && make && make install
+
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
 COPY . .

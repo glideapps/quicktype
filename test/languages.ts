@@ -1,6 +1,7 @@
 "use strict";
 
 import { RendererOptions } from "../dist";
+import * as process from "process";
 
 export interface Language {
   name: string;
@@ -49,6 +50,7 @@ export const CSharpLanguage: Language = {
 export const JavaLanguage: Language = {
   name: "java",
   base: "test/fixtures/java",
+  setupCommand: "mvn package",
   compileCommand: "mvn package",
   runCommand(sample: string) {
     return `java -cp target/QuickTypeTest-1.0-SNAPSHOT.jar io.quicktype.App "${sample}"`;
@@ -73,9 +75,10 @@ export const JavaLanguage: Language = {
 export const RustLanguage: Language = {
   name: "rust",
   base: "test/fixtures/rust",
-  compileCommand: "cargo build",
+  setupCommand: "cargo build || true",
+  compileCommand: "cargo build --jobs 1",
   runCommand(sample: string) {
-    return `./target/debug/quick_type_test "${sample}"`;
+    return `RUST_THREADS=1 ./target/debug/quick_type_test "${sample}"`;
   },
   // FIXME: implement comparing multiple files
   diffViaSchema: false,
@@ -84,7 +87,7 @@ export const RustLanguage: Language = {
   topLevel: "TopLevel",
   skipJSON: [],
   skipSchema: [],
-  skipMiscJSON: true,
+  skipMiscJSON: false,
   rendererOptions: {},
   quickTestRendererOptions: [{ density: "dense" }],
   sourceFiles: ["src/Language/Rust.ts"]
@@ -141,7 +144,9 @@ export const ElmLanguage: Language = {
   name: "elm",
   base: "test/fixtures/elm",
   setupCommand: "rm -rf elm-stuff/build-artifacts && elm-make --yes",
-  compileCommand: "elm-make Main.elm QuickType.elm --output elm.js",
+  compileCommand: process.env.CI === "true"
+    ? "sysconfcpus -n 1 elm-make Main.elm QuickType.elm --output elm.js"
+    : "elm-make Main.elm QuickType.elm --output elm.js",
   runCommand(sample: string) {
     return `node ./runner.js "${sample}"`;
   },
@@ -160,7 +165,7 @@ export const ElmLanguage: Language = {
     "nst-test-suite.json",
     "keywords.json" // stack overflow
   ],
-  skipMiscJSON: true,
+  skipMiscJSON: false,
   skipSchema: [
     "union-list.schema", // recursion
     "list.schema", // recursion
