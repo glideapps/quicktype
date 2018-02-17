@@ -15,7 +15,8 @@ import {
     PrimitiveStringTypeKind,
     StringType,
     ClassProperty,
-    TypeKind
+    TypeKind,
+    matchTypeExhaustive
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
@@ -134,7 +135,7 @@ export abstract class TypeBuilder {
         private readonly _stringTypeMapping: StringTypeMapping,
         readonly alphabetizeProperties: boolean,
         private readonly _allPropertiesOptional: boolean
-    ) { }
+    ) {}
 
     addTopLevel(name: string, tref: TypeRef): void {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
@@ -433,7 +434,7 @@ export class TypeReconstituter {
         private readonly _makeClassUnique: boolean,
         private readonly _typeAttributes: TypeAttributes,
         private readonly _forwardingRef: TypeRef
-    ) { }
+    ) {}
 
     private useBuilder = (): TypeBuilder => {
         assert(!this._wasUsed, "TypeReconstituter used more than once");
@@ -620,82 +621,149 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
     }
 }
 
-export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass, TMap> {
+export class UnionAccumulator<TArray, TClass, TMap> {
     private _haveAny = false;
     private _haveNull = false;
     private _haveBool = false;
     private _haveInteger = false;
     private _haveDouble = false;
     private _stringTypes = OrderedSet<PrimitiveStringTypeKind>();
-    private readonly _arrays: TArray[] = [];
-    private readonly _maps: TMap[] = [];
-    private readonly _classes: TClass[] = [];
+    protected readonly arrays: TArray[] = [];
+    protected readonly maps: TMap[] = [];
+    protected readonly classes: TClass[] = [];
     // FIXME: we're losing order here
-    private _enumCaseMap: { [name: string]: number } = {};
-    private _enumCases: string[] = [];
+    protected enumCaseMap: { [name: string]: number } = {};
+    protected enumCases: string[] = [];
 
-    constructor(
-        protected readonly typeBuilder: TBuilder,
-        private readonly _typeAttributes: TypeAttributes,
-        private readonly _conflateNumbers: boolean,
-        private readonly _forwardingRef?: TypeRef
-    ) { }
+    constructor(private readonly _conflateNumbers: boolean) {}
 
     get haveString(): boolean {
         return this._stringTypes.has("string");
     }
 
-    addAny = (): void => {
+    addAny(): void {
         this._haveAny = true;
-    };
-    addNull = (): void => {
+    }
+    addNull(): void {
         this._haveNull = true;
-    };
-    addBool = (): void => {
+    }
+    addBool(): void {
         this._haveBool = true;
-    };
-    addInteger = (): void => {
+    }
+    addInteger(): void {
         this._haveInteger = true;
-    };
-    addDouble = (): void => {
+    }
+    addDouble(): void {
         this._haveDouble = true;
-    };
+    }
 
-    addStringType = (kind: PrimitiveStringTypeKind): void => {
+    addStringType(kind: PrimitiveStringTypeKind): void {
         if (this._stringTypes.has(kind)) return;
         // string overrides all other string types, as well as enum
         if (kind === "string") {
             this._stringTypes = OrderedSet([kind]);
-            this._enumCaseMap = {};
-            this._enumCases = [];
+            this.enumCaseMap = {};
+            this.enumCases = [];
         } else {
             if (this.haveString) return;
             this._stringTypes = this._stringTypes.add(kind);
         }
-    };
-    addArray = (t: TArray): void => {
-        this._arrays.push(t);
-    };
-    addClass = (t: TClass): void => {
-        this._classes.push(t);
-    };
-    addMap = (t: TMap): void => {
-        this._maps.push(t);
-    };
+    }
+    addArray(t: TArray): void {
+        this.arrays.push(t);
+    }
+    addClass(t: TClass): void {
+        this.classes.push(t);
+    }
+    addMap(t: TMap): void {
+        this.maps.push(t);
+    }
 
-    addEnumCase = (s: string, count: number = 1): void => {
+    addEnumCase(s: string, count: number = 1): void {
         if (this.haveString) {
             return;
         }
-        if (!Object.prototype.hasOwnProperty.call(this._enumCaseMap, s)) {
-            this._enumCaseMap[s] = 0;
-            this._enumCases.push(s);
+        if (!Object.prototype.hasOwnProperty.call(this.enumCaseMap, s)) {
+            this.enumCaseMap[s] = 0;
+            this.enumCases.push(s);
         }
-        this._enumCaseMap[s] += count;
-    };
-    addEnumCases = (cases: OrderedMap<string, number>): void => {
+        this.enumCaseMap[s] += count;
+    }
+    addEnumCases(cases: OrderedMap<string, number>): void {
         cases.forEach((count, name) => this.addEnumCase(name, count));
-    };
+    }
+
+    getMemberKinds(): TypeKind[] {
+        if (this._haveAny) {
+            return ["any"];
+        }
+
+        const members: TypeKind[] = [];
+
+        if (this._haveNull) members.push("null");
+        if (this._haveBool) members.push("bool");
+        if (this._haveDouble) members.push("double");
+        if (this._haveInteger && !(this._conflateNumbers && this._haveDouble)) members.push("integer");
+        this._stringTypes.forEach(kind => {
+            members.push(kind);
+        });
+        if (this.enumCases.length > 0) members.push("enum");
+        if (this.classes.length > 0 || this.maps.length > 0) members.push("class");
+        if (this.arrays.length > 0) members.push("array");
+
+        if (members.length === 0) {
+            return ["none"];
+        }
+        return members;
+    }
+}
+
+export function addTypeToUnionAccumulator(ua: UnionAccumulator<TypeRef, TypeRef, TypeRef>, t: Type): void {
+    matchTypeExhaustive(
+        t,
+        _noneType => {
+            return;
+        },
+        _anyType => ua.addAny(),
+        _nullType => ua.addNull(),
+        _boolType => ua.addBool(),
+        _integerType => ua.addInteger(),
+        _doubleType => ua.addDouble(),
+        stringType => {
+            const enumCases = stringType.enumCases;
+            if (enumCases === undefined) {
+                ua.addStringType("string");
+            } else {
+                ua.addEnumCases(enumCases);
+            }
+        },
+        arrayType => ua.addArray(arrayType.items.typeRef),
+        classType => ua.addClass(classType.typeRef),
+        mapType => ua.addMap(mapType.values.typeRef),
+        // FIXME: We're not carrying counts, so this is not correct if we do enum
+        // inference.  JSON Schema input uses this case, however, without enum
+        // inference, which is fine, but still a bit ugly.
+        enumType => enumType.cases.forEach(s => ua.addEnumCase(s)),
+        unionType => unionType.members.forEach(m => addTypeToUnionAccumulator(ua, m)),
+        _dateType => ua.addStringType("date"),
+        _timeType => ua.addStringType("time"),
+        _dateTimeType => ua.addStringType("date-time")
+    );
+}
+
+export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass, TMap> extends UnionAccumulator<
+    TArray,
+    TClass,
+    TMap
+> {
+    constructor(
+        protected readonly typeBuilder: TBuilder,
+        private readonly _typeAttributes: TypeAttributes,
+        conflateNumbers: boolean,
+        private readonly _forwardingRef?: TypeRef
+    ) {
+        super(conflateNumbers);
+    }
 
     protected abstract makeEnum(
         cases: string[],
@@ -714,28 +782,6 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef;
-
-    getMemberKinds(): TypeKind[] {
-        if (this._haveAny) {
-            return ["any"];
-        }
-
-        const members: TypeKind[] = [];
-
-        if (this._haveNull) members.push("null");
-        if (this._haveBool) members.push("bool");
-        if (this._haveDouble) members.push("double");
-        if (this._haveInteger && !(this._conflateNumbers && this._haveDouble)) members.push("integer");
-        this._stringTypes.forEach(kind => { members.push(kind); });
-        if (this._enumCases.length > 0) members.push("enum");
-        if (this._classes.length > 0 || this._maps.length > 0) members.push("class");
-        if (this._arrays.length > 0) members.push("array");
-
-        if (members.length === 0) {
-            return ["none"];
-        }
-        return members;
-    }
 
     private makeTypeOfKind(
         kind: TypeKind,
@@ -758,11 +804,11 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
             case "string":
                 return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
             case "enum":
-                return this.makeEnum(this._enumCases, this._enumCaseMap, typeAttributes, forwardingRef);
+                return this.makeEnum(this.enumCases, this.enumCaseMap, typeAttributes, forwardingRef);
             case "class":
-                return this.makeClass(this._classes, this._maps, typeAttributes, forwardingRef);
+                return this.makeClass(this.classes, this.maps, typeAttributes, forwardingRef);
             case "array":
-                return this.makeArray(this._arrays, typeAttributes, forwardingRef);
+                return this.makeArray(this.arrays, typeAttributes, forwardingRef);
             default:
                 if (kind === "union" || kind === "map") {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
@@ -771,7 +817,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         }
     }
 
-    buildUnion = (unique: boolean): TypeRef => {
+    buildUnion(unique: boolean): TypeRef {
         const kinds = this.getMemberKinds();
 
         if (kinds.length === 1) {
@@ -790,5 +836,5 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         } else {
             return this.typeBuilder.getUnionType(this._typeAttributes, typesSet, this._forwardingRef);
         }
-    };
+    }
 }

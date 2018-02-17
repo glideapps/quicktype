@@ -2,8 +2,8 @@
 
 import { Set, OrderedMap, OrderedSet, Map } from "immutable";
 
-import { ClassType, Type, matchTypeExhaustive, assertIsClass, ClassProperty, allTypeCases } from "./Type";
-import { TypeRef, UnionBuilder, TypeBuilder, TypeLookerUp } from "./TypeBuilder";
+import { ClassType, Type, assertIsClass, ClassProperty, allTypeCases } from "./Type";
+import { TypeRef, UnionBuilder, TypeBuilder, TypeLookerUp, addTypeToUnionAccumulator } from "./TypeBuilder";
 import { panic, assert, defined } from "./Support";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
@@ -148,40 +148,8 @@ export function unifyTypes(
             )
     );
 
-    const addType = (t: Type): void => {
-        matchTypeExhaustive(
-            t,
-            _noneType => {
-                return;
-            },
-            _anyType => unionBuilder.addAny(),
-            _nullType => unionBuilder.addNull(),
-            _boolType => unionBuilder.addBool(),
-            _integerType => unionBuilder.addInteger(),
-            _doubleType => unionBuilder.addDouble(),
-            stringType => {
-                const enumCases = stringType.enumCases;
-                if (enumCases === undefined) {
-                    unionBuilder.addStringType("string");
-                } else {
-                    unionBuilder.addEnumCases(enumCases);
-                }
-            },
-            arrayType => unionBuilder.addArray(arrayType.items.typeRef),
-            classType => unionBuilder.addClass(classType.typeRef),
-            mapType => unionBuilder.addMap(mapType.values.typeRef),
-            // FIXME: We're not carrying counts, so this is not correct if we do enum
-            // inference.  JSON Schema input uses this case, however, without enum
-            // inference, which is fine, but still a bit ugly.
-            enumType => enumType.cases.forEach(s => unionBuilder.addEnumCase(s)),
-            unionType => unionType.members.forEach(addType),
-            _dateType => unionBuilder.addStringType("date"),
-            _timeType => unionBuilder.addStringType("time"),
-            _dateTimeType => unionBuilder.addStringType("date-time")
-        );
-    };
 
-    types.forEach(addType);
+    types.forEach(t => addTypeToUnionAccumulator(unionBuilder, t));
 
     return unionBuilder.buildUnion(false);
 }
