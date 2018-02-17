@@ -128,9 +128,7 @@ export const CPlusPlusLanguage: Language = {
   topLevel: "TopLevel",
   skipJSON: [
     // fails on a string containing null
-    "nst-test-suite.json",
-    // takes too long to compile
-    "combinations.json"
+    "nst-test-suite.json"
   ],
   skipMiscJSON: false,
   skipSchema: [],
