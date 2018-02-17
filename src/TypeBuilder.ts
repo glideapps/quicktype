@@ -758,9 +758,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
 > {
     constructor(
         protected readonly typeBuilder: TBuilder,
-        private readonly _typeAttributes: TypeAttributes,
-        conflateNumbers: boolean,
-        private readonly _forwardingRef?: TypeRef
+        conflateNumbers: boolean
     ) {
         super(conflateNumbers);
     }
@@ -817,11 +815,11 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         }
     }
 
-    buildUnion(unique: boolean): TypeRef {
+    buildUnion(unique: boolean, typeAttributes: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
         const kinds = this.getMemberKinds();
 
         if (kinds.length === 1) {
-            const t = this.makeTypeOfKind(kinds[0], this._typeAttributes, this._forwardingRef);
+            const t = this.makeTypeOfKind(kinds[0], typeAttributes, forwardingRef);
             return t;
         }
 
@@ -831,10 +829,10 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         }
         const typesSet = OrderedSet(types);
         if (unique) {
-            assert(this._forwardingRef === undefined, "Cannot build unique union type with forwarding ref"); // FIXME: why not?
-            return this.typeBuilder.getUniqueUnionType(this._typeAttributes, typesSet);
+            assert(forwardingRef === undefined, "Cannot build unique union type with forwarding ref"); // FIXME: why not?
+            return this.typeBuilder.getUniqueUnionType(typeAttributes, typesSet);
         } else {
-            return this.typeBuilder.getUnionType(this._typeAttributes, typesSet, this._forwardingRef);
+            return this.typeBuilder.getUnionType(typeAttributes, typesSet, forwardingRef);
         }
     }
 }

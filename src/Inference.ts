@@ -36,12 +36,10 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
 
     constructor(
         typeBuilder: TypeBuilder,
-        typeAttributes: TypeAttributes,
         private readonly _typeInference: TypeInference,
-        private readonly _cjson: CompressedJSON,
-        forwardingRef?: TypeRef
+        private readonly _cjson: CompressedJSON
     ) {
-        super(typeBuilder, typeAttributes, true, forwardingRef);
+        super(typeBuilder, true);
     }
 
     setNumValues = (n: number): void => {
@@ -86,7 +84,7 @@ export class TypeInference {
         valueArray: NestedValueArray,
         forwardingRef?: TypeRef
     ): TypeRef {
-        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, typeAttributes, this, cjson, forwardingRef);
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, cjson);
         let numValues = 0;
 
         forEachValueInNestedValueArray(valueArray, value => {
@@ -142,7 +140,7 @@ export class TypeInference {
         });
 
         unionBuilder.setNumValues(numValues);
-        return unionBuilder.buildUnion(false);
+        return unionBuilder.buildUnion(false, typeAttributes, forwardingRef);
     }
 
     inferClassType(

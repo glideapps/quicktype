@@ -41,14 +41,12 @@ function getCliqueProperties(
 class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef> {
     constructor(
         typeBuilder: TypeBuilder & TypeLookerUp,
-        typeAttributes: TypeAttributes,
         private readonly _makeEnums: boolean,
         private readonly _makeClassesFixed: boolean,
         conflateNumbers: boolean,
-        forwardingRef: TypeRef | undefined,
         private readonly _unifyTypes: (typesToUnify: TypeRef[], typeAttributes: TypeAttributes) => TypeRef
     ) {
-        super(typeBuilder, typeAttributes, conflateNumbers, forwardingRef);
+        super(typeBuilder, conflateNumbers);
     }
 
     protected makeEnum(enumCases: string[], counts: { [name: string]: number }, typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
@@ -132,11 +130,9 @@ export function unifyTypes(
 
     const unionBuilder = new UnifyUnionBuilder(
         typeBuilder,
-        typeAttributes,
         makeEnums,
         makeClassesFixed,
         conflateNumbers,
-        forwardingRef,
         (trefs, names) =>
             unifyTypes(
                 Set(trefs.map(tref => tref.deref()[0])),
@@ -151,5 +147,5 @@ export function unifyTypes(
 
     types.forEach(t => addTypeToUnionAccumulator(unionBuilder, t));
 
-    return unionBuilder.buildUnion(false);
+    return unionBuilder.buildUnion(false, typeAttributes, forwardingRef);
 }
