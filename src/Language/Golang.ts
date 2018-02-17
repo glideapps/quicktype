@@ -22,11 +22,12 @@ import {
     splitIntoWords,
     combineWords,
     firstUpperWordStyle,
-    allUpperWordStyle
+    allUpperWordStyle,
+    camelCase
 } from "../Strings";
 import { defined } from "../Support";
 import { StringOption, BooleanOption } from "../RendererOptions";
-import { Sourcelike, maybeAnnotated } from "../Source";
+import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
@@ -324,8 +325,9 @@ class GoRenderer extends ConvenienceRenderer {
             this.emitLine("// To parse and unparse this JSON data, add this code to your project and do:");
             this.forEachTopLevel("none", (_: Type, name: Name) => {
                 this.emitLine("//");
-                this.emitLine("//    r, err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
-                this.emitLine("//    bytes, err = r.Marshal()");
+                const ref = modifySource(camelCase, name);
+                this.emitLine("//    ", ref, ", err := ", defined(this._topLevelUnmarshalNames.get(name)), "(bytes)");
+                this.emitLine("//    bytes, err = ", ref, ".Marshal()");
             });
         }
         if (!this._justTypes) {
