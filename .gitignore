@@ -15,6 +15,7 @@ test/golang/schema-from-schema.json
 test/elm/elm-stuff/
 test/elm/elm.js
 test/elm/QuickType.elm
+test/fixtures/rust/target
 
 *.log
 /test/elm/libsysconfcpus/
