@@ -162,7 +162,7 @@ export const ElmLanguage: Language = {
     "nst-test-suite.json",
     "keywords.json" // stack overflow
   ],
-  skipMiscJSON: false,
+  skipMiscJSON: true,
   skipSchema: [
     "union-list.schema", // recursion
     "list.schema", // recursion
