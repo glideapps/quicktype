@@ -16,6 +16,7 @@ test/elm/elm-stuff/
 test/elm/elm.js
 test/elm/QuickType.elm
 test/fixtures/rust/target
+test/fixtures/java/target
 
 *.log
 /test/elm/libsysconfcpus/
