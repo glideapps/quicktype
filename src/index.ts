@@ -18,6 +18,7 @@ import { makeNamesTypeAttributes } from "./TypeNames";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
 import { inferEnums } from "./InferEnums";
+import { descriptionTypeAttributeKind } from "./TypeAttributes";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -45,6 +46,7 @@ export type StringInput = string | Readable;
 export interface JSONTypeSource {
     name: string;
     samples: StringInput[];
+    description?: string;
 }
 
 export function isJSONSource(source: TypeSource): source is JSONTypeSource {
@@ -110,7 +112,7 @@ const defaultOptions: Options = {
 };
 
 type InputData = {
-    samples: { [name: string]: Value[] };
+    samples: { [name: string]: { samples: Value[]; description?: string } };
     schemas: { [name: string]: { schema: any; topLevelRefs: string[] | undefined } };
     graphQLs: { [name: string]: { schema: any; query: string } };
 };
@@ -182,11 +184,17 @@ export class Run {
         if (Object.keys(this._allInputs.samples).length > 0) {
             const inference = new TypeInference(typeBuilder, doInferEnums, this._options.inferDates);
 
-            Map(this._allInputs.samples).forEach((cjson, name) => {
-                typeBuilder.addTopLevel(
-                    name,
-                    inference.inferType(this._compressedJSON as CompressedJSON, makeNamesTypeAttributes(name, false), cjson)
+            Map(this._allInputs.samples).forEach(({ samples, description }, name) => {
+                const tref = inference.inferType(
+                    this._compressedJSON as CompressedJSON,
+                    makeNamesTypeAttributes(name, false),
+                    samples
                 );
+                typeBuilder.addTopLevel(name, tref);
+                if (description !== undefined) {
+                    const attributes = descriptionTypeAttributeKind.makeAttributes(description);
+                    typeBuilder.addAttributes(tref, attributes);
+                }
             });
         }
 
@@ -240,13 +248,16 @@ export class Run {
                 const { name, schema, query } = source;
                 this._allInputs.graphQLs[name] = { schema, query: await toString(query) };
             } else if (isJSONSource(source)) {
-                const { name, samples } = source;
+                const { name, samples, description } = source;
                 for (const sample of samples) {
                     const input = await this._compressedJSON.readFromStream(toReadable(sample));
                     if (!_.has(this._allInputs.samples, name)) {
-                        this._allInputs.samples[name] = [];
+                        this._allInputs.samples[name] = { samples: [] };
                     }
-                    this._allInputs.samples[name].push(input);
+                    this._allInputs.samples[name].samples.push(input);
+                    if (description !== undefined) {
+                        this._allInputs.samples[name].description = description;
+                    }
                 }
             } else if (isSchemaSource(source)) {
                 const { name, schema, topLevelRefs } = source;
