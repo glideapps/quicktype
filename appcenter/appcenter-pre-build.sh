@@ -7,18 +7,7 @@ source appcenter/slack.sh
 ### Build ###
 #############
 
-npm run build
-
-############
-### Test ###
-############
-
-# TODO re-enable these when we run go and C++ fixtures
-# brew install go boost
-
-# TODO run full test suite when we deprecate Travis
-export FIXTURE=swift,objective-c
-if script/test; then
+if npm run build; then
     slack_notify_build_passed
 else
     slack_notify_build_failed
