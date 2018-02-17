@@ -86,7 +86,7 @@ export const RustLanguage: Language = {
   topLevel: "TopLevel",
   skipJSON: [],
   skipSchema: [],
-  skipMiscJSON: true,
+  skipMiscJSON: false,
   rendererOptions: {},
   quickTestRendererOptions: [{ density: "dense" }],
   sourceFiles: ["src/Language/Rust.ts"]
@@ -164,7 +164,7 @@ export const ElmLanguage: Language = {
     "nst-test-suite.json",
     "keywords.json" // stack overflow
   ],
-  skipMiscJSON: true,
+  skipMiscJSON: false,
   skipSchema: [
     "union-list.schema", // recursion
     "list.schema", // recursion
