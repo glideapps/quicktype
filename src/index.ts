@@ -225,11 +225,10 @@ export class Run {
         if (!targetLanguage.supportsOptionalClassProperties) {
             graph = optionalToNullable(graph, stringTypeMapping);
         }
-        // JSON Schema input can leave unreachable classes in the graph when it
-        // unifies, which can trip is up, so we remove them here.  Also, sometimes
-        // we combine classes in ways that will the order come out differently
-        // compared to what it would be from the equivalent schema, so we always
-        // just garbage collect to get a defined order and be done with it.
+        // Sometimes we combine classes in ways that will the order come out
+        // differently compared to what it would be from the equivalent schema,
+        // so we always just garbage collect to get a defined order and be done
+        // with it.
         // FIXME: We don't actually have to do this if any of the above graph
         // rewrites did anything.  We could just check whether the current graph
         // is different from the one we started out with.
