@@ -1,5 +1,7 @@
 ![](quicktype-logo.svg)
 
+change
+
 [![npm version](https://badge.fury.io/js/quicktype.svg)](https://badge.fury.io/js/quicktype)
 [![Build status](https://badge.buildkite.com/147309f9f492c2af1ea53df922be7140ba4035dbb31f61ee1e.svg)](https://buildkite.com/typeguard/quicktype-master)
 [![Join us in Slack](http://slack.quicktype.io/badge.svg)](http://slack.quicktype.io/)
