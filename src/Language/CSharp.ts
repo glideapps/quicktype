@@ -231,7 +231,7 @@ class CSharpRenderer extends ConvenienceRenderer {
                 return this.nameForNamedType(unionType);
             },
             {
-                dateTimeType: _ => "System.DateTime"
+                dateTimeType: _ => "System.DateTimeOffset"
             }
         );
     };
@@ -285,56 +285,68 @@ class CSharpRenderer extends ConvenienceRenderer {
     }
 
     emitClassDefinition = (c: ClassType, className: Name): void => {
-        this.emitType(this.descriptionForType(c), AccessModifier.Public, [this.partialString, "class"], className, () => {
-            if (c.properties.isEmpty()) return;
-            const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
-            let columns: Sourcelike[][] = [];
-            let isFirstProperty = true;
-            let previousDescription: string[] | undefined = undefined;
-            this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
-                const csType = this.csType(p.type, true);
-                const attribute = this.attributeForProperty(jsonName);
-                const description = this.descriptionForClassProperty(c, jsonName);
-                const property = ["public ", csType, " ", name, " { get; set; }"];
-                if (!this.needAttributes) {
-                    if (
-                        // Descriptions should be preceded by an empty line
-                        (!isFirstProperty && description !== undefined) ||
-                        // If the previous property has a description, leave an empty line
-                        previousDescription !== undefined
-                    ) {
-                        this.ensureBlankLine();
+        this.emitType(
+            this.descriptionForType(c),
+            AccessModifier.Public,
+            [this.partialString, "class"],
+            className,
+            () => {
+                if (c.properties.isEmpty()) return;
+                const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
+                let columns: Sourcelike[][] = [];
+                let isFirstProperty = true;
+                let previousDescription: string[] | undefined = undefined;
+                this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
+                    const csType = this.csType(p.type, true);
+                    const attribute = this.attributeForProperty(jsonName);
+                    const description = this.descriptionForClassProperty(c, jsonName);
+                    const property = ["public ", csType, " ", name, " { get; set; }"];
+                    if (!this.needAttributes) {
+                        if (
+                            // Descriptions should be preceded by an empty line
+                            (!isFirstProperty && description !== undefined) ||
+                            // If the previous property has a description, leave an empty line
+                            previousDescription !== undefined
+                        ) {
+                            this.ensureBlankLine();
+                        }
+                        this.emitDescription(description);
+                        this.emitLine(property);
+                    } else if (this.dense && attribute !== undefined) {
+                        const comment = description === undefined ? "" : ` // ${description.join("; ")}`;
+                        columns.push([attribute, " ", property, comment]);
+                    } else {
+                        this.emitDescription(description);
+                        if (attribute !== undefined) {
+                            this.emitLine(attribute);
+                        }
+                        this.emitLine(property);
                     }
-                    this.emitDescription(description);
-                    this.emitLine(property);
-                } else if (this.dense && attribute !== undefined) {
-                    const comment = description === undefined ? "" : ` // ${description.join("; ")}`;
-                    columns.push([attribute, " ", property, comment]);
-                } else {
-                    this.emitDescription(description);
-                    if (attribute !== undefined) {
-                        this.emitLine(attribute);
-                    }
-                    this.emitLine(property);
-                }
 
-                isFirstProperty = false;
-                previousDescription = description;
-            });
-            if (columns.length > 0) {
-                this.emitTable(columns);
+                    isFirstProperty = false;
+                    previousDescription = description;
+                });
+                if (columns.length > 0) {
+                    this.emitTable(columns);
+                }
             }
-        });
+        );
     };
 
     emitUnionDefinition = (u: UnionType, unionName: Name): void => {
         const nonNulls = removeNullFromUnion(u)[1];
-        this.emitType(this.descriptionForType(u), AccessModifier.Public, [this.partialString, "struct"], unionName, () => {
-            this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
-                const csType = this.nullableCSType(t);
-                this.emitLine("public ", csType, " ", fieldName, ";");
-            });
-        });
+        this.emitType(
+            this.descriptionForType(u),
+            AccessModifier.Public,
+            [this.partialString, "struct"],
+            unionName,
+            () => {
+                this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
+                    const csType = this.nullableCSType(t);
+                    this.emitLine("public ", csType, " ", fieldName, ";");
+                });
+            }
+        );
     };
 
     emitEnumDefinition = (e: EnumType, enumName: Name): void => {
@@ -386,7 +398,7 @@ class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected emitUsings(): void {
-        for (const ns of ["System", "System.Net", "System.Collections.Generic"]) {
+        for (const ns of ["System", "System.Collections.Generic", "System.Net"]) {
             this.emitUsing(ns);
         }
     }
@@ -479,7 +491,11 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
     protected emitUsings(): void {
         super.emitUsings();
         this.ensureBlankLine();
-        this.emitUsing("Newtonsoft.Json");
+
+        for (const ns of ["System.Globalization", "Newtonsoft.Json", "Newtonsoft.Json.Converters"]) {
+            this.emitUsing(ns);
+        }
+
         if (this.dense) {
             this.emitUsing([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
         }
@@ -533,48 +549,62 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     private emitEnumExtension(e: EnumType, enumName: Name): void {
-        this.emitType(undefined, AccessModifier.None, "static class", defined(this._enumExtensionsNames.get(enumName)), () => {
-            this.emitLine("public static ", enumName, "? ValueForString(string str)");
-            this.emitBlock(() => {
-                this.emitLine("switch (str)");
+        this.emitType(
+            undefined,
+            AccessModifier.None,
+            "static class",
+            defined(this._enumExtensionsNames.get(enumName)),
+            () => {
+                this.emitLine("public static ", enumName, "? ValueForString(string str)");
                 this.emitBlock(() => {
-                    this.forEachEnumCase(e, "none", (name, jsonName) => {
-                        this.emitLine('case "', utf16StringEscape(jsonName), '": return ', enumName, ".", name, ";");
-                    });
-                    this.emitLine("default: return null;");
-                });
-            });
-            this.ensureBlankLine();
-            this.emitLine("public static ", enumName, " ReadJson(JsonReader reader, JsonSerializer serializer)");
-            this.emitBlock(() => {
-                this.emitLine("var str = serializer.Deserialize<string>(reader);");
-                this.emitLine("var maybeValue = ValueForString(str);");
-                this.emitLine("if (maybeValue.HasValue) return maybeValue.Value;");
-                this.emitLine('throw new Exception("Unknown enum case " + str);');
-            });
-            this.ensureBlankLine();
-            this.emitLine(
-                "public static void WriteJson(this ",
-                enumName,
-                " value, JsonWriter writer, JsonSerializer serializer)"
-            );
-            this.emitBlock(() => {
-                this.emitLine("switch (value)");
-                this.emitBlock(() => {
-                    this.forEachEnumCase(e, "none", (name, jsonName) => {
-                        this.emitLine(
-                            "case ",
-                            enumName,
-                            ".",
-                            name,
-                            ': serializer.Serialize(writer, "',
-                            utf16StringEscape(jsonName),
-                            '"); break;'
-                        );
+                    this.emitLine("switch (str)");
+                    this.emitBlock(() => {
+                        this.forEachEnumCase(e, "none", (name, jsonName) => {
+                            this.emitLine(
+                                'case "',
+                                utf16StringEscape(jsonName),
+                                '": return ',
+                                enumName,
+                                ".",
+                                name,
+                                ";"
+                            );
+                        });
+                        this.emitLine("default: return null;");
                     });
                 });
-            });
-        });
+                this.ensureBlankLine();
+                this.emitLine("public static ", enumName, " ReadJson(JsonReader reader, JsonSerializer serializer)");
+                this.emitBlock(() => {
+                    this.emitLine("var str = serializer.Deserialize<string>(reader);");
+                    this.emitLine("var maybeValue = ValueForString(str);");
+                    this.emitLine("if (maybeValue.HasValue) return maybeValue.Value;");
+                    this.emitLine('throw new Exception("Unknown enum case " + str);');
+                });
+                this.ensureBlankLine();
+                this.emitLine(
+                    "public static void WriteJson(this ",
+                    enumName,
+                    " value, JsonWriter writer, JsonSerializer serializer)"
+                );
+                this.emitBlock(() => {
+                    this.emitLine("switch (value)");
+                    this.emitBlock(() => {
+                        this.forEachEnumCase(e, "none", (name, jsonName) => {
+                            this.emitLine(
+                                "case ",
+                                enumName,
+                                ".",
+                                name,
+                                ': serializer.Serialize(writer, "',
+                                utf16StringEscape(jsonName),
+                                '"); break;'
+                            );
+                        });
+                    });
+                });
+            }
+        );
     }
 
     private emitUnionJSONPartial(u: UnionType, unionName: Name): void {
@@ -630,8 +660,8 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
                             this.emitLine("return;");
                         });
                     } else if (t.kind === "date-time") {
-                        this.emitLine("System.DateTime dt;");
-                        this.emitLine("if (System.DateTime.TryParse(str, out dt))");
+                        this.emitLine("System.DateTimeOffset  dt;");
+                        this.emitLine("if (System.DateTimeOffset .TryParse(str, out dt))");
                         this.emitBlock(() => {
                             this.emitLine(fieldName, " = dt;");
                             this.emitLine("return;");
@@ -752,7 +782,20 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.emitLine("MetadataPropertyHandling = MetadataPropertyHandling.Ignore,");
                 this.emitLine("DateParseHandling = DateParseHandling.None,");
                 if (this.haveNamedUnions || this.haveEnums) {
-                    this.emitLine("Converters = { new Converter() },");
+                    this.emitMultiline(`Converters = { 
+    new Converter(),
+    new IsoDateTimeConverter()
+    {
+        DateTimeStyles = DateTimeStyles.AssumeUniversal,
+    },
+},`);
+                } else {
+                    this.emitMultiline(`Converters = { 
+    new IsoDateTimeConverter()
+    {
+        DateTimeStyles = DateTimeStyles.AssumeUniversal,
+    },
+},`);
                 }
             }, true);
         });
