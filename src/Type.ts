@@ -424,16 +424,12 @@ export class UnionType extends Type {
 
     constructor(typeRef: TypeRef, private _memberRefs?: OrderedSet<TypeRef>) {
         super(typeRef, "union");
-        if (_memberRefs !== undefined) {
-            assert(_memberRefs.size > 1, "Union less than two members");
-        }
     }
 
     setMembers(memberRefs: OrderedSet<TypeRef>) {
         if (this._memberRefs !== undefined) {
             return panic("Can only set map members once");
         }
-        assert(memberRefs.size > 1, "Union less than two members");
         this._memberRefs = memberRefs;
     }
 

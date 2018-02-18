@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map } from "immutable";
+import { Map, OrderedSet } from "immutable";
 
 import { panic } from "./Support";
 
@@ -65,12 +65,12 @@ export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAtt
     return first.mergeWith((aa, ab, kind) => kind.combine(aa, ab), ...rest);
 }
 
-function combineDescriptions(a: string, b: string): string {
-    return a.trim() + "\n\n" + b.trim();
+function combineDescriptions(a: OrderedSet<string>, b: OrderedSet<string>): OrderedSet<string> {
+    return a.union(b);
 }
 
-export const descriptionTypeAttributeKind = new TypeAttributeKind<string>("description", combineDescriptions);
-export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, string>>(
+export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", combineDescriptions);
+export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, OrderedSet<string>>>(
     "propertyDescriptions",
     (a, b) => a.mergeWith(combineDescriptions, b)
 );

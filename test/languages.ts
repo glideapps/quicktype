@@ -170,6 +170,8 @@ export const ElmLanguage: Language = {
     "union-list.schema", // recursion
     "list.schema", // recursion
     "mutually-recursive.schema", // recursion
+    "postman-collection.schema", // recursion
+    "vega-lite.schema", // recursion
     "keyword-unions.schema" // can't handle "hasOwnProperty" for some reason
   ],
   rendererOptions: {},

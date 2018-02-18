@@ -50,7 +50,7 @@ function jsonTestFiles(base: string): string[] {
     jsonFiles.push(fn);
   }
   let i = 1;
-  for (;;) {
+  for (; ;) {
     fn = `${base}.${i.toString()}.json`;
     if (fs.existsSync(fn)) {
       jsonFiles.push(fn);
@@ -59,17 +59,13 @@ function jsonTestFiles(base: string): string[] {
     }
     i++;
   }
-
-  if (jsonFiles.length === 0) {
-    return failWith("No JSON input files", { base });
-  }
   return jsonFiles;
 }
 
 export abstract class Fixture {
   abstract name: string;
 
-  constructor(public language: languages.Language) {}
+  constructor(public language: languages.Language) { }
 
   runForName(name: string): boolean {
     return this.name === name;
@@ -113,7 +109,7 @@ export abstract class Fixture {
     ].join(" ");
     console.time(message);
     return message;
-}
+  }
 
   runMessageEnd(message: string) {
     console.timeEnd(message);
@@ -255,7 +251,7 @@ class JSONFixture extends LanguageFixture {
       // Compare fixture.output to fixture.output.expected
       exec(
         `diff -Naur ${this.language.output}.expected ${
-          this.language.output
+        this.language.output
         } > /dev/null 2>&1`
       );
     }

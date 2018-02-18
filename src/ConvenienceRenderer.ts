@@ -30,9 +30,9 @@ import {
     propertyDescriptionsTypeAttributeKind
 } from "./TypeAttributes";
 
-function splitDescription(description: string | undefined): string[] | undefined {
-    if (description === undefined) return undefined;
-    description = description.trim();
+function splitDescription(descriptions: OrderedSet<string> | undefined): string[] | undefined {
+    if (descriptions === undefined) return undefined;
+    const description = descriptions.join("\n\n").trim();
     if (description === "") return undefined;
     return description.split("\n").map(l => l.trim());
 }

@@ -1,8 +1,7 @@
 {
   // Place your settings in this file to overwrite default and user settings.
-  "purescript.addNpmPath": true,
-  "purescript.buildCommand": "pulp build --build-path dist -- --json-errors",
   "editor.formatOnSave": true,
+  "spellright.ignoreFiles": ["**/.gitignore", "**/.spellignore"],
   "search.exclude": {
     "**/.git": true,
     "**/node_modules": true,
@@ -17,5 +16,6 @@
     "elm-stuff": true,
     "dist": true
   },
+  "spellright.documentTypes": [],
   "java.configuration.updateBuildConfiguration": "automatic"
 }

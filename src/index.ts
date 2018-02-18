@@ -1,6 +1,6 @@
 import { getStream } from "./get-stream";
 import * as _ from "lodash";
-import { List, Map, OrderedMap } from "immutable";
+import { List, Map, OrderedMap, OrderedSet } from "immutable";
 import { Readable } from "stream";
 
 import * as targetLanguages from "./Language/All";
@@ -19,6 +19,7 @@ import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
 import { inferEnums } from "./InferEnums";
 import { descriptionTypeAttributeKind } from "./TypeAttributes";
+import { flattenUnions } from "./FlattenUnions";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -154,7 +155,7 @@ export class Run {
         if (this._options.findSimilarClassesSchema !== undefined) {
             const schema = JSON.parse(this._options.findSimilarClassesSchema);
             const name = "ComparisonBaseRoot";
-            addTypesInSchema(typeBuilder, schema, conflateNumbers, Map([[name, rootRef] as [string, Ref]]));
+            addTypesInSchema(typeBuilder, schema, Map([[name, rootRef] as [string, Ref]]));
         }
 
         // JSON Schema
@@ -163,11 +164,14 @@ export class Run {
             if (topLevelRefs === undefined) {
                 references = Map([[name, rootRef] as [string, Ref]]);
             } else {
-                assert(topLevelRefs.length === 1 && topLevelRefs[0] === "definitions/", "Schema top level refs must be `definitions/`");
+                assert(
+                    topLevelRefs.length === 1 && topLevelRefs[0] === "definitions/",
+                    "Schema top level refs must be `definitions/`"
+                );
                 references = definitionRefsInSchema(schema);
                 assert(references.size > 0, "No definitions in JSON Schema");
             }
-            addTypesInSchema(typeBuilder, schema, conflateNumbers, references);
+            addTypesInSchema(typeBuilder, schema, references);
         });
 
         // GraphQL
@@ -192,19 +196,22 @@ export class Run {
                 );
                 typeBuilder.addTopLevel(name, tref);
                 if (description !== undefined) {
-                    const attributes = descriptionTypeAttributeKind.makeAttributes(description);
+                    const attributes = descriptionTypeAttributeKind.makeAttributes(OrderedSet([description]));
                     typeBuilder.addAttributes(tref, attributes);
                 }
             });
         }
 
-        const originalGraph = typeBuilder.finish();
+        let graph = typeBuilder.finish();
 
-        if (this._options.findSimilarClassesSchema !== undefined) {
-            return originalGraph;
+        if (Object.getOwnPropertyNames(this._allInputs.schemas).length > 0) {
+            graph = flattenUnions(graph, stringTypeMapping, conflateNumbers);
         }
 
-        let graph = originalGraph;
+        if (this._options.findSimilarClassesSchema !== undefined) {
+            return graph;
+        }
+
         if (this._options.combineClasses) {
             graph = combineClasses(graph, stringTypeMapping, this._options.alphabetizeProperties, conflateNumbers);
         }
@@ -218,11 +225,10 @@ export class Run {
         if (!targetLanguage.supportsOptionalClassProperties) {
             graph = optionalToNullable(graph, stringTypeMapping);
         }
-        // JSON Schema input can leave unreachable classes in the graph when it
-        // unifies, which can trip is up, so we remove them here.  Also, sometimes
-        // we combine classes in ways that will the order come out differently
-        // compared to what it would be from the equivalent schema, so we always
-        // just garbage collect to get a defined order and be done with it.
+        // Sometimes we combine classes in ways that will the order come out
+        // differently compared to what it would be from the equivalent schema,
+        // so we always just garbage collect to get a defined order and be done
+        // with it.
         // FIXME: We don't actually have to do this if any of the above graph
         // rewrites did anything.  We could just check whether the current graph
         // is different from the one we started out with.

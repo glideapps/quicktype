@@ -1,11 +1,18 @@
 "use strict";
 
-import { Set, OrderedMap, OrderedSet } from "immutable";
+import { Set, OrderedMap, OrderedSet, Map } from "immutable";
 
-import { ClassType, Type, matchTypeExhaustive, assertIsClass, ClassProperty, allTypeCases } from "./Type";
-import { TypeRef, UnionBuilder, TypeBuilder, TypeLookerUp } from "./TypeBuilder";
+import { ClassType, Type, assertIsClass, ClassProperty, allTypeCases, UnionType } from "./Type";
+import {
+    TypeRef,
+    UnionBuilder,
+    TypeBuilder,
+    TypeLookerUp,
+    addTypeToUnionAccumulator,
+    GraphRewriteBuilder
+} from "./TypeBuilder";
 import { panic, assert, defined } from "./Support";
-import { TypeNames, namesTypeAttributeKind, modifyTypeNames } from "./TypeNames";
+import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 
 function getCliqueProperties(
@@ -41,25 +48,33 @@ function getCliqueProperties(
 class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef> {
     constructor(
         typeBuilder: TypeBuilder & TypeLookerUp,
-        typeAttributes: TypeAttributes,
         private readonly _makeEnums: boolean,
         private readonly _makeClassesFixed: boolean,
         conflateNumbers: boolean,
-        forwardingRef: TypeRef | undefined,
         private readonly _unifyTypes: (typesToUnify: TypeRef[], typeAttributes: TypeAttributes) => TypeRef
     ) {
-        super(typeBuilder, typeAttributes, conflateNumbers, forwardingRef);
+        super(typeBuilder, conflateNumbers);
     }
 
-    protected makeEnum(enumCases: string[], counts: { [name: string]: number }): TypeRef {
+    protected makeEnum(
+        enumCases: string[],
+        counts: { [name: string]: number },
+        typeAttributes: TypeAttributes,
+        forwardingRef: TypeRef | undefined
+    ): TypeRef {
         if (this._makeEnums) {
-            return this.typeBuilder.getEnumType(this.typeAttributes, OrderedSet(enumCases), this.forwardingRef);
+            return this.typeBuilder.getEnumType(typeAttributes, OrderedSet(enumCases), forwardingRef);
         } else {
-            return this.typeBuilder.getStringType(this.typeAttributes, OrderedMap(counts), this.forwardingRef);
+            return this.typeBuilder.getStringType(typeAttributes, OrderedMap(counts), forwardingRef);
         }
     }
 
-    protected makeClass(classes: TypeRef[], maps: TypeRef[]): TypeRef {
+    protected makeClass(
+        classes: TypeRef[],
+        maps: TypeRef[],
+        typeAttributes: TypeAttributes,
+        forwardingRef: TypeRef | undefined
+    ): TypeRef {
         if (maps.length > 0) {
             const propertyTypes = maps.slice();
             for (let classRef of classes) {
@@ -68,25 +83,30 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
                     propertyTypes.push(cp.typeRef);
                 });
             }
-            return this.typeBuilder.getMapType(this._unifyTypes(propertyTypes, this.typeAttributes), this.forwardingRef);
+            const t = this.typeBuilder.getMapType(this._unifyTypes(propertyTypes, Map()), forwardingRef);
+            this.typeBuilder.addAttributes(t, typeAttributes);
+            return t;
         }
         if (classes.length === 1) {
-            return this.typeBuilder.lookupTypeRef(classes[0]);
+            const t = this.typeBuilder.lookupTypeRef(classes[0]);
+            this.typeBuilder.addAttributes(t, typeAttributes);
+            return t;
         }
         const maybeTypeRef = this.typeBuilder.lookupTypeRefs(classes);
-        if (maybeTypeRef !== undefined) {
+        // FIXME: Comparing this to `forwardingRef` feels like it will come
+        // crashing on our heads eventually.  The reason we need it here is
+        // because `unifyTypes` registers the union that we're supposed to
+        // build here as a forwarding ref, and we end up with a circular
+        // ref if we just return it here.
+        if (maybeTypeRef !== undefined && maybeTypeRef !== forwardingRef) {
+            this.typeBuilder.addAttributes(maybeTypeRef, typeAttributes);
             return maybeTypeRef;
         }
 
         const actualClasses: ClassType[] = classes.map(c => assertIsClass(c.deref()[0]));
 
         let ref: TypeRef;
-        ref = this.typeBuilder.getUniqueClassType(
-            this.typeAttributes,
-            this._makeClassesFixed,
-            undefined,
-            this.forwardingRef
-        );
+        ref = this.typeBuilder.getUniqueClassType(typeAttributes, this._makeClassesFixed, undefined, forwardingRef);
 
         const properties = getCliqueProperties(actualClasses, (names, types) => {
             assert(types.size > 0, "Property has no type");
@@ -98,39 +118,46 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
         return ref;
     }
 
-    protected makeArray(arrays: TypeRef[]): TypeRef {
-        const attributes = modifyTypeNames(this.typeAttributes, tn => defined(tn).singularize());
-        return this.typeBuilder.getArrayType(this._unifyTypes(arrays, attributes));
+    protected makeArray(
+        arrays: TypeRef[],
+        typeAttributes: TypeAttributes,
+        forwardingRef: TypeRef | undefined
+    ): TypeRef {
+        const ref = this.typeBuilder.getArrayType(this._unifyTypes(arrays, Map()), forwardingRef);
+        this.typeBuilder.addAttributes(ref, typeAttributes);
+        return ref;
     }
 }
 
-export function unifyTypes(
+export function unifyTypes<T extends Type>(
     types: Set<Type>,
     typeAttributes: TypeAttributes,
-    typeBuilder: TypeBuilder & TypeLookerUp,
+    typeBuilder: GraphRewriteBuilder<T>,
     makeEnums: boolean,
     makeClassesFixed: boolean,
     conflateNumbers: boolean,
-    forwardingRef?: TypeRef
+    maybeForwardingRef?: TypeRef
 ): TypeRef {
     if (types.isEmpty()) {
         return panic("Cannot unify empty set of types");
     } else if (types.count() === 1) {
-        return typeBuilder.lookupTypeRef(defined(types.first()).typeRef);
+        const first = defined(types.first());
+        if (!(first instanceof UnionType)) {
+            return typeBuilder.lookupTypeRef(first.typeRef);
+        }
     }
 
-    const maybeTypeRef = typeBuilder.lookupTypeRefs(types.toArray().map(t => t.typeRef));
+    const typeRefs = types.toArray().map(t => t.typeRef);
+    const maybeTypeRef = typeBuilder.lookupTypeRefs(typeRefs);
     if (maybeTypeRef !== undefined) {
         return maybeTypeRef;
     }
 
     const unionBuilder = new UnifyUnionBuilder(
         typeBuilder,
-        typeAttributes,
         makeEnums,
         makeClassesFixed,
         conflateNumbers,
-        forwardingRef,
         (trefs, names) =>
             unifyTypes(
                 Set(trefs.map(tref => tref.deref()[0])),
@@ -142,40 +169,10 @@ export function unifyTypes(
             )
     );
 
-    const addType = (t: Type): void => {
-        matchTypeExhaustive(
-            t,
-            _noneType => {
-                return;
-            },
-            _anyType => unionBuilder.addAny(),
-            _nullType => unionBuilder.addNull(),
-            _boolType => unionBuilder.addBool(),
-            _integerType => unionBuilder.addInteger(),
-            _doubleType => unionBuilder.addDouble(),
-            stringType => {
-                const enumCases = stringType.enumCases;
-                if (enumCases === undefined) {
-                    unionBuilder.addStringType("string");
-                } else {
-                    unionBuilder.addEnumCases(enumCases);
-                }
-            },
-            arrayType => unionBuilder.addArray(arrayType.items.typeRef),
-            classType => unionBuilder.addClass(classType.typeRef),
-            mapType => unionBuilder.addMap(mapType.values.typeRef),
-            // FIXME: We're not carrying counts, so this is not correct if we do enum
-            // inference.  JSON Schema input uses this case, however, without enum
-            // inference, which is fine, but still a bit ugly.
-            enumType => enumType.cases.forEach(s => unionBuilder.addEnumCase(s)),
-            unionType => unionType.members.forEach(addType),
-            _dateType => unionBuilder.addStringType("date"),
-            _timeType => unionBuilder.addStringType("time"),
-            _dateTimeType => unionBuilder.addStringType("date-time")
-        );
-    };
+    types.forEach(t => addTypeToUnionAccumulator(unionBuilder, t));
 
-    types.forEach(addType);
-
-    return unionBuilder.buildUnion(false);
+    return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {
+        typeBuilder.registerUnion(typeRefs, forwardingRef);
+        return unionBuilder.buildUnion(false, typeAttributes, forwardingRef);
+    });
 }
