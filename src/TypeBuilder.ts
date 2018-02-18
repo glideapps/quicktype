@@ -404,7 +404,7 @@ export function getHopefullyFinishedType(builder: TypeLookerUp, t: TypeRef): Typ
     return result;
 }
 
-export class TypeGraphBuilder extends TypeBuilder implements TypeLookerUp {
+export class TypeGraphBuilder extends TypeBuilder {
     protected typeForEntry(entry: Type | undefined): Type | undefined {
         return entry;
     }
@@ -412,23 +412,7 @@ export class TypeGraphBuilder extends TypeBuilder implements TypeLookerUp {
     getLazyMapType(valuesCreator: () => TypeRef | undefined): TypeRef {
         return this.addType(undefined, tref => new MapType(tref, valuesCreator()), undefined);
     }
-
-    lookupTypeRefs(_typeRefs: TypeRef[]): undefined {
-        return undefined;
     }
-
-    lookupTypeRef = (typeRef: TypeRef): TypeRef => {
-        return typeRef;
-    };
-
-    lookupType = (typeRef: TypeRef): Type | undefined => {
-        const maybeIndex = typeRef.maybeIndex;
-        if (maybeIndex === undefined) {
-            return undefined;
-        }
-        return this.types[maybeIndex];
-    };
-}
 
 export class TypeReconstituter {
     private _wasUsed: boolean = false;
