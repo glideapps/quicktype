@@ -478,7 +478,7 @@ function parseArgv(argv: string[]): CLIOptions {
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): CLIOptions {
     const opts: { [key: string]: any } = commandLineArgs(definitions, { argv, partial });
-    const options: { rendererOptions: RendererOptions;[key: string]: any } = { rendererOptions: {} };
+    const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
     definitions.forEach(o => {
         if (!(o.name in opts)) return;
         const v = opts[o.name];
@@ -570,6 +570,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
         }
 
         let sources: TypeSource[] = [];
+        let leadingComments: string[] | undefined = [];
         switch (options.srcLang) {
             case "graphql":
                 let schemaString: string | undefined = undefined;
@@ -613,8 +614,12 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             case "postman-json":
                 for (const collectionFile of options.src) {
                     const collectionJSON = fs.readFileSync(collectionFile, "utf8");
-                    for (const src of sourcesFromPostmanCollection(collectionJSON)) {
+                    const { sources: postmanSources, description } = sourcesFromPostmanCollection(collectionJSON);
+                    for (const src of postmanSources) {
                         sources.push(src);
+                    }
+                    if (description.length > 0) {
+                        leadingComments = description;
                     }
                 }
                 break;
@@ -629,7 +634,8 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                         sources.push({
                             name: source.name,
                             schema: source.samples[0],
-                            topLevelRefs: options.addSchemaTopLevel === undefined ? undefined : [options.addSchemaTopLevel]
+                            topLevelRefs:
+                                options.addSchemaTopLevel === undefined ? undefined : [options.addSchemaTopLevel]
                         });
                     } else {
                         sources.push(source);
@@ -662,6 +668,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             combineClasses: !options.noCombineClasses,
             noRender: options.noRender,
             rendererOptions: options.rendererOptions,
+            leadingComments,
             handlebarsTemplate,
             findSimilarClassesSchema,
             outputFilename: options.out !== undefined ? path.basename(options.out) : undefined

@@ -11,14 +11,20 @@ function isValidJSON(s: string): boolean {
     }
 }
 
-export function sourcesFromPostmanCollection(collectionJSON: string): JSONTypeSource[] {
+export function sourcesFromPostmanCollection(
+    collectionJSON: string
+): { sources: JSONTypeSource[]; description: string[] } {
     const sources: JSONTypeSource[] = [];
+    const descriptions: string[] = [];
 
     function processCollection(c: any): void {
         if (typeof c !== "object") return;
         if (Array.isArray(c.item)) {
             for (const item of c.item) {
                 processCollection(item);
+            }
+            if (typeof c.info === "object" && typeof c.info.description === "string") {
+                descriptions.push(c.info.description);
             }
         }
         if (typeof c.name === "string" && Array.isArray(c.response)) {
@@ -39,5 +45,14 @@ export function sourcesFromPostmanCollection(collectionJSON: string): JSONTypeSo
     }
 
     processCollection(JSON.parse(collectionJSON));
-    return sources;
+
+    const joinedDescription = descriptions.join("\n\n").trim();
+    let description: string[];
+    if (joinedDescription === "") {
+        description = [];
+    } else {
+        description = joinedDescription.split("\n");
+    }
+
+    return { sources, description };
 }
