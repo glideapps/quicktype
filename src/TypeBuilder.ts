@@ -135,7 +135,7 @@ export abstract class TypeBuilder {
         private readonly _stringTypeMapping: StringTypeMapping,
         readonly alphabetizeProperties: boolean,
         private readonly _allPropertiesOptional: boolean
-    ) {}
+    ) { }
 
     addTopLevel(name: string, tref: TypeRef): void {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
@@ -384,6 +384,7 @@ export interface TypeLookerUp {
     lookupTypeRefs(typeRefs: TypeRef[]): TypeRef | undefined;
     lookupTypeRef(typeRef: TypeRef): TypeRef;
     lookupType(typeRef: TypeRef): Type | undefined;
+    registerUnion(typeRefs: TypeRef[], reconstituted: TypeRef): void;
 }
 
 // Here's a case we can't handle: If the schema specifies
@@ -412,7 +413,7 @@ export class TypeGraphBuilder extends TypeBuilder {
     getLazyMapType(valuesCreator: () => TypeRef | undefined): TypeRef {
         return this.addType(undefined, tref => new MapType(tref, valuesCreator()), undefined);
     }
-    }
+}
 
 export class TypeReconstituter {
     private _wasUsed: boolean = false;
@@ -422,7 +423,7 @@ export class TypeReconstituter {
         private readonly _makeClassUnique: boolean,
         private readonly _typeAttributes: TypeAttributes,
         private readonly _forwardingRef: TypeRef
-    ) {}
+    ) { }
 
     private useBuilder = (): TypeBuilder => {
         assert(!this._wasUsed, "TypeReconstituter used more than once");
@@ -474,6 +475,7 @@ export class TypeReconstituter {
 export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements TypeLookerUp {
     private _setsToReplaceByMember: Map<number, Set<T>>;
     private _reconstitutedTypes: Map<number, TypeRef> = Map();
+    private _reconstitutedUnions: Map<Set<TypeRef>, TypeRef> = Map();
 
     constructor(
         private readonly _originalGraph: TypeGraph,
@@ -498,6 +500,12 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         }
     }
 
+    registerUnion(typeRefs: TypeRef[], reconstituted: TypeRef): void {
+        const set = Set(typeRefs);
+        assert(!this._reconstitutedUnions.has(set), "Cannot register reconstituted set twice");
+        this._reconstitutedUnions = this._reconstitutedUnions.set(set, reconstituted);
+    }
+
     followIndex(index: number): number {
         const entry = this.types[index];
         if (typeof entry === "number") {
@@ -516,7 +524,11 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         return entry;
     }
 
-    private withForwardingRef(typeCreator: (forwardingRef: TypeRef) => TypeRef): TypeRef {
+    withForwardingRef(maybeForwardingRef: TypeRef | undefined, typeCreator: (forwardingRef: TypeRef) => TypeRef): TypeRef {
+        if (maybeForwardingRef !== undefined) {
+            return typeCreator(maybeForwardingRef);
+        }
+
         const forwardingRef = new TypeRef(this.typeGraph, undefined, this);
         const actualRef = typeCreator(forwardingRef);
         forwardingRef.resolve(actualRef);
@@ -524,7 +536,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
     }
 
     private replaceSet(typesToReplace: Set<T>): TypeRef {
-        return this.withForwardingRef(forwardingRef => {
+        return this.withForwardingRef(undefined, forwardingRef => {
             typesToReplace.forEach(t => {
                 const originalRef = t.typeRef;
                 const index = originalRef.getIndex();
@@ -545,7 +557,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         if (maybeSet !== undefined) {
             return this.replaceSet(maybeSet);
         }
-        return this.withForwardingRef(forwardingRef => {
+        return this.withForwardingRef(undefined, forwardingRef => {
             this._reconstitutedTypes = this._reconstitutedTypes.set(index, forwardingRef);
             const [originalType, originalNames] = originalRef.deref();
             return originalType.map(
@@ -561,7 +573,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
     };
 
     lookupTypeRefs(typeRefs: TypeRef[]): TypeRef | undefined {
-        const maybeRef = this._reconstitutedTypes.get(typeRefs[0].getIndex());
+        let maybeRef = this._reconstitutedTypes.get(typeRefs[0].getIndex());
         if (maybeRef !== undefined && maybeRef.maybeIndex !== undefined) {
             let allEqual = true;
             for (let i = 1; i < typeRefs.length; i++) {
@@ -573,6 +585,11 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
             if (allEqual) {
                 return maybeRef;
             }
+        }
+
+        maybeRef = this._reconstitutedUnions.get(Set(typeRefs));
+        if (maybeRef !== undefined) {
+            return maybeRef;
         }
 
         const maybeSet = this._setsToReplaceByMember.get(typeRefs[0].getIndex());
@@ -621,7 +638,7 @@ export class UnionAccumulator<TArray, TClass, TMap> {
     protected enumCaseMap: { [name: string]: number } = {};
     protected enumCases: string[] = [];
 
-    constructor(private readonly _conflateNumbers: boolean) {}
+    constructor(private readonly _conflateNumbers: boolean) { }
 
     get haveString(): boolean {
         return this._stringTypes.has("string");
@@ -741,7 +758,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
     TArray,
     TClass,
     TMap
-> {
+    > {
     constructor(protected readonly typeBuilder: TBuilder, conflateNumbers: boolean) {
         super(conflateNumbers);
     }

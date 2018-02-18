@@ -3,7 +3,14 @@
 import { Set, OrderedMap, OrderedSet, Map } from "immutable";
 
 import { ClassType, Type, assertIsClass, ClassProperty, allTypeCases, UnionType } from "./Type";
-import { TypeRef, UnionBuilder, TypeBuilder, TypeLookerUp, addTypeToUnionAccumulator } from "./TypeBuilder";
+import {
+    TypeRef,
+    UnionBuilder,
+    TypeBuilder,
+    TypeLookerUp,
+    addTypeToUnionAccumulator,
+    GraphRewriteBuilder
+} from "./TypeBuilder";
 import { panic, assert, defined } from "./Support";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
@@ -86,7 +93,12 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
             return t;
         }
         const maybeTypeRef = this.typeBuilder.lookupTypeRefs(classes);
-        if (maybeTypeRef !== undefined) {
+        // FIXME: Comparing this to `forwardingRef` feels like it will come
+        // crashing on our heads eventually.  The reason we need it here is
+        // because `unifyTypes` registers the union that we're supposed to
+        // build here as a forwarding ref, and we end up with a circular
+        // ref if we just return it here.
+        if (maybeTypeRef !== undefined && maybeTypeRef !== forwardingRef) {
             this.typeBuilder.addAttributes(maybeTypeRef, typeAttributes);
             return maybeTypeRef;
         }
@@ -117,14 +129,14 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
     }
 }
 
-export function unifyTypes(
+export function unifyTypes<T extends Type>(
     types: Set<Type>,
     typeAttributes: TypeAttributes,
-    typeBuilder: TypeBuilder & TypeLookerUp,
+    typeBuilder: GraphRewriteBuilder<T>,
     makeEnums: boolean,
     makeClassesFixed: boolean,
     conflateNumbers: boolean,
-    forwardingRef?: TypeRef
+    maybeForwardingRef?: TypeRef
 ): TypeRef {
     if (types.isEmpty()) {
         return panic("Cannot unify empty set of types");
@@ -135,7 +147,8 @@ export function unifyTypes(
         }
     }
 
-    const maybeTypeRef = typeBuilder.lookupTypeRefs(types.toArray().map(t => t.typeRef));
+    const typeRefs = types.toArray().map(t => t.typeRef);
+    const maybeTypeRef = typeBuilder.lookupTypeRefs(typeRefs);
     if (maybeTypeRef !== undefined) {
         return maybeTypeRef;
     }
@@ -158,5 +171,8 @@ export function unifyTypes(
 
     types.forEach(t => addTypeToUnionAccumulator(unionBuilder, t));
 
-    return unionBuilder.buildUnion(false, typeAttributes, forwardingRef);
+    return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {
+        typeBuilder.registerUnion(typeRefs, forwardingRef);
+        return unionBuilder.buildUnion(false, typeAttributes, forwardingRef);
+    });
 }
