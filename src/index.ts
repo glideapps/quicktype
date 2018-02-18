@@ -1,6 +1,6 @@
 import { getStream } from "./get-stream";
 import * as _ from "lodash";
-import { List, Map, OrderedMap } from "immutable";
+import { List, Map, OrderedMap, OrderedSet } from "immutable";
 import { Readable } from "stream";
 
 import * as targetLanguages from "./Language/All";
@@ -196,7 +196,7 @@ export class Run {
                 );
                 typeBuilder.addTopLevel(name, tref);
                 if (description !== undefined) {
-                    const attributes = descriptionTypeAttributeKind.makeAttributes(description);
+                    const attributes = descriptionTypeAttributeKind.makeAttributes(OrderedSet([description]));
                     typeBuilder.addAttributes(tref, attributes);
                 }
             });

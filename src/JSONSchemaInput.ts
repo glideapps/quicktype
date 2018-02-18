@@ -87,7 +87,7 @@ function indexArray(cases: any, index: number): StringMap {
 function makeAttributes(schema: StringMap, attributes: TypeAttributes): TypeAttributes {
     const maybeDescription = schema.description;
     if (typeof maybeDescription === "string") {
-        attributes = descriptionTypeAttributeKind.setInAttributes(attributes, maybeDescription);
+        attributes = descriptionTypeAttributeKind.setInAttributes(attributes, OrderedSet([maybeDescription]));
     }
     return modifyTypeNames(attributes, maybeTypeNames => {
         const typeNames = defined(maybeTypeNames);
@@ -172,12 +172,12 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
                 if (typeof propSchema === "object") {
                     const desc = propSchema.description;
                     if (typeof desc === "string") {
-                        return desc;
+                        return OrderedSet([desc]);
                     }
                 }
                 return undefined;
             })
-            .filter(v => v !== undefined) as Map<string, string>;
+            .filter(v => v !== undefined) as Map<string, OrderedSet<string>>;
         if (!propertyDescriptions.isEmpty()) {
             attributes = propertyDescriptionsTypeAttributeKind.setInAttributes(attributes, propertyDescriptions);
         }
