@@ -29,12 +29,15 @@ export function sourcesFromPostmanCollection(collectionJSON: string): JSONTypeSo
                 }
             }
             if (samples.length > 0) {
-                sources.push({ name: c.name, samples });
+                const source: JSONTypeSource = { name: c.name, samples };
+                if (typeof c.request === "object" && typeof c.request.description === "string") {
+                    source.description = c.request.description;
+                }
+                sources.push(source);
             }
         }
     }
 
     processCollection(JSON.parse(collectionJSON));
-    console.log("sources are", JSON.stringify(sources));
     return sources;
 }
