@@ -37,6 +37,12 @@ const unicode = require("unicode-properties");
 type Version = 5 | 6;
 type OutputFeatures = { helpers: boolean; attributes: boolean };
 
+enum AccessModifier {
+    None,
+    Public,
+    Internal
+}
+
 export default class CSharpTargetLanguage extends TargetLanguage {
     private readonly _listOption = new EnumOption("array-type", "Use T[] or List<T>", [
         ["array", false],
@@ -241,13 +247,18 @@ class CSharpRenderer extends ConvenienceRenderer {
 
     emitType = (
         description: string[] | undefined,
-        isPublic: boolean,
+        accessModifier: AccessModifier,
         declaration: Sourcelike,
         name: Sourcelike,
         emitter: () => void
     ): void => {
-        if (isPublic) {
-            declaration = ["public ", declaration];
+        switch (accessModifier) {
+            case AccessModifier.Public:
+                declaration = ["public ", declaration];
+                break;
+            case AccessModifier.Internal:
+                declaration = ["internal ", declaration];
+                break;
         }
         this.emitDescription(description);
         this.emitLine(declaration, " ", name);
@@ -274,7 +285,7 @@ class CSharpRenderer extends ConvenienceRenderer {
     }
 
     emitClassDefinition = (c: ClassType, className: Name): void => {
-        this.emitType(this.descriptionForType(c), true, [this.partialString, "class"], className, () => {
+        this.emitType(this.descriptionForType(c), AccessModifier.Public, [this.partialString, "class"], className, () => {
             if (c.properties.isEmpty()) return;
             const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
             let columns: Sourcelike[][] = [];
@@ -318,7 +329,7 @@ class CSharpRenderer extends ConvenienceRenderer {
 
     emitUnionDefinition = (u: UnionType, unionName: Name): void => {
         const nonNulls = removeNullFromUnion(u)[1];
-        this.emitType(this.descriptionForType(u), true, [this.partialString, "struct"], unionName, () => {
+        this.emitType(this.descriptionForType(u), AccessModifier.Public, [this.partialString, "struct"], unionName, () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
                 const csType = this.nullableCSType(t);
                 this.emitLine("public ", csType, " ", fieldName, ";");
@@ -512,7 +523,7 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
             typeKind = "class";
         }
         const csType = this.csType(t);
-        this.emitType(undefined, true, [partial, typeKind], name, () => {
+        this.emitType(undefined, AccessModifier.Public, [partial, typeKind], name, () => {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
@@ -522,7 +533,7 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     private emitEnumExtension(e: EnumType, enumName: Name): void {
-        this.emitType(undefined, false, "static class", defined(this._enumExtensionsNames.get(enumName)), () => {
+        this.emitType(undefined, AccessModifier.None, "static class", defined(this._enumExtensionsNames.get(enumName)), () => {
             this.emitLine("public static ", enumName, "? ValueForString(string str)");
             this.emitBlock(() => {
                 this.emitLine("switch (str)");
@@ -634,7 +645,7 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
         };
 
         const [hasNull, nonNulls] = removeNullFromUnion(u);
-        this.emitType(undefined, true, "partial struct", unionName, () => {
+        this.emitType(undefined, AccessModifier.Public, "partial struct", unionName, () => {
             this.emitLine("public ", unionName, "(JsonReader reader, JsonSerializer serializer)");
             this.emitBlock(() => {
                 this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, _) => {
@@ -675,7 +686,7 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private emitSerializeClass(): void {
         // FIXME: Make Serialize a Named
-        this.emitType(undefined, true, "static class", "Serialize", () => {
+        this.emitType(undefined, AccessModifier.Public, "static class", "Serialize", () => {
             this.topLevels.forEach((t: Type, _: string) => {
                 // FIXME: Make ToJson a Named
                 this.emitExpressionMember(
@@ -731,7 +742,7 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
         // FIXME: Make Converter a Named
         let converterName: Sourcelike = ["Converter"];
         if (jsonConverter) converterName = converterName.concat([": JsonConverter"]);
-        this.emitType(undefined, true, "class", converterName, () => {
+        this.emitType(undefined, AccessModifier.Internal, "class", converterName, () => {
             if (jsonConverter) {
                 this.emitConverterMembers();
                 this.ensureBlankLine();
