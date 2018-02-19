@@ -655,10 +655,40 @@ export abstract class ConvenienceRenderer extends Renderer {
         return "// ";
     }
 
-    protected emitCommentLines(lines: string[]): void {
-        for (const line of lines) {
-            this.emitLine(trimEnd(this.commentLineStart + line));
+    protected emitCommentLines(
+        lines: string[],
+        lineStart?: string,
+        beforeLine?: string,
+        afterLine?: string,
+        firstLineStart?: string
+    ): void {
+        if (lineStart === undefined) {
+            lineStart = this.commentLineStart;
         }
+        if (firstLineStart === undefined) {
+            firstLineStart = lineStart;
+        }
+        if (beforeLine !== undefined) {
+            this.emitLine(beforeLine);
+        }
+        let first = true;
+        for (const line of lines) {
+            this.emitLine(first ? firstLineStart : lineStart, trimEnd(line));
+            first = false;
+        }
+        if (afterLine !== undefined) {
+            this.emitLine(afterLine);
+        }
+    }
+
+    protected emitDescription(description: string[] | undefined): void {
+        if (description === undefined) return;
+        // FIXME: word-wrap
+        this.emitDescriptionBlock(description);
+    }
+
+    protected emitDescriptionBlock(lines: string[]): void {
+        this.emitCommentLines(lines);
     }
 
     private processGraph(): void {

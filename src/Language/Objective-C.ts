@@ -321,6 +321,10 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         return type;
     }
 
+    protected emitDescriptionBlock(lines: string[]): void {
+        this.emitCommentLines(lines, "/// ");
+    }
+
     private emitBlock = (line: Sourcelike, f: () => void): void => {
         this.emitLine(line, " {");
         this.indent(f);
@@ -662,6 +666,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         const isTopLevel = this.topLevels.valueSeq().contains(t);
         const propertyTable: Sourcelike[][] = [];
 
+        this.emitDescription(this.descriptionForType(t));
+
         this.emitLine("@interface ", className, " : NSObject");
         if (DEBUG) this.emitLine("@property NSDictionary<NSString *, id> *_json;");
         this.forEachClassProperty(t, "none", (name, _json, property) => {
@@ -844,6 +850,8 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private emitPseudoEnumInterface(enumType: EnumType, enumName: Name) {
+        this.emitDescription(this.descriptionForType(enumType));
+
         this.emitLine("@interface ", enumName, " : NSObject");
         this.emitLine("@property (nonatomic, readonly, copy) NSString *value;");
         this.emitLine("+ (instancetype _Nullable)withValue:(NSString *)value;");

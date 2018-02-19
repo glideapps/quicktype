@@ -139,7 +139,12 @@ class TypeScriptRenderer extends ConvenienceRenderer {
         return directlyReachableSingleNamedType(type);
     }
 
+    protected emitDescriptionBlock(lines: string[]): void {
+        this.emitCommentLines(lines, " * ", "/**", " */");
+    }
+
     private emitEnum = (e: EnumType, enumName: Name): void => {
+        this.emitDescription(this.descriptionForType(e));
         this.emitBlock(["export enum ", enumName], "", () => {
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 this.emitLine(name, ` = "${utf16StringEscape(jsonName)}",`);
@@ -236,6 +241,7 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     };
 
     private emitClass = (c: ClassType, className: Name) => {
+        this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["export interface ", className], "", () => {
             const table: Sourcelike[][] = [];
             this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
@@ -366,6 +372,9 @@ function O(className: string) {
         if (this._inlineUnions) {
             return;
         }
+
+        this.emitDescription(this.descriptionForType(u));
+
         const children = multiWord(" | ", ...u.children.map(c => parenIfNeeded(this.sourceFor(c))).toArray());
         this.emitLine("export type ", unionName, " = ", children.source, ";");
     };

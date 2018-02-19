@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "description": "The top-level class",
+  "description": "The top-level class.\nIts description has two lines.",
   "properties": {
     "union": {
       "type": ["number", "string"],

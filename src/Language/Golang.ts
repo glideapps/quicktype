@@ -184,14 +184,6 @@ class GoRenderer extends ConvenienceRenderer {
         );
     };
 
-    private emitDescription(description: string[] | undefined): void {
-        if (description === undefined) return;
-
-        for (const line of description) {
-            this.emitLine("// ", line);
-        }
-    }
-
     private emitTopLevel = (t: Type, name: Name): void => {
         const unmarshalName = defined(this._topLevelUnmarshalNames.get(name));
         if (this.namedTypeToNameForTopLevel(t) === undefined) {

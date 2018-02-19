@@ -229,6 +229,14 @@ class ElmRenderer extends ConvenienceRenderer {
         return "-- ";
     }
 
+    protected emitDescriptionBlock(lines: string[]): void {
+        if (lines.length === 1) {
+            this.emitLine("{-| ", lines[0], " -}");
+        } else {
+            this.emitCommentLines(lines, "", undefined, "-}", "{-| ");
+        }
+    }
+
     private get arrayType(): string {
         return this._useList ? "List" : "Array";
     }
@@ -281,7 +289,8 @@ class ElmRenderer extends ConvenienceRenderer {
             _doubleType => singleWord("Jdec.float"),
             _stringType => singleWord("Jdec.string"),
             arrayType =>
-                multiWord(" ", 
+                multiWord(
+                    " ",
                     ["Jdec.", decapitalize(this.arrayType)],
                     parenIfNeeded(this.decoderNameForType(arrayType.items))
                 ),
@@ -323,7 +332,11 @@ class ElmRenderer extends ConvenienceRenderer {
             _doubleType => singleWord("Jenc.float"),
             _stringType => singleWord("Jenc.string"),
             arrayType =>
-                multiWord(" ", ["make", this.arrayType, "Encoder"], parenIfNeeded(this.encoderNameForType(arrayType.items))),
+                multiWord(
+                    " ",
+                    ["make", this.arrayType, "Encoder"],
+                    parenIfNeeded(this.encoderNameForType(arrayType.items))
+                ),
             classType => singleWord(this.encoderNameForNamedType(classType)),
             mapType => multiWord(" ", "makeDictEncoder", parenIfNeeded(this.encoderNameForType(mapType.values))),
             enumType => singleWord(this.encoderNameForNamedType(enumType)),
@@ -352,10 +365,12 @@ class ElmRenderer extends ConvenienceRenderer {
     };
 
     private emitClassDefinition = (c: ClassType, className: Name): void => {
+        this.emitDescription(this.descriptionForType(c));
         this.emitLine("type alias ", className, " =");
         this.indent(() => {
             let onFirst = true;
-            this.forEachClassProperty(c, "none", (name, _, p) => {
+            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitLine(onFirst ? "{" : ",", " ", name, " : ", this.elmProperty(p));
                 onFirst = false;
             });
@@ -367,6 +382,7 @@ class ElmRenderer extends ConvenienceRenderer {
     };
 
     private emitEnumDefinition = (e: EnumType, enumName: Name): void => {
+        this.emitDescription(this.descriptionForType(e));
         this.emitLine("type ", enumName);
         this.indent(() => {
             let onFirst = true;
@@ -379,6 +395,7 @@ class ElmRenderer extends ConvenienceRenderer {
     };
 
     private emitUnionDefinition = (u: UnionType, unionName: Name): void => {
+        this.emitDescription(this.descriptionForType(u));
         this.emitLine("type ", unionName);
         this.indent(() => {
             let onFirst = true;

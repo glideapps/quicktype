@@ -262,15 +262,13 @@ class CSharpRenderer extends ConvenienceRenderer {
         return undefined;
     }
 
-    private emitDescription(description: string[] | undefined): void {
-        this.descriptionLines(description).forEach(line => this.emitLine(line));
-    }
-
-    private descriptionLines(description: string[] | undefined): string[] {
-        if (description === undefined) return [];
-        return this.dense
-            ? [`/// <summary>${description.join("; ")}</summary>`]
-            : ["/// <summary>", ...description.map(d => `/// ${d}`), "/// </summary>"];
+    protected emitDescriptionBlock(lines: string[]): void {
+        const start = "/// <summary>";
+        if (this.dense) {
+            this.emitLine(start, lines.join("; "), "</summary>");
+        } else {
+            this.emitCommentLines(lines, "/// ", start, "/// </summary>");
+        }
     }
 
     emitClassDefinition = (c: ClassType, className: Name): void => {

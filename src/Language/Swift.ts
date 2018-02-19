@@ -281,6 +281,10 @@ class SwiftRenderer extends ConvenienceRenderer {
         return kind === "array" || kind === "map";
     }
 
+    protected emitDescriptionBlock(lines: string[]): void {
+        this.emitCommentLines(lines, "/// ");
+    }
+
     private emitBlock = (line: Sourcelike, f: () => void): void => {
         this.emitLine(line, " {");
         this.indent(f);
@@ -415,6 +419,8 @@ class SwiftRenderer extends ConvenienceRenderer {
             }
         };
 
+        this.emitDescription(this.descriptionForType(c));
+
         const isClass = this._useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
         this.emitBlock([structOrClass, " ", className, this.getProtocolString()], () => {
@@ -543,6 +549,8 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
     };
 
     private renderEnumDefinition = (e: EnumType, enumName: Name): void => {
+        this.emitDescription(this.descriptionForType(e));
+
         if (this._justTypes) {
             this.emitBlock(["enum ", enumName], () => {
                 this.forEachEnumCase(e, "none", name => {
@@ -565,6 +573,8 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
                 this.emitLine("return");
             });
         };
+
+        this.emitDescription(this.descriptionForType(u));
 
         const indirect = this.isCycleBreakerType(u) ? "indirect " : "";
         const [maybeNull, nonNulls] = removeNullFromUnion(u);
