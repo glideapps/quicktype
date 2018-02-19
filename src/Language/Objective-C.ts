@@ -664,13 +664,12 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
 
     private emitClassInterface = (t: ClassType, className: Name): void => {
         const isTopLevel = this.topLevels.valueSeq().contains(t);
-        const propertyTable: Sourcelike[][] = [];
 
         this.emitDescription(this.descriptionForType(t));
 
         this.emitLine("@interface ", className, " : NSObject");
         if (DEBUG) this.emitLine("@property NSDictionary<NSString *, id> *_json;");
-        this.forEachClassProperty(t, "none", (name, _json, property) => {
+        this.emitPropertyTable(t, (name, _json, property) => {
             let attributes = ["nonatomic"];
             // TODO offer a 'readonly' option
             // TODO We must add "copy" if it's NSCopy, otherwise "strong"
@@ -678,12 +677,11 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 attributes.push("nullable");
             }
             attributes.push(this.memoryAttribute(property.type, property.type.isNullable));
-            propertyTable.push([
+            return [
                 ["@property ", ["(", attributes.join(", "), ")"], " "],
                 [this.pointerAwareTypeName(property.type), name, ";"]
-            ]);
+            ];
         });
-        this.emitTable(propertyTable);
 
         if (!this._justTypes && isTopLevel) {
             if (t.properties.count() > 0) this.ensureBlankLine();

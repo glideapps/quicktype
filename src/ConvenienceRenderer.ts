@@ -691,6 +691,28 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.emitCommentLines(lines);
     }
 
+    protected emitPropertyTable(
+        c: ClassType,
+        makePropertyRow: (name: Name, jsonName: string, p: ClassProperty) => Sourcelike[]
+    ): void {
+        let table: Sourcelike[][] = [];
+        const emitTable = () => {
+            if (table.length === 0) return;
+            this.emitTable(table);
+            table = [];
+        };
+
+        this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            const description = this.descriptionForClassProperty(c, jsonName);
+            if (description !== undefined) {
+                emitTable();
+                this.emitDescription(description);
+            }
+            table.push(makePropertyRow(name, jsonName, p));
+        });
+        emitTable();
+    }
+
     private processGraph(): void {
         this._declarationIR = declarationsForGraph(
             this.typeGraph,
