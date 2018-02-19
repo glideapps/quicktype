@@ -655,15 +655,26 @@ export abstract class ConvenienceRenderer extends Renderer {
         return "// ";
     }
 
-    protected emitCommentLines(lines: string[], lineStart?: string, beforeLine?: string, afterLine?: string): void {
+    protected emitCommentLines(
+        lines: string[],
+        lineStart?: string,
+        beforeLine?: string,
+        afterLine?: string,
+        firstLineStart?: string
+    ): void {
         if (lineStart === undefined) {
             lineStart = this.commentLineStart;
+        }
+        if (firstLineStart === undefined) {
+            firstLineStart = lineStart;
         }
         if (beforeLine !== undefined) {
             this.emitLine(beforeLine);
         }
+        let first = true;
         for (const line of lines) {
-            this.emitLine(trimEnd(lineStart + line));
+            this.emitLine(first ? firstLineStart : lineStart, trimEnd(line));
+            first = false;
         }
         if (afterLine !== undefined) {
             this.emitLine(afterLine);
