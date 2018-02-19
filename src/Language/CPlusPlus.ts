@@ -306,6 +306,10 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return kind === "class";
     }
 
+    protected emitDescriptionBlock(lines: string[]): void {
+        this.emitCommentLines(lines, " * ", "/**", " */");
+    }
+
     private emitBlock = (line: Sourcelike, withSemicolon: boolean, f: () => void): void => {
         this.emitLine(line, " {");
         this.indent(f);
@@ -427,8 +431,10 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     };
 
     private emitClass = (c: ClassType, className: Name): void => {
+        this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["struct ", className], true, () => {
-            this.forEachClassProperty(c, "none", (name, _json, property) => {
+            this.forEachClassProperty(c, "none", (name, jsonName, property) => {
+                this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitLine(
                     this.cppType(
                         property.type,
@@ -504,6 +510,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
         });
+        this.emitDescription(this.descriptionForType(e));
         this.emitLine("enum class ", enumName, " { ", caseNames, " };");
     };
 
