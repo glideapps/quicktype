@@ -20,6 +20,7 @@ import { gatherNames } from "./GatherNames";
 import { inferEnums } from "./InferEnums";
 import { descriptionTypeAttributeKind } from "./TypeAttributes";
 import { flattenUnions } from "./FlattenUnions";
+import { resolveIntersections } from "./ResolveIntersections";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -208,7 +209,9 @@ export class Run {
         let graph = typeBuilder.finish();
 
         if (Object.getOwnPropertyNames(this._allInputs.schemas).length > 0) {
+            // FIXME: These two should probably be a single pass
             graph = flattenUnions(graph, stringTypeMapping, conflateNumbers);
+            graph = resolveIntersections(graph, stringTypeMapping);
         }
 
         if (this._options.findSimilarClassesSchema !== undefined) {

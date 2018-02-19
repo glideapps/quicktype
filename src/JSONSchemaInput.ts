@@ -15,6 +15,7 @@ export enum PathElementKind {
     Definition,
     OneOf,
     AnyOf,
+    AllOf,
     Property,
     AdditionalProperty,
     Items
@@ -25,6 +26,7 @@ export type PathElement =
     | { kind: PathElementKind.Definition; name: string }
     | { kind: PathElementKind.OneOf; index: number }
     | { kind: PathElementKind.AnyOf; index: number }
+    | { kind: PathElementKind.AllOf; index: number }
     | { kind: PathElementKind.Property; name: string }
     | { kind: PathElementKind.AdditionalProperty }
     | { kind: PathElementKind.Items };
@@ -153,6 +155,8 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
                 return lookupRef(indexArray(local.oneOf, first.index), localPath, rest);
             case PathElementKind.AnyOf:
                 return lookupRef(indexArray(local.anyOf, first.index), localPath, rest);
+            case PathElementKind.AllOf:
+                return lookupRef(indexArray(local.allOf, first.index), localPath, rest);
             case PathElementKind.Property:
                 return lookupRef(lookupProperty(local, first.name), localPath, rest);
             case PathElementKind.AdditionalProperty:
@@ -241,13 +245,15 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
 
                 if (schema.additionalProperties !== undefined) {
                     const additional = schema.additionalProperties;
-                    if (additional === true) {
-                        return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
-                    } else if (additional === false) {
+                    // FIXME: We don't treat `additional === true`, which is also the default,
+                    // not according to spec.  It should be translated into a map type to any,
+                    // though that's not what the intention usually is.  Ideally, we'd find a
+                    // way to store additional attributes on regular classes.
+                    if (additional === false) {
                         if (schema.properties === undefined) {
                             typesInUnion.push(makeClass(path, typeAttributes, {}, required));
                         }
-                    } else {
+                    } else if (typeof additional === "object") {
                         typesInUnion.push(makeMap(path, typeAttributes, checkStringMap(additional)));
                     }
                 }
@@ -255,7 +261,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
                 if (typesInUnion.length === 0) {
                     typesInUnion.push(typeBuilder.getMapType(typeBuilder.getPrimitiveType("any")));
                 }
-                typeBuilder.setUnionMembers(unionType, OrderedSet(typesInUnion));
+                typeBuilder.setSetOperationMembers(unionType, OrderedSet(typesInUnion));
                 return unionType;
             case "array":
                 if (schema.items !== undefined) {
@@ -307,8 +313,22 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
             const types = cases.map((t, index) =>
                 toType(checkStringMap(t), path.push({ kind, index } as any), typeAttributes)
             );
-            typeBuilder.setUnionMembers(unionType, OrderedSet(types));
+            typeBuilder.setSetOperationMembers(unionType, OrderedSet(types));
             return unionType;
+        }
+
+        function convertAllOf(cases: any): TypeRef {
+            if (!Array.isArray(cases)) {
+                return panic(`allOf is not an array: ${cases}`);
+            }
+            const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
+            setTypeForPath(path, intersectionType);
+            // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
+            const types = cases.map((t, index) =>
+                toType(checkStringMap(t), path.push({ kind: PathElementKind.AllOf, index } as any), typeAttributes)
+            );
+            typeBuilder.setSetOperationMembers(intersectionType, OrderedSet(types));
+            return intersectionType;
         }
 
         if (schema.$ref !== undefined) {
@@ -340,13 +360,15 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
                 const unionType = typeBuilder.getUniqueUnionType(typeAttributes, undefined);
                 setTypeForPath(path, unionType);
                 const types = jsonTypes.map(n => fromTypeName(schema, path, typeAttributes, n));
-                typeBuilder.setUnionMembers(unionType, OrderedSet(types));
+                typeBuilder.setSetOperationMembers(unionType, OrderedSet(types));
                 return unionType;
             }
         } else if (schema.oneOf !== undefined) {
             return convertOneOrAnyOf(schema.oneOf, PathElementKind.OneOf);
         } else if (schema.anyOf !== undefined) {
             return convertOneOrAnyOf(schema.anyOf, PathElementKind.AnyOf);
+        } else if (schema.allOf !== undefined) {
+            return convertAllOf(schema.allOf);
         } else {
             return typeBuilder.getPrimitiveType("any");
         }

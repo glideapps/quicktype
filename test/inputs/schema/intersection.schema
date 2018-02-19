@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "intersection": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "foo": {
+              "type": "number"
+            }
+          },
+          "required": ["foo"],
+          "additionalProperties": true
+        },
+        {
+          "type": "object",
+          "properties": {
+            "bar": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    }
+  }
+}

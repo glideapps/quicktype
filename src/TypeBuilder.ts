@@ -16,7 +16,8 @@ import {
     StringType,
     ClassProperty,
     TypeKind,
-    matchTypeExhaustive
+    matchTypeExhaustive,
+    IntersectionType
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
@@ -371,10 +372,18 @@ export abstract class TypeBuilder {
         return this.addType(forwardingRef, tref => new UnionType(tref, members), attributes);
     }
 
-    setUnionMembers(ref: TypeRef, members: OrderedSet<TypeRef>): void {
+    getUniqueIntersectionType(
+        attributes: TypeAttributes,
+        members: OrderedSet<TypeRef> | undefined,
+        forwardingRef?: TypeRef
+    ): TypeRef {
+        return this.addType(forwardingRef, tref => new IntersectionType(tref, members), attributes);
+    }
+
+    setSetOperationMembers(ref: TypeRef, members: OrderedSet<TypeRef>): void {
         const type = ref.deref()[0];
-        if (!(type instanceof UnionType)) {
-            return panic("Tried to set members of non-union type");
+        if (!(type instanceof UnionType || type instanceof IntersectionType)) {
+            return panic("Tried to set members of non-set-operation type");
         }
         type.setMembers(members);
     }
@@ -425,51 +434,55 @@ export class TypeReconstituter {
         private readonly _forwardingRef: TypeRef
     ) {}
 
-    private useBuilder = (): TypeBuilder => {
+    private useBuilder(): TypeBuilder {
         assert(!this._wasUsed, "TypeReconstituter used more than once");
         this._wasUsed = true;
         return this._typeBuilder;
-    };
+    }
 
-    getPrimitiveType = (kind: PrimitiveTypeKind): TypeRef => {
+    getPrimitiveType(kind: PrimitiveTypeKind): TypeRef {
         return this.useBuilder().getPrimitiveType(kind, this._forwardingRef);
-    };
+    }
 
-    getStringType = (enumCases: OrderedMap<string, number> | undefined): TypeRef => {
+    getStringType(enumCases: OrderedMap<string, number> | undefined): TypeRef {
         return this.useBuilder().getStringType(this._typeAttributes, enumCases, this._forwardingRef);
-    };
+    }
 
-    getEnumType = (cases: OrderedSet<string>): TypeRef => {
+    getEnumType(cases: OrderedSet<string>): TypeRef {
         return this.useBuilder().getEnumType(defined(this._typeAttributes), cases, this._forwardingRef);
-    };
+    }
 
-    getMapType = (values: TypeRef): TypeRef => {
+    getMapType(values: TypeRef): TypeRef {
         return this.useBuilder().getMapType(values, this._forwardingRef);
-    };
+    }
 
-    getArrayType = (items: TypeRef): TypeRef => {
+    getArrayType(items: TypeRef): TypeRef {
         return this.useBuilder().getArrayType(items, this._forwardingRef);
-    };
+    }
 
-    getClassType = (properties: OrderedMap<string, ClassProperty>): TypeRef => {
+    getClassType(properties: OrderedMap<string, ClassProperty>): TypeRef {
         if (this._makeClassUnique) {
             return this.getUniqueClassType(false, properties);
         }
         return this.useBuilder().getClassType(defined(this._typeAttributes), properties, this._forwardingRef);
-    };
+    }
 
-    getUniqueClassType = (isFixed: boolean, properties?: OrderedMap<string, ClassProperty>): TypeRef => {
+    getUniqueClassType(isFixed: boolean, properties?: OrderedMap<string, ClassProperty>): TypeRef {
         return this.useBuilder().getUniqueClassType(
             defined(this._typeAttributes),
             isFixed,
             properties,
             this._forwardingRef
         );
-    };
+    }
 
-    getUnionType = (members: OrderedSet<TypeRef>): TypeRef => {
+    getUnionType(members: OrderedSet<TypeRef>): TypeRef {
         return this.useBuilder().getUnionType(defined(this._typeAttributes), members, this._forwardingRef);
-    };
+    }
+
+    getUniqueIntersectionType(members: OrderedSet<TypeRef>): TypeRef {
+        return this.useBuilder().getUniqueIntersectionType(defined(this._typeAttributes), members, this._forwardingRef);
+    }
 }
 
 export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements TypeLookerUp {
@@ -822,7 +835,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
             case "array":
                 return this.makeArray(typeProvider.arrays, typeAttributes, forwardingRef);
             default:
-                if (kind === "union" || kind === "map") {
+                if (kind === "union" || kind === "map" || kind === "intersection") {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
                 }
                 return assertNever(kind);
@@ -852,7 +865,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         }
         const typesSet = OrderedSet(types);
         if (union !== undefined) {
-            this.typeBuilder.setUnionMembers(union, typesSet);
+            this.typeBuilder.setSetOperationMembers(union, typesSet);
             return union;
         } else {
             return this.typeBuilder.getUnionType(typeAttributes, typesSet, forwardingRef);

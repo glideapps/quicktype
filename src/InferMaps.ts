@@ -2,7 +2,7 @@
 
 import { Map, Set, OrderedSet } from "immutable";
 
-import { Type, ClassType, unionCasesEqual, removeNullFromType, ClassProperty, allTypeCases } from "./Type";
+import { Type, ClassType, setOperationCasesEqual, removeNullFromType, ClassProperty, allTypeCases } from "./Type";
 import { defined, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
@@ -70,7 +70,7 @@ function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefi
             if (firstNonNullCases !== undefined) {
                 // The set of non-null cases for all other properties must
                 // be the the same, otherwise we won't infer a map.
-                if (!unionCasesEqual(nn, firstNonNullCases, (a, b) => a.structurallyCompatible(b))) {
+                if (!setOperationCasesEqual(nn, firstNonNullCases, (a, b) => a.structurallyCompatible(b))) {
                     canBeMap = false;
                     return false;
                 }

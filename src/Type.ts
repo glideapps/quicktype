@@ -10,7 +10,7 @@ import { TypeAttributes } from "./TypeAttributes";
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
-export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
+export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map" | "intersection";
 
 function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     if (x.typeRef.getIndex() === y.typeRef.getIndex()) return true;
@@ -418,13 +418,10 @@ export class EnumType extends Type {
     }
 }
 
-export class UnionType extends Type {
-    // @ts-ignore: This is initialized in the Type constructor
-    kind: "union";
-
-    constructor(typeRef: TypeRef, private _memberRefs?: OrderedSet<TypeRef>) {
-        super(typeRef, "union");
-    }
+export abstract class SetOperationType extends Type {
+    constructor(typeRef: TypeRef, kind: TypeKind, private _memberRefs?: OrderedSet<TypeRef>) {
+        super(typeRef, kind);
+    }    
 
     setMembers(memberRefs: OrderedSet<TypeRef>) {
         if (this._memberRefs !== undefined) {
@@ -433,7 +430,7 @@ export class UnionType extends Type {
         this._memberRefs = memberRefs;
     }
 
-    private getMemberRefs(): OrderedSet<TypeRef> {
+    protected getMemberRefs(): OrderedSet<TypeRef> {
         if (this._memberRefs === undefined) {
             return panic("Map members accessed before they were set");
         }
@@ -444,6 +441,51 @@ export class UnionType extends Type {
         return this.getMemberRefs().map(tref => tref.deref()[0]);
     }
 
+    get sortedMembers(): OrderedSet<Type> {
+        // FIXME: We're assuming no two members of the same kind.
+        return this.members.sortBy(t => t.kind);
+    }
+
+    get children(): OrderedSet<Type> {
+        return this.sortedMembers;
+    }
+
+    isPrimitive(): this is PrimitiveType {
+        return false;
+    }
+
+    protected structuralEqualityStep(other: UnionType, queue: (a: Type, b: Type) => boolean): boolean {
+        return setOperationCasesEqual(this.members, other.members, queue);
+    }
+}
+
+export class IntersectionType extends SetOperationType {
+    // @ts-ignore: This is initialized in the Type constructor
+    kind: "intersection";
+
+    constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
+        super(typeRef, "intersection", memberRefs);
+    }
+
+    get isNullable(): boolean {
+        return panic("isNullable not implemented for IntersectionType");
+    }
+
+    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
+        const members = this.getMemberRefs().map(f);
+        // FIXME: Eventually switch to non-unique
+        return builder.getUniqueIntersectionType(members);
+    }
+}
+
+export class UnionType extends SetOperationType {
+    // @ts-ignore: This is initialized in the Type constructor
+    kind: "union";
+
+    constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
+        super(typeRef, "union", memberRefs);
+    }
+
     get stringTypeMembers(): OrderedSet<Type> {
         return this.members.filter(t => ["string", "date", "time", "date-time", "enum"].indexOf(t.kind) >= 0);
     }
@@ -452,42 +494,17 @@ export class UnionType extends Type {
         return this.members.find((t: Type) => t.kind === kind);
     }
 
-    get children(): OrderedSet<Type> {
-        return this.sortedMembers;
-    }
-
     get isNullable(): boolean {
         return this.findMember("null") !== undefined;
     }
 
-    isPrimitive(): this is PrimitiveType {
-        return false;
-    }
-
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        // console.log(`${mapIndentation()}mapping union ${this.getCombinedName()}`);
-        const members = this.getMemberRefs().map(t => {
-            // const kind = t.deref()[0].kind;
-            // console.log(`${mapIndentation()}  member ${kind}`);
-            // mapPath.push(kind);
-            const result = f(t);
-            // mapPath.pop();
-            return result;
-        });
+        const members = this.getMemberRefs().map(f);
         return builder.getUnionType(members);
-    }
-
-    get sortedMembers(): OrderedSet<Type> {
-        // FIXME: We're assuming no two members of the same kind.
-        return this.members.sortBy(t => t.kind);
-    }
-
-    protected structuralEqualityStep(other: UnionType, queue: (a: Type, b: Type) => boolean): boolean {
-        return unionCasesEqual(this.members, other.members, queue);
     }
 }
 
-export function unionCasesEqual(
+export function setOperationCasesEqual(
     ma: OrderedSet<Type>,
     mb: OrderedSet<Type>,
     membersEqual: (a: Type, b: Type) => boolean
