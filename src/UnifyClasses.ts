@@ -129,12 +129,29 @@ class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef
     }
 }
 
+export function unionBuilderForUnification<T extends Type>(
+    typeBuilder: GraphRewriteBuilder<T>,
+    makeEnums: boolean,
+    makeClassesFixed: boolean,
+    conflateNumbers: boolean
+): UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef> {
+    return new UnifyUnionBuilder(typeBuilder, makeEnums, makeClassesFixed, (trefs, names) =>
+        unifyTypes(
+            Set(trefs.map(tref => tref.deref()[0])),
+            names,
+            typeBuilder,
+            unionBuilderForUnification(typeBuilder, makeEnums, makeClassesFixed, conflateNumbers),
+            conflateNumbers
+        )
+    );
+}
+
+// FIXME: The UnionBuilder might end up not being used.
 export function unifyTypes<T extends Type>(
     types: Set<Type>,
     typeAttributes: TypeAttributes,
     typeBuilder: GraphRewriteBuilder<T>,
-    makeEnums: boolean,
-    makeClassesFixed: boolean,
+    unionBuilder: UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef>,
     conflateNumbers: boolean,
     maybeForwardingRef?: TypeRef
 ): TypeRef {
@@ -155,17 +172,6 @@ export function unifyTypes<T extends Type>(
 
     const accumulator = new UnionAccumulator<TypeRef, TypeRef, TypeRef>(conflateNumbers);
     types.forEach(t => addTypeToUnionAccumulator(accumulator, t));
-
-    const unionBuilder = new UnifyUnionBuilder(typeBuilder, makeEnums, makeClassesFixed, (trefs, names) =>
-        unifyTypes(
-            Set(trefs.map(tref => tref.deref()[0])),
-            names,
-            typeBuilder,
-            makeEnums,
-            makeClassesFixed,
-            conflateNumbers
-        )
-    );
 
     return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {
         typeBuilder.registerUnion(typeRefs, forwardingRef);

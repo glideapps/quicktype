@@ -7,7 +7,7 @@ import { Type, UnionType } from "./Type";
 import { assert, defined } from "./Support";
 import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
 import { combineTypeAttributes } from "./TypeAttributes";
-import { unifyTypes } from "./UnifyClasses";
+import { unifyTypes, unionBuilderForUnification } from "./UnifyClasses";
 
 function unionMembersRecursively(...unions: UnionType[]): OrderedSet<Type> {
     let processedUnions = Set<UnionType>();
@@ -38,7 +38,14 @@ export function flattenUnions(
 ): TypeGraph {
     function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
         const attributes = combineTypeAttributes(types.map(t => t.getAttributes()).toArray());
-        return unifyTypes(types, attributes, builder, true, true, conflateNumbers, forwardingRef);
+        return unifyTypes(
+            types,
+            attributes,
+            builder,
+            unionBuilderForUnification(builder, true, true, conflateNumbers),
+            conflateNumbers,
+            forwardingRef
+        );
     }
 
     const unions = graph.allTypesUnordered().filter(t => t instanceof UnionType) as Set<UnionType>;

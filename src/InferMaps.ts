@@ -6,7 +6,7 @@ import { Type, ClassType, setOperationCasesEqual, removeNullFromType, ClassPrope
 import { defined, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
-import { unifyTypes } from "./UnifyClasses";
+import { unifyTypes, unionBuilderForUnification } from "./UnifyClasses";
 import { MarkovChain, load, evaluate } from "./MarkovChain";
 
 const mapSizeThreshold = 20;
@@ -107,7 +107,13 @@ export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping
         // type graph.  Except we don't get Type objects but TypeRef objects,
         // which is a type-to-be.
         return builder.getMapType(
-            unifyTypes(shouldBe, c.getAttributes(), builder, false, false, conflateNumbers),
+            unifyTypes(
+                shouldBe,
+                c.getAttributes(),
+                builder,
+                unionBuilderForUnification(builder, false, false, conflateNumbers),
+                conflateNumbers
+            ),
             forwardingRef
         );
     }
