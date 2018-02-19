@@ -147,9 +147,11 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
     };
 
     private emitClass = (c: ClassType, className: Name) => {
+        this.emitDescription(this.descriptionForType(c));
         this.emitLine("class ", className, " {");
         this.indent(() => {
-            this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+            this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitLine(name, p.isOptional ? "?" : "", ": ", this.sourceFor(p.type));
             });
         });
@@ -162,10 +164,12 @@ class SimpleTypesRenderer extends ConvenienceRenderer {
             if (caseNames.length > 0) caseNames.push(" | ");
             caseNames.push(name);
         });
+        this.emitDescription(this.descriptionForType(e));
         this.emitLine("enum ", enumName, " = ", caseNames);
     };
 
     emitUnion = (u: UnionType, unionName: Name) => {
+        this.emitDescription(this.descriptionForType(u));
         this.emitLine("union ", unionName, " {");
         this.indent(() => {
             this.forEach(u.members, false, false, (t: Type) => {
