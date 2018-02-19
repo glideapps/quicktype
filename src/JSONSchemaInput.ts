@@ -58,10 +58,44 @@ function parseRef(ref: any): [Ref, string] {
         if (parts[i] === "#") {
             elements.push({ kind: PathElementKind.Root });
             refName = "Root";
+        } else if (parts[i] === "items") {
+            elements.push({ kind: PathElementKind.Items });
+            refName = "ArrayItems";
+        } else if (parts[i] === "additionalProperties") {
+            elements.push({ kind: PathElementKind.AdditionalProperty });
+            refName = "AdditionalProperties";
         } else if (parts[i] === "definitions" && i + 1 < parts.length) {
             refName = parts[i + 1];
             elements.push({ kind: PathElementKind.Definition, name: refName });
             i += 1;
+        } else if (parts[i] === "properties" && i + 1 < parts.length) {
+            refName = parts[i + 1];
+            elements.push({ kind: PathElementKind.Property, name: refName });
+            i += 1;
+        } else if (parts[i] === "oneOf" && i + 1 < parts.length) {
+            const index = Math.floor(parseInt(parts[i + 1]));
+            if (isNaN(index)) {
+                return panic(`Could not parse oneOf index ${parts[i + 1]}`);
+            }
+            elements.push({ kind: PathElementKind.OneOf, index });
+            i += 1;
+            refName = "OneOf";
+        } else if (parts[i] === "anyOf" && i + 1 < parts.length) {
+            const index = Math.floor(parseInt(parts[i + 1]));
+            if (isNaN(index)) {
+                return panic(`Could not parse anyOf index ${parts[i + 1]}`);
+            }
+            elements.push({ kind: PathElementKind.AnyOf, index });
+            i += 1;
+            refName = "AnyOf";
+        } else if (parts[i] === "allOf" && i + 1 < parts.length) {
+            const index = Math.floor(parseInt(parts[i + 1]));
+            if (isNaN(index)) {
+                return panic(`Could not parse allOf index ${parts[i + 1]}`);
+            }
+            elements.push({ kind: PathElementKind.AllOf, index });
+            i += 1;
+            refName = "AllOf";
         } else {
             panic(`Could not parse JSON schema reference ${ref}`);
         }
