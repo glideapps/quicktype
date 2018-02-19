@@ -309,6 +309,12 @@ export class JavaRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     }
 
+    protected emitDescriptionBlock(lines: string[]): void {
+        this.emitLine("/**");
+        this.emitCommentLines(lines, " * ");
+        this.emitLine(" */");
+    }
+
     protected emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
@@ -389,12 +395,14 @@ export class JavaRenderer extends ConvenienceRenderer {
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitFileHeader(className, this.importsForType(c));
+        this.emitDescription(this.descriptionForType(c));
         this.emitClassAttributes(c, className);
         this.emitBlock(["public class ", className], () => {
             this.forEachClassProperty(c, "none", (name, _, p) => {
                 this.emitLine("private ", this.javaType(false, p.type, true), " ", name, ";");
             });
             this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, p) => {
+                this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 const [getterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
                 this.emitAccessorAttributes(c, className, name, jsonName, p, false);
                 const rendered = this.javaType(false, p.type);
@@ -454,6 +462,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         };
 
         this.emitFileHeader(unionName, this.importsForType(u));
+        this.emitDescription(this.descriptionForType(u));
         if (!this._justTypes) {
             this.emitLine("@JsonDeserialize(using = ", unionName, ".Deserializer.class)");
             this.emitLine("@JsonSerialize(using = ", unionName, ".Serializer.class)");
@@ -523,6 +532,7 @@ export class JavaRenderer extends ConvenienceRenderer {
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitFileHeader(enumName, this.importsForType(e));
+        this.emitDescription(this.descriptionForType(e));
         const caseNames: Sourcelike[] = [];
         this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
