@@ -655,12 +655,18 @@ export abstract class ConvenienceRenderer extends Renderer {
         return "// ";
     }
 
-    protected emitCommentLines(lines: string[], lineStart?: string): void {
+    protected emitCommentLines(lines: string[], lineStart?: string, beforeLine?: string, afterLine?: string): void {
         if (lineStart === undefined) {
             lineStart = this.commentLineStart;
         }
+        if (beforeLine !== undefined) {
+            this.emitLine(beforeLine);
+        }
         for (const line of lines) {
             this.emitLine(trimEnd(lineStart + line));
+        }
+        if (afterLine !== undefined) {
+            this.emitLine(afterLine);
         }
     }
 

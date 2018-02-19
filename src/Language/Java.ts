@@ -310,9 +310,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitDescriptionBlock(lines: string[]): void {
-        this.emitLine("/**");
-        this.emitCommentLines(lines, " * ");
-        this.emitLine(" */");
+        this.emitCommentLines(lines, " * ", "/**", " */");
     }
 
     protected emitBlock(line: Sourcelike, f: () => void): void {

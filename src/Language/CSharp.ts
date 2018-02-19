@@ -267,9 +267,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         if (this.dense) {
             this.emitLine(start, lines.join("; "), "</summary>");
         } else {
-            this.emitLine(start);
-            this.emitCommentLines(lines, "/// ");
-            this.emitLine("/// </summary>");
+            this.emitCommentLines(lines, "/// ", start, "/// </summary>");
         }
     }
 
