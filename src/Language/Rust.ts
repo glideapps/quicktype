@@ -263,14 +263,6 @@ class RustRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitDescriptionForMember(t: ClassType, jsonName: string) {
-        const comments = this.descriptionForClassProperty(t, jsonName);
-
-        if (comments !== undefined) {
-            this.emitCommentLines(comments);
-        }
-    }
-
     private emitStructDefinition = (c: ClassType, className: Name): void => {
         this.emitDescription(this.descriptionForType(c));
         this.emitLine("#[derive(Serialize, Deserialize)]");
@@ -278,7 +270,7 @@ class RustRenderer extends ConvenienceRenderer {
         const blankLines = this._density === Density.Dense ? "none" : "interposing";
         const structBody = () =>
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
-                this.emitDescriptionForMember(c, jsonName);
+                this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitRenameAttribute(name, jsonName);
                 this.emitLine(name, ": ", this.breakCycle(prop.type, true), ",");
             });
@@ -326,14 +318,6 @@ class RustRenderer extends ConvenienceRenderer {
             })
         );
     };
-
-    private emitDescription(description: string[] | undefined): void {
-        if (description === undefined) return;
-
-        for (const line of description) {
-            this.emitLine("/// ", line);
-        }
-    }
 
     emitTopLevelAlias = (t: Type, name: Name): void => {
         this.emitLine("pub type ", name, " = ", this.rustType(t), ";");

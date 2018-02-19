@@ -655,10 +655,23 @@ export abstract class ConvenienceRenderer extends Renderer {
         return "// ";
     }
 
-    protected emitCommentLines(lines: string[]): void {
-        for (const line of lines) {
-            this.emitLine(trimEnd(this.commentLineStart + line));
+    protected emitCommentLines(lines: string[], lineStart?: string): void {
+        if (lineStart === undefined) {
+            lineStart = this.commentLineStart;
         }
+        for (const line of lines) {
+            this.emitLine(trimEnd(lineStart + line));
+        }
+    }
+
+    protected emitDescription(description: string[] | undefined): void {
+        if (description === undefined) return;
+        // FIXME: word-wrap
+        this.emitDescriptionBlock(description);
+    }
+
+    protected emitDescriptionBlock(lines: string[]): void {
+        this.emitCommentLines(lines);
     }
 
     private processGraph(): void {
