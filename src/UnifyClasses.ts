@@ -46,7 +46,7 @@ function getCliqueProperties(
     });
 }
 
-class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef> {
+export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[], TypeRef[]> {
     constructor(
         typeBuilder: TypeBuilder & TypeLookerUp,
         private readonly _makeEnums: boolean,
@@ -134,7 +134,7 @@ export function unionBuilderForUnification<T extends Type>(
     makeEnums: boolean,
     makeClassesFixed: boolean,
     conflateNumbers: boolean
-): UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef> {
+): UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[], TypeRef[]> {
     return new UnifyUnionBuilder(typeBuilder, makeEnums, makeClassesFixed, (trefs, names) =>
         unifyTypes(
             Set(trefs.map(tref => tref.deref()[0])),
@@ -151,7 +151,7 @@ export function unifyTypes<T extends Type>(
     types: Set<Type>,
     typeAttributes: TypeAttributes,
     typeBuilder: GraphRewriteBuilder<T>,
-    unionBuilder: UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef>,
+    unionBuilder: UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[], TypeRef[]>,
     conflateNumbers: boolean,
     maybeForwardingRef?: TypeRef
 ): TypeRef {

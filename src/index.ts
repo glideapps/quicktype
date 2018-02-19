@@ -209,9 +209,21 @@ export class Run {
         let graph = typeBuilder.finish();
 
         if (Object.getOwnPropertyNames(this._allInputs.schemas).length > 0) {
-            // FIXME: These two should probably be a single pass
-            graph = flattenUnions(graph, stringTypeMapping, conflateNumbers);
-            graph = resolveIntersections(graph, stringTypeMapping);
+            let intersectionsDone = false;
+            let unionsDone = false;
+            do {
+                const graphBeforeRewrites = graph;
+                if (!intersectionsDone) {
+                    [graph, intersectionsDone] = resolveIntersections(graph, stringTypeMapping);
+                }
+                if (!unionsDone) {
+                    [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers);
+                }
+
+                if (graph === graphBeforeRewrites) {
+                    assert(intersectionsDone && unionsDone, "Graph didn't change but we're not done");
+                }
+            } while (!intersectionsDone || !unionsDone);
         }
 
         if (this._options.findSimilarClassesSchema !== undefined) {

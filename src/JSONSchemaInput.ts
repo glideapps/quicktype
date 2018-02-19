@@ -103,6 +103,32 @@ function parseRef(ref: any): [Ref, string] {
     return [List(elements), refName];
 }
 
+function refToString(ref: Ref): string {
+    function elementToString(e: PathElement): string {
+        switch (e.kind) {
+            case PathElementKind.Root:
+                return "#";
+            case PathElementKind.Definition:
+                return `definitions/${e.name}`;
+            case PathElementKind.OneOf:
+                return `oneOf/${e.index.toString()}`;
+            case PathElementKind.AnyOf:
+                return `anyOf/${e.index.toString()}`;
+            case PathElementKind.AllOf:
+                return `allOf/${e.index.toString()}`;
+            case PathElementKind.Property:
+                return `properties/${e.name}`;
+            case PathElementKind.AdditionalProperty:
+                return "additionalProperties";
+            case PathElementKind.Items:
+                return "items";
+            default:
+                return assertNever(e);
+        }
+    }
+    return ref.map(elementToString).join("/");
+}
+
 function lookupDefinition(schema: StringMap, name: string): StringMap {
     const definitions = checkStringMap(schema.definitions);
     return checkStringMap(definitions[name]);
@@ -353,7 +379,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
 
         function convertAllOf(cases: any): TypeRef {
             if (!Array.isArray(cases)) {
-                return panic(`allOf is not an array: ${cases}`);
+                return panic(`allOf is not an array at ${refToString(path)}: ${cases}`);
             }
             const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
             setTypeForPath(path, intersectionType);
@@ -377,6 +403,9 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
             let cases = schema.enum as any[];
             const haveNull = cases.indexOf(null) >= 0;
             cases = cases.filter(c => c !== null);
+            if (cases.filter(c => typeof c !== "string").length > 0) {
+                return panic(`Non-string enum cases are not supported, at ${refToString(path)}`);
+            }
             const tref = typeBuilder.getEnumType(typeAttributes, OrderedSet(checkStringArray(cases)));
             if (haveNull) {
                 return typeBuilder.getUnionType(

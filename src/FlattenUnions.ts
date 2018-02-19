@@ -3,11 +3,11 @@
 import { Set, Map, OrderedSet } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
-import { Type, UnionType } from "./Type";
+import { Type, UnionType, IntersectionType } from "./Type";
 import { assert, defined } from "./Support";
 import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
 import { combineTypeAttributes } from "./TypeAttributes";
-import { unifyTypes, unionBuilderForUnification } from "./UnifyClasses";
+import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
 
 function unionMembersRecursively(...unions: UnionType[]): OrderedSet<Type> {
     let processedUnions = Set<UnionType>();
@@ -35,25 +35,35 @@ export function flattenUnions(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
     conflateNumbers: boolean
-): TypeGraph {
+): [TypeGraph, boolean] {
+    let needsRepeat = false;
+
     function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
-        const attributes = combineTypeAttributes(types.map(t => t.getAttributes()).toArray());
-        return unifyTypes(
-            types,
-            attributes,
-            builder,
-            unionBuilderForUnification(builder, true, true, conflateNumbers),
-            conflateNumbers,
-            forwardingRef
-        );
+        const unionBuilder = new UnifyUnionBuilder(builder, true, true, (trefs, attributes) => {
+            assert(trefs.length > 0, "Must have at least one type to build union");
+            trefs = trefs.map(tref => builder.reconstituteType(tref.deref()[0]));
+            if (trefs.length === 1) {
+                return trefs[0];
+            }
+            needsRepeat = true;
+            return builder.getUnionType(attributes, OrderedSet(trefs));
+        });
+        const unionAttributes = combineTypeAttributes(types.map(t => t.getAttributes()).toArray());
+        return unifyTypes(types, unionAttributes, builder, unionBuilder, conflateNumbers, forwardingRef);
     }
 
     const unions = graph.allTypesUnordered().filter(t => t instanceof UnionType) as Set<UnionType>;
+    const nonCanonicalUnions = unions.filter(u => !u.isCanonical);
     let singleTypeGroups = Map<Type, OrderedSet<Type>>();
     const groups: Type[][] = [];
-    unions.forEach(u => {
+    let foundIntersection: boolean = false;
+    nonCanonicalUnions.forEach(u => {
         const members = unionMembersRecursively(u);
         assert(!members.isEmpty(), "We can't have an empty union");
+        if (members.some(m => m instanceof IntersectionType)) {
+            foundIntersection = true;
+            return;
+        }
         if (members.size === 1) {
             const t = defined(members.first());
             let maybeSet = singleTypeGroups.get(t);
@@ -67,6 +77,8 @@ export function flattenUnions(
         }
     });
     singleTypeGroups.forEach(ts => groups.push(ts.toArray()));
+    graph = graph.rewrite(stringTypeMapping, false, groups, replace);
 
-    return graph.rewrite(stringTypeMapping, false, groups, replace);
+    // console.log(`flattened ${nonCanonicalUnions.size} of ${unions.size} unions`);
+    return [graph, !needsRepeat && !foundIntersection];
 }

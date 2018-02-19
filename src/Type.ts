@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Collection } from "immutable";
+import { OrderedSet, OrderedMap, Collection, is, hash } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
@@ -11,6 +11,20 @@ export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map" | "intersection";
+
+export function isPrimitiveStringTypeKind(kind: TypeKind): kind is PrimitiveStringTypeKind {
+    return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
+}
+
+export function isNumberTypeKind(kind: TypeKind): kind is "integer" | "double" {
+    return kind === "integer" || kind === "double";
+}
+
+export function isPrimitiveTypeKind(kind: TypeKind): kind is PrimitiveTypeKind {
+    if (isPrimitiveStringTypeKind(kind)) return true;
+    if (isNumberTypeKind(kind)) return true;
+    return kind === "none" || kind === "any" || kind === "null" || kind === "bool";
+}
 
 function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     if (x.typeRef.getIndex() === y.typeRef.getIndex()) return true;
@@ -273,22 +287,32 @@ export class MapType extends Type {
     }
 }
 
-export class ClassProperty {
-    constructor(readonly typeRef: TypeRef, readonly isOptional: boolean) {}
-
-    get type(): Type {
-        return this.typeRef.deref()[0];
-    }
+export class GenericClassProperty<T> {
+    constructor(readonly typeData: T, readonly isOptional: boolean) {}
 
     equals(other: any): boolean {
-        if (!(other instanceof ClassProperty)) {
+        if (!(other instanceof GenericClassProperty)) {
             return false;
         }
-        return this.typeRef.equals(other.typeRef) && this.isOptional === other.isOptional;
+        return is(this.typeData, other.typeData) && this.isOptional === other.isOptional;
     }
 
     hashCode(): number {
-        return this.typeRef.hashCode() + (this.isOptional ? 17 : 23);
+        return hash(this.typeData) + (this.isOptional ? 17 : 23);
+    }
+}
+
+export class ClassProperty extends GenericClassProperty<TypeRef> {
+    constructor(typeRef: TypeRef, isOptional: boolean) {
+        super(typeRef, isOptional);
+    }
+
+    get typeRef(): TypeRef {
+        return this.typeData;
+    }
+
+    get type(): Type {
+        return this.typeRef.deref()[0];
     }
 }
 
@@ -421,7 +445,7 @@ export class EnumType extends Type {
 export abstract class SetOperationType extends Type {
     constructor(typeRef: TypeRef, kind: TypeKind, private _memberRefs?: OrderedSet<TypeRef>) {
         super(typeRef, kind);
-    }    
+    }
 
     setMembers(memberRefs: OrderedSet<TypeRef>) {
         if (this._memberRefs !== undefined) {
@@ -496,6 +520,18 @@ export class UnionType extends SetOperationType {
 
     get isNullable(): boolean {
         return this.findMember("null") !== undefined;
+    }
+
+    get isCanonical(): boolean {
+        const members = this.members;
+        if (members.size <= 1) return false;
+        const kinds = members.map(t => t.kind);
+        if (kinds.size < members.size) return false;
+        if (kinds.has("union") || kinds.has("intersection")) return false;
+        if (kinds.has("none") || kinds.has("any")) return false;
+        if (kinds.has("string") && kinds.has("enum")) return false;
+        if (kinds.has("class") && kinds.has("map")) return false;
+        return true;
     }
 
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
