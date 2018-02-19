@@ -1,5 +1,5 @@
-docker system prune --force
+#!/bin/bash
 
-docker pull schani/quicktype
-docker build --cache-from schani/quicktype -t quicktype .
+set -eu
+
 docker run -t --workdir="/app" -e FIXTURE quicktype npm test
