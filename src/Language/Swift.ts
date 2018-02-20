@@ -429,29 +429,29 @@ class SwiftRenderer extends ConvenienceRenderer {
                 let lastNames: Name[] = [];
 
                 const emitLastProperty = () => {
-                    if (lastProperty !== undefined) {
-                        let sources: Sourcelike[] = ["let "];
-                        lastNames.forEach((n, i) => {
-                            if (i > 0) sources.push(", ");
-                            sources.push(n);
-                        });
-                        sources.push(": ");
-                        sources.push(swiftType(lastProperty));
-                        this.emitLine(sources);
-                    }
+                    if (lastProperty === undefined) return;
+
+                    let sources: Sourcelike[] = ["let "];
+                    lastNames.forEach((n, i) => {
+                        if (i > 0) sources.push(", ");
+                        sources.push(n);
+                    });
+                    sources.push(": ");
+                    sources.push(swiftType(lastProperty));
+                    this.emitLine(sources);
+
+                    lastProperty = undefined;
+                    lastNames = [];
                 };
 
                 this.forEachClassProperty(c, "none", (name, _, p) => {
+                    if (!p.equals(lastProperty) || lastNames.length >= MAX_SAMELINE_PROPERTIES) {
+                        emitLastProperty();
+                    }
                     if (lastProperty === undefined) {
                         lastProperty = p;
                     }
-                    if (p.equals(lastProperty) && lastNames.length < MAX_SAMELINE_PROPERTIES) {
-                        lastNames.push(name);
-                    } else {
-                        emitLastProperty();
-                        lastProperty = p;
-                        lastNames = [name];
-                    }
+                    lastNames.push(name);
                 });
                 emitLastProperty();
             } else {
