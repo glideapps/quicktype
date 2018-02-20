@@ -10,6 +10,7 @@ import { Namer, funPrefixNamer } from "../Naming";
 import { legalizeCharacters, splitIntoWords, combineWords, firstUpperWordStyle, allUpperWordStyle } from "../Strings";
 import { defined, assert, panic } from "../Support";
 import { StringTypeMapping } from "../TypeBuilder";
+import { descriptionTypeAttributeKind } from "../TypeAttributes";
 
 export default class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
@@ -93,7 +94,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
     };
 
     private schemaForType = (t: Type): Schema => {
-        return matchTypeExhaustive<{ [name: string]: any }>(
+        const schema = matchTypeExhaustive<{ [name: string]: any }>(
             t,
             _noneType => {
                 return panic("None type should have been replaced");
@@ -117,6 +118,11 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
             _timeType => ({ type: "string", format: "time" }),
             _dateTimeType => ({ type: "string", format: "date-time" })
         );
+        const description = this.typeGraph.attributeStore.tryGet(descriptionTypeAttributeKind, t);
+        if (description !== undefined) {
+            schema.description = description.join("\n");
+        }
+        return schema;
     };
 
     private definitionForClass = (c: ClassType): Schema => {

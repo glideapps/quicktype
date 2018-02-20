@@ -243,19 +243,17 @@ class TypeScriptRenderer extends ConvenienceRenderer {
     private emitClass = (c: ClassType, className: Name) => {
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["export interface ", className], "", () => {
-            const table: Sourcelike[][] = [];
-            this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
+            this.emitPropertyTable(c, (name, _jsonName, p) => {
                 const t = p.type;
                 let nullable = t instanceof UnionType ? nullableFromUnion(t) : null;
                 if (p.isOptional && nullable === null) {
                     nullable = t;
                 }
-                table.push([
+                return [
                     [name, nullable !== null ? "?" : "", ": "],
                     [this.sourceFor(nullable !== null ? nullable : t).source, ";"]
-                ]);
+                ];
             });
-            this.emitTable(table);
         });
     };
 
