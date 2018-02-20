@@ -34,6 +34,7 @@ const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
 const chalk = require("chalk");
 const fetch = require("node-fetch");
+const wordWrap: (s: string) => string = require("wordwrap")(90);
 
 const packageJSON = require("../package.json");
 
@@ -478,7 +479,7 @@ function parseArgv(argv: string[]): CLIOptions {
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): CLIOptions {
     const opts: { [key: string]: any } = commandLineArgs(definitions, { argv, partial });
-    const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
+    const options: { rendererOptions: RendererOptions;[key: string]: any } = { rendererOptions: {} };
     definitions.forEach(o => {
         if (!(o.name in opts)) return;
         const v = opts[o.name];
@@ -618,8 +619,8 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                     for (const src of postmanSources) {
                         sources.push(src);
                     }
-                    if (description.length > 0) {
-                        leadingComments = description;
+                    if (description != undefined) {
+                        leadingComments = wordWrap(description).split("\n");
                     }
                 }
                 break;
