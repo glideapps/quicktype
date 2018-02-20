@@ -444,14 +444,19 @@ class SwiftRenderer extends ConvenienceRenderer {
                     lastNames = [];
                 };
 
-                this.forEachClassProperty(c, "none", (name, _, p) => {
-                    if (!p.equals(lastProperty) || lastNames.length >= MAX_SAMELINE_PROPERTIES) {
+                this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                    const description = this.descriptionForClassProperty(c, jsonName);
+                    if (!p.equals(lastProperty) || lastNames.length >= MAX_SAMELINE_PROPERTIES || description !== undefined) {
                         emitLastProperty();
                     }
                     if (lastProperty === undefined) {
                         lastProperty = p;
                     }
                     lastNames.push(name);
+                    if (description !== undefined) {
+                        this.emitDescription(description);
+                        emitLastProperty();
+                    }
                 });
                 emitLastProperty();
             } else {
