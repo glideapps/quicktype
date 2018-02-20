@@ -365,14 +365,25 @@ class ElmRenderer extends ConvenienceRenderer {
     };
 
     private emitClassDefinition = (c: ClassType, className: Name): void => {
-        this.emitDescription(this.descriptionForType(c));
+        let description = this.descriptionForType(c);
+        this.forEachClassProperty(c, "none", (name, jsonName) => {
+            const propertyDescription = this.descriptionForClassProperty(c, jsonName);
+            if (propertyDescription === undefined) return;
+
+            if (description === undefined) {
+                description = [];
+            } else {
+                description.push("");
+            }
+            description.push(`${this.sourcelikeToString(name)}:`);
+            description.push(...propertyDescription);
+        });
+
+        this.emitDescription(description);
         this.emitLine("type alias ", className, " =");
         this.indent(() => {
             let onFirst = true;
             this.forEachClassProperty(c, "none", (name, _jsonName, p) => {
-                // FIXME: Elm doesn't like special comments here.  See
-                // https://github.com/elm-lang/elm-compiler/issues/1678
-                // this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitLine(onFirst ? "{" : ",", " ", name, " : ", this.elmProperty(p));
                 onFirst = false;
             });
