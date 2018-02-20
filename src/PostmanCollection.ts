@@ -1,7 +1,6 @@
 "use strict";
 
 import { JSONTypeSource } from ".";
-import { isObject } from "lodash";
 
 function isValidJSON(s: string): boolean {
     try {
@@ -39,9 +38,9 @@ export function sourcesFromPostmanCollection(
                 const source: JSONTypeSource = { name: c.name, samples };
                 const sourceDescription = [c.name];
 
-                if (isObject(c.request)) {
+                if (typeof c.request === "object") {
                     const { method, url } = c.request;
-                    if (method !== undefined && isObject(url) && url.raw !== undefined) {
+                    if (method !== undefined && typeof url === "object" && url.raw !== undefined) {
                         sourceDescription.push(`${method} ${url.raw}`);
                     }
                 }
