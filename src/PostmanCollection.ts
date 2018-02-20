@@ -36,9 +36,20 @@ export function sourcesFromPostmanCollection(
             }
             if (samples.length > 0) {
                 const source: JSONTypeSource = { name: c.name, samples };
-                if (typeof c.request === "object" && typeof c.request.description === "string") {
-                    source.description = c.request.description;
+                const sourceDescription = [c.name];
+
+                if (typeof c.request === "object") {
+                    const { method, url } = c.request;
+                    if (method !== undefined && typeof url === "object" && url.raw !== undefined) {
+                        sourceDescription.push(`${method} ${url.raw}`);
+                    }
                 }
+
+                if (typeof c.request === "object" && typeof c.request.description === "string") {
+                    sourceDescription.push(c.request.description);
+                }
+
+                source.description = sourceDescription.length === 0 ? undefined : sourceDescription.join("\n\n");
                 sources.push(source);
             }
         }
