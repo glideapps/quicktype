@@ -30,11 +30,13 @@ import {
     propertyDescriptionsTypeAttributeKind
 } from "./TypeAttributes";
 
+const wordWrap: (s: string) => string = require("wordwrap")(90);
+
 function splitDescription(descriptions: OrderedSet<string> | undefined): string[] | undefined {
     if (descriptions === undefined) return undefined;
     const description = descriptions.join("\n\n").trim();
     if (description === "") return undefined;
-    return description.split("\n").map(l => l.trim());
+    return wordWrap(description).split("\n").map(l => l.trim());
 }
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };

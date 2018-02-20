@@ -13,7 +13,7 @@ function isValidJSON(s: string): boolean {
 
 export function sourcesFromPostmanCollection(
     collectionJSON: string
-): { sources: JSONTypeSource[]; description: string[] } {
+): { sources: JSONTypeSource[]; description: string | undefined } {
     const sources: JSONTypeSource[] = [];
     const descriptions: string[] = [];
 
@@ -47,11 +47,9 @@ export function sourcesFromPostmanCollection(
     processCollection(JSON.parse(collectionJSON));
 
     const joinedDescription = descriptions.join("\n\n").trim();
-    let description: string[];
-    if (joinedDescription === "") {
-        description = [];
-    } else {
-        description = joinedDescription.split("\n");
+    let description: string | undefined = undefined;;
+    if (joinedDescription !== "") {
+        description = joinedDescription;
     }
 
     return { sources, description };
