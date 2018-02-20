@@ -41,7 +41,7 @@ export function sourcesFromPostmanCollection(
 
                 if (isObject(c.request)) {
                     const { method, url } = c.request;
-                    if (method !== undefined && url.raw !== undefined) {
+                    if (method !== undefined && isObject(url) && url.raw !== undefined) {
                         sourceDescription.push(`${method} ${url.raw}`);
                     }
                 }
