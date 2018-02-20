@@ -37,7 +37,8 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
     constructor(
         typeBuilder: TypeBuilder,
         private readonly _typeInference: TypeInference,
-        private readonly _cjson: CompressedJSON
+        private readonly _cjson: CompressedJSON,
+        private readonly _fixed: boolean
     ) {
         super(typeBuilder, true);
     }
@@ -56,12 +57,12 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
 
     protected makeClass(classes: NestedValueArray, maps: any[], typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
         assert(maps.length === 0);
-        return this._typeInference.inferClassType(this._cjson, typeAttributes, classes, forwardingRef);
+        return this._typeInference.inferClassType(this._cjson, typeAttributes, classes, this._fixed, forwardingRef);
     }
 
     protected makeArray(arrays: NestedValueArray, typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, typeAttributes, arrays, forwardingRef)
+            this._typeInference.inferType(this._cjson, typeAttributes, arrays, this._fixed, forwardingRef)
         );
     }
 }
@@ -82,9 +83,10 @@ export class TypeInference {
         cjson: CompressedJSON,
         typeAttributes: TypeAttributes,
         valueArray: NestedValueArray,
+        fixed: boolean,
         forwardingRef?: TypeRef
     ): TypeRef {
-        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, cjson);
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, cjson, fixed);
         let numValues = 0;
 
         forEachValueInNestedValueArray(valueArray, value => {
@@ -147,6 +149,7 @@ export class TypeInference {
         cjson: CompressedJSON,
         typeAttributes: TypeAttributes,
         objects: NestedValueArray,
+        fixed: boolean,
         forwardingRef?: TypeRef
     ): TypeRef {
         const propertyNames: string[] = [];
@@ -167,12 +170,16 @@ export class TypeInference {
         const properties: [string, ClassProperty][] = [];
         for (const key of propertyNames) {
             const values = propertyValues[key];
-            const t = this.inferType(cjson, Map(), values);
+            const t = this.inferType(cjson, Map(), values, false);
             const isOptional = values.length < objects.length;
             properties.push([key, new ClassProperty(t, isOptional)]);
         }
 
         const propertyMap = OrderedMap(properties);
-        return this._typeBuilder.getClassType(typeAttributes, propertyMap, forwardingRef);
+        if (fixed) {
+            return this._typeBuilder.getUniqueClassType(typeAttributes, true, propertyMap, forwardingRef);
+        } else {
+            return this._typeBuilder.getClassType(typeAttributes, propertyMap, forwardingRef);
+        }
     }
 }
