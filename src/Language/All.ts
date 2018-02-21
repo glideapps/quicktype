@@ -8,7 +8,8 @@ import CPlusPlusTargetLanguage from "./CPlusPlus";
 import ObjectiveCTargetLanguage from "./Objective-C";
 import { JavaTargetLanguage } from "./Java";
 import SimpleTypesTargetLanguage from "./SimpleTypes";
-import TypeScriptTargetLanguage from "./TypeScript";
+import { JavaScriptTargetLanguage } from "./JavaScript";
+import { TypeScriptTargetLanguage } from "./TypeScript";
 import SwiftTargetLanguage from "./Swift";
 import ElmTargetLanguage from "./Elm";
 import JSONSchemaTargetLanguage from "./JSONSchema";
@@ -22,6 +23,7 @@ export const all: TargetLanguage[] = [
     new ObjectiveCTargetLanguage(),
     new JavaTargetLanguage(),
     new TypeScriptTargetLanguage(),
+    new JavaScriptTargetLanguage(),
     new SwiftTargetLanguage(),
     new ElmTargetLanguage(),
     new JSONSchemaTargetLanguage(),
