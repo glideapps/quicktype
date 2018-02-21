@@ -29,7 +29,7 @@ import { Namer, Name } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption } from "../RendererOptions";
+import { BooleanOption, Option } from "../RendererOptions";
 import { StringTypeMapping } from "../TypeBuilder";
 
 const unicode = require("unicode-properties");
@@ -39,7 +39,10 @@ export default class SimpleTypesTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Simple Types", ["types"], "txt");
-        this.setOptions([this._declareUnionsOption]);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [this._declareUnionsOption];
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {

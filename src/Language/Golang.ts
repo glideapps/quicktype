@@ -26,7 +26,7 @@ import {
     camelCase
 } from "../Strings";
 import { defined } from "../Support";
-import { StringOption, BooleanOption } from "../RendererOptions";
+import { StringOption, BooleanOption, Option } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
@@ -38,7 +38,10 @@ export default class GoTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Go", ["go", "golang"], "go");
-        this.setOptions([this._justTypesOption, this._packageOption]);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [this._justTypesOption, this._packageOption];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
