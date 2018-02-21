@@ -259,6 +259,8 @@ class CSharpRenderer extends ConvenienceRenderer {
             case AccessModifier.Internal:
                 declaration = ["internal ", declaration];
                 break;
+            default:
+                break;
         }
         this.emitDescription(description);
         this.emitLine(declaration, " ", name);
