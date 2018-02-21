@@ -571,7 +571,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
         }
 
         let sources: TypeSource[] = [];
-        let leadingComments: string[] | undefined = [];
+        let leadingComments: string[] | undefined = undefined;
         switch (options.srcLang) {
             case "graphql":
                 let schemaString: string | undefined = undefined;
@@ -619,7 +619,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                     for (const src of postmanSources) {
                         sources.push(src);
                     }
-                    if (description != undefined) {
+                    if (description !== undefined) {
                         leadingComments = wordWrap(description).split("\n");
                     }
                 }
