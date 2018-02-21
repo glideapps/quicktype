@@ -28,7 +28,7 @@ import { Sourcelike, modifySource, MultiWord, singleWord, parenIfNeeded, multiWo
 import { Namer, Name } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption } from "../RendererOptions";
+import { BooleanOption, Option } from "../RendererOptions";
 
 const unicode = require("unicode-properties");
 
@@ -43,7 +43,10 @@ export default class L extends TargetLanguage {
 
     constructor() {
         super("TypeScript", ["typescript", "ts", "tsx"], "ts");
-        this.setOptions([this._justTypes, this._declareUnions, this._omitRuntimeTypecheck]);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [this._justTypes, this._declareUnions, this._omitRuntimeTypecheck];
     }
 
     get supportsOptionalClassProperties(): boolean {

@@ -11,11 +11,15 @@ import { legalizeCharacters, splitIntoWords, combineWords, firstUpperWordStyle, 
 import { defined, assert, panic } from "../Support";
 import { StringTypeMapping } from "../TypeBuilder";
 import { descriptionTypeAttributeKind } from "../TypeAttributes";
+import { Option } from "../RendererOptions";
 
 export default class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
         super("JSON Schema", ["schema", "json-schema"], "schema");
-        this.setOptions([]);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [];
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {

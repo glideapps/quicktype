@@ -23,7 +23,7 @@ import {
 } from "../Strings";
 import { defined, assertNever, panic } from "../Support";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { StringOption, EnumOption, BooleanOption } from "../RendererOptions";
+import { StringOption, EnumOption, BooleanOption, Option } from "../RendererOptions";
 import { assert } from "../Support";
 import { Declaration } from "../DeclarationIR";
 
@@ -61,13 +61,16 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("C++", ["c++", "cpp", "cplusplus"], "cpp");
-        this.setOptions([
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [
             this._justTypesOption,
             this._namespaceOption,
             this._typeNamingStyleOption,
             this._memberNamingStyleOption,
             this._enumeratorNamingStyleOption
-        ]);
+        ];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
