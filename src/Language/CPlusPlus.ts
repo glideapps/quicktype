@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet } from "immutable";
+import { OrderedSet, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, UnionType, nullableFromUnion, matchType, removeNullFromUnion } from "../Type";
@@ -21,7 +21,7 @@ import {
     allUpperWordStyle,
     allLowerWordStyle
 } from "../Strings";
-import { defined, assertNever, panic } from "../Support";
+import { defined, assertNever, panic, intercalate } from "../Support";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { StringOption, EnumOption, BooleanOption } from "../RendererOptions";
 import { assert } from "../Support";
@@ -38,7 +38,7 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
     private readonly _namespaceOption = new StringOption(
         "namespace",
-        "Name of the generated namespace",
+        "Name of the generated namespace(s)",
         "NAME",
         "quicktype"
     );
@@ -243,6 +243,8 @@ type TypeContext = {
 };
 
 class CPlusPlusRenderer extends ConvenienceRenderer {
+    private readonly _namespaceNames: List<string>;
+
     private readonly _typeNameStyle: (rawName: string) => string;
     private readonly _typeNamingFunction: Namer;
     private readonly _memberNamingFunction: Namer;
@@ -252,12 +254,14 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
-        private readonly _namespaceName: string,
+        namespaceName: string,
         _typeNamingStyle: NamingStyle,
         _memberNamingStyle: NamingStyle,
         _enumeratorNamingStyle: NamingStyle
     ) {
         super(graph, leadingComments);
+
+        this._namespaceNames = List(namespaceName.split("::"));
 
         this._typeNameStyle = cppNameStyle(_typeNamingStyle);
         this._typeNamingFunction = funPrefixNamer("types", this._typeNameStyle);
@@ -310,9 +314,13 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 
-    private emitBlock = (line: Sourcelike, withSemicolon: boolean, f: () => void): void => {
+    private emitBlock = (line: Sourcelike, withSemicolon: boolean, f: () => void, withIndent: boolean = true): void => {
         this.emitLine(line, " {");
-        this.indent(f);
+        if (withIndent) {
+            this.indent(f);
+        } else {
+            f();
+        }
         if (withSemicolon) {
             this.emitLine("};");
         } else {
@@ -320,8 +328,13 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     };
 
-    private emitNamespace = (namespaceName: string, f: () => void): void => {
-        this.emitBlock(["namespace ", namespaceName], false, f);
+    private emitNamespaces = (namespaceNames: List<string>, f: () => void): void => {
+        const first = namespaceNames.first();
+        if (first === undefined) {
+            f();
+        } else {
+            this.emitBlock(["namespace ", first], false, () => this.emitNamespaces(namespaceNames.rest(), f), namespaceNames.size === 1);
+        }
     };
 
     private cppTypeInOptional = (nonNulls: OrderedSet<Type>, ctx: TypeContext, withIssues: boolean): Sourcelike => {
@@ -364,7 +377,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     };
 
     private ourQualifier = (inJsonNamespace: boolean): Sourcelike => {
-        return inJsonNamespace ? [this._namespaceName, "::"] : [];
+        return inJsonNamespace ? [intercalate("::", this._namespaceNames).toArray(), "::"] : [];
     };
 
     private jsonQualifier = (inJsonNamespace: boolean): Sourcelike => {
@@ -758,13 +771,13 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
         if (this._justTypes) {
             this.emitTypes();
         } else {
-            this.emitNamespace(this._namespaceName, this.emitTypes);
+            this.emitNamespaces(this._namespaceNames, this.emitTypes);
         }
         if (this._justTypes) return;
         if (!this.haveNamedTypes) return;
 
         this.ensureBlankLine();
-        this.emitNamespace("nlohmann", () => {
+        this.emitNamespaces(List(["nlohmann"]), () => {
             if (this.haveUnions) {
                 this.emitOptionalHelpers();
             }
