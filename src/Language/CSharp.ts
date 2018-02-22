@@ -28,7 +28,7 @@ import { intercalate, defined, assert, panic, StringMap } from "../Support";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { StringOption, EnumOption } from "../RendererOptions";
+import { StringOption, EnumOption, Option } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { StringTypeMapping } from "../TypeBuilder";
 
@@ -60,13 +60,10 @@ export default class CSharpTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("C#", ["cs", "csharp"], "cs");
-        this.setOptions([
-            this._namespaceOption,
-            this._versionOption,
-            this._denseOption,
-            this._listOption,
-            this._featuresOption
-        ]);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [this._namespaceOption, this._versionOption, this._denseOption, this._listOption, this._featuresOption];
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {

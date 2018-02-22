@@ -36,7 +36,7 @@ import {
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption, StringOption } from "../RendererOptions";
+import { BooleanOption, StringOption, Option } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined, assert, assertNever } from "../Support";
 
@@ -47,7 +47,10 @@ export class JavaTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Java", ["java"], "java");
-        this.setOptions([this._packageOption, this._justTypesOption]);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [this._packageOption, this._justTypesOption];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {

@@ -19,7 +19,7 @@ import { Name, Namer, funPrefixNamer } from "../Naming";
 import { UnionType, nullableFromUnion, Type, ClassType, matchType, removeNullFromUnion, EnumType } from "../Type";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { EnumOption } from "../RendererOptions";
+import { EnumOption, Option } from "../RendererOptions";
 import { defined } from "../Support";
 
 enum Density {
@@ -39,7 +39,10 @@ export default class RustTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Rust", ["rs", "rust", "rustlang"], "rs");
-        this.setOptions([this._denseOption]);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [this._denseOption];
     }
 }
 

@@ -29,7 +29,7 @@ import {
     stringEscape
 } from "../Strings";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { StringOption, BooleanOption, EnumOption } from "../RendererOptions";
+import { StringOption, BooleanOption, EnumOption, Option } from "../RendererOptions";
 import { Set } from "immutable";
 import { assert, defined } from "../Support";
 
@@ -59,13 +59,16 @@ export default class ObjectiveCTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
-        this.setOptions([
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [
             this._justTypesOption,
             this._classPrefixOption,
             this._featuresOption,
             this._extraCommentsOption,
             this._emitMarshallingFunctions
-        ]);
+        ];
     }
 
     protected get rendererClass(): new (

@@ -16,7 +16,7 @@ import {
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Name, Namer, funPrefixNamer } from "../Naming";
-import { BooleanOption, EnumOption } from "../RendererOptions";
+import { BooleanOption, EnumOption, Option } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
@@ -66,13 +66,16 @@ export default class SwiftTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
-        this.setOptions([
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [
             this._justTypesOption,
             this._classOption,
             this._denseOption,
             this._versionOption,
             this._convenienceInitializers
-        ]);
+        ];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -446,7 +449,11 @@ class SwiftRenderer extends ConvenienceRenderer {
 
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const description = this.descriptionForClassProperty(c, jsonName);
-                    if (!p.equals(lastProperty) || lastNames.length >= MAX_SAMELINE_PROPERTIES || description !== undefined) {
+                    if (
+                        !p.equals(lastProperty) ||
+                        lastNames.length >= MAX_SAMELINE_PROPERTIES ||
+                        description !== undefined
+                    ) {
                         emitLastProperty();
                     }
                     if (lastProperty === undefined) {

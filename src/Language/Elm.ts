@@ -3,7 +3,7 @@
 import { Map, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { EnumOption, StringOption, BooleanOption } from "../RendererOptions";
+import { EnumOption, StringOption, BooleanOption, Option } from "../RendererOptions";
 import { Type, matchType, nullableFromUnion, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
@@ -36,7 +36,10 @@ export default class ElmTargetLanguage extends TargetLanguage {
 
     constructor() {
         super("Elm", ["elm"], "elm");
-        this.setOptions([this._justTypesOption, this._moduleOption, this._listOption]);
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [this._justTypesOption, this._moduleOption, this._listOption];
     }
 
     get supportsOptionalClassProperties(): boolean {

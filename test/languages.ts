@@ -260,3 +260,22 @@ export const TypeScriptLanguage: Language = {
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/TypeScript.ts"]
 };
+
+export const JavaScriptLanguage: Language = {
+  name: "javascript",
+  base: "test/fixtures/javascript",
+  runCommand(sample: string) {
+    return `node main.js \"${sample}\"`;
+  },
+  // FIXME: enable once TypeScript supports unions
+  diffViaSchema: false,
+  allowMissingNull: false,
+  output: "TopLevel.js",
+  topLevel: "TopLevel",
+  skipJSON: [],
+  skipMiscJSON: false,
+  skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
+  rendererOptions: { "explicit-unions": "yes" },
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/JavaScript.ts"]
+};
