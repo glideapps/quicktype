@@ -43,6 +43,8 @@ export abstract class Renderer {
     private _currentEmitTarget: Sourcelike[];
     // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _needBlankLine: boolean;
+    // @ts-ignore: Initialized in startEmit, which is called from the constructor
+    private _preventBlankLine: boolean;
 
     constructor(protected readonly typeGraph: TypeGraph, protected readonly leadingComments: string[] | undefined) {
         this._finishedFiles = Map();
@@ -52,11 +54,17 @@ export abstract class Renderer {
     private startEmit(): void {
         this._currentEmitTarget = this._emitted = [];
         this._needBlankLine = false;
+        this._preventBlankLine = true; // no blank lines at start of file
+    }
+
+    private pushItem(item: Sourcelike): void {
+        this._currentEmitTarget.push(item);
+        this._preventBlankLine = false;
     }
 
     private emitNewline = (): void => {
         const nl = newline();
-        this._currentEmitTarget.push(nl);
+        this.pushItem(nl);
         this._lastNewline = nl;
     };
 
@@ -65,16 +73,18 @@ export abstract class Renderer {
             this.emitNewline();
             this._needBlankLine = false;
         }
-        this._currentEmitTarget.push(item);
+        this.pushItem(item);
     };
 
-    ensureBlankLine = (): void => {
-        if (this._emitted.length === 0 && this._currentEmitTarget.length === 0) {
-            // no blank lines at start of file
-            return;
-        }
+    protected ensureBlankLine(): void {
+        if (this._preventBlankLine) return;
         this._needBlankLine = true;
-    };
+    }
+
+    protected preventBlankLine(): void {
+        this._needBlankLine = false;
+        this._preventBlankLine = true;
+    }
 
     emitLine(...lineParts: Sourcelike[]): void {
         if (lineParts.length === 1) {
@@ -117,7 +127,7 @@ export abstract class Renderer {
         assert(this._currentEmitTarget === emitTarget, "_currentEmitTarget not restored correctly");
         this._currentEmitTarget = oldEmitTarget;
         const source = sourcelikeToSource(emitTarget);
-        this._currentEmitTarget.push(annotated(annotation, source));
+        this.pushItem(annotated(annotation, source));
     }
 
     emitIssue(message: string, emitter: () => void): void {

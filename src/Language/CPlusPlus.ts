@@ -319,11 +319,13 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
 
     private emitBlock = (line: Sourcelike, withSemicolon: boolean, f: () => void, withIndent: boolean = true): void => {
         this.emitLine(line, " {");
+        this.preventBlankLine();
         if (withIndent) {
             this.indent(f);
         } else {
             f();
         }
+        this.preventBlankLine();
         if (withSemicolon) {
             this.emitLine("};");
         } else {
