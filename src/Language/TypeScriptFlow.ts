@@ -9,17 +9,26 @@ import { Name } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { BooleanOption, Option } from "../RendererOptions";
 import { JavaScriptTargetLanguage, JavaScriptRenderer } from "./JavaScript";
+import { defined } from "../Support";
 
-export class TypeScriptTargetLanguage extends JavaScriptTargetLanguage {
+export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
     private readonly _justTypes = new BooleanOption("just-types", "Interfaces only", false);
     private readonly _declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
 
-    constructor() {
-        super("TypeScript", ["typescript", "ts", "tsx"], "ts");
-    }
-
     protected getOptions(): Option<any>[] {
         return [this._justTypes, this._declareUnions, this.omitRuntimeTypecheck];
+    }
+
+    protected abstract get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer;
+}
+
+export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
+    constructor() {
+        super("TypeScript", ["typescript", "ts", "tsx"], "ts");
     }
 
     protected get rendererClass(): new (
@@ -31,7 +40,7 @@ export class TypeScriptTargetLanguage extends JavaScriptTargetLanguage {
     }
 }
 
-class TypeScriptRenderer extends JavaScriptRenderer {
+abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     private readonly _inlineUnions: boolean;
 
     constructor(
@@ -79,14 +88,7 @@ class TypeScriptRenderer extends JavaScriptRenderer {
         );
     }
 
-    private emitEnum(e: EnumType, enumName: Name): void {
-        this.emitDescription(this.descriptionForType(e));
-        this.emitBlock(["export enum ", enumName], "", () => {
-            this.forEachEnumCase(e, "none", (name, jsonName) => {
-                this.emitLine(name, ` = "${utf16StringEscape(jsonName)}",`);
-            });
-        });
-    }
+    protected abstract emitEnum(e: EnumType, enumName: Name): void;
 
     private emitClass(c: ClassType, className: Name) {
         this.emitDescription(this.descriptionForType(c));
@@ -125,6 +127,55 @@ class TypeScriptRenderer extends JavaScriptRenderer {
         );
     }
 
+    protected emitUsageComments(): void {
+        if (this._justTypes) return;
+        super.emitUsageComments();
+    }
+
+    protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
+        return ["function to", name, "(json: string): ", this.sourceFor(t).source];
+    }
+
+    protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
+        const camelCaseName = modifySource(camelCase, name);
+        return ["function ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): string"];
+    }
+
+    protected get moduleLine(): string | undefined {
+        return undefined;
+    }
+
+    protected get castFunctionLine(): string {
+        return "function cast<T>(obj: any, typ: any): T";
+    }
+
+    protected get typeAnnotations(): { any: string; anyArray: string; string: string; boolean: string } {
+        return { any: ": any", anyArray: ": any[]", string: ": string", boolean: ": boolean" };
+    }
+
+    protected emitConvertModule(): void {
+        if (this._justTypes) return;
+        super.emitConvertModule();
+    }
+}
+
+class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
+    protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
+        return ["export ", super.deserializerFunctionLine(t, name)];
+    }
+
+    protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
+        return ["export ", super.serializerFunctionLine(t, name)];
+    }
+
+    protected get moduleLine(): string | undefined {
+        return "export module Convert";
+    }
+
+    protected emitModuleExports(): void {
+        return;
+    }
+
     protected emitUsageImportComment(): void {
         const topLevelNames: Sourcelike[] = [];
         this.forEachTopLevel(
@@ -137,38 +188,55 @@ class TypeScriptRenderer extends JavaScriptRenderer {
         this.emitLine("//   import { Convert", topLevelNames, ' } from "./file";');
     }
 
-    protected emitUsageComments(): void {
-        if (this._justTypes) return;
-        super.emitUsageComments();
+    protected emitEnum(e: EnumType, enumName: Name): void {
+        this.emitDescription(this.descriptionForType(e));
+        this.emitBlock(["export enum ", enumName], "", () => {
+            this.forEachEnumCase(e, "none", (name, jsonName) => {
+                this.emitLine(name, ` = "${utf16StringEscape(jsonName)}",`);
+            });
+        });
+    }
+}
+
+export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
+    constructor() {
+        super("Flow", ["flow"], "flow");
     }
 
-    protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
-        return ["export function to", name, "(json: string): ", this.sourceFor(t).source];
+    protected get rendererClass(): new (
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
+        return FlowRenderer;
+    }
+}
+
+class FlowRenderer extends TypeScriptFlowBaseRenderer {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
+        return ["Class", "Object", "String", "Array", "JSON"];
     }
 
-    protected serializerFunctionLine(t: Type, name: Name): Sourcelike {
-        const camelCaseName = modifySource(camelCase, name);
-        return ["export function ", camelCaseName, "ToJson(value: ", this.sourceFor(t).source, "): string"];
+    protected emitEnum(e: EnumType, enumName: Name): void {
+        this.emitDescription(this.descriptionForType(e));
+        const lines: string[][] = [];
+        this.forEachEnumCase(e, "none", (_, jsonName) => {
+            const maybeOr = lines.length === 0 ? "  " : "| ";
+            lines.push([maybeOr, '"', utf16StringEscape(jsonName), '"']);
+        });
+        defined(lines[lines.length - 1]).push(";");
+
+        this.emitLine("export type ", enumName, " =");
+        this.indent(() => {
+            for (const line of lines) {
+                this.emitLine(line);
+            }
+        });
     }
 
-    protected get moduleLine(): string | undefined {
-        return "export module Convert";
-    }
-
-    protected get castFunctionLine(): string {
-        return "function cast<T>(obj: any, typ: any): T";
-    }
-
-    protected get typeAnnotations(): { any: string; anyArray: string; string: string; boolean: string } {
-        return { any: ": any", anyArray: ": any[]", string: ": string", boolean: ": boolean" };
-    }
-
-    protected emitModuleExports(): void {
-        return;
-    }
-
-    protected emitConvertModule(): void {
-        if (this._justTypes) return;
-        super.emitConvertModule();
+    protected emitSourceStructure() {
+        this.emitLine("// @flow");
+        this.ensureBlankLine();
+        super.emitSourceStructure();
     }
 }

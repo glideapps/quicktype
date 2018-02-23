@@ -275,7 +275,61 @@ export const JavaScriptLanguage: Language = {
   skipJSON: [],
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
-  rendererOptions: { "explicit-unions": "yes" },
+  rendererOptions: {},
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/JavaScript.ts"]
+};
+
+export const FlowLanguage: Language = {
+  name: "flow",
+  base: "test/fixtures/flow",
+  runCommand(sample: string) {
+    return `flow check 1>&2 && flow-node main.js \"${sample}\"`;
+  },
+  diffViaSchema: false,
+  allowMissingNull: false,
+  output: "TopLevel.js",
+  topLevel: "TopLevel",
+  skipJSON: [
+    "blns-object.json",
+    "identifiers.json",
+    "simple-identifiers.json",
+    "name-style.json",
+    "nst-test-suite.json",
+    "kitchen-sink.json",
+    "00ec5.json",
+    "127a1.json",
+    "112b5.json",
+    "0cffa.json",
+    "2465e.json",
+    "14d38.json",
+    "26b49.json",
+    "26c9c.json",
+    "54147.json",
+    "617e8.json",
+    "5f7fe.json",
+    "7d397.json",
+    "76ae1.json",
+    "7681c.json",
+    "b4865.json",
+    "b9f64.json",
+    "b6fe5.json",
+    "ae9ca.json",
+    "c3303.json",
+    "e2a58.json",
+    "e324e.json",
+    "e64a0.json",
+    "e8b04.json",
+    "f6a65.json",
+    "f82d9.json",
+    "fcca3.json"
+  ],
+  skipMiscJSON: false,
+  skipSchema: [
+    "date-time.schema",
+    "keyword-unions.schema" // can't handle "constructor" property
+  ],
+  rendererOptions: { "explicit-unions": "yes" },
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Flow.ts"]
 };

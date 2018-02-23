@@ -554,6 +554,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.SwiftLanguage),
   new JSONFixture(languages.ObjectiveCLanguage),
   new JSONFixture(languages.TypeScriptLanguage),
+  new JSONFixture(languages.FlowLanguage),
   new JSONFixture(languages.JavaScriptLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
@@ -564,6 +565,7 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.ElmLanguage),
   new JSONSchemaFixture(languages.SwiftLanguage),
   new JSONSchemaFixture(languages.TypeScriptLanguage),
+  new JSONSchemaFixture(languages.FlowLanguage),
   new JSONSchemaFixture(languages.JavaScriptLanguage),
   new GraphQLFixture(languages.CSharpLanguage),
   new GraphQLFixture(languages.JavaLanguage),
@@ -572,5 +574,6 @@ export const allFixtures: Fixture[] = [
   new GraphQLFixture(languages.SwiftLanguage),
   new GraphQLFixture(languages.ObjectiveCLanguage, true),
   new GraphQLFixture(languages.TypeScriptLanguage),
+  new GraphQLFixture(languages.FlowLanguage),
   new GraphQLFixture(languages.JavaScriptLanguage)
 ];
