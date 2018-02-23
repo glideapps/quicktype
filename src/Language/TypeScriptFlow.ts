@@ -90,21 +90,25 @@ abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
     protected abstract emitEnum(e: EnumType, enumName: Name): void;
 
+    protected abstract emitClassBlock(c: ClassType, className: Name): void;
+
+    protected emitClassBlockBody(c: ClassType): void {
+        this.emitPropertyTable(c, (name, _jsonName, p) => {
+            const t = p.type;
+            let nullable = t instanceof UnionType ? nullableFromUnion(t) : null;
+            if (p.isOptional && nullable === null) {
+                nullable = t;
+            }
+            return [
+                [name, nullable !== null ? "?" : "", ": "],
+                [this.sourceFor(nullable !== null ? nullable : t).source, ";"]
+            ];
+        });
+    }
+
     private emitClass(c: ClassType, className: Name) {
         this.emitDescription(this.descriptionForType(c));
-        this.emitBlock(["export interface ", className], "", () => {
-            this.emitPropertyTable(c, (name, _jsonName, p) => {
-                const t = p.type;
-                let nullable = t instanceof UnionType ? nullableFromUnion(t) : null;
-                if (p.isOptional && nullable === null) {
-                    nullable = t;
-                }
-                return [
-                    [name, nullable !== null ? "?" : "", ": "],
-                    [this.sourceFor(nullable !== null ? nullable : t).source, ";"]
-                ];
-            });
-        });
+        this.emitClassBlock(c, className);
     }
 
     emitUnion(u: UnionType, unionName: Name) {
@@ -196,6 +200,12 @@ class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
             });
         });
     }
+
+    protected emitClassBlock(c: ClassType, className: Name): void {
+        this.emitBlock(["export interface ", className], "", () => {
+            this.emitClassBlockBody(c);
+        });
+    }
 }
 
 export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
@@ -231,6 +241,12 @@ class FlowRenderer extends TypeScriptFlowBaseRenderer {
             for (const line of lines) {
                 this.emitLine(line);
             }
+        });
+    }
+
+    protected emitClassBlock(c: ClassType, className: Name): void {
+        this.emitBlock(["export type ", className, " ="], ";", () => {
+            this.emitClassBlockBody(c);
         });
     }
 
