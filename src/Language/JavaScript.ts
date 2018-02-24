@@ -141,13 +141,13 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             _integerType => `0`,
             _doubleType => `3.14`,
             _stringType => `""`,
-            arrayType => ["A(", this.typeMapTypeFor(arrayType.items), ")"],
-            classType => ['O("', this.nameForNamedType(classType), '")'],
-            mapType => ["M(", this.typeMapTypeFor(mapType.values), ")"],
-            enumType => ['E("', this.nameForNamedType(enumType), '")'],
+            arrayType => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
+            classType => ['o("', this.nameForNamedType(classType), '")'],
+            mapType => ["m(", this.typeMapTypeFor(mapType.values), ")"],
+            enumType => ['e("', this.nameForNamedType(enumType), '")'],
             unionType => {
                 const children = unionType.children.map(this.typeMapTypeFor);
-                return ["U(", ...intercalate(", ", children).toArray(), ")"];
+                return ["u(", ...intercalate(", ", children).toArray(), ")"];
             }
         );
     };
@@ -156,7 +156,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         if (!p.isOptional || p.type.isNullable) {
             return this.typeMapTypeFor(p.type);
         }
-        return ["U(null, ", this.typeMapTypeFor(p.type), ")"];
+        return ["u(null, ", this.typeMapTypeFor(p.type), ")"];
     }
 
     emitBlock = (source: Sourcelike, end: string, emit: () => void) => {
@@ -297,23 +297,23 @@ function isValidObject(className${stringAnnotation}, val${anyAnnotation})${boole
     });
 }
 
-function A(typ${anyAnnotation}) {
+function a(typ${anyAnnotation}) {
     return { typ, isArray: true };
 }
 
-function E(name${stringAnnotation}) {
+function e(name${stringAnnotation}) {
     return { name, isEnum: true };
 }
 
-function U(...typs${anyArrayAnnotation}) {
+function u(...typs${anyArrayAnnotation}) {
     return { typs, isUnion: true };
 }
 
-function M(typ${anyAnnotation}) {
+function m(typ${anyAnnotation}) {
     return { typ, isMap: true };
 }
 
-function O(className${stringAnnotation}) {
+function o(className${stringAnnotation}) {
     return { cls: className, isObject: true };
 }
 `);

@@ -275,7 +275,27 @@ export const JavaScriptLanguage: Language = {
   skipJSON: [],
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
-  rendererOptions: { "explicit-unions": "yes" },
+  rendererOptions: {},
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/JavaScript.ts"]
+};
+
+export const FlowLanguage: Language = {
+  name: "flow",
+  base: "test/fixtures/flow",
+  runCommand(sample: string) {
+    return `flow check 1>&2 && flow-node main.js \"${sample}\"`;
+  },
+  diffViaSchema: false,
+  allowMissingNull: false,
+  output: "TopLevel.js",
+  topLevel: "TopLevel",
+  skipJSON: [],
+  skipMiscJSON: false,
+  skipSchema: [
+    "keyword-unions.schema" // can't handle "constructor" property
+  ],
+  rendererOptions: { "explicit-unions": "yes" },
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Flow.ts"]
 };
