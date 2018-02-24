@@ -943,7 +943,7 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
                 this.forEachTopLevel("none", (t, topLevelName) => {
                     const fromJsonExpression =
                         t instanceof ClassType
-                            ? ["[", topLevelName, " fromJSON:json encoding:NSUTF8Encoding error:&error]"]
+                            ? ["[", topLevelName, " fromJSON:json encoding:NSUTF8Encoding error:&error];"]
                             : [topLevelName, "FromJSON(json, NSUTF8Encoding, &error);"];
                     this.emitLine(
                         "//   ",
