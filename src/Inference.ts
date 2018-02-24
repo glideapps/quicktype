@@ -60,9 +60,9 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         return this._typeInference.inferClassType(this._cjson, typeAttributes, classes, this._fixed, forwardingRef);
     }
 
-    protected makeArray(arrays: NestedValueArray, typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
+    protected makeArray(arrays: NestedValueArray, _typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, typeAttributes, arrays, this._fixed, forwardingRef)
+            this._typeInference.inferType(this._cjson, Map(), arrays, this._fixed, forwardingRef)
         );
     }
 }
