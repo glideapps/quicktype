@@ -9,7 +9,9 @@ import {
     TypeBuilder,
     TypeLookerUp,
     addTypeToUnionAccumulator,
-    GraphRewriteBuilder
+    GraphRewriteBuilder,
+    UnionTypeProvider,
+    UnionAccumulator
 } from "./TypeBuilder";
 import { panic, assert, defined } from "./Support";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
@@ -48,12 +50,12 @@ function getCliqueProperties(
 class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef> {
     constructor(
         typeBuilder: TypeBuilder & TypeLookerUp,
+        typeProvider: UnionTypeProvider<TypeRef, TypeRef, TypeRef>,
         private readonly _makeEnums: boolean,
         private readonly _makeClassesFixed: boolean,
-        conflateNumbers: boolean,
         private readonly _unifyTypes: (typesToUnify: TypeRef[], typeAttributes: TypeAttributes) => TypeRef
     ) {
-        super(typeBuilder, conflateNumbers);
+        super(typeBuilder, typeProvider);
     }
 
     protected makeEnum(
@@ -153,23 +155,19 @@ export function unifyTypes<T extends Type>(
         return maybeTypeRef;
     }
 
-    const unionBuilder = new UnifyUnionBuilder(
-        typeBuilder,
-        makeEnums,
-        makeClassesFixed,
-        conflateNumbers,
-        (trefs, names) =>
-            unifyTypes(
-                Set(trefs.map(tref => tref.deref()[0])),
-                names,
-                typeBuilder,
-                makeEnums,
-                makeClassesFixed,
-                conflateNumbers
-            )
-    );
+    const accumulator = new UnionAccumulator<TypeRef, TypeRef, TypeRef>(conflateNumbers);
+    types.forEach(t => addTypeToUnionAccumulator(accumulator, t));
 
-    types.forEach(t => addTypeToUnionAccumulator(unionBuilder, t));
+    const unionBuilder = new UnifyUnionBuilder(typeBuilder, accumulator, makeEnums, makeClassesFixed, (trefs, names) =>
+        unifyTypes(
+            Set(trefs.map(tref => tref.deref()[0])),
+            names,
+            typeBuilder,
+            makeEnums,
+            makeClassesFixed,
+            conflateNumbers
+        )
+    );
 
     return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {
         typeBuilder.registerUnion(typeRefs, forwardingRef);
