@@ -1,7 +1,6 @@
 "use strict";
 
-import { Set, List, OrderedSet } from "immutable";
-import stringHash = require("string-hash");
+import { Set, List, OrderedSet, hash } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
 import { Type } from "./Type";
@@ -19,7 +18,7 @@ export class Declaration {
     }
 
     hashCode(): number {
-        return (stringHash(this.kind) + this.type.hashCode()) | 0;
+        return (hash(this.kind) + this.type.hashCode()) | 0;
     }
 }
 

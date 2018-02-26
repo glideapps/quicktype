@@ -2,12 +2,13 @@
 
 import * as stream from "stream";
 
+import { hash } from "immutable";
+
 import { defined, hashCodeInit, addHashCode, panic } from "./Support";
 import { isDate, isTime, isDateTime } from "./DateTime";
 
 const Combo = require("stream-json/Combo");
 const Source = require("stream-json/Source");
-const stringHash = require("string-hash");
 
 export enum Tag {
     Null,
@@ -308,27 +309,27 @@ export class CompressedJSON {
     };
 
     hashCode = (): number => {
-        let hash = hashCodeInit;
+        let hashAccumulator = hashCodeInit;
         for (const s of this._strings) {
-            hash = addHashCode(hash, stringHash(s));
+            hashAccumulator = addHashCode(hashAccumulator, hash(s));
         }
 
         for (const s of Object.getOwnPropertyNames(this._stringValues).sort()) {
-            hash = addHashCode(hash, stringHash(s));
-            hash = addHashCode(hash, this._stringValues[s]);
+            hashAccumulator = addHashCode(hashAccumulator, hash(s));
+            hashAccumulator = addHashCode(hashAccumulator, this._stringValues[s]);
         }
 
         for (const o of this._objects) {
             for (const v of o) {
-                hash = addHashCode(hash, v);
+                hashAccumulator = addHashCode(hashAccumulator, v);
             }
         }
         for (const o of this._arrays) {
             for (const v of o) {
-                hash = addHashCode(hash, v);
+                hashAccumulator = addHashCode(hashAccumulator, v);
             }
         }
 
-        return hash;
+        return hashAccumulator;
     };
 }

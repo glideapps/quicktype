@@ -1,11 +1,8 @@
 "use strict";
 
-import { Map, OrderedSet } from "immutable";
+import { Map, OrderedSet, hash } from "immutable";
 
 import { panic } from "./Support";
-
-const stringHash = require("string-hash");
-
 export class TypeAttributeKind<T> {
     public readonly combine: (a: T, b: T) => T;
 
@@ -52,7 +49,7 @@ export class TypeAttributeKind<T> {
     }
 
     hashCode(): number {
-        return stringHash(this.name);
+        return hash(this.name);
     }
 }
 
