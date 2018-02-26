@@ -10,7 +10,6 @@ import {
     TypeLookerUp,
     addTypeToUnionAccumulator,
     GraphRewriteBuilder,
-    UnionTypeProvider,
     UnionAccumulator
 } from "./TypeBuilder";
 import { panic, assert, defined } from "./Support";
@@ -50,12 +49,11 @@ function getCliqueProperties(
 class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef, TypeRef, TypeRef> {
     constructor(
         typeBuilder: TypeBuilder & TypeLookerUp,
-        typeProvider: UnionTypeProvider<TypeRef, TypeRef, TypeRef>,
         private readonly _makeEnums: boolean,
         private readonly _makeClassesFixed: boolean,
         private readonly _unifyTypes: (typesToUnify: TypeRef[], typeAttributes: TypeAttributes) => TypeRef
     ) {
-        super(typeBuilder, typeProvider);
+        super(typeBuilder);
     }
 
     protected makeEnum(
@@ -158,7 +156,7 @@ export function unifyTypes<T extends Type>(
     const accumulator = new UnionAccumulator<TypeRef, TypeRef, TypeRef>(conflateNumbers);
     types.forEach(t => addTypeToUnionAccumulator(accumulator, t));
 
-    const unionBuilder = new UnifyUnionBuilder(typeBuilder, accumulator, makeEnums, makeClassesFixed, (trefs, names) =>
+    const unionBuilder = new UnifyUnionBuilder(typeBuilder, makeEnums, makeClassesFixed, (trefs, names) =>
         unifyTypes(
             Set(trefs.map(tref => tref.deref()[0])),
             names,
@@ -171,6 +169,6 @@ export function unifyTypes<T extends Type>(
 
     return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {
         typeBuilder.registerUnion(typeRefs, forwardingRef);
-        return unionBuilder.buildUnion(false, typeAttributes, forwardingRef);
+        return unionBuilder.buildUnion(accumulator, false, typeAttributes, forwardingRef);
     });
 }

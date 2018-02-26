@@ -774,10 +774,7 @@ export function addTypeToUnionAccumulator(ua: UnionAccumulator<TypeRef, TypeRef,
 }
 
 export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass, TMap> {
-    constructor(
-        protected readonly typeBuilder: TBuilder,
-        private readonly _typeProvider: UnionTypeProvider<TArray, TClass, TMap>
-    ) {}
+    constructor(protected readonly typeBuilder: TBuilder) {}
 
     protected abstract makeEnum(
         cases: string[],
@@ -798,6 +795,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
     ): TypeRef;
 
     private makeTypeOfKind(
+        typeProvider: UnionTypeProvider<TArray, TClass, TMap>,
         kind: TypeKind,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
@@ -818,21 +816,11 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
             case "string":
                 return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
             case "enum":
-                return this.makeEnum(
-                    this._typeProvider.enumCases,
-                    this._typeProvider.enumCaseMap,
-                    typeAttributes,
-                    forwardingRef
-                );
+                return this.makeEnum(typeProvider.enumCases, typeProvider.enumCaseMap, typeAttributes, forwardingRef);
             case "class":
-                return this.makeClass(
-                    this._typeProvider.classes,
-                    this._typeProvider.maps,
-                    typeAttributes,
-                    forwardingRef
-                );
+                return this.makeClass(typeProvider.classes, typeProvider.maps, typeAttributes, forwardingRef);
             case "array":
-                return this.makeArray(this._typeProvider.arrays, typeAttributes, forwardingRef);
+                return this.makeArray(typeProvider.arrays, typeAttributes, forwardingRef);
             default:
                 if (kind === "union" || kind === "map") {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
@@ -841,11 +829,16 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         }
     }
 
-    buildUnion(unique: boolean, typeAttributes: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
-        const kinds = this._typeProvider.getMemberKinds();
+    buildUnion(
+        typeProvider: UnionTypeProvider<TArray, TClass, TMap>,
+        unique: boolean,
+        typeAttributes: TypeAttributes,
+        forwardingRef?: TypeRef
+    ): TypeRef {
+        const kinds = typeProvider.getMemberKinds();
 
         if (kinds.length === 1) {
-            const t = this.makeTypeOfKind(kinds[0], typeAttributes, forwardingRef);
+            const t = this.makeTypeOfKind(typeProvider, kinds[0], typeAttributes, forwardingRef);
             return t;
         }
 
@@ -855,7 +848,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
 
         const types: TypeRef[] = [];
         for (const kind of kinds) {
-            types.push(this.makeTypeOfKind(kind, Map(), undefined));
+            types.push(this.makeTypeOfKind(typeProvider, kind, Map(), undefined));
         }
         const typesSet = OrderedSet(types);
         if (union !== undefined) {

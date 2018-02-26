@@ -4,7 +4,7 @@ import { OrderedMap, Map } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { assertNever, assert } from "./Support";
-import { TypeBuilder, UnionBuilder, TypeRef, UnionTypeProvider, UnionAccumulator } from "./TypeBuilder";
+import { TypeBuilder, UnionBuilder, TypeRef, UnionAccumulator } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { ClassProperty } from "./Type";
 import { TypeAttributes } from "./TypeAttributes";
@@ -34,12 +34,11 @@ function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => v
 class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, NestedValueArray, any> {
     constructor(
         typeBuilder: TypeBuilder,
-        typeProvider: UnionTypeProvider<NestedValueArray, NestedValueArray, any>,
         private readonly _typeInference: TypeInference,
         private readonly _cjson: CompressedJSON,
         private readonly _fixed: boolean
     ) {
-        super(typeBuilder, typeProvider);
+        super(typeBuilder);
     }
 
     protected makeEnum(
@@ -145,8 +144,8 @@ export class TypeInference {
             }
         });
 
-        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, accumulator, this, cjson, fixed);
-        return unionBuilder.buildUnion(false, typeAttributes, forwardingRef);
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, cjson, fixed);
+        return unionBuilder.buildUnion(accumulator, false, typeAttributes, forwardingRef);
     }
 
     inferClassType(
