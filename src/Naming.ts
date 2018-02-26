@@ -1,7 +1,6 @@
 "use strict";
 
-import { Set, OrderedSet, List, Map, Collection } from "immutable";
-import stringHash = require("string-hash");
+import { Set, OrderedSet, List, Map, Collection, hash } from "immutable";
 
 import { defined, nonNull, assert, panic } from "./Support";
 
@@ -59,11 +58,11 @@ export class Namespace {
     }
 
     hashCode(): number {
-        let hash = stringHash(this._name);
+        let hashAccumulator = hash(this._name);
         if (this._parent !== undefined) {
-            hash += this._parent.hashCode();
+            hashAccumulator += this._parent.hashCode();
         }
-        return hash | 0;
+        return hashAccumulator | 0;
     }
 }
 
@@ -254,7 +253,7 @@ export class FixedName extends Name {
     }
 
     hashCode(): number {
-        return (super.hashCode() + stringHash(this._fixedName)) | 0;
+        return (super.hashCode() + hash(this._fixedName)) | 0;
     }
 }
 
