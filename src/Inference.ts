@@ -3,8 +3,8 @@
 import { OrderedMap, Map } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
-import { assertNever, assert, panic } from "./Support";
-import { TypeBuilder, UnionBuilder, TypeRef } from "./TypeBuilder";
+import { assertNever, assert } from "./Support";
+import { TypeBuilder, UnionBuilder, TypeRef, UnionTypeProvider, UnionAccumulator } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { ClassProperty } from "./Type";
 import { TypeAttributes } from "./TypeAttributes";
@@ -32,35 +32,41 @@ function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => v
 }
 
 class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, NestedValueArray, any> {
-    private _numValues?: number;
-
     constructor(
         typeBuilder: TypeBuilder,
+        typeProvider: UnionTypeProvider<NestedValueArray, NestedValueArray, any>,
         private readonly _typeInference: TypeInference,
         private readonly _cjson: CompressedJSON,
         private readonly _fixed: boolean
     ) {
-        super(typeBuilder, true);
+        super(typeBuilder, typeProvider);
     }
 
-    setNumValues = (n: number): void => {
-        if (this._numValues !== undefined) {
-            return panic("Can only set number of values once");
-        }
-        this._numValues = n;
-    };
-
-    protected makeEnum(cases: string[], counts: { [name: string]: number }, typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
+    protected makeEnum(
+        cases: string[],
+        counts: { [name: string]: number },
+        typeAttributes: TypeAttributes,
+        forwardingRef: TypeRef | undefined
+    ): TypeRef {
         const caseMap = OrderedMap(cases.map((c: string): [string, number] => [c, counts[c]]));
         return this.typeBuilder.getStringType(typeAttributes, caseMap, forwardingRef);
     }
 
-    protected makeClass(classes: NestedValueArray, maps: any[], typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
+    protected makeClass(
+        classes: NestedValueArray,
+        maps: any[],
+        typeAttributes: TypeAttributes,
+        forwardingRef: TypeRef | undefined
+    ): TypeRef {
         assert(maps.length === 0);
         return this._typeInference.inferClassType(this._cjson, typeAttributes, classes, this._fixed, forwardingRef);
     }
 
-    protected makeArray(arrays: NestedValueArray, _typeAttributes: TypeAttributes, forwardingRef: TypeRef | undefined): TypeRef {
+    protected makeArray(
+        arrays: NestedValueArray,
+        _typeAttributes: TypeAttributes,
+        forwardingRef: TypeRef | undefined
+    ): TypeRef {
         return this.typeBuilder.getArrayType(
             this._typeInference.inferType(this._cjson, Map(), arrays, this._fixed, forwardingRef)
         );
@@ -77,7 +83,7 @@ export class TypeInference {
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferEnums: boolean,
         private readonly _inferDates: boolean
-    ) { }
+    ) {}
 
     inferType(
         cjson: CompressedJSON,
@@ -86,62 +92,60 @@ export class TypeInference {
         fixed: boolean,
         forwardingRef?: TypeRef
     ): TypeRef {
-        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, cjson, fixed);
-        let numValues = 0;
+        const accumulator = new UnionAccumulator<NestedValueArray, NestedValueArray, any>(true);
 
         forEachValueInNestedValueArray(valueArray, value => {
-            numValues += 1;
             const t = valueTag(value);
             switch (t) {
                 case Tag.Null:
-                    unionBuilder.addNull();
+                    accumulator.addNull();
                     break;
                 case Tag.False:
                 case Tag.True:
-                    unionBuilder.addBool();
+                    accumulator.addBool();
                     break;
                 case Tag.Integer:
-                    unionBuilder.addInteger();
+                    accumulator.addInteger();
                     break;
                 case Tag.Double:
-                    unionBuilder.addDouble();
+                    accumulator.addDouble();
                     break;
                 case Tag.InternedString:
-                    if (this._inferEnums && !unionBuilder.haveString) {
+                    if (this._inferEnums && !accumulator.haveString) {
                         const s = cjson.getStringForValue(value);
                         if (canBeEnumCase(s)) {
-                            unionBuilder.addEnumCase(s);
+                            accumulator.addEnumCase(s);
                         } else {
-                            unionBuilder.addStringType("string");
+                            accumulator.addStringType("string");
                         }
                     } else {
-                        unionBuilder.addStringType("string");
+                        accumulator.addStringType("string");
                     }
                     break;
                 case Tag.UninternedString:
-                    unionBuilder.addStringType("string");
+                    accumulator.addStringType("string");
                     break;
                 case Tag.Object:
-                    unionBuilder.addClass(cjson.getObjectForValue(value));
+                    accumulator.addClass(cjson.getObjectForValue(value));
                     break;
                 case Tag.Array:
-                    unionBuilder.addArray(cjson.getArrayForValue(value));
+                    accumulator.addArray(cjson.getArrayForValue(value));
                     break;
                 case Tag.Date:
-                    unionBuilder.addStringType(this._inferDates ? "date" : "string");
+                    accumulator.addStringType(this._inferDates ? "date" : "string");
                     break;
                 case Tag.Time:
-                    unionBuilder.addStringType(this._inferDates ? "time" : "string");
+                    accumulator.addStringType(this._inferDates ? "time" : "string");
                     break;
                 case Tag.DateTime:
-                    unionBuilder.addStringType(this._inferDates ? "date-time" : "string");
+                    accumulator.addStringType(this._inferDates ? "date-time" : "string");
                     break;
                 default:
                     return assertNever(t);
             }
         });
 
-        unionBuilder.setNumValues(numValues);
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, accumulator, this, cjson, fixed);
         return unionBuilder.buildUnion(false, typeAttributes, forwardingRef);
     }
 

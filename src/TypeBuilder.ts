@@ -135,7 +135,7 @@ export abstract class TypeBuilder {
         private readonly _stringTypeMapping: StringTypeMapping,
         readonly alphabetizeProperties: boolean,
         private readonly _allPropertiesOptional: boolean
-    ) { }
+    ) {}
 
     addTopLevel(name: string, tref: TypeRef): void {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
@@ -423,7 +423,7 @@ export class TypeReconstituter {
         private readonly _makeClassUnique: boolean,
         private readonly _typeAttributes: TypeAttributes,
         private readonly _forwardingRef: TypeRef
-    ) { }
+    ) {}
 
     private useBuilder = (): TypeBuilder => {
         assert(!this._wasUsed, "TypeReconstituter used more than once");
@@ -524,7 +524,10 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         return entry;
     }
 
-    withForwardingRef(maybeForwardingRef: TypeRef | undefined, typeCreator: (forwardingRef: TypeRef) => TypeRef): TypeRef {
+    withForwardingRef(
+        maybeForwardingRef: TypeRef | undefined,
+        typeCreator: (forwardingRef: TypeRef) => TypeRef
+    ): TypeRef {
         if (maybeForwardingRef !== undefined) {
             return typeCreator(maybeForwardingRef);
         }
@@ -624,21 +627,37 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
     }
 }
 
-export class UnionAccumulator<TArray, TClass, TMap> {
+// FIXME: This interface is badly designed.  All the properties
+// should use immutable types, and getMemberKinds should be
+// implementable using the interface, not be part of it.  That
+// means we'll have to expose primitive types, too.
+export interface UnionTypeProvider<TArray, TClass, TMap> {
+    readonly arrays: TArray[];
+    readonly maps: TMap[];
+    readonly classes: TClass[];
+    // FIXME: We're losing order here.
+    enumCaseMap: { [name: string]: number };
+    enumCases: string[];
+
+    getMemberKinds(): TypeKind[];
+}
+
+export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider<TArray, TClass, TMap> {
     private _haveAny = false;
     private _haveNull = false;
     private _haveBool = false;
     private _haveInteger = false;
     private _haveDouble = false;
     private _stringTypes = OrderedSet<PrimitiveStringTypeKind>();
-    protected readonly arrays: TArray[] = [];
-    protected readonly maps: TMap[] = [];
-    protected readonly classes: TClass[] = [];
-    // FIXME: we're losing order here
-    protected enumCaseMap: { [name: string]: number } = {};
-    protected enumCases: string[] = [];
 
-    constructor(private readonly _conflateNumbers: boolean) { }
+    readonly arrays: TArray[] = [];
+    readonly maps: TMap[] = [];
+    readonly classes: TClass[] = [];
+    // FIXME: we're losing order here
+    enumCaseMap: { [name: string]: number } = {};
+    enumCases: string[] = [];
+
+    constructor(private readonly _conflateNumbers: boolean) {}
 
     get haveString(): boolean {
         return this._stringTypes.has("string");
@@ -754,14 +773,11 @@ export function addTypeToUnionAccumulator(ua: UnionAccumulator<TypeRef, TypeRef,
     );
 }
 
-export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass, TMap> extends UnionAccumulator<
-    TArray,
-    TClass,
-    TMap
-    > {
-    constructor(protected readonly typeBuilder: TBuilder, conflateNumbers: boolean) {
-        super(conflateNumbers);
-    }
+export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass, TMap> {
+    constructor(
+        protected readonly typeBuilder: TBuilder,
+        private readonly _typeProvider: UnionTypeProvider<TArray, TClass, TMap>
+    ) {}
 
     protected abstract makeEnum(
         cases: string[],
@@ -802,11 +818,21 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
             case "string":
                 return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
             case "enum":
-                return this.makeEnum(this.enumCases, this.enumCaseMap, typeAttributes, forwardingRef);
+                return this.makeEnum(
+                    this._typeProvider.enumCases,
+                    this._typeProvider.enumCaseMap,
+                    typeAttributes,
+                    forwardingRef
+                );
             case "class":
-                return this.makeClass(this.classes, this.maps, typeAttributes, forwardingRef);
+                return this.makeClass(
+                    this._typeProvider.classes,
+                    this._typeProvider.maps,
+                    typeAttributes,
+                    forwardingRef
+                );
             case "array":
-                return this.makeArray(this.arrays, typeAttributes, forwardingRef);
+                return this.makeArray(this._typeProvider.arrays, typeAttributes, forwardingRef);
             default:
                 if (kind === "union" || kind === "map") {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
@@ -816,7 +842,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
     }
 
     buildUnion(unique: boolean, typeAttributes: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
-        const kinds = this.getMemberKinds();
+        const kinds = this._typeProvider.getMemberKinds();
 
         if (kinds.length === 1) {
             const t = this.makeTypeOfKind(kinds[0], typeAttributes, forwardingRef);
