@@ -32,5 +32,7 @@ export const all: TargetLanguage[] = [
 ];
 
 export function languageNamed(name: string): TargetLanguage | undefined {
-    return find(all, l => includes(l.names, name) || l.displayName === name || l.extension === name);
+    const maybeTargetLanguage = find(all, l => includes(l.names, name) || l.displayName === name);
+    if (maybeTargetLanguage !== undefined) return maybeTargetLanguage;
+    return find(all, l => l.extension === name);
 }

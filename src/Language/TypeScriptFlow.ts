@@ -210,7 +210,7 @@ class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
 export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
     constructor() {
-        super("Flow", ["flow"], "flow");
+        super("Flow", ["flow"], "js");
     }
 
     protected get rendererClass(): new (
