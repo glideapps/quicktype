@@ -1,0 +1,43 @@
+{
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "stuff": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/thing"
+            }
+        }
+    },
+    "required": [
+        "stuff"
+    ],
+    "definitions": {
+        "thing": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "required": {
+                    "$ref": "#/definitions/anything"
+                },
+                "optional": {
+                    "$ref": "#/definitions/anything"
+                }
+            },
+            "required": [
+                "required"
+            ]
+        },
+        "anything": {
+            "type": [
+                "string",
+                "number",
+                "integer",
+                "boolean",
+                "object",
+                "array",
+                "null"
+            ]
+        }
+    }
+}

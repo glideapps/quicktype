@@ -157,6 +157,14 @@ class GoRenderer extends ConvenienceRenderer {
         }
     };
 
+    private propertyGoType(t: Type): Sourcelike {
+        const goType = this.goType(t, true);
+        if (t instanceof UnionType && nullableFromUnion(t) === null) {
+            return ["*", goType];
+        }
+        return goType;
+    }
+
     private goType = (t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
@@ -210,7 +218,7 @@ class GoRenderer extends ConvenienceRenderer {
     private emitClass = (c: ClassType, className: Name): void => {
         let columns: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-            const goType = this.goType(p.type, true);
+            const goType = this.propertyGoType(p.type);
             const comment = singleDescriptionComment(this.descriptionForClassProperty(c, jsonName));
             columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`'], comment]);
         });
