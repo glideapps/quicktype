@@ -15,6 +15,7 @@ export enum PathElementKind {
     Definition,
     OneOf,
     AnyOf,
+    AllOf,
     Property,
     AdditionalProperty,
     Items
@@ -25,6 +26,7 @@ export type PathElement =
     | { kind: PathElementKind.Definition; name: string }
     | { kind: PathElementKind.OneOf; index: number }
     | { kind: PathElementKind.AnyOf; index: number }
+    | { kind: PathElementKind.AllOf; index: number }
     | { kind: PathElementKind.Property; name: string }
     | { kind: PathElementKind.AdditionalProperty }
     | { kind: PathElementKind.Items };
@@ -56,15 +58,75 @@ function parseRef(ref: any): [Ref, string] {
         if (parts[i] === "#") {
             elements.push({ kind: PathElementKind.Root });
             refName = "Root";
+        } else if (parts[i] === "items") {
+            elements.push({ kind: PathElementKind.Items });
+            refName = "ArrayItems";
+        } else if (parts[i] === "additionalProperties") {
+            elements.push({ kind: PathElementKind.AdditionalProperty });
+            refName = "AdditionalProperties";
         } else if (parts[i] === "definitions" && i + 1 < parts.length) {
             refName = parts[i + 1];
             elements.push({ kind: PathElementKind.Definition, name: refName });
             i += 1;
+        } else if (parts[i] === "properties" && i + 1 < parts.length) {
+            refName = parts[i + 1];
+            elements.push({ kind: PathElementKind.Property, name: refName });
+            i += 1;
+        } else if (parts[i] === "oneOf" && i + 1 < parts.length) {
+            const index = Math.floor(parseInt(parts[i + 1]));
+            if (isNaN(index)) {
+                return panic(`Could not parse oneOf index ${parts[i + 1]}`);
+            }
+            elements.push({ kind: PathElementKind.OneOf, index });
+            i += 1;
+            refName = "OneOf";
+        } else if (parts[i] === "anyOf" && i + 1 < parts.length) {
+            const index = Math.floor(parseInt(parts[i + 1]));
+            if (isNaN(index)) {
+                return panic(`Could not parse anyOf index ${parts[i + 1]}`);
+            }
+            elements.push({ kind: PathElementKind.AnyOf, index });
+            i += 1;
+            refName = "AnyOf";
+        } else if (parts[i] === "allOf" && i + 1 < parts.length) {
+            const index = Math.floor(parseInt(parts[i + 1]));
+            if (isNaN(index)) {
+                return panic(`Could not parse allOf index ${parts[i + 1]}`);
+            }
+            elements.push({ kind: PathElementKind.AllOf, index });
+            i += 1;
+            refName = "AllOf";
         } else {
             panic(`Could not parse JSON schema reference ${ref}`);
         }
     }
     return [List(elements), refName];
+}
+
+function refToString(ref: Ref): string {
+    function elementToString(e: PathElement): string {
+        switch (e.kind) {
+            case PathElementKind.Root:
+                return "#";
+            case PathElementKind.Definition:
+                return `definitions/${e.name}`;
+            case PathElementKind.OneOf:
+                return `oneOf/${e.index.toString()}`;
+            case PathElementKind.AnyOf:
+                return `anyOf/${e.index.toString()}`;
+            case PathElementKind.AllOf:
+                return `allOf/${e.index.toString()}`;
+            case PathElementKind.Property:
+                return `properties/${e.name}`;
+            case PathElementKind.AdditionalProperty:
+                return "additionalProperties";
+            case PathElementKind.Items:
+                return "items";
+            default:
+                return assertNever(e);
+        }
+    }
+    return ref.map(elementToString).join("/");
 }
 
 function lookupDefinition(schema: StringMap, name: string): StringMap {
@@ -153,6 +215,8 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
                 return lookupRef(indexArray(local.oneOf, first.index), localPath, rest);
             case PathElementKind.AnyOf:
                 return lookupRef(indexArray(local.anyOf, first.index), localPath, rest);
+            case PathElementKind.AllOf:
+                return lookupRef(indexArray(local.allOf, first.index), localPath, rest);
             case PathElementKind.Property:
                 return lookupRef(lookupProperty(local, first.name), localPath, rest);
             case PathElementKind.AdditionalProperty:
@@ -241,13 +305,15 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
 
                 if (schema.additionalProperties !== undefined) {
                     const additional = schema.additionalProperties;
-                    if (additional === true) {
-                        return typeBuilder.getMapType(typeBuilder.getPrimitiveType("any"));
-                    } else if (additional === false) {
+                    // FIXME: We don't treat `additional === true`, which is also the default,
+                    // not according to spec.  It should be translated into a map type to any,
+                    // though that's not what the intention usually is.  Ideally, we'd find a
+                    // way to store additional attributes on regular classes.
+                    if (additional === false) {
                         if (schema.properties === undefined) {
                             typesInUnion.push(makeClass(path, typeAttributes, {}, required));
                         }
-                    } else {
+                    } else if (typeof additional === "object") {
                         typesInUnion.push(makeMap(path, typeAttributes, checkStringMap(additional)));
                     }
                 }
@@ -255,7 +321,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
                 if (typesInUnion.length === 0) {
                     typesInUnion.push(typeBuilder.getMapType(typeBuilder.getPrimitiveType("any")));
                 }
-                typeBuilder.setUnionMembers(unionType, OrderedSet(typesInUnion));
+                typeBuilder.setSetOperationMembers(unionType, OrderedSet(typesInUnion));
                 return unionType;
             case "array":
                 if (schema.items !== undefined) {
@@ -307,8 +373,22 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
             const types = cases.map((t, index) =>
                 toType(checkStringMap(t), path.push({ kind, index } as any), typeAttributes)
             );
-            typeBuilder.setUnionMembers(unionType, OrderedSet(types));
+            typeBuilder.setSetOperationMembers(unionType, OrderedSet(types));
             return unionType;
+        }
+
+        function convertAllOf(cases: any): TypeRef {
+            if (!Array.isArray(cases)) {
+                return panic(`allOf is not an array at ${refToString(path)}: ${cases}`);
+            }
+            const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
+            setTypeForPath(path, intersectionType);
+            // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
+            const types = cases.map((t, index) =>
+                toType(checkStringMap(t), path.push({ kind: PathElementKind.AllOf, index } as any), typeAttributes)
+            );
+            typeBuilder.setSetOperationMembers(intersectionType, OrderedSet(types));
+            return intersectionType;
         }
 
         if (schema.$ref !== undefined) {
@@ -323,6 +403,9 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
             let cases = schema.enum as any[];
             const haveNull = cases.indexOf(null) >= 0;
             cases = cases.filter(c => c !== null);
+            if (cases.filter(c => typeof c !== "string").length > 0) {
+                return panic(`Non-string enum cases are not supported, at ${refToString(path)}`);
+            }
             const tref = typeBuilder.getEnumType(typeAttributes, OrderedSet(checkStringArray(cases)));
             if (haveNull) {
                 return typeBuilder.getUnionType(
@@ -340,13 +423,15 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
                 const unionType = typeBuilder.getUniqueUnionType(typeAttributes, undefined);
                 setTypeForPath(path, unionType);
                 const types = jsonTypes.map(n => fromTypeName(schema, path, typeAttributes, n));
-                typeBuilder.setUnionMembers(unionType, OrderedSet(types));
+                typeBuilder.setSetOperationMembers(unionType, OrderedSet(types));
                 return unionType;
             }
         } else if (schema.oneOf !== undefined) {
             return convertOneOrAnyOf(schema.oneOf, PathElementKind.OneOf);
         } else if (schema.anyOf !== undefined) {
             return convertOneOrAnyOf(schema.anyOf, PathElementKind.AnyOf);
+        } else if (schema.allOf !== undefined) {
+            return convertAllOf(schema.allOf);
         } else {
             return typeBuilder.getPrimitiveType("any");
         }

@@ -16,7 +16,8 @@ import {
     StringType,
     ClassProperty,
     TypeKind,
-    matchTypeExhaustive
+    matchTypeExhaustive,
+    IntersectionType
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
@@ -371,10 +372,18 @@ export abstract class TypeBuilder {
         return this.addType(forwardingRef, tref => new UnionType(tref, members), attributes);
     }
 
-    setUnionMembers(ref: TypeRef, members: OrderedSet<TypeRef>): void {
+    getUniqueIntersectionType(
+        attributes: TypeAttributes,
+        members: OrderedSet<TypeRef> | undefined,
+        forwardingRef?: TypeRef
+    ): TypeRef {
+        return this.addType(forwardingRef, tref => new IntersectionType(tref, members), attributes);
+    }
+
+    setSetOperationMembers(ref: TypeRef, members: OrderedSet<TypeRef>): void {
         const type = ref.deref()[0];
-        if (!(type instanceof UnionType)) {
-            return panic("Tried to set members of non-union type");
+        if (!(type instanceof UnionType || type instanceof IntersectionType)) {
+            return panic("Tried to set members of non-set-operation type");
         }
         type.setMembers(members);
     }
@@ -425,51 +434,55 @@ export class TypeReconstituter {
         private readonly _forwardingRef: TypeRef
     ) {}
 
-    private useBuilder = (): TypeBuilder => {
+    private useBuilder(): TypeBuilder {
         assert(!this._wasUsed, "TypeReconstituter used more than once");
         this._wasUsed = true;
         return this._typeBuilder;
-    };
+    }
 
-    getPrimitiveType = (kind: PrimitiveTypeKind): TypeRef => {
+    getPrimitiveType(kind: PrimitiveTypeKind): TypeRef {
         return this.useBuilder().getPrimitiveType(kind, this._forwardingRef);
-    };
+    }
 
-    getStringType = (enumCases: OrderedMap<string, number> | undefined): TypeRef => {
+    getStringType(enumCases: OrderedMap<string, number> | undefined): TypeRef {
         return this.useBuilder().getStringType(this._typeAttributes, enumCases, this._forwardingRef);
-    };
+    }
 
-    getEnumType = (cases: OrderedSet<string>): TypeRef => {
+    getEnumType(cases: OrderedSet<string>): TypeRef {
         return this.useBuilder().getEnumType(defined(this._typeAttributes), cases, this._forwardingRef);
-    };
+    }
 
-    getMapType = (values: TypeRef): TypeRef => {
+    getMapType(values: TypeRef): TypeRef {
         return this.useBuilder().getMapType(values, this._forwardingRef);
-    };
+    }
 
-    getArrayType = (items: TypeRef): TypeRef => {
+    getArrayType(items: TypeRef): TypeRef {
         return this.useBuilder().getArrayType(items, this._forwardingRef);
-    };
+    }
 
-    getClassType = (properties: OrderedMap<string, ClassProperty>): TypeRef => {
+    getClassType(properties: OrderedMap<string, ClassProperty>): TypeRef {
         if (this._makeClassUnique) {
             return this.getUniqueClassType(false, properties);
         }
         return this.useBuilder().getClassType(defined(this._typeAttributes), properties, this._forwardingRef);
-    };
+    }
 
-    getUniqueClassType = (isFixed: boolean, properties?: OrderedMap<string, ClassProperty>): TypeRef => {
+    getUniqueClassType(isFixed: boolean, properties?: OrderedMap<string, ClassProperty>): TypeRef {
         return this.useBuilder().getUniqueClassType(
             defined(this._typeAttributes),
             isFixed,
             properties,
             this._forwardingRef
         );
-    };
+    }
 
-    getUnionType = (members: OrderedSet<TypeRef>): TypeRef => {
+    getUnionType(members: OrderedSet<TypeRef>): TypeRef {
         return this.useBuilder().getUnionType(defined(this._typeAttributes), members, this._forwardingRef);
-    };
+    }
+
+    getUniqueIntersectionType(members: OrderedSet<TypeRef>): TypeRef {
+        return this.useBuilder().getUniqueIntersectionType(defined(this._typeAttributes), members, this._forwardingRef);
+    }
 }
 
 export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements TypeLookerUp {
@@ -631,10 +644,10 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
 // should use immutable types, and getMemberKinds should be
 // implementable using the interface, not be part of it.  That
 // means we'll have to expose primitive types, too.
-export interface UnionTypeProvider<TArray, TClass, TMap> {
-    readonly arrays: TArray[];
-    readonly maps: TMap[];
-    readonly classes: TClass[];
+export interface UnionTypeProvider<TArrayData, TClassData, TMapData> {
+    readonly arrayData: TArrayData;
+    readonly mapData: TMapData;
+    readonly classData: TClassData;
     // FIXME: We're losing order here.
     enumCaseMap: { [name: string]: number };
     enumCases: string[];
@@ -642,7 +655,7 @@ export interface UnionTypeProvider<TArray, TClass, TMap> {
     getMemberKinds(): TypeKind[];
 }
 
-export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider<TArray, TClass, TMap> {
+export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider<TArray[], TClass[], TMap[]> {
     private _haveAny = false;
     private _haveNull = false;
     private _haveBool = false;
@@ -650,9 +663,9 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
     private _haveDouble = false;
     private _stringTypes = OrderedSet<PrimitiveStringTypeKind>();
 
-    readonly arrays: TArray[] = [];
-    readonly maps: TMap[] = [];
-    readonly classes: TClass[] = [];
+    readonly arrayData: TArray[] = [];
+    readonly mapData: TMap[] = [];
+    readonly classData: TClass[] = [];
     // FIXME: we're losing order here
     enumCaseMap: { [name: string]: number } = {};
     enumCases: string[] = [];
@@ -692,13 +705,13 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
         }
     }
     addArray(t: TArray): void {
-        this.arrays.push(t);
+        this.arrayData.push(t);
     }
     addClass(t: TClass): void {
-        this.classes.push(t);
+        this.classData.push(t);
     }
     addMap(t: TMap): void {
-        this.maps.push(t);
+        this.mapData.push(t);
     }
 
     addEnumCase(s: string, count: number = 1): void {
@@ -730,8 +743,8 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
             members.push(kind);
         });
         if (this.enumCases.length > 0) members.push("enum");
-        if (this.classes.length > 0 || this.maps.length > 0) members.push("class");
-        if (this.arrays.length > 0) members.push("array");
+        if (this.classData.length > 0 || this.mapData.length > 0) members.push("class");
+        if (this.arrayData.length > 0) members.push("array");
 
         if (members.length === 0) {
             return ["none"];
@@ -773,7 +786,7 @@ export function addTypeToUnionAccumulator(ua: UnionAccumulator<TypeRef, TypeRef,
     );
 }
 
-export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass, TMap> {
+export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TClassData, TMapData> {
     constructor(protected readonly typeBuilder: TBuilder) {}
 
     protected abstract makeEnum(
@@ -783,19 +796,19 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         forwardingRef: TypeRef | undefined
     ): TypeRef;
     protected abstract makeClass(
-        classes: TClass[],
-        maps: TMap[],
+        classes: TClassData,
+        maps: TMapData,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef;
     protected abstract makeArray(
-        arrays: TArray[],
+        arrays: TArrayData,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef;
 
     private makeTypeOfKind(
-        typeProvider: UnionTypeProvider<TArray, TClass, TMap>,
+        typeProvider: UnionTypeProvider<TArrayData, TClassData, TMapData>,
         kind: TypeKind,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
@@ -818,11 +831,11 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
             case "enum":
                 return this.makeEnum(typeProvider.enumCases, typeProvider.enumCaseMap, typeAttributes, forwardingRef);
             case "class":
-                return this.makeClass(typeProvider.classes, typeProvider.maps, typeAttributes, forwardingRef);
+                return this.makeClass(typeProvider.classData, typeProvider.mapData, typeAttributes, forwardingRef);
             case "array":
-                return this.makeArray(typeProvider.arrays, typeAttributes, forwardingRef);
+                return this.makeArray(typeProvider.arrayData, typeAttributes, forwardingRef);
             default:
-                if (kind === "union" || kind === "map") {
+                if (kind === "union" || kind === "map" || kind === "intersection") {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
                 }
                 return assertNever(kind);
@@ -830,7 +843,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
     }
 
     buildUnion(
-        typeProvider: UnionTypeProvider<TArray, TClass, TMap>,
+        typeProvider: UnionTypeProvider<TArrayData, TClassData, TMapData>,
         unique: boolean,
         typeAttributes: TypeAttributes,
         forwardingRef?: TypeRef
@@ -852,7 +865,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArray, TClass,
         }
         const typesSet = OrderedSet(types);
         if (union !== undefined) {
-            this.typeBuilder.setUnionMembers(union, typesSet);
+            this.typeBuilder.setSetOperationMembers(union, typesSet);
             return union;
         } else {
             return this.typeBuilder.getUnionType(typeAttributes, typesSet, forwardingRef);

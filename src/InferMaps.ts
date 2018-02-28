@@ -2,11 +2,11 @@
 
 import { Map, Set, OrderedSet } from "immutable";
 
-import { Type, ClassType, unionCasesEqual, removeNullFromType, ClassProperty, allTypeCases } from "./Type";
+import { Type, ClassType, setOperationCasesEqual, removeNullFromType, ClassProperty, allTypeCases } from "./Type";
 import { defined, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
-import { unifyTypes } from "./UnifyClasses";
+import { unifyTypes, unionBuilderForUnification } from "./UnifyClasses";
 import { MarkovChain, load, evaluate } from "./MarkovChain";
 
 const mapSizeThreshold = 20;
@@ -70,7 +70,7 @@ function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefi
             if (firstNonNullCases !== undefined) {
                 // The set of non-null cases for all other properties must
                 // be the the same, otherwise we won't infer a map.
-                if (!unionCasesEqual(nn, firstNonNullCases, (a, b) => a.structurallyCompatible(b))) {
+                if (!setOperationCasesEqual(nn, firstNonNullCases, (a, b) => a.structurallyCompatible(b))) {
                     canBeMap = false;
                     return false;
                 }
@@ -107,7 +107,13 @@ export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping
         // type graph.  Except we don't get Type objects but TypeRef objects,
         // which is a type-to-be.
         return builder.getMapType(
-            unifyTypes(shouldBe, c.getAttributes(), builder, false, false, conflateNumbers),
+            unifyTypes(
+                shouldBe,
+                c.getAttributes(),
+                builder,
+                unionBuilderForUnification(builder, false, false, conflateNumbers),
+                conflateNumbers
+            ),
             forwardingRef
         );
     }

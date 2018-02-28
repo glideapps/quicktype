@@ -6,7 +6,7 @@ import { ClassType, Type, nonNullTypeCases, ClassProperty } from "./Type";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
-import { unifyTypes } from "./UnifyClasses";
+import { unifyTypes, unionBuilderForUnification } from "./UnifyClasses";
 import { combineTypeAttributes } from "./TypeAttributes";
 
 const REQUIRED_OVERLAP = 3 / 4;
@@ -139,7 +139,14 @@ export function combineClasses(
     ): TypeRef {
         assert(clique.size > 0, "Clique can't be empty");
         const attributes = combineTypeAttributes(clique.map(c => c.getAttributes()).toArray());
-        return unifyTypes(clique, attributes, builder, false, false, conflateNumbers, forwardingRef);
+        return unifyTypes(
+            clique,
+            attributes,
+            builder,
+            unionBuilderForUnification(builder, false, false, conflateNumbers),
+            conflateNumbers,
+            forwardingRef
+        );
     }
 
     return graph.rewrite(stringTypeMapping, alphabetizeProperties, cliques, makeCliqueClass);

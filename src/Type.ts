@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Collection } from "immutable";
+import { OrderedSet, OrderedMap, Collection, is, hash } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
@@ -10,7 +10,21 @@ import { TypeAttributes } from "./TypeAttributes";
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
-export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map";
+export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map" | "intersection";
+
+export function isPrimitiveStringTypeKind(kind: TypeKind): kind is PrimitiveStringTypeKind {
+    return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
+}
+
+export function isNumberTypeKind(kind: TypeKind): kind is "integer" | "double" {
+    return kind === "integer" || kind === "double";
+}
+
+export function isPrimitiveTypeKind(kind: TypeKind): kind is PrimitiveTypeKind {
+    if (isPrimitiveStringTypeKind(kind)) return true;
+    if (isNumberTypeKind(kind)) return true;
+    return kind === "none" || kind === "any" || kind === "null" || kind === "bool";
+}
 
 function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     if (x.typeRef.getIndex() === y.typeRef.getIndex()) return true;
@@ -273,22 +287,32 @@ export class MapType extends Type {
     }
 }
 
-export class ClassProperty {
-    constructor(readonly typeRef: TypeRef, readonly isOptional: boolean) {}
-
-    get type(): Type {
-        return this.typeRef.deref()[0];
-    }
+export class GenericClassProperty<T> {
+    constructor(readonly typeData: T, readonly isOptional: boolean) {}
 
     equals(other: any): boolean {
-        if (!(other instanceof ClassProperty)) {
+        if (!(other instanceof GenericClassProperty)) {
             return false;
         }
-        return this.typeRef.equals(other.typeRef) && this.isOptional === other.isOptional;
+        return is(this.typeData, other.typeData) && this.isOptional === other.isOptional;
     }
 
     hashCode(): number {
-        return this.typeRef.hashCode() + (this.isOptional ? 17 : 23);
+        return hash(this.typeData) + (this.isOptional ? 17 : 23);
+    }
+}
+
+export class ClassProperty extends GenericClassProperty<TypeRef> {
+    constructor(typeRef: TypeRef, isOptional: boolean) {
+        super(typeRef, isOptional);
+    }
+
+    get typeRef(): TypeRef {
+        return this.typeData;
+    }
+
+    get type(): Type {
+        return this.typeRef.deref()[0];
     }
 }
 
@@ -418,12 +442,9 @@ export class EnumType extends Type {
     }
 }
 
-export class UnionType extends Type {
-    // @ts-ignore: This is initialized in the Type constructor
-    kind: "union";
-
-    constructor(typeRef: TypeRef, private _memberRefs?: OrderedSet<TypeRef>) {
-        super(typeRef, "union");
+export abstract class SetOperationType extends Type {
+    constructor(typeRef: TypeRef, kind: TypeKind, private _memberRefs?: OrderedSet<TypeRef>) {
+        super(typeRef, kind);
     }
 
     setMembers(memberRefs: OrderedSet<TypeRef>) {
@@ -433,7 +454,7 @@ export class UnionType extends Type {
         this._memberRefs = memberRefs;
     }
 
-    private getMemberRefs(): OrderedSet<TypeRef> {
+    protected getMemberRefs(): OrderedSet<TypeRef> {
         if (this._memberRefs === undefined) {
             return panic("Map members accessed before they were set");
         }
@@ -444,6 +465,51 @@ export class UnionType extends Type {
         return this.getMemberRefs().map(tref => tref.deref()[0]);
     }
 
+    get sortedMembers(): OrderedSet<Type> {
+        // FIXME: We're assuming no two members of the same kind.
+        return this.members.sortBy(t => t.kind);
+    }
+
+    get children(): OrderedSet<Type> {
+        return this.sortedMembers;
+    }
+
+    isPrimitive(): this is PrimitiveType {
+        return false;
+    }
+
+    protected structuralEqualityStep(other: UnionType, queue: (a: Type, b: Type) => boolean): boolean {
+        return setOperationCasesEqual(this.members, other.members, queue);
+    }
+}
+
+export class IntersectionType extends SetOperationType {
+    // @ts-ignore: This is initialized in the Type constructor
+    kind: "intersection";
+
+    constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
+        super(typeRef, "intersection", memberRefs);
+    }
+
+    get isNullable(): boolean {
+        return panic("isNullable not implemented for IntersectionType");
+    }
+
+    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
+        const members = this.getMemberRefs().map(f);
+        // FIXME: Eventually switch to non-unique
+        return builder.getUniqueIntersectionType(members);
+    }
+}
+
+export class UnionType extends SetOperationType {
+    // @ts-ignore: This is initialized in the Type constructor
+    kind: "union";
+
+    constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
+        super(typeRef, "union", memberRefs);
+    }
+
     get stringTypeMembers(): OrderedSet<Type> {
         return this.members.filter(t => ["string", "date", "time", "date-time", "enum"].indexOf(t.kind) >= 0);
     }
@@ -452,42 +518,29 @@ export class UnionType extends Type {
         return this.members.find((t: Type) => t.kind === kind);
     }
 
-    get children(): OrderedSet<Type> {
-        return this.sortedMembers;
-    }
-
     get isNullable(): boolean {
         return this.findMember("null") !== undefined;
     }
 
-    isPrimitive(): this is PrimitiveType {
-        return false;
+    get isCanonical(): boolean {
+        const members = this.members;
+        if (members.size <= 1) return false;
+        const kinds = members.map(t => t.kind);
+        if (kinds.size < members.size) return false;
+        if (kinds.has("union") || kinds.has("intersection")) return false;
+        if (kinds.has("none") || kinds.has("any")) return false;
+        if (kinds.has("string") && kinds.has("enum")) return false;
+        if (kinds.has("class") && kinds.has("map")) return false;
+        return true;
     }
 
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        // console.log(`${mapIndentation()}mapping union ${this.getCombinedName()}`);
-        const members = this.getMemberRefs().map(t => {
-            // const kind = t.deref()[0].kind;
-            // console.log(`${mapIndentation()}  member ${kind}`);
-            // mapPath.push(kind);
-            const result = f(t);
-            // mapPath.pop();
-            return result;
-        });
+        const members = this.getMemberRefs().map(f);
         return builder.getUnionType(members);
-    }
-
-    get sortedMembers(): OrderedSet<Type> {
-        // FIXME: We're assuming no two members of the same kind.
-        return this.members.sortBy(t => t.kind);
-    }
-
-    protected structuralEqualityStep(other: UnionType, queue: (a: Type, b: Type) => boolean): boolean {
-        return unionCasesEqual(this.members, other.members, queue);
     }
 }
 
-export function unionCasesEqual(
+export function setOperationCasesEqual(
     ma: OrderedSet<Type>,
     mb: OrderedSet<Type>,
     membersEqual: (a: Type, b: Type) => boolean
@@ -511,12 +564,24 @@ export function allTypeCases(t: Type): OrderedSet<Type> {
     return OrderedSet([t]);
 }
 
-export function removeNullFromUnion(t: UnionType): [PrimitiveType | null, OrderedSet<Type>] {
+// FIXME: We shouldn't have to sort here.  This is just because we're not getting
+// back the right order from JSON Schema, due to the changes the intersection types
+// introduced.
+export function removeNullFromUnion(
+    t: UnionType,
+    sortBy: boolean | ((t: Type) => any) = false
+): [PrimitiveType | null, OrderedSet<Type>] {
+    function sort(s: OrderedSet<Type>): OrderedSet<Type> {
+        if (sortBy === false) return s;
+        if (sortBy === true) return s.sortBy(m => m.kind);
+        return s.sortBy(sortBy);
+    }
+
     const nullType = t.findMember("null");
     if (nullType === undefined) {
-        return [null, t.members];
+        return [null, sort(t.members)];
     }
-    return [nullType as PrimitiveType, t.members.filterNot(isNull).toOrderedSet()];
+    return [nullType as PrimitiveType, sort(t.members.filterNot(isNull))];
 }
 
 export function removeNullFromType(t: Type): [PrimitiveType | null, OrderedSet<Type>] {
