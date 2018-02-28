@@ -9,26 +9,22 @@ import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
 import { combineTypeAttributes } from "./TypeAttributes";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
 
-function unionMembersRecursively(...unions: UnionType[]): OrderedSet<Type> {
-    let processedUnions = Set<UnionType>();
+function unionMembersRecursively(...types: Type[]): [OrderedSet<Type>, OrderedSet<UnionType>] {
+    let processedUnions = OrderedSet<UnionType>();
     let members = OrderedSet<Type>();
 
-    function addMembers(u: UnionType): void {
-        if (processedUnions.has(u)) return;
-        processedUnions = processedUnions.add(u);
-        u.members.forEach(t => {
-            if (t instanceof UnionType) {
-                addMembers(t);
-            } else {
-                members = members.add(t);
-            }
-        });
+    function addMembers(t: Type): void {
+        if (!(t instanceof UnionType)) {
+            members = members.add(t);
+            return;
+        }
+        if (processedUnions.has(t)) return;
+        processedUnions = processedUnions.add(t);
+        t.members.forEach(addMembers);
     }
 
-    for (const union of unions) {
-        addMembers(union);
-    }
-    return members;
+    types.forEach(addMembers);
+    return [members, processedUnions];
 }
 
 export function flattenUnions(
@@ -48,8 +44,15 @@ export function flattenUnions(
             needsRepeat = true;
             return builder.getUnionType(attributes, OrderedSet(trefs));
         });
-        const unionAttributes = combineTypeAttributes(types.map(t => t.getAttributes()).toArray());
-        return unifyTypes(types, unionAttributes, builder, unionBuilder, conflateNumbers, forwardingRef);
+        const [nonUnions, unions] = unionMembersRecursively(...types.toArray());
+        const unionAttributes = combineTypeAttributes(unions.map(t => t.getAttributes()).toArray());
+        assert(!nonUnions.isEmpty());
+        if (nonUnions.size === 1) {
+            const tref = builder.forceReconstituteType(defined(nonUnions.first()).typeRef, forwardingRef);
+            builder.addAttributes(tref, unionAttributes);
+            return tref;
+        }
+        return unifyTypes(nonUnions, unionAttributes, builder, unionBuilder, conflateNumbers, forwardingRef);
     }
 
     const unions = graph.allTypesUnordered().filter(t => t instanceof UnionType) as Set<UnionType>;
@@ -58,7 +61,7 @@ export function flattenUnions(
     const groups: Type[][] = [];
     let foundIntersection: boolean = false;
     nonCanonicalUnions.forEach(u => {
-        const members = unionMembersRecursively(u);
+        const [members, unionMembers] = unionMembersRecursively(u);
         assert(!members.isEmpty(), "We can't have an empty union");
         if (members.some(m => m instanceof IntersectionType)) {
             foundIntersection = true;
@@ -70,7 +73,7 @@ export function flattenUnions(
             if (maybeSet === undefined) {
                 maybeSet = OrderedSet([t]);
             }
-            maybeSet = maybeSet.add(u);
+            maybeSet = maybeSet.union(unionMembers);
             singleTypeGroups = singleTypeGroups.set(t, maybeSet);
         } else {
             groups.push([u]);
