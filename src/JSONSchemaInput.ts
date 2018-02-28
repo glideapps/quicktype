@@ -18,7 +18,8 @@ export enum PathElementKind {
     AllOf,
     Property,
     AdditionalProperty,
-    Items
+    Items,
+    Type
 }
 
 export type PathElement =
@@ -29,7 +30,8 @@ export type PathElement =
     | { kind: PathElementKind.AllOf; index: number }
     | { kind: PathElementKind.Property; name: string }
     | { kind: PathElementKind.AdditionalProperty }
-    | { kind: PathElementKind.Items };
+    | { kind: PathElementKind.Items }
+    | { kind: PathElementKind.Type; index: number };
 
 export type Ref = List<PathElement>;
 
@@ -122,6 +124,8 @@ function refToString(ref: Ref): string {
                 return "additionalProperties";
             case PathElementKind.Items:
                 return "items";
+            case PathElementKind.Type:
+                return `type/${e.index.toString()}`;
             default:
                 return assertNever(e);
         }
@@ -235,6 +239,8 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
                 return lookupRef(checkStringMap(local.additionalProperties), localPath, rest);
             case PathElementKind.Items:
                 return lookupRef(checkStringMap(local.items), localPath, rest);
+            case PathElementKind.Type:
+                return panic('Cannot look up path that indexes "type"');
             default:
                 return assertNever(first);
         }
@@ -425,7 +431,11 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
             } else {
                 const unionType = typeBuilder.getUniqueUnionType(typeAttributes, undefined);
                 setTypeForPath(path, unionType);
-                const types = jsonTypes.map(n => fromTypeName(schema, path, typeAttributes, n));
+                const types = jsonTypes
+                    .toList()
+                    .map((n, index) =>
+                        fromTypeName(schema, path.push({ kind: PathElementKind.Type, index }), typeAttributes, n)
+                    );
                 typeBuilder.setSetOperationMembers(unionType, OrderedSet(types));
                 return unionType;
             }
