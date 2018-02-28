@@ -338,7 +338,12 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         if (first === undefined) {
             f();
         } else {
-            this.emitBlock(["namespace ", first], false, () => this.emitNamespaces(namespaceNames.rest(), f), namespaceNames.size === 1);
+            this.emitBlock(
+                ["namespace ", first],
+                false,
+                () => this.emitNamespaces(namespaceNames.rest(), f),
+                namespaceNames.size === 1
+            );
         }
     };
 
@@ -367,7 +372,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
     };
 
     private variantType = (u: UnionType, inJsonNamespace: boolean): Sourcelike => {
-        const [maybeNull, nonNulls] = removeNullFromUnion(u);
+        const [maybeNull, nonNulls] = removeNullFromUnion(u, true);
         assert(nonNulls.size >= 2, "Variant not needed for less than two types.");
         const indirection = maybeNull !== null;
         const variant = this.cppTypeInOptional(
@@ -476,7 +481,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, json, p) => {
                     const t = p.type;
                     if (t instanceof UnionType) {
-                        const [maybeNull, nonNulls] = removeNullFromUnion(t);
+                        const [maybeNull, nonNulls] = removeNullFromUnion(t, true);
                         if (maybeNull !== null) {
                             this.emitLine(
                                 "_x.",
@@ -547,7 +552,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             ["array", "is_array"],
             ["enum", "is_string"]
         ];
-        const nonNulls = removeNullFromUnion(u)[1];
+        const nonNulls = removeNullFromUnion(u, true)[1];
         const variantType = this.cppTypeInOptional(
             nonNulls,
             { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
@@ -664,7 +669,7 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
             u =>
                 this.sourcelikeToString(
                     this.cppTypeInOptional(
-                        removeNullFromUnion(u)[1],
+                        removeNullFromUnion(u, true)[1],
                         { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: true },
                         false
                     )

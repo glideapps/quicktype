@@ -579,6 +579,12 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
     };
 
     private renderUnionDefinition = (u: UnionType, unionName: Name): void => {
+        function sortBy(t: Type): string {
+            const kind = t.kind;
+            if (kind === "class") return kind;
+            return "_" + kind;
+        }
+
         const renderUnionCase = (t: Type): void => {
             this.emitBlock(["if let x = try? container.decode(", this.swiftType(t), ".self)"], () => {
                 this.emitLine("self = .", this.nameForUnionMember(u, t), "(x)");
@@ -589,7 +595,7 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
         this.emitDescription(this.descriptionForType(u));
 
         const indirect = this.isCycleBreakerType(u) ? "indirect " : "";
-        const [maybeNull, nonNulls] = removeNullFromUnion(u);
+        const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
         this.emitBlock([indirect, "enum ", unionName, this.getProtocolString()], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");

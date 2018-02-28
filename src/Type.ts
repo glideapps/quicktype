@@ -564,12 +564,24 @@ export function allTypeCases(t: Type): OrderedSet<Type> {
     return OrderedSet([t]);
 }
 
-export function removeNullFromUnion(t: UnionType): [PrimitiveType | null, OrderedSet<Type>] {
+// FIXME: We shouldn't have to sort here.  This is just because we're not getting
+// back the right order from JSON Schema, due to the changes the intersection types
+// introduced.
+export function removeNullFromUnion(
+    t: UnionType,
+    sortBy: boolean | ((t: Type) => any) = false
+): [PrimitiveType | null, OrderedSet<Type>] {
+    function sort(s: OrderedSet<Type>): OrderedSet<Type> {
+        if (sortBy === false) return s;
+        if (sortBy === true) return s.sortBy(m => m.kind);
+        return s.sortBy(sortBy);
+    }
+
     const nullType = t.findMember("null");
     if (nullType === undefined) {
-        return [null, t.members];
+        return [null, sort(t.members)];
     }
-    return [nullType as PrimitiveType, t.members.filterNot(isNull).toOrderedSet()];
+    return [nullType as PrimitiveType, sort(t.members.filterNot(isNull))];
 }
 
 export function removeNullFromType(t: Type): [PrimitiveType | null, OrderedSet<Type>] {
