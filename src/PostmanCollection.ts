@@ -58,7 +58,7 @@ export function sourcesFromPostmanCollection(
     processCollection(JSON.parse(collectionJSON));
 
     const joinedDescription = descriptions.join("\n\n").trim();
-    let description: string | undefined = undefined;;
+    let description: string | undefined = undefined;
     if (joinedDescription !== "") {
         description = joinedDescription;
     }

@@ -236,7 +236,7 @@ class RustRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
 
-                if (nullable) return this.nullableRustType(nullable, withIssues);
+                if (nullable !== null) return this.nullableRustType(nullable, withIssues);
 
                 const [hasNull] = removeNullFromUnion(unionType);
 
@@ -246,7 +246,7 @@ class RustRenderer extends ConvenienceRenderer {
                     ? ["Box<", this.nameForNamedType(unionType), ">"]
                     : this.nameForNamedType(unionType);
 
-                return hasNull ? (["Option<", name, ">"] as Sourcelike) : name;
+                return hasNull !== null ? (["Option<", name, ">"] as Sourcelike) : name;
             }
         );
     };
