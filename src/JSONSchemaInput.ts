@@ -75,7 +75,7 @@ function parseRef(ref: any): [Ref, string] {
             elements.push({ kind: PathElementKind.Property, name: refName });
             i += 1;
         } else if (parts[i] === "oneOf" && i + 1 < parts.length) {
-            const index = Math.floor(parseInt(parts[i + 1]));
+            const index = Math.floor(parseInt(parts[i + 1], 10));
             if (isNaN(index)) {
                 return panic(`Could not parse oneOf index ${parts[i + 1]}`);
             }
@@ -83,7 +83,7 @@ function parseRef(ref: any): [Ref, string] {
             i += 1;
             refName = "OneOf";
         } else if (parts[i] === "anyOf" && i + 1 < parts.length) {
-            const index = Math.floor(parseInt(parts[i + 1]));
+            const index = Math.floor(parseInt(parts[i + 1], 10));
             if (isNaN(index)) {
                 return panic(`Could not parse anyOf index ${parts[i + 1]}`);
             }
@@ -91,7 +91,7 @@ function parseRef(ref: any): [Ref, string] {
             i += 1;
             refName = "AnyOf";
         } else if (parts[i] === "allOf" && i + 1 < parts.length) {
-            const index = Math.floor(parseInt(parts[i + 1]));
+            const index = Math.floor(parseInt(parts[i + 1], 10));
             if (isNaN(index)) {
                 return panic(`Could not parse allOf index ${parts[i + 1]}`);
             }
