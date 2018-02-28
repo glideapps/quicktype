@@ -3,7 +3,7 @@
 import { List, OrderedSet, Map, fromJS, Set } from "immutable";
 import * as pluralize from "pluralize";
 
-import { MapType, ClassProperty } from "./Type";
+import { ClassProperty } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "./Support";
 import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
@@ -202,7 +202,12 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
     let typeForPath = Map<List<any>, TypeRef>();
 
     function setTypeForPath(path: Ref, t: TypeRef): void {
-        typeForPath = typeForPath.set(makeImmutablePath(path), t);
+        const immutablePath = makeImmutablePath(path);
+        const maybeRef = typeForPath.get(immutablePath);
+        if (maybeRef !== undefined) {
+            assert(maybeRef === t, "Trying to set path again to different type");
+        }
+        typeForPath = typeForPath.set(immutablePath, t);
     }
 
     function lookupRef(local: StringMap, localPath: Ref, ref: Ref): [StringMap, Ref] {
@@ -252,8 +257,6 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
         if (!propertyDescriptions.isEmpty()) {
             attributes = propertyDescriptionsTypeAttributeKind.setInAttributes(attributes, propertyDescriptions);
         }
-        const result = typeBuilder.getUniqueClassType(attributes, true);
-        setTypeForPath(path, result);
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
         // we would use a JSON parser that preserves order.
@@ -266,24 +269,13 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
             const isOptional = !required.has(propName);
             return new ClassProperty(t, isOptional);
         });
-        typeBuilder.setClassProperties(result, props.toOrderedMap());
-        return result;
+        return typeBuilder.getUniqueClassType(attributes, true, props.toOrderedMap());
     }
 
     function makeMap(path: Ref, typeAttributes: TypeAttributes, additional: StringMap): TypeRef {
-        let valuesType: TypeRef | undefined = undefined;
-        let mustSet = false;
-        const result = typeBuilder.getLazyMapType(() => {
-            mustSet = true;
-            return valuesType;
-        });
-        setTypeForPath(path, result);
         path = path.push({ kind: PathElementKind.AdditionalProperty });
-        valuesType = toType(additional, path, singularizeTypeNames(typeAttributes));
-        if (mustSet) {
-            (result.deref()[0] as MapType).setValues(valuesType);
-        }
-        return result;
+        const valuesType = toType(additional, path, singularizeTypeNames(typeAttributes));
+        return typeBuilder.getMapType(valuesType);
     }
 
     function fromTypeName(schema: StringMap, path: Ref, typeAttributes: TypeAttributes, typeName: string): TypeRef {
@@ -457,7 +449,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
             return maybeType;
         }
         const result = convertToType(schema, path, typeAttributes);
-        setTypeForPath(immutablePath, result);
+        setTypeForPath(path, result);
         return result;
     }
 
