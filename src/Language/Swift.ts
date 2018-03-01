@@ -984,8 +984,9 @@ class JSONAny: Codable {
 
     emitAlamofireExtension() {
         this.ensureBlankLine();
-        this.emitMultiline(`extension DataRequest {
-fileprivate func decodableResponseSerializer<T: Decodable>() -> DataResponseSerializer<T> {
+        this.emitBlock("extension DataRequest", () => {
+            this
+                .emitMultiline(`fileprivate func decodableResponseSerializer<T: Decodable>() -> DataResponseSerializer<T> {
     return DataResponseSerializer { _, response, data, error in
         guard error == nil else { return .failure(error!) }
         
@@ -993,40 +994,31 @@ fileprivate func decodableResponseSerializer<T: Decodable>() -> DataResponseSeri
             return .failure(AFError.responseSerializationFailed(reason: .inputDataNil))
         }
         
-        return Result {
-            try JSONDecoder().decode(T.self, from: data)
-        }
+        return Result { try JSONDecoder().decode(T.self, from: data) }
     }
 }
 
 @discardableResult
-func responseDecodable<T: Decodable>(
-    queue: DispatchQueue? = nil,
-    completionHandler: @escaping (DataResponse<T>) -> Void)
-    -> Self
+func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<T>) -> Void) -> Self
 {
-    return response(
-        queue: queue,
-        responseSerializer: decodableResponseSerializer(),
-        completionHandler: completionHandler
-    )
+    return response(queue: queue, responseSerializer: decodableResponseSerializer(), completionHandler: completionHandler)
 }`);
-        this.ensureBlankLine();
-        this.forEachTopLevel("leading-and-interposing", (_, name) => {
-            this.emitLine("@discardableResult");
-            this.emitLine("func response", name, "(");
-            this.indent(() => {
-                this.emitLine("queue: DispatchQueue? = nil,");
-                this.emitLine("completionHandler: @escaping (DataResponse<", name, ">) -> Void)");
-                this.emitBlock("-> Self", () => {
-                    this.emitMultiline(`return response(
-    queue: queue,
-    responseSerializer: decodableResponseSerializer(),
-    completionHandler: completionHandler
-)`);
-                });
+            this.ensureBlankLine();
+            this.forEachTopLevel("leading-and-interposing", (_, name) => {
+                this.emitLine("@discardableResult");
+                this.emitBlock(
+                    [
+                        "func response",
+                        name,
+                        "(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<",
+                        name,
+                        ">) -> Void) -> Self"
+                    ],
+                    () => {
+                        this.emitLine(`return responseDecodable(queue: queue, completionHandler: completionHandler)`);
+                    }
+                );
             });
         });
-        this.emitLine("}");
     }
 }
