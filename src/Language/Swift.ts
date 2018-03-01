@@ -52,6 +52,8 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         true
     );
 
+    private readonly _alamofireHandlers = new BooleanOption("alamofire", "Generate Alamofire response handlers", true);
+
     private readonly _classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
         ["struct", false],
         ["class", true]
@@ -74,7 +76,8 @@ export default class SwiftTargetLanguage extends TargetLanguage {
             this._classOption,
             this._denseOption,
             this._versionOption,
-            this._convenienceInitializers
+            this._convenienceInitializers,
+            this._alamofireHandlers
         ];
     }
 
@@ -238,7 +241,8 @@ class SwiftRenderer extends ConvenienceRenderer {
         private readonly _useClasses: boolean,
         private readonly _dense: boolean,
         private readonly _version: Version,
-        private readonly _convenienceInitializers: boolean
+        private readonly _convenienceInitializers: boolean,
+        private readonly _alamofire: boolean
     ) {
         super(graph, leadingComments);
     }
@@ -368,6 +372,9 @@ class SwiftRenderer extends ConvenienceRenderer {
         }
         this.ensureBlankLine();
         this.emitLine("import Foundation");
+        if (!this._justTypes && this._alamofire) {
+            this.emitLine("import Alamofire");
+        }
     };
 
     private renderTopLevelAlias = (t: Type, name: Name): void => {
@@ -950,6 +957,10 @@ class JSONAny: Codable {
         );
 
         if (!this._justTypes) {
+            if (this._alamofire) {
+                this.emitAlamofireExtension();
+            }
+
             if (this._convenienceInitializers) {
                 this.ensureBlankLine();
                 this.emitMark("Convenience initializers");
@@ -969,5 +980,53 @@ class JSONAny: Codable {
             this.ensureBlankLine();
             this.emitSupportFunctions4();
         }
+    }
+
+    emitAlamofireExtension() {
+        this.ensureBlankLine();
+        this.emitMultiline(`extension DataRequest {
+fileprivate func decodableResponseSerializer<T: Decodable>() -> DataResponseSerializer<T> {
+    return DataResponseSerializer { _, response, data, error in
+        guard error == nil else { return .failure(error!) }
+        
+        guard let data = data else {
+            return .failure(AFError.responseSerializationFailed(reason: .inputDataNil))
+        }
+        
+        return Result {
+            try JSONDecoder().decode(T.self, from: data)
+        }
+    }
+}
+
+@discardableResult
+func responseDecodable<T: Decodable>(
+    queue: DispatchQueue? = nil,
+    completionHandler: @escaping (DataResponse<T>) -> Void)
+    -> Self
+{
+    return response(
+        queue: queue,
+        responseSerializer: decodableResponseSerializer(),
+        completionHandler: completionHandler
+    )
+}`);
+        this.ensureBlankLine();
+        this.forEachTopLevel("leading-and-interposing", (_, name) => {
+            this.emitLine("@discardableResult");
+            this.emitLine("func response", name, "(");
+            this.indent(() => {
+                this.emitLine("queue: DispatchQueue? = nil,");
+                this.emitLine("completionHandler: @escaping (DataResponse<", name, ">) -> Void)");
+                this.emitBlock("-> Self", () => {
+                    this.emitMultiline(`return response(
+    queue: queue,
+    responseSerializer: decodableResponseSerializer(),
+    completionHandler: completionHandler
+)`);
+                });
+            });
+        });
+        this.emitLine("}");
     }
 }
