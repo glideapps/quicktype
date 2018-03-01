@@ -1018,8 +1018,7 @@ class JSONAny: Codable {
 }
 
 @discardableResult
-func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<T>) -> Void) -> Self
-{
+func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<T>) -> Void) -> Self {
     return response(queue: queue, responseSerializer: decodableResponseSerializer(), completionHandler: completionHandler)
 }`);
             this.ensureBlankLine();
