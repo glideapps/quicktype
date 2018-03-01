@@ -248,6 +248,9 @@ class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
+        if (this._alamofire) {
+            return ["DataRequest", ...keywords];
+        }
         return keywords;
     }
 
@@ -369,6 +372,19 @@ class SwiftRenderer extends ConvenienceRenderer {
                     );
                 }
             });
+
+            if (this._alamofire) {
+                this.emitLine("//");
+                this.emitLine("// To parse values from Alamofire responses:");
+                this.forEachTopLevel("none", (_, name) => {
+                    this.emitLine("//");
+                    this.emitLine("//   Alamofire.request(url).response", name, "{ response in");
+                    this.emitLine("//     if let ", modifySource(camelCase, name), " = response.result.value {");
+                    this.emitLine("//       ...");
+                    this.emitLine("//     }");
+                    this.emitLine("//   }");
+                });
+            }
         }
         this.ensureBlankLine();
         this.emitLine("import Foundation");
@@ -958,6 +974,9 @@ class JSONAny: Codable {
 
         if (!this._justTypes) {
             if (this._alamofire) {
+                this.ensureBlankLine();
+                this.emitMark("Alamofire response handlers", true);
+                this.ensureBlankLine();
                 this.emitAlamofireExtension();
             }
 
@@ -999,8 +1018,7 @@ class JSONAny: Codable {
 }
 
 @discardableResult
-func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<T>) -> Void) -> Self
-{
+func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, completionHandler: @escaping (DataResponse<T>) -> Void) -> Self {
     return response(queue: queue, responseSerializer: decodableResponseSerializer(), completionHandler: completionHandler)
 }`);
             this.ensureBlankLine();
