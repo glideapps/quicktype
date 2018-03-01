@@ -372,6 +372,19 @@ class SwiftRenderer extends ConvenienceRenderer {
                     );
                 }
             });
+
+            if (this._alamofire) {
+                this.emitLine("//");
+                this.emitLine("// To parse values from Alamofire responses:");
+                this.forEachTopLevel("none", (_, name) => {
+                    this.emitLine("//");
+                    this.emitLine("//   Alamofire.request(url).response", name, "{ response in");
+                    this.emitLine("//     if let ", modifySource(camelCase, name), " = response.result.value {");
+                    this.emitLine("//       ...");
+                    this.emitLine("//     }");
+                    this.emitLine("//   }");
+                });
+            }
         }
         this.ensureBlankLine();
         this.emitLine("import Foundation");
