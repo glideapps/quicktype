@@ -52,7 +52,7 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         true
     );
 
-    private readonly _alamofireHandlers = new BooleanOption("alamofire", "Generate Alamofire response handlers", true);
+    private readonly _alamofireHandlers = new BooleanOption("alamofire", "Generate Alamofire response handlers", false);
 
     private readonly _classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
         ["struct", false],
