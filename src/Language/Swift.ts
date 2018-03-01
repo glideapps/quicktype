@@ -48,13 +48,13 @@ export default class SwiftTargetLanguage extends TargetLanguage {
 
     private readonly _convenienceInitializers = new BooleanOption(
         "initializers",
-        "Generate convenience initializers",
+        "Convenience initializers",
         true
     );
 
-    private readonly _alamofireHandlers = new BooleanOption("alamofire", "Generate Alamofire response handlers", false);
+    private readonly _alamofireHandlers = new BooleanOption("alamofire", "Alamofire extensions", false);
 
-    private readonly _classOption = new EnumOption("struct-or-class", "Generate structs or classes", [
+    private readonly _classOption = new EnumOption("struct-or-class", "Structs or classes", [
         ["struct", false],
         ["class", true]
     ]);
