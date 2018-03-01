@@ -248,6 +248,9 @@ class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
+        if (this._alamofire) {
+            return ["DataRequest", ...keywords];
+        }
         return keywords;
     }
 
