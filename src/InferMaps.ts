@@ -2,7 +2,7 @@
 
 import { Map, Set, OrderedSet } from "immutable";
 
-import { Type, ClassType, setOperationCasesEqual, removeNullFromType, ClassProperty, allTypeCases } from "./Type";
+import { Type, ClassType, setOperationCasesEqual, removeNullFromType, ClassProperty } from "./Type";
 import { defined, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
@@ -78,7 +78,7 @@ function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefi
                 firstNonNullCases = nn;
             }
         }
-        allCases = allCases.union(allTypeCases(p.type));
+        allCases = allCases.add(p.type);
     });
     if (!canBeMap) {
         return undefined;

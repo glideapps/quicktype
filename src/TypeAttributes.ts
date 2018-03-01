@@ -2,7 +2,7 @@
 
 import { Map, OrderedSet, hash } from "immutable";
 
-import { panic } from "./Support";
+import { panic, setUnion } from "./Support";
 export class TypeAttributeKind<T> {
     public readonly combine: (a: T, b: T) => T;
 
@@ -55,6 +55,8 @@ export class TypeAttributeKind<T> {
 
 export type TypeAttributes = Map<TypeAttributeKind<any>, any>;
 
+export const emptyTypeAttributes: TypeAttributes = Map();
+
 export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAttributes {
     if (attributeArray.length === 0) return Map();
     const first = attributeArray[0];
@@ -62,12 +64,8 @@ export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAtt
     return first.mergeWith((aa, ab, kind) => kind.combine(aa, ab), ...rest);
 }
 
-function combineDescriptions(a: OrderedSet<string>, b: OrderedSet<string>): OrderedSet<string> {
-    return a.union(b);
-}
-
-export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", combineDescriptions);
+export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", setUnion);
 export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, OrderedSet<string>>>(
     "propertyDescriptions",
-    (a, b) => a.mergeWith(combineDescriptions, b)
+    (a, b) => a.mergeWith(setUnion, b)
 );

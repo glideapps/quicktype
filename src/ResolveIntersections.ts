@@ -10,7 +10,8 @@ import {
     UnionTypeProvider,
     UnionBuilder,
     TypeBuilder,
-    TypeLookerUp
+    TypeLookerUp,
+    TypeAttributeMap
 } from "./TypeBuilder";
 import {
     IntersectionType,
@@ -33,7 +34,7 @@ import {
     TypeKind
 } from "./Type";
 import { assert, defined, panic } from "./Support";
-import { combineTypeAttributes, TypeAttributes } from "./TypeAttributes";
+import { combineTypeAttributes, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 
 function intersectionMembersRecursively(intersection: IntersectionType): OrderedSet<Type> {
     const types: Type[] = [];
@@ -219,10 +220,14 @@ class IntersectionAccumulator
 
     private addUnion(u: UnionType): void {
         this.addUnionSet(u.members);
-        // FIXME: add attributes
     }
 
-    addType(t: Type): void {
+    addType(t: Type): TypeAttributes {
+        // FIXME: We're very lazy here.  We're supposed to keep type
+        // attributes separately for each type kind, but we collect
+        // them all together and return them as attributes for the
+        // overall result type.
+        let attributes = t.getAttributes();
         matchTypeExhaustive<void>(
             t,
             _noneType => {
@@ -243,6 +248,7 @@ class IntersectionAccumulator
             timeType => this.addUnionSet(OrderedSet([timeType])),
             dateTimeType => this.addUnionSet(OrderedSet([dateTimeType]))
         );
+        return attributes;
     }
 
     get arrayData(): OrderedSet<Type> {
@@ -270,7 +276,7 @@ class IntersectionAccumulator
         return caseMap;
     }
 
-    getMemberKinds(): TypeKind[] {
+    getMemberKinds(): TypeAttributeMap<TypeKind> {
         let kinds: OrderedSet<TypeKind> = defined(this._primitiveStringTypes).union(defined(this._otherPrimitiveTypes));
         if (this._enumCases !== undefined && this._enumCases.size > 0) {
             kinds = kinds.add("enum");
@@ -283,7 +289,7 @@ class IntersectionAccumulator
         } else if (this._classProperties !== undefined) {
             kinds = kinds.add("class");
         }
-        return kinds.toArray();
+        return kinds.toOrderedMap().map(_ => emptyTypeAttributes);
     }
 }
 
@@ -300,6 +306,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
 
         const first = defined(reconstitutedMembers.first());
         if (reconstitutedMembers.size === 1) {
+            this.typeBuilder.addAttributes(first, attributes);
             return first;
         }
 
@@ -337,7 +344,9 @@ class IntersectionUnionBuilder extends UnionBuilder<
         } else if (maybeMapValueTypes !== undefined) {
             // FIXME: attributes
             const valuesType = this.makeIntersection(maybeMapValueTypes, Map());
-            return this.typeBuilder.getMapType(valuesType, forwardingRef);
+            const mapType = this.typeBuilder.getMapType(valuesType, forwardingRef);
+            this.typeBuilder.addAttributes(mapType, typeAttributes);
+            return mapType;
         } else {
             return panic("Either classes or maps must be given");
         }
@@ -345,12 +354,14 @@ class IntersectionUnionBuilder extends UnionBuilder<
 
     protected makeArray(
         arrays: OrderedSet<Type>,
-        _typeAttributes: TypeAttributes,
+        typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         // FIXME: attributes
         const itemsType = this.makeIntersection(arrays, Map());
-        return this.typeBuilder.getArrayType(itemsType, forwardingRef);
+        const tref = this.typeBuilder.getArrayType(itemsType, forwardingRef);
+        this.typeBuilder.addAttributes(tref, typeAttributes);
+        return tref;
     }
 }
 

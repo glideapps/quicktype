@@ -557,13 +557,6 @@ export function setOperationCasesEqual(
     return !failed;
 }
 
-export function allTypeCases(t: Type): OrderedSet<Type> {
-    if (t instanceof UnionType) {
-        return t.members;
-    }
-    return OrderedSet([t]);
-}
-
 // FIXME: We shouldn't have to sort here.  This is just because we're not getting
 // back the right order from JSON Schema, due to the changes the intersection types
 // introduced.

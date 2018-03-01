@@ -2,7 +2,7 @@
 
 import { Set, OrderedMap, OrderedSet, Map } from "immutable";
 
-import { ClassType, Type, assertIsClass, ClassProperty, allTypeCases, UnionType } from "./Type";
+import { ClassType, Type, assertIsClass, ClassProperty, UnionType } from "./Type";
 import {
     TypeRef,
     UnionBuilder,
@@ -29,7 +29,7 @@ function getCliqueProperties(
                 properties = properties.set(name, p);
             }
             p[1] += 1;
-            p[0] = p[0].union(allTypeCases(cp.type));
+            p[0] = p[0].add(cp.type);
             if (cp.isOptional) {
                 p[2] = true;
             }
@@ -160,18 +160,22 @@ export function unifyTypes<T extends Type>(
     } else if (types.count() === 1) {
         const first = defined(types.first());
         if (!(first instanceof UnionType)) {
-            return typeBuilder.lookupTypeRef(first.typeRef);
+            const tref = typeBuilder.lookupTypeRef(first.typeRef);
+            typeBuilder.addAttributes(tref, typeAttributes);
+            return tref;
         }
     }
 
     const typeRefs = types.toArray().map(t => t.typeRef);
     const maybeTypeRef = typeBuilder.lookupTypeRefs(typeRefs);
     if (maybeTypeRef !== undefined) {
+        typeBuilder.addAttributes(maybeTypeRef, typeAttributes);
         return maybeTypeRef;
     }
 
     const accumulator = new UnionAccumulator<TypeRef, TypeRef, TypeRef>(conflateNumbers);
-    types.forEach(t => addTypeToUnionAccumulator(accumulator, t));
+    const nestedAttributes = combineTypeAttributes(types.map(t => addTypeToUnionAccumulator(accumulator, t)).toArray());
+    typeAttributes = combineTypeAttributes([typeAttributes, nestedAttributes]);
 
     return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {
         typeBuilder.registerUnion(typeRefs, forwardingRef);

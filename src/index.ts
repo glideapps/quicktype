@@ -149,10 +149,13 @@ export class Run {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
+        const haveSchemas = Object.getOwnPropertyNames(this._allInputs.schemas).length > 0;
         const typeBuilder = new TypeGraphBuilder(
             stringTypeMapping,
             this._options.alphabetizeProperties,
-            this._options.allPropertiesOptional
+            this._options.allPropertiesOptional,
+            haveSchemas,
+            false
         );
 
         if (this._options.findSimilarClassesSchema !== undefined) {
@@ -209,7 +212,7 @@ export class Run {
 
         let graph = typeBuilder.finish();
 
-        if (Object.getOwnPropertyNames(this._allInputs.schemas).length > 0) {
+        if (haveSchemas) {
             let intersectionsDone = false;
             let unionsDone = false;
             do {
