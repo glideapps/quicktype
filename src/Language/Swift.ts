@@ -974,6 +974,9 @@ class JSONAny: Codable {
 
         if (!this._justTypes) {
             if (this._alamofire) {
+                this.ensureBlankLine();
+                this.emitMark("Alamofire response handlers", true);
+                this.ensureBlankLine();
                 this.emitAlamofireExtension();
             }
 
