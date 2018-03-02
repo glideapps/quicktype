@@ -35,8 +35,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
     constructor(
         typeBuilder: TypeBuilder,
         private readonly _typeInference: TypeInference,
-        private readonly _cjson: CompressedJSON,
-        private readonly _fixed: boolean
+        private readonly _cjson: CompressedJSON
     ) {
         super(typeBuilder);
     }
@@ -58,7 +57,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         assert(maps.length === 0);
-        return this._typeInference.inferClassType(this._cjson, typeAttributes, classes, this._fixed, forwardingRef);
+        return this._typeInference.inferClassType(this._cjson, typeAttributes, classes, forwardingRef);
     }
 
     protected makeArray(
@@ -67,7 +66,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, Map(), arrays, this._fixed, forwardingRef)
+            this._typeInference.inferType(this._cjson, Map(), arrays, forwardingRef)
         );
     }
 }
@@ -82,13 +81,12 @@ export class TypeInference {
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferEnums: boolean,
         private readonly _inferDates: boolean
-    ) {}
+    ) { }
 
     inferType(
         cjson: CompressedJSON,
         typeAttributes: TypeAttributes,
         valueArray: NestedValueArray,
-        fixed: boolean,
         forwardingRef?: TypeRef
     ): TypeRef {
         const accumulator = new UnionAccumulator<NestedValueArray, NestedValueArray, any>(true);
@@ -144,7 +142,7 @@ export class TypeInference {
             }
         });
 
-        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, cjson, fixed);
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, cjson);
         return unionBuilder.buildUnion(accumulator, false, typeAttributes, forwardingRef);
     }
 
@@ -152,7 +150,6 @@ export class TypeInference {
         cjson: CompressedJSON,
         typeAttributes: TypeAttributes,
         objects: NestedValueArray,
-        fixed: boolean,
         forwardingRef?: TypeRef
     ): TypeRef {
         const propertyNames: string[] = [];
@@ -173,16 +170,12 @@ export class TypeInference {
         const properties: [string, ClassProperty][] = [];
         for (const key of propertyNames) {
             const values = propertyValues[key];
-            const t = this.inferType(cjson, Map(), values, false);
+            const t = this.inferType(cjson, Map(), values);
             const isOptional = values.length < objects.length;
             properties.push([key, new ClassProperty(t, isOptional)]);
         }
 
         const propertyMap = OrderedMap(properties);
-        if (fixed) {
-            return this._typeBuilder.getUniqueClassType(typeAttributes, true, propertyMap, forwardingRef);
-        } else {
-            return this._typeBuilder.getClassType(typeAttributes, propertyMap, forwardingRef);
-        }
+        return this._typeBuilder.getClassType(typeAttributes, propertyMap, forwardingRef);
     }
 }
