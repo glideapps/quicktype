@@ -186,17 +186,14 @@ export class Run {
 
         // JSON
         const doInferEnums = this._options.inferEnums;
-        const numSamples = Object.keys(this._allInputs.samples).length;
-        if (numSamples > 0) {
+        if (Object.keys(this._allInputs.samples).length > 0) {
             const inference = new TypeInference(typeBuilder, doInferEnums, this._options.inferDates);
-            const fixedTopLevels = numSamples > 1;
 
             Map(this._allInputs.samples).forEach(({ samples, description }, name) => {
                 const tref = inference.inferType(
                     this._compressedJSON as CompressedJSON,
                     makeNamesTypeAttributes(name, false),
-                    samples,
-                    fixedTopLevels
+                    samples
                 );
                 typeBuilder.addTopLevel(name, tref);
                 if (description !== undefined) {
