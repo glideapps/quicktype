@@ -572,6 +572,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
 
         let sources: TypeSource[] = [];
         let leadingComments: string[] | undefined = undefined;
+        let fixedTopLevels: boolean = false;
         switch (options.srcLang) {
             case "graphql":
                 let schemaString: string | undefined = undefined;
@@ -618,6 +619,9 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                     const { sources: postmanSources, description } = sourcesFromPostmanCollection(collectionJSON);
                     for (const src of postmanSources) {
                         sources.push(src);
+                    }
+                    if (postmanSources.length > 1) {
+                        fixedTopLevels = true;
                     }
                     if (description !== undefined) {
                         leadingComments = wordWrap(description).split("\n");
@@ -667,6 +671,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             alphabetizeProperties: options.alphabetizeProperties,
             allPropertiesOptional: options.allPropertiesOptional,
             combineClasses: !options.noCombineClasses,
+            fixedTopLevels,
             noRender: options.noRender,
             rendererOptions: options.rendererOptions,
             leadingComments,

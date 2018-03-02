@@ -88,6 +88,7 @@ export interface Options {
     alphabetizeProperties: boolean;
     allPropertiesOptional: boolean;
     combineClasses: boolean;
+    fixedTopLevels: boolean;
     noRender: boolean;
     leadingComments: string[] | undefined;
     rendererOptions: RendererOptions;
@@ -106,6 +107,7 @@ const defaultOptions: Options = {
     alphabetizeProperties: false,
     allPropertiesOptional: false,
     combineClasses: true,
+    fixedTopLevels: false,
     noRender: false,
     leadingComments: undefined,
     rendererOptions: {},
@@ -189,14 +191,13 @@ export class Run {
         const numSamples = Object.keys(this._allInputs.samples).length;
         if (numSamples > 0) {
             const inference = new TypeInference(typeBuilder, doInferEnums, this._options.inferDates);
-            const fixedTopLevels = numSamples > 1;
 
             Map(this._allInputs.samples).forEach(({ samples, description }, name) => {
                 const tref = inference.inferType(
                     this._compressedJSON as CompressedJSON,
                     makeNamesTypeAttributes(name, false),
                     samples,
-                    fixedTopLevels
+                    this._options.fixedTopLevels
                 );
                 typeBuilder.addTopLevel(name, tref);
                 if (description !== undefined) {
