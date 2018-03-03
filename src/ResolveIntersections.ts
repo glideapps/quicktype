@@ -36,21 +36,25 @@ import {
 import { assert, defined, panic } from "./Support";
 import { combineTypeAttributes, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 
-function intersectionMembersRecursively(intersection: IntersectionType): OrderedSet<Type> {
+function intersectionMembersRecursively(intersection: IntersectionType): [OrderedSet<Type>, TypeAttributes] {
     const types: Type[] = [];
+    let attributes = emptyTypeAttributes;
     function process(t: Type): void {
         if (t instanceof IntersectionType) {
+            attributes = combineTypeAttributes([attributes, t.getAttributes()]);
             t.members.forEach(process);
         } else if (t.kind !== "any") {
             types.push(t);
+        } else {
+            attributes = combineTypeAttributes([attributes, t.getAttributes()]);
         }
     }
     process(intersection);
-    return OrderedSet(types);
+    return [OrderedSet(types), attributes];
 }
 
 function canResolve(t: IntersectionType): boolean {
-    const members = intersectionMembersRecursively(t);
+    const members = intersectionMembersRecursively(t)[0];
     if (members.size <= 1) return true;
     return members.every(m => !(m instanceof UnionType) || m.isCanonical);
 }
@@ -374,7 +378,7 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         forwardingRef: TypeRef
     ): TypeRef {
         assert(types.size === 1);
-        const members = intersectionMembersRecursively(defined(types.first()));
+        const [members, intersectionAttributes] = intersectionMembersRecursively(defined(types.first()));
         if (members.isEmpty()) {
             return builder.getPrimitiveType("any", forwardingRef);
         }
@@ -382,11 +386,9 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
             return builder.reconstituteType(defined(members.first()));
         }
 
-        // FIXME: Should the accumulator keep track of the attributes?
-        const attributes = combineTypeAttributes(members.map(t => t.getAttributes()).toArray());
-
         const accumulator = new IntersectionAccumulator();
-        members.forEach(t => accumulator.addType(t));
+        const extraAttributes = combineTypeAttributes(members.map(t => accumulator.addType(t)).toArray());
+        const attributes = combineTypeAttributes([intersectionAttributes, extraAttributes]);
 
         const unionBuilder = new IntersectionUnionBuilder(builder);
         const tref = unionBuilder.buildUnion(accumulator, true, attributes, forwardingRef);
