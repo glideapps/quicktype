@@ -146,7 +146,7 @@ function indexArray(cases: any, index: number): StringMap {
     return checkStringMap(cases[index]);
 }
 
-function makeAttributes(schema: StringMap, attributes: TypeAttributes): TypeAttributes {
+function makeAttributes(schema: StringMap, path: Ref, attributes: TypeAttributes): TypeAttributes {
     const maybeDescription = schema.description;
     if (typeof maybeDescription === "string") {
         attributes = descriptionTypeAttributeKind.setInAttributes(attributes, OrderedSet([maybeDescription]));
@@ -156,7 +156,14 @@ function makeAttributes(schema: StringMap, attributes: TypeAttributes): TypeAttr
         if (!typeNames.areInferred) {
             return typeNames;
         }
-        const title = schema.title;
+        let title = schema.title;
+        if (typeof title !== "string") {
+            const last = path.last();
+            if (last !== undefined && last.kind === PathElementKind.Definition) {
+                title = last.name;
+            }
+        }
+
         if (typeof title === "string") {
             return new TypeNames(OrderedSet([title]), OrderedSet(), false);
         } else {
@@ -283,7 +290,11 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
         // FIXME: We seem to be overzealous in making attributes.  We get them from
         // our caller, then we make them again here, and then we make them again
         // in `makeClass`, potentially in other places, too.
-        typeAttributes = makeAttributes(schema, modifyTypeNames(typeAttributes, tn => defined(tn).makeInferred()));
+        typeAttributes = makeAttributes(
+            schema,
+            path,
+            modifyTypeNames(typeAttributes, tn => defined(tn).makeInferred())
+        );
         switch (typeName) {
             case "object":
                 let required: string[];
@@ -361,7 +372,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
     }
 
     function convertToType(schema: StringMap, path: Ref, typeAttributes: TypeAttributes): TypeRef {
-        typeAttributes = makeAttributes(schema, typeAttributes);
+        typeAttributes = makeAttributes(schema, path, typeAttributes);
 
         function convertOneOrAnyOf(cases: any, kind: PathElementKind.OneOf | PathElementKind.AnyOf): TypeRef {
             if (!Array.isArray(cases)) {
