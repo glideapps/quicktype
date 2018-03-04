@@ -114,9 +114,9 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
             mapType => ({ type: "object", additionalProperties: this.schemaForType(mapType.values) }),
             enumType => ({ type: "string", enum: enumType.cases.toArray(), title: enumType.getCombinedName() }),
             unionType => {
-                const schema = this.makeOneOf(unionType.sortedMembers);
-                schema.title = unionType.getCombinedName();
-                return schema;
+                const oneOf = this.makeOneOf(unionType.sortedMembers);
+                oneOf.title = unionType.getCombinedName();
+                return oneOf;
             },
             _dateType => ({ type: "string", format: "date" }),
             _timeType => ({ type: "string", format: "time" }),

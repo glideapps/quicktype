@@ -147,6 +147,7 @@ export function unionBuilderForUnification<T extends Type>(
 }
 
 // FIXME: The UnionBuilder might end up not being used.
+// FIXME: Add typeAttributes in all cases.
 export function unifyTypes<T extends Type>(
     types: Set<Type>,
     typeAttributes: TypeAttributes,
