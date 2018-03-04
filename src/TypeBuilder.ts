@@ -784,6 +784,8 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
 
         if (this._nonStringTypeAttributes.has("any")) {
             const allAttributes = combineTypeAttributes(merged.valueSeq().toArray());
+            // FIXME: Somehow get this information to the code that checks provenenace.
+            // console.log("losing attributes");
             return OrderedMap([["any", allAttributes] as [TypeKind, TypeAttributes]]);
         }
 

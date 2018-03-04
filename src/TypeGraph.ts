@@ -119,6 +119,8 @@ export class TypeGraph {
 
     private _types?: Type[];
 
+    private _parents: Set<Type>[] | undefined = undefined;
+
     constructor(typeBuilder: TypeBuilder, private readonly _haveProvenanceAttributes: boolean) {
         this._typeBuilder = typeBuilder;
     }
@@ -236,10 +238,14 @@ export class TypeGraph {
             replacer
         ).finish();
 
+        // FIXME: Make this enable-able via the command line
         if (this._haveProvenanceAttributes) {
             const oldProvenance = this.allProvenance();
             const newProvenance = newGraph.allProvenance();
-            assert(oldProvenance.equals(newProvenance), "Some type attributes were not carried over to the new graph");
+            if (oldProvenance.size !== newProvenance.size) {
+                const difference = oldProvenance.subtract(newProvenance);
+                `Type attributes for ${difference.size} types were not carried over to the new graph`;
+            }
         }
 
         return newGraph;
@@ -259,6 +265,21 @@ export class TypeGraph {
 
     makeGraph(invertDirection: boolean, childrenOfType: (t: Type) => OrderedSet<Type>): Graph<Type> {
         return new Graph(defined(this._types), invertDirection, childrenOfType);
+    }
+
+    getParentsOfType(t: Type): Set<Type> {
+        assert(t.typeRef.graph === this, "Called on wrong type graph");
+        if (this._parents === undefined) {
+            const parents = defined(this._types).map(_ => Set());
+            this.allTypesUnordered().forEach(p => {
+                p.children.forEach(c => {
+                    const index = c.typeRef.getIndex();
+                    parents[index] = parents[index].add(p);
+                });
+            });
+            this._parents = parents;
+        }
+        return this._parents[t.typeRef.getIndex()];
     }
 }
 

@@ -338,6 +338,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         if (maybeProperties !== undefined) {
+            assert(maybeMapValueTypes === undefined);
             const tref = this.typeBuilder.getUniqueClassType(typeAttributes, true, undefined, forwardingRef);
             // FIXME: attributes
             const properties = maybeProperties.map(
@@ -399,6 +400,8 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         }
         return tref;
     }
+    // FIXME: We need to handle intersections that resolve to the same set of types.
+    // See for example the intersections-nested.schema example.
     const intersections = graph.allTypesUnordered().filter(t => t instanceof IntersectionType) as Set<IntersectionType>;
     if (intersections.isEmpty()) {
         return [graph, true];

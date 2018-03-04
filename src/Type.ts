@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Collection, is, hash } from "immutable";
+import { OrderedSet, OrderedMap, Collection, Set, is, hash } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
@@ -130,6 +130,35 @@ export abstract class Type {
         }
 
         return true;
+    }
+
+    getParentTypes(): Set<Type> {
+        return this.typeRef.graph.getParentsOfType(this);
+    }
+
+    getAncestorsNotInSet(set: Set<TypeRef>): Set<Type> {
+        const workList: Type[] = [this];
+        let processed: Set<Type> = Set();
+        let ancestors: Set<Type> = Set();
+        for (;;) {
+            const t = workList.pop();
+            if (t === undefined) break;
+
+            const parents = t.getParentTypes();
+            console.log(`${parents.size} parents`);
+            parents.forEach(p => {
+                if (processed.has(p)) return;
+                processed = processed.add(p);
+                if (set.has(p.typeRef)) {
+                    console.log(`adding ${p.kind}`);
+                    workList.push(p);
+                } else {
+                    console.log(`found ${p.kind}`);
+                    ancestors = ancestors.add(p);
+                }
+            });
+        }
+        return ancestors;
     }
 }
 
