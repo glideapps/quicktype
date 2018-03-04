@@ -6,7 +6,6 @@ import { TypeGraph } from "./TypeGraph";
 import { Type, UnionType, IntersectionType } from "./Type";
 import { assert, defined } from "./Support";
 import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
-import { combineTypeAttributes } from "./TypeAttributes";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
 
 function unionMembersRecursively(...unions: UnionType[]): OrderedSet<Type> {
@@ -48,8 +47,7 @@ export function flattenUnions(
             needsRepeat = true;
             return builder.getUnionType(attributes, OrderedSet(trefs));
         });
-        const unionAttributes = combineTypeAttributes(types.map(t => t.getAttributes()).toArray());
-        return unifyTypes(types, unionAttributes, builder, unionBuilder, conflateNumbers, forwardingRef);
+        return unifyTypes(types, Map(), builder, unionBuilder, conflateNumbers, forwardingRef);
     }
 
     const unions = graph.allTypesUnordered().filter(t => t instanceof UnionType) as Set<UnionType>;

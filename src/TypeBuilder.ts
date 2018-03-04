@@ -20,7 +20,7 @@ import {
     IntersectionType
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
-import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes, makeTypeAttributesInferred } from "./TypeAttributes";
 import { defined, assert, panic, assertNever, setUnion } from "./Support";
 
 export type TypeRefCallback = (index: number) => void;
@@ -113,7 +113,7 @@ export class TypeRef {
     }
 }
 
-export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>("provenance", setUnion);
+export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>("provenance", setUnion, a => a);
 
 export type StringTypeMapping = {
     date: PrimitiveStringTypeKind;
@@ -831,7 +831,7 @@ export function addTypeToUnionAccumulator(ua: UnionAccumulator<TypeRef, TypeRef,
         // inference, which is fine, but still a bit ugly.
         enumType => ua.addEnumCases(enumType.cases.toOrderedMap().map(_ => 1), attributes),
         unionType => {
-            unionAttributes = combineTypeAttributes(unionType.members.map(m => addTypeToUnionAccumulator(ua, m)).toArray());
+            unionAttributes = addTypesToUnionAccumulator(ua, unionType.members);
             unionAttributes = combineTypeAttributes([attributes, unionAttributes]);
         },
         _dateType => ua.addStringType("date", attributes),
@@ -840,6 +840,14 @@ export function addTypeToUnionAccumulator(ua: UnionAccumulator<TypeRef, TypeRef,
     );
     if (unionAttributes === undefined) return emptyTypeAttributes;
     return unionAttributes;
+}
+
+export function addTypesToUnionAccumulator(ua: UnionAccumulator<TypeRef, TypeRef, TypeRef>, types: Set<Type>): TypeAttributes {
+    if (types.size === 1) {
+        return addTypeToUnionAccumulator(ua, defined(types.first()));
+    }
+
+    return makeTypeAttributesInferred(combineTypeAttributes(types.map(m => addTypeToUnionAccumulator(ua, m)).toArray()));
 }
 
 export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TClassData, TMapData> {

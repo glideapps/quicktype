@@ -99,7 +99,7 @@ export function typeNamesUnion(c: Collection<any, TypeNames>): TypeNames {
     return names;
 }
 
-export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>("names", (a, b) => a.add(b));
+export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>("names", (a, b) => a.add(b), a => a.makeInferred());
 
 export function modifyTypeNames(
     attributes: TypeAttributes,

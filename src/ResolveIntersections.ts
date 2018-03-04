@@ -34,7 +34,7 @@ import {
     TypeKind
 } from "./Type";
 import { assert, defined, panic } from "./Support";
-import { combineTypeAttributes, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { combineTypeAttributes, TypeAttributes, emptyTypeAttributes, makeTypeAttributesInferred } from "./TypeAttributes";
 
 function intersectionMembersRecursively(intersection: IntersectionType): [OrderedSet<Type>, TypeAttributes] {
     const types: Type[] = [];
@@ -61,10 +61,10 @@ function canResolve(t: IntersectionType): boolean {
 
 class IntersectionAccumulator
     implements UnionTypeProvider<
-            OrderedSet<Type>,
-            OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
-            OrderedSet<Type> | undefined
-        > {
+    OrderedSet<Type>,
+    OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
+    OrderedSet<Type> | undefined
+    > {
     private _primitiveStringTypes: OrderedSet<PrimitiveStringTypeKind> | undefined;
     private _otherPrimitiveTypes: OrderedSet<PrimitiveTypeKind> | undefined;
     private _enumCases: OrderedSet<string> | undefined;
@@ -302,7 +302,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     OrderedSet<Type>,
     OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
     OrderedSet<Type> | undefined
-> {
+    > {
     private _createdNewIntersections: boolean = false;
 
     private makeIntersection(members: OrderedSet<Type>, attributes: TypeAttributes): TypeRef {
@@ -390,7 +390,7 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         }
 
         const accumulator = new IntersectionAccumulator();
-        const extraAttributes = combineTypeAttributes(members.map(t => accumulator.addType(t)).toArray());
+        const extraAttributes = makeTypeAttributesInferred(combineTypeAttributes(members.map(t => accumulator.addType(t)).toArray()));
         const attributes = combineTypeAttributes([intersectionAttributes, extraAttributes]);
 
         const unionBuilder = new IntersectionUnionBuilder(builder);

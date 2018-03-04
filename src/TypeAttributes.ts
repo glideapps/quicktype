@@ -5,14 +5,22 @@ import { Map, OrderedSet, hash } from "immutable";
 import { panic, setUnion } from "./Support";
 export class TypeAttributeKind<T> {
     public readonly combine: (a: T, b: T) => T;
+    public readonly makeInferred: (a: T) => T;
 
-    constructor(readonly name: string, combine: ((a: T, b: T) => T) | undefined) {
+    constructor(readonly name: string, combine: ((a: T, b: T) => T) | undefined, makeInferred: ((a: T) => T) | undefined) {
         if (combine === undefined) {
             combine = () => {
                 return panic(`Cannot combine type attribute ${name}`);
             };
         }
         this.combine = combine;
+
+        if (makeInferred === undefined) {
+            makeInferred = () => {
+                return panic(`Cannot make type attribute ${name} inferred`);
+            };
+        }
+        this.makeInferred = makeInferred;
     }
 
     makeAttributes(value: T): TypeAttributes {
@@ -64,8 +72,13 @@ export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAtt
     return first.mergeWith((aa, ab, kind) => kind.combine(aa, ab), ...rest);
 }
 
-export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", setUnion);
+export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
+    return attr.map((value, kind) => kind.makeInferred(value));
+}
+
+export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", setUnion, a => a);
 export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, OrderedSet<string>>>(
     "propertyDescriptions",
-    (a, b) => a.mergeWith(setUnion, b)
+    (a, b) => a.mergeWith(setUnion, b),
+    a => a
 );
