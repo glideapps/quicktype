@@ -1,3 +1,5 @@
+git --no-pager log 'HEAD~5..HEAD'
+
 docker system prune --force
 
 docker pull schani/quicktype
