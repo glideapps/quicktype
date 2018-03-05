@@ -2,6 +2,9 @@
 set -euo pipefail
 
 if [ "x$BUILDKITE_PULL_REQUEST_BASE_BRANCH" != "x" ] ; then
+    git config --global user.email "buildkitepr@quicktype.io" || true
+    git config --global user.name "Buildkite PR builder" || true
+
     git --no-pager branch -D pr || true
     git --no-pager fetch origin "pull/$BUILDKITE_PULL_REQUEST/head:pr"
     git --no-pager status
