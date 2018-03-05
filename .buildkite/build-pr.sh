@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [ "x$BUILDKITE_PULL_REQUEST_BASE_BRANCH" != "x" ] ; then
-    git --no-pager branch -D pr
+    git --no-pager branch -D pr || true
     git --no-pager fetch origin "pull/$BUILDKITE_PULL_REQUEST/head:pr"
     git --no-pager status
     git --no-pager checkout pr
