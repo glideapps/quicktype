@@ -258,6 +258,8 @@ export class Run {
 
         gatherNames(graph);
 
+        // graph.printGraph();
+
         return graph;
     };
 

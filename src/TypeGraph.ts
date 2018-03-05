@@ -281,6 +281,17 @@ export class TypeGraph {
         }
         return this._parents[t.typeRef.getIndex()];
     }
+
+    printGraph(): void {
+        const types = defined(this._types);
+        for (let i = 0; i < types.length; i++) {
+            const t = types[i];
+            const namesString = t.hasNames ? ` name: ${t.getCombinedName()}` : "";
+            const children = t.children;
+            const childrenString = children.isEmpty() ? "" : ` children: ${children.map(t => t.typeRef.getIndex()).join(",")}`;
+            console.log(`${i}: ${t.kind}${namesString}${childrenString}`);
+        }
+    }
 }
 
 export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
