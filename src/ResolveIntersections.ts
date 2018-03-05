@@ -10,7 +10,8 @@ import {
     UnionTypeProvider,
     UnionBuilder,
     TypeBuilder,
-    TypeLookerUp
+    TypeLookerUp,
+    TypeAttributeMap
 } from "./TypeBuilder";
 import {
     IntersectionType,
@@ -33,33 +34,37 @@ import {
     TypeKind
 } from "./Type";
 import { assert, defined, panic } from "./Support";
-import { combineTypeAttributes, TypeAttributes } from "./TypeAttributes";
+import { combineTypeAttributes, TypeAttributes, emptyTypeAttributes, makeTypeAttributesInferred } from "./TypeAttributes";
 
-function intersectionMembersRecursively(intersection: IntersectionType): OrderedSet<Type> {
+function intersectionMembersRecursively(intersection: IntersectionType): [OrderedSet<Type>, TypeAttributes] {
     const types: Type[] = [];
+    let attributes = emptyTypeAttributes;
     function process(t: Type): void {
         if (t instanceof IntersectionType) {
+            attributes = combineTypeAttributes([attributes, t.getAttributes()]);
             t.members.forEach(process);
         } else if (t.kind !== "any") {
             types.push(t);
+        } else {
+            attributes = combineTypeAttributes([attributes, t.getAttributes()]);
         }
     }
     process(intersection);
-    return OrderedSet(types);
+    return [OrderedSet(types), attributes];
 }
 
 function canResolve(t: IntersectionType): boolean {
-    const members = intersectionMembersRecursively(t);
+    const members = intersectionMembersRecursively(t)[0];
     if (members.size <= 1) return true;
     return members.every(m => !(m instanceof UnionType) || m.isCanonical);
 }
 
 class IntersectionAccumulator
     implements UnionTypeProvider<
-            OrderedSet<Type>,
-            OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
-            OrderedSet<Type> | undefined
-        > {
+    OrderedSet<Type>,
+    OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
+    OrderedSet<Type> | undefined
+    > {
     private _primitiveStringTypes: OrderedSet<PrimitiveStringTypeKind> | undefined;
     private _otherPrimitiveTypes: OrderedSet<PrimitiveTypeKind> | undefined;
     private _enumCases: OrderedSet<string> | undefined;
@@ -219,10 +224,14 @@ class IntersectionAccumulator
 
     private addUnion(u: UnionType): void {
         this.addUnionSet(u.members);
-        // FIXME: add attributes
     }
 
-    addType(t: Type): void {
+    addType(t: Type): TypeAttributes {
+        // FIXME: We're very lazy here.  We're supposed to keep type
+        // attributes separately for each type kind, but we collect
+        // them all together and return them as attributes for the
+        // overall result type.
+        let attributes = t.getAttributes();
         matchTypeExhaustive<void>(
             t,
             _noneType => {
@@ -243,6 +252,7 @@ class IntersectionAccumulator
             timeType => this.addUnionSet(OrderedSet([timeType])),
             dateTimeType => this.addUnionSet(OrderedSet([dateTimeType]))
         );
+        return attributes;
     }
 
     get arrayData(): OrderedSet<Type> {
@@ -270,7 +280,7 @@ class IntersectionAccumulator
         return caseMap;
     }
 
-    getMemberKinds(): TypeKind[] {
+    getMemberKinds(): TypeAttributeMap<TypeKind> {
         let kinds: OrderedSet<TypeKind> = defined(this._primitiveStringTypes).union(defined(this._otherPrimitiveTypes));
         if (this._enumCases !== undefined && this._enumCases.size > 0) {
             kinds = kinds.add("enum");
@@ -283,7 +293,7 @@ class IntersectionAccumulator
         } else if (this._classProperties !== undefined) {
             kinds = kinds.add("class");
         }
-        return kinds.toArray();
+        return kinds.toOrderedMap().map(_ => emptyTypeAttributes);
     }
 }
 
@@ -292,7 +302,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     OrderedSet<Type>,
     OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
     OrderedSet<Type> | undefined
-> {
+    > {
     private _createdNewIntersections: boolean = false;
 
     private makeIntersection(members: OrderedSet<Type>, attributes: TypeAttributes): TypeRef {
@@ -300,6 +310,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
 
         const first = defined(reconstitutedMembers.first());
         if (reconstitutedMembers.size === 1) {
+            this.typeBuilder.addAttributes(first, attributes);
             return first;
         }
 
@@ -327,6 +338,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         if (maybeProperties !== undefined) {
+            assert(maybeMapValueTypes === undefined);
             const tref = this.typeBuilder.getUniqueClassType(typeAttributes, true, undefined, forwardingRef);
             // FIXME: attributes
             const properties = maybeProperties.map(
@@ -337,7 +349,9 @@ class IntersectionUnionBuilder extends UnionBuilder<
         } else if (maybeMapValueTypes !== undefined) {
             // FIXME: attributes
             const valuesType = this.makeIntersection(maybeMapValueTypes, Map());
-            return this.typeBuilder.getMapType(valuesType, forwardingRef);
+            const mapType = this.typeBuilder.getMapType(valuesType, forwardingRef);
+            this.typeBuilder.addAttributes(mapType, typeAttributes);
+            return mapType;
         } else {
             return panic("Either classes or maps must be given");
         }
@@ -345,12 +359,14 @@ class IntersectionUnionBuilder extends UnionBuilder<
 
     protected makeArray(
         arrays: OrderedSet<Type>,
-        _typeAttributes: TypeAttributes,
+        typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         // FIXME: attributes
         const itemsType = this.makeIntersection(arrays, Map());
-        return this.typeBuilder.getArrayType(itemsType, forwardingRef);
+        const tref = this.typeBuilder.getArrayType(itemsType, forwardingRef);
+        this.typeBuilder.addAttributes(tref, typeAttributes);
+        return tref;
     }
 }
 
@@ -363,19 +379,19 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         forwardingRef: TypeRef
     ): TypeRef {
         assert(types.size === 1);
-        const members = intersectionMembersRecursively(defined(types.first()));
+        const [members, intersectionAttributes] = intersectionMembersRecursively(defined(types.first()));
         if (members.isEmpty()) {
             return builder.getPrimitiveType("any", forwardingRef);
         }
         if (members.size === 1) {
-            return builder.reconstituteType(defined(members.first()));
+            const single = builder.reconstituteType(defined(members.first()));
+            builder.addAttributes(single, intersectionAttributes);
+            return single;
         }
 
-        // FIXME: Should the accumulator keep track of the attributes?
-        const attributes = combineTypeAttributes(members.map(t => t.getAttributes()).toArray());
-
         const accumulator = new IntersectionAccumulator();
-        members.forEach(t => accumulator.addType(t));
+        const extraAttributes = makeTypeAttributesInferred(combineTypeAttributes(members.map(t => accumulator.addType(t)).toArray()));
+        const attributes = combineTypeAttributes([intersectionAttributes, extraAttributes]);
 
         const unionBuilder = new IntersectionUnionBuilder(builder);
         const tref = unionBuilder.buildUnion(accumulator, true, attributes, forwardingRef);
@@ -384,6 +400,8 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         }
         return tref;
     }
+    // FIXME: We need to handle intersections that resolve to the same set of types.
+    // See for example the intersections-nested.schema example.
     const intersections = graph.allTypesUnordered().filter(t => t instanceof IntersectionType) as Set<IntersectionType>;
     if (intersections.isEmpty()) {
         return [graph, true];

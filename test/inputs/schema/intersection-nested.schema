@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "intersection": {
+      "allOf": [
+        {
+          "allOf": [
+            {
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

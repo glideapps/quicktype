@@ -12,7 +12,7 @@ import {
     UnionType
 } from "./Type";
 import { defined, assert, panic } from "./Support";
-import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping } from "./TypeBuilder";
+import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
@@ -20,7 +20,7 @@ import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 export class TypeAttributeStore {
     private _topLevelValues: Map<string, TypeAttributes> = Map();
 
-    constructor(private readonly _typeGraph: TypeGraph, private _values: (TypeAttributes | undefined)[]) {}
+    constructor(private readonly _typeGraph: TypeGraph, private _values: (TypeAttributes | undefined)[]) { }
 
     private getTypeIndex(t: Type): number {
         const tref = t.typeRef;
@@ -119,7 +119,9 @@ export class TypeGraph {
 
     private _types?: Type[];
 
-    constructor(typeBuilder: TypeBuilder) {
+    private _parents: Set<Type>[] | undefined = undefined;
+
+    constructor(typeBuilder: TypeBuilder, private readonly _haveProvenanceAttributes: boolean) {
         this._typeBuilder = typeBuilder;
     }
 
@@ -201,6 +203,17 @@ export class TypeGraph {
         return separateNamedTypes(types);
     };
 
+    private allProvenance(): Set<TypeRef> {
+        assert(this._haveProvenanceAttributes);
+
+        const view = new TypeAttributeStoreView(this.attributeStore, provenanceTypeAttributeKind);
+        return this.allTypesUnordered().toList().map(t => {
+            const maybeSet = view.tryGet(t);
+            if (maybeSet !== undefined) return maybeSet;
+            return Set();
+        }).reduce<Set<TypeRef>>((a, b) => a.union(b));
+    }
+
     // Each array in `replacementGroups` is a bunch of types to be replaced by a
     // single new type.  `replacer` is a function that takes a group and a
     // TypeBuilder, and builds a new type with that builder that replaces the group.
@@ -211,23 +224,38 @@ export class TypeGraph {
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         replacementGroups: T[][],
-        replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef
+        replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef,
+        force: boolean = false
     ): TypeGraph {
-        if (replacementGroups.length === 0) return this;
-        return new GraphRewriteBuilder(
+        if (!force && replacementGroups.length === 0) return this;
+
+        const newGraph = new GraphRewriteBuilder(
             this,
             stringTypeMapping,
             alphabetizeProperties,
+            this._haveProvenanceAttributes,
             replacementGroups,
             replacer
         ).finish();
+
+        // FIXME: Make this enable-able via the command line
+        if (this._haveProvenanceAttributes) {
+            const oldProvenance = this.allProvenance();
+            const newProvenance = newGraph.allProvenance();
+            if (oldProvenance.size !== newProvenance.size) {
+                const difference = oldProvenance.subtract(newProvenance);
+                `Type attributes for ${difference.size} types were not carried over to the new graph`;
+            }
+        }
+
+        return newGraph;
     }
 
     garbageCollect(alphabetizeProperties: boolean): TypeGraph {
-        // console.log("GC");
-        return new GraphRewriteBuilder(this, NoStringTypeMapping, alphabetizeProperties, [], (_t, _b) =>
-            panic("This shouldn't be called")
-        ).finish();
+        const newGraph = this.rewrite(NoStringTypeMapping, alphabetizeProperties, [], (_t, _b) =>
+            panic("This shouldn't be called"), true);
+        // console.log(`GC: ${defined(newGraph._types).length} types`);
+        return newGraph;
     }
 
     allTypesUnordered = (): Set<Type> => {
@@ -237,6 +265,32 @@ export class TypeGraph {
 
     makeGraph(invertDirection: boolean, childrenOfType: (t: Type) => OrderedSet<Type>): Graph<Type> {
         return new Graph(defined(this._types), invertDirection, childrenOfType);
+    }
+
+    getParentsOfType(t: Type): Set<Type> {
+        assert(t.typeRef.graph === this, "Called on wrong type graph");
+        if (this._parents === undefined) {
+            const parents = defined(this._types).map(_ => Set());
+            this.allTypesUnordered().forEach(p => {
+                p.children.forEach(c => {
+                    const index = c.typeRef.getIndex();
+                    parents[index] = parents[index].add(p);
+                });
+            });
+            this._parents = parents;
+        }
+        return this._parents[t.typeRef.getIndex()];
+    }
+
+    printGraph(): void {
+        const types = defined(this._types);
+        for (let i = 0; i < types.length; i++) {
+            const t = types[i];
+            const namesString = t.hasNames ? ` name: ${t.getCombinedName()}` : "";
+            const children = t.children;
+            const childrenString = children.isEmpty() ? "" : ` children: ${children.map(t => t.typeRef.getIndex()).join(",")}`;
+            console.log(`${i}: ${t.kind}${namesString}${childrenString}`);
+        }
     }
 }
 

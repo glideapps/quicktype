@@ -26,11 +26,12 @@ function replaceString(
     builder: GraphRewriteBuilder<StringType | UnionType>,
     forwardingRef: TypeRef
 ): TypeRef {
+    const attributes = t.getAttributes();
     const maybeEnumCases = shouldBeEnum(t);
     if (maybeEnumCases !== undefined) {
-        return builder.getEnumType(t.getAttributes(), maybeEnumCases.keySeq().toOrderedSet(), forwardingRef);
+        return builder.getEnumType(attributes, maybeEnumCases.keySeq().toOrderedSet(), forwardingRef);
     }
-    return builder.getStringType(undefined, undefined, forwardingRef);
+    return builder.getStringType(attributes, undefined, forwardingRef);
 }
 
 function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {

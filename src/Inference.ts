@@ -7,7 +7,7 @@ import { assertNever, assert } from "./Support";
 import { TypeBuilder, UnionBuilder, TypeRef, UnionAccumulator } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { ClassProperty } from "./Type";
-import { TypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
@@ -97,47 +97,47 @@ export class TypeInference {
             const t = valueTag(value);
             switch (t) {
                 case Tag.Null:
-                    accumulator.addNull();
+                    accumulator.addNull(emptyTypeAttributes);
                     break;
                 case Tag.False:
                 case Tag.True:
-                    accumulator.addBool();
+                    accumulator.addBool(emptyTypeAttributes);
                     break;
                 case Tag.Integer:
-                    accumulator.addInteger();
+                    accumulator.addInteger(emptyTypeAttributes);
                     break;
                 case Tag.Double:
-                    accumulator.addDouble();
+                    accumulator.addDouble(emptyTypeAttributes);
                     break;
                 case Tag.InternedString:
                     if (this._inferEnums && !accumulator.haveString) {
                         const s = cjson.getStringForValue(value);
                         if (canBeEnumCase(s)) {
-                            accumulator.addEnumCase(s);
+                            accumulator.addEnumCase(s, 1, emptyTypeAttributes);
                         } else {
-                            accumulator.addStringType("string");
+                            accumulator.addStringType("string", emptyTypeAttributes);
                         }
                     } else {
-                        accumulator.addStringType("string");
+                        accumulator.addStringType("string", emptyTypeAttributes);
                     }
                     break;
                 case Tag.UninternedString:
-                    accumulator.addStringType("string");
+                    accumulator.addStringType("string", emptyTypeAttributes);
                     break;
                 case Tag.Object:
-                    accumulator.addClass(cjson.getObjectForValue(value));
+                    accumulator.addClass(cjson.getObjectForValue(value), emptyTypeAttributes);
                     break;
                 case Tag.Array:
-                    accumulator.addArray(cjson.getArrayForValue(value));
+                    accumulator.addArray(cjson.getArrayForValue(value), emptyTypeAttributes);
                     break;
                 case Tag.Date:
-                    accumulator.addStringType(this._inferDates ? "date" : "string");
+                    accumulator.addStringType(this._inferDates ? "date" : "string", emptyTypeAttributes);
                     break;
                 case Tag.Time:
-                    accumulator.addStringType(this._inferDates ? "time" : "string");
+                    accumulator.addStringType(this._inferDates ? "time" : "string", emptyTypeAttributes);
                     break;
                 case Tag.DateTime:
-                    accumulator.addStringType(this._inferDates ? "date-time" : "string");
+                    accumulator.addStringType(this._inferDates ? "date-time" : "string", emptyTypeAttributes);
                     break;
                 default:
                     return assertNever(t);

@@ -1,6 +1,6 @@
 "use strict";
 
-import { Collection, List } from "immutable";
+import { Collection, List, Set } from "immutable";
 
 export function intercalate<T>(separator: T, items: Collection<any, T>): List<T> {
     const acc: T[] = [];
@@ -9,6 +9,10 @@ export function intercalate<T>(separator: T, items: Collection<any, T>): List<T>
         acc.push(x);
     });
     return List(acc);
+}
+
+export function setUnion<T, TSet extends Set<T>>(a: TSet, b: TSet): TSet {
+    return a.union(b) as TSet;
 }
 
 export type StringMap = { [name: string]: any };

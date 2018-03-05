@@ -2,17 +2,25 @@
 
 import { Map, OrderedSet, hash } from "immutable";
 
-import { panic } from "./Support";
+import { panic, setUnion } from "./Support";
 export class TypeAttributeKind<T> {
     public readonly combine: (a: T, b: T) => T;
+    public readonly makeInferred: (a: T) => T;
 
-    constructor(readonly name: string, combine: ((a: T, b: T) => T) | undefined) {
+    constructor(readonly name: string, combine: ((a: T, b: T) => T) | undefined, makeInferred: ((a: T) => T) | undefined) {
         if (combine === undefined) {
             combine = () => {
                 return panic(`Cannot combine type attribute ${name}`);
             };
         }
         this.combine = combine;
+
+        if (makeInferred === undefined) {
+            makeInferred = () => {
+                return panic(`Cannot make type attribute ${name} inferred`);
+            };
+        }
+        this.makeInferred = makeInferred;
     }
 
     makeAttributes(value: T): TypeAttributes {
@@ -55,6 +63,8 @@ export class TypeAttributeKind<T> {
 
 export type TypeAttributes = Map<TypeAttributeKind<any>, any>;
 
+export const emptyTypeAttributes: TypeAttributes = Map();
+
 export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAttributes {
     if (attributeArray.length === 0) return Map();
     const first = attributeArray[0];
@@ -62,12 +72,13 @@ export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAtt
     return first.mergeWith((aa, ab, kind) => kind.combine(aa, ab), ...rest);
 }
 
-function combineDescriptions(a: OrderedSet<string>, b: OrderedSet<string>): OrderedSet<string> {
-    return a.union(b);
+export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
+    return attr.map((value, kind) => kind.makeInferred(value));
 }
 
-export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", combineDescriptions);
+export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", setUnion, a => a);
 export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, OrderedSet<string>>>(
     "propertyDescriptions",
-    (a, b) => a.mergeWith(combineDescriptions, b)
+    (a, b) => a.mergeWith(setUnion, b),
+    a => a
 );
