@@ -953,7 +953,7 @@ class JSONAny: Codable {
     };
 
     emitMark = (line: Sourcelike, horizontalLine: boolean = false) => {
-        this.emitLine("// MARK: ", line, horizontalLine ? " -" : "");
+        this.emitLine("// MARK: ", horizontalLine ? " -" : "", line);
     };
 
     protected emitSourceStructure(): void {
