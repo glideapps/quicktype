@@ -765,17 +765,11 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 if (this.haveNamedUnions || this.haveEnums) {
                     this.emitMultiline(`Converters = { 
     new Converter(),
-    new IsoDateTimeConverter()
-    {
-        DateTimeStyles = DateTimeStyles.AssumeUniversal,
-    },
+    new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal }
 },`);
                 } else {
                     this.emitMultiline(`Converters = { 
-    new IsoDateTimeConverter()
-    {
-        DateTimeStyles = DateTimeStyles.AssumeUniversal,
-    },
+    new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal }
 },`);
                 }
             }, true);
