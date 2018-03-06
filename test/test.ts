@@ -52,9 +52,7 @@ async function main(sources: string[]) {
     setup: async () => {
       testCLI();
 
-      console.error(
-        `* Running ${tests.length} tests between ${fixtures.length} fixtures`
-      );
+      console.error(`* Running ${tests.length} tests between ${fixtures.length} fixtures`);
 
       for (const fixture of fixtures) {
         await execAsync(`rm -rf test/runs`);
@@ -78,7 +76,7 @@ async function main(sources: string[]) {
 
 function testCLI() {
   console.log(`* CLI sanity check`);
-  const qt = args => exec(`node dist/cli.js ${args}`);
+  const qt = (args: string) => exec(`node dist/cli.js ${args}`);
 
   console.log("* Ensure we can quicktype a URL");
   qt(`https://blockchain.info/latestblock`);

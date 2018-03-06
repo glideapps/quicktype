@@ -4,7 +4,6 @@ import * as _ from "lodash";
 import * as path from "path";
 import * as fs from "fs";
 import { randomBytes } from "crypto";
-import { timeout } from "promise-timeout";
 import * as shell from "shelljs";
 
 const Ajv = require("ajv");
@@ -20,7 +19,6 @@ import {
   quicktypeForLanguage,
   Sample,
   samplesFromSources,
-  samplesFromPaths,
   testsInDir
 } from "./utils";
 import * as languages from "./languages";
@@ -29,13 +27,7 @@ import { panic } from "../dist/Support";
 import { isDateTime } from "../dist/DateTime";
 
 const chalk = require("chalk");
-
-const IS_CI = process.env.CI === "true";
-const BRANCH = process.env.TRAVIS_BRANCH;
-const IS_BLESSED = BRANCH === "master";
-const IS_PR =
-  process.env.TRAVIS_PULL_REQUEST &&
-  process.env.TRAVIS_PULL_REQUEST !== "false";
+const timeout = require("promise-timeout").timeout;
 
 const MAX_TEST_RUNTIME_MS = 30 * 60 * 1000;
 
@@ -50,7 +42,7 @@ function jsonTestFiles(base: string): string[] {
     jsonFiles.push(fn);
   }
   let i = 1;
-  for (; ;) {
+  for (;;) {
     fn = `${base}.${i.toString()}.json`;
     if (fs.existsSync(fn)) {
       jsonFiles.push(fn);
@@ -65,7 +57,7 @@ function jsonTestFiles(base: string): string[] {
 export abstract class Fixture {
   abstract name: string;
 
-  constructor(public language: languages.Language) { }
+  constructor(public language: languages.Language) {}
 
   runForName(name: string): boolean {
     return this.name === name;
@@ -75,31 +67,16 @@ export abstract class Fixture {
     return;
   }
 
-  abstract getSamples(
-    sources: string[]
-  ): { priority: Sample[]; others: Sample[] };
+  abstract getSamples(sources: string[]): { priority: Sample[]; others: Sample[] };
 
-  abstract runWithSample(
-    sample: Sample,
-    index: number,
-    total: number
-  ): Promise<void>;
+  abstract runWithSample(sample: Sample, index: number, total: number): Promise<void>;
 
   getRunDirectory(): string {
     return `test/runs/${this.name}-${randomBytes(3).toString("hex")}`;
   }
 
-  runMessageStart(
-    sample: Sample,
-    index: number,
-    total: number,
-    cwd: string,
-    shouldSkip: boolean
-  ): string {
-    const rendererOptions = _.map(
-      sample.additionalRendererOptions,
-      (v, k) => `${k}: ${v}`
-    ).join(", ");
+  runMessageStart(sample: Sample, index: number, total: number, cwd: string, shouldSkip: boolean): string {
+    const rendererOptions = _.map(sample.additionalRendererOptions, (v, k) => `${k}: ${v}`).join(", ");
     const message = [
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
@@ -135,17 +112,14 @@ abstract class LanguageFixture extends Fixture {
   }
 
   abstract shouldSkipTest(sample: Sample): boolean;
-  abstract async runQuicktype(
-    filename: string,
-    additionalRendererOptions: RendererOptions
-  ): Promise<void>;
+  abstract async runQuicktype(filename: string, additionalRendererOptions: RendererOptions): Promise<void>;
   abstract async test(
     filename: string,
     additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
   ): Promise<void>;
 
-  additionalFiles(sample: Sample): string[] {
+  additionalFiles(_sample: Sample): string[] {
     return [];
   }
 
@@ -169,11 +143,7 @@ abstract class LanguageFixture extends Fixture {
 
       try {
         await timeout(
-          this.test(
-            sampleFile,
-            sample.additionalRendererOptions,
-            additionalFiles
-          ),
+          this.test(sampleFile, sample.additionalRendererOptions, additionalFiles),
           MAX_TEST_RUNTIME_MS
         );
       } catch (e) {
@@ -188,10 +158,7 @@ abstract class LanguageFixture extends Fixture {
 }
 
 class JSONFixture extends LanguageFixture {
-  constructor(
-    language: languages.Language,
-    public name: string = language.name
-  ) {
+  constructor(language: languages.Language, public name: string = language.name) {
     super(language);
   }
 
@@ -199,24 +166,15 @@ class JSONFixture extends LanguageFixture {
     return this.name === name || name === "json";
   }
 
-  async runQuicktype(
-    sample: string,
-    additionalRendererOptions: RendererOptions
-  ): Promise<void> {
+  async runQuicktype(sample: string, additionalRendererOptions: RendererOptions): Promise<void> {
     // FIXME: add options
-    await quicktypeForLanguage(
-      this.language,
-      sample,
-      "json",
-      true,
-      additionalRendererOptions
-    );
+    await quicktypeForLanguage(this.language, sample, "json", true, additionalRendererOptions);
   }
 
   async test(
     filename: string,
     additionalRendererOptions: RendererOptions,
-    additionalFiles: string[]
+    _additionalFiles: string[]
   ): Promise<void> {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
@@ -240,20 +198,10 @@ class JSONFixture extends LanguageFixture {
       });
       // Quicktype from the schema and compare to expected code
       shell.mv(this.language.output, `${this.language.output}.expected`);
-      await quicktypeForLanguage(
-        this.language,
-        "schema.json",
-        "schema",
-        true,
-        additionalRendererOptions
-      );
+      await quicktypeForLanguage(this.language, "schema.json", "schema", true, additionalRendererOptions);
 
       // Compare fixture.output to fixture.output.expected
-      exec(
-        `diff -Naur ${this.language.output}.expected ${
-        this.language.output
-        } > /dev/null 2>&1`
-      );
+      exec(`diff -Naur ${this.language.output}.expected ${this.language.output} > /dev/null 2>&1`);
     }
   }
 
@@ -271,42 +219,20 @@ class JSONFixture extends LanguageFixture {
       testsInDir("test/inputs/json/samples", "json")
     );
 
-    const miscSamples = this.language.skipMiscJSON
-      ? []
-      : testsInDir("test/inputs/json/misc", "json");
+    const miscSamples = this.language.skipMiscJSON ? [] : testsInDir("test/inputs/json/misc", "json");
 
-    let { priority, others } = samplesFromSources(
-      sources,
-      prioritySamples,
-      miscSamples,
-      "json"
-    );
+    let { priority, others } = samplesFromSources(sources, prioritySamples, miscSamples, "json");
 
-    const combinationsInput = _.find(prioritySamples, p =>
-      p.endsWith("/priority/combinations.json")
-    );
+    const combinationsInput = _.find(prioritySamples, p => p.endsWith("/priority/combinations.json"));
     if (!combinationsInput) {
-      return failWith(
-        "priority/combinations.json sample not found",
-        prioritySamples
-      );
+      return failWith("priority/combinations.json sample not found", prioritySamples);
     }
     if (sources.length === 0) {
-      const quickTestSamples = _.map(
-        this.language.quickTestRendererOptions,
-        ro => ({ path: combinationsInput, additionalRendererOptions: ro })
-      );
+      const quickTestSamples = _.map(this.language.quickTestRendererOptions, ro => ({
+        path: combinationsInput,
+        additionalRendererOptions: ro
+      }));
       priority = quickTestSamples.concat(priority);
-    }
-
-    if (IS_CI) {
-      // On CI, we run a maximum number of test samples. First we test
-      // the priority samples to fail faster, then we continue testing
-      // until testMax with random sources.
-      const testMax = 100;
-      others = _.chain(samplesFromPaths(miscSamples))
-        .take(testMax - prioritySamples.length)
-        .value();
     }
 
     return { priority, others };
@@ -326,7 +252,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
       name: "schema",
       base: language.base,
       setupCommand: language.setupCommand,
-      runCommand: (sample: string) => {
+      runCommand: (_sample: string) => {
         return panic("This must not be called!");
       },
       diffViaSchema: false,
@@ -353,11 +279,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
     return this.name === name || name === "schema-json";
   }
 
-  async test(
-    filename: string,
-    additionalRendererOptions: RendererOptions,
-    additionalFiles: string[]
-  ) {
+  async test(filename: string, additionalRendererOptions: RendererOptions, _additionalFiles: string[]) {
     let input = JSON.parse(fs.readFileSync(filename, "utf8"));
     let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
 
@@ -372,13 +294,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
     }
 
     // Generate code from the schema
-    await quicktypeForLanguage(
-      this.runLanguage,
-      "schema.json",
-      "schema",
-      false,
-      additionalRendererOptions
-    );
+    await quicktypeForLanguage(this.runLanguage, "schema.json", "schema", false, additionalRendererOptions);
 
     // Parse the sample with the code generated from its schema, and compare to the sample
     compareJsonFileToJson({
@@ -410,10 +326,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
 // that we can't (yet) get from JSON.  Right now that's only
 // recursive types.
 class JSONSchemaFixture extends LanguageFixture {
-  constructor(
-    language: languages.Language,
-    readonly name: string = `schema-${language.name}`
-  ) {
+  constructor(language: languages.Language, readonly name: string = `schema-${language.name}`) {
     super(language);
   }
 
@@ -430,17 +343,8 @@ class JSONSchemaFixture extends LanguageFixture {
     return _.includes(this.language.skipSchema, path.basename(sample.path));
   }
 
-  async runQuicktype(
-    filename: string,
-    additionalRendererOptions: RendererOptions
-  ): Promise<void> {
-    await quicktypeForLanguage(
-      this.language,
-      filename,
-      "schema",
-      false,
-      additionalRendererOptions
-    );
+  async runQuicktype(filename: string, additionalRendererOptions: RendererOptions): Promise<void> {
+    await quicktypeForLanguage(this.language, filename, "schema", false, additionalRendererOptions);
   }
 
   additionalFiles(sample: Sample): string[] {
@@ -448,8 +352,8 @@ class JSONSchemaFixture extends LanguageFixture {
   }
 
   async test(
-    sample: string,
-    additionalRendererOptions: RendererOptions,
+    _sample: string,
+    _additionalRendererOptions: RendererOptions,
     jsonFiles: string[]
   ): Promise<void> {
     if (this.language.compileCommand) {
@@ -470,10 +374,7 @@ class JSONSchemaFixture extends LanguageFixture {
 function graphQLSchemaFilename(baseName: string): string {
   const baseMatch = baseName.match(/(.*\D)\d+$/);
   if (baseMatch === null) {
-    return failWith(
-      "GraphQL test filename does not correspond to naming schema",
-      { baseName }
-    );
+    return failWith("GraphQL test filename does not correspond to naming schema", { baseName });
   }
   return baseMatch[1] + ".gqlschema";
 }
@@ -496,14 +397,11 @@ class GraphQLFixture extends LanguageFixture {
     return samplesFromSources(sources, prioritySamples, [], "graphql");
   }
 
-  shouldSkipTest(sample: Sample): boolean {
+  shouldSkipTest(_sample: Sample): boolean {
     return false;
   }
 
-  async runQuicktype(
-    filename: string,
-    additionalRendererOptions: RendererOptions
-  ): Promise<void> {
+  async runQuicktype(filename: string, additionalRendererOptions: RendererOptions): Promise<void> {
     const baseName = pathWithoutExtension(filename, ".graphql");
     const schemaFilename = graphQLSchemaFilename(baseName);
     await quicktypeForLanguage(
@@ -522,8 +420,8 @@ class GraphQLFixture extends LanguageFixture {
   }
 
   async test(
-    filename: string,
-    additionalRendererOptions: RendererOptions,
+    _filename: string,
+    _additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
   ): Promise<void> {
     if (this.language.compileCommand) {

@@ -31,12 +31,7 @@ function momentsEqual(x: Moment, y: Moment, isTime: boolean): boolean {
 }
 
 // https://stackoverflow.com/questions/1068834/object-comparison-in-javascript
-export default function deepEquals(
-  x: any,
-  y: any,
-  allowMissingNull: boolean,
-  path: string[] = []
-): boolean {
+export default function deepEquals(x: any, y: any, allowMissingNull: boolean, path: string[] = []): boolean {
   // remember that NaN === NaN returns false
   // and isNaN(undefined) returns true
   if (typeof x === "number" && typeof y === "number") {
@@ -61,12 +56,8 @@ export default function deepEquals(
   if (typeof x === "string" && typeof y === "string") {
     if (x === y) return true;
     const [xMoment, isTime] = tryParseMoment(x);
-    const [yMoment, _] = tryParseMoment(y);
-    if (
-      xMoment !== undefined &&
-      yMoment !== undefined &&
-      momentsEqual(xMoment, yMoment, isTime)
-    ) {
+    const [yMoment] = tryParseMoment(y);
+    if (xMoment !== undefined && yMoment !== undefined && momentsEqual(xMoment, yMoment, isTime)) {
       return true;
     }
     console.error(`Strings not equal at path ${pathToString(path)}.`);
@@ -88,9 +79,9 @@ export default function deepEquals(
   // compare it regularly.
   if (x.constructor instanceof String && x.constructor !== y.constructor) {
     console.error(
-      `Not the same constructor at path ${pathToString(path)}: should be ${
-        x.constructor
-      } but is ${y.constructor}.`
+      `Not the same constructor at path ${pathToString(path)}: should be ${x.constructor} but is ${
+        y.constructor
+      }.`
     );
     return false;
   }
@@ -102,9 +93,7 @@ export default function deepEquals(
 
   if (Array.isArray(x)) {
     if (x.length !== y.length) {
-      console.error(
-        `Arrays don't have the same length at path ${pathToString(path)}.`
-      );
+      console.error(`Arrays don't have the same length at path ${pathToString(path)}.`);
       return false;
     }
     for (let i = 0; i < x.length; i++) {
@@ -127,21 +116,13 @@ export default function deepEquals(
     // so long as they're null.
     if (xKeys.indexOf(p) < 0) {
       if (y[p] !== null) {
-        console.error(
-          `Non-null property ${p} is not expected at path ${pathToString(
-            path
-          )}.`
-        );
+        console.error(`Non-null property ${p} is not expected at path ${pathToString(path)}.`);
         return false;
       }
       continue;
     }
     if (typeof y[p] !== typeof x[p]) {
-      console.error(
-        `Properties ${p} don't have the same types at path ${pathToString(
-          path
-        )}.`
-      );
+      console.error(`Properties ${p} don't have the same types at path ${pathToString(path)}.`);
       return false;
     }
   }
@@ -151,17 +132,11 @@ export default function deepEquals(
       if (allowMissingNull && x[p] === null) {
         continue;
       }
-      console.error(
-        `Expected property ${p} not found at path ${pathToString(path)}.`
-      );
+      console.error(`Expected property ${p} not found at path ${pathToString(path)}.`);
       return false;
     }
     if (typeof x[p] !== typeof y[p]) {
-      console.error(
-        `Properties ${p} don't have the same types at path ${pathToString(
-          path
-        )}.`
-      );
+      console.error(`Properties ${p} don't have the same types at path ${pathToString(path)}.`);
       return false;
     }
 
