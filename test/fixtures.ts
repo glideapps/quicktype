@@ -29,6 +29,8 @@ import { isDateTime } from "../dist/DateTime";
 const chalk = require("chalk");
 const timeout = require("promise-timeout").timeout;
 
+const OUTPUT_DIR = process.env.OUTPUT_DIR;
+
 const MAX_TEST_RUNTIME_MS = 30 * 60 * 1000;
 
 function pathWithoutExtension(fullPath: string, extension: string): string {
@@ -150,6 +152,19 @@ abstract class LanguageFixture extends Fixture {
         failWith("Fixture threw an exception", { error: e, sample });
       }
     });
+
+    // FIXME: This is an ugly hack to exclude Java, which has multiple
+    // output files.  We have to support that eventually.
+    if (OUTPUT_DIR !== undefined && this.language.output.indexOf("/") < 0) {
+      const outputDir = path.join(
+        OUTPUT_DIR,
+        this.language.name,
+        path.dirname(sample.path),
+        path.basename(sample.path, path.extname(sample.path))
+      );
+      shell.mkdir("-p", outputDir);
+      shell.cp(path.join(cwd, this.language.output), outputDir);
+    }
 
     shell.rm("-rf", cwd);
 
