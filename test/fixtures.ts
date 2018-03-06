@@ -5,6 +5,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { randomBytes } from "crypto";
 import { timeout } from "promise-timeout";
+import * as shell from "shelljs";
 
 const Ajv = require("ajv");
 
@@ -28,7 +29,6 @@ import { panic } from "../dist/Support";
 import { isDateTime } from "../dist/DateTime";
 
 const chalk = require("chalk");
-const shell = require("shelljs");
 
 const IS_CI = process.env.CI === "true";
 const BRANCH = process.env.TRAVIS_BRANCH;
