@@ -27,6 +27,9 @@ pushd ..
 aws --output text ssm get-parameters --names buildkite-id-rsa --with-decryption --query 'Parameters[0].Value' >id_rsa
 chmod 600 id_rsa
 
+if [ -d quicktype-outputs ] ; then
+    rm -rf quicktype-outputs
+fi
 GIT_SSH_COMMAND='ssh -i id_rsa' git clone git@github.com:quicktype/quicktype-outputs.git
 cd ./quicktype-outputs
 COMMIT_DIR="`pwd`/outputs/$BUILDKITE_COMMIT"
