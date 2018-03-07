@@ -11,7 +11,7 @@ commit_outputs () {
     if [ -d quicktype-outputs ] ; then
         rm -rf quicktype-outputs
     fi
-    GIT_SSH_COMMAND='ssh -i id_rsa' git clone git@github.com:quicktype/quicktype-outputs.git
+    GIT_SSH_COMMAND='ssh -o "StrictHostKeyChecking no" -i id_rsa' git clone git@github.com:quicktype/quicktype-outputs.git
     cd ./quicktype-outputs
     if [ ! -d outputs ] ; then
         mkdir outputs
@@ -24,6 +24,6 @@ commit_outputs () {
     git --no-pager add -A
     git --no-pager commit --no-edit -m "Outputs for $BUILDKITE_COMMIT"
 
-    GIT_SSH_COMMAND='ssh -i ../id_rsa' git push origin master
+    GIT_SSH_COMMAND='ssh -o "StrictHostKeyChecking no" -i ../id_rsa' git push origin master
     popd
 }

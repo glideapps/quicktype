@@ -167,7 +167,11 @@ abstract class LanguageFixture extends Fixture {
         path.dirname(sample.path),
         path.basename(sample.path, path.extname(sample.path))
       );
-      shell.mkdir("-p", outputDir);
+      try {
+        shell.mkdir("-p", outputDir);
+      } catch (e) {
+        console.error(`Error creating directory "${outputDir}" - probably another thread created it`);
+      }
       shell.cp(path.join(cwd, this.language.output), outputDir);
     }
 
