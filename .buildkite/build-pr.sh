@@ -1,11 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-if [[ "$BUILDKITE_PULL_REQUEST" != "false" ]]; then
-    BUILDKITE_COMMIT="`git rev-parse HEAD^`"
-fi
+BUILDKITE_COMMIT="`git rev-parse HEAD^`"
 
 QUICKTYPE_OUTPUTS="`mktemp -d`"
+git --no-pager show -s --format=fuller HEAD >"$QUICKTYPE_OUTPUTS/merge-commit"
 
 docker system prune --force
 
