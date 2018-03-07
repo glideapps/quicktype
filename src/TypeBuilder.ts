@@ -799,55 +799,62 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
     }
 }
 
-// FIXME: why is this a function when the same thing in IntersectionAccumulator
-// is a method?  If we make them both methods, maybe we can find a common
-// superclass or an interface for them.
-export function addTypeToUnionAccumulator(ua: UnionAccumulator<TypeRef, TypeRef, TypeRef>, t: Type): TypeAttributes {
-    const attributes = t.getAttributes();
-    let unionAttributes: TypeAttributes | undefined = undefined;
-    matchTypeExhaustive(
-        t,
-        _noneType => {
-            return;
-        },
-        _anyType => ua.addAny(attributes),
-        _nullType => ua.addNull(attributes),
-        _boolType => ua.addBool(attributes),
-        _integerType => ua.addInteger(attributes),
-        _doubleType => ua.addDouble(attributes),
-        stringType => {
-            const enumCases = stringType.enumCases;
-            if (enumCases === undefined) {
-                ua.addStringType("string", attributes);
-            } else {
-                ua.addEnumCases(enumCases, attributes);
-            }
-        },
-        arrayType => ua.addArray(arrayType.items.typeRef, attributes),
-        classType => ua.addClass(classType.typeRef, attributes),
-        mapType => ua.addMap(mapType.values.typeRef, attributes),
-        // FIXME: We're not carrying counts, so this is not correct if we do enum
-        // inference.  JSON Schema input uses this case, however, without enum
-        // inference, which is fine, but still a bit ugly.
-        enumType => ua.addEnumCases(enumType.cases.toOrderedMap().map(_ => 1), attributes),
-        unionType => {
-            unionAttributes = addTypesToUnionAccumulator(ua, unionType.members);
-            unionAttributes = combineTypeAttributes([attributes, unionAttributes]);
-        },
-        _dateType => ua.addStringType("date", attributes),
-        _timeType => ua.addStringType("time", attributes),
-        _dateTimeType => ua.addStringType("date-time", attributes)
-    );
-    if (unionAttributes === undefined) return emptyTypeAttributes;
-    return unionAttributes;
-}
+export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, TypeRef> {
+    private readonly _typesAdded: Set<Type> = Set();
 
-export function addTypesToUnionAccumulator(ua: UnionAccumulator<TypeRef, TypeRef, TypeRef>, types: Set<Type>): TypeAttributes {
-    if (types.size === 1) {
-        return addTypeToUnionAccumulator(ua, defined(types.first()));
+    // There is a method analogous to this in the IntersectionAccumulator.  It might
+    // make sense to find a common interface.
+    addType(t: Type): TypeAttributes {
+        if (this._typesAdded.has(t)) {
+            return emptyTypeAttributes;
+        }
+
+        const attributes = t.getAttributes();
+        let unionAttributes: TypeAttributes | undefined = undefined;
+        matchTypeExhaustive(
+            t,
+            _noneType => {
+                return;
+            },
+            _anyType => this.addAny(attributes),
+            _nullType => this.addNull(attributes),
+            _boolType => this.addBool(attributes),
+            _integerType => this.addInteger(attributes),
+            _doubleType => this.addDouble(attributes),
+            stringType => {
+                const enumCases = stringType.enumCases;
+                if (enumCases === undefined) {
+                    this.addStringType("string", attributes);
+                } else {
+                    this.addEnumCases(enumCases, attributes);
+                }
+            },
+            arrayType => this.addArray(arrayType.items.typeRef, attributes),
+            classType => this.addClass(classType.typeRef, attributes),
+            mapType => this.addMap(mapType.values.typeRef, attributes),
+            // FIXME: We're not carrying counts, so this is not correct if we do enum
+            // inference.  JSON Schema input uses this case, however, without enum
+            // inference, which is fine, but still a bit ugly.
+            enumType => this.addEnumCases(enumType.cases.toOrderedMap().map(_ => 1), attributes),
+            unionType => {
+                unionAttributes = this.addTypes(unionType.members);
+                unionAttributes = combineTypeAttributes([attributes, unionAttributes]);
+            },
+            _dateType => this.addStringType("date", attributes),
+            _timeType => this.addStringType("time", attributes),
+            _dateTimeType => this.addStringType("date-time", attributes)
+        );
+        if (unionAttributes === undefined) return emptyTypeAttributes;
+        return unionAttributes;
+    }    
+
+    addTypes(types: Set<Type>): TypeAttributes {
+        if (types.size === 1) {
+            return this.addType(defined(types.first()));
+        }
+    
+        return makeTypeAttributesInferred(combineTypeAttributes(types.map(m => this.addType(m)).toArray()));
     }
-
-    return makeTypeAttributesInferred(combineTypeAttributes(types.map(m => addTypeToUnionAccumulator(ua, m)).toArray()));
 }
 
 export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TClassData, TMapData> {

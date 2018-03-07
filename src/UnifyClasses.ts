@@ -9,8 +9,7 @@ import {
     TypeBuilder,
     TypeLookerUp,
     GraphRewriteBuilder,
-    UnionAccumulator,
-    addTypesToUnionAccumulator
+    TypeRefUnionAccumulator
 } from "./TypeBuilder";
 import { panic, assert, defined } from "./Support";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
@@ -173,8 +172,8 @@ export function unifyTypes<T extends Type>(
         return maybeTypeRef;
     }
 
-    const accumulator = new UnionAccumulator<TypeRef, TypeRef, TypeRef>(conflateNumbers);
-    const nestedAttributes = addTypesToUnionAccumulator(accumulator, types);
+    const accumulator = new TypeRefUnionAccumulator(conflateNumbers);
+    const nestedAttributes = accumulator.addTypes(types);
     typeAttributes = combineTypeAttributes([typeAttributes, nestedAttributes]);
 
     return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {
