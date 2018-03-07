@@ -4,26 +4,15 @@ make_outputs_dir () {
 }
 
 commit_outputs () {
-    pushd ..
-    aws --output text ssm get-parameters --names buildkite-id-rsa --with-decryption --query 'Parameters[0].Value' >id_rsa
-    chmod 600 id_rsa
-
-    if [ -d quicktype-outputs ] ; then
-        rm -rf quicktype-outputs
+    if [ "${FIXTURE:=none}" != "none" ] ; then
+        FILENAME="outputs-`echo $FIXTURE | cksum | awk '{ print $1 }'`.tar.gz"
+    else
+        FILENAME="outputs.tar.gz"
     fi
-    GIT_SSH_COMMAND='ssh -o "StrictHostKeyChecking no" -i id_rsa' git clone git@github.com:quicktype/quicktype-outputs.git
-    cd ./quicktype-outputs
-    if [ ! -d outputs ] ; then
-        mkdir outputs
-    fi
-    COMMIT_DIR="`pwd`/outputs/$BUILDKITE_COMMIT"
-    if [ ! -d "$COMMIT_DIR" ] ; then
-        mkdir "$COMMIT_DIR"
-    fi
-    cp -r "$QUICKTYPE_OUTPUTS"/* "$COMMIT_DIR/"
-    git --no-pager add -A
-    git --no-pager commit --no-edit -m "Outputs for $BUILDKITE_COMMIT"
-
-    GIT_SSH_COMMAND='ssh -o "StrictHostKeyChecking no" -i ../id_rsa' git push origin master
-    popd
+    COMMIT=`git rev-parse "$BUILDKITE_COMMIT"`
+    S3="s3://quicktype-outputs/$COMMIT/$FILENAME"
+    tar -zcvf "$QUICKTYPE_OUTPUTS/outputs.tar.gz" "$QUICKTYPE_OUTPUTS"/*
+    echo "Writing to $S3"
+    ls -l "$QUICKTYPE_OUTPUTS/outputs.tar.gz"
+    aws s3 cp "$QUICKTYPE_OUTPUTS/outputs.tar.gz" "$S3"
 }
