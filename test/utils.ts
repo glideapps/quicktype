@@ -126,10 +126,11 @@ export function testsInDir(dir: string, extension: string): string[] {
 export interface Sample {
   path: string;
   additionalRendererOptions: RendererOptions;
+  saveOutput: boolean;
 }
 
 export function samplesFromPaths(paths: string[]): Sample[] {
-  return paths.map(p => ({ path: p, additionalRendererOptions: {} }));
+  return paths.map(p => ({ path: p, additionalRendererOptions: {}, saveOutput: true }));
 }
 
 export function samplesFromSources(
@@ -178,11 +179,11 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
   const allowMissingNull = !!args.allowMissingNull;
   let jsonAreEqual = strict
     ? callAndReportFailure("Failed to strictly compare objects", () =>
-        strictDeepEquals(givenJSON, expectedJSON)
-      )
+      strictDeepEquals(givenJSON, expectedJSON)
+    )
     : callAndReportFailure("Failed to compare objects.", () =>
-        deepEquals(expectedJSON, givenJSON, allowMissingNull)
-      );
+      deepEquals(expectedJSON, givenJSON, allowMissingNull)
+    );
 
   if (!jsonAreEqual) {
     failWith("Error: Output is not equivalent to input.", {

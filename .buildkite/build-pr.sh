@@ -32,6 +32,9 @@ if [ -d quicktype-outputs ] ; then
 fi
 GIT_SSH_COMMAND='ssh -i id_rsa' git clone git@github.com:quicktype/quicktype-outputs.git
 cd ./quicktype-outputs
+if [ ! -d outputs ] ; then
+    mkdir outputs
+fi
 COMMIT_DIR="`pwd`/outputs/$BUILDKITE_COMMIT"
 if [ ! -d "$COMMIT_DIR" ] ; then
     mkdir "$COMMIT_DIR"

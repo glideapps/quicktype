@@ -155,7 +155,7 @@ abstract class LanguageFixture extends Fixture {
 
     // FIXME: This is an ugly hack to exclude Java, which has multiple
     // output files.  We have to support that eventually.
-    if (OUTPUT_DIR !== undefined && this.language.output.indexOf("/") < 0) {
+    if (sample.saveOutput && OUTPUT_DIR !== undefined && this.language.output.indexOf("/") < 0) {
       const outputDir = path.join(
         OUTPUT_DIR,
         this.language.name,
@@ -245,7 +245,8 @@ class JSONFixture extends LanguageFixture {
     if (sources.length === 0) {
       const quickTestSamples = _.map(this.language.quickTestRendererOptions, ro => ({
         path: combinationsInput,
-        additionalRendererOptions: ro
+        additionalRendererOptions: ro,
+        saveOutput: false
       }));
       priority = quickTestSamples.concat(priority);
     }
