@@ -29,7 +29,8 @@ docker build --cache-from schani/quicktype -t quicktype .
 docker run -t --workdir="/app" -e FIXTURE -v "$QUICKTYPE_OUTPUTS:/quicktype-outputs" -e "OUTPUT_DIR=/quicktype-outputs/outputs/$BUILDKITE_COMMIT" quicktype npm test
 
 cd "$QUICKTYPE_OUTPUTS"
-GIT_SSH_COMMAND='ssh -i ../id_rsa' git --no-pager pull --no-edit origin master
 git --no-pager add -A
 git --no-pager commit --no-edit -m "Outputs for $BUILDKITE_COMMIT"
+GIT_SSH_COMMAND='ssh -i ../id_rsa' git --no-pager fetch origin
+git --no-pager rebase origin/master
 GIT_SSH_COMMAND='ssh -i ../id_rsa' git push origin master
