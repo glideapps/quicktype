@@ -3,13 +3,13 @@
 import * as fs from "fs";
 
 import * as _ from "lodash";
+import * as shell from "shelljs";
 
 import { main as quicktype_, CLIOptions } from "../dist/cli";
-import { Options, RendererOptions } from "../dist";
+import { RendererOptions } from "../dist";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 
-const shell = require("shelljs");
 const chalk = require("chalk");
 const strictDeepEquals: (x: any, y: any) => boolean = require("deep-equal");
 
@@ -43,7 +43,7 @@ export function exec(
   cb?: any
 ): { stdout: string; code: number } {
   debug(s);
-  let result = shell.exec(s, opts, cb);
+  const result = shell.exec(s, opts, cb) as any;
 
   if (result.code !== 0) {
     console.error(result.stdout);
@@ -57,11 +57,7 @@ export function exec(
   return result;
 }
 
-export function execAsync(
-  s: string,
-  opts: { silent: boolean } = { silent: !DEBUG },
-  cb?: any
-) {
+export function execAsync(s: string, opts: { silent: boolean } = { silent: !DEBUG }) {
   return new Promise<{ stdout: string; code: number }>((resolve, reject) => {
     debug(s);
     shell.exec(s, opts, (code, stdout, stderr) => {
@@ -83,7 +79,7 @@ async function time<T>(work: () => Promise<T>): Promise<[T, number]> {
 }
 
 export async function quicktype(opts: Partial<CLIOptions>) {
-  let [result, duration] = await time(async () => {
+  await time(async () => {
     await quicktype_(opts);
   });
 }
@@ -105,11 +101,7 @@ export async function quicktypeForLanguage(
       graphqlSchema,
       topLevel: language.topLevel,
       alphabetizeProperties,
-      rendererOptions: _.merge(
-        {},
-        language.rendererOptions,
-        additionalRendererOptions
-      ),
+      rendererOptions: _.merge({}, language.rendererOptions, additionalRendererOptions),
       quiet: true
     });
   } catch (e) {
@@ -175,20 +167,12 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
   const given: any = args.given;
 
   const jsonString = given.file
-    ? callAndReportFailure("Could not read JSON output file", () =>
-        fs.readFileSync(given.file, "utf8")
-      )
-    : callAndReportFailure(
-        "Could not run command for JSON output",
-        () => exec(given.command).stdout
-      );
+    ? callAndReportFailure("Could not read JSON output file", () => fs.readFileSync(given.file, "utf8"))
+    : callAndReportFailure("Could not run command for JSON output", () => exec(given.command).stdout);
 
-  const givenJSON = callAndReportFailure("Could not parse output JSON", () =>
-    JSON.parse(jsonString)
-  );
-  const expectedJSON = callAndReportFailure(
-    "Could not read or parse expected JSON file",
-    () => JSON.parse(fs.readFileSync(expectedFile, "utf8"))
+  const givenJSON = callAndReportFailure("Could not parse output JSON", () => JSON.parse(jsonString));
+  const expectedJSON = callAndReportFailure("Could not read or parse expected JSON file", () =>
+    JSON.parse(fs.readFileSync(expectedFile, "utf8"))
   );
 
   const allowMissingNull = !!args.allowMissingNull;

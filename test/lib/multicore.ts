@@ -19,24 +19,21 @@ function randomPick<T>(arr: T[]): T {
 
 function guys(n: number): string {
   return _.range(n)
-    .map(i => randomPick(WORKERS))
+    .map(_i => randomPick(WORKERS))
     .join(" ");
 }
 
-export async function inParallel<Item, Result, Acc>(
-  args: ParallelArgs<Item, Result, Acc>
-) {
+export async function inParallel<Item, Result, Acc>(args: ParallelArgs<Item, Result, Acc>) {
   let { queue } = args;
-  let total = queue.length;
   let items = queue.map((item, i) => {
     return { item, i };
   });
 
   if (cluster.isMaster) {
     let { setup, workers, map } = args;
-    let accumulator = await setup();
+    await setup();
 
-    cluster.on("message", (worker, { result, item }) => {
+    cluster.on("message", (worker, { _result, _item }) => {
       if (items.length) {
         worker.send(items.shift());
       } else {
@@ -44,7 +41,7 @@ export async function inParallel<Item, Result, Acc>(
       }
     });
 
-    cluster.on("exit", (worker, code, signal) => {
+    cluster.on("exit", (_worker, code, _signal) => {
       if (code && code !== 0) {
         // Kill workers and exit if any worker dies
         _.forIn(cluster.workers, w => {
@@ -60,7 +57,7 @@ export async function inParallel<Item, Result, Acc>(
     if (workers < 2) {
       // We run everything on the master process if only one worker
       for (let { item, i } of items) {
-        let result = await map(item, i);
+        await map(item, i);
       }
     } else {
       _.range(workers).forEach(i =>
