@@ -1,9 +1,20 @@
 #!/bin/bash
 
-set -eu
+set -euo pipefail
 
 if [[ "$BUILDKITE_PULL_REQUEST" != "false" ]]; then
-    # Build the merge commit of the PR
-    git fetch origin "pull/$BUILDKITE_PULL_REQUEST/merge"
-    git checkout -qf FETCH_HEAD
+    # Build the merge commit of the PR.  Unfortunately GitHub's merge
+    # commit sometimes doesn't seem to update, so we fetch the head
+    # and then merge in master.
+
+    git --no-pager config --global user.email "buildkitepr@quicktype.io" || true
+    git --no-pager config --global user.name "Buildkite PR builder" || true
+
+    git --no-pager branch -D pr || true
+    git --no-pager fetch origin "pull/$BUILDKITE_PULL_REQUEST/head:pr"
+    git --no-pager status
+    git --no-pager checkout pr
+    git --no-pager merge --no-ff --no-edit master
 fi
+
+git --no-pager log 'HEAD~5..HEAD'

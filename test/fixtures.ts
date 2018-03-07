@@ -30,6 +30,7 @@ const chalk = require("chalk");
 const timeout = require("promise-timeout").timeout;
 
 const OUTPUT_DIR = process.env.OUTPUT_DIR;
+const ONLY_OUTPUT = process.env.ONLY_OUTPUT !== undefined;
 
 const MAX_TEST_RUNTIME_MS = 30 * 60 * 1000;
 
@@ -102,7 +103,7 @@ abstract class LanguageFixture extends Fixture {
 
   async setup() {
     const setupCommand = this.language.setupCommand;
-    if (!setupCommand) {
+    if (!setupCommand || ONLY_OUTPUT) {
       return;
     }
 
@@ -142,6 +143,10 @@ abstract class LanguageFixture extends Fixture {
 
     await inDir(cwd, async () => {
       await this.runQuicktype(sampleFile, sample.additionalRendererOptions);
+
+      if (ONLY_OUTPUT) {
+        return;
+      }
 
       try {
         await timeout(
@@ -242,7 +247,7 @@ class JSONFixture extends LanguageFixture {
     if (!combinationsInput) {
       return failWith("priority/combinations.json sample not found", prioritySamples);
     }
-    if (sources.length === 0) {
+    if (sources.length === 0 && !ONLY_OUTPUT) {
       const quickTestSamples = _.map(this.language.quickTestRendererOptions, ro => ({
         path: combinationsInput,
         additionalRendererOptions: ro,
