@@ -10,6 +10,7 @@ import { JavaTargetLanguage } from "./Java";
 import { JavaScriptTargetLanguage } from "./JavaScript";
 import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
 import SwiftTargetLanguage from "./Swift";
+import KotlinTargetLanguage from "./Kotlin";
 import ElmTargetLanguage from "./Elm";
 import JSONSchemaTargetLanguage from "./JSONSchema";
 import RustTargetLanguage from "./Rust";
@@ -26,6 +27,7 @@ export const all: TargetLanguage[] = [
     new JavaScriptTargetLanguage(),
     new FlowTargetLanguage(),
     new SwiftTargetLanguage(),
+    new KotlinTargetLanguage(),
     new ElmTargetLanguage(),
     new JSONSchemaTargetLanguage(),
     new RubyTargetLanguage()

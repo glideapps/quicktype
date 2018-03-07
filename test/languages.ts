@@ -503,3 +503,61 @@ export const FlowLanguage: Language = {
   quickTestRendererOptions: [],
   sourceFiles: ["src/language/Flow.ts"]
 };
+
+export const KotlinLanguage: Language = {
+  name: "kotlin",
+  base: "test/fixtures/kotlin",
+  compileCommand: "./build.sh",
+  runCommand(sample: string) {
+    return `cp "${sample}" sample.json && ./run.sh`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "bug427.json",
+    "keywords.json",
+    // TODO Investigate these
+    "34702.json",
+    "76ae1.json"
+  ],
+  allowMissingNull: true,
+  output: "TopLevel.kt",
+  topLevel: "TopLevel",
+  skipJSON: [
+    // Some odd property names prevent Klaxon from mapping to constructors
+    // https://github.com/cbeust/klaxon/issues/146
+    "blns-object.json",
+    "identifiers.json",
+    "simple-identifiers.json",
+    // Klaxon cannot parse List<List<Enum | Union>>
+    // https://github.com/cbeust/klaxon/issues/145
+    "kitchen-sink.json",
+    "26c9c.json",
+    "421d4.json",
+    "a0496.json",
+    "fcca3.json",
+    "ae9ca.json",
+    "617e8.json",
+    "5f7fe.json",
+    "f74d5.json",
+    "a3d8c.json",
+    // Top-level maps do not work yet
+    "ed095.json",
+    // Klaxon has a hard time with null inside collections
+    "combinations.json",
+    "unions.json",
+    "nst-test-suite.json",
+    // Klaxon does not support top-level primitives
+    "no-classes.json",
+    // These should be enabled
+    "nbl-stats.json",
+    // TODO Investigate these
+    "af2d1.json",
+    "32431.json",
+    "bug427.json"
+  ],
+  skipSchema: [],
+  skipMiscJSON: false,
+  rendererOptions: {},
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Kotlin.ts"]
+};

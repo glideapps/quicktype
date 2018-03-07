@@ -13,6 +13,10 @@ export function intercalate<T>(separator: T, items: Collection<any, T>): List<T>
     return List(acc);
 }
 
+export function intercalateArray<T>(separator: T, items: T[]): T[] {
+    return intercalate(separator, List(items)).toArray();
+}
+
 export function setUnion<T, TSet extends Set<T>>(a: TSet, b: TSet): TSet {
     return a.union(b) as TSet;
 }
