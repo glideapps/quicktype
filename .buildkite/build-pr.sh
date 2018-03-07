@@ -29,7 +29,11 @@ chmod 600 id_rsa
 
 GIT_SSH_COMMAND='ssh -i id_rsa' git clone git@github.com:quicktype/quicktype-outputs.git
 cd ./quicktype-outputs
-cp -r "$QUICKTYPE_OUTPUTS"/* ./outputs/$BUILDKITE_COMMIT/
+COMMIT_DIR="`pwd`/outputs/$BUILDKITE_COMMIT"
+if [ ! -d "$COMMIT_DIR" ] ; then
+    mkdir "$COMMIT_DIR"
+fi
+cp -r "$QUICKTYPE_OUTPUTS"/* "$COMMIT_DIR/"
 git --no-pager add -A
 git --no-pager commit --no-edit -m "Outputs for $BUILDKITE_COMMIT"
 
