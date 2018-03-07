@@ -12,7 +12,7 @@ import {
     UnionType
 } from "./Type";
 import { defined, assert, panic } from "./Support";
-import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
+import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
@@ -203,6 +203,8 @@ export class TypeGraph {
         return separateNamedTypes(types);
     };
 
+    // FIXME: This is for the provenance check in `rewrite` below.
+    /*
     private allProvenance(): Set<TypeRef> {
         assert(this._haveProvenanceAttributes);
 
@@ -213,6 +215,7 @@ export class TypeGraph {
             return Set();
         }).reduce<Set<TypeRef>>((a, b) => a.union(b));
     }
+    */
 
     // Each array in `replacementGroups` is a bunch of types to be replaced by a
     // single new type.  `replacer` is a function that takes a group and a
@@ -239,14 +242,16 @@ export class TypeGraph {
         ).finish();
 
         // FIXME: Make this enable-able via the command line
+        /*
         if (this._haveProvenanceAttributes) {
             const oldProvenance = this.allProvenance();
             const newProvenance = newGraph.allProvenance();
             if (oldProvenance.size !== newProvenance.size) {
                 const difference = oldProvenance.subtract(newProvenance);
-                `Type attributes for ${difference.size} types were not carried over to the new graph`;
+                return panic(`Type attributes for ${difference.size} types were not carried over to the new graph`);
             }
         }
+        */
 
         return newGraph;
     }
@@ -288,7 +293,7 @@ export class TypeGraph {
             const t = types[i];
             const namesString = t.hasNames ? ` name: ${t.getCombinedName()}` : "";
             const children = t.children;
-            const childrenString = children.isEmpty() ? "" : ` children: ${children.map(t => t.typeRef.getIndex()).join(",")}`;
+            const childrenString = children.isEmpty() ? "" : ` children: ${children.map(c => c.typeRef.getIndex()).join(",")}`;
             console.log(`${i}: ${t.kind}${namesString}${childrenString}`);
         }
     }

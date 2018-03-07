@@ -50,8 +50,8 @@ export function flattenUnions(
         return unifyTypes(types, Map(), builder, unionBuilder, conflateNumbers, forwardingRef);
     }
 
-    const unions = graph.allTypesUnordered().filter(t => t instanceof UnionType) as Set<UnionType>;
-    const nonCanonicalUnions = unions.filter(u => !u.isCanonical);
+    const allUnions = graph.allTypesUnordered().filter(t => t instanceof UnionType) as Set<UnionType>;
+    const nonCanonicalUnions = allUnions.filter(u => !u.isCanonical);
     let singleTypeGroups = Map<Type, OrderedSet<Type>>();
     const groups: Type[][] = [];
     let foundIntersection: boolean = false;
