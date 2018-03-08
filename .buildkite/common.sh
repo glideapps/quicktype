@@ -14,5 +14,5 @@ commit_outputs () {
     tar -zcvf "$QUICKTYPE_OUTPUTS/outputs.tar.gz" "$QUICKTYPE_OUTPUTS"/*
     echo "Writing to $S3"
     ls -l "$QUICKTYPE_OUTPUTS/outputs.tar.gz"
-    aws s3 cp "$QUICKTYPE_OUTPUTS/outputs.tar.gz" "$S3"
+    aws s3 cp --acl public-read "$QUICKTYPE_OUTPUTS/outputs.tar.gz" "$S3"
 }
