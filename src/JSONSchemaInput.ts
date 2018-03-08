@@ -8,7 +8,7 @@ import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "
 import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
-import { TypeAttributes, descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./TypeAttributes";
+import { TypeAttributes, descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind, makeTypeAttributesInferred } from "./TypeAttributes";
 
 export enum PathElementKind {
     Root,
@@ -291,7 +291,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
         typeAttributes = makeAttributes(
             schema,
             path,
-            modifyTypeNames(typeAttributes, tn => defined(tn).makeInferred())
+            makeTypeAttributesInferred(typeAttributes)
         );
         switch (typeName) {
             case "object":
