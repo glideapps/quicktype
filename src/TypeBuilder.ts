@@ -582,14 +582,24 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         });
     }
 
-    reconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
-        assert(originalRef.graph === this._originalGraph, "Trying to reconstitute a type from the wrong graph");
-        if (maybeForwardingRef !== undefined) {
-            assert(maybeForwardingRef.graph === this.typeGraph, "Trying to forward a type to the wrong graph");
+    private assertTypeRefsToReconstitute(typeRefs: TypeRef[], forwardingRef?: TypeRef): void {
+        for (const originalRef of typeRefs) {
+            assert(originalRef.graph === this._originalGraph, "Trying to reconstitute a type from the wrong graph");
         }
+        if (forwardingRef !== undefined) {
+            assert(forwardingRef.graph === this.typeGraph, "Trying to forward a type to the wrong graph");
+        }
+    }
+
+    reconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
+        this.assertTypeRefsToReconstitute([originalRef], maybeForwardingRef);
+
         const index = originalRef.getIndex();
         const maybeTypeRef = this._reconstitutedTypes.get(index);
-        if (maybeTypeRef !== undefined) {
+        if (maybeTypeRef !== undefined && maybeTypeRef !== maybeForwardingRef) {
+            if (maybeForwardingRef !== undefined) {
+                maybeForwardingRef.resolve(maybeTypeRef);
+            }
             return maybeTypeRef;
         }
         const maybeSet = this._setsToReplaceByMember.get(index);
@@ -604,6 +614,8 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
     }
 
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined {
+        this.assertTypeRefsToReconstitute(typeRefs, forwardingRef);
+
         let maybeRef = this._reconstitutedTypes.get(typeRefs[0].getIndex());
         // FIXME: Why are we looking at the index here?  We don't do it further down.
         if (maybeRef !== undefined && maybeRef.maybeIndex !== undefined && maybeRef !== forwardingRef) {
