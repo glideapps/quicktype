@@ -87,7 +87,7 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
             return t;
         }
         if (classes.length === 1) {
-            const t = this.typeBuilder.lookupTypeRef(classes[0], forwardingRef);
+            const t = this.typeBuilder.reconstituteTypeRef(classes[0], forwardingRef);
             this.typeBuilder.addAttributes(t, typeAttributes);
             return t;
         }
@@ -159,7 +159,7 @@ export function unifyTypes<T extends Type>(
     } else if (types.count() === 1) {
         const first = defined(types.first());
         if (!(first instanceof UnionType)) {
-            const tref = typeBuilder.lookupTypeRef(first.typeRef, maybeForwardingRef);
+            const tref = typeBuilder.reconstituteTypeRef(first.typeRef, maybeForwardingRef);
             typeBuilder.addAttributes(tref, typeAttributes);
             return tref;
         }

@@ -20,7 +20,13 @@ import {
     IntersectionType
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
-import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes, makeTypeAttributesInferred } from "./TypeAttributes";
+import {
+    TypeAttributes,
+    combineTypeAttributes,
+    TypeAttributeKind,
+    emptyTypeAttributes,
+    makeTypeAttributesInferred
+} from "./TypeAttributes";
 import { defined, assert, panic, assertNever, setUnion } from "./Support";
 
 export type TypeRefCallback = (index: number) => void;
@@ -141,7 +147,10 @@ export abstract class TypeBuilder {
         private readonly _addProvenanceAttributes: boolean,
         inheritsProvenanceAttributes: boolean
     ) {
-        assert(!_addProvenanceAttributes || !inheritsProvenanceAttributes, "We can't both inherit as well as add provenance");
+        assert(
+            !_addProvenanceAttributes || !inheritsProvenanceAttributes,
+            "We can't both inherit as well as add provenance"
+        );
         this.typeGraph = new TypeGraph(this, _addProvenanceAttributes || inheritsProvenanceAttributes);
     }
 
@@ -157,7 +166,9 @@ export abstract class TypeBuilder {
         // console.log(`reserving ${index}`);
         this.types.push(undefined);
         const tref = new TypeRef(this.typeGraph, index, undefined);
-        const attributes: TypeAttributes = this._addProvenanceAttributes ? provenanceTypeAttributeKind.makeAttributes(Set([tref])) : Map();
+        const attributes: TypeAttributes = this._addProvenanceAttributes
+            ? provenanceTypeAttributeKind.makeAttributes(Set([tref]))
+            : Map();
         this.typeAttributes.push(attributes);
         return tref;
     }
@@ -401,7 +412,7 @@ export abstract class TypeBuilder {
 
 export interface TypeLookerUp {
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined;
-    lookupTypeRef(typeRef: TypeRef, forwardingRef?: TypeRef): TypeRef;
+    reconstituteTypeRef(typeRef: TypeRef, forwardingRef?: TypeRef): TypeRef;
     registerUnion(typeRefs: TypeRef[], reconstituted: TypeRef): void;
 }
 
@@ -423,7 +434,7 @@ export class TypeReconstituter {
         private readonly _makeClassUnique: boolean,
         private readonly _typeAttributes: TypeAttributes,
         private readonly _forwardingRef: TypeRef
-    ) { }
+    ) {}
 
     private useBuilder(): TypeBuilder {
         assert(!this._wasUsed, "TypeReconstituter used more than once");
@@ -560,7 +571,18 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         });
     }
 
-    private getReconstitutedType(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
+    private forceReconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
+        return this.withForwardingRef(maybeForwardingRef, (forwardingRef: TypeRef): TypeRef => {
+            this._reconstitutedTypes = this._reconstitutedTypes.set(originalRef.getIndex(), forwardingRef);
+            const [originalType, originalNames] = originalRef.deref();
+            return originalType.map(
+                new TypeReconstituter(this, this.alphabetizeProperties, originalNames, forwardingRef),
+                (ref: TypeRef) => this.reconstituteTypeRef(ref)
+            );
+        });
+    }
+
+    reconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
         assert(originalRef.graph === this._originalGraph, "Trying to reconstitute a type from the wrong graph");
         if (maybeForwardingRef !== undefined) {
             assert(maybeForwardingRef.graph === this.typeGraph, "Trying to forward a type to the wrong graph");
@@ -574,19 +596,11 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         if (maybeSet !== undefined) {
             return this.replaceSet(maybeSet);
         }
-
-        return this.withForwardingRef(maybeForwardingRef, (forwardingRef: TypeRef): TypeRef => {
-            this._reconstitutedTypes = this._reconstitutedTypes.set(index, forwardingRef);
-            const [originalType, originalNames] = originalRef.deref();
-            return originalType.map(
-                new TypeReconstituter(this, this.alphabetizeProperties, originalNames, forwardingRef),
-                (ref: TypeRef) => this.getReconstitutedType(ref)
-            );
-        });
+        return this.forceReconstituteTypeRef(originalRef, maybeForwardingRef);
     }
 
     reconstituteType(t: Type, forwardingRef?: TypeRef): TypeRef {
-        return this.getReconstitutedType(t.typeRef, forwardingRef);
+        return this.reconstituteTypeRef(t.typeRef, forwardingRef);
     }
 
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined {
@@ -626,16 +640,12 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
             }
         }
 
-        return this.reconstituteType(typeRefs[0].deref()[0], forwardingRef);
-    }
-
-    lookupTypeRef(typeRef: TypeRef, forwardingRef?: TypeRef): TypeRef {
-        return this.reconstituteType(typeRef.deref()[0], forwardingRef);
+        return this.forceReconstituteTypeRef(typeRefs[0], forwardingRef);
     }
 
     finish(): TypeGraph {
         this._originalGraph.topLevels.forEach((t, name) => {
-            this.addTopLevel(name, this.getReconstitutedType(t.typeRef));
+            this.addTopLevel(name, this.reconstituteTypeRef(t.typeRef));
         });
         return super.finish();
     }
@@ -658,12 +668,19 @@ export interface UnionTypeProvider<TArrayData, TClassData, TMapData> {
 
 export type TypeAttributeMap<T extends TypeKind> = OrderedMap<T, TypeAttributes>;
 
-function addAttributes(accumulatorAttributes: TypeAttributes | undefined, newAttributes: TypeAttributes): TypeAttributes {
+function addAttributes(
+    accumulatorAttributes: TypeAttributes | undefined,
+    newAttributes: TypeAttributes
+): TypeAttributes {
     if (accumulatorAttributes === undefined) return newAttributes;
     return combineTypeAttributes([accumulatorAttributes, newAttributes]);
 }
 
-function setAttributes<T extends TypeKind>(attributeMap: TypeAttributeMap<T>, kind: T, newAttributes: TypeAttributes): TypeAttributeMap<T> {
+function setAttributes<T extends TypeKind>(
+    attributeMap: TypeAttributeMap<T>,
+    kind: T,
+    newAttributes: TypeAttributes
+): TypeAttributeMap<T> {
     return attributeMap.set(kind, addAttributes(attributeMap.get(kind), newAttributes));
 }
 
@@ -685,10 +702,12 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
     enumCaseMap: { [name: string]: number } = {};
     enumCases: string[] = [];
 
-    constructor(private readonly _conflateNumbers: boolean) { }
+    constructor(private readonly _conflateNumbers: boolean) {}
 
     private have(kind: TypeKind): boolean {
-        return this._nonStringTypeAttributes.has(kind) || this._stringTypeAttributes.has(kind as PrimitiveStringTypeKind);
+        return (
+            this._nonStringTypeAttributes.has(kind) || this._stringTypeAttributes.has(kind as PrimitiveStringTypeKind)
+        );
     }
 
     get haveString(): boolean {
@@ -843,7 +862,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, 
 }
 
 export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TClassData, TMapData> {
-    constructor(protected readonly typeBuilder: TBuilder) { }
+    constructor(protected readonly typeBuilder: TBuilder) {}
 
     protected abstract makeEnum(
         cases: string[],
