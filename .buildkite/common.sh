@@ -11,7 +11,9 @@ commit_outputs () {
     fi
     COMMIT=`git rev-parse "$BUILDKITE_COMMIT"`
     S3="s3://quicktype-outputs/$COMMIT/$FILENAME"
-    tar -zcf "$QUICKTYPE_OUTPUTS/outputs.tar.gz" "$QUICKTYPE_OUTPUTS"/*
+    pushd "$QUICKTYPE_OUTPUTS"
+    tar -zcf outputs.tar.gz *
+    popd
     echo "Writing to $S3"
     ls -l "$QUICKTYPE_OUTPUTS/outputs.tar.gz"
     aws s3 cp --acl public-read "$QUICKTYPE_OUTPUTS/outputs.tar.gz" "$S3"
