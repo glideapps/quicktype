@@ -603,9 +603,13 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         return this.reconstituteTypeRef(t.typeRef, forwardingRef);
     }
 
+    // If the union of these type refs have been, or are supposed to be, reconstituted to
+    // one target type, return it.  Otherwise return undefined.
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined {
         this.assertTypeRefsToReconstitute(typeRefs, forwardingRef);
 
+        // Check whether we have already reconstituted them.  That means ensuring
+        // that they all have the same target type.
         let maybeRef = this._reconstitutedTypes.get(typeRefs[0].getIndex());
         if (maybeRef !== undefined && maybeRef !== forwardingRef) {
             let allEqual = true;
@@ -623,6 +627,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
             }
         }
 
+        // Has this been reconstituted as a set?
         maybeRef = this._reconstitutedUnions.get(Set(typeRefs));
         if (maybeRef !== undefined && maybeRef !== forwardingRef) {
             if (forwardingRef !== undefined) {
@@ -631,6 +636,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
             return maybeRef;
         }
 
+        // Is this set requested to be replaced?  If not, we're out of options.
         const maybeSet = this._setsToReplaceByMember.get(typeRefs[0].getIndex());
         if (maybeSet === undefined) {
             return undefined;
@@ -640,6 +646,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
                 return undefined;
             }
         }
+        // Yes, this set is requested to be replaced, so do it.
         return this.replaceSet(maybeSet, forwardingRef);
     }
 
