@@ -650,8 +650,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
                 return undefined;
             }
         }
-
-        return this.forceReconstituteTypeRef(typeRefs[0], forwardingRef);
+        return this.replaceSet(maybeSet, forwardingRef);
     }
 
     finish(): TypeGraph {
