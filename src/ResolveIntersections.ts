@@ -384,7 +384,7 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
             return builder.getPrimitiveType("any", forwardingRef);
         }
         if (members.size === 1) {
-            const single = builder.reconstituteType(defined(members.first()));
+            const single = builder.reconstituteType(defined(members.first()), forwardingRef);
             builder.addAttributes(single, intersectionAttributes);
             return single;
         }

@@ -400,28 +400,9 @@ export abstract class TypeBuilder {
 }
 
 export interface TypeLookerUp {
-    lookupTypeRefs(typeRefs: TypeRef[]): TypeRef | undefined;
-    lookupTypeRef(typeRef: TypeRef): TypeRef;
-    lookupType(typeRef: TypeRef): Type | undefined;
+    lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined;
+    lookupTypeRef(typeRef: TypeRef, forwardingRef?: TypeRef): TypeRef;
     registerUnion(typeRefs: TypeRef[], reconstituted: TypeRef): void;
-}
-
-// Here's a case we can't handle: If the schema specifies
-// types
-//
-//   Foo = class { x: Bar }
-//   Bar = Foo | Quux
-//   Quux = class { ... }
-//
-// then to resolve the properties of `Foo` we have to know
-// the properties of `Bar`, but to resolve those we have to
-// know the properties of `Foo`.
-export function getHopefullyFinishedType(builder: TypeLookerUp, t: TypeRef): Type {
-    const result = builder.lookupType(t);
-    if (result === undefined) {
-        return panic("Inconveniently recursive types");
-    }
-    return result;
 }
 
 export class TypeGraphBuilder extends TypeBuilder {
@@ -579,7 +560,11 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         });
     }
 
-    private getReconstitutedType = (originalRef: TypeRef): TypeRef => {
+    private getReconstitutedType(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
+        assert(originalRef.graph === this._originalGraph, "Trying to reconstitute a type from the wrong graph");
+        if (maybeForwardingRef !== undefined) {
+            assert(maybeForwardingRef.graph === this.typeGraph, "Trying to forward a type to the wrong graph");
+        }
         const index = originalRef.getIndex();
         const maybeTypeRef = this._reconstitutedTypes.get(index);
         if (maybeTypeRef !== undefined) {
@@ -589,24 +574,25 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         if (maybeSet !== undefined) {
             return this.replaceSet(maybeSet);
         }
-        return this.withForwardingRef(undefined, forwardingRef => {
+
+        return this.withForwardingRef(maybeForwardingRef, (forwardingRef: TypeRef): TypeRef => {
             this._reconstitutedTypes = this._reconstitutedTypes.set(index, forwardingRef);
             const [originalType, originalNames] = originalRef.deref();
             return originalType.map(
                 new TypeReconstituter(this, this.alphabetizeProperties, originalNames, forwardingRef),
-                this.getReconstitutedType
+                (ref: TypeRef) => this.getReconstitutedType(ref)
             );
         });
-    };
+    }
 
-    reconstituteType = (t: Type): TypeRef => {
-        assert(t.typeRef.graph === this._originalGraph, "Trying to reconstitute a type from the wrong graph");
-        return this.getReconstitutedType(t.typeRef);
-    };
+    reconstituteType(t: Type, forwardingRef?: TypeRef): TypeRef {
+        return this.getReconstitutedType(t.typeRef, forwardingRef);
+    }
 
-    lookupTypeRefs(typeRefs: TypeRef[]): TypeRef | undefined {
+    lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined {
         let maybeRef = this._reconstitutedTypes.get(typeRefs[0].getIndex());
-        if (maybeRef !== undefined && maybeRef.maybeIndex !== undefined) {
+        // FIXME: Why are we looking at the index here?  We don't do it further down.
+        if (maybeRef !== undefined && maybeRef.maybeIndex !== undefined && maybeRef !== forwardingRef) {
             let allEqual = true;
             for (let i = 1; i < typeRefs.length; i++) {
                 if (this._reconstitutedTypes.get(typeRefs[i].getIndex()) !== maybeRef) {
@@ -615,12 +601,18 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
                 }
             }
             if (allEqual) {
+                if (forwardingRef !== undefined) {
+                    forwardingRef.resolve(maybeRef);
+                }
                 return maybeRef;
             }
         }
 
         maybeRef = this._reconstitutedUnions.get(Set(typeRefs));
-        if (maybeRef !== undefined) {
+        if (maybeRef !== undefined && maybeRef !== forwardingRef) {
+            if (forwardingRef !== undefined) {
+                forwardingRef.resolve(maybeRef);
+            }
             return maybeRef;
         }
 
@@ -634,19 +626,12 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
             }
         }
 
-        return this.reconstituteType(typeRefs[0].deref()[0]);
+        return this.reconstituteType(typeRefs[0].deref()[0], forwardingRef);
     }
 
-    lookupTypeRef = (typeRef: TypeRef): TypeRef => {
-        return this.reconstituteType(typeRef.deref()[0]);
-    };
-
-    lookupType = (typeRef: TypeRef): Type | undefined => {
-        const tref = this.lookupTypeRef(typeRef);
-        const maybeIndex = tref.maybeIndex;
-        if (maybeIndex === undefined) return undefined;
-        return this.types[maybeIndex];
-    };
+    lookupTypeRef(typeRef: TypeRef, forwardingRef?: TypeRef): TypeRef {
+        return this.reconstituteType(typeRef.deref()[0], forwardingRef);
+    }
 
     finish(): TypeGraph {
         this._originalGraph.topLevels.forEach((t, name) => {
@@ -846,13 +831,13 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, 
         );
         if (unionAttributes === undefined) return emptyTypeAttributes;
         return unionAttributes;
-    }    
+    }
 
     addTypes(types: Set<Type>): TypeAttributes {
         if (types.size === 1) {
             return this.addType(defined(types.first()));
         }
-    
+
         return makeTypeAttributesInferred(combineTypeAttributes(types.map(m => this.addType(m)).toArray()));
     }
 }

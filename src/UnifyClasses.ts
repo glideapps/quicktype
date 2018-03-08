@@ -87,11 +87,11 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
             return t;
         }
         if (classes.length === 1) {
-            const t = this.typeBuilder.lookupTypeRef(classes[0]);
+            const t = this.typeBuilder.lookupTypeRef(classes[0], forwardingRef);
             this.typeBuilder.addAttributes(t, typeAttributes);
             return t;
         }
-        const maybeTypeRef = this.typeBuilder.lookupTypeRefs(classes);
+        const maybeTypeRef = this.typeBuilder.lookupTypeRefs(classes, forwardingRef);
         // FIXME: Comparing this to `forwardingRef` feels like it will come
         // crashing on our heads eventually.  The reason we need it here is
         // because `unifyTypes` registers the union that we're supposed to
@@ -159,14 +159,14 @@ export function unifyTypes<T extends Type>(
     } else if (types.count() === 1) {
         const first = defined(types.first());
         if (!(first instanceof UnionType)) {
-            const tref = typeBuilder.lookupTypeRef(first.typeRef);
+            const tref = typeBuilder.lookupTypeRef(first.typeRef, maybeForwardingRef);
             typeBuilder.addAttributes(tref, typeAttributes);
             return tref;
         }
     }
 
     const typeRefs = types.toArray().map(t => t.typeRef);
-    const maybeTypeRef = typeBuilder.lookupTypeRefs(typeRefs);
+    const maybeTypeRef = typeBuilder.lookupTypeRefs(typeRefs, maybeForwardingRef);
     if (maybeTypeRef !== undefined) {
         typeBuilder.addAttributes(maybeTypeRef, typeAttributes);
         return maybeTypeRef;
