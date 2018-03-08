@@ -559,8 +559,8 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         return actualRef;
     }
 
-    private replaceSet(typesToReplace: Set<T>): TypeRef {
-        return this.withForwardingRef(undefined, forwardingRef => {
+    private replaceSet(typesToReplace: Set<T>, maybeForwardingRef: TypeRef | undefined): TypeRef {
+        return this.withForwardingRef(maybeForwardingRef, forwardingRef => {
             typesToReplace.forEach(t => {
                 const originalRef = t.typeRef;
                 const index = originalRef.getIndex();
@@ -604,7 +604,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         }
         const maybeSet = this._setsToReplaceByMember.get(index);
         if (maybeSet !== undefined) {
-            return this.replaceSet(maybeSet);
+            return this.replaceSet(maybeSet, maybeForwardingRef);
         }
         return this.forceReconstituteTypeRef(originalRef, maybeForwardingRef);
     }
