@@ -645,7 +645,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
 
     finish(): TypeGraph {
         this._originalGraph.topLevels.forEach((t, name) => {
-            this.addTopLevel(name, this.reconstituteTypeRef(t.typeRef));
+            this.addTopLevel(name, this.reconstituteType(t));
         });
         return super.finish();
     }
