@@ -484,7 +484,7 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     protected emitDefaultLeadingComments(): void {
         this.emitLine(
-            "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do",
+            "// Bro! To parse this JSON data, add NuGet 'Newtonsoft.Json' then do",
             this.topLevels.size === 1 ? "" : " one of these",
             ":"
         );
