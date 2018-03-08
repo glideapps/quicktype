@@ -617,8 +617,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         this.assertTypeRefsToReconstitute(typeRefs, forwardingRef);
 
         let maybeRef = this._reconstitutedTypes.get(typeRefs[0].getIndex());
-        // FIXME: Why are we looking at the index here?  We don't do it further down.
-        if (maybeRef !== undefined && maybeRef.maybeIndex !== undefined && maybeRef !== forwardingRef) {
+        if (maybeRef !== undefined && maybeRef !== forwardingRef) {
             let allEqual = true;
             for (let i = 1; i < typeRefs.length; i++) {
                 if (this._reconstitutedTypes.get(typeRefs[i].getIndex()) !== maybeRef) {
