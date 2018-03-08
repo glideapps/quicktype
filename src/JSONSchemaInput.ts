@@ -19,7 +19,8 @@ export enum PathElementKind {
     Property,
     AdditionalProperty,
     Items,
-    Type
+    Type,
+    Object
 }
 
 export type PathElement =
@@ -31,7 +32,8 @@ export type PathElement =
     | { kind: PathElementKind.Property; name: string }
     | { kind: PathElementKind.AdditionalProperty }
     | { kind: PathElementKind.Items }
-    | { kind: PathElementKind.Type; index: number };
+    | { kind: PathElementKind.Type; index: number }
+    | { kind: PathElementKind.Object };
 
 export type Ref = List<PathElement>;
 
@@ -126,6 +128,8 @@ function refToString(ref: Ref): string {
                 return "items";
             case PathElementKind.Type:
                 return `type/${e.index.toString()}`;
+            case PathElementKind.Object:
+                return "object";
             default:
                 return assertNever(e);
         }
@@ -241,6 +245,8 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
                 return lookupRef(checkStringMap(local.items), localPath, rest);
             case PathElementKind.Type:
                 return panic('Cannot look up path that indexes "type"');
+            case PathElementKind.Object:
+                return panic('Cannot look up path that indexes "object"');
             default:
                 return assertNever(first);
         }
@@ -372,32 +378,20 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
     function convertToType(schema: StringMap, path: Ref, typeAttributes: TypeAttributes): TypeRef {
         typeAttributes = makeAttributes(schema, path, typeAttributes);
 
-        function convertOneOrAnyOf(cases: any, kind: PathElementKind.OneOf | PathElementKind.AnyOf): TypeRef {
+        function makeTypesFromCases(cases: any, kind: PathElementKind.OneOf | PathElementKind.AnyOf | PathElementKind.AllOf): TypeRef[] {
             if (!Array.isArray(cases)) {
-                return panic(`oneOf or anyOf is not an array: ${cases}`);
+                return panic(`Cases are not an array: ${cases}`);
             }
-            const unionType = typeBuilder.getUniqueUnionType(typeAttributes, undefined);
-            setTypeForPath(path, unionType);
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
-            const types = cases.map((t, index) =>
-                toType(checkStringMap(t), path.push({ kind, index } as any), typeAttributes)
+            return cases.map((t, index) =>
+                toType(checkStringMap(t), path.push({ kind, index } as any), makeTypeAttributesInferred(typeAttributes))
             );
-            typeBuilder.setSetOperationMembers(unionType, OrderedSet(types));
-            return unionType;
         }
 
-        function convertAllOf(cases: any): TypeRef {
-            if (!Array.isArray(cases)) {
-                return panic(`allOf is not an array at ${refToString(path)}: ${cases}`);
-            }
-            const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
-            setTypeForPath(path, intersectionType);
-            // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
-            const types = cases.map((t, index) =>
-                toType(checkStringMap(t), path.push({ kind: PathElementKind.AllOf, index } as any), typeAttributes)
-            );
-            typeBuilder.setSetOperationMembers(intersectionType, OrderedSet(types));
-            return intersectionType;
+        function convertOneOrAnyOf(cases: any, kind: PathElementKind.OneOf | PathElementKind.AnyOf): TypeRef {
+            const unionType = typeBuilder.getUniqueUnionType(makeTypeAttributesInferred(typeAttributes), undefined);
+            typeBuilder.setSetOperationMembers(unionType, OrderedSet(makeTypesFromCases(cases, kind)));
+            return unionType;
         }
 
         if (schema.$ref !== undefined) {
@@ -424,30 +418,43 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
             } else {
                 return tref;
             }
-        } else if (schema.type !== undefined) {
-            const jsonTypes = checkTypeList(schema.type);
+        }
+
+        let jsonTypes: OrderedSet<string> | undefined = undefined;
+        if (schema.type !== undefined) {
+            jsonTypes = checkTypeList(schema.type);
+        } else if (schema.properties !== undefined || schema.additionalProperties !== undefined) {
+            jsonTypes = OrderedSet(["object"]);
+        }
+
+        const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
+        setTypeForPath(path, intersectionType);
+        const types: TypeRef[] = [];
+        if (schema.allOf !== undefined) {
+            types.push(...makeTypesFromCases(schema.allOf, PathElementKind.AllOf));
+        }
+        if (schema.oneOf) {
+            types.push(convertOneOrAnyOf(schema.oneOf, PathElementKind.OneOf));
+        }
+        if (schema.anyOf) {
+            types.push(convertOneOrAnyOf(schema.anyOf, PathElementKind.AnyOf));
+        }
+        if (jsonTypes !== undefined) {
             if (jsonTypes.size === 1) {
-                return fromTypeName(schema, path, typeAttributes, defined(jsonTypes.first()));
+                types.push(fromTypeName(schema, path.push({ kind: PathElementKind.Object }), typeAttributes, defined(jsonTypes.first())));
             } else {
                 const unionType = typeBuilder.getUniqueUnionType(typeAttributes, undefined);
-                setTypeForPath(path, unionType);
-                const types = jsonTypes
+                const unionTypes = jsonTypes
                     .toList()
                     .map((n, index) =>
                         fromTypeName(schema, path.push({ kind: PathElementKind.Type, index }), typeAttributes, n)
                     );
-                typeBuilder.setSetOperationMembers(unionType, OrderedSet(types));
-                return unionType;
+                typeBuilder.setSetOperationMembers(unionType, OrderedSet(unionTypes));
+                types.push(unionType);
             }
-        } else if (schema.oneOf !== undefined) {
-            return convertOneOrAnyOf(schema.oneOf, PathElementKind.OneOf);
-        } else if (schema.anyOf !== undefined) {
-            return convertOneOrAnyOf(schema.anyOf, PathElementKind.AnyOf);
-        } else if (schema.allOf !== undefined) {
-            return convertAllOf(schema.allOf);
-        } else {
-            return typeBuilder.getPrimitiveType("any");
         }
+        typeBuilder.setSetOperationMembers(intersectionType, OrderedSet(types));
+        return intersectionType;
     }
 
     function toType(schema: StringMap, path: Ref, typeAttributes: TypeAttributes): TypeRef {
