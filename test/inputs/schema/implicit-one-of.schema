@@ -1,0 +1,21 @@
+{
+  "oneOf": [{ "$ref": "#/definitions/base1" }, { "$ref": "#/definitions/base2" }],
+  "properties": {
+    "foo": { "type": "integer" }
+  },
+  "required": ["foo"],
+  "definitions": {
+    "base1": {
+      "properties": {
+        "bar": { "type": "boolean" }
+      },
+      "required": ["bar"]
+    },
+    "base2": {
+      "properties": {
+        "quux": { "type": "string" }
+      },
+      "required": ["quux"]
+    }
+  }
+}

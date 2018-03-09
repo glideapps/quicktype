@@ -837,12 +837,13 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
     }
 }
 
+// FIXME: Move this to UnifyClasses.ts?
 export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, TypeRef> {
     private _typesAdded: Set<Type> = Set();
 
     // There is a method analogous to this in the IntersectionAccumulator.  It might
     // make sense to find a common interface.
-    addType(t: Type): TypeAttributes {
+    private addType(t: Type): TypeAttributes {
         if (this._typesAdded.has(t)) {
             return emptyTypeAttributes;
         }
@@ -887,12 +888,26 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, 
         return unionAttributes;
     }
 
-    addTypes(types: Set<Type>): TypeAttributes {
-        if (types.size === 1) {
-            return this.addType(defined(types.first()));
-        }
+    private get numberOfAddedNonUnionTypes(): number {
+        return this._typesAdded.filter(t => !(t instanceof UnionType)).size;
+    }
 
-        return makeTypeAttributesInferred(combineTypeAttributes(types.map(m => this.addType(m)).toArray()));
+    addTypes(types: Set<Type>): TypeAttributes {
+        let attributes: TypeAttributes = Map();
+        let numTypesForWhichWeAdded = 0;
+        types.forEach(t => {
+            const numBefore = this.numberOfAddedNonUnionTypes;
+            attributes = combineTypeAttributes([attributes, this.addType(t)]);
+            if (this.numberOfAddedNonUnionTypes > numBefore) {
+                numTypesForWhichWeAdded += 1;
+            }
+        });
+
+        if (numTypesForWhichWeAdded <= 1) {
+            return attributes;
+        } else {
+            return makeTypeAttributesInferred(attributes);
+        }
     }
 }
 
