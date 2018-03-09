@@ -14,6 +14,7 @@ import SwiftTargetLanguage from "./Swift";
 import ElmTargetLanguage from "./Elm";
 import JSONSchemaTargetLanguage from "./JSONSchema";
 import RustTargetLanguage from "./Rust";
+import RubyTargetLanguage from "./Ruby";
 
 export const all: TargetLanguage[] = [
     new CSharpTargetLanguage(),
@@ -28,6 +29,7 @@ export const all: TargetLanguage[] = [
     new SwiftTargetLanguage(),
     new ElmTargetLanguage(),
     new JSONSchemaTargetLanguage(),
+    new RubyTargetLanguage(),
     new SimpleTypesTargetLanguage()
 ];
 

@@ -473,6 +473,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.GoLanguage),
   new JSONFixture(languages.CPlusPlusLanguage),
   new JSONFixture(languages.RustLanguage),
+  new JSONFixture(languages.RubyLanguage),
   new JSONFixture(languages.ElmLanguage),
   new JSONFixture(languages.SwiftLanguage),
   new JSONFixture(languages.ObjectiveCLanguage),
