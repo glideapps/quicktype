@@ -66,11 +66,11 @@ function canResolve(t: IntersectionType): boolean {
 
 class IntersectionAccumulator
     implements
-    UnionTypeProvider<
-    OrderedSet<Type>,
-    OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
-    OrderedSet<Type> | undefined
-    > {
+        UnionTypeProvider<
+            OrderedSet<Type>,
+            OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
+            OrderedSet<Type> | undefined
+        > {
     private _primitiveStringTypes: OrderedSet<PrimitiveStringTypeKind> | undefined;
     private _otherPrimitiveTypes: OrderedSet<PrimitiveTypeKind> | undefined;
     private _enumCases: OrderedSet<string> | undefined;
@@ -312,7 +312,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     OrderedSet<Type>,
     OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
     OrderedSet<Type> | undefined
-    > {
+> {
     private _createdNewIntersections: boolean = false;
 
     private makeIntersection(members: OrderedSet<Type>, attributes: TypeAttributes): TypeRef {
@@ -391,7 +391,9 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         assert(types.size === 1);
         const [members, intersectionAttributes] = intersectionMembersRecursively(defined(types.first()));
         if (members.isEmpty()) {
-            return builder.getPrimitiveType("any", forwardingRef);
+            const t = builder.getPrimitiveType("any", forwardingRef);
+            builder.addAttributes(t, intersectionAttributes);
+            return t;
         }
         if (members.size === 1) {
             const single = builder.reconstituteType(defined(members.first()), forwardingRef);
