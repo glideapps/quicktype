@@ -408,6 +408,8 @@ export abstract class TypeBuilder {
         }
         type.setMembers(members);
     }
+
+    abstract setLostTypeAttributes(): void;
 }
 
 export interface TypeLookerUp {
@@ -423,6 +425,10 @@ export class TypeGraphBuilder extends TypeBuilder {
 
     getLazyMapType(valuesCreator: () => TypeRef | undefined): TypeRef {
         return this.addType(undefined, tref => new MapType(tref, valuesCreator()), undefined);
+    }
+
+    setLostTypeAttributes(): void {
+        return;
     }
 }
 
@@ -496,6 +502,8 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
     private _setsToReplaceByMember: Map<number, Set<T>>;
     private _reconstitutedTypes: Map<number, TypeRef> = Map();
     private _reconstitutedUnions: Map<Set<TypeRef>, TypeRef> = Map();
+
+    private _lostTypeAttributes: boolean = false;
 
     constructor(
         private readonly _originalGraph: TypeGraph,
@@ -656,12 +664,22 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         });
         return super.finish();
     }
+
+    setLostTypeAttributes(): void {
+        this._lostTypeAttributes = true;
+    }
+
+    get lostTypeAttributes(): boolean {
+        return this._lostTypeAttributes;
+    }
 }
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be
 // implementable using the interface, not be part of it.  That
 // means we'll have to expose primitive types, too.
+//
+// FIXME: Also, only UnionAccumulator seems to implement it.
 export interface UnionTypeProvider<TArrayData, TClassData, TMapData> {
     readonly arrayData: TArrayData;
     readonly mapData: TMapData;
@@ -671,6 +689,8 @@ export interface UnionTypeProvider<TArrayData, TClassData, TMapData> {
     enumCases: string[];
 
     getMemberKinds(): TypeAttributeMap<TypeKind>;
+
+    readonly lostTypeAttributes: boolean;
 }
 
 export type TypeAttributeMap<T extends TypeKind> = OrderedMap<T, TypeAttributes>;
@@ -705,6 +725,8 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
     readonly mapData: TMap[] = [];
     readonly classData: TClass[] = [];
 
+    private _lostTypeAttributes: boolean = false;
+
     // FIXME: we're losing order here
     enumCaseMap: { [name: string]: number } = {};
     enumCases: string[] = [];
@@ -723,6 +745,7 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
 
     addAny(attributes: TypeAttributes): void {
         this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "any", attributes);
+        this._lostTypeAttributes = true;
     }
     addNull(attributes: TypeAttributes): void {
         this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "null", attributes);
@@ -794,9 +817,9 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
         }
 
         if (this._nonStringTypeAttributes.has("any")) {
+            assert(this._lostTypeAttributes, "This had to be set when we added 'any'");
+
             const allAttributes = combineTypeAttributes(merged.valueSeq().toArray());
-            // FIXME: Somehow get this information to the code that checks provenenace.
-            // console.log("losing attributes");
             return OrderedMap([["any", allAttributes] as [TypeKind, TypeAttributes]]);
         }
 
@@ -807,6 +830,10 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
             merged = moveAttributes(merged, "map", "class");
         }
         return merged;
+    }
+
+    get lostTypeAttributes(): boolean {
+        return this._lostTypeAttributes;
     }
 }
 
@@ -931,6 +958,10 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TCl
         typeAttributes: TypeAttributes,
         forwardingRef?: TypeRef
     ): TypeRef {
+        if (typeProvider.lostTypeAttributes) {
+            this.typeBuilder.setLostTypeAttributes();
+        }
+
         const kinds = typeProvider.getMemberKinds();
 
         if (kinds.size === 1) {
