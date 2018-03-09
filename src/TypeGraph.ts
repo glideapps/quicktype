@@ -12,7 +12,7 @@ import {
     UnionType
 } from "./Type";
 import { defined, assert, panic } from "./Support";
-import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping } from "./TypeBuilder";
+import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
@@ -203,8 +203,6 @@ export class TypeGraph {
         return separateNamedTypes(types);
     };
 
-    // FIXME: This is for the provenance check in `rewrite` below.
-    /*
     private allProvenance(): Set<TypeRef> {
         assert(this._haveProvenanceAttributes);
 
@@ -215,7 +213,6 @@ export class TypeGraph {
             return Set();
         }).reduce<Set<TypeRef>>((a, b) => a.union(b));
     }
-    */
 
     // Each array in `replacementGroups` is a bunch of types to be replaced by a
     // single new type.  `replacer` is a function that takes a group and a
@@ -232,18 +229,18 @@ export class TypeGraph {
     ): TypeGraph {
         if (!force && replacementGroups.length === 0) return this;
 
-        const newGraph = new GraphRewriteBuilder(
+        const builder = new GraphRewriteBuilder(
             this,
             stringTypeMapping,
             alphabetizeProperties,
             this._haveProvenanceAttributes,
             replacementGroups,
             replacer
-        ).finish();
+        );
+        const newGraph = builder.finish();
 
         // FIXME: Make this enable-able via the command line
-        /*
-        if (this._haveProvenanceAttributes) {
+        if (this._haveProvenanceAttributes && !builder.lostTypeAttributes) {
             const oldProvenance = this.allProvenance();
             const newProvenance = newGraph.allProvenance();
             if (oldProvenance.size !== newProvenance.size) {
@@ -251,7 +248,6 @@ export class TypeGraph {
                 return panic(`Type attributes for ${difference.size} types were not carried over to the new graph`);
             }
         }
-        */
 
         return newGraph;
     }

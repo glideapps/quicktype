@@ -66,11 +66,11 @@ function canResolve(t: IntersectionType): boolean {
 
 class IntersectionAccumulator
     implements
-        UnionTypeProvider<
-            OrderedSet<Type>,
-            OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
-            OrderedSet<Type> | undefined
-        > {
+    UnionTypeProvider<
+    OrderedSet<Type>,
+    OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
+    OrderedSet<Type> | undefined
+    > {
     private _primitiveStringTypes: OrderedSet<PrimitiveStringTypeKind> | undefined;
     private _otherPrimitiveTypes: OrderedSet<PrimitiveTypeKind> | undefined;
     private _enumCases: OrderedSet<string> | undefined;
@@ -301,6 +301,10 @@ class IntersectionAccumulator
         }
         return kinds.toOrderedMap().map(_ => emptyTypeAttributes);
     }
+
+    get lostTypeAttributes(): boolean {
+        return false;
+    }
 }
 
 class IntersectionUnionBuilder extends UnionBuilder<
@@ -308,7 +312,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     OrderedSet<Type>,
     OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
     OrderedSet<Type> | undefined
-> {
+    > {
     private _createdNewIntersections: boolean = false;
 
     private makeIntersection(members: OrderedSet<Type>, attributes: TypeAttributes): TypeRef {
