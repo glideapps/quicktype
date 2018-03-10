@@ -1,0 +1,14 @@
+{
+  "$id": "http://example.net/root.json",
+  "type": "object",
+  "properties": {
+      "item": { "$ref": "#item" }
+  },
+  "required": ["item"],
+  "definitions": {
+    "single": {
+      "$id": "#item",
+      "type": "integer"
+    }
+  }
+}

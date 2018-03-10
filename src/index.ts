@@ -9,7 +9,7 @@ import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
 import { assertNever, assert } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { combineClasses, findSimilarityCliques } from "./CombineClasses";
-import { addTypesInSchema, definitionRefsInSchema, Ref } from "./JSONSchemaInput";
+import { addTypesInSchema, definitionRefsInSchema, Ref, JSONSchema, JSONSchemaStore, checkJSONSchema } from "./JSONSchemaInput";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
@@ -129,6 +129,17 @@ async function toString(source: string | Readable): Promise<string> {
     return _.isString(source) ? source : await getStream(source);
 }
 
+class SimpleJSONSchemaStore extends JSONSchemaStore {
+    constructor (private readonly _name: string, private readonly _schema: JSONSchema) {
+        super();
+    }
+
+    protected fetch(address: string): JSONSchema | undefined {
+        assert(address === this._name, `Wrong address ${address}`);
+        return this._schema;
+    }
+}
+
 export class Run {
     private _compressedJSON: CompressedJSON;
     private _allInputs: InputData;
@@ -159,25 +170,27 @@ export class Run {
         );
 
         if (this._options.findSimilarClassesSchema !== undefined) {
-            const schema = JSON.parse(this._options.findSimilarClassesSchema);
+            const schema = checkJSONSchema(JSON.parse(this._options.findSimilarClassesSchema));
             const name = "ComparisonBaseRoot";
-            addTypesInSchema(typeBuilder, schema, Map([[name, Ref.root] as [string, Ref]]));
+            const store = new SimpleJSONSchemaStore(name, schema);
+            addTypesInSchema(typeBuilder, store, Map([[name, Ref.root(name)] as [string, Ref]]));
         }
 
         // JSON Schema
         Map(this._allInputs.schemas).forEach(({ schema, topLevelRefs }, name) => {
             let references: Map<string, Ref>;
             if (topLevelRefs === undefined) {
-                references = Map([[name, Ref.root] as [string, Ref]]);
+                references = Map([[name, Ref.root(name)] as [string, Ref]]);
             } else {
                 assert(
                     topLevelRefs.length === 1 && topLevelRefs[0] === "definitions/",
                     "Schema top level refs must be `definitions/`"
                 );
-                references = definitionRefsInSchema(schema);
+                references = definitionRefsInSchema(schema, name);
                 assert(references.size > 0, "No definitions in JSON Schema");
             }
-            addTypesInSchema(typeBuilder, schema, references);
+            const store = new SimpleJSONSchemaStore(name, checkJSONSchema(schema));
+            addTypesInSchema(typeBuilder, store, references);
         });
 
         // GraphQL
