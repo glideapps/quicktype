@@ -9,7 +9,7 @@ import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
 import { assertNever, assert } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { combineClasses, findSimilarityCliques } from "./CombineClasses";
-import { addTypesInSchema, definitionRefsInSchema, Ref, rootRef } from "./JSONSchemaInput";
+import { addTypesInSchema, definitionRefsInSchema, Ref } from "./JSONSchemaInput";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
@@ -161,14 +161,14 @@ export class Run {
         if (this._options.findSimilarClassesSchema !== undefined) {
             const schema = JSON.parse(this._options.findSimilarClassesSchema);
             const name = "ComparisonBaseRoot";
-            addTypesInSchema(typeBuilder, schema, Map([[name, rootRef] as [string, Ref]]));
+            addTypesInSchema(typeBuilder, schema, Map([[name, Ref.root] as [string, Ref]]));
         }
 
         // JSON Schema
         Map(this._allInputs.schemas).forEach(({ schema, topLevelRefs }, name) => {
             let references: Map<string, Ref>;
             if (topLevelRefs === undefined) {
-                references = Map([[name, rootRef] as [string, Ref]]);
+                references = Map([[name, Ref.root] as [string, Ref]]);
             } else {
                 assert(
                     topLevelRefs.length === 1 && topLevelRefs[0] === "definitions/",
