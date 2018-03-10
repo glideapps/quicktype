@@ -18,6 +18,16 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
     npm run pub
     
     slack_notify_deployed
+    
+    ###############################
+    ### Deploy app.quicktype.io ###
+    ###############################
+
+    appcenter \
+        build queue \
+        --app quicktype/app.quicktype.io \
+        --branch master \
+        --token $APPCENTER_TOKEN
 
     #########################
     ### Deploy to VS Code ###
@@ -26,16 +36,6 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
     appcenter \
         build queue \
         --app quicktype/quicktype-vscode \
-        --branch master \
-        --token $APPCENTER_TOKEN
-
-    ###############################
-    ### Deploy app.quicktype.io ###
-    ###############################
-
-    appcenter \
-        build queue \
-        --app quicktype/app.quicktype.io \
         --branch master \
         --token $APPCENTER_TOKEN
 
