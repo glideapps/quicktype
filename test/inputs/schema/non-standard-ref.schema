@@ -1,0 +1,15 @@
+{
+  "properties": {
+    "foo": {
+      "type": "integer"
+    },
+    "bar": {
+      "$ref": "#/properties/foo"
+    },
+    "quux": {
+      "$ref": "#/bla/0"
+    }
+  },
+  "bla": [{ "type": "boolean" }],
+  "required": ["foo", "bar", "quux"]
+}

@@ -8,7 +8,12 @@ import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "
 import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
-import { TypeAttributes, descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind, makeTypeAttributesInferred } from "./TypeAttributes";
+import {
+    TypeAttributes,
+    descriptionTypeAttributeKind,
+    propertyDescriptionsTypeAttributeKind,
+    makeTypeAttributesInferred
+} from "./TypeAttributes";
 
 export enum PathElementKind {
     Root,
@@ -20,7 +25,8 @@ export enum PathElementKind {
     AdditionalProperty,
     Items,
     Type,
-    Object
+    Object,
+    KeyOrIndex
 }
 
 export type PathElement =
@@ -33,9 +39,126 @@ export type PathElement =
     | { kind: PathElementKind.AdditionalProperty }
     | { kind: PathElementKind.Items }
     | { kind: PathElementKind.Type; index: number }
-    | { kind: PathElementKind.Object };
+    | { kind: PathElementKind.Object }
+    | { kind: PathElementKind.KeyOrIndex; key: string };
 
-export type Ref = List<PathElement>;
+export class Ref {
+    constructor(public readonly path: List<PathElement>) {}
+
+    push(pe: PathElement): Ref {
+        return new Ref(this.path.push(pe));
+    }
+
+    get definitionName(): string | undefined {
+        const last = this.path.last();
+        if (last !== undefined && last.kind === PathElementKind.Definition) {
+            return last.name;
+        }
+        return undefined;
+    }
+
+    toString(): string {
+        function elementToString(e: PathElement): string {
+            switch (e.kind) {
+                case PathElementKind.Root:
+                    return "#";
+                case PathElementKind.Definition:
+                    return `definitions/${e.name}`;
+                case PathElementKind.OneOf:
+                    return `oneOf/${e.index.toString()}`;
+                case PathElementKind.AnyOf:
+                    return `anyOf/${e.index.toString()}`;
+                case PathElementKind.AllOf:
+                    return `allOf/${e.index.toString()}`;
+                case PathElementKind.Property:
+                    return `properties/${e.name}`;
+                case PathElementKind.AdditionalProperty:
+                    return "additionalProperties";
+                case PathElementKind.Items:
+                    return "items";
+                case PathElementKind.Type:
+                    return `type/${e.index.toString()}`;
+                case PathElementKind.Object:
+                    return "object";
+                case PathElementKind.KeyOrIndex:
+                    return e.key;
+                default:
+                    return assertNever(e);
+            }
+        }
+        return this.path.map(elementToString).join("/");
+    }
+
+    lookupRef(root: StringMap, localSchema: StringMap, localRef: Ref): [StringMap, Ref] {
+        function lookupDefinition(schema: StringMap, name: string): StringMap {
+            const definitions = checkStringMap(schema.definitions);
+            return checkStringMap(definitions[name]);
+        }
+
+        function lookupProperty(schema: StringMap, name: string): StringMap {
+            const properties = checkStringMap(schema.properties);
+            return checkStringMap(properties[name]);
+        }
+
+        function indexArray(cases: any, index: number): StringMap {
+            if (!Array.isArray(cases)) {
+                return panic("oneOf or anyOf value must be an array");
+            }
+            return checkStringMap(cases[index]);
+        }
+
+        function lookup(
+            local: StringMap | any[],
+            localPath: List<PathElement>,
+            path: List<PathElement>
+        ): [StringMap, Ref] {
+            const first = path.first();
+            if (first === undefined) {
+                return [checkStringMap(local), new Ref(localPath)];
+            }
+            const rest = path.rest();
+            if (first.kind === PathElementKind.Root) {
+                return lookup(root, List([first]), path.rest());
+            }
+            localPath = localPath.push(first);
+            switch (first.kind) {
+                case PathElementKind.Definition:
+                    return lookup(lookupDefinition(checkStringMap(local), first.name), localPath, rest);
+                case PathElementKind.OneOf:
+                    return lookup(indexArray(checkStringMap(local).oneOf, first.index), localPath, rest);
+                case PathElementKind.AnyOf:
+                    return lookup(indexArray(checkStringMap(local).anyOf, first.index), localPath, rest);
+                case PathElementKind.AllOf:
+                    return lookup(indexArray(checkStringMap(local).allOf, first.index), localPath, rest);
+                case PathElementKind.Property:
+                    return lookup(lookupProperty(checkStringMap(local), first.name), localPath, rest);
+                case PathElementKind.AdditionalProperty:
+                    return lookup(checkStringMap(checkStringMap(local).additionalProperties), localPath, rest);
+                case PathElementKind.Items:
+                    return lookup(checkStringMap(checkStringMap(local).items), localPath, rest);
+                case PathElementKind.KeyOrIndex:
+                    if (Array.isArray(local)) {
+                        return lookup(local[parseInt(first.key, 10)], localPath, rest);
+                    } else {
+                        return lookup(checkStringMap(local)[first.key], localPath, rest);
+                    }
+                case PathElementKind.Type:
+                    return panic('Cannot look up path that indexes "type"');
+                case PathElementKind.Object:
+                    return panic('Cannot look up path that indexes "object"');
+                default:
+                    return assertNever(first);
+            }
+        }
+        return lookup(localSchema, localRef.path, this.path);
+    }
+
+    get immutable(): List<any> {
+        return this.path.map(pe => fromJS(pe));
+    }
+}
+
+export const rootRef: Ref = new Ref(List([{ kind: PathElementKind.Root } as PathElement]));
 
 function checkStringArray(arr: any): string[] {
     if (!Array.isArray(arr)) {
@@ -101,57 +224,11 @@ function parseRef(ref: any): [Ref, string] {
             i += 1;
             refName = "AllOf";
         } else {
-            panic(`Could not parse JSON schema reference ${ref}`);
+            elements.push({ kind: PathElementKind.KeyOrIndex, key: parts[i] });
+            refName = parts[i];
         }
     }
-    return [List(elements), refName];
-}
-
-function refToString(ref: Ref): string {
-    function elementToString(e: PathElement): string {
-        switch (e.kind) {
-            case PathElementKind.Root:
-                return "#";
-            case PathElementKind.Definition:
-                return `definitions/${e.name}`;
-            case PathElementKind.OneOf:
-                return `oneOf/${e.index.toString()}`;
-            case PathElementKind.AnyOf:
-                return `anyOf/${e.index.toString()}`;
-            case PathElementKind.AllOf:
-                return `allOf/${e.index.toString()}`;
-            case PathElementKind.Property:
-                return `properties/${e.name}`;
-            case PathElementKind.AdditionalProperty:
-                return "additionalProperties";
-            case PathElementKind.Items:
-                return "items";
-            case PathElementKind.Type:
-                return `type/${e.index.toString()}`;
-            case PathElementKind.Object:
-                return "object";
-            default:
-                return assertNever(e);
-        }
-    }
-    return ref.map(elementToString).join("/");
-}
-
-function lookupDefinition(schema: StringMap, name: string): StringMap {
-    const definitions = checkStringMap(schema.definitions);
-    return checkStringMap(definitions[name]);
-}
-
-function lookupProperty(schema: StringMap, name: string): StringMap {
-    const properties = checkStringMap(schema.properties);
-    return checkStringMap(properties[name]);
-}
-
-function indexArray(cases: any, index: number): StringMap {
-    if (!Array.isArray(cases)) {
-        return panic("oneOf or anyOf value must be an array");
-    }
-    return checkStringMap(cases[index]);
+    return [new Ref(List(elements)), refName];
 }
 
 function makeAttributes(schema: StringMap, path: Ref, attributes: TypeAttributes): TypeAttributes {
@@ -166,10 +243,7 @@ function makeAttributes(schema: StringMap, path: Ref, attributes: TypeAttributes
         }
         let title = schema.title;
         if (typeof title !== "string") {
-            const last = path.last();
-            if (last !== undefined && last.kind === PathElementKind.Definition) {
-                title = last.name;
-            }
+            title = path.definitionName;
         }
 
         if (typeof title === "string") {
@@ -199,57 +273,17 @@ function checkTypeList(typeOrTypes: any): OrderedSet<string> {
     }
 }
 
-function makeImmutablePath(path: Ref): List<any> {
-    return path.map(pe => fromJS(pe));
-}
-
-export const rootRef: Ref = List([{ kind: PathElementKind.Root } as PathElement]);
-
 export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, references: Map<string, Ref>): void {
     const root = checkStringMap(rootJson);
     let typeForPath = Map<List<any>, TypeRef>();
 
     function setTypeForPath(path: Ref, t: TypeRef): void {
-        const immutablePath = makeImmutablePath(path);
+        const immutablePath = path.immutable;
         const maybeRef = typeForPath.get(immutablePath);
         if (maybeRef !== undefined) {
             assert(maybeRef === t, "Trying to set path again to different type");
         }
         typeForPath = typeForPath.set(immutablePath, t);
-    }
-
-    function lookupRef(local: StringMap, localPath: Ref, ref: Ref): [StringMap, Ref] {
-        const first = ref.first();
-        if (first === undefined) {
-            return [local, localPath];
-        }
-        const rest = ref.rest();
-        if (first.kind === PathElementKind.Root) {
-            return lookupRef(root, List([first]), ref.rest());
-        }
-        localPath = localPath.push(first);
-        switch (first.kind) {
-            case PathElementKind.Definition:
-                return lookupRef(lookupDefinition(local, first.name), localPath, rest);
-            case PathElementKind.OneOf:
-                return lookupRef(indexArray(local.oneOf, first.index), localPath, rest);
-            case PathElementKind.AnyOf:
-                return lookupRef(indexArray(local.anyOf, first.index), localPath, rest);
-            case PathElementKind.AllOf:
-                return lookupRef(indexArray(local.allOf, first.index), localPath, rest);
-            case PathElementKind.Property:
-                return lookupRef(lookupProperty(local, first.name), localPath, rest);
-            case PathElementKind.AdditionalProperty:
-                return lookupRef(checkStringMap(local.additionalProperties), localPath, rest);
-            case PathElementKind.Items:
-                return lookupRef(checkStringMap(local.items), localPath, rest);
-            case PathElementKind.Type:
-                return panic('Cannot look up path that indexes "type"');
-            case PathElementKind.Object:
-                return panic('Cannot look up path that indexes "object"');
-            default:
-                return assertNever(first);
-        }
     }
 
     function makeClass(path: Ref, attributes: TypeAttributes, properties: StringMap, requiredArray: string[]): TypeRef {
@@ -294,11 +328,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
         // FIXME: We seem to be overzealous in making attributes.  We get them from
         // our caller, then we make them again here, and then we make them again
         // in `makeClass`, potentially in other places, too.
-        typeAttributes = makeAttributes(
-            schema,
-            path,
-            makeTypeAttributesInferred(typeAttributes)
-        );
+        typeAttributes = makeAttributes(schema, path, makeTypeAttributesInferred(typeAttributes));
         switch (typeName) {
             case "object":
                 let required: string[];
@@ -378,7 +408,10 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
     function convertToType(schema: StringMap, path: Ref, typeAttributes: TypeAttributes): TypeRef {
         typeAttributes = makeAttributes(schema, path, typeAttributes);
 
-        function makeTypesFromCases(cases: any, kind: PathElementKind.OneOf | PathElementKind.AnyOf | PathElementKind.AllOf): TypeRef[] {
+        function makeTypesFromCases(
+            cases: any,
+            kind: PathElementKind.OneOf | PathElementKind.AnyOf | PathElementKind.AllOf
+        ): TypeRef[] {
             if (!Array.isArray(cases)) {
                 return panic(`Cases are not an array: ${cases}`);
             }
@@ -396,7 +429,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
 
         if (schema.$ref !== undefined) {
             const [ref, refName] = parseRef(schema.$ref);
-            const [target, targetPath] = lookupRef(schema, path, ref);
+            const [target, targetPath] = ref.lookupRef(root, schema, path);
             const attributes = modifyTypeNames(typeAttributes, tn => {
                 if (!defined(tn).areInferred) return tn;
                 return new TypeNames(OrderedSet([refName]), OrderedSet(), true);
@@ -407,7 +440,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
             const haveNull = cases.indexOf(null) >= 0;
             cases = cases.filter(c => c !== null);
             if (cases.filter(c => typeof c !== "string").length > 0) {
-                return panic(`Non-string enum cases are not supported, at ${refToString(path)}`);
+                return panic(`Non-string enum cases are not supported, at ${path.toString()}`);
             }
             const tref = typeBuilder.getEnumType(typeAttributes, OrderedSet(checkStringArray(cases)));
             if (haveNull) {
@@ -441,7 +474,14 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
         }
         if (jsonTypes !== undefined) {
             if (jsonTypes.size === 1) {
-                types.push(fromTypeName(schema, path.push({ kind: PathElementKind.Object }), typeAttributes, defined(jsonTypes.first())));
+                types.push(
+                    fromTypeName(
+                        schema,
+                        path.push({ kind: PathElementKind.Object }),
+                        typeAttributes,
+                        defined(jsonTypes.first())
+                    )
+                );
             } else {
                 const unionType = typeBuilder.getUniqueUnionType(typeAttributes, undefined);
                 const unionTypes = jsonTypes
@@ -460,7 +500,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
     function toType(schema: StringMap, path: Ref, typeAttributes: TypeAttributes): TypeRef {
         // FIXME: This fromJS thing is ugly and inefficient.  Schemas aren't
         // big, so it most likely doesn't matter.
-        const immutablePath = makeImmutablePath(path);
+        const immutablePath = path.immutable;
         const maybeType = typeForPath.get(immutablePath);
         if (maybeType !== undefined) {
             return maybeType;
@@ -471,7 +511,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
     }
 
     references.forEach((topLevelRef, topLevelName) => {
-        const [target, targetPath] = lookupRef(root, rootRef, topLevelRef);
+        const [target, targetPath] = topLevelRef.lookupRef(root, root, rootRef);
         const t = toType(target, targetPath, makeNamesTypeAttributes(topLevelName, false));
         typeBuilder.addTopLevel(topLevelName, t);
     });
