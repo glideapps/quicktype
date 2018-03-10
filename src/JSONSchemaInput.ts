@@ -31,16 +31,18 @@ enum PathElementKind {
 
 type PathElement =
     | { kind: PathElementKind.Root }
-    | { kind: PathElementKind.Definition; name: string }
     | { kind: PathElementKind.Type; index: number }
     | { kind: PathElementKind.Object }
     | { kind: PathElementKind.KeyOrIndex; key: string };
 
+function keyOrIndex(pe: PathElement): string | undefined {
+    if (pe.kind !== PathElementKind.KeyOrIndex) return undefined;
+    return pe.key;
+}
+
 function pathElementEquals(a: PathElement, b: PathElement): boolean {
     if (a.kind !== b.kind) return false;
     switch (a.kind) {
-        case PathElementKind.Definition:
-            return a.name === (b as any).name;
         case PathElementKind.Type:
             return a.index === (b as any).index;
         case PathElementKind.KeyOrIndex:
@@ -65,9 +67,6 @@ export class Ref {
         for (let i = 0; i < parts.length; i++) {
             if (parts[i] === "#") {
                 elements.push({ kind: PathElementKind.Root });
-            } else if (parts[i] === "definitions" && i + 1 < parts.length) {
-                elements.push({ kind: PathElementKind.Definition, name: parts[i + 1] });
-                i += 1;
             } else {
                 elements.push({ kind: PathElementKind.KeyOrIndex, key: parts[i] });
             }
@@ -75,7 +74,7 @@ export class Ref {
         return new Ref(List(elements));
     }
 
-    private constructor(private readonly _path: List<PathElement>) {}
+    private constructor(private readonly _path: List<PathElement>) { }
 
     private pushElement(pe: PathElement): Ref {
         return new Ref(this._path.push(pe));
@@ -89,10 +88,6 @@ export class Ref {
         return ref;
     }
 
-    pushDefinition(name: string): Ref {
-        return this.pushElement({ kind: PathElementKind.Definition, name });
-    }
-
     pushObject(): Ref {
         return this.pushElement({ kind: PathElementKind.Object });
     }
@@ -104,7 +99,7 @@ export class Ref {
     get name(): string {
         let path = this._path;
 
-        for (;;) {
+        for (; ;) {
             const e = path.last();
             if (e === undefined) {
                 return "Something";
@@ -113,8 +108,6 @@ export class Ref {
             switch (e.kind) {
                 case PathElementKind.Root:
                     return "Root";
-                case PathElementKind.Definition:
-                    return e.name;
                 case PathElementKind.KeyOrIndex:
                     if (e.key.match(numberRegexp) !== null) {
                         return e.key;
@@ -132,10 +125,9 @@ export class Ref {
     }
 
     get definitionName(): string | undefined {
-        const last = this._path.last();
-        if (last !== undefined && last.kind === PathElementKind.Definition) {
-            return last.name;
-        }
+        const pe = this._path.get(-2);
+        if (pe === undefined) return undefined;
+        if (keyOrIndex(pe) === "definitions") return keyOrIndex(defined(this._path.last()));
         return undefined;
     }
 
@@ -144,8 +136,6 @@ export class Ref {
             switch (e.kind) {
                 case PathElementKind.Root:
                     return "#";
-                case PathElementKind.Definition:
-                    return `definitions/${e.name}`;
                 case PathElementKind.Type:
                     return `type/${e.index.toString()}`;
                 case PathElementKind.Object:
@@ -160,11 +150,6 @@ export class Ref {
     }
 
     lookupRef(root: StringMap, localSchema: StringMap, localRef: Ref): [StringMap, Ref] {
-        function lookupDefinition(schema: StringMap, name: string): StringMap {
-            const definitions = checkStringMap(schema.definitions);
-            return checkStringMap(definitions[name]);
-        }
-
         function lookup(
             local: StringMap | any[],
             localPath: List<PathElement>,
@@ -180,8 +165,6 @@ export class Ref {
             }
             localPath = localPath.push(first);
             switch (first.kind) {
-                case PathElementKind.Definition:
-                    return lookup(lookupDefinition(checkStringMap(local), first.name), localPath, rest);
                 case PathElementKind.KeyOrIndex:
                     if (Array.isArray(local)) {
                         return lookup(local[parseInt(first.key, 10)], localPath, rest);
@@ -210,9 +193,6 @@ export class Ref {
         this._path.forEach(pe => {
             acc = addHashCode(acc, pe.kind);
             switch (pe.kind) {
-                case PathElementKind.Definition:
-                    acc = addHashCode(acc, hash(pe.name));
-                    break;
                 case PathElementKind.Type:
                     acc = addHashCode(acc, pe.index);
                     break;
@@ -516,7 +496,7 @@ export function definitionRefsInSchema(rootJson: any): Map<string, Ref> {
     if (typeof definitions !== "object") return Map();
     return Map(
         Object.keys(definitions).map(name => {
-            return [name, Ref.root.pushDefinition(name)] as [string, Ref];
+            return [name, Ref.root.push("definitions", name)] as [string, Ref];
         })
     );
 }
