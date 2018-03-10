@@ -25,7 +25,8 @@ export enum PathElementKind {
     AdditionalProperty,
     Items,
     Type,
-    Object
+    Object,
+    KeyOrIndex
 }
 
 export type PathElement =
@@ -38,7 +39,8 @@ export type PathElement =
     | { kind: PathElementKind.AdditionalProperty }
     | { kind: PathElementKind.Items }
     | { kind: PathElementKind.Type; index: number }
-    | { kind: PathElementKind.Object };
+    | { kind: PathElementKind.Object }
+    | { kind: PathElementKind.KeyOrIndex; key: string };
 
 export class Ref {
     constructor(public readonly path: List<PathElement>) {}
@@ -78,6 +80,8 @@ export class Ref {
                     return `type/${e.index.toString()}`;
                 case PathElementKind.Object:
                     return "object";
+                case PathElementKind.KeyOrIndex:
+                    return e.key;
                 default:
                     return assertNever(e);
             }
@@ -86,10 +90,31 @@ export class Ref {
     }
 
     lookupRef(root: StringMap, localSchema: StringMap, localRef: Ref): [StringMap, Ref] {
-        function lookup(local: StringMap, localPath: List<PathElement>, path: List<PathElement>): [StringMap, Ref] {
+        function lookupDefinition(schema: StringMap, name: string): StringMap {
+            const definitions = checkStringMap(schema.definitions);
+            return checkStringMap(definitions[name]);
+        }
+
+        function lookupProperty(schema: StringMap, name: string): StringMap {
+            const properties = checkStringMap(schema.properties);
+            return checkStringMap(properties[name]);
+        }
+
+        function indexArray(cases: any, index: number): StringMap {
+            if (!Array.isArray(cases)) {
+                return panic("oneOf or anyOf value must be an array");
+            }
+            return checkStringMap(cases[index]);
+        }
+
+        function lookup(
+            local: StringMap | any[],
+            localPath: List<PathElement>,
+            path: List<PathElement>
+        ): [StringMap, Ref] {
             const first = path.first();
             if (first === undefined) {
-                return [local, new Ref(localPath)];
+                return [checkStringMap(local), new Ref(localPath)];
             }
             const rest = path.rest();
             if (first.kind === PathElementKind.Root) {
@@ -98,19 +123,25 @@ export class Ref {
             localPath = localPath.push(first);
             switch (first.kind) {
                 case PathElementKind.Definition:
-                    return lookup(lookupDefinition(local, first.name), localPath, rest);
+                    return lookup(lookupDefinition(checkStringMap(local), first.name), localPath, rest);
                 case PathElementKind.OneOf:
-                    return lookup(indexArray(local.oneOf, first.index), localPath, rest);
+                    return lookup(indexArray(checkStringMap(local).oneOf, first.index), localPath, rest);
                 case PathElementKind.AnyOf:
-                    return lookup(indexArray(local.anyOf, first.index), localPath, rest);
+                    return lookup(indexArray(checkStringMap(local).anyOf, first.index), localPath, rest);
                 case PathElementKind.AllOf:
-                    return lookup(indexArray(local.allOf, first.index), localPath, rest);
+                    return lookup(indexArray(checkStringMap(local).allOf, first.index), localPath, rest);
                 case PathElementKind.Property:
-                    return lookup(lookupProperty(local, first.name), localPath, rest);
+                    return lookup(lookupProperty(checkStringMap(local), first.name), localPath, rest);
                 case PathElementKind.AdditionalProperty:
-                    return lookup(checkStringMap(local.additionalProperties), localPath, rest);
+                    return lookup(checkStringMap(checkStringMap(local).additionalProperties), localPath, rest);
                 case PathElementKind.Items:
-                    return lookup(checkStringMap(local.items), localPath, rest);
+                    return lookup(checkStringMap(checkStringMap(local).items), localPath, rest);
+                case PathElementKind.KeyOrIndex:
+                    if (Array.isArray(local)) {
+                        return lookup(local[parseInt(first.key, 10)], localPath, rest);
+                    } else {
+                        return lookup(checkStringMap(local)[first.key], localPath, rest);
+                    }
                 case PathElementKind.Type:
                     return panic('Cannot look up path that indexes "type"');
                 case PathElementKind.Object:
@@ -193,27 +224,11 @@ function parseRef(ref: any): [Ref, string] {
             i += 1;
             refName = "AllOf";
         } else {
-            panic(`Could not parse JSON schema reference ${ref}`);
+            elements.push({ kind: PathElementKind.KeyOrIndex, key: parts[i] });
+            refName = parts[i];
         }
     }
     return [new Ref(List(elements)), refName];
-}
-
-function lookupDefinition(schema: StringMap, name: string): StringMap {
-    const definitions = checkStringMap(schema.definitions);
-    return checkStringMap(definitions[name]);
-}
-
-function lookupProperty(schema: StringMap, name: string): StringMap {
-    const properties = checkStringMap(schema.properties);
-    return checkStringMap(properties[name]);
-}
-
-function indexArray(cases: any, index: number): StringMap {
-    if (!Array.isArray(cases)) {
-        return panic("oneOf or anyOf value must be an array");
-    }
-    return checkStringMap(cases[index]);
 }
 
 function makeAttributes(schema: StringMap, path: Ref, attributes: TypeAttributes): TypeAttributes {
