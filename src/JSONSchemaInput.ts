@@ -49,6 +49,38 @@ export class Ref {
         return new Ref(this._path.push(pe));
     }
 
+    get name(): string {
+        const e = this._path.last();
+        if (e === undefined) {
+            return "Something";
+        }
+        switch (e.kind) {
+            case PathElementKind.Root:
+                return "Root";
+            case PathElementKind.Definition:
+                return e.name;
+            case PathElementKind.OneOf:
+                return "OneOf";
+            case PathElementKind.AnyOf:
+                return "AnyOf";
+            case PathElementKind.AllOf:
+                return "AllOf";
+            case PathElementKind.Property:
+                return e.name;
+            case PathElementKind.AdditionalProperty:
+                return "AdditionalProperties";
+            case PathElementKind.Items:
+                return "ArrayItems";
+            case PathElementKind.Type:
+            case PathElementKind.Object:
+                return panic("We shouldn't try to get the name of Type or Object refs");
+            case PathElementKind.KeyOrIndex:
+                return e.key;
+            default:
+                return assertNever(e);
+        }
+    }
+
     get definitionName(): string | undefined {
         const last = this._path.last();
         if (last !== undefined && last.kind === PathElementKind.Definition) {
@@ -172,32 +204,25 @@ function checkStringArray(arr: any): string[] {
     return arr;
 }
 
-function parseRef(ref: any): [Ref, string] {
+function parseRef(ref: any): Ref {
     if (typeof ref !== "string") {
         return panic("$ref must be a string");
     }
-
-    let refName = "Something";
 
     const parts = ref.split("/");
     const elements: PathElement[] = [];
     for (let i = 0; i < parts.length; i++) {
         if (parts[i] === "#") {
             elements.push({ kind: PathElementKind.Root });
-            refName = "Root";
         } else if (parts[i] === "items") {
             elements.push({ kind: PathElementKind.Items });
-            refName = "ArrayItems";
         } else if (parts[i] === "additionalProperties") {
             elements.push({ kind: PathElementKind.AdditionalProperty });
-            refName = "AdditionalProperties";
         } else if (parts[i] === "definitions" && i + 1 < parts.length) {
-            refName = parts[i + 1];
-            elements.push({ kind: PathElementKind.Definition, name: refName });
+            elements.push({ kind: PathElementKind.Definition, name: parts[i + 1] });
             i += 1;
         } else if (parts[i] === "properties" && i + 1 < parts.length) {
-            refName = parts[i + 1];
-            elements.push({ kind: PathElementKind.Property, name: refName });
+            elements.push({ kind: PathElementKind.Property, name: parts[i + 1] });
             i += 1;
         } else if (parts[i] === "oneOf" && i + 1 < parts.length) {
             const index = Math.floor(parseInt(parts[i + 1], 10));
@@ -206,7 +231,6 @@ function parseRef(ref: any): [Ref, string] {
             }
             elements.push({ kind: PathElementKind.OneOf, index });
             i += 1;
-            refName = "OneOf";
         } else if (parts[i] === "anyOf" && i + 1 < parts.length) {
             const index = Math.floor(parseInt(parts[i + 1], 10));
             if (isNaN(index)) {
@@ -214,7 +238,6 @@ function parseRef(ref: any): [Ref, string] {
             }
             elements.push({ kind: PathElementKind.AnyOf, index });
             i += 1;
-            refName = "AnyOf";
         } else if (parts[i] === "allOf" && i + 1 < parts.length) {
             const index = Math.floor(parseInt(parts[i + 1], 10));
             if (isNaN(index)) {
@@ -222,13 +245,11 @@ function parseRef(ref: any): [Ref, string] {
             }
             elements.push({ kind: PathElementKind.AllOf, index });
             i += 1;
-            refName = "AllOf";
         } else {
             elements.push({ kind: PathElementKind.KeyOrIndex, key: parts[i] });
-            refName = parts[i];
         }
     }
-    return [new Ref(List(elements)), refName];
+    return new Ref(List(elements));
 }
 
 function makeAttributes(schema: StringMap, path: Ref, attributes: TypeAttributes): TypeAttributes {
@@ -428,11 +449,11 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
         }
 
         if (schema.$ref !== undefined) {
-            const [ref, refName] = parseRef(schema.$ref);
+            const ref = parseRef(schema.$ref);
             const [target, targetPath] = ref.lookupRef(root, schema, path);
             const attributes = modifyTypeNames(typeAttributes, tn => {
                 if (!defined(tn).areInferred) return tn;
-                return new TypeNames(OrderedSet([refName]), OrderedSet(), true);
+                return new TypeNames(OrderedSet([ref.name]), OrderedSet(), true);
             });
             return toType(target, targetPath, attributes);
         } else if (Array.isArray(schema.enum)) {
