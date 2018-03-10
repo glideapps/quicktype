@@ -1,10 +1,10 @@
 "use strict";
 
-import { List, OrderedSet, Map, fromJS, Set } from "immutable";
+import { List, OrderedSet, Map, Set, hash } from "immutable";
 import * as pluralize from "pluralize";
 
 import { ClassProperty } from "./Type";
-import { panic, assertNever, StringMap, checkStringMap, assert, defined } from "./Support";
+import { panic, assertNever, StringMap, checkStringMap, assert, defined, addHashCode, hashCodeInit } from "./Support";
 import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
@@ -35,6 +35,20 @@ type PathElement =
     | { kind: PathElementKind.Type; index: number }
     | { kind: PathElementKind.Object }
     | { kind: PathElementKind.KeyOrIndex; key: string };
+
+function pathElementEquals(a: PathElement, b: PathElement): boolean {
+    if (a.kind !== b.kind) return false;
+    switch (a.kind) {
+        case PathElementKind.Definition:
+            return a.name === (b as any).name;
+        case PathElementKind.Type:
+            return a.index === (b as any).index;
+        case PathElementKind.KeyOrIndex:
+            return a.key === (b as any).key;
+        default:
+            return true;
+    }
+}
 
 const numberRegexp = new RegExp("^[0-9]+$");
 
@@ -185,8 +199,29 @@ export class Ref {
         return lookup(localSchema, localRef._path, this._path);
     }
 
-    get immutable(): List<any> {
-        return this._path.map(pe => fromJS(pe));
+    equals(other: any): boolean {
+        if (!(other instanceof Ref)) return false;
+        if (this._path.size !== other._path.size) return false;
+        return this._path.zipWith(pathElementEquals, other._path).every(x => x);
+    }
+
+    hashCode(): number {
+        let acc = hashCodeInit;
+        this._path.forEach(pe => {
+            acc = addHashCode(acc, pe.kind);
+            switch (pe.kind) {
+                case PathElementKind.Definition:
+                    acc = addHashCode(acc, hash(pe.name));
+                    break;
+                case PathElementKind.Type:
+                    acc = addHashCode(acc, pe.index);
+                    break;
+                case PathElementKind.KeyOrIndex:
+                    acc = addHashCode(acc, hash(pe.key));
+                    break;
+            }
+        });
+        return acc;
     }
 }
 
@@ -246,15 +281,14 @@ function checkTypeList(typeOrTypes: any): OrderedSet<string> {
 
 export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, references: Map<string, Ref>): void {
     const root = checkStringMap(rootJson);
-    let typeForPath = Map<List<any>, TypeRef>();
+    let typeForPath = Map<Ref, TypeRef>();
 
     function setTypeForPath(path: Ref, t: TypeRef): void {
-        const immutablePath = path.immutable;
-        const maybeRef = typeForPath.get(immutablePath);
+        const maybeRef = typeForPath.get(path);
         if (maybeRef !== undefined) {
             assert(maybeRef === t, "Trying to set path again to different type");
         }
-        typeForPath = typeForPath.set(immutablePath, t);
+        typeForPath = typeForPath.set(path, t);
     }
 
     function makeClass(path: Ref, attributes: TypeAttributes, properties: StringMap, requiredArray: string[]): TypeRef {
@@ -460,10 +494,7 @@ export function addTypesInSchema(typeBuilder: TypeGraphBuilder, rootJson: any, r
     }
 
     function toType(schema: StringMap, path: Ref, typeAttributes: TypeAttributes): TypeRef {
-        // FIXME: This fromJS thing is ugly and inefficient.  Schemas aren't
-        // big, so it most likely doesn't matter.
-        const immutablePath = path.immutable;
-        const maybeType = typeForPath.get(immutablePath);
+        const maybeType = typeForPath.get(path);
         if (maybeType !== undefined) {
             return maybeType;
         }
