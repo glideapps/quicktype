@@ -27,10 +27,22 @@ enum Density {
     Dense
 }
 
+enum Visibility {
+    Private,
+    Crate,
+    Public
+}
+
 export default class RustTargetLanguage extends TargetLanguage {
     private readonly _denseOption = new EnumOption("density", "Density", [
         ["normal", Density.Normal],
         ["dense", Density.Dense]
+    ]);
+
+    private readonly _visibilityOption = new EnumOption("visibility", "Field visibility", [
+        ["private", Visibility.Private],
+        ["crate", Visibility.Crate],
+        ["public", Visibility.Public]
     ]);
 
     protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
@@ -42,7 +54,7 @@ export default class RustTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._denseOption];
+        return [this._denseOption, this._visibilityOption];
     }
 }
 
@@ -167,7 +179,12 @@ const standardUnicodeRustEscape = (codePoint: number): string => {
 const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape));
 
 class RustRenderer extends ConvenienceRenderer {
-    constructor(graph: TypeGraph, leadingComments: string[] | undefined, private readonly _density: Density) {
+    constructor(
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        private readonly _density: Density,
+        private readonly _visibility: Visibility
+    ) {
         super(graph, leadingComments);
     }
 
@@ -266,6 +283,15 @@ class RustRenderer extends ConvenienceRenderer {
         }
     }
 
+    private get visibility(): string {
+        if (this._visibility === Visibility.Crate) {
+            return "pub(crate) ";
+        } else if (this._visibility === Visibility.Public) {
+            return "pub ";
+        }
+        return "";
+    }
+
     private emitStructDefinition = (c: ClassType, className: Name): void => {
         this.emitDescription(this.descriptionForType(c));
         this.emitLine("#[derive(Serialize, Deserialize)]");
@@ -275,7 +301,7 @@ class RustRenderer extends ConvenienceRenderer {
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
                 this.emitRenameAttribute(name, jsonName);
-                this.emitLine(name, ": ", this.breakCycle(prop.type, true), ",");
+                this.emitLine(this.visibility, name, ": ", this.breakCycle(prop.type, true), ",");
             });
 
         this.emitBlock(["pub struct ", className], structBody);
@@ -334,9 +360,9 @@ class RustRenderer extends ConvenienceRenderer {
 // #[macro_use]
 // extern crate serde_derive;
 // extern crate serde_json;
-// 
+//
 // use generated_module::${topLevelName};
-// 
+//
 // fn main() {
 //     let json = r#"{"answer": 42}"#;
 //     let model: ${topLevelName} = serde_json::from_str(&json).unwrap();

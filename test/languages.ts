@@ -89,7 +89,12 @@ export const RustLanguage: Language = {
   skipSchema: [],
   skipMiscJSON: false,
   rendererOptions: {},
-  quickTestRendererOptions: [{ density: "dense" }],
+  quickTestRendererOptions: [
+    { density: "dense" },
+    { visibility: "crate" },
+    { visibility: "private" },
+    { visibility: "public" }
+  ],
   sourceFiles: ["src/Language/Rust.ts"]
 };
 
