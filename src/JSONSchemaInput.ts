@@ -43,14 +43,14 @@ export type PathElement =
     | { kind: PathElementKind.KeyOrIndex; key: string };
 
 export class Ref {
-    constructor(public readonly path: List<PathElement>) {}
+    constructor(private readonly _path: List<PathElement>) {}
 
     push(pe: PathElement): Ref {
-        return new Ref(this.path.push(pe));
+        return new Ref(this._path.push(pe));
     }
 
     get definitionName(): string | undefined {
-        const last = this.path.last();
+        const last = this._path.last();
         if (last !== undefined && last.kind === PathElementKind.Definition) {
             return last.name;
         }
@@ -86,7 +86,7 @@ export class Ref {
                     return assertNever(e);
             }
         }
-        return this.path.map(elementToString).join("/");
+        return this._path.map(elementToString).join("/");
     }
 
     lookupRef(root: StringMap, localSchema: StringMap, localRef: Ref): [StringMap, Ref] {
@@ -150,11 +150,11 @@ export class Ref {
                     return assertNever(first);
             }
         }
-        return lookup(localSchema, localRef.path, this.path);
+        return lookup(localSchema, localRef._path, this._path);
     }
 
     get immutable(): List<any> {
-        return this.path.map(pe => fromJS(pe));
+        return this._path.map(pe => fromJS(pe));
     }
 }
 
