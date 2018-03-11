@@ -37,6 +37,10 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN git clone https://github.com/obmarg/libsysconfcpus.git
 RUN cd libsysconfcpus && ./configure && make && make install
 
+# Ruby
+RUN apt-get install ruby --assume-yes
+RUN gem install bundler
+
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
 COPY . .

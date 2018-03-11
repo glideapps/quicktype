@@ -8,5 +8,5 @@ steps:
   - command: "FIXTURE=typescript,schema-typescript,javascript,schema-javascript,flow,schema-flow,csharp,schema-csharp,golang,schema-golang .buildkite/build-pr.sh"
     label: "typescript javascript flow csharp golang"
 
-  - command: "FIXTURE=swift,schema-swift,rust,schema-rust,elm,schema-elm .buildkite/build-pr.sh"
-    label: "swift rust elm"
+  - command: "FIXTURE=swift,schema-swift,rust,schema-rust,elm,schema-elm,ruby,schema-ruby .buildkite/build-pr.sh"
+    label: "swift rust elm ruby"
