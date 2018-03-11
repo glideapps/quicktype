@@ -2,6 +2,7 @@
 
 import { List, OrderedSet, Map, Set, hash } from "immutable";
 import * as pluralize from "pluralize";
+import * as URI from "urijs";
 
 import { ClassProperty } from "./Type";
 import { panic, assertNever, StringMap, checkStringMap, assert, defined, addHashCode } from "./Support";
@@ -16,12 +17,14 @@ import {
 } from "./TypeAttributes";
 
 export enum PathElementKind {
+    Root,
     KeyOrIndex,
     Type,
     Object
 }
 
 export type PathElement =
+    | { kind: PathElementKind.Root }
     | { kind: PathElementKind.KeyOrIndex; key: string }
     | { kind: PathElementKind.Type; index: number }
     | { kind: PathElementKind.Object };
@@ -57,26 +60,23 @@ const numberRegexp = new RegExp("^[0-9]+$");
 
 export class Ref {
     static root(address: string): Ref {
-        return new Ref(address, List());
+        const uri = new URI(address);
+        return new Ref(uri, List());
     }
 
     private static parsePath(path: string): List<PathElement> {
-        // FIXME: We treat the paths `#/foo` and `#foo` the same, but they
-        // shouldn't be.  Maybe the root `#/` should always have one empty
-        // path element first?
-        if (path.startsWith("#/")) {
-            path = path.substr(2);
-        } else if (path.startsWith("#")) {
+        const elements: PathElement[] = [];
+
+        if (path.startsWith("/")) {
+            elements.push({kind: PathElementKind.Root});
             path = path.substr(1);
         }
 
-        if (path === "") return List();
-
-        const elements: PathElement[] = [];
-        const parts = path.split("/");
-        // FIXME: Just `map` here.
-        for (let i = 0; i < parts.length; i++) {
-            elements.push({ kind: PathElementKind.KeyOrIndex, key: parts[i] });
+        if (path !== "") {
+            const parts = path.split("/");
+            for (let i = 0; i < parts.length; i++) {
+                elements.push({ kind: PathElementKind.KeyOrIndex, key: parts[i] });
+            }    
         }
         return List(elements);
     }
@@ -86,25 +86,34 @@ export class Ref {
             return panic("$ref must be a string");
         }
 
-        const indexOfHash = ref.indexOf("#");
-        if (indexOfHash < 0) {
-            return Ref.root(ref);
-        }
-
-        const address = ref.substr(0, indexOfHash);
-        const path = ref.substr(indexOfHash);
+        const uri = new URI(ref);
+        const path = uri.fragment();
+        uri.fragment("");
         const elements = Ref.parsePath(path);
-        return new Ref(address, elements);
+        return new Ref(uri, elements);
     }
 
-    constructor(readonly address: string, readonly path: List<PathElement>) { }
+    public addressURI: uri.URI | undefined;
+
+    constructor(addressURI: uri.URI | undefined, readonly path: List<PathElement>) {
+        if (addressURI !== undefined) {
+            assert(addressURI.fragment() === "", `Ref URI with fragment is not allowed: ${addressURI.toString()}`);
+            this.addressURI = addressURI.clone().normalize();
+        } else {
+            this.addressURI = undefined;
+        }
+     }
 
     get hasAddress(): boolean {
-        return this.address !== "";
+        return this.addressURI !== undefined;
+    }
+
+    get address(): string {
+        return defined(this.addressURI).toString();
     }
 
     private pushElement(pe: PathElement): Ref {
-        return new Ref(this.address, this.path.push(pe));
+        return new Ref(this.addressURI, this.path.push(pe));
     }
 
     push(...keys: string[]): Ref {
@@ -124,26 +133,28 @@ export class Ref {
     }
 
     resolveAgainst(base: Ref | undefined): Ref {
-        let address: string;
-        if (this.hasAddress) {
-            // FIXME: Address must be interpreted relative to base address.
-            address = this.address;
-        } else {
-            if (base === undefined || !base.hasAddress) {
-                return panic("Top-level ref must have an address");
-            }
-            address = base.address;
+        let addressURI = this.addressURI;
+        if (base !== undefined && base.addressURI !== undefined) {
+            addressURI = addressURI === undefined ? base.addressURI : addressURI.absoluteTo(base.addressURI);
         }
-        return new Ref(address, this.path);
+        return new Ref(addressURI, this.path);
     }
 
     get name(): string {
         let path = this.path;
 
-        for (; ;) {
+        for (;;) {
             const e = path.last();
-            if (e === undefined) {
-                return "Something";
+            if (e === undefined || e.kind === PathElementKind.Root) {
+                let name = this.addressURI !== undefined ? this.addressURI.filename() : "";
+                const suffix = this.addressURI !== undefined ? this.addressURI.suffix() : "";
+                if (name.length > suffix.length + 1) {
+                    name = name.substr(0, name.length - suffix.length - 1);
+                }
+                if (name === "") {
+                    return "Something";
+                }
+                return name;
             }
 
             switch (e.kind) {
@@ -173,6 +184,8 @@ export class Ref {
     toString(): string {
         function elementToString(e: PathElement): string {
             switch (e.kind) {
+                case PathElementKind.Root:
+                    return "/";
                 case PathElementKind.Type:
                     return `type/${e.index.toString()}`;
                 case PathElementKind.Object:
@@ -183,7 +196,8 @@ export class Ref {
                     return assertNever(e);
             }
         }
-        return "#/" + this.path.map(elementToString).join("/");
+        const address = this.addressURI === undefined ? "" : this.addressURI.toString();
+        return address + "#" + this.path.map(elementToString).join("/");
     }
 
     lookupRef(root: JSONSchema): JSONSchema {
@@ -197,6 +211,8 @@ export class Ref {
             }
             const rest = path.rest();
             switch (first.kind) {
+                case PathElementKind.Root:
+                    return lookup(root, rest);
                 case PathElementKind.KeyOrIndex:
                     if (Array.isArray(local)) {
                         return lookup(local[parseInt(first.key, 10)], rest);
@@ -216,13 +232,17 @@ export class Ref {
 
     equals(other: any): boolean {
         if (!(other instanceof Ref)) return false;
-        if (this.address !== other.address) return false;
+        if (this.addressURI !== undefined && other.addressURI !== undefined) {
+            if (!this.addressURI.equals(other.addressURI)) return false;
+        } else {
+            if ((this.addressURI === undefined) !== (other.addressURI === undefined)) return false;
+        }
         if (this.path.size !== other.path.size) return false;
         return this.path.zipWith(pathElementEquals, other.path).every(x => x);
     }
 
     hashCode(): number {
-        let acc = hash(this.address);
+        let acc = hash(this.addressURI !== undefined ? this.addressURI.toString() : undefined);
         this.path.forEach(pe => {
             acc = addHashCode(acc, pe.kind);
             switch (pe.kind) {
@@ -266,6 +286,10 @@ class Location {
 
     pushType(index: number): Location {
         return new Location(this.canonicalRef.pushType(index), this.virtualRef.pushType(index));
+    }
+
+    toString(): string {
+        return `${this.virtualRef.toString()} (${this.canonicalRef.toString()})`;
     }
 }
 
@@ -339,15 +363,17 @@ class Canonizer {
         for (; ;) {
             const maybeCanonical = this._map.get(virtual);
             if (maybeCanonical !== undefined) {
-                return [new Ref(maybeCanonical.address, maybeCanonical.path.concat(relative)), fullVirtual];
+                return [new Ref(maybeCanonical.addressURI, maybeCanonical.path.concat(relative)), fullVirtual];
             }
             const last = virtual.path.last();
             if (last === undefined) {
                 // We've exhausted our options - it's not a mapped ref.
                 return [fullVirtual, fullVirtual];
             }
-            relative = relative.unshift(last);
-            virtual = new Ref(virtual.address, virtual.path.pop());
+            if (last.kind !== PathElementKind.Root) {
+                relative = relative.unshift(last);
+            }
+            virtual = new Ref(virtual.addressURI, virtual.path.pop());
         }
     }
 }
