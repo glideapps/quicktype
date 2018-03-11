@@ -26,12 +26,13 @@
     "lodash": "^4.17.4",
     "moment": "^2.19.3",
     "node-fetch": "^1.7.1",
-    "pkg": "^4.3.0",
     "pako": "^1.0.6",
+    "pkg": "^4.3.0",
     "pluralize": "^7.0.0",
     "stream-json": "0.5.2",
     "string-to-stream": "^1.1.0",
-    "unicode-properties": "quicktype/unicode-properties#dist"
+    "unicode-properties": "quicktype/unicode-properties#dist",
+    "urijs": "^1.19.1"
   },
   "devDependencies": {
     "@types/graphql": "^0.11.7",
@@ -43,6 +44,7 @@
     "@types/pako": "^1.0.0",
     "@types/pluralize": "0.0.28",
     "@types/shelljs": "^0.7.8",
+    "@types/urijs": "^1.15.36",
     "ajv": "^5.2.2",
     "compare-versions": "^3.1.0",
     "deep-equal": "^1.0.1",
