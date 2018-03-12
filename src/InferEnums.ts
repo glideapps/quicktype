@@ -6,6 +6,7 @@ import { Type, StringType, UnionType } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { assert, defined, assertNever } from "./Support";
+import { combineTypeAttributes } from "./TypeAttributes";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -34,6 +35,8 @@ function replaceString(
     return builder.getStringType(attributes, undefined, forwardingRef);
 }
 
+// A union needs replacing if it contains more than one string type, one of them being
+// a basic string type that won't be converted into an enum.
 function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {
     const stringMembers = u.stringTypeMembers;
     if (stringMembers.size <= 1) return undefined;
@@ -42,22 +45,27 @@ function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {
     return stringMembers;
 }
 
+// Replaces all string types in an enum with the basic string type.
 function replaceUnion(
     u: UnionType,
     builder: GraphRewriteBuilder<StringType | UnionType>,
     forwardingRef: TypeRef
 ): TypeRef {
     const stringMembers = defined(unionNeedsReplacing(u));
+    const stringAttributes = combineTypeAttributes(stringMembers.map(t => t.getAttributes()).toArray());
     const types: TypeRef[] = [];
     u.members.forEach(t => {
         if (stringMembers.has(t)) return;
         types.push(builder.reconstituteType(t));
     });
-    // FIXME: add names to string type
     if (types.length === 0) {
-        return builder.getStringType(undefined, undefined, forwardingRef);
+        return builder.getStringType(
+            combineTypeAttributes([stringAttributes, u.getAttributes()]),
+            undefined,
+            forwardingRef
+        );
     }
-    types.push(builder.getStringType(undefined, undefined));
+    types.push(builder.getStringType(stringAttributes, undefined));
     return builder.getUnionType(u.getAttributes(), OrderedSet(types), forwardingRef);
 }
 

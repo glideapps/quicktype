@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "properties": {
+    "foo": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
+      ]
+    },
+    "bar": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "enum": ["quux"]
+        }
+      ]
+    }
+  },
+  "required": ["foo", "bar"]
+}
