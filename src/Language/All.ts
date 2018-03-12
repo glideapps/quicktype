@@ -13,6 +13,7 @@ import SwiftTargetLanguage from "./Swift";
 import ElmTargetLanguage from "./Elm";
 import JSONSchemaTargetLanguage from "./JSONSchema";
 import RustTargetLanguage from "./Rust";
+import RubyTargetLanguage from "./Ruby";
 
 export const all: TargetLanguage[] = [
     new CSharpTargetLanguage(),
@@ -26,7 +27,8 @@ export const all: TargetLanguage[] = [
     new FlowTargetLanguage(),
     new SwiftTargetLanguage(),
     new ElmTargetLanguage(),
-    new JSONSchemaTargetLanguage()
+    new JSONSchemaTargetLanguage(),
+    new RubyTargetLanguage()
 ];
 
 export function languageNamed(name: string): TargetLanguage | undefined {
