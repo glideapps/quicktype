@@ -257,6 +257,7 @@ class RubyRenderer extends ConvenienceRenderer {
     ): Sourcelike {
         const primitiveCast = [this.dryType(t, optional), "[", e, "]"];
         const primitive = castPrimitives ? primitiveCast : e;
+        const safeAccess = optional ? "&" : "";
         return matchType<Sourcelike>(
             t,
             _anyType => primitive,
@@ -265,23 +266,19 @@ class RubyRenderer extends ConvenienceRenderer {
             _integerType => primitive,
             _doubleType => primitive,
             _stringType => primitive,
-            arrayType => [
-                e,
-                optional ? "&" : "",
-                ".map { |x| ",
-                this.fromDynamic(arrayType.items, "x", false, true),
-                " }"
-            ],
+            arrayType => [e, safeAccess, ".map { |x| ", this.fromDynamic(arrayType.items, "x", false, true), " }"],
             classType => {
                 const expression = [this.nameForNamedType(classType), ".from_dynamic!(", e, ")"];
                 return optional ? [e, " ? ", expression, " : nil"] : expression;
             },
             mapType => [
-                e,
-                optional ? "&" : "",
+                ["Types::Strict::Hash", optional ? ".optional" : "", "[", e, "]"],
+                safeAccess,
                 ".map { |k, v| [k, ",
                 this.fromDynamic(mapType.values, "v", false, true),
-                "] }.to_h"
+                "] }",
+                safeAccess,
+                ".to_h"
             ],
             enumType => {
                 const expression = ["Types::", this.nameForNamedType(enumType), "[", e, "]"];
@@ -290,7 +287,7 @@ class RubyRenderer extends ConvenienceRenderer {
             unionType => {
                 const nullable = nullableFromUnion(unionType);
                 if (nullable !== null) {
-                    return [e, ".nil? ? nil : ", this.fromDynamic(nullable, e)];
+                    return this.fromDynamic(nullable, e, true);
                 }
                 const expression = [this.nameForNamedType(unionType), ".from_dynamic!(", e, ")"];
                 return optional ? [e, " ? ", expression, " : nil"] : expression;
@@ -350,6 +347,33 @@ class RubyRenderer extends ConvenienceRenderer {
         );
     }
 
+    // This is only to be used to allow class properties to possibly
+    // marshal implicitly. They are allowed to do this because they will
+    // be checked in Dry::Struct.new
+    private propertyTypeMarshalsImplicitlyFromDynamic(t: Type): boolean {
+        return matchType<boolean>(
+            t,
+            _anyType => true,
+            _nullType => true,
+            _boolType => true,
+            _integerType => true,
+            _doubleType => true,
+            _stringType => true,
+            arrayType => this.propertyTypeMarshalsImplicitlyFromDynamic(arrayType.items),
+            _classType => false,
+            // Map properties must be checked because Dry:Types doesn't have a generic Map
+            _mapType => false,
+            _enumType => true,
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) {
+                    return this.propertyTypeMarshalsImplicitlyFromDynamic(nullable);
+                }
+                return false;
+            }
+        );
+    }
+
     private emitBlock(source: Sourcelike, emit: () => void) {
         this.emitLine(source);
         this.indent(emit);
@@ -393,7 +417,7 @@ class RubyRenderer extends ConvenienceRenderer {
 
             this.ensureBlankLine();
             this.emitBlock(["def self.from_dynamic!(d)"], () => {
-                this.emitLine(`raise ArgumentError, "Argument is not a hash" unless d.is_a? Hash`);
+                this.emitLine("Types::Strict::Hash[d]");
                 this.emitLine("new(");
                 this.indent(() => {
                     const inits: Sourcelike[][] = [];
@@ -404,8 +428,12 @@ class RubyRenderer extends ConvenienceRenderer {
                             : // This will raise a runtime error if the key is not found in the hash
                               `d.fetch("${stringEscape(jsonName)}")`;
 
-                        const expression = this.fromDynamic(p.type, dynamic, p.isOptional);
-                        inits.push([[name, ": "], [expression, ","]]);
+                        if (this.propertyTypeMarshalsImplicitlyFromDynamic(p.type)) {
+                            inits.push([[name, ": "], [dynamic, ","]]);
+                        } else {
+                            const expression = this.fromDynamic(p.type, dynamic, p.isOptional);
+                            inits.push([[name, ": "], [expression, ","]]);
+                        }
                     });
                     this.emitTable(inits);
                 });
@@ -470,7 +498,7 @@ class RubyRenderer extends ConvenienceRenderer {
                         .remove(name)
                         .toArray()
                         .map((memberName: Name) => [", ", memberName, ": nil"]);
-                    if (this.marshalsImplicitlyToDynamic(t)) {
+                    if (this.propertyTypeMarshalsImplicitlyFromDynamic(t)) {
                         this.emitBlock(["if schema[:", name, "].right.valid? d"], () => {
                             this.emitLine("return new(", name, ": d", nilMembers, ")");
                         });
