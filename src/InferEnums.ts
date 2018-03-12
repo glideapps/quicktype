@@ -5,7 +5,8 @@ import { Set, OrderedMap, OrderedSet } from "immutable";
 import { Type, StringType, UnionType } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
-import { assert, defined, assertNever } from "./Support";
+import { assert, defined } from "./Support";
+import { combineTypeAttributes } from "./TypeAttributes";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -22,10 +23,12 @@ function shouldBeEnum(t: StringType): OrderedMap<string, number> | undefined {
 }
 
 function replaceString(
-    t: StringType,
-    builder: GraphRewriteBuilder<StringType | UnionType>,
+    group: Set<StringType>,
+    builder: GraphRewriteBuilder<StringType>,
     forwardingRef: TypeRef
 ): TypeRef {
+    assert(group.size === 1);
+    const t = defined(group.first());
     const attributes = t.getAttributes();
     const maybeEnumCases = shouldBeEnum(t);
     if (maybeEnumCases !== undefined) {
@@ -34,47 +37,35 @@ function replaceString(
     return builder.getStringType(attributes, undefined, forwardingRef);
 }
 
+// A union needs replacing if it contains more than one string type, one of them being
+// a basic string type.
 function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {
     const stringMembers = u.stringTypeMembers;
     if (stringMembers.size <= 1) return undefined;
-    const stringType = u.findMember("string");
-    if (stringType === undefined || shouldBeEnum(stringType as StringType) !== undefined) return undefined;
+    if (u.findMember("string") === undefined) return undefined;
     return stringMembers;
 }
 
-function replaceUnion(
-    u: UnionType,
-    builder: GraphRewriteBuilder<StringType | UnionType>,
-    forwardingRef: TypeRef
-): TypeRef {
+// Replaces all string types in an enum with the basic string type.
+function replaceUnion(group: Set<UnionType>, builder: GraphRewriteBuilder<UnionType>, forwardingRef: TypeRef): TypeRef {
+    assert(group.size === 1);
+    const u = defined(group.first());
     const stringMembers = defined(unionNeedsReplacing(u));
+    const stringAttributes = combineTypeAttributes(stringMembers.map(t => t.getAttributes()).toArray());
     const types: TypeRef[] = [];
     u.members.forEach(t => {
         if (stringMembers.has(t)) return;
         types.push(builder.reconstituteType(t));
     });
-    // FIXME: add names to string type
     if (types.length === 0) {
-        return builder.getStringType(undefined, undefined, forwardingRef);
+        return builder.getStringType(
+            combineTypeAttributes([stringAttributes, u.getAttributes()]),
+            undefined,
+            forwardingRef
+        );
     }
-    types.push(builder.getStringType(undefined, undefined));
+    types.push(builder.getStringType(stringAttributes, undefined));
     return builder.getUnionType(u.getAttributes(), OrderedSet(types), forwardingRef);
-}
-
-function replace(
-    setOfStringOrUnion: Set<StringType | UnionType>,
-    builder: GraphRewriteBuilder<StringType | UnionType>,
-    forwardingRef: TypeRef
-): TypeRef {
-    assert(setOfStringOrUnion.size === 1);
-    const t = defined(setOfStringOrUnion.first());
-    if (t instanceof StringType) {
-        return replaceString(t, builder, forwardingRef);
-    } else if (t instanceof UnionType) {
-        return replaceUnion(t, builder, forwardingRef);
-    } else {
-        return assertNever(t);
-    }
 }
 
 export function inferEnums(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
@@ -83,11 +74,14 @@ export function inferEnums(graph: TypeGraph, stringTypeMapping: StringTypeMappin
         .filter(t => t instanceof StringType)
         .map(t => [t])
         .toArray() as StringType[][];
+    return graph.rewrite(stringTypeMapping, false, allStrings, replaceString);
+}
+
+export function flattenStrings(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
     const allUnions = graph.allNamedTypesSeparated().unions;
     const unionsToReplace = allUnions
         .filter(unionNeedsReplacing)
         .map(t => [t])
         .toArray();
-    const typesToReplace = ([] as (StringType | UnionType)[][]).concat(allStrings, unionsToReplace);
-    return graph.rewrite(stringTypeMapping, false, typesToReplace, replace);
+    return graph.rewrite(stringTypeMapping, false, unionsToReplace, replaceUnion);
 }

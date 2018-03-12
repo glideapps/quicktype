@@ -17,7 +17,7 @@ import { TypeGraph, noneToAny, optionalToNullable } from "./TypeGraph";
 import { makeNamesTypeAttributes } from "./TypeNames";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
-import { inferEnums } from "./InferEnums";
+import { inferEnums, flattenStrings } from "./InferEnums";
 import { descriptionTypeAttributeKind } from "./TypeAttributes";
 import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
@@ -240,6 +240,7 @@ export class Run {
         if (doInferEnums) {
             graph = inferEnums(graph, stringTypeMapping);
         }
+        graph = flattenStrings(graph, stringTypeMapping);
         if (this._options.inferMaps) {
             graph = inferMaps(graph, stringTypeMapping, conflateNumbers);
         }
