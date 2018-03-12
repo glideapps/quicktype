@@ -2,6 +2,7 @@ import { getStream } from "./get-stream";
 import * as _ from "lodash";
 import { List, Map, OrderedMap, OrderedSet } from "immutable";
 import { Readable } from "stream";
+import * as URI from "urijs";
 
 import * as targetLanguages from "./Language/All";
 import { TargetLanguage } from "./TargetLanguage";
@@ -57,6 +58,7 @@ export function isJSONSource(source: TypeSource): source is JSONTypeSource {
 
 export interface SchemaTypeSource {
     name: string;
+    uri?: string;
     schema: StringInput;
     topLevelRefs?: string[];
 }
@@ -117,7 +119,7 @@ const defaultOptions: Options = {
 
 type InputData = {
     samples: { [name: string]: { samples: Value[]; description?: string } };
-    schemas: { [name: string]: { schema: any; topLevelRefs: string[] | undefined } };
+    schemas: { [name: string]: { schema: any; uri: string; topLevelRefs: string[] | undefined } };
     graphQLs: { [name: string]: { schema: any; query: string } };
 };
 
@@ -130,12 +132,16 @@ async function toString(source: string | Readable): Promise<string> {
 }
 
 class SimpleJSONSchemaStore extends JSONSchemaStore {
-    constructor (private readonly _name: string, private readonly _schema: JSONSchema) {
+    private readonly _address: uri.URI;
+
+    constructor (address: string, private readonly _schema: JSONSchema) {
         super();
+        this._address = new URI(address);
     }
 
     protected fetch(address: string): JSONSchema | undefined {
-        assert(address === this._name, `Wrong address ${address}`);
+        console.log(`Fetching ${address}`);
+        assert(this._address.equals(address), `Wrong address ${address}`);
         return this._schema;
     }
 }
@@ -177,19 +183,19 @@ export class Run {
         }
 
         // JSON Schema
-        Map(this._allInputs.schemas).forEach(({ schema, topLevelRefs }, name) => {
+        Map(this._allInputs.schemas).forEach(({ schema, uri, topLevelRefs }, name) => {
             let references: Map<string, Ref>;
             if (topLevelRefs === undefined) {
-                references = Map([[name, Ref.root(name)] as [string, Ref]]);
+                references = Map([[name, Ref.root(uri)] as [string, Ref]]);
             } else {
                 assert(
                     topLevelRefs.length === 1 && topLevelRefs[0] === "definitions/",
                     "Schema top level refs must be `definitions/`"
                 );
-                references = definitionRefsInSchema(schema, name);
+                references = definitionRefsInSchema(schema, uri);
                 assert(references.size > 0, "No definitions in JSON Schema");
             }
-            const store = new SimpleJSONSchemaStore(name, checkJSONSchema(schema));
+            const store = new SimpleJSONSchemaStore(uri, checkJSONSchema(schema));
             addTypesInSchema(typeBuilder, store, references);
         });
 
@@ -303,12 +309,12 @@ export class Run {
                     }
                 }
             } else if (isSchemaSource(source)) {
-                const { name, schema, topLevelRefs } = source;
+                const { name, uri, schema, topLevelRefs } = source;
                 const input = JSON.parse(await toString(schema));
                 if (_.has(this._allInputs.schemas, name)) {
                     throw new Error(`More than one schema given for ${name}`);
                 }
-                this._allInputs.schemas[name] = { schema: input, topLevelRefs };
+                this._allInputs.schemas[name] = { schema: input, uri: uri !== undefined ? uri : name, topLevelRefs };
             } else {
                 assertNever(source);
             }

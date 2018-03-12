@@ -82,9 +82,11 @@ async function readableFromFileOrUrl(fileOrUrl: string): Promise<Readable> {
     }
 }
 
-async function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Promise<JSONTypeSource> {
+type WithURI = { uri?: string };
+
+async function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Promise<JSONTypeSource & WithURI> {
     const samples = await Promise.all(filesOrUrls.map(readableFromFileOrUrl));
-    return { name, samples };
+    return { name, uri: filesOrUrls.length === 1 ? filesOrUrls[0] : undefined, samples };
 }
 
 function typeNameFromFilename(filename: string): string {
@@ -92,15 +94,15 @@ function typeNameFromFilename(filename: string): string {
     return name.substr(0, name.lastIndexOf("."));
 }
 
-async function samplesFromDirectory(dataDir: string, schemaTopLevel: string | undefined): Promise<TypeSource[]> {
+async function samplesFromDirectory(dataDir: string, schemaTopLevel: string | undefined): Promise<(TypeSource & WithURI)[]> {
     async function readFilesOrURLsInDirectory(d: string): Promise<TypeSource[]> {
         const files = fs
             .readdirSync(d)
             .map(x => path.join(d, x))
             .filter(x => fs.lstatSync(x).isFile());
         // Each file is a (Name, JSON | URL)
-        const sourcesInDir: TypeSource[] = [];
-        const graphQLSources: GraphQLTypeSource[] = [];
+        const sourcesInDir: (TypeSource & WithURI)[] = [];
+        const graphQLSources: (GraphQLTypeSource & WithURI)[] = [];
         let graphQLSchema: Readable | undefined = undefined;
         for (let file of files) {
             const name = typeNameFromFilename(file);
@@ -116,11 +118,13 @@ async function samplesFromDirectory(dataDir: string, schemaTopLevel: string | un
             if (file.endsWith(".url") || file.endsWith(".json")) {
                 sourcesInDir.push({
                     name,
+                    uri: fileOrUrl,
                     samples: [await readableFromFileOrUrl(fileOrUrl)]
                 });
             } else if (file.endsWith(".schema")) {
                 sourcesInDir.push({
                     name,
+                    uri: fileOrUrl,
                     schema: await readableFromFileOrUrl(fileOrUrl),
                     topLevelRefs: schemaTopLevel === undefined ? undefined : [schemaTopLevel]
                 });
@@ -128,7 +132,7 @@ async function samplesFromDirectory(dataDir: string, schemaTopLevel: string | un
                 assert(graphQLSchema === undefined, `More than one GraphQL schema in ${dataDir}`);
                 graphQLSchema = await readableFromFileOrUrl(fileOrUrl);
             } else if (file.endsWith(".graphql")) {
-                graphQLSources.push({ name, schema: undefined, query: await readableFromFileOrUrl(fileOrUrl) });
+                graphQLSources.push({ name, schema: undefined, uri: fileOrUrl, query: await readableFromFileOrUrl(fileOrUrl) });
             }
         }
 
@@ -515,7 +519,7 @@ function usage() {
     console.log(getUsage(sections));
 }
 
-async function getSources(options: CLIOptions): Promise<TypeSource[]> {
+async function getSources(options: CLIOptions): Promise<(TypeSource & WithURI)[]> {
     if (options.srcUrls !== undefined) {
         const json = JSON.parse(fs.readFileSync(options.srcUrls, "utf8"));
         const jsonMap = urlsFromURLGrammar(json);
@@ -525,6 +529,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
         return [
             {
                 name: options.topLevel,
+                uri: ".",
                 samples: [process.stdin]
             }
         ];
@@ -532,7 +537,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
         const exists = options.src.filter(fs.existsSync);
         const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
 
-        let sources: TypeSource[] = [];
+        let sources: (TypeSource & WithURI)[] = [];
         for (const dataDir of directories) {
             sources = sources.concat(await samplesFromDirectory(dataDir, options.addSchemaTopLevel));
         }
@@ -638,6 +643,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                         assert(source.samples.length === 1, `Please specify one schema file for ${source.name}`);
                         sources.push({
                             name: source.name,
+                            uri: source.uri,
                             schema: source.samples[0],
                             topLevelRefs:
                                 options.addSchemaTopLevel === undefined ? undefined : [options.addSchemaTopLevel]
