@@ -7,7 +7,6 @@ import GoTargetLanguage from "./Golang";
 import CPlusPlusTargetLanguage from "./CPlusPlus";
 import ObjectiveCTargetLanguage from "./Objective-C";
 import { JavaTargetLanguage } from "./Java";
-import SimpleTypesTargetLanguage from "./SimpleTypes";
 import { JavaScriptTargetLanguage } from "./JavaScript";
 import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
 import SwiftTargetLanguage from "./Swift";
@@ -27,8 +26,7 @@ export const all: TargetLanguage[] = [
     new FlowTargetLanguage(),
     new SwiftTargetLanguage(),
     new ElmTargetLanguage(),
-    new JSONSchemaTargetLanguage(),
-    new SimpleTypesTargetLanguage()
+    new JSONSchemaTargetLanguage()
 ];
 
 export function languageNamed(name: string): TargetLanguage | undefined {
