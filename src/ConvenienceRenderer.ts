@@ -826,4 +826,27 @@ export abstract class ConvenienceRenderer extends Renderer {
             return options.fn(context.allTypes[t.index]);
         });
     }
+
+    protected forEachType<TResult>(process: (t: Type) => TResult): Set<TResult> {
+        let visitedTypes = Set();
+        let processed = Set();
+        const queue = this.typeGraph.topLevels.valueSeq().toArray();
+
+        function visit(t: Type) {
+            if (visitedTypes.has(t)) return;
+            queue.push(...t.children.toArray());
+            visitedTypes = visitedTypes.add(t);
+            processed = processed.add(process(t));
+        }
+
+        for (;;) {
+            const maybeType = queue.pop();
+            if (maybeType === undefined) {
+                break;
+            }
+            visit(maybeType);
+        }
+
+        return processed;
+    }
 }
