@@ -2,9 +2,6 @@ import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
 
-// The typings for this module are screwy
-const isURL = require("is-url");
-
 import {
     Run,
     JSONTypeSource,
@@ -15,8 +12,7 @@ import {
     isJSONSource,
     StringInput,
     SchemaTypeSource,
-    isSchemaSource,
-    isGraphQLSource
+    isSchemaSource
 } from ".";
 import { OptionDefinition } from "./RendererOptions";
 import * as targetLanguages from "./Language/All";
@@ -29,11 +25,11 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { getStream } from "./get-stream/index";
 import { train } from "./MarkovChain";
 import { sourcesFromPostmanCollection } from "./PostmanCollection";
+import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
 const chalk = require("chalk");
-const fetch = require("node-fetch");
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
 const packageJSON = require("../package.json");
@@ -50,7 +46,6 @@ export interface CLIOptions {
     graphqlSchema?: string;
     graphqlIntrospect?: string;
     graphqlServerHeader?: string[];
-    addSchemaTopLevel?: string;
     template?: string;
     out?: string;
     buildMarkovChain?: string;
@@ -71,22 +66,9 @@ export interface CLIOptions {
     version: boolean;
 }
 
-async function readableFromFileOrUrl(fileOrUrl: string): Promise<Readable> {
-    if (isURL(fileOrUrl)) {
-        const response = await fetch(fileOrUrl);
-        return response.body;
-    } else if (fs.existsSync(fileOrUrl)) {
-        return fs.createReadStream(fileOrUrl);
-    } else {
-        return panic(`Input file ${fileOrUrl} does not exist`);
-    }
-}
-
-type WithURI = { uri?: string };
-
-async function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Promise<JSONTypeSource & WithURI> {
-    const samples = await Promise.all(filesOrUrls.map(readableFromFileOrUrl));
-    return { name, uri: filesOrUrls.length === 1 ? filesOrUrls[0] : undefined, samples };
+async function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Promise<JSONTypeSource> {
+    const samples = await Promise.all(filesOrUrls.map(readableFromFileOrURL));
+    return { name, samples };
 }
 
 function typeNameFromFilename(filename: string): string {
@@ -94,15 +76,15 @@ function typeNameFromFilename(filename: string): string {
     return name.substr(0, name.lastIndexOf("."));
 }
 
-async function samplesFromDirectory(dataDir: string, schemaTopLevel: string | undefined): Promise<(TypeSource & WithURI)[]> {
+async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
     async function readFilesOrURLsInDirectory(d: string): Promise<TypeSource[]> {
         const files = fs
             .readdirSync(d)
             .map(x => path.join(d, x))
             .filter(x => fs.lstatSync(x).isFile());
         // Each file is a (Name, JSON | URL)
-        const sourcesInDir: (TypeSource & WithURI)[] = [];
-        const graphQLSources: (GraphQLTypeSource & WithURI)[] = [];
+        const sourcesInDir: TypeSource[] = [];
+        const graphQLSources: GraphQLTypeSource[] = [];
         let graphQLSchema: Readable | undefined = undefined;
         for (let file of files) {
             const name = typeNameFromFilename(file);
@@ -119,20 +101,18 @@ async function samplesFromDirectory(dataDir: string, schemaTopLevel: string | un
                 sourcesInDir.push({
                     name,
                     uri: fileOrUrl,
-                    samples: [await readableFromFileOrUrl(fileOrUrl)]
+                    samples: [await readableFromFileOrURL(fileOrUrl)]
                 });
             } else if (file.endsWith(".schema")) {
                 sourcesInDir.push({
                     name,
-                    uri: fileOrUrl,
-                    schema: await readableFromFileOrUrl(fileOrUrl),
-                    topLevelRefs: schemaTopLevel === undefined ? undefined : [schemaTopLevel]
+                    uri: fileOrUrl
                 });
             } else if (file.endsWith(".gqlschema")) {
                 assert(graphQLSchema === undefined, `More than one GraphQL schema in ${dataDir}`);
-                graphQLSchema = await readableFromFileOrUrl(fileOrUrl);
+                graphQLSchema = await readableFromFileOrURL(fileOrUrl);
             } else if (file.endsWith(".graphql")) {
-                graphQLSources.push({ name, schema: undefined, uri: fileOrUrl, query: await readableFromFileOrUrl(fileOrUrl) });
+                graphQLSources.push({ name, schema: undefined, query: await readableFromFileOrURL(fileOrUrl) });
             }
         }
 
@@ -257,7 +237,6 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         graphqlServerHeader: opts.graphqlServerHeader,
-        addSchemaTopLevel: opts.addSchemaTopLevel,
         template: opts.template
     };
     /* tslint:enable */
@@ -311,12 +290,6 @@ const optionDefinitions: OptionDefinition[] = [
         name: "no-combine-classes",
         type: Boolean,
         description: "Don't combine similar classes."
-    },
-    {
-        name: "add-schema-top-level",
-        type: String,
-        typeLabel: "REF",
-        description: "Use JSON Schema definitions as top-levels.  Must be `definitions/`."
     },
     {
         name: "graphql-schema",
@@ -519,37 +492,50 @@ function usage() {
     console.log(getUsage(sections));
 }
 
-async function getSources(options: CLIOptions): Promise<(TypeSource & WithURI)[]> {
+// Returns an array of [name, sourceURIs] pairs.
+async function getSourceURIs(options: CLIOptions): Promise<[string, string[]][]> {
     if (options.srcUrls !== undefined) {
-        const json = JSON.parse(fs.readFileSync(options.srcUrls, "utf8"));
+        const json = JSON.parse(await readFromFileOrURL(options.srcUrls));
         const jsonMap = urlsFromURLGrammar(json);
         const topLevels = Object.getOwnPropertyNames(jsonMap);
-        return Promise.all(topLevels.map(name => sourceFromFileOrUrlArray(name, jsonMap[name])));
+        return topLevels.map(name => [name, jsonMap[name]] as [string, string[]]);
     } else if (options.src.length === 0) {
-        return [
-            {
-                name: options.topLevel,
-                uri: ".",
-                samples: [process.stdin]
-            }
-        ];
+        return [[options.topLevel, ["-"]]];
     } else {
-        const exists = options.src.filter(fs.existsSync);
-        const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
-
-        let sources: (TypeSource & WithURI)[] = [];
-        for (const dataDir of directories) {
-            sources = sources.concat(await samplesFromDirectory(dataDir, options.addSchemaTopLevel));
-        }
-
-        // Every src that's not a directory is assumed to be a file or URL
-        const filesOrUrls = options.src.filter(x => !_.includes(directories, x));
-        if (!_.isEmpty(filesOrUrls)) {
-            sources.push(await sourceFromFileOrUrlArray(options.topLevel, filesOrUrls));
-        }
-
-        return sources;
+        return [];
     }
+}
+
+async function typeSourceForURIs(name: string, uris: string[], options: CLIOptions): Promise<TypeSource> {
+    switch (options.srcLang) {
+        case "json":
+            return await sourceFromFileOrUrlArray(name, uris);
+        case "schema":
+            assert(uris.length === 1, `Must have exactly one schema for ${name}`);
+            return {name, uri: uris[0]};
+        default:
+            return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);
+    }
+}
+
+async function getSources(options: CLIOptions): Promise<TypeSource[]> {
+    const sourceURIs = await getSourceURIs(options);
+    let sources: TypeSource[] = await Promise.all(sourceURIs.map(([name, uris]) => typeSourceForURIs(name, uris, options)));
+
+    const exists = options.src.filter(fs.existsSync);
+    const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
+
+    for (const dataDir of directories) {
+        sources = sources.concat(await samplesFromDirectory(dataDir));
+    }
+
+    // Every src that's not a directory is assumed to be a file or URL
+    const filesOrUrls = options.src.filter(x => !_.includes(directories, x));
+    if (!_.isEmpty(filesOrUrls)) {
+        sources.push(await typeSourceForURIs(options.topLevel, filesOrUrls, options));
+    }
+
+    return sources;
 }
 
 export async function main(args: string[] | Partial<CLIOptions>) {
@@ -609,13 +595,14 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                         schemaString = fs.readFileSync(schemaFile, "utf8");
                     }
                     const schema = JSON.parse(schemaString);
-                    const query = await readableFromFileOrUrl(queryFile);
+                    const query = await readableFromFileOrURL(queryFile);
                     const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
                     gqlSources.push({ name, schema, query });
                 }
                 sources = gqlSources;
                 break;
             case "json":
+            case "schema":
                 sources = await getSources(options);
                 break;
             case "postman-json":
@@ -633,26 +620,6 @@ export async function main(args: string[] | Partial<CLIOptions>) {
                     }
                 }
                 break;
-            case "schema":
-                // Collect sources as JSON, then map to schema data
-                for (const source of await getSources(options)) {
-                    if (isGraphQLSource(source)) {
-                        return panic("Cannot accept GraphQL for JSON Schema input");
-                    }
-                    if (isJSONSource(source)) {
-                        assert(source.samples.length === 1, `Please specify one schema file for ${source.name}`);
-                        sources.push({
-                            name: source.name,
-                            uri: source.uri,
-                            schema: source.samples[0],
-                            topLevelRefs:
-                                options.addSchemaTopLevel === undefined ? undefined : [options.addSchemaTopLevel]
-                        });
-                    } else {
-                        sources.push(source);
-                    }
-                }
-                break;
             default:
                 panic(`Unsupported source language (${options.srcLang})`);
                 break;
@@ -661,11 +628,6 @@ export async function main(args: string[] | Partial<CLIOptions>) {
         let handlebarsTemplate: string | undefined = undefined;
         if (options.template !== undefined) {
             handlebarsTemplate = fs.readFileSync(options.template, "utf8");
-        }
-
-        let findSimilarClassesSchema: string | undefined = undefined;
-        if (options.findSimilarClassesSchema !== undefined) {
-            findSimilarClassesSchema = fs.readFileSync(options.findSimilarClassesSchema, "utf8");
         }
 
         let run = new Run({
@@ -682,8 +644,9 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             rendererOptions: options.rendererOptions,
             leadingComments,
             handlebarsTemplate,
-            findSimilarClassesSchema,
-            outputFilename: options.out !== undefined ? path.basename(options.out) : undefined
+            findSimilarClassesSchemaURI: options.findSimilarClassesSchema,
+            outputFilename: options.out !== undefined ? path.basename(options.out) : undefined,
+            schemaStore: new FetchingJSONSchemaStore()
         });
 
         const resultsByFilename = await run.run();
