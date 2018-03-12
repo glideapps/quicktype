@@ -8,7 +8,7 @@ import { Sourcelike, modifySource } from "../../Source";
 import { Namer, Name } from "../../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../../ConvenienceRenderer";
 import { TargetLanguage } from "../../TargetLanguage";
-import { Option, BooleanOption } from "../../RendererOptions";
+import { Option, BooleanOption, EnumOption } from "../../RendererOptions";
 
 import * as keywords from "./keywords";
 
@@ -44,15 +44,26 @@ function unicodeEscape(codePoint: number): string {
 
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
+enum Strictness {
+    Strict = "Strict::",
+    Coercible = "Coercible::",
+    None = "Types::"
+}
 export default class RubyTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
+
+    private readonly _strictnessOption = new EnumOption("strictness", "Type strictness", [
+        ["strict", Strictness.Strict],
+        ["coercible", Strictness.Coercible],
+        ["none", Strictness.None]
+    ]);
 
     constructor() {
         super("Ruby", ["ruby"], "rb");
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._justTypesOption];
+        return [this._justTypesOption, this._strictnessOption];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -112,7 +123,12 @@ function memberNameStyle(original: string): string {
 }
 
 class RubyRenderer extends ConvenienceRenderer {
-    constructor(graph: TypeGraph, leadingComments: string[] | undefined, private readonly _justTypes: boolean) {
+    constructor(
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        private readonly _justTypes: boolean,
+        private readonly _strictness: Strictness
+    ) {
         super(graph, leadingComments);
     }
 
@@ -161,14 +177,14 @@ class RubyRenderer extends ConvenienceRenderer {
         return matchType<Sourcelike>(
             t,
             _anyType => ["Types::Any", optional],
-            _nullType => ["Types::Strict::Nil", optional],
-            _boolType => ["Types::Strict::Bool", optional],
-            _integerType => ["Types::Strict::Int", optional],
-            _doubleType => ["Types::StrictDouble", optional],
-            _stringType => ["Types::Strict::String", optional],
+            _nullType => ["Types::Nil", optional],
+            _boolType => ["Types::Bool", optional],
+            _integerType => ["Types::Int", optional],
+            _doubleType => ["Types::Double", optional],
+            _stringType => ["Types::String", optional],
             arrayType => ["Types.Array(", this.dryType(arrayType.items), ")", optional],
             classType => ["Types.Instance(", this.nameForNamedType(classType), ")", optional],
-            mapType => ["Types::Strict::Hash.meta(of: ", this.dryType(mapType.values), ")", optional],
+            mapType => ["Types::Hash.meta(of: ", this.dryType(mapType.values), ")", optional],
             enumType => ["Types::", this.nameForNamedType(enumType), optional],
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -272,7 +288,7 @@ class RubyRenderer extends ConvenienceRenderer {
                 return optional ? [e, " ? ", expression, " : nil"] : expression;
             },
             mapType => [
-                ["Types::Strict::Hash", optional ? ".optional" : "", "[", e, "]"],
+                ["Types::Hash", optional ? ".optional" : "", "[", e, "]"],
                 safeAccess,
                 ".map { |k, v| [k, ",
                 this.fromDynamic(mapType.values, "v", false, true),
@@ -417,7 +433,7 @@ class RubyRenderer extends ConvenienceRenderer {
 
             this.ensureBlankLine();
             this.emitBlock(["def self.from_dynamic!(d)"], () => {
-                this.emitLine("Types::Strict::Hash[d]");
+                this.emitLine("d = Types::Hash[d]");
                 this.emitLine("new(");
                 this.indent(() => {
                     const inits: Sourcelike[][] = [];
@@ -548,12 +564,48 @@ class RubyRenderer extends ConvenienceRenderer {
         });
     }
 
-    private emitEnumDeclaration(e: EnumType, name: Name) {
-        const cases: Sourcelike[][] = [];
-        this.forEachEnumCase(e, "none", (_name, json) => {
-            cases.push([cases.length === 0 ? "" : ", ", `"${stringEscape(json)}"`]);
+    private emitTypesModule() {
+        this.emitBlock(["module Types"], () => {
+            this.emitLine("include Dry::Types.module");
+
+            const declarations: Sourcelike[][] = [];
+
+            if (this._strictness !== Strictness.None) {
+                let has = { int: false, nil: false, bool: false, hash: false, string: false, double: false };
+                this.forEachType(t => {
+                    has = {
+                        int: has.int || t.kind === "integer",
+                        nil: has.nil || t.kind === "null",
+                        bool: has.bool || t.kind === "bool",
+                        hash: has.hash || t.kind === "map" || t.kind === "class",
+                        string: has.string || t.kind === "string" || t.kind === "enum",
+                        double: has.double || t.kind === "double"
+                    };
+                });
+                if (has.int) declarations.push([["Int"], [` = ${this._strictness}Int`]]);
+                if (this._strictness === Strictness.Strict) {
+                    if (has.nil) declarations.push([["Nil"], [` = ${this._strictness}Nil`]]);
+                }
+                if (has.bool) declarations.push([["Bool"], [` = ${this._strictness}Bool`]]);
+                if (has.hash) declarations.push([["Hash"], [` = ${this._strictness}Hash`]]);
+                if (has.string) declarations.push([["String"], [` = ${this._strictness}String`]]);
+                if (has.double)
+                    declarations.push([["Double"], [` = ${this._strictness}Float | ${this._strictness}Int`]]);
+            }
+
+            this.forEachEnum("none", (enumType, enumName) => {
+                const cases: Sourcelike[][] = [];
+                this.forEachEnumCase(enumType, "none", (_name, json) => {
+                    cases.push([cases.length === 0 ? "" : ", ", `"${stringEscape(json)}"`]);
+                });
+                declarations.push([[enumName], [" = ", this._strictness, "String.enum(", ...cases, ")"]]);
+            });
+
+            if (declarations.length > 0) {
+                this.ensureBlankLine();
+                this.emitTable(declarations);
+            }
         });
-        this.emitLine(name, " = Types::Strict::String.enum(", ...cases, ")");
     }
 
     protected emitSourceStructure() {
@@ -578,18 +630,9 @@ class RubyRenderer extends ConvenienceRenderer {
         this.emitLine("require 'json'");
         this.emitLine("require 'dry-types'");
         this.emitLine("require 'dry-struct'");
-        this.ensureBlankLine();
 
-        this.emitBlock(["module Types"], () => {
-            this.emitLine("include Dry::Types.module");
-            this.emitLine("StrictDouble = Strict::Int | Strict::Float");
-            this.forEachNamedType(
-                "none",
-                (_c, _n) => undefined,
-                (e, n) => this.emitEnumDeclaration(e, n),
-                (_u, _n) => undefined
-            );
-        });
+        this.ensureBlankLine();
+        this.emitTypesModule();
 
         this.forEachDeclaration("leading-and-interposing", decl => {
             if (decl.kind === "forward") {
