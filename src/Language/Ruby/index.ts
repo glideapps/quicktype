@@ -133,7 +133,7 @@ class RubyRenderer extends ConvenienceRenderer {
     }
 
     protected get commentLineStart(): string {
-        return "# ";
+        return "#";
     }
 
     protected get needsTypeDeclarationBeforeUse(): boolean {
