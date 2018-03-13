@@ -675,7 +675,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
         let first = true;
         for (const line of lines) {
-            this.emitLine(first ? firstLineStart : lineStart, trimEnd(line));
+            let start = first ? firstLineStart : lineStart;
+            if (line === "") {
+                start = trimEnd(start);
+            }
+            this.emitLine(start, trimEnd(line));
             first = false;
         }
         if (afterLine !== undefined) {
