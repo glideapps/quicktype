@@ -19,7 +19,7 @@ import { Name, Namer, funPrefixNamer } from "../Naming";
 import { UnionType, nullableFromUnion, Type, ClassType, matchType, removeNullFromUnion, EnumType } from "../Type";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { EnumOption, Option } from "../RendererOptions";
+import { BooleanOption, EnumOption, Option } from "../RendererOptions";
 import { defined } from "../Support";
 
 enum Density {
@@ -45,6 +45,8 @@ export default class RustTargetLanguage extends TargetLanguage {
         ["public", Visibility.Public]
     ]);
 
+    private readonly _deriveDebugOption = new BooleanOption("derive-debug", "Derive Debug impl", false);
+
     protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
         return RustRenderer;
     }
@@ -54,7 +56,7 @@ export default class RustTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._denseOption, this._visibilityOption];
+        return [this._denseOption, this._visibilityOption, this._deriveDebugOption];
     }
 }
 
@@ -183,7 +185,8 @@ class RustRenderer extends ConvenienceRenderer {
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _density: Density,
-        private readonly _visibility: Visibility
+        private readonly _visibility: Visibility,
+        private readonly _deriveDebug: bool
     ) {
         super(graph, leadingComments);
     }
@@ -294,7 +297,7 @@ class RustRenderer extends ConvenienceRenderer {
 
     private emitStructDefinition = (c: ClassType, className: Name): void => {
         this.emitDescription(this.descriptionForType(c));
-        this.emitLine("#[derive(Serialize, Deserialize)]");
+        this.emitLine("#[derive(", this._deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
 
         const blankLines = this._density === Density.Dense ? "none" : "interposing";
         const structBody = () =>
@@ -321,7 +324,7 @@ class RustRenderer extends ConvenienceRenderer {
         }
 
         this.emitDescription(this.descriptionForType(u));
-        this.emitLine("#[derive(Serialize, Deserialize)]");
+        this.emitLine("#[derive(", this._deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
         this.emitLine("#[serde(untagged)]");
 
         const [, nonNulls] = removeNullFromUnion(u);
@@ -337,7 +340,7 @@ class RustRenderer extends ConvenienceRenderer {
 
     emitEnumDefinition = (e: EnumType, enumName: Name): void => {
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("#[derive(Serialize, Deserialize)]");
+        this.emitLine("#[derive(", this._deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
 
         const blankLines = this._density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
