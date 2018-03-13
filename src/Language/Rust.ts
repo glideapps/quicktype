@@ -225,7 +225,7 @@ class RustRenderer extends ConvenienceRenderer {
     }
 
     protected get commentLineStart(): string {
-        return "/// ";
+        return "///";
     }
 
     private nullableRustType = (t: Type, withIssues: boolean): Sourcelike => {

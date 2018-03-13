@@ -229,7 +229,7 @@ class ElmRenderer extends ConvenienceRenderer {
     }
 
     protected get commentLineStart(): string {
-        return "-- ";
+        return "--";
     }
 
     protected emitDescriptionBlock(lines: string[]): void {

@@ -654,7 +654,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected get commentLineStart(): string {
-        return "// ";
+        return "//";
     }
 
     protected emitCommentLines(
@@ -675,7 +675,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
         let first = true;
         for (const line of lines) {
-            this.emitLine(first ? firstLineStart : lineStart, trimEnd(line));
+            const c = trimEnd(line);
+            if (c) {
+                this.emitLine(first ? firstLineStart : lineStart, ' ', c));
+            } else {
+                this.emitLine(first ? firstLineStart : lineStart);
+            }
             first = false;
         }
         if (afterLine !== undefined) {
