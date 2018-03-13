@@ -59,6 +59,6 @@
     "uglify-js": "^3.0.26",
     "watch": "^1.0.2"
   },
-  "files": ["dist/**"],
+  "files": ["dist/**", "types/**"],
   "bin": "dist/cli.js"
 }
