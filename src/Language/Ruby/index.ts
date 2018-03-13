@@ -183,7 +183,7 @@ class RubyRenderer extends ConvenienceRenderer {
             _doubleType => ["Types::Double", optional],
             _stringType => ["Types::String", optional],
             arrayType => ["Types.Array(", this.dryType(arrayType.items), ")", optional],
-            classType => ["Types.Instance(", this.nameForNamedType(classType), ")", optional],
+            classType => [this.nameForNamedType(classType), optional],
             mapType => ["Types::Hash.meta(of: ", this.dryType(mapType.values), ")", optional],
             enumType => ["Types::", this.nameForNamedType(enumType), optional],
             unionType => {
