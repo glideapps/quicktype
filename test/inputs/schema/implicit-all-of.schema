@@ -6,12 +6,14 @@
   "required": ["foo"],
   "definitions": {
     "base1": {
+      "type": "object",
       "properties": {
         "bar": { "type": "boolean" }
       },
       "required": ["bar"]
     },
     "base2": {
+      "type": "object",
       "properties": {
         "quux": { "type": "string" }
       },

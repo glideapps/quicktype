@@ -3,6 +3,7 @@
     "$ref": "#/definitions/foo",
     "definitions": {
         "foo": {
+            "type": "object",
             "properties": {
                 "bar": {
                     "$ref": "http://foo/root.json#/definitions/bar"
