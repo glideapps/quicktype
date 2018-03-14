@@ -19,6 +19,10 @@ export abstract class TargetLanguage {
         return this.getOptions().map(o => o.definition);
     }
 
+    get cliOptionDefinitions(): OptionDefinition[] {
+        return this.getOptions().map(o => o.cliDefinition);        
+    }
+
     protected abstract get rendererClass(): new (
         graph: TypeGraph,
         leadingComments: string[] | undefined,
