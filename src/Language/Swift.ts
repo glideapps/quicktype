@@ -49,7 +49,7 @@ export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _convenienceInitializers = new BooleanOption(
         "initializers",
         "Convenience initializers",
-        true
+        false
     );
 
     private readonly _alamofireHandlers = new BooleanOption("alamofire", "Alamofire extensions", false);
