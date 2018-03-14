@@ -471,9 +471,10 @@ export async function addTypesInSchema(
         loc: Location,
         attributes: TypeAttributes,
         properties: StringMap,
-        requiredArray: string[]
+        requiredArray: string[],
+        additionalPropertiesType: boolean | TypeRef
     ): Promise<TypeRef> {
-        const required = Set(requiredArray);
+        const required = OrderedSet(requiredArray);
         const propertiesMap = Map(properties);
         const propertyDescriptions = propertiesMap
             .map(propSchema => {
@@ -492,7 +493,7 @@ export async function addTypesInSchema(
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
         // we would use a JSON parser that preserves order.
-        const props = await mapSync(propertiesMap, async (propSchema, propName) => {
+        let props = (await mapSync(propertiesMap, async (propSchema, propName) => {
             const t = await toType(
                 checkStringMap(propSchema),
                 loc.push("properties", propName),
@@ -500,14 +501,29 @@ export async function addTypesInSchema(
             );
             const isOptional = !required.has(propName);
             return new ClassProperty(t, isOptional);
-        });
-        return typeBuilder.getUniqueClassType(attributes, true, props.toOrderedMap());
+        })).toOrderedMap();
+        const additionalRequired = required.subtract(props.keySeq());
+        if (!additionalRequired.isEmpty()) {
+            let t: TypeRef;
+            if (additionalPropertiesType === false) {
+                return panic("Can't have non-specified required properties but forbidden additionalTypes");
+            }
+            if (additionalPropertiesType === true) {
+                t = typeBuilder.getPrimitiveType("any");
+            } else {
+                t = additionalPropertiesType;
+            }
+
+            const additionalProps = additionalRequired.toOrderedMap().map(_name => new ClassProperty(t, true));
+            props = props.merge(additionalProps);
+        }
+        return typeBuilder.getUniqueClassType(attributes, true, props);
     }
 
-    async function makeMap(loc: Location, typeAttributes: TypeAttributes, additional: StringMap): Promise<TypeRef> {
+    async function makeMap(loc: Location, typeAttributes: TypeAttributes, additional: StringMap): Promise<[TypeRef, TypeRef]> {
         loc = loc.push("additionalProperties");
         const valuesType = await toType(additional, loc, singularizeTypeNames(typeAttributes));
-        return typeBuilder.getMapType(valuesType);
+        return [typeBuilder.getMapType(valuesType), valuesType];
     }
 
     async function convertToType(schema: StringMap, loc: Location, typeAttributes: TypeAttributes): Promise<TypeRef> {
@@ -552,12 +568,7 @@ export async function addTypesInSchema(
 
             const typesInUnion: TypeRef[] = [];
 
-            if (schema.properties !== undefined) {
-                typesInUnion.push(
-                    await makeClass(loc, inferredAttributes, checkStringMap(schema.properties), required)
-                );
-            }
-
+            let additionalPropertiesType: boolean | TypeRef = true;
             if (schema.additionalProperties !== undefined) {
                 const additional = schema.additionalProperties;
                 // FIXME: We don't treat `additional === true`, which is also the default,
@@ -566,11 +577,20 @@ export async function addTypesInSchema(
                 // way to store additional attributes on regular classes.
                 if (additional === false) {
                     if (schema.properties === undefined) {
-                        typesInUnion.push(await makeClass(loc, inferredAttributes, {}, required));
+                        typesInUnion.push(await makeClass(loc, inferredAttributes, {}, required, false));
                     }
+                    additionalPropertiesType = false;
                 } else if (typeof additional === "object") {
-                    typesInUnion.push(await makeMap(loc, inferredAttributes, checkStringMap(additional)));
+                    const [mapType, valuesType] = await makeMap(loc, inferredAttributes, checkStringMap(additional));
+                    typesInUnion.push(await mapType);
+                    additionalPropertiesType = valuesType;
                 }
+            }
+
+            if (schema.properties !== undefined) {
+                typesInUnion.push(
+                    await makeClass(loc, inferredAttributes, checkStringMap(schema.properties), required, additionalPropertiesType)
+                );
             }
 
             if (typesInUnion.length === 0) {
