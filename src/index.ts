@@ -6,10 +6,10 @@ import { Readable } from "stream";
 import * as targetLanguages from "./Language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assertNever, assert } from "./Support";
+import { assertNever, assert, panic } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { combineClasses, findSimilarityCliques } from "./CombineClasses";
-import { addTypesInSchema, definitionRefsInSchema, Ref } from "./JSONSchemaInput";
+import { addTypesInSchema, Ref, JSONSchemaStore } from "./JSONSchemaInput";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
@@ -57,8 +57,7 @@ export function isJSONSource(source: TypeSource): source is JSONTypeSource {
 
 export interface SchemaTypeSource {
     name: string;
-    schema: StringInput;
-    topLevelRefs?: string[];
+    uri: string;
 }
 
 export function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
@@ -81,7 +80,7 @@ export interface Options {
     lang: string | TargetLanguage;
     sources: TypeSource[];
     handlebarsTemplate: string | undefined;
-    findSimilarClassesSchema: string | undefined;
+    findSimilarClassesSchemaURI: string | undefined;
     inferMaps: boolean;
     inferEnums: boolean;
     inferDates: boolean;
@@ -94,13 +93,14 @@ export interface Options {
     rendererOptions: RendererOptions;
     indentation: string | undefined;
     outputFilename: string;
+    schemaStore: JSONSchemaStore | undefined;
 }
 
 const defaultOptions: Options = {
     lang: "ts",
     sources: [],
     handlebarsTemplate: undefined,
-    findSimilarClassesSchema: undefined,
+    findSimilarClassesSchemaURI: undefined,
     inferMaps: true,
     inferEnums: true,
     inferDates: true,
@@ -112,12 +112,13 @@ const defaultOptions: Options = {
     leadingComments: undefined,
     rendererOptions: {},
     indentation: undefined,
-    outputFilename: "stdout"
+    outputFilename: "stdout",
+    schemaStore: undefined
 };
 
 type InputData = {
     samples: { [name: string]: { samples: Value[]; description?: string } };
-    schemas: { [name: string]: { schema: any; topLevelRefs: string[] | undefined } };
+    schemas: { [name: string]: { uri: string } };
     graphQLs: { [name: string]: { schema: any; query: string } };
 };
 
@@ -145,7 +146,7 @@ export class Run {
         this._compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
     }
 
-    private makeGraph = (): TypeGraph => {
+    private async makeGraph(): Promise<TypeGraph> {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
@@ -158,27 +159,17 @@ export class Run {
             false
         );
 
-        if (this._options.findSimilarClassesSchema !== undefined) {
-            const schema = JSON.parse(this._options.findSimilarClassesSchema);
-            const name = "ComparisonBaseRoot";
-            addTypesInSchema(typeBuilder, schema, Map([[name, Ref.root] as [string, Ref]]));
-        }
-
         // JSON Schema
-        Map(this._allInputs.schemas).forEach(({ schema, topLevelRefs }, name) => {
-            let references: Map<string, Ref>;
-            if (topLevelRefs === undefined) {
-                references = Map([[name, Ref.root] as [string, Ref]]);
-            } else {
-                assert(
-                    topLevelRefs.length === 1 && topLevelRefs[0] === "definitions/",
-                    "Schema top level refs must be `definitions/`"
-                );
-                references = definitionRefsInSchema(schema);
-                assert(references.size > 0, "No definitions in JSON Schema");
+        let schemaInputs = Map(this._allInputs.schemas).map(({uri}) => uri);
+        if (this._options.findSimilarClassesSchemaURI !== undefined) {
+            schemaInputs = schemaInputs.set("ComparisonBaseRoot", this._options.findSimilarClassesSchemaURI);
+        }
+        if (!schemaInputs.isEmpty()) {
+            if (this._options.schemaStore === undefined) {
+                return panic("Must have a schema store to process JSON Schema");
             }
-            addTypesInSchema(typeBuilder, schema, references);
-        });
+            await addTypesInSchema(typeBuilder, this._options.schemaStore, schemaInputs.map(uri =>  Ref.parse(uri)));
+        }
 
         // GraphQL
         const numInputs = Object.keys(this._allInputs.graphQLs).length;
@@ -230,7 +221,7 @@ export class Run {
             } while (!intersectionsDone || !unionsDone);
         }
 
-        if (this._options.findSimilarClassesSchema !== undefined) {
+        if (this._options.findSimilarClassesSchemaURI !== undefined) {
             return graph;
         }
 
@@ -262,7 +253,7 @@ export class Run {
         // graph.printGraph();
 
         return graph;
-    };
+    }
 
     private makeSimpleTextResult(lines: string[]): OrderedMap<string, SerializedRenderResult> {
         return OrderedMap([[this._options.outputFilename, { lines, annotations: List() }]] as [
@@ -291,24 +282,23 @@ export class Run {
                     }
                 }
             } else if (isSchemaSource(source)) {
-                const { name, schema, topLevelRefs } = source;
-                const input = JSON.parse(await toString(schema));
+                const { name, uri } = source;
                 if (_.has(this._allInputs.schemas, name)) {
                     throw new Error(`More than one schema given for ${name}`);
                 }
-                this._allInputs.schemas[name] = { schema: input, topLevelRefs };
+                this._allInputs.schemas[name] = { uri };
             } else {
                 assertNever(source);
             }
         }
 
-        const graph = this.makeGraph();
+        const graph = await this.makeGraph();
 
         if (this._options.noRender) {
             return this.makeSimpleTextResult(["Done.", ""]);
         }
 
-        if (this._options.findSimilarClassesSchema !== undefined) {
+        if (this._options.findSimilarClassesSchemaURI !== undefined) {
             const cliques = findSimilarityCliques(graph, true);
             const lines: string[] = [];
             if (cliques.length === 0) {

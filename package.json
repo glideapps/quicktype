@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "9.0.0",
+  "version": "10.0.0",
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -26,12 +26,13 @@
     "lodash": "^4.17.4",
     "moment": "^2.19.3",
     "node-fetch": "^1.7.1",
-    "pkg": "^4.3.0",
     "pako": "^1.0.6",
+    "pkg": "^4.3.0",
     "pluralize": "^7.0.0",
     "stream-json": "0.5.2",
     "string-to-stream": "^1.1.0",
-    "unicode-properties": "quicktype/unicode-properties#dist"
+    "unicode-properties": "quicktype/unicode-properties#dist",
+    "urijs": "^1.19.1"
   },
   "devDependencies": {
     "@types/graphql": "^0.11.7",
@@ -58,6 +59,6 @@
     "uglify-js": "^3.0.26",
     "watch": "^1.0.2"
   },
-  "files": ["dist/**"],
+  "files": ["dist/**", "types/**"],
   "bin": "dist/cli.js"
 }

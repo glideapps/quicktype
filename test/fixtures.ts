@@ -38,23 +38,23 @@ function pathWithoutExtension(fullPath: string, extension: string): string {
   return path.join(path.dirname(fullPath), path.basename(fullPath, extension));
 }
 
-function jsonTestFiles(base: string): string[] {
-  const jsonFiles: string[] = [];
-  let fn = `${base}.json`;
+function additionalTestFiles(base: string, extension: string): string[] {
+  const additionalFiles: string[] = [];
+  let fn = `${base}.${extension}`;
   if (fs.existsSync(fn)) {
-    jsonFiles.push(fn);
+    additionalFiles.push(fn);
   }
   let i = 1;
   for (;;) {
-    fn = `${base}.${i.toString()}.json`;
+    fn = `${base}.${i.toString()}.${extension}`;
     if (fs.existsSync(fn)) {
-      jsonFiles.push(fn);
+      additionalFiles.push(fn);
     } else {
       break;
     }
     i++;
   }
-  return jsonFiles;
+  return additionalFiles;
 }
 
 export abstract class Fixture {
@@ -373,19 +373,22 @@ class JSONSchemaFixture extends LanguageFixture {
   }
 
   additionalFiles(sample: Sample): string[] {
-    return jsonTestFiles(pathWithoutExtension(sample.path, ".schema"));
+    const baseName = pathWithoutExtension(sample.path, ".schema");
+    return additionalTestFiles(baseName, "json").concat(additionalTestFiles(baseName, "ref"));
   }
 
   async test(
     _sample: string,
     _additionalRendererOptions: RendererOptions,
-    jsonFiles: string[]
+    additionalFiles: string[]
   ): Promise<void> {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
-    for (const json of jsonFiles) {
-      const jsonBase = path.basename(json);
+    for (const filename of additionalFiles) {
+      if (!filename.endsWith(".json")) continue;
+
+      const jsonBase = path.basename(filename);
       compareJsonFileToJson({
         expectedFile: jsonBase,
         given: { command: this.language.runCommand(jsonBase) },
@@ -441,7 +444,7 @@ class GraphQLFixture extends LanguageFixture {
 
   additionalFiles(sample: Sample): string[] {
     const baseName = pathWithoutExtension(sample.path, ".graphql");
-    return jsonTestFiles(baseName).concat(graphQLSchemaFilename(baseName));
+    return additionalTestFiles(baseName, "json").concat(graphQLSchemaFilename(baseName));
   }
 
   async test(
