@@ -2,10 +2,16 @@
     "compilerOptions": {
         "target": "es5",
         "module": "commonjs",
-        "lib": ["es2015", "esnext.asynciterable"],
+        "lib": [
+            "es2015",
+            "esnext.asynciterable"
+        ],
         "allowJs": false,
         "declaration": true,
-        "typeRoots": ["../node_modules/@types"],
+        "typeRoots": [
+            "../node_modules/@types",
+            "../types"
+        ],
         "strict": true,
         "outDir": "../dist",
         "noUnusedLocals": true,
