@@ -46,6 +46,7 @@ export interface CLIOptions {
     graphqlSchema?: string;
     graphqlIntrospect?: string;
     graphqlServerHeader?: string[];
+    addSchemaTopLevel?: string;
     template?: string;
     out?: string;
     buildMarkovChain?: string;
@@ -76,7 +77,7 @@ function typeNameFromFilename(filename: string): string {
     return name.substr(0, name.lastIndexOf("."));
 }
 
-async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
+async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | undefined): Promise<TypeSource[]> {
     async function readFilesOrURLsInDirectory(d: string): Promise<TypeSource[]> {
         const files = fs
             .readdirSync(d)
@@ -98,6 +99,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
             }
 
             if (file.endsWith(".url") || file.endsWith(".json")) {
+                // FIXME: Why do we include the URI here?
                 sourcesInDir.push({
                     name,
                     uri: fileOrUrl,
@@ -106,7 +108,8 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
             } else if (file.endsWith(".schema")) {
                 sourcesInDir.push({
                     name,
-                    uri: fileOrUrl
+                    uri: fileOrUrl,
+                    topLevelRefs
                 });
             } else if (file.endsWith(".gqlschema")) {
                 assert(graphQLSchema === undefined, `More than one GraphQL schema in ${dataDir}`);
@@ -237,6 +240,7 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         graphqlServerHeader: opts.graphqlServerHeader,
+        addSchemaTopLevel: opts.addSchemaTopLevel,
         template: opts.template
     };
     /* tslint:enable */
@@ -290,6 +294,12 @@ const optionDefinitions: OptionDefinition[] = [
         name: "no-combine-classes",
         type: Boolean,
         description: "Don't combine similar classes."
+    },
+    {
+        name: "add-schema-top-level",
+        type: String,
+        typeLabel: "REF",
+        description: "Use JSON Schema definitions as top-levels.  Must be `/definitions/`."
     },
     {
         name: "graphql-schema",
@@ -506,13 +516,17 @@ async function getSourceURIs(options: CLIOptions): Promise<[string, string[]][]>
     }
 }
 
+function topLevelRefsForOptions(options: CLIOptions): string[] | undefined {
+    return options.addSchemaTopLevel === undefined ? undefined : [options.addSchemaTopLevel];
+}
+
 async function typeSourceForURIs(name: string, uris: string[], options: CLIOptions): Promise<TypeSource> {
     switch (options.srcLang) {
         case "json":
             return await sourceFromFileOrUrlArray(name, uris);
         case "schema":
             assert(uris.length === 1, `Must have exactly one schema for ${name}`);
-            return {name, uri: uris[0]};
+            return {name, uri: uris[0], topLevelRefs: topLevelRefsForOptions(options) };
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);
     }
@@ -526,7 +540,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
 
     for (const dataDir of directories) {
-        sources = sources.concat(await samplesFromDirectory(dataDir));
+        sources = sources.concat(await samplesFromDirectory(dataDir, topLevelRefsForOptions(options)));
     }
 
     // Every src that's not a directory is assumed to be a file or URL

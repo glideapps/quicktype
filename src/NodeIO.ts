@@ -27,7 +27,7 @@ export async function readFromFileOrURL(fileOrURL: string): Promise<string> {
 }
 
 export class FetchingJSONSchemaStore extends JSONSchemaStore {
-    protected async fetch(address: string): Promise<JSONSchema | undefined> {
+    async fetch(address: string): Promise<JSONSchema | undefined> {
         // console.log(`Fetching ${address}`);
         return JSON.parse(await readFromFileOrURL(address));
     }

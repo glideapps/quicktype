@@ -301,7 +301,7 @@ export abstract class JSONSchemaStore {
         this._schemas = this._schemas.set(address, schema);
     }
 
-    protected abstract async fetch(_address: string): Promise<JSONSchema | undefined>;
+    abstract async fetch(_address: string): Promise<JSONSchema | undefined>;
 
     async get(address: string): Promise<JSONSchema> {
         let schema = this._schemas.get(address);
@@ -686,9 +686,9 @@ export async function addTypesInSchema(
     });
 }
 
-export function definitionRefsInSchema(store: JSONSchemaStore, address: string): Map<string, Ref> {
+export async function definitionRefsInSchema(store: JSONSchemaStore, address: string): Promise<Map<string, Ref>> {
     const ref = Ref.parse(address);
-    const rootSchema = store.get(ref.address);
+    const rootSchema = await store.get(ref.address);
     const schema = ref.lookupRef(rootSchema);
     if (typeof schema !== "object") return Map();
     const definitions = schema.definitions;
