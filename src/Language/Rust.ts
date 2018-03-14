@@ -186,7 +186,7 @@ class RustRenderer extends ConvenienceRenderer {
         leadingComments: string[] | undefined,
         private readonly _density: Density,
         private readonly _visibility: Visibility,
-        private readonly _deriveDebug: bool
+        private readonly _deriveDebug: boolean
     ) {
         super(graph, leadingComments);
     }
