@@ -2,14 +2,15 @@ import { getStream } from "./get-stream";
 import * as _ from "lodash";
 import { List, Map, OrderedMap, OrderedSet } from "immutable";
 import { Readable } from "stream";
+import * as URI from "urijs";
 
 import * as targetLanguages from "./Language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assertNever, assert, panic } from "./Support";
+import { assertNever, assert, panic, defined, forEachSync } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { combineClasses, findSimilarityCliques } from "./CombineClasses";
-import { addTypesInSchema, Ref, JSONSchemaStore } from "./JSONSchemaInput";
+import { addTypesInSchema, Ref, JSONSchemaStore, definitionRefsInSchema, JSONSchema, checkJSONSchema } from "./JSONSchemaInput";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeGraphBuilder } from "./TypeBuilder";
@@ -57,7 +58,9 @@ export function isJSONSource(source: TypeSource): source is JSONTypeSource {
 
 export interface SchemaTypeSource {
     name: string;
-    uri: string;
+    uri?: string;
+    schema?: StringInput;
+    topLevelRefs?: string[];
 }
 
 export function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
@@ -118,7 +121,7 @@ const defaultOptions: Options = {
 
 type InputData = {
     samples: { [name: string]: { samples: Value[]; description?: string } };
-    schemas: { [name: string]: { uri: string } };
+    schemas: { [name: string]: { ref: Ref } };
     graphQLs: { [name: string]: { schema: any; query: string } };
 };
 
@@ -130,10 +133,28 @@ async function toString(source: string | Readable): Promise<string> {
     return _.isString(source) ? source : await getStream(source);
 }
 
+class InputJSONSchemaStore extends JSONSchemaStore {
+    constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
+        super();
+    }
+
+    async fetch(address: string): Promise<JSONSchema | undefined> {
+        const maybeInput = this._inputs.get(address);
+        if (maybeInput !== undefined) {
+            return checkJSONSchema(JSON.parse(await toString(maybeInput)));
+        }
+        if (this._delegate === undefined) {
+            return panic(`Schema URI ${address} requested, but no store given`);
+        }
+        return await this._delegate.fetch(address);
+    }
+}
+
 export class Run {
     private _compressedJSON: CompressedJSON;
     private _allInputs: InputData;
     private _options: Options;
+    private _schemaStore: JSONSchemaStore | undefined;
 
     constructor(options: Partial<Options>) {
         this._options = _.mergeWith(_.clone(options), defaultOptions, (o, s) => (o === undefined ? s : o));
@@ -144,6 +165,10 @@ export class Run {
         const makeTime = mapping.time !== "string";
         const makeDateTime = mapping.dateTime !== "string";
         this._compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
+    }
+
+    private getSchemaStore(): JSONSchemaStore {
+        return defined(this._schemaStore);
     }
 
     private async makeGraph(): Promise<TypeGraph> {
@@ -160,15 +185,12 @@ export class Run {
         );
 
         // JSON Schema
-        let schemaInputs = Map(this._allInputs.schemas).map(({uri}) => uri);
+        let schemaInputs = Map(this._allInputs.schemas).map(({ref}) => ref);
         if (this._options.findSimilarClassesSchemaURI !== undefined) {
-            schemaInputs = schemaInputs.set("ComparisonBaseRoot", this._options.findSimilarClassesSchemaURI);
+            schemaInputs = schemaInputs.set("ComparisonBaseRoot", Ref.parse(this._options.findSimilarClassesSchemaURI));
         }
         if (!schemaInputs.isEmpty()) {
-            if (this._options.schemaStore === undefined) {
-                return panic("Must have a schema store to process JSON Schema");
-            }
-            await addTypesInSchema(typeBuilder, this._options.schemaStore, schemaInputs.map(uri =>  Ref.parse(uri)));
+            await addTypesInSchema(typeBuilder, this.getSchemaStore(), schemaInputs);
         }
 
         // GraphQL
@@ -262,8 +284,66 @@ export class Run {
         ][]);
     }
 
+    private addSchemaInput(name: string, ref: Ref): void {
+        if (_.has(this._allInputs.schemas, name)) {
+            throw new Error(`More than one schema given for ${name}`);
+        }
+
+        this._allInputs.schemas[name] = { ref };
+    }
+
     public run = async (): Promise<OrderedMap<string, SerializedRenderResult>> => {
         const targetLanguage = getTargetLanguage(this._options.lang);
+
+        let schemaInputs: Map<string, StringInput> = Map();
+        let schemaSources: List<[uri.URI, SchemaTypeSource]> = List();
+        for (const source of this._options.sources) {
+            if (!isSchemaSource(source)) continue;
+            const { uri, schema } = source;
+
+            let normalizedURI: uri.URI;
+            if (uri === undefined) {
+                normalizedURI = new URI(`-${schemaInputs.size + 1}`);
+            } else {
+                normalizedURI = new URI(uri).normalize();
+            }
+
+            if (schema === undefined) {
+                assert(uri !== undefined, "URI must be given if schema source is not specified");                
+            } else {
+                schemaInputs = schemaInputs.set(normalizedURI.clone().hash("").toString(), schema);
+            }
+
+            schemaSources = schemaSources.push([normalizedURI, source]);
+        }
+
+        if (!schemaSources.isEmpty()) {
+            if (schemaInputs.isEmpty()) {
+                if (this._options.schemaStore === undefined) {
+                    return panic("Must have a schema store to process JSON Schema");
+                }
+                this._schemaStore = this._options.schemaStore;
+            } else {
+                this._schemaStore = new InputJSONSchemaStore(schemaInputs, this._options.schemaStore);
+            }
+
+            await forEachSync(schemaSources, async ([normalizedURI, source]) => {
+                const { name, topLevelRefs } = source;
+
+                if (topLevelRefs !== undefined) {
+                    assert(
+                            topLevelRefs.length === 1 && topLevelRefs[0] === "/definitions/",
+                            "Schema top level refs must be `/definitions/`"
+                        );
+                    const definitionRefs = await definitionRefsInSchema(this.getSchemaStore(), normalizedURI.toString());
+                    definitionRefs.forEach((ref, name) => {
+                        this.addSchemaInput(name, ref);
+                    });
+                } else {
+                    this.addSchemaInput(name, Ref.parse(normalizedURI.toString()));
+                }
+            });
+        }
 
         for (const source of this._options.sources) {
             if (isGraphQLSource(source)) {
@@ -281,13 +361,7 @@ export class Run {
                         this._allInputs.samples[name].description = description;
                     }
                 }
-            } else if (isSchemaSource(source)) {
-                const { name, uri } = source;
-                if (_.has(this._allInputs.schemas, name)) {
-                    throw new Error(`More than one schema given for ${name}`);
-                }
-                this._allInputs.schemas[name] = { uri };
-            } else {
+            } else if (!isSchemaSource(source)) {
                 assertNever(source);
             }
         }
