@@ -625,12 +625,24 @@ export async function addTypesInSchema(
         const typeSet = schema.type !== undefined ? checkTypeList(schema.type) : undefined;
 
         function includePrimitiveType(name: string): boolean {
-            const predicate = name === "null" ? (x: any) => x === null : (x: any) => typeof x === name;
-            if (enumArray !== undefined) {
-                return enumArray.find(predicate) !== undefined;
+            if (typeSet !== undefined && !typeSet.has(name)) {
+                return false;
             }
-            if (typeSet !== undefined) {
-                return typeSet.has(name);
+            if (enumArray !== undefined) {
+                let predicate: (x: any) => boolean;
+                switch (name) {
+                    case "null":
+                        predicate = (x: any) => x === null;
+                        break;
+                    case "integer":
+                        predicate = (x: any) => typeof x === "number" && x === Math.floor(x)
+                        break;
+                    default:
+                        predicate = (x: any) => typeof x === name;
+                        break;
+                }
+
+                return enumArray.find(predicate) !== undefined;
             }
             return true;
         }
@@ -638,7 +650,7 @@ export async function addTypesInSchema(
         const includeObject = enumArray === undefined && (typeSet === undefined || typeSet.has("object"));
         const includeArray = enumArray === undefined && (typeSet === undefined || typeSet.has("array"));
         const needStringEnum = includePrimitiveType("string") && enumArray !== undefined && enumArray.find((x: any) => typeof x === "string") !== undefined;
-        const needUnion = typeSet !== undefined || schema.properties !== undefined || schema.additionalProperties !== undefined || schema.items !== undefined || needStringEnum;
+        const needUnion = typeSet !== undefined || schema.properties !== undefined || schema.additionalProperties !== undefined || schema.items !== undefined || enumArray !== undefined;
 
         const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
         await setTypeForLocation(loc, intersectionType);

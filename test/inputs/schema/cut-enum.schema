@@ -1,0 +1,21 @@
+{
+    "type": "object",
+    "properties": {
+        "foo": {
+            "type": [
+                "integer"
+            ],
+            "enum": [
+                1,
+                2,
+                true,
+                "a",
+                "b",
+                "c"
+            ]
+        }
+    },
+    "required": [
+        "foo"
+    ]
+}
