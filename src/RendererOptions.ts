@@ -1,6 +1,6 @@
 "use strict";
 
-import { panic } from "./Support";
+import { panic, assert } from "./Support";
 
 export interface OptionDefinition {
     name: string;
@@ -22,6 +22,10 @@ export abstract class UntypedOption {
         definition.renderer = true;
         this.definition = definition;
     }
+
+    get cliDefinition(): OptionDefinition {
+        return this.definition;
+    }
 }
 
 export abstract class Option<T> extends UntypedOption {
@@ -35,14 +39,40 @@ export abstract class Option<T> extends UntypedOption {
 }
 
 export class BooleanOption extends Option<boolean> {
-    constructor(name: string, description: string, defaultValue: boolean) {
-        const definition = {
+    constructor(name: string, description: string, defaultValue: boolean, private readonly _cliDescription?: string) {
+        super({
             name,
             type: Boolean,
             description,
             defaultValue
-        };
-        super(definition);
+        });
+        if (defaultValue === true) {
+            assert(_cliDescription !== undefined, "We need a CLI description for boolean options that are true by default");
+        }
+    }
+
+    get cliDefinition(): OptionDefinition {
+        const definition = Object.assign({}, this.definition);
+        if (this._cliDescription !== undefined) {
+            definition.description = this._cliDescription;
+        }
+        if (this.definition.defaultValue === true) {
+            definition.name = `no-${definition.name}`;
+        }
+        definition.defaultValue = false;
+        return definition;
+    }
+
+    getValue(values: { [name: string]: any }): boolean {
+        const definition = this.cliDefinition;
+        const value = values[definition.name];
+        if (value === undefined) {
+            return this.definition.defaultValue;
+        }
+        if (this.definition.defaultValue === true) {
+            return !value;
+        }
+        return value;
     }
 }
 

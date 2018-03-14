@@ -450,7 +450,7 @@ const sectionsAfterRenderers: UsageSection[] = [
 ];
 
 function getOptionDefinitions(opts: CLIOptions): OptionDefinition[] {
-    return getTargetLanguage(opts.lang).optionDefinitions;
+    return getTargetLanguage(opts.lang).cliOptionDefinitions;
 }
 
 function parseArgv(argv: string[]): CLIOptions {
@@ -501,7 +501,7 @@ function usage() {
     const rendererSections: UsageSection[] = [];
 
     _.forEach(targetLanguages.all, language => {
-        const definitions = language.optionDefinitions;
+        const definitions = language.cliOptionDefinitions;
         if (definitions.length === 0) return;
 
         rendererSections.push({
