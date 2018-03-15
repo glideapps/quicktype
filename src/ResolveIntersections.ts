@@ -73,7 +73,10 @@ class IntersectionAccumulator
         > {
     private _primitiveStringTypes: OrderedSet<PrimitiveStringTypeKind> | undefined;
     private _otherPrimitiveTypes: OrderedSet<PrimitiveTypeKind> | undefined;
+
     private _enumCases: OrderedSet<string> | undefined;
+    private _enumAttributes: TypeAttributes = emptyTypeAttributes;
+
     // * undefined: We haven't seen any types yet.
     // * OrderedSet: All types we've seen can be arrays.
     // * false: At least one of the types seen can't be an array.
@@ -136,11 +139,12 @@ class IntersectionAccumulator
     }
 
     private updateEnumCases(members: OrderedSet<Type>): TypeAttributes {
+        const enums = members.filter(t => t instanceof EnumType) as OrderedSet<EnumType>;
+        const attributes = combineTypeAttributes(enums.map(t => t.getAttributes()).toArray());
+        this._enumAttributes = combineTypeAttributes([this._enumAttributes, attributes]);
         if (members.find(t => t instanceof StringType) !== undefined) {
             return emptyTypeAttributes;
         }
-        const enums = members.filter(t => t instanceof EnumType) as OrderedSet<EnumType>;
-        const attributes = combineTypeAttributes(enums.map(t => t.getAttributes()).toArray());
         const newCases = OrderedSet<string>().union(
             ...enums.map(t => t.cases).toArray()
         );
@@ -149,7 +153,7 @@ class IntersectionAccumulator
         } else {
             this._enumCases = this._enumCases.intersect(newCases);
         }
-        return attributes;
+        return emptyTypeAttributes;
     }
 
     private updateArrayItemTypes(members: OrderedSet<Type>): TypeAttributes {
@@ -310,19 +314,27 @@ class IntersectionAccumulator
     }
 
     getMemberKinds(): TypeAttributeMap<TypeKind> {
-        let kinds: OrderedSet<TypeKind> = defined(this._primitiveStringTypes).union(defined(this._otherPrimitiveTypes));
+        let kinds: TypeAttributeMap<TypeKind> = defined(this._primitiveStringTypes).union(defined(this._otherPrimitiveTypes)).toOrderedMap().map(_kind => emptyTypeAttributes);
+
         if (this._enumCases !== undefined && this._enumCases.size > 0) {
-            kinds = kinds.add("enum");
+            kinds = kinds.set("enum", this._enumAttributes);
+        } else if (!this._enumAttributes.isEmpty()) {
+            if (kinds.has("string")) {
+                kinds = kinds.update("string", ta => combineTypeAttributes([ta, this._enumAttributes]));
+            } else {
+                this._lostTypeAttributes = true;
+            }
         }
+
         if (OrderedSet.isOrderedSet(this._arrayItemTypes)) {
-            kinds = kinds.add("array");
+            kinds = kinds.set("array", emptyTypeAttributes);
         }
         if (this._mapValueTypes !== undefined) {
-            kinds = kinds.add("map");
+            kinds = kinds.set("map", emptyTypeAttributes);
         } else if (this._classProperties !== undefined) {
-            kinds = kinds.add("class");
+            kinds = kinds.set("class", emptyTypeAttributes);
         }
-        return kinds.toOrderedMap().map(_ => emptyTypeAttributes);
+        return kinds;
     }
 
     get lostTypeAttributes(): boolean {

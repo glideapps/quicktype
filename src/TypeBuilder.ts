@@ -973,11 +973,11 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TCl
         typeAttributes: TypeAttributes,
         forwardingRef?: TypeRef
     ): TypeRef {
+        const kinds = typeProvider.getMemberKinds();
+
         if (typeProvider.lostTypeAttributes) {
             this.typeBuilder.setLostTypeAttributes();
         }
-
-        const kinds = typeProvider.getMemberKinds();
 
         if (kinds.size === 1) {
             const [[kind, memberAttributes]] = kinds.toArray();
