@@ -97,7 +97,10 @@ class IntersectionAccumulator
     //    are both undefined.
 
     private _mapValueTypes: OrderedSet<Type> | undefined = OrderedSet();
+    private _mapAttributes: TypeAttributes = emptyTypeAttributes;
+
     private _classProperties: OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined;
+    private _classAttributes: TypeAttributes = emptyTypeAttributes;
 
     private _lostTypeAttributes: boolean = false;
 
@@ -187,6 +190,13 @@ class IntersectionAccumulator
             "Can't have both class and map type in a canonical union"
         );
 
+        if (maybeClass !== undefined) {
+            this._classAttributes = combineTypeAttributes([this._classAttributes, maybeClass.getAttributes()]);
+        }
+        if (maybeMap !== undefined) {
+            this._mapAttributes = combineTypeAttributes([this._mapAttributes, maybeMap.getAttributes()]);
+        }
+
         if (maybeMap === undefined && maybeClass === undefined) {
             // Moving to state 4.
             this._mapValueTypes = undefined;
@@ -194,7 +204,6 @@ class IntersectionAccumulator
             return emptyTypeAttributes;
         }
 
-        let attributes: TypeAttributes = emptyTypeAttributes;
         if (this._mapValueTypes !== undefined) {
             // We're in state 1 or 2.
             assert(this._classProperties === undefined, "One of _mapValueTypes and _classProperties must be undefined");
@@ -202,7 +211,6 @@ class IntersectionAccumulator
             if (maybeMap !== undefined) {
                 // Moving to state 2.
                 this._mapValueTypes = this._mapValueTypes.add(maybeMap.values);
-                attributes = maybeMap.getAttributes();
             } else {
                 // Moving to state 3.
 
@@ -216,7 +224,6 @@ class IntersectionAccumulator
                 this._classProperties = this._classProperties.map(
                     cp => new GenericClassProperty(cp.typeData.add(maybeMap.values), cp.isOptional)
                 );
-                attributes = maybeMap.getAttributes();
             } else {
                 // Staying in state 3.
                 if (maybeClass === undefined) return panic("Didn't we just check for this?");
@@ -226,7 +233,6 @@ class IntersectionAccumulator
                         new GenericClassProperty(cp1.typeData.union(cp2.typeData), cp1.isOptional || cp2.isOptional),
                     makeProperties()
                 );
-                attributes = maybeClass.getAttributes();
             }
         } else {
             // We're in state 4.  No way out of state 4.
@@ -238,7 +244,7 @@ class IntersectionAccumulator
             "We screwed up our sacred state machine."
         );
 
-        return attributes;
+        return emptyTypeAttributes;
     }
 
     private addAny(t: PrimitiveType): TypeAttributes {
@@ -330,11 +336,16 @@ class IntersectionAccumulator
         } else if (!this._arrayAttributes.isEmpty()) {
             this._lostTypeAttributes = true;
         }
+
+        const objectAttributes = combineTypeAttributes([this._classAttributes, this._mapAttributes]);
         if (this._mapValueTypes !== undefined) {
-            kinds = kinds.set("map", emptyTypeAttributes);
+            kinds = kinds.set("map", objectAttributes);
         } else if (this._classProperties !== undefined) {
-            kinds = kinds.set("class", emptyTypeAttributes);
+            kinds = kinds.set("class", objectAttributes);
+        } else if (!objectAttributes.isEmpty()) {
+            this._lostTypeAttributes = true;
         }
+        
         return kinds;
     }
 
