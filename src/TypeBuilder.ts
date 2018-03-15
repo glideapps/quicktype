@@ -119,7 +119,11 @@ export class TypeRef {
     }
 }
 
-export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>("provenance", setUnion, a => a);
+function provenanceToString(p: Set<TypeRef>): string {
+    return p.map(r => r.getIndex()).toList().sort().map(i => i.toString()).join(",");
+}
+
+export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>("provenance", setUnion, a => a, provenanceToString);
 
 export type StringTypeMapping = {
     date: PrimitiveStringTypeKind;

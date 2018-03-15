@@ -485,7 +485,7 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         return [graph, false];
     }
     const groups = resolvableIntersections.map(i => [i]).toArray();
-    graph = graph.rewrite(stringTypeMapping, false, groups, replace);
+    graph = graph.rewrite("resolve intersections", stringTypeMapping, false, groups, replace);
 
     // console.log(`resolved ${resolvableIntersections.size} of ${intersections.size} intersections`);
     return [graph, !needsRepeat && intersections.size === resolvableIntersections.size];

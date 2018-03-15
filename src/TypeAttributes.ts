@@ -6,8 +6,9 @@ import { panic, setUnion } from "./Support";
 export class TypeAttributeKind<T> {
     public readonly combine: (a: T, b: T) => T;
     public readonly makeInferred: (a: T) => T;
+    public readonly stringify: (a: T) => string | undefined;
 
-    constructor(readonly name: string, combine: ((a: T, b: T) => T) | undefined, makeInferred: ((a: T) => T) | undefined) {
+    constructor(readonly name: string, combine: ((a: T, b: T) => T) | undefined, makeInferred: ((a: T) => T) | undefined, stringify: ((a: T) => string | undefined) | undefined) {
         if (combine === undefined) {
             combine = () => {
                 return panic(`Cannot combine type attribute ${name}`);
@@ -21,6 +22,11 @@ export class TypeAttributeKind<T> {
             };
         }
         this.makeInferred = makeInferred;
+
+        if (stringify === undefined) {
+            stringify = () => undefined;
+        }
+        this.stringify = stringify;
     }
 
     makeAttributes(value: T): TypeAttributes {
@@ -73,7 +79,7 @@ export function combineTypeAttributes(firstOrArray: TypeAttributes[] | TypeAttri
     let rest: TypeAttributes[];
     if (Array.isArray(firstOrArray)) {
         attributeArray = firstOrArray;
-    if (attributeArray.length === 0) return Map();
+        if (attributeArray.length === 0) return Map();
         first = attributeArray[0];
         rest = attributeArray.slice(1);
     } else {
@@ -90,9 +96,10 @@ export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes
     return attr.map((value, kind) => kind.makeInferred(value));
 }
 
-export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", setUnion, a => a);
+export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", setUnion, a => a, undefined);
 export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, OrderedSet<string>>>(
     "propertyDescriptions",
     (a, b) => a.mergeWith(setUnion, b),
-    a => a
+    a => a,
+    undefined
 );

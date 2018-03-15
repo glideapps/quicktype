@@ -89,6 +89,11 @@ export class TypeNames {
     singularize(): TypeNames {
         return new TypeNames(this.names.map(pluralize.singular), this._alternativeNames.map(pluralize.singular), true);
     }
+
+    toString(): string {
+        const inferred = this.areInferred ? "inferred" : "given";
+        return `${inferred} ${this.names.join(",")} (${this._alternativeNames.join(",")})`;
+    }
 }
 
 export function typeNamesUnion(c: Collection<any, TypeNames>): TypeNames {
@@ -99,7 +104,7 @@ export function typeNamesUnion(c: Collection<any, TypeNames>): TypeNames {
     return names;
 }
 
-export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>("names", (a, b) => a.add(b), a => a.makeInferred());
+export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>("names", (a, b) => a.add(b), a => a.makeInferred(), a => a.toString());
 
 export function modifyTypeNames(
     attributes: TypeAttributes,

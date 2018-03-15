@@ -224,6 +224,7 @@ export class Run {
         }
 
         let graph = typeBuilder.finish();
+        // graph.printGraph();
 
         if (haveSchemas) {
             let intersectionsDone = false;

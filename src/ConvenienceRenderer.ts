@@ -41,10 +41,10 @@ function splitDescription(descriptions: OrderedSet<string> | undefined): string[
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
 
-const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName", undefined, undefined);
-const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedPropertyNames", undefined, undefined);
-const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>("assignedMemberNames", undefined, undefined);
-const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedCaseNames", undefined, undefined);
+const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName", undefined, undefined, undefined);
+const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedPropertyNames", undefined, undefined, undefined);
+const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>("assignedMemberNames", undefined, undefined, undefined);
+const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedCaseNames", undefined, undefined, undefined);
 
 export abstract class ConvenienceRenderer extends Renderer {
     private _globalForbiddenNamespace: Namespace | undefined;
