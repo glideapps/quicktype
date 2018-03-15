@@ -81,6 +81,7 @@ class IntersectionAccumulator
     // * OrderedSet: All types we've seen can be arrays.
     // * false: At least one of the types seen can't be an array.
     private _arrayItemTypes: OrderedSet<Type> | undefined | false;
+    private _arrayAttributes: TypeAttributes = emptyTypeAttributes;
 
     // We allow only either maps, classes, or neither.  States:
     //
@@ -157,22 +158,20 @@ class IntersectionAccumulator
     }
 
     private updateArrayItemTypes(members: OrderedSet<Type>): TypeAttributes {
-        if (this._arrayItemTypes === false) {
-            this._lostTypeAttributes = true;
-            return emptyTypeAttributes;
-        }
-
         const maybeArray = members.find(t => t instanceof ArrayType) as ArrayType | undefined;
         if (maybeArray === undefined) {
             this._arrayItemTypes = false;
             return emptyTypeAttributes;
         }
 
+        this._arrayAttributes = combineTypeAttributes([this._arrayAttributes, maybeArray.getAttributes()]);
+
         if (this._arrayItemTypes === undefined) {
             this._arrayItemTypes = OrderedSet();
+        } else if (this._arrayItemTypes !== false) {
+            this._arrayItemTypes = this._arrayItemTypes.add(maybeArray.items);
         }
-        this._arrayItemTypes = this._arrayItemTypes.add(maybeArray.items);
-        return maybeArray.getAttributes();
+        return emptyTypeAttributes;
     }
 
     private updateMapValueTypesAndClassProperties(members: OrderedSet<Type>): TypeAttributes {
@@ -327,7 +326,9 @@ class IntersectionAccumulator
         }
 
         if (OrderedSet.isOrderedSet(this._arrayItemTypes)) {
-            kinds = kinds.set("array", emptyTypeAttributes);
+            kinds = kinds.set("array", this._arrayAttributes);
+        } else if (!this._arrayAttributes.isEmpty()) {
+            this._lostTypeAttributes = true;
         }
         if (this._mapValueTypes !== undefined) {
             kinds = kinds.set("map", emptyTypeAttributes);
