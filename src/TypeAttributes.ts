@@ -65,10 +65,24 @@ export type TypeAttributes = Map<TypeAttributeKind<any>, any>;
 
 export const emptyTypeAttributes: TypeAttributes = Map();
 
-export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAttributes {
+export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAttributes;
+export function combineTypeAttributes(a: TypeAttributes, b: TypeAttributes): TypeAttributes;
+export function combineTypeAttributes(firstOrArray: TypeAttributes[] | TypeAttributes, second?: TypeAttributes): TypeAttributes {
+    let attributeArray: TypeAttributes[];
+    let first: TypeAttributes;
+    let rest: TypeAttributes[];
+    if (Array.isArray(firstOrArray)) {
+        attributeArray = firstOrArray;
     if (attributeArray.length === 0) return Map();
-    const first = attributeArray[0];
-    const rest = attributeArray.slice(1);
+        first = attributeArray[0];
+        rest = attributeArray.slice(1);
+    } else {
+        if (second === undefined) {
+            return panic("Must have on array or two attributes");
+        }
+        first = firstOrArray;
+        rest = [second];
+    }
     return first.mergeWith((aa, ab, kind) => kind.combine(aa, ab), ...rest);
 }
 

@@ -59,7 +59,7 @@ function replaceUnion(group: Set<UnionType>, builder: GraphRewriteBuilder<UnionT
     });
     if (types.length === 0) {
         return builder.getStringType(
-            combineTypeAttributes([stringAttributes, u.getAttributes()]),
+            combineTypeAttributes(stringAttributes, u.getAttributes()),
             undefined,
             forwardingRef
         );

@@ -218,7 +218,7 @@ export abstract class TypeBuilder {
             if (attributes === undefined) {
                 attributes = Map();
             }
-            this.typeAttributes[index] = combineTypeAttributes([this.typeAttributes[index], attributes]);
+            this.typeAttributes[index] = combineTypeAttributes(this.typeAttributes[index], attributes);
         });
     }
 
@@ -700,7 +700,7 @@ function addAttributes(
     newAttributes: TypeAttributes
 ): TypeAttributes {
     if (accumulatorAttributes === undefined) return newAttributes;
-    return combineTypeAttributes([accumulatorAttributes, newAttributes]);
+    return combineTypeAttributes(accumulatorAttributes, newAttributes);
 }
 
 function setAttributes<T extends TypeKind>(
@@ -878,7 +878,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, 
             enumType => this.addEnumCases(enumType.cases.toOrderedMap().map(_ => 1), attributes),
             unionType => {
                 unionAttributes = this.addTypes(unionType.members);
-                unionAttributes = combineTypeAttributes([attributes, unionAttributes]);
+                unionAttributes = combineTypeAttributes(attributes, unionAttributes);
             },
             _dateType => this.addStringType("date", attributes),
             _timeType => this.addStringType("time", attributes),
@@ -897,7 +897,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, 
         let numTypesForWhichWeAdded = 0;
         types.forEach(t => {
             const numBefore = this.numberOfAddedNonUnionTypes;
-            attributes = combineTypeAttributes([attributes, this.addType(t)]);
+            attributes = combineTypeAttributes(attributes, this.addType(t));
             if (this.numberOfAddedNonUnionTypes > numBefore) {
                 numTypesForWhichWeAdded += 1;
             }
@@ -981,7 +981,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TCl
 
         if (kinds.size === 1) {
             const [[kind, memberAttributes]] = kinds.toArray();
-            const allAttributes = combineTypeAttributes([typeAttributes, memberAttributes]);
+            const allAttributes = combineTypeAttributes(typeAttributes, memberAttributes);
             const t = this.makeTypeOfKind(typeProvider, kind, allAttributes, forwardingRef);
             return t;
         }
