@@ -71,6 +71,8 @@ class IntersectionAccumulator
             OrderedSet<Type> | undefined
         > {
     private _primitiveStringTypes: OrderedSet<PrimitiveStringTypeKind> | undefined;
+    private _primitiveStringAttributes: Map<PrimitiveStringTypeKind, TypeAttributes> = Map();
+
     private _otherPrimitiveTypes: OrderedSet<PrimitiveTypeKind> | undefined;
 
     private _enumCases: OrderedSet<string> | undefined;
@@ -105,6 +107,8 @@ class IntersectionAccumulator
 
     private updatePrimitiveStringTypes(members: OrderedSet<Type>): void {
         const types = members.filter(t => isPrimitiveStringTypeKind(t.kind));
+        const attributes = types.toMap().map(t => t.getAttributes()).mapKeys(t => t.kind) as Map<PrimitiveStringTypeKind, TypeAttributes>;
+        this._primitiveStringAttributes = this._primitiveStringAttributes.mergeWith((a, b) => combineTypeAttributes([a, b]), attributes);
         const kinds = types.map(t => t.kind) as OrderedSet<PrimitiveStringTypeKind>;
         if (this._primitiveStringTypes === undefined) {
             this._primitiveStringTypes = kinds;
@@ -302,7 +306,14 @@ class IntersectionAccumulator
     }
 
     getMemberKinds(): TypeAttributeMap<TypeKind> {
-        let kinds: TypeAttributeMap<TypeKind> = defined(this._primitiveStringTypes).union(defined(this._otherPrimitiveTypes)).toOrderedMap().map(_kind => emptyTypeAttributes);
+        let primitiveStringKinds = defined(this._primitiveStringTypes).toOrderedMap().map(k => defined(this._primitiveStringAttributes.get(k)));
+        const maybeStringAttributes = this._primitiveStringAttributes.get("string");
+        if (maybeStringAttributes !== undefined && !primitiveStringKinds.has("string")) {
+            primitiveStringKinds = primitiveStringKinds.map(a => combineTypeAttributes([a, maybeStringAttributes]));
+        }
+
+        let otherPrimitiveKinds = defined(this._otherPrimitiveTypes).toOrderedMap().map(_kind => emptyTypeAttributes);
+        let kinds: TypeAttributeMap<TypeKind> = primitiveStringKinds.merge(otherPrimitiveKinds);
 
         if (this._enumCases !== undefined && this._enumCases.size > 0) {
             kinds = kinds.set("enum", this._enumAttributes);
@@ -328,7 +339,7 @@ class IntersectionAccumulator
         } else if (!objectAttributes.isEmpty()) {
             this._lostTypeAttributes = true;
         }
-        
+
         return kinds;
     }
 
