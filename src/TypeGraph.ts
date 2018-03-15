@@ -121,6 +121,8 @@ export class TypeGraph {
 
     private _parents: Set<Type>[] | undefined = undefined;
 
+    private _printOnRewrite: boolean = false;
+
     constructor(typeBuilder: TypeBuilder, private readonly _haveProvenanceAttributes: boolean) {
         this._typeBuilder = typeBuilder;
     }
@@ -214,6 +216,10 @@ export class TypeGraph {
         }).reduce<Set<TypeRef>>((a, b) => a.union(b));
     }
 
+    setPrintOnRewrite(): void {
+        this._printOnRewrite = true;
+    }
+
     // Each array in `replacementGroups` is a bunch of types to be replaced by a
     // single new type.  `replacer` is a function that takes a group and a
     // TypeBuilder, and builds a new type with that builder that replaces the group.
@@ -250,8 +256,11 @@ export class TypeGraph {
             }
         }
 
-        // console.log(`\n# ${title}`);
-        // this.printGraph();
+        if (this._printOnRewrite) {
+            newGraph.setPrintOnRewrite();
+            console.log(`\n# ${title}`);
+            newGraph.printGraph();
+        }
 
         return newGraph;
     }

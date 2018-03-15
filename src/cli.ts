@@ -65,6 +65,7 @@ export interface CLIOptions {
     help: boolean;
     quiet: boolean;
     version: boolean;
+    debug?: string;
 }
 
 async function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Promise<JSONTypeSource> {
@@ -241,7 +242,8 @@ function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
         graphqlIntrospect: opts.graphqlIntrospect,
         graphqlServerHeader: opts.graphqlServerHeader,
         addSchemaTopLevel: opts.addSchemaTopLevel,
-        template: opts.template
+        template: opts.template,
+        debug: opts.debug
     };
     /* tslint:enable */
 }
@@ -371,6 +373,12 @@ const optionDefinitions: OptionDefinition[] = [
         name: "quiet",
         type: Boolean,
         description: "Don't show issues in the generated code."
+    },
+    {
+        name: "debug",
+        type: String,
+        typeLabel: "OPTIONS",
+        description: "Comma separated debug options: print-graph"
     },
     {
         name: "help",
@@ -644,6 +652,12 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             handlebarsTemplate = fs.readFileSync(options.template, "utf8");
         }
 
+        let debugPrintGraph = false;
+        if (options.debug !== undefined) {
+            assert(options.debug === "print-graph", "The --debug option must be \"print-graph\"");
+            debugPrintGraph = true;
+        }
+        
         let run = new Run({
             lang: options.lang,
             sources,
@@ -660,7 +674,8 @@ export async function main(args: string[] | Partial<CLIOptions>) {
             handlebarsTemplate,
             findSimilarClassesSchemaURI: options.findSimilarClassesSchema,
             outputFilename: options.out !== undefined ? path.basename(options.out) : undefined,
-            schemaStore: new FetchingJSONSchemaStore()
+            schemaStore: new FetchingJSONSchemaStore(),
+            debugPrintGraph
         });
 
         const resultsByFilename = await run.run();

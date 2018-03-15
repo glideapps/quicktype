@@ -97,6 +97,7 @@ export interface Options {
     indentation: string | undefined;
     outputFilename: string;
     schemaStore: JSONSchemaStore | undefined;
+    debugPrintGraph: boolean | undefined;
 }
 
 const defaultOptions: Options = {
@@ -116,7 +117,8 @@ const defaultOptions: Options = {
     rendererOptions: {},
     indentation: undefined,
     outputFilename: "stdout",
-    schemaStore: undefined
+    schemaStore: undefined,
+    debugPrintGraph: false
 };
 
 type InputData = {
@@ -224,7 +226,10 @@ export class Run {
         }
 
         let graph = typeBuilder.finish();
-        // graph.printGraph();
+        if (this._options.debugPrintGraph) {
+            graph.setPrintOnRewrite();
+            graph.printGraph();
+        }
 
         if (haveSchemas) {
             let intersectionsDone = false;
@@ -272,8 +277,10 @@ export class Run {
         graph = graph.garbageCollect(this._options.alphabetizeProperties);
 
         gatherNames(graph);
-
-        // graph.printGraph();
+        if (this._options.debugPrintGraph) {
+            console.log("\n# gather names");
+            graph.printGraph();
+        }
 
         return graph;
     }
