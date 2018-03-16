@@ -2,7 +2,8 @@
   "_from": "@types/urijs",
   "_id": "@types/urijs@1.15.36",
   "_inBundle": false,
-  "_integrity": "sha512-VTtBKU7xugrSODKR/lpO2eohFiZZ60BsiPlS1Lf9MHsBjhF6FeR2Uc0/Qtlb151Wz9u0+BLVjx/xbRIsMCTb3Q==",
+  "_integrity":
+    "sha512-VTtBKU7xugrSODKR/lpO2eohFiZZ60BsiPlS1Lf9MHsBjhF6FeR2Uc0/Qtlb151Wz9u0+BLVjx/xbRIsMCTb3Q==",
   "_location": "/@types/urijs",
   "_phantomChildren": {},
   "_requested": {
@@ -16,10 +17,7 @@
     "saveSpec": null,
     "fetchSpec": "latest"
   },
-  "_requiredBy": [
-    "#DEV:/",
-    "#USER"
-  ],
+  "_requiredBy": ["#DEV:/", "#USER"],
   "_resolved": "https://registry.npmjs.org/@types/urijs/-/urijs-1.15.36.tgz",
   "_shasum": "13e481d2fedad94880080a32b739388bc3b52e4b",
   "_spec": "@types/urijs",
@@ -39,9 +37,6 @@
       "url": "https://github.com/petejohanson"
     }
   ],
-  "dependencies": {
-    "@types/jquery": "*"
-  },
   "deprecated": false,
   "description": "TypeScript definitions for URI.js",
   "license": "MIT",
@@ -53,6 +48,7 @@
   },
   "scripts": {},
   "typeScriptVersion": "2.3",
-  "typesPublisherContentHash": "35f15ad31c8beb76fd8929afad2b894e7bfd4640b88d2944a3e0a9c0a79e29da",
+  "typesPublisherContentHash":
+    "35f15ad31c8beb76fd8929afad2b894e7bfd4640b88d2944a3e0a9c0a79e29da",
   "version": "1.15.36"
 }

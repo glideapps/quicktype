@@ -8,10 +8,7 @@
         ],
         "allowJs": false,
         "declaration": true,
-        "typeRoots": [
-            "../node_modules/@types",
-            "../types"
-        ],
+        "typeRoots": ["../node_modules/@types"],
         "strict": true,
         "outDir": "../dist",
         "noUnusedLocals": true,
