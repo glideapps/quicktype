@@ -26,6 +26,13 @@ export function gatherNames(graph: TypeGraph): void {
         parentNames: OrderedSet<string> | undefined,
         alternativeSuffix?: string
     ) {
+        if (t.hasNames) {
+            const typeNames = t.getNames();
+            if (!typeNames.areInferred) {
+                names = typeNames.names;
+            }
+        }
+
         const alternatives: string[] = [];
         names.forEach(name => {
             if (alternativeSuffix !== undefined) {
@@ -44,9 +51,9 @@ export function gatherNames(graph: TypeGraph): void {
         });
         const newNames = new TypeNames(names, OrderedSet(alternatives), true);
         setNames(t, t.hasNames ? t.getNames().add(newNames) : newNames);
-        const processedEnry = List([t, names, parentNames]);
-        if (processed.has(processedEnry)) return;
-        processed = processed.add(processedEnry);
+        const processedEntry = List([t, names, parentNames]);
+        if (processed.has(processedEntry)) return;
+        processed = processed.add(processedEntry);
         matchCompoundType(
             t,
             arrayType => {
