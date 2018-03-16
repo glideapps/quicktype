@@ -841,20 +841,55 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
     }
 }
 
-// FIXME: Move this to UnifyClasses.ts?
-export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, TypeRef> {
-    private _typesAdded: Set<Type> = Set();
+class FauxUnion {
+    getAttributes(): TypeAttributes {
+        return emptyTypeAttributes;
+    }
+}
 
-    // There is a method analogous to this in the IntersectionAccumulator.  It might
-    // make sense to find a common interface.
-    private addType(t: Type): TypeAttributes {
-        if (this._typesAdded.has(t)) {
+function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>, TypeAttributes] {
+    let unionsForType: OrderedMap<Type, Set<UnionType | FauxUnion>> = OrderedMap();
+    let typesForUnion: Map<UnionType | FauxUnion, Set<Type>> = Map();
+    let unions: OrderedSet<UnionType> = OrderedSet();
+    function traverse(t: Type, path: Set<UnionType | FauxUnion>): void {
+        if (t instanceof UnionType) {
+            unions = unions.add(t);
+
+            path = path.add(t);
+            t.members.forEach(m => traverse(m, path));
+        } else {
+            unionsForType = unionsForType.update(t, Set(), s => s.union(path));
+            path.forEach(u => {
+                typesForUnion = typesForUnion.update(u, Set(), s => s.add(t));
+            });
+        }
+    }
+    
+    const rootPath = Set([new FauxUnion()]);
+    types.forEach(t => traverse(t, rootPath));
+
+    const attributesForTypes = unionsForType.map((unions, t) => {
+        const singleAncestors = unions.filter(u => defined(typesForUnion.get(u)).size === 1);
+        assert(singleAncestors.every(u => defined(typesForUnion.get(u)).has(t)), "We messed up bookkeeping");
+        const inheritedAttributes = singleAncestors.toArray().map(u => u.getAttributes());
+        return combineTypeAttributes([t.getAttributes()].concat(inheritedAttributes));
+    });
+    const unionAttributes = unions.toArray().map(u => {
+        const types = typesForUnion.get(u);
+        if (types !== undefined && types.size === 1) {
             return emptyTypeAttributes;
         }
-        this._typesAdded = this._typesAdded.add(t);
+        const attributes = u.getAttributes();
+        return makeTypeAttributesInferred(attributes);
+    });
+    return [attributesForTypes, combineTypeAttributes(unionAttributes)];
+}
 
-        const attributes = t.getAttributes();
-        let unionAttributes: TypeAttributes | undefined = undefined;
+// FIXME: Move this to UnifyClasses.ts?
+export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, TypeRef> {
+    // There is a method analogous to this in the IntersectionAccumulator.  It might
+    // make sense to find a common interface.
+    private addType(t: Type, attributes: TypeAttributes): void {
         matchTypeExhaustive(
             t,
             _noneType => {
@@ -880,38 +915,19 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, 
             // inference.  JSON Schema input uses this case, however, without enum
             // inference, which is fine, but still a bit ugly.
             enumType => this.addEnumCases(enumType.cases.toOrderedMap().map(_ => 1), attributes),
-            unionType => {
-                unionAttributes = this.addTypes(unionType.members);
-                unionAttributes = combineTypeAttributes(attributes, unionAttributes);
+            _unionType => {
+                return panic("The unions should have been eliminated in attributesForTypesInUnion");
             },
             _dateType => this.addStringType("date", attributes),
             _timeType => this.addStringType("time", attributes),
             _dateTimeType => this.addStringType("date-time", attributes)
         );
-        if (unionAttributes === undefined) return emptyTypeAttributes;
-        return unionAttributes;
-    }
-
-    private get numberOfAddedNonUnionTypes(): number {
-        return this._typesAdded.filter(t => !(t instanceof UnionType)).size;
     }
 
     addTypes(types: Set<Type>): TypeAttributes {
-        let attributes: TypeAttributes = Map();
-        let numTypesForWhichWeAdded = 0;
-        types.forEach(t => {
-            const numBefore = this.numberOfAddedNonUnionTypes;
-            attributes = combineTypeAttributes(attributes, this.addType(t));
-            if (this.numberOfAddedNonUnionTypes > numBefore) {
-                numTypesForWhichWeAdded += 1;
-            }
-        });
-
-        if (numTypesForWhichWeAdded <= 1) {
-            return attributes;
-        } else {
-            return makeTypeAttributesInferred(attributes);
-        }
+        const [attributesMap, unionAttributes] = attributesForTypes(types);
+        attributesMap.forEach((attributes, t) => this.addType(t, attributes));
+        return unionAttributes;
     }
 }
 
