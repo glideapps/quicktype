@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# This runs quicktype, without installing dependencies.
-#
-# In practice this runs 75% faster.
-
-SCRIPTDIR=$(dirname "$0")
-
-SKIP_INSTALL_PREREQUISITES=true "$SCRIPTDIR/quicktype" "$@"
