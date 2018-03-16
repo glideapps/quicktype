@@ -851,12 +851,17 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
     let unionsForType: OrderedMap<Type, Set<UnionType | FauxUnion>> = OrderedMap();
     let typesForUnion: Map<UnionType | FauxUnion, Set<Type>> = Map();
     let unions: OrderedSet<UnionType> = OrderedSet();
-    function traverse(t: Type, path: Set<UnionType | FauxUnion>): void {
+    let unionsEquivalentToRoot: Set<UnionType> = Set();
+    function traverse(t: Type, path: Set<UnionType | FauxUnion>, isEquivalentToRoot: boolean): void {
         if (t instanceof UnionType) {
             unions = unions.add(t);
+            if (isEquivalentToRoot) {
+                unionsEquivalentToRoot = unionsEquivalentToRoot.add(t);
+            }
 
             path = path.add(t);
-            t.members.forEach(m => traverse(m, path));
+            isEquivalentToRoot = isEquivalentToRoot && t.members.size === 1;
+            t.members.forEach(m => traverse(m, path, isEquivalentToRoot));
         } else {
             unionsForType = unionsForType.update(t, Set(), s => s.union(path));
             path.forEach(u => {
@@ -866,7 +871,7 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
     }
     
     const rootPath = Set([new FauxUnion()]);
-    types.forEach(t => traverse(t, rootPath));
+    types.forEach(t => traverse(t, rootPath, types.size === 1));
 
     const attributesForTypes = unionsForType.map((unions, t) => {
         const singleAncestors = unions.filter(u => defined(typesForUnion.get(u)).size === 1);
@@ -880,6 +885,9 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
             return emptyTypeAttributes;
         }
         const attributes = u.getAttributes();
+        if (unionsEquivalentToRoot.has(u)) {
+            return attributes;
+        }
         return makeTypeAttributesInferred(attributes);
     });
     return [attributesForTypes, combineTypeAttributes(unionAttributes)];
