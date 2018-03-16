@@ -9,23 +9,27 @@
           "$ref": "#/definitions/UnionList"
         }
       },
-      "required": ["list"]
+      "required": [
+        "list"
+      ]
     },
     "UnionList": {
       "oneOf": [
-	{
-	  "type": "object",
-	  "additionalProperties": false,
-	  "properties": {
-	    "next": {
-	      "$ref": "#/definitions/UnionList"
-	    }
-	  },
-	  "required": ["next"]
-	},
-	{
-	  "type": "number"
-	}
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "next": {
+              "$ref": "#/definitions/UnionList"
+            }
+          },
+          "required": [
+            "next"
+          ]
+        },
+        {
+          "type": "number"
+        }
       ]
     }
   }
