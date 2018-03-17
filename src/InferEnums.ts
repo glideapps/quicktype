@@ -51,7 +51,7 @@ function replaceUnion(group: Set<UnionType>, builder: GraphRewriteBuilder<UnionT
     assert(group.size === 1);
     const u = defined(group.first());
     const stringMembers = defined(unionNeedsReplacing(u));
-    const stringAttributes = combineTypeAttributes(stringMembers.map(t => t.getAttributes()).toArray());
+    const stringAttributes = combineTypeAttributes(stringMembers.toArray().map(t => t.getAttributes()));
     const types: TypeRef[] = [];
     u.members.forEach(t => {
         if (stringMembers.has(t)) return;
