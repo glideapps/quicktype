@@ -1,17 +1,14 @@
-#!/bin/bash
+#!/bin/bash -e
 
 OUTDIR=dist
 
 ./script/patch-npm-version.ts
 
-# If not on CI, do a clean build
-if [ -z "$CI" ]; then
-    rm -rf $OUTDIR
-    npm run build
-fi
+rm -rf $OUTDIR
+npm run build
 
-# If not on CI, publish directly
-if [ -z "$CI" ]; then
-   npm publish \
-    --ignore-scripts # Don't rebuild
+if [ "$APPCENTER_BRANCH" == "next" ]; then
+    npm publish --ignore-scripts --tag next
+else
+    npm publish --ignore-scripts # Don't rebuild
 fi
