@@ -4,7 +4,7 @@ import * as fs from "fs";
 import { Readable } from "stream";
 import { getStream } from "./get-stream/index";
 
-import { JSONSchemaStore, JSONSchema } from "./JSONSchemaInput";
+import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
 import { panic } from "./Support";
 
 // The typings for this module are screwy
