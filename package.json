@@ -44,7 +44,6 @@
     "@types/pako": "^1.0.0",
     "@types/pluralize": "0.0.28",
     "@types/shelljs": "^0.7.8",
-    "@types/urijs": "file:lib/@types/urijs",
     "ajv": "^5.2.2",
     "compare-versions": "^3.1.0",
     "deep-equal": "^1.0.1",
@@ -60,6 +59,8 @@
     "uglify-js": "^3.0.26",
     "watch": "^1.0.2"
   },
-  "files": ["dist/**"],
+  "files": [
+    "dist/**"
+  ],
   "bin": "dist/cli.js"
 }
