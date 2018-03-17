@@ -22,7 +22,6 @@ import {
     UnionType,
     PrimitiveStringTypeKind,
     PrimitiveTypeKind,
-    PrimitiveType,
     StringType,
     ArrayType,
     matchTypeExhaustive,
@@ -46,12 +45,12 @@ function intersectionMembersRecursively(intersection: IntersectionType): [Ordere
     let attributes = emptyTypeAttributes;
     function process(t: Type): void {
         if (t instanceof IntersectionType) {
-            attributes = combineTypeAttributes([attributes, t.getAttributes()]);
+            attributes = combineTypeAttributes(attributes, t.getAttributes());
             t.members.forEach(process);
         } else if (t.kind !== "any") {
             types.push(t);
         } else {
-            attributes = combineTypeAttributes([attributes, t.getAttributes()]);
+            attributes = combineTypeAttributes(attributes, t.getAttributes());
         }
     }
     process(intersection);
@@ -64,6 +63,10 @@ function canResolve(t: IntersectionType): boolean {
     return members.every(m => !(m instanceof UnionType) || m.isCanonical);
 }
 
+function attributesForTypes<T extends TypeKind>(types: OrderedSet<Type>): TypeAttributeMap<T> {
+    return types.toMap().map(t => t.getAttributes()).mapKeys(t => t.kind) as Map<T, TypeAttributes>;
+}
+
 class IntersectionAccumulator
     implements
         UnionTypeProvider<
@@ -72,12 +75,19 @@ class IntersectionAccumulator
             OrderedSet<Type> | undefined
         > {
     private _primitiveStringTypes: OrderedSet<PrimitiveStringTypeKind> | undefined;
+    private _primitiveStringAttributes: TypeAttributeMap<PrimitiveStringTypeKind> = OrderedMap();
+
     private _otherPrimitiveTypes: OrderedSet<PrimitiveTypeKind> | undefined;
+    private _otherPrimitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> = OrderedMap();
+
     private _enumCases: OrderedSet<string> | undefined;
+    private _enumAttributes: TypeAttributes = emptyTypeAttributes;
+
     // * undefined: We haven't seen any types yet.
     // * OrderedSet: All types we've seen can be arrays.
     // * false: At least one of the types seen can't be an array.
     private _arrayItemTypes: OrderedSet<Type> | undefined | false;
+    private _arrayAttributes: TypeAttributes = emptyTypeAttributes;
 
     // We allow only either maps, classes, or neither.  States:
     //
@@ -93,16 +103,26 @@ class IntersectionAccumulator
     //    are both undefined.
 
     private _mapValueTypes: OrderedSet<Type> | undefined = OrderedSet();
+    private _mapAttributes: TypeAttributes = emptyTypeAttributes;
+
     private _classProperties: OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined;
+    private _classAttributes: TypeAttributes = emptyTypeAttributes;
+
+    private _lostTypeAttributes: boolean = false;
 
     private updatePrimitiveStringTypes(members: OrderedSet<Type>): void {
         const types = members.filter(t => isPrimitiveStringTypeKind(t.kind));
+        const attributes = attributesForTypes<PrimitiveStringTypeKind>(types);
+        this._primitiveStringAttributes = this._primitiveStringAttributes.mergeWith(combineTypeAttributes, attributes);
+
         const kinds = types.map(t => t.kind) as OrderedSet<PrimitiveStringTypeKind>;
         if (this._primitiveStringTypes === undefined) {
             this._primitiveStringTypes = kinds;
             return;
         }
 
+        // If the unrestricted string type is part of the union, this doesn't add
+        // any more restrictions.
         if (members.find(t => t instanceof StringType) === undefined) {
             this._primitiveStringTypes = this._primitiveStringTypes.intersect(kinds);
         }
@@ -110,6 +130,9 @@ class IntersectionAccumulator
 
     private updateOtherPrimitiveTypes(members: OrderedSet<Type>): void {
         const types = members.filter(t => isPrimitiveTypeKind(t.kind) && !isPrimitiveStringTypeKind(t.kind));
+        const attributes = attributesForTypes<PrimitiveTypeKind>(types);
+        this._otherPrimitiveAttributes = this._otherPrimitiveAttributes.mergeWith(combineTypeAttributes, attributes);
+
         const kinds = types.map(t => t.kind) as OrderedSet<PrimitiveStringTypeKind>;
         if (this._otherPrimitiveTypes === undefined) {
             this._otherPrimitiveTypes = kinds;
@@ -128,11 +151,14 @@ class IntersectionAccumulator
     }
 
     private updateEnumCases(members: OrderedSet<Type>): void {
+        const enums = members.filter(t => t instanceof EnumType) as OrderedSet<EnumType>;
+        const attributes = combineTypeAttributes(enums.map(t => t.getAttributes()).toArray());
+        this._enumAttributes = combineTypeAttributes(this._enumAttributes, attributes);
         if (members.find(t => t instanceof StringType) !== undefined) {
             return;
         }
         const newCases = OrderedSet<string>().union(
-            ...members.map(t => (t instanceof EnumType ? t.cases : OrderedSet<string>())).toArray()
+            ...enums.map(t => t.cases).toArray()
         );
         if (this._enumCases === undefined) {
             this._enumCases = newCases;
@@ -142,18 +168,19 @@ class IntersectionAccumulator
     }
 
     private updateArrayItemTypes(members: OrderedSet<Type>): void {
-        if (this._arrayItemTypes === false) return;
-
         const maybeArray = members.find(t => t instanceof ArrayType) as ArrayType | undefined;
         if (maybeArray === undefined) {
             this._arrayItemTypes = false;
             return;
         }
 
+        this._arrayAttributes = combineTypeAttributes(this._arrayAttributes, maybeArray.getAttributes());
+
         if (this._arrayItemTypes === undefined) {
             this._arrayItemTypes = OrderedSet();
+        } else if (this._arrayItemTypes !== false) {
+            this._arrayItemTypes = this._arrayItemTypes.add(maybeArray.items);
         }
-        this._arrayItemTypes = this._arrayItemTypes.add(maybeArray.items);
     }
 
     private updateMapValueTypesAndClassProperties(members: OrderedSet<Type>): void {
@@ -168,6 +195,13 @@ class IntersectionAccumulator
             maybeClass === undefined || maybeMap === undefined,
             "Can't have both class and map type in a canonical union"
         );
+
+        if (maybeClass !== undefined) {
+            this._classAttributes = combineTypeAttributes(this._classAttributes, maybeClass.getAttributes());
+        }
+        if (maybeMap !== undefined) {
+            this._mapAttributes = combineTypeAttributes(this._mapAttributes, maybeMap.getAttributes());
+        }
 
         if (maybeMap === undefined && maybeClass === undefined) {
             // Moving to state 4.
@@ -188,6 +222,7 @@ class IntersectionAccumulator
 
                 this._mapValueTypes = undefined;
                 this._classProperties = makeProperties();
+                this._lostTypeAttributes = true;
             }
         } else if (this._classProperties !== undefined) {
             // We're in state 3.
@@ -207,17 +242,13 @@ class IntersectionAccumulator
             }
         } else {
             // We're in state 4.  No way out of state 4.
+            this._lostTypeAttributes = true;
         }
 
         assert(
             this._mapValueTypes === undefined || this._classProperties === undefined,
             "We screwed up our sacred state machine."
         );
-    }
-
-    private addAny(_t: PrimitiveType): void {
-        // "any" doesn't change the types at all
-        // FIXME: just add attributes
     }
 
     private addUnionSet(members: OrderedSet<Type>): void {
@@ -228,22 +259,16 @@ class IntersectionAccumulator
         this.updateMapValueTypesAndClassProperties(members);
     }
 
-    private addUnion(u: UnionType): void {
-        this.addUnionSet(u.members);
-    }
-
     addType(t: Type): TypeAttributes {
-        // FIXME: We're very lazy here.  We're supposed to keep type
-        // attributes separately for each type kind, but we collect
-        // them all together and return them as attributes for the
-        // overall result type.
         let attributes = t.getAttributes();
         matchTypeExhaustive<void>(
             t,
             _noneType => {
                 return panic("There shouldn't be a none type");
             },
-            anyType => this.addAny(anyType),
+            _anyType => {
+                return panic("The any type should have been filtered out in intersectionMembersRecursively")
+            },
             nullType => this.addUnionSet(OrderedSet([nullType])),
             boolType => this.addUnionSet(OrderedSet([boolType])),
             integerType => this.addUnionSet(OrderedSet([integerType])),
@@ -253,12 +278,15 @@ class IntersectionAccumulator
             classType => this.addUnionSet(OrderedSet([classType])),
             mapType => this.addUnionSet(OrderedSet([mapType])),
             enumType => this.addUnionSet(OrderedSet([enumType])),
-            unionType => this.addUnion(unionType),
+            unionType => {
+                attributes = combineTypeAttributes([attributes].concat(unionType.members.map(t => t.getAttributes()).toArray()));
+                this.addUnionSet(unionType.members);
+            },
             dateType => this.addUnionSet(OrderedSet([dateType])),
             timeType => this.addUnionSet(OrderedSet([timeType])),
             dateTimeType => this.addUnionSet(OrderedSet([dateTimeType]))
         );
-        return attributes;
+        return makeTypeAttributesInferred(attributes);
     }
 
     get arrayData(): OrderedSet<Type> {
@@ -287,23 +315,55 @@ class IntersectionAccumulator
     }
 
     getMemberKinds(): TypeAttributeMap<TypeKind> {
-        let kinds: OrderedSet<TypeKind> = defined(this._primitiveStringTypes).union(defined(this._otherPrimitiveTypes));
+        let primitiveStringKinds = defined(this._primitiveStringTypes).toOrderedMap().map(k => defined(this._primitiveStringAttributes.get(k)));
+        const maybeStringAttributes = this._primitiveStringAttributes.get("string");
+        // If full string was eliminated, add its attribute to the other string types
+        if (maybeStringAttributes !== undefined && !primitiveStringKinds.has("string")) {
+            primitiveStringKinds = primitiveStringKinds.map(a => combineTypeAttributes(a, maybeStringAttributes));
+        }
+
+        let otherPrimitiveKinds = defined(this._otherPrimitiveTypes).toOrderedMap().map(k => defined(this._otherPrimitiveAttributes.get(k)));
+        const maybeDoubleAttributes = this._otherPrimitiveAttributes.get("double");
+        // If double was eliminated, add its attributes to integer
+        if (maybeDoubleAttributes !== undefined && !otherPrimitiveKinds.has("double")) {
+            otherPrimitiveKinds = otherPrimitiveKinds.map((a, k) => {
+                if (k !== "integer") return a;
+                return combineTypeAttributes(a, maybeDoubleAttributes);
+            });
+        }
+
+        let kinds: TypeAttributeMap<TypeKind> = primitiveStringKinds.merge(otherPrimitiveKinds);
+
         if (this._enumCases !== undefined && this._enumCases.size > 0) {
-            kinds = kinds.add("enum");
+            kinds = kinds.set("enum", this._enumAttributes);
+        } else if (!this._enumAttributes.isEmpty()) {
+            if (kinds.has("string")) {
+                kinds = kinds.update("string", ta => combineTypeAttributes(ta, this._enumAttributes));
+            } else {
+                this._lostTypeAttributes = true;
+            }
         }
+
         if (OrderedSet.isOrderedSet(this._arrayItemTypes)) {
-            kinds = kinds.add("array");
+            kinds = kinds.set("array", this._arrayAttributes);
+        } else if (!this._arrayAttributes.isEmpty()) {
+            this._lostTypeAttributes = true;
         }
+
+        const objectAttributes = combineTypeAttributes(this._classAttributes, this._mapAttributes);
         if (this._mapValueTypes !== undefined) {
-            kinds = kinds.add("map");
+            kinds = kinds.set("map", objectAttributes);
         } else if (this._classProperties !== undefined) {
-            kinds = kinds.add("class");
+            kinds = kinds.set("class", objectAttributes);
+        } else if (!objectAttributes.isEmpty()) {
+            this._lostTypeAttributes = true;
         }
-        return kinds.toOrderedMap().map(_ => emptyTypeAttributes);
+
+        return kinds;
     }
 
     get lostTypeAttributes(): boolean {
-        return false;
+        return this._lostTypeAttributes;
     }
 }
 
@@ -405,7 +465,7 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         const extraAttributes = makeTypeAttributesInferred(
             combineTypeAttributes(members.map(t => accumulator.addType(t)).toArray())
         );
-        const attributes = combineTypeAttributes([intersectionAttributes, extraAttributes]);
+        const attributes = combineTypeAttributes(intersectionAttributes, extraAttributes);
 
         const unionBuilder = new IntersectionUnionBuilder(builder);
         const tref = unionBuilder.buildUnion(accumulator, true, attributes, forwardingRef);
@@ -425,7 +485,7 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         return [graph, false];
     }
     const groups = resolvableIntersections.map(i => [i]).toArray();
-    graph = graph.rewrite(stringTypeMapping, false, groups, replace);
+    graph = graph.rewrite("resolve intersections", stringTypeMapping, false, groups, replace);
 
     // console.log(`resolved ${resolvableIntersections.size} of ${intersections.size} intersections`);
     return [graph, !needsRepeat && intersections.size === resolvableIntersections.size];

@@ -59,7 +59,7 @@ function replaceUnion(group: Set<UnionType>, builder: GraphRewriteBuilder<UnionT
     });
     if (types.length === 0) {
         return builder.getStringType(
-            combineTypeAttributes([stringAttributes, u.getAttributes()]),
+            combineTypeAttributes(stringAttributes, u.getAttributes()),
             undefined,
             forwardingRef
         );
@@ -74,7 +74,7 @@ export function inferEnums(graph: TypeGraph, stringTypeMapping: StringTypeMappin
         .filter(t => t instanceof StringType)
         .map(t => [t])
         .toArray() as StringType[][];
-    return graph.rewrite(stringTypeMapping, false, allStrings, replaceString);
+    return graph.rewrite("infer enums", stringTypeMapping, false, allStrings, replaceString);
 }
 
 export function flattenStrings(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
@@ -83,5 +83,5 @@ export function flattenStrings(graph: TypeGraph, stringTypeMapping: StringTypeMa
         .filter(unionNeedsReplacing)
         .map(t => [t])
         .toArray();
-    return graph.rewrite(stringTypeMapping, false, unionsToReplace, replaceUnion);
+    return graph.rewrite("flatten strings", stringTypeMapping, false, unionsToReplace, replaceUnion);
 }

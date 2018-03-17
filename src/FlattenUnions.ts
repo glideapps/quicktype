@@ -75,7 +75,7 @@ export function flattenUnions(
         }
     });
     singleTypeGroups.forEach(ts => groups.push(ts.toArray()));
-    graph = graph.rewrite(stringTypeMapping, false, groups, replace);
+    graph = graph.rewrite("flatten unions", stringTypeMapping, false, groups, replace);
 
     // console.log(`flattened ${nonCanonicalUnions.size} of ${unions.size} unions`);
     return [graph, !needsRepeat && !foundIntersection];

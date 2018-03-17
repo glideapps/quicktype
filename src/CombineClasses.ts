@@ -149,5 +149,5 @@ export function combineClasses(
         );
     }
 
-    return graph.rewrite(stringTypeMapping, alphabetizeProperties, cliques, makeCliqueClass);
+    return graph.rewrite("combine classes", stringTypeMapping, alphabetizeProperties, cliques, makeCliqueClass);
 }

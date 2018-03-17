@@ -121,6 +121,8 @@ export class TypeGraph {
 
     private _parents: Set<Type>[] | undefined = undefined;
 
+    private _printOnRewrite: boolean = false;
+
     constructor(typeBuilder: TypeBuilder, private readonly _haveProvenanceAttributes: boolean) {
         this._typeBuilder = typeBuilder;
     }
@@ -214,6 +216,10 @@ export class TypeGraph {
         }).reduce<Set<TypeRef>>((a, b) => a.union(b));
     }
 
+    setPrintOnRewrite(): void {
+        this._printOnRewrite = true;
+    }
+
     // Each array in `replacementGroups` is a bunch of types to be replaced by a
     // single new type.  `replacer` is a function that takes a group and a
     // TypeBuilder, and builds a new type with that builder that replaces the group.
@@ -221,6 +227,7 @@ export class TypeGraph {
     // graph, but return types in the new graph.  Recursive types must be handled
     // carefully.
     rewrite<T extends Type>(
+        title: string,
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         replacementGroups: T[][],
@@ -249,11 +256,17 @@ export class TypeGraph {
             }
         }
 
+        if (this._printOnRewrite) {
+            newGraph.setPrintOnRewrite();
+            console.log(`\n# ${title}`);
+            newGraph.printGraph();
+        }
+
         return newGraph;
     }
 
     garbageCollect(alphabetizeProperties: boolean): TypeGraph {
-        const newGraph = this.rewrite(NoStringTypeMapping, alphabetizeProperties, [], (_t, _b) =>
+        const newGraph = this.rewrite("GC", NoStringTypeMapping, alphabetizeProperties, [], (_t, _b) =>
             panic("This shouldn't be called"), true);
         // console.log(`GC: ${defined(newGraph._types).length} types`);
         return newGraph;
@@ -287,10 +300,19 @@ export class TypeGraph {
         const types = defined(this._types);
         for (let i = 0; i < types.length; i++) {
             const t = types[i];
-            const namesString = t.hasNames ? ` name: ${t.getCombinedName()}` : "";
+            const parts: string[] = [];
+            parts.push(`${t.kind}${t.hasNames ? ` ${t.getCombinedName()}` : ""}`);
             const children = t.children;
-            const childrenString = children.isEmpty() ? "" : ` children: ${children.map(c => c.typeRef.getIndex()).join(",")}`;
-            console.log(`${i}: ${t.kind}${namesString}${childrenString}`);
+            if (!children.isEmpty()) {
+                parts.push(`children ${children.map(c => c.typeRef.getIndex()).join(",")}`);
+            }
+            t.getAttributes().forEach((value, kind) => {
+                const maybeString = kind.stringify(value);
+                if (maybeString !== undefined) {
+                    parts.push(maybeString);
+                }
+            });
+            console.log(`${i}: ${parts.join(" | ")}`);
         }
     }
 }
@@ -301,7 +323,7 @@ export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping
         return graph;
     }
     assert(noneTypes.size === 1, "Cannot have more than one none type");
-    return graph.rewrite(stringTypeMapping, false, [noneTypes.toArray()], (_, builder, forwardingRef) => {
+    return graph.rewrite("none to any", stringTypeMapping, false, [noneTypes.toArray()], (_, builder, forwardingRef) => {
         return builder.getPrimitiveType("any", forwardingRef);
     });
 }
@@ -343,7 +365,7 @@ export function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTy
     if (classesWithOptional.size === 0) {
         return graph;
     }
-    return graph.rewrite(stringTypeMapping, false, replacementGroups, (setOfClass, builder, forwardingRef) => {
+    return graph.rewrite("optional to nullable", stringTypeMapping, false, replacementGroups, (setOfClass, builder, forwardingRef) => {
         assert(setOfClass.size === 1);
         const c = defined(setOfClass.first());
         return rewriteClass(c, builder, forwardingRef);

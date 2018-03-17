@@ -37,7 +37,7 @@
     "no-empty": [true, "allow-empty-catch"],
     "no-eval": true,
     "no-shadowed-variable": true,
-    "no-string-literal": true,
+    "no-string-literal": false,
     "no-switch-case-fall-through": true,
     "no-trailing-whitespace": false,
     "no-unsafe-any": false,

@@ -1,0 +1,18 @@
+{
+    "$id": "http://foo/root.json",
+    "$ref": "#/definitions/foo",
+    "definitions": {
+        "foo": {
+            "type": "object",
+            "properties": {
+                "bar": {
+                    "$ref": "http://foo/root.json#/definitions/bar"
+                }
+            },
+            "required": ["bar"]
+        },
+        "bar": {
+            "type": "integer"
+        }
+    }
+}

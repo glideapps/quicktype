@@ -120,5 +120,5 @@ export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping
 
     const allClasses = graph.allNamedTypesSeparated().classes;
     const classesToReplace = allClasses.filter(c => !c.isFixed && shouldBeMap(c.properties) !== undefined).toArray();
-    return graph.rewrite(stringTypeMapping, false, classesToReplace.map(c => [c]), replaceClass);
+    return graph.rewrite("infer maps", stringTypeMapping, false, classesToReplace.map(c => [c]), replaceClass);
 }
