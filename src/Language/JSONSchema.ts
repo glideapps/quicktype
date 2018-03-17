@@ -80,10 +80,6 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    protected unionNeedsName(_: UnionType): boolean {
-        return true;
-    }
-
     private nameForType = (t: Type): string => {
         return defined(this.names.get(this.nameForNamedType(t)));
     };
@@ -117,7 +113,13 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
             classType => this.makeRef(classType),
             mapType => ({ type: "object", additionalProperties: this.schemaForType(mapType.values) }),
             enumType => this.makeRef(enumType),
-            unionType => this.makeRef(unionType),
+            unionType => {
+                if (this.unionNeedsName(unionType)) {
+                    return this.makeRef(unionType);
+                } else {
+                    return this.definitionForUnion(unionType);
+                }
+            },
             _dateType => ({ type: "string", format: "date" }),
             _timeType => ({ type: "string", format: "time" }),
             _dateTimeType => ({ type: "string", format: "date-time" })
@@ -147,9 +149,11 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         };
     }
 
-    private definitionForUnion(u: UnionType, title: string): Schema {
+    private definitionForUnion(u: UnionType, title?: string): Schema {
         const oneOf = this.makeOneOf(u.sortedMembers);
-        oneOf.title = title;
+        if (title !== undefined) {
+            oneOf.title = title;
+        }
         return oneOf;
     }
 
@@ -166,6 +170,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
             definitions[title] = this.definitionForClass(c, title);
         });
         this.forEachUnion("none", (u, name) => {
+            if (!this.unionNeedsName(u)) return;
             const title = defined(this.names.get(name));
             definitions[title] = this.definitionForUnion(u, title);
         });
