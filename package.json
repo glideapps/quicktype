@@ -8,7 +8,7 @@
   "scripts": {
     "pub": "script/publish.sh",
     "prepare": "npm run build",
-    "build": "script/build.ts",
+    "build": "script/build.ts && cp -r lib/\\@types dist/ && (find dist/\\@types ! -name '*.d.ts' -type f | xargs rm)",
     "test": "npm run build && script/test",
     "start": "script/watch",
     "pkg": "script/make-pkgs.sh",
