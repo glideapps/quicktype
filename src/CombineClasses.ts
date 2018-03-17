@@ -138,7 +138,7 @@ export function combineClasses(
         forwardingRef: TypeRef
     ): TypeRef {
         assert(clique.size > 0, "Clique can't be empty");
-        const attributes = combineTypeAttributes(clique.map(c => c.getAttributes()).toArray());
+        const attributes = combineTypeAttributes(clique.toArray().map(c => c.getAttributes()));
         return unifyTypes(
             clique,
             attributes,

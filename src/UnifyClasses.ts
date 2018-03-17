@@ -36,7 +36,7 @@ function getCliqueProperties(
     }
     return properties.map(([types, count, isOptional], name) => {
         isOptional = isOptional || count < clique.length;
-        let attributes = combineTypeAttributes(types.map(t => t.getAttributes()).toArray());
+        let attributes = combineTypeAttributes(types.toArray().map(t => t.getAttributes()));
         attributes = namesTypeAttributeKind.setDefaultInAttributes(
             attributes,
             () => new TypeNames(OrderedSet([name]), OrderedSet(), true)

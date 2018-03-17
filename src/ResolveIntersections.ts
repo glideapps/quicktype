@@ -152,7 +152,7 @@ class IntersectionAccumulator
 
     private updateEnumCases(members: OrderedSet<Type>): void {
         const enums = members.filter(t => t instanceof EnumType) as OrderedSet<EnumType>;
-        const attributes = combineTypeAttributes(enums.map(t => t.getAttributes()).toArray());
+        const attributes = combineTypeAttributes(enums.toArray().map(t => t.getAttributes()));
         this._enumAttributes = combineTypeAttributes(this._enumAttributes, attributes);
         if (members.find(t => t instanceof StringType) !== undefined) {
             return;
@@ -279,7 +279,7 @@ class IntersectionAccumulator
             mapType => this.addUnionSet(OrderedSet([mapType])),
             enumType => this.addUnionSet(OrderedSet([enumType])),
             unionType => {
-                attributes = combineTypeAttributes([attributes].concat(unionType.members.map(t => t.getAttributes()).toArray()));
+                attributes = combineTypeAttributes([attributes].concat(unionType.members.toArray().map(t => t.getAttributes())));
                 this.addUnionSet(unionType.members);
             },
             dateType => this.addUnionSet(OrderedSet([dateType])),
@@ -463,7 +463,7 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
 
         const accumulator = new IntersectionAccumulator();
         const extraAttributes = makeTypeAttributesInferred(
-            combineTypeAttributes(members.map(t => accumulator.addType(t)).toArray())
+            combineTypeAttributes(members.toArray().map(t => accumulator.addType(t)))
         );
         const attributes = combineTypeAttributes(intersectionAttributes, extraAttributes);
 
