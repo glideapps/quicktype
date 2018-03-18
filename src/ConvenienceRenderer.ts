@@ -36,15 +36,32 @@ function splitDescription(descriptions: OrderedSet<string> | undefined): string[
     if (descriptions === undefined) return undefined;
     const description = descriptions.join("\n\n").trim();
     if (description === "") return undefined;
-    return wordWrap(description).split("\n").map(l => l.trim());
+    return wordWrap(description)
+        .split("\n")
+        .map(l => l.trim());
 }
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
 
 const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName", undefined, undefined, undefined);
-const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedPropertyNames", undefined, undefined, undefined);
-const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>("assignedMemberNames", undefined, undefined, undefined);
-const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedCaseNames", undefined, undefined, undefined);
+const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
+    "assignedPropertyNames",
+    undefined,
+    undefined,
+    undefined
+);
+const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>(
+    "assignedMemberNames",
+    undefined,
+    undefined,
+    undefined
+);
+const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
+    "assignedCaseNames",
+    undefined,
+    undefined,
+    undefined
+);
 
 export abstract class ConvenienceRenderer extends Renderer {
     private _globalForbiddenNamespace: Namespace | undefined;
@@ -234,7 +251,8 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected makeNameForNamedType(t: Type): Name {
-        return new SimpleName(t.getProposedNames(), defined(this._namedTypeNamer));
+        const names = t.getNames();
+        return new SimpleName(names.proposedNames, defined(this._namedTypeNamer));
     }
 
     private addNameForNamedType = (type: Type): Name => {
