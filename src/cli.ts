@@ -1,9 +1,11 @@
+import { Map } from "immutable";
+
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
 
 import {
-    Run,
+    Options,
     JSONTypeSource,
     RendererOptions,
     getTargetLanguage,
@@ -12,7 +14,10 @@ import {
     isJSONSource,
     StringInput,
     SchemaTypeSource,
-    isSchemaSource
+    isSchemaSource,
+    quicktypeMultiFile,
+    SerializedRenderResult,
+    TargetLanguage
 } from ".";
 import { OptionDefinition } from "./RendererOptions";
 import * as targetLanguages from "./Language/All";
@@ -205,7 +210,7 @@ function inferTopLevel(options: Partial<CLIOptions>): string {
     return "TopLevel";
 }
 
-function inferOptions(opts: Partial<CLIOptions>): CLIOptions {
+export function inferCLIOptions(opts: Partial<CLIOptions>): CLIOptions {
     let srcLang = opts.srcLang;
     if (opts.graphqlSchema !== undefined || opts.graphqlIntrospect !== undefined) {
         assert(
@@ -444,17 +449,20 @@ const sectionsAfterRenderers: UsageSection[] = [
     }
 ];
 
-function getOptionDefinitions(opts: CLIOptions): OptionDefinition[] {
-    return getTargetLanguage(opts.lang).cliOptionDefinitions;
-}
+export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage): CLIOptions {
+    if (argv.length === 0) {
+        return inferCLIOptions({ help: true });
+    }
 
-function parseArgv(argv: string[]): CLIOptions {
     // We can only fully parse the options once we know which renderer is selected,
     // because there are renderer-specific options.  But we only know which renderer
     // is selected after we've parsed the options.  Hence, we parse the options
     // twice.  This is the first parse to get the renderer:
     const incompleteOptions = parseOptions(optionDefinitions, argv, true);
-    const rendererOptionDefinitions = getOptionDefinitions(incompleteOptions);
+    if (targetLanguage === undefined) {
+        targetLanguage = getTargetLanguage(incompleteOptions.lang);
+    }
+    const rendererOptionDefinitions = targetLanguage.cliOptionDefinitions;
     // Use the global options as well as the renderer options from now on:
     const allOptionDefinitions = _.concat(optionDefinitions, rendererOptionDefinitions);
     try {
@@ -489,7 +497,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
             options[k] = v;
         }
     });
-    return inferOptions(options);
+    return inferCLIOptions(options);
 }
 
 function usage() {
@@ -560,152 +568,163 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     return sources;
 }
 
-export async function main(args: string[] | Partial<CLIOptions>) {
-    if (_.isArray(args) && args.length === 0) {
+export async function makeQuicktypeOptions(options: CLIOptions): Promise<Partial<Options> | undefined> {
+    if (options.help) {
         usage();
-    } else {
-        let options = _.isArray(args) ? parseArgv(args) : inferOptions(args);
-
-        if (options.help) {
-            usage();
-            return;
-        }
-        if (options.version) {
-            console.log(`quicktype version ${packageJSON.version}`);
-            console.log("Visit quicktype.io for more info.");
-            return;
-        }
-        if (options.buildMarkovChain !== undefined) {
-            const contents = fs.readFileSync(options.buildMarkovChain).toString();
-            const lines = contents.split("\n");
-            const mc = train(lines, 3);
-            console.log(JSON.stringify(mc));
-            return;
-        }
-
-        let sources: TypeSource[] = [];
-        let leadingComments: string[] | undefined = undefined;
-        let fixedTopLevels: boolean = false;
-        switch (options.srcLang) {
-            case "graphql":
-                let schemaString: string | undefined = undefined;
-                let wroteSchemaToFile = false;
-                if (options.graphqlIntrospect !== undefined) {
-                    schemaString = await introspectServer(
-                        options.graphqlIntrospect,
-                        withDefault<string[]>(options.graphqlServerHeader, [])
-                    );
-                    if (options.graphqlSchema !== undefined) {
-                        fs.writeFileSync(options.graphqlSchema, schemaString);
-                        wroteSchemaToFile = true;
-                    }
-                }
-                const numSources = options.src.length;
-                if (numSources !== 1) {
-                    if (wroteSchemaToFile) {
-                        // We're done.
-                        return;
-                    }
-                    if (numSources === 0) {
-                        return panic("Please specify at least one GraphQL query as input");
-                    }
-                }
-                const gqlSources: GraphQLTypeSource[] = [];
-                for (const queryFile of options.src) {
-                    if (schemaString === undefined) {
-                        const schemaFile = defined(options.graphqlSchema);
-                        schemaString = fs.readFileSync(schemaFile, "utf8");
-                    }
-                    const schema = JSON.parse(schemaString);
-                    const query = await readableFromFileOrURL(queryFile);
-                    const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
-                    gqlSources.push({ name, schema, query });
-                }
-                sources = gqlSources;
-                break;
-            case "json":
-            case "schema":
-                sources = await getSources(options);
-                break;
-            case "postman-json":
-                for (const collectionFile of options.src) {
-                    const collectionJSON = fs.readFileSync(collectionFile, "utf8");
-                    const { sources: postmanSources, description } = sourcesFromPostmanCollection(collectionJSON);
-                    for (const src of postmanSources) {
-                        sources.push(src);
-                    }
-                    if (postmanSources.length > 1) {
-                        fixedTopLevels = true;
-                    }
-                    if (description !== undefined) {
-                        leadingComments = wordWrap(description).split("\n");
-                    }
-                }
-                break;
-            default:
-                panic(`Unsupported source language (${options.srcLang})`);
-                break;
-        }
-
-        let handlebarsTemplate: string | undefined = undefined;
-        if (options.template !== undefined) {
-            handlebarsTemplate = fs.readFileSync(options.template, "utf8");
-        }
-
-        let debugPrintGraph = false;
-        if (options.debug !== undefined) {
-            assert(options.debug === "print-graph", "The --debug option must be \"print-graph\"");
-            debugPrintGraph = true;
-        }
-        
-        let run = new Run({
-            lang: options.lang,
-            sources,
-            inferMaps: !options.noMaps,
-            inferEnums: !options.noEnums,
-            inferDates: !options.noDateTimes,
-            alphabetizeProperties: options.alphabetizeProperties,
-            allPropertiesOptional: options.allPropertiesOptional,
-            combineClasses: !options.noCombineClasses,
-            fixedTopLevels,
-            noRender: options.noRender,
-            rendererOptions: options.rendererOptions,
-            leadingComments,
-            handlebarsTemplate,
-            findSimilarClassesSchemaURI: options.findSimilarClassesSchema,
-            outputFilename: options.out !== undefined ? path.basename(options.out) : undefined,
-            schemaStore: new FetchingJSONSchemaStore(),
-            debugPrintGraph
-        });
-
-        const resultsByFilename = await run.run();
-        let onFirst = true;
-        resultsByFilename.forEach(({ lines, annotations }, filename) => {
-            const output = lines.join("\n");
-
-            if (options.out !== undefined) {
-                fs.writeFileSync(path.join(path.dirname(options.out), filename), output);
-            } else {
-                if (!onFirst) {
-                    process.stdout.write("\n");
-                }
-                process.stdout.write(output);
-            }
-            if (options.quiet) {
-                return;
-            }
-            annotations.forEach((sa: Annotation) => {
-                const annotation = sa.annotation;
-                if (!(annotation instanceof IssueAnnotationData)) return;
-                const lineNumber = sa.span.start.line;
-                const humanLineNumber = lineNumber + 1;
-                console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
-                console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
-            });
-
-            onFirst = false;
-        });
+        return undefined;
     }
+    if (options.version) {
+        console.log(`quicktype version ${packageJSON.version}`);
+        console.log("Visit quicktype.io for more info.");
+        return undefined;
+    }
+    if (options.buildMarkovChain !== undefined) {
+        const contents = fs.readFileSync(options.buildMarkovChain).toString();
+        const lines = contents.split("\n");
+        const mc = train(lines, 3);
+        console.log(JSON.stringify(mc));
+        return undefined;
+    }
+
+    let sources: TypeSource[] = [];
+    let leadingComments: string[] | undefined = undefined;
+    let fixedTopLevels: boolean = false;
+    switch (options.srcLang) {
+        case "graphql":
+            let schemaString: string | undefined = undefined;
+            let wroteSchemaToFile = false;
+            if (options.graphqlIntrospect !== undefined) {
+                schemaString = await introspectServer(
+                    options.graphqlIntrospect,
+                    withDefault<string[]>(options.graphqlServerHeader, [])
+                );
+                if (options.graphqlSchema !== undefined) {
+                    fs.writeFileSync(options.graphqlSchema, schemaString);
+                    wroteSchemaToFile = true;
+                }
+            }
+            const numSources = options.src.length;
+            if (numSources !== 1) {
+                if (wroteSchemaToFile) {
+                    // We're done.
+                    return undefined;
+                }
+                if (numSources === 0) {
+                    return panic("Please specify at least one GraphQL query as input");
+                }
+            }
+            const gqlSources: GraphQLTypeSource[] = [];
+            for (const queryFile of options.src) {
+                if (schemaString === undefined) {
+                    const schemaFile = defined(options.graphqlSchema);
+                    schemaString = fs.readFileSync(schemaFile, "utf8");
+                }
+                const schema = JSON.parse(schemaString);
+                const query = await readableFromFileOrURL(queryFile);
+                const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
+                gqlSources.push({ name, schema, query });
+            }
+            sources = gqlSources;
+            break;
+        case "json":
+        case "schema":
+            sources = await getSources(options);
+            break;
+        case "postman-json":
+            for (const collectionFile of options.src) {
+                const collectionJSON = fs.readFileSync(collectionFile, "utf8");
+                const { sources: postmanSources, description } = sourcesFromPostmanCollection(collectionJSON);
+                for (const src of postmanSources) {
+                    sources.push(src);
+                }
+                if (postmanSources.length > 1) {
+                    fixedTopLevels = true;
+                }
+                if (description !== undefined) {
+                    leadingComments = wordWrap(description).split("\n");
+                }
+            }
+            break;
+        default:
+            panic(`Unsupported source language (${options.srcLang})`);
+            break;
+    }
+
+    let handlebarsTemplate: string | undefined = undefined;
+    if (options.template !== undefined) {
+        handlebarsTemplate = fs.readFileSync(options.template, "utf8");
+    }
+
+    let debugPrintGraph = false;
+    if (options.debug !== undefined) {
+        assert(options.debug === "print-graph", "The --debug option must be \"print-graph\"");
+        debugPrintGraph = true;
+    }
+
+    return {
+        lang: options.lang,
+        sources,
+        inferMaps: !options.noMaps,
+        inferEnums: !options.noEnums,
+        inferDates: !options.noDateTimes,
+        alphabetizeProperties: options.alphabetizeProperties,
+        allPropertiesOptional: options.allPropertiesOptional,
+        combineClasses: !options.noCombineClasses,
+        fixedTopLevels,
+        noRender: options.noRender,
+        rendererOptions: options.rendererOptions,
+        leadingComments,
+        handlebarsTemplate,
+        findSimilarClassesSchemaURI: options.findSimilarClassesSchema,
+        outputFilename: options.out !== undefined ? path.basename(options.out) : undefined,
+        schemaStore: new FetchingJSONSchemaStore(),
+        debugPrintGraph
+    };
+}
+
+export function writeOutput(cliOptions: CLIOptions, resultsByFilename: Map<string, SerializedRenderResult>): void {
+    let onFirst = true;
+    resultsByFilename.forEach(({ lines, annotations }, filename) => {
+        const output = lines.join("\n");
+
+        if (cliOptions.out !== undefined) {
+            fs.writeFileSync(path.join(path.dirname(cliOptions.out), filename), output);
+        } else {
+            if (!onFirst) {
+                process.stdout.write("\n");
+            }
+            process.stdout.write(output);
+        }
+        if (cliOptions.quiet) {
+            return;
+        }
+        annotations.forEach((sa: Annotation) => {
+            const annotation = sa.annotation;
+            if (!(annotation instanceof IssueAnnotationData)) return;
+            const lineNumber = sa.span.start.line;
+            const humanLineNumber = lineNumber + 1;
+            console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
+            console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
+        });
+
+        onFirst = false;
+    });
+}
+
+export async function main(args: string[] | Partial<CLIOptions>) {
+    let cliOptions: CLIOptions;
+    if (Array.isArray(args)) {
+        cliOptions = parseCLIOptions(args);
+    } else {
+        cliOptions = inferCLIOptions(args);
+    }
+
+    const quicktypeOptions = await makeQuicktypeOptions(cliOptions);
+    if (quicktypeOptions === undefined) return;
+
+    const resultsByFilename = await quicktypeMultiFile(quicktypeOptions);
+
+    writeOutput(cliOptions, resultsByFilename);
 }
 
 if (require.main === module) {
