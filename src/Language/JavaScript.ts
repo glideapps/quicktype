@@ -23,9 +23,9 @@ const unicode = require("unicode-properties");
 
 export class JavaScriptTargetLanguage extends TargetLanguage {
     protected readonly omitRuntimeTypecheck = new BooleanOption(
-        "no-runtime-typecheck",
-        "Don't verify JSON.parse results at runtime",
-        false
+        "runtime-typecheck",
+        "Verify JSON.parse results at runtime",
+        true
     );
 
     constructor(

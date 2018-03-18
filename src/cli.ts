@@ -488,7 +488,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
     if (targetLanguage === undefined) {
         targetLanguage = getTargetLanguage(incompleteOptions.lang);
     }
-    const rendererOptionDefinitions = targetLanguage.cliOptionDefinitions;
+    const rendererOptionDefinitions = targetLanguage.cliOptionDefinitions.actual;
     // Use the global options as well as the renderer options from now on:
     const allOptionDefinitions = _.concat(optionDefinitions, rendererOptionDefinitions);
     try {
@@ -530,7 +530,7 @@ function usage(targetLanguages: TargetLanguage[]) {
     const rendererSections: UsageSection[] = [];
 
     _.forEach(targetLanguages, language => {
-        const definitions = language.cliOptionDefinitions;
+        const definitions = language.cliOptionDefinitions.display;
         if (definitions.length === 0) return;
 
         rendererSections.push({

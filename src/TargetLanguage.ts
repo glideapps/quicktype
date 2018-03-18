@@ -19,8 +19,14 @@ export abstract class TargetLanguage {
         return this.getOptions().map(o => o.definition);
     }
 
-    get cliOptionDefinitions(): OptionDefinition[] {
-        return this.getOptions().map(o => o.cliDefinition);        
+    get cliOptionDefinitions(): { display: OptionDefinition[]; actual: OptionDefinition[] } {
+        let actual: OptionDefinition[] = [];
+        let display: OptionDefinition[] = [];
+        for (const { cliDefinitions } of this.getOptions()) {
+            actual = actual.concat(cliDefinitions.actual);
+            display = display.concat(cliDefinitions.display);
+        }
+        return { actual, display };
     }
 
     protected abstract get rendererClass(): new (
