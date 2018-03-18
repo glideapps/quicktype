@@ -129,7 +129,11 @@ class GoRenderer extends ConvenienceRenderer {
     }
 
     protected makeTopLevelDependencyNames(_: Type, topLevelName: Name): DependencyName[] {
-        const unmarshalName = new DependencyName(namingFunction, lookup => `unmarshal_${lookup(topLevelName)}`);
+        const unmarshalName = new DependencyName(
+            namingFunction,
+            topLevelName.order,
+            lookup => `unmarshal_${lookup(topLevelName)}`
+        );
         this._topLevelUnmarshalNames = this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
         return [unmarshalName];
     }

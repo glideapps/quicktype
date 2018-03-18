@@ -238,8 +238,8 @@ export class JavaRenderer extends ConvenienceRenderer {
         _jsonName: string,
         name: Name
     ): [Name, Name] {
-        const getterName = new DependencyName(propertyNamingFunction, lookup => `get_${lookup(name)}`);
-        const setterName = new DependencyName(propertyNamingFunction, lookup => `set_${lookup(name)}`);
+        const getterName = new DependencyName(propertyNamingFunction, name.order, lookup => `get_${lookup(name)}`);
+        const setterName = new DependencyName(propertyNamingFunction, name.order, lookup => `set_${lookup(name)}`);
         return [getterName, setterName];
     }
 

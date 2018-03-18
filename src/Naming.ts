@@ -186,7 +186,7 @@ export abstract class Name {
     private _associates = Set<AssociatedName>();
 
     // If a Named is fixed, the namingFunction is undefined.
-    constructor(private readonly _namingFunction: Namer | undefined) {}
+    constructor(private readonly _namingFunction: Namer | undefined, readonly order: number) {}
 
     equals(other: any): boolean {
         return this === other;
@@ -237,7 +237,7 @@ export abstract class Name {
 // FIXME: FixedNameds should optionally be user-configurable
 export class FixedName extends Name {
     constructor(private readonly _fixedName: string) {
-        super(undefined);
+        super(undefined, 0);
     }
 
     get dependencies(): List<Name> {
@@ -262,8 +262,8 @@ export class FixedName extends Name {
 }
 
 export class SimpleName extends Name {
-    constructor(private readonly _unstyledNames: OrderedSet<string>, namingFunction: Namer) {
-        super(namingFunction);
+    constructor(private readonly _unstyledNames: OrderedSet<string>, namingFunction: Namer, order: number) {
+        super(namingFunction, order);
     }
 
     get dependencies(): List<Name> {
@@ -280,8 +280,8 @@ export class SimpleName extends Name {
 }
 
 export class AssociatedName extends Name {
-    constructor(private readonly _sponsor: Name, readonly getName: (sponsorName: string) => string) {
-        super(undefined);
+    constructor(private readonly _sponsor: Name, order: number, readonly getName: (sponsorName: string) => string) {
+        super(undefined, order);
     }
 
     get dependencies(): List<Name> {
@@ -298,9 +298,10 @@ export class DependencyName extends Name {
 
     constructor(
         namingFunction: Namer | undefined,
+        order: number,
         private readonly _proposeUnstyledName: (lookup: (n: Name) => string) => string
     ) {
-        super(namingFunction);
+        super(namingFunction, order);
         const dependencies: Name[] = [];
         _proposeUnstyledName(n => {
             dependencies.push(n);
@@ -418,24 +419,32 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
             .map((n: Name) => defined(ctx.names.get(n)))
             .toSet();
 
-        // 2. Sort those names into sets where all members of a set propose the same
-        //    name and have the same naming function.
+        // 2. From low order to high order, sort those names into sets where all
+        //    members of a set propose the same name and have the same naming
+        //    function.
 
-        const readyNames = readyNamespace.members.filter(ctx.isReadyToBeNamed);
-        // It would be nice if we had tuples, then we wouldn't have to do this in
-        // two steps.
-        const byNamingFunction = readyNames.groupBy(n => n.namingFunction);
-        byNamingFunction.forEach((namedsForNamingFunction: Collection<any, Name>, namer: Namer) => {
-            const byProposed = namedsForNamingFunction.groupBy(n =>
-                n.namingFunction.nameStyle(n.firstProposedName(ctx.names))
-            );
-            byProposed.forEach((nameds: Collection<any, Name>, _: string) => {
-                // 3. Use each set's naming function to name its members.
+        for (;;) {
+            const allReadyNames = readyNamespace.members.filter(ctx.isReadyToBeNamed);
+            const minOrderName = allReadyNames.minBy(n => n.order);
+            if (minOrderName === undefined) break;
+            const minOrder = minOrderName.order;
+            const readyNames = allReadyNames.filter(n => n.order === minOrder);
 
-                const names = namer.assignNames(ctx.names, forbiddenNames, nameds);
-                names.forEach((assigned: string, name: Name) => ctx.assign(name, readyNamespace, assigned));
-                forbiddenNames = forbiddenNames.union(names.toSet());
+            // It would be nice if we had tuples, then we wouldn't have to do this in
+            // two steps.
+            const byNamingFunction = readyNames.groupBy(n => n.namingFunction);
+            byNamingFunction.forEach((namedsForNamingFunction: Collection<any, Name>, namer: Namer) => {
+                const byProposed = namedsForNamingFunction.groupBy(n =>
+                    n.namingFunction.nameStyle(n.firstProposedName(ctx.names))
+                );
+                byProposed.forEach((nameds: Collection<any, Name>, _: string) => {
+                    // 3. Use each set's naming function to name its members.
+
+                    const names = namer.assignNames(ctx.names, forbiddenNames, nameds);
+                    names.forEach((assigned: string, name: Name) => ctx.assign(name, readyNamespace, assigned));
+                    forbiddenNames = forbiddenNames.union(names.toSet());
+                });
             });
-        });
+        }
     }
 }

@@ -171,10 +171,14 @@ class ElmRenderer extends ConvenienceRenderer {
     }
 
     protected makeTopLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
-        const encoder = new DependencyName(lowerNamingFunction, lookup => `${lookup(topLevelName)}_to_string`);
+        const encoder = new DependencyName(
+            lowerNamingFunction,
+            topLevelName.order,
+            lookup => `${lookup(topLevelName)}_to_string`
+        );
         let decoder: DependencyName | undefined = undefined;
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
-            decoder = new DependencyName(lowerNamingFunction, lookup => lookup(topLevelName));
+            decoder = new DependencyName(lowerNamingFunction, topLevelName.order, lookup => lookup(topLevelName));
         }
         this._topLevelDependents = this._topLevelDependents.set(topLevelName, { encoder, decoder });
         if (decoder !== undefined) {
@@ -188,8 +192,8 @@ class ElmRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeDependencyNames(_: Type, typeName: Name): DependencyName[] {
-        const encoder = new DependencyName(lowerNamingFunction, lookup => `encode_${lookup(typeName)}`);
-        const decoder = new DependencyName(lowerNamingFunction, lookup => lookup(typeName));
+        const encoder = new DependencyName(lowerNamingFunction, typeName.order, lookup => `encode_${lookup(typeName)}`);
+        const decoder = new DependencyName(lowerNamingFunction, typeName.order, lookup => lookup(typeName));
         this._namedTypeDependents = this._namedTypeDependents.set(typeName, { encoder, decoder });
         return [encoder, decoder];
     }

@@ -464,7 +464,7 @@ class NewtonsoftCSharpRenderer extends CSharpRenderer {
     protected makeNamedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
         if (!(t instanceof EnumType)) return [];
 
-        const extensionsName = new DependencyName(namingFunction, lookup => `${lookup(name)}_extensions`);
+        const extensionsName = new DependencyName(namingFunction, name.order, lookup => `${lookup(name)}_extensions`);
         this._enumExtensionsNames = this._enumExtensionsNames.set(name, extensionsName);
         return [extensionsName];
     }
