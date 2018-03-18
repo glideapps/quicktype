@@ -12,7 +12,12 @@ function exec(command: string) {
   return (result.stdout as string).trim();
 }
 
-const PUBLISHED = exec(`npm show quicktype version`);
+const PUBLISHED = (() => {
+  // Get the highest published version of any tag
+  const all = JSON.parse(exec(`npm show quicktype versions --json`));
+  return all[all.length - 1];
+})();
+
 const CURRENT = exec(`npm version`).match(/quicktype: '(.+)'/)[1];
 
 switch (compareVersions(CURRENT, PUBLISHED)) {

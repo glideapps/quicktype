@@ -59,3 +59,25 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
         slack_notify_homebrew_bump
     fi
 fi
+
+if [ "$APPCENTER_BRANCH" == "next" ]; then
+
+    ####################################
+    ### Deploy to npm with @next tag ###
+    ####################################
+
+    echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
+    npm run pub
+    
+    slack_notify_deployed
+    
+    ################################
+    ### Deploy next.quicktype.io ###
+    ################################
+
+    appcenter \
+        build queue \
+        --app quicktype/app.quicktype.io \
+        --branch next \
+        --token $APPCENTER_TOKEN
+fi
