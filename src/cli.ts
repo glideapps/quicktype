@@ -185,6 +185,7 @@ function inferLang(options: Partial<CLIOptions>): string {
         return extension.substr(1);
     }
 
+    // FIXME: There should be a default language coming in from the caller
     return "go";
 }
 
@@ -417,13 +418,20 @@ interface UsageSection {
 }
 
 function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSection[] {
-    const langs = makeLangTypeLabel(targetLanguages);
+    let langsString: string;
+    if (targetLanguages.length < 2) {
+        langsString = "";
+    } else {
+        const langs = makeLangTypeLabel(targetLanguages);
+        langsString = ` [[bold]{--lang} ${langs}]`;
+    }
+
     const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
 
     return [
         {
             header: "Synopsis",
-            content: `$ quicktype [[bold]{--lang} ${langs}] FILE|URL ...`
+            content: `$ quicktype${langsString} FILE|URL ...`
         },
         {
             header: "Description",
