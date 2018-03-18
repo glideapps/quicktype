@@ -20,7 +20,7 @@ import {
     TargetLanguage
 } from ".";
 import { OptionDefinition } from "./RendererOptions";
-import * as targetLanguages from "./Language/All";
+import * as defaultTargetLanguages from "./Language/All";
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { Annotation } from "./Source";
 import { IssueAnnotationData } from "./Annotation";
@@ -38,9 +38,6 @@ const chalk = require("chalk");
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
 const packageJSON = require("../package.json");
-
-const langs = targetLanguages.all.map(r => _.minBy(r.names, s => s.length)).join("|");
-const langDisplayNames = targetLanguages.all.map(r => r.displayName).join(", ");
 
 export interface CLIOptions {
     lang: string;
@@ -188,6 +185,7 @@ function inferLang(options: Partial<CLIOptions>): string {
         return extension.substr(1);
     }
 
+    // FIXME: There should be a default language coming in from the caller
     return "go";
 }
 
@@ -253,151 +251,164 @@ export function inferCLIOptions(opts: Partial<CLIOptions>): CLIOptions {
     /* tslint:enable */
 }
 
-const optionDefinitions: OptionDefinition[] = [
-    {
-        name: "out",
-        alias: "o",
-        type: String,
-        typeLabel: `FILE`,
-        description: "The output file. Determines --lang and --top-level."
-    },
-    {
-        name: "top-level",
-        alias: "t",
-        type: String,
-        typeLabel: "NAME",
-        description: "The name for the top level type."
-    },
-    {
-        name: "lang",
-        alias: "l",
-        type: String,
-        typeLabel: langs,
-        description: "The target language."
-    },
-    {
-        name: "src-lang",
-        alias: "s",
-        type: String,
-        defaultValue: undefined,
-        typeLabel: "json|schema|graphql|postman-json",
-        description: "The source language (default is json)."
-    },
-    {
-        name: "src",
-        type: String,
-        multiple: true,
-        defaultOption: true,
-        typeLabel: "FILE|URL|DIRECTORY",
-        description: "The file, url, or data directory to type."
-    },
-    {
-        name: "src-urls",
-        type: String,
-        typeLabel: "FILE",
-        description: "Tracery grammar describing URLs to crawl."
-    },
-    {
-        name: "no-combine-classes",
-        type: Boolean,
-        description: "Don't combine similar classes."
-    },
-    {
-        name: "add-schema-top-level",
-        type: String,
-        typeLabel: "REF",
-        description: "Use JSON Schema definitions as top-levels.  Must be `/definitions/`."
-    },
-    {
-        name: "graphql-schema",
-        type: String,
-        typeLabel: "FILE",
-        description: "GraphQL introspection file."
-    },
-    {
-        name: "graphql-introspect",
-        type: String,
-        typeLabel: "URL",
-        description: "Introspect GraphQL schema from a server."
-    },
-    {
-        name: "graphql-server-header",
-        type: String,
-        multiple: true,
-        description: "HTTP header for the GraphQL introspection query."
-    },
-    {
-        name: "template",
-        type: String,
-        typeLabel: "FILE",
-        description: "Handlebars template file."
-    },
-    {
-        name: "no-maps",
-        type: Boolean,
-        description: "Don't infer maps, always use classes."
-    },
-    {
-        name: "no-enums",
-        type: Boolean,
-        description: "Don't infer enums, always use strings."
-    },
-    {
-        name: "no-date-times",
-        type: Boolean,
-        description: "Don't infer dates or times."
-    },
-    {
-        name: "no-render",
-        type: Boolean,
-        description: "Don't render output."
-    },
-    {
-        name: "alphabetize-properties",
-        type: Boolean,
-        description: "Alphabetize order of class properties."
-    },
-    {
-        name: "all-properties-optional",
-        type: Boolean,
-        description: "Make all class properties optional."
-    },
-    {
-        name: "build-markov-chain",
-        type: String,
-        typeLabel: "FILE",
-        description: "Markov chain corpus filename."
-    },
-    {
-        name: "find-similar-classes-schema",
-        type: String,
-        typeLabel: "FILE",
-        description: "Base schema for finding similar classes"
-    },
-    {
-        name: "quiet",
-        type: Boolean,
-        description: "Don't show issues in the generated code."
-    },
-    {
-        name: "debug",
-        type: String,
-        typeLabel: "OPTIONS",
-        description: "Comma separated debug options: print-graph"
-    },
-    {
-        name: "help",
-        alias: "h",
-        type: Boolean,
-        description: "Get some help."
-    },
-    {
-        name: "version",
-        alias: "v",
-        type: Boolean,
-        description: "Display the version of quicktype"
-    }
-];
+function makeLangTypeLabel(targetLanguages: TargetLanguage[]): string {
+    assert(targetLanguages.length > 0, "Must have at least one target language");
+    return targetLanguages.map(r => _.minBy(r.names, s => s.length)).join("|");
+}
+
+function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinition[] {
+    const beforeLang: OptionDefinition[] = [
+        {
+            name: "out",
+            alias: "o",
+            type: String,
+            typeLabel: `FILE`,
+            description: "The output file. Determines --lang and --top-level."
+        },
+        {
+            name: "top-level",
+            alias: "t",
+            type: String,
+            typeLabel: "NAME",
+            description: "The name for the top level type."
+        }
+    ];
+    const lang: OptionDefinition[] = targetLanguages.length < 2 ? [] : [
+        {
+            name: "lang",
+            alias: "l",
+            type: String,
+            typeLabel: makeLangTypeLabel(targetLanguages),
+            description: "The target language."
+        }
+    ];
+    const afterLang: OptionDefinition[] = [
+        {
+            name: "src-lang",
+            alias: "s",
+            type: String,
+            defaultValue: undefined,
+            typeLabel: "json|schema|graphql|postman-json",
+            description: "The source language (default is json)."
+        },
+        {
+            name: "src",
+            type: String,
+            multiple: true,
+            defaultOption: true,
+            typeLabel: "FILE|URL|DIRECTORY",
+            description: "The file, url, or data directory to type."
+        },
+        {
+            name: "src-urls",
+            type: String,
+            typeLabel: "FILE",
+            description: "Tracery grammar describing URLs to crawl."
+        },
+        {
+            name: "no-combine-classes",
+            type: Boolean,
+            description: "Don't combine similar classes."
+        },
+        {
+            name: "add-schema-top-level",
+            type: String,
+            typeLabel: "REF",
+            description: "Use JSON Schema definitions as top-levels.  Must be `/definitions/`."
+        },
+        {
+            name: "graphql-schema",
+            type: String,
+            typeLabel: "FILE",
+            description: "GraphQL introspection file."
+        },
+        {
+            name: "graphql-introspect",
+            type: String,
+            typeLabel: "URL",
+            description: "Introspect GraphQL schema from a server."
+        },
+        {
+            name: "graphql-server-header",
+            type: String,
+            multiple: true,
+            typeLabel: "HEADER",
+            description: "HTTP header for the GraphQL introspection query."
+        },
+        {
+            name: "template",
+            type: String,
+            typeLabel: "FILE",
+            description: "Handlebars template file."
+        },
+        {
+            name: "no-maps",
+            type: Boolean,
+            description: "Don't infer maps, always use classes."
+        },
+        {
+            name: "no-enums",
+            type: Boolean,
+            description: "Don't infer enums, always use strings."
+        },
+        {
+            name: "no-date-times",
+            type: Boolean,
+            description: "Don't infer dates or times."
+        },
+        {
+            name: "no-render",
+            type: Boolean,
+            description: "Don't render output."
+        },
+        {
+            name: "alphabetize-properties",
+            type: Boolean,
+            description: "Alphabetize order of class properties."
+        },
+        {
+            name: "all-properties-optional",
+            type: Boolean,
+            description: "Make all class properties optional."
+        },
+        {
+            name: "build-markov-chain",
+            type: String,
+            typeLabel: "FILE",
+            description: "Markov chain corpus filename."
+        },
+        {
+            name: "find-similar-classes-schema",
+            type: String,
+            typeLabel: "FILE",
+            description: "Base schema for finding similar classes"
+        },
+        {
+            name: "quiet",
+            type: Boolean,
+            description: "Don't show issues in the generated code."
+        },
+        {
+            name: "debug",
+            type: String,
+            typeLabel: "OPTIONS",
+            description: "Comma separated debug options: print-graph"
+        },
+        {
+            name: "help",
+            alias: "h",
+            type: Boolean,
+            description: "Get some help."
+        },
+        {
+            name: "version",
+            alias: "v",
+            type: Boolean,
+            description: "Display the version of quicktype"
+        }
+    ];
+    return beforeLang.concat(lang, afterLang);
+}
 
 interface UsageSection {
     header?: string;
@@ -406,21 +417,33 @@ interface UsageSection {
     hide?: string[];
 }
 
-const sectionsBeforeRenderers: UsageSection[] = [
-    {
-        header: "Synopsis",
-        content: `$ quicktype [[bold]{--lang} ${langs}] FILE|URL ...`
-    },
-    {
-        header: "Description",
-        content: `Given JSON sample data, quicktype outputs code for working with that data in ${langDisplayNames}.`
-    },
-    {
-        header: "Options",
-        optionList: optionDefinitions,
-        hide: ["no-render", "build-markov-chain", "find-similar-classes-schema"]
+function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSection[] {
+    let langsString: string;
+    if (targetLanguages.length < 2) {
+        langsString = "";
+    } else {
+        const langs = makeLangTypeLabel(targetLanguages);
+        langsString = ` [[bold]{--lang} ${langs}]`;
     }
-];
+
+    const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
+
+    return [
+        {
+            header: "Synopsis",
+            content: `$ quicktype${langsString} FILE|URL ...`
+        },
+        {
+            header: "Description",
+            content: `Given JSON sample data, quicktype outputs code for working with that data in ${langDisplayNames}.`
+        },
+        {
+            header: "Options",
+            optionList: makeOptionDefinitions(targetLanguages),
+            hide: ["no-render", "build-markov-chain", "find-similar-classes-schema"]
+        }
+    ];
+}
 
 const sectionsAfterRenderers: UsageSection[] = [
     {
@@ -454,6 +477,9 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
         return inferCLIOptions({ help: true });
     }
 
+    const targetLanguages = targetLanguage === undefined ? defaultTargetLanguages.all : [targetLanguage];
+    const optionDefinitions = makeOptionDefinitions(targetLanguages);
+
     // We can only fully parse the options once we know which renderer is selected,
     // because there are renderer-specific options.  But we only know which renderer
     // is selected after we've parsed the options.  Hence, we parse the options
@@ -470,7 +496,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
         return parseOptions(allOptionDefinitions, argv, false);
     } catch (error) {
         if (error.name === "UNKNOWN_OPTION") {
-            usage();
+            usage(targetLanguages);
             throw new Error("Unknown option");
         }
         throw error;
@@ -500,10 +526,10 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
     return inferCLIOptions(options);
 }
 
-function usage() {
+function usage(targetLanguages: TargetLanguage[]) {
     const rendererSections: UsageSection[] = [];
 
-    _.forEach(targetLanguages.all, language => {
+    _.forEach(targetLanguages, language => {
         const definitions = language.cliOptionDefinitions;
         if (definitions.length === 0) return;
 
@@ -513,7 +539,7 @@ function usage() {
         });
     });
 
-    const sections = _.concat(sectionsBeforeRenderers, rendererSections, sectionsAfterRenderers);
+    const sections = _.concat(makeSectionsBeforeRenderers(targetLanguages), rendererSections, sectionsAfterRenderers);
 
     console.log(getUsage(sections));
 }
@@ -568,9 +594,9 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     return sources;
 }
 
-export async function makeQuicktypeOptions(options: CLIOptions): Promise<Partial<Options> | undefined> {
+export async function makeQuicktypeOptions(options: CLIOptions, targetLanguages?: TargetLanguage[]): Promise<Partial<Options> | undefined> {
     if (options.help) {
-        usage();
+        usage(targetLanguages === undefined ? defaultTargetLanguages.all : targetLanguages);
         return undefined;
     }
     if (options.version) {
