@@ -10,6 +10,7 @@ export interface Language {
   compileCommand?: string;
   runCommand(sample: string): string;
   diffViaSchema: boolean;
+  skipDiffViaSchema: string[];
   allowMissingNull: boolean;
   output: string;
   topLevel: string;
@@ -30,6 +31,17 @@ export const CSharpLanguage: Language = {
     return `dotnet run "${sample}"`;
   },
   diffViaSchema: true,
+  skipDiffViaSchema: [
+    "keywords.json",
+    "00c36.json",
+    "0a91a.json",
+    "34702.json",
+    "2df80.json",
+    "7fbfb.json",
+    "cda6c.json",
+    "c8c7e.json",
+    "e53b5.json"
+  ],
   allowMissingNull: false,
   output: "QuickType.cs",
   topLevel: "TopLevel",
@@ -53,6 +65,7 @@ export const JavaLanguage: Language = {
   },
   // FIXME: implement comparing multiple files
   diffViaSchema: false,
+  skipDiffViaSchema: [],
   allowMissingNull: false,
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
@@ -72,8 +85,17 @@ export const RustLanguage: Language = {
   runCommand(sample: string) {
     return `RUST_THREADS=1 ./target/debug/quick_type_test "${sample}"`;
   },
-  // FIXME: implement comparing multiple files
-  diffViaSchema: false,
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "bug427.json",
+    "keywords.json",
+    "recursive.json",
+    "github-events.json",
+    "0a91a.json",
+    "34702.json",
+    "76ae1.json",
+    "af2d1.json"
+  ],
   allowMissingNull: false,
   output: "module_under_test.rs",
   topLevel: "TopLevel",
@@ -99,6 +121,56 @@ export const RubyLanguage: Language = {
     return `bundle exec main.rb "${sample}"`;
   },
   diffViaSchema: true,
+  skipDiffViaSchema: [
+    "keywords.json",
+    "nst-test-suite.json",
+    "recursive.json",
+    "combinations.json",
+    "bug427.json",
+    "kitchen-sink.json",
+    "github-events.json",
+    "reddit.json",
+    "00c36.json",
+    "050b0.json",
+    "06bee.json",
+    "07c75.json",
+    "0a91a.json",
+    "10be4.json",
+    "27332.json",
+    "29f47.json",
+    "2df80.json",
+    "3536b.json",
+    "34702.json",
+    "33d2e.json",
+    "43970.json",
+    "4a455.json",
+    "570ec.json",
+    "4d6fb.json",
+    "66121.json",
+    "65dec.json",
+    "6eb00.json",
+    "6de06.json",
+    "7fbfb.json",
+    "76ae1.json",
+    "8592b.json",
+    "9847b.json",
+    "9a503.json",
+    "996bd.json",
+    "9eed5.json",
+    "ad8be.json",
+    "ae7f0.json",
+    "af2d1.json",
+    "b4865.json",
+    "be234.json",
+    "c8c7e.json",
+    "cda6c.json",
+    "dc44f.json",
+    "dd1ce.json",
+    "e53b5.json",
+    "f22f5.json",
+    "f3139.json",
+    "e8b04.json"
+  ],
   allowMissingNull: true,
   output: "TopLevel.rb",
   topLevel: "TopLevel",
@@ -120,6 +192,30 @@ export const GoLanguage: Language = {
     return `go run main.go quicktype.go < "${sample}"`;
   },
   diffViaSchema: true,
+  skipDiffViaSchema: [
+    "bug427.json",
+    "github-events.json",
+    "reddit.json",
+    "0cffa.json",
+    "0e0c2.json",
+    "127a1.json",
+    "29f47.json",
+    "2df80.json",
+    "32431.json",
+    "27332.json",
+    "337ed.json",
+    "34702.json",
+    "4a455.json",
+    "6de06.json",
+    "7eb30.json",
+    "7681c.json",
+    "ae9ca.json",
+    "af2d1.json",
+    "be234.json",
+    "c3303.json",
+    "e8b04.json",
+    "f6a65.json"
+  ],
   allowMissingNull: false,
   output: "quicktype.go",
   topLevel: "TopLevel",
@@ -141,6 +237,16 @@ export const CPlusPlusLanguage: Language = {
     return `./quicktype "${sample}"`;
   },
   diffViaSchema: true,
+  skipDiffViaSchema: [
+    "github-events.json",
+    "bug427.json",
+    "keywords.json",
+    "0a91a.json",
+    "34702.json",
+    "7f568.json",
+    "e8b04.json",
+    "fcca3.json"
+  ],
   allowMissingNull: false,
   output: "quicktype.hpp",
   topLevel: "TopLevel",
@@ -167,6 +273,31 @@ export const ElmLanguage: Language = {
     return `node ./runner.js "${sample}"`;
   },
   diffViaSchema: true,
+  skipDiffViaSchema: [
+    "reddit.json",
+    "github-events.json",
+    "0a91a.json",
+    "0cffa.json",
+    "0e0c2.json",
+    "127a1.json",
+    "29f47.json",
+    "2df80.json",
+    "27332.json",
+    "32431.json",
+    "337ed.json",
+    "34702.json",
+    "4a455.json",
+    "6de06.json",
+    "76ae1.json",
+    "7eb30.json",
+    "7681c.json",
+    "ae9ca.json",
+    "af2d1.json",
+    "be234.json",
+    "c3303.json",
+    "e8b04.json",
+    "f6a65.json"
+  ],
   allowMissingNull: false,
   output: "QuickType.elm",
   topLevel: "QuickType",
@@ -204,6 +335,20 @@ export const SwiftLanguage: Language = {
     return `./quicktype "${sample}"`;
   },
   diffViaSchema: true,
+  skipDiffViaSchema: [
+    "bug427.json",
+    "github-events.json",
+    "keywords.json",
+    "0a91a.json",
+    "337ed.json",
+    "34702.json",
+    "7f568.json",
+    "76ae1.json",
+    "c8c7e.json",
+    "e53b5.json",
+    "e8b04.json",
+    "fcca3.json"
+  ],
   allowMissingNull: true,
   output: "quicktype.swift",
   topLevel: "TopLevel",
@@ -233,6 +378,7 @@ export const ObjectiveCLanguage: Language = {
     return `cp "${sample}" sample.json && ./test sample.json`;
   },
   diffViaSchema: true,
+  skipDiffViaSchema: [],
   allowMissingNull: true,
   output: "QTTopLevel.m",
   topLevel: "QTTopLevel",
@@ -266,6 +412,7 @@ export const TypeScriptLanguage: Language = {
   },
   // FIXME: enable once TypeScript supports unions
   diffViaSchema: false,
+  skipDiffViaSchema: [],
   allowMissingNull: false,
   output: "TopLevel.ts",
   topLevel: "TopLevel",
@@ -285,6 +432,7 @@ export const JavaScriptLanguage: Language = {
   },
   // FIXME: enable once TypeScript supports unions
   diffViaSchema: false,
+  skipDiffViaSchema: [],
   allowMissingNull: false,
   output: "TopLevel.js",
   topLevel: "TopLevel",
@@ -303,6 +451,7 @@ export const FlowLanguage: Language = {
     return `flow check 1>&2 && flow-node main.js \"${sample}\"`;
   },
   diffViaSchema: false,
+  skipDiffViaSchema: [],
   allowMissingNull: false,
   output: "TopLevel.js",
   topLevel: "TopLevel",

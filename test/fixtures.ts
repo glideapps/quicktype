@@ -210,7 +210,10 @@ class JSONFixture extends LanguageFixture {
       allowMissingNull: this.language.allowMissingNull
     });
 
-    if (this.language.diffViaSchema) {
+    if (
+      this.language.diffViaSchema &&
+      !_.includes(this.language.skipDiffViaSchema, path.basename(filename))
+    ) {
       debug("* Diffing with code generated via JSON Schema");
       // Make a schema
       await quicktype({
@@ -281,6 +284,7 @@ class JSONSchemaJSONFixture extends JSONFixture {
         return panic("This must not be called!");
       },
       diffViaSchema: false,
+      skipDiffViaSchema: [],
       allowMissingNull: language.allowMissingNull,
       output: "schema.json",
       topLevel: "schema",

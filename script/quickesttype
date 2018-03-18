@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# This runs quicktype, without building.
+#
+# In practice this runs an order of magnitude faster.
+
+SCRIPTDIR=$(dirname "$0")
+
+SKIP_BUILD=true "$SCRIPTDIR/quicktype" "$@"

@@ -59,10 +59,6 @@ export abstract class Type {
         return this.getNames().combinedName;
     }
 
-    getProposedNames(): OrderedSet<string> {
-        return this.getNames().proposedNames;
-    }
-
     abstract get isNullable(): boolean;
     abstract isPrimitive(): this is PrimitiveType;
     abstract map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef;

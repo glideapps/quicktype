@@ -3,7 +3,7 @@
 import { Collection } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, UnionType, ClassType, matchTypeExhaustive } from "../Type";
+import { Type, UnionType, ClassType, matchTypeExhaustive, EnumType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer } from "../Naming";
@@ -80,10 +80,6 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return null;
     }
 
-    protected unionNeedsName(_: UnionType): boolean {
-        return false;
-    }
-
     private nameForType = (t: Type): string => {
         return defined(this.names.get(this.nameForNamedType(t)));
     };
@@ -96,6 +92,10 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         }
         return { oneOf: types.map(this.schemaForType).toArray() };
     };
+
+    private makeRef(t: Type): Schema {
+        return { $ref: `#/definitions/${this.nameForType(t)}` };
+    }
 
     private schemaForType = (t: Type): Schema => {
         const schema = matchTypeExhaustive<{ [name: string]: any }>(
@@ -110,13 +110,15 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
             _doubleType => ({ type: "number" }),
             _stringType => ({ type: "string" }),
             arrayType => ({ type: "array", items: this.schemaForType(arrayType.items) }),
-            classType => ({ $ref: `#/definitions/${this.nameForType(classType)}` }),
+            classType => this.makeRef(classType),
             mapType => ({ type: "object", additionalProperties: this.schemaForType(mapType.values) }),
-            enumType => ({ type: "string", enum: enumType.cases.toArray(), title: enumType.getCombinedName() }),
+            enumType => this.makeRef(enumType),
             unionType => {
-                const oneOf = this.makeOneOf(unionType.sortedMembers);
-                oneOf.title = unionType.getCombinedName();
-                return oneOf;
+                if (this.unionNeedsName(unionType)) {
+                    return this.makeRef(unionType);
+                } else {
+                    return this.definitionForUnion(unionType);
+                }
             },
             _dateType => ({ type: "string", format: "date" }),
             _timeType => ({ type: "string", format: "time" }),
@@ -129,7 +131,7 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
         return schema;
     };
 
-    private definitionForClass = (c: ClassType): Schema => {
+    private definitionForClass(c: ClassType, title: string): Schema {
         const properties: Schema = {};
         const required: string[] = [];
         c.properties.forEach((p, name) => {
@@ -143,16 +145,38 @@ class JSONSchemaRenderer extends ConvenienceRenderer {
             additionalProperties: false,
             properties,
             required: required.sort(),
-            title: c.getCombinedName()
+            title
         };
-    };
+    }
+
+    private definitionForUnion(u: UnionType, title?: string): Schema {
+        const oneOf = this.makeOneOf(u.sortedMembers);
+        if (title !== undefined) {
+            oneOf.title = title;
+        }
+        return oneOf;
+    }
+
+    private definitionForEnum(e: EnumType, title: string): Schema {
+        return { type: "string", enum: e.cases.toArray(), title };
+    }
 
     protected emitSourceStructure(): void {
         // FIXME: Find a better way to do multiple top-levels.  Maybe multiple files?
         const schema = this.makeOneOf(this.topLevels);
         const definitions: { [name: string]: Schema } = {};
         this.forEachClass("none", (c, name) => {
-            definitions[defined(this.names.get(name))] = this.definitionForClass(c);
+            const title = defined(this.names.get(name));
+            definitions[title] = this.definitionForClass(c, title);
+        });
+        this.forEachUnion("none", (u, name) => {
+            if (!this.unionNeedsName(u)) return;
+            const title = defined(this.names.get(name));
+            definitions[title] = this.definitionForUnion(u, title);
+        });
+        this.forEachEnum("none", (e, name) => {
+            const title = defined(this.names.get(name));
+            definitions[title] = this.definitionForEnum(e, title);
         });
         schema.definitions = definitions;
 

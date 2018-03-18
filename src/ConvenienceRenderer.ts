@@ -32,19 +32,42 @@ import {
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
+const givenNameOrder = 1;
+const inferredNameOrder = 3;
+const classPropertyNameOrder = 2;
+const enumCaseNameOrder = 2;
+const unionMemberNameOrder = 4;
+
 function splitDescription(descriptions: OrderedSet<string> | undefined): string[] | undefined {
     if (descriptions === undefined) return undefined;
     const description = descriptions.join("\n\n").trim();
     if (description === "") return undefined;
-    return wordWrap(description).split("\n").map(l => l.trim());
+    return wordWrap(description)
+        .split("\n")
+        .map(l => l.trim());
 }
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
 
 const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName", undefined, undefined, undefined);
-const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedPropertyNames", undefined, undefined, undefined);
-const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>("assignedMemberNames", undefined, undefined, undefined);
-const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedCaseNames", undefined, undefined, undefined);
+const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
+    "assignedPropertyNames",
+    undefined,
+    undefined,
+    undefined
+);
+const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>(
+    "assignedMemberNames",
+    undefined,
+    undefined,
+    undefined
+);
+const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
+    "assignedCaseNames",
+    undefined,
+    undefined,
+    undefined
+);
 
 export abstract class ConvenienceRenderer extends Renderer {
     private _globalForbiddenNamespace: Namespace | undefined;
@@ -234,7 +257,9 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected makeNameForNamedType(t: Type): Name {
-        return new SimpleName(t.getProposedNames(), defined(this._namedTypeNamer));
+        const names = t.getNames();
+        const order = names.areInferred ? inferredNameOrder : givenNameOrder;
+        return new SimpleName(names.proposedNames, defined(this._namedTypeNamer), order);
     }
 
     private addNameForNamedType = (type: Type): Name => {
@@ -296,7 +321,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         const alternative = `${c.getCombinedName()}_${jsonName}`;
         const namer = this.namerForClassProperty(c, p);
         if (namer === null) return undefined;
-        return new SimpleName(OrderedSet([jsonName, alternative]), namer);
+        return new SimpleName(OrderedSet([jsonName, alternative]), namer, classPropertyNameOrder);
     }
 
     protected makePropertyDependencyNames(
@@ -335,7 +360,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected makeNameForUnionMember(u: UnionType, unionName: Name, t: Type): Name {
-        return new DependencyName(nonNull(this._unionMemberNamer), lookup =>
+        return new DependencyName(nonNull(this._unionMemberNamer), unionMemberNameOrder, lookup =>
             this.proposeUnionMemberName(u, unionName, t, lookup)
         );
     }
@@ -367,7 +392,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         // FIXME: See the FIXME in `makeNameForProperty`.  We do have global
         // enum cases, though (in Go), so this is actually useful already.
         const alternative = `${e.getCombinedName()}_${caseName}`;
-        return new SimpleName(OrderedSet([caseName, alternative]), nonNull(this._enumCaseNamer));
+        return new SimpleName(OrderedSet([caseName, alternative]), nonNull(this._enumCaseNamer), enumCaseNameOrder);
     }
 
     // FIXME: this is very similar to addPropertyNameds and addUnionMemberNames

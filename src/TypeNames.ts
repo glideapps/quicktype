@@ -50,7 +50,7 @@ function combineNames(names: Collection<any, string>): string {
 
 export class TypeNames {
     constructor(
-        private readonly names: OrderedSet<string>,
+        readonly names: OrderedSet<string>,
         private readonly _alternativeNames: OrderedSet<string>,
         readonly areInferred: boolean
     ) {}

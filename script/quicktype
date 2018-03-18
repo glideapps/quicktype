@@ -10,5 +10,7 @@
 SCRIPTDIR=$(dirname "$0")
 BASEDIR="$SCRIPTDIR/.."
 
-( cd "$BASEDIR" ; npm run build &>/dev/null )
+if [ x"$SKIP_BUILD" = x ] ; then
+    ( cd "$BASEDIR" ; npm run build &>/dev/null )
+fi
 node --stack_trace_limit=100 "$BASEDIR/dist/cli.js" "$@"
