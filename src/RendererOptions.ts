@@ -1,6 +1,6 @@
 "use strict";
 
-import { panic, assert } from "./Support";
+import { panic } from "./Support";
 
 export interface OptionDefinition {
     name: string;
@@ -73,8 +73,6 @@ export class BooleanOption extends Option<boolean> {
         if (negated === undefined) {
             negated = !this.definition.defaultValue;
         }
-
-        assert(value !== negated, `${this.definition.name} and no-${this.definition.name} cannot have the same value`);
 
         if (this.definition.defaultValue) {
             return value && !negated;
