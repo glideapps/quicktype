@@ -22,7 +22,7 @@ import { BooleanOption, Option } from "../RendererOptions";
 const unicode = require("unicode-properties");
 
 export class JavaScriptTargetLanguage extends TargetLanguage {
-    protected readonly runtimeTypecheck = new BooleanOption(
+    protected readonly _runtimeTypecheck = new BooleanOption(
         "runtime-typecheck",
         "Verify JSON.parse results at runtime",
         true
@@ -37,7 +37,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [this.runtimeTypecheck];
+        return [this._runtimeTypecheck];
     }
 
     get supportsOptionalClassProperties(): boolean {
