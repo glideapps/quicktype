@@ -16,7 +16,7 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
     private readonly _declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
 
     protected getOptions(): Option<any>[] {
-        return [this._justTypes, this._declareUnions, this.omitRuntimeTypecheck];
+        return [this._justTypes, this._declareUnions, this.runtimeTypecheck];
     }
 
     protected abstract get rendererClass(): new (
@@ -48,9 +48,9 @@ abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
         declareUnions: boolean,
-        omitRuntimeTypecheck: boolean
+        runtimeTypecheck: boolean
     ) {
-        super(graph, leadingComments, omitRuntimeTypecheck);
+        super(graph, leadingComments, runtimeTypecheck);
         this._inlineUnions = !declareUnions;
     }
 

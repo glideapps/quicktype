@@ -1,6 +1,6 @@
 "use strict";
 
-import { panic, assert } from "./Support";
+import { panic } from "./Support";
 
 export interface OptionDefinition {
     name: string;
@@ -23,8 +23,8 @@ export abstract class UntypedOption {
         this.definition = definition;
     }
 
-    get cliDefinition(): OptionDefinition {
-        return this.definition;
+    get cliDefinitions(): { display: OptionDefinition[]; actual: OptionDefinition[] } {
+        return { actual: [this.definition], display: [this.definition] };
     }
 }
 
@@ -39,40 +39,46 @@ export abstract class Option<T> extends UntypedOption {
 }
 
 export class BooleanOption extends Option<boolean> {
-    constructor(name: string, description: string, defaultValue: boolean, private readonly _cliDescription?: string) {
+    constructor(name: string, description: string, defaultValue: boolean) {
         super({
             name,
             type: Boolean,
             description,
             defaultValue
         });
-        if (defaultValue === true) {
-            assert(_cliDescription !== undefined, "We need a CLI description for boolean options that are true by default");
-        }
     }
 
-    get cliDefinition(): OptionDefinition {
-        const definition = Object.assign({}, this.definition);
-        if (this._cliDescription !== undefined) {
-            definition.description = this._cliDescription;
-        }
-        if (this.definition.defaultValue === true) {
-            definition.name = `no-${definition.name}`;
-        }
-        definition.defaultValue = false;
-        return definition;
+    get cliDefinitions(): { display: OptionDefinition[]; actual: OptionDefinition[] } {
+        const negated = Object.assign({}, this.definition, {
+            name: `no-${this.definition.name}`,
+            defaultValue: !this.definition.defaultValue
+        });
+        const display = Object.assign({}, this.definition, {
+            name: `[no-]${this.definition.name}`,
+            description: `${this.definition.description} (${this.definition.defaultValue ? "on" : "off"} by default)`
+        });
+        return {
+            display: [display],
+            actual: [this.definition, negated]
+        };
     }
 
     getValue(values: { [name: string]: any }): boolean {
-        const definition = this.cliDefinition;
-        const value = values[definition.name];
+        let value = values[this.definition.name];
         if (value === undefined) {
-            return this.definition.defaultValue;
+            value = this.definition.defaultValue;
         }
-        if (this.definition.defaultValue === true) {
-            return !value;
+
+        let negated = values[`no-${this.definition.name}`];
+        if (negated === undefined) {
+            negated = !this.definition.defaultValue;
         }
-        return value;
+
+        if (this.definition.defaultValue) {
+            return value && !negated;
+        } else {
+            return value || !negated;
+        }
     }
 }
 

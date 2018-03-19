@@ -45,14 +45,7 @@ type Version = 4 | 4.1;
 
 export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-
-    private readonly _convenienceInitializers = new BooleanOption(
-        "initializers",
-        "Convenience initializers",
-        true,
-        "No convenience initializers"
-    );
-
+    private readonly _convenienceInitializers = new BooleanOption("initializers", "Convenience initializers", true);
     private readonly _alamofireHandlers = new BooleanOption("alamofire", "Alamofire extensions", false);
 
     private readonly _classOption = new EnumOption("struct-or-class", "Structs or classes", [
