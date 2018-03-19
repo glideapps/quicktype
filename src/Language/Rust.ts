@@ -47,7 +47,11 @@ export default class RustTargetLanguage extends TargetLanguage {
 
     private readonly _deriveDebugOption = new BooleanOption("derive-debug", "Derive Debug impl", false);
 
-    protected get rendererClass(): new (graph: TypeGraph, ...optionValues: any[]) => ConvenienceRenderer {
+    protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
+        graph: TypeGraph,
+        ...optionValues: any[]
+    ) => ConvenienceRenderer {
         return RustRenderer;
     }
 
@@ -182,13 +186,14 @@ const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, st
 
 export class RustRenderer extends ConvenienceRenderer {
     constructor(
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _density: Density,
         private readonly _visibility: Visibility,
         private readonly _deriveDebug: boolean
     ) {
-        super(graph, leadingComments);
+        super(targetLanguage, graph, leadingComments);
     }
 
     protected makeNamedTypeNamer(): Namer {

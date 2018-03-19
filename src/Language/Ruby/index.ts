@@ -75,6 +75,7 @@ export default class RubyTargetLanguage extends TargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -124,12 +125,13 @@ function memberNameStyle(original: string): string {
 
 export class RubyRenderer extends ConvenienceRenderer {
     constructor(
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
         private readonly _strictness: Strictness
     ) {
-        super(graph, leadingComments);
+        super(targetLanguage, graph, leadingComments);
     }
 
     protected get commentLineStart(): string {

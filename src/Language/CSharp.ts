@@ -75,6 +75,7 @@ export default class CSharpTargetLanguage extends TargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -128,6 +129,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     protected readonly needAttributes: boolean;
 
     constructor(
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         protected readonly namespaceName: string,
@@ -136,7 +138,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         private readonly _useList: boolean,
         outputFeatures: OutputFeatures
     ) {
-        super(graph, leadingComments);
+        super(targetLanguage, graph, leadingComments);
         this.needHelpers = outputFeatures.helpers;
         this.needAttributes = outputFeatures.attributes;
     }

@@ -78,6 +78,7 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -254,6 +255,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     private readonly _caseNamingFunction: Namer;
 
     constructor(
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
@@ -262,7 +264,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         _memberNamingStyle: NamingStyle,
         _enumeratorNamingStyle: NamingStyle
     ) {
-        super(graph, leadingComments);
+        super(targetLanguage, graph, leadingComments);
 
         this._namespaceNames = List(namespaceName.split("::"));
 

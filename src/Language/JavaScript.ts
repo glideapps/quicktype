@@ -1,6 +1,6 @@
 "use strict";
 
-import { Type, matchType, directlyReachableSingleNamedType, ClassProperty } from "../Type";
+import { Type, matchType, directlyReachableSingleNamedType, ClassProperty, ClassType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import {
     utf16LegalizeCharacters,
@@ -45,6 +45,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -96,8 +97,13 @@ function propertyNameStyle(original: string): string {
 }
 
 export class JavaScriptRenderer extends ConvenienceRenderer {
-    constructor(graph: TypeGraph, leadingComments: string[] | undefined, private readonly _runtimeTypecheck: boolean) {
-        super(graph, leadingComments);
+    constructor(
+        targetLanguage: TargetLanguage,
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        private readonly _runtimeTypecheck: boolean
+    ) {
+        super(targetLanguage, graph, leadingComments);
     }
 
     protected topLevelNameStyle(rawName: string): string {
@@ -122,6 +128,17 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
         return directlyReachableSingleNamedType(type);
+    }
+
+    protected makeNameForProperty(
+        c: ClassType,
+        className: Name,
+        p: ClassProperty,
+        jsonName: string,
+        _assignedName: string | undefined
+    ): Name | undefined {
+        // Ignore the assigned name
+        return super.makeNameForProperty(c, className, p, jsonName, undefined);
     }
 
     protected emitDescriptionBlock(lines: string[]): void {

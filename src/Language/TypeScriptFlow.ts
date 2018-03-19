@@ -10,6 +10,7 @@ import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { BooleanOption, Option } from "../RendererOptions";
 import { JavaScriptTargetLanguage, JavaScriptRenderer } from "./JavaScript";
 import { defined } from "../Support";
+import { TargetLanguage } from "../TargetLanguage";
 
 export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
     private readonly _justTypes = new BooleanOption("just-types", "Interfaces only", false);
@@ -20,6 +21,7 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
     }
 
     protected abstract get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -32,6 +34,7 @@ export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -44,13 +47,14 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     private readonly _inlineUnions: boolean;
 
     constructor(
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
         declareUnions: boolean,
         runtimeTypecheck: boolean
     ) {
-        super(graph, leadingComments, runtimeTypecheck);
+        super(targetLanguage, graph, leadingComments, runtimeTypecheck);
         this._inlineUnions = !declareUnions;
     }
 
@@ -214,6 +218,7 @@ export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]

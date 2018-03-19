@@ -8,6 +8,7 @@ import { Name, Namespace, assignNames } from "./Naming";
 import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newline } from "./Source";
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
 import { assert, panic, StringMap } from "./Support";
+import { TargetLanguage } from "./TargetLanguage";
 
 export type RenderResult = {
     sources: OrderedMap<string, Source>;
@@ -46,7 +47,7 @@ export abstract class Renderer {
     // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _preventBlankLine: boolean;
 
-    constructor(protected readonly typeGraph: TypeGraph, protected readonly leadingComments: string[] | undefined) {
+    constructor(protected readonly targetLanguage: TargetLanguage, protected readonly typeGraph: TypeGraph, protected readonly leadingComments: string[] | undefined) {
         this._finishedFiles = Map();
         this.startEmit();
     }

@@ -49,6 +49,7 @@ export default class GoTargetLanguage extends TargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -96,12 +97,13 @@ export class GoRenderer extends ConvenienceRenderer {
     private _topLevelUnmarshalNames = Map<Name, Name>();
 
     constructor(
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
         private readonly _packageName: string
     ) {
-        super(graph, leadingComments);
+        super(targetLanguage, graph, leadingComments);
     }
 
     protected topLevelNameStyle(rawName: string): string {

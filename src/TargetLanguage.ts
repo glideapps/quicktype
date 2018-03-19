@@ -29,7 +29,12 @@ export abstract class TargetLanguage {
         return { actual, display };
     }
 
+    get name(): string {
+        return defined(this.names[0]);
+    }
+
     protected abstract get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -41,6 +46,7 @@ export abstract class TargetLanguage {
         rendererOptions: { [name: string]: any }
     ): Renderer {
         return new this.rendererClass(
+            this,
             graph,
             leadingComments,
             ...this.getOptions().map(o => o.getValue(rendererOptions))

@@ -58,6 +58,7 @@ export class JavaTargetLanguage extends TargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -183,12 +184,13 @@ export class JavaRenderer extends ConvenienceRenderer {
     private _gettersAndSettersForPropertyName: Map<Name, [Name, Name]>;
 
     constructor(
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _packageName: string,
         private readonly _justTypes: boolean
     ) {
-        super(graph, leadingComments);
+        super(targetLanguage, graph, leadingComments);
         this._gettersAndSettersForPropertyName = Map();
     }
 

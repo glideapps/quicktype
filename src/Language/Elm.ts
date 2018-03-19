@@ -51,6 +51,7 @@ export default class ElmTargetLanguage extends TargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -153,13 +154,14 @@ export class ElmRenderer extends ConvenienceRenderer {
     private _namedTypeDependents: Map<Name, NamedTypeDependent> = Map();
 
     constructor(
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
         private readonly _moduleName: string,
         private readonly _useList: boolean
     ) {
-        super(graph, leadingComments);
+        super(targetLanguage, graph, leadingComments);
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
