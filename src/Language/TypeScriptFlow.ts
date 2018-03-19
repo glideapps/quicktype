@@ -16,7 +16,7 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
     private readonly _declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
 
     protected getOptions(): Option<any>[] {
-        return [this._justTypes, this._declareUnions, this._runtimeTypecheck];
+        return [this._justTypes, this._declareUnions, this.runtimeTypecheck];
     }
 
     protected abstract get rendererClass(): new (
