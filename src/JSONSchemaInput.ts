@@ -610,7 +610,7 @@ export async function addTypesInSchema(
                         predicate = (x: any) => x === null;
                         break;
                     case "integer":
-                        predicate = (x: any) => typeof x === "number" && x === Math.floor(x)
+                        predicate = (x: any) => typeof x === "number" && x === Math.floor(x);
                         break;
                     default:
                         predicate = (x: any) => typeof x === name;
@@ -652,7 +652,7 @@ export async function addTypesInSchema(
                 unionTypes.push(await makeArrayType());
             }
             if (includeObject) {
-                unionTypes.push(...await makeObjectTypes())
+                unionTypes.push(...(await makeObjectTypes()));
             }
 
             types.push(typeBuilder.getUniqueUnionType(inferredAttributes, OrderedSet(unionTypes)));
