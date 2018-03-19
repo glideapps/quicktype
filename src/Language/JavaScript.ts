@@ -22,7 +22,7 @@ import { BooleanOption, Option } from "../RendererOptions";
 const unicode = require("unicode-properties");
 
 export class JavaScriptTargetLanguage extends TargetLanguage {
-    protected readonly omitRuntimeTypecheck = new BooleanOption(
+    protected readonly runtimeTypecheck = new BooleanOption(
         "runtime-typecheck",
         "Verify JSON.parse results at runtime",
         true
@@ -37,7 +37,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [this.omitRuntimeTypecheck];
+        return [this.runtimeTypecheck];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -96,11 +96,7 @@ function propertyNameStyle(original: string): string {
 }
 
 export class JavaScriptRenderer extends ConvenienceRenderer {
-    constructor(
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _omitRuntimeTypecheck: boolean
-    ) {
+    constructor(graph: TypeGraph, leadingComments: string[] | undefined, private readonly _runtimeTypecheck: boolean) {
         super(graph, leadingComments);
     }
 
@@ -220,7 +216,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     private emitConvertModuleBody(): void {
         this.forEachTopLevel("interposing", (t, name) => {
             this.emitBlock(this.deserializerFunctionLine(t, name), "", () => {
-                if (this._omitRuntimeTypecheck) {
+                if (!this._runtimeTypecheck) {
                     this.emitLine("return JSON.parse(json);");
                 } else {
                     this.emitLine("return cast(JSON.parse(json), ", this.typeMapTypeFor(t), ");");
@@ -232,7 +228,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 this.emitLine("return JSON.stringify(value, null, 2);");
             });
         });
-        if (!this._omitRuntimeTypecheck) {
+        if (this._runtimeTypecheck) {
             const {
                 any: anyAnnotation,
                 anyArray: anyArrayAnnotation,
@@ -324,7 +320,7 @@ function o(className${stringAnnotation}) {
     protected emitConvertModule(): void {
         this.ensureBlankLine();
         this.emitMultiline(`// Converts JSON strings to/from your types`);
-        if (!this._omitRuntimeTypecheck) {
+        if (this._runtimeTypecheck) {
             this.emitMultiline(`// and asserts the results of JSON.parse at runtime`);
         }
         const moduleLine = this.moduleLine;
@@ -353,7 +349,7 @@ function o(className${stringAnnotation}) {
             const camelCaseName = modifySource(camelCase, name);
             this.emitLine("//   const ", camelCaseName, " = Convert.to", name, "(json);");
         });
-        if (!this._omitRuntimeTypecheck) {
+        if (this._runtimeTypecheck) {
             this.emitLine("//");
             this.emitLine("// These functions will throw an error if the JSON doesn't");
             this.emitLine("// match the expected interface, even if the JSON is valid.");
