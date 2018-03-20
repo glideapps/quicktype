@@ -484,7 +484,9 @@ class SwiftRenderer extends ConvenienceRenderer {
                 });
                 emitLastProperty();
             } else {
-                this.forEachClassProperty(c, "none", (name, _, p) => {
+                this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+                    const description = this.descriptionForClassProperty(c, jsonName);
+                    this.emitDescription(description);
                     this.emitLine("let ", name, ": ", swiftType(p));
                 });
             }
