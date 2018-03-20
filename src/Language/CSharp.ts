@@ -34,10 +34,10 @@ import { StringTypeMapping } from "../TypeBuilder";
 
 const unicode = require("unicode-properties");
 
-type Version = 5 | 6;
-type OutputFeatures = { helpers: boolean; attributes: boolean };
+export type Version = 5 | 6;
+export type OutputFeatures = { helpers: boolean; attributes: boolean };
 
-enum AccessModifier {
+export enum AccessModifier {
     None,
     Public,
     Internal
@@ -123,7 +123,7 @@ function isValueType(t: Type): boolean {
     return ["integer", "double", "bool", "enum", "date-time"].indexOf(t.kind) >= 0;
 }
 
-class CSharpRenderer extends ConvenienceRenderer {
+export class CSharpRenderer extends ConvenienceRenderer {
     protected readonly needHelpers: boolean;
     protected readonly needAttributes: boolean;
 
@@ -196,13 +196,13 @@ class CSharpRenderer extends ConvenienceRenderer {
         return directlyReachableSingleNamedType(type);
     }
 
-    emitBlock = (f: () => void, semicolon: boolean = false): void => {
+    protected emitBlock(f: () => void, semicolon: boolean = false): void {
         this.emitLine("{");
         this.indent(f);
         this.emitLine("}", semicolon ? ";" : "");
-    };
+    }
 
-    csType = (t: Type, withIssues: boolean = false): Sourcelike => {
+    protected csType(t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "object"),
@@ -231,24 +231,24 @@ class CSharpRenderer extends ConvenienceRenderer {
                 dateTimeType: _ => "System.DateTimeOffset"
             }
         );
-    };
+    }
 
-    nullableCSType = (t: Type): Sourcelike => {
+    protected nullableCSType(t: Type): Sourcelike {
         const csType = this.csType(t);
         if (isValueType(t)) {
             return [csType, "?"];
         } else {
             return csType;
         }
-    };
+    }
 
-    emitType = (
+    protected emitType(
         description: string[] | undefined,
         accessModifier: AccessModifier,
         declaration: Sourcelike,
         name: Sourcelike,
         emitter: () => void
-    ): void => {
+    ): void {
         switch (accessModifier) {
             case AccessModifier.Public:
                 declaration = ["public ", declaration];
@@ -262,7 +262,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         this.emitDescription(description);
         this.emitLine(declaration, " ", name);
         this.emitBlock(emitter);
-    };
+    }
 
     protected attributeForProperty(_jsonName: string): Sourcelike | undefined {
         return undefined;
@@ -277,7 +277,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         }
     }
 
-    emitClassDefinition = (c: ClassType, className: Name): void => {
+    private emitClassDefinition(c: ClassType, className: Name): void {
         this.emitType(this.descriptionForType(c), AccessModifier.Public, "partial class", className, () => {
             if (c.properties.isEmpty()) return;
             const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
@@ -318,9 +318,9 @@ class CSharpRenderer extends ConvenienceRenderer {
                 this.emitTable(columns);
             }
         });
-    };
+    }
 
-    emitUnionDefinition = (u: UnionType, unionName: Name): void => {
+    private emitUnionDefinition(u: UnionType, unionName: Name): void {
         const nonNulls = removeNullFromUnion(u)[1];
         this.emitType(this.descriptionForType(u), AccessModifier.Public, "partial struct", unionName, () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
@@ -328,9 +328,9 @@ class CSharpRenderer extends ConvenienceRenderer {
                 this.emitLine("public ", csType, " ", fieldName, ";");
             });
         });
-    };
+    }
 
-    emitEnumDefinition = (e: EnumType, enumName: Name): void => {
+    private emitEnumDefinition(e: EnumType, enumName: Name): void {
         const caseNames: Sourcelike[] = [];
         this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
@@ -338,9 +338,9 @@ class CSharpRenderer extends ConvenienceRenderer {
         });
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("public enum ", enumName, " { ", caseNames, " };");
-    };
+    }
 
-    emitExpressionMember(declare: Sourcelike, define: Sourcelike): void {
+    protected emitExpressionMember(declare: Sourcelike, define: Sourcelike): void {
         if (this._version === 5) {
             this.emitLine(declare);
             this.emitBlock(() => {
@@ -351,7 +351,7 @@ class CSharpRenderer extends ConvenienceRenderer {
         }
     }
 
-    emitTypeSwitch<T extends Sourcelike>(
+    protected emitTypeSwitch<T extends Sourcelike>(
         types: OrderedSet<T>,
         condition: (t: T) => Sourcelike,
         withBlock: boolean,
@@ -392,9 +392,9 @@ class CSharpRenderer extends ConvenienceRenderer {
         if (this.needAttributes || this.needHelpers) {
             this.emitUsings();
         }
-        this.forEachClass("leading-and-interposing", this.emitClassDefinition);
-        this.forEachEnum("leading-and-interposing", this.emitEnumDefinition);
-        this.forEachUnion("leading-and-interposing", this.emitUnionDefinition);
+        this.forEachClass("leading-and-interposing", (c, name) => this.emitClassDefinition(c, name));
+        this.forEachEnum("leading-and-interposing", (e, name) => this.emitEnumDefinition(e, name));
+        this.forEachUnion("leading-and-interposing", (u, name) => this.emitUnionDefinition(u, name));
         this.emitRequiredHelpers();
     };
 
@@ -436,7 +436,7 @@ class CSharpRenderer extends ConvenienceRenderer {
     }
 }
 
-class NewtonsoftCSharpRenderer extends CSharpRenderer {
+export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private _enumExtensionsNames = Map<Name, Name>();
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
