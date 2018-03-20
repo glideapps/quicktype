@@ -13,7 +13,7 @@
       "args": [
         "--project",
         "src/tsconfig.json",
-        "src/cli.ts",
+        "src/cli/index.ts",
         "--lang",
         "ts",
         "--src-lang",

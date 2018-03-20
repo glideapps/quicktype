@@ -18,18 +18,19 @@ import {
     quicktypeMultiFile,
     SerializedRenderResult,
     TargetLanguage
-} from ".";
-import { OptionDefinition } from "./RendererOptions";
-import * as defaultTargetLanguages from "./Language/All";
-import { urlsFromURLGrammar } from "./URLGrammar";
-import { Annotation } from "./Source";
-import { IssueAnnotationData } from "./Annotation";
+} from "..";
+
+import { OptionDefinition } from "../RendererOptions";
+import * as defaultTargetLanguages from "../Language/All";
+import { urlsFromURLGrammar } from "../URLGrammar";
+import { Annotation } from "../Source";
+import { IssueAnnotationData } from "../Annotation";
 import { Readable } from "stream";
-import { panic, assert, defined, withDefault } from "./Support";
-import { introspectServer } from "./GraphQLIntrospection";
-import { getStream } from "./get-stream/index";
-import { train } from "./MarkovChain";
-import { sourcesFromPostmanCollection } from "./PostmanCollection";
+import { panic, assert, defined, withDefault } from "../Support";
+import { introspectServer } from "../GraphQLIntrospection";
+import { getStream } from "../get-stream/index";
+import { train } from "../MarkovChain";
+import { sourcesFromPostmanCollection } from "../PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 
 const commandLineArgs = require("command-line-args");
@@ -568,7 +569,7 @@ async function typeSourceForURIs(name: string, uris: string[], options: CLIOptio
             return await sourceFromFileOrUrlArray(name, uris);
         case "schema":
             assert(uris.length === 1, `Must have exactly one schema for ${name}`);
-            return {name, uri: uris[0], topLevelRefs: topLevelRefsForOptions(options) };
+            return { name, uri: uris[0], topLevelRefs: topLevelRefsForOptions(options) };
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);
     }
