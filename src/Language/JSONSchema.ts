@@ -59,7 +59,7 @@ function jsonNameStyle(original: string): string {
 
 type Schema = { [name: string]: any };
 
-class JSONSchemaRenderer extends ConvenienceRenderer {
+export class JSONSchemaRenderer extends ConvenienceRenderer {
     protected topLevelNameStyle(rawName: string): string {
         return jsonNameStyle(rawName);
     }

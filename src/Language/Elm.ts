@@ -148,7 +148,7 @@ type NamedTypeDependent = {
     decoder: Name;
 };
 
-class ElmRenderer extends ConvenienceRenderer {
+export class ElmRenderer extends ConvenienceRenderer {
     private _topLevelDependents: Map<Name, TopLevelDependent> = Map();
     private _namedTypeDependents: Map<Name, NamedTypeDependent> = Map();
 

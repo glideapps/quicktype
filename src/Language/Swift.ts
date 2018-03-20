@@ -41,7 +41,7 @@ import { List } from "immutable";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
-type Version = 4 | 4.1;
+export type Version = 4 | 4.1;
 
 export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
@@ -224,7 +224,7 @@ const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicod
 const upperNamingFunction = funPrefixNamer("upper", s => swiftNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer("lower", s => swiftNameStyle(false, s));
 
-class SwiftRenderer extends ConvenienceRenderer {
+export class SwiftRenderer extends ConvenienceRenderer {
     private _needAny: boolean = false;
     private _needNull: boolean = false;
 
@@ -300,7 +300,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         else return notJustTypes;
     };
 
-    private swiftType = (t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike => {
+    protected swiftType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
@@ -334,7 +334,7 @@ class SwiftRenderer extends ConvenienceRenderer {
                 return this.nameForNamedType(unionType);
             }
         );
-    };
+    }
 
     protected proposedUnionMemberNameForTypeKind = (kind: TypeKind): string | null => {
         if (kind === "enum") {
@@ -402,7 +402,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
     };
 
-    getEnumPropertyGroups = (c: ClassType) => {
+    private getEnumPropertyGroups(c: ClassType) {
         type PropertyGroup = { name: Name; label?: string }[];
 
         let groups: PropertyGroup[] = [];
@@ -428,7 +428,7 @@ class SwiftRenderer extends ConvenienceRenderer {
         }
 
         return groups;
-    };
+    }
 
     private renderClassDefinition = (c: ClassType, className: Name): void => {
         const swiftType = (p: ClassProperty) => {
@@ -948,9 +948,9 @@ class JSONAny: Codable {
         }
     };
 
-    emitMark = (line: Sourcelike, horizontalLine: boolean = false) => {
+    protected emitMark(line: Sourcelike, horizontalLine: boolean = false) {
         this.emitLine("// MARK:", horizontalLine ? " - " : " ", line);
-    };
+    }
 
     protected emitSourceStructure(): void {
         this.renderHeader();
@@ -997,7 +997,7 @@ class JSONAny: Codable {
         }
     }
 
-    emitAlamofireExtension() {
+    private emitAlamofireExtension() {
         this.ensureBlankLine();
         this.emitBlock("extension DataRequest", () => {
             this

@@ -44,7 +44,7 @@ function unicodeEscape(codePoint: number): string {
 
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
-enum Strictness {
+export enum Strictness {
     Strict = "Strict::",
     Coercible = "Coercible::",
     None = "Types::"
@@ -122,7 +122,7 @@ function memberNameStyle(original: string): string {
     );
 }
 
-class RubyRenderer extends ConvenienceRenderer {
+export class RubyRenderer extends ConvenienceRenderer {
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
@@ -217,8 +217,8 @@ class RubyRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(classType, "none", (name, _json, prop) => {
                     if (includes(["class", "map", "array"], prop.type.kind)) {
                         info = { name, prop };
-                    } else {
-                        info = info || { name, prop };
+                    } else if (info === undefined) {
+                        info = { name, prop };
                     }
                 });
                 if (info !== undefined) {
@@ -229,8 +229,11 @@ class RubyRenderer extends ConvenienceRenderer {
             mapType => this.exampleUse(mapType.values, [exp, safeNav, `["…"]`], depth),
             enumType => {
                 let name: Name | undefined;
+                // FIXME: This is a terrible way to get the first enum case name.
                 this.forEachEnumCase(enumType, "none", theName => {
-                    name = name || theName;
+                    if (name === undefined) {
+                        name = theName;
+                    }
                 });
                 if (name !== undefined) {
                     return [exp, " == ", this.nameForNamedType(enumType), "::", name];

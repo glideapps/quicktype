@@ -188,7 +188,7 @@ export class Run {
         );
 
         // JSON Schema
-        let schemaInputs = Map(this._allInputs.schemas).map(({ref}) => ref);
+        let schemaInputs = Map(this._allInputs.schemas).map(({ ref }) => ref);
         if (this._options.findSimilarClassesSchemaURI !== undefined) {
             schemaInputs = schemaInputs.set("ComparisonBaseRoot", Ref.parse(this._options.findSimilarClassesSchemaURI));
         }
@@ -227,7 +227,7 @@ export class Run {
         }
 
         let graph = typeBuilder.finish();
-        if (this._options.debugPrintGraph) {
+        if (this._options.debugPrintGraph === true) {
             graph.setPrintOnRewrite();
             graph.printGraph();
         }
@@ -278,7 +278,7 @@ export class Run {
         graph = graph.garbageCollect(this._options.alphabetizeProperties);
 
         gatherNames(graph);
-        if (this._options.debugPrintGraph) {
+        if (this._options.debugPrintGraph === true) {
             console.log("\n# gather names");
             graph.printGraph();
         }
@@ -318,9 +318,15 @@ export class Run {
             }
 
             if (schema === undefined) {
-                assert(uri !== undefined, "URI must be given if schema source is not specified");                
+                assert(uri !== undefined, "URI must be given if schema source is not specified");
             } else {
-                schemaInputs = schemaInputs.set(normalizedURI.clone().hash("").toString(), schema);
+                schemaInputs = schemaInputs.set(
+                    normalizedURI
+                        .clone()
+                        .hash("")
+                        .toString(),
+                    schema
+                );
             }
 
             schemaSources = schemaSources.push([normalizedURI, source]);
@@ -341,12 +347,15 @@ export class Run {
 
                 if (topLevelRefs !== undefined) {
                     assert(
-                            topLevelRefs.length === 1 && topLevelRefs[0] === "/definitions/",
-                            "Schema top level refs must be `/definitions/`"
-                        );
-                    const definitionRefs = await definitionRefsInSchema(this.getSchemaStore(), normalizedURI.toString());
-                    definitionRefs.forEach((ref, name) => {
-                        this.addSchemaInput(name, ref);
+                        topLevelRefs.length === 1 && topLevelRefs[0] === "/definitions/",
+                        "Schema top level refs must be `/definitions/`"
+                    );
+                    const definitionRefs = await definitionRefsInSchema(
+                        this.getSchemaStore(),
+                        normalizedURI.toString()
+                    );
+                    definitionRefs.forEach((ref, refName) => {
+                        this.addSchemaInput(refName, ref);
                     });
                 } else {
                     this.addSchemaInput(name, Ref.parse(normalizedURI.toString()));

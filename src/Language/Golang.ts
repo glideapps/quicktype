@@ -92,7 +92,7 @@ function singleDescriptionComment(description: string[] | undefined): string {
     return "// " + description.join("; ");
 }
 
-class GoRenderer extends ConvenienceRenderer {
+export class GoRenderer extends ConvenienceRenderer {
     private _topLevelUnmarshalNames = Map<Name, Name>();
 
     constructor(

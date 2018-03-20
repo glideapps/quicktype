@@ -27,7 +27,7 @@ import { StringOption, EnumOption, BooleanOption, Option } from "../RendererOpti
 import { assert } from "../Support";
 import { Declaration } from "../DeclarationIR";
 
-type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
+export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
@@ -245,7 +245,7 @@ type TypeContext = {
     inJsonNamespace: boolean;
 };
 
-class CPlusPlusRenderer extends ConvenienceRenderer {
+export class CPlusPlusRenderer extends ConvenienceRenderer {
     private readonly _namespaceNames: List<string>;
 
     private readonly _typeNameStyle: (rawName: string) => string;

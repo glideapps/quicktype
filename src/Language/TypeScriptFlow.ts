@@ -40,7 +40,7 @@ export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
     }
 }
 
-abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
+export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     private readonly _inlineUnions: boolean;
 
     constructor(
@@ -163,7 +163,7 @@ abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 }
 
-class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
+export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
         return ["export ", super.deserializerFunctionLine(t, name)];
     }
@@ -222,7 +222,7 @@ export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
     }
 }
 
-class FlowRenderer extends TypeScriptFlowBaseRenderer {
+export class FlowRenderer extends TypeScriptFlowBaseRenderer {
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return ["Class", "Object", "String", "Array", "JSON"];
     }
