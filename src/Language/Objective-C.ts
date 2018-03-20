@@ -36,7 +36,7 @@ import { assert, defined } from "../Support";
 const unicode = require("unicode-properties");
 
 type MemoryAttribute = "assign" | "strong" | "copy";
-type OutputFeatures = { interface: boolean; implementation: boolean };
+export type OutputFeatures = { interface: boolean; implementation: boolean };
 
 const DEBUG = false;
 const DEFAULT_CLASS_PREFIX = "QT";
@@ -232,7 +232,14 @@ function isAnyOrNull(t: Type): boolean {
 const staticEnumValuesIdentifier = "values";
 const forbiddenForEnumCases = ["new", staticEnumValuesIdentifier];
 
-class ObjectiveCRenderer extends ConvenienceRenderer {
+function splitExtension(filename: string): [string, string] {
+    const i = filename.lastIndexOf(".");
+    const extension = i !== -1 ? filename.split(".").pop() : "m";
+    filename = i !== -1 ? filename.substr(0, i) : filename;
+    return [filename, extension === undefined ? "m" : extension];
+}
+
+export class ObjectiveCRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
 
     // enums contained in NSArray or NSDictionary are represented
@@ -348,13 +355,13 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         }
     };
 
-    startFile(basename: Sourcelike, extension: string): void {
+    protected startFile(basename: Sourcelike, extension: string): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         // FIXME: The filenames should actually be Sourcelikes, too
         this._currentFilename = `${this.sourcelikeToString(basename)}.${extension}`;
     }
 
-    finishFile(): void {
+    protected finishFile(): void {
         super.finishFile(defined(this._currentFilename));
         this._currentFilename = undefined;
     }
@@ -917,20 +924,13 @@ class ObjectiveCRenderer extends ConvenienceRenderer {
         this.emitLine("@end");
     }
 
-    splitExtension(filename: string): [string, string] {
-        const i = filename.lastIndexOf(".");
-        const extension = i !== -1 ? filename.split(".").pop() : "m";
-        filename = i !== -1 ? filename.substr(0, i) : filename;
-        return [filename, extension === undefined ? "m" : extension];
-    }
-
     protected emitSourceStructure(proposedFilename: string): void {
         const fileMode = proposedFilename !== "stdout";
         if (!fileMode) {
             // We don't have a filename, so we use a top-level name
             proposedFilename = this.sourcelikeToString(this.nameForNamedType(defined(this.topLevels.first()))) + ".m";
         }
-        const [filename, extension] = this.splitExtension(proposedFilename);
+        const [filename, extension] = splitExtension(proposedFilename);
 
         if (this._features.interface) {
             this.startFile(filename, "h");

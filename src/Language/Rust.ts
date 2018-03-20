@@ -22,12 +22,12 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { BooleanOption, EnumOption, Option } from "../RendererOptions";
 import { defined } from "../Support";
 
-enum Density {
+export enum Density {
     Normal,
     Dense
 }
 
-enum Visibility {
+export enum Visibility {
     Private,
     Crate,
     Public
@@ -180,7 +180,7 @@ const standardUnicodeRustEscape = (codePoint: number): string => {
 
 const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, standardUnicodeRustEscape));
 
-class RustRenderer extends ConvenienceRenderer {
+export class RustRenderer extends ConvenienceRenderer {
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
@@ -295,7 +295,7 @@ class RustRenderer extends ConvenienceRenderer {
         return "";
     }
 
-    private emitStructDefinition = (c: ClassType, className: Name): void => {
+    protected emitStructDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         this.emitLine("#[derive(", this._deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
 
@@ -308,15 +308,15 @@ class RustRenderer extends ConvenienceRenderer {
             });
 
         this.emitBlock(["pub struct ", className], structBody);
-    };
+    }
 
-    private emitBlock = (line: Sourcelike, f: () => void): void => {
+    protected emitBlock(line: Sourcelike, f: () => void): void {
         this.emitLine(line, " {");
         this.indent(f);
         this.emitLine("}");
-    };
+    }
 
-    private emitUnion = (u: UnionType, unionName: Name): void => {
+    protected emitUnion(u: UnionType, unionName: Name): void {
         const isMaybeWithSingleType = nullableFromUnion(u);
 
         if (isMaybeWithSingleType !== null) {
@@ -336,9 +336,9 @@ class RustRenderer extends ConvenienceRenderer {
                 this.emitLine([fieldName, "(", rustType, "),"]);
             })
         );
-    };
+    }
 
-    emitEnumDefinition = (e: EnumType, enumName: Name): void => {
+    protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("#[derive(", this._deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
 
@@ -349,11 +349,11 @@ class RustRenderer extends ConvenienceRenderer {
                 this.emitLine([name, ","]);
             })
         );
-    };
+    }
 
-    emitTopLevelAlias = (t: Type, name: Name): void => {
+    protected emitTopLevelAlias(t: Type, name: Name): void {
         this.emitLine("pub type ", name, " = ", this.rustType(t), ";");
-    };
+    }
 
     protected emitUsageExample(): void {
         const topLevelName = defined(this.topLevels.keySeq().first());
@@ -382,10 +382,14 @@ class RustRenderer extends ConvenienceRenderer {
             this.emitLine("use std::collections::HashMap;");
         }
 
-        this.forEachTopLevel("leading", this.emitTopLevelAlias, t => this.namedTypeToNameForTopLevel(t) === undefined);
+        this.forEachTopLevel(
+            "leading",
+            (t, name) => this.emitTopLevelAlias(t, name),
+            t => this.namedTypeToNameForTopLevel(t) === undefined
+        );
 
-        this.forEachClass("leading-and-interposing", this.emitStructDefinition);
-        this.forEachUnion("leading-and-interposing", this.emitUnion);
-        this.forEachEnum("leading-and-interposing", this.emitEnumDefinition);
+        this.forEachClass("leading-and-interposing", (c, name) => this.emitStructDefinition(c, name));
+        this.forEachUnion("leading-and-interposing", (u, name) => this.emitUnion(u, name));
+        this.forEachEnum("leading-and-interposing", (e, name) => this.emitEnumDefinition(e, name));
     }
 }

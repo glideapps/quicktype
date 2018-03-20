@@ -44,7 +44,7 @@ function unicodeEscape(codePoint: number): string {
 
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
-enum Strictness {
+export enum Strictness {
     Strict = "Strict::",
     Coercible = "Coercible::",
     None = "Types::"
@@ -122,7 +122,7 @@ function memberNameStyle(original: string): string {
     );
 }
 
-class RubyRenderer extends ConvenienceRenderer {
+export class RubyRenderer extends ConvenienceRenderer {
     constructor(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
