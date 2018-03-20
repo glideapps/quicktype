@@ -27,3 +27,4 @@ test/fixtures/objective-c/quicktype
 *.xcbkptlist
 *.xcuserstate
 /bin
+/.node-persist

@@ -17,7 +17,8 @@ import {
     isSchemaSource,
     quicktypeMultiFile,
     SerializedRenderResult,
-    TargetLanguage
+    TargetLanguage,
+    languageNamed
 } from "..";
 
 import { OptionDefinition } from "../RendererOptions";
@@ -32,13 +33,14 @@ import { getStream } from "../get-stream/index";
 import { train } from "../MarkovChain";
 import { sourcesFromPostmanCollection } from "../PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
+import * as telemetry from "./telemetry";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
 const chalk = require("chalk");
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
-const packageJSON = require("../package.json");
+const packageJSON = require("../../package.json");
 
 export interface CLIOptions {
     lang: string;
@@ -69,6 +71,7 @@ export interface CLIOptions {
     quiet: boolean;
     version: boolean;
     debug?: string;
+    telemetry?: string;
 }
 
 async function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Promise<JSONTypeSource> {
@@ -222,11 +225,17 @@ export function inferCLIOptions(opts: Partial<CLIOptions>): CLIOptions {
         srcLang = withDefault<string>(srcLang, "json");
     }
 
+    const lang = opts.lang !== undefined ? opts.lang : inferLang(opts);
+    const language = languageNamed(lang);
+    if (language === undefined) {
+        return panic(`Unsupported output language: ${lang}`);
+    }
+
     /* tslint:disable:strict-boolean-expressions */
     return {
         src: opts.src || [],
         srcLang: srcLang,
-        lang: opts.lang || inferLang(opts),
+        lang: language.displayName,
         topLevel: opts.topLevel || inferTopLevel(opts),
         noMaps: !!opts.noMaps,
         noEnums: !!opts.noEnums,
@@ -247,7 +256,8 @@ export function inferCLIOptions(opts: Partial<CLIOptions>): CLIOptions {
         graphqlServerHeader: opts.graphqlServerHeader,
         addSchemaTopLevel: opts.addSchemaTopLevel,
         template: opts.template,
-        debug: opts.debug
+        debug: opts.debug,
+        telemetry: opts.telemetry
     };
     /* tslint:enable */
 }
@@ -394,6 +404,12 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             type: String,
             typeLabel: "OPTIONS",
             description: "Comma separated debug options: print-graph"
+        },
+        {
+            name: "telemetry",
+            type: String,
+            typeLabel: "enable|disable",
+            description: "Enable anonymous telemetry to help improve quicktype"
         },
         {
             name: "help",
@@ -688,6 +704,11 @@ export async function makeQuicktypeOptions(options: CLIOptions, targetLanguages?
         debugPrintGraph = true;
     }
 
+    if (telemetry.state() === "none") {
+        leadingComments = leadingComments !== undefined ? leadingComments : [];
+        leadingComments = telemetry.TELEMETRY_HEADER.split("\n").concat(leadingComments);
+    }
+
     return {
         lang: options.lang,
         sources,
@@ -739,6 +760,9 @@ export function writeOutput(cliOptions: CLIOptions, resultsByFilename: Map<strin
 }
 
 export async function main(args: string[] | Partial<CLIOptions>) {
+    await telemetry.init();
+    telemetry.pageview("/");
+
     let cliOptions: CLIOptions;
     if (Array.isArray(args)) {
         cliOptions = parseCLIOptions(args);
@@ -746,10 +770,17 @@ export async function main(args: string[] | Partial<CLIOptions>) {
         cliOptions = inferCLIOptions(args);
     }
 
+    if (cliOptions.telemetry === "enable") {
+        telemetry.enable();
+    } else if (cliOptions.telemetry === "disable") {
+        telemetry.disable();
+    }
+
     const quicktypeOptions = await makeQuicktypeOptions(cliOptions);
     if (quicktypeOptions === undefined) return;
 
-    const resultsByFilename = await quicktypeMultiFile(quicktypeOptions);
+    telemetry.event("default", "quicktype", cliOptions.lang);
+    const resultsByFilename = await telemetry.timeAsync("run", () => quicktypeMultiFile(quicktypeOptions));
 
     writeOutput(cliOptions, resultsByFilename);
 }
