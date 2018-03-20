@@ -64,7 +64,10 @@ function canResolve(t: IntersectionType): boolean {
 }
 
 function attributesForTypes<T extends TypeKind>(types: OrderedSet<Type>): TypeAttributeMap<T> {
-    return types.toMap().map(t => t.getAttributes()).mapKeys(t => t.kind) as Map<T, TypeAttributes>;
+    return types
+        .toMap()
+        .map(t => t.getAttributes())
+        .mapKeys(t => t.kind) as Map<T, TypeAttributes>;
 }
 
 class IntersectionAccumulator
@@ -157,9 +160,7 @@ class IntersectionAccumulator
         if (members.find(t => t instanceof StringType) !== undefined) {
             return;
         }
-        const newCases = OrderedSet<string>().union(
-            ...enums.map(t => t.cases).toArray()
-        );
+        const newCases = OrderedSet<string>().union(...enums.map(t => t.cases).toArray());
         if (this._enumCases === undefined) {
             this._enumCases = newCases;
         } else {
@@ -267,7 +268,7 @@ class IntersectionAccumulator
                 return panic("There shouldn't be a none type");
             },
             _anyType => {
-                return panic("The any type should have been filtered out in intersectionMembersRecursively")
+                return panic("The any type should have been filtered out in intersectionMembersRecursively");
             },
             nullType => this.addUnionSet(OrderedSet([nullType])),
             boolType => this.addUnionSet(OrderedSet([boolType])),
@@ -279,7 +280,9 @@ class IntersectionAccumulator
             mapType => this.addUnionSet(OrderedSet([mapType])),
             enumType => this.addUnionSet(OrderedSet([enumType])),
             unionType => {
-                attributes = combineTypeAttributes([attributes].concat(unionType.members.toArray().map(t => t.getAttributes())));
+                attributes = combineTypeAttributes(
+                    [attributes].concat(unionType.members.toArray().map(m => m.getAttributes()))
+                );
                 this.addUnionSet(unionType.members);
             },
             dateType => this.addUnionSet(OrderedSet([dateType])),
@@ -315,14 +318,18 @@ class IntersectionAccumulator
     }
 
     getMemberKinds(): TypeAttributeMap<TypeKind> {
-        let primitiveStringKinds = defined(this._primitiveStringTypes).toOrderedMap().map(k => defined(this._primitiveStringAttributes.get(k)));
+        let primitiveStringKinds = defined(this._primitiveStringTypes)
+            .toOrderedMap()
+            .map(k => defined(this._primitiveStringAttributes.get(k)));
         const maybeStringAttributes = this._primitiveStringAttributes.get("string");
         // If full string was eliminated, add its attribute to the other string types
         if (maybeStringAttributes !== undefined && !primitiveStringKinds.has("string")) {
             primitiveStringKinds = primitiveStringKinds.map(a => combineTypeAttributes(a, maybeStringAttributes));
         }
 
-        let otherPrimitiveKinds = defined(this._otherPrimitiveTypes).toOrderedMap().map(k => defined(this._otherPrimitiveAttributes.get(k)));
+        let otherPrimitiveKinds = defined(this._otherPrimitiveTypes)
+            .toOrderedMap()
+            .map(k => defined(this._otherPrimitiveAttributes.get(k)));
         const maybeDoubleAttributes = this._otherPrimitiveAttributes.get("double");
         // If double was eliminated, add its attributes to integer
         if (maybeDoubleAttributes !== undefined && !otherPrimitiveKinds.has("double")) {

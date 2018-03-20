@@ -120,10 +120,20 @@ export class TypeRef {
 }
 
 function provenanceToString(p: Set<TypeRef>): string {
-    return p.map(r => r.getIndex()).toList().sort().map(i => i.toString()).join(",");
+    return p
+        .map(r => r.getIndex())
+        .toList()
+        .sort()
+        .map(i => i.toString())
+        .join(",");
 }
 
-export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>("provenance", setUnion, a => a, provenanceToString);
+export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>(
+    "provenance",
+    setUnion,
+    a => a,
+    provenanceToString
+);
 
 export type StringTypeMapping = {
     date: PrimitiveStringTypeKind;
@@ -869,19 +879,19 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
             });
         }
     }
-    
+
     const rootPath = Set([new FauxUnion()]);
     types.forEach(t => traverse(t, rootPath, types.size === 1));
 
-    const attributesForTypes = unionsForType.map((unions, t) => {
-        const singleAncestors = unions.filter(u => defined(typesForUnion.get(u)).size === 1);
+    const resultAttributes = unionsForType.map((unionForType, t) => {
+        const singleAncestors = unionForType.filter(u => defined(typesForUnion.get(u)).size === 1);
         assert(singleAncestors.every(u => defined(typesForUnion.get(u)).has(t)), "We messed up bookkeeping");
         const inheritedAttributes = singleAncestors.toArray().map(u => u.getAttributes());
         return combineTypeAttributes([t.getAttributes()].concat(inheritedAttributes));
     });
     const unionAttributes = unions.toArray().map(u => {
-        const types = typesForUnion.get(u);
-        if (types !== undefined && types.size === 1) {
+        const t = typesForUnion.get(u);
+        if (t !== undefined && t.size === 1) {
             return emptyTypeAttributes;
         }
         const attributes = u.getAttributes();
@@ -890,7 +900,7 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
         }
         return makeTypeAttributesInferred(attributes);
     });
-    return [attributesForTypes, combineTypeAttributes(unionAttributes)];
+    return [resultAttributes, combineTypeAttributes(unionAttributes)];
 }
 
 // FIXME: Move this to UnifyClasses.ts?
