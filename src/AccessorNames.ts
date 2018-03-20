@@ -28,36 +28,46 @@ export function checkAccessorNames(x: any): AccessorNames {
     return checkStringMap(x, isAccessorEntry);
 }
 
-function getFromEntry(entry: AccessorEntry, language: string): string | undefined {
-    if (typeof entry === "string") return entry;
+// Returns [name, isFixed].
+function getFromEntry(entry: AccessorEntry, language: string): [string, boolean] | undefined {
+    if (typeof entry === "string") return [entry, false];
 
     const maybeForLanguage = entry[language];
-    if (maybeForLanguage !== undefined) return maybeForLanguage;
+    if (maybeForLanguage !== undefined) return [maybeForLanguage, true];
 
-    const maybeCatchAll = entry["*"];
-    if (maybeCatchAll !== undefined) return maybeCatchAll;
+    const maybeWildcard = entry["*"];
+    if (maybeWildcard !== undefined) return [maybeWildcard, false];
 
     return undefined;
 }
 
-function lookupKey(accessors: AccessorNames, key: string, language: string): string | undefined {
+function lookupKey(accessors: AccessorNames, key: string, language: string): [string, boolean] | undefined {
     if (!Object.prototype.hasOwnProperty.call(accessors, key)) return undefined;
 
     return getFromEntry(accessors[key], language);
 }
 
-export function classPropertyNames(c: ClassType, language: string): Map<string, string | undefined> {
+export function classPropertyNames(c: ClassType, language: string): Map<string, [string, boolean] | undefined> {
     const accessors = accessorNamesTypeAttributeKind.tryGetInAttributes(c.getAttributes());
     const map = c.properties;
     if (accessors === undefined) return map.map(_ => undefined);
     return map.map((_cp, n) => lookupKey(accessors, n, language));
 }
 
-export function enumCaseNames(e: EnumType, language: string): Map<string, string | undefined> {
+export function enumCaseNames(e: EnumType, language: string): Map<string, [string, boolean] | undefined> {
     const accessors = accessorNamesTypeAttributeKind.tryGetInAttributes(e.getAttributes());
     const map = e.cases.toMap();
     if (accessors === undefined) return map.map(_ => undefined);
     return map.map(c => lookupKey(accessors, c, language));
+}
+
+export function getAccessorName(
+    names: Map<string, [string, boolean] | undefined>,
+    original: string
+): [string | undefined, boolean] {
+    const maybeName = names.get(original);
+    if (maybeName === undefined) return [undefined, false];
+    return maybeName;
 }
 
 export const unionIdentifierTypeAttributeKind = new TypeAttributeKind<Set<number>>(
@@ -88,25 +98,42 @@ export function makeUnionMemberNamesAttribute(unionAttributes: TypeAttributes, e
     return unionMemberNamesTypeAttributeKind.makeAttributes(map);
 }
 
-export function unionMemberName(u: UnionType, member: Type, language: string): string | undefined {
+export function unionMemberName(u: UnionType, member: Type, language: string): [string | undefined, boolean] {
     const identifiers = unionIdentifierTypeAttributeKind.tryGetInAttributes(u.getAttributes());
-    if (identifiers === undefined) return undefined;
+    if (identifiers === undefined) return [undefined, false];
 
     const memberNames = unionMemberNamesTypeAttributeKind.tryGetInAttributes(member.getAttributes());
-    if (memberNames === undefined) return undefined;
+    if (memberNames === undefined) return [undefined, false];
 
     let names: Set<string> = Set();
+    let fixedNames: Set<string> = Set();
     identifiers.forEach(i => {
         const maybeEntry = memberNames.get(i);
         if (maybeEntry === undefined) return;
         const maybeName = getFromEntry(maybeEntry, language);
         if (maybeName === undefined) return;
-        names = names.add(maybeName);
+        const [name, isNameFixed] = maybeName;
+        if (isNameFixed) {
+            fixedNames = fixedNames.add(name);
+        } else {
+            names = names.add(name);
+        }
     });
 
-    const first = names.first();
-    if (first === undefined) return undefined;
+    let size: number;
+    let isFixed: boolean;
+    let first = fixedNames.first();
+    if (first !== undefined) {
+        size = fixedNames.size;
+        isFixed = true;
+    } else {
+        first = names.first();
+        if (first === undefined) return [undefined, false];
 
-    assert(names.size === 1, `More than one name given for union member: ${names.join(", ")}`);
-    return first;
+        size = names.size;
+        isFixed = false;
+    }
+
+    assert(size === 1, `More than one name given for union member: ${names.join(", ")}`);
+    return [first, isFixed];
 }

@@ -29,7 +29,7 @@ import {
     descriptionTypeAttributeKind,
     propertyDescriptionsTypeAttributeKind
 } from "./TypeAttributes";
-import { enumCaseNames, classPropertyNames, unionMemberName } from "./AccessorNames";
+import { enumCaseNames, classPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -354,8 +354,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         const accessorNames = classPropertyNames(c, this.targetLanguage.name);
         const names = c.sortedProperties
             .map((p, jsonName) => {
-                const assignedName = accessorNames.get(jsonName);
-                const name = this.makeNameForProperty(c, className, p, jsonName, assignedName);
+                const [assignedName, isFixed] = getAccessorName(accessorNames, jsonName);
+                let name: Name | undefined;
+                if (isFixed) {
+                    name = new FixedName(defined(assignedName));
+                } else {
+                    name = this.makeNameForProperty(c, className, p, jsonName, assignedName);
+                }
                 if (name === undefined) return undefined;
                 if (ns === undefined) {
                     ns = new Namespace(c.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
@@ -371,8 +376,11 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected makeNameForUnionMember(u: UnionType, unionName: Name, t: Type): Name {
+        const [assignedName, isFixed] = unionMemberName(u, t, this.targetLanguage.name);
+        if (isFixed) {
+            return new FixedName(defined(assignedName));
+        }
         return new DependencyName(nonNull(this._unionMemberNamer), unionMemberNameOrder, lookup => {
-            const assignedName = unionMemberName(u, t, this.targetLanguage.name);
             if (assignedName !== undefined) return assignedName;
             return this.proposeUnionMemberName(u, unionName, t, lookup);
         });
@@ -433,8 +441,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         let names = Map<string, Name>();
         const accessorNames = enumCaseNames(e, this.targetLanguage.name);
         e.cases.forEach(caseName => {
-            const assignedName = accessorNames.get(caseName);
-            const name = this.makeNameForEnumCase(e, enumName, caseName, assignedName);
+            const [assignedName, isFixed] = getAccessorName(accessorNames, caseName);
+            let name: Name;
+            if (isFixed) {
+                name = new FixedName(defined(assignedName));
+            } else {
+                name = this.makeNameForEnumCase(e, enumName, caseName, assignedName);
+            }
             names = names.set(caseName, ns.add(name));
         });
         defined(this._caseNamesStoreView).set(e, names);
