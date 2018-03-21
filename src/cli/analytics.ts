@@ -10,21 +10,21 @@ const GoogleAnalyticsID = "UA-102732788-5";
 
 // A map from CI providers to environment variables that uniquely identify a project.
 // If present, these variables are hashed to produce a unique userId for quicktype in CI.
-const CIProviders: { [provider: string]: Array<string | undefined> } = {
-    travis: [env.TRAVIS_REPO_SLUG],
-    jenkins: [env.JENKINS_URL],
-    teamcity: [env.TEAMCITY_PROJECT_NAME],
-    circleci: [env.CIRCLE_PROJECT_USERNAME, env.CIRCLE_PROJECT_REPONAME],
-    codeship: [env.CI_REPO_NAME],
-    gitlab: [env.GITLAB_CI, env.CI_REPOSITORY_URL, env.CI_PROJECT_ID],
-    vsts: [env.SYSTEM_TEAMFOUNDATIONCOLLECTIONURI, env.BUILD_REPOSITORY_NAME],
-    appcenter: [env.SYSTEM_TEAMFOUNDATIONCOLLECTIONURI, env.BUILD_REPOSITORY_NAME],
+const CIProviders: [string, Array<string | undefined>][] = [
+    ["Travis", [env.TRAVIS_REPO_SLUG]],
+    ["Jenkins", [env.JENKINS_URL]],
+    ["TeamCity", [env.TEAMCITY_PROJECT_NAME]],
+    ["CircleCI", [env.CIRCLE_PROJECT_USERNAME, env.CIRCLE_PROJECT_REPONAME]],
+    ["Codeship", [env.CI_REPO_NAME]],
+    ["GitLab", [env.GITLAB_CI, env.CI_REPOSITORY_URL, env.CI_PROJECT_ID]],
+    ["VSTS", [env.SYSTEM_TEAMFOUNDATIONCOLLECTIONURI, env.BUILD_REPOSITORY_NAME]],
+    ["App Center", [env.SYSTEM_TEAMFOUNDATIONCOLLECTIONURI, env.BUILD_REPOSITORY_NAME]],
     // We intentionally collapse users with env.CI to prevent over-counting for unidentified CI
-    other: [env.CI]
-};
+    ["Other", [env.CI]]
+];
 
 function getCIProvider(): { provider: string; userId: string } | undefined {
-    function tryHash(...envs: Array<string | undefined>): string | undefined {
+    function tryHash(envs: Array<string | undefined>): string | undefined {
         if (envs.some(s => s === undefined)) {
             return undefined;
         }
@@ -33,8 +33,8 @@ function getCIProvider(): { provider: string; userId: string } | undefined {
         return hash.digest("base64");
     }
 
-    for (const provider of Object.keys(CIProviders)) {
-        const hash = tryHash(...CIProviders[provider]);
+    for (const [provider, vars] of CIProviders) {
+        const hash = tryHash(vars);
         if (hash !== undefined) {
             return { provider, userId: hash };
         }
