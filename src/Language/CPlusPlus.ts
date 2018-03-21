@@ -771,6 +771,15 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
         }
         this.ensureBlankLine();
 
+        const guardName: Sourcelike = [
+            "__QUICKTYPE_",
+            intercalate("_", this.topLevels.keySeq().map(n => legalizeName(allUpperWordStyle(n)))).toArray(),
+            "_HPP__"
+        ];
+        this.emitLine("#ifndef ", guardName);
+        this.emitLine("#define ", guardName);
+        this.ensureBlankLine();
+
         const include = (name: string): void => {
             this.emitLine(`#include ${name}`);
         };
@@ -783,20 +792,23 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
         } else {
             this.emitNamespaces(this._namespaceNames, this.emitTypes);
         }
-        if (this._justTypes) return;
-        if (!this.haveNamedTypes) return;
+
+        if (!this._justTypes && this.haveNamedTypes) {
+            this.ensureBlankLine();
+            this.emitNamespaces(List(["nlohmann"]), () => {
+                if (this.haveUnions) {
+                    this.emitOptionalHelpers();
+                }
+                this.forEachClass("leading-and-interposing", this.emitClassFunctions);
+                this.forEachEnum("leading-and-interposing", this.emitEnumFunctions);
+                if (this.haveUnions) {
+                    this.ensureBlankLine();
+                    this.emitAllUnionFunctions();
+                }
+            });
+        }
 
         this.ensureBlankLine();
-        this.emitNamespaces(List(["nlohmann"]), () => {
-            if (this.haveUnions) {
-                this.emitOptionalHelpers();
-            }
-            this.forEachClass("leading-and-interposing", this.emitClassFunctions);
-            this.forEachEnum("leading-and-interposing", this.emitEnumFunctions);
-            if (this.haveUnions) {
-                this.ensureBlankLine();
-                this.emitAllUnionFunctions();
-            }
-        });
+        this.emitLine("#endif");
     }
 }
