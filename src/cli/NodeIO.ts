@@ -2,10 +2,10 @@
 
 import * as fs from "fs";
 import { Readable } from "stream";
-import { getStream } from "./get-stream/index";
+import { getStream } from "../get-stream/index";
 
-import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
-import { panic } from "./Support";
+import { JSONSchemaStore, JSONSchema } from "../JSONSchemaStore";
+import { panic } from "../Support";
 
 // The typings for this module are screwy
 const isURL = require("is-url");

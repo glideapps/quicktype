@@ -21,7 +21,7 @@ for fn in `find . -name '*.schema'` ; do
     fbase=`basename "$fn" .schema`
     odir="$OUTPUT_DIR/schema/$fdir"
     mkdir -p "$odir"
-    node "$__dir/../dist/cli.js" --lang "$LANGUAGE" $OPTIONS --src-lang schema --quiet -o "$odir/$fbase.$LANGUAGE" "$fn"
+    node "$__dir/../dist/cli/index.js" --lang "$LANGUAGE" $OPTIONS --src-lang schema --quiet -o "$odir/$fbase.$LANGUAGE" "$fn"
 done
 
 cd "$JSON_INPUT_DIR"
@@ -31,5 +31,5 @@ for fn in `find . -name '*.json'` ; do
     fbase=`basename "$fn" .json`
     odir="$OUTPUT_DIR/json/$fdir"
     mkdir -p "$odir"
-    node "$__dir/../dist/cli.js" --lang "$LANGUAGE" $OPTIONS --quiet -o "$odir/$fbase.$LANGUAGE" "$fn"
+    node "$__dir/../dist/cli/index.js" --lang "$LANGUAGE" $OPTIONS --quiet -o "$odir/$fbase.$LANGUAGE" "$fn"
 done
