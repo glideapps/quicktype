@@ -770,10 +770,22 @@ export async function main(args: string[] | Partial<CLIOptions>) {
         cliOptions = inferCLIOptions(args);
     }
 
-    if (cliOptions.telemetry === "enable") {
-        telemetry.enable();
-    } else if (cliOptions.telemetry === "disable") {
-        telemetry.disable();
+    if (cliOptions.telemetry !== undefined) {
+        switch (cliOptions.telemetry) {
+            case "enable":
+                telemetry.enable();
+                break;
+            case "disable":
+                telemetry.disable();
+                break;
+            default:
+                console.error(chalk.red("telemetry must be 'enable' or 'disable'"));
+                return;
+        }
+        if (Array.isArray(args) && args.length === 2) {
+            // This was merely a CLI run to set telemetry and we should not proceed
+            return;
+        }
     }
 
     const quicktypeOptions = await makeQuicktypeOptions(cliOptions);
