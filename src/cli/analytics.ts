@@ -1,5 +1,6 @@
 import * as ga from "universal-analytics";
 import * as storage from "./storage";
+import * as ci from "./ci";
 
 const uuid = require("uuid/v4");
 
@@ -29,8 +30,18 @@ export class GoogleAnalytics implements Analytics {
     private readonly visitor: ga.Visitor;
 
     constructor() {
-        const userId = storage.get("userId", uuid());
+        const ciInfo = ci.getProvider();
+        const userId = ciInfo !== undefined ? ciInfo.userId : storage.get("userId", uuid());
+
         this.visitor = ga(GoogleAnalyticsID, userId);
+
+        if (ciInfo !== undefined) {
+            this.ciProvider = ciInfo.provider;
+        }
+    }
+
+    set ciProvider(provider: string) {
+        this.visitor.set("dimension1", provider);
     }
 
     pageview(page: string): void {
