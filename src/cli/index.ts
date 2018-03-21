@@ -74,6 +74,8 @@ export interface CLIOptions {
     telemetry?: string;
 }
 
+const defaultDefaultTargetLanguageName: string = "go";
+
 async function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Promise<JSONTypeSource> {
     const samples = await Promise.all(filesOrUrls.map(readableFromFileOrURL));
     return { name, samples };
@@ -179,7 +181,7 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
     return sources;
 }
 
-function inferLang(options: Partial<CLIOptions>): string {
+function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): string {
     // Output file extension determines the language if language is undefined
     if (options.out !== undefined) {
         let extension = path.extname(options.out);
@@ -189,8 +191,7 @@ function inferLang(options: Partial<CLIOptions>): string {
         return extension.substr(1);
     }
 
-    // FIXME: There should be a default language coming in from the caller
-    return "go";
+    return defaultLanguage;
 }
 
 function inferTopLevel(options: Partial<CLIOptions>): string {
@@ -212,7 +213,7 @@ function inferTopLevel(options: Partial<CLIOptions>): string {
     return "TopLevel";
 }
 
-export function inferCLIOptions(opts: Partial<CLIOptions>): CLIOptions {
+export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: string): CLIOptions {
     let srcLang = opts.srcLang;
     if (opts.graphqlSchema !== undefined || opts.graphqlIntrospect !== undefined) {
         assert(
@@ -225,7 +226,10 @@ export function inferCLIOptions(opts: Partial<CLIOptions>): CLIOptions {
         srcLang = withDefault<string>(srcLang, "json");
     }
 
-    const lang = opts.lang !== undefined ? opts.lang : inferLang(opts);
+    if (defaultLanguage === undefined) {
+        defaultLanguage = defaultDefaultTargetLanguageName;
+    }
+    const lang = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultLanguage);
     const language = languageNamed(lang);
     if (language === undefined) {
         return panic(`Unsupported output language: ${lang}`);
@@ -284,15 +288,18 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             description: "The name for the top level type."
         }
     ];
-    const lang: OptionDefinition[] = targetLanguages.length < 2 ? [] : [
-        {
-            name: "lang",
-            alias: "l",
-            type: String,
-            typeLabel: makeLangTypeLabel(targetLanguages),
-            description: "The target language."
-        }
-    ];
+    const lang: OptionDefinition[] =
+        targetLanguages.length < 2
+            ? []
+            : [
+                  {
+                      name: "lang",
+                      alias: "l",
+                      type: String,
+                      typeLabel: makeLangTypeLabel(targetLanguages),
+                      description: "The target language."
+                  }
+              ];
     const afterLang: OptionDefinition[] = [
         {
             name: "src-lang",
@@ -490,8 +497,10 @@ const sectionsAfterRenderers: UsageSection[] = [
 ];
 
 export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage): CLIOptions {
+    const defaultLanguage = targetLanguage === undefined ? defaultDefaultTargetLanguageName : targetLanguage.names[0];
+
     if (argv.length === 0) {
-        return inferCLIOptions({ help: true });
+        return inferCLIOptions({ help: true }, defaultLanguage);
     }
 
     const targetLanguages = targetLanguage === undefined ? defaultTargetLanguages.all : [targetLanguage];
@@ -501,7 +510,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
     // because there are renderer-specific options.  But we only know which renderer
     // is selected after we've parsed the options.  Hence, we parse the options
     // twice.  This is the first parse to get the renderer:
-    const incompleteOptions = parseOptions(optionDefinitions, argv, true);
+    const incompleteOptions = inferCLIOptions(parseOptions(optionDefinitions, argv, true), defaultLanguage);
     if (targetLanguage === undefined) {
         targetLanguage = getTargetLanguage(incompleteOptions.lang);
     }
@@ -510,7 +519,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
     const allOptionDefinitions = _.concat(optionDefinitions, rendererOptionDefinitions);
     try {
         // This is the parse that counts:
-        return parseOptions(allOptionDefinitions, argv, false);
+        return inferCLIOptions(parseOptions(allOptionDefinitions, argv, false), defaultLanguage);
     } catch (error) {
         if (error.name === "UNKNOWN_OPTION") {
             usage(targetLanguages);
@@ -523,9 +532,9 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
 // Parse the options in argv and split them into global options and renderer options,
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
-function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): CLIOptions {
+function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): Partial<CLIOptions> {
     const opts: { [key: string]: any } = commandLineArgs(definitions, { argv, partial });
-    const options: { rendererOptions: RendererOptions;[key: string]: any } = { rendererOptions: {} };
+    const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
     definitions.forEach(o => {
         if (!(o.name in opts)) return;
         const v = opts[o.name];
@@ -540,7 +549,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
             options[k] = v;
         }
     });
-    return inferCLIOptions(options);
+    return options;
 }
 
 function usage(targetLanguages: TargetLanguage[]) {
@@ -593,7 +602,9 @@ async function typeSourceForURIs(name: string, uris: string[], options: CLIOptio
 
 async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     const sourceURIs = await getSourceURIs(options);
-    let sources: TypeSource[] = await Promise.all(sourceURIs.map(([name, uris]) => typeSourceForURIs(name, uris, options)));
+    let sources: TypeSource[] = await Promise.all(
+        sourceURIs.map(([name, uris]) => typeSourceForURIs(name, uris, options))
+    );
 
     const exists = options.src.filter(fs.existsSync);
     const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
@@ -611,7 +622,10 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     return sources;
 }
 
-export async function makeQuicktypeOptions(options: CLIOptions, targetLanguages?: TargetLanguage[]): Promise<Partial<Options> | undefined> {
+export async function makeQuicktypeOptions(
+    options: CLIOptions,
+    targetLanguages?: TargetLanguage[]
+): Promise<Partial<Options> | undefined> {
     if (options.help) {
         usage(targetLanguages === undefined ? defaultTargetLanguages.all : targetLanguages);
         return undefined;
@@ -700,7 +714,7 @@ export async function makeQuicktypeOptions(options: CLIOptions, targetLanguages?
 
     let debugPrintGraph = false;
     if (options.debug !== undefined) {
-        assert(options.debug === "print-graph", "The --debug option must be \"print-graph\"");
+        assert(options.debug === "print-graph", 'The --debug option must be "print-graph"');
         debugPrintGraph = true;
     }
 
@@ -767,7 +781,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
     if (Array.isArray(args)) {
         cliOptions = parseCLIOptions(args);
     } else {
-        cliOptions = inferCLIOptions(args);
+        cliOptions = inferCLIOptions(args, defaultDefaultTargetLanguageName);
     }
 
     if (cliOptions.telemetry === "enable") {
