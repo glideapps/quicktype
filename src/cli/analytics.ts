@@ -18,7 +18,9 @@ const CIProviders: { [provider: string]: Array<string | undefined> } = {
     codeship: [env.CI_REPO_NAME],
     gitlab: [env.GITLAB_CI, env.CI_REPOSITORY_URL, env.CI_PROJECT_ID],
     vsts: [env.SYSTEM_TEAMFOUNDATIONCOLLECTIONURI, env.BUILD_REPOSITORY_NAME],
-    appcenter: [env.SYSTEM_TEAMFOUNDATIONCOLLECTIONURI, env.BUILD_REPOSITORY_NAME]
+    appcenter: [env.SYSTEM_TEAMFOUNDATIONCOLLECTIONURI, env.BUILD_REPOSITORY_NAME],
+    // We intentionally collapse users with env.CI to prevent over-counting for unidentified CI
+    other: [env.CI]
 };
 
 function getCIProvider(): { provider: string; userId: string } | undefined {
@@ -70,8 +72,12 @@ export class GoogleAnalytics implements Analytics {
         this.visitor = ga(GoogleAnalyticsID, userId);
 
         if (ci !== undefined) {
-            this.visitor.set("dimension1", ci.provider);
+            this.ciProvider = ci.provider;
         }
+    }
+
+    set ciProvider(provider: string) {
+        this.visitor.set("dimension1", provider);
     }
 
     pageview(page: string): void {
