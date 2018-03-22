@@ -147,7 +147,7 @@ export const NoStringTypeMapping: StringTypeMapping = {
     dateTime: "date-time"
 };
 
-export abstract class TypeBuilder {
+export class TypeBuilder {
     readonly typeGraph: TypeGraph;
 
     protected topLevels: Map<string, TypeRef> = Map();
@@ -412,27 +412,15 @@ export abstract class TypeBuilder {
         type.setMembers(members);
     }
 
-    abstract setLostTypeAttributes(): void;
+    setLostTypeAttributes(): void {
+        return;
+    }
 }
 
 export interface TypeLookerUp {
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined;
     reconstituteTypeRef(typeRef: TypeRef, forwardingRef?: TypeRef): TypeRef;
     registerUnion(typeRefs: TypeRef[], reconstituted: TypeRef): void;
-}
-
-export class TypeGraphBuilder extends TypeBuilder {
-    protected typeForEntry(entry: Type | undefined): Type | undefined {
-        return entry;
-    }
-
-    getLazyMapType(valuesCreator: () => TypeRef | undefined): TypeRef {
-        return this.addType(undefined, tref => new MapType(tref, valuesCreator()), undefined);
-    }
-
-    setLostTypeAttributes(): void {
-        return;
-    }
 }
 
 export class TypeReconstituter {

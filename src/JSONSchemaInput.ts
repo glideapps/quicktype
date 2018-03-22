@@ -17,7 +17,7 @@ import {
     forEachSync,
     checkArray
 } from "./Support";
-import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
+import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
 import {
@@ -429,7 +429,7 @@ function checkTypeList(typeOrTypes: any): OrderedSet<string> {
 }
 
 export async function addTypesInSchema(
-    typeBuilder: TypeGraphBuilder,
+    typeBuilder: TypeBuilder,
     store: JSONSchemaStore,
     references: Map<string, Ref>
 ): Promise<void> {

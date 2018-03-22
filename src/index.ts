@@ -14,7 +14,7 @@ import { addTypesInSchema, Ref, definitionRefsInSchema, checkJSONSchema } from "
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
-import { TypeGraphBuilder } from "./TypeBuilder";
+import { TypeBuilder } from "./TypeBuilder";
 import { TypeGraph, noneToAny, optionalToNullable } from "./TypeGraph";
 import { makeNamesTypeAttributes } from "./TypeNames";
 import { makeGraphQLQueryTypes } from "./GraphQL";
@@ -179,7 +179,7 @@ export class Run {
         const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
         const haveSchemas = Object.getOwnPropertyNames(this._allInputs.schemas).length > 0;
-        const typeBuilder = new TypeGraphBuilder(
+        const typeBuilder = new TypeBuilder(
             stringTypeMapping,
             this._options.alphabetizeProperties,
             this._options.allPropertiesOptional,
