@@ -265,26 +265,12 @@ export class MapType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: "map";
 
-    constructor(typeRef: TypeRef, private _valuesRef?: TypeRef) {
+    constructor(typeRef: TypeRef, readonly valuesRef: TypeRef) {
         super(typeRef, "map");
     }
 
-    setValues(valuesRef: TypeRef) {
-        if (this._valuesRef !== undefined) {
-            return panic("Can only set map values once");
-        }
-        this._valuesRef = valuesRef;
-    }
-
-    private getValuesRef(): TypeRef {
-        if (this._valuesRef === undefined) {
-            return panic("Map values accessed before they were set");
-        }
-        return this._valuesRef;
-    }
-
     get values(): Type {
-        return this.getValuesRef().deref()[0];
+        return this.valuesRef.deref()[0];
     }
 
     get children(): OrderedSet<Type> {
@@ -302,7 +288,7 @@ export class MapType extends Type {
     map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
         // console.log(`${mapIndentation()}mapping ${this.kind}`);
         // mapPath.push("{}");
-        const result = builder.getMapType(f(this.getValuesRef()));
+        const result = builder.getMapType(f(this.valuesRef));
         // mapPath.pop();
         return result;
     }
