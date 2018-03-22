@@ -23,6 +23,7 @@ import { inferEnums, flattenStrings } from "./InferEnums";
 import { descriptionTypeAttributeKind } from "./TypeAttributes";
 import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
+import { replaceObjectType } from "./ReplaceObjectType";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -233,6 +234,8 @@ export class Run {
         }
 
         if (haveSchemas) {
+            graph = replaceObjectType(graph, stringTypeMapping, conflateNumbers);
+
             let intersectionsDone = false;
             let unionsDone = false;
             do {

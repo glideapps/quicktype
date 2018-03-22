@@ -113,6 +113,9 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             arrayType => ({ type: "array", items: this.schemaForType(arrayType.items) }),
             classType => this.makeRef(classType),
             mapType => ({ type: "object", additionalProperties: this.schemaForType(mapType.values) }),
+            _objectType => {
+                return panic("FIXME: support object types");
+            },
             enumType => this.makeRef(enumType),
             unionType => {
                 if (this.unionNeedsName(unionType)) {

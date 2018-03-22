@@ -106,7 +106,7 @@ export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping
         // Reconstituting a type means generating the "same" type in the new
         // type graph.  Except we don't get Type objects but TypeRef objects,
         // which is a type-to-be.
-        return builder.getMapType(
+        const tref = builder.getMapType(
             unifyTypes(
                 shouldBe,
                 c.getAttributes(),
@@ -116,6 +116,8 @@ export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping
             ),
             forwardingRef
         );
+        builder.addAttributes(tref, c.getAttributes());
+        return tref;
     }
 
     const allClasses = graph.allNamedTypesSeparated().classes;

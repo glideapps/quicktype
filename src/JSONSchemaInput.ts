@@ -456,12 +456,12 @@ export async function addTypesInSchema(
         typeForCanonicalRef = typeForCanonicalRef.set(loc.canonicalRef, t);
     }
 
-    async function makeClass(
+    async function makeObject(
         loc: Location,
         attributes: TypeAttributes,
         properties: StringMap,
         requiredArray: string[],
-        additionalPropertiesType: boolean | TypeRef
+        additionalProperties: any
     ): Promise<TypeRef> {
         const required = OrderedSet(requiredArray);
         const propertiesMap = Map(properties);
@@ -484,35 +484,36 @@ export async function addTypesInSchema(
         // we would use a JSON parser that preserves order.
         let props = (await mapSync(propertiesMap, async (propSchema, propName) => {
             const t = await toType(
-                checkStringMap(propSchema),
+                checkJSONSchema(propSchema),
                 loc.push("properties", propName),
                 makeNamesTypeAttributes(pluralize.singular(propName), true)
             );
             const isOptional = !required.has(propName);
             return new ClassProperty(t, isOptional);
         })).toOrderedMap();
+        let additionalPropertiesType: TypeRef | undefined;
+        if (additionalProperties === undefined || additionalProperties === true) {
+            additionalPropertiesType = typeBuilder.getPrimitiveType("any");
+        } else if (additionalProperties === false) {
+            additionalPropertiesType = undefined;
+        } else {
+            additionalPropertiesType = await toType(
+                checkJSONSchema(additionalProperties),
+                loc.push("additionalProperties"),
+                singularizeTypeNames(attributes)
+            );
+        }
         const additionalRequired = required.subtract(props.keySeq());
         if (!additionalRequired.isEmpty()) {
-            let t: TypeRef;
-            if (additionalPropertiesType === false) {
+            const t = additionalPropertiesType;
+            if (t === undefined) {
                 return panic("Can't have non-specified required properties but forbidden additionalTypes");
-            }
-            if (additionalPropertiesType === true) {
-                t = typeBuilder.getPrimitiveType("any");
-            } else {
-                t = additionalPropertiesType;
             }
 
             const additionalProps = additionalRequired.toOrderedMap().map(_name => new ClassProperty(t, true));
             props = props.merge(additionalProps);
         }
-        return typeBuilder.getUniqueClassType(attributes, true, props);
-    }
-
-    async function makeMap(loc: Location, typeAttributes: TypeAttributes, additional: StringMap): Promise<[TypeRef, TypeRef]> {
-        loc = loc.push("additionalProperties");
-        const valuesType = await toType(additional, loc, singularizeTypeNames(typeAttributes));
-        return [typeBuilder.getMapType(valuesType), valuesType];
+        return typeBuilder.getUniqueObjectType(attributes, props, additionalPropertiesType);
     }
 
     async function convertToType(schema: StringMap, loc: Location, typeAttributes: TypeAttributes): Promise<TypeRef> {
@@ -536,7 +537,7 @@ export async function addTypesInSchema(
             }
             return typeBuilder.getStringType(inferredAttributes, undefined);
         }
-    
+
         async function makeArrayType(): Promise<TypeRef> {
             if (schema.items !== undefined) {
                 loc = loc.push("items");
@@ -547,7 +548,7 @@ export async function addTypesInSchema(
             return typeBuilder.getArrayType(typeBuilder.getPrimitiveType("any"));
         }
 
-        async function makeObjectTypes(): Promise<TypeRef[]> {
+        async function makeObjectType(): Promise<TypeRef> {
             let required: string[];
             if (schema.required === undefined) {
                 required = [];
@@ -555,39 +556,18 @@ export async function addTypesInSchema(
                 required = checkStringArray(schema.required);
             }
 
-            const typesInUnion: TypeRef[] = [];
-
-            let additionalPropertiesType: boolean | TypeRef = true;
-            if (schema.additionalProperties !== undefined) {
-                const additional = schema.additionalProperties;
-                // FIXME: We don't treat `additional === true`, which is also the default,
-                // not according to spec.  It should be translated into a map type to any,
-                // though that's not what the intention usually is.  Ideally, we'd find a
-                // way to store additional attributes on regular classes.
-                if (additional === false) {
-                    if (schema.properties === undefined) {
-                        typesInUnion.push(await makeClass(loc, inferredAttributes, {}, required, false));
-                    }
-                    additionalPropertiesType = false;
-                } else if (typeof additional === "object") {
-                    const [mapType, valuesType] = await makeMap(loc, inferredAttributes, checkStringMap(additional));
-                    typesInUnion.push(await mapType);
-                    additionalPropertiesType = valuesType;
-                }
+            let properties: StringMap;
+            if (schema.properties === undefined) {
+                properties = {};
+            } else {
+                properties = checkStringMap(schema.properties);
             }
 
-            if (schema.properties !== undefined) {
-                typesInUnion.push(
-                    await makeClass(loc, inferredAttributes, checkStringMap(schema.properties), required, additionalPropertiesType)
-                );
-            }
+            const additionalProperties = schema.additionalProperties;
 
-            if (typesInUnion.length === 0) {
-                typesInUnion.push(typeBuilder.getMapType(typeBuilder.getPrimitiveType("any")));
-            }
-            return typesInUnion;
+            return await makeObject(loc, inferredAttributes, properties, required, additionalProperties);
         }
-    
+
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
             if (!Array.isArray(cases)) {
                 return panic(`Cases are not an array: ${cases}`);
@@ -658,8 +638,16 @@ export async function addTypesInSchema(
 
         const includeObject = enumArray === undefined && (typeSet === undefined || typeSet.has("object"));
         const includeArray = enumArray === undefined && (typeSet === undefined || typeSet.has("array"));
-        const needStringEnum = includePrimitiveType("string") && enumArray !== undefined && enumArray.find((x: any) => typeof x === "string") !== undefined;
-        const needUnion = typeSet !== undefined || schema.properties !== undefined || schema.additionalProperties !== undefined || schema.items !== undefined || enumArray !== undefined;
+        const needStringEnum =
+            includePrimitiveType("string") &&
+            enumArray !== undefined &&
+            enumArray.find((x: any) => typeof x === "string") !== undefined;
+        const needUnion =
+            typeSet !== undefined ||
+            schema.properties !== undefined ||
+            schema.additionalProperties !== undefined ||
+            schema.items !== undefined ||
+            enumArray !== undefined;
 
         const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
         await setTypeForLocation(loc, intersectionType);
@@ -668,7 +656,12 @@ export async function addTypesInSchema(
         if (needUnion) {
             const unionTypes: TypeRef[] = [];
 
-            for (const [name, kind] of [["null", "null"], ["number", "double"], ["integer", "integer"], ["boolean", "bool"]] as [string, PrimitiveTypeKind][]) {
+            for (const [name, kind] of [
+                ["null", "null"],
+                ["number", "double"],
+                ["integer", "integer"],
+                ["boolean", "bool"]
+            ] as [string, PrimitiveTypeKind][]) {
                 if (!includePrimitiveType(name)) continue;
 
                 unionTypes.push(typeBuilder.getPrimitiveType(kind));
@@ -686,7 +679,7 @@ export async function addTypesInSchema(
                 unionTypes.push(await makeArrayType());
             }
             if (includeObject) {
-                unionTypes.push(...(await makeObjectTypes()));
+                unionTypes.push(await makeObjectType());
             }
 
             types.push(typeBuilder.getUniqueUnionType(inferredAttributes, OrderedSet(unionTypes)));
@@ -701,7 +694,7 @@ export async function addTypesInSchema(
             });
             types.push(await toType(target, newLoc, attributes));
         }
-        
+
         if (schema.allOf !== undefined) {
             types.push(...(await makeTypesFromCases(schema.allOf, "allOf")));
         }

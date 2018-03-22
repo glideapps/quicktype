@@ -17,7 +17,8 @@ import {
     ClassProperty,
     TypeKind,
     matchTypeExhaustive,
-    IntersectionType
+    IntersectionType,
+    ObjectType
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import {
@@ -317,6 +318,20 @@ export class TypeBuilder {
         return tref;
     }
 
+    getUniqueObjectType(
+        attributes: TypeAttributes,
+        properties: OrderedMap<string, ClassProperty>,
+        additionalProperties: TypeRef | undefined,
+        forwardingRef?: TypeRef
+    ): TypeRef {
+        properties = this.modifyPropertiesIfNecessary(properties);
+        return this.addType(
+            forwardingRef,
+            tref => new ObjectType(tref, "object", true, properties, additionalProperties),
+            attributes
+        );
+    }
+
     getMapType(values: TypeRef, forwardingRef?: TypeRef): TypeRef {
         let tref = this._mapTypes.get(values);
         if (tref === undefined) {
@@ -462,6 +477,16 @@ export class TypeReconstituter {
 
     getArrayType(items: TypeRef): TypeRef {
         return this.addAttributes(this.useBuilder().getArrayType(items, this._forwardingRef));
+    }
+
+    getUniqueObjectType(
+        properties: OrderedMap<string, ClassProperty>,
+        additionalProperties: TypeRef | undefined
+    ): TypeRef {
+        assert(this._makeClassUnique);
+        return this.addAttributes(
+            this.useBuilder().getUniqueObjectType(defined(this._typeAttributes), properties, additionalProperties)
+        );
     }
 
     getClassType(properties: OrderedMap<string, ClassProperty>): TypeRef {
@@ -906,6 +931,9 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, 
             arrayType => this.addArray(arrayType.items.typeRef, attributes),
             classType => this.addClass(classType.typeRef, attributes),
             mapType => this.addMap(mapType.values.typeRef, attributes),
+            _objectType => {
+                return panic("FIXME: Implement support for object types");
+            },
             // FIXME: We're not carrying counts, so this is not correct if we do enum
             // inference.  JSON Schema input uses this case, however, without enum
             // inference, which is fine, but still a bit ugly.

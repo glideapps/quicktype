@@ -278,6 +278,9 @@ class IntersectionAccumulator
             arrayType => this.addUnionSet(OrderedSet([arrayType])),
             classType => this.addUnionSet(OrderedSet([classType])),
             mapType => this.addUnionSet(OrderedSet([mapType])),
+            _objectType => {
+                return panic("FIXME: Implement support for object types");
+            },
             enumType => this.addUnionSet(OrderedSet([enumType])),
             unionType => {
                 attributes = combineTypeAttributes(
