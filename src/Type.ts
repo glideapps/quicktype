@@ -10,7 +10,7 @@ import { TypeAttributes } from "./TypeAttributes";
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
-export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map" | "intersection";
+export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
 
 export function isPrimitiveStringTypeKind(kind: TypeKind): kind is PrimitiveStringTypeKind {
     return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
@@ -261,43 +261,6 @@ export class ArrayType extends Type {
     }
 }
 
-export class MapType extends Type {
-    // @ts-ignore: This is initialized in the Type constructor
-    readonly kind: "map";
-
-    constructor(typeRef: TypeRef, readonly valuesRef: TypeRef) {
-        super(typeRef, "map");
-    }
-
-    get values(): Type {
-        return this.valuesRef.deref()[0];
-    }
-
-    get children(): OrderedSet<Type> {
-        return OrderedSet([this.values]);
-    }
-
-    get isNullable(): boolean {
-        return false;
-    }
-
-    isPrimitive(): this is PrimitiveType {
-        return false;
-    }
-
-    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        // console.log(`${mapIndentation()}mapping ${this.kind}`);
-        // mapPath.push("{}");
-        const result = builder.getMapType(f(this.valuesRef));
-        // mapPath.pop();
-        return result;
-    }
-
-    protected structuralEqualityStep(other: MapType, queue: (a: Type, b: Type) => boolean): boolean {
-        return queue(this.values, other.values);
-    }
-}
-
 export class GenericClassProperty<T> {
     constructor(readonly typeData: T, readonly isOptional: boolean) {}
 
@@ -327,12 +290,25 @@ export class ClassProperty extends GenericClassProperty<TypeRef> {
     }
 }
 
-export class ClassType extends Type {
-    // @ts-ignore: This is initialized in the Type constructor
-    kind: "class";
+export class ObjectType extends Type {
+    constructor(
+        typeRef: TypeRef,
+        kind: TypeKind,
+        readonly isFixed: boolean,
+        readonly properties: OrderedMap<string, ClassProperty>,
+        private _additionalPropertiesRef: TypeRef | undefined
+    ) {
+        super(typeRef, kind);
 
-    constructor(typeRef: TypeRef, readonly isFixed: boolean, readonly properties: OrderedMap<string, ClassProperty>) {
-        super(typeRef, "class");
+        assert(kind === "object" || kind === "map" || kind === "class");
+        if (kind === "map") {
+            assert(properties.isEmpty());
+            assert(!isFixed);
+        } else if (kind === "class") {
+            assert(_additionalPropertiesRef === undefined);
+        } else {
+            assert(isFixed);
+        }
     }
 
     get sortedProperties(): OrderedMap<string, ClassProperty> {
@@ -342,8 +318,18 @@ export class ClassType extends Type {
         return OrderedMap(props);
     }
 
+    get additionalProperties(): Type | undefined {
+        if (this._additionalPropertiesRef === undefined) return undefined;
+        return this._additionalPropertiesRef.deref()[0];
+    }
+
     get children(): OrderedSet<Type> {
-        return this.sortedProperties.map(p => p.type).toOrderedSet();
+        const children = this.sortedProperties.map(p => p.type).toOrderedSet();
+        const additionalProperties = this.additionalProperties;
+        if (additionalProperties === undefined) {
+            return children;
+        }
+        return children.add(additionalProperties);
     }
 
     get isNullable(): boolean {
@@ -365,14 +351,25 @@ export class ClassType extends Type {
             // mapPath.pop();
             return result;
         });
-        if (this.isFixed) {
-            return builder.getUniqueClassType(true, properties);
-        } else {
-            return builder.getClassType(properties);
+        const additionalProperties =
+            this._additionalPropertiesRef === undefined ? undefined : f(this._additionalPropertiesRef);
+        switch (this.kind) {
+            case "object":
+                return panic("We don't have full object types yet");
+            case "map":
+                return builder.getMapType(defined(additionalProperties));
+            case "class":
+                if (this.isFixed) {
+                    return builder.getUniqueClassType(true, properties);
+                } else {
+                    return builder.getClassType(properties);
+                }
+            default:
+                return panic(`Invalid object type kind ${this.kind}`);
         }
     }
 
-    protected structuralEqualityStep(other: ClassType, queue: (a: Type, b: Type) => boolean): boolean {
+    protected structuralEqualityStep(other: ObjectType, queue: (a: Type, b: Type) => boolean): boolean {
         const pa = this.properties;
         const pb = other.properties;
         if (pa.size !== pb.size) return false;
@@ -384,7 +381,33 @@ export class ClassType extends Type {
                 return false;
             }
         });
-        return !failed;
+        if (failed) return false;
+
+        if ((this.additionalProperties === undefined) !== (other.additionalProperties === undefined)) return false;
+        if (this.additionalProperties === undefined || other.additionalProperties === undefined) return true;
+        return queue(this.additionalProperties, other.additionalProperties);
+    }
+}
+
+export class ClassType extends ObjectType {
+    // @ts-ignore: This is initialized in the Type constructor
+    kind: "class";
+
+    constructor(typeRef: TypeRef, readonly isFixed: boolean, readonly properties: OrderedMap<string, ClassProperty>) {
+        super(typeRef, "class", isFixed, properties, undefined);
+    }
+}
+
+export class MapType extends ObjectType {
+    // @ts-ignore: This is initialized in the Type constructor
+    readonly kind: "map";
+
+    constructor(typeRef: TypeRef, valuesRef: TypeRef) {
+        super(typeRef, "map", false, OrderedMap(), valuesRef);
+    }
+
+    get values(): Type {
+        return defined(this.additionalProperties);
     }
 }
 

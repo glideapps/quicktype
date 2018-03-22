@@ -974,6 +974,8 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TCl
                 return this.makeClass(typeProvider.classData, typeProvider.mapData, typeAttributes, forwardingRef);
             case "array":
                 return this.makeArray(typeProvider.arrayData, typeAttributes, forwardingRef);
+            case "object":
+                return panic("We don't support the full object type yet");
             default:
                 if (kind === "union" || kind === "map" || kind === "intersection") {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
