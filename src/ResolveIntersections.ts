@@ -416,13 +416,11 @@ class IntersectionUnionBuilder extends UnionBuilder<
     ): TypeRef {
         if (maybeProperties !== undefined) {
             assert(maybeMapValueTypes === undefined);
-            const tref = this.typeBuilder.getUniqueClassType(typeAttributes, true, undefined, forwardingRef);
             // FIXME: attributes
             const properties = maybeProperties.map(
                 cp => new ClassProperty(this.makeIntersection(cp.typeData, Map()), cp.isOptional)
             );
-            this.typeBuilder.setClassProperties(tref, properties);
-            return tref;
+            return this.typeBuilder.getUniqueClassType(typeAttributes, true, properties, forwardingRef);
         } else if (maybeMapValueTypes !== undefined) {
             // FIXME: attributes
             const valuesType = this.makeIntersection(maybeMapValueTypes, Map());

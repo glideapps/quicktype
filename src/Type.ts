@@ -341,40 +341,12 @@ export class ClassProperty extends GenericClassProperty<TypeRef> {
     }
 }
 
-function propertiesAreSorted(_props: OrderedMap<string, ClassProperty>): boolean {
-    /*
-    const keys = props.keySeq().toArray();
-    for (let i = 1; i < keys.length; i++) {
-        if (keys[i - 1] > keys[i]) return false;
-    }
-*/
-    return true;
-}
-
 export class ClassType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "class";
 
-    constructor(typeRef: TypeRef, readonly isFixed: boolean, private _properties?: OrderedMap<string, ClassProperty>) {
+    constructor(typeRef: TypeRef, readonly isFixed: boolean, readonly properties: OrderedMap<string, ClassProperty>) {
         super(typeRef, "class");
-        if (_properties !== undefined) {
-            assert(propertiesAreSorted(_properties));
-        }
-    }
-
-    setProperties(properties: OrderedMap<string, ClassProperty>): void {
-        assert(propertiesAreSorted(properties));
-        if (this._properties !== undefined) {
-            return panic("Can only set class properties once");
-        }
-        this._properties = properties;
-    }
-
-    get properties(): OrderedMap<string, ClassProperty> {
-        if (this._properties === undefined) {
-            return panic("Properties are not set yet");
-        }
-        return this._properties;
     }
 
     get sortedProperties(): OrderedMap<string, ClassProperty> {

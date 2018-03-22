@@ -369,22 +369,11 @@ export abstract class TypeBuilder {
     getUniqueClassType(
         attributes: TypeAttributes,
         isFixed: boolean,
-        properties?: OrderedMap<string, ClassProperty>,
+        properties: OrderedMap<string, ClassProperty>,
         forwardingRef?: TypeRef
     ): TypeRef {
-        if (properties !== undefined) {
-            properties = this.modifyPropertiesIfNecessary(properties);
-        }
-        return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties), attributes);
-    }
-
-    setClassProperties(ref: TypeRef, properties: OrderedMap<string, ClassProperty>): void {
-        const type = ref.deref()[0];
-        if (!(type instanceof ClassType)) {
-            return panic("Tried to set properties of non-class type");
-        }
         properties = this.modifyPropertiesIfNecessary(properties);
-        type.setProperties(properties);
+        return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties), attributes);
     }
 
     getUnionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
@@ -494,7 +483,7 @@ export class TypeReconstituter {
         return this.useBuilder().getClassType(defined(this._typeAttributes), properties, this._forwardingRef);
     }
 
-    getUniqueClassType(isFixed: boolean, properties?: OrderedMap<string, ClassProperty>): TypeRef {
+    getUniqueClassType(isFixed: boolean, properties: OrderedMap<string, ClassProperty>): TypeRef {
         return this.useBuilder().getUniqueClassType(
             defined(this._typeAttributes),
             isFixed,

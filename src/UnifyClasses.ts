@@ -103,18 +103,12 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
         }
 
         const actualClasses: ClassType[] = classes.map(c => assertIsClass(c.deref()[0]));
-
-        let ref: TypeRef;
-        ref = this.typeBuilder.getUniqueClassType(typeAttributes, this._makeClassesFixed, undefined, forwardingRef);
-
         const properties = getCliqueProperties(actualClasses, (names, types) => {
             assert(types.size > 0, "Property has no type");
             return this._unifyTypes(types.map(t => t.typeRef).toArray(), names);
         });
 
-        this.typeBuilder.setClassProperties(ref, properties);
-
-        return ref;
+        return this.typeBuilder.getUniqueClassType(typeAttributes, this._makeClassesFixed, properties, forwardingRef);
     }
 
     protected makeArray(
