@@ -451,7 +451,6 @@ export class TypeReconstituter {
 
     constructor(
         private readonly _typeBuilder: TypeBuilder,
-        private readonly _makeClassUnique: boolean,
         private readonly _typeAttributes: TypeAttributes,
         private readonly _forwardingRef: TypeRef
     ) {}
@@ -488,10 +487,7 @@ export class TypeReconstituter {
     }
 
     getClassType(properties: OrderedMap<string, ClassProperty>): TypeRef {
-        if (this._makeClassUnique) {
-            return this.getUniqueClassType(false, properties);
-        }
-        return this.useBuilder().getClassType(defined(this._typeAttributes), properties, this._forwardingRef);
+        return this.getUniqueClassType(false, properties);
     }
 
     getUniqueClassType(isFixed: boolean, properties?: OrderedMap<string, ClassProperty>): TypeRef {
@@ -597,9 +593,8 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         return this.withForwardingRef(maybeForwardingRef, (forwardingRef: TypeRef): TypeRef => {
             this._reconstitutedTypes = this._reconstitutedTypes.set(originalRef.getIndex(), forwardingRef);
             const [originalType, originalNames] = originalRef.deref();
-            return originalType.map(
-                new TypeReconstituter(this, this.alphabetizeProperties, originalNames, forwardingRef),
-                (ref: TypeRef) => this.reconstituteTypeRef(ref)
+            return originalType.map(new TypeReconstituter(this, originalNames, forwardingRef), (ref: TypeRef) =>
+                this.reconstituteTypeRef(ref)
             );
         });
     }
