@@ -233,18 +233,16 @@ export class Run {
             graph.printGraph();
         }
 
+        let unionsDone = false;
         if (haveSchemas) {
-            graph = replaceObjectType(graph, stringTypeMapping, conflateNumbers);
-
             let intersectionsDone = false;
-            let unionsDone = false;
             do {
                 const graphBeforeRewrites = graph;
                 if (!intersectionsDone) {
                     [graph, intersectionsDone] = resolveIntersections(graph, stringTypeMapping);
                 }
                 if (!unionsDone) {
-                    [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers);
+                    [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, true);
                 }
 
                 if (graph === graphBeforeRewrites) {
@@ -252,6 +250,11 @@ export class Run {
                 }
             } while (!intersectionsDone || !unionsDone);
         }
+
+        graph = replaceObjectType(graph, stringTypeMapping, conflateNumbers);
+        do {
+            [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false);
+        } while (!unionsDone);
 
         if (this._options.findSimilarClassesSchemaURI !== undefined) {
             return graph;

@@ -79,7 +79,7 @@ export function replaceObjectType(
         return mapType;
     }
 
-    const allObjectTypes = graph.allTypesUnordered().filter(t => t instanceof ObjectType) as Set<ObjectType>;
+    const allObjectTypes = graph.allTypesUnordered().filter(t => t.kind === "object") as Set<ObjectType>;
     const groups = allObjectTypes.toArray().map(t => [t]);
     return graph.rewrite("replace object type", stringTypeMapping, false, groups, replace);
 }

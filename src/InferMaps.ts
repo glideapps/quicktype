@@ -111,7 +111,7 @@ export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping
                 shouldBe,
                 c.getAttributes(),
                 builder,
-                unionBuilderForUnification(builder, false, false, conflateNumbers),
+                unionBuilderForUnification(builder, false, false, false, conflateNumbers),
                 conflateNumbers
             ),
             forwardingRef

@@ -3,7 +3,7 @@
 import { OrderedMap, Map } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
-import { assertNever, assert } from "./Support";
+import { assertNever } from "./Support";
 import { TypeBuilder, UnionBuilder, TypeRef, UnionAccumulator } from "./TypeBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { ClassProperty } from "./Type";
@@ -31,7 +31,7 @@ function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => v
     forEachArrayInNestedValueArray(va, a => a.forEach(f));
 }
 
-class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, NestedValueArray, any> {
+class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, NestedValueArray> {
     constructor(
         typeBuilder: TypeBuilder,
         private readonly _typeInference: TypeInference,
@@ -51,14 +51,12 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         return this.typeBuilder.getStringType(typeAttributes, caseMap, forwardingRef);
     }
 
-    protected makeClass(
-        classes: NestedValueArray,
-        maps: any[],
+    protected makeObject(
+        objects: NestedValueArray,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
-        assert(maps.length === 0);
-        return this._typeInference.inferClassType(this._cjson, typeAttributes, classes, this._fixed, forwardingRef);
+        return this._typeInference.inferClassType(this._cjson, typeAttributes, objects, this._fixed, forwardingRef);
     }
 
     protected makeArray(
@@ -91,7 +89,7 @@ export class TypeInference {
         fixed: boolean,
         forwardingRef?: TypeRef
     ): TypeRef {
-        const accumulator = new UnionAccumulator<NestedValueArray, NestedValueArray, any>(true);
+        const accumulator = new UnionAccumulator<NestedValueArray, NestedValueArray>(true);
 
         forEachValueInNestedValueArray(valueArray, value => {
             const t = valueTag(value);
@@ -125,7 +123,7 @@ export class TypeInference {
                     accumulator.addStringType("string", emptyTypeAttributes);
                     break;
                 case Tag.Object:
-                    accumulator.addClass(cjson.getObjectForValue(value), emptyTypeAttributes);
+                    accumulator.addObject(cjson.getObjectForValue(value), emptyTypeAttributes);
                     break;
                 case Tag.Array:
                     accumulator.addArray(cjson.getArrayForValue(value), emptyTypeAttributes);

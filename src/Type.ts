@@ -5,7 +5,7 @@ import { OrderedSet, OrderedMap, Collection, Set, is, hash } from "immutable";
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
-import { TypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
@@ -412,6 +412,13 @@ export class MapType extends ObjectType {
     }
 }
 
+export function assertIsObject(t: Type): ObjectType {
+    if (t instanceof ObjectType) {
+        return t;
+    }
+    return panic("Supposed object type is not an object type");
+}
+
 export function assertIsClass(t: Type): ClassType {
     if (!(t instanceof ClassType)) {
         return panic("Supposed class type is not a class type");
@@ -545,7 +552,13 @@ export class UnionType extends SetOperationType {
         if (kinds.has("union") || kinds.has("intersection")) return false;
         if (kinds.has("none") || kinds.has("any")) return false;
         if (kinds.has("string") && kinds.has("enum")) return false;
-        if (kinds.has("class") && kinds.has("map")) return false;
+
+        let numObjectTypes = 0;
+        if (kinds.has("class")) numObjectTypes += 1;
+        if (kinds.has("map")) numObjectTypes += 1;
+        if (kinds.has("object")) numObjectTypes += 1;
+        if (numObjectTypes > 1) return false;
+
         return true;
     }
 
@@ -553,6 +566,15 @@ export class UnionType extends SetOperationType {
         const members = this.getMemberRefs().map(f);
         return builder.getUnionType(members);
     }
+}
+
+export function combineTypeAttributesOfTypes(types: Collection<any, Type>): TypeAttributes {
+    return combineTypeAttributes(
+        types
+            .valueSeq()
+            .toArray()
+            .map(t => t.getAttributes())
+    );
 }
 
 export function setOperationCasesEqual(
