@@ -306,7 +306,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             alias: "s",
             type: String,
             defaultValue: undefined,
-            typeLabel: "json|schema|graphql|postman-json",
+            typeLabel: "json|schema|graphql|postman",
             description: "The source language (default is json)."
         },
         {
@@ -687,7 +687,7 @@ export async function makeQuicktypeOptions(
         case "schema":
             sources = await getSources(options);
             break;
-        case "postman-json":
+        case "postman":
             for (const collectionFile of options.src) {
                 const collectionJSON = fs.readFileSync(collectionFile, "utf8");
                 const { sources: postmanSources, description } = sourcesFromPostmanCollection(collectionJSON);
