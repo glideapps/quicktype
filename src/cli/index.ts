@@ -306,7 +306,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             alias: "s",
             type: String,
             defaultValue: undefined,
-            typeLabel: "json|schema|graphql|postman-json",
+            typeLabel: "json|schema|graphql|postman",
             description: "The source language (default is json)."
         },
         {
