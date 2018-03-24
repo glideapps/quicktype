@@ -5,10 +5,10 @@ import { Map, OrderedSet, hash } from "immutable";
 import { panic, setUnion } from "./Support";
 export class TypeAttributeKind<T> {
     public readonly combine: (a: T, b: T) => T;
-    public readonly makeInferred: (a: T) => T;
+    public readonly makeInferred: (a: T) => (T | undefined);
     public readonly stringify: (a: T) => string | undefined;
 
-    constructor(readonly name: string, combine: ((a: T, b: T) => T) | undefined, makeInferred: ((a: T) => T) | undefined, stringify: ((a: T) => string | undefined) | undefined) {
+    constructor(readonly name: string, combine: ((a: T, b: T) => T) | undefined, makeInferred: ((a: T) => (T | undefined)) | undefined, stringify: ((a: T) => string | undefined) | undefined) {
         if (combine === undefined) {
             combine = () => {
                 return panic(`Cannot combine type attribute ${name}`);
@@ -93,7 +93,7 @@ export function combineTypeAttributes(firstOrArray: TypeAttributes[] | TypeAttri
 }
 
 export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
-    return attr.map((value, kind) => kind.makeInferred(value));
+    return attr.map((value, kind) => kind.makeInferred(value)).filter(v => v !== undefined);
 }
 
 export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", setUnion, a => a, undefined);

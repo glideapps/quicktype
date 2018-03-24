@@ -1,0 +1,44 @@
+{
+  "type": "object",
+  "properties": {
+    "union": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "qt-accessors": ["presence", "amount"]
+    },
+    "enum": {
+      "type": "string",
+      "enum": ["red", "green", "blue"],
+      "qt-accessors": {
+        "red": "fire",
+        "green": "grass"
+      }
+    },
+    "foo": {
+      "type": "string"
+    },
+    "bar": {
+      "type": "string"
+    }
+  },
+  "qt-accessors": {
+    "union": "unionization",
+    "enum": "enumerification",
+    "foo": {
+      "cs": "Fu_uu",
+      "java": "Goo"
+    },
+    "bar": {
+      "go": "Bah",
+      "*": "barre"
+    }
+  },
+  "required": ["union", "enum", "foo", "bar"],
+  "additionalProperties": false
+}

@@ -29,13 +29,19 @@ import {
     descriptionTypeAttributeKind,
     propertyDescriptionsTypeAttributeKind
 } from "./TypeAttributes";
+import { enumCaseNames, classPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
 const givenNameOrder = 1;
 const inferredNameOrder = 3;
+
 const classPropertyNameOrder = 2;
+const assignedClassPropertyNameOrder = 1;
+
 const enumCaseNameOrder = 2;
+const assignedEnumCaseNameOrder = 1;
+
 const unionMemberNameOrder = 4;
 
 function splitDescription(descriptions: OrderedSet<string> | undefined): string[] | undefined {
@@ -307,8 +313,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         c: ClassType,
         _className: Name,
         p: ClassProperty,
-        jsonName: string
+        jsonName: string,
+        assignedName: string | undefined
     ): Name | undefined {
+        const namer = this.namerForClassProperty(c, p);
+        if (namer === null) return undefined;
         // FIXME: This alternative should really depend on what the
         // actual name of the class ends up being.  We can do this
         // with a DependencyName.
@@ -319,9 +328,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         // maybe we'll need global properties for some weird language at
         // some point.
         const alternative = `${c.getCombinedName()}_${jsonName}`;
-        const namer = this.namerForClassProperty(c, p);
-        if (namer === null) return undefined;
-        return new SimpleName(OrderedSet([jsonName, alternative]), namer, classPropertyNameOrder);
+        const order = assignedName === undefined ? classPropertyNameOrder : assignedClassPropertyNameOrder;
+        const names = assignedName === undefined ? [jsonName, alternative] : [assignedName];
+        return new SimpleName(OrderedSet(names), namer, order);
     }
 
     protected makePropertyDependencyNames(
@@ -342,9 +351,16 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         let ns: Namespace | undefined;
 
+        const accessorNames = classPropertyNames(c, this.targetLanguage.name);
         const names = c.sortedProperties
             .map((p, jsonName) => {
-                const name = this.makeNameForProperty(c, className, p, jsonName);
+                const [assignedName, isFixed] = getAccessorName(accessorNames, jsonName);
+                let name: Name | undefined;
+                if (isFixed) {
+                    name = new FixedName(defined(assignedName));
+                } else {
+                    name = this.makeNameForProperty(c, className, p, jsonName, assignedName);
+                }
                 if (name === undefined) return undefined;
                 if (ns === undefined) {
                     ns = new Namespace(c.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
@@ -360,9 +376,14 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected makeNameForUnionMember(u: UnionType, unionName: Name, t: Type): Name {
-        return new DependencyName(nonNull(this._unionMemberNamer), unionMemberNameOrder, lookup =>
-            this.proposeUnionMemberName(u, unionName, t, lookup)
-        );
+        const [assignedName, isFixed] = unionMemberName(u, t, this.targetLanguage.name);
+        if (isFixed) {
+            return new FixedName(defined(assignedName));
+        }
+        return new DependencyName(nonNull(this._unionMemberNamer), unionMemberNameOrder, lookup => {
+            if (assignedName !== undefined) return assignedName;
+            return this.proposeUnionMemberName(u, unionName, t, lookup);
+        });
     }
 
     private addUnionMemberNames = (u: UnionType, unionName: Name): void => {
@@ -388,11 +409,18 @@ export abstract class ConvenienceRenderer extends Renderer {
         defined(this._memberNamesStoreView).set(u, names);
     };
 
-    protected makeNameForEnumCase(e: EnumType, _enumName: Name, caseName: string): Name {
+    protected makeNameForEnumCase(
+        e: EnumType,
+        _enumName: Name,
+        caseName: string,
+        assignedName: string | undefined
+    ): Name {
         // FIXME: See the FIXME in `makeNameForProperty`.  We do have global
         // enum cases, though (in Go), so this is actually useful already.
         const alternative = `${e.getCombinedName()}_${caseName}`;
-        return new SimpleName(OrderedSet([caseName, alternative]), nonNull(this._enumCaseNamer), enumCaseNameOrder);
+        const order = assignedName === undefined ? enumCaseNameOrder : assignedEnumCaseNameOrder;
+        const names = assignedName === undefined ? [caseName, alternative] : [assignedName];
+        return new SimpleName(OrderedSet(names), nonNull(this._enumCaseNamer), order);
     }
 
     // FIXME: this is very similar to addPropertyNameds and addUnionMemberNames
@@ -411,8 +439,16 @@ export abstract class ConvenienceRenderer extends Renderer {
             ns = new Namespace(e.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
         }
         let names = Map<string, Name>();
+        const accessorNames = enumCaseNames(e, this.targetLanguage.name);
         e.cases.forEach(caseName => {
-            names = names.set(caseName, ns.add(this.makeNameForEnumCase(e, enumName, caseName)));
+            const [assignedName, isFixed] = getAccessorName(accessorNames, caseName);
+            let name: Name;
+            if (isFixed) {
+                name = new FixedName(defined(assignedName));
+            } else {
+                name = this.makeNameForEnumCase(e, enumName, caseName, assignedName);
+            }
+            names = names.set(caseName, ns.add(name));
         });
         defined(this._caseNamesStoreView).set(e, names);
     };

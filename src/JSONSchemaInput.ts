@@ -14,7 +14,8 @@ import {
     defined,
     addHashCode,
     mapSync,
-    forEachSync
+    forEachSync,
+    checkArray
 } from "./Support";
 import { TypeGraphBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
@@ -26,6 +27,13 @@ import {
     makeTypeAttributesInferred
 } from "./TypeAttributes";
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
+import {
+    accessorNamesTypeAttributeKind,
+    checkAccessorNames,
+    makeUnionIdentifierAttribute,
+    isAccessorEntry,
+    makeUnionMemberNamesAttribute
+} from "./AccessorNames";
 
 export enum PathElementKind {
     Root,
@@ -395,6 +403,12 @@ function makeAttributes(schema: StringMap, loc: Location, attributes: TypeAttrib
     });
 }
 
+function makeNonUnionAccessorAttributes(schema: StringMap): TypeAttributes | undefined {
+    const maybeAccessors = schema["qt-accessors"];
+    if (maybeAccessors === undefined) return undefined;
+    return accessorNamesTypeAttributeKind.makeAttributes(checkAccessorNames(maybeAccessors));
+}
+
 function checkTypeList(typeOrTypes: any): OrderedSet<string> {
     if (typeof typeOrTypes === "string") {
         return OrderedSet([typeOrTypes]);
@@ -591,8 +605,28 @@ export async function addTypesInSchema(
         }
 
         async function convertOneOrAnyOf(cases: any, kind: string): Promise<TypeRef> {
+            const maybeAccessors = schema["qt-accessors"];
             const unionType = typeBuilder.getUniqueUnionType(makeTypeAttributesInferred(typeAttributes), undefined);
-            typeBuilder.setSetOperationMembers(unionType, OrderedSet(await makeTypesFromCases(cases, kind)));
+            const typeRefs = await makeTypesFromCases(cases, kind);
+
+            if (maybeAccessors !== undefined) {
+                const identifierAttribute = makeUnionIdentifierAttribute();
+                typeBuilder.addAttributes(unionType, identifierAttribute);
+
+                const accessors = checkArray(maybeAccessors, isAccessorEntry);
+                assert(
+                    typeRefs.length === accessors.length,
+                    `Accessor entry array must have the same number of entries as the ${kind}`
+                );
+                for (let i = 0; i < typeRefs.length; i++) {
+                    typeBuilder.addAttributes(
+                        typeRefs[i],
+                        makeUnionMemberNamesAttribute(identifierAttribute, accessors[i])
+                    );
+                }
+            }
+
+            typeBuilder.setSetOperationMembers(unionType, OrderedSet(typeRefs));
             return unionType;
         }
 
@@ -610,7 +644,7 @@ export async function addTypesInSchema(
                         predicate = (x: any) => x === null;
                         break;
                     case "integer":
-                        predicate = (x: any) => typeof x === "number" && x === Math.floor(x)
+                        predicate = (x: any) => typeof x === "number" && x === Math.floor(x);
                         break;
                     default:
                         predicate = (x: any) => typeof x === name;
@@ -652,7 +686,7 @@ export async function addTypesInSchema(
                 unionTypes.push(await makeArrayType());
             }
             if (includeObject) {
-                unionTypes.push(...await makeObjectTypes())
+                unionTypes.push(...(await makeObjectTypes()));
             }
 
             types.push(typeBuilder.getUniqueUnionType(inferredAttributes, OrderedSet(unionTypes)));
@@ -673,6 +707,11 @@ export async function addTypesInSchema(
         }
         if (schema.oneOf !== undefined) {
             types.push(await convertOneOrAnyOf(schema.oneOf, "oneOf"));
+        } else {
+            const maybeAttributes = makeNonUnionAccessorAttributes(schema);
+            if (maybeAttributes !== undefined) {
+                typeBuilder.addAttributes(intersectionType, maybeAttributes);
+            }
         }
         if (schema.anyOf !== undefined) {
             types.push(await convertOneOrAnyOf(schema.anyOf, "anyOf"));

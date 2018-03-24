@@ -84,6 +84,7 @@ export default class SwiftTargetLanguage extends TargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -229,6 +230,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private _needNull: boolean = false;
 
     constructor(
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
@@ -238,7 +240,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         private readonly _convenienceInitializers: boolean,
         private readonly _alamofire: boolean
     ) {
-        super(graph, leadingComments);
+        super(targetLanguage, graph, leadingComments);
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {

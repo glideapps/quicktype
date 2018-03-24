@@ -17,16 +17,42 @@ export function setUnion<T, TSet extends Set<T>>(a: TSet, b: TSet): TSet {
 
 export type StringMap = { [name: string]: any };
 
-export function checkStringMap(x: any): StringMap {
-    if (typeof x !== "object") {
-        return panic(`Value must be an object, but is ${x}`);
+export function isStringMap(x: any): x is StringMap;
+export function isStringMap<T>(x: any, checkValue: (v: any) => v is T): x is { [name: string]: T };
+export function isStringMap<T>(x: any, checkValue?: (v: any) => v is T): boolean {
+    if (typeof x !== "object" || Array.isArray(x) || x === null) {
+        return false;
     }
-    return x;
+    if (checkValue !== undefined) {
+        for (const k of Object.getOwnPropertyNames(x)) {
+            const v = x[k];
+            if (!checkValue(v)) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
-export function checkArray(x: any): any[] {
+export function checkStringMap(x: any): StringMap;
+export function checkStringMap<T>(x: any, checkValue: (v: any) => v is T): { [name: string]: T };
+export function checkStringMap<T>(x: any, checkValue?: (v: any) => v is T): StringMap {
+    if (isStringMap(x, checkValue as any)) return x;
+    return panic(`Value must be an object, but is ${x}`);
+}
+
+export function checkArray(x: any): any[];
+export function checkArray<T>(x: any, checkItem: (v: any) => v is T): T[];
+export function checkArray<T>(x: any, checkItem?: (v: any) => v is T): T[] {
     if (!Array.isArray(x)) {
         return panic(`Value must be an array, but is ${x}`);
+    }
+    if (checkItem !== undefined) {
+        for (const v of x) {
+            if (!checkItem(v)) {
+                return panic(`Array item does not satisfy constraint: ${v}`);
+            }
+        }
     }
     return x;
 }

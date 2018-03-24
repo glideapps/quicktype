@@ -72,6 +72,7 @@ export default class ObjectiveCTargetLanguage extends TargetLanguage {
     }
 
     protected get rendererClass(): new (
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         ...optionValues: any[]
@@ -248,6 +249,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     pseudoEnums: Set<EnumType>;
 
     constructor(
+        targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         private readonly _justTypes: boolean,
@@ -256,7 +258,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         private readonly _extraComments: boolean,
         private readonly _marshalingFunctions: boolean
     ) {
-        super(graph, leadingComments);
+        super(targetLanguage, graph, leadingComments);
 
         // Infer the class prefix from a top-level name if it's not given
         if (this._classPrefix === DEFAULT_CLASS_PREFIX) {
