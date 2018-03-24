@@ -263,7 +263,11 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 break;
         }
         this.emitDescription(description);
-        this.emitLine(declaration, " ", name);
+        if (superclass === undefined) {
+            this.emitLine(declaration, " ", name);
+        } else {
+            this.emitLine(declaration, " ", name, " : ", superclass);
+        }
         this.emitBlock(emitter);
     }
 
@@ -286,7 +290,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             AccessModifier.Public,
             "partial class",
             className,
-            " : " + this.superclassForClass(c),
+            this.superclassForClass(c),
             () => {
                 if (c.properties.isEmpty()) return;
                 const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
