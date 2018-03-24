@@ -687,7 +687,7 @@ export async function makeQuicktypeOptions(
         case "schema":
             sources = await getSources(options);
             break;
-        case "postman-json":
+        case "postman":
             for (const collectionFile of options.src) {
                 const collectionJSON = fs.readFileSync(collectionFile, "utf8");
                 const { sources: postmanSources, description } = sourcesFromPostmanCollection(collectionJSON);
