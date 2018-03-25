@@ -17,7 +17,6 @@ import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./Ty
 
 function getCliqueProperties(
     clique: ObjectType[],
-    includeAnyInProperties: boolean,
     makePropertyType: (attributes: TypeAttributes, types: OrderedSet<Type>) => TypeRef
 ): [OrderedMap<string, ClassProperty>, TypeRef | undefined, boolean] {
     let lostTypeAttributes = false;
@@ -32,15 +31,13 @@ function getCliqueProperties(
     let additionalProperties: OrderedSet<Type> | undefined = undefined;
     for (const o of clique) {
         let additional = o.additionalProperties;
-        if (!includeAnyInProperties && additional !== undefined && additional.kind === "any") {
-            additional = undefined;
-            lostTypeAttributes = true;
-        }
         if (additional !== undefined) {
             if (additionalProperties === undefined) {
                 additionalProperties = OrderedSet();
             }
-            additionalProperties = additionalProperties.add(additional);
+            if (additional !== undefined) {
+                additionalProperties = additionalProperties.add(additional);
+            }
         }
 
         for (let i = 0; i < properties.length; i++) {
@@ -48,7 +45,7 @@ function getCliqueProperties(
             const maybeProperty = o.properties.get(name);
             if (maybeProperty === undefined) {
                 isOptional = true;
-                if (additional !== undefined && (includeAnyInProperties || additional.kind !== "any")) {
+                if (additional !== undefined && additional.kind !== "any") {
                     types = types.add(additional);
                 }
             } else {
@@ -159,7 +156,6 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
         } else {
             const [properties, additionalProperties, lostTypeAttributes] = getCliqueProperties(
                 objectTypes,
-                this._makeObjectTypes,
                 (names, types) => {
                     assert(types.size > 0, "Property has no type");
                     return this._unifyTypes(types.map(t => t.typeRef).toArray(), names);
