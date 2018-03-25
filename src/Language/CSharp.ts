@@ -243,12 +243,15 @@ export class CSharpRenderer extends ConvenienceRenderer {
             return csType;
         }
     }
-
+    protected superclassForType(_t: Type): Sourcelike | undefined {
+        return undefined;
+    }
     protected emitType(
         description: string[] | undefined,
         accessModifier: AccessModifier,
         declaration: Sourcelike,
         name: Sourcelike,
+        superclass: Sourcelike | undefined,
         emitter: () => void
     ): void {
         switch (accessModifier) {
@@ -262,7 +265,11 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 break;
         }
         this.emitDescription(description);
-        this.emitLine(declaration, " ", name);
+        if (superclass === undefined) {
+            this.emitLine(declaration, " ", name);
+        } else {
+            this.emitLine(declaration, " ", name, " : ", superclass);
+        }
         this.emitBlock(emitter);
     }
 
@@ -280,56 +287,70 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     private emitClassDefinition(c: ClassType, className: Name): void {
-        this.emitType(this.descriptionForType(c), AccessModifier.Public, "partial class", className, () => {
-            if (c.properties.isEmpty()) return;
-            const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
-            let columns: Sourcelike[][] = [];
-            let isFirstProperty = true;
-            let previousDescription: string[] | undefined = undefined;
-            this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
-                const csType = this.csType(p.type, true);
-                const attribute = this.attributeForProperty(jsonName);
-                const description = this.descriptionForClassProperty(c, jsonName);
-                const property = ["public ", csType, " ", name, " { get; set; }"];
-                if (!this.needAttributes) {
-                    if (
-                        // Descriptions should be preceded by an empty line
-                        (!isFirstProperty && description !== undefined) ||
-                        // If the previous property has a description, leave an empty line
-                        previousDescription !== undefined
-                    ) {
-                        this.ensureBlankLine();
+        this.emitType(
+            this.descriptionForType(c),
+            AccessModifier.Public,
+            "partial class",
+            className,
+            this.superclassForType(c),
+            () => {
+                if (c.properties.isEmpty()) return;
+                const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
+                let columns: Sourcelike[][] = [];
+                let isFirstProperty = true;
+                let previousDescription: string[] | undefined = undefined;
+                this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
+                    const csType = this.csType(p.type, true);
+                    const attribute = this.attributeForProperty(jsonName);
+                    const description = this.descriptionForClassProperty(c, jsonName);
+                    const property = ["public ", csType, " ", name, " { get; set; }"];
+                    if (!this.needAttributes) {
+                        if (
+                            // Descriptions should be preceded by an empty line
+                            (!isFirstProperty && description !== undefined) ||
+                            // If the previous property has a description, leave an empty line
+                            previousDescription !== undefined
+                        ) {
+                            this.ensureBlankLine();
+                        }
+                        this.emitDescription(description);
+                        this.emitLine(property);
+                    } else if (this.dense && attribute !== undefined) {
+                        const comment = description === undefined ? "" : ` // ${description.join("; ")}`;
+                        columns.push([attribute, " ", property, comment]);
+                    } else {
+                        this.emitDescription(description);
+                        if (attribute !== undefined) {
+                            this.emitLine(attribute);
+                        }
+                        this.emitLine(property);
                     }
-                    this.emitDescription(description);
-                    this.emitLine(property);
-                } else if (this.dense && attribute !== undefined) {
-                    const comment = description === undefined ? "" : ` // ${description.join("; ")}`;
-                    columns.push([attribute, " ", property, comment]);
-                } else {
-                    this.emitDescription(description);
-                    if (attribute !== undefined) {
-                        this.emitLine(attribute);
-                    }
-                    this.emitLine(property);
-                }
 
-                isFirstProperty = false;
-                previousDescription = description;
-            });
-            if (columns.length > 0) {
-                this.emitTable(columns);
+                    isFirstProperty = false;
+                    previousDescription = description;
+                });
+                if (columns.length > 0) {
+                    this.emitTable(columns);
+                }
             }
-        });
+        );
     }
 
     private emitUnionDefinition(u: UnionType, unionName: Name): void {
         const nonNulls = removeNullFromUnion(u)[1];
-        this.emitType(this.descriptionForType(u), AccessModifier.Public, "partial struct", unionName, () => {
-            this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
-                const csType = this.nullableCSType(t);
-                this.emitLine("public ", csType, " ", fieldName, ";");
-            });
-        });
+        this.emitType(
+            this.descriptionForType(u),
+            AccessModifier.Public,
+            "partial struct",
+            unionName,
+            this.superclassForType(u),
+            () => {
+                this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
+                    const csType = this.nullableCSType(t);
+                    this.emitLine("public ", csType, " ", fieldName, ";");
+                });
+            }
+        );
     }
 
     private emitEnumDefinition(e: EnumType, enumName: Name): void {
@@ -522,7 +543,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             typeKind = "class";
         }
         const csType = this.csType(t);
-        this.emitType(undefined, AccessModifier.Public, [partial, typeKind], name, () => {
+        this.emitType(undefined, AccessModifier.Public, [partial, typeKind], name, this.superclassForType(t), () => {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
@@ -537,6 +558,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             AccessModifier.None,
             "static class",
             defined(this._enumExtensionsNames.get(enumName)),
+            this.superclassForType(e),
             () => {
                 this.emitLine("public static ", enumName, "? ValueForString(string str)");
                 this.emitBlock(() => {
@@ -658,7 +680,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         };
 
         const [hasNull, nonNulls] = removeNullFromUnion(u);
-        this.emitType(undefined, AccessModifier.Public, "partial struct", unionName, () => {
+        this.emitType(undefined, AccessModifier.Public, "partial struct", unionName, this.superclassForType(u), () => {
             this.emitLine("public ", unionName, "(JsonReader reader, JsonSerializer serializer)");
             this.emitBlock(() => {
                 this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, _) => {
@@ -699,7 +721,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private emitSerializeClass(): void {
         // FIXME: Make Serialize a Named
-        this.emitType(undefined, AccessModifier.Public, "static class", "Serialize", () => {
+        this.emitType(undefined, AccessModifier.Public, "static class", "Serialize", undefined, () => {
             this.topLevels.forEach((t: Type, _: string) => {
                 // FIXME: Make ToJson a Named
                 this.emitExpressionMember(
@@ -755,7 +777,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         // FIXME: Make Converter a Named
         let converterName: Sourcelike = ["Converter"];
         if (jsonConverter) converterName = converterName.concat([": JsonConverter"]);
-        this.emitType(undefined, AccessModifier.Internal, "class", converterName, () => {
+        this.emitType(undefined, AccessModifier.Internal, "class", converterName, undefined, () => {
             if (jsonConverter) {
                 this.emitConverterMembers();
                 this.ensureBlankLine();
