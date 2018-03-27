@@ -472,7 +472,7 @@ export abstract class SetOperationType extends Type {
         super(typeRef, kind);
     }
 
-    setMembers(memberRefs: OrderedSet<TypeRef>) {
+    setMembers(memberRefs: OrderedSet<TypeRef>): void {
         if (this._memberRefs !== undefined) {
             return panic("Can only set map members once");
         }
@@ -533,6 +533,14 @@ export class UnionType extends SetOperationType {
 
     constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
         super(typeRef, "union", memberRefs);
+        if (memberRefs !== undefined) {
+            assert(!memberRefs.isEmpty(), "We can't have empty unions");
+        }
+    }
+
+    setMembers(memberRefs: OrderedSet<TypeRef>): void {
+        assert(!memberRefs.isEmpty(), "We can't have empty unions");
+        super.setMembers(memberRefs);
     }
 
     get stringTypeMembers(): OrderedSet<Type> {
