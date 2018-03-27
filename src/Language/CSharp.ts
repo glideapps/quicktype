@@ -281,8 +281,8 @@ export class CSharpRenderer extends ConvenienceRenderer {
         this.emitBlock(emitter);
     }
 
-    protected attributeForProperty(_jsonName: string): Sourcelike | undefined {
-        return undefined;
+    protected attributesForProperty(_jsonName: string): Sourcelike[] {
+        return [];
     }
 
     protected emitDescriptionBlock(lines: string[]): void {
@@ -309,7 +309,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 let previousDescription: string[] | undefined = undefined;
                 this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
                     const csType = this.csType(p.type, true);
-                    const attribute = this.attributeForProperty(jsonName);
+                    const attributes = this.attributesForProperty(jsonName);
                     const description = this.descriptionForClassProperty(c, jsonName);
                     const property = ["public ", csType, " ", name, " { get; set; }"];
                     if (!this.needAttributes) {
@@ -323,12 +323,12 @@ export class CSharpRenderer extends ConvenienceRenderer {
                         }
                         this.emitDescription(description);
                         this.emitLine(property);
-                    } else if (this.dense && attribute !== undefined) {
+                    } else if (this.dense && attributes.length > 0) {
                         const comment = description === undefined ? "" : ` // ${description.join("; ")}`;
-                        columns.push([attribute, " ", property, comment]);
+                        columns.push([attributes, " ", property, comment]);
                     } else {
                         this.emitDescription(description);
-                        if (attribute !== undefined) {
+                        for (const attribute of attributes) {
                             this.emitLine(attribute);
                         }
                         this.emitLine(property);
@@ -540,10 +540,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         });
     }
 
-    protected attributeForProperty(jsonName: string): Sourcelike {
+    protected attributesForProperty(jsonName: string): Sourcelike[] {
         const jsonProperty = this.dense ? denseJsonPropertyName : "JsonProperty";
         const escapedName = utf16StringEscape(jsonName);
-        return ["[", jsonProperty, '("', escapedName, '")]'];
+        return [["[", jsonProperty, '("', escapedName, '")]']];
     }
 
     private emitFromJsonForTopLevel(t: Type, name: Name): void {
