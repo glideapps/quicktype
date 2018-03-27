@@ -12,7 +12,8 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-    directlyReachableSingleNamedType
+    directlyReachableSingleNamedType,
+    ClassProperty
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -86,6 +87,10 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         return true;
     }
 
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
     protected get rendererClass(): new (
         targetLanguage: TargetLanguage,
         graph: TypeGraph,
@@ -133,6 +138,9 @@ function csNameStyle(original: string): string {
 }
 
 function isValueType(t: Type): boolean {
+    if (t instanceof UnionType) {
+        return nullableFromUnion(t) === null;
+    }
     return ["integer", "double", "bool", "enum", "date-time"].indexOf(t.kind) >= 0;
 }
 
@@ -243,8 +251,8 @@ export class CSharpRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected nullableCSType(t: Type): Sourcelike {
-        const csType = this.csType(t);
+    protected nullableCSType(t: Type, withIssues: boolean = false): Sourcelike {
+        const csType = this.csType(t, withIssues);
         if (isValueType(t)) {
             return [csType, "?"];
         } else {
@@ -281,7 +289,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         this.emitBlock(emitter);
     }
 
-    protected attributesForProperty(_jsonName: string): Sourcelike[] {
+    protected attributesForProperty(_property: ClassProperty, _jsonName: string): Sourcelike[] {
         return [];
     }
 
@@ -308,8 +316,8 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 let isFirstProperty = true;
                 let previousDescription: string[] | undefined = undefined;
                 this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
-                    const csType = this.csType(p.type, true);
-                    const attributes = this.attributesForProperty(jsonName);
+                    const csType = p.isOptional ? this.nullableCSType(p.type, true) : this.csType(p.type, true);
+                    const attributes = this.attributesForProperty(p, jsonName);
                     const description = this.descriptionForClassProperty(c, jsonName);
                     const property = ["public ", csType, " ", name, " { get; set; }"];
                     if (!this.needAttributes) {
@@ -483,13 +491,14 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 "Newtonsoft",
                 "MetadataPropertyHandling",
                 "DateParseHandling",
-                "FromJson"
+                "FromJson",
+                "Required"
             ]);
     }
 
     protected forbiddenForClassProperties(c: ClassType, className: Name): ForbiddenWordsInfo {
         const result = super.forbiddenForClassProperties(c, className);
-        result.names = result.names.concat(["ToJson", "FromJson"]);
+        result.names = result.names.concat(["ToJson", "FromJson", "Required"]);
         return result;
     }
 
@@ -526,24 +535,33 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         this.forEachTopLevel("none", (t, topLevelName) => {
             let rhs: Sourcelike;
             if (t instanceof EnumType) {
-                rhs = ["JsonConvert.DeserializeObject<", topLevelName, ">(jsonString)"]
+                rhs = ["JsonConvert.DeserializeObject<", topLevelName, ">(jsonString)"];
             } else {
                 rhs = [topLevelName, ".FromJson(jsonString)"];
             }
-            this.emitLine(
-                "//    var ",
-                modifySource(camelCase, topLevelName),
-                " = ",
-                rhs,
-                ";"
-            );
+            this.emitLine("//    var ", modifySource(camelCase, topLevelName), " = ", rhs, ";");
         });
     }
 
-    protected attributesForProperty(jsonName: string): Sourcelike[] {
+    protected attributesForProperty(property: ClassProperty, jsonName: string): Sourcelike[] {
+        const t = property.type;
         const jsonProperty = this.dense ? denseJsonPropertyName : "JsonProperty";
         const escapedName = utf16StringEscape(jsonName);
-        return [["[", jsonProperty, '("', escapedName, '")]']];
+        const isNullable = t.isNullable;
+        const isOptional = property.isOptional;
+        const nullValueHandling =
+            isValueType(t) && !isOptional ? [] : [", NullValueHandling = NullValueHandling.Ignore"];
+        let required: Sourcelike;
+        if (isOptional && isNullable) {
+            required = [];
+        } else if (isOptional && !isNullable) {
+            required = [", Required = Required.DisallowNull", nullValueHandling];
+        } else if (!isOptional && isNullable) {
+            required = [", Required = Required.AllowNull"];
+        } else {
+            required = [", Required = Required.Always", nullValueHandling];
+        }
+        return [["[", jsonProperty, '("', escapedName, '"', required, ")]"]];
     }
 
     private emitFromJsonForTopLevel(t: Type, name: Name): void {
@@ -754,7 +772,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         const unionNames = this.namedUnions.map(this.nameForNamedType);
         const allNames = enumNames.union(unionNames);
         const canConvertExprs = allNames.map((n: Name): Sourcelike => ["t == typeof(", n, ")"]);
-        const nullableCanConvertExprs = enumNames.map((n: Name): Sourcelike => ["t == typeof(", n, "?)"]);
+        const nullableCanConvertExprs = allNames.map((n: Name): Sourcelike => ["t == typeof(", n, "?)"]);
         const canConvertExpr = intercalate(" || ", canConvertExprs.union(nullableCanConvertExprs));
         // FIXME: make Iterable<any, Sourcelike> a Sourcelike, too?
         this.emitExpressionMember("public override bool CanConvert(Type t)", canConvertExpr.toArray());
@@ -773,7 +791,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.emitLine("return ", extensionsName, ".ReadJson(reader, serializer);");
             });
             // FIXME: call the constructor via reflection?
-            this.emitTypeSwitch(unionNames, t => ["t == typeof(", t, ")"], false, false, n => {
+            this.emitTypeSwitch(unionNames, t => ["t == typeof(", t, ") || t == typeof(", t, "?)"], false, false, n => {
                 this.emitLine("return new ", n, "(reader, serializer);");
             });
             this.emitLine('throw new Exception("Unknown type");');
