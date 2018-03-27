@@ -234,6 +234,10 @@ export class TypeGraph {
         replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef,
         force: boolean = false
     ): TypeGraph {
+        if (this._printOnRewrite) {
+            console.log(`\n# ${title}`);
+        }
+
         if (!force && replacementGroups.length === 0) return this;
 
         const builder = new GraphRewriteBuilder(
@@ -258,7 +262,6 @@ export class TypeGraph {
 
         if (this._printOnRewrite) {
             newGraph.setPrintOnRewrite();
-            console.log(`\n# ${title}`);
             newGraph.printGraph();
         }
 
