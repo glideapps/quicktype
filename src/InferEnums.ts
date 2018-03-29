@@ -2,7 +2,7 @@
 
 import { Set, OrderedMap, OrderedSet } from "immutable";
 
-import { Type, StringType, UnionType } from "./Type";
+import { Type, StringType, UnionType, combineTypeAttributesOfTypes } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { assert, defined } from "./Support";
@@ -51,7 +51,7 @@ function replaceUnion(group: Set<UnionType>, builder: GraphRewriteBuilder<UnionT
     assert(group.size === 1);
     const u = defined(group.first());
     const stringMembers = defined(unionNeedsReplacing(u));
-    const stringAttributes = combineTypeAttributes(stringMembers.toArray().map(t => t.getAttributes()));
+    const stringAttributes = combineTypeAttributesOfTypes(stringMembers);
     const types: TypeRef[] = [];
     u.members.forEach(t => {
         if (stringMembers.has(t)) return;

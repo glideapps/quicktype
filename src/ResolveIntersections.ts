@@ -16,7 +16,6 @@ import {
 import {
     IntersectionType,
     Type,
-    ClassType,
     ClassProperty,
     EnumType,
     UnionType,
@@ -25,12 +24,13 @@ import {
     StringType,
     ArrayType,
     matchTypeExhaustive,
-    MapType,
     isPrimitiveStringTypeKind,
     isPrimitiveTypeKind,
     isNumberTypeKind,
     GenericClassProperty,
-    TypeKind
+    TypeKind,
+    combineTypeAttributesOfTypes,
+    ObjectType
 } from "./Type";
 import { assert, defined, panic } from "./Support";
 import {
@@ -70,13 +70,10 @@ function attributesForTypes<T extends TypeKind>(types: OrderedSet<Type>): TypeAt
         .mapKeys(t => t.kind) as Map<T, TypeAttributes>;
 }
 
+type PropertyMap = OrderedMap<string, GenericClassProperty<OrderedSet<Type>>>;
+
 class IntersectionAccumulator
-    implements
-        UnionTypeProvider<
-            OrderedSet<Type>,
-            OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
-            OrderedSet<Type> | undefined
-        > {
+    implements UnionTypeProvider<OrderedSet<Type>, [PropertyMap, OrderedSet<Type> | undefined] | undefined> {
     private _primitiveStringTypes: OrderedSet<PrimitiveStringTypeKind> | undefined;
     private _primitiveStringAttributes: TypeAttributeMap<PrimitiveStringTypeKind> = OrderedMap();
 
@@ -92,24 +89,17 @@ class IntersectionAccumulator
     private _arrayItemTypes: OrderedSet<Type> | undefined | false;
     private _arrayAttributes: TypeAttributes = emptyTypeAttributes;
 
-    // We allow only either maps, classes, or neither.  States:
+    // We start out with all object types allowed, which means
+    // _additionalPropertyTypes is empty - no restrictions - and
+    // _classProperties is empty - no defined properties so far.
     //
-    // 1. Start: No types seen yet, both are allowed, _mapValueTypes is
-    //    the empty set, _classProperties is undefined.
-    // 2. At least one type seen, all of them can be maps: _mapValueTypes
-    //    is a non-empty set, _classProperties is undefined.
-    // 3. All types seen can be maps or classes, at least one of them
-    //    can only be a class: Maps are not allowed anymore, but classes
-    //    are.  _mapValueTypes is undefined, _classProperties is defined.
-    // 4. At least one type seen that can't be map or class: Neither map
-    //    nor class is allowed anymore.  _mapValueTypes and _classProperties
-    //    are both undefined.
-
-    private _mapValueTypes: OrderedSet<Type> | undefined = OrderedSet();
-    private _mapAttributes: TypeAttributes = emptyTypeAttributes;
-
-    private _classProperties: OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined;
-    private _classAttributes: TypeAttributes = emptyTypeAttributes;
+    // If _additionalPropertyTypes is undefined, no additional
+    // properties are allowed anymore.  If _classProperties is
+    // undefined, no object types are allowed, in which case
+    // _additionalPropertyTypes must also be undefined;
+    private _objectProperties: PropertyMap | undefined = OrderedMap();
+    private _objectAttributes: TypeAttributes = emptyTypeAttributes;
+    private _additionalPropertyTypes: OrderedSet<Type> | undefined = OrderedSet();
 
     private _lostTypeAttributes: boolean = false;
 
@@ -155,7 +145,7 @@ class IntersectionAccumulator
 
     private updateEnumCases(members: OrderedSet<Type>): void {
         const enums = members.filter(t => t instanceof EnumType) as OrderedSet<EnumType>;
-        const attributes = combineTypeAttributes(enums.toArray().map(t => t.getAttributes()));
+        const attributes = combineTypeAttributesOfTypes(enums);
         this._enumAttributes = combineTypeAttributes(this._enumAttributes, attributes);
         if (members.find(t => t instanceof StringType) !== undefined) {
             return;
@@ -184,72 +174,50 @@ class IntersectionAccumulator
         }
     }
 
-    private updateMapValueTypesAndClassProperties(members: OrderedSet<Type>): void {
-        function makeProperties(): OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> {
-            if (maybeClass === undefined) return panic("Didn't we just check for this?");
-            return maybeClass.properties.map(cp => new GenericClassProperty(OrderedSet([cp.type]), cp.isOptional));
-        }
-
-        const maybeClass = members.find(t => t instanceof ClassType) as ClassType | undefined;
-        const maybeMap = members.find(t => t instanceof MapType) as MapType | undefined;
-        assert(
-            maybeClass === undefined || maybeMap === undefined,
-            "Can't have both class and map type in a canonical union"
-        );
-
-        if (maybeClass !== undefined) {
-            this._classAttributes = combineTypeAttributes(this._classAttributes, maybeClass.getAttributes());
-        }
-        if (maybeMap !== undefined) {
-            this._mapAttributes = combineTypeAttributes(this._mapAttributes, maybeMap.getAttributes());
-        }
-
-        if (maybeMap === undefined && maybeClass === undefined) {
-            // Moving to state 4.
-            this._mapValueTypes = undefined;
-            this._classProperties = undefined;
+    private updateObjectProperties(members: OrderedSet<Type>): void {
+        const maybeObject = members.find(t => t instanceof ObjectType) as ObjectType | undefined;
+        if (maybeObject === undefined) {
+            this._objectProperties = undefined;
+            this._additionalPropertyTypes = undefined;
             return;
         }
 
-        if (this._mapValueTypes !== undefined) {
-            // We're in state 1 or 2.
-            assert(this._classProperties === undefined, "One of _mapValueTypes and _classProperties must be undefined");
+        this._objectAttributes = combineTypeAttributes(this._objectAttributes, maybeObject.getAttributes());
 
-            if (maybeMap !== undefined) {
-                // Moving to state 2.
-                this._mapValueTypes = this._mapValueTypes.add(maybeMap.values);
-            } else {
-                // Moving to state 3.
-
-                this._mapValueTypes = undefined;
-                this._classProperties = makeProperties();
-                this._lostTypeAttributes = true;
-            }
-        } else if (this._classProperties !== undefined) {
-            // We're in state 3.
-            if (maybeMap !== undefined) {
-                this._classProperties = this._classProperties.map(
-                    cp => new GenericClassProperty(cp.typeData.add(maybeMap.values), cp.isOptional)
-                );
-            } else {
-                // Staying in state 3.
-                if (maybeClass === undefined) return panic("Didn't we just check for this?");
-
-                this._classProperties = this._classProperties.mergeWith(
-                    (cp1, cp2) =>
-                        new GenericClassProperty(cp1.typeData.union(cp2.typeData), cp1.isOptional || cp2.isOptional),
-                    makeProperties()
-                );
-            }
-        } else {
-            // We're in state 4.  No way out of state 4.
-            this._lostTypeAttributes = true;
+        if (this._objectProperties === undefined) {
+            assert(this._additionalPropertyTypes === undefined);
+            return;
         }
 
-        assert(
-            this._mapValueTypes === undefined || this._classProperties === undefined,
-            "We screwed up our sacred state machine."
-        );
+        const allPropertyNames = this._objectProperties.keySeq().toOrderedSet().union(maybeObject.properties.keySeq());
+        allPropertyNames.forEach(name => {
+            const existing = defined(this._objectProperties).get(name);
+            const newProperty = maybeObject.properties.get(name);
+
+            if (existing !== undefined && newProperty !== undefined) {
+                const cp = new GenericClassProperty(existing.typeData.add(newProperty.type), existing.isOptional || newProperty.isOptional);
+                this._objectProperties = defined(this._objectProperties).set(name, cp);
+            } else if (existing !== undefined && maybeObject.additionalProperties !== undefined) {
+                const cp = new GenericClassProperty(existing.typeData.add(maybeObject.additionalProperties), existing.isOptional);
+                this._objectProperties = defined(this._objectProperties).set(name, cp);
+            } else if (existing !== undefined) {
+                this._objectProperties = defined(this._objectProperties).remove(name);                
+            } else if (newProperty !== undefined && this._additionalPropertyTypes !== undefined) {
+                const types = this._additionalPropertyTypes.add(newProperty.type);
+                this._objectProperties = defined(this._objectProperties).set(name, new GenericClassProperty(types, newProperty.isOptional));
+            } else if (newProperty !== undefined) {
+                this._objectProperties = defined(this._objectProperties).remove(name);
+            } else {
+                return panic("This should not happen");
+            }
+        });
+
+        if (this._additionalPropertyTypes !== undefined && maybeObject.additionalProperties) {
+            this._additionalPropertyTypes = this._additionalPropertyTypes.add(maybeObject.additionalProperties);
+        } else if (this._additionalPropertyTypes !== undefined || maybeObject.additionalProperties) {
+            this._additionalPropertyTypes = undefined;
+            this._lostTypeAttributes = true;
+        }
     }
 
     private addUnionSet(members: OrderedSet<Type>): void {
@@ -257,7 +225,7 @@ class IntersectionAccumulator
         this.updateOtherPrimitiveTypes(members);
         this.updateEnumCases(members);
         this.updateArrayItemTypes(members);
-        this.updateMapValueTypesAndClassProperties(members);
+        this.updateObjectProperties(members);
     }
 
     addType(t: Type): TypeAttributes {
@@ -276,8 +244,9 @@ class IntersectionAccumulator
             doubleType => this.addUnionSet(OrderedSet([doubleType])),
             stringType => this.addUnionSet(OrderedSet([stringType])),
             arrayType => this.addUnionSet(OrderedSet([arrayType])),
-            classType => this.addUnionSet(OrderedSet([classType])),
-            mapType => this.addUnionSet(OrderedSet([mapType])),
+            _classType => panic("We should never see class types in intersections"),
+            _mapType => panic("We should never see map types in intersections"),
+            objectType => this.addUnionSet(OrderedSet([objectType])),
             enumType => this.addUnionSet(OrderedSet([enumType])),
             unionType => {
                 attributes = combineTypeAttributes(
@@ -299,12 +268,13 @@ class IntersectionAccumulator
         return this._arrayItemTypes;
     }
 
-    get mapData(): OrderedSet<Type> | undefined {
-        return this._mapValueTypes;
-    }
+    get objectData(): [PropertyMap, OrderedSet<Type> | undefined] | undefined {
+        if (this._objectProperties === undefined) {
+            assert(this._additionalPropertyTypes === undefined);
+            return undefined;
+        }
 
-    get classData(): OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined {
-        return this._classProperties;
+        return [this._objectProperties, this._additionalPropertyTypes];
     }
 
     get enumCases(): string[] {
@@ -357,12 +327,9 @@ class IntersectionAccumulator
             this._lostTypeAttributes = true;
         }
 
-        const objectAttributes = combineTypeAttributes(this._classAttributes, this._mapAttributes);
-        if (this._mapValueTypes !== undefined) {
-            kinds = kinds.set("map", objectAttributes);
-        } else if (this._classProperties !== undefined) {
-            kinds = kinds.set("class", objectAttributes);
-        } else if (!objectAttributes.isEmpty()) {
+        if (this._objectProperties !== undefined) {
+            kinds = kinds.set("object", this._objectAttributes);
+        } else if (!this._objectAttributes.isEmpty()) {
             this._lostTypeAttributes = true;
         }
 
@@ -377,8 +344,7 @@ class IntersectionAccumulator
 class IntersectionUnionBuilder extends UnionBuilder<
     TypeBuilder & TypeLookerUp,
     OrderedSet<Type>,
-    OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
-    OrderedSet<Type> | undefined
+    [PropertyMap, OrderedSet<Type> | undefined] | undefined
 > {
     private _createdNewIntersections: boolean = false;
 
@@ -408,30 +374,24 @@ class IntersectionUnionBuilder extends UnionBuilder<
         return this.typeBuilder.getEnumType(typeAttributes, OrderedSet(cases), forwardingRef);
     }
 
-    protected makeClass(
-        maybeProperties: OrderedMap<string, GenericClassProperty<OrderedSet<Type>>> | undefined,
-        maybeMapValueTypes: OrderedSet<Type> | undefined,
+    protected makeObject(
+        maybeData: [PropertyMap, OrderedSet<Type> | undefined] | undefined,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
-        if (maybeProperties !== undefined) {
-            assert(maybeMapValueTypes === undefined);
-            const tref = this.typeBuilder.getUniqueClassType(typeAttributes, true, undefined, forwardingRef);
-            // FIXME: attributes
-            const properties = maybeProperties.map(
-                cp => new ClassProperty(this.makeIntersection(cp.typeData, Map()), cp.isOptional)
-            );
-            this.typeBuilder.setClassProperties(tref, properties);
-            return tref;
-        } else if (maybeMapValueTypes !== undefined) {
-            // FIXME: attributes
-            const valuesType = this.makeIntersection(maybeMapValueTypes, Map());
-            const mapType = this.typeBuilder.getMapType(valuesType, forwardingRef);
-            this.typeBuilder.addAttributes(mapType, typeAttributes);
-            return mapType;
-        } else {
-            return panic("Either classes or maps must be given");
+        if (maybeData === undefined) {
+            return panic("Either properties or additional properties must be given to make an object type");
         }
+
+        const [propertyTypes, maybeAdditionalProperties] = maybeData;
+        const properties = propertyTypes.map(
+            cp => new ClassProperty(this.makeIntersection(cp.typeData, Map()), cp.isOptional)
+        );
+        const additionalProperties =
+            maybeAdditionalProperties === undefined
+                ? undefined
+                : this.makeIntersection(maybeAdditionalProperties, emptyTypeAttributes);
+        return this.typeBuilder.getUniqueObjectType(typeAttributes, properties, additionalProperties, forwardingRef);
     }
 
     protected makeArray(

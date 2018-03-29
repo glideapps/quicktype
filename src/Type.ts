@@ -5,12 +5,12 @@ import { OrderedSet, OrderedMap, Collection, Set, is, hash } from "immutable";
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
-import { TypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
-export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "map" | "intersection";
+export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
 
 export function isPrimitiveStringTypeKind(kind: TypeKind): kind is PrimitiveStringTypeKind {
     return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
@@ -261,57 +261,6 @@ export class ArrayType extends Type {
     }
 }
 
-export class MapType extends Type {
-    // @ts-ignore: This is initialized in the Type constructor
-    readonly kind: "map";
-
-    constructor(typeRef: TypeRef, private _valuesRef?: TypeRef) {
-        super(typeRef, "map");
-    }
-
-    setValues(valuesRef: TypeRef) {
-        if (this._valuesRef !== undefined) {
-            return panic("Can only set map values once");
-        }
-        this._valuesRef = valuesRef;
-    }
-
-    private getValuesRef(): TypeRef {
-        if (this._valuesRef === undefined) {
-            return panic("Map values accessed before they were set");
-        }
-        return this._valuesRef;
-    }
-
-    get values(): Type {
-        return this.getValuesRef().deref()[0];
-    }
-
-    get children(): OrderedSet<Type> {
-        return OrderedSet([this.values]);
-    }
-
-    get isNullable(): boolean {
-        return false;
-    }
-
-    isPrimitive(): this is PrimitiveType {
-        return false;
-    }
-
-    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        // console.log(`${mapIndentation()}mapping ${this.kind}`);
-        // mapPath.push("{}");
-        const result = builder.getMapType(f(this.getValuesRef()));
-        // mapPath.pop();
-        return result;
-    }
-
-    protected structuralEqualityStep(other: MapType, queue: (a: Type, b: Type) => boolean): boolean {
-        return queue(this.values, other.values);
-    }
-}
-
 export class GenericClassProperty<T> {
     constructor(readonly typeData: T, readonly isOptional: boolean) {}
 
@@ -341,40 +290,25 @@ export class ClassProperty extends GenericClassProperty<TypeRef> {
     }
 }
 
-function propertiesAreSorted(_props: OrderedMap<string, ClassProperty>): boolean {
-    /*
-    const keys = props.keySeq().toArray();
-    for (let i = 1; i < keys.length; i++) {
-        if (keys[i - 1] > keys[i]) return false;
-    }
-*/
-    return true;
-}
+export class ObjectType extends Type {
+    constructor(
+        typeRef: TypeRef,
+        kind: TypeKind,
+        readonly isFixed: boolean,
+        readonly properties: OrderedMap<string, ClassProperty>,
+        private _additionalPropertiesRef: TypeRef | undefined
+    ) {
+        super(typeRef, kind);
 
-export class ClassType extends Type {
-    // @ts-ignore: This is initialized in the Type constructor
-    kind: "class";
-
-    constructor(typeRef: TypeRef, readonly isFixed: boolean, private _properties?: OrderedMap<string, ClassProperty>) {
-        super(typeRef, "class");
-        if (_properties !== undefined) {
-            assert(propertiesAreSorted(_properties));
+        assert(kind === "object" || kind === "map" || kind === "class");
+        if (kind === "map") {
+            assert(properties.isEmpty());
+            assert(!isFixed);
+        } else if (kind === "class") {
+            assert(_additionalPropertiesRef === undefined);
+        } else {
+            assert(isFixed);
         }
-    }
-
-    setProperties(properties: OrderedMap<string, ClassProperty>): void {
-        assert(propertiesAreSorted(properties));
-        if (this._properties !== undefined) {
-            return panic("Can only set class properties once");
-        }
-        this._properties = properties;
-    }
-
-    get properties(): OrderedMap<string, ClassProperty> {
-        if (this._properties === undefined) {
-            return panic("Properties are not set yet");
-        }
-        return this._properties;
     }
 
     get sortedProperties(): OrderedMap<string, ClassProperty> {
@@ -384,8 +318,18 @@ export class ClassType extends Type {
         return OrderedMap(props);
     }
 
+    get additionalProperties(): Type | undefined {
+        if (this._additionalPropertiesRef === undefined) return undefined;
+        return this._additionalPropertiesRef.deref()[0];
+    }
+
     get children(): OrderedSet<Type> {
-        return this.sortedProperties.map(p => p.type).toOrderedSet();
+        const children = this.sortedProperties.map(p => p.type).toOrderedSet();
+        const additionalProperties = this.additionalProperties;
+        if (additionalProperties === undefined) {
+            return children;
+        }
+        return children.add(additionalProperties);
     }
 
     get isNullable(): boolean {
@@ -407,14 +351,26 @@ export class ClassType extends Type {
             // mapPath.pop();
             return result;
         });
-        if (this.isFixed) {
-            return builder.getUniqueClassType(true, properties);
-        } else {
-            return builder.getClassType(properties);
+        const additionalProperties =
+            this._additionalPropertiesRef === undefined ? undefined : f(this._additionalPropertiesRef);
+        switch (this.kind) {
+            case "object":
+                assert(this.isFixed);
+                return builder.getUniqueObjectType(properties, additionalProperties);
+            case "map":
+                return builder.getMapType(defined(additionalProperties));
+            case "class":
+                if (this.isFixed) {
+                    return builder.getUniqueClassType(true, properties);
+                } else {
+                    return builder.getClassType(properties);
+                }
+            default:
+                return panic(`Invalid object type kind ${this.kind}`);
         }
     }
 
-    protected structuralEqualityStep(other: ClassType, queue: (a: Type, b: Type) => boolean): boolean {
+    protected structuralEqualityStep(other: ObjectType, queue: (a: Type, b: Type) => boolean): boolean {
         const pa = this.properties;
         const pb = other.properties;
         if (pa.size !== pb.size) return false;
@@ -426,8 +382,41 @@ export class ClassType extends Type {
                 return false;
             }
         });
-        return !failed;
+        if (failed) return false;
+
+        if ((this.additionalProperties === undefined) !== (other.additionalProperties === undefined)) return false;
+        if (this.additionalProperties === undefined || other.additionalProperties === undefined) return true;
+        return queue(this.additionalProperties, other.additionalProperties);
     }
+}
+
+export class ClassType extends ObjectType {
+    // @ts-ignore: This is initialized in the Type constructor
+    kind: "class";
+
+    constructor(typeRef: TypeRef, readonly isFixed: boolean, readonly properties: OrderedMap<string, ClassProperty>) {
+        super(typeRef, "class", isFixed, properties, undefined);
+    }
+}
+
+export class MapType extends ObjectType {
+    // @ts-ignore: This is initialized in the Type constructor
+    readonly kind: "map";
+
+    constructor(typeRef: TypeRef, valuesRef: TypeRef) {
+        super(typeRef, "map", false, OrderedMap(), valuesRef);
+    }
+
+    get values(): Type {
+        return defined(this.additionalProperties);
+    }
+}
+
+export function assertIsObject(t: Type): ObjectType {
+    if (t instanceof ObjectType) {
+        return t;
+    }
+    return panic("Supposed object type is not an object type");
 }
 
 export function assertIsClass(t: Type): ClassType {
@@ -563,7 +552,13 @@ export class UnionType extends SetOperationType {
         if (kinds.has("union") || kinds.has("intersection")) return false;
         if (kinds.has("none") || kinds.has("any")) return false;
         if (kinds.has("string") && kinds.has("enum")) return false;
-        if (kinds.has("class") && kinds.has("map")) return false;
+
+        let numObjectTypes = 0;
+        if (kinds.has("class")) numObjectTypes += 1;
+        if (kinds.has("map")) numObjectTypes += 1;
+        if (kinds.has("object")) numObjectTypes += 1;
+        if (numObjectTypes > 1) return false;
+
         return true;
     }
 
@@ -571,6 +566,15 @@ export class UnionType extends SetOperationType {
         const members = this.getMemberRefs().map(f);
         return builder.getUnionType(members);
     }
+}
+
+export function combineTypeAttributesOfTypes(types: Collection<any, Type>): TypeAttributes {
+    return combineTypeAttributes(
+        types
+            .valueSeq()
+            .toArray()
+            .map(t => t.getAttributes())
+    );
 }
 
 export function setOperationCasesEqual(
@@ -700,6 +704,7 @@ export function matchTypeExhaustive<U>(
     arrayType: (arrayType: ArrayType) => U,
     classType: (classType: ClassType) => U,
     mapType: (mapType: MapType) => U,
+    objectType: (objectType: ObjectType) => U,
     enumType: (enumType: EnumType) => U,
     unionType: (unionType: UnionType) => U,
     dateType: (dateType: PrimitiveType) => U,
@@ -724,13 +729,14 @@ export function matchTypeExhaustive<U>(
     } else if (t instanceof ArrayType) return arrayType(t);
     else if (t instanceof ClassType) return classType(t);
     else if (t instanceof MapType) return mapType(t);
+    else if (t instanceof ObjectType) return objectType(t);
     else if (t instanceof EnumType) return enumType(t);
     else if (t instanceof UnionType) return unionType(t);
-    return panic("Unknown Type");
+    return panic(`Unknown type ${t.kind}`);
 }
 
 export function matchType<U>(
-    t: Type,
+    type: Type,
     anyType: (anyType: PrimitiveType) => U,
     nullType: (nullType: PrimitiveType) => U,
     boolType: (boolType: PrimitiveType) => U,
@@ -744,8 +750,8 @@ export function matchType<U>(
     unionType: (unionType: UnionType) => U,
     stringTypeMatchers?: StringTypeMatchers<U>
 ): U {
-    function typeNotSupported(_: Type) {
-        return panic("Unsupported PrimitiveType");
+    function typeNotSupported(t: Type) {
+        return panic(`Unsupported type ${t.kind} in non-exhaustive match`);
     }
 
     if (stringTypeMatchers === undefined) {
@@ -753,7 +759,7 @@ export function matchType<U>(
     }
     /* tslint:disable:strict-boolean-expressions */
     return matchTypeExhaustive(
-        t,
+        type,
         typeNotSupported,
         anyType,
         nullType,
@@ -764,6 +770,7 @@ export function matchType<U>(
         arrayType,
         classType,
         mapType,
+        typeNotSupported,
         enumType,
         unionType,
         stringTypeMatchers.dateType || typeNotSupported,

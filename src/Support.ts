@@ -15,6 +15,13 @@ export function setUnion<T, TSet extends Set<T>>(a: TSet, b: TSet): TSet {
     return a.union(b) as TSet;
 }
 
+export function unionOfSets<T, TSet extends Set<T>>(sets: TSet[]): TSet {
+    if (sets.length === 0) {
+        return Set() as TSet;
+    }
+    return sets[0].union(...sets.slice(1)) as TSet;
+}
+
 export type StringMap = { [name: string]: any };
 
 export function isStringMap(x: any): x is StringMap;
@@ -128,19 +135,28 @@ export async function forEachSync<K, V>(coll: Collection<K, V> | V[], f: (v: V, 
         }
     } else {
         // I don't understand why we can't directly cast to `Collection.Set`.
-        for (const v of (coll as any as Collection.Set<V>).toArray()) {
+        for (const v of ((coll as any) as Collection.Set<V>).toArray()) {
             // If the collection is a set, then `K` is the same as `v`,
             // but TypeScript doesn't know this.
             await f(v, v as any);
-        }        
+        }
     }
 }
 
 export async function mapSync<V, U>(coll: V[], f: (v: V, k: number) => Promise<U>): Promise<U[]>;
-export async function mapSync<K, V, U>(coll: Collection.Keyed<K, V>, f: (v: V, k: K) => Promise<U>): Promise<Collection.Keyed<K, U>>;
+export async function mapSync<K, V, U>(
+    coll: Collection.Keyed<K, V>,
+    f: (v: V, k: K) => Promise<U>
+): Promise<Collection.Keyed<K, U>>;
 export async function mapSync<V, U>(coll: Collection.Set<V>, f: (v: V, k: V) => Promise<U>): Promise<Collection.Set<U>>;
-export async function mapSync<V, U>(coll: Collection.Indexed<V>, f: (v: V, k: number) => Promise<U>): Promise<Collection.Indexed<U>>;
-export async function mapSync<K, V, U>(coll: Collection<K, V> | V[], f: (v: V, k: K) => Promise<U>): Promise<Collection<K, U> | U[]> {
+export async function mapSync<V, U>(
+    coll: Collection.Indexed<V>,
+    f: (v: V, k: number) => Promise<U>
+): Promise<Collection.Indexed<U>>;
+export async function mapSync<K, V, U>(
+    coll: Collection<K, V> | V[],
+    f: (v: V, k: K) => Promise<U>
+): Promise<Collection<K, U> | U[]> {
     const results: U[] = [];
     await forEachSync(coll as any, async (v, k) => {
         results.push(await f(v as any, k as any));

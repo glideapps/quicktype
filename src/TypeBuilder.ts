@@ -17,7 +17,8 @@ import {
     ClassProperty,
     TypeKind,
     matchTypeExhaustive,
-    IntersectionType
+    IntersectionType,
+    ObjectType
 } from "./Type";
 import { TypeGraph } from "./TypeGraph";
 import {
@@ -147,7 +148,7 @@ export const NoStringTypeMapping: StringTypeMapping = {
     dateTime: "date-time"
 };
 
-export abstract class TypeBuilder {
+export class TypeBuilder {
     readonly typeGraph: TypeGraph;
 
     protected topLevels: Map<string, TypeRef> = Map();
@@ -317,6 +318,20 @@ export abstract class TypeBuilder {
         return tref;
     }
 
+    getUniqueObjectType(
+        attributes: TypeAttributes,
+        properties: OrderedMap<string, ClassProperty>,
+        additionalProperties: TypeRef | undefined,
+        forwardingRef?: TypeRef
+    ): TypeRef {
+        properties = this.modifyPropertiesIfNecessary(properties);
+        return this.addType(
+            forwardingRef,
+            tref => new ObjectType(tref, "object", true, properties, additionalProperties),
+            attributes
+        );
+    }
+
     getMapType(values: TypeRef, forwardingRef?: TypeRef): TypeRef {
         let tref = this._mapTypes.get(values);
         if (tref === undefined) {
@@ -369,22 +384,11 @@ export abstract class TypeBuilder {
     getUniqueClassType(
         attributes: TypeAttributes,
         isFixed: boolean,
-        properties?: OrderedMap<string, ClassProperty>,
+        properties: OrderedMap<string, ClassProperty>,
         forwardingRef?: TypeRef
     ): TypeRef {
-        if (properties !== undefined) {
-            properties = this.modifyPropertiesIfNecessary(properties);
-        }
-        return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties), attributes);
-    }
-
-    setClassProperties(ref: TypeRef, properties: OrderedMap<string, ClassProperty>): void {
-        const type = ref.deref()[0];
-        if (!(type instanceof ClassType)) {
-            return panic("Tried to set properties of non-class type");
-        }
         properties = this.modifyPropertiesIfNecessary(properties);
-        type.setProperties(properties);
+        return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties), attributes);
     }
 
     getUnionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
@@ -423,27 +427,15 @@ export abstract class TypeBuilder {
         type.setMembers(members);
     }
 
-    abstract setLostTypeAttributes(): void;
+    setLostTypeAttributes(): void {
+        return;
+    }
 }
 
 export interface TypeLookerUp {
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined;
     reconstituteTypeRef(typeRef: TypeRef, forwardingRef?: TypeRef): TypeRef;
     registerUnion(typeRefs: TypeRef[], reconstituted: TypeRef): void;
-}
-
-export class TypeGraphBuilder extends TypeBuilder {
-    protected typeForEntry(entry: Type | undefined): Type | undefined {
-        return entry;
-    }
-
-    getLazyMapType(valuesCreator: () => TypeRef | undefined): TypeRef {
-        return this.addType(undefined, tref => new MapType(tref, valuesCreator()), undefined);
-    }
-
-    setLostTypeAttributes(): void {
-        return;
-    }
 }
 
 export class TypeReconstituter {
@@ -487,6 +479,15 @@ export class TypeReconstituter {
         return this.addAttributes(this.useBuilder().getArrayType(items, this._forwardingRef));
     }
 
+    getUniqueObjectType(
+        properties: OrderedMap<string, ClassProperty>,
+        additionalProperties: TypeRef | undefined
+    ): TypeRef {
+        return this.addAttributes(
+            this.useBuilder().getUniqueObjectType(defined(this._typeAttributes), properties, additionalProperties)
+        );
+    }
+
     getClassType(properties: OrderedMap<string, ClassProperty>): TypeRef {
         if (this._makeClassUnique) {
             return this.getUniqueClassType(false, properties);
@@ -494,7 +495,7 @@ export class TypeReconstituter {
         return this.useBuilder().getClassType(defined(this._typeAttributes), properties, this._forwardingRef);
     }
 
-    getUniqueClassType(isFixed: boolean, properties?: OrderedMap<string, ClassProperty>): TypeRef {
+    getUniqueClassType(isFixed: boolean, properties: OrderedMap<string, ClassProperty>): TypeRef {
         return this.useBuilder().getUniqueClassType(
             defined(this._typeAttributes),
             isFixed,
@@ -694,10 +695,9 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
 // means we'll have to expose primitive types, too.
 //
 // FIXME: Also, only UnionAccumulator seems to implement it.
-export interface UnionTypeProvider<TArrayData, TClassData, TMapData> {
+export interface UnionTypeProvider<TArrayData, TObjectData> {
     readonly arrayData: TArrayData;
-    readonly mapData: TMapData;
-    readonly classData: TClassData;
+    readonly objectData: TObjectData;
     // FIXME: We're losing order here.
     enumCaseMap: { [name: string]: number };
     enumCases: string[];
@@ -731,13 +731,12 @@ function moveAttributes<T extends TypeKind>(map: TypeAttributeMap<T>, fromKind: 
     return setAttributes(map, toKind, fromAttributes);
 }
 
-export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider<TArray[], TClass[], TMap[]> {
+export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArray[], TObject[]> {
     private _nonStringTypeAttributes: TypeAttributeMap<TypeKind> = OrderedMap();
     private _stringTypeAttributes: TypeAttributeMap<PrimitiveStringTypeKind | "enum"> = OrderedMap();
 
     readonly arrayData: TArray[] = [];
-    readonly mapData: TMap[] = [];
-    readonly classData: TClass[] = [];
+    readonly objectData: TObject[] = [];
 
     private _lostTypeAttributes: boolean = false;
 
@@ -795,13 +794,9 @@ export class UnionAccumulator<TArray, TClass, TMap> implements UnionTypeProvider
         this.arrayData.push(t);
         this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "array", attributes);
     }
-    addClass(t: TClass, attributes: TypeAttributes): void {
-        this.classData.push(t);
-        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "class", attributes);
-    }
-    addMap(t: TMap, attributes: TypeAttributes): void {
-        this.mapData.push(t);
-        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "map", attributes);
+    addObject(t: TObject, attributes: TypeAttributes): void {
+        this.objectData.push(t);
+        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "object", attributes);
     }
 
     addEnumCases(cases: OrderedMap<string, number>, attributes: TypeAttributes): void {
@@ -904,7 +899,7 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
 }
 
 // FIXME: Move this to UnifyClasses.ts?
-export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, TypeRef> {
+export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> {
     // There is a method analogous to this in the IntersectionAccumulator.  It might
     // make sense to find a common interface.
     private addType(t: Type, attributes: TypeAttributes): void {
@@ -927,8 +922,9 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, 
                 }
             },
             arrayType => this.addArray(arrayType.items.typeRef, attributes),
-            classType => this.addClass(classType.typeRef, attributes),
-            mapType => this.addMap(mapType.values.typeRef, attributes),
+            classType => this.addObject(classType.typeRef, attributes),
+            mapType => this.addObject(mapType.typeRef, attributes),
+            objectType => this.addObject(objectType.typeRef, attributes),
             // FIXME: We're not carrying counts, so this is not correct if we do enum
             // inference.  JSON Schema input uses this case, however, without enum
             // inference, which is fine, but still a bit ugly.
@@ -949,7 +945,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef, 
     }
 }
 
-export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TClassData, TMapData> {
+export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TObjectData> {
     constructor(protected readonly typeBuilder: TBuilder) {}
 
     protected abstract makeEnum(
@@ -958,9 +954,8 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TCl
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef;
-    protected abstract makeClass(
-        classes: TClassData,
-        maps: TMapData,
+    protected abstract makeObject(
+        objects: TObjectData,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef;
@@ -971,7 +966,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TCl
     ): TypeRef;
 
     private makeTypeOfKind(
-        typeProvider: UnionTypeProvider<TArrayData, TClassData, TMapData>,
+        typeProvider: UnionTypeProvider<TArrayData, TObjectData>,
         kind: TypeKind,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
@@ -993,12 +988,12 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TCl
                 return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
             case "enum":
                 return this.makeEnum(typeProvider.enumCases, typeProvider.enumCaseMap, typeAttributes, forwardingRef);
-            case "class":
-                return this.makeClass(typeProvider.classData, typeProvider.mapData, typeAttributes, forwardingRef);
+            case "object":
+                return this.makeObject(typeProvider.objectData, typeAttributes, forwardingRef);
             case "array":
                 return this.makeArray(typeProvider.arrayData, typeAttributes, forwardingRef);
             default:
-                if (kind === "union" || kind === "map" || kind === "intersection") {
+                if (kind === "union" || kind === "class" || kind === "map" || kind === "intersection") {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
                 }
                 return assertNever(kind);
@@ -1006,7 +1001,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TCl
     }
 
     buildUnion(
-        typeProvider: UnionTypeProvider<TArrayData, TClassData, TMapData>,
+        typeProvider: UnionTypeProvider<TArrayData, TObjectData>,
         unique: boolean,
         typeAttributes: TypeAttributes,
         forwardingRef?: TypeRef

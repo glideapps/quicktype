@@ -33,12 +33,13 @@ function unionMembersRecursively(...unions: UnionType[]): OrderedSet<Type> {
 export function flattenUnions(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
-    conflateNumbers: boolean
+    conflateNumbers: boolean,
+    makeObjectTypes: boolean
 ): [TypeGraph, boolean] {
     let needsRepeat = false;
 
     function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
-        const unionBuilder = new UnifyUnionBuilder(builder, true, true, (trefs, attributes) => {
+        const unionBuilder = new UnifyUnionBuilder(builder, true, makeObjectTypes, true, (trefs, attributes) => {
             assert(trefs.length > 0, "Must have at least one type to build union");
             trefs = trefs.map(tref => builder.reconstituteType(tref.deref()[0]));
             if (trefs.length === 1) {

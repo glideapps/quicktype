@@ -530,6 +530,9 @@ export abstract class ConvenienceRenderer extends Renderer {
                 arrayType => typeNameForUnionMember(arrayType.items) + "_array",
                 classType => lookup(this.nameForNamedType(classType)),
                 mapType => typeNameForUnionMember(mapType.values) + "_map",
+                _objectType => {
+                    return panic("Object types not supported in the renderer yet");
+                },
                 _enumType => "enum",
                 _unionType => "union",
                 _dateType => "date",

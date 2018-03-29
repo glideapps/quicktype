@@ -14,7 +14,7 @@ import { addTypesInSchema, Ref, definitionRefsInSchema, checkJSONSchema } from "
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
-import { TypeGraphBuilder } from "./TypeBuilder";
+import { TypeBuilder } from "./TypeBuilder";
 import { TypeGraph, noneToAny, optionalToNullable } from "./TypeGraph";
 import { makeNamesTypeAttributes } from "./TypeNames";
 import { makeGraphQLQueryTypes } from "./GraphQL";
@@ -23,6 +23,7 @@ import { inferEnums, flattenStrings } from "./InferEnums";
 import { descriptionTypeAttributeKind } from "./TypeAttributes";
 import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
+import { replaceObjectType } from "./ReplaceObjectType";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -179,7 +180,7 @@ export class Run {
         const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
         const haveSchemas = Object.getOwnPropertyNames(this._allInputs.schemas).length > 0;
-        const typeBuilder = new TypeGraphBuilder(
+        const typeBuilder = new TypeBuilder(
             stringTypeMapping,
             this._options.alphabetizeProperties,
             this._options.allPropertiesOptional,
@@ -232,16 +233,16 @@ export class Run {
             graph.printGraph();
         }
 
+        let unionsDone = false;
         if (haveSchemas) {
             let intersectionsDone = false;
-            let unionsDone = false;
             do {
                 const graphBeforeRewrites = graph;
                 if (!intersectionsDone) {
                     [graph, intersectionsDone] = resolveIntersections(graph, stringTypeMapping);
                 }
                 if (!unionsDone) {
-                    [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers);
+                    [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, true);
                 }
 
                 if (graph === graphBeforeRewrites) {
@@ -249,6 +250,11 @@ export class Run {
                 }
             } while (!intersectionsDone || !unionsDone);
         }
+
+        graph = replaceObjectType(graph, stringTypeMapping, conflateNumbers);
+        do {
+            [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false);
+        } while (!unionsDone);
 
         if (this._options.findSimilarClassesSchemaURI !== undefined) {
             return graph;
