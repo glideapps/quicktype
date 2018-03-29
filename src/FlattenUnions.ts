@@ -3,32 +3,10 @@
 import { Set, Map, OrderedSet } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
-import { Type, UnionType, IntersectionType } from "./Type";
-import { assert, defined } from "./Support";
+import { Type, UnionType, IntersectionType, makeGroupsToFlatten } from "./Type";
+import { assert } from "./Support";
 import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
-
-function unionMembersRecursively(...unions: UnionType[]): OrderedSet<Type> {
-    let processedUnions = Set<UnionType>();
-    let members = OrderedSet<Type>();
-
-    function addMembers(u: UnionType): void {
-        if (processedUnions.has(u)) return;
-        processedUnions = processedUnions.add(u);
-        u.members.forEach(t => {
-            if (t instanceof UnionType) {
-                addMembers(t);
-            } else {
-                members = members.add(t);
-            }
-        });
-    }
-
-    for (const union of unions) {
-        addMembers(union);
-    }
-    return members;
-}
 
 export function flattenUnions(
     graph: TypeGraph,
@@ -53,29 +31,21 @@ export function flattenUnions(
 
     const allUnions = graph.allTypesUnordered().filter(t => t instanceof UnionType) as Set<UnionType>;
     const nonCanonicalUnions = allUnions.filter(u => !u.isCanonical);
-    let singleTypeGroups = Map<Type, OrderedSet<Type>>();
-    const groups: Type[][] = [];
-    let foundIntersection: boolean = false;
-    nonCanonicalUnions.forEach(u => {
-        const members = unionMembersRecursively(u);
+    let foundIntersection = false;
+    const groups = makeGroupsToFlatten(nonCanonicalUnions, members => {
         assert(!members.isEmpty(), "We can't have an empty union");
-        if (members.some(m => m instanceof IntersectionType)) {
-            foundIntersection = true;
-            return;
-        }
-        if (members.size === 1) {
-            const t = defined(members.first());
-            let maybeSet = singleTypeGroups.get(t);
-            if (maybeSet === undefined) {
-                maybeSet = OrderedSet([t]);
-            }
-            maybeSet = maybeSet.add(u);
-            singleTypeGroups = singleTypeGroups.set(t, maybeSet);
-        } else {
-            groups.push([u]);
-        }
+        if (!members.some(m => m instanceof IntersectionType)) return true;
+
+        // FIXME: This is stupid.  `flattenUnions` returns true when no more union
+        // flattening is necessary, but `resolveIntersections` can introduce new
+        // unions that might require flattening, so now `flattenUnions` needs to take
+        // that into account.  Either change `resolveIntersections` such that it
+        // doesn't introduce non-canonical unions (by using `unifyTypes`), or have
+        // some other way to tell whether more work is needed that doesn't require
+        // the two passes to know about each other.
+        foundIntersection = true;
+        return false;
     });
-    singleTypeGroups.forEach(ts => groups.push(ts.toArray()));
     graph = graph.rewrite("flatten unions", stringTypeMapping, false, groups, replace);
 
     // console.log(`flattened ${nonCanonicalUnions.size} of ${unions.size} unions`);

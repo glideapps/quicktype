@@ -30,7 +30,9 @@ import {
     GenericClassProperty,
     TypeKind,
     combineTypeAttributesOfTypes,
-    ObjectType
+    ObjectType,
+    setOperationMembersRecursively,
+    makeGroupsToFlatten
 } from "./Type";
 import { assert, defined, panic } from "./Support";
 import {
@@ -40,25 +42,8 @@ import {
     makeTypeAttributesInferred
 } from "./TypeAttributes";
 
-function intersectionMembersRecursively(intersection: IntersectionType): [OrderedSet<Type>, TypeAttributes] {
-    const types: Type[] = [];
-    let attributes = emptyTypeAttributes;
-    function process(t: Type): void {
-        if (t instanceof IntersectionType) {
-            attributes = combineTypeAttributes(attributes, t.getAttributes());
-            t.members.forEach(process);
-        } else if (t.kind !== "any") {
-            types.push(t);
-        } else {
-            attributes = combineTypeAttributes(attributes, t.getAttributes());
-        }
-    }
-    process(intersection);
-    return [OrderedSet(types), attributes];
-}
-
 function canResolve(t: IntersectionType): boolean {
-    const members = intersectionMembersRecursively(t)[0];
+    const members = setOperationMembersRecursively(t)[0];
     if (members.size <= 1) return true;
     return members.every(m => !(m instanceof UnionType) || m.isCanonical);
 }
@@ -236,7 +221,7 @@ class IntersectionAccumulator
                 return panic("There shouldn't be a none type");
             },
             _anyType => {
-                return panic("The any type should have been filtered out in intersectionMembersRecursively");
+                return panic("The any type should have been filtered out in setOperationMembersRecursively");
             },
             nullType => this.addUnionSet(OrderedSet([nullType])),
             boolType => this.addUnionSet(OrderedSet([boolType])),
@@ -410,13 +395,9 @@ class IntersectionUnionBuilder extends UnionBuilder<
 export function resolveIntersections(graph: TypeGraph, stringTypeMapping: StringTypeMapping): [TypeGraph, boolean] {
     let needsRepeat = false;
 
-    function replace(
-        types: Set<IntersectionType>,
-        builder: GraphRewriteBuilder<IntersectionType>,
-        forwardingRef: TypeRef
-    ): TypeRef {
-        assert(types.size === 1);
-        const [members, intersectionAttributes] = intersectionMembersRecursively(defined(types.first()));
+    function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
+        const intersections = types.filter(t => t instanceof IntersectionType) as Set<IntersectionType>;
+        const [members, intersectionAttributes] = setOperationMembersRecursively(intersections.toArray());
         if (members.isEmpty()) {
             const t = builder.getPrimitiveType("any", forwardingRef);
             builder.addAttributes(t, intersectionAttributes);
@@ -443,17 +424,13 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
     }
     // FIXME: We need to handle intersections that resolve to the same set of types.
     // See for example the intersections-nested.schema example.
-    const intersections = graph.allTypesUnordered().filter(t => t instanceof IntersectionType) as Set<IntersectionType>;
-    if (intersections.isEmpty()) {
-        return [graph, true];
-    }
-    const resolvableIntersections = intersections.filter(canResolve);
-    if (resolvableIntersections.isEmpty()) {
-        return [graph, false];
-    }
-    const groups = resolvableIntersections.map(i => [i]).toArray();
+    const allIntersections = graph.allTypesUnordered().filter(t => t instanceof IntersectionType) as Set<
+        IntersectionType
+    >;
+    const resolvableIntersections = allIntersections.filter(canResolve);
+    const groups = makeGroupsToFlatten(resolvableIntersections, undefined);
     graph = graph.rewrite("resolve intersections", stringTypeMapping, false, groups, replace);
 
     // console.log(`resolved ${resolvableIntersections.size} of ${intersections.size} intersections`);
-    return [graph, !needsRepeat && intersections.size === resolvableIntersections.size];
+    return [graph, !needsRepeat && allIntersections.size === resolvableIntersections.size];
 }
