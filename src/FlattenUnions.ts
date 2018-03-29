@@ -32,7 +32,7 @@ export function flattenUnions(
     const allUnions = graph.allTypesUnordered().filter(t => t instanceof UnionType) as Set<UnionType>;
     const nonCanonicalUnions = allUnions.filter(u => !u.isCanonical);
     let foundIntersection = false;
-    const groups = makeGroupsToFlatten(nonCanonicalUnions, members => {
+    const groups = makeGroupsToFlatten(nonCanonicalUnions, true, members => {
         assert(!members.isEmpty(), "We can't have an empty union");
         if (!members.some(m => m instanceof IntersectionType)) return true;
 

@@ -606,6 +606,7 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
 
 export function makeGroupsToFlatten<T extends SetOperationType>(
     setOperations: Set<T>,
+    includeSingleMembers: boolean,
     include: ((members: Set<Type>) => boolean) | undefined
 ): Type[][] {
     let typeGroups = Map<Set<Type>, OrderedSet<Type>>();
@@ -619,7 +620,7 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
         let maybeSet = typeGroups.get(members);
         if (maybeSet === undefined) {
             maybeSet = OrderedSet();
-            if (members.size === 1) {
+            if (includeSingleMembers && members.size === 1) {
                 maybeSet = maybeSet.add(defined(members.first()));
             }
         }

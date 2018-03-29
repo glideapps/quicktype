@@ -594,9 +594,15 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         });
     }
 
-    private forceReconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
+    forceReconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
         return this.withForwardingRef(maybeForwardingRef, (forwardingRef: TypeRef): TypeRef => {
-            this._reconstitutedTypes = this._reconstitutedTypes.set(originalRef.getIndex(), forwardingRef);
+            const index = originalRef.getIndex();
+            const maybeExistingForwardingRef = this._reconstitutedTypes.get(index);
+            if (maybeExistingForwardingRef !== undefined && forwardingRef !== maybeExistingForwardingRef) {
+                forwardingRef.resolve(maybeExistingForwardingRef);
+                forwardingRef = maybeExistingForwardingRef;
+            }
+            this._reconstitutedTypes = this._reconstitutedTypes.set(index, forwardingRef);
             const [originalType, originalNames] = originalRef.deref();
             return originalType.map(
                 new TypeReconstituter(this, this.alphabetizeProperties, originalNames, forwardingRef),

@@ -428,7 +428,7 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         IntersectionType
     >;
     const resolvableIntersections = allIntersections.filter(canResolve);
-    const groups = makeGroupsToFlatten(resolvableIntersections, undefined);
+    const groups = makeGroupsToFlatten(resolvableIntersections, false, undefined);
     graph = graph.rewrite("resolve intersections", stringTypeMapping, false, groups, replace);
 
     // console.log(`resolved ${resolvableIntersections.size} of ${intersections.size} intersections`);
