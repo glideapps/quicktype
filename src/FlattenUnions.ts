@@ -3,30 +3,10 @@
 import { Set, Map, OrderedSet } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
-import { Type, UnionType, IntersectionType } from "./Type";
+import { Type, UnionType, IntersectionType, setOperationMembersRecursively } from "./Type";
 import { assert, defined } from "./Support";
 import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
-
-function unionMembersRecursively(union: UnionType): OrderedSet<Type> {
-    let processedUnions = Set<UnionType>();
-    let members = OrderedSet<Type>();
-
-    function addMembers(u: UnionType): void {
-        if (processedUnions.has(u)) return;
-        processedUnions = processedUnions.add(u);
-        u.members.forEach(t => {
-            if (t instanceof UnionType) {
-                addMembers(t);
-            } else {
-                members = members.add(t);
-            }
-        });
-    }
-
-    addMembers(union);
-    return members;
-}
 
 export function flattenUnions(
     graph: TypeGraph,
@@ -55,7 +35,7 @@ export function flattenUnions(
     const groups: Type[][] = [];
     let foundIntersection: boolean = false;
     nonCanonicalUnions.forEach(u => {
-        const members = unionMembersRecursively(u);
+        const members = setOperationMembersRecursively(u)[0];
         assert(!members.isEmpty(), "We can't have an empty union");
         if (members.some(m => m instanceof IntersectionType)) {
             foundIntersection = true;

@@ -5,7 +5,7 @@ import { OrderedSet, OrderedMap, Collection, Set, is, hash } from "immutable";
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
-import { TypeAttributes, combineTypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
@@ -566,6 +566,33 @@ export class UnionType extends SetOperationType {
         const members = this.getMemberRefs().map(f);
         return builder.getUnionType(members);
     }
+}
+
+export function setOperationMembersRecursively<T extends SetOperationType>(
+    setOperation: T
+): [OrderedSet<Type>, TypeAttributes] {
+    const kind = setOperation.kind;
+    const includeAny = kind !== "intersection";
+    let processedSetOperations = Set<T>();
+    let members = OrderedSet<Type>();
+    let attributes = emptyTypeAttributes;
+
+    function process(t: Type): void {
+        if (t.kind === kind) {
+            const so = t as T;
+        if (processedSetOperations.has(so)) return;
+        processedSetOperations = processedSetOperations.add(so);
+                attributes = combineTypeAttributes(attributes, t.getAttributes());
+            so.members.forEach(process);
+            } else if (includeAny || t.kind !== "any") {
+                members = members.add(t);
+            } else {
+                attributes = combineTypeAttributes(attributes, t.getAttributes());
+            }
+    }
+
+    process(setOperation);
+    return [members, attributes];
 }
 
 export function combineTypeAttributesOfTypes(types: Collection<any, Type>): TypeAttributes {

@@ -30,7 +30,8 @@ import {
     GenericClassProperty,
     TypeKind,
     combineTypeAttributesOfTypes,
-    ObjectType
+    ObjectType,
+    setOperationMembersRecursively
 } from "./Type";
 import { assert, defined, panic } from "./Support";
 import {
@@ -40,25 +41,8 @@ import {
     makeTypeAttributesInferred
 } from "./TypeAttributes";
 
-function intersectionMembersRecursively(intersection: IntersectionType): [OrderedSet<Type>, TypeAttributes] {
-    const types: Type[] = [];
-    let attributes = emptyTypeAttributes;
-    function process(t: Type): void {
-        if (t instanceof IntersectionType) {
-            attributes = combineTypeAttributes(attributes, t.getAttributes());
-            t.members.forEach(process);
-        } else if (t.kind !== "any") {
-            types.push(t);
-        } else {
-            attributes = combineTypeAttributes(attributes, t.getAttributes());
-        }
-    }
-    process(intersection);
-    return [OrderedSet(types), attributes];
-}
-
 function canResolve(t: IntersectionType): boolean {
-    const members = intersectionMembersRecursively(t)[0];
+    const members = setOperationMembersRecursively(t)[0];
     if (members.size <= 1) return true;
     return members.every(m => !(m instanceof UnionType) || m.isCanonical);
 }
@@ -236,7 +220,7 @@ class IntersectionAccumulator
                 return panic("There shouldn't be a none type");
             },
             _anyType => {
-                return panic("The any type should have been filtered out in intersectionMembersRecursively");
+                return panic("The any type should have been filtered out in setOperationMembersRecursively");
             },
             nullType => this.addUnionSet(OrderedSet([nullType])),
             boolType => this.addUnionSet(OrderedSet([boolType])),
@@ -416,7 +400,7 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
         forwardingRef: TypeRef
     ): TypeRef {
         assert(types.size === 1);
-        const [members, intersectionAttributes] = intersectionMembersRecursively(defined(types.first()));
+        const [members, intersectionAttributes] = setOperationMembersRecursively(defined(types.first()));
         if (members.isEmpty()) {
             const t = builder.getPrimitiveType("any", forwardingRef);
             builder.addAttributes(t, intersectionAttributes);
