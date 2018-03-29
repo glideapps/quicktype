@@ -8,34 +8,30 @@ import { assert, defined } from "./Support";
 import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
 
-function makeGroupsToFlatten(
-    unions: Set<UnionType>,
-    include: ((members: OrderedSet<Type>) => boolean) | undefined
-): Type[][] {
-    let singleTypeGroups = Map<Type, OrderedSet<Type>>();
-    const groups: Type[][] = [];
+function makeGroupsToFlatten(unions: Set<UnionType>, include: ((members: Set<Type>) => boolean) | undefined): Type[][] {
+    let typeGroups = Map<Set<Type>, OrderedSet<Type>>();
     unions.forEach(u => {
-        const members = setOperationMembersRecursively(u)[0];
+        const members = setOperationMembersRecursively(u)[0].toSet();
 
         if (include !== undefined) {
             if (!include(members)) return;
         }
 
-        if (members.size === 1) {
-            const t = defined(members.first());
-            let maybeSet = singleTypeGroups.get(t);
-            if (maybeSet === undefined) {
-                maybeSet = OrderedSet([t]);
+        let maybeSet = typeGroups.get(members);
+        if (maybeSet === undefined) {
+            maybeSet = OrderedSet();
+            if (members.size === 1) {
+                maybeSet = maybeSet.add(defined(members.first()));
             }
-            maybeSet = maybeSet.add(u);
-            singleTypeGroups = singleTypeGroups.set(t, maybeSet);
-        } else {
-            groups.push([u]);
         }
+        maybeSet = maybeSet.add(u);
+        typeGroups = typeGroups.set(members, maybeSet);
     });
-    singleTypeGroups.forEach(ts => groups.push(ts.toArray()));
 
-    return groups;
+    return typeGroups
+        .valueSeq()
+        .toArray()
+        .map(ts => ts.toArray());
 }
 
 export function flattenUnions(
