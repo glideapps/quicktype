@@ -104,8 +104,11 @@ export class Ref {
         }
 
         const uri = new URI(ref);
-        const path = uri.fragment();
+        let path = uri.fragment();
         uri.fragment("");
+        if ((uri.host() !== "" || uri.filename() !== "") && path === "") {
+            path = "/";
+        }
         const elements = Ref.parsePath(path);
         return new Ref(uri, elements);
     }
