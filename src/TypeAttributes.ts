@@ -96,10 +96,15 @@ export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes
     return attr.map((value, kind) => kind.makeInferred(value)).filter(v => v !== undefined);
 }
 
-export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>("description", setUnion, a => a, undefined);
+export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>(
+    "description",
+    setUnion,
+    _ => OrderedSet(),
+    undefined
+);
 export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, OrderedSet<string>>>(
     "propertyDescriptions",
     (a, b) => a.mergeWith(setUnion, b),
-    a => a,
+    _ => Map(),
     undefined
 );
