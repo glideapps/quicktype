@@ -1,6 +1,6 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Collection, Set, is, hash } from "immutable";
+import { OrderedSet, OrderedMap, Collection, Map, Set, is, hash } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
@@ -570,8 +570,15 @@ export class UnionType extends SetOperationType {
 
 export function setOperationMembersRecursively<T extends SetOperationType>(
     setOperation: T
+): [OrderedSet<Type>, TypeAttributes];
+export function setOperationMembersRecursively<T extends SetOperationType>(
+    setOperations: T[]
+): [OrderedSet<Type>, TypeAttributes];
+export function setOperationMembersRecursively<T extends SetOperationType>(
+    oneOrMany: T | T[]
 ): [OrderedSet<Type>, TypeAttributes] {
-    const kind = setOperation.kind;
+    const setOperations = Array.isArray(oneOrMany) ? oneOrMany : [oneOrMany];
+    const kind = setOperations[0].kind;
     const includeAny = kind !== "intersection";
     let processedSetOperations = Set<T>();
     let members = OrderedSet<Type>();
@@ -580,19 +587,50 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
     function process(t: Type): void {
         if (t.kind === kind) {
             const so = t as T;
-        if (processedSetOperations.has(so)) return;
-        processedSetOperations = processedSetOperations.add(so);
-                attributes = combineTypeAttributes(attributes, t.getAttributes());
+            if (processedSetOperations.has(so)) return;
+            processedSetOperations = processedSetOperations.add(so);
+            attributes = combineTypeAttributes(attributes, t.getAttributes());
             so.members.forEach(process);
-            } else if (includeAny || t.kind !== "any") {
-                members = members.add(t);
-            } else {
-                attributes = combineTypeAttributes(attributes, t.getAttributes());
-            }
+        } else if (includeAny || t.kind !== "any") {
+            members = members.add(t);
+        } else {
+            attributes = combineTypeAttributes(attributes, t.getAttributes());
+        }
     }
 
-    process(setOperation);
+    for (const so of setOperations) {
+        process(so);
+    }
     return [members, attributes];
+}
+
+export function makeGroupsToFlatten<T extends SetOperationType>(
+    setOperations: Set<T>,
+    include: ((members: Set<Type>) => boolean) | undefined
+): Type[][] {
+    let typeGroups = Map<Set<Type>, OrderedSet<Type>>();
+    setOperations.forEach(u => {
+        const members = setOperationMembersRecursively(u)[0].toSet();
+
+        if (include !== undefined) {
+            if (!include(members)) return;
+        }
+
+        let maybeSet = typeGroups.get(members);
+        if (maybeSet === undefined) {
+            maybeSet = OrderedSet();
+            if (members.size === 1) {
+                maybeSet = maybeSet.add(defined(members.first()));
+            }
+        }
+        maybeSet = maybeSet.add(u);
+        typeGroups = typeGroups.set(members, maybeSet);
+    });
+
+    return typeGroups
+        .valueSeq()
+        .toArray()
+        .map(ts => ts.toArray());
 }
 
 export function combineTypeAttributesOfTypes(types: Collection<any, Type>): TypeAttributes {

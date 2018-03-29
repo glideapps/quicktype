@@ -3,36 +3,10 @@
 import { Set, Map, OrderedSet } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
-import { Type, UnionType, IntersectionType, setOperationMembersRecursively } from "./Type";
-import { assert, defined } from "./Support";
+import { Type, UnionType, IntersectionType, makeGroupsToFlatten } from "./Type";
+import { assert } from "./Support";
 import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
-
-function makeGroupsToFlatten(unions: Set<UnionType>, include: ((members: Set<Type>) => boolean) | undefined): Type[][] {
-    let typeGroups = Map<Set<Type>, OrderedSet<Type>>();
-    unions.forEach(u => {
-        const members = setOperationMembersRecursively(u)[0].toSet();
-
-        if (include !== undefined) {
-            if (!include(members)) return;
-        }
-
-        let maybeSet = typeGroups.get(members);
-        if (maybeSet === undefined) {
-            maybeSet = OrderedSet();
-            if (members.size === 1) {
-                maybeSet = maybeSet.add(defined(members.first()));
-            }
-        }
-        maybeSet = maybeSet.add(u);
-        typeGroups = typeGroups.set(members, maybeSet);
-    });
-
-    return typeGroups
-        .valueSeq()
-        .toArray()
-        .map(ts => ts.toArray());
-}
 
 export function flattenUnions(
     graph: TypeGraph,

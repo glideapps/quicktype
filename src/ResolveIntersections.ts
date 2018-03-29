@@ -31,7 +31,8 @@ import {
     TypeKind,
     combineTypeAttributesOfTypes,
     ObjectType,
-    setOperationMembersRecursively
+    setOperationMembersRecursively,
+    makeGroupsToFlatten
 } from "./Type";
 import { assert, defined, panic } from "./Support";
 import {
@@ -394,13 +395,9 @@ class IntersectionUnionBuilder extends UnionBuilder<
 export function resolveIntersections(graph: TypeGraph, stringTypeMapping: StringTypeMapping): [TypeGraph, boolean] {
     let needsRepeat = false;
 
-    function replace(
-        types: Set<IntersectionType>,
-        builder: GraphRewriteBuilder<IntersectionType>,
-        forwardingRef: TypeRef
-    ): TypeRef {
-        assert(types.size === 1);
-        const [members, intersectionAttributes] = setOperationMembersRecursively(defined(types.first()));
+    function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
+        const intersections = types.filter(t => t instanceof IntersectionType) as Set<IntersectionType>;
+        const [members, intersectionAttributes] = setOperationMembersRecursively(intersections.toArray());
         if (members.isEmpty()) {
             const t = builder.getPrimitiveType("any", forwardingRef);
             builder.addAttributes(t, intersectionAttributes);
@@ -427,17 +424,13 @@ export function resolveIntersections(graph: TypeGraph, stringTypeMapping: String
     }
     // FIXME: We need to handle intersections that resolve to the same set of types.
     // See for example the intersections-nested.schema example.
-    const intersections = graph.allTypesUnordered().filter(t => t instanceof IntersectionType) as Set<IntersectionType>;
-    if (intersections.isEmpty()) {
-        return [graph, true];
-    }
-    const resolvableIntersections = intersections.filter(canResolve);
-    if (resolvableIntersections.isEmpty()) {
-        return [graph, false];
-    }
-    const groups = resolvableIntersections.map(i => [i]).toArray();
+    const allIntersections = graph.allTypesUnordered().filter(t => t instanceof IntersectionType) as Set<
+        IntersectionType
+    >;
+    const resolvableIntersections = allIntersections.filter(canResolve);
+    const groups = makeGroupsToFlatten(resolvableIntersections, undefined);
     graph = graph.rewrite("resolve intersections", stringTypeMapping, false, groups, replace);
 
     // console.log(`resolved ${resolvableIntersections.size} of ${intersections.size} intersections`);
-    return [graph, !needsRepeat && intersections.size === resolvableIntersections.size];
+    return [graph, !needsRepeat && allIntersections.size === resolvableIntersections.size];
 }
