@@ -105,6 +105,8 @@ const namingFunction = funPrefixNamer("namer", csNameStyle);
 
 // FIXME: Make a Named?
 const denseJsonPropertyName = "J";
+const denseRequiredEnumName = "R";
+const denseNullValueHandlingEnumName = "N";
 
 function isStartCharacter(utf16Unit: number): boolean {
     if (unicode.isAlphabetic(utf16Unit)) {
@@ -479,21 +481,23 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private _enumExtensionsNames = Map<Name, Name>();
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return super
-            .forbiddenNamesForGlobalNamespace()
-            .concat([
-                "Converter",
-                "JsonConverter",
-                "JsonSerializer",
-                "JsonWriter",
-                "JsonToken",
-                "Serialize",
-                "Newtonsoft",
-                "MetadataPropertyHandling",
-                "DateParseHandling",
-                "FromJson",
-                "Required"
-            ]);
+        const forbidden = [
+            "Converter",
+            "JsonConverter",
+            "JsonSerializer",
+            "JsonWriter",
+            "JsonToken",
+            "Serialize",
+            "Newtonsoft",
+            "MetadataPropertyHandling",
+            "DateParseHandling",
+            "FromJson",
+            "Required"
+        ];
+        if (this.dense) {
+            forbidden.push("J", "R", "N");
+        }
+        return super.forbiddenNamesForGlobalNamespace().concat(forbidden);
     }
 
     protected forbiddenForClassProperties(c: ClassType, className: Name): ForbiddenWordsInfo {
@@ -520,6 +524,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
         if (this.dense) {
             this.emitUsing([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
+            this.emitUsing([denseRequiredEnumName, " = Newtonsoft.Json.Required"]);
+            this.emitUsing([denseNullValueHandlingEnumName, " = Newtonsoft.Json.NullValueHandling"]);
         }
     }
 
@@ -549,17 +555,19 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         const escapedName = utf16StringEscape(jsonName);
         const isNullable = t.isNullable;
         const isOptional = property.isOptional;
+        const requiredClass = this.dense ? "R" : "Required";
+        const nullValueHandlingClass = this.dense ? "N" : "NullValueHandling";
         const nullValueHandling =
-            isValueType(t) && !isOptional ? [] : [", NullValueHandling = NullValueHandling.Ignore"];
+            isValueType(t) && !isOptional ? [] : [", NullValueHandling = ", nullValueHandlingClass, ".Ignore"];
         let required: Sourcelike;
         if (isOptional && isNullable) {
             required = [];
         } else if (isOptional && !isNullable) {
-            required = [", Required = Required.DisallowNull", nullValueHandling];
+            required = [", Required = ", requiredClass, ".DisallowNull", nullValueHandling];
         } else if (!isOptional && isNullable) {
-            required = [", Required = Required.AllowNull"];
+            required = [", Required = ", requiredClass, ".AllowNull"];
         } else {
-            required = [", Required = Required.Always", nullValueHandling];
+            required = [", Required = ", requiredClass, ".Always", nullValueHandling];
         }
         return [["[", jsonProperty, '("', escapedName, '"', required, ")]"]];
     }
