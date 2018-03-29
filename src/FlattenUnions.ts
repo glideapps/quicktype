@@ -8,7 +8,7 @@ import { assert, defined } from "./Support";
 import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
 
-function unionMembersRecursively(...unions: UnionType[]): OrderedSet<Type> {
+function unionMembersRecursively(union: UnionType): OrderedSet<Type> {
     let processedUnions = Set<UnionType>();
     let members = OrderedSet<Type>();
 
@@ -24,9 +24,7 @@ function unionMembersRecursively(...unions: UnionType[]): OrderedSet<Type> {
         });
     }
 
-    for (const union of unions) {
-        addMembers(union);
-    }
+    addMembers(union);
     return members;
 }
 
