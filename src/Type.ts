@@ -2,7 +2,7 @@
 
 import { OrderedSet, OrderedMap, Collection, Map, Set, is, hash } from "immutable";
 
-import { defined, panic, assert, assertNever } from "./Support";
+import { defined, panic, assert, assertNever, mapOptional } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
@@ -351,8 +351,7 @@ export class ObjectType extends Type {
             // mapPath.pop();
             return result;
         });
-        const additionalProperties =
-            this._additionalPropertiesRef === undefined ? undefined : f(this._additionalPropertiesRef);
+        const additionalProperties = mapOptional(f, this._additionalPropertiesRef);
         switch (this.kind) {
             case "object":
                 assert(this.isFixed);

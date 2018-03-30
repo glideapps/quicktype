@@ -15,7 +15,8 @@ import {
     addHashCode,
     mapSync,
     forEachSync,
-    checkArray
+    checkArray,
+    mapOptional
 } from "./Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
@@ -259,7 +260,7 @@ export class Ref {
     }
 
     hashCode(): number {
-        let acc = hash(this.addressURI !== undefined ? this.addressURI.toString() : undefined);
+        let acc = hash(mapOptional(u => u.toString(), this.addressURI));
         this.path.forEach(pe => {
             acc = addHashCode(acc, pe.kind);
             switch (pe.kind) {
@@ -439,10 +440,7 @@ export async function addTypesInSchema(
     const canonizer = new Canonizer();
 
     async function resolveVirtualRef(base: Location | undefined, virtualRef: Ref): Promise<[JSONSchema, Location]> {
-        const [canonical, fullVirtual] = canonizer.canonize(
-            base !== undefined ? base.virtualRef : undefined,
-            virtualRef
-        );
+        const [canonical, fullVirtual] = canonizer.canonize(mapOptional(b => b.virtualRef, base), virtualRef);
         assert(canonical.hasAddress, "Canonical ref can't be resolved without an address");
         const schema = await store.get(canonical.address);
         canonizer.addSchema(schema, canonical.address);
@@ -614,7 +612,7 @@ export async function addTypesInSchema(
         }
 
         const enumArray = Array.isArray(schema.enum) ? schema.enum : undefined;
-        const typeSet = schema.type !== undefined ? checkTypeList(schema.type) : undefined;
+        const typeSet = mapOptional(checkTypeList, schema.type);
 
         function includePrimitiveType(name: string): boolean {
             if (typeSet !== undefined && !typeSet.has(name)) {
