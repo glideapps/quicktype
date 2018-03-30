@@ -347,7 +347,8 @@ export abstract class ConvenienceRenderer extends Renderer {
         let ns: Namespace | undefined;
 
         const accessorNames = objectPropertyNames(o, this.targetLanguage.name);
-        const names = o.sortedProperties
+        const names = o
+            .getSortedProperties()
             .map((p, jsonName) => {
                 const [assignedName, isFixed] = getAccessorName(accessorNames, jsonName);
                 let name: Name | undefined;
@@ -452,7 +453,8 @@ export abstract class ConvenienceRenderer extends Renderer {
         const names = this.names;
         if (t instanceof ClassType) {
             const propertyNameds = defined(this._propertyNamesStoreView).get(t);
-            const sortedMap = t.properties
+            const sortedMap = t
+                .getProperties()
                 .filter((_, n) => propertyNameds.get(n) !== undefined)
                 .map(p => p.type)
                 .sortBy((_, n) => defined(names.get(defined(propertyNameds.get(n)))));
@@ -602,11 +604,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (this._alphabetizeProperties) {
             const alphabetizedPropertyNames = propertyNames.sortBy(n => this.names.get(n)).toOrderedMap();
             this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName) => {
-                const p = defined(o.properties.get(jsonName));
+                const p = defined(o.getProperties().get(jsonName));
                 f(name, jsonName, p);
             });
         } else {
-            this.forEachWithBlankLines(o.properties, blankLocations, (p, jsonName) => {
+            this.forEachWithBlankLines(o.getProperties(), blankLocations, (p, jsonName) => {
                 const name = defined(propertyNames.get(jsonName));
                 f(name, jsonName, p);
             });
@@ -806,7 +808,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._haveMaps = types.some(t => t instanceof MapType);
         this._haveOptionalProperties = types
             .filter(t => t instanceof ClassType)
-            .some(c => (c as ClassType).properties.some(p => p.isOptional));
+            .some(c => (c as ClassType).getProperties().some(p => p.isOptional));
         this._namedTypes = this._declarationIR.declarations.filter(d => d.kind === "define").map(d => d.type);
         const { objects, enums, unions } = separateNamedTypes(this._namedTypes);
         this._namedObjects = objects;

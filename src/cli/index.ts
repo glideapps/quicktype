@@ -425,7 +425,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             name: "debug",
             type: String,
             typeLabel: "OPTIONS",
-            description: "Comma separated debug options: print-graph,provenance"
+            description: "Comma separated debug options: print-graph, provenance, print-reconstitution"
         },
         {
             name: "telemetry",
@@ -741,12 +741,15 @@ export async function makeQuicktypeOptions(
 
     let debugPrintGraph = false;
     let checkProvenance = false;
+    let debugPrintReconstitution = false;
     if (options.debug !== undefined) {
         const components = options.debug.split(",");
         for (let component of components) {
             component = component.trim();
             if (component === "print-graph") {
                 debugPrintGraph = true;
+            } else if (component === "print-reconstitution") {
+                debugPrintReconstitution = true;
             } else if (component === "provenance") {
                 checkProvenance = true;
             } else {
@@ -778,7 +781,8 @@ export async function makeQuicktypeOptions(
         outputFilename: mapOptional(path.basename, options.out),
         schemaStore: new FetchingJSONSchemaStore(),
         debugPrintGraph,
-        checkProvenance
+        checkProvenance,
+        debugPrintReconstitution
     };
 }
 

@@ -13,7 +13,8 @@ export function flattenUnions(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
     conflateNumbers: boolean,
-    makeObjectTypes: boolean
+    makeObjectTypes: boolean,
+    debugPrintReconstitution: boolean
 ): [TypeGraph, boolean] {
     let needsRepeat = false;
 
@@ -47,7 +48,7 @@ export function flattenUnions(
         foundIntersection = true;
         return false;
     });
-    graph = graph.rewrite("flatten unions", stringTypeMapping, false, groups, replace);
+    graph = graph.rewrite("flatten unions", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
 
     // console.log(`flattened ${nonCanonicalUnions.size} of ${unions.size} unions`);
     return [graph, !needsRepeat && !foundIntersection];

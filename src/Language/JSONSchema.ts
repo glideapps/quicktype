@@ -136,13 +136,13 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     private definitionForObject(o: ObjectType, title: string | undefined): Schema {
         let properties: Schema | undefined;
         let required: string[] | undefined;
-        if (o.properties.isEmpty()) {
+        if (o.getProperties().isEmpty()) {
             properties = undefined;
             required = undefined;
         } else {
             const props: Schema = {};
             const req: string[] = [];
-            o.properties.forEach((p, name) => {
+            o.getProperties().forEach((p, name) => {
                 props[name] = this.schemaForType(p.type);
                 if (!p.isOptional) {
                     req.push(name);
@@ -151,8 +151,8 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             properties = props;
             required = req.sort();
         }
-        const additionalProperties =
-            o.additionalProperties !== undefined ? this.schemaForType(o.additionalProperties) : false;
+        const additional = o.getAdditionalProperties();
+        const additionalProperties = additional !== undefined ? this.schemaForType(additional) : false;
         return {
             type: "object",
             additionalProperties,

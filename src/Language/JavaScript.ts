@@ -187,8 +187,9 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 
         this.emitBlock(`const typeMap${anyAnnotation} = `, ";", () => {
             this.forEachObject("none", (t: ObjectType, name: Name) => {
+                const additionalProperties = t.getAdditionalProperties();
                 const additional =
-                    t.additionalProperties !== undefined ? this.typeMapTypeFor(t.additionalProperties) : "false";
+                    additionalProperties !== undefined ? this.typeMapTypeFor(additionalProperties) : "false";
                 this.emitBlock(['"', name, '": o('], [", ", additional, "),"], () => {
                     this.forEachClassProperty(t, "none", (propName, _propJsonName, property) => {
                         this.emitLine(propName, ": ", this.typeMapTypeForProperty(property), ",");

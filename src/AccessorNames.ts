@@ -50,7 +50,7 @@ function lookupKey(accessors: AccessorNames, key: string, language: string): [st
 
 export function objectPropertyNames(o: ObjectType, language: string): Map<string, [string, boolean] | undefined> {
     const accessors = accessorNamesTypeAttributeKind.tryGetInAttributes(o.getAttributes());
-    const map = o.properties;
+    const map = o.getProperties();
     if (accessors === undefined) return map.map(_ => undefined);
     return map.map((_cp, n) => lookupKey(accessors, n, language));
 }

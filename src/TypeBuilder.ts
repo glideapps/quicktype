@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, OrderedMap, OrderedSet, Set } from "immutable";
+import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -28,7 +28,7 @@ import {
     emptyTypeAttributes,
     makeTypeAttributesInferred
 } from "./TypeAttributes";
-import { defined, assert, panic, assertNever, setUnion } from "./Support";
+import { defined, assert, panic, assertNever, setUnion, mapOptional } from "./Support";
 
 export type TypeRefCallback = (index: number) => void;
 
@@ -129,6 +129,8 @@ function provenanceToString(p: Set<TypeRef>): string {
         .join(",");
 }
 
+// FIXME: Don't infer provenance.  All original types should be present in
+// non-inferred form in the final graph.
 export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>(
     "provenance",
     setUnion,
@@ -147,6 +149,15 @@ export const NoStringTypeMapping: StringTypeMapping = {
     time: "time",
     dateTime: "date-time"
 };
+
+function forwardIfNecessary(forwardingRef: TypeRef | undefined, maybeRef: TypeRef): TypeRef;
+function forwardIfNecessary(forwardingRef: TypeRef | undefined, maybeRef: TypeRef | undefined): TypeRef | undefined;
+function forwardIfNecessary(forwardingRef: TypeRef | undefined, maybeRef: TypeRef | undefined): TypeRef | undefined {
+    if (forwardingRef !== undefined && maybeRef !== undefined) {
+        forwardingRef.resolve(maybeRef);
+    }
+    return maybeRef;
+}
 
 export class TypeBuilder {
     readonly typeGraph: TypeGraph;
@@ -264,6 +275,7 @@ export class TypeBuilder {
     private _enumTypes: Map<Set<string>, TypeRef> = Map();
     private _classTypes: Map<Map<string, ClassProperty>, TypeRef> = Map();
     private _unionTypes: Map<Set<TypeRef>, TypeRef> = Map();
+    private _intersectionTypes: Map<Set<TypeRef>, TypeRef> = Map();
 
     getPrimitiveType(kind: PrimitiveTypeKind, forwardingRef?: TypeRef): TypeRef {
         assert(kind !== "string", "Use getStringType to create strings");
@@ -273,7 +285,7 @@ export class TypeBuilder {
         if (kind === "string") {
             return this.getStringType(undefined, undefined, forwardingRef);
         }
-        let tref = this._primitiveTypes.get(kind);
+        let tref = forwardIfNecessary(forwardingRef, this._primitiveTypes.get(kind));
         if (tref === undefined) {
             tref = this.addType(forwardingRef, tr => new PrimitiveType(tr, kind), undefined);
             this._primitiveTypes = this._primitiveTypes.set(kind, tref);
@@ -301,14 +313,14 @@ export class TypeBuilder {
                 this._noEnumStringType = this.addType(forwardingRef, tr => new StringType(tr, undefined), undefined);
             }
             this.addAttributes(this._noEnumStringType, attributes);
-            return this._noEnumStringType;
+            return forwardIfNecessary(forwardingRef, this._noEnumStringType);
         }
         return this.addType(forwardingRef, tr => new StringType(tr, cases), attributes);
     }
 
     getEnumType(attributes: TypeAttributes, cases: OrderedSet<string>, forwardingRef?: TypeRef): TypeRef {
         const unorderedCases = cases.toSet();
-        let tref = this._enumTypes.get(unorderedCases);
+        let tref = forwardIfNecessary(forwardingRef, this._enumTypes.get(unorderedCases));
         if (tref === undefined) {
             tref = this.addType(forwardingRef, tr => new EnumType(tr, cases), attributes);
             this._enumTypes = this._enumTypes.set(unorderedCases, tref);
@@ -320,11 +332,11 @@ export class TypeBuilder {
 
     getUniqueObjectType(
         attributes: TypeAttributes,
-        properties: OrderedMap<string, ClassProperty>,
+        properties: OrderedMap<string, ClassProperty> | undefined,
         additionalProperties: TypeRef | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
-        properties = this.modifyPropertiesIfNecessary(properties);
+        properties = mapOptional(p => this.modifyPropertiesIfNecessary(p), properties);
         return this.addType(
             forwardingRef,
             tref => new ObjectType(tref, "object", true, properties, additionalProperties),
@@ -332,8 +344,12 @@ export class TypeBuilder {
         );
     }
 
+    getUniqueMapType(forwardingRef?: TypeRef): TypeRef {
+        return this.addType(forwardingRef, tr => new MapType(tr, undefined), undefined);
+    }
+
     getMapType(values: TypeRef, forwardingRef?: TypeRef): TypeRef {
-        let tref = this._mapTypes.get(values);
+        let tref = forwardIfNecessary(forwardingRef, this._mapTypes.get(values));
         if (tref === undefined) {
             tref = this.addType(forwardingRef, tr => new MapType(tr, values), undefined);
             this._mapTypes = this._mapTypes.set(values, tref);
@@ -341,13 +357,37 @@ export class TypeBuilder {
         return tref;
     }
 
+    setObjectProperties(
+        ref: TypeRef,
+        properties: OrderedMap<string, ClassProperty>,
+        additionalProperties: TypeRef | undefined
+    ): void {
+        const type = ref.deref()[0];
+        if (!(type instanceof ObjectType)) {
+            return panic("Tried to set properties of non-object type");
+        }
+        type.setProperties(this.modifyPropertiesIfNecessary(properties), additionalProperties);
+    }
+
+    getUniqueArrayType(forwardingRef?: TypeRef): TypeRef {
+        return this.addType(forwardingRef, tr => new ArrayType(tr, undefined), undefined);
+    }
+
     getArrayType(items: TypeRef, forwardingRef?: TypeRef): TypeRef {
-        let tref = this._arrayTypes.get(items);
+        let tref = forwardIfNecessary(forwardingRef, this._arrayTypes.get(items));
         if (tref === undefined) {
             tref = this.addType(forwardingRef, tr => new ArrayType(tr, items), undefined);
             this._arrayTypes = this._arrayTypes.set(items, tref);
         }
         return tref;
+    }
+
+    setArrayItems(ref: TypeRef, items: TypeRef): void {
+        const type = ref.deref()[0];
+        if (!(type instanceof ArrayType)) {
+            return panic("Tried to set items of non-array type");
+        }
+        type.setItems(items);
     }
 
     modifyPropertiesIfNecessary(properties: OrderedMap<string, ClassProperty>): OrderedMap<string, ClassProperty> {
@@ -366,11 +406,8 @@ export class TypeBuilder {
         forwardingRef?: TypeRef
     ): TypeRef {
         properties = this.modifyPropertiesIfNecessary(properties);
-        let tref = this._classTypes.get(properties.toMap());
-        // FIXME: It's not clear to me that the `forwardingRef` condition here
-        // might actually ever be true.  And if it can, shouldn't we also have
-        // it in all the other `getXXX` methods here?
-        if ((forwardingRef !== undefined && forwardingRef.maybeIndex !== undefined) || tref === undefined) {
+        let tref = forwardIfNecessary(forwardingRef, this._classTypes.get(properties.toMap()));
+        if (tref === undefined) {
             tref = this.addType(forwardingRef, tr => new ClassType(tr, false, properties), attributes);
             this._classTypes = this._classTypes.set(properties.toMap(), tref);
         } else {
@@ -384,16 +421,16 @@ export class TypeBuilder {
     getUniqueClassType(
         attributes: TypeAttributes,
         isFixed: boolean,
-        properties: OrderedMap<string, ClassProperty>,
+        properties: OrderedMap<string, ClassProperty> | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
-        properties = this.modifyPropertiesIfNecessary(properties);
+        properties = mapOptional(p => this.modifyPropertiesIfNecessary(p), properties);
         return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties), attributes);
     }
 
     getUnionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
         const unorderedMembers = members.toSet();
-        let tref = this._unionTypes.get(unorderedMembers);
+        let tref = forwardIfNecessary(forwardingRef, this._unionTypes.get(unorderedMembers));
         if (tref === undefined) {
             tref = this.addType(forwardingRef, tr => new UnionType(tr, members), attributes);
             this._unionTypes = this._unionTypes.set(unorderedMembers, tref);
@@ -409,6 +446,18 @@ export class TypeBuilder {
         forwardingRef?: TypeRef
     ): TypeRef {
         return this.addType(forwardingRef, tref => new UnionType(tref, members), attributes);
+    }
+
+    getIntersectionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
+        const unorderedMembers = members.toSet();
+        let tref = forwardIfNecessary(forwardingRef, this._intersectionTypes.get(unorderedMembers));
+        if (tref === undefined) {
+            tref = this.addType(forwardingRef, tr => new IntersectionType(tr, members), attributes);
+            this._intersectionTypes = this._intersectionTypes.set(unorderedMembers, tref);
+        } else {
+            this.addAttributes(tref, attributes);
+        }
+        return tref;
     }
 
     getUniqueIntersectionType(
@@ -438,78 +487,170 @@ export interface TypeLookerUp {
     registerUnion(typeRefs: TypeRef[], reconstituted: TypeRef): void;
 }
 
-export class TypeReconstituter {
+export class TypeReconstituter<T extends Type> {
     private _wasUsed: boolean = false;
+    private _typeRef: TypeRef | undefined = undefined;
 
     constructor(
-        private readonly _typeBuilder: TypeBuilder,
+        private readonly _typeBuilder: GraphRewriteBuilder<T>,
         private readonly _makeClassUnique: boolean,
         private readonly _typeAttributes: TypeAttributes,
-        private readonly _forwardingRef: TypeRef
+        private readonly _forwardingRef: TypeRef,
+        private readonly _register: (tref: TypeRef) => void
     ) {}
 
-    private useBuilder(): TypeBuilder {
+    private builderForNewType(): GraphRewriteBuilder<T> {
         assert(!this._wasUsed, "TypeReconstituter used more than once");
         this._wasUsed = true;
         return this._typeBuilder;
     }
 
-    private addAttributes(tref: TypeRef): TypeRef {
+    private builderForSetting(): GraphRewriteBuilder<T> {
+        assert(this._wasUsed && this._typeRef !== undefined, "Can't set type members before constructing a type");
+        return this._typeBuilder;
+    }
+
+    getResult(): TypeRef {
+        if (this._typeRef === undefined) {
+            return panic("Type was not reconstituted");
+        }
+        return this._typeRef;
+    }
+
+    // FIXME: Do registration automatically.
+    private register(tref: TypeRef): void {
+        assert(this._typeRef === undefined, "Cannot register a type twice");
+        this._typeRef = tref;
+        this._register(tref);
+    }
+
+    private registerAndAddAttributes(tref: TypeRef): void {
         this._typeBuilder.addAttributes(tref, this._typeAttributes);
-        return tref;
+        this.register(tref);
     }
 
-    getPrimitiveType(kind: PrimitiveTypeKind): TypeRef {
-        return this.addAttributes(this.useBuilder().getPrimitiveType(kind, this._forwardingRef));
+    lookup(tref: TypeRef): TypeRef | undefined;
+    lookup<C extends Collection<any, TypeRef>>(trefs: C): C | undefined;
+    lookup<C extends Collection<any, TypeRef>>(trefs: TypeRef | C): TypeRef | C | undefined {
+        assert(!this._wasUsed, "Cannot lookup constituents after building type");
+        if (isCollection(trefs)) {
+            const maybeRefs = trefs.map(tref => this._typeBuilder.lookupTypeRefs([tref], undefined, false));
+            if (maybeRefs.some(tref => tref === undefined)) return undefined;
+            return maybeRefs as C;
+        }
+        return this._typeBuilder.lookupTypeRefs([trefs], undefined, false);
     }
 
-    getStringType(enumCases: OrderedMap<string, number> | undefined): TypeRef {
-        return this.useBuilder().getStringType(this._typeAttributes, enumCases, this._forwardingRef);
+    reconstitute(tref: TypeRef): TypeRef;
+    reconstitute<C extends Collection<any, TypeRef>>(trefs: C): C;
+    reconstitute<C extends Collection<any, TypeRef>>(trefs: TypeRef | C): TypeRef | C {
+        assert(this._wasUsed, "Cannot reconstitute constituents before building type");
+        if (isCollection(trefs)) {
+            return trefs.map(tref => this._typeBuilder.reconstituteTypeRef(tref)) as C;
+        }
+        return this._typeBuilder.reconstituteTypeRef(trefs);
     }
 
-    getEnumType(cases: OrderedSet<string>): TypeRef {
-        return this.useBuilder().getEnumType(defined(this._typeAttributes), cases, this._forwardingRef);
+    getPrimitiveType(kind: PrimitiveTypeKind): void {
+        this.registerAndAddAttributes(this.builderForNewType().getPrimitiveType(kind, this._forwardingRef));
     }
 
-    getMapType(values: TypeRef): TypeRef {
-        return this.addAttributes(this.useBuilder().getMapType(values, this._forwardingRef));
+    getStringType(enumCases: OrderedMap<string, number> | undefined): void {
+        this.register(this.builderForNewType().getStringType(this._typeAttributes, enumCases, this._forwardingRef));
     }
 
-    getArrayType(items: TypeRef): TypeRef {
-        return this.addAttributes(this.useBuilder().getArrayType(items, this._forwardingRef));
+    getEnumType(cases: OrderedSet<string>): void {
+        this.register(this.builderForNewType().getEnumType(this._typeAttributes, cases, this._forwardingRef));
+    }
+
+    getUniqueMapType(): void {
+        this.registerAndAddAttributes(this.builderForNewType().getUniqueMapType(this._forwardingRef));
+    }
+
+    getMapType(values: TypeRef): void {
+        this.registerAndAddAttributes(this.builderForNewType().getMapType(values, this._forwardingRef));
+    }
+
+    getUniqueArrayType(): void {
+        this.registerAndAddAttributes(this.builderForNewType().getUniqueArrayType(this._forwardingRef));
+    }
+
+    getArrayType(items: TypeRef): void {
+        this.registerAndAddAttributes(this.builderForNewType().getArrayType(items, this._forwardingRef));
+    }
+
+    setArrayItems(items: TypeRef): void {
+        this.builderForSetting().setArrayItems(this.getResult(), items);
+    }
+
+    getObjectType(properties: OrderedMap<string, ClassProperty>, additionalProperties: TypeRef | undefined): void {
+        this.register(
+            this.builderForNewType().getUniqueObjectType(
+                this._typeAttributes,
+                properties,
+                additionalProperties,
+                this._forwardingRef
+            )
+        );
     }
 
     getUniqueObjectType(
+        properties: OrderedMap<string, ClassProperty> | undefined,
+        additionalProperties: TypeRef | undefined
+    ): void {
+        this.register(
+            this.builderForNewType().getUniqueObjectType(
+                this._typeAttributes,
+                properties,
+                additionalProperties,
+                this._forwardingRef
+            )
+        );
+    }
+
+    getClassType(properties: OrderedMap<string, ClassProperty>): void {
+        if (this._makeClassUnique) {
+            this.getUniqueClassType(false, properties);
+            return;
+        }
+        this.register(this.builderForNewType().getClassType(this._typeAttributes, properties, this._forwardingRef));
+    }
+
+    getUniqueClassType(isFixed: boolean, properties: OrderedMap<string, ClassProperty> | undefined): void {
+        this.register(
+            this.builderForNewType().getUniqueClassType(this._typeAttributes, isFixed, properties, this._forwardingRef)
+        );
+    }
+
+    setObjectProperties(
         properties: OrderedMap<string, ClassProperty>,
         additionalProperties: TypeRef | undefined
-    ): TypeRef {
-        return this.addAttributes(
-            this.useBuilder().getUniqueObjectType(defined(this._typeAttributes), properties, additionalProperties)
+    ): void {
+        this.builderForSetting().setObjectProperties(this.getResult(), properties, additionalProperties);
+    }
+
+    getUnionType(members: OrderedSet<TypeRef>): void {
+        this.register(this.builderForNewType().getUnionType(this._typeAttributes, members, this._forwardingRef));
+    }
+
+    getUniqueUnionType(): void {
+        this.register(
+            this.builderForNewType().getUniqueUnionType(this._typeAttributes, undefined, this._forwardingRef)
         );
     }
 
-    getClassType(properties: OrderedMap<string, ClassProperty>): TypeRef {
-        if (this._makeClassUnique) {
-            return this.getUniqueClassType(false, properties);
-        }
-        return this.useBuilder().getClassType(defined(this._typeAttributes), properties, this._forwardingRef);
+    getIntersectionType(members: OrderedSet<TypeRef>): void {
+        this.register(this.builderForNewType().getIntersectionType(this._typeAttributes, members, this._forwardingRef));
     }
 
-    getUniqueClassType(isFixed: boolean, properties: OrderedMap<string, ClassProperty>): TypeRef {
-        return this.useBuilder().getUniqueClassType(
-            defined(this._typeAttributes),
-            isFixed,
-            properties,
-            this._forwardingRef
+    getUniqueIntersectionType(members?: OrderedSet<TypeRef>): void {
+        this.register(
+            this.builderForNewType().getUniqueIntersectionType(this._typeAttributes, members, this._forwardingRef)
         );
     }
 
-    getUnionType(members: OrderedSet<TypeRef>): TypeRef {
-        return this.useBuilder().getUnionType(defined(this._typeAttributes), members, this._forwardingRef);
-    }
-
-    getUniqueIntersectionType(members: OrderedSet<TypeRef>): TypeRef {
-        return this.useBuilder().getUniqueIntersectionType(defined(this._typeAttributes), members, this._forwardingRef);
+    setSetOperationMembers(members: OrderedSet<TypeRef>): void {
+        this.builderForSetting().setSetOperationMembers(this.getResult(), members);
     }
 }
 
@@ -520,12 +661,15 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
 
     private _lostTypeAttributes: boolean = false;
 
+    private _printIndent = 0;
+
     constructor(
         private readonly _originalGraph: TypeGraph,
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         graphHasProvenanceAttributes: boolean,
         setsToReplace: T[][],
+        private readonly _debugPrintReconstitution: boolean,
         private readonly _replacer: (
             typesToReplace: Set<T>,
             builder: GraphRewriteBuilder<T>,
@@ -578,12 +722,36 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
 
     private forceReconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
         return this.withForwardingRef(maybeForwardingRef, (forwardingRef: TypeRef): TypeRef => {
-            this._reconstitutedTypes = this._reconstitutedTypes.set(originalRef.getIndex(), forwardingRef);
-            const [originalType, originalNames] = originalRef.deref();
-            return originalType.map(
-                new TypeReconstituter(this, this.alphabetizeProperties, originalNames, forwardingRef),
-                (ref: TypeRef) => this.reconstituteTypeRef(ref)
+            const [originalType, originalAttributes] = originalRef.deref();
+            const index = originalRef.getIndex();
+
+            if (this._debugPrintReconstitution) {
+                console.log(`${"  ".repeat(this._printIndent)}reconstituting ${index}`);
+                this._printIndent += 1;
+            }
+
+            const reconstituter = new TypeReconstituter(
+                this,
+                this.alphabetizeProperties,
+                originalAttributes,
+                forwardingRef,
+                tref => {
+                    if (this._debugPrintReconstitution) {
+                        this._printIndent -= 1;
+                        console.log(`${"  ".repeat(this._printIndent)}reconstituted ${index} as ${tref.getIndex()}`);
+                    }
+
+                    assert(tref.equals(forwardingRef), "We didn't pass the forwarding ref");
+                    const alreadyReconstitutedType = this._reconstitutedTypes.get(index);
+                    if (alreadyReconstitutedType === undefined) {
+                        this._reconstitutedTypes = this._reconstitutedTypes.set(index, tref);
+                    } else {
+                        assert(tref.equals(alreadyReconstitutedType), "We reconstituted a type twice differently");
+                    }
+                }
             );
+            originalType.reconstitute(reconstituter);
+            return reconstituter.getResult();
         });
     }
 
@@ -610,7 +778,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
 
     // If the union of these type refs have been, or are supposed to be, reconstituted to
     // one target type, return it.  Otherwise return undefined.
-    lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined {
+    lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef, replaceSet: boolean = true): TypeRef | undefined {
         this.assertTypeRefsToReconstitute(typeRefs, forwardingRef);
 
         // Check whether we have already reconstituted them.  That means ensuring
@@ -652,6 +820,7 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
             }
         }
         // Yes, this set is requested to be replaced, so do it.
+        if (!replaceSet) return undefined;
         return this.replaceSet(maybeSet, forwardingRef);
     }
 

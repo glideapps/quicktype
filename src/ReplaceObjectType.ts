@@ -12,7 +12,8 @@ export function replaceObjectType(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
     _conflateNumbers: boolean,
-    leaveFullObjects: boolean
+    leaveFullObjects: boolean,
+    debugPrintReconstitution: boolean
 ): TypeGraph {
     function replace(
         setOfOneType: Set<ObjectType>,
@@ -21,8 +22,8 @@ export function replaceObjectType(
     ): TypeRef {
         const o = defined(setOfOneType.first());
         const attributes = o.getAttributes();
-        const properties = o.properties;
-        const additionalProperties = o.additionalProperties;
+        const properties = o.getProperties();
+        const additionalProperties = o.getAdditionalProperties();
 
         function reconstituteProperties(): OrderedMap<string, ClassProperty> {
             return properties.map(cp => new ClassProperty(builder.reconstituteTypeRef(cp.typeRef), cp.isOptional));
@@ -82,8 +83,8 @@ export function replaceObjectType(
 
     const allObjectTypes = graph.allTypesUnordered().filter(t => t.kind === "object") as Set<ObjectType>;
     const objectTypesToReplace = leaveFullObjects
-        ? allObjectTypes.filter(o => o.properties.isEmpty() || o.additionalProperties === undefined)
+        ? allObjectTypes.filter(o => o.getProperties().isEmpty() || o.getAdditionalProperties() === undefined)
         : allObjectTypes;
     const groups = objectTypesToReplace.toArray().map(t => [t]);
-    return graph.rewrite("replace object type", stringTypeMapping, false, groups, replace);
+    return graph.rewrite("replace object type", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
 }

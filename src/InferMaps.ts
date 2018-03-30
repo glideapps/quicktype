@@ -86,14 +86,19 @@ function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefi
     return allCases;
 }
 
-export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping, conflateNumbers: boolean): TypeGraph {
+export function inferMaps(
+    graph: TypeGraph,
+    stringTypeMapping: StringTypeMapping,
+    conflateNumbers: boolean,
+    debugPrintReconstitution: boolean
+): TypeGraph {
     function replaceClass(
         setOfOneClass: Set<ClassType>,
         builder: GraphRewriteBuilder<ClassType>,
         forwardingRef: TypeRef
     ): TypeRef {
         const c = defined(setOfOneClass.first());
-        const properties = c.properties;
+        const properties = c.getProperties();
 
         const shouldBe = shouldBeMap(properties);
         if (shouldBe === undefined) {
@@ -123,6 +128,15 @@ export function inferMaps(graph: TypeGraph, stringTypeMapping: StringTypeMapping
     const allClasses = graph.allNamedTypesSeparated().objects.filter(o => o instanceof ClassType) as OrderedSet<
         ClassType
     >;
-    const classesToReplace = allClasses.filter(c => !c.isFixed && shouldBeMap(c.properties) !== undefined).toArray();
-    return graph.rewrite("infer maps", stringTypeMapping, false, classesToReplace.map(c => [c]), replaceClass);
+    const classesToReplace = allClasses
+        .filter(c => !c.isFixed && shouldBeMap(c.getProperties()) !== undefined)
+        .toArray();
+    return graph.rewrite(
+        "infer maps",
+        stringTypeMapping,
+        false,
+        classesToReplace.map(c => [c]),
+        debugPrintReconstitution,
+        replaceClass
+    );
 }

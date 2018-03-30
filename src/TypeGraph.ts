@@ -242,6 +242,7 @@ export class TypeGraph {
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         replacementGroups: T[][],
+        debugPrintReconstitution: boolean,
         replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef,
         force: boolean = false
     ): TypeGraph {
@@ -257,6 +258,7 @@ export class TypeGraph {
             alphabetizeProperties,
             this._haveProvenanceAttributes,
             replacementGroups,
+            debugPrintReconstitution,
             replacer
         );
         const newGraph = builder.finish();
@@ -285,6 +287,7 @@ export class TypeGraph {
             NoStringTypeMapping,
             alphabetizeProperties,
             [],
+            false,
             (_t, _b) => mustNotBeCalled(),
             true
         );
@@ -337,7 +340,11 @@ export class TypeGraph {
     }
 }
 
-export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
+export function noneToAny(
+    graph: TypeGraph,
+    stringTypeMapping: StringTypeMapping,
+    debugPrintReconstitution: boolean
+): TypeGraph {
     const noneTypes = graph.allTypesUnordered().filter(t => t.kind === "none");
     if (noneTypes.size === 0) {
         return graph;
@@ -348,6 +355,7 @@ export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping
         stringTypeMapping,
         false,
         [noneTypes.toArray()],
+        debugPrintReconstitution,
         (types, builder, forwardingRef) => {
             const tref = builder.getPrimitiveType("any", forwardingRef);
             const attributes = combineTypeAttributesOfTypes(types);
@@ -357,9 +365,13 @@ export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping
     );
 }
 
-export function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
+export function optionalToNullable(
+    graph: TypeGraph,
+    stringTypeMapping: StringTypeMapping,
+    debugPrintReconstitution: boolean
+): TypeGraph {
     function rewriteClass(c: ClassType, builder: GraphRewriteBuilder<ClassType>, forwardingRef: TypeRef): TypeRef {
-        const properties = c.properties.map((p, name) => {
+        const properties = c.getProperties().map((p, name) => {
             const t = p.type;
             let ref: TypeRef;
             if (!p.isOptional || t.isNullable) {
@@ -389,7 +401,7 @@ export function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTy
 
     const classesWithOptional = graph
         .allTypesUnordered()
-        .filter(t => t instanceof ClassType && t.properties.some(p => p.isOptional));
+        .filter(t => t instanceof ClassType && t.getProperties().some(p => p.isOptional));
     const replacementGroups = classesWithOptional.map(c => [c as ClassType]).toArray();
     if (classesWithOptional.size === 0) {
         return graph;
@@ -399,6 +411,7 @@ export function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTy
         stringTypeMapping,
         false,
         replacementGroups,
+        debugPrintReconstitution,
         (setOfClass, builder, forwardingRef) => {
             assert(setOfClass.size === 1);
             const c = defined(setOfClass.first());
