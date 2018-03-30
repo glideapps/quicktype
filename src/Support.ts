@@ -64,6 +64,11 @@ export function checkArray<T>(x: any, checkItem?: (v: any) => v is T): T[] {
     return x;
 }
 
+export function mapOptional<T, U>(f: (x: T) => U, x: T | undefined): U | undefined {
+    if (x === undefined) return undefined;
+    return f(x);
+}
+
 export function defined<T>(x: T | undefined): T {
     if (x !== undefined) return x;
     return panic("Defined value expected, but got undefined");

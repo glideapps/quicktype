@@ -27,7 +27,7 @@ import { urlsFromURLGrammar } from "../URLGrammar";
 import { Annotation } from "../Source";
 import { IssueAnnotationData } from "../Annotation";
 import { Readable } from "stream";
-import { panic, assert, defined, withDefault } from "../Support";
+import { panic, assert, defined, withDefault, mapOptional } from "../Support";
 import { introspectServer } from "../GraphQLIntrospection";
 import { getStream } from "../get-stream/index";
 import { train } from "../MarkovChain";
@@ -585,7 +585,7 @@ async function getSourceURIs(options: CLIOptions): Promise<[string, string[]][]>
 }
 
 function topLevelRefsForOptions(options: CLIOptions): string[] | undefined {
-    return options.addSchemaTopLevel === undefined ? undefined : [options.addSchemaTopLevel];
+    return mapOptional(x => [x], options.addSchemaTopLevel);
 }
 
 async function typeSourceForURIs(name: string, uris: string[], options: CLIOptions): Promise<TypeSource> {
@@ -738,7 +738,7 @@ export async function makeQuicktypeOptions(
         leadingComments,
         handlebarsTemplate,
         findSimilarClassesSchemaURI: options.findSimilarClassesSchema,
-        outputFilename: options.out !== undefined ? path.basename(options.out) : undefined,
+        outputFilename: mapOptional(path.basename, options.out),
         schemaStore: new FetchingJSONSchemaStore(),
         debugPrintGraph
     };
