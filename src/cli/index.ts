@@ -33,7 +33,7 @@ import { getStream } from "../get-stream/index";
 import { train } from "../MarkovChain";
 import { sourcesFromPostmanCollection } from "../PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
-import { schemaForTypeScriptSources } from "./typescript";
+import { schemaForTypeScriptSources } from "../TypeScriptInput";
 import * as telemetry from "./telemetry";
 
 const commandLineArgs = require("command-line-args");
