@@ -30,7 +30,6 @@ import {
 } from "../Strings";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { StringOption, BooleanOption, EnumOption, Option } from "../RendererOptions";
-import { Set } from "immutable";
 import { assert, defined } from "../Support";
 
 const unicode = require("unicode-properties");
@@ -243,11 +242,6 @@ function splitExtension(filename: string): [string, string] {
 export class ObjectiveCRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
 
-    // enums contained in NSArray or NSDictionary are represented
-    // as 'pseudo-enum' reference types. Eventually we may want to
-    // support 'natural' enums (NSUInteger) but this isn't implemented yet.
-    pseudoEnums: Set<EnumType>;
-
     constructor(
         targetLanguage: TargetLanguage,
         graph: TypeGraph,
@@ -265,29 +259,11 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             const aTopLevel = defined(this.topLevels.keySeq().first());
             this._classPrefix = this.inferClassPrefix(aTopLevel);
         }
-
-        this.pseudoEnums = graph
-            .allTypesUnordered()
-            .filter(t => t instanceof EnumType && this.enumOccursInArrayOrMap(t))
-            .map(t => t as EnumType);
     }
 
     private inferClassPrefix(name: string): string {
         const caps = lo.initial(lo.takeWhile(name, s => s === s.toLocaleUpperCase())).join("");
         return caps.length === 0 ? DEFAULT_CLASS_PREFIX : caps;
-    }
-
-    private enumOccursInArrayOrMap(enumType: EnumType): boolean {
-        function containedBy(t: Type): boolean {
-            return (
-                (t instanceof ArrayType && t.items.equals(enumType)) ||
-                (t instanceof MapType && t.values.equals(enumType)) ||
-                (t instanceof ClassType && t.properties.some(p => containedBy(p.type))) ||
-                // TODO support unions
-                (t instanceof UnionType && false)
-            );
-        }
-        return this.typeGraph.allTypesUnordered().some(containedBy);
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
