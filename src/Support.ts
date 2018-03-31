@@ -2,6 +2,9 @@
 
 import { Collection, List, Set, isKeyed, isIndexed } from "immutable";
 
+import { Base64 } from "js-base64";
+import * as pako from "pako";
+
 export function intercalate<T>(separator: T, items: Collection<any, T>): List<T> {
     const acc: T[] = [];
     items.forEach((x: T) => {
@@ -172,4 +175,9 @@ export async function mapSync<K, V, U>(
         return results;
     }
     return coll.map(_v => results[index++]);
+}
+
+export function inflateBase64(encoded: string): string {
+    const bytes = Base64.atob(encoded);
+    return pako.inflate(bytes, { to: "string" });
 }

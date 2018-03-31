@@ -1,10 +1,8 @@
 "use strict";
 
-import { Base64 } from "js-base64";
 
-import { panic, assert } from "./Support";
+import { panic, assert, inflateBase64 } from "./Support";
 import { encodedMarkovChain } from "./EncodedMarkovChain";
-import * as pako from "pako";
 
 // This must be null, not undefined, because we read it from JSON.
 export type SubTrie = number | null | Trie;
@@ -90,8 +88,7 @@ export function train(lines: string[], depth: number): MarkovChain {
 }
 
 export function load(): MarkovChain {
-    const bytes = Base64.atob(encodedMarkovChain);
-    return JSON.parse(pako.inflate(bytes, { to: "string" }));
+    return JSON.parse(inflateBase64(encodedMarkovChain));
 }
 
 export function evaluateFull(mc: MarkovChain, word: string): [number, number[]] {
