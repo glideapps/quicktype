@@ -32,6 +32,7 @@
     "pluralize": "^7.0.0",
     "stream-json": "0.5.2",
     "string-to-stream": "^1.1.0",
+    "typescript-json-schema": "^0.21.0",
     "unicode-properties": "quicktype/unicode-properties#dist",
     "universal-analytics": "^0.4.16",
     "urijs": "^1.19.1",

@@ -33,6 +33,7 @@ import { getStream } from "../get-stream/index";
 import { train } from "../MarkovChain";
 import { sourcesFromPostmanCollection } from "../PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
+import { schemaForTypeScriptSources } from "./typescript";
 import * as telemetry from "./telemetry";
 
 const commandLineArgs = require("command-line-args");
@@ -221,6 +222,8 @@ export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: str
             "If a GraphQL schema is specified, the source language must be GraphQL"
         );
         srcLang = "graphql";
+    } else if (opts.src !== undefined && opts.src.length > 0 && opts.src.every(file => _.endsWith(file, ".ts"))) {
+        srcLang = "typescript";
     } else {
         assert(srcLang !== "graphql", "Please specify a GraphQL schema with --graphql-schema or --graphql-introspect");
         srcLang = withDefault<string>(srcLang, "json");
@@ -306,7 +309,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             alias: "s",
             type: String,
             defaultValue: undefined,
-            typeLabel: "json|schema|graphql|postman",
+            typeLabel: "json|schema|graphql|postman|typescript",
             description: "The source language (default is json)."
         },
         {
@@ -686,6 +689,15 @@ export async function makeQuicktypeOptions(
         case "json":
         case "schema":
             sources = await getSources(options);
+            break;
+        case "typescript":
+            sources = [
+                {
+                    name: options.topLevel,
+                    schema: schemaForTypeScriptSources(options.src),
+                    topLevelRefs: ["/definitions/"]
+                }
+            ];
             break;
         case "postman":
             for (const collectionFile of options.src) {
