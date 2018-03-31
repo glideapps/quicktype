@@ -49,7 +49,9 @@ export const CSharpLanguage: Language = {
     "31189.json" // JSON.NET doesn't accept year 0000 as 1BC, though it should
   ],
   skipMiscJSON: false,
-  skipSchema: [],
+  skipSchema: [
+    "top-level-enum.schema" // The code we generate for top-level enums is incompatible with the driver
+  ],
   rendererOptions: {},
   quickTestRendererOptions: [{ "array-type": "list" }, { "csharp-version": "5" }, { density: "dense" }],
   sourceFiles: ["src/Language/CSharp.ts"]
