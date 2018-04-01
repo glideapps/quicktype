@@ -9,7 +9,8 @@ import {
     isNamedType,
     ClassType,
     ClassProperty,
-    UnionType
+    UnionType,
+    combineTypeAttributesOfTypes
 } from "./Type";
 import { defined, assert, panic } from "./Support";
 import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
@@ -326,9 +327,13 @@ export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping
         return graph;
     }
     assert(noneTypes.size === 1, "Cannot have more than one none type");
-    return graph.rewrite("none to any", stringTypeMapping, false, [noneTypes.toArray()], (_, builder, forwardingRef) => {
-        return builder.getPrimitiveType("any", forwardingRef);
-    });
+    return graph.rewrite("none to any", stringTypeMapping, false, [noneTypes.toArray()],
+        (types, builder, forwardingRef) => {
+            const tref = builder.getPrimitiveType("any", forwardingRef);
+            const attributes = combineTypeAttributesOfTypes(types);
+            builder.addAttributes(tref, attributes);
+            return tref;
+        });
 }
 
 export function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
