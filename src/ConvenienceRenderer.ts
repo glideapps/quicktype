@@ -33,16 +33,18 @@ import { enumCaseNames, classPropertyNames, unionMemberName, getAccessorName } f
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
-const givenNameOrder = 1;
-const inferredNameOrder = 3;
+const topLevelNameOrder = 1;
 
-const classPropertyNameOrder = 2;
-const assignedClassPropertyNameOrder = 1;
+const givenNameOrder = 10;
+const inferredNameOrder = 30;
 
-const enumCaseNameOrder = 2;
-const assignedEnumCaseNameOrder = 1;
+const classPropertyNameOrder = 20;
+const assignedClassPropertyNameOrder = 10;
 
-const unionMemberNameOrder = 4;
+const enumCaseNameOrder = 20;
+const assignedEnumCaseNameOrder = 10;
+
+const unionMemberNameOrder = 40;
 
 function splitDescription(descriptions: OrderedSet<string> | undefined): string[] | undefined {
     if (descriptions === undefined) return undefined;
@@ -130,7 +132,6 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [];
     }
 
-    protected abstract topLevelNameStyle(rawName: string): string;
     protected abstract makeNamedTypeNamer(): Namer;
     protected abstract namerForClassProperty(c: ClassType, p: ClassProperty): Namer | null;
     protected abstract makeUnionMemberNamer(): Namer | null;
@@ -234,15 +235,8 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
     };
 
-    protected makeNameForTopLevel(_t: Type, givenName: string, maybeNamedType: Type | undefined): Name {
-        let styledName: string;
-        if (maybeNamedType !== undefined) {
-            styledName = defined(this._namedTypeNamer).nameStyle(givenName);
-        } else {
-            styledName = this.topLevelNameStyle(givenName);
-        }
-
-        return new FixedName(styledName);
+    protected makeNameForTopLevel(_t: Type, givenName: string, _maybeNamedType: Type | undefined): Name {
+        return new SimpleName(OrderedSet([givenName]), defined(this._namedTypeNamer), topLevelNameOrder);
     }
 
     private addNameForTopLevel = (type: Type, givenName: string): Name => {

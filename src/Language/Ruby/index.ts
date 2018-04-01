@@ -146,10 +146,6 @@ export class RubyRenderer extends ConvenienceRenderer {
         return "class" === t.kind;
     }
 
-    protected topLevelNameStyle(rawName: string): string {
-        return simpleNameStyle(rawName, true);
-    }
-
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return keywords.globals.concat(["Types", "JSON", "Dry", "Constructor"]);
     }

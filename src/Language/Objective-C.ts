@@ -278,10 +278,6 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return { names: forbiddenForEnumCases, includeGlobalForbidden: true };
     }
 
-    protected topLevelNameStyle(rawName: string): string {
-        return camelCase(rawName);
-    }
-
     protected makeNamedTypeNamer(): Namer {
         return funPrefixNamer("types", rawName => typeNameStyle(this._classPrefix, rawName));
     }

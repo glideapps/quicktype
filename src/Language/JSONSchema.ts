@@ -61,10 +61,6 @@ function jsonNameStyle(original: string): string {
 type Schema = { [name: string]: any };
 
 export class JSONSchemaRenderer extends ConvenienceRenderer {
-    protected topLevelNameStyle(rawName: string): string {
-        return jsonNameStyle(rawName);
-    }
-
     protected makeNamedTypeNamer(): Namer {
         return namingFunction;
     }

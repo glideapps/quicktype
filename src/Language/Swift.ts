@@ -262,10 +262,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected topLevelNameStyle(rawName: string): string {
-        return swiftNameStyle(true, rawName);
-    }
-
     protected makeNamedTypeNamer(): Namer {
         return upperNamingFunction;
     }

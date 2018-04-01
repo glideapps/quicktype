@@ -168,10 +168,6 @@ export class ElmRenderer extends ConvenienceRenderer {
         return forbiddenNames;
     }
 
-    protected topLevelNameStyle(rawName: string): string {
-        return elmNameStyle(rawName, true);
-    }
-
     protected makeTopLevelDependencyNames(t: Type, topLevelName: Name): DependencyName[] {
         const encoder = new DependencyName(
             lowerNamingFunction,

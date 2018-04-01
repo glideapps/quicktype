@@ -202,10 +202,6 @@ export class JavaRenderer extends ConvenienceRenderer {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected topLevelNameStyle(rawName: string): string {
-        return javaNameStyle(true, false, rawName);
-    }
-
     protected makeNamedTypeNamer(): Namer {
         return typeNamingFunction;
     }
