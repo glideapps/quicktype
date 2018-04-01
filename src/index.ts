@@ -81,15 +81,16 @@ function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
     return source.kind === "schema";
 }
 
-function toSchemaSource(source: TypeSource): SchemaTypeSource | undefined {
+function toSchemaSource(source: TypeSource): (SchemaTypeSource & { isDirectInput: boolean }) | undefined {
     if (isSchemaSource(source)) {
-        return source;
+        return Object.assign({ isDirectInput: true }, source);
     } else if (isTypeScriptSource(source)) {
         return {
             kind: "schema",
             name: "",
             schema: schemaForTypeScriptSources(source.sources),
-            topLevelRefs: ["/definitions/"]
+            topLevelRefs: ["/definitions/"],
+            isDirectInput: false
         };
     }
     return undefined;
@@ -339,10 +340,15 @@ export class Run {
 
         let schemaInputs: Map<string, StringInput> = Map();
         let schemaSources: List<[uri.URI, SchemaTypeSource]> = List();
+        let needIR = targetLanguage.names.indexOf("schema") < 0
+            || this._options.findSimilarClassesSchemaURI !== undefined
+            || this._options.handlebarsTemplate !== undefined;
         for (const source of this._options.sources) {
             const schemaSource = toSchemaSource(source);
 
             if (schemaSource === undefined) continue;
+
+            needIR =  schemaSource.isDirectInput || needIR;
 
             const { uri, schema } = schemaSource;
 
@@ -366,6 +372,40 @@ export class Run {
             }
 
             schemaSources = schemaSources.push([normalizedURI, schemaSource]);
+        }
+
+        for (const source of this._options.sources) {
+            if (isGraphQLSource(source)) {
+                const { name, schema, query } = source;
+                this._allInputs.graphQLs[name] = { schema, query: await toString(query) };
+
+                needIR = true;
+            } else if (isJSONSource(source)) {
+                const { name, samples, description } = source;
+                for (const sample of samples) {
+                    const input = await this._compressedJSON.readFromStream(toReadable(sample));
+                    if (!_.has(this._allInputs.samples, name)) {
+                        this._allInputs.samples[name] = { samples: [] };
+                    }
+                    this._allInputs.samples[name].samples.push(input);
+                    if (description !== undefined) {
+                        this._allInputs.samples[name].description = description;
+                    }
+                }
+
+                needIR = true;
+            } else if (!isSchemaSource(source) && !isTypeScriptSource(source)) {
+                assertNever(source);
+            }
+        }
+
+        if (!needIR && schemaSources.size === 1) {
+            const source = defined(schemaSources.first());
+            const schemaString = await toString(defined(source[1].schema));
+            const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
+            lines.push("");
+            const srr = { lines, annotations: List() };
+            return OrderedMap([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
         }
 
         if (!schemaSources.isEmpty()) {
@@ -397,27 +437,6 @@ export class Run {
                     this.addSchemaInput(name, Ref.parse(normalizedURI.toString()));
                 }
             });
-        }
-
-        for (const source of this._options.sources) {
-            if (isGraphQLSource(source)) {
-                const { name, schema, query } = source;
-                this._allInputs.graphQLs[name] = { schema, query: await toString(query) };
-            } else if (isJSONSource(source)) {
-                const { name, samples, description } = source;
-                for (const sample of samples) {
-                    const input = await this._compressedJSON.readFromStream(toReadable(sample));
-                    if (!_.has(this._allInputs.samples, name)) {
-                        this._allInputs.samples[name] = { samples: [] };
-                    }
-                    this._allInputs.samples[name].samples.push(input);
-                    if (description !== undefined) {
-                        this._allInputs.samples[name].description = description;
-                    }
-                }
-            } else if (!isSchemaSource(source) && !isTypeScriptSource(source)) {
-                assertNever(source);
-            }
         }
 
         const graph = await this.makeGraph();
