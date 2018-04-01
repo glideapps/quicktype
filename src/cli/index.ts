@@ -32,7 +32,6 @@ import { getStream } from "../get-stream/index";
 import { train } from "../MarkovChain";
 import { sourcesFromPostmanCollection } from "../PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
-import { schemaForTypeScriptSources } from "../TypeScriptInput";
 import * as telemetry from "./telemetry";
 
 const commandLineArgs = require("command-line-args");
@@ -643,6 +642,17 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     return sources;
 }
 
+function makeTypeScriptSource(fileNames: string[]): TypeScriptTypeSource {
+    const sources: {[fileName: string]: string} = {};
+
+    for (const fileName of fileNames) {
+        const baseName = path.basename(fileName);
+        sources[baseName] = defined(fs.readFileSync(fileName, "utf8"));
+    }
+
+    return { kind: "typescript", sources };
+}
+
 export async function makeQuicktypeOptions(
     options: CLIOptions,
     targetLanguages?: TargetLanguage[]
@@ -709,15 +719,7 @@ export async function makeQuicktypeOptions(
             sources = await getSources(options);
             break;
         case "typescript":
-            // TODO make this a TypeScriptSource
-            sources = [
-                {
-                    kind: "schema",
-                    name: options.topLevel,
-                    schema: schemaForTypeScriptSources(options.src),
-                    topLevelRefs: ["/definitions/"]
-                }
-            ];
+            sources = [makeTypeScriptSource(options.src)];
             break;
         case "postman":
             for (const collectionFile of options.src) {
