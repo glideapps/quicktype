@@ -101,19 +101,6 @@ export function schemaForTypeScriptSources(sources: string[] | { [fileName: stri
     let host: ts.CompilerHost;
 
     if (Array.isArray(sources)) {
-        /*
-        const sourceContents: {[fileName: string]: string} = {};
-        fileNames = [];
-
-        for (const fileName of sources) {
-            const baseName = path.basename(fileName);
-            sourceContents[baseName] = defined(ts.sys.readFile(fileName));
-            fileNames.push(baseName);
-        }
-
-        host = new CompilerHost(options, sourceContents);
-        */
-
         fileNames = sources;
         host = ts.createCompilerHost(options);
     } else {
