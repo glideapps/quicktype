@@ -29,7 +29,7 @@ import { intercalate, defined, assert, panic, StringMap } from "../Support";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { StringOption, EnumOption, Option } from "../RendererOptions";
+import { StringOption, EnumOption, Option, BooleanOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { StringTypeMapping } from "../TypeBuilder";
 
@@ -70,13 +70,25 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         "6",
         "secondary"
     );
+    private readonly _checkRequiredOption = new BooleanOption(
+        "check-required",
+        "Fail if required properties are missing",
+        false
+    );
 
     constructor() {
         super("C#", ["cs", "csharp"], "cs");
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._namespaceOption, this._versionOption, this._denseOption, this._listOption, this._featuresOption];
+        return [
+            this._namespaceOption,
+            this._versionOption,
+            this._denseOption,
+            this._listOption,
+            this._featuresOption,
+            this._checkRequiredOption
+        ];
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
@@ -494,7 +506,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         version: Version,
         dense: boolean,
         useList: boolean,
-        outputFeatures: OutputFeatures
+        outputFeatures: OutputFeatures,
+        private readonly _checkRequiredProperties: boolean
     ) {
         super(targetLanguage, graph, leadingComments, namespaceName, version, dense, useList);
         this._needHelpers = outputFeatures.helpers;
@@ -586,10 +599,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         const requiredClass = this.dense ? "R" : "Required";
         const nullValueHandlingClass = this.dense ? "N" : "NullValueHandling";
         const nullValueHandling =
-            isValueType(t) && !isOptional ? [] : [", NullValueHandling = ", nullValueHandlingClass, ".Ignore"];
+            isOptional && !isNullable ? [", NullValueHandling = ", nullValueHandlingClass, ".Ignore"] : [];
         let required: Sourcelike;
-        if (isOptional && isNullable) {
-            required = [];
+        if (!this._checkRequiredProperties || (isOptional && isNullable)) {
+            required = [nullValueHandling];
         } else if (isOptional && !isNullable) {
             required = [", Required = ", requiredClass, ".DisallowNull", nullValueHandling];
         } else if (!isOptional && isNullable) {
