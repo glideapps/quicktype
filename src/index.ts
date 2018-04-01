@@ -24,6 +24,7 @@ import { descriptionTypeAttributeKind } from "./TypeAttributes";
 import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
 import { replaceObjectType } from "./ReplaceObjectType";
+import { schemaForTypeScriptSources } from "./TypeScriptInput";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -49,16 +50,27 @@ export type RendererOptions = { [name: string]: string };
 export type StringInput = string | Readable;
 
 export interface JSONTypeSource {
+    kind: "json";
     name: string;
     samples: StringInput[];
     description?: string;
 }
 
 export function isJSONSource(source: TypeSource): source is JSONTypeSource {
-    return "samples" in source;
+    return source.kind === "json";
+}
+
+export interface TypeScriptTypeSource {
+    kind: "typescript";
+    sources: { [filename: string]: string };
+}
+
+export function isTypeScriptSource(source: TypeSource): source is TypeScriptTypeSource {
+    return source.kind === "typescript";
 }
 
 export interface SchemaTypeSource {
+    kind: "schema";
     name: string;
     uri?: string;
     schema?: StringInput;
@@ -66,20 +78,35 @@ export interface SchemaTypeSource {
 }
 
 export function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
-    return !("query" in source) && !("samples" in source);
+    return source.kind === "schema";
+}
+
+export function toSchemaSource(source: TypeSource): SchemaTypeSource | undefined {
+    if (isSchemaSource(source)) {
+        return source;
+    } else if (isTypeScriptSource(source)) {
+        return {
+            kind: "schema",
+            name: "",
+            schema: schemaForTypeScriptSources(source.sources),
+            topLevelRefs: ["/definitions/"]
+        };
+    }
+    return undefined;
 }
 
 export interface GraphQLTypeSource {
+    kind: "graphql";
     name: string;
     schema: any;
     query: StringInput;
 }
 
 export function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource {
-    return "query" in source;
+    return source.kind === "graphql";
 }
 
-export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource;
+export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource | TypeScriptTypeSource;
 
 export interface Options {
     lang: string | TargetLanguage;
@@ -313,8 +340,11 @@ export class Run {
         let schemaInputs: Map<string, StringInput> = Map();
         let schemaSources: List<[uri.URI, SchemaTypeSource]> = List();
         for (const source of this._options.sources) {
-            if (!isSchemaSource(source)) continue;
-            const { uri, schema } = source;
+            const schemaSource = toSchemaSource(source);
+
+            if (schemaSource === undefined) continue;
+
+            const { uri, schema } = schemaSource;
 
             let normalizedURI: uri.URI;
             if (uri === undefined) {
@@ -335,7 +365,7 @@ export class Run {
                 );
             }
 
-            schemaSources = schemaSources.push([normalizedURI, source]);
+            schemaSources = schemaSources.push([normalizedURI, schemaSource]);
         }
 
         if (!schemaSources.isEmpty()) {
@@ -385,7 +415,7 @@ export class Run {
                         this._allInputs.samples[name].description = description;
                     }
                 }
-            } else if (!isSchemaSource(source)) {
+            } else if (!isSchemaSource(source) && !isTypeScriptSource(source)) {
                 assertNever(source);
             }
         }

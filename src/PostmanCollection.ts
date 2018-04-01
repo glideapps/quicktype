@@ -35,7 +35,7 @@ export function sourcesFromPostmanCollection(
                 }
             }
             if (samples.length > 0) {
-                const source: JSONTypeSource = { name: c.name, samples };
+                const source: JSONTypeSource = { kind: "json", name: c.name, samples };
                 const sourceDescription = [c.name];
 
                 if (typeof c.request === "object") {
