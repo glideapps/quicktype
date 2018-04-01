@@ -56,7 +56,7 @@ export interface JSONTypeSource {
     description?: string;
 }
 
-export function isJSONSource(source: TypeSource): source is JSONTypeSource {
+function isJSONSource(source: TypeSource): source is JSONTypeSource {
     return source.kind === "json";
 }
 
@@ -77,11 +77,11 @@ export interface SchemaTypeSource {
     topLevelRefs?: string[];
 }
 
-export function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
+function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
     return source.kind === "schema";
 }
 
-export function toSchemaSource(source: TypeSource): SchemaTypeSource | undefined {
+function toSchemaSource(source: TypeSource): SchemaTypeSource | undefined {
     if (isSchemaSource(source)) {
         return source;
     } else if (isTypeScriptSource(source)) {
@@ -102,7 +102,7 @@ export interface GraphQLTypeSource {
     query: StringInput;
 }
 
-export function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource {
+function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource {
     return source.kind === "graphql";
 }
 
