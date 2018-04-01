@@ -48,7 +48,13 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         ["array", false],
         ["list", true]
     ]);
-    private readonly _denseOption = new EnumOption("density", "Property density", [["normal", false], ["dense", true]]);
+    private readonly _denseOption = new EnumOption(
+        "density",
+        "Property density",
+        [["normal", false], ["dense", true]],
+        "normal",
+        "secondary"
+    );
     private readonly _featuresOption = new EnumOption("features", "Output features", [
         ["complete", { helpers: true, attributes: true }],
         ["attributes-only", { helpers: false, attributes: true }],
@@ -56,7 +62,13 @@ export default class CSharpTargetLanguage extends TargetLanguage {
     ]);
     // FIXME: Do this via a configurable named eventually.
     private readonly _namespaceOption = new StringOption("namespace", "Generated namespace", "NAME", "QuickType");
-    private readonly _versionOption = new EnumOption<Version>("csharp-version", "C# version", [["6", 6], ["5", 5]]);
+    private readonly _versionOption = new EnumOption<Version>(
+        "csharp-version",
+        "C# version",
+        [["5", 5], ["6", 6]],
+        "6",
+        "secondary"
+    );
 
     constructor() {
         super("C#", ["cs", "csharp"], "cs");
