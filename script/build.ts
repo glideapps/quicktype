@@ -18,9 +18,17 @@ function mapFile(
 
 function installPrereqs() {
   shell.exec("npm install --ignore-scripts");
+
+  console.error("Restoring node_modules/typescript-json-schema.");
+  console.error("TODO remove this once upstream figures out packaging");
+  shell.exec(`cd node_modules/typescript-json-schema && npm i`);
 }
 
 function buildTypeScript() {
+  console.error("Building node_modules/typescript-json-schema.");
+  console.error("TODO remove this once upstream figures out packaging");
+  shell.exec(`cd node_modules/typescript-json-schema && npm run build`);
+
   shell.exec(`tsc --project src`);
 }
 
