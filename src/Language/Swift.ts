@@ -354,8 +354,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
         } else if (!this._justTypes) {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
-            this.forEachTopLevel("none", (_, name) => {
-                if (this._convenienceInitializers) {
+            this.forEachTopLevel("none", (t, name) => {
+                if (this._convenienceInitializers && !(t instanceof EnumType)) {
                     this.emitLine("//   let ", modifySource(camelCase, name), " = try ", name, "(json)");
                 } else {
                     this.emitLine(
@@ -978,6 +978,7 @@ class JSONAny: Codable {
                 this.emitAlamofireExtension();
             }
 
+            // FIXME: We emit only the MARK line for top-level-enum.schema
             if (this._convenienceInitializers) {
                 this.ensureBlankLine();
                 this.emitMark("Convenience initializers");

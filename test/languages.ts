@@ -49,7 +49,9 @@ export const CSharpLanguage: Language = {
     "31189.json" // JSON.NET doesn't accept year 0000 as 1BC, though it should
   ],
   skipMiscJSON: false,
-  skipSchema: [],
+  skipSchema: [
+    "top-level-enum.schema" // The code we generate for top-level enums is incompatible with the driver
+  ],
   rendererOptions: {},
   quickTestRendererOptions: [{ "array-type": "list" }, { "csharp-version": "5" }, { density: "dense" }],
   sourceFiles: ["src/Language/CSharp.ts"]
@@ -177,7 +179,9 @@ export const RubyLanguage: Language = {
   skipJSON: [],
   skipSchema: [
     // FIXME: I don't know what the issue is here
-    "implicit-class-array-union.schema"
+    "implicit-class-array-union.schema",
+    // We don't generate a convenience method for top-level enums
+    "top-level-enum.schema"
   ],
   skipMiscJSON: false,
   rendererOptions: {},
@@ -362,8 +366,10 @@ export const SwiftLanguage: Language = {
   ],
   skipMiscJSON: false,
   skipSchema: [
-    // The top-level is a union
-    "implicit-class-array-union.schema"
+    // The top-level is a union, which Swift's JSON types don't support
+    "implicit-class-array-union.schema",
+    // The code we generate for top-level enums is incompatible with the driver
+    "top-level-enum.schema"
   ],
   rendererOptions: {},
   quickTestRendererOptions: [{ "struct-or-class": "class" }, { density: "dense" }, { density: "normal" }],

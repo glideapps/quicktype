@@ -514,13 +514,19 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         this.emitLine("//");
         this.emitLine("//    using ", this.namespaceName, ";");
         this.emitLine("//");
-        this.forEachTopLevel("none", (_, topLevelName) => {
+        this.forEachTopLevel("none", (t, topLevelName) => {
+            let rhs: Sourcelike;
+            if (t instanceof EnumType) {
+                rhs = ["JsonConvert.DeserializeObject<", topLevelName, ">(jsonString)"]
+            } else {
+                rhs = [topLevelName, ".FromJson(jsonString)"];
+            }
             this.emitLine(
                 "//    var ",
                 modifySource(camelCase, topLevelName),
                 " = ",
-                topLevelName,
-                ".FromJson(jsonString);"
+                rhs,
+                ";"
             );
         });
     }
@@ -532,6 +538,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     private emitFromJsonForTopLevel(t: Type, name: Name): void {
+        if (t instanceof EnumType) return;
+
         let partial: string;
         let typeKind: string;
         const definedType = this.namedTypeToNameForTopLevel(t);
