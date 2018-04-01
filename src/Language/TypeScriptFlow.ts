@@ -168,6 +168,10 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 }
 
 export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
+    protected forbiddenNamesForGlobalNamespace(): string[] {
+        return ["Array", "Date"];
+    }
+
     protected deserializerFunctionLine(t: Type, name: Name): Sourcelike {
         return ["export ", super.deserializerFunctionLine(t, name)];
     }
