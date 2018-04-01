@@ -228,10 +228,6 @@ export class RustRenderer extends ConvenienceRenderer {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected topLevelNameStyle(rawName: string): string {
-        return rustStyle(rawName, false);
-    }
-
     protected get commentLineStart(): string {
         return "/// ";
     }

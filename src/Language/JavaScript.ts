@@ -106,10 +106,6 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         super(targetLanguage, graph, leadingComments);
     }
 
-    protected topLevelNameStyle(rawName: string): string {
-        return typeNameStyle(rawName);
-    }
-
     protected makeNamedTypeNamer(): Namer {
         return new Namer("types", typeNameStyle, []);
     }

@@ -286,10 +286,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return { names: [], includeGlobalForbidden: true };
     }
 
-    protected topLevelNameStyle(rawName: string): string {
-        return this._typeNameStyle(rawName);
-    }
-
     protected makeNamedTypeNamer(): Namer {
         return this._typeNamingFunction;
     }

@@ -106,10 +106,6 @@ export class GoRenderer extends ConvenienceRenderer {
         super(targetLanguage, graph, leadingComments);
     }
 
-    protected topLevelNameStyle(rawName: string): string {
-        return goNameStyle(rawName);
-    }
-
     protected makeNamedTypeNamer(): Namer {
         return namingFunction;
     }

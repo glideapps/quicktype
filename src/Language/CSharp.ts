@@ -167,10 +167,6 @@ export class CSharpRenderer extends ConvenienceRenderer {
         return { names: [unionNamed], includeGlobalForbidden: true };
     }
 
-    protected topLevelNameStyle(rawName: string): string {
-        return csNameStyle(rawName);
-    }
-
     protected makeNamedTypeNamer(): Namer {
         return namingFunction;
     }
