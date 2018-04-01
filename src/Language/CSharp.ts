@@ -147,9 +147,6 @@ function isValueType(t: Type): boolean {
 }
 
 export class CSharpRenderer extends ConvenienceRenderer {
-    protected readonly needHelpers: boolean;
-    protected readonly needAttributes: boolean;
-
     constructor(
         targetLanguage: TargetLanguage,
         graph: TypeGraph,
@@ -157,12 +154,9 @@ export class CSharpRenderer extends ConvenienceRenderer {
         protected readonly namespaceName: string,
         private readonly _version: Version,
         protected readonly dense: boolean,
-        private readonly _useList: boolean,
-        outputFeatures: OutputFeatures
+        private readonly _useList: boolean
     ) {
         super(targetLanguage, graph, leadingComments);
-        this.needHelpers = outputFeatures.helpers;
-        this.needAttributes = outputFeatures.attributes;
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -291,8 +285,8 @@ export class CSharpRenderer extends ConvenienceRenderer {
         this.emitBlock(emitter);
     }
 
-    protected attributesForProperty(_property: ClassProperty, _jsonName: string): Sourcelike[] {
-        return [];
+    protected attributesForProperty(_property: ClassProperty, _jsonName: string): Sourcelike[] | undefined {
+        return undefined;
     }
 
     protected emitDescriptionBlock(lines: string[]): void {
@@ -304,6 +298,10 @@ export class CSharpRenderer extends ConvenienceRenderer {
         }
     }
 
+    protected blankLinesBetweenAttributes(): boolean {
+        return false;
+    }
+
     private emitClassDefinition(c: ClassType, className: Name): void {
         this.emitType(
             this.descriptionForType(c),
@@ -313,7 +311,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             this.superclassForType(c),
             () => {
                 if (c.properties.isEmpty()) return;
-                const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
+                const blankLines = this.blankLinesBetweenAttributes() ? "interposing" : "none";
                 let columns: Sourcelike[][] = [];
                 let isFirstProperty = true;
                 let previousDescription: string[] | undefined = undefined;
@@ -322,7 +320,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                     const attributes = this.attributesForProperty(p, jsonName);
                     const description = this.descriptionForClassProperty(c, jsonName);
                     const property = ["public ", csType, " ", name, " { get; set; }"];
-                    if (!this.needAttributes) {
+                    if (attributes === undefined) {
                         if (
                             // Descriptions should be preceded by an empty line
                             (!isFirstProperty && description !== undefined) ||
@@ -420,7 +418,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected emitUsings(): void {
-        for (const ns of ["System", "System.Collections.Generic", "System.Net"]) {
+        for (const ns of ["System", "System.Collections.Generic"]) {
             this.emitUsing(ns);
         }
     }
@@ -429,32 +427,37 @@ export class CSharpRenderer extends ConvenienceRenderer {
         return;
     }
 
-    private emitTypesAndSupport = (): void => {
-        if (this.needAttributes || this.needHelpers) {
-            this.emitUsings();
-        }
+    private emitTypesAndSupport(): void {
         this.forEachClass("leading-and-interposing", (c, name) => this.emitClassDefinition(c, name));
         this.forEachEnum("leading-and-interposing", (e, name) => this.emitEnumDefinition(e, name));
         this.forEachUnion("leading-and-interposing", (u, name) => this.emitUnionDefinition(u, name));
         this.emitRequiredHelpers();
-    };
+    }
 
     protected emitDefaultLeadingComments(): void {
         return;
     }
 
+    protected needNamespace(): boolean {
+        return true;
+    }
+
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
-        } else if (this.needHelpers) {
+        } else {
             this.emitDefaultLeadingComments();
         }
 
         this.ensureBlankLine();
-        if (this.needHelpers || this.needAttributes) {
+        if (this.needNamespace()) {
             this.emitLine("namespace ", this.namespaceName);
-            this.emitBlock(this.emitTypesAndSupport);
+            this.emitBlock(() => {
+                this.emitUsings();
+                this.emitTypesAndSupport();
+            });
         } else {
+            this.emitUsings();
             this.emitTypesAndSupport();
         }
     }
@@ -479,6 +482,24 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private _enumExtensionsNames = Map<Name, Name>();
+
+    private readonly _needHelpers: boolean;
+    private readonly _needAttributes: boolean;
+
+    constructor(
+        targetLanguage: TargetLanguage,
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        namespaceName: string,
+        version: Version,
+        dense: boolean,
+        useList: boolean,
+        outputFeatures: OutputFeatures
+    ) {
+        super(targetLanguage, graph, leadingComments, namespaceName, version, dense, useList);
+        this._needHelpers = outputFeatures.helpers;
+        this._needAttributes = outputFeatures.attributes;
+    }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
         const forbidden = [
@@ -515,6 +536,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     protected emitUsings(): void {
+        // FIXME: We need System.Collections.Generic whenever we have maps or use List.
+        if (!this._needAttributes && !this._needHelpers) return;
+
         super.emitUsings();
         this.ensureBlankLine();
 
@@ -530,6 +554,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     protected emitDefaultLeadingComments(): void {
+        if (!this._needHelpers) return;
+
         this.emitLine(
             "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do",
             this.topLevels.size === 1 ? "" : " one of these",
@@ -549,7 +575,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         });
     }
 
-    protected attributesForProperty(property: ClassProperty, jsonName: string): Sourcelike[] {
+    protected attributesForProperty(property: ClassProperty, jsonName: string): Sourcelike[] | undefined {
+        if (!this._needAttributes) return undefined;
+
         const t = property.type;
         const jsonProperty = this.dense ? denseJsonPropertyName : "JsonProperty";
         const escapedName = utf16StringEscape(jsonName);
@@ -570,6 +598,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             required = [", Required = ", requiredClass, ".Always", nullValueHandling];
         }
         return [["[", jsonProperty, '("', escapedName, '"', required, ")]"]];
+    }
+
+    protected blankLinesBetweenAttributes(): boolean {
+        return this._needAttributes && !this.dense;
     }
 
     private emitFromJsonForTopLevel(t: Type, name: Name): void {
@@ -844,17 +876,21 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     protected emitRequiredHelpers(): void {
-        if (this.needHelpers) {
+        if (this._needHelpers) {
             this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitFromJsonForTopLevel(t, n));
             this.forEachEnum("leading-and-interposing", (e, n) => this.emitEnumExtension(e, n));
             this.forEachUnion("leading-and-interposing", (u, n) => this.emitUnionJSONPartial(u, n));
             this.ensureBlankLine();
             this.emitSerializeClass();
         }
-        if (this.needHelpers || (this.needAttributes && (this.haveNamedUnions || this.haveEnums))) {
+        if (this._needHelpers || (this._needAttributes && (this.haveNamedUnions || this.haveEnums))) {
             this.ensureBlankLine();
             this.emitConverterClass();
         }
+    }
+
+    protected needNamespace(): boolean {
+        return this._needHelpers || this._needAttributes;
     }
 
     protected makeHandlebarsContextForType(t: Type): StringMap {
