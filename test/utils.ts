@@ -103,7 +103,8 @@ export async function quicktypeForLanguage(
       alphabetizeProperties,
       rendererOptions: _.merge({}, language.rendererOptions, additionalRendererOptions),
       quiet: true,
-      telemetry: "disable"
+      telemetry: "disable",
+      debug: "provenance"
     });
   } catch (e) {
     failWith("quicktype threw an exception", { error: e });

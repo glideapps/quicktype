@@ -127,7 +127,8 @@ export interface Options {
     indentation: string | undefined;
     outputFilename: string;
     schemaStore: JSONSchemaStore | undefined;
-    debugPrintGraph: boolean | undefined;
+    debugPrintGraph: boolean;
+    checkProvenance: boolean;
 }
 
 const defaultOptions: Options = {
@@ -148,7 +149,8 @@ const defaultOptions: Options = {
     indentation: undefined,
     outputFilename: "stdout",
     schemaStore: undefined,
-    debugPrintGraph: false
+    debugPrintGraph: false,
+    checkProvenance: false
 };
 
 type InputData = {
@@ -212,7 +214,7 @@ export class Run {
             stringTypeMapping,
             this._options.alphabetizeProperties,
             this._options.allPropertiesOptional,
-            haveSchemas,
+            this._options.checkProvenance,
             false
         );
 
@@ -256,7 +258,7 @@ export class Run {
         }
 
         let graph = typeBuilder.finish();
-        if (this._options.debugPrintGraph === true) {
+        if (this._options.debugPrintGraph) {
             graph.setPrintOnRewrite();
             graph.printGraph();
         }
@@ -312,7 +314,7 @@ export class Run {
         graph = graph.garbageCollect(this._options.alphabetizeProperties);
 
         gatherNames(graph);
-        if (this._options.debugPrintGraph === true) {
+        if (this._options.debugPrintGraph) {
             console.log("\n# gather names");
             graph.printGraph();
         }

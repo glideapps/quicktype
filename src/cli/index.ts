@@ -430,7 +430,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             name: "debug",
             type: String,
             typeLabel: "OPTIONS",
-            description: "Comma separated debug options: print-graph"
+            description: "Comma separated debug options: print-graph,provenance"
         },
         {
             name: "telemetry",
@@ -747,9 +747,19 @@ export async function makeQuicktypeOptions(
     }
 
     let debugPrintGraph = false;
+    let checkProvenance = false;
     if (options.debug !== undefined) {
-        assert(options.debug === "print-graph", 'The --debug option must be "print-graph"');
-        debugPrintGraph = true;
+        const components = options.debug.split(",");
+        for (let component of components) {
+            component = component.trim();
+            if (component === "print-graph") {
+                debugPrintGraph = true;
+            } else if (component === "provenance") {
+                checkProvenance = true;
+            } else {
+                return panic(`Unknown debug option ${component}`);
+            }
+        }
     }
 
     if (telemetry.state() === "none") {
@@ -774,7 +784,8 @@ export async function makeQuicktypeOptions(
         findSimilarClassesSchemaURI: options.findSimilarClassesSchema,
         outputFilename: mapOptional(path.basename, options.out),
         schemaStore: new FetchingJSONSchemaStore(),
-        debugPrintGraph
+        debugPrintGraph,
+        checkProvenance
     };
 }
 
