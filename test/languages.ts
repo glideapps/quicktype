@@ -179,7 +179,9 @@ export const RubyLanguage: Language = {
   skipJSON: [],
   skipSchema: [
     // FIXME: I don't know what the issue is here
-    "implicit-class-array-union.schema"
+    "implicit-class-array-union.schema",
+    // We don't generate a convenience method for top-level enums
+    "top-level-enum.schema"
   ],
   skipMiscJSON: false,
   rendererOptions: {},
