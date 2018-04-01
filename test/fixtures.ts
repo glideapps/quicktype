@@ -267,17 +267,16 @@ class JSONFixture extends LanguageFixture {
   }
 }
 
-// This fixture tests generating Schemas from JSON, then
-// making sure that they accept the JSON by generating code from
-// the Schema and running the code on the original JSON.  Also
-// generating a Schema from the Schema and testing that it's
-// the same as the original Schema.
-class JSONSchemaJSONFixture extends JSONFixture {
+// This fixture tests generating code for language X from JSON,
+// then generating code for Y from the code for X, making sure
+// that the resulting code for Y accepts the JSON by running it
+// on the original JSON.
+class JSONToXToYFixture extends JSONFixture {
   private readonly runLanguage: languages.Language;
 
-  constructor(language: languages.Language) {
-    const schemaLanguage: languages.Language = {
-      name: "schema",
+  constructor(private readonly _fixturePrefix: string, languageXName: string, languageXOutputFilename: string, rendererOptions: RendererOptions, skipJSON: string[], language: languages.Language) {
+    super({
+      name: languageXName,
       base: language.base,
       setupCommand: language.setupCommand,
       runCommand: (_sample: string) => {
@@ -286,31 +285,54 @@ class JSONSchemaJSONFixture extends JSONFixture {
       diffViaSchema: false,
       skipDiffViaSchema: [],
       allowMissingNull: language.allowMissingNull,
-      output: "schema.json",
-      topLevel: "schema",
-      skipJSON: [
-        "blns-object.json", // AJV refuses to even "compile" the schema we generate
-        "31189.json", // same here
-        "ed095.json" // same here on Travis
-      ],
+      output: languageXOutputFilename,
+      topLevel: "TopLevel",
+      skipJSON,
       skipMiscJSON: false,
       skipSchema: [],
-      rendererOptions: {},
+      rendererOptions,
       quickTestRendererOptions: [],
       sourceFiles: language.sourceFiles
-    };
-    super(schemaLanguage);
+    });
     this.runLanguage = language;
-    this.name = `schema-json-${language.name}`;
+    this.name = `${this._fixturePrefix}-${language.name}`;
   }
 
   runForName(name: string): boolean {
-    return this.name === name || name === "schema-json";
+    return this.name === name || name === this._fixturePrefix;
   }
 
   async test(filename: string, additionalRendererOptions: RendererOptions, _additionalFiles: string[]) {
+    // Generate code for Y from X
+    await quicktypeForLanguage(this.runLanguage, this.language.output, this.language.name, false, additionalRendererOptions);
+
+    // Parse the sample with the code generated from its schema, and compare to the sample
+    compareJsonFileToJson({
+      expectedFile: filename,
+      given: { command: this.runLanguage.runCommand(filename) },
+      strict: false,
+      allowMissingNull: this.runLanguage.allowMissingNull
+    });
+  }
+}
+
+// This tests generating Schema from JSON, and then generating
+// target code from that Schema.  The target code is then run on
+// the original JSON.  Also generating a Schema from the Schema
+// and testing that it's the same as the original Schema.
+class JSONSchemaJSONFixture extends JSONToXToYFixture {
+  constructor(language: languages.Language) {
+    const skipJSON = [
+      "blns-object.json", // AJV refuses to even "compile" the schema we generate
+      "31189.json", // same here
+      "ed095.json" // same here on Travis
+    ]
+    super("schema-json", "schema", "schema.json", {}, skipJSON, language);
+  }
+
+  async test(filename: string, additionalRendererOptions: RendererOptions, additionalFiles: string[]) {
     let input = JSON.parse(fs.readFileSync(filename, "utf8"));
-    let schema = JSON.parse(fs.readFileSync("schema.json", "utf8"));
+    let schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
 
     let ajv = new Ajv({ format: "full" });
     // Make Ajv's date-time compatible with what we recognize
@@ -322,32 +344,94 @@ class JSONSchemaJSONFixture extends JSONFixture {
       });
     }
 
-    // Generate code from the schema
-    await quicktypeForLanguage(this.runLanguage, "schema.json", "schema", false, additionalRendererOptions);
-
-    // Parse the sample with the code generated from its schema, and compare to the sample
-    compareJsonFileToJson({
-      expectedFile: filename,
-      given: { command: this.runLanguage.runCommand(filename) },
-      strict: false,
-      allowMissingNull: this.runLanguage.allowMissingNull
-    });
+    super.test(filename, additionalRendererOptions, additionalFiles);
 
     // Generate a schema from the schema, making sure the schemas are the same
+    // FIXME: We could move this to the superclass and test it for all JSON->X->Y
     let schemaSchema = "schema-from-schema.json";
     await quicktype({
-      src: ["schema.json"],
-      srcLang: "schema",
-      lang: "schema",
-      topLevel: "schema",
+      src: [this.language.output],
+      srcLang: this.language.name,
+      lang: this.language.name,
+      topLevel: this.language.topLevel,
       out: schemaSchema,
       rendererOptions: {}
     });
     compareJsonFileToJson({
-      expectedFile: "schema.json",
+      expectedFile: this.language.output,
       given: { file: schemaSchema },
       strict: true
     });
+  }
+}
+
+// These are all inputs where the top-level type is not directly
+// converted to TypeScript, mostly arrays.
+const skipTypeScriptTests = [
+  "no-classes.json",
+  "optional-union.json",
+  "pokedex.json", // Enums are screwed up: https://github.com/YousefED/typescript-json-schema/issues/186
+  "github-events.json",
+  "00c36.json",
+  "010b1.json",
+  "050b0.json",
+  "06bee.json",
+  "07c75.json",
+  "0a91a.json",
+  "10be4.json",
+  "13d8d.json",
+  "176f1.json", // Enum screwed up
+  "1a7f5.json",
+  "262f0.json", // Enum screwed up
+  "2df80.json",
+  "32d5c.json",
+  "33d2e.json", // Enum screwed up
+  "34702.json", // Enum screwed up
+  "3536b.json",
+  "3e9a3.json", // duplicate top-level type: https://github.com/quicktype/quicktype/issues/726
+  "3f1ce.json", // Enum screwed up
+  "43970.json",
+  "570ec.json",
+  "5eae5.json",
+  "65dec.json", // duplicate top-level type
+  "66121.json",
+  "6dec6.json", // Enum screwed up
+  "6eb00.json",
+  "77392.json",
+  "7f568.json",
+  "7eb30.json", // duplicate top-level type
+  "7fbfb.json",
+  "9847b.json",
+  "996bd.json",
+  "9a503.json",
+  "9eed5.json",
+  "a45b0.json",
+  "ab0d1.json",
+  "ad8be.json",
+  "ae9ca.json", // Enum screwed up
+  "af2d1.json", // Enum screwed up
+  "b4865.json",
+  "c8c7e.json",
+  "cb0cc.json", // Enum screwed up
+  "cda6c.json",
+  "dbfb3.json", // Enum screwed up
+  "e2a58.json",
+  "e53b5.json",
+  "e8a0b.json",
+  "e8b04.json",
+  "ed095.json", // top-level is a map
+  "f3139.json",
+  "f3edf.json",
+  "f466a.json"
+];
+
+class JSONTypeScriptFixture extends JSONToXToYFixture {
+  constructor(language: languages.Language) {
+    super("json-ts", "ts", "typescript.ts", { "just-types": "true" }, [], language);
+  }
+
+  shouldSkipTest(sample: Sample): boolean {
+    return skipTypeScriptTests.indexOf(path.basename(sample.path)) >= 0;
   }
 }
 
@@ -488,6 +572,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.FlowLanguage),
   new JSONFixture(languages.JavaScriptLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
+  new JSONTypeScriptFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.JavaLanguage),
   new JSONSchemaFixture(languages.GoLanguage),

@@ -11,14 +11,13 @@ import {
     getTargetLanguage,
     TypeSource,
     GraphQLTypeSource,
-    isJSONSource,
     StringInput,
     SchemaTypeSource,
-    isSchemaSource,
     quicktypeMultiFile,
     SerializedRenderResult,
     TargetLanguage,
-    languageNamed
+    languageNamed,
+    TypeScriptTypeSource
 } from "..";
 
 import { OptionDefinition } from "../RendererOptions";
@@ -33,6 +32,7 @@ import { getStream } from "../get-stream/index";
 import { train } from "../MarkovChain";
 import { sourcesFromPostmanCollection } from "../PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
+import { schemaForTypeScriptSources } from "../TypeScriptInput";
 import * as telemetry from "./telemetry";
 
 const commandLineArgs = require("command-line-args");
@@ -78,7 +78,7 @@ const defaultDefaultTargetLanguageName: string = "go";
 
 async function sourceFromFileOrUrlArray(name: string, filesOrUrls: string[]): Promise<JSONTypeSource> {
     const samples = await Promise.all(filesOrUrls.map(readableFromFileOrURL));
-    return { name, samples };
+    return { kind: "json", name, samples };
 }
 
 function typeNameFromFilename(filename: string): string {
@@ -108,14 +108,14 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
             }
 
             if (file.endsWith(".url") || file.endsWith(".json")) {
-                // FIXME: Why do we include the URI here?
                 sourcesInDir.push({
+                    kind: "json",
                     name,
-                    uri: fileOrUrl,
                     samples: [await readableFromFileOrURL(fileOrUrl)]
                 });
             } else if (file.endsWith(".schema")) {
                 sourcesInDir.push({
+                    kind: "schema",
                     name,
                     uri: fileOrUrl,
                     topLevelRefs
@@ -124,7 +124,12 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
                 assert(graphQLSchema === undefined, `More than one GraphQL schema in ${dataDir}`);
                 graphQLSchema = await readableFromFileOrURL(fileOrUrl);
             } else if (file.endsWith(".graphql")) {
-                graphQLSources.push({ name, schema: undefined, query: await readableFromFileOrURL(fileOrUrl) });
+                graphQLSources.push({
+                    kind: "graphql",
+                    name,
+                    schema: undefined,
+                    query: await readableFromFileOrURL(fileOrUrl)
+                });
             }
         }
 
@@ -151,25 +156,39 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
         let jsonSamples: StringInput[] = [];
         const schemaSources: SchemaTypeSource[] = [];
         const graphQLSources: GraphQLTypeSource[] = [];
+        const typeScriptSources: TypeScriptTypeSource[] = [];
+
         for (const source of await readFilesOrURLsInDirectory(dir)) {
-            // FIXME: We do a type switch here, but we know which types we're putting in
-            // in the function above.  It should separate it right away.
-            if (isJSONSource(source)) {
-                jsonSamples = jsonSamples.concat(source.samples);
-            } else if (isSchemaSource(source)) {
-                schemaSources.push(source);
-            } else {
-                graphQLSources.push(source);
+            switch (source.kind) {
+                case "json":
+                    jsonSamples = jsonSamples.concat(source.samples);
+                    break;
+                case "schema":
+                    schemaSources.push(source);
+                    break;
+                case "graphql":
+                    graphQLSources.push(source);
+                    break;
+                case "typescript":
+                    typeScriptSources.push(source);
+                    break;
+                default:
+                    return panic("Unrecognized source");
             }
         }
-        if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length > 0) {
-            return panic("Cannot mix JSON samples with JSON Schema or GraphQL in input subdirectory");
+
+        if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length + typeScriptSources.length > 0) {
+            return panic("Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript in input subdirectory");
         }
-        if (schemaSources.length > 0 && graphQLSources.length > 0) {
-            return panic("Cannot mix JSON Schema with GraphQL in an input subdirectory");
+
+        const oneUnlessEmpty = (xs: any[]) => Math.sign(xs.length);
+        if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) + oneUnlessEmpty(typeScriptSources) > 1) {
+            return panic("Cannot mix JSON Schema, GraphQL, and TypeScript in an input subdirectory");
         }
+
         if (jsonSamples.length > 0) {
             sources.push({
+                kind: "json",
                 name: path.basename(dir),
                 samples: jsonSamples
             });
@@ -221,6 +240,8 @@ export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: str
             "If a GraphQL schema is specified, the source language must be GraphQL"
         );
         srcLang = "graphql";
+    } else if (opts.src !== undefined && opts.src.length > 0 && opts.src.every(file => _.endsWith(file, ".ts"))) {
+        srcLang = "typescript";
     } else {
         assert(srcLang !== "graphql", "Please specify a GraphQL schema with --graphql-schema or --graphql-introspect");
         srcLang = withDefault<string>(srcLang, "json");
@@ -306,7 +327,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             alias: "s",
             type: String,
             defaultValue: undefined,
-            typeLabel: "json|schema|graphql|postman",
+            typeLabel: "json|schema|graphql|postman|typescript",
             description: "The source language (default is json)."
         },
         {
@@ -594,7 +615,7 @@ async function typeSourceForURIs(name: string, uris: string[], options: CLIOptio
             return await sourceFromFileOrUrlArray(name, uris);
         case "schema":
             assert(uris.length === 1, `Must have exactly one schema for ${name}`);
-            return { name, uri: uris[0], topLevelRefs: topLevelRefsForOptions(options) };
+            return { kind: "schema", name, uri: uris[0], topLevelRefs: topLevelRefsForOptions(options) };
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);
     }
@@ -679,13 +700,24 @@ export async function makeQuicktypeOptions(
                 const schema = JSON.parse(schemaString);
                 const query = await readableFromFileOrURL(queryFile);
                 const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
-                gqlSources.push({ name, schema, query });
+                gqlSources.push({ kind: "graphql", name, schema, query });
             }
             sources = gqlSources;
             break;
         case "json":
         case "schema":
             sources = await getSources(options);
+            break;
+        case "typescript":
+            // TODO make this a TypeScriptSource
+            sources = [
+                {
+                    kind: "schema",
+                    name: options.topLevel,
+                    schema: schemaForTypeScriptSources(options.src),
+                    topLevelRefs: ["/definitions/"]
+                }
+            ];
             break;
         case "postman":
             for (const collectionFile of options.src) {

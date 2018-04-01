@@ -1,6 +1,6 @@
 {
   "name": "quicktype",
-  "version": "9.0.0",
+  "version": "10.0.0",
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,6 +32,8 @@
     "pluralize": "^7.0.0",
     "stream-json": "0.5.2",
     "string-to-stream": "^1.1.0",
+    "typescript": "~2.6.2",
+    "typescript-json-schema": "^0.21.0",
     "unicode-properties": "quicktype/unicode-properties#dist",
     "universal-analytics": "^0.4.16",
     "urijs": "^1.19.1",
@@ -64,7 +66,6 @@
     "ts-jest": "^22.4.2",
     "ts-node": "^3.3.0",
     "tslint": "^5.8.0",
-    "typescript": "^2.5.3",
     "uglify-js": "^3.0.26",
     "watch": "^1.0.2"
   },

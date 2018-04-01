@@ -470,7 +470,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 "Serialize",
                 "Newtonsoft",
                 "MetadataPropertyHandling",
-                "DateParseHandling"
+                "DateParseHandling",
+                "FromJson"
             ]);
     }
 
