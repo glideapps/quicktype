@@ -392,7 +392,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private getProtocolString = (): Sourcelike => {
         let protocols: string[] = [];
         if (this._version > 4) {
-            protocols.push("Hashable", "Equatable");
+            protocols.push("Hashable");
         }
         if (!this._justTypes) {
             protocols.push("Codable");
