@@ -108,6 +108,12 @@ export function schemaForTypeScriptSources(sources: string[] | { [fileName: stri
     }
 
     const program = ts.createProgram(fileNames, compilerOptions, host);
+    const diagnostics = ts.getPreEmitDiagnostics(program);
+    const error = diagnostics.find(d => d.category === ts.DiagnosticCategory.Error);
+    if (error !== undefined) {
+        return panic(ts.flattenDiagnosticMessageText(error.messageText, "\n"));
+    }
+
     const schema = generateSchema(program, "*", settings);
     return JSON.stringify(schema);
 }
