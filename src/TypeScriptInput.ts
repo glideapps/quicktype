@@ -10,7 +10,12 @@ const settings: PartialArgs = {
     topRef: true
 };
 
-const compilerOptions: CompilerOptions = {
+const compilerOptions: ts.CompilerOptions = {
+    noEmit: true,
+    emitDecoratorMetadata: true,
+    experimentalDecorators: true,
+    target: ts.ScriptTarget.ES5,
+    module: ts.ModuleKind.CommonJS,
     strictNullChecks: true,
     typeRoots: []
 };
@@ -26,9 +31,7 @@ function getLibSource(): string {
 }
 
 class CompilerHost implements ts.CompilerHost {
-    constructor(_options: ts.CompilerOptions,
-        private readonly _sources: {[fileName: string]: string}) {
-    }
+    constructor(_options: ts.CompilerOptions, private readonly _sources: { [fileName: string]: string }) {}
 
     fileExists(fileName: string): boolean {
         if (fileName === libFileName) return true;
@@ -42,7 +45,12 @@ class CompilerHost implements ts.CompilerHost {
         return this._sources[fileName];
     }
 
-    getSourceFile(fileName: string, languageVersion: ts.ScriptTarget, _onError?: (message: string) => void, _shouldCreateNewSourceFile?: boolean): ts.SourceFile | undefined {
+    getSourceFile(
+        fileName: string,
+        languageVersion: ts.ScriptTarget,
+        _onError?: (message: string) => void,
+        _shouldCreateNewSourceFile?: boolean
+    ): ts.SourceFile | undefined {
         const sourceText = this.readFile(fileName);
         return sourceText !== undefined ? ts.createSourceFile(fileName, sourceText, languageVersion) : undefined;
     }
@@ -51,7 +59,13 @@ class CompilerHost implements ts.CompilerHost {
         return libFileName;
     }
 
-    writeFile(_fileName: string, _data: string, _writeByteOrderMark: boolean, _onError: ((message: string) => void) | undefined, _sourceFiles: ReadonlyArray<ts.SourceFile>): void {
+    writeFile(
+        _fileName: string,
+        _data: string,
+        _writeByteOrderMark: boolean,
+        _onError: ((message: string) => void) | undefined,
+        _sourceFiles: ReadonlyArray<ts.SourceFile>
+    ): void {
         return panic("cannot write file");
     }
 
@@ -79,36 +93,27 @@ class CompilerHost implements ts.CompilerHost {
     }
 }
 
-function makeCompilerOptions(jsonCompilerOptions: any, basePath: string = "./"): ts.CompilerOptions {
-    const compilerOptions = ts.convertCompilerOptionsFromJson(jsonCompilerOptions, basePath).options;
-    const options: ts.CompilerOptions = {
-        noEmit: true, emitDecoratorMetadata: true, experimentalDecorators: true, target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS
-    };
-    for (const k in compilerOptions) {
-        if (compilerOptions.hasOwnProperty(k)) {
-            options[k] = compilerOptions[k];
-        }
-    }
-    return options;
-}
-
 export function schemaForTypeScriptSources(sourceFileNames: string[]): string;
 export function schemaForTypeScriptSources(sources: { [fileName: string]: string }): string;
 export function schemaForTypeScriptSources(sources: string[] | { [fileName: string]: string }): string {
-    const options = makeCompilerOptions(compilerOptions);
-
     let fileNames: string[];
     let host: ts.CompilerHost;
 
     if (Array.isArray(sources)) {
         fileNames = sources;
-        host = ts.createCompilerHost(options);
+        host = ts.createCompilerHost(compilerOptions);
     } else {
         fileNames = Object.getOwnPropertyNames(sources);
-        host = new CompilerHost(options, sources);
+        host = new CompilerHost(compilerOptions, sources);
     }
 
-    const program = ts.createProgram(fileNames, options, host);
+    const program = ts.createProgram(fileNames, compilerOptions, host);
+    const diagnostics = ts.getPreEmitDiagnostics(program);
+    const error = diagnostics.find(d => d.category === ts.DiagnosticCategory.Error);
+    if (error !== undefined) {
+        return panic(ts.flattenDiagnosticMessageText(error.messageText, "\n"));
+    }
+
     const schema = generateSchema(program, "*", settings);
     return JSON.stringify(schema);
 }
