@@ -131,7 +131,9 @@ interface Selection {
 }
 
 function expandSelectionSet(selectionSet: SelectionSetNode, inType: GQLType, optional: boolean): Selection[] {
-    return selectionSet.selections.reverse().map(s => ({ selection: s, inType, optional }));
+    return selectionSet.selections
+        .reverse()
+        .map(s => ({ selection: s, inType, optional: optional || hasOptionalDirectives(s.directives) }));
 }
 
 interface GQLSchema {
@@ -275,10 +277,7 @@ class GQLQuery {
                     const givenName = selection.alias ? selection.alias.value : fieldName;
                     const field = getField(inType, fieldName);
                     let fieldType = this.makeIRTypeFromFieldNode(builder, selection, field.type, nameOrOverride);
-                    if (optional) {
-                        fieldType = makeNullable(builder, fieldType, givenName, null, nameOrOverride);
-                    }
-                    properties = properties.set(givenName, new ClassProperty(fieldType, false));
+                    properties = properties.set(givenName, new ClassProperty(fieldType, optional));
                     break;
                 case "FragmentSpread": {
                     const fragment = this.getFragment(selection.name.value);
@@ -428,8 +427,9 @@ export function makeGraphQLQueryTypes(
             ),
             OrderedMap({ message: new ClassProperty(builder.getStringType(undefined, undefined), false) })
         );
-        const optionalErrorArray = builder.makeNullable(
-            builder.getArrayType(errorType),
+        const errorArray = builder.getArrayType(errorType);
+        builder.addAttributes(
+            errorArray,
             namesTypeAttributeKind.makeAttributes(
                 new TypeNames(OrderedSet(["errors"]), OrderedSet(["graphQLErrors"]), false)
             )
@@ -438,7 +438,7 @@ export function makeGraphQLQueryTypes(
             makeNamesTypeAttributes(queryName, false),
             OrderedMap({
                 data: new ClassProperty(dataType, false),
-                errors: new ClassProperty(optionalErrorArray, false)
+                errors: new ClassProperty(errorArray, true)
             })
         );
         types = types.set(queryName, t);

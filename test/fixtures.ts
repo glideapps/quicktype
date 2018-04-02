@@ -274,7 +274,14 @@ class JSONFixture extends LanguageFixture {
 class JSONToXToYFixture extends JSONFixture {
   private readonly runLanguage: languages.Language;
 
-  constructor(private readonly _fixturePrefix: string, languageXName: string, languageXOutputFilename: string, rendererOptions: RendererOptions, skipJSON: string[], language: languages.Language) {
+  constructor(
+    private readonly _fixturePrefix: string,
+    languageXName: string,
+    languageXOutputFilename: string,
+    rendererOptions: RendererOptions,
+    skipJSON: string[],
+    language: languages.Language
+  ) {
     super({
       name: languageXName,
       base: language.base,
@@ -304,7 +311,13 @@ class JSONToXToYFixture extends JSONFixture {
 
   async test(filename: string, additionalRendererOptions: RendererOptions, _additionalFiles: string[]) {
     // Generate code for Y from X
-    await quicktypeForLanguage(this.runLanguage, this.language.output, this.language.name, false, additionalRendererOptions);
+    await quicktypeForLanguage(
+      this.runLanguage,
+      this.language.output,
+      this.language.name,
+      false,
+      additionalRendererOptions
+    );
 
     // Parse the sample with the code generated from its schema, and compare to the sample
     compareJsonFileToJson({
@@ -326,7 +339,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
       "blns-object.json", // AJV refuses to even "compile" the schema we generate
       "31189.json", // same here
       "ed095.json" // same here on Travis
-    ]
+    ];
     super("schema-json", "schema", "schema.json", {}, skipJSON, language);
   }
 
@@ -572,7 +585,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.FlowLanguage),
   new JSONFixture(languages.JavaScriptLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
-  new JSONTypeScriptFixture(languages.CSharpLanguage),
+  new JSONTypeScriptFixture(languages.CSharpPermissibleLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.JavaLanguage),
   new JSONSchemaFixture(languages.GoLanguage),

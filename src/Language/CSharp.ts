@@ -12,7 +12,8 @@ import {
     matchType,
     nullableFromUnion,
     removeNullFromUnion,
-    directlyReachableSingleNamedType
+    directlyReachableSingleNamedType,
+    ClassProperty
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -28,7 +29,7 @@ import { intercalate, defined, assert, panic, StringMap } from "../Support";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { StringOption, EnumOption, Option } from "../RendererOptions";
+import { StringOption, EnumOption, Option, BooleanOption } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { StringTypeMapping } from "../TypeBuilder";
 
@@ -69,13 +70,25 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         "6",
         "secondary"
     );
+    private readonly _checkRequiredOption = new BooleanOption(
+        "check-required",
+        "Fail if required properties are missing",
+        false
+    );
 
     constructor() {
         super("C#", ["cs", "csharp"], "cs");
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._namespaceOption, this._versionOption, this._denseOption, this._listOption, this._featuresOption];
+        return [
+            this._namespaceOption,
+            this._versionOption,
+            this._denseOption,
+            this._listOption,
+            this._featuresOption,
+            this._checkRequiredOption
+        ];
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
@@ -83,6 +96,10 @@ export default class CSharpTargetLanguage extends TargetLanguage {
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
+    get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
@@ -100,6 +117,8 @@ const namingFunction = funPrefixNamer("namer", csNameStyle);
 
 // FIXME: Make a Named?
 const denseJsonPropertyName = "J";
+const denseRequiredEnumName = "R";
+const denseNullValueHandlingEnumName = "N";
 
 function isStartCharacter(utf16Unit: number): boolean {
     if (unicode.isAlphabetic(utf16Unit)) {
@@ -133,13 +152,13 @@ function csNameStyle(original: string): string {
 }
 
 function isValueType(t: Type): boolean {
+    if (t instanceof UnionType) {
+        return nullableFromUnion(t) === null;
+    }
     return ["integer", "double", "bool", "enum", "date-time"].indexOf(t.kind) >= 0;
 }
 
 export class CSharpRenderer extends ConvenienceRenderer {
-    protected readonly needHelpers: boolean;
-    protected readonly needAttributes: boolean;
-
     constructor(
         targetLanguage: TargetLanguage,
         graph: TypeGraph,
@@ -147,12 +166,9 @@ export class CSharpRenderer extends ConvenienceRenderer {
         protected readonly namespaceName: string,
         private readonly _version: Version,
         protected readonly dense: boolean,
-        private readonly _useList: boolean,
-        outputFeatures: OutputFeatures
+        private readonly _useList: boolean
     ) {
         super(targetLanguage, graph, leadingComments);
-        this.needHelpers = outputFeatures.helpers;
-        this.needAttributes = outputFeatures.attributes;
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -243,8 +259,8 @@ export class CSharpRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected nullableCSType(t: Type): Sourcelike {
-        const csType = this.csType(t);
+    protected nullableCSType(t: Type, withIssues: boolean = false): Sourcelike {
+        const csType = this.csType(t, withIssues);
         if (isValueType(t)) {
             return [csType, "?"];
         } else {
@@ -281,7 +297,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         this.emitBlock(emitter);
     }
 
-    protected attributeForProperty(_jsonName: string): Sourcelike | undefined {
+    protected attributesForProperty(_property: ClassProperty, _jsonName: string): Sourcelike[] | undefined {
         return undefined;
     }
 
@@ -294,6 +310,10 @@ export class CSharpRenderer extends ConvenienceRenderer {
         }
     }
 
+    protected blankLinesBetweenAttributes(): boolean {
+        return false;
+    }
+
     private emitClassDefinition(c: ClassType, className: Name): void {
         this.emitType(
             this.descriptionForType(c),
@@ -303,16 +323,16 @@ export class CSharpRenderer extends ConvenienceRenderer {
             this.superclassForType(c),
             () => {
                 if (c.properties.isEmpty()) return;
-                const blankLines = this.needAttributes && !this.dense ? "interposing" : "none";
+                const blankLines = this.blankLinesBetweenAttributes() ? "interposing" : "none";
                 let columns: Sourcelike[][] = [];
                 let isFirstProperty = true;
                 let previousDescription: string[] | undefined = undefined;
                 this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
-                    const csType = this.csType(p.type, true);
-                    const attribute = this.attributeForProperty(jsonName);
+                    const csType = p.isOptional ? this.nullableCSType(p.type, true) : this.csType(p.type, true);
+                    const attributes = this.attributesForProperty(p, jsonName);
                     const description = this.descriptionForClassProperty(c, jsonName);
                     const property = ["public ", csType, " ", name, " { get; set; }"];
-                    if (!this.needAttributes) {
+                    if (attributes === undefined) {
                         if (
                             // Descriptions should be preceded by an empty line
                             (!isFirstProperty && description !== undefined) ||
@@ -323,12 +343,12 @@ export class CSharpRenderer extends ConvenienceRenderer {
                         }
                         this.emitDescription(description);
                         this.emitLine(property);
-                    } else if (this.dense && attribute !== undefined) {
+                    } else if (this.dense && attributes.length > 0) {
                         const comment = description === undefined ? "" : ` // ${description.join("; ")}`;
-                        columns.push([attribute, " ", property, comment]);
+                        columns.push([attributes, " ", property, comment]);
                     } else {
                         this.emitDescription(description);
-                        if (attribute !== undefined) {
+                        for (const attribute of attributes) {
                             this.emitLine(attribute);
                         }
                         this.emitLine(property);
@@ -410,7 +430,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected emitUsings(): void {
-        for (const ns of ["System", "System.Collections.Generic", "System.Net"]) {
+        for (const ns of ["System", "System.Collections.Generic"]) {
             this.emitUsing(ns);
         }
     }
@@ -419,32 +439,37 @@ export class CSharpRenderer extends ConvenienceRenderer {
         return;
     }
 
-    private emitTypesAndSupport = (): void => {
-        if (this.needAttributes || this.needHelpers) {
-            this.emitUsings();
-        }
+    private emitTypesAndSupport(): void {
         this.forEachClass("leading-and-interposing", (c, name) => this.emitClassDefinition(c, name));
         this.forEachEnum("leading-and-interposing", (e, name) => this.emitEnumDefinition(e, name));
         this.forEachUnion("leading-and-interposing", (u, name) => this.emitUnionDefinition(u, name));
         this.emitRequiredHelpers();
-    };
+    }
 
     protected emitDefaultLeadingComments(): void {
         return;
     }
 
+    protected needNamespace(): boolean {
+        return true;
+    }
+
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
-        } else if (this.needHelpers) {
+        } else {
             this.emitDefaultLeadingComments();
         }
 
         this.ensureBlankLine();
-        if (this.needHelpers || this.needAttributes) {
+        if (this.needNamespace()) {
             this.emitLine("namespace ", this.namespaceName);
-            this.emitBlock(this.emitTypesAndSupport);
+            this.emitBlock(() => {
+                this.emitUsings();
+                this.emitTypesAndSupport();
+            });
         } else {
+            this.emitUsings();
             this.emitTypesAndSupport();
         }
     }
@@ -470,26 +495,48 @@ export class CSharpRenderer extends ConvenienceRenderer {
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private _enumExtensionsNames = Map<Name, Name>();
 
+    private readonly _needHelpers: boolean;
+    private readonly _needAttributes: boolean;
+
+    constructor(
+        targetLanguage: TargetLanguage,
+        graph: TypeGraph,
+        leadingComments: string[] | undefined,
+        namespaceName: string,
+        version: Version,
+        dense: boolean,
+        useList: boolean,
+        outputFeatures: OutputFeatures,
+        private readonly _checkRequiredProperties: boolean
+    ) {
+        super(targetLanguage, graph, leadingComments, namespaceName, version, dense, useList);
+        this._needHelpers = outputFeatures.helpers;
+        this._needAttributes = outputFeatures.attributes;
+    }
+
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return super
-            .forbiddenNamesForGlobalNamespace()
-            .concat([
-                "Converter",
-                "JsonConverter",
-                "JsonSerializer",
-                "JsonWriter",
-                "JsonToken",
-                "Serialize",
-                "Newtonsoft",
-                "MetadataPropertyHandling",
-                "DateParseHandling",
-                "FromJson"
-            ]);
+        const forbidden = [
+            "Converter",
+            "JsonConverter",
+            "JsonSerializer",
+            "JsonWriter",
+            "JsonToken",
+            "Serialize",
+            "Newtonsoft",
+            "MetadataPropertyHandling",
+            "DateParseHandling",
+            "FromJson",
+            "Required"
+        ];
+        if (this.dense) {
+            forbidden.push("J", "R", "N");
+        }
+        return super.forbiddenNamesForGlobalNamespace().concat(forbidden);
     }
 
     protected forbiddenForClassProperties(c: ClassType, className: Name): ForbiddenWordsInfo {
         const result = super.forbiddenForClassProperties(c, className);
-        result.names = result.names.concat(["ToJson", "FromJson"]);
+        result.names = result.names.concat(["ToJson", "FromJson", "Required"]);
         return result;
     }
 
@@ -502,6 +549,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     protected emitUsings(): void {
+        // FIXME: We need System.Collections.Generic whenever we have maps or use List.
+        if (!this._needAttributes && !this._needHelpers) return;
+
         super.emitUsings();
         this.ensureBlankLine();
 
@@ -511,10 +561,14 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
         if (this.dense) {
             this.emitUsing([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
+            this.emitUsing([denseRequiredEnumName, " = Newtonsoft.Json.Required"]);
+            this.emitUsing([denseNullValueHandlingEnumName, " = Newtonsoft.Json.NullValueHandling"]);
         }
     }
 
     protected emitDefaultLeadingComments(): void {
+        if (!this._needHelpers) return;
+
         this.emitLine(
             "// To parse this JSON data, add NuGet 'Newtonsoft.Json' then do",
             this.topLevels.size === 1 ? "" : " one of these",
@@ -526,24 +580,41 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         this.forEachTopLevel("none", (t, topLevelName) => {
             let rhs: Sourcelike;
             if (t instanceof EnumType) {
-                rhs = ["JsonConvert.DeserializeObject<", topLevelName, ">(jsonString)"]
+                rhs = ["JsonConvert.DeserializeObject<", topLevelName, ">(jsonString)"];
             } else {
                 rhs = [topLevelName, ".FromJson(jsonString)"];
             }
-            this.emitLine(
-                "//    var ",
-                modifySource(camelCase, topLevelName),
-                " = ",
-                rhs,
-                ";"
-            );
+            this.emitLine("//    var ", modifySource(camelCase, topLevelName), " = ", rhs, ";");
         });
     }
 
-    protected attributeForProperty(jsonName: string): Sourcelike {
+    protected attributesForProperty(property: ClassProperty, jsonName: string): Sourcelike[] | undefined {
+        if (!this._needAttributes) return undefined;
+
+        const t = property.type;
         const jsonProperty = this.dense ? denseJsonPropertyName : "JsonProperty";
         const escapedName = utf16StringEscape(jsonName);
-        return ["[", jsonProperty, '("', escapedName, '")]'];
+        const isNullable = t.isNullable;
+        const isOptional = property.isOptional;
+        const requiredClass = this.dense ? "R" : "Required";
+        const nullValueHandlingClass = this.dense ? "N" : "NullValueHandling";
+        const nullValueHandling =
+            isOptional && !isNullable ? [", NullValueHandling = ", nullValueHandlingClass, ".Ignore"] : [];
+        let required: Sourcelike;
+        if (!this._checkRequiredProperties || (isOptional && isNullable)) {
+            required = [nullValueHandling];
+        } else if (isOptional && !isNullable) {
+            required = [", Required = ", requiredClass, ".DisallowNull", nullValueHandling];
+        } else if (!isOptional && isNullable) {
+            required = [", Required = ", requiredClass, ".AllowNull"];
+        } else {
+            required = [", Required = ", requiredClass, ".Always", nullValueHandling];
+        }
+        return [["[", jsonProperty, '("', escapedName, '"', required, ")]"]];
+    }
+
+    protected blankLinesBetweenAttributes(): boolean {
+        return this._needAttributes && !this.dense;
     }
 
     private emitFromJsonForTopLevel(t: Type, name: Name): void {
@@ -754,7 +825,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         const unionNames = this.namedUnions.map(this.nameForNamedType);
         const allNames = enumNames.union(unionNames);
         const canConvertExprs = allNames.map((n: Name): Sourcelike => ["t == typeof(", n, ")"]);
-        const nullableCanConvertExprs = enumNames.map((n: Name): Sourcelike => ["t == typeof(", n, "?)"]);
+        const nullableCanConvertExprs = allNames.map((n: Name): Sourcelike => ["t == typeof(", n, "?)"]);
         const canConvertExpr = intercalate(" || ", canConvertExprs.union(nullableCanConvertExprs));
         // FIXME: make Iterable<any, Sourcelike> a Sourcelike, too?
         this.emitExpressionMember("public override bool CanConvert(Type t)", canConvertExpr.toArray());
@@ -773,7 +844,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.emitLine("return ", extensionsName, ".ReadJson(reader, serializer);");
             });
             // FIXME: call the constructor via reflection?
-            this.emitTypeSwitch(unionNames, t => ["t == typeof(", t, ")"], false, false, n => {
+            this.emitTypeSwitch(unionNames, t => ["t == typeof(", t, ") || t == typeof(", t, "?)"], false, false, n => {
                 this.emitLine("return new ", n, "(reader, serializer);");
             });
             this.emitLine('throw new Exception("Unknown type");');
@@ -818,17 +889,21 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     protected emitRequiredHelpers(): void {
-        if (this.needHelpers) {
+        if (this._needHelpers) {
             this.forEachTopLevel("leading-and-interposing", (t, n) => this.emitFromJsonForTopLevel(t, n));
             this.forEachEnum("leading-and-interposing", (e, n) => this.emitEnumExtension(e, n));
             this.forEachUnion("leading-and-interposing", (u, n) => this.emitUnionJSONPartial(u, n));
             this.ensureBlankLine();
             this.emitSerializeClass();
         }
-        if (this.needHelpers || (this.needAttributes && (this.haveNamedUnions || this.haveEnums))) {
+        if (this._needHelpers || (this._needAttributes && (this.haveNamedUnions || this.haveEnums))) {
             this.ensureBlankLine();
             this.emitConverterClass();
         }
+    }
+
+    protected needNamespace(): boolean {
+        return this._needHelpers || this._needAttributes;
     }
 
     protected makeHandlebarsContextForType(t: Type): StringMap {
