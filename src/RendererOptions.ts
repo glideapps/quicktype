@@ -1,10 +1,13 @@
 "use strict";
 
-import { panic } from "./Support";
+import { panic, assert } from "./Support";
+
+export type OptionKind = "primary" | "secondary";
 
 export interface OptionDefinition {
     name: string;
     type: StringConstructor | BooleanConstructor;
+    kind?: OptionKind;
     renderer?: boolean;
     alias?: string;
     multiple?: boolean;
@@ -21,6 +24,7 @@ export abstract class UntypedOption {
     constructor(definition: OptionDefinition) {
         definition.renderer = true;
         this.definition = definition;
+        assert(definition.kind !== undefined, "Renderer option kind must be defined");
     }
 
     get cliDefinitions(): { display: OptionDefinition[]; actual: OptionDefinition[] } {
@@ -39,9 +43,10 @@ export abstract class Option<T> extends UntypedOption {
 }
 
 export class BooleanOption extends Option<boolean> {
-    constructor(name: string, description: string, defaultValue: boolean) {
+    constructor(name: string, description: string, defaultValue: boolean, kind: OptionKind = "primary") {
         super({
             name,
+            kind,
             type: Boolean,
             description,
             defaultValue
@@ -83,9 +88,16 @@ export class BooleanOption extends Option<boolean> {
 }
 
 export class StringOption extends Option<string> {
-    constructor(name: string, description: string, typeLabel: string, defaultValue: string) {
+    constructor(
+        name: string,
+        description: string,
+        typeLabel: string,
+        defaultValue: string,
+        kind: OptionKind = "primary"
+    ) {
         const definition = {
             name,
+            kind,
             type: String,
             description,
             typeLabel,
@@ -98,14 +110,24 @@ export class StringOption extends Option<string> {
 export class EnumOption<T> extends Option<T> {
     private readonly _values: { [name: string]: T };
 
-    constructor(name: string, description: string, values: [string, T][]) {
+    constructor(
+        name: string,
+        description: string,
+        values: [string, T][],
+        defaultValue: string | undefined = undefined,
+        kind: OptionKind = "primary"
+    ) {
+        if (defaultValue === undefined) {
+            defaultValue = values[0][0];
+        }
         const definition = {
             name,
+            kind,
             type: String,
             description,
             typeLabel: values.map(([n, _]) => n).join("|"),
             legalValues: values.map(([n, _]) => n),
-            defaultValue: values[0][0]
+            defaultValue
         };
         super(definition);
 
@@ -122,7 +144,7 @@ export class EnumOption<T> extends Option<T> {
         }
         const value = this._values[name];
         if (value === undefined) {
-            return panic(`Unknown value for option ${name}`);
+            return panic(`Unknown value ${name} for option ${this.definition.name}`);
         }
         return value;
     }

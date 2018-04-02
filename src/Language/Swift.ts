@@ -53,12 +53,21 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         ["class", true]
     ]);
 
-    private readonly _versionOption = new EnumOption<Version>("swift-version", "Swift version", [
-        ["4", 4],
-        ["4.1", 4.1]
-    ]);
+    private readonly _versionOption = new EnumOption<Version>(
+        "swift-version",
+        "Swift version",
+        [["4", 4], ["4.1", 4.1]],
+        "4",
+        "secondary"
+    );
 
-    private readonly _denseOption = new EnumOption("density", "Code density", [["dense", true], ["normal", false]]);
+    private readonly _denseOption = new EnumOption(
+        "density",
+        "Code density",
+        [["dense", true], ["normal", false]],
+        "dense",
+        "secondary"
+    );
 
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
