@@ -36,7 +36,7 @@ import {
     isAccessorEntry,
     makeUnionMemberNamesAttribute
 } from "./AccessorNames";
-import { ErrorMessage, ErrorMessageWithInfo, ErrorMessageWithTwoInfos, messageAssert, messageError } from "./Messages";
+import { ErrorMessage, messageAssert, messageError } from "./Messages";
 
 export enum PathElementKind {
     Root,
@@ -72,7 +72,7 @@ export function checkJSONSchema(x: any): JSONSchema {
     if (typeof x === "boolean") return x;
     if (Array.isArray(x)) return messageError(ErrorMessage.ArrayIsInvalidJSONSchema);
     if (x === null) return messageError(ErrorMessage.NullIsInvalidJSONSchema);
-    if (typeof x !== "object") return messageError(ErrorMessageWithInfo.InvalidJSONSchemaType, typeof x);
+    if (typeof x !== "object") return messageError(ErrorMessage.InvalidJSONSchemaType, { type: typeof x });
     return x;
 }
 
@@ -120,11 +120,9 @@ export class Ref {
 
     constructor(addressURI: uri.URI | undefined, readonly path: List<PathElement>) {
         if (addressURI !== undefined) {
-            messageAssert(
-                addressURI.fragment() === "",
-                ErrorMessageWithInfo.RefWithFragmentNotAllowed,
-                addressURI.toString()
-            );
+            messageAssert(addressURI.fragment() === "", ErrorMessage.RefWithFragmentNotAllowed, {
+                ref: addressURI.toString()
+            });
             this.addressURI = addressURI.clone().normalize();
         } else {
             this.addressURI = undefined;
@@ -414,7 +412,7 @@ function checkTypeList(typeOrTypes: any): OrderedSet<string> {
         const arr: string[] = [];
         for (const t of typeOrTypes) {
             if (typeof t !== "string") {
-                return messageError(ErrorMessageWithInfo.TypeElementMustBeString, JSON.stringify(t));
+                return messageError(ErrorMessage.TypeElementMustBeString, { element: t });
             }
             arr.push(t);
         }
@@ -422,17 +420,17 @@ function checkTypeList(typeOrTypes: any): OrderedSet<string> {
         assert(!set.isEmpty(), "JSON Schema must specify at least one type");
         return set;
     } else {
-        return messageError(ErrorMessageWithInfo.TypeMustBeStringOrStringArray, JSON.stringify(typeOrTypes));
+        return messageError(ErrorMessage.TypeMustBeStringOrStringArray, { actual: typeOrTypes });
     }
 }
 
 function checkRequiredArray(arr: any): string[] {
     if (!Array.isArray(arr)) {
-        return messageError(ErrorMessageWithInfo.RequiredMustBeStringOrStringArray, JSON.stringify(arr));
+        return messageError(ErrorMessage.RequiredMustBeStringOrStringArray, { actual: arr });
     }
     for (const e of arr) {
         if (typeof e !== "string") {
-            return messageError(ErrorMessageWithInfo.RequiredElementMustBeString, JSON.stringify(e));
+            return messageError(ErrorMessage.RequiredElementMustBeString, { element: e });
         }
     }
     return arr;
@@ -589,7 +587,7 @@ export async function addTypesInSchema(
 
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
             if (!Array.isArray(cases)) {
-                return messageError(ErrorMessageWithTwoInfos.SetOperationCasesIsNotArray, kind, JSON.stringify(cases));
+                return messageError(ErrorMessage.SetOperationCasesIsNotArray, { operation: kind, cases });
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
             return await mapSync(
