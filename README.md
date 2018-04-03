@@ -12,8 +12,11 @@
 
 ### Supported Inputs
 
-| JSON | JSON API URLs | [JSON Schema](https://app.quicktype.io/#s=coordinate) | GraphQL queries |
-| ---- | ------------- | ----------------------------------------------------- | --------------- |
+| JSON | JSON API URLs | [JSON Schema](https://app.quicktype.io/#s=coordinate) |
+| ---- | ------------- | ----------------------------------------------------- |
+
+| TypeScript | GraphQL queries |
+| ---------- | --------------- |
 
 
 ### Target Languages
@@ -80,6 +83,8 @@ quicktype ./blockchain -o blockchain-api.cpp
 quicktype https://api.somewhere.com/data -o Data.java
 ```
 
+### Generating code from JSON schema
+
 The recommended way to use `quicktype` is to generate a JSON schema from sample data, review and edit the schema, commit the schema to your project repo, then generate code from the schema as part of your build process:
 
 ```bash
@@ -98,6 +103,27 @@ quicktype -s schema schema.json -o src/nodejs/Models.ts
 # All of these models will serialize to and from the same
 # JSON, so different programs in your stack can communicate
 # seamlessly.
+```
+
+### Generating code from TypeScript (Experimental)
+
+You can achieve a similar result by writing or generating a [TypeScript](http://www.typescriptlang.org/) file, then quicktyping it. TypeScript is a typed superset of JavaScript with simple, succint syntax for defining types:
+
+```typescript
+interface Person {
+  name: string;
+  nickname?: string; // an optional property
+  luckyNumber: number;
+}
+```
+
+You can use TypeScript just like JSON schema was used in the last example:
+
+```bash
+# First, infer a TypeScript file from a sample (or just write one!)
+quicktype pokedex.json -o pokedex.ts --just-types
+# Review the TypeScript, make changes, etc.
+quicktype pokedex.ts -o src/ios/models.swift
 ```
 
 ## Contributing
