@@ -69,6 +69,13 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         "secondary"
     );
 
+    private readonly _accessLevelOption = new EnumOption(
+        "access-level",
+        "Access level",
+        [["public", "public"], ["internal", "internal"]],
+        "internal"
+    );
+
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
     }
@@ -80,6 +87,7 @@ export default class SwiftTargetLanguage extends TargetLanguage {
             this._denseOption,
             this._versionOption,
             this._convenienceInitializers,
+            this._accessLevelOption,
             this._alamofireHandlers
         ];
     }
@@ -247,6 +255,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         private readonly _dense: boolean,
         private readonly _version: Version,
         private readonly _convenienceInitializers: boolean,
+        private readonly _accessLevel: string,
         private readonly _alamofire: boolean
     ) {
         super(targetLanguage, graph, leadingComments);
@@ -437,6 +446,14 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return groups;
     }
 
+    private withAccessLevel(decl: Sourcelike): Sourcelike {
+        const access =
+            this._accessLevel === "internal"
+                ? "" // internal is default, so we don't have to emit it
+                : this._accessLevel + " ";
+        return [access, decl];
+    }
+
     private renderClassDefinition = (c: ClassType, className: Name): void => {
         const swiftType = (p: ClassProperty) => {
             if (p.isOptional) {
@@ -450,7 +467,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         const isClass = this._useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
-        this.emitBlock([structOrClass, " ", className, this.getProtocolString()], () => {
+        this.emitBlock([this.withAccessLevel(structOrClass), " ", className, this.getProtocolString()], () => {
             if (this._dense) {
                 let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
@@ -458,7 +475,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 const emitLastProperty = () => {
                     if (lastProperty === undefined) return;
 
-                    let sources: Sourcelike[] = ["let "];
+                    let sources: Sourcelike[] = [this.withAccessLevel("let ")];
                     lastNames.forEach((n, i) => {
                         if (i > 0) sources.push(", ");
                         sources.push(n);
@@ -494,7 +511,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const description = this.descriptionForClassProperty(c, jsonName);
                     this.emitDescription(description);
-                    this.emitLine("let ", name, ": ", swiftType(p));
+                    this.emitLine(this.withAccessLevel("let "), name, ": ", swiftType(p));
                 });
             }
 
@@ -543,7 +560,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         const isClass = this._useClasses || this.isCycleBreakerType(c);
         const convenience = isClass ? "convenience " : "";
 
-        this.emitBlock(["extension ", className], () => {
+        this.emitBlock([this.withAccessLevel("extension "), className], () => {
             if (isClass) {
                 this.emitBlock(["convenience init(data: Data) throws"], () => {
                     this.emitLine("let me = try JSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
