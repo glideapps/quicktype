@@ -450,7 +450,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return groups;
     }
 
-    /// Access level (e.g. "public") with trailing space, or empty string
+    /// Access level with trailing space (e.g. "public "), or empty string
     private get accessLevel(): string {
         return this._accessLevel === "internal"
             ? "" // internal is default, so we don't have to emit it
