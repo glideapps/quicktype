@@ -72,8 +72,9 @@ export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _accessLevelOption = new EnumOption(
         "access-level",
         "Access level",
-        [["public", "public"], ["internal", "internal"]],
-        "internal"
+        [["internal", "internal"], ["public", "public"]],
+        "internal",
+        "secondary"
     );
 
     constructor() {
