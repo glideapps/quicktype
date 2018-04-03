@@ -69,6 +69,13 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         "secondary"
     );
 
+    private readonly _accessLevelOption = new EnumOption(
+        "access-level",
+        "Access level",
+        [["public", "public"], ["internal", "internal"]],
+        "internal"
+    );
+
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
     }
@@ -80,6 +87,7 @@ export default class SwiftTargetLanguage extends TargetLanguage {
             this._denseOption,
             this._versionOption,
             this._convenienceInitializers,
+            this._accessLevelOption,
             this._alamofireHandlers
         ];
     }
@@ -247,6 +255,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         private readonly _dense: boolean,
         private readonly _version: Version,
         private readonly _convenienceInitializers: boolean,
+        private readonly _accessLevel: string,
         private readonly _alamofire: boolean
     ) {
         super(targetLanguage, graph, leadingComments);
@@ -301,6 +310,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
         this.indent(f);
         this.emitLine("}");
     };
+
+    private emitBlockWithAccess(line: Sourcelike, f: () => void): void {
+        this.emitBlock([this.accessLevel, line], f);
+    }
 
     private justTypesCase = (justTypes: Sourcelike, notJustTypes: Sourcelike): Sourcelike => {
         if (this._justTypes) return justTypes;
@@ -437,6 +450,13 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return groups;
     }
 
+    /// Access level with trailing space (e.g. "public "), or empty string
+    private get accessLevel(): string {
+        return this._accessLevel === "internal"
+            ? "" // internal is default, so we don't have to emit it
+            : this._accessLevel + " ";
+    }
+
     private renderClassDefinition = (c: ClassType, className: Name): void => {
         const swiftType = (p: ClassProperty) => {
             if (p.isOptional) {
@@ -450,7 +470,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         const isClass = this._useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
-        this.emitBlock([structOrClass, " ", className, this.getProtocolString()], () => {
+        this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString()], () => {
             if (this._dense) {
                 let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
@@ -458,7 +478,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 const emitLastProperty = () => {
                     if (lastProperty === undefined) return;
 
-                    let sources: Sourcelike[] = ["let "];
+                    let sources: Sourcelike[] = [[this.accessLevel, "let "]];
                     lastNames.forEach((n, i) => {
                         if (i > 0) sources.push(", ");
                         sources.push(n);
@@ -494,7 +514,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const description = this.descriptionForClassProperty(c, jsonName);
                     this.emitDescription(description);
-                    this.emitLine("let ", name, ": ", swiftType(p));
+                    this.emitLine(this.accessLevel, "let ", name, ": ", swiftType(p));
                 });
             }
 
@@ -530,7 +550,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     if (properties.length > 0) properties.push(", ");
                     properties.push(name, ": ", swiftType(p));
                 });
-                this.emitBlock(["init(", ...properties, ")"], () => {
+                this.emitBlockWithAccess(["init(", ...properties, ")"], () => {
                     this.forEachClassProperty(c, "none", name => {
                         this.emitLine("self.", name, " = ", name);
                     });
@@ -543,9 +563,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
         const isClass = this._useClasses || this.isCycleBreakerType(c);
         const convenience = isClass ? "convenience " : "";
 
-        this.emitBlock(["extension ", className], () => {
+        this.emitBlockWithAccess(["extension ", className], () => {
             if (isClass) {
-                this.emitBlock(["convenience init(data: Data) throws"], () => {
+                this.emitBlockWithAccess("convenience init(data: Data) throws", () => {
                     this.emitLine("let me = try JSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                     let args: Sourcelike[] = [];
                     this.forEachClassProperty(c, "none", name => {
@@ -555,12 +575,12 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     this.emitLine("self.init(", ...args, ")");
                 });
             } else {
-                this.emitBlock(["init(data: Data) throws"], () => {
+                this.emitBlockWithAccess("init(data: Data) throws", () => {
                     this.emitLine("self = try JSONDecoder().decode(", this.swiftType(c), ".self, from: data)");
                 });
             }
             this.ensureBlankLine();
-            this.emitBlock(
+            this.emitBlockWithAccess(
                 [convenience, "init(_ json: String, using encoding: String.Encoding = .utf8) throws"],
                 () => {
                     this.emitBlock("guard let data = json.data(using: encoding) else", () => {
@@ -570,19 +590,19 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 }
             );
             this.ensureBlankLine();
-            this.emitBlock([convenience, `init(fromURL url: URL) throws`], () => {
+            this.emitBlockWithAccess([convenience, `init(fromURL url: URL) throws`], () => {
                 this.emitLine("try self.init(data: try Data(contentsOf: url))");
             });
 
             // Convenience serializers
             this.ensureBlankLine();
-            this.emitMultiline(`func jsonData() throws -> Data {
-    return try JSONEncoder().encode(self)
-}
-
-func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
-    return String(data: try self.jsonData(), encoding: encoding)
-}`);
+            this.emitBlockWithAccess(`func jsonData() throws -> Data`, () => {
+                this.emitLine("return try JSONEncoder().encode(self)");
+            });
+            this.ensureBlankLine();
+            this.emitBlockWithAccess(`func jsonString(encoding: String.Encoding = .utf8) throws -> String?`, () => {
+                this.emitLine("return String(data: try self.jsonData(), encoding: encoding)");
+            });
         });
     };
 
@@ -590,13 +610,13 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
         this.emitDescription(this.descriptionForType(e));
 
         if (this._justTypes) {
-            this.emitBlock(["enum ", enumName], () => {
+            this.emitBlockWithAccess(["enum ", enumName], () => {
                 this.forEachEnumCase(e, "none", name => {
                     this.emitLine("case ", name);
                 });
             });
         } else {
-            this.emitBlock(["enum ", enumName, ": String, Codable"], () => {
+            this.emitBlockWithAccess(["enum ", enumName, ": String, Codable"], () => {
                 this.forEachEnumCase(e, "none", (name, jsonName) => {
                     this.emitLine("case ", name, ' = "', stringEscape(jsonName), '"');
                 });
@@ -622,7 +642,7 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
 
         const indirect = this.isCycleBreakerType(u) ? "indirect " : "";
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
-        this.emitBlock([indirect, "enum ", unionName, this.getProtocolString()], () => {
+        this.emitBlockWithAccess([indirect, "enum ", unionName, this.getProtocolString()], () => {
             this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                 this.emitLine("case ", name, "(", this.swiftType(t), ")");
             });
@@ -632,7 +652,7 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
 
             if (!this._justTypes) {
                 this.ensureBlankLine();
-                this.emitBlock("init(from decoder: Decoder) throws", () => {
+                this.emitBlockWithAccess("init(from decoder: Decoder) throws", () => {
                     this.emitLine("let container = try decoder.singleValueContainer()");
                     const boolMember = u.findMember("bool");
                     if (boolMember !== undefined) renderUnionCase(boolMember);
@@ -651,7 +671,7 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
                     this.emitDecodingError(unionName);
                 });
                 this.ensureBlankLine();
-                this.emitBlock("func encode(to encoder: Encoder) throws", () => {
+                this.emitBlockWithAccess("func encode(to encoder: Encoder) throws", () => {
                     this.emitLine("var container = encoder.singleValueContainer()");
                     this.emitLine("switch self {");
                     this.forEachUnionMember(u, nonNulls, "none", null, (name, _) => {
@@ -679,27 +699,27 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
             return;
         }
 
-        this.emitBlock(["extension ", extensionSource], () => {
+        this.emitBlockWithAccess(["extension ", extensionSource], () => {
             this.emitBlock(["init(data: Data) throws"], () => {
                 this.emitLine("self = try JSONDecoder().decode(", name, ".self, from: data)");
             });
             this.ensureBlankLine();
-            this.emitBlock(["init(_ json: String, using encoding: String.Encoding = .utf8) throws"], () => {
+            this.emitBlockWithAccess("init(_ json: String, using encoding: String.Encoding = .utf8) throws", () => {
                 this.emitBlock("guard let data = json.data(using: encoding) else", () => {
                     this.emitLine(`throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)`);
                 });
                 this.emitLine("try self.init(data: data)");
             });
             this.ensureBlankLine();
-            this.emitBlock(`init(fromURL url: URL) throws`, () => {
+            this.emitBlockWithAccess(`init(fromURL url: URL) throws`, () => {
                 this.emitLine("try self.init(data: try Data(contentsOf: url))");
             });
             this.ensureBlankLine();
-            this.emitBlock("func jsonData() throws -> Data", () => {
+            this.emitBlockWithAccess("func jsonData() throws -> Data", () => {
                 this.emitLine("return try JSONEncoder().encode(self)");
             });
             this.ensureBlankLine();
-            this.emitBlock("func jsonString(encoding: String.Encoding = .utf8) throws -> String?", () => {
+            this.emitBlockWithAccess("func jsonString(encoding: String.Encoding = .utf8) throws -> String?", () => {
                 this.emitLine("return String(data: try self.jsonData(), encoding: encoding)");
             });
         });
@@ -721,7 +741,7 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
         if (this._needAny || this._needNull) {
             this.emitMark("Encode/decode helpers");
             this.ensureBlankLine();
-            this.emitMultiline(`class JSONNull: Codable {
+            this.emitMultiline(`${this.accessLevel}class JSONNull: Codable {
     public init() {}
     
     public required init(from decoder: Decoder) throws {
@@ -759,8 +779,8 @@ func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
     }
 }
 
-class JSONAny: Codable {
-    public let value: Any
+${this.accessLevel}class JSONAny: Codable {
+    ${this.accessLevel}let value: Any
     
     static func decodingError(forCodingPath codingPath: [CodingKey]) -> DecodingError {
         let context = DecodingError.Context(codingPath: codingPath, debugDescription: "Cannot decode JSONAny")
@@ -1007,7 +1027,7 @@ class JSONAny: Codable {
 
     private emitAlamofireExtension() {
         this.ensureBlankLine();
-        this.emitBlock("extension DataRequest", () => {
+        this.emitBlockWithAccess("extension DataRequest", () => {
             this
                 .emitMultiline(`fileprivate func decodableResponseSerializer<T: Decodable>() -> DataResponseSerializer<T> {
     return DataResponseSerializer { _, response, data, error in
@@ -1028,7 +1048,7 @@ fileprivate func responseDecodable<T: Decodable>(queue: DispatchQueue? = nil, co
             this.ensureBlankLine();
             this.forEachTopLevel("leading-and-interposing", (_, name) => {
                 this.emitLine("@discardableResult");
-                this.emitBlock(
+                this.emitBlockWithAccess(
                     [
                         "func response",
                         name,
