@@ -446,12 +446,14 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return groups;
     }
 
+    private get accessLevel(): string {
+        return this._accessLevel === "internal"
+            ? "" // internal is default, so we don't have to emit it
+            : this._accessLevel + " ";
+    }
+
     private withAccess(decl: Sourcelike): Sourcelike {
-        const access =
-            this._accessLevel === "internal"
-                ? "" // internal is default, so we don't have to emit it
-                : this._accessLevel + " ";
-        return [access, decl];
+        return [this.accessLevel, decl];
     }
 
     private renderClassDefinition = (c: ClassType, className: Name): void => {
@@ -745,22 +747,23 @@ export class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private emitSupportFunctions4 = (): void => {
+        const access = this.accessLevel;
         // This assumes that this method is called after declarations
         // are emitted.
         if (this._needAny || this._needNull) {
             this.emitMark("Encode/decode helpers");
             this.ensureBlankLine();
-            this.emitMultiline(`class JSONNull: Codable {
-    public init() {}
+            this.emitMultiline(`${access}class JSONNull: Codable {
+    ${access}init() {}
     
-    public required init(from decoder: Decoder) throws {
+    ${access}required init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if !container.decodeNil() {
             throw DecodingError.typeMismatch(JSONNull.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Wrong type for JSONNull"))
         }
     }
     
-    public func encode(to encoder: Encoder) throws {
+    ${access}func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encodeNil()
     }
@@ -788,8 +791,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 }
 
-class JSONAny: Codable {
-    public let value: Any
+${access}class JSONAny: Codable {
+    ${access}let value: Any
     
     static func decodingError(forCodingPath codingPath: [CodingKey]) -> DecodingError {
         let context = DecodingError.Context(codingPath: codingPath, debugDescription: "Cannot decode JSONAny")
@@ -957,7 +960,7 @@ class JSONAny: Codable {
         }
     }
     
-    public required init(from decoder: Decoder) throws {
+    ${access}required init(from decoder: Decoder) throws {
         if var arrayContainer = try? decoder.unkeyedContainer() {
             self.value = try JSONAny.decodeArray(from: &arrayContainer)
         } else if var container = try? decoder.container(keyedBy: JSONCodingKey.self) {
@@ -968,7 +971,7 @@ class JSONAny: Codable {
         }
     }
     
-    public func encode(to encoder: Encoder) throws {
+    ${access}func encode(to encoder: Encoder) throws {
         if let arr = self.value as? [Any] {
             var container = encoder.unkeyedContainer()
             try JSONAny.encode(to: &container, array: arr)
