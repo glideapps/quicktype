@@ -36,6 +36,7 @@ import {
     isAccessorEntry,
     makeUnionMemberNamesAttribute
 } from "./AccessorNames";
+import { ErrorMessage, messageAssert, messageError } from "./Messages";
 
 export enum PathElementKind {
     Root,
@@ -69,9 +70,9 @@ function pathElementEquals(a: PathElement, b: PathElement): boolean {
 
 export function checkJSONSchema(x: any): JSONSchema {
     if (typeof x === "boolean") return x;
-    if (Array.isArray(x)) return panic("An array is not a valid JSON Schema");
-    if (x === null) return panic("null is not a valid JSON Schema");
-    if (typeof x !== "object") return panic("Only booleans and objects can be valid JSON Schemas");
+    if (Array.isArray(x)) return messageError(ErrorMessage.ArrayIsInvalidJSONSchema);
+    if (x === null) return messageError(ErrorMessage.NullIsInvalidJSONSchema);
+    if (typeof x !== "object") return messageError(ErrorMessage.InvalidJSONSchemaType, { type: typeof x });
     return x;
 }
 
@@ -102,7 +103,7 @@ export class Ref {
 
     static parse(ref: any): Ref {
         if (typeof ref !== "string") {
-            return panic("$ref must be a string");
+            return messageError(ErrorMessage.RefMustBeString);
         }
 
         const uri = new URI(ref);
@@ -119,7 +120,9 @@ export class Ref {
 
     constructor(addressURI: uri.URI | undefined, readonly path: List<PathElement>) {
         if (addressURI !== undefined) {
-            assert(addressURI.fragment() === "", `Ref URI with fragment is not allowed: ${addressURI.toString()}`);
+            messageAssert(addressURI.fragment() === "", ErrorMessage.RefWithFragmentNotAllowed, {
+                ref: addressURI.toString()
+            });
             this.addressURI = addressURI.clone().normalize();
         } else {
             this.addressURI = undefined;
@@ -318,7 +321,7 @@ class Canonizer {
 
     private addID(mapped: string, loc: Location): void {
         const ref = Ref.parse(mapped).resolveAgainst(loc.virtualRef);
-        assert(ref.hasAddress, "$id must have an address");
+        messageAssert(ref.hasAddress, ErrorMessage.IDMustHaveAddress, { id: mapped });
         this._map = this._map.set(ref, loc.canonicalRef);
     }
 
@@ -373,18 +376,6 @@ class Canonizer {
     }
 }
 
-function checkStringArray(arr: any): string[] {
-    if (!Array.isArray(arr)) {
-        return panic(`Expected a string array, but got ${arr}`);
-    }
-    for (const e of arr) {
-        if (typeof e !== "string") {
-            return panic(`Expected string, but got ${e}`);
-        }
-    }
-    return arr;
-}
-
 function makeAttributes(schema: StringMap, loc: Location, attributes: TypeAttributes): TypeAttributes {
     const maybeDescription = schema.description;
     if (typeof maybeDescription === "string") {
@@ -421,16 +412,28 @@ function checkTypeList(typeOrTypes: any): OrderedSet<string> {
         const arr: string[] = [];
         for (const t of typeOrTypes) {
             if (typeof t !== "string") {
-                return panic(`element of type is not a string: ${t}`);
+                return messageError(ErrorMessage.TypeElementMustBeString, { element: t });
             }
             arr.push(t);
         }
         const set = OrderedSet(arr);
-        assert(!set.isEmpty(), "JSON Schema must specify at least one type");
+        messageAssert(!set.isEmpty(), ErrorMessage.NoTypeSpecified);
         return set;
     } else {
-        return panic(`type is neither a string or array of strings: ${typeOrTypes}`);
+        return messageError(ErrorMessage.TypeMustBeStringOrStringArray, { actual: typeOrTypes });
     }
+}
+
+function checkRequiredArray(arr: any): string[] {
+    if (!Array.isArray(arr)) {
+        return messageError(ErrorMessage.RequiredMustBeStringOrStringArray, { actual: arr });
+    }
+    for (const e of arr) {
+        if (typeof e !== "string") {
+            return messageError(ErrorMessage.RequiredElementMustBeString, { element: e });
+        }
+    }
+    return arr;
 }
 
 export async function addTypesInSchema(
@@ -509,7 +512,7 @@ export async function addTypesInSchema(
         if (!additionalRequired.isEmpty()) {
             const t = additionalPropertiesType;
             if (t === undefined) {
-                return panic("Can't have non-specified required properties but forbidden additionalTypes");
+                return messageError(ErrorMessage.AdditionalTypesForbidRequired);
             }
 
             const additionalProps = additionalRequired.toOrderedMap().map(_name => new ClassProperty(t, true));
@@ -542,19 +545,20 @@ export async function addTypesInSchema(
 
         async function makeArrayType(): Promise<TypeRef> {
             const singularAttributes = singularizeTypeNames(typeAttributes);
+            const items = schema.items;
             let itemType: TypeRef;
-            if (Array.isArray(schema.items)) {
+            if (Array.isArray(items)) {
                 const itemsLoc = loc.push("items");
                 const itemTypes = await mapSync(
-                    schema.items,
+                    items,
                     async (item, i) =>
                         await toType(checkStringMap(item), itemsLoc.push(i.toString()), singularAttributes)
                 );
                 itemType = typeBuilder.getUnionType(emptyTypeAttributes, OrderedSet(itemTypes));
-            } else if (typeof schema.items === "object") {
-                itemType = await toType(checkStringMap(schema.items), loc.push("items"), singularAttributes);
-            } else if (schema.items !== undefined) {
-                return panic("Array items must be an array or an object");
+            } else if (typeof items === "object") {
+                itemType = await toType(checkStringMap(items), loc.push("items"), singularAttributes);
+            } else if (items !== undefined) {
+                return messageError(ErrorMessage.ArrayItemsMustBeStringOrArray, { actual: items });
             } else {
                 itemType = typeBuilder.getPrimitiveType("any");
             }
@@ -567,7 +571,7 @@ export async function addTypesInSchema(
             if (schema.required === undefined) {
                 required = [];
             } else {
-                required = checkStringArray(schema.required);
+                required = checkRequiredArray(schema.required);
             }
 
             let properties: StringMap;
@@ -584,7 +588,7 @@ export async function addTypesInSchema(
 
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
             if (!Array.isArray(cases)) {
-                return panic(`Cases are not an array: ${cases}`);
+                return messageError(ErrorMessage.SetOperationCasesIsNotArray, { operation: kind, cases });
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
             return await mapSync(
@@ -608,10 +612,9 @@ export async function addTypesInSchema(
                 typeBuilder.addAttributes(unionType, identifierAttribute);
 
                 const accessors = checkArray(maybeAccessors, isAccessorEntry);
-                assert(
-                    typeRefs.length === accessors.length,
-                    `Accessor entry array must have the same number of entries as the ${kind}`
-                );
+                messageAssert(typeRefs.length === accessors.length, ErrorMessage.WrongAccessorEntryArrayLength, {
+                    operation: kind
+                });
                 for (let i = 0; i < typeRefs.length; i++) {
                     typeBuilder.addAttributes(
                         typeRefs[i],
@@ -738,7 +741,7 @@ export async function addTypesInSchema(
         if (typeof schema === "boolean") {
             // FIXME: Empty union.  We'd have to check that it's supported everywhere,
             // in particular in union flattening.
-            assert(schema === true, 'Schema "false" is not supported');
+            messageAssert(schema === true, ErrorMessage.FalseSchemaNotSupported);
             result = typeBuilder.getPrimitiveType("any");
         } else {
             loc = loc.updateWithID(schema["$id"]);
