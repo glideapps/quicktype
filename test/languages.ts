@@ -383,7 +383,13 @@ export const SwiftLanguage: Language = {
     "top-level-enum.schema"
   ],
   rendererOptions: {},
-  quickTestRendererOptions: [{ "struct-or-class": "class" }, { density: "dense" }, { density: "normal" }],
+  quickTestRendererOptions: [
+    { "struct-or-class": "class" },
+    { density: "dense" },
+    { density: "normal" },
+    { "access-level": "internal" },
+    { "access-level": "public" }
+  ],
   sourceFiles: ["src/Language/Swift.ts"]
 };
 
