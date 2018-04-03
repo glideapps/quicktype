@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "tuple": {
+      "type": "array",
+      "items": [{ "type": "integer" }, { "type": "boolean" }]
+    }
+  },
+  "required": ["tuple"]
+}
