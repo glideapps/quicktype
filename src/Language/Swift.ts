@@ -671,7 +671,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     this.emitDecodingError(unionName);
                 });
                 this.ensureBlankLine();
-                this.emitBlock("public func encode(to encoder: Encoder) throws", () => {
+                this.emitBlockWithAccess("func encode(to encoder: Encoder) throws", () => {
                     this.emitLine("var container = encoder.singleValueContainer()");
                     this.emitLine("switch self {");
                     this.forEachUnionMember(u, nonNulls, "none", null, (name, _) => {
