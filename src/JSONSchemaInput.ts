@@ -25,7 +25,8 @@ import {
     TypeAttributes,
     descriptionTypeAttributeKind,
     propertyDescriptionsTypeAttributeKind,
-    makeTypeAttributesInferred
+    makeTypeAttributesInferred,
+    emptyTypeAttributes
 } from "./TypeAttributes";
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import {
@@ -540,13 +541,25 @@ export async function addTypesInSchema(
         }
 
         async function makeArrayType(): Promise<TypeRef> {
-            if (schema.items !== undefined) {
-                loc = loc.push("items");
-                return typeBuilder.getArrayType(
-                    await toType(checkStringMap(schema.items), loc, singularizeTypeNames(typeAttributes))
+            const singularAttributes = singularizeTypeNames(typeAttributes);
+            let itemType: TypeRef;
+            if (Array.isArray(schema.items)) {
+                const itemsLoc = loc.push("items");
+                const itemTypes = await mapSync(
+                    schema.items,
+                    async (item, i) =>
+                        await toType(checkStringMap(item), itemsLoc.push(i.toString()), singularAttributes)
                 );
+                itemType = typeBuilder.getUnionType(emptyTypeAttributes, OrderedSet(itemTypes));
+            } else if (typeof schema.items === "object") {
+                itemType = await toType(checkStringMap(schema.items), loc.push("items"), singularAttributes);
+            } else if (schema.items !== undefined) {
+                return panic("Array items must be an array or an object");
+            } else {
+                itemType = typeBuilder.getPrimitiveType("any");
             }
-            return typeBuilder.getArrayType(typeBuilder.getPrimitiveType("any"));
+            typeBuilder.addAttributes(itemType, singularAttributes);
+            return typeBuilder.getArrayType(itemType);
         }
 
         async function makeObjectType(): Promise<TypeRef> {
