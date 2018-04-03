@@ -7,12 +7,17 @@ export enum ErrorMessage {
     NullIsInvalidJSONSchema = "null is not a valid JSON Schema",
     RefMustBeString = "$ref must be a string",
     AdditionalTypesForbidRequired = "Can't have non-specified required properties but forbidden additionalTypes",
+    NoTypeSpecified = "JSON Schema must specify at least one type",
+    FalseSchemaNotSupported = 'Schema "false" is not supported',
     RefWithFragmentNotAllowed = "Ref URI with fragment is not allowed: ${ref}",
     InvalidJSONSchemaType = "Value of type ${type} is not valid JSON Schemas",
     RequiredMustBeStringOrStringArray = "`required` must be string or array of strings, but is ${actual}",
     RequiredElementMustBeString = "`required` must only contain strings, but it has ${element}",
     TypeMustBeStringOrStringArray = "`type` must be string or array of strings, but is ${actual}",
     TypeElementMustBeString = "`type` must only contain strings, but it has ${element}",
+    ArrayItemsMustBeStringOrArray = "Array items must be an array or an object, but is ${actual}",
+    IDMustHaveAddress = "$id doesn't have an address: ${id}",
+    WrongAccessorEntryArrayLength = "Accessor entry array must have the same number of entries as the ${operation}",
     SetOperationCasesIsNotArray = "${operation} cases must be an array, but is ${cases}"
 }
 
@@ -22,12 +27,17 @@ type Error =
     | { message: ErrorMessage.NullIsInvalidJSONSchema; props: {} }
     | { message: ErrorMessage.RefMustBeString; props: {} }
     | { message: ErrorMessage.AdditionalTypesForbidRequired; props: {} }
+    | { message: ErrorMessage.NoTypeSpecified; props: {} }
+    | { message: ErrorMessage.FalseSchemaNotSupported; props: {} }
     | { message: ErrorMessage.RefWithFragmentNotAllowed; props: { ref: string } }
     | { message: ErrorMessage.InvalidJSONSchemaType; props: { type: string } }
     | { message: ErrorMessage.RequiredMustBeStringOrStringArray; props: { actual: any } }
     | { message: ErrorMessage.RequiredElementMustBeString; props: { element: any } }
     | { message: ErrorMessage.TypeMustBeStringOrStringArray; props: { actual: any } }
     | { message: ErrorMessage.TypeElementMustBeString; props: { element: any } }
+    | { message: ErrorMessage.ArrayItemsMustBeStringOrArray; props: { actual: any } }
+    | { message: ErrorMessage.IDMustHaveAddress, props: { id: string } }
+    | { message: ErrorMessage.WrongAccessorEntryArrayLength, props: { operation: string } }
     | { message: ErrorMessage.SetOperationCasesIsNotArray; props: { operation: string; cases: any } };
     */
 

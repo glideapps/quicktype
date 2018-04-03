@@ -321,7 +321,7 @@ class Canonizer {
 
     private addID(mapped: string, loc: Location): void {
         const ref = Ref.parse(mapped).resolveAgainst(loc.virtualRef);
-        assert(ref.hasAddress, "$id must have an address");
+        messageAssert(ref.hasAddress, ErrorMessage.IDMustHaveAddress, { id: mapped });
         this._map = this._map.set(ref, loc.canonicalRef);
     }
 
@@ -417,7 +417,7 @@ function checkTypeList(typeOrTypes: any): OrderedSet<string> {
             arr.push(t);
         }
         const set = OrderedSet(arr);
-        assert(!set.isEmpty(), "JSON Schema must specify at least one type");
+        messageAssert(!set.isEmpty(), ErrorMessage.NoTypeSpecified);
         return set;
     } else {
         return messageError(ErrorMessage.TypeMustBeStringOrStringArray, { actual: typeOrTypes });
@@ -545,19 +545,20 @@ export async function addTypesInSchema(
 
         async function makeArrayType(): Promise<TypeRef> {
             const singularAttributes = singularizeTypeNames(typeAttributes);
+            const items = schema.items;
             let itemType: TypeRef;
-            if (Array.isArray(schema.items)) {
+            if (Array.isArray(items)) {
                 const itemsLoc = loc.push("items");
                 const itemTypes = await mapSync(
-                    schema.items,
+                    items,
                     async (item, i) =>
                         await toType(checkStringMap(item), itemsLoc.push(i.toString()), singularAttributes)
                 );
                 itemType = typeBuilder.getUnionType(emptyTypeAttributes, OrderedSet(itemTypes));
-            } else if (typeof schema.items === "object") {
-                itemType = await toType(checkStringMap(schema.items), loc.push("items"), singularAttributes);
-            } else if (schema.items !== undefined) {
-                return panic("Array items must be an array or an object");
+            } else if (typeof items === "object") {
+                itemType = await toType(checkStringMap(items), loc.push("items"), singularAttributes);
+            } else if (items !== undefined) {
+                return messageError(ErrorMessage.ArrayItemsMustBeStringOrArray, { actual: items });
             } else {
                 itemType = typeBuilder.getPrimitiveType("any");
             }
@@ -611,10 +612,9 @@ export async function addTypesInSchema(
                 typeBuilder.addAttributes(unionType, identifierAttribute);
 
                 const accessors = checkArray(maybeAccessors, isAccessorEntry);
-                assert(
-                    typeRefs.length === accessors.length,
-                    `Accessor entry array must have the same number of entries as the ${kind}`
-                );
+                messageAssert(typeRefs.length === accessors.length, ErrorMessage.WrongAccessorEntryArrayLength, {
+                    operation: kind
+                });
                 for (let i = 0; i < typeRefs.length; i++) {
                     typeBuilder.addAttributes(
                         typeRefs[i],
@@ -741,7 +741,7 @@ export async function addTypesInSchema(
         if (typeof schema === "boolean") {
             // FIXME: Empty union.  We'd have to check that it's supported everywhere,
             // in particular in union flattening.
-            assert(schema === true, 'Schema "false" is not supported');
+            messageAssert(schema === true, ErrorMessage.FalseSchemaNotSupported);
             result = typeBuilder.getPrimitiveType("any");
         } else {
             loc = loc.updateWithID(schema["$id"]);
