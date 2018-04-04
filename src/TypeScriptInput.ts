@@ -3,6 +3,7 @@ import { PartialArgs, CompilerOptions, generateSchema } from "typescript-json-sc
 
 import { panic, inflateBase64 } from "./Support";
 import { encodedDefaultTypeScriptLibrary } from "./EncodedDefaultTypeScriptLibrary";
+import { ErrorMessage, messageError } from "./Messages";
 
 const settings: PartialArgs = {
     required: true,
@@ -60,13 +61,13 @@ class CompilerHost implements ts.CompilerHost {
     }
 
     writeFile(
-        _fileName: string,
+        fileName: string,
         _data: string,
         _writeByteOrderMark: boolean,
         _onError: ((message: string) => void) | undefined,
         _sourceFiles: ReadonlyArray<ts.SourceFile>
     ): void {
-        return panic("cannot write file");
+        return panic(`writeFile should not be called by the TypeScript compiler.  Filename ${fileName}`);
     }
 
     getCurrentDirectory(): string {
@@ -111,7 +112,9 @@ export function schemaForTypeScriptSources(sources: string[] | { [fileName: stri
     const diagnostics = ts.getPreEmitDiagnostics(program);
     const error = diagnostics.find(d => d.category === ts.DiagnosticCategory.Error);
     if (error !== undefined) {
-        return panic(ts.flattenDiagnosticMessageText(error.messageText, "\n"));
+        return messageError(ErrorMessage.TypeScriptCompilerError, {
+            message: ts.flattenDiagnosticMessageText(error.messageText, "\n")
+        });
     }
 
     const schema = generateSchema(program, "*", settings);

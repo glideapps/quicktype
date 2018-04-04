@@ -63,7 +63,7 @@ function canBeCombined(c1: ClassType, c2: ClassType): boolean {
         let ts = smaller.get(name);
         let tl = larger.get(name);
         if (ts === undefined || tl === undefined) {
-            return panic("Both of these should have this property");
+            return panic(`Both classes should have property ${name}`);
         }
         const tsCases = nonNullTypeCases(ts.type);
         const tlCases = nonNullTypeCases(tl.type);

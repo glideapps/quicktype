@@ -5,7 +5,7 @@ import { Readable } from "stream";
 import { getStream } from "../get-stream/index";
 
 import { JSONSchemaStore, JSONSchema } from "../JSONSchemaStore";
-import { panic } from "../Support";
+import { messageError, ErrorMessage } from "../Messages";
 
 // The typings for this module are screwy
 const isURL = require("is-url");
@@ -18,7 +18,7 @@ export async function readableFromFileOrURL(fileOrUrl: string): Promise<Readable
     } else if (fs.existsSync(fileOrUrl)) {
         return fs.createReadStream(fileOrUrl);
     } else {
-        return panic(`Input file ${fileOrUrl} does not exist`);
+        return messageError(ErrorMessage.InputFileDoesNotExist, { filename: fileOrUrl });
     }
 }
 

@@ -26,13 +26,14 @@ import { urlsFromURLGrammar } from "../URLGrammar";
 import { Annotation } from "../Source";
 import { IssueAnnotationData } from "../Annotation";
 import { Readable } from "stream";
-import { panic, assert, defined, withDefault, mapOptional } from "../Support";
+import { panic, assert, defined, withDefault, mapOptional, assertNever } from "../Support";
 import { introspectServer } from "../GraphQLIntrospection";
 import { getStream } from "../get-stream/index";
 import { train } from "../MarkovChain";
 import { sourcesFromPostmanCollection } from "../PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
+import { ErrorMessage, messageError } from "../Messages";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -134,7 +135,7 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
 
         if (graphQLSources.length > 0) {
             if (graphQLSchema === undefined) {
-                return panic(`No GraphQL schema in ${dataDir}`);
+                return messageError(ErrorMessage.NoGraphQLSchemaInDir, { dir: dataDir });
             }
             const schema = JSON.parse(await getStream(graphQLSchema));
             for (const source of graphQLSources) {
@@ -172,17 +173,17 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
                     typeScriptSources.push(source);
                     break;
                 default:
-                    return panic("Unrecognized source");
+                    return assertNever(source);
             }
         }
 
         if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length + typeScriptSources.length > 0) {
-            return panic("Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript in input subdirectory");
+            return messageError(ErrorMessage.CannotMixJSONWithOtherSamples, { dir: dir });
         }
 
         const oneUnlessEmpty = (xs: any[]) => Math.sign(xs.length);
         if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) + oneUnlessEmpty(typeScriptSources) > 1) {
-            return panic("Cannot mix JSON Schema, GraphQL, and TypeScript in an input subdirectory");
+            return messageError(ErrorMessage.CannotMixNonJSONInputs, { dir: dir });
         }
 
         if (jsonSamples.length > 0) {
@@ -252,7 +253,7 @@ export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: str
     const lang = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultLanguage);
     const language = languageNamed(lang);
     if (language === undefined) {
-        return panic(`Unsupported output language: ${lang}`);
+        return messageError(ErrorMessage.UnknownOutputLanguage, { lang });
     }
 
     /* tslint:disable:strict-boolean-expressions */
@@ -643,7 +644,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
 }
 
 function makeTypeScriptSource(fileNames: string[]): TypeScriptTypeSource {
-    const sources: {[fileName: string]: string} = {};
+    const sources: { [fileName: string]: string } = {};
 
     for (const fileName of fileNames) {
         const baseName = path.basename(fileName);
@@ -698,7 +699,7 @@ export async function makeQuicktypeOptions(
                     return undefined;
                 }
                 if (numSources === 0) {
-                    return panic("Please specify at least one GraphQL query as input");
+                    return messageError(ErrorMessage.NoGraphQLQueryGiven);
                 }
             }
             const gqlSources: GraphQLTypeSource[] = [];
@@ -737,8 +738,7 @@ export async function makeQuicktypeOptions(
             }
             break;
         default:
-            panic(`Unsupported source language (${options.srcLang})`);
-            break;
+            return messageError(ErrorMessage.UnknownSourceLanguage, { lang: options.srcLang });
     }
 
     let handlebarsTemplate: string | undefined = undefined;
@@ -757,7 +757,7 @@ export async function makeQuicktypeOptions(
             } else if (component === "provenance") {
                 checkProvenance = true;
             } else {
-                return panic(`Unknown debug option ${component}`);
+                return messageError(ErrorMessage.UnknownDebugOption, { option: component });
             }
         }
     }

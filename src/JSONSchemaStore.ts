@@ -1,7 +1,8 @@
 "use strict";
 
 import { Map } from "immutable";
-import { panic, StringMap, assert } from "./Support";
+import { StringMap, assert } from "./Support";
+import { ErrorMessage, messageError } from "./Messages";
 
 export type JSONSchema = StringMap | boolean;
 
@@ -22,7 +23,7 @@ export abstract class JSONSchemaStore {
         }
         schema = await this.fetch(address);
         if (schema === undefined) {
-            return panic(`Schema at address "${address}" not available`);
+            return messageError(ErrorMessage.CannotFetchSchema, { address });
         }
         this.add(address, schema);
         return schema;

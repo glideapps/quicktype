@@ -12,16 +12,24 @@ import {
     UnionType,
     combineTypeAttributesOfTypes
 } from "./Type";
-import { defined, assert, panic } from "./Support";
-import { GraphRewriteBuilder, TypeRef, TypeBuilder, StringTypeMapping, NoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
+import { defined, assert, mustNotBeCalled } from "./Support";
+import {
+    GraphRewriteBuilder,
+    TypeRef,
+    TypeBuilder,
+    StringTypeMapping,
+    NoStringTypeMapping,
+    provenanceTypeAttributeKind
+} from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
+import { messageError, ErrorMessage } from "./Messages";
 
 export class TypeAttributeStore {
     private _topLevelValues: Map<string, TypeAttributes> = Map();
 
-    constructor(private readonly _typeGraph: TypeGraph, private _values: (TypeAttributes | undefined)[]) { }
+    constructor(private readonly _typeGraph: TypeGraph, private _values: (TypeAttributes | undefined)[]) {}
 
     private getTypeIndex(t: Type): number {
         const tref = t.typeRef;
@@ -82,8 +90,7 @@ export class TypeAttributeStoreView<T> {
     constructor(
         private readonly _attributeStore: TypeAttributeStore,
         private readonly _definition: TypeAttributeKind<T>
-    ) {
-    }
+    ) {}
 
     set(t: Type, value: T): void {
         this._attributeStore.set(this._definition, t, value);
@@ -210,11 +217,14 @@ export class TypeGraph {
         assert(this._haveProvenanceAttributes);
 
         const view = new TypeAttributeStoreView(this.attributeStore, provenanceTypeAttributeKind);
-        return this.allTypesUnordered().toList().map(t => {
-            const maybeSet = view.tryGet(t);
-            if (maybeSet !== undefined) return maybeSet;
-            return Set();
-        }).reduce<Set<TypeRef>>((a, b) => a.union(b));
+        return this.allTypesUnordered()
+            .toList()
+            .map(t => {
+                const maybeSet = view.tryGet(t);
+                if (maybeSet !== undefined) return maybeSet;
+                return Set();
+            })
+            .reduce<Set<TypeRef>>((a, b) => a.union(b));
     }
 
     setPrintOnRewrite(): void {
@@ -257,7 +267,7 @@ export class TypeGraph {
             const newProvenance = newGraph.allProvenance();
             if (oldProvenance.size !== newProvenance.size) {
                 const difference = oldProvenance.subtract(newProvenance);
-                return panic(`Type attributes for ${difference.size} types were not carried over to the new graph`);
+                return messageError(ErrorMessage.TypeAttributesNotPropagated, { count: difference.size });
             }
         }
 
@@ -270,8 +280,14 @@ export class TypeGraph {
     }
 
     garbageCollect(alphabetizeProperties: boolean): TypeGraph {
-        const newGraph = this.rewrite("GC", NoStringTypeMapping, alphabetizeProperties, [], (_t, _b) =>
-            panic("This shouldn't be called"), true);
+        const newGraph = this.rewrite(
+            "GC",
+            NoStringTypeMapping,
+            alphabetizeProperties,
+            [],
+            (_t, _b) => mustNotBeCalled(),
+            true
+        );
         // console.log(`GC: ${defined(newGraph._types).length} types`);
         return newGraph;
     }
@@ -327,13 +343,18 @@ export function noneToAny(graph: TypeGraph, stringTypeMapping: StringTypeMapping
         return graph;
     }
     assert(noneTypes.size === 1, "Cannot have more than one none type");
-    return graph.rewrite("none to any", stringTypeMapping, false, [noneTypes.toArray()],
+    return graph.rewrite(
+        "none to any",
+        stringTypeMapping,
+        false,
+        [noneTypes.toArray()],
         (types, builder, forwardingRef) => {
             const tref = builder.getPrimitiveType("any", forwardingRef);
             const attributes = combineTypeAttributesOfTypes(types);
             builder.addAttributes(tref, attributes);
             return tref;
-        });
+        }
+    );
 }
 
 export function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
@@ -373,9 +394,15 @@ export function optionalToNullable(graph: TypeGraph, stringTypeMapping: StringTy
     if (classesWithOptional.size === 0) {
         return graph;
     }
-    return graph.rewrite("optional to nullable", stringTypeMapping, false, replacementGroups, (setOfClass, builder, forwardingRef) => {
-        assert(setOfClass.size === 1);
-        const c = defined(setOfClass.first());
-        return rewriteClass(c, builder, forwardingRef);
-    });
+    return graph.rewrite(
+        "optional to nullable",
+        stringTypeMapping,
+        false,
+        replacementGroups,
+        (setOfClass, builder, forwardingRef) => {
+            assert(setOfClass.size === 1);
+            const c = defined(setOfClass.first());
+            return rewriteClass(c, builder, forwardingRef);
+        }
+    );
 }

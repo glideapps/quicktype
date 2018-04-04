@@ -96,6 +96,14 @@ export function panic(message: string): never {
     throw Error(message);
 }
 
+export function mustNotBeCalled(): never {
+    return panic("This must not be called");
+}
+
+export function mustNotHappen(): never {
+    return panic("This must not happen");
+}
+
 export const hashCodeInit = 17;
 
 export function addHashCode(acc: number, h: number): number {

@@ -23,7 +23,7 @@ import {
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist";
-import { panic } from "../dist/Support";
+import { mustNotBeCalled } from "../dist/Support";
 import { isDateTime } from "../dist/DateTime";
 
 const chalk = require("chalk");
@@ -286,9 +286,7 @@ class JSONToXToYFixture extends JSONFixture {
       name: languageXName,
       base: language.base,
       setupCommand: language.setupCommand,
-      runCommand: (_sample: string) => {
-        return panic("This must not be called!");
-      },
+      runCommand: (_sample: string) => mustNotBeCalled(),
       diffViaSchema: false,
       skipDiffViaSchema: [],
       allowMissingNull: language.allowMissingNull,
