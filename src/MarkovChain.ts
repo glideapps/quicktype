@@ -1,6 +1,5 @@
 "use strict";
 
-
 import { panic, assert, inflateBase64 } from "./Support";
 import { encodedMarkovChain } from "./EncodedMarkovChain";
 
@@ -130,7 +129,7 @@ export function generate(mc: MarkovChain, state: string, unseenWeight: number): 
     if (t === undefined) {
         return String.fromCharCode(randomInt(32, 127));
     }
-    const counts = t.arr.map((x, i) => x === null ? (i === 0 ? 0 : unseenWeight) : x as number);
+    const counts = t.arr.map((x, i) => (x === null ? (i === 0 ? 0 : unseenWeight) : (x as number)));
     let n = 0;
     for (const c of counts) {
         n += c;

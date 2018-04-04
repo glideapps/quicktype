@@ -7,7 +7,7 @@ import * as URI from "urijs";
 import * as targetLanguages from "./Language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assertNever, assert, panic, defined, forEachSync } from "./Support";
+import { assertNever, assert, panic, defined, forEachSync, parseJSON } from "./Support";
 import { CompressedJSON, Value } from "./CompressedJSON";
 import { combineClasses, findSimilarityCliques } from "./CombineClasses";
 import { addTypesInSchema, Ref, definitionRefsInSchema, checkJSONSchema } from "./JSONSchemaInput";
@@ -175,7 +175,7 @@ class InputJSONSchemaStore extends JSONSchemaStore {
     async fetch(address: string): Promise<JSONSchema | undefined> {
         const maybeInput = this._inputs.get(address);
         if (maybeInput !== undefined) {
-            return checkJSONSchema(JSON.parse(await toString(maybeInput)));
+            return checkJSONSchema(parseJSON(await toString(maybeInput), "JSON Schema", address));
         }
         if (this._delegate === undefined) {
             return panic(`Schema URI ${address} requested, but no store given`);
@@ -342,15 +342,16 @@ export class Run {
 
         let schemaInputs: Map<string, StringInput> = Map();
         let schemaSources: List<[uri.URI, SchemaTypeSource]> = List();
-        let needIR = targetLanguage.names.indexOf("schema") < 0
-            || this._options.findSimilarClassesSchemaURI !== undefined
-            || this._options.handlebarsTemplate !== undefined;
+        let needIR =
+            targetLanguage.names.indexOf("schema") < 0 ||
+            this._options.findSimilarClassesSchemaURI !== undefined ||
+            this._options.handlebarsTemplate !== undefined;
         for (const source of this._options.sources) {
             const schemaSource = toSchemaSource(source);
 
             if (schemaSource === undefined) continue;
 
-            needIR =  schemaSource.isDirectInput || needIR;
+            needIR = schemaSource.isDirectInput || needIR;
 
             const { uri, schema } = schemaSource;
 

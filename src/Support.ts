@@ -4,6 +4,7 @@ import { Collection, List, Set, isKeyed, isIndexed } from "immutable";
 
 import { Base64 } from "js-base64";
 import * as pako from "pako";
+import { messageError, ErrorMessage } from "./Messages";
 
 export function intercalate<T>(separator: T, items: Collection<any, T>): List<T> {
     const acc: T[] = [];
@@ -83,17 +84,25 @@ export function nonNull<T>(x: T | null): T {
 }
 
 export function assertNever(x: never): never {
-    throw new Error("Unexpected object: " + x);
+    return messageError(ErrorMessage.InternalError, { message: `Unexpected object ${x}` });
 }
 
 export function assert(condition: boolean, message: string = "Assertion failed"): void {
     if (!condition) {
-        throw Error(message);
+        return messageError(ErrorMessage.InternalError, { message });
     }
 }
 
 export function panic(message: string): never {
-    throw Error(message);
+    return messageError(ErrorMessage.InternalError, { message });
+}
+
+export function mustNotBeCalled(): never {
+    return panic("This must not be called");
+}
+
+export function mustNotHappen(): never {
+    return panic("This must not happen");
 }
 
 export const hashCodeInit = 17;
@@ -180,4 +189,20 @@ export async function mapSync<K, V, U>(
 export function inflateBase64(encoded: string): string {
     const bytes = Base64.atob(encoded);
     return pako.inflate(bytes, { to: "string" });
+}
+
+export function parseJSON(text: string, description: string, address: string = "<unknown>"): any {
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        let message: string;
+
+        if (e instanceof SyntaxError) {
+            message = e.message;
+        } else {
+            message = `Unknown exception ${e}`;
+        }
+
+        return messageError(ErrorMessage.JSONParseError, { description, address, message });
+    }
 }

@@ -1,6 +1,7 @@
 "use strict";
 
-import { panic, assert } from "./Support";
+import { assert } from "./Support";
+import { messageError, ErrorMessage } from "./Messages";
 
 export type OptionKind = "primary" | "secondary";
 
@@ -144,7 +145,7 @@ export class EnumOption<T> extends Option<T> {
         }
         const value = this._values[name];
         if (value === undefined) {
-            return panic(`Unknown value ${name} for option ${this.definition.name}`);
+            return messageError(ErrorMessage.UnknownRendererOptionValue, { value: name, name: this.definition.name });
         }
         return value;
     }

@@ -6,6 +6,7 @@ import { TypeGraph } from "./TypeGraph";
 import { Type } from "./Type";
 import { panic, defined } from "./Support";
 import { Graph } from "./Graph";
+import { ErrorMessage, messageError } from "./Messages";
 
 export type DeclarationKind = "forward" | "define";
 
@@ -152,7 +153,7 @@ export function declarationsForGraph(
             // we declare the types we previously forward-declared.
             const forwardDeclarable = component.filter(canBeForwardDeclared);
             if (forwardDeclarable.isEmpty()) {
-                return panic("Cannot resolve cycle because it doesn't contain types that can be forward declared");
+                return messageError(ErrorMessage.NoForwardDeclarableTypeInCycle);
             }
             forwardDeclarable.forEach(t => {
                 declarations.push(new Declaration("forward", t));
