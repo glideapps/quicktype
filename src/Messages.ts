@@ -41,6 +41,17 @@ type Error =
     | { message: ErrorMessage.SetOperationCasesIsNotArray; props: { operation: string; cases: any } };
     */
 
+/*
+type Errors =
+   { kind: "foo"; props: { quux: number } } |
+   { kind: "bar"; props: { frob: boolean } };
+type Kind = Errors extends { kind: infer T } ? T : never;
+type Props = Errors extends { props: infer P } ? P : never;
+type KindFor<P> = Extract<Errors, { props: P }> extends { kind: infer K } ? K : never;
+
+function error<P extends Props>(kind: KindFor<P>, props: P): void {}
+*/
+
 export function messageError(message: ErrorMessage): never;
 export function messageError(message: ErrorMessage, props: { [name: string]: any }): never;
 export function messageError(message: ErrorMessage, props?: { [name: string]: any }): never {
