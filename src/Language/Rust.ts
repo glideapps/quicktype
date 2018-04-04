@@ -244,7 +244,7 @@ export class RustRenderer extends ConvenienceRenderer {
     private rustType = (t: Type, withIssues: boolean = false): Sourcelike => {
         return matchType<Sourcelike>(
             t,
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "serde_json::Value"),
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Option<serde_json::Value>"),
             _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Option<serde_json::Value>"),
             _boolType => "bool",
             _integerType => "i64",
