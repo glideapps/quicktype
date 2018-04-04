@@ -190,3 +190,19 @@ export function inflateBase64(encoded: string): string {
     const bytes = Base64.atob(encoded);
     return pako.inflate(bytes, { to: "string" });
 }
+
+export function parseJSON(text: string, description: string, address: string = "<unknown>"): any {
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        let message: string;
+
+        if (e instanceof SyntaxError) {
+            message = e.message;
+        } else {
+            message = `Unknown exception ${e}`;
+        }
+
+        return messageError(ErrorMessage.JSONParseError, { description, address, message });
+    }
+}

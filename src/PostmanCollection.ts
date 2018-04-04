@@ -1,6 +1,7 @@
 "use strict";
 
 import { JSONTypeSource } from ".";
+import { parseJSON } from "./Support";
 
 function isValidJSON(s: string): boolean {
     try {
@@ -12,7 +13,8 @@ function isValidJSON(s: string): boolean {
 }
 
 export function sourcesFromPostmanCollection(
-    collectionJSON: string
+    collectionJSON: string,
+    collectionJSONAddress?: string
 ): { sources: JSONTypeSource[]; description: string | undefined } {
     const sources: JSONTypeSource[] = [];
     const descriptions: string[] = [];
@@ -55,7 +57,7 @@ export function sourcesFromPostmanCollection(
         }
     }
 
-    processCollection(JSON.parse(collectionJSON));
+    processCollection(parseJSON(collectionJSON, "Postman collection", collectionJSONAddress));
 
     const joinedDescription = descriptions.join("\n\n").trim();
     let description: string | undefined = undefined;

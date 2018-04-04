@@ -6,29 +6,40 @@ import { getStream } from "../get-stream/index";
 
 import { JSONSchemaStore, JSONSchema } from "../JSONSchemaStore";
 import { messageError, ErrorMessage } from "../Messages";
+import { parseJSON } from "../Support";
 
 // The typings for this module are screwy
 const isURL = require("is-url");
 const fetch = require("node-fetch");
 
-export async function readableFromFileOrURL(fileOrUrl: string): Promise<Readable> {
-    if (isURL(fileOrUrl)) {
-        const response = await fetch(fileOrUrl);
-        return response.body;
-    } else if (fs.existsSync(fileOrUrl)) {
-        return fs.createReadStream(fileOrUrl);
-    } else {
-        return messageError(ErrorMessage.InputFileDoesNotExist, { filename: fileOrUrl });
+export async function readableFromFileOrURL(fileOrURL: string): Promise<Readable> {
+    try {
+        if (isURL(fileOrURL)) {
+            const response = await fetch(fileOrURL);
+            return response.body;
+        } else if (fs.existsSync(fileOrURL)) {
+            return fs.createReadStream(fileOrURL);
+        }
+    } catch (e) {
+        const message = typeof e.message === "string" ? e.message : "Unknown error";
+        return messageError(ErrorMessage.ReadError, { fileOrURL, message });
     }
+    return messageError(ErrorMessage.InputFileDoesNotExist, { filename: fileOrURL });
 }
 
 export async function readFromFileOrURL(fileOrURL: string): Promise<string> {
-    return await getStream(await readableFromFileOrURL(fileOrURL));
+    const readable = await readableFromFileOrURL(fileOrURL);
+    try {
+        return await getStream(readable);
+    } catch (e) {
+        const message = typeof e.message === "string" ? e.message : "Unknown error";
+        return messageError(ErrorMessage.ReadError, { fileOrURL, message });
+    }
 }
 
 export class FetchingJSONSchemaStore extends JSONSchemaStore {
     async fetch(address: string): Promise<JSONSchema | undefined> {
         // console.log(`Fetching ${address}`);
-        return JSON.parse(await readFromFileOrURL(address));
+        return parseJSON(await readFromFileOrURL(address), "JSON Schema", address);
     }
 }

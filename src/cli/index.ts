@@ -26,7 +26,7 @@ import { urlsFromURLGrammar } from "../URLGrammar";
 import { Annotation } from "../Source";
 import { IssueAnnotationData } from "../Annotation";
 import { Readable } from "stream";
-import { panic, assert, defined, withDefault, mapOptional, assertNever } from "../Support";
+import { panic, assert, defined, withDefault, mapOptional, assertNever, parseJSON } from "../Support";
 import { introspectServer } from "../GraphQLIntrospection";
 import { getStream } from "../get-stream/index";
 import { train } from "../MarkovChain";
@@ -96,6 +96,7 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
         const sourcesInDir: TypeSource[] = [];
         const graphQLSources: GraphQLTypeSource[] = [];
         let graphQLSchema: Readable | undefined = undefined;
+        let graphQLSchemaFileName: string | undefined = undefined;
         for (let file of files) {
             const name = typeNameFromFilename(file);
 
@@ -123,6 +124,7 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
             } else if (file.endsWith(".gqlschema")) {
                 assert(graphQLSchema === undefined, `More than one GraphQL schema in ${dataDir}`);
                 graphQLSchema = await readableFromFileOrURL(fileOrUrl);
+                graphQLSchemaFileName = fileOrUrl;
             } else if (file.endsWith(".graphql")) {
                 graphQLSources.push({
                     kind: "graphql",
@@ -137,7 +139,7 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
             if (graphQLSchema === undefined) {
                 return messageError(ErrorMessage.NoGraphQLSchemaInDir, { dir: dataDir });
             }
-            const schema = JSON.parse(await getStream(graphQLSchema));
+            const schema = parseJSON(await getStream(graphQLSchema), "GraphQL schema", graphQLSchemaFileName);
             for (const source of graphQLSources) {
                 source.schema = schema;
                 sourcesInDir.push(source);
@@ -594,7 +596,7 @@ function usage(targetLanguages: TargetLanguage[]) {
 // Returns an array of [name, sourceURIs] pairs.
 async function getSourceURIs(options: CLIOptions): Promise<[string, string[]][]> {
     if (options.srcUrls !== undefined) {
-        const json = JSON.parse(await readFromFileOrURL(options.srcUrls));
+        const json = parseJSON(await readFromFileOrURL(options.srcUrls), "URL grammar", options.srcUrls);
         const jsonMap = urlsFromURLGrammar(json);
         const topLevels = Object.getOwnPropertyNames(jsonMap);
         return topLevels.map(name => [name, jsonMap[name]] as [string, string[]]);
@@ -704,11 +706,12 @@ export async function makeQuicktypeOptions(
             }
             const gqlSources: GraphQLTypeSource[] = [];
             for (const queryFile of options.src) {
+                let schemaFileName: string | undefined = undefined;
                 if (schemaString === undefined) {
-                    const schemaFile = defined(options.graphqlSchema);
-                    schemaString = fs.readFileSync(schemaFile, "utf8");
+                    schemaFileName = defined(options.graphqlSchema);
+                    schemaString = fs.readFileSync(schemaFileName, "utf8");
                 }
-                const schema = JSON.parse(schemaString);
+                const schema = parseJSON(schemaString, "GraphQL schema", schemaFileName);
                 const query = await readableFromFileOrURL(queryFile);
                 const name = numSources === 1 ? options.topLevel : typeNameFromFilename(queryFile);
                 gqlSources.push({ kind: "graphql", name, schema, query });
@@ -725,7 +728,10 @@ export async function makeQuicktypeOptions(
         case "postman":
             for (const collectionFile of options.src) {
                 const collectionJSON = fs.readFileSync(collectionFile, "utf8");
-                const { sources: postmanSources, description } = sourcesFromPostmanCollection(collectionJSON);
+                const { sources: postmanSources, description } = sourcesFromPostmanCollection(
+                    collectionJSON,
+                    collectionFile
+                );
                 for (const src of postmanSources) {
                     sources.push(src);
                 }

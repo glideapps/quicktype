@@ -3,6 +3,10 @@
 export enum ErrorMessage {
     InternalError = "Internal error: ${message}",
 
+    // Misc
+    JSONParseError = "Syntax error in ${description} JSON ${address}: ${message}",
+    ReadError = "Cannot read from file or URL ${fileOrURL}: ${message}",
+
     // JSON Schema input
     ArrayIsInvalidJSONSchema = "An array is not a valid JSON Schema",
     NullIsInvalidJSONSchema = "null is not a valid JSON Schema",
@@ -36,6 +40,9 @@ export enum ErrorMessage {
     NoForwardDeclarableTypeInCycle = "Cannot resolve cycle because it doesn't contain types that can be forward declared",
     TypeAttributesNotPropagated = "Type attributes for ${count} types were not carried over to the new graph",
 
+    // Rendering
+    UnknownRendererOptionValue = "Unknown value ${value} for option ${name}",
+
     // TypeScript input
     TypeScriptCompilerError = "TypeScript error: ${message}"
 }
@@ -43,6 +50,10 @@ export enum ErrorMessage {
 /*
 type Error =
     | { message: ErrorMessage.InternalError; props: { message: string } }
+
+    // Misc
+    | { message: ErrorMessage.JSONParseError; props: { description: string; address: string; message: string } }
+    | { message: ErrorMessage.ReadError; props: { fileOrURL: string; message: string } }
 
     // JSON Schema input
     | { message: ErrorMessage.ArrayIsInvalidJSONSchema; props: {} }
@@ -76,6 +87,9 @@ type Error =
     // IR
     | { message: ErrorMessage.NoForwardDeclarableTypeInCycle; props: {} }
     | { message: ErrorMessage.TypeAttributesNotPropagated; props: { count: number } }
+
+    // Rendering
+    | { message: ErrorMessage. UnknownRendererOptionValue; props: { value: string; name: string } },
 
     // TypeScript input
     | { message: ErrorMessage.TypeScriptCompilerError; props: { message: string } }
