@@ -1,8 +1,8 @@
 "use strict";
 
-import { panic } from "./Support";
-
 export enum ErrorMessage {
+    InternalError = "Internal error: ${message}",
+
     // JSON Schema input
     ArrayIsInvalidJSONSchema = "An array is not a valid JSON Schema",
     NullIsInvalidJSONSchema = "null is not a valid JSON Schema",
@@ -42,6 +42,8 @@ export enum ErrorMessage {
 
 /*
 type Error =
+    | { message: ErrorMessage.InternalError; props: { message: string } }
+
     // JSON Schema input
     | { message: ErrorMessage.ArrayIsInvalidJSONSchema; props: {} }
     | { message: ErrorMessage.NullIsInvalidJSONSchema; props: {} }
@@ -105,7 +107,7 @@ export function messageError(message: ErrorMessage, props?: { [name: string]: an
         }
     }
 
-    return panic(userMessage);
+    throw Error(userMessage);
 }
 
 export function messageAssert(assertion: boolean, message: ErrorMessage): void;
