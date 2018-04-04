@@ -209,9 +209,9 @@ class IntersectionAccumulator
             }
         });
 
-        if (this._additionalPropertyTypes !== undefined && maybeObject.additionalProperties) {
+        if (this._additionalPropertyTypes !== undefined && maybeObject.additionalProperties !== undefined) {
             this._additionalPropertyTypes = this._additionalPropertyTypes.add(maybeObject.additionalProperties);
-        } else if (this._additionalPropertyTypes !== undefined || maybeObject.additionalProperties) {
+        } else if (this._additionalPropertyTypes !== undefined || maybeObject.additionalProperties !== undefined) {
             this._additionalPropertyTypes = undefined;
             this._lostTypeAttributes = true;
         }
