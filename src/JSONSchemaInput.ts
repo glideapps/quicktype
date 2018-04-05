@@ -515,7 +515,7 @@ export async function addTypesInSchema(
                 return messageError(ErrorMessage.AdditionalTypesForbidRequired);
             }
 
-            const additionalProps = additionalRequired.toOrderedMap().map(_name => new ClassProperty(t, true));
+            const additionalProps = additionalRequired.toOrderedMap().map(_name => new ClassProperty(t, false));
             props = props.merge(additionalProps);
         }
         return typeBuilder.getUniqueObjectType(attributes, props, additionalPropertiesType);
@@ -664,6 +664,7 @@ export async function addTypesInSchema(
             schema.properties !== undefined ||
             schema.additionalProperties !== undefined ||
             schema.items !== undefined ||
+            schema.required !== undefined ||
             enumArray !== undefined;
 
         const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
