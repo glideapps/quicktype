@@ -20,6 +20,7 @@ import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import * as graphql from "graphql/language";
 import { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
+import { ErrorMessage, messageAssert } from "./Messages";
 
 interface GQLType {
     kind: TypeKind;
@@ -161,7 +162,7 @@ class GQLQuery {
                 this._fragments[def.name.value] = def;
             }
         }
-        assert(queries.length >= 1, "GraphQL file doesn't have any queries defined.");
+        messageAssert(queries.length >= 1, ErrorMessage.NoGraphQLQueriesDefined);
         this.queries = List(queries);
     }
 

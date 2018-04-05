@@ -47,7 +47,11 @@ export abstract class Renderer {
     // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _preventBlankLine: boolean;
 
-    constructor(protected readonly targetLanguage: TargetLanguage, protected readonly typeGraph: TypeGraph, protected readonly leadingComments: string[] | undefined) {
+    constructor(
+        protected readonly targetLanguage: TargetLanguage,
+        protected readonly typeGraph: TypeGraph,
+        protected readonly leadingComments: string[] | undefined
+    ) {
         this._finishedFiles = Map();
         this.startEmit();
     }
@@ -189,7 +193,6 @@ export abstract class Renderer {
     }
 
     protected finishFile(filename: string): void {
-        assert(this._emitted.length > 0, `Tried to emit empty file ${filename}`);
         assert(!this._finishedFiles.has(filename), `Tried to emit file ${filename} more than once`);
         const source = sourcelikeToSource(this._emitted);
         this._finishedFiles = this._finishedFiles.set(filename, source);

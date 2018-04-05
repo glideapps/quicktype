@@ -209,7 +209,7 @@ function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): strin
     if (options.out !== undefined) {
         let extension = path.extname(options.out);
         if (extension === "") {
-            throw new Error("Please specify a language (--lang) or an output file extension.");
+            return messageError(ErrorMessage.NoLanguageOrExtension);
         }
         return extension.substr(1);
     }
@@ -539,23 +539,22 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
     const rendererOptionDefinitions = targetLanguage.cliOptionDefinitions.actual;
     // Use the global options as well as the renderer options from now on:
     const allOptionDefinitions = _.concat(optionDefinitions, rendererOptionDefinitions);
-    try {
-        // This is the parse that counts:
-        return inferCLIOptions(parseOptions(allOptionDefinitions, argv, false), defaultLanguage);
-    } catch (error) {
-        if (error.name === "UNKNOWN_OPTION") {
-            usage(targetLanguages);
-            throw new Error("Unknown option");
-        }
-        throw error;
-    }
+    // This is the parse that counts:
+    return inferCLIOptions(parseOptions(allOptionDefinitions, argv, false), defaultLanguage);
 }
 
 // Parse the options in argv and split them into global options and renderer options,
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): Partial<CLIOptions> {
-    const opts: { [key: string]: any } = commandLineArgs(definitions, { argv, partial });
+    let opts: { [key: string]: any };
+    try {
+        opts = commandLineArgs(definitions, { argv, partial });
+    } catch (e) {
+        assert(!partial, "Partial option parsing should not have failed");
+        return messageError(ErrorMessage.CLIOptionParsingFailed, { message: e.message });
+    }
+
     const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
     definitions.forEach(o => {
         if (!(o.name in opts)) return;
