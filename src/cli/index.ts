@@ -33,7 +33,7 @@ import { train } from "../MarkovChain";
 import { sourcesFromPostmanCollection } from "../PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { ErrorMessage, messageError } from "../Messages";
+import { ErrorMessage, messageError, messageAssert } from "../Messages";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -122,7 +122,9 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
                     topLevelRefs
                 });
             } else if (file.endsWith(".gqlschema")) {
-                assert(graphQLSchema === undefined, `More than one GraphQL schema in ${dataDir}`);
+                messageAssert(graphQLSchema === undefined, ErrorMessage.MoreThanOneGraphQLSchemaInDir, {
+                    dir: dataDir
+                });
                 graphQLSchema = await readableFromFileOrURL(fileOrUrl);
                 graphQLSchemaFileName = fileOrUrl;
             } else if (file.endsWith(".graphql")) {
@@ -237,15 +239,12 @@ function inferTopLevel(options: Partial<CLIOptions>): string {
 export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: string): CLIOptions {
     let srcLang = opts.srcLang;
     if (opts.graphqlSchema !== undefined || opts.graphqlIntrospect !== undefined) {
-        assert(
-            srcLang === undefined || srcLang === "graphql",
-            "If a GraphQL schema is specified, the source language must be GraphQL"
-        );
+        messageAssert(srcLang === undefined || srcLang === "graphql", ErrorMessage.SourceLangMustBeGraphQL);
         srcLang = "graphql";
     } else if (opts.src !== undefined && opts.src.length > 0 && opts.src.every(file => _.endsWith(file, ".ts"))) {
         srcLang = "typescript";
     } else {
-        assert(srcLang !== "graphql", "Please specify a GraphQL schema with --graphql-schema or --graphql-introspect");
+        messageAssert(srcLang !== "graphql", ErrorMessage.GraphQLSchemaNeeded);
         srcLang = withDefault<string>(srcLang, "json");
     }
 
@@ -616,7 +615,7 @@ async function typeSourceForURIs(name: string, uris: string[], options: CLIOptio
         case "json":
             return await sourceFromFileOrUrlArray(name, uris);
         case "schema":
-            assert(uris.length === 1, `Must have exactly one schema for ${name}`);
+            messageAssert(uris.length === 1, ErrorMessage.NeedExactlyOneSchema, { name });
             return { kind: "schema", name, uri: uris[0], topLevelRefs: topLevelRefsForOptions(options) };
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);

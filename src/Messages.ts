@@ -27,12 +27,17 @@ export enum ErrorMessage {
     WrongAccessorEntryArrayLength = "Accessor entry array must have the same number of entries as the ${operation}",
     SetOperationCasesIsNotArray = "${operation} cases must be an array, but is ${cases}",
     CannotFetchSchema = "Cannot fetch schema at address ${address}",
+    MoreThanOneUnionMemberName = "More than one name given for union member: ${names}",
 
     // Driver
     UnknownSourceLanguage = "Unknown source language ${lang}",
     UnknownOutputLanguage = "Unknown output language ${lang}",
+    NeedExactlyOneSchema = "Must have exactly one schema for ${name}",
     NoGraphQLQueryGiven = "Please specify at least one GraphQL query as input",
-    NoGraphQLSchemaInDir = "No GraphQL schema in ${dataDir}",
+    NoGraphQLSchemaInDir = "No GraphQL schema in ${dir}",
+    MoreThanOneGraphQLSchemaInDir = "More than one GraphQL schema in ${dir}",
+    SourceLangMustBeGraphQL = "If a GraphQL schema is specified, the source language must be GraphQL",
+    GraphQLSchemaNeeded = "Please specify a GraphQL schema with --graphql-schema or --graphql-introspect",
     InputFileDoesNotExist = "Input file ${filename} does not exist",
     CannotMixJSONWithOtherSamples = "Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript in input subdirectory ${dir}",
     CannotMixNonJSONInputs = "Cannot mix JSON Schema, GraphQL, and TypeScript in an input subdirectory ${dir}",
@@ -75,12 +80,17 @@ type Error =
     | { message: ErrorMessage.WrongAccessorEntryArrayLength, properties: { operation: string } }
     | { message: ErrorMessage.SetOperationCasesIsNotArray; properties: { operation: string; cases: any } }
     | { message: ErrorMessage.CannotFetchSchema; properties: { address: string } }
+    | { message: ErrorMessage.MoreThanOneUnionMemberName; properties: { names: string[] } }
 
     // Driver
     | { message: ErrorMessage.UnknownSourceLanguage; properties: { lang: string } }
     | { message: ErrorMessage.UnknownOutputLanguage; properties: { lang: string } }
+    | { message: ErrorMessage.NeedExactlyOneSchema; properties: { name: string } }
     | { message: ErrorMessage.NoGraphQLQueryGiven; properties: {} }
     | { message: ErrorMessage.NoGraphQLSchemaInDir; properties: { dir: string } }
+    | { message: ErrorMessage.MoreThanOneGraphQLSchemaInDir; properties: { dir: string } }
+    | { message: ErrorMessage.SourceLangMustBeGraphQL; properties: {} }
+    | { message: ErrorMessage.GraphQLSchemaNeeded; properties: {} }
     | { message: ErrorMessage.InputFileDoesNotExist; properties: { filename: string } }
     | { message: ErrorMessage.CannotMixJSONWithOtherSamples; properties: { dir: string } }
     | { message: ErrorMessage.CannotMixNonJSONInputs; properties: { dir: string } }
