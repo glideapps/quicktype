@@ -1,0 +1,17 @@
+{
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "longitude": {
+          "type": "number"
+        }
+      }
+    },
+    {
+      "required": [
+        "longitude"
+      ]
+    }
+  ]
+}

@@ -236,7 +236,10 @@ export const GoLanguage: Language = {
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json", "nst-test-suite.json"],
   skipMiscJSON: false,
-  skipSchema: [],
+  skipSchema: [
+    // interface{} as top-level doesn't work
+    "any.schema"
+  ],
   rendererOptions: {},
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/Golang.ts"]
