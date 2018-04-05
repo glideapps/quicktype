@@ -341,7 +341,11 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     super("schema-json", "schema", "schema.json", {}, skipJSON, language);
   }
 
-  async test(filename: string, additionalRendererOptions: RendererOptions, additionalFiles: string[]) {
+  async test(
+    filename: string,
+    additionalRendererOptions: RendererOptions,
+    additionalFiles: string[]
+  ): Promise<void> {
     let input = JSON.parse(fs.readFileSync(filename, "utf8"));
     let schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
 
@@ -355,7 +359,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
       });
     }
 
-    super.test(filename, additionalRendererOptions, additionalFiles);
+    await super.test(filename, additionalRendererOptions, additionalFiles);
 
     // Generate a schema from the schema, making sure the schemas are the same
     // FIXME: We could move this to the superclass and test it for all JSON->X->Y
