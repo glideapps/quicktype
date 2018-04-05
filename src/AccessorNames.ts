@@ -3,8 +3,9 @@
 import { Map, Set } from "immutable";
 
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
-import { checkStringMap, isStringMap, defined, assert } from "./Support";
+import { checkStringMap, isStringMap, defined } from "./Support";
 import { EnumType, ClassType, UnionType, Type } from "./Type";
+import { messageAssert, ErrorMessage } from "./Messages";
 
 export type AccessorEntry = string | { [language: string]: string };
 
@@ -134,6 +135,6 @@ export function unionMemberName(u: UnionType, member: Type, language: string): [
         isFixed = false;
     }
 
-    assert(size === 1, `More than one name given for union member: ${names.join(", ")}`);
+    messageAssert(size === 1, ErrorMessage.MoreThanOneUnionMemberName, { names });
     return [first, isFixed];
 }

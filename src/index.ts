@@ -25,6 +25,7 @@ import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
 import { replaceObjectType } from "./ReplaceObjectType";
 import { schemaForTypeScriptSources } from "./TypeScriptInput";
+import { ErrorMessage, messageAssert, messageError } from "./Messages";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -42,7 +43,7 @@ export function getTargetLanguage(nameOrInstance: string | TargetLanguage): Targ
     if (language !== undefined) {
         return language;
     }
-    throw new Error(`'${nameOrInstance}' is not yet supported as an output language.`);
+    return messageError(ErrorMessage.UnknownOutputLanguage, { lang: nameOrInstance });
 }
 
 export type RendererOptions = { [name: string]: string };
@@ -330,10 +331,7 @@ export class Run {
     }
 
     private addSchemaInput(name: string, ref: Ref): void {
-        if (_.has(this._allInputs.schemas, name)) {
-            throw new Error(`More than one schema given for ${name}`);
-        }
-
+        messageAssert(!_.has(this._allInputs.schemas, name), ErrorMessage.MoreThanOneSchemaGiven, { name });
         this._allInputs.schemas[name] = { ref };
     }
 
@@ -425,9 +423,10 @@ export class Run {
                 const { name, topLevelRefs } = source;
 
                 if (topLevelRefs !== undefined) {
-                    assert(
+                    messageAssert(
                         topLevelRefs.length === 1 && topLevelRefs[0] === "/definitions/",
-                        "Schema top level refs must be `/definitions/`"
+                        ErrorMessage.InvalidSchemaTopLevelRefs,
+                        { actual: topLevelRefs }
                     );
                     const definitionRefs = await definitionRefsInSchema(
                         this.getSchemaStore(),

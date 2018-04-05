@@ -33,7 +33,7 @@ import { train } from "../MarkovChain";
 import { sourcesFromPostmanCollection } from "../PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { ErrorMessage, messageError } from "../Messages";
+import { ErrorMessage, messageError, messageAssert } from "../Messages";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -122,7 +122,9 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
                     topLevelRefs
                 });
             } else if (file.endsWith(".gqlschema")) {
-                assert(graphQLSchema === undefined, `More than one GraphQL schema in ${dataDir}`);
+                messageAssert(graphQLSchema === undefined, ErrorMessage.MoreThanOneGraphQLSchemaInDir, {
+                    dir: dataDir
+                });
                 graphQLSchema = await readableFromFileOrURL(fileOrUrl);
                 graphQLSchemaFileName = fileOrUrl;
             } else if (file.endsWith(".graphql")) {
@@ -207,7 +209,7 @@ function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): strin
     if (options.out !== undefined) {
         let extension = path.extname(options.out);
         if (extension === "") {
-            throw new Error("Please specify a language (--lang) or an output file extension.");
+            return messageError(ErrorMessage.NoLanguageOrExtension);
         }
         return extension.substr(1);
     }
@@ -237,15 +239,12 @@ function inferTopLevel(options: Partial<CLIOptions>): string {
 export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: string): CLIOptions {
     let srcLang = opts.srcLang;
     if (opts.graphqlSchema !== undefined || opts.graphqlIntrospect !== undefined) {
-        assert(
-            srcLang === undefined || srcLang === "graphql",
-            "If a GraphQL schema is specified, the source language must be GraphQL"
-        );
+        messageAssert(srcLang === undefined || srcLang === "graphql", ErrorMessage.SourceLangMustBeGraphQL);
         srcLang = "graphql";
     } else if (opts.src !== undefined && opts.src.length > 0 && opts.src.every(file => _.endsWith(file, ".ts"))) {
         srcLang = "typescript";
     } else {
-        assert(srcLang !== "graphql", "Please specify a GraphQL schema with --graphql-schema or --graphql-introspect");
+        messageAssert(srcLang !== "graphql", ErrorMessage.GraphQLSchemaNeeded);
         srcLang = withDefault<string>(srcLang, "json");
     }
 
@@ -540,23 +539,22 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
     const rendererOptionDefinitions = targetLanguage.cliOptionDefinitions.actual;
     // Use the global options as well as the renderer options from now on:
     const allOptionDefinitions = _.concat(optionDefinitions, rendererOptionDefinitions);
-    try {
-        // This is the parse that counts:
-        return inferCLIOptions(parseOptions(allOptionDefinitions, argv, false), defaultLanguage);
-    } catch (error) {
-        if (error.name === "UNKNOWN_OPTION") {
-            usage(targetLanguages);
-            throw new Error("Unknown option");
-        }
-        throw error;
-    }
+    // This is the parse that counts:
+    return inferCLIOptions(parseOptions(allOptionDefinitions, argv, false), defaultLanguage);
 }
 
 // Parse the options in argv and split them into global options and renderer options,
 // according to each option definition's `renderer` field.  If `partial` is false this
 // will throw if it encounters an unknown option.
 function parseOptions(definitions: OptionDefinition[], argv: string[], partial: boolean): Partial<CLIOptions> {
-    const opts: { [key: string]: any } = commandLineArgs(definitions, { argv, partial });
+    let opts: { [key: string]: any };
+    try {
+        opts = commandLineArgs(definitions, { argv, partial });
+    } catch (e) {
+        assert(!partial, "Partial option parsing should not have failed");
+        return messageError(ErrorMessage.CLIOptionParsingFailed, { message: e.message });
+    }
+
     const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
     definitions.forEach(o => {
         if (!(o.name in opts)) return;
@@ -616,7 +614,7 @@ async function typeSourceForURIs(name: string, uris: string[], options: CLIOptio
         case "json":
             return await sourceFromFileOrUrlArray(name, uris);
         case "schema":
-            assert(uris.length === 1, `Must have exactly one schema for ${name}`);
+            messageAssert(uris.length === 1, ErrorMessage.NeedExactlyOneSchema, { name });
             return { kind: "schema", name, uri: uris[0], topLevelRefs: topLevelRefsForOptions(options) };
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);

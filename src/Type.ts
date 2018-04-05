@@ -6,6 +6,7 @@ import { defined, panic, assert, assertNever, mapOptional } from "./Support";
 import { TypeRef, TypeReconstituter } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { ErrorMessage, messageAssert } from "./Messages";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
@@ -522,12 +523,12 @@ export class UnionType extends SetOperationType {
     constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
         super(typeRef, "union", memberRefs);
         if (memberRefs !== undefined) {
-            assert(!memberRefs.isEmpty(), "We can't have empty unions");
+            messageAssert(!memberRefs.isEmpty(), ErrorMessage.NoEmptyUnions);
         }
     }
 
     setMembers(memberRefs: OrderedSet<TypeRef>): void {
-        assert(!memberRefs.isEmpty(), "We can't have empty unions");
+        messageAssert(!memberRefs.isEmpty(), ErrorMessage.NoEmptyUnions);
         super.setMembers(memberRefs);
     }
 

@@ -253,7 +253,7 @@ export class FixedName extends Name {
     }
 
     proposeUnstyledNames(_?: Map<Name, string>): OrderedSet<string> {
-        throw "Only fixedName should be called on FixedName.";
+        return panic("Only fixedName should be called on FixedName.");
     }
 
     hashCode(): number {

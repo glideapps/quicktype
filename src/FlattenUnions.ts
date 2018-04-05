@@ -7,6 +7,7 @@ import { Type, UnionType, IntersectionType, makeGroupsToFlatten } from "./Type";
 import { assert } from "./Support";
 import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
+import { messageAssert, ErrorMessage } from "./Messages";
 
 export function flattenUnions(
     graph: TypeGraph,
@@ -33,7 +34,7 @@ export function flattenUnions(
     const nonCanonicalUnions = allUnions.filter(u => !u.isCanonical);
     let foundIntersection = false;
     const groups = makeGroupsToFlatten(nonCanonicalUnions, members => {
-        assert(!members.isEmpty(), "We can't have an empty union");
+        messageAssert(!members.isEmpty(), ErrorMessage.NoEmptyUnions);
         if (!members.some(m => m instanceof IntersectionType)) return true;
 
         // FIXME: This is stupid.  `flattenUnions` returns true when no more union

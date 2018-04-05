@@ -8,6 +8,7 @@ export enum ErrorMessage {
     // Misc
     JSONParseError = "Syntax error in ${description} JSON ${address}: ${message}",
     ReadError = "Cannot read from file or URL ${fileOrURL}: ${message}",
+    UnicodeHighSurrogateWithoutLowSurrogate = "Malformed unicode: High surrogate not followed by low surrogate",
 
     // JSON Schema input
     ArrayIsInvalidJSONSchema = "An array is not a valid JSON Schema",
@@ -27,20 +28,33 @@ export enum ErrorMessage {
     WrongAccessorEntryArrayLength = "Accessor entry array must have the same number of entries as the ${operation}",
     SetOperationCasesIsNotArray = "${operation} cases must be an array, but is ${cases}",
     CannotFetchSchema = "Cannot fetch schema at address ${address}",
+    MoreThanOneUnionMemberName = "More than one name given for union member: ${names}",
+
+    // GraphQL input
+    NoGraphQLQueriesDefined = "GraphQL file doesn't have any queries defined.",
 
     // Driver
     UnknownSourceLanguage = "Unknown source language ${lang}",
     UnknownOutputLanguage = "Unknown output language ${lang}",
+    NeedExactlyOneSchema = "Must have exactly one schema for ${name}",
+    MoreThanOneSchemaGiven = "More than one schema given for ${name}",
     NoGraphQLQueryGiven = "Please specify at least one GraphQL query as input",
-    NoGraphQLSchemaInDir = "No GraphQL schema in ${dataDir}",
+    NoGraphQLSchemaInDir = "No GraphQL schema in ${dir}",
+    MoreThanOneGraphQLSchemaInDir = "More than one GraphQL schema in ${dir}",
+    SourceLangMustBeGraphQL = "If a GraphQL schema is specified, the source language must be GraphQL",
+    GraphQLSchemaNeeded = "Please specify a GraphQL schema with --graphql-schema or --graphql-introspect",
     InputFileDoesNotExist = "Input file ${filename} does not exist",
     CannotMixJSONWithOtherSamples = "Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript in input subdirectory ${dir}",
     CannotMixNonJSONInputs = "Cannot mix JSON Schema, GraphQL, and TypeScript in an input subdirectory ${dir}",
     UnknownDebugOption = "Unknown debug option ${option}",
+    InvalidSchemaTopLevelRefs = "Schema top level refs must be `/definitions/`, but is `${actual}`",
+    NoLanguageOrExtension = "Please specify a language (--lang) or an output file extension",
+    CLIOptionParsingFailed = "Option parsing failed: ${message}",
 
     // IR
     NoForwardDeclarableTypeInCycle = "Cannot resolve cycle because it doesn't contain types that can be forward declared",
     TypeAttributesNotPropagated = "Type attributes for ${count} types were not carried over to the new graph",
+    NoEmptyUnions = "Trying to make an empty union - do you have an impossible type in your schema?",
 
     // Rendering
     UnknownRendererOptionValue = "Unknown value ${value} for option ${name}",
@@ -56,6 +70,7 @@ type Error =
     // Misc
     | { message: ErrorMessage.JSONParseError; properties: { description: string; address: string; message: string } }
     | { message: ErrorMessage.ReadError; properties: { fileOrURL: string; message: string } }
+    | { message: ErrorMessage.UnicodeHighSurrogateWithoutLowSurrogate}
 
     // JSON Schema input
     | { message: ErrorMessage.ArrayIsInvalidJSONSchema; properties: {} }
@@ -75,20 +90,33 @@ type Error =
     | { message: ErrorMessage.WrongAccessorEntryArrayLength, properties: { operation: string } }
     | { message: ErrorMessage.SetOperationCasesIsNotArray; properties: { operation: string; cases: any } }
     | { message: ErrorMessage.CannotFetchSchema; properties: { address: string } }
+    | { message: ErrorMessage.MoreThanOneUnionMemberName; properties: { names: string[] } }
+    | { message: ErrorMessage.InvalidSchemaTopLevelRefs; properties: { actual: string[] } }
+
+    // GraphQL input
+    | { message: ErrorMessage.NoGraphQLQueriesDefined; properties: {} }
 
     // Driver
     | { message: ErrorMessage.UnknownSourceLanguage; properties: { lang: string } }
     | { message: ErrorMessage.UnknownOutputLanguage; properties: { lang: string } }
+    | { message: ErrorMessage.NeedExactlyOneSchema; properties: { name: string } }
+    | { message: ErrorMessage.MoreThanOneSchemaGiven; properties: { name: string } }
     | { message: ErrorMessage.NoGraphQLQueryGiven; properties: {} }
     | { message: ErrorMessage.NoGraphQLSchemaInDir; properties: { dir: string } }
+    | { message: ErrorMessage.MoreThanOneGraphQLSchemaInDir; properties: { dir: string } }
+    | { message: ErrorMessage.SourceLangMustBeGraphQL; properties: {} }
+    | { message: ErrorMessage.GraphQLSchemaNeeded; properties: {} }
     | { message: ErrorMessage.InputFileDoesNotExist; properties: { filename: string } }
     | { message: ErrorMessage.CannotMixJSONWithOtherSamples; properties: { dir: string } }
     | { message: ErrorMessage.CannotMixNonJSONInputs; properties: { dir: string } }
     | { message: ErrorMessage.UnknownDebugOption; properties: { option: string } }
+    | { message: ErrorMessage.NoLanguageOrExtension; properties: {} }
+    | { message: ErrorMessage.CLIOptionParsingFailed; properties: { message: string } }
 
     // IR
     | { message: ErrorMessage.NoForwardDeclarableTypeInCycle; properties: {} }
     | { message: ErrorMessage.TypeAttributesNotPropagated; properties: { count: number } }
+    | { message: ErrorMessage.NoEmptyUnions; properties: {} }
 
     // Rendering
     | { message: ErrorMessage. UnknownRendererOptionValue; properties: { value: string; name: string } }
