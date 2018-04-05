@@ -624,7 +624,7 @@ async function typeSourceForURIs(name: string, uris: string[], options: CLIOptio
 async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     const sourceURIs = await getSourceURIs(options);
     let sources: TypeSource[] = await Promise.all(
-        sourceURIs.map(([name, uris]) => typeSourceForURIs(name, uris, options))
+        sourceURIs.map(async ([name, uris]) => await typeSourceForURIs(name, uris, options))
     );
 
     const exists = options.src.filter(fs.existsSync);
@@ -855,7 +855,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
     if (quicktypeOptions === undefined) return;
 
     telemetry.event("default", "quicktype", cliOptions.lang);
-    const resultsByFilename = await telemetry.timeAsync("run", () => quicktypeMultiFile(quicktypeOptions));
+    const resultsByFilename = await telemetry.timeAsync("run", async () => await quicktypeMultiFile(quicktypeOptions));
 
     writeOutput(cliOptions, resultsByFilename);
 }

@@ -485,8 +485,8 @@ export class Run {
     };
 }
 
-export function quicktypeMultiFile(options: Partial<Options>): Promise<Map<string, SerializedRenderResult>> {
-    return new Run(options).run();
+export async function quicktypeMultiFile(options: Partial<Options>): Promise<Map<string, SerializedRenderResult>> {
+    return await new Run(options).run();
 }
 
 function offsetLocation(loc: Location, lineOffset: number): Location {
