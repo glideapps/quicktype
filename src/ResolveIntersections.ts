@@ -185,7 +185,7 @@ class IntersectionAccumulator
             if (existing !== undefined && newProperty !== undefined) {
                 const cp = new GenericClassProperty(
                     existing.typeData.add(newProperty.type),
-                    existing.isOptional || newProperty.isOptional
+                    existing.isOptional && newProperty.isOptional
                 );
                 this._objectProperties = defined(this._objectProperties).set(name, cp);
             } else if (existing !== undefined && maybeObject.additionalProperties !== undefined) {
