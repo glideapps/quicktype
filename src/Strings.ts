@@ -474,3 +474,8 @@ export function combineWords(
 
     return styledWords.join(separator);
 }
+
+export function addPrefixIfNecessary(prefix: string, name: string): string {
+    // Take care not to doubly-prefix type names
+    return name.startsWith(prefix) ? name : prefix + name;
+}
