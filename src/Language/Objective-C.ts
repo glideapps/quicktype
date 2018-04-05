@@ -1,7 +1,7 @@
 "use strict";
 
 import * as lo from "lodash";
-import { includes, startsWith, repeat } from "lodash";
+import { includes, repeat } from "lodash";
 
 import { TargetLanguage } from "../TargetLanguage";
 import {
@@ -26,7 +26,8 @@ import {
     allLowerWordStyle,
     camelCase,
     utf16LegalizeCharacters,
-    stringEscape
+    stringEscape,
+    addPrefixIfNecessary
 } from "../Strings";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { StringOption, BooleanOption, EnumOption, Option } from "../RendererOptions";
@@ -92,8 +93,7 @@ function typeNameStyle(prefix: string, original: string): string {
         "",
         isStartCharacter
     );
-    // Take care not to doubly-prefix type names
-    return startsWith(result, prefix) ? result : prefix + result;
+    return addPrefixIfNecessary(prefix, result);
 }
 
 function propertyNameStyle(original: string, isBool: boolean = false): string {

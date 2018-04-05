@@ -16,7 +16,7 @@ import {
 } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { Name, Namer, funPrefixNamer } from "../Naming";
-import { BooleanOption, EnumOption, Option } from "../RendererOptions";
+import { BooleanOption, EnumOption, Option, StringOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
@@ -34,7 +34,8 @@ import {
     firstUpperWordStyle,
     allLowerWordStyle,
     allUpperWordStyle,
-    camelCase
+    camelCase,
+    addPrefixIfNecessary
 } from "../Strings";
 import { intercalate } from "../Support";
 import { List } from "immutable";
@@ -47,6 +48,13 @@ export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
     private readonly _convenienceInitializers = new BooleanOption("initializers", "Convenience initializers", true);
     private readonly _alamofireHandlers = new BooleanOption("alamofire", "Alamofire extensions", false);
+    private readonly _namedTypePrefix = new StringOption(
+        "type-prefix",
+        "Prefix for type names",
+        "PREFIX",
+        "",
+        "secondary"
+    );
 
     private readonly _classOption = new EnumOption("struct-or-class", "Structs or classes", [
         ["struct", false],
@@ -89,7 +97,8 @@ export default class SwiftTargetLanguage extends TargetLanguage {
             this._versionOption,
             this._convenienceInitializers,
             this._accessLevelOption,
-            this._alamofireHandlers
+            this._alamofireHandlers,
+            this._namedTypePrefix
         ];
     }
 
@@ -220,9 +229,9 @@ function isStartCharacter(codePoint: number): boolean {
 
 const legalizeName = legalizeCharacters(isPartCharacter);
 
-function swiftNameStyle(isUpper: boolean, original: string): string {
+function swiftNameStyle(prefix: string, isUpper: boolean, original: string): string {
     const words = splitIntoWords(original);
-    return combineWords(
+    const combined = combineWords(
         words,
         legalizeName,
         isUpper ? firstUpperWordStyle : allLowerWordStyle,
@@ -232,6 +241,7 @@ function swiftNameStyle(isUpper: boolean, original: string): string {
         "",
         isStartCharacter
     );
+    return addPrefixIfNecessary(prefix, combined);
 }
 
 function unicodeEscape(codePoint: number): string {
@@ -240,8 +250,7 @@ function unicodeEscape(codePoint: number): string {
 
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
 
-const upperNamingFunction = funPrefixNamer("upper", s => swiftNameStyle(true, s));
-const lowerNamingFunction = funPrefixNamer("lower", s => swiftNameStyle(false, s));
+const lowerNamingFunction = funPrefixNamer("lower", s => swiftNameStyle("", false, s));
 
 export class SwiftRenderer extends ConvenienceRenderer {
     private _needAny: boolean = false;
@@ -257,7 +266,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
         private readonly _version: Version,
         private readonly _convenienceInitializers: boolean,
         private readonly _accessLevel: string,
-        private readonly _alamofire: boolean
+        private readonly _alamofire: boolean,
+        private readonly _namedTypePrefix: string
     ) {
         super(targetLanguage, graph, leadingComments);
     }
@@ -282,7 +292,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return upperNamingFunction;
+        return funPrefixNamer("upper", s => swiftNameStyle(this._namedTypePrefix, true, s));
     }
 
     protected namerForClassProperty(): Namer {
