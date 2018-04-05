@@ -4,7 +4,7 @@ import * as stream from "stream";
 
 import { hash } from "immutable";
 
-import { defined, hashCodeInit, addHashCode, panic } from "./Support";
+import { defined, hashCodeInit, addHashCode, panic, assert } from "./Support";
 import { isDate, isTime, isDateTime } from "./DateTime";
 
 const Combo = require("stream-json/Combo");
@@ -35,9 +35,7 @@ function makeValue(t: Tag, index: number): Value {
 }
 
 function getIndex(v: Value, tag: Tag): number {
-    if (valueTag(v) !== tag) {
-        throw "Trying to get index for value with invalid tag";
-    }
+    assert(valueTag(v) === tag, "Trying to get index for value with invalid tag");
     return v >> TAG_BITS;
 }
 
@@ -121,9 +119,7 @@ export class CompressedJSON {
         const value = makeValue(Tag.InternedString, this._strings.length);
         this._strings.push(s);
         this._stringValues[s] = value;
-        if (typeof value !== "number") {
-            throw `Interned string value is not a number: ${value}`;
-        }
+        assert(typeof value === "number", `Interned string value is not a number: ${value}`);
         return value;
     };
 
@@ -140,35 +136,32 @@ export class CompressedJSON {
     };
 
     private commitValue = (value: Value): void => {
-        if (typeof value !== "number") {
-            throw `CompressedJSON value is not a number: ${value}`;
-        }
+        assert(typeof value === "number", `CompressedJSON value is not a number: ${value}`);
         if (this._ctx === undefined) {
-            if (this._rootValue !== undefined) {
-                throw "Committing value but nowhere to commit to - root value still there.";
-            }
+            assert(
+                this._rootValue === undefined,
+                "Committing value but nowhere to commit to - root value still there."
+            );
             this._rootValue = value;
         } else if (this._ctx.currentObject !== undefined) {
             if (this._ctx.currentKey === undefined || this._ctx.currentString !== undefined) {
-                throw "Must have key and can't have string when committing";
+                return panic("Must have key and can't have string when committing");
             }
             this._ctx.currentObject.push(this.internString(this._ctx.currentKey), value);
             this._ctx.currentKey = undefined;
         } else if (this._ctx.currentArray !== undefined) {
             this._ctx.currentArray.push(value);
         } else {
-            throw "Committing value but nowhere to commit to";
+            return panic("Committing value but nowhere to commit to");
         }
     };
 
     private finish = (): Value => {
         const value = this._rootValue;
         if (value === undefined) {
-            throw "Finished without root document";
+            return panic("Finished without root document");
         }
-        if (this._ctx !== undefined || this._contextStack.length > 0) {
-            throw "Finished with contexts present";
-        }
+        assert(this._ctx === undefined && this._contextStack.length === 0, "Finished with contexts present");
         this._rootValue = undefined;
         return value;
     };
@@ -187,9 +180,7 @@ export class CompressedJSON {
     };
 
     private popContext = (): void => {
-        if (this._ctx === undefined) {
-            throw "Popping context when there isn't one";
-        }
+        assert(this._ctx !== undefined, "Popping context when there isn't one");
         this._ctx = this._contextStack.pop();
     };
 
@@ -199,10 +190,10 @@ export class CompressedJSON {
     };
 
     private handleEndObject = (): void => {
-        if (defined(this._ctx).currentObject === undefined) {
-            throw "Object ended but not started";
+        const obj = defined(this._ctx).currentObject;
+        if (obj === undefined) {
+            return panic("Object ended but not started");
         }
-        const obj = defined(defined(this._ctx).currentObject);
         this.popContext();
         this.commitValue(this.internObject(obj));
     };
@@ -213,10 +204,10 @@ export class CompressedJSON {
     };
 
     private handleEndArray = (): void => {
-        if (defined(this._ctx).currentArray === undefined) {
-            throw "Array ended but not started";
+        const arr = defined(this._ctx).currentArray;
+        if (arr === undefined) {
+            return panic("Array ended but not started");
         }
-        const arr = defined(defined(this._ctx).currentArray);
         this.popContext();
         this.commitValue(this.internArray(arr));
     };
@@ -226,11 +217,13 @@ export class CompressedJSON {
     };
 
     private handleEndKey = (): void => {
-        if (defined(this._ctx).currentString === undefined) {
-            throw "Key ended but no string";
+        const ctx = defined(this._ctx);
+        const str = ctx.currentString;
+        if (str === undefined) {
+            return panic("Key ended but no string");
         }
-        defined(this._ctx).currentKey = defined(this._ctx).currentString;
-        defined(this._ctx).currentString = undefined;
+        ctx.currentKey = str;
+        ctx.currentString = undefined;
     };
 
     private handleStartString = (): void => {
@@ -239,17 +232,18 @@ export class CompressedJSON {
     };
 
     private handleStringChunk = (s: string): void => {
-        if (defined(this._ctx).currentString === undefined) {
-            throw "String chunk but no string";
+        const ctx = defined(this._ctx);
+        if (ctx.currentString === undefined) {
+            return panic("String chunk but no string");
         }
-        defined(this._ctx).currentString += s;
+        ctx.currentString += s;
     };
 
     private handleEndString = (): void => {
-        if (defined(this._ctx).currentString === undefined) {
-            throw "String ended but not started";
+        const str = defined(this._ctx).currentString;
+        if (str === undefined) {
+            return panic("String ended but not started");
         }
-        const str = defined(defined(this._ctx).currentString);
         this.popContext();
         let value: Value | undefined = undefined;
         if (str.length <= 64) {
