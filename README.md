@@ -107,7 +107,7 @@ quicktype -s schema schema.json -o src/nodejs/Models.ts
 
 ### Generating code from TypeScript (Experimental)
 
-You can achieve a similar result by writing or generating a [TypeScript](http://www.typescriptlang.org/) file, then quicktyping it. TypeScript is a typed superset of JavaScript with simple, succint syntax for defining types:
+You can achieve a similar result by writing or generating a [TypeScript](http://www.typescriptlang.org/) file, then quicktyping it. TypeScript is a typed superset of JavaScript with simple, succinct syntax for defining types:
 
 ```typescript
 interface Person {
