@@ -6,7 +6,7 @@ import { TargetLanguage } from "../TargetLanguage";
 import { Type, UnionType, ClassType, matchTypeExhaustive, EnumType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { Namer, funPrefixNamer } from "../Naming";
+import { Namer, funPrefixNamer, Name } from "../Naming";
 import { legalizeCharacters, splitIntoWords, combineWords, firstUpperWordStyle, allUpperWordStyle } from "../Strings";
 import { defined, assert, panic } from "../Support";
 import { StringTypeMapping } from "../TypeBuilder";
@@ -65,7 +65,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected namerForClassProperty(): null {
+    protected namerForObjectProperty(): null {
         return null;
     }
 
@@ -165,7 +165,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         // FIXME: Find a better way to do multiple top-levels.  Maybe multiple files?
         const schema = this.makeOneOf(this.topLevels);
         const definitions: { [name: string]: Schema } = {};
-        this.forEachClass("none", (c, name) => {
+        this.forEachObject("none", (c: ClassType, name: Name) => {
             const title = defined(this.names.get(name));
             definitions[title] = this.definitionForClass(c, title);
         });

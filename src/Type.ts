@@ -720,21 +720,23 @@ function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
 // FIXME: Give this an appropriate name, considering that we don't distinguish
 // between named and non-named types anymore.
 export function isNamedType(t: Type): boolean {
-    return t instanceof ClassType || t instanceof EnumType || t instanceof UnionType;
+    return ["class", "union", "enum", "object"].indexOf(t.kind) >= 0;
 }
 
 export type SeparatedNamedTypes = {
-    classes: OrderedSet<ClassType>;
+    objects: OrderedSet<ObjectType>;
     enums: OrderedSet<EnumType>;
     unions: OrderedSet<UnionType>;
 };
 
 export function separateNamedTypes(types: Collection<any, Type>): SeparatedNamedTypes {
-    const classes = types.filter((t: Type) => t instanceof ClassType).toOrderedSet() as OrderedSet<ClassType>;
+    const objects = types.filter((t: Type) => t.kind === "object" || t.kind === "class").toOrderedSet() as OrderedSet<
+        ObjectType
+    >;
     const enums = types.filter((t: Type) => t instanceof EnumType).toOrderedSet() as OrderedSet<EnumType>;
     const unions = types.filter((t: Type) => t instanceof UnionType).toOrderedSet() as OrderedSet<UnionType>;
 
-    return { classes, enums, unions };
+    return { objects, enums, unions };
 }
 
 export function directlyReachableSingleNamedType(type: Type): Type | undefined {
@@ -850,14 +852,16 @@ export function matchCompoundType(
     arrayType: (arrayType: ArrayType) => void,
     classType: (classType: ClassType) => void,
     mapType: (mapType: MapType) => void,
+    objectType: (objectType: ObjectType) => void,
     unionType: (unionType: UnionType) => void
 ): void {
     function ignore<T extends Type>(_: T): void {
         return;
     }
 
-    return matchType(
+    return matchTypeExhaustive(
         t,
+        ignore,
         ignore,
         ignore,
         ignore,
@@ -867,8 +871,11 @@ export function matchCompoundType(
         arrayType,
         classType,
         mapType,
+        objectType,
         ignore,
         unionType,
-        { dateType: ignore, timeType: ignore, dateTimeType: ignore }
+        ignore,
+        ignore,
+        ignore
     );
 }

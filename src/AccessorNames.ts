@@ -4,7 +4,7 @@ import { Map, Set } from "immutable";
 
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { checkStringMap, isStringMap, defined } from "./Support";
-import { EnumType, ClassType, UnionType, Type } from "./Type";
+import { EnumType, UnionType, Type, ObjectType } from "./Type";
 import { messageAssert, ErrorMessage } from "./Messages";
 
 export type AccessorEntry = string | { [language: string]: string };
@@ -48,9 +48,9 @@ function lookupKey(accessors: AccessorNames, key: string, language: string): [st
     return getFromEntry(accessors[key], language);
 }
 
-export function classPropertyNames(c: ClassType, language: string): Map<string, [string, boolean] | undefined> {
-    const accessors = accessorNamesTypeAttributeKind.tryGetInAttributes(c.getAttributes());
-    const map = c.properties;
+export function objectPropertyNames(o: ObjectType, language: string): Map<string, [string, boolean] | undefined> {
+    const accessors = accessorNamesTypeAttributeKind.tryGetInAttributes(o.getAttributes());
+    const map = o.properties;
     if (accessors === undefined) return map.map(_ => undefined);
     return map.map((_cp, n) => lookupKey(accessors, n, language));
 }

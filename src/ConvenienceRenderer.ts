@@ -14,11 +14,12 @@ import {
     TypeKind,
     isNamedType,
     ClassProperty,
-    MapType
+    MapType,
+    ObjectType
 } from "./Type";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
-import { defined, panic, nonNull, StringMap } from "./Support";
+import { defined, panic, nonNull, StringMap, assert } from "./Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 import { trimEnd } from "lodash";
@@ -29,7 +30,7 @@ import {
     descriptionTypeAttributeKind,
     propertyDescriptionsTypeAttributeKind
 } from "./TypeAttributes";
-import { enumCaseNames, classPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
+import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -94,7 +95,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     private _declarationIR: DeclarationIR | undefined;
     private _namedTypes: List<Type> | undefined;
-    private _namedClasses: OrderedSet<ClassType> | undefined;
+    private _namedObjects: OrderedSet<ObjectType> | undefined;
     private _namedEnums: OrderedSet<EnumType> | undefined;
     private _namedUnions: OrderedSet<UnionType> | undefined;
     private _haveUnions: boolean | undefined;
@@ -112,7 +113,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [];
     }
 
-    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_o: ObjectType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: false };
     }
 
@@ -133,7 +134,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected abstract makeNamedTypeNamer(): Namer;
-    protected abstract namerForClassProperty(c: ClassType, p: ClassProperty): Namer | null;
+    protected abstract namerForObjectProperty(o: ObjectType, p: ClassProperty): Namer | null;
     protected abstract makeUnionMemberNamer(): Namer | null;
     protected abstract makeEnumCaseNamer(): Namer | null;
     protected abstract emitSourceStructure(givenOutputFilename: string): void;
@@ -206,14 +207,14 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._globalForbiddenNamespace = keywordNamespace("forbidden", this.forbiddenNamesForGlobalNamespace());
         this._otherForbiddenNamespaces = Map();
         this._globalNamespace = new Namespace("global", undefined, Set([this._globalForbiddenNamespace]), Set());
-        const { classes, enums, unions } = this.typeGraph.allNamedTypesSeparated();
+        const { objects, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = unions.filter((u: UnionType) => this.unionNeedsName(u)).toOrderedSet();
         this.topLevels.forEach((t, name) => {
             this.nameStoreView.setForTopLevel(name, this.addNameForTopLevel(t, name));
         });
-        classes.forEach((c: ClassType) => {
-            const name = this.addNameForNamedType(c);
-            this.addPropertyNames(c, name);
+        objects.forEach((o: ObjectType) => {
+            const name = this.addNameForNamedType(o);
+            this.addPropertyNames(o, name);
         });
         enums.forEach((e: EnumType) => {
             const name = this.addNameForNamedType(e);
@@ -304,13 +305,13 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected makeNameForProperty(
-        c: ClassType,
+        o: ObjectType,
         _className: Name,
         p: ClassProperty,
         jsonName: string,
         assignedName: string | undefined
     ): Name | undefined {
-        const namer = this.namerForClassProperty(c, p);
+        const namer = this.namerForObjectProperty(o, p);
         if (namer === null) return undefined;
         // FIXME: This alternative should really depend on what the
         // actual name of the class ends up being.  We can do this
@@ -321,14 +322,14 @@ export abstract class ConvenienceRenderer extends Renderer {
         // the alternative would also be the same, i.e. useless.  But
         // maybe we'll need global properties for some weird language at
         // some point.
-        const alternative = `${c.getCombinedName()}_${jsonName}`;
+        const alternative = `${o.getCombinedName()}_${jsonName}`;
         const order = assignedName === undefined ? classPropertyNameOrder : assignedClassPropertyNameOrder;
         const names = assignedName === undefined ? [jsonName, alternative] : [assignedName];
         return new SimpleName(OrderedSet(names), namer, order);
     }
 
     protected makePropertyDependencyNames(
-        _c: ClassType,
+        _o: ObjectType,
         _className: Name,
         _p: ClassProperty,
         _jsonName: string,
@@ -337,36 +338,36 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [];
     }
 
-    private addPropertyNames = (c: ClassType, className: Name): void => {
+    private addPropertyNames = (o: ObjectType, className: Name): void => {
         const { forbiddenNames, forbiddenNamespaces } = this.processForbiddenWordsInfo(
-            this.forbiddenForClassProperties(c, className),
+            this.forbiddenForObjectProperties(o, className),
             "forbidden-for-properties"
         );
 
         let ns: Namespace | undefined;
 
-        const accessorNames = classPropertyNames(c, this.targetLanguage.name);
-        const names = c.sortedProperties
+        const accessorNames = objectPropertyNames(o, this.targetLanguage.name);
+        const names = o.sortedProperties
             .map((p, jsonName) => {
                 const [assignedName, isFixed] = getAccessorName(accessorNames, jsonName);
                 let name: Name | undefined;
                 if (isFixed) {
                     name = new FixedName(defined(assignedName));
                 } else {
-                    name = this.makeNameForProperty(c, className, p, jsonName, assignedName);
+                    name = this.makeNameForProperty(o, className, p, jsonName, assignedName);
                 }
                 if (name === undefined) return undefined;
                 if (ns === undefined) {
-                    ns = new Namespace(c.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
+                    ns = new Namespace(o.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
                 }
                 ns.add(name);
-                for (const depName of this.makePropertyDependencyNames(c, className, p, jsonName, name)) {
+                for (const depName of this.makePropertyDependencyNames(o, className, p, jsonName, name)) {
                     ns.add(depName);
                 }
                 return name;
             })
             .filter(v => v !== undefined) as OrderedMap<string, SimpleName>;
-        defined(this._propertyNamesStoreView).set(c, names);
+        defined(this._propertyNamesStoreView).set(o, names);
     };
 
     protected makeNameForUnionMember(u: UnionType, unionName: Name, t: Type): Name {
@@ -524,8 +525,12 @@ export abstract class ConvenienceRenderer extends Renderer {
                 arrayType => typeNameForUnionMember(arrayType.items) + "_array",
                 classType => lookup(this.nameForNamedType(classType)),
                 mapType => typeNameForUnionMember(mapType.values) + "_map",
-                _objectType => {
-                    return panic("Object type should have been replaced in `replaceObjectType`");
+                objectType => {
+                    assert(
+                        this.targetLanguage.supportsFullObjectType,
+                        "Object type should have been replaced in `replaceObjectType`"
+                    );
+                    return lookup(this.nameForNamedType(objectType));
                 },
                 _enumType => "enum",
                 _unionType => "union",
@@ -658,9 +663,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         });
     }
 
-    protected forEachClass = (blankLocations: BlankLineLocations, f: (c: ClassType, className: Name) => void): void => {
-        this.forEachSpecificNamedType(blankLocations, defined(this._namedClasses), f);
-    };
+    protected forEachObject(
+        blankLocations: BlankLineLocations,
+        f: ((c: ClassType, className: Name) => void) | ((o: ObjectType, objectName: Name) => void)
+    ): void {
+        // FIXME: This is ugly.
+        this.forEachSpecificNamedType<ObjectType>(blankLocations, defined(this._namedObjects), f as any);
+    }
 
     protected forEachEnum = (blankLocations: BlankLineLocations, f: (u: EnumType, enumName: Name) => void): void => {
         this.forEachSpecificNamedType(blankLocations, this.enums, f);
@@ -687,13 +696,15 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected forEachNamedType = (
         blankLocations: BlankLineLocations,
-        classFunc: (c: ClassType, className: Name) => void,
+        objectFunc: ((c: ClassType, className: Name) => void) | ((o: ObjectType, objectName: Name) => void),
         enumFunc: (e: EnumType, enumName: Name) => void,
         unionFunc: (u: UnionType, unionName: Name) => void
     ): void => {
         this.forEachWithBlankLines(defined(this._namedTypes), blankLocations, (t: Type) => {
-            if (t instanceof ClassType) {
-                this.callForNamedType(t, classFunc);
+            if (t instanceof ObjectType) {
+                // FIXME: This is ugly.  We can't runtime check that the function
+                // takes full object types if we have them.
+                this.callForNamedType<ClassType>(t as any, objectFunc);
             } else if (t instanceof EnumType) {
                 this.callForNamedType(t, enumFunc);
             } else if (t instanceof UnionType) {
@@ -797,8 +808,8 @@ export abstract class ConvenienceRenderer extends Renderer {
             .filter(t => t instanceof ClassType)
             .some(c => (c as ClassType).properties.some(p => p.isOptional));
         this._namedTypes = this._declarationIR.declarations.filter(d => d.kind === "define").map(d => d.type);
-        const { classes, enums, unions } = separateNamedTypes(this._namedTypes);
-        this._namedClasses = classes;
+        const { objects, enums, unions } = separateNamedTypes(this._namedTypes);
+        this._namedObjects = objects;
         this._namedEnums = enums;
         this._namedUnions = unions;
     }

@@ -94,8 +94,8 @@ function tryAddToClique(c: ClassType, clique: Clique): boolean {
 export function findSimilarityCliques(graph: TypeGraph, includeFixedClasses: boolean): ClassType[][] {
     let unprocessedClasses = graph
         .allNamedTypesSeparated()
-        .classes.filter(c => includeFixedClasses || !c.isFixed)
-        .toArray();
+        .objects.filter(o => o instanceof ClassType && (includeFixedClasses || !o.isFixed))
+        .toArray() as ClassType[];
     const cliques: ClassType[][] = [];
 
     // FIXME: Don't build cliques one by one.  Instead have a list of

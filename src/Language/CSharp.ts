@@ -184,7 +184,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         return ["QuickType", "Type", "System", "Console", "Exception"];
     }
 
-    protected forbiddenForClassProperties(_: ClassType, classNamed: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_: ClassType, classNamed: Name): ForbiddenWordsInfo {
         return {
             names: [
                 classNamed,
@@ -208,7 +208,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected namerForClassProperty(): Namer {
+    protected namerForObjectProperty(): Namer {
         return namingFunction;
     }
 
@@ -449,7 +449,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     private emitTypesAndSupport(): void {
-        this.forEachClass("leading-and-interposing", (c, name) => this.emitClassDefinition(c, name));
+        this.forEachObject("leading-and-interposing", (c: ClassType, name: Name) => this.emitClassDefinition(c, name));
         this.forEachEnum("leading-and-interposing", (e, name) => this.emitEnumDefinition(e, name));
         this.forEachUnion("leading-and-interposing", (u, name) => this.emitUnionDefinition(u, name));
         this.emitRequiredHelpers();
@@ -544,8 +544,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         return super.forbiddenNamesForGlobalNamespace().concat(forbidden);
     }
 
-    protected forbiddenForClassProperties(c: ClassType, className: Name): ForbiddenWordsInfo {
-        const result = super.forbiddenForClassProperties(c, className);
+    protected forbiddenForObjectProperties(c: ClassType, className: Name): ForbiddenWordsInfo {
+        const result = super.forbiddenForObjectProperties(c, className);
         result.names = result.names.concat(["ToJson", "FromJson", "Required"]);
         return result;
     }

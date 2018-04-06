@@ -108,4 +108,8 @@ export abstract class TargetLanguage {
     get supportsUnionsWithBothNumberTypes(): boolean {
         return false;
     }
+
+    get supportsFullObjectType(): boolean {
+        return false;
+    }
 }

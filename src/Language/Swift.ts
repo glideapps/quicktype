@@ -279,7 +279,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForClassProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
         return { names: ["fromURL", "json"], includeGlobalForbidden: true };
     }
 
@@ -295,7 +295,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         return funPrefixNamer("upper", s => swiftNameStyle(this._namedTypePrefix, true, s));
     }
 
-    protected namerForClassProperty(): Namer {
+    protected namerForObjectProperty(): Namer {
         return lowerNamingFunction;
     }
 

@@ -198,7 +198,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -206,7 +206,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         return typeNamingFunction;
     }
 
-    protected namerForClassProperty(): Namer {
+    protected namerForObjectProperty(): Namer {
         return propertyNamingFunction;
     }
 
@@ -663,7 +663,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         }
         this.forEachNamedType(
             "leading-and-interposing",
-            (c, n) => this.emitClassDefinition(c, n),
+            (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
             (e, n) => this.emitEnumDefinition(e, n),
             (u, n) => this.emitUnionDefinition(u, n)
         );

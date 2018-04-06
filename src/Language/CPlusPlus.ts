@@ -278,7 +278,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -290,7 +290,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return this._typeNamingFunction;
     }
 
-    protected namerForClassProperty(): Namer {
+    protected namerForObjectProperty(): Namer {
         return this._memberNamingFunction;
     }
 
@@ -797,7 +797,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
                 if (this.haveUnions) {
                     this.emitOptionalHelpers();
                 }
-                this.forEachClass("leading-and-interposing", this.emitClassFunctions);
+                this.forEachObject("leading-and-interposing", this.emitClassFunctions);
                 this.forEachEnum("leading-and-interposing", this.emitEnumFunctions);
                 if (this.haveUnions) {
                     this.ensureBlankLine();

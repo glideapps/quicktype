@@ -110,7 +110,7 @@ export class GoRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
-    protected namerForClassProperty(): Namer {
+    protected namerForObjectProperty(): Namer {
         return namingFunction;
     }
 
@@ -350,7 +350,7 @@ export class GoRenderer extends ConvenienceRenderer {
             this.emitTopLevel,
             t => !this._justTypes || this.namedTypeToNameForTopLevel(t) === undefined
         );
-        this.forEachClass("leading-and-interposing", this.emitClass);
+        this.forEachObject("leading-and-interposing", this.emitClass);
         this.forEachEnum("leading-and-interposing", this.emitEnum);
         this.forEachUnion("leading-and-interposing", this.emitUnion);
 
