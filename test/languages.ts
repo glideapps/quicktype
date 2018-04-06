@@ -54,7 +54,12 @@ function makeCSharpLanguage(strictOptionalVsNullable: boolean): Language {
       "top-level-enum.schema" // The code we generate for top-level enums is incompatible with the driver
     ],
     rendererOptions: {},
-    quickTestRendererOptions: [{ "array-type": "list" }, { "csharp-version": "5" }, { density: "dense" }],
+    quickTestRendererOptions: [
+      { "array-type": "list" },
+      { "csharp-version": "5" },
+      { density: "dense" },
+      { "number-type": "decimal" }
+    ],
     sourceFiles: ["src/Language/CSharp.ts"]
   };
   if (strictOptionalVsNullable) {

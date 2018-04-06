@@ -75,6 +75,13 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         "Fail if required properties are missing",
         false
     );
+    private readonly _useDecimalOption = new EnumOption(
+        "number-type",
+        "Type to use for numbers",
+        [["double", false], ["decimal", true]],
+        "double",
+        "secondary"
+    );
 
     constructor() {
         super("C#", ["cs", "csharp"], "cs");
@@ -86,6 +93,7 @@ export default class CSharpTargetLanguage extends TargetLanguage {
             this._versionOption,
             this._denseOption,
             this._listOption,
+            this._useDecimalOption,
             this._featuresOption,
             this._checkRequiredOption
         ];
@@ -166,7 +174,8 @@ export class CSharpRenderer extends ConvenienceRenderer {
         protected readonly namespaceName: string,
         private readonly _version: Version,
         protected readonly dense: boolean,
-        private readonly _useList: boolean
+        private readonly _useList: boolean,
+        private readonly _useDecimal: boolean
     ) {
         super(targetLanguage, graph, leadingComments);
     }
@@ -235,7 +244,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "object"),
             _boolType => "bool",
             _integerType => "long",
-            _doubleType => "double",
+            _doubleType => (this._useDecimal ? "decimal" : "double"),
             _stringType => "string",
             arrayType => {
                 const itemsType = this.csType(arrayType.items, withIssues);
@@ -506,10 +515,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         version: Version,
         dense: boolean,
         useList: boolean,
+        useDecimal: boolean,
         outputFeatures: OutputFeatures,
         private readonly _checkRequiredProperties: boolean
     ) {
-        super(targetLanguage, graph, leadingComments, namespaceName, version, dense, useList);
+        super(targetLanguage, graph, leadingComments, namespaceName, version, dense, useList, useDecimal);
         this._needHelpers = outputFeatures.helpers;
         this._needAttributes = outputFeatures.attributes;
     }
