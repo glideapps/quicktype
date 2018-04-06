@@ -282,12 +282,10 @@ export class Run {
             } while (!intersectionsDone || !unionsDone);
         }
 
-        if (!targetLanguage.supportsFullObjectType) {
-            graph = replaceObjectType(graph, stringTypeMapping, conflateNumbers);
-            do {
-                [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false);
-            } while (!unionsDone);
-        }
+        graph = replaceObjectType(graph, stringTypeMapping, conflateNumbers, targetLanguage.supportsFullObjectType);
+        do {
+            [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false);
+        } while (!unionsDone);
 
         if (this._options.findSimilarClassesSchemaURI !== undefined) {
             return graph;

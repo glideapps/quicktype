@@ -3,7 +3,7 @@
 import { Collection } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, UnionType, ClassType, matchTypeExhaustive, EnumType } from "../Type";
+import { Type, UnionType, matchTypeExhaustive, EnumType, ObjectType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer, Name } from "../Naming";
@@ -27,6 +27,10 @@ export default class JSONSchemaTargetLanguage extends TargetLanguage {
     }
 
     get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
+    get supportsFullObjectType(): boolean {
         return true;
     }
 
@@ -108,10 +112,8 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             _stringType => ({ type: "string" }),
             arrayType => ({ type: "array", items: this.schemaForType(arrayType.items) }),
             classType => this.makeRef(classType),
-            mapType => ({ type: "object", additionalProperties: this.schemaForType(mapType.values) }),
-            _objectType => {
-                return panic("FIXME: support object types");
-            },
+            mapType => this.definitionForObject(mapType, undefined),
+            objectType => this.makeRef(objectType),
             enumType => this.makeRef(enumType),
             unionType => {
                 if (this.unionNeedsName(unionType)) {
@@ -131,20 +133,31 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         return schema;
     };
 
-    private definitionForClass(c: ClassType, title: string): Schema {
-        const properties: Schema = {};
-        const required: string[] = [];
-        c.properties.forEach((p, name) => {
-            properties[name] = this.schemaForType(p.type);
-            if (!p.isOptional) {
-                required.push(name);
-            }
-        });
+    private definitionForObject(o: ObjectType, title: string | undefined): Schema {
+        let properties: Schema | undefined;
+        let required: string[] | undefined;
+        if (o.properties.isEmpty()) {
+            properties = undefined;
+            required = undefined;
+        } else {
+            const props: Schema = {};
+            const req: string[] = [];
+            o.properties.forEach((p, name) => {
+                props[name] = this.schemaForType(p.type);
+                if (!p.isOptional) {
+                    req.push(name);
+                }
+            });
+            properties = props;
+            required = req.sort();
+        }
+        const additionalProperties =
+            o.additionalProperties !== undefined ? this.schemaForType(o.additionalProperties) : false;
         return {
             type: "object",
-            additionalProperties: false,
+            additionalProperties,
             properties,
-            required: required.sort(),
+            required,
             title
         };
     }
@@ -165,9 +178,9 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         // FIXME: Find a better way to do multiple top-levels.  Maybe multiple files?
         const schema = this.makeOneOf(this.topLevels);
         const definitions: { [name: string]: Schema } = {};
-        this.forEachObject("none", (c: ClassType, name: Name) => {
+        this.forEachObject("none", (o: ObjectType, name: Name) => {
             const title = defined(this.names.get(name));
-            definitions[title] = this.definitionForClass(c, title);
+            definitions[title] = this.definitionForObject(o, title);
         });
         this.forEachUnion("none", (u, name) => {
             if (!this.unionNeedsName(u)) return;

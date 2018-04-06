@@ -11,7 +11,8 @@ import { emptyTypeAttributes } from "./TypeAttributes";
 export function replaceObjectType(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
-    _conflateNumbers: boolean
+    _conflateNumbers: boolean,
+    leaveFullObjects: boolean
 ): TypeGraph {
     function replace(
         setOfOneType: Set<ObjectType>,
@@ -80,6 +81,9 @@ export function replaceObjectType(
     }
 
     const allObjectTypes = graph.allTypesUnordered().filter(t => t.kind === "object") as Set<ObjectType>;
-    const groups = allObjectTypes.toArray().map(t => [t]);
+    const objectTypesToReplace = leaveFullObjects
+        ? allObjectTypes.filter(o => o.properties.isEmpty() || o.additionalProperties === undefined)
+        : allObjectTypes;
+    const groups = objectTypesToReplace.toArray().map(t => [t]);
     return graph.rewrite("replace object type", stringTypeMapping, false, groups, replace);
 }
