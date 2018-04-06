@@ -432,9 +432,20 @@ export const TypeScriptLanguage: Language = {
     // to the root test/tsconfig.json
     return `TS_NODE_PROJECT= ts-node main.ts \"${sample}\"`;
   },
-  // FIXME: enable once TypeScript supports unions
-  diffViaSchema: false,
-  skipDiffViaSchema: [],
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "bug427.json",
+    "kitchen-sink.json",
+    "00c36.json",
+    "2df80.json",
+    "34702.json",
+    "76ae1.json",
+    "7fbfb.json",
+    "c8c7e.json",
+    "cda6c.json",
+    "e53b5.json",
+    "e8b04.json"
+  ],
   allowMissingNull: false,
   output: "TopLevel.ts",
   topLevel: "TopLevel",
