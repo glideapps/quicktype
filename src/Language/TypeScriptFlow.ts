@@ -20,6 +20,10 @@ export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetL
         return [this._justTypes, this._declareUnions, this.runtimeTypecheck];
     }
 
+    get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
     protected abstract get rendererClass(): new (
         targetLanguage: TargetLanguage,
         graph: TypeGraph,
@@ -99,14 +103,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     protected emitClassBlockBody(c: ClassType): void {
         this.emitPropertyTable(c, (name, _jsonName, p) => {
             const t = p.type;
-            let nullable = t instanceof UnionType ? nullableFromUnion(t) : null;
-            if (p.isOptional && nullable === null) {
-                nullable = t;
-            }
-            return [
-                [name, nullable !== null ? "?" : "", ": "],
-                [this.sourceFor(nullable !== null ? nullable : t).source, ";"]
-            ];
+            return [[name, p.isOptional ? "?" : "", ": "], [this.sourceFor(t).source, ";"]];
         });
     }
 
