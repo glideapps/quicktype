@@ -22,56 +22,45 @@ export interface Language {
   sourceFiles?: string[];
 }
 
-function makeCSharpLanguage(strictOptionalVsNullable: boolean): Language {
-  const lang: Language = {
-    name: "csharp",
-    base: "test/fixtures/csharp",
-    // https://github.com/dotnet/cli/issues/1582
-    setupCommand: "dotnet restore --no-cache",
-    runCommand(sample: string) {
-      return `dotnet run "${sample}"`;
-    },
-    diffViaSchema: true,
-    skipDiffViaSchema: [
-      "keywords.json",
-      "00c36.json",
-      "0a91a.json",
-      "34702.json",
-      "2df80.json",
-      "7fbfb.json",
-      "cda6c.json",
-      "c8c7e.json",
-      "e53b5.json"
-    ],
-    allowMissingNull: false,
-    output: "QuickType.cs",
-    topLevel: "TopLevel",
-    skipJSON: [
-      "31189.json" // JSON.NET doesn't accept year 0000 as 1BC, though it should
-    ],
-    skipMiscJSON: false,
-    skipSchema: [
-      "top-level-enum.schema" // The code we generate for top-level enums is incompatible with the driver
-    ],
-    rendererOptions: {},
-    quickTestRendererOptions: [
-      { "array-type": "list" },
-      { "csharp-version": "5" },
-      { density: "dense" },
-      { "number-type": "decimal" }
-    ],
-    sourceFiles: ["src/Language/CSharp.ts"]
-  };
-  if (strictOptionalVsNullable) {
-    lang.rendererOptions = { "check-required": "true" };
-  } else {
-    lang.allowMissingNull = true;
-  }
-  return lang;
-}
-
-export const CSharpLanguage = makeCSharpLanguage(true);
-export const CSharpPermissibleLanguage = makeCSharpLanguage(false);
+export const CSharpLanguage: Language = {
+  name: "csharp",
+  base: "test/fixtures/csharp",
+  // https://github.com/dotnet/cli/issues/1582
+  setupCommand: "dotnet restore --no-cache",
+  runCommand(sample: string) {
+    return `dotnet run "${sample}"`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "keywords.json",
+    "00c36.json",
+    "0a91a.json",
+    "34702.json",
+    "2df80.json",
+    "7fbfb.json",
+    "cda6c.json",
+    "c8c7e.json",
+    "e53b5.json"
+  ],
+  allowMissingNull: false,
+  output: "QuickType.cs",
+  topLevel: "TopLevel",
+  skipJSON: [
+    "31189.json" // JSON.NET doesn't accept year 0000 as 1BC, though it should
+  ],
+  skipMiscJSON: false,
+  skipSchema: [
+    "top-level-enum.schema" // The code we generate for top-level enums is incompatible with the driver
+  ],
+  rendererOptions: { "check-required": "true" },
+  quickTestRendererOptions: [
+    { "array-type": "list" },
+    { "csharp-version": "5" },
+    { density: "dense" },
+    { "number-type": "decimal" }
+  ],
+  sourceFiles: ["src/Language/CSharp.ts"]
+};
 
 export const JavaLanguage: Language = {
   name: "java",

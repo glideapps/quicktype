@@ -587,7 +587,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.FlowLanguage),
   new JSONFixture(languages.JavaScriptLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
-  new JSONTypeScriptFixture(languages.CSharpPermissibleLanguage),
+  new JSONTypeScriptFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.JavaLanguage),
   new JSONSchemaFixture(languages.GoLanguage),
