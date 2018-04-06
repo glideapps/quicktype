@@ -162,10 +162,11 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     };
 
     typeMapTypeForProperty(p: ClassProperty): Sourcelike {
-        if (!p.isOptional || p.type.isNullable) {
-            return this.typeMapTypeFor(p.type);
+        const typeMap = this.typeMapTypeFor(p.type);
+        if (!p.isOptional) {
+            return typeMap;
         }
-        return ["u(null, ", this.typeMapTypeFor(p.type), ")"];
+        return ["u(undefined, ", typeMap, ")"];
     }
 
     emitBlock = (source: Sourcelike, end: string, emit: () => void) => {
@@ -258,7 +259,7 @@ ${this.castFunctionLine} {
 
 function isValid(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
     if (typ === undefined) return true;
-    if (typ === null) return val === null || val === undefined;
+    if (typ === null) return val === null;
     return typ.isUnion  ? isValidUnion(typ.typs, val)
             : typ.isArray  ? isValidArray(typ.typ, val)
             : typ.isMap    ? isValidMap(typ.typ, val)
@@ -273,7 +274,7 @@ function isValidPrimitive(typ${stringAnnotation}, val${anyAnnotation}) {
 
 function isValidUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${booleanAnnotation} {
     // val must validate against one typ in typs
-    return typs.find(typ => isValid(typ, val)) !== undefined;
+    return typs.some(typ => isValid(typ, val));
 }
 
 function isValidEnum(enumName${stringAnnotation}, val${anyAnnotation})${booleanAnnotation} {
