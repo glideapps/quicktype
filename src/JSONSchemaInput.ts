@@ -1,6 +1,6 @@
 "use strict";
 
-import { List, OrderedSet, Map, Set, hash } from "immutable";
+import { List, OrderedSet, Map, Set, hash, OrderedMap } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
 
@@ -469,7 +469,7 @@ export async function addTypesInSchema(
         additionalProperties: any
     ): Promise<TypeRef> {
         const required = OrderedSet(requiredArray);
-        const propertiesMap = Map(properties);
+        const propertiesMap = OrderedMap(properties).sortBy((_, k) => k.toLowerCase());
         const propertyDescriptions = propertiesMap
             .map(propSchema => {
                 if (typeof propSchema === "object") {
@@ -480,7 +480,7 @@ export async function addTypesInSchema(
                 }
                 return undefined;
             })
-            .filter(v => v !== undefined) as Map<string, OrderedSet<string>>;
+            .filter(v => v !== undefined) as OrderedMap<string, OrderedSet<string>>;
         if (!propertyDescriptions.isEmpty()) {
             attributes = propertyDescriptionsTypeAttributeKind.setInAttributes(attributes, propertyDescriptions);
         }
