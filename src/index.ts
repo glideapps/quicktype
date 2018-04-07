@@ -5,7 +5,7 @@ import * as URI from "urijs";
 import * as targetLanguages from "./Language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assertNever, assert, panic, defined, forEachSync } from "./Support";
+import { assert, panic, defined, forEachSync } from "./Support";
 import { CompressedJSON } from "./CompressedJSON";
 import { combineClasses, findSimilarityCliques } from "./CombineClasses";
 import { addTypesInSchema, Ref, definitionRefsInSchema } from "./JSONSchemaInput";
@@ -23,7 +23,7 @@ import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
 import { replaceObjectType } from "./ReplaceObjectType";
 import { ErrorMessage, messageAssert, messageError } from "./Messages";
-import { InputJSONSchemaStore, StringInput, TypeSource, InputData, SchemaTypeSource, isGraphQLSource, isJSONSource, isTypeScriptSource, isSchemaSource, toSchemaSource, toReadable, toString } from "./Inputs";
+import { InputJSONSchemaStore, StringInput, TypeSource, InputData, SchemaTypeSource, toSchemaSource, toString } from "./Inputs";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -109,20 +109,21 @@ function nameFromURI(uri: uri.URI): string {
 }
 
 export class Run {
-    private _compressedJSON: CompressedJSON;
-    private _allInputs: InputData;
-    private _options: Options;
+    private readonly _allInputs: InputData;
+    private readonly _options: Options;
     private _schemaStore: JSONSchemaStore | undefined;
+    private readonly _compressedJSON: CompressedJSON;
 
     constructor(options: Partial<Options>) {
         this._options = _.mergeWith(_.clone(options), defaultOptions, (o, s) => (o === undefined ? s : o));
-        this._allInputs = { samples: {}, schemas: {}, graphQLs: {} };
 
         const mapping = getTargetLanguage(this._options.lang).stringTypeMapping;
         const makeDate = mapping.date !== "string";
         const makeTime = mapping.time !== "string";
         const makeDateTime = mapping.dateTime !== "string";
+
         this._compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
+        this._allInputs = new InputData(this._compressedJSON);
     }
 
     private getSchemaStore(): JSONSchemaStore {
@@ -133,7 +134,6 @@ export class Run {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
-        const haveSchemas = Object.getOwnPropertyNames(this._allInputs.schemas).length > 0;
         const typeBuilder = new TypeBuilder(
             stringTypeMapping,
             this._options.alphabetizeProperties,
@@ -143,7 +143,7 @@ export class Run {
         );
 
         // JSON Schema
-        let schemaInputs = Map(this._allInputs.schemas).map(({ ref }) => ref);
+        let schemaInputs = this._allInputs.schemaInputs;
         if (this._options.findSimilarClassesSchemaURI !== undefined) {
             schemaInputs = schemaInputs.set("ComparisonBaseRoot", Ref.parse(this._options.findSimilarClassesSchemaURI));
         }
@@ -152,21 +152,21 @@ export class Run {
         }
 
         // GraphQL
-        const numInputs = Object.keys(this._allInputs.graphQLs).length;
-        Map(this._allInputs.graphQLs).forEach(({ schema, query }, name) => {
+        const graphQLInputs = this._allInputs.graphQLInputs;
+        graphQLInputs.forEach(({ schema, query }, name) => {
             const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
             newTopLevels.forEach((t, actualName) => {
-                typeBuilder.addTopLevel(numInputs === 1 ? name : actualName, t);
+                typeBuilder.addTopLevel(graphQLInputs.size === 1 ? name : actualName, t);
             });
         });
 
         // JSON
         const doInferEnums = this._options.inferEnums;
-        const numSamples = Object.keys(this._allInputs.samples).length;
-        if (numSamples > 0) {
+        const jsonInputs = this._allInputs.jsonInputs;
+        if (!jsonInputs.isEmpty()) {
             const inference = new TypeInference(typeBuilder, doInferEnums, this._options.inferDates);
 
-            Map(this._allInputs.samples).forEach(({ samples, description }, name) => {
+            jsonInputs.forEach(({ samples, description }, name) => {
                 const tref = inference.inferType(
                     this._compressedJSON as CompressedJSON,
                     makeNamesTypeAttributes(name, false),
@@ -188,7 +188,7 @@ export class Run {
         }
 
         let unionsDone = false;
-        if (haveSchemas) {
+        if (!schemaInputs.isEmpty()) {
             let intersectionsDone = false;
             do {
                 const graphBeforeRewrites = graph;
@@ -253,11 +253,6 @@ export class Run {
         ][]);
     }
 
-    private addSchemaInput(name: string, ref: Ref): void {
-        messageAssert(!_.has(this._allInputs.schemas, name), ErrorMessage.MoreThanOneSchemaGiven, { name });
-        this._allInputs.schemas[name] = { ref };
-    }
-
     public run = async (): Promise<OrderedMap<string, SerializedRenderResult>> => {
         const targetLanguage = getTargetLanguage(this._options.lang);
 
@@ -299,28 +294,7 @@ export class Run {
         }
 
         for (const source of this._options.sources) {
-            if (isGraphQLSource(source)) {
-                const { name, schema, query } = source;
-                this._allInputs.graphQLs[name] = { schema, query: await toString(query) };
-
-                needIR = true;
-            } else if (isJSONSource(source)) {
-                const { name, samples, description } = source;
-                for (const sample of samples) {
-                    const input = await this._compressedJSON.readFromStream(toReadable(sample));
-                    if (!_.has(this._allInputs.samples, name)) {
-                        this._allInputs.samples[name] = { samples: [] };
-                    }
-                    this._allInputs.samples[name].samples.push(input);
-                    if (description !== undefined) {
-                        this._allInputs.samples[name].description = description;
-                    }
-                }
-
-                needIR = true;
-            } else if (!isSchemaSource(source) && !isTypeScriptSource(source)) {
-                assertNever(source);
-            }
+            needIR = await this._allInputs.addTypeSource(source) || needIR;
         }
 
         if (!needIR && schemaSources.size === 1) {
@@ -354,11 +328,11 @@ export class Run {
                     );
                     const definitionRefs = await definitionRefsInSchema(this.getSchemaStore(), uriString);
                     definitionRefs.forEach((ref, refName) => {
-                        this.addSchemaInput(refName, ref);
+                        this._allInputs.addSchemaInput(refName, ref);
                     });
                 } else {
                     const nameForSource = schemaSources.size === 1 ? name : nameFromURI(normalizedURI);
-                    this.addSchemaInput(nameForSource, Ref.parse(uriString));
+                    this._allInputs.addSchemaInput(nameForSource, Ref.parse(uriString));
                 }
             });
         }

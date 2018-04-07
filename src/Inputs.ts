@@ -1,22 +1,18 @@
+import * as lodash from "lodash";
 import { Map } from "immutable";
 import { getStream } from "./get-stream";
 import { Readable } from "stream";
 
 import { schemaForTypeScriptSources } from "./TypeScriptInput";
 import { Ref, checkJSONSchema } from "./JSONSchemaInput";
-import { Value } from "./CompressedJSON";
+import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
-import { parseJSON, panic } from "./Support";
+import { parseJSON, panic, assertNever } from "./Support";
+import { messageAssert, ErrorMessage } from "./Messages";
 
 const stringToStream = require("string-to-stream");
 
-export type InputData = {
-    samples: { [name: string]: { samples: Value[]; description?: string } };
-    schemas: { [name: string]: { ref: Ref } };
-    graphQLs: { [name: string]: { schema: any; query: string } };
-};
-
-export function toReadable(source: string | Readable): Readable {
+function toReadable(source: string | Readable): Readable {
     return typeof source === "string" ? stringToStream(source) : source;
 }
 
@@ -33,7 +29,7 @@ export interface JSONTypeSource {
     description?: string;
 }
 
-export function isJSONSource(source: TypeSource): source is JSONTypeSource {
+function isJSONSource(source: TypeSource): source is JSONTypeSource {
     return source.kind === "json";
 }
 
@@ -42,7 +38,7 @@ export interface TypeScriptTypeSource {
     sources: { [filename: string]: string };
 }
 
-export function isTypeScriptSource(source: TypeSource): source is TypeScriptTypeSource {
+function isTypeScriptSource(source: TypeSource): source is TypeScriptTypeSource {
     return source.kind === "typescript";
 }
 
@@ -54,7 +50,7 @@ export interface SchemaTypeSource {
     topLevelRefs?: string[];
 }
 
-export function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
+function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
     return source.kind === "schema";
 }
 
@@ -80,7 +76,7 @@ export interface GraphQLTypeSource {
     query: StringInput;
 }
 
-export function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource {
+function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource {
     return source.kind === "graphql";
 }
 
@@ -100,5 +96,58 @@ export class InputJSONSchemaStore extends JSONSchemaStore {
             return panic(`Schema URI ${address} requested, but no store given`);
         }
         return await this._delegate.fetch(address);
+    }
+}
+
+export class InputData {
+    private readonly _samples: { [name: string]: { samples: Value[]; description?: string } } = {};
+    private readonly _schemas: { [name: string]: { ref: Ref } } = {};
+    private readonly _graphQLs: { [name: string]: { schema: any; query: string } } = {};
+
+    constructor(private readonly _compressedJSON: CompressedJSON) {
+    }
+
+    get jsonInputs(): Map<string, { samples: Value[]; description?: string }> {
+        return Map(this._samples);
+    }
+
+    get schemaInputs(): Map<string, Ref> {
+        return Map(this._schemas).map(({ ref }) => ref);
+    }
+
+    get graphQLInputs(): Map<string, { schema: any; query: string }> {
+        return Map(this._graphQLs);
+    }
+
+    addSchemaInput(name: string, ref: Ref): void {
+        messageAssert(!lodash.has(this._schemas, [name]), ErrorMessage.MoreThanOneSchemaGiven, { name });
+        this._schemas[name] = { ref };
+    }
+
+    // Returns whether we need IR for this type source
+    async addTypeSource(source: TypeSource): Promise<boolean> {
+        if (isGraphQLSource(source)) {
+            const { name, schema, query } = source;
+            this._graphQLs[name] = { schema, query: await toString(query) };
+
+            return true;
+        } else if (isJSONSource(source)) {
+            const { name, samples, description } = source;
+            for (const sample of samples) {
+                const input = await this._compressedJSON.readFromStream(toReadable(sample));
+                if (!lodash.has(this._samples, [name])) {
+                    this._samples[name] = { samples: [] };
+                }
+                this._samples[name].samples.push(input);
+                if (description !== undefined) {
+                    this._samples[name].description = description;
+                }
+            }
+
+            return true;
+        } else if (isSchemaSource(source) || isTypeScriptSource(source)) {
+            return false;
+        }
+        return assertNever(source);
     }
 }
