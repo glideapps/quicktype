@@ -88,28 +88,13 @@ const defaultOptions: Options = {
 };
 
 export class Run {
-    private readonly _allInputs: InputData;
     private readonly _options: Options;
-    private _schemaStore: JSONSchemaStore | undefined;
-    private readonly _compressedJSON: CompressedJSON;
 
     constructor(options: Partial<Options>) {
         this._options = _.mergeWith(_.clone(options), defaultOptions, (o, s) => (o === undefined ? s : o));
-
-        const mapping = getTargetLanguage(this._options.lang).stringTypeMapping;
-        const makeDate = mapping.date !== "string";
-        const makeTime = mapping.time !== "string";
-        const makeDateTime = mapping.dateTime !== "string";
-
-        this._compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
-        this._allInputs = new InputData(this._compressedJSON, this._options.schemaStore);
     }
 
-    private getSchemaStore(): JSONSchemaStore {
-        return defined(this._schemaStore);
-    }
-
-    private async makeGraph(): Promise<TypeGraph> {
+    private async makeGraph(allInputs: InputData, compressedJSON: CompressedJSON, schemaStore: JSONSchemaStore | undefined): Promise<TypeGraph> {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
@@ -122,16 +107,16 @@ export class Run {
         );
 
         // JSON Schema
-        let schemaInputs = this._allInputs.schemaInputs;
+        let schemaInputs = allInputs.schemaInputs;
         if (this._options.findSimilarClassesSchemaURI !== undefined) {
             schemaInputs = schemaInputs.set("ComparisonBaseRoot", Ref.parse(this._options.findSimilarClassesSchemaURI));
         }
         if (!schemaInputs.isEmpty()) {
-            await addTypesInSchema(typeBuilder, this.getSchemaStore(), schemaInputs);
+            await addTypesInSchema(typeBuilder, defined(schemaStore), schemaInputs);
         }
 
         // GraphQL
-        const graphQLInputs = this._allInputs.graphQLInputs;
+        const graphQLInputs = allInputs.graphQLInputs;
         graphQLInputs.forEach(({ schema, query }, name) => {
             const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
             newTopLevels.forEach((t, actualName) => {
@@ -141,13 +126,13 @@ export class Run {
 
         // JSON
         const doInferEnums = this._options.inferEnums;
-        const jsonInputs = this._allInputs.jsonInputs;
+        const jsonInputs = allInputs.jsonInputs;
         if (!jsonInputs.isEmpty()) {
             const inference = new TypeInference(typeBuilder, doInferEnums, this._options.inferDates);
 
             jsonInputs.forEach(({ samples, description }, name) => {
                 const tref = inference.inferType(
-                    this._compressedJSON as CompressedJSON,
+                    compressedJSON as CompressedJSON,
                     makeNamesTypeAttributes(name, false),
                     samples,
                     this._options.fixedTopLevels
@@ -232,19 +217,27 @@ export class Run {
         ][]);
     }
 
-    public run = async (): Promise<OrderedMap<string, SerializedRenderResult>> => {
+    public async run(): Promise<OrderedMap<string, SerializedRenderResult>> {
         const targetLanguage = getTargetLanguage(this._options.lang);
         let needIR =
             targetLanguage.names.indexOf("schema") < 0 ||
             this._options.findSimilarClassesSchemaURI !== undefined ||
             this._options.handlebarsTemplate !== undefined;
 
-        if (await this._allInputs.addTypeSources(this._options.sources)) {
+        const mapping = targetLanguage.stringTypeMapping;
+        const makeDate = mapping.date !== "string";
+        const makeTime = mapping.time !== "string";
+        const makeDateTime = mapping.dateTime !== "string";
+
+        const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
+        const allInputs = new InputData(compressedJSON, this._options.schemaStore);
+    
+        if (await allInputs.addTypeSources(this._options.sources)) {
             needIR = true;
         }
 
-        if (!needIR && this._allInputs.schemaSources.size === 1) {
-            const source = defined(this._allInputs.schemaSources.first());
+        if (!needIR && allInputs.schemaSources.size === 1) {
+            const source = defined(allInputs.schemaSources.first());
             const schemaString = await toString(defined(source[1].schema));
             const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
             lines.push("");
@@ -252,9 +245,9 @@ export class Run {
             return OrderedMap([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
         }
 
-        this._schemaStore = await this._allInputs.addSchemaInputs();
+        const schemaStore = await allInputs.addSchemaInputs();
 
-        const graph = await this.makeGraph();
+        const graph = await this.makeGraph(allInputs, compressedJSON, schemaStore);
 
         if (this._options.noRender) {
             return this.makeSimpleTextResult(["Done.", ""]);
@@ -295,7 +288,7 @@ export class Run {
                 this._options.indentation
             );
         }
-    };
+    }
 }
 
 export async function quicktypeMultiFile(options: Partial<Options>): Promise<Map<string, SerializedRenderResult>> {

@@ -83,7 +83,7 @@ function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource {
 
 export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource | TypeScriptTypeSource;
 
-export class InputJSONSchemaStore extends JSONSchemaStore {
+class InputJSONSchemaStore extends JSONSchemaStore {
     constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
         super();
     }
