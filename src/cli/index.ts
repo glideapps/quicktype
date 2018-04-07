@@ -6,20 +6,15 @@ import * as _ from "lodash";
 
 import {
     Options,
-    JSONTypeSource,
     RendererOptions,
     getTargetLanguage,
-    TypeSource,
-    GraphQLTypeSource,
-    StringInput,
-    SchemaTypeSource,
     quicktypeMultiFile,
     SerializedRenderResult,
     TargetLanguage,
-    languageNamed,
-    TypeScriptTypeSource
+    languageNamed    
 } from "..";
 
+import { JSONTypeSource, TypeSource, GraphQLTypeSource, StringInput, SchemaTypeSource, TypeScriptTypeSource } from "../Inputs";
 import { OptionDefinition } from "../RendererOptions";
 import * as defaultTargetLanguages from "../Language/All";
 import { urlsFromURLGrammar } from "../URLGrammar";

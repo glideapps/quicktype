@@ -1,17 +1,15 @@
-import { getStream } from "./get-stream";
 import * as _ from "lodash";
 import { List, Map, OrderedMap, OrderedSet } from "immutable";
-import { Readable } from "stream";
 import * as URI from "urijs";
 
 import * as targetLanguages from "./Language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assertNever, assert, panic, defined, forEachSync, parseJSON } from "./Support";
-import { CompressedJSON, Value } from "./CompressedJSON";
+import { assertNever, assert, panic, defined, forEachSync } from "./Support";
+import { CompressedJSON } from "./CompressedJSON";
 import { combineClasses, findSimilarityCliques } from "./CombineClasses";
-import { addTypesInSchema, Ref, definitionRefsInSchema, checkJSONSchema } from "./JSONSchemaInput";
-import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
+import { addTypesInSchema, Ref, definitionRefsInSchema } from "./JSONSchemaInput";
+import { JSONSchemaStore } from "./JSONSchemaStore";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeBuilder } from "./TypeBuilder";
@@ -24,16 +22,14 @@ import { descriptionTypeAttributeKind } from "./TypeAttributes";
 import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
 import { replaceObjectType } from "./ReplaceObjectType";
-import { schemaForTypeScriptSources } from "./TypeScriptInput";
 import { ErrorMessage, messageAssert, messageError } from "./Messages";
+import { InputJSONSchemaStore, StringInput, TypeSource, InputData, SchemaTypeSource, isGraphQLSource, isJSONSource, isTypeScriptSource, isSchemaSource, toSchemaSource, toReadable, toString } from "./Inputs";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
 export { SerializedRenderResult, Annotation } from "./Source";
 export { all as languages, languageNamed } from "./Language/All";
 export { OptionDefinition } from "./RendererOptions";
-
-const stringToStream = require("string-to-stream");
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
@@ -47,68 +43,6 @@ export function getTargetLanguage(nameOrInstance: string | TargetLanguage): Targ
 }
 
 export type RendererOptions = { [name: string]: string };
-
-export type StringInput = string | Readable;
-
-export interface JSONTypeSource {
-    kind: "json";
-    name: string;
-    samples: StringInput[];
-    description?: string;
-}
-
-function isJSONSource(source: TypeSource): source is JSONTypeSource {
-    return source.kind === "json";
-}
-
-export interface TypeScriptTypeSource {
-    kind: "typescript";
-    sources: { [filename: string]: string };
-}
-
-export function isTypeScriptSource(source: TypeSource): source is TypeScriptTypeSource {
-    return source.kind === "typescript";
-}
-
-export interface SchemaTypeSource {
-    kind: "schema";
-    name: string;
-    uri?: string;
-    schema?: StringInput;
-    topLevelRefs?: string[];
-}
-
-function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
-    return source.kind === "schema";
-}
-
-function toSchemaSource(source: TypeSource): (SchemaTypeSource & { isDirectInput: boolean }) | undefined {
-    if (isSchemaSource(source)) {
-        return Object.assign({ isDirectInput: true }, source);
-    } else if (isTypeScriptSource(source)) {
-        return {
-            kind: "schema",
-            name: "",
-            schema: schemaForTypeScriptSources(source.sources),
-            topLevelRefs: ["/definitions/"],
-            isDirectInput: false
-        };
-    }
-    return undefined;
-}
-
-export interface GraphQLTypeSource {
-    kind: "graphql";
-    name: string;
-    schema: any;
-    query: StringInput;
-}
-
-function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource {
-    return source.kind === "graphql";
-}
-
-export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource | TypeScriptTypeSource;
 
 export interface Options {
     lang: string | TargetLanguage;
@@ -154,20 +88,6 @@ const defaultOptions: Options = {
     checkProvenance: false
 };
 
-type InputData = {
-    samples: { [name: string]: { samples: Value[]; description?: string } };
-    schemas: { [name: string]: { ref: Ref } };
-    graphQLs: { [name: string]: { schema: any; query: string } };
-};
-
-function toReadable(source: string | Readable): Readable {
-    return _.isString(source) ? stringToStream(source) : source;
-}
-
-async function toString(source: string | Readable): Promise<string> {
-    return _.isString(source) ? source : await getStream(source);
-}
-
 function nameFromURI(uri: uri.URI): string {
     // FIXME: Try `title` first.
     const fragment = uri.fragment();
@@ -186,23 +106,6 @@ function nameFromURI(uri: uri.URI): string {
         return filename;
     }
     return messageError(ErrorMessage.CannotInferNameForSchema, { uri: uri.toString() });
-}
-
-class InputJSONSchemaStore extends JSONSchemaStore {
-    constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
-        super();
-    }
-
-    async fetch(address: string): Promise<JSONSchema | undefined> {
-        const maybeInput = this._inputs.get(address);
-        if (maybeInput !== undefined) {
-            return checkJSONSchema(parseJSON(await toString(maybeInput), "JSON Schema", address));
-        }
-        if (this._delegate === undefined) {
-            return panic(`Schema URI ${address} requested, but no store given`);
-        }
-        return await this._delegate.fetch(address);
-    }
 }
 
 export class Run {
