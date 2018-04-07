@@ -36,8 +36,8 @@ export class ErrorMessage {
     // Driver
     static UnknownSourceLanguage = "Unknown source language ${lang}";
     static UnknownOutputLanguage = "Unknown output language ${lang}";
-    static NeedExactlyOneSchema = "Must have exactly one schema for ${name}";
     static MoreThanOneSchemaGiven = "More than one schema given for ${name}";
+    static CannotInferNameForSchema = "Cannot infer name for schema ${uri}";
     static NoGraphQLQueryGiven = "Please specify at least one GraphQL query as input";
     static NoGraphQLSchemaInDir = "No GraphQL schema in ${dir}";
     static MoreThanOneGraphQLSchemaInDir = "More than one GraphQL schema in ${dir}";
@@ -99,8 +99,8 @@ type Error =
     // Driver
     | { message: ErrorMessage.UnknownSourceLanguage; properties: { lang: string } }
     | { message: ErrorMessage.UnknownOutputLanguage; properties: { lang: string } }
-    | { message: ErrorMessage.NeedExactlyOneSchema; properties: { name: string } }
     | { message: ErrorMessage.MoreThanOneSchemaGiven; properties: { name: string } }
+    | { message: ErrorMessage.CannotInferNameForSchema; properties: { uri: string } }
     | { message: ErrorMessage.NoGraphQLQueryGiven; properties: {} }
     | { message: ErrorMessage.NoGraphQLSchemaInDir; properties: { dir: string } }
     | { message: ErrorMessage.MoreThanOneGraphQLSchemaInDir; properties: { dir: string } }

@@ -168,6 +168,26 @@ async function toString(source: string | Readable): Promise<string> {
     return _.isString(source) ? source : await getStream(source);
 }
 
+function nameFromURI(uri: uri.URI): string {
+    // FIXME: Try `title` first.
+    const fragment = uri.fragment();
+    if (fragment !== "") {
+        const components = fragment.split("/");
+        const len = components.length;
+        if (components[len - 1] !== "") {
+            return components[len - 1];
+        }
+        if (len > 1 && components[len - 2] !== "") {
+            return components[len - 2];
+        }
+    }
+    const filename = uri.filename();
+    if (filename !== "") {
+        return filename;
+    }
+    return messageError(ErrorMessage.CannotInferNameForSchema, { uri: uri.toString() });
+}
+
 class InputJSONSchemaStore extends JSONSchemaStore {
     constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
         super();
@@ -421,6 +441,7 @@ export class Run {
 
             await forEachSync(schemaSources, async ([normalizedURI, source]) => {
                 const { name, topLevelRefs } = source;
+                const uriString = normalizedURI.toString();
 
                 if (topLevelRefs !== undefined) {
                     messageAssert(
@@ -428,15 +449,13 @@ export class Run {
                         ErrorMessage.InvalidSchemaTopLevelRefs,
                         { actual: topLevelRefs }
                     );
-                    const definitionRefs = await definitionRefsInSchema(
-                        this.getSchemaStore(),
-                        normalizedURI.toString()
-                    );
+                    const definitionRefs = await definitionRefsInSchema(this.getSchemaStore(), uriString);
                     definitionRefs.forEach((ref, refName) => {
                         this.addSchemaInput(refName, ref);
                     });
                 } else {
-                    this.addSchemaInput(name, Ref.parse(normalizedURI.toString()));
+                    const nameForSource = schemaSources.size === 1 ? name : nameFromURI(normalizedURI);
+                    this.addSchemaInput(nameForSource, Ref.parse(uriString));
                 }
             });
         }

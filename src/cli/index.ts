@@ -609,13 +609,15 @@ function topLevelRefsForOptions(options: CLIOptions): string[] | undefined {
     return mapOptional(x => [x], options.addSchemaTopLevel);
 }
 
-async function typeSourceForURIs(name: string, uris: string[], options: CLIOptions): Promise<TypeSource> {
+async function typeSourcesForURIs(name: string, uris: string[], options: CLIOptions): Promise<TypeSource[]> {
     switch (options.srcLang) {
         case "json":
-            return await sourceFromFileOrUrlArray(name, uris);
+            return [await sourceFromFileOrUrlArray(name, uris)];
         case "schema":
-            messageAssert(uris.length === 1, ErrorMessage.NeedExactlyOneSchema, { name });
-            return { kind: "schema", name, uri: uris[0], topLevelRefs: topLevelRefsForOptions(options) };
+            return uris.map(
+                uri =>
+                    ({ kind: "schema", name, uri, topLevelRefs: topLevelRefsForOptions(options) } as SchemaTypeSource)
+            );
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);
     }
@@ -623,9 +625,10 @@ async function typeSourceForURIs(name: string, uris: string[], options: CLIOptio
 
 async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     const sourceURIs = await getSourceURIs(options);
-    let sources: TypeSource[] = await Promise.all(
-        sourceURIs.map(async ([name, uris]) => await typeSourceForURIs(name, uris, options))
+    const sourceArrays = await Promise.all(
+        sourceURIs.map(async ([name, uris]) => await typeSourcesForURIs(name, uris, options))
     );
+    let sources: TypeSource[] = ([] as TypeSource[]).concat(...sourceArrays);
 
     const exists = options.src.filter(fs.existsSync);
     const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
@@ -637,7 +640,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     // Every src that's not a directory is assumed to be a file or URL
     const filesOrUrls = options.src.filter(x => !_.includes(directories, x));
     if (!_.isEmpty(filesOrUrls)) {
-        sources.push(await typeSourceForURIs(options.topLevel, filesOrUrls, options));
+        sources.push(...(await typeSourcesForURIs(options.topLevel, filesOrUrls, options)));
     }
 
     return sources;
