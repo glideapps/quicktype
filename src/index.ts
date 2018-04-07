@@ -1,14 +1,13 @@
 import * as _ from "lodash";
 import { List, Map, OrderedMap, OrderedSet } from "immutable";
-import * as URI from "urijs";
 
 import * as targetLanguages from "./Language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assert, panic, defined, forEachSync } from "./Support";
+import { assert, defined } from "./Support";
 import { CompressedJSON } from "./CompressedJSON";
 import { combineClasses, findSimilarityCliques } from "./CombineClasses";
-import { addTypesInSchema, Ref, definitionRefsInSchema } from "./JSONSchemaInput";
+import { addTypesInSchema, Ref } from "./JSONSchemaInput";
 import { JSONSchemaStore } from "./JSONSchemaStore";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
@@ -22,8 +21,8 @@ import { descriptionTypeAttributeKind } from "./TypeAttributes";
 import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
 import { replaceObjectType } from "./ReplaceObjectType";
-import { ErrorMessage, messageAssert, messageError } from "./Messages";
-import { InputJSONSchemaStore, StringInput, TypeSource, InputData, SchemaTypeSource, toSchemaSource, toString } from "./Inputs";
+import { ErrorMessage, messageError } from "./Messages";
+import { TypeSource, InputData, toString } from "./Inputs";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -88,26 +87,6 @@ const defaultOptions: Options = {
     checkProvenance: false
 };
 
-function nameFromURI(uri: uri.URI): string {
-    // FIXME: Try `title` first.
-    const fragment = uri.fragment();
-    if (fragment !== "") {
-        const components = fragment.split("/");
-        const len = components.length;
-        if (components[len - 1] !== "") {
-            return components[len - 1];
-        }
-        if (len > 1 && components[len - 2] !== "") {
-            return components[len - 2];
-        }
-    }
-    const filename = uri.filename();
-    if (filename !== "") {
-        return filename;
-    }
-    return messageError(ErrorMessage.CannotInferNameForSchema, { uri: uri.toString() });
-}
-
 export class Run {
     private readonly _allInputs: InputData;
     private readonly _options: Options;
@@ -123,7 +102,7 @@ export class Run {
         const makeDateTime = mapping.dateTime !== "string";
 
         this._compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
-        this._allInputs = new InputData(this._compressedJSON);
+        this._allInputs = new InputData(this._compressedJSON, this._options.schemaStore);
     }
 
     private getSchemaStore(): JSONSchemaStore {
@@ -255,50 +234,17 @@ export class Run {
 
     public run = async (): Promise<OrderedMap<string, SerializedRenderResult>> => {
         const targetLanguage = getTargetLanguage(this._options.lang);
-
-        let schemaInputs: Map<string, StringInput> = Map();
-        let schemaSources: List<[uri.URI, SchemaTypeSource]> = List();
         let needIR =
             targetLanguage.names.indexOf("schema") < 0 ||
             this._options.findSimilarClassesSchemaURI !== undefined ||
             this._options.handlebarsTemplate !== undefined;
-        for (const source of this._options.sources) {
-            const schemaSource = toSchemaSource(source);
 
-            if (schemaSource === undefined) continue;
-
-            needIR = schemaSource.isDirectInput || needIR;
-
-            const { uri, schema } = schemaSource;
-
-            let normalizedURI: uri.URI;
-            if (uri === undefined) {
-                normalizedURI = new URI(`-${schemaInputs.size + 1}`);
-            } else {
-                normalizedURI = new URI(uri).normalize();
-            }
-
-            if (schema === undefined) {
-                assert(uri !== undefined, "URI must be given if schema source is not specified");
-            } else {
-                schemaInputs = schemaInputs.set(
-                    normalizedURI
-                        .clone()
-                        .hash("")
-                        .toString(),
-                    schema
-                );
-            }
-
-            schemaSources = schemaSources.push([normalizedURI, schemaSource]);
+        if (await this._allInputs.addTypeSources(this._options.sources)) {
+            needIR = true;
         }
 
-        for (const source of this._options.sources) {
-            needIR = await this._allInputs.addTypeSource(source) || needIR;
-        }
-
-        if (!needIR && schemaSources.size === 1) {
-            const source = defined(schemaSources.first());
+        if (!needIR && this._allInputs.schemaSources.size === 1) {
+            const source = defined(this._allInputs.schemaSources.first());
             const schemaString = await toString(defined(source[1].schema));
             const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
             lines.push("");
@@ -306,36 +252,7 @@ export class Run {
             return OrderedMap([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
         }
 
-        if (!schemaSources.isEmpty()) {
-            if (schemaInputs.isEmpty()) {
-                if (this._options.schemaStore === undefined) {
-                    return panic("Must have a schema store to process JSON Schema");
-                }
-                this._schemaStore = this._options.schemaStore;
-            } else {
-                this._schemaStore = new InputJSONSchemaStore(schemaInputs, this._options.schemaStore);
-            }
-
-            await forEachSync(schemaSources, async ([normalizedURI, source]) => {
-                const { name, topLevelRefs } = source;
-                const uriString = normalizedURI.toString();
-
-                if (topLevelRefs !== undefined) {
-                    messageAssert(
-                        topLevelRefs.length === 1 && topLevelRefs[0] === "/definitions/",
-                        ErrorMessage.InvalidSchemaTopLevelRefs,
-                        { actual: topLevelRefs }
-                    );
-                    const definitionRefs = await definitionRefsInSchema(this.getSchemaStore(), uriString);
-                    definitionRefs.forEach((ref, refName) => {
-                        this._allInputs.addSchemaInput(refName, ref);
-                    });
-                } else {
-                    const nameForSource = schemaSources.size === 1 ? name : nameFromURI(normalizedURI);
-                    this._allInputs.addSchemaInput(nameForSource, Ref.parse(uriString));
-                }
-            });
-        }
+        this._schemaStore = await this._allInputs.addSchemaInputs();
 
         const graph = await this.makeGraph();
 
