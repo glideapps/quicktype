@@ -55,17 +55,16 @@ function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
     return source.kind === "schema";
 }
 
-function toSchemaSource(source: TypeSource): (SchemaTypeSource & { isDirectInput: boolean }) | undefined {
+function toSchemaSource(source: TypeSource): [SchemaTypeSource, boolean] | undefined {
     if (isSchemaSource(source)) {
-        return Object.assign({ isDirectInput: true }, source);
+        return [source, true];
     } else if (isTypeScriptSource(source)) {
-        return {
+        return [{
             kind: "schema",
             name: "",
             schema: schemaForTypeScriptSources(source.sources),
-            topLevelRefs: ["/definitions/"],
-            isDirectInput: false
-        };
+            topLevelRefs: ["/definitions/"]
+        }, false];
     }
     return undefined;
 }
@@ -184,11 +183,15 @@ export class InputData {
         let needIR = false;
 
         for (const source of sources) {
-            const schemaSource = toSchemaSource(source);
+            const maybeSchemaSource = toSchemaSource(source);
 
-            if (schemaSource === undefined) continue;
+            if (maybeSchemaSource === undefined) {
+                needIR = await this.addTypeSource(source) || needIR;
+                continue;
+            }
 
-            needIR = schemaSource.isDirectInput || needIR;
+            const [schemaSource, isDirectInput] = maybeSchemaSource;
+            needIR = isDirectInput || needIR;
 
             const { uri, schema } = schemaSource;
 
@@ -212,10 +215,6 @@ export class InputData {
             }
 
             this._schemaSources = this._schemaSources.push([normalizedURI, schemaSource]);
-        }
-
-        for (const source of sources) {
-            needIR = await this.addTypeSource(source) || needIR;
         }
 
         return needIR;
