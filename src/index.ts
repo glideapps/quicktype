@@ -282,7 +282,7 @@ export class Run {
             } while (!intersectionsDone || !unionsDone);
         }
 
-        graph = replaceObjectType(graph, stringTypeMapping, conflateNumbers);
+        graph = replaceObjectType(graph, stringTypeMapping, conflateNumbers, targetLanguage.supportsFullObjectType);
         do {
             [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false);
         } while (!unionsDone);

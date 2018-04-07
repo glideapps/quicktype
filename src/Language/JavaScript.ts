@@ -110,7 +110,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return new Namer("types", typeNameStyle, []);
     }
 
-    protected namerForClassProperty(): Namer {
+    protected namerForObjectProperty(): Namer {
         return new Namer("properties", propertyNameStyle, []);
     }
 
@@ -179,7 +179,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         const { any: anyAnnotation } = this.typeAnnotations;
 
         this.emitBlock(`const typeMap${anyAnnotation} =`, ";", () => {
-            this.forEachClass("none", (t, name) => {
+            this.forEachObject("none", (t: ClassType, name: Name) => {
                 this.emitBlock(['"', name, '":'], ",", () => {
                     this.forEachClassProperty(t, "none", (propName, _propJsonName, property) => {
                         this.emitLine(propName, ": ", this.typeMapTypeForProperty(property), ",");

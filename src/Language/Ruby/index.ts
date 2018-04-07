@@ -150,7 +150,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         return keywords.globals.concat(["Types", "JSON", "Dry", "Constructor"]);
     }
 
-    protected forbiddenForClassProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_c: ClassType, _classNamed: Name): ForbiddenWordsInfo {
         return { names: keywords.reservedProperties, includeGlobalForbidden: true };
     }
 
@@ -158,7 +158,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         return new Namer("types", n => simpleNameStyle(n, true), []);
     }
 
-    protected namerForClassProperty(): Namer {
+    protected namerForObjectProperty(): Namer {
         return new Namer("properties", memberNameStyle, []);
     }
 
@@ -644,7 +644,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
         this.forEachNamedType(
             "leading-and-interposing",
-            (c, n) => this.emitClass(c, n),
+            (c: ClassType, n: Name) => this.emitClass(c, n),
             (e, n) => this.emitEnum(e, n),
             (u, n) => this.emitUnion(u, n)
         );

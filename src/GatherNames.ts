@@ -4,7 +4,7 @@ import { Set, OrderedSet, List } from "immutable";
 import * as pluralize from "pluralize";
 
 import { TypeGraph } from "./TypeGraph";
-import { matchCompoundType, Type } from "./Type";
+import { matchCompoundType, Type, ObjectType } from "./Type";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 
 export function gatherNames(graph: TypeGraph): void {
@@ -19,6 +19,18 @@ export function gatherNames(graph: TypeGraph): void {
     });
 
     let processed: Set<List<any>> = Set();
+
+    function processObjectType(o: ObjectType, names: OrderedSet<string>, parentNames: OrderedSet<string> | undefined) {
+        const properties = o.properties.sortBy((_, n) => n);
+        properties.forEach((property, propertyName) => {
+            processType(property.type, OrderedSet([propertyName]), names);
+        });
+
+        const values = o.additionalProperties;
+        if (values !== undefined) {
+            processType(values, names.map(pluralize.singular), parentNames, "value");
+        }
+    }
 
     function processType(
         t: Type,
@@ -59,15 +71,9 @@ export function gatherNames(graph: TypeGraph): void {
             arrayType => {
                 processType(arrayType.items, names.map(pluralize.singular), parentNames, "element");
             },
-            classType => {
-                const properties = classType.properties.sortBy((_, n) => n);
-                properties.forEach((property, propertyName) => {
-                    processType(property.type, OrderedSet([propertyName]), names);
-                });
-            },
-            mapType => {
-                processType(mapType.values, names.map(pluralize.singular), parentNames, "value");
-            },
+            classType => processObjectType(classType, names, parentNames),
+            mapType => processObjectType(mapType, names, parentNames),
+            objectType => processObjectType(objectType, names, parentNames),
             unionType => {
                 const members = unionType.members.sortBy(member => member.kind);
                 members.forEach(memberType => {

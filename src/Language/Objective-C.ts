@@ -270,7 +270,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
         return { names: forbiddenPropertyNames, includeGlobalForbidden: true };
     }
 
@@ -282,7 +282,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         return funPrefixNamer("types", rawName => typeNameStyle(this._classPrefix, rawName));
     }
 
-    protected namerForClassProperty(_: ClassType, p: ClassProperty): Namer {
+    protected namerForObjectProperty(_: ClassType, p: ClassProperty): Namer {
         // TODO why is underscore being removed?
         return new Namer("properties", s => propertyNameStyle(s, p.type.kind === "bool"), [
             "_",
@@ -937,7 +937,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             // Emit @class declarations for top-level array+maps and classes
             this.forEachNamedType(
                 "none",
-                (_, className) => this.emitLine("@class ", className, ";"),
+                (_: ClassType, className: Name) => this.emitLine("@class ", className, ";"),
                 (_, enumName) => this.emitLine("@class ", enumName, ";"),
                 () => null
             );

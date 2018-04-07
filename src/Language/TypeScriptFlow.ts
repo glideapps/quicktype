@@ -126,7 +126,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     protected emitTypes(): void {
         this.forEachNamedType(
             "leading-and-interposing",
-            (c, n) => this.emitClass(c, n),
+            (c: ClassType, n: Name) => this.emitClass(c, n),
             (e, n) => this.emitEnum(e, n),
             (u, n) => this.emitUnion(u, n)
         );

@@ -200,7 +200,7 @@ export class RustRenderer extends ConvenienceRenderer {
         return camelNamingFunction;
     }
 
-    protected namerForClassProperty(): Namer | null {
+    protected namerForObjectProperty(): Namer | null {
         return snakeNamingFunction;
     }
 
@@ -216,7 +216,7 @@ export class RustRenderer extends ConvenienceRenderer {
         return keywords;
     }
 
-    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -389,7 +389,7 @@ export class RustRenderer extends ConvenienceRenderer {
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
 
-        this.forEachClass("leading-and-interposing", (c, name) => this.emitStructDefinition(c, name));
+        this.forEachObject("leading-and-interposing", (c: ClassType, name: Name) => this.emitStructDefinition(c, name));
         this.forEachUnion("leading-and-interposing", (u, name) => this.emitUnion(u, name));
         this.forEachEnum("leading-and-interposing", (e, name) => this.emitEnumDefinition(e, name));
     }

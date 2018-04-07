@@ -196,11 +196,11 @@ export class ElmRenderer extends ConvenienceRenderer {
         return [encoder, decoder];
     }
 
-    protected namerForClassProperty(): Namer {
+    protected namerForObjectProperty(): Namer {
         return lowerNamingFunction;
     }
 
-    protected forbiddenForClassProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
+    protected forbiddenForObjectProperties(_c: ClassType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: true };
     }
 
@@ -570,7 +570,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             topLevelDecoders = topLevelDecoders.push(decoder);
             exports.push(name, encoder, decoder);
         });
-        this.forEachClass("none", (t, name) => {
+        this.forEachObject("none", (t: ClassType, name: Name) => {
             if (!this.topLevels.contains(t)) exports.push(name);
         });
         this.forEachEnum("none", (t, name) => {
