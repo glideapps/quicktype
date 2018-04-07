@@ -146,13 +146,8 @@ export class InputData {
         return this._schemaSources;
     }
 
-    private addSchemaInput(name: string, ref: Ref): void {
-        messageAssert(!lodash.has(this._schemas, [name]), ErrorMessage.MoreThanOneSchemaGiven, { name });
-        this._schemas[name] = { ref };
-    }
-
     // Returns whether we need IR for this type source
-    private async addTypeSource(source: TypeSource): Promise<boolean> {
+    private async addOtherTypeSource(source: TypeSource): Promise<boolean> {
         if (isGraphQLSource(source)) {
             const { name, schema, query } = source;
             this._graphQLs[name] = { schema, query: await toString(query) };
@@ -178,6 +173,31 @@ export class InputData {
         return assertNever(source);
     }
 
+    private addSchemaTypeSource(schemaSource: SchemaTypeSource): void {
+        const { uri, schema } = schemaSource;
+
+        let normalizedURI: uri.URI;
+        if (uri === undefined) {
+            normalizedURI = new URI(`-${this._schemaInputs.size + 1}`);
+        } else {
+            normalizedURI = new URI(uri).normalize();
+        }
+
+        if (schema === undefined) {
+            assert(uri !== undefined, "URI must be given if schema source is not specified");
+        } else {
+            this._schemaInputs = this._schemaInputs.set(
+                normalizedURI
+                    .clone()
+                    .hash("")
+                    .toString(),
+                schema
+            );
+        }
+
+        this._schemaSources = this._schemaSources.push([normalizedURI, schemaSource]);
+    }
+
     // Returns whether we need IR for this type source
     async addTypeSources(sources: TypeSource[]): Promise<boolean> {
         let needIR = false;
@@ -185,39 +205,23 @@ export class InputData {
         for (const source of sources) {
             const maybeSchemaSource = toSchemaSource(source);
 
-            if (maybeSchemaSource === undefined) {
-                needIR = await this.addTypeSource(source) || needIR;
+            if (maybeSchemaSource !== undefined) {
+                const [schemaSource, isDirectInput] = maybeSchemaSource;
+                needIR = isDirectInput || needIR;
+    
+                this.addSchemaTypeSource(schemaSource);
+            } else {    
+                needIR = await this.addOtherTypeSource(source) || needIR;
                 continue;
             }
-
-            const [schemaSource, isDirectInput] = maybeSchemaSource;
-            needIR = isDirectInput || needIR;
-
-            const { uri, schema } = schemaSource;
-
-            let normalizedURI: uri.URI;
-            if (uri === undefined) {
-                normalizedURI = new URI(`-${this._schemaInputs.size + 1}`);
-            } else {
-                normalizedURI = new URI(uri).normalize();
-            }
-
-            if (schema === undefined) {
-                assert(uri !== undefined, "URI must be given if schema source is not specified");
-            } else {
-                this._schemaInputs = this._schemaInputs.set(
-                    normalizedURI
-                        .clone()
-                        .hash("")
-                        .toString(),
-                    schema
-                );
-            }
-
-            this._schemaSources = this._schemaSources.push([normalizedURI, schemaSource]);
         }
 
         return needIR;
+    }
+    
+    private addSchemaInput(name: string, ref: Ref): void {
+        messageAssert(!lodash.has(this._schemas, [name]), ErrorMessage.MoreThanOneSchemaGiven, { name });
+        this._schemas[name] = { ref };
     }
 
     async addSchemaInputs(): Promise<JSONSchemaStore | undefined> {
