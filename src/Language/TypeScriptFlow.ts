@@ -195,7 +195,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected get moduleLine(): string | undefined {
-        return "export module Convert";
+        return "export namespace Convert";
     }
 
     protected emitModuleExports(): void {
