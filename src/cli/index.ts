@@ -122,7 +122,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
                     uri: fileOrUrl
                 });
             } else if (file.endsWith(".gqlschema")) {
-                messageAssert(graphQLSchema === undefined, ErrorMessage.MoreThanOneGraphQLSchemaInDir, {
+                messageAssert(graphQLSchema === undefined, ErrorMessage.DriverMoreThanOneGraphQLSchemaInDir, {
                     dir: dataDir
                 });
                 graphQLSchema = await readableFromFileOrURL(fileOrUrl);
@@ -139,7 +139,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
 
         if (graphQLSources.length > 0) {
             if (graphQLSchema === undefined) {
-                return messageError(ErrorMessage.NoGraphQLSchemaInDir, { dir: dataDir });
+                return messageError(ErrorMessage.DriverNoGraphQLSchemaInDir, { dir: dataDir });
             }
             const schema = parseJSON(await getStream(graphQLSchema), "GraphQL schema", graphQLSchemaFileName);
             for (const source of graphQLSources) {
@@ -182,12 +182,12 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
         }
 
         if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length + typeScriptSources.length > 0) {
-            return messageError(ErrorMessage.CannotMixJSONWithOtherSamples, { dir: dir });
+            return messageError(ErrorMessage.DriverCannotMixJSONWithOtherSamples, { dir: dir });
         }
 
         const oneUnlessEmpty = (xs: any[]) => Math.sign(xs.length);
         if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) + oneUnlessEmpty(typeScriptSources) > 1) {
-            return messageError(ErrorMessage.CannotMixNonJSONInputs, { dir: dir });
+            return messageError(ErrorMessage.DriverCannotMixNonJSONInputs, { dir: dir });
         }
 
         if (jsonSamples.length > 0) {
@@ -209,7 +209,7 @@ function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): strin
     if (options.out !== undefined) {
         let extension = path.extname(options.out);
         if (extension === "") {
-            return messageError(ErrorMessage.NoLanguageOrExtension);
+            return messageError(ErrorMessage.DriverNoLanguageOrExtension);
         }
         return extension.substr(1);
     }
@@ -239,12 +239,12 @@ function inferTopLevel(options: Partial<CLIOptions>): string {
 export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: string): CLIOptions {
     let srcLang = opts.srcLang;
     if (opts.graphqlSchema !== undefined || opts.graphqlIntrospect !== undefined) {
-        messageAssert(srcLang === undefined || srcLang === "graphql", ErrorMessage.SourceLangMustBeGraphQL);
+        messageAssert(srcLang === undefined || srcLang === "graphql", ErrorMessage.DriverSourceLangMustBeGraphQL);
         srcLang = "graphql";
     } else if (opts.src !== undefined && opts.src.length > 0 && opts.src.every(file => _.endsWith(file, ".ts"))) {
         srcLang = "typescript";
     } else {
-        messageAssert(srcLang !== "graphql", ErrorMessage.GraphQLSchemaNeeded);
+        messageAssert(srcLang !== "graphql", ErrorMessage.DriverGraphQLSchemaNeeded);
         srcLang = withDefault<string>(srcLang, "json");
     }
 
@@ -254,7 +254,7 @@ export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: str
     const lang = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultLanguage);
     const language = languageNamed(lang);
     if (language === undefined) {
-        return messageError(ErrorMessage.UnknownOutputLanguage, { lang });
+        return messageError(ErrorMessage.DriverUnknownOutputLanguage, { lang });
     }
 
     /* tslint:disable:strict-boolean-expressions */
@@ -545,7 +545,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         opts = commandLineArgs(definitions, { argv, partial });
     } catch (e) {
         assert(!partial, "Partial option parsing should not have failed");
-        return messageError(ErrorMessage.CLIOptionParsingFailed, { message: e.message });
+        return messageError(ErrorMessage.DriverCLIOptionParsingFailed, { message: e.message });
     }
 
     const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
@@ -688,7 +688,7 @@ export async function makeQuicktypeOptions(
                     return undefined;
                 }
                 if (numSources === 0) {
-                    return messageError(ErrorMessage.NoGraphQLQueryGiven);
+                    return messageError(ErrorMessage.DriverNoGraphQLQueryGiven);
                 }
             }
             const gqlSources: GraphQLTypeSource[] = [];
@@ -731,7 +731,7 @@ export async function makeQuicktypeOptions(
             }
             break;
         default:
-            return messageError(ErrorMessage.UnknownSourceLanguage, { lang: options.srcLang });
+            return messageError(ErrorMessage.DriverUnknownSourceLanguage, { lang: options.srcLang });
     }
 
     let handlebarsTemplate: string | undefined = undefined;
@@ -750,7 +750,7 @@ export async function makeQuicktypeOptions(
             } else if (component === "provenance") {
                 checkProvenance = true;
             } else {
-                return messageError(ErrorMessage.UnknownDebugOption, { option: component });
+                return messageError(ErrorMessage.DriverUnknownDebugOption, { option: component });
             }
         }
     }

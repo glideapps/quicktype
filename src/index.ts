@@ -38,7 +38,7 @@ export function getTargetLanguage(nameOrInstance: string | TargetLanguage): Targ
     if (language !== undefined) {
         return language;
     }
-    return messageError(ErrorMessage.UnknownOutputLanguage, { lang: nameOrInstance });
+    return messageError(ErrorMessage.DriverUnknownOutputLanguage, { lang: nameOrInstance });
 }
 
 export type RendererOptions = { [name: string]: string };

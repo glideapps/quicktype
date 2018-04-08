@@ -99,7 +99,10 @@ export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: strin
                     const highSurrogate = cc;
                     i++;
                     const lowSurrogate = s.charCodeAt(i);
-                    messageAssert(isLowSurrogate(lowSurrogate), ErrorMessage.UnicodeHighSurrogateWithoutLowSurrogate);
+                    messageAssert(
+                        isLowSurrogate(lowSurrogate),
+                        ErrorMessage.MiscUnicodeHighSurrogateWithoutLowSurrogate
+                    );
                     const highBits = highSurrogate - 0xd800;
                     const lowBits = lowSurrogate - 0xdc00;
                     cc = 0x10000 + lowBits + (highBits << 10);

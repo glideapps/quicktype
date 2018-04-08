@@ -135,6 +135,6 @@ export function unionMemberName(u: UnionType, member: Type, language: string): [
         isFixed = false;
     }
 
-    messageAssert(size === 1, ErrorMessage.MoreThanOneUnionMemberName, { names });
+    messageAssert(size === 1, ErrorMessage.SchemaMoreThanOneUnionMemberName, { names });
     return [first, isFixed];
 }

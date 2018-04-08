@@ -162,7 +162,7 @@ class GQLQuery {
                 this._fragments[def.name.value] = def;
             }
         }
-        messageAssert(queries.length >= 1, ErrorMessage.NoGraphQLQueriesDefined);
+        messageAssert(queries.length >= 1, ErrorMessage.GraphQLNoQueriesDefined);
         this.queries = List(queries);
     }
 

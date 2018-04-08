@@ -71,9 +71,9 @@ function pathElementEquals(a: PathElement, b: PathElement): boolean {
 
 export function checkJSONSchema(x: any): JSONSchema {
     if (typeof x === "boolean") return x;
-    if (Array.isArray(x)) return messageError(ErrorMessage.ArrayIsInvalidJSONSchema);
-    if (x === null) return messageError(ErrorMessage.NullIsInvalidJSONSchema);
-    if (typeof x !== "object") return messageError(ErrorMessage.InvalidJSONSchemaType, { type: typeof x });
+    if (Array.isArray(x)) return messageError(ErrorMessage.SchemaArrayIsInvalidSchema);
+    if (x === null) return messageError(ErrorMessage.SchemaNullIsInvalidSchema);
+    if (typeof x !== "object") return messageError(ErrorMessage.SchemaInvalidJSONSchemaType, { type: typeof x });
     return x;
 }
 
@@ -118,7 +118,7 @@ export class Ref {
 
     static parse(ref: any): Ref {
         if (typeof ref !== "string") {
-            return messageError(ErrorMessage.RefMustBeString);
+            return messageError(ErrorMessage.SchemaRefMustBeString);
         }
 
         return Ref.parseURI(new URI(ref), true);
@@ -249,16 +249,16 @@ export class Ref {
                     const key = first.key;
                     if (Array.isArray(local)) {
                         if (!/^\d+$/.test(key)) {
-                            return messageError(ErrorMessage.TryingToIndexSchemaArrayWithNonNumber, { actual: key });
+                            return messageError(ErrorMessage.SchemaCannotIndexArrayWithNonNumber, { actual: key });
                         }
                         const index = parseInt(first.key, 10);
                         if (index >= local.length) {
-                            return messageError(ErrorMessage.IndexNotInSchemaArray, { index });
+                            return messageError(ErrorMessage.SchemaIndexNotInArray, { index });
                         }
                         return lookup(local[index], rest);
                     } else {
                         if (!lodash.has(local, [key])) {
-                            return messageError(ErrorMessage.KeyNotInSchemaObject, { key });
+                            return messageError(ErrorMessage.SchemaKeyNotInObject, { key });
                         }
                         return lookup(checkStringMap(local)[first.key], rest);
                     }
@@ -342,7 +342,7 @@ class Canonizer {
 
     private addID(mapped: string, loc: Location): void {
         const ref = Ref.parse(mapped).resolveAgainst(loc.virtualRef);
-        messageAssert(ref.hasAddress, ErrorMessage.IDMustHaveAddress, { id: mapped });
+        messageAssert(ref.hasAddress, ErrorMessage.SchemaIDMustHaveAddress, { id: mapped });
         this._map = this._map.set(ref, loc.canonicalRef);
     }
 
@@ -433,25 +433,25 @@ function checkTypeList(typeOrTypes: any): OrderedSet<string> {
         const arr: string[] = [];
         for (const t of typeOrTypes) {
             if (typeof t !== "string") {
-                return messageError(ErrorMessage.TypeElementMustBeString, { element: t });
+                return messageError(ErrorMessage.SchemaTypeElementMustBeString, { element: t });
             }
             arr.push(t);
         }
         const set = OrderedSet(arr);
-        messageAssert(!set.isEmpty(), ErrorMessage.NoTypeSpecified);
+        messageAssert(!set.isEmpty(), ErrorMessage.SchemaNoTypeSpecified);
         return set;
     } else {
-        return messageError(ErrorMessage.TypeMustBeStringOrStringArray, { actual: typeOrTypes });
+        return messageError(ErrorMessage.SchemaTypeMustBeStringOrStringArray, { actual: typeOrTypes });
     }
 }
 
 function checkRequiredArray(arr: any): string[] {
     if (!Array.isArray(arr)) {
-        return messageError(ErrorMessage.RequiredMustBeStringOrStringArray, { actual: arr });
+        return messageError(ErrorMessage.SchemaRequiredMustBeStringOrStringArray, { actual: arr });
     }
     for (const e of arr) {
         if (typeof e !== "string") {
-            return messageError(ErrorMessage.RequiredElementMustBeString, { element: e });
+            return messageError(ErrorMessage.SchemaRequiredElementMustBeString, { element: e });
         }
     }
     return arr;
@@ -533,7 +533,7 @@ export async function addTypesInSchema(
         if (!additionalRequired.isEmpty()) {
             const t = additionalPropertiesType;
             if (t === undefined) {
-                return messageError(ErrorMessage.AdditionalTypesForbidRequired);
+                return messageError(ErrorMessage.SchemaAdditionalTypesForbidRequired);
             }
 
             const additionalProps = additionalRequired.toOrderedMap().map(_name => new ClassProperty(t, false));
@@ -579,7 +579,7 @@ export async function addTypesInSchema(
             } else if (typeof items === "object") {
                 itemType = await toType(checkStringMap(items), loc.push("items"), singularAttributes);
             } else if (items !== undefined) {
-                return messageError(ErrorMessage.ArrayItemsMustBeStringOrArray, { actual: items });
+                return messageError(ErrorMessage.SchemaArrayItemsMustBeStringOrArray, { actual: items });
             } else {
                 itemType = typeBuilder.getPrimitiveType("any");
             }
@@ -609,7 +609,7 @@ export async function addTypesInSchema(
 
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
             if (!Array.isArray(cases)) {
-                return messageError(ErrorMessage.SetOperationCasesIsNotArray, { operation: kind, cases });
+                return messageError(ErrorMessage.SchemaSetOperationCasesIsNotArray, { operation: kind, cases });
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
             return await mapSync(
@@ -633,7 +633,7 @@ export async function addTypesInSchema(
                 typeBuilder.addAttributes(unionType, identifierAttribute);
 
                 const accessors = checkArray(maybeAccessors, isAccessorEntry);
-                messageAssert(typeRefs.length === accessors.length, ErrorMessage.WrongAccessorEntryArrayLength, {
+                messageAssert(typeRefs.length === accessors.length, ErrorMessage.SchemaWrongAccessorEntryArrayLength, {
                     operation: kind
                 });
                 for (let i = 0; i < typeRefs.length; i++) {
@@ -763,7 +763,7 @@ export async function addTypesInSchema(
         if (typeof schema === "boolean") {
             // FIXME: Empty union.  We'd have to check that it's supported everywhere,
             // in particular in union flattening.
-            messageAssert(schema === true, ErrorMessage.FalseSchemaNotSupported);
+            messageAssert(schema === true, ErrorMessage.SchemaFalseNotSupported);
             result = typeBuilder.getPrimitiveType("any");
         } else {
             loc = loc.updateWithID(schema["$id"]);
@@ -798,7 +798,7 @@ function nameFromURI(uri: uri.URI): string | undefined {
     if (filename !== "") {
         return filename;
     }
-    return messageError(ErrorMessage.CannotInferNameForSchema, { uri: uri.toString() });
+    return messageError(ErrorMessage.DriverCannotInferNameForSchema, { uri: uri.toString() });
 }
 
 export async function refsInSchemaForURI(
@@ -821,7 +821,7 @@ export async function refsInSchemaForURI(
 
     if (propertiesAreTypes) {
         if (typeof schema !== "object") {
-            return messageError(ErrorMessage.CannotGetTypesFromBoolean, { ref: ref.toString() });
+            return messageError(ErrorMessage.SchemaCannotGetTypesFromBoolean, { ref: ref.toString() });
         }
         return Map(schema).map((_, name) => ref.push(name));
     } else {

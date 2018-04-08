@@ -22,9 +22,9 @@ export async function readableFromFileOrURL(fileOrURL: string): Promise<Readable
         }
     } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";
-        return messageError(ErrorMessage.ReadError, { fileOrURL, message });
+        return messageError(ErrorMessage.MiscReadError, { fileOrURL, message });
     }
-    return messageError(ErrorMessage.InputFileDoesNotExist, { filename: fileOrURL });
+    return messageError(ErrorMessage.DriverInputFileDoesNotExist, { filename: fileOrURL });
 }
 
 export async function readFromFileOrURL(fileOrURL: string): Promise<string> {
@@ -33,7 +33,7 @@ export async function readFromFileOrURL(fileOrURL: string): Promise<string> {
         return await getStream(readable);
     } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";
-        return messageError(ErrorMessage.ReadError, { fileOrURL, message });
+        return messageError(ErrorMessage.MiscReadError, { fileOrURL, message });
     }
 }
 

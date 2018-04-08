@@ -203,7 +203,7 @@ export class InputData {
     }
 
     private addSchemaInput(name: string, ref: Ref): void {
-        messageAssert(!lodash.has(this._schemas, [name]), ErrorMessage.MoreThanOneSchemaGiven, { name });
+        messageAssert(!lodash.has(this._schemas, [name]), ErrorMessage.DriverMoreThanOneSchemaGiven, { name });
         this._schemas[name] = { ref };
     }
 
