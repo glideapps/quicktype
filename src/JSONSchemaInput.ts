@@ -347,7 +347,7 @@ class Canonizer {
 
     private addID(mapped: string, loc: Location): void {
         const ref = Ref.parse(mapped).resolveAgainst(loc.virtualRef);
-        messageAssert(ref.hasAddress, ErrorMessage.SchemaIDMustHaveAddress, { id: mapped });
+        messageAssert(ref.hasAddress, ErrorMessage.SchemaIDMustHaveAddress, withRef(loc, { id: mapped }));
         this._map = this._map.set(ref, loc.canonicalRef);
     }
 
@@ -447,7 +447,7 @@ function checkTypeList(typeOrTypes: any, loc: Location): OrderedSet<string> {
     } else {
         return messageError(ErrorMessage.SchemaTypeMustBeStringOrStringArray, withRef(loc, { actual: typeOrTypes }));
     }
-    messageAssert(!set.isEmpty(), ErrorMessage.SchemaNoTypeSpecified);
+    messageAssert(!set.isEmpty(), ErrorMessage.SchemaNoTypeSpecified, withRef(loc));
     const validTypes = ["null", "boolean", "object", "array", "number", "string", "integer"];
     const maybeInvalid = set.find(s => validTypes.indexOf(s) < 0);
     if (maybeInvalid !== undefined) {
@@ -456,13 +456,13 @@ function checkTypeList(typeOrTypes: any, loc: Location): OrderedSet<string> {
     return set;
 }
 
-function checkRequiredArray(arr: any): string[] {
+function checkRequiredArray(arr: any, loc: Location): string[] {
     if (!Array.isArray(arr)) {
-        return messageError(ErrorMessage.SchemaRequiredMustBeStringOrStringArray, { actual: arr });
+        return messageError(ErrorMessage.SchemaRequiredMustBeStringOrStringArray, withRef(loc, { actual: arr }));
     }
     for (const e of arr) {
         if (typeof e !== "string") {
-            return messageError(ErrorMessage.SchemaRequiredElementMustBeString, { element: e });
+            return messageError(ErrorMessage.SchemaRequiredElementMustBeString, withRef(loc, { element: e }));
         }
     }
     return arr;
@@ -546,7 +546,7 @@ export async function addTypesInSchema(
         if (!additionalRequired.isEmpty()) {
             const t = additionalPropertiesType;
             if (t === undefined) {
-                return messageError(ErrorMessage.SchemaAdditionalTypesForbidRequired);
+                return messageError(ErrorMessage.SchemaAdditionalTypesForbidRequired, withRef(loc));
             }
 
             const additionalProps = additionalRequired.toOrderedMap().map(_name => new ClassProperty(t, false));
@@ -592,7 +592,7 @@ export async function addTypesInSchema(
             } else if (typeof items === "object") {
                 itemType = await toType(checkStringMap(items), loc.push("items"), singularAttributes);
             } else if (items !== undefined) {
-                return messageError(ErrorMessage.SchemaArrayItemsMustBeStringOrArray, { actual: items });
+                return messageError(ErrorMessage.SchemaArrayItemsMustBeStringOrArray, withRef(loc, { actual: items }));
             } else {
                 itemType = typeBuilder.getPrimitiveType("any");
             }
@@ -605,7 +605,7 @@ export async function addTypesInSchema(
             if (schema.required === undefined) {
                 required = [];
             } else {
-                required = checkRequiredArray(schema.required);
+                required = checkRequiredArray(schema.required, loc);
             }
 
             let properties: StringMap;
@@ -621,8 +621,9 @@ export async function addTypesInSchema(
         }
 
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
+            const kindLoc = loc.push(kind);
             if (!Array.isArray(cases)) {
-                return messageError(ErrorMessage.SchemaSetOperationCasesIsNotArray, { operation: kind, cases });
+                return messageError(ErrorMessage.SchemaSetOperationCasesIsNotArray, withRef(kindLoc, { operation: kind, cases }));
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
             return await mapSync(
@@ -630,7 +631,7 @@ export async function addTypesInSchema(
                 async (t, index) =>
                     await toType(
                         checkStringMap(t),
-                        loc.push(kind, index.toString()),
+                        kindLoc.push(index.toString()),
                         makeTypeAttributesInferred(typeAttributes)
                     )
             );
@@ -646,9 +647,8 @@ export async function addTypesInSchema(
                 typeBuilder.addAttributes(unionType, identifierAttribute);
 
                 const accessors = checkArray(maybeAccessors, isAccessorEntry);
-                messageAssert(typeRefs.length === accessors.length, ErrorMessage.SchemaWrongAccessorEntryArrayLength, {
-                    operation: kind
-                });
+                messageAssert(typeRefs.length === accessors.length, ErrorMessage.SchemaWrongAccessorEntryArrayLength,
+                    withRef(() => loc.canonicalRef.push(kind), { operation: kind }));
                 for (let i = 0; i < typeRefs.length; i++) {
                     typeBuilder.addAttributes(
                         typeRefs[i],
@@ -779,7 +779,7 @@ export async function addTypesInSchema(
         if (typeof schema === "boolean") {
             // FIXME: Empty union.  We'd have to check that it's supported everywhere,
             // in particular in union flattening.
-            messageAssert(schema === true, ErrorMessage.SchemaFalseNotSupported);
+            messageAssert(schema === true, ErrorMessage.SchemaFalseNotSupported, withRef(loc));
             result = typeBuilder.getPrimitiveType("any");
         } else {
             loc = loc.updateWithID(schema["$id"]);

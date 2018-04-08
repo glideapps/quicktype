@@ -14,19 +14,19 @@ export class ErrorMessage {
     static SchemaArrayIsInvalidSchema = "An array is not a valid JSON Schema at ${ref}";
     static SchemaNullIsInvalidSchema = "null is not a valid JSON Schema at ${ref}";
     static SchemaRefMustBeString = "$ref must be a string, but is an ${actual} at ${ref}";
-    static SchemaAdditionalTypesForbidRequired = "Can't have non-specified required properties but forbidden additionalTypes";
-    static SchemaNoTypeSpecified = "JSON Schema must specify at least one type";
+    static SchemaAdditionalTypesForbidRequired = "Can't have non-specified required properties but forbidden additionalTypes at ${ref}";
+    static SchemaNoTypeSpecified = "JSON Schema must specify at least one type at ${ref}";
     static SchemaInvalidType = "Invalid type ${type} in JSON Schema at ${ref}";
-    static SchemaFalseNotSupported = 'Schema "false" is not supported';
+    static SchemaFalseNotSupported = 'Schema "false" is not supported at ${ref}';
     static SchemaInvalidJSONSchemaType = "Value of type ${type} is not valid JSON Schema at ${ref}";
-    static SchemaRequiredMustBeStringOrStringArray = "`required` must be string or array of strings, but is ${actual}";
-    static SchemaRequiredElementMustBeString = "`required` must contain only strings, but it has ${element}";
+    static SchemaRequiredMustBeStringOrStringArray = "`required` must be string or array of strings, but is ${actual} at ${ref}";
+    static SchemaRequiredElementMustBeString = "`required` must contain only strings, but it has ${element}, at ${ref}";
     static SchemaTypeMustBeStringOrStringArray = "`type` must be string or array of strings, but is ${actual}";
     static SchemaTypeElementMustBeString = "`type` must contain only strings, but it has ${element}";
     static SchemaArrayItemsMustBeStringOrArray = "Array items must be an array or an object, but is ${actual}";
-    static SchemaIDMustHaveAddress = "$id doesn't have an address: ${id}";
-    static SchemaWrongAccessorEntryArrayLength = "Accessor entry array must have the same number of entries as the ${operation}";
-    static SchemaSetOperationCasesIsNotArray = "${operation} cases must be an array, but is ${cases}";
+    static SchemaIDMustHaveAddress = "$id ${id} doesn't have an address at ${ref}";
+    static SchemaWrongAccessorEntryArrayLength = "Accessor entry array must have the same number of entries as the ${operation} at ${ref}";
+    static SchemaSetOperationCasesIsNotArray = "${operation} cases must be an array, but is ${cases}, at ${ref}";
     static SchemaCannotFetch = "Cannot fetch schema at address ${address}";
     static SchemaMoreThanOneUnionMemberName = "More than one name given for union member: ${names}";
     static SchemaCannotGetTypesFromBoolean = "Schema value to get top-level types from must be an object, but is boolean, at ${ref}";
@@ -79,19 +79,19 @@ type Error =
     | { message: ErrorMessage.SchemaArrayIsInvalidSchema; properties: { ref: Ref } }
     | { message: ErrorMessage.SchemaNullIsInvalidSchema; properties: { ref: Ref } }
     | { message: ErrorMessage.SchemaRefMustBeString; properties: { actual: string; ref: Ref } }
-    | { message: ErrorMessage.SchemaAdditionalTypesForbidRequired; properties: {} }
-    | { message: ErrorMessage.SchemaNoTypeSpecified; properties: {} }
+    | { message: ErrorMessage.SchemaAdditionalTypesForbidRequired; properties: { ref: Ref } }
+    | { message: ErrorMessage.SchemaNoTypeSpecified; properties: { ref: Ref } }
     | { message: ErrorMessage.SchemaInvalidType; properties: { type: string; ref: Ref } }
-    | { message: ErrorMessage.SchemaFalseNotSupported; properties: {} }
+    | { message: ErrorMessage.SchemaFalseNotSupported; properties: { ref: Ref } }
     | { message: ErrorMessage.SchemaInvalidJSONSchemaType; properties: { type: string, ref: Ref } }
-    | { message: ErrorMessage.SchemaRequiredMustBeStringOrStringArray; properties: { actual: any } }
-    | { message: ErrorMessage.SchemaRequiredElementMustBeString; properties: { element: any } }
+    | { message: ErrorMessage.SchemaRequiredMustBeStringOrStringArray; properties: { actual: any; ref: Ref } }
+    | { message: ErrorMessage.SchemaRequiredElementMustBeString; properties: { element: any; ref: Ref } }
     | { message: ErrorMessage.SchemaTypeMustBeStringOrStringArray; properties: { actual: any } }
     | { message: ErrorMessage.SchemaTypeElementMustBeString; properties: { element: any; ref: Ref } }
     | { message: ErrorMessage.SchemaArrayItemsMustBeStringOrArray; properties: { actual: any; ref: Ref } }
-    | { message: ErrorMessage.SchemaIDMustHaveAddress, properties: { id: string } }
-    | { message: ErrorMessage.SchemaWrongAccessorEntryArrayLength, properties: { operation: string } }
-    | { message: ErrorMessage.SchemaSetOperationCasesIsNotArray; properties: { operation: string; cases: any } }
+    | { message: ErrorMessage.SchemaIDMustHaveAddress, properties: { id: string; ref: Ref } }
+    | { message: ErrorMessage.SchemaWrongAccessorEntryArrayLength, properties: { operation: string; ref: Ref } }
+    | { message: ErrorMessage.SchemaSetOperationCasesIsNotArray; properties: { operation: string; cases: any; ref: Ref } }
     | { message: ErrorMessage.SchemaCannotFetch; properties: { address: string } }
     | { message: ErrorMessage.SchemaMoreThanOneUnionMemberName; properties: { names: string[] } }
     | { message: ErrorMessage.SchemaCannotGetTypesFromBoolean; properties: { ref: string } }
