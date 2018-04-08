@@ -36,7 +36,7 @@ class CompilerHost implements ts.CompilerHost {
 
     fileExists(fileName: string): boolean {
         if (fileName === libFileName) return true;
-        return Object.prototype.hasOwnProperty.apply(this._sources, fileName);
+        return Object.prototype.hasOwnProperty.call(this._sources, fileName);
     }
 
     readFile(fileName: string): string | undefined {
