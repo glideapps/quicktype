@@ -16,6 +16,7 @@ export class ErrorMessage {
     static SchemaRefMustBeString = "$ref must be a string";
     static SchemaAdditionalTypesForbidRequired = "Can't have non-specified required properties but forbidden additionalTypes";
     static SchemaNoTypeSpecified = "JSON Schema must specify at least one type";
+    static SchemaInvalidType = "Invalid type ${type} in JSON Schema at ${ref}";
     static SchemaFalseNotSupported = 'Schema "false" is not supported';
     static SchemaInvalidJSONSchemaType = "Value of type ${type} is not valid JSON Schema at ${ref}";
     static SchemaRequiredMustBeStringOrStringArray = "`required` must be string or array of strings, but is ${actual}";
@@ -80,13 +81,14 @@ type Error =
     | { message: ErrorMessage.SchemaRefMustBeString; properties: {} }
     | { message: ErrorMessage.SchemaAdditionalTypesForbidRequired; properties: {} }
     | { message: ErrorMessage.SchemaNoTypeSpecified; properties: {} }
+    | { message: ErrorMessage.SchemaInvalidType; properties: { type: string; ref: Ref } }
     | { message: ErrorMessage.SchemaFalseNotSupported; properties: {} }
     | { message: ErrorMessage.SchemaInvalidJSONSchemaType; properties: { type: string, ref: Ref } }
     | { message: ErrorMessage.SchemaRequiredMustBeStringOrStringArray; properties: { actual: any } }
     | { message: ErrorMessage.SchemaRequiredElementMustBeString; properties: { element: any } }
     | { message: ErrorMessage.SchemaTypeMustBeStringOrStringArray; properties: { actual: any } }
-    | { message: ErrorMessage.SchemaTypeElementMustBeString; properties: { element: any } }
-    | { message: ErrorMessage.SchemaArrayItemsMustBeStringOrArray; properties: { actual: any } }
+    | { message: ErrorMessage.SchemaTypeElementMustBeString; properties: { element: any; ref: Ref } }
+    | { message: ErrorMessage.SchemaArrayItemsMustBeStringOrArray; properties: { actual: any; ref: Ref } }
     | { message: ErrorMessage.SchemaIDMustHaveAddress, properties: { id: string } }
     | { message: ErrorMessage.SchemaWrongAccessorEntryArrayLength, properties: { operation: string } }
     | { message: ErrorMessage.SchemaSetOperationCasesIsNotArray; properties: { operation: string; cases: any } }

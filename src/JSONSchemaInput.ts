@@ -434,23 +434,29 @@ function makeNonUnionAccessorAttributes(schema: StringMap): TypeAttributes | und
     return accessorNamesTypeAttributeKind.makeAttributes(checkAccessorNames(maybeAccessors));
 }
 
-function checkTypeList(typeOrTypes: any): OrderedSet<string> {
+function checkTypeList(typeOrTypes: any, loc: Location): OrderedSet<string> {
+    let set: OrderedSet<string>;
     if (typeof typeOrTypes === "string") {
-        return OrderedSet([typeOrTypes]);
+        set = OrderedSet([typeOrTypes]);
     } else if (Array.isArray(typeOrTypes)) {
         const arr: string[] = [];
         for (const t of typeOrTypes) {
             if (typeof t !== "string") {
-                return messageError(ErrorMessage.SchemaTypeElementMustBeString, { element: t });
+                return messageError(ErrorMessage.SchemaTypeElementMustBeString, withRef(loc, { element: t }));
             }
             arr.push(t);
         }
-        const set = OrderedSet(arr);
-        messageAssert(!set.isEmpty(), ErrorMessage.SchemaNoTypeSpecified);
-        return set;
+        set = OrderedSet(arr);
     } else {
-        return messageError(ErrorMessage.SchemaTypeMustBeStringOrStringArray, { actual: typeOrTypes });
+        return messageError(ErrorMessage.SchemaTypeMustBeStringOrStringArray, withRef(loc, { actual: typeOrTypes }));
     }
+    messageAssert(!set.isEmpty(), ErrorMessage.SchemaNoTypeSpecified);
+    const validTypes = ["null", "boolean", "object", "array", "number", "string", "integer"];
+    const maybeInvalid = set.find(s => validTypes.indexOf(s) < 0);
+    if (maybeInvalid !== undefined) {
+        return messageError(ErrorMessage.SchemaInvalidType, withRef(loc, { type: maybeInvalid }));
+    }
+    return set;
 }
 
 function checkRequiredArray(arr: any): string[] {
@@ -659,7 +665,7 @@ export async function addTypesInSchema(
         }
 
         const enumArray = Array.isArray(schema.enum) ? schema.enum : undefined;
-        const typeSet = mapOptional(checkTypeList, schema.type);
+        const typeSet = mapOptional(t => checkTypeList(t, loc), schema.type);
 
         function includePrimitiveType(name: string): boolean {
             if (typeSet !== undefined && !typeSet.has(name)) {
