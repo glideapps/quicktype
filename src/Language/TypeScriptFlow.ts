@@ -247,7 +247,7 @@ export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
 
 export class FlowRenderer extends TypeScriptFlowBaseRenderer {
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return ["Class", "Object", "String", "Array", "JSON"];
+        return ["Class", "Object", "String", "Array", "JSON", "Error"];
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {

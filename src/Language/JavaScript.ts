@@ -267,22 +267,22 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 stringArray: stringArrayAnnotation,
                 boolean: booleanAnnotation
             } = this.typeAnnotations;
-            this.emitMultiline(`
-${this.castFunctionLine} {
+            this.ensureBlankLine();
+            this.emitMultiline(`${this.castFunctionLine} {
     if (!isValid(typ, obj)) {
-        throw \`Invalid value\`;
+        throw Error(\`Invalid value\`);
     }
     return obj;
 }
 
 function isValid(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (typ === "any") return true;
-    if (typ === null) return val === null;
-    if (typ === false) return false;
+    if (typ === "any") { return true; }
+    if (typ === null) { return val === null; }
+    if (typ === false) { return false; }
     while (typeof typ === "object" && typ.ref !== undefined) {
         typ = typeMap[typ.ref];
     }
-    if (Array.isArray(typ)) return isValidEnum(typ, val);
+    if (Array.isArray(typ)) { return isValidEnum(typ, val); }
     if (typeof typ === "object") {
         return typ.hasOwnProperty("unionMembers") ? isValidUnion(typ.unionMembers, val)
             : typ.hasOwnProperty("arrayItems")    ? isValidArray(typ.arrayItems, val)
@@ -298,7 +298,7 @@ function isValidPrimitive(typ${stringAnnotation}, val${anyAnnotation}) {
 
 function isValidUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${booleanAnnotation} {
     // val must validate against one typ in typs
-    return typs.some(typ => isValid(typ, val));
+    return typs.some((typ) => isValid(typ, val));
 }
 
 function isValidEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${booleanAnnotation} {
@@ -307,14 +307,16 @@ function isValidEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${boolea
 
 function isValidArray(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
     // val must be an array with no invalid elements
-    return Array.isArray(val) && val.every(element => {
+    return Array.isArray(val) && val.every((element) => {
         return isValid(typ, element);
     });
 }
 
 function isValidObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (val === null || typeof val !== "object" || Array.isArray(val)) return false;
-    return Object.getOwnPropertyNames(val).every(key => {
+    if (val === null || typeof val !== "object" || Array.isArray(val)) {
+        return false;
+    }
+    return Object.getOwnPropertyNames(val).every((key) => {
         const prop = val[key];
         if (Object.prototype.hasOwnProperty.call(props, key)) {
             return isValid(props[key], prop);
