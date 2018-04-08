@@ -69,11 +69,18 @@ function pathElementEquals(a: PathElement, b: PathElement): boolean {
     }
 }
 
-export function checkJSONSchema(x: any): JSONSchema {
+function withRef(refOrLoc: Ref | (() => Ref) | Location): { ref: Ref };
+function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props?: T): T & { ref: Ref };
+function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props?: T): any {
+    const ref = typeof refOrLoc === "function" ? refOrLoc() : refOrLoc instanceof Ref ? refOrLoc : refOrLoc.canonicalRef;
+    return Object.assign({ ref }, props === undefined ? {} : props);
+}
+
+export function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema {
     if (typeof x === "boolean") return x;
-    if (Array.isArray(x)) return messageError(ErrorMessage.SchemaArrayIsInvalidSchema);
-    if (x === null) return messageError(ErrorMessage.SchemaNullIsInvalidSchema);
-    if (typeof x !== "object") return messageError(ErrorMessage.SchemaInvalidJSONSchemaType, { type: typeof x });
+    if (Array.isArray(x)) return messageError(ErrorMessage.SchemaArrayIsInvalidSchema, withRef(refOrLoc));
+    if (x === null) return messageError(ErrorMessage.SchemaNullIsInvalidSchema, withRef(refOrLoc));
+    if (typeof x !== "object") return messageError(ErrorMessage.SchemaInvalidJSONSchemaType, withRef(refOrLoc, { type: typeof x }));
     return x;
 }
 
@@ -220,7 +227,7 @@ export class Ref {
         function elementToString(e: PathElement): string {
             switch (e.kind) {
                 case PathElementKind.Root:
-                    return "/";
+                    return "";
                 case PathElementKind.Type:
                     return `type/${e.index.toString()}`;
                 case PathElementKind.Object:
@@ -235,42 +242,43 @@ export class Ref {
         return address + "#" + this.path.map(elementToString).join("/");
     }
 
-    lookupRef(root: JSONSchema): JSONSchema {
-        function lookup(local: any, path: List<PathElement>): JSONSchema {
-            const first = path.first();
-            if (first === undefined) {
-                return checkJSONSchema(local);
-            }
-            const rest = path.rest();
-            switch (first.kind) {
-                case PathElementKind.Root:
-                    return lookup(root, rest);
-                case PathElementKind.KeyOrIndex:
-                    const key = first.key;
-                    if (Array.isArray(local)) {
-                        if (!/^\d+$/.test(key)) {
-                            return messageError(ErrorMessage.SchemaCannotIndexArrayWithNonNumber, { actual: key });
-                        }
-                        const index = parseInt(first.key, 10);
-                        if (index >= local.length) {
-                            return messageError(ErrorMessage.SchemaIndexNotInArray, { index });
-                        }
-                        return lookup(local[index], rest);
-                    } else {
-                        if (!lodash.has(local, [key])) {
-                            return messageError(ErrorMessage.SchemaKeyNotInObject, { key });
-                        }
-                        return lookup(checkStringMap(local)[first.key], rest);
-                    }
-                case PathElementKind.Type:
-                    return panic('Cannot look up path that indexes "type"');
-                case PathElementKind.Object:
-                    return panic('Cannot look up path that indexes "object"');
-                default:
-                    return assertNever(first);
-            }
+    private lookup(local: any, path: List<PathElement>, root: JSONSchema): JSONSchema {
+        const first = path.first();
+        if (first === undefined) {
+            return checkJSONSchema(local, () => new Ref(this.addressURI, path));
         }
-        return lookup(root, this.path);
+        const rest = path.rest();
+        switch (first.kind) {
+            case PathElementKind.Root:
+                return this.lookup(root, rest, root);
+            case PathElementKind.KeyOrIndex:
+                const key = first.key;
+                if (Array.isArray(local)) {
+                    if (!/^\d+$/.test(key)) {
+                        return messageError(ErrorMessage.SchemaCannotIndexArrayWithNonNumber, { actual: key });
+                    }
+                    const index = parseInt(first.key, 10);
+                    if (index >= local.length) {
+                        return messageError(ErrorMessage.SchemaIndexNotInArray, { index });
+                    }
+                    return this.lookup(local[index], rest, root);
+                } else {
+                    if (!lodash.has(local, [key])) {
+                        return messageError(ErrorMessage.SchemaKeyNotInObject, { key });
+                    }
+                    return this.lookup(checkStringMap(local)[first.key], rest, root);
+                }
+            case PathElementKind.Type:
+                return panic('Cannot look up path that indexes "type"');
+            case PathElementKind.Object:
+                return panic('Cannot look up path that indexes "object"');
+            default:
+                return assertNever(first);
+        }
+    }
+
+    lookupRef(root: JSONSchema): JSONSchema {
+        return this.lookup(root, this.path, root);
     }
 
     equals(other: any): boolean {
@@ -509,9 +517,10 @@ export async function addTypesInSchema(
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
         // we would use a JSON parser that preserves order.
         let props = (await mapSync(propertiesMap, async (propSchema, propName) => {
+            const propLoc = loc.push("properties", propName);
             const t = await toType(
-                checkJSONSchema(propSchema),
-                loc.push("properties", propName),
+                checkJSONSchema(propSchema, propLoc.canonicalRef),
+                propLoc,
                 makeNamesTypeAttributes(pluralize.singular(propName), true)
             );
             const isOptional = !required.has(propName);
@@ -523,9 +532,10 @@ export async function addTypesInSchema(
         } else if (additionalProperties === false) {
             additionalPropertiesType = undefined;
         } else {
+            const additionalLoc = loc.push("additionalProperties");
             additionalPropertiesType = await toType(
-                checkJSONSchema(additionalProperties),
-                loc.push("additionalProperties"),
+                checkJSONSchema(additionalProperties, additionalLoc.canonicalRef),
+                additionalLoc,
                 singularizeTypeNames(attributes)
             );
         }

@@ -89,7 +89,7 @@ class InputJSONSchemaStore extends JSONSchemaStore {
     async fetch(address: string): Promise<JSONSchema | undefined> {
         const maybeInput = this._inputs.get(address);
         if (maybeInput !== undefined) {
-            return checkJSONSchema(parseJSON(await toString(maybeInput), "JSON Schema", address));
+            return checkJSONSchema(parseJSON(await toString(maybeInput), "JSON Schema", address), () => Ref.root(address));
         }
         if (this._delegate === undefined) {
             return panic(`Schema URI ${address} requested, but no store given`);

@@ -11,13 +11,13 @@ export class ErrorMessage {
     static MiscUnicodeHighSurrogateWithoutLowSurrogate = "Malformed unicode: High surrogate not followed by low surrogate";
 
     // JSON Schema input
-    static SchemaArrayIsInvalidSchema = "An array is not a valid JSON Schema";
-    static SchemaNullIsInvalidSchema = "null is not a valid JSON Schema";
+    static SchemaArrayIsInvalidSchema = "An array is not a valid JSON Schema at ${ref}";
+    static SchemaNullIsInvalidSchema = "null is not a valid JSON Schema at ${ref}";
     static SchemaRefMustBeString = "$ref must be a string";
     static SchemaAdditionalTypesForbidRequired = "Can't have non-specified required properties but forbidden additionalTypes";
     static SchemaNoTypeSpecified = "JSON Schema must specify at least one type";
     static SchemaFalseNotSupported = 'Schema "false" is not supported';
-    static SchemaInvalidJSONSchemaType = "Value of type ${type} is not valid JSON Schema";
+    static SchemaInvalidJSONSchemaType = "Value of type ${type} is not valid JSON Schema at ${ref}";
     static SchemaRequiredMustBeStringOrStringArray = "`required` must be string or array of strings, but is ${actual}";
     static SchemaRequiredElementMustBeString = "`required` must contain only strings, but it has ${element}";
     static SchemaTypeMustBeStringOrStringArray = "`type` must be string or array of strings, but is ${actual}";
@@ -75,13 +75,13 @@ type Error =
     | { message: ErrorMessage.MiscUnicodeHighSurrogateWithoutLowSurrogate; properties: {} }
 
     // JSON Schema input
-    | { message: ErrorMessage.SchemaArrayIsInvalidSchema; properties: {} }
-    | { message: ErrorMessage.SchemaNullIsInvalidSchema; properties: {} }
+    | { message: ErrorMessage.SchemaArrayIsInvalidSchema; properties: { ref: Ref } }
+    | { message: ErrorMessage.SchemaNullIsInvalidSchema; properties: { ref: Ref } }
     | { message: ErrorMessage.SchemaRefMustBeString; properties: {} }
     | { message: ErrorMessage.SchemaAdditionalTypesForbidRequired; properties: {} }
     | { message: ErrorMessage.SchemaNoTypeSpecified; properties: {} }
     | { message: ErrorMessage.SchemaFalseNotSupported; properties: {} }
-    | { message: ErrorMessage.SchemaInvalidJSONSchemaType; properties: { type: string } }
+    | { message: ErrorMessage.SchemaInvalidJSONSchemaType; properties: { type: string, ref: Ref } }
     | { message: ErrorMessage.SchemaRequiredMustBeStringOrStringArray; properties: { actual: any } }
     | { message: ErrorMessage.SchemaRequiredElementMustBeString; properties: { element: any } }
     | { message: ErrorMessage.SchemaTypeMustBeStringOrStringArray; properties: { actual: any } }
@@ -169,7 +169,9 @@ export function messageError(message: string, properties?: StringMap): never {
     if (properties !== undefined) {
         for (const name of Object.getOwnPropertyNames(properties)) {
             let value = properties[name];
-            if (typeof value !== "string") {
+            if (typeof value === "object" && typeof value.toString === "function") {
+                value = value.toString();
+            } else if (typeof value !== "string") {
                 value = JSON.stringify(value);
             }
             userMessage = userMessage.replace("${" + name + "}", value);
