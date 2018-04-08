@@ -1,6 +1,6 @@
 "use strict";
 
-import { Type, matchType, directlyReachableSingleNamedType, ClassProperty, ClassType } from "../Type";
+import { Type, matchType, directlyReachableSingleNamedType, ClassProperty, ClassType, ObjectType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import {
     utf16LegalizeCharacters,
@@ -11,7 +11,7 @@ import {
     allUpperWordStyle,
     camelCase
 } from "../Strings";
-import { intercalate } from "../Support";
+import { intercalate, panic } from "../Support";
 
 import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";
@@ -41,6 +41,10 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
+    get supportsFullObjectType(): boolean {
         return true;
     }
 
@@ -142,18 +146,21 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     typeMapTypeFor = (t: Type): Sourcelike => {
+        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
+            return ['r("', this.nameForNamedType(t), '")'];
+        }
         return matchType<Sourcelike>(
             t,
-            _anyType => `undefined`,
+            _anyType => '"any"',
             _nullType => `null`,
             _boolType => `true`,
             _integerType => `0`,
             _doubleType => `3.14`,
             _stringType => `""`,
             arrayType => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
-            classType => ['r("', this.nameForNamedType(classType), '")'],
+            _classType => panic("We handled this above"),
             mapType => ["m(", this.typeMapTypeFor(mapType.values), ")"],
-            enumType => ['r("', this.nameForNamedType(enumType), '")'],
+            _enumType => panic("We handled this above"),
             unionType => {
                 const children = unionType.children.map(this.typeMapTypeFor);
                 return ["u(", ...intercalate(", ", children).toArray(), ")"];
@@ -169,18 +176,20 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return ["u(undefined, ", typeMap, ")"];
     }
 
-    emitBlock = (source: Sourcelike, end: string, emit: () => void) => {
-        this.emitLine(source, " {");
+    emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void) {
+        this.emitLine(source, "{");
         this.indent(emit);
         this.emitLine("}", end);
-    };
+    }
 
     emitTypeMap = () => {
         const { any: anyAnnotation } = this.typeAnnotations;
 
-        this.emitBlock(`const typeMap${anyAnnotation} =`, ";", () => {
-            this.forEachObject("none", (t: ClassType, name: Name) => {
-                this.emitBlock(['"', name, '": c('], "),", () => {
+        this.emitBlock(`const typeMap${anyAnnotation} = `, ";", () => {
+            this.forEachObject("none", (t: ObjectType, name: Name) => {
+                const additional =
+                    t.additionalProperties !== undefined ? this.typeMapTypeFor(t.additionalProperties) : "false";
+                this.emitBlock(['"', name, '": o('], [", ", additional, "),"], () => {
                     this.forEachClassProperty(t, "none", (propName, _propJsonName, property) => {
                         this.emitLine(propName, ": ", this.typeMapTypeForProperty(property), ",");
                     });
@@ -236,7 +245,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 
     private emitConvertModuleBody(): void {
         this.forEachTopLevel("interposing", (t, name) => {
-            this.emitBlock(this.deserializerFunctionLine(t, name), "", () => {
+            this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
                 if (!this._runtimeTypecheck) {
                     this.emitLine("return JSON.parse(json);");
                 } else {
@@ -245,7 +254,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             });
             this.ensureBlankLine();
 
-            this.emitBlock(this.serializerFunctionLine(t, name), "", () => {
+            this.emitBlock([this.serializerFunctionLine(t, name), " "], "", () => {
                 this.emitLine("return JSON.stringify(value, null, 2);");
             });
         });
@@ -267,7 +276,7 @@ ${this.castFunctionLine} {
 }
 
 function isValid(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (typ === undefined) return true;
+    if (typ === "any") return true;
     if (typ === null) return val === null;
     if (typ === false) return false;
     while (typeof typ === "object" && typ.ref !== undefined) {
@@ -322,8 +331,8 @@ function u(...typs${anyArrayAnnotation}) {
     return { unionMembers: typs };
 }
 
-function c(props${anyMapAnnotation}) {
-    return { props, additional: false };
+function o(props${anyMapAnnotation}, additional${anyAnnotation}) {
+    return { props, additional };
 }
 
 function m(additional${anyAnnotation}) {
@@ -348,7 +357,7 @@ function r(name${stringAnnotation}) {
         if (moduleLine === undefined) {
             this.emitConvertModuleBody();
         } else {
-            this.emitBlock(moduleLine, "", () => this.emitConvertModuleBody());
+            this.emitBlock([moduleLine, " "], "", () => this.emitConvertModuleBody());
         }
     }
 
@@ -380,7 +389,7 @@ function r(name${stringAnnotation}) {
     protected emitModuleExports(): void {
         this.ensureBlankLine();
 
-        this.emitBlock("module.exports =", ";", () => {
+        this.emitBlock("module.exports = ", ";", () => {
             this.forEachTopLevel("none", (_, name) => {
                 const serializer = this.serializerFunctionName(name);
                 const deserializer = this.deserializerFunctionName(name);

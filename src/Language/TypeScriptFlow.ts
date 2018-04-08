@@ -9,7 +9,7 @@ import { Name } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { BooleanOption, Option } from "../RendererOptions";
 import { JavaScriptTargetLanguage, JavaScriptRenderer } from "./JavaScript";
-import { defined } from "../Support";
+import { defined, panic } from "../Support";
 import { TargetLanguage } from "../TargetLanguage";
 
 export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
@@ -63,6 +63,9 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     private sourceFor(t: Type): MultiWord {
+        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
+            return singleWord(this.nameForNamedType(t));
+        }
         return matchType<MultiWord>(
             t,
             _anyType => singleWord("any"),
@@ -82,9 +85,9 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
                     return singleWord([parenIfNeeded(itemType), "[]"]);
                 }
             },
-            classType => singleWord(this.nameForNamedType(classType)),
+            _classType => panic("We handled this above"),
             mapType => singleWord(["{ [key: string]: ", this.sourceFor(mapType.values).source, " }"]),
-            enumType => singleWord(this.nameForNamedType(enumType)),
+            _enumType => panic("We handled this above"),
             unionType => {
                 if (this._inlineUnions || nullableFromUnion(unionType) !== null) {
                     const children = unionType.children.map(c => parenIfNeeded(this.sourceFor(c)));
@@ -213,7 +216,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
     protected emitEnum(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
-        this.emitBlock(["export enum ", enumName], "", () => {
+        this.emitBlock(["export enum ", enumName, " "], "", () => {
             this.forEachEnumCase(e, "none", (name, jsonName) => {
                 this.emitLine(name, ` = "${utf16StringEscape(jsonName)}",`);
             });
@@ -221,7 +224,7 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected emitClassBlock(c: ClassType, className: Name): void {
-        this.emitBlock(["export interface ", className], "", () => {
+        this.emitBlock(["export interface ", className, " "], "", () => {
             this.emitClassBlockBody(c);
         });
     }
@@ -265,7 +268,7 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
     }
 
     protected emitClassBlock(c: ClassType, className: Name): void {
-        this.emitBlock(["export type ", className, " ="], ";", () => {
+        this.emitBlock(["export type ", className, " = "], ";", () => {
             this.emitClassBlockBody(c);
         });
     }
