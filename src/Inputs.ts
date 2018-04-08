@@ -5,11 +5,11 @@ import { getStream } from "./get-stream";
 import { Readable } from "stream";
 
 import { schemaForTypeScriptSources } from "./TypeScriptInput";
-import { Ref, checkJSONSchema, definitionRefsInSchema } from "./JSONSchemaInput";
+import { Ref, checkJSONSchema, refsInSchemaForURI } from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
 import { parseJSON, panic, assertNever, assert, forEachSync, defined } from "./Support";
-import { messageAssert, ErrorMessage, messageError } from "./Messages";
+import { messageAssert, ErrorMessage } from "./Messages";
 
 const stringToStream = require("string-to-stream");
 
@@ -48,7 +48,6 @@ export interface SchemaTypeSource {
     name: string;
     uri?: string;
     schema?: StringInput;
-    topLevelRefs?: string[];
 }
 
 function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
@@ -63,7 +62,7 @@ function toSchemaSource(source: TypeSource): [SchemaTypeSource, boolean] | undef
             kind: "schema",
             name: "",
             schema: schemaForTypeScriptSources(source.sources),
-            topLevelRefs: ["/definitions/"]
+            uri: "#/definitions/"
         }, false];
     }
     return undefined;
@@ -97,26 +96,6 @@ class InputJSONSchemaStore extends JSONSchemaStore {
         }
         return await this._delegate.fetch(address);
     }
-}
-
-function nameFromURI(uri: uri.URI): string {
-    // FIXME: Try `title` first.
-    const fragment = uri.fragment();
-    if (fragment !== "") {
-        const components = fragment.split("/");
-        const len = components.length;
-        if (components[len - 1] !== "") {
-            return components[len - 1];
-        }
-        if (len > 1 && components[len - 2] !== "") {
-            return components[len - 2];
-        }
-    }
-    const filename = uri.filename();
-    if (filename !== "") {
-        return filename;
-    }
-    return messageError(ErrorMessage.CannotInferNameForSchema, { uri: uri.toString() });
 }
 
 export class InputData {
@@ -177,10 +156,14 @@ export class InputData {
         const { uri, schema } = schemaSource;
 
         let normalizedURI: uri.URI;
+        const uriPath = `-${this._schemaInputs.size + 1}`;
         if (uri === undefined) {
-            normalizedURI = new URI(`-${this._schemaInputs.size + 1}`);
+            normalizedURI = new URI(uriPath);
         } else {
             normalizedURI = new URI(uri).normalize();
+            if (normalizedURI.clone().hash("").toString() === "") {
+                normalizedURI.path(uriPath);
+            }
         }
 
         if (schema === undefined) {
@@ -218,7 +201,7 @@ export class InputData {
 
         return needIR;
     }
-    
+
     private addSchemaInput(name: string, ref: Ref): void {
         messageAssert(!lodash.has(this._schemas, [name]), ErrorMessage.MoreThanOneSchemaGiven, { name });
         this._schemas[name] = { ref };
@@ -237,22 +220,21 @@ export class InputData {
         }
 
         await forEachSync(this._schemaSources, async ([normalizedURI, source]) => {
-            const { name, topLevelRefs } = source;
-            const uriString = normalizedURI.toString();
+            const givenName = source.name;
 
-            if (topLevelRefs !== undefined) {
-                messageAssert(
-                    topLevelRefs.length === 1 && topLevelRefs[0] === "/definitions/",
-                    ErrorMessage.InvalidSchemaTopLevelRefs,
-                    { actual: topLevelRefs }
-                );
-                const definitionRefs = await definitionRefsInSchema(defined(schemaStore), uriString);
-                definitionRefs.forEach((ref, refName) => {
+            const refs = await refsInSchemaForURI(defined(schemaStore), normalizedURI, givenName);
+            if (Array.isArray(refs)) {
+                let name: string;
+                if (this._schemaSources.size === 1) {
+                    name = givenName;
+                } else {
+                    name = refs[0];
+                }
+                this.addSchemaInput(name, refs[1]);
+            } else {
+                refs.forEach((ref, refName) => {
                     this.addSchemaInput(refName, ref);
                 });
-            } else {
-                const nameForSource = this._schemaSources.size === 1 ? name : nameFromURI(normalizedURI);
-                this.addSchemaInput(nameForSource, Ref.parse(uriString));
             }
         });
 

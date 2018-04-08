@@ -101,12 +101,11 @@ export class Ref {
         return List(elements);
     }
 
-    static parse(ref: any): Ref {
-        if (typeof ref !== "string") {
-            return messageError(ErrorMessage.RefMustBeString);
+    static parseURI(uri: uri.URI, destroyURI: boolean = false): Ref {
+        if (!destroyURI) {
+            uri = uri.clone();
         }
 
-        const uri = new URI(ref);
         let path = uri.fragment();
         uri.fragment("");
         if ((uri.host() !== "" || uri.filename() !== "") && path === "") {
@@ -116,13 +115,19 @@ export class Ref {
         return new Ref(uri, elements);
     }
 
+    static parse(ref: any): Ref {
+        if (typeof ref !== "string") {
+            return messageError(ErrorMessage.RefMustBeString);
+        }
+
+        return Ref.parseURI(new URI(ref), true);
+    }
+
     public addressURI: uri.URI | undefined;
 
     constructor(addressURI: uri.URI | undefined, readonly path: List<PathElement>) {
         if (addressURI !== undefined) {
-            messageAssert(addressURI.fragment() === "", ErrorMessage.RefWithFragmentNotAllowed, {
-                ref: addressURI.toString()
-            });
+            assert(addressURI.fragment() === "", `Ref URI with fragment is not allowed: ${addressURI.toString()}`);
             this.addressURI = addressURI.clone().normalize();
         } else {
             this.addressURI = undefined;
@@ -135,6 +140,10 @@ export class Ref {
 
     get address(): string {
         return defined(this.addressURI).toString();
+    }
+
+    get isRoot(): boolean {
+        return this.path.size === 1 && defined(this.path.first()).kind === PathElementKind.Root;
     }
 
     private pushElement(pe: PathElement): Ref {
@@ -760,17 +769,57 @@ export async function addTypesInSchema(
     });
 }
 
-export async function definitionRefsInSchema(store: JSONSchemaStore, address: string): Promise<Map<string, Ref>> {
-    const ref = Ref.parse(address);
+function nameFromURI(uri: uri.URI): string | undefined {
+    // FIXME: Try `title` first.
+    const fragment = uri.fragment();
+    if (fragment !== "") {
+        const components = fragment.split("/");
+        const len = components.length;
+        if (components[len - 1] !== "") {
+            return components[len - 1];
+        }
+        if (len > 1 && components[len - 2] !== "") {
+            return components[len - 2];
+        }
+    }
+    const filename = uri.filename();
+    if (filename !== "") {
+        return filename;
+    }
+    return messageError(ErrorMessage.CannotInferNameForSchema, { uri: uri.toString() });
+}
+
+export async function refsInSchemaForURI(
+    store: JSONSchemaStore,
+    uri: uri.URI,
+    defaultName: string
+): Promise<Map<string, Ref> | [string, Ref]> {
+    const fragment = uri.fragment();
+    let propertiesAreTypes = fragment.endsWith("/");
+    if (propertiesAreTypes) {
+        uri = uri.clone().fragment(fragment.substr(0, fragment.length - 1));
+    }
+    const ref = Ref.parseURI(uri);
+    if (ref.isRoot) {
+        propertiesAreTypes = false;
+    }
+
     const rootSchema = await store.get(ref.address);
     const schema = ref.lookupRef(rootSchema);
-    if (typeof schema !== "object") return Map();
-    const definitions = schema.definitions;
-    if (typeof definitions !== "object") return Map();
-    const definitionsRef = ref.push("definitions");
-    return Map(
-        Object.getOwnPropertyNames(definitions).map(name => {
-            return [name, definitionsRef.push(name)] as [string, Ref];
-        })
-    );
+
+    if (propertiesAreTypes) {
+        if (typeof schema !== "object") {
+            return messageError(ErrorMessage.CannotGetTypesFromBoolean, { ref: ref.toString() });
+        }
+        return Map(schema).map((_, name) => ref.push(name));
+    } else {
+        let name: string;
+        if (typeof schema === "object" && typeof schema.title === "string") {
+            name = schema.title;
+        } else {
+            const maybeName = nameFromURI(uri);
+            name = maybeName !== undefined ? maybeName : defaultName;
+        }
+        return [name, ref];
+    }
 }

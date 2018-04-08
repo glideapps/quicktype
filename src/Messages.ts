@@ -17,7 +17,6 @@ export class ErrorMessage {
     static AdditionalTypesForbidRequired = "Can't have non-specified required properties but forbidden additionalTypes";
     static NoTypeSpecified = "JSON Schema must specify at least one type";
     static FalseSchemaNotSupported = 'Schema "false" is not supported';
-    static RefWithFragmentNotAllowed = "Ref URI with fragment is not allowed: ${ref}";
     static InvalidJSONSchemaType = "Value of type ${type} is not valid JSON Schema";
     static RequiredMustBeStringOrStringArray = "`required` must be string or array of strings, but is ${actual}";
     static RequiredElementMustBeString = "`required` must contain only strings, but it has ${element}";
@@ -29,6 +28,7 @@ export class ErrorMessage {
     static SetOperationCasesIsNotArray = "${operation} cases must be an array, but is ${cases}";
     static CannotFetchSchema = "Cannot fetch schema at address ${address}";
     static MoreThanOneUnionMemberName = "More than one name given for union member: ${names}";
+    static CannotGetTypesFromBoolean = "Schema value to get top-level types from must be an object, but is boolean, at ${ref}";
 
     // GraphQL input
     static NoGraphQLQueriesDefined = "GraphQL file doesn't have any queries defined.";
@@ -47,7 +47,6 @@ export class ErrorMessage {
     static CannotMixJSONWithOtherSamples = "Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript in input subdirectory ${dir}";
     static CannotMixNonJSONInputs = "Cannot mix JSON Schema, GraphQL, and TypeScript in an input subdirectory ${dir}";
     static UnknownDebugOption = "Unknown debug option ${option}";
-    static InvalidSchemaTopLevelRefs = "Schema top level refs must be `/definitions/`, but is `${actual}`";
     static NoLanguageOrExtension = "Please specify a language (--lang) or an output file extension";
     static CLIOptionParsingFailed = "Option parsing failed: ${message}";
 
@@ -79,7 +78,6 @@ type Error =
     | { message: ErrorMessage.AdditionalTypesForbidRequired; properties: {} }
     | { message: ErrorMessage.NoTypeSpecified; properties: {} }
     | { message: ErrorMessage.FalseSchemaNotSupported; properties: {} }
-    | { message: ErrorMessage.RefWithFragmentNotAllowed; properties: { ref: string } }
     | { message: ErrorMessage.InvalidJSONSchemaType; properties: { type: string } }
     | { message: ErrorMessage.RequiredMustBeStringOrStringArray; properties: { actual: any } }
     | { message: ErrorMessage.RequiredElementMustBeString; properties: { element: any } }
@@ -91,7 +89,7 @@ type Error =
     | { message: ErrorMessage.SetOperationCasesIsNotArray; properties: { operation: string; cases: any } }
     | { message: ErrorMessage.CannotFetchSchema; properties: { address: string } }
     | { message: ErrorMessage.MoreThanOneUnionMemberName; properties: { names: string[] } }
-    | { message: ErrorMessage.InvalidSchemaTopLevelRefs; properties: { actual: string[] } }
+    | { message: ErrorMessage.CannotGetTypesFromBoolean; properties: { ref: string } }
 
     // GraphQL input
     | { message: ErrorMessage.NoGraphQLQueriesDefined; properties: {} }
