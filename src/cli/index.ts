@@ -11,10 +11,17 @@ import {
     quicktypeMultiFile,
     SerializedRenderResult,
     TargetLanguage,
-    languageNamed    
+    languageNamed
 } from "..";
 
-import { JSONTypeSource, TypeSource, GraphQLTypeSource, StringInput, SchemaTypeSource, TypeScriptTypeSource } from "../Inputs";
+import {
+    JSONTypeSource,
+    TypeSource,
+    GraphQLTypeSource,
+    StringInput,
+    SchemaTypeSource,
+    TypeScriptTypeSource
+} from "../Inputs";
 import { OptionDefinition } from "../RendererOptions";
 import * as defaultTargetLanguages from "../Language/All";
 import { urlsFromURLGrammar } from "../URLGrammar";
@@ -596,10 +603,7 @@ async function typeSourcesForURIs(name: string, uris: string[], options: CLIOpti
         case "json":
             return [await sourceFromFileOrUrlArray(name, uris)];
         case "schema":
-            return uris.map(
-                uri =>
-                    ({ kind: "schema", name, uri } as SchemaTypeSource)
-            );
+            return uris.map(uri => ({ kind: "schema", name, uri } as SchemaTypeSource));
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);
     }

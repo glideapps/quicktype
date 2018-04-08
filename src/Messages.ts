@@ -29,6 +29,9 @@ export class ErrorMessage {
     static CannotFetchSchema = "Cannot fetch schema at address ${address}";
     static MoreThanOneUnionMemberName = "More than one name given for union member: ${names}";
     static CannotGetTypesFromBoolean = "Schema value to get top-level types from must be an object, but is boolean, at ${ref}";
+    static TryingToIndexSchemaArrayWithNonNumber = "Trying to index array in schema with key that is not a number, but is ${actual}";
+    static IndexNotInSchemaArray = "Index out of range of schema array: ${index}";
+    static KeyNotInSchemaObject = "Key not in schema object: ${key}";
 
     // GraphQL input
     static NoGraphQLQueriesDefined = "GraphQL file doesn't have any queries defined.";
@@ -90,6 +93,9 @@ type Error =
     | { message: ErrorMessage.CannotFetchSchema; properties: { address: string } }
     | { message: ErrorMessage.MoreThanOneUnionMemberName; properties: { names: string[] } }
     | { message: ErrorMessage.CannotGetTypesFromBoolean; properties: { ref: string } }
+    | { message: ErrorMessage.TryingToIndexSchemaArrayWithNonNumber; properties: { actual: string } }
+    | { message: ErrorMessage.IndexNotInSchemaArray; properties: { index: number } }
+    | { message: ErrorMessage.KeyNotInSchemaObject; properties: { key: string } }
 
     // GraphQL input
     | { message: ErrorMessage.NoGraphQLQueriesDefined; properties: {} }

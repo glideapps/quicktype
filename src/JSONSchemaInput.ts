@@ -3,6 +3,7 @@
 import { List, OrderedSet, Map, Set, hash, OrderedMap } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
+import * as lodash from "lodash";
 
 import { ClassProperty, PrimitiveTypeKind } from "./Type";
 import {
@@ -245,9 +246,20 @@ export class Ref {
                 case PathElementKind.Root:
                     return lookup(root, rest);
                 case PathElementKind.KeyOrIndex:
+                    const key = first.key;
                     if (Array.isArray(local)) {
-                        return lookup(local[parseInt(first.key, 10)], rest);
+                        if (!/^\d+$/.test(key)) {
+                            return messageError(ErrorMessage.TryingToIndexSchemaArrayWithNonNumber, { actual: key });
+                        }
+                        const index = parseInt(first.key, 10);
+                        if (index >= local.length) {
+                            return messageError(ErrorMessage.IndexNotInSchemaArray, { index });
+                        }
+                        return lookup(local[index], rest);
                     } else {
+                        if (!lodash.has(local, [key])) {
+                            return messageError(ErrorMessage.KeyNotInSchemaObject, { key });
+                        }
                         return lookup(checkStringMap(local)[first.key], rest);
                     }
                 case PathElementKind.Type:
