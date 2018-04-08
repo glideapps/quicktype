@@ -146,14 +146,14 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             t,
             _anyType => `undefined`,
             _nullType => `null`,
-            _boolType => `false`,
+            _boolType => `true`,
             _integerType => `0`,
             _doubleType => `3.14`,
             _stringType => `""`,
             arrayType => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
-            classType => ['o("', this.nameForNamedType(classType), '")'],
+            classType => ['r("', this.nameForNamedType(classType), '")'],
             mapType => ["m(", this.typeMapTypeFor(mapType.values), ")"],
-            enumType => ['e("', this.nameForNamedType(enumType), '")'],
+            enumType => ['r("', this.nameForNamedType(enumType), '")'],
             unionType => {
                 const children = unionType.children.map(this.typeMapTypeFor);
                 return ["u(", ...intercalate(", ", children).toArray(), ")"];
@@ -180,7 +180,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 
         this.emitBlock(`const typeMap${anyAnnotation} =`, ";", () => {
             this.forEachObject("none", (t: ClassType, name: Name) => {
-                this.emitBlock(['"', name, '":'], ",", () => {
+                this.emitBlock(['"', name, '": c('], "),", () => {
                     this.forEachClassProperty(t, "none", (propName, _propJsonName, property) => {
                         this.emitLine(propName, ": ", this.typeMapTypeForProperty(property), ",");
                     });
@@ -223,8 +223,15 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return "function cast(obj, typ)";
     }
 
-    protected get typeAnnotations(): { any: string; anyArray: string; string: string; boolean: string } {
-        return { any: "", anyArray: "", string: "", boolean: "" };
+    protected get typeAnnotations(): {
+        any: string;
+        anyArray: string;
+        anyMap: string;
+        string: string;
+        stringArray: string;
+        boolean: string;
+    } {
+        return { any: "", anyArray: "", anyMap: "", string: "", stringArray: "", boolean: "" };
     }
 
     private emitConvertModuleBody(): void {
@@ -246,7 +253,9 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             const {
                 any: anyAnnotation,
                 anyArray: anyArrayAnnotation,
+                anyMap: anyMapAnnotation,
                 string: stringAnnotation,
+                stringArray: stringArrayAnnotation,
                 boolean: booleanAnnotation
             } = this.typeAnnotations;
             this.emitMultiline(`
@@ -260,12 +269,18 @@ ${this.castFunctionLine} {
 function isValid(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
     if (typ === undefined) return true;
     if (typ === null) return val === null;
-    return typ.isUnion  ? isValidUnion(typ.typs, val)
-            : typ.isArray  ? isValidArray(typ.typ, val)
-            : typ.isMap    ? isValidMap(typ.typ, val)
-            : typ.isEnum   ? isValidEnum(typ.name, val)
-            : typ.isObject ? isValidObject(typ.cls, val)
-            :                isValidPrimitive(typ, val);
+    if (typ === false) return false;
+    while (typeof typ === "object" && typ.ref !== undefined) {
+        typ = typeMap[typ.ref];
+    }
+    if (Array.isArray(typ)) return isValidEnum(typ, val);
+    if (typeof typ === "object") {
+        return typ.hasOwnProperty("unionMembers") ? isValidUnion(typ.unionMembers, val)
+            : typ.hasOwnProperty("arrayItems")    ? isValidArray(typ.arrayItems, val)
+            : typ.hasOwnProperty("props")         ? isValidObject(typ.props, typ.additional, val)
+            : false;
+    }
+    return isValidPrimitive(typ, val);
 }
 
 function isValidPrimitive(typ${stringAnnotation}, val${anyAnnotation}) {
@@ -277,8 +292,7 @@ function isValidUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${booleanAn
     return typs.some(typ => isValid(typ, val));
 }
 
-function isValidEnum(enumName${stringAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    const cases = typeMap[enumName];
+function isValidEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${booleanAnnotation} {
     return cases.indexOf(val) !== -1;
 }
 
@@ -289,42 +303,35 @@ function isValidArray(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotati
     });
 }
 
-function isValidMap(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
+function isValidObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
     if (val === null || typeof val !== "object" || Array.isArray(val)) return false;
-    // all values in the map must be typ
-    return Object.keys(val).every(prop => {
-        if (!Object.prototype.hasOwnProperty.call(val, prop)) return true;
-        return isValid(typ, val[prop]);
-    });
-}
-
-function isValidObject(className${stringAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (val === null || typeof val !== "object" || Array.isArray(val)) return false;
-    let typeRep = typeMap[className];
-    return Object.keys(typeRep).every(prop => {
-        if (!Object.prototype.hasOwnProperty.call(typeRep, prop)) return true;
-        return isValid(typeRep[prop], val[prop]);
+    return Object.getOwnPropertyNames(val).every(key => {
+        const prop = val[key];
+        if (Object.prototype.hasOwnProperty.call(props, key)) {
+            return isValid(props[key], prop);
+        }
+        return isValid(additional, prop);
     });
 }
 
 function a(typ${anyAnnotation}) {
-    return { typ, isArray: true };
-}
-
-function e(name${stringAnnotation}) {
-    return { name, isEnum: true };
+    return { arrayItems: typ };
 }
 
 function u(...typs${anyArrayAnnotation}) {
-    return { typs, isUnion: true };
+    return { unionMembers: typs };
 }
 
-function m(typ${anyAnnotation}) {
-    return { typ, isMap: true };
+function c(props${anyMapAnnotation}) {
+    return { props, additional: false };
 }
 
-function o(className${stringAnnotation}) {
-    return { cls: className, isObject: true };
+function m(additional${anyAnnotation}) {
+    return { props: {}, additional };
+}
+
+function r(name${stringAnnotation}) {
+    return { ref: name };
 }
 `);
             this.emitTypeMap();

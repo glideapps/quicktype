@@ -154,8 +154,22 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         return "function cast<T>(obj: any, typ: any): T";
     }
 
-    protected get typeAnnotations(): { any: string; anyArray: string; string: string; boolean: string } {
-        return { any: ": any", anyArray: ": any[]", string: ": string", boolean: ": boolean" };
+    protected get typeAnnotations(): {
+        any: string;
+        anyArray: string;
+        anyMap: string;
+        string: string;
+        stringArray: string;
+        boolean: string;
+    } {
+        return {
+            any: ": any",
+            anyArray: ": any[]",
+            anyMap: ": {[k: string]: any}",
+            string: ": string",
+            stringArray: ": string[]",
+            boolean: ": boolean"
+        };
     }
 
     protected emitConvertModule(): void {
