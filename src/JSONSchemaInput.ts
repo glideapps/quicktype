@@ -123,11 +123,7 @@ export class Ref {
         return new Ref(uri, elements);
     }
 
-    static parse(ref: any): Ref {
-        if (typeof ref !== "string") {
-            return messageError(ErrorMessage.SchemaRefMustBeString);
-        }
-
+    static parse(ref: string): Ref {
         return Ref.parseURI(new URI(ref), true);
     }
 
@@ -741,6 +737,9 @@ export async function addTypesInSchema(
         }
 
         if (schema.$ref !== undefined) {
+            if (typeof schema.$ref !== "string") {
+                return messageError(ErrorMessage.SchemaRefMustBeString, withRef(loc, { actual: typeof schema.$ref }));
+            }
             const virtualRef = Ref.parse(schema.$ref);
             const [target, newLoc] = await resolveVirtualRef(loc, virtualRef);
             const attributes = modifyTypeNames(typeAttributes, tn => {

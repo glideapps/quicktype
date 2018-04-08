@@ -13,7 +13,7 @@ export class ErrorMessage {
     // JSON Schema input
     static SchemaArrayIsInvalidSchema = "An array is not a valid JSON Schema at ${ref}";
     static SchemaNullIsInvalidSchema = "null is not a valid JSON Schema at ${ref}";
-    static SchemaRefMustBeString = "$ref must be a string";
+    static SchemaRefMustBeString = "$ref must be a string, but is an ${actual} at ${ref}";
     static SchemaAdditionalTypesForbidRequired = "Can't have non-specified required properties but forbidden additionalTypes";
     static SchemaNoTypeSpecified = "JSON Schema must specify at least one type";
     static SchemaInvalidType = "Invalid type ${type} in JSON Schema at ${ref}";
@@ -78,7 +78,7 @@ type Error =
     // JSON Schema input
     | { message: ErrorMessage.SchemaArrayIsInvalidSchema; properties: { ref: Ref } }
     | { message: ErrorMessage.SchemaNullIsInvalidSchema; properties: { ref: Ref } }
-    | { message: ErrorMessage.SchemaRefMustBeString; properties: {} }
+    | { message: ErrorMessage.SchemaRefMustBeString; properties: { actual: string; ref: Ref } }
     | { message: ErrorMessage.SchemaAdditionalTypesForbidRequired; properties: {} }
     | { message: ErrorMessage.SchemaNoTypeSpecified; properties: {} }
     | { message: ErrorMessage.SchemaInvalidType; properties: { type: string; ref: Ref } }
