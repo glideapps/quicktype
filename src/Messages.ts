@@ -30,9 +30,9 @@ export class ErrorMessage {
     static SchemaCannotFetch = "Cannot fetch schema at address ${address}";
     static SchemaMoreThanOneUnionMemberName = "More than one name given for union member: ${names}";
     static SchemaCannotGetTypesFromBoolean = "Schema value to get top-level types from must be an object, but is boolean, at ${ref}";
-    static SchemaCannotIndexArrayWithNonNumber = "Trying to index array in schema with key that is not a number, but is ${actual}";
-    static SchemaIndexNotInArray = "Index out of range of schema array: ${index}";
-    static SchemaKeyNotInObject = "Key not in schema object: ${key}";
+    static SchemaCannotIndexArrayWithNonNumber = "Trying to index array in schema with key that is not a number, but is ${actual} at ${ref}";
+    static SchemaIndexNotInArray = "Index ${index} out of range of schema array at ${ref}";
+    static SchemaKeyNotInObject = "Key ${key} not in schema object at ${ref}";
 
     // GraphQL input
     static GraphQLNoQueriesDefined = "GraphQL file doesn't have any queries defined.";
@@ -95,9 +95,9 @@ type Error =
     | { message: ErrorMessage.SchemaCannotFetch; properties: { address: string } }
     | { message: ErrorMessage.SchemaMoreThanOneUnionMemberName; properties: { names: string[] } }
     | { message: ErrorMessage.SchemaCannotGetTypesFromBoolean; properties: { ref: string } }
-    | { message: ErrorMessage.SchemaCannotIndexArrayWithNonNumber; properties: { actual: string } }
-    | { message: ErrorMessage.SchemaIndexNotInArray; properties: { index: number } }
-    | { message: ErrorMessage.SchemaKeyNotInObject; properties: { key: string } }
+    | { message: ErrorMessage.SchemaCannotIndexArrayWithNonNumber; properties: { actual: string; ref: Ref } }
+    | { message: ErrorMessage.SchemaIndexNotInArray; properties: { index: number; ref: Ref } }
+    | { message: ErrorMessage.SchemaKeyNotInObject; properties: { key: string; ref: Ref } }
 
     // GraphQL input
     | { message: ErrorMessage.GraphQLNoQueriesDefined; properties: {} }

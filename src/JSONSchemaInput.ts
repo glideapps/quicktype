@@ -239,9 +239,10 @@ export class Ref {
     }
 
     private lookup(local: any, path: List<PathElement>, root: JSONSchema): JSONSchema {
+        const refMaker = () => new Ref(this.addressURI, path);
         const first = path.first();
         if (first === undefined) {
-            return checkJSONSchema(local, () => new Ref(this.addressURI, path));
+            return checkJSONSchema(local, refMaker);
         }
         const rest = path.rest();
         switch (first.kind) {
@@ -251,16 +252,16 @@ export class Ref {
                 const key = first.key;
                 if (Array.isArray(local)) {
                     if (!/^\d+$/.test(key)) {
-                        return messageError(ErrorMessage.SchemaCannotIndexArrayWithNonNumber, { actual: key });
+                        return messageError(ErrorMessage.SchemaCannotIndexArrayWithNonNumber, withRef(refMaker, { actual: key }));
                     }
                     const index = parseInt(first.key, 10);
                     if (index >= local.length) {
-                        return messageError(ErrorMessage.SchemaIndexNotInArray, { index });
+                        return messageError(ErrorMessage.SchemaIndexNotInArray, withRef(refMaker, { index }));
                     }
                     return this.lookup(local[index], rest, root);
                 } else {
                     if (!lodash.has(local, [key])) {
-                        return messageError(ErrorMessage.SchemaKeyNotInObject, { key });
+                        return messageError(ErrorMessage.SchemaKeyNotInObject, withRef(refMaker, { key }));
                     }
                     return this.lookup(checkStringMap(local)[first.key], rest, root);
                 }
