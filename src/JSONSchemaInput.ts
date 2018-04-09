@@ -418,7 +418,7 @@ function makeAttributes(schema: StringMap, loc: Location, attributes: TypeAttrib
         }
 
         if (typeof title === "string") {
-            return new TypeNames(OrderedSet([title]), OrderedSet(), false);
+            return new TypeNames(OrderedSet([title]), OrderedSet(), schema.$ref !== undefined);
         } else {
             return typeNames.makeInferred();
         }
