@@ -72,7 +72,8 @@ function pathElementEquals(a: PathElement, b: PathElement): boolean {
 function withRef(refOrLoc: Ref | (() => Ref) | Location): { ref: Ref };
 function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props?: T): T & { ref: Ref };
 function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props?: T): any {
-    const ref = typeof refOrLoc === "function" ? refOrLoc() : refOrLoc instanceof Ref ? refOrLoc : refOrLoc.canonicalRef;
+    const ref =
+        typeof refOrLoc === "function" ? refOrLoc() : refOrLoc instanceof Ref ? refOrLoc : refOrLoc.canonicalRef;
     return Object.assign({ ref }, props === undefined ? {} : props);
 }
 
@@ -80,7 +81,8 @@ export function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema
     if (typeof x === "boolean") return x;
     if (Array.isArray(x)) return messageError(ErrorMessage.SchemaArrayIsInvalidSchema, withRef(refOrLoc));
     if (x === null) return messageError(ErrorMessage.SchemaNullIsInvalidSchema, withRef(refOrLoc));
-    if (typeof x !== "object") return messageError(ErrorMessage.SchemaInvalidJSONSchemaType, withRef(refOrLoc, { type: typeof x }));
+    if (typeof x !== "object")
+        return messageError(ErrorMessage.SchemaInvalidJSONSchemaType, withRef(refOrLoc, { type: typeof x }));
     return x;
 }
 
@@ -252,7 +254,10 @@ export class Ref {
                 const key = first.key;
                 if (Array.isArray(local)) {
                     if (!/^\d+$/.test(key)) {
-                        return messageError(ErrorMessage.SchemaCannotIndexArrayWithNonNumber, withRef(refMaker, { actual: key }));
+                        return messageError(
+                            ErrorMessage.SchemaCannotIndexArrayWithNonNumber,
+                            withRef(refMaker, { actual: key })
+                        );
                     }
                     const index = parseInt(first.key, 10);
                     if (index >= local.length) {
@@ -623,7 +628,10 @@ export async function addTypesInSchema(
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
             const kindLoc = loc.push(kind);
             if (!Array.isArray(cases)) {
-                return messageError(ErrorMessage.SchemaSetOperationCasesIsNotArray, withRef(kindLoc, { operation: kind, cases }));
+                return messageError(
+                    ErrorMessage.SchemaSetOperationCasesIsNotArray,
+                    withRef(kindLoc, { operation: kind, cases })
+                );
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
             return await mapSync(
@@ -647,8 +655,11 @@ export async function addTypesInSchema(
                 typeBuilder.addAttributes(unionType, identifierAttribute);
 
                 const accessors = checkArray(maybeAccessors, isAccessorEntry);
-                messageAssert(typeRefs.length === accessors.length, ErrorMessage.SchemaWrongAccessorEntryArrayLength,
-                    withRef(() => loc.canonicalRef.push(kind), { operation: kind }));
+                messageAssert(
+                    typeRefs.length === accessors.length,
+                    ErrorMessage.SchemaWrongAccessorEntryArrayLength,
+                    withRef(() => loc.canonicalRef.push(kind), { operation: kind })
+                );
                 for (let i = 0; i < typeRefs.length; i++) {
                     typeBuilder.addAttributes(
                         typeRefs[i],
