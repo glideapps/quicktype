@@ -1,6 +1,6 @@
 "use strict";
 
-import { Type, matchType, directlyReachableSingleNamedType, ClassProperty, ClassType } from "../Type";
+import { Type, matchType, directlyReachableSingleNamedType, ClassProperty, ClassType, ObjectType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import {
     utf16LegalizeCharacters,
@@ -11,7 +11,7 @@ import {
     allUpperWordStyle,
     camelCase
 } from "../Strings";
-import { intercalate } from "../Support";
+import { intercalate, panic } from "../Support";
 
 import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";
@@ -41,6 +41,10 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
+    get supportsFullObjectType(): boolean {
         return true;
     }
 
@@ -142,18 +146,21 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     typeMapTypeFor = (t: Type): Sourcelike => {
+        if (["class", "object", "enum"].indexOf(t.kind) >= 0) {
+            return ['r("', this.nameForNamedType(t), '")'];
+        }
         return matchType<Sourcelike>(
             t,
-            _anyType => `undefined`,
+            _anyType => '"any"',
             _nullType => `null`,
-            _boolType => `false`,
+            _boolType => `true`,
             _integerType => `0`,
             _doubleType => `3.14`,
             _stringType => `""`,
             arrayType => ["a(", this.typeMapTypeFor(arrayType.items), ")"],
-            classType => ['o("', this.nameForNamedType(classType), '")'],
+            _classType => panic("We handled this above"),
             mapType => ["m(", this.typeMapTypeFor(mapType.values), ")"],
-            enumType => ['e("', this.nameForNamedType(enumType), '")'],
+            _enumType => panic("We handled this above"),
             unionType => {
                 const children = unionType.children.map(this.typeMapTypeFor);
                 return ["u(", ...intercalate(", ", children).toArray(), ")"];
@@ -169,18 +176,20 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return ["u(undefined, ", typeMap, ")"];
     }
 
-    emitBlock = (source: Sourcelike, end: string, emit: () => void) => {
-        this.emitLine(source, " {");
+    emitBlock(source: Sourcelike, end: Sourcelike, emit: () => void) {
+        this.emitLine(source, "{");
         this.indent(emit);
         this.emitLine("}", end);
-    };
+    }
 
     emitTypeMap = () => {
         const { any: anyAnnotation } = this.typeAnnotations;
 
-        this.emitBlock(`const typeMap${anyAnnotation} =`, ";", () => {
-            this.forEachObject("none", (t: ClassType, name: Name) => {
-                this.emitBlock(['"', name, '":'], ",", () => {
+        this.emitBlock(`const typeMap${anyAnnotation} = `, ";", () => {
+            this.forEachObject("none", (t: ObjectType, name: Name) => {
+                const additional =
+                    t.additionalProperties !== undefined ? this.typeMapTypeFor(t.additionalProperties) : "false";
+                this.emitBlock(['"', name, '": o('], [", ", additional, "),"], () => {
                     this.forEachClassProperty(t, "none", (propName, _propJsonName, property) => {
                         this.emitLine(propName, ": ", this.typeMapTypeForProperty(property), ",");
                     });
@@ -223,13 +232,20 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return "function cast(obj, typ)";
     }
 
-    protected get typeAnnotations(): { any: string; anyArray: string; string: string; boolean: string } {
-        return { any: "", anyArray: "", string: "", boolean: "" };
+    protected get typeAnnotations(): {
+        any: string;
+        anyArray: string;
+        anyMap: string;
+        string: string;
+        stringArray: string;
+        boolean: string;
+    } {
+        return { any: "", anyArray: "", anyMap: "", string: "", stringArray: "", boolean: "" };
     }
 
     private emitConvertModuleBody(): void {
         this.forEachTopLevel("interposing", (t, name) => {
-            this.emitBlock(this.deserializerFunctionLine(t, name), "", () => {
+            this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
                 if (!this._runtimeTypecheck) {
                     this.emitLine("return JSON.parse(json);");
                 } else {
@@ -238,7 +254,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             });
             this.ensureBlankLine();
 
-            this.emitBlock(this.serializerFunctionLine(t, name), "", () => {
+            this.emitBlock([this.serializerFunctionLine(t, name), " "], "", () => {
                 this.emitLine("return JSON.stringify(value, null, 2);");
             });
         });
@@ -246,26 +262,34 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             const {
                 any: anyAnnotation,
                 anyArray: anyArrayAnnotation,
+                anyMap: anyMapAnnotation,
                 string: stringAnnotation,
+                stringArray: stringArrayAnnotation,
                 boolean: booleanAnnotation
             } = this.typeAnnotations;
-            this.emitMultiline(`
-${this.castFunctionLine} {
+            this.ensureBlankLine();
+            this.emitMultiline(`${this.castFunctionLine} {
     if (!isValid(typ, obj)) {
-        throw \`Invalid value\`;
+        throw Error(\`Invalid value\`);
     }
     return obj;
 }
 
 function isValid(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (typ === undefined) return true;
-    if (typ === null) return val === null;
-    return typ.isUnion  ? isValidUnion(typ.typs, val)
-            : typ.isArray  ? isValidArray(typ.typ, val)
-            : typ.isMap    ? isValidMap(typ.typ, val)
-            : typ.isEnum   ? isValidEnum(typ.name, val)
-            : typ.isObject ? isValidObject(typ.cls, val)
-            :                isValidPrimitive(typ, val);
+    if (typ === "any") { return true; }
+    if (typ === null) { return val === null; }
+    if (typ === false) { return false; }
+    while (typeof typ === "object" && typ.ref !== undefined) {
+        typ = typeMap[typ.ref];
+    }
+    if (Array.isArray(typ)) { return isValidEnum(typ, val); }
+    if (typeof typ === "object") {
+        return typ.hasOwnProperty("unionMembers") ? isValidUnion(typ.unionMembers, val)
+            : typ.hasOwnProperty("arrayItems")    ? isValidArray(typ.arrayItems, val)
+            : typ.hasOwnProperty("props")         ? isValidObject(typ.props, typ.additional, val)
+            : false;
+    }
+    return isValidPrimitive(typ, val);
 }
 
 function isValidPrimitive(typ${stringAnnotation}, val${anyAnnotation}) {
@@ -274,57 +298,51 @@ function isValidPrimitive(typ${stringAnnotation}, val${anyAnnotation}) {
 
 function isValidUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${booleanAnnotation} {
     // val must validate against one typ in typs
-    return typs.some(typ => isValid(typ, val));
+    return typs.some((typ) => isValid(typ, val));
 }
 
-function isValidEnum(enumName${stringAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    const cases = typeMap[enumName];
+function isValidEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${booleanAnnotation} {
     return cases.indexOf(val) !== -1;
 }
 
 function isValidArray(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
     // val must be an array with no invalid elements
-    return Array.isArray(val) && val.every(element => {
+    return Array.isArray(val) && val.every((element) => {
         return isValid(typ, element);
     });
 }
 
-function isValidMap(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (val === null || typeof val !== "object" || Array.isArray(val)) return false;
-    // all values in the map must be typ
-    return Object.keys(val).every(prop => {
-        if (!Object.prototype.hasOwnProperty.call(val, prop)) return true;
-        return isValid(typ, val[prop]);
-    });
-}
-
-function isValidObject(className${stringAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (val === null || typeof val !== "object" || Array.isArray(val)) return false;
-    let typeRep = typeMap[className];
-    return Object.keys(typeRep).every(prop => {
-        if (!Object.prototype.hasOwnProperty.call(typeRep, prop)) return true;
-        return isValid(typeRep[prop], val[prop]);
+function isValidObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
+    if (val === null || typeof val !== "object" || Array.isArray(val)) {
+        return false;
+    }
+    return Object.getOwnPropertyNames(val).every((key) => {
+        const prop = val[key];
+        if (Object.prototype.hasOwnProperty.call(props, key)) {
+            return isValid(props[key], prop);
+        }
+        return isValid(additional, prop);
     });
 }
 
 function a(typ${anyAnnotation}) {
-    return { typ, isArray: true };
-}
-
-function e(name${stringAnnotation}) {
-    return { name, isEnum: true };
+    return { arrayItems: typ };
 }
 
 function u(...typs${anyArrayAnnotation}) {
-    return { typs, isUnion: true };
+    return { unionMembers: typs };
 }
 
-function m(typ${anyAnnotation}) {
-    return { typ, isMap: true };
+function o(props${anyMapAnnotation}, additional${anyAnnotation}) {
+    return { props, additional };
 }
 
-function o(className${stringAnnotation}) {
-    return { cls: className, isObject: true };
+function m(additional${anyAnnotation}) {
+    return { props: {}, additional };
+}
+
+function r(name${stringAnnotation}) {
+    return { ref: name };
 }
 `);
             this.emitTypeMap();
@@ -341,7 +359,7 @@ function o(className${stringAnnotation}) {
         if (moduleLine === undefined) {
             this.emitConvertModuleBody();
         } else {
-            this.emitBlock(moduleLine, "", () => this.emitConvertModuleBody());
+            this.emitBlock([moduleLine, " "], "", () => this.emitConvertModuleBody());
         }
     }
 
@@ -373,7 +391,7 @@ function o(className${stringAnnotation}) {
     protected emitModuleExports(): void {
         this.ensureBlankLine();
 
-        this.emitBlock("module.exports =", ";", () => {
+        this.emitBlock("module.exports = ", ";", () => {
             this.forEachTopLevel("none", (_, name) => {
                 const serializer = this.serializerFunctionName(name);
                 const deserializer = this.deserializerFunctionName(name);

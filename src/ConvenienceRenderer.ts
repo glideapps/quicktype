@@ -594,19 +594,19 @@ export abstract class ConvenienceRenderer extends Renderer {
     };
 
     protected forEachClassProperty = (
-        c: ClassType,
+        o: ObjectType,
         blankLocations: BlankLineLocations,
         f: (name: Name, jsonName: string, p: ClassProperty) => void
     ): void => {
-        const propertyNames = defined(this._propertyNamesStoreView).get(c);
+        const propertyNames = defined(this._propertyNamesStoreView).get(o);
         if (this._alphabetizeProperties) {
             const alphabetizedPropertyNames = propertyNames.sortBy(n => this.names.get(n)).toOrderedMap();
             this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName) => {
-                const p = defined(c.properties.get(jsonName));
+                const p = defined(o.properties.get(jsonName));
                 f(name, jsonName, p);
             });
         } else {
-            this.forEachWithBlankLines(c.properties, blankLocations, (p, jsonName) => {
+            this.forEachWithBlankLines(o.properties, blankLocations, (p, jsonName) => {
                 const name = defined(propertyNames.get(jsonName));
                 f(name, jsonName, p);
             });
