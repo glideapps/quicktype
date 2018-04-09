@@ -550,24 +550,6 @@ export class GraphRewriteBuilder<T extends Type> extends TypeBuilder implements 
         this._reconstitutedUnions = this._reconstitutedUnions.set(set, reconstituted);
     }
 
-    followIndex(index: number): number {
-        const entry = this.types[index];
-        if (typeof entry === "number") {
-            return this.followIndex(entry);
-        }
-        return index;
-    }
-
-    protected typeForEntry(entry: Type | undefined | number): Type | undefined {
-        if (typeof entry === "number") {
-            entry = this.types[this.followIndex(entry)];
-            if (typeof entry === "number") {
-                return panic("followIndex led us to a forwarding entry");
-            }
-        }
-        return entry;
-    }
-
     withForwardingRef(
         maybeForwardingRef: TypeRef | undefined,
         typeCreator: (forwardingRef: TypeRef) => TypeRef
