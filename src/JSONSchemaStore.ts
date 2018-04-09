@@ -23,7 +23,7 @@ export abstract class JSONSchemaStore {
         }
         schema = await this.fetch(address);
         if (schema === undefined) {
-            return messageError(ErrorMessage.CannotFetchSchema, { address });
+            return messageError(ErrorMessage.SchemaCannotFetch, { address });
         }
         this.add(address, schema);
         return schema;

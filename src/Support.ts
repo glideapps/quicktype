@@ -203,6 +203,6 @@ export function parseJSON(text: string, description: string, address: string = "
             message = `Unknown exception ${e}`;
         }
 
-        return messageError(ErrorMessage.JSONParseError, { description, address, message });
+        return messageError(ErrorMessage.MiscJSONParseError, { description, address, message });
     }
 }

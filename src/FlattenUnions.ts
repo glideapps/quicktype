@@ -34,7 +34,7 @@ export function flattenUnions(
     const nonCanonicalUnions = allUnions.filter(u => !u.isCanonical);
     let foundIntersection = false;
     const groups = makeGroupsToFlatten(nonCanonicalUnions, members => {
-        messageAssert(!members.isEmpty(), ErrorMessage.NoEmptyUnions);
+        messageAssert(!members.isEmpty(), ErrorMessage.IRNoEmptyUnions);
         if (!members.some(m => m instanceof IntersectionType)) return true;
 
         // FIXME: This is stupid.  `flattenUnions` returns true when no more union

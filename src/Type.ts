@@ -523,12 +523,12 @@ export class UnionType extends SetOperationType {
     constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
         super(typeRef, "union", memberRefs);
         if (memberRefs !== undefined) {
-            messageAssert(!memberRefs.isEmpty(), ErrorMessage.NoEmptyUnions);
+            messageAssert(!memberRefs.isEmpty(), ErrorMessage.IRNoEmptyUnions);
         }
     }
 
     setMembers(memberRefs: OrderedSet<TypeRef>): void {
-        messageAssert(!memberRefs.isEmpty(), ErrorMessage.NoEmptyUnions);
+        messageAssert(!memberRefs.isEmpty(), ErrorMessage.IRNoEmptyUnions);
         super.setMembers(memberRefs);
     }
 

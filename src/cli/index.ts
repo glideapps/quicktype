@@ -6,20 +6,22 @@ import * as _ from "lodash";
 
 import {
     Options,
-    JSONTypeSource,
     RendererOptions,
     getTargetLanguage,
+    quicktypeMultiFile,
+    SerializedRenderResult,
+    TargetLanguage,
+    languageNamed
+} from "..";
+
+import {
+    JSONTypeSource,
     TypeSource,
     GraphQLTypeSource,
     StringInput,
     SchemaTypeSource,
-    quicktypeMultiFile,
-    SerializedRenderResult,
-    TargetLanguage,
-    languageNamed,
     TypeScriptTypeSource
-} from "..";
-
+} from "../Inputs";
 import { OptionDefinition } from "../RendererOptions";
 import * as defaultTargetLanguages from "../Language/All";
 import { urlsFromURLGrammar } from "../URLGrammar";
@@ -51,7 +53,6 @@ export interface CLIOptions {
     graphqlSchema?: string;
     graphqlIntrospect?: string;
     graphqlServerHeader?: string[];
-    addSchemaTopLevel?: string;
     template?: string;
     out?: string;
     buildMarkovChain?: string;
@@ -86,7 +87,7 @@ function typeNameFromFilename(filename: string): string {
     return name.substr(0, name.lastIndexOf("."));
 }
 
-async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | undefined): Promise<TypeSource[]> {
+async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
     async function readFilesOrURLsInDirectory(d: string): Promise<TypeSource[]> {
         const files = fs
             .readdirSync(d)
@@ -118,11 +119,10 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
                 sourcesInDir.push({
                     kind: "schema",
                     name,
-                    uri: fileOrUrl,
-                    topLevelRefs
+                    uris: [fileOrUrl]
                 });
             } else if (file.endsWith(".gqlschema")) {
-                messageAssert(graphQLSchema === undefined, ErrorMessage.MoreThanOneGraphQLSchemaInDir, {
+                messageAssert(graphQLSchema === undefined, ErrorMessage.DriverMoreThanOneGraphQLSchemaInDir, {
                     dir: dataDir
                 });
                 graphQLSchema = await readableFromFileOrURL(fileOrUrl);
@@ -139,7 +139,7 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
 
         if (graphQLSources.length > 0) {
             if (graphQLSchema === undefined) {
-                return messageError(ErrorMessage.NoGraphQLSchemaInDir, { dir: dataDir });
+                return messageError(ErrorMessage.DriverNoGraphQLSchemaInDir, { dir: dataDir });
             }
             const schema = parseJSON(await getStream(graphQLSchema), "GraphQL schema", graphQLSchemaFileName);
             for (const source of graphQLSources) {
@@ -182,12 +182,12 @@ async function samplesFromDirectory(dataDir: string, topLevelRefs: string[] | un
         }
 
         if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length + typeScriptSources.length > 0) {
-            return messageError(ErrorMessage.CannotMixJSONWithOtherSamples, { dir: dir });
+            return messageError(ErrorMessage.DriverCannotMixJSONWithOtherSamples, { dir: dir });
         }
 
         const oneUnlessEmpty = (xs: any[]) => Math.sign(xs.length);
         if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) + oneUnlessEmpty(typeScriptSources) > 1) {
-            return messageError(ErrorMessage.CannotMixNonJSONInputs, { dir: dir });
+            return messageError(ErrorMessage.DriverCannotMixNonJSONInputs, { dir: dir });
         }
 
         if (jsonSamples.length > 0) {
@@ -209,7 +209,7 @@ function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): strin
     if (options.out !== undefined) {
         let extension = path.extname(options.out);
         if (extension === "") {
-            return messageError(ErrorMessage.NoLanguageOrExtension);
+            return messageError(ErrorMessage.DriverNoLanguageOrExtension);
         }
         return extension.substr(1);
     }
@@ -239,12 +239,12 @@ function inferTopLevel(options: Partial<CLIOptions>): string {
 export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: string): CLIOptions {
     let srcLang = opts.srcLang;
     if (opts.graphqlSchema !== undefined || opts.graphqlIntrospect !== undefined) {
-        messageAssert(srcLang === undefined || srcLang === "graphql", ErrorMessage.SourceLangMustBeGraphQL);
+        messageAssert(srcLang === undefined || srcLang === "graphql", ErrorMessage.DriverSourceLangMustBeGraphQL);
         srcLang = "graphql";
     } else if (opts.src !== undefined && opts.src.length > 0 && opts.src.every(file => _.endsWith(file, ".ts"))) {
         srcLang = "typescript";
     } else {
-        messageAssert(srcLang !== "graphql", ErrorMessage.GraphQLSchemaNeeded);
+        messageAssert(srcLang !== "graphql", ErrorMessage.DriverGraphQLSchemaNeeded);
         srcLang = withDefault<string>(srcLang, "json");
     }
 
@@ -254,7 +254,7 @@ export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: str
     const lang = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultLanguage);
     const language = languageNamed(lang);
     if (language === undefined) {
-        return messageError(ErrorMessage.UnknownOutputLanguage, { lang });
+        return messageError(ErrorMessage.DriverUnknownOutputLanguage, { lang });
     }
 
     /* tslint:disable:strict-boolean-expressions */
@@ -280,7 +280,6 @@ export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: str
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         graphqlServerHeader: opts.graphqlServerHeader,
-        addSchemaTopLevel: opts.addSchemaTopLevel,
         template: opts.template,
         debug: opts.debug,
         telemetry: opts.telemetry
@@ -349,12 +348,6 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             name: "no-combine-classes",
             type: Boolean,
             description: "Don't combine similar classes."
-        },
-        {
-            name: "add-schema-top-level",
-            type: String,
-            typeLabel: "REF",
-            description: "Use JSON Schema definitions as top-levels.  Must be `/definitions/`."
         },
         {
             name: "graphql-schema",
@@ -552,7 +545,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         opts = commandLineArgs(definitions, { argv, partial });
     } catch (e) {
         assert(!partial, "Partial option parsing should not have failed");
-        return messageError(ErrorMessage.CLIOptionParsingFailed, { message: e.message });
+        return messageError(ErrorMessage.DriverCLIOptionParsingFailed, { message: e.message });
     }
 
     const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
@@ -605,17 +598,12 @@ async function getSourceURIs(options: CLIOptions): Promise<[string, string[]][]>
     }
 }
 
-function topLevelRefsForOptions(options: CLIOptions): string[] | undefined {
-    return mapOptional(x => [x], options.addSchemaTopLevel);
-}
-
-async function typeSourceForURIs(name: string, uris: string[], options: CLIOptions): Promise<TypeSource> {
+async function typeSourcesForURIs(name: string, uris: string[], options: CLIOptions): Promise<TypeSource[]> {
     switch (options.srcLang) {
         case "json":
-            return await sourceFromFileOrUrlArray(name, uris);
+            return [await sourceFromFileOrUrlArray(name, uris)];
         case "schema":
-            messageAssert(uris.length === 1, ErrorMessage.NeedExactlyOneSchema, { name });
-            return { kind: "schema", name, uri: uris[0], topLevelRefs: topLevelRefsForOptions(options) };
+            return uris.map(uri => ({ kind: "schema", name, uris: [uri] } as SchemaTypeSource));
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);
     }
@@ -623,21 +611,22 @@ async function typeSourceForURIs(name: string, uris: string[], options: CLIOptio
 
 async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     const sourceURIs = await getSourceURIs(options);
-    let sources: TypeSource[] = await Promise.all(
-        sourceURIs.map(async ([name, uris]) => await typeSourceForURIs(name, uris, options))
+    const sourceArrays = await Promise.all(
+        sourceURIs.map(async ([name, uris]) => await typeSourcesForURIs(name, uris, options))
     );
+    let sources: TypeSource[] = ([] as TypeSource[]).concat(...sourceArrays);
 
     const exists = options.src.filter(fs.existsSync);
     const directories = exists.filter(x => fs.lstatSync(x).isDirectory());
 
     for (const dataDir of directories) {
-        sources = sources.concat(await samplesFromDirectory(dataDir, topLevelRefsForOptions(options)));
+        sources = sources.concat(await samplesFromDirectory(dataDir));
     }
 
     // Every src that's not a directory is assumed to be a file or URL
     const filesOrUrls = options.src.filter(x => !_.includes(directories, x));
     if (!_.isEmpty(filesOrUrls)) {
-        sources.push(await typeSourceForURIs(options.topLevel, filesOrUrls, options));
+        sources.push(...(await typeSourcesForURIs(options.topLevel, filesOrUrls, options)));
     }
 
     return sources;
@@ -699,7 +688,7 @@ export async function makeQuicktypeOptions(
                     return undefined;
                 }
                 if (numSources === 0) {
-                    return messageError(ErrorMessage.NoGraphQLQueryGiven);
+                    return messageError(ErrorMessage.DriverNoGraphQLQueryGiven);
                 }
             }
             const gqlSources: GraphQLTypeSource[] = [];
@@ -742,7 +731,7 @@ export async function makeQuicktypeOptions(
             }
             break;
         default:
-            return messageError(ErrorMessage.UnknownSourceLanguage, { lang: options.srcLang });
+            return messageError(ErrorMessage.DriverUnknownSourceLanguage, { lang: options.srcLang });
     }
 
     let handlebarsTemplate: string | undefined = undefined;
@@ -761,7 +750,7 @@ export async function makeQuicktypeOptions(
             } else if (component === "provenance") {
                 checkProvenance = true;
             } else {
-                return messageError(ErrorMessage.UnknownDebugOption, { option: component });
+                return messageError(ErrorMessage.DriverUnknownDebugOption, { option: component });
             }
         }
     }

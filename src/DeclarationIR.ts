@@ -153,7 +153,7 @@ export function declarationsForGraph(
             // we declare the types we previously forward-declared.
             const forwardDeclarable = component.filter(canBeForwardDeclared);
             if (forwardDeclarable.isEmpty()) {
-                return messageError(ErrorMessage.NoForwardDeclarableTypeInCycle);
+                return messageError(ErrorMessage.IRNoForwardDeclarableTypeInCycle);
             }
             forwardDeclarable.forEach(t => {
                 declarations.push(new Declaration("forward", t));

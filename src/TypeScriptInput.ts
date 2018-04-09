@@ -1,7 +1,7 @@
 import * as ts from "typescript";
 import { PartialArgs, CompilerOptions, generateSchema } from "typescript-json-schema";
 
-import { panic, inflateBase64 } from "./Support";
+import { panic, inflateBase64, defined } from "./Support";
 import { encodedDefaultTypeScriptLibrary } from "./EncodedDefaultTypeScriptLibrary";
 import { ErrorMessage, messageError } from "./Messages";
 
@@ -94,9 +94,15 @@ class CompilerHost implements ts.CompilerHost {
     }
 }
 
-export function schemaForTypeScriptSources(sourceFileNames: string[]): string;
-export function schemaForTypeScriptSources(sources: { [fileName: string]: string }): string;
-export function schemaForTypeScriptSources(sources: string[] | { [fileName: string]: string }): string {
+// FIXME: We're stringifying and then parsing this schema again.  Just pass around
+// the schema directly.
+export function schemaForTypeScriptSources(sourceFileNames: string[]): { schema: string; name: string; uris: string[] };
+export function schemaForTypeScriptSources(sources: {
+    [fileName: string]: string;
+}): { schema: string; name: string; uris: string[] };
+export function schemaForTypeScriptSources(
+    sources: string[] | { [fileName: string]: string }
+): { schema: string; name: string; uris: string[] } {
     let fileNames: string[];
     let host: ts.CompilerHost;
 
@@ -118,5 +124,47 @@ export function schemaForTypeScriptSources(sources: string[] | { [fileName: stri
     }
 
     const schema = generateSchema(program, "*", settings);
-    return JSON.stringify(schema);
+    const uris: string[] = [];
+    let topLevelName: string | undefined = undefined;
+    if (schema !== null && typeof schema === "object" && typeof schema.definitions === "object") {
+        for (const name of Object.getOwnPropertyNames(schema.definitions)) {
+            const definition = schema.definitions[name];
+            if (
+                definition === null ||
+                Array.isArray(definition) ||
+                typeof definition !== "object" ||
+                typeof definition.description !== "string"
+            ) {
+                continue;
+            }
+
+            const description = definition.description as string;
+            const matches = description.match(/#TopLevel/);
+            if (matches === null) {
+                continue;
+            }
+
+            const index = defined(matches.index);
+            definition.description = description.substr(0, index) + description.substr(index + matches[0].length);
+
+            uris.push(`#/definitions/${name}`);
+
+            if (topLevelName === undefined) {
+                if (typeof definition.title === "string") {
+                    topLevelName = definition.title;
+                } else {
+                    topLevelName = name;
+                }
+            } else {
+                topLevelName = "";
+            }
+        }
+    }
+    if (uris.length === 0) {
+        uris.push("#/definitions/");
+    }
+    if (topLevelName === undefined) {
+        topLevelName = "";
+    }
+    return { schema: JSON.stringify(schema), name: topLevelName, uris };
 }
