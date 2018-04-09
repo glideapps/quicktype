@@ -168,7 +168,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         return {
             any: ": any",
             anyArray: ": any[]",
-            anyMap: ": {[k: string]: any}",
+            anyMap: ": { [k: string]: any }",
             string: ": string",
             stringArray: ": string[]",
             boolean: ": boolean"
