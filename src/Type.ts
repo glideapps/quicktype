@@ -3,7 +3,7 @@
 import { OrderedSet, OrderedMap, Collection, Map, Set, is, hash } from "immutable";
 
 import { defined, panic, assert, assertNever, mapOptional } from "./Support";
-import { TypeRef, TypeReconstituter } from "./TypeBuilder";
+import { TypeRef, TypeReconstituter, BaseGraphRewriteBuilder } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { ErrorMessage, messageAssert } from "./Messages";
@@ -62,7 +62,7 @@ export abstract class Type {
 
     abstract get isNullable(): boolean;
     abstract isPrimitive(): this is PrimitiveType;
-    abstract reconstitute<T extends Type>(builder: TypeReconstituter<T>): void;
+    abstract reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void;
 
     equals(other: any): boolean {
         if (!Object.prototype.hasOwnProperty.call(other, "typeRef")) {
@@ -182,7 +182,7 @@ export class PrimitiveType extends Type {
         return true;
     }
 
-    reconstitute<T extends Type>(builder: TypeReconstituter<T>): void {
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         builder.getPrimitiveType(this.kind);
     }
 
@@ -200,7 +200,7 @@ export class StringType extends PrimitiveType {
         super(typeRef, "string", false);
     }
 
-    reconstitute<T extends Type>(builder: TypeReconstituter<T>): void {
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         builder.getStringType(this.enumCases);
     }
 
@@ -247,7 +247,7 @@ export class ArrayType extends Type {
         return false;
     }
 
-    reconstitute<T extends Type>(builder: TypeReconstituter<T>): void {
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         const itemsRef = this.getItemsRef();
         const maybeItems = builder.lookup(itemsRef);
         if (maybeItems === undefined) {
@@ -366,7 +366,7 @@ export class ObjectType extends Type {
         return false;
     }
 
-    reconstitute<T extends Type>(builder: TypeReconstituter<T>): void {
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         const maybePropertyTypes = builder.lookup(this.getProperties().map(cp => cp.typeRef));
         const maybeAdditionalProperties = mapOptional(r => builder.lookup(r), this._additionalPropertiesRef);
 
@@ -499,7 +499,7 @@ export class EnumType extends Type {
         return false;
     }
 
-    reconstitute<T extends Type>(builder: TypeReconstituter<T>): void {
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         builder.getEnumType(this.cases);
     }
 
@@ -561,7 +561,7 @@ export class IntersectionType extends SetOperationType {
         return panic("isNullable not implemented for IntersectionType");
     }
 
-    reconstitute<T extends Type>(builder: TypeReconstituter<T>): void {
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         const memberRefs = this.getMemberRefs();
         const maybeMembers = builder.lookup(memberRefs);
         if (maybeMembers === undefined) {
@@ -619,7 +619,7 @@ export class UnionType extends SetOperationType {
         return true;
     }
 
-    reconstitute<T extends Type>(builder: TypeReconstituter<T>): void {
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         const memberRefs = this.getMemberRefs();
         const maybeMembers = builder.lookup(memberRefs);
         if (maybeMembers === undefined) {
@@ -696,13 +696,13 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
         .map(ts => ts.toArray());
 }
 
-export function combineTypeAttributesOfTypes(types: Collection<any, Type>): TypeAttributes {
-    return combineTypeAttributes(
-        types
-            .valueSeq()
-            .toArray()
-            .map(t => t.getAttributes())
-    );
+export function combineTypeAttributesOfTypes(types: Type[]): TypeAttributes;
+export function combineTypeAttributesOfTypes(types: Collection<any, Type>): TypeAttributes;
+export function combineTypeAttributesOfTypes(types: Type[] | Collection<any, Type>): TypeAttributes {
+    if (!Array.isArray(types)) {
+        types = types.valueSeq().toArray();
+    }
+    return combineTypeAttributes(types.map(t => t.getAttributes()));
 }
 
 export function setOperationCasesEqual(

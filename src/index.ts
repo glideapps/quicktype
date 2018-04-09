@@ -12,7 +12,7 @@ import { JSONSchemaStore } from "./JSONSchemaStore";
 import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeBuilder } from "./TypeBuilder";
-import { TypeGraph, noneToAny, optionalToNullable } from "./TypeGraph";
+import { TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
 import { makeNamesTypeAttributes } from "./TypeNames";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
@@ -158,6 +158,10 @@ export class Run {
         }
 
         const debugPrintReconstitution = this._options.debugPrintReconstitution === true;
+
+        if (typeBuilder.didAddForwardingIntersection) {
+            graph = removeIndirectionIntersections(graph, stringTypeMapping, debugPrintReconstitution);
+        }
 
         let unionsDone = false;
         if (!schemaInputs.isEmpty()) {

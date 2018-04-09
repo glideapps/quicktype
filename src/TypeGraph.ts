@@ -10,16 +10,19 @@ import {
     ClassType,
     ClassProperty,
     UnionType,
-    combineTypeAttributesOfTypes
+    combineTypeAttributesOfTypes,
+    IntersectionType
 } from "./Type";
-import { defined, assert, mustNotBeCalled } from "./Support";
+import { defined, assert, mustNotBeCalled, panic } from "./Support";
 import {
     GraphRewriteBuilder,
     TypeRef,
     TypeBuilder,
     StringTypeMapping,
     NoStringTypeMapping,
-    provenanceTypeAttributeKind
+    provenanceTypeAttributeKind,
+    GraphRemapBuilder,
+    BaseGraphRewriteBuilder
 } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
@@ -231,6 +234,23 @@ export class TypeGraph {
         this._printOnRewrite = true;
     }
 
+    private checkLostTypeAttributes(builder: BaseGraphRewriteBuilder, newGraph: TypeGraph): void {
+        if (!this._haveProvenanceAttributes || builder.lostTypeAttributes) return;
+
+        const oldProvenance = this.allProvenance();
+        const newProvenance = newGraph.allProvenance();
+        if (oldProvenance.size !== newProvenance.size) {
+            const difference = oldProvenance.subtract(newProvenance);
+            return messageError(ErrorMessage.IRTypeAttributesNotPropagated, { count: difference.size });
+        }
+    }
+
+    private printRewrite(title: string): void {
+        if (!this._printOnRewrite) return;
+
+        console.log(`\n# ${title}`);
+    }
+
     // Each array in `replacementGroups` is a bunch of types to be replaced by a
     // single new type.  `replacer` is a function that takes a group and a
     // TypeBuilder, and builds a new type with that builder that replaces the group.
@@ -246,9 +266,7 @@ export class TypeGraph {
         replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef,
         force: boolean = false
     ): TypeGraph {
-        if (this._printOnRewrite) {
-            console.log(`\n# ${title}`);
-        }
+        this.printRewrite(title);
 
         if (!force && replacementGroups.length === 0) return this;
 
@@ -263,20 +281,48 @@ export class TypeGraph {
         );
         const newGraph = builder.finish();
 
-        // FIXME: Make this enable-able via the command line
-        if (this._haveProvenanceAttributes && !builder.lostTypeAttributes) {
-            const oldProvenance = this.allProvenance();
-            const newProvenance = newGraph.allProvenance();
-            if (oldProvenance.size !== newProvenance.size) {
-                const difference = oldProvenance.subtract(newProvenance);
-                return messageError(ErrorMessage.IRTypeAttributesNotPropagated, { count: difference.size });
-            }
-        }
+        this.checkLostTypeAttributes(builder, newGraph);
 
         if (this._printOnRewrite) {
             newGraph.setPrintOnRewrite();
             newGraph.printGraph();
         }
+
+        if (!builder.didAddForwardingIntersection) return newGraph;
+
+        assert(!force, "We shouldn't have introduced forwarding intersections in a forced rewrite");
+        return removeIndirectionIntersections(newGraph, stringTypeMapping, debugPrintReconstitution);
+    }
+
+    remap(
+        title: string,
+        stringTypeMapping: StringTypeMapping,
+        alphabetizeProperties: boolean,
+        map: Map<Type, Type>,
+        debugPrintRemapping: boolean
+    ): TypeGraph {
+        this.printRewrite(title);
+
+        if (map.isEmpty()) return this;
+
+        const builder = new GraphRemapBuilder(
+            this,
+            stringTypeMapping,
+            alphabetizeProperties,
+            this._haveProvenanceAttributes,
+            map,
+            debugPrintRemapping
+        );
+        const newGraph = builder.finish();
+
+        this.checkLostTypeAttributes(builder, newGraph);
+
+        if (this._printOnRewrite) {
+            newGraph.setPrintOnRewrite();
+            newGraph.printGraph();
+        }
+
+        assert(!builder.didAddForwardingIntersection);
 
         return newGraph;
     }
@@ -418,4 +464,33 @@ export function optionalToNullable(
             return rewriteClass(c, builder, forwardingRef);
         }
     );
+}
+
+export function removeIndirectionIntersections(
+    graph: TypeGraph,
+    stringTypeMapping: StringTypeMapping,
+    debugPrintRemapping: boolean
+): TypeGraph {
+    const map: [Type, Type][] = [];
+
+    graph.allTypesUnordered().forEach(t => {
+        if (!(t instanceof IntersectionType)) return;
+        let seen = Set([t]);
+        let current = t;
+        while (current.members.size === 1) {
+            const member = defined(current.members.first());
+            if (!(member instanceof IntersectionType)) {
+                map.push([t, member]);
+                return;
+            }
+            if (seen.has(member)) {
+                // FIXME: Technically, this is an any type.
+                return panic("There's a cycle of intersection types");
+            }
+            seen = seen.add(member);
+            current = member;
+        }
+    });
+
+    return graph.remap("remove indirection intersections", stringTypeMapping, false, Map(map), debugPrintRemapping);
 }
