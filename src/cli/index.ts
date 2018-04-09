@@ -119,7 +119,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
                 sourcesInDir.push({
                     kind: "schema",
                     name,
-                    uri: fileOrUrl
+                    uris: [fileOrUrl]
                 });
             } else if (file.endsWith(".gqlschema")) {
                 messageAssert(graphQLSchema === undefined, ErrorMessage.DriverMoreThanOneGraphQLSchemaInDir, {
@@ -603,7 +603,7 @@ async function typeSourcesForURIs(name: string, uris: string[], options: CLIOpti
         case "json":
             return [await sourceFromFileOrUrlArray(name, uris)];
         case "schema":
-            return uris.map(uri => ({ kind: "schema", name, uri } as SchemaTypeSource));
+            return uris.map(uri => ({ kind: "schema", name, uris: [uri] } as SchemaTypeSource));
         default:
             return panic(`typeSourceForURIs must not be called for source language ${options.srcLang}`);
     }

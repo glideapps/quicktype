@@ -46,7 +46,7 @@ function isTypeScriptSource(source: TypeSource): source is TypeScriptTypeSource 
 export interface SchemaTypeSource {
     kind: "schema";
     name: string;
-    uri?: string;
+    uris?: string[];
     schema?: StringInput;
 }
 
@@ -58,12 +58,8 @@ function toSchemaSource(source: TypeSource): [SchemaTypeSource, boolean] | undef
     if (isSchemaSource(source)) {
         return [source, true];
     } else if (isTypeScriptSource(source)) {
-        return [{
-            kind: "schema",
-            name: "",
-            schema: schemaForTypeScriptSources(source.sources),
-            uri: "#/definitions/"
-        }, false];
+        const { schema, name, uris } = schemaForTypeScriptSources(source.sources);
+        return [{ kind: "schema", name, schema, uris }, false];
     }
     return undefined;
 }
@@ -89,7 +85,9 @@ class InputJSONSchemaStore extends JSONSchemaStore {
     async fetch(address: string): Promise<JSONSchema | undefined> {
         const maybeInput = this._inputs.get(address);
         if (maybeInput !== undefined) {
-            return checkJSONSchema(parseJSON(await toString(maybeInput), "JSON Schema", address), () => Ref.root(address));
+            return checkJSONSchema(parseJSON(await toString(maybeInput), "JSON Schema", address), () =>
+                Ref.root(address)
+            );
         }
         if (this._delegate === undefined) {
             return panic(`Schema URI ${address} requested, but no store given`);
@@ -106,8 +104,10 @@ export class InputData {
     private _schemaInputs: Map<string, StringInput> = Map();
     private _schemaSources: List<[uri.URI, SchemaTypeSource]> = List();
 
-    constructor(private readonly _compressedJSON: CompressedJSON, private readonly _givenSchemaStore: JSONSchemaStore | undefined) {
-    }
+    constructor(
+        private readonly _compressedJSON: CompressedJSON,
+        private readonly _givenSchemaStore: JSONSchemaStore | undefined
+    ) {}
 
     get jsonInputs(): Map<string, { samples: Value[]; description?: string }> {
         return Map(this._samples);
@@ -153,32 +153,44 @@ export class InputData {
     }
 
     private addSchemaTypeSource(schemaSource: SchemaTypeSource): void {
-        const { uri, schema } = schemaSource;
+        const { uris, schema } = schemaSource;
 
-        let normalizedURI: uri.URI;
+        let normalizedURIs: uri.URI[];
         const uriPath = `-${this._schemaInputs.size + 1}`;
-        if (uri === undefined) {
-            normalizedURI = new URI(uriPath);
+        if (uris === undefined) {
+            normalizedURIs = [new URI(uriPath)];
         } else {
-            normalizedURI = new URI(uri).normalize();
-            if (normalizedURI.clone().hash("").toString() === "") {
-                normalizedURI.path(uriPath);
-            }
+            normalizedURIs = uris.map(uri => {
+                const normalizedURI = new URI(uri).normalize();
+                if (
+                    normalizedURI
+                        .clone()
+                        .hash("")
+                        .toString() === ""
+                ) {
+                    normalizedURI.path(uriPath);
+                }
+                return normalizedURI;
+            });
         }
 
         if (schema === undefined) {
-            assert(uri !== undefined, "URI must be given if schema source is not specified");
+            assert(uris !== undefined, "URIs must be given if schema source is not specified");
         } else {
-            this._schemaInputs = this._schemaInputs.set(
-                normalizedURI
-                    .clone()
-                    .hash("")
-                    .toString(),
-                schema
-            );
+            for (const normalizedURI of normalizedURIs) {
+                this._schemaInputs = this._schemaInputs.set(
+                    normalizedURI
+                        .clone()
+                        .hash("")
+                        .toString(),
+                    schema
+                );
+            }
         }
 
-        this._schemaSources = this._schemaSources.push([normalizedURI, schemaSource]);
+        for (const normalizedURI of normalizedURIs) {
+            this._schemaSources = this._schemaSources.push([normalizedURI, schemaSource]);
+        }
     }
 
     // Returns whether we need IR for this type source
@@ -191,10 +203,10 @@ export class InputData {
             if (maybeSchemaSource !== undefined) {
                 const [schemaSource, isDirectInput] = maybeSchemaSource;
                 needIR = isDirectInput || needIR;
-    
+
                 this.addSchemaTypeSource(schemaSource);
-            } else {    
-                needIR = await this.addOtherTypeSource(source) || needIR;
+            } else {
+                needIR = (await this.addOtherTypeSource(source)) || needIR;
                 continue;
             }
         }
