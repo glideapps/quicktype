@@ -1,6 +1,6 @@
 import * as URI from "urijs";
 import * as lodash from "lodash";
-import { Map, List } from "immutable";
+import { Map, List, Set } from "immutable";
 import { getStream } from "./get-stream";
 import { Readable } from "stream";
 
@@ -17,7 +17,7 @@ function toReadable(source: string | Readable): Readable {
     return typeof source === "string" ? stringToStream(source) : source;
 }
 
-export async function toString(source: string | Readable): Promise<string> {
+async function toString(source: string | Readable): Promise<string> {
     return typeof source === "string" ? source : await getStream(source);
 }
 
@@ -119,10 +119,6 @@ export class InputData {
 
     get graphQLInputs(): Map<string, { schema: any; query: string }> {
         return Map(this._graphQLs);
-    }
-
-    get schemaSources(): List<[uri.URI, SchemaTypeSource]> {
-        return this._schemaSources;
     }
 
     // Returns whether we need IR for this type source
@@ -251,5 +247,16 @@ export class InputData {
         });
 
         return schemaStore;
+    }
+
+    singleStringSchemaSource(): string | undefined {
+        if (!this._schemaSources.every(([_, { schema }]) => typeof schema === "string")) {
+            return undefined;
+        }
+        const set = Set(this._schemaSources.map(([_, { schema }]) => schema as string));
+        if (set.size === 1) {
+            return defined(set.first());
+        }
+        return undefined;
     }
 }

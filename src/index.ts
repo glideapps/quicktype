@@ -22,7 +22,7 @@ import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
 import { replaceObjectType } from "./ReplaceObjectType";
 import { ErrorMessage, messageError } from "./Messages";
-import { TypeSource, InputData, toString } from "./Inputs";
+import { TypeSource, InputData } from "./Inputs";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -94,7 +94,11 @@ export class Run {
         this._options = _.mergeWith(_.clone(options), defaultOptions, (o, s) => (o === undefined ? s : o));
     }
 
-    private async makeGraph(allInputs: InputData, compressedJSON: CompressedJSON, schemaStore: JSONSchemaStore | undefined): Promise<TypeGraph> {
+    private async makeGraph(
+        allInputs: InputData,
+        compressedJSON: CompressedJSON,
+        schemaStore: JSONSchemaStore | undefined
+    ): Promise<TypeGraph> {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
@@ -231,14 +235,13 @@ export class Run {
 
         const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
         const allInputs = new InputData(compressedJSON, this._options.schemaStore);
-    
+
         if (await allInputs.addTypeSources(this._options.sources)) {
             needIR = true;
         }
 
-        if (!needIR && allInputs.schemaSources.size === 1) {
-            const source = defined(allInputs.schemaSources.first());
-            const schemaString = await toString(defined(source[1].schema));
+        const schemaString = needIR ? undefined : allInputs.singleStringSchemaSource();
+        if (schemaString !== undefined) {
             const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
             lines.push("");
             const srr = { lines, annotations: List() };

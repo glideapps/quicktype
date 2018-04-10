@@ -40,7 +40,8 @@ export const CSharpLanguage: Language = {
     "7fbfb.json",
     "cda6c.json",
     "c8c7e.json",
-    "e53b5.json"
+    "e53b5.json",
+    "f82d9.json"
   ],
   allowMissingNull: false,
   output: "QuickType.cs",
@@ -359,7 +360,8 @@ export const SwiftLanguage: Language = {
     "c8c7e.json",
     "e53b5.json",
     "e8b04.json",
-    "fcca3.json"
+    "fcca3.json",
+    "f82d9.json"
   ],
   allowMissingNull: true,
   output: "quicktype.swift",

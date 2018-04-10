@@ -5,6 +5,7 @@ import * as pluralize from "pluralize";
 
 import { panic, defined } from "./Support";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
+import { splitIntoWords } from "./Strings";
 
 export type NameOrNames = string | TypeNames;
 
@@ -13,16 +14,29 @@ export type NameOrNames = string | TypeNames;
 // the names "aaa" and "aaaa" we have the common prefix "aaa" and the
 // common suffix "aaa", so we will produce the combined name "aaaaaa".
 function combineNames(names: Collection<any, string>): string {
-    const first = names.first();
-    if (first === undefined) {
+    let originalFirst = names.first();
+    if (originalFirst === undefined) {
         return panic("Named type has no names");
     }
     if (names.count() === 1) {
+        return originalFirst;
+    }
+
+    const namesSet = names
+        .map(s =>
+            splitIntoWords(s)
+                .map(w => w.word.toLowerCase())
+                .join("_")
+        )
+        .toSet();
+    const first = defined(namesSet.first());
+    if (namesSet.size === 1) {
         return first;
     }
+
     let prefixLength = first.length;
     let suffixLength = first.length;
-    names.rest().forEach(n => {
+    namesSet.rest().forEach(n => {
         prefixLength = Math.min(prefixLength, n.length);
         for (let i = 0; i < prefixLength; i++) {
             if (first[i] !== n[i]) {
