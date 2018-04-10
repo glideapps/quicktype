@@ -21,12 +21,12 @@ export function gatherNames(graph: TypeGraph): void {
     let processed: Set<List<any>> = Set();
 
     function processObjectType(o: ObjectType, names: OrderedSet<string>, parentNames: OrderedSet<string> | undefined) {
-        const properties = o.properties.sortBy((_, n) => n);
+        const properties = o.getProperties().sortBy((_, n) => n);
         properties.forEach((property, propertyName) => {
             processType(property.type, OrderedSet([propertyName]), names);
         });
 
-        const values = o.additionalProperties;
+        const values = o.getAdditionalProperties();
         if (values !== undefined) {
             processType(values, names.map(pluralize.singular), parentNames, "value");
         }

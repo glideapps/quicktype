@@ -68,20 +68,35 @@ function replaceUnion(group: Set<UnionType>, builder: GraphRewriteBuilder<UnionT
     return builder.getUnionType(u.getAttributes(), OrderedSet(types), forwardingRef);
 }
 
-export function inferEnums(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
+export function inferEnums(
+    graph: TypeGraph,
+    stringTypeMapping: StringTypeMapping,
+    debugPrintReconstitution: boolean
+): TypeGraph {
     const allStrings = graph
         .allTypesUnordered()
         .filter(t => t instanceof StringType)
         .map(t => [t])
         .toArray() as StringType[][];
-    return graph.rewrite("infer enums", stringTypeMapping, false, allStrings, replaceString);
+    return graph.rewrite("infer enums", stringTypeMapping, false, allStrings, debugPrintReconstitution, replaceString);
 }
 
-export function flattenStrings(graph: TypeGraph, stringTypeMapping: StringTypeMapping): TypeGraph {
+export function flattenStrings(
+    graph: TypeGraph,
+    stringTypeMapping: StringTypeMapping,
+    debugPrintReconstitution: boolean
+): TypeGraph {
     const allUnions = graph.allNamedTypesSeparated().unions;
     const unionsToReplace = allUnions
         .filter(unionNeedsReplacing)
         .map(t => [t])
         .toArray();
-    return graph.rewrite("flatten strings", stringTypeMapping, false, unionsToReplace, replaceUnion);
+    return graph.rewrite(
+        "flatten strings",
+        stringTypeMapping,
+        false,
+        unionsToReplace,
+        debugPrintReconstitution,
+        replaceUnion
+    );
 }

@@ -22,7 +22,7 @@ function getCliqueProperties(
     let lostTypeAttributes = false;
     let propertyNames = OrderedSet<string>();
     for (const o of clique) {
-        propertyNames = propertyNames.union(o.properties.keySeq());
+        propertyNames = propertyNames.union(o.getProperties().keySeq());
     }
 
     let properties = propertyNames
@@ -30,7 +30,7 @@ function getCliqueProperties(
         .map(name => [name, OrderedSet(), false] as [string, OrderedSet<Type>, boolean]);
     let additionalProperties: OrderedSet<Type> | undefined = undefined;
     for (const o of clique) {
-        let additional = o.additionalProperties;
+        let additional = o.getAdditionalProperties();
         if (additional !== undefined) {
             if (additionalProperties === undefined) {
                 additionalProperties = OrderedSet();
@@ -42,7 +42,7 @@ function getCliqueProperties(
 
         for (let i = 0; i < properties.length; i++) {
             let [name, types, isOptional] = properties[i];
-            const maybeProperty = o.properties.get(name);
+            const maybeProperty = o.getProperties().get(name);
             if (maybeProperty === undefined) {
                 isOptional = true;
                 if (additional !== undefined && additional.kind !== "any") {
@@ -85,10 +85,10 @@ function countProperties(
     let hasAdditionalProperties = false;
     let hasNonAnyAdditionalProperties = false;
     for (const o of clique) {
-        if (!o.properties.isEmpty()) {
+        if (!o.getProperties().isEmpty()) {
             hasProperties = true;
         }
-        const additional = o.additionalProperties;
+        const additional = o.getAdditionalProperties();
         if (additional !== undefined) {
             hasAdditionalProperties = true;
             if (additional.kind !== "any") {
@@ -143,11 +143,18 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
         const { hasProperties, hasAdditionalProperties, hasNonAnyAdditionalProperties } = countProperties(objectTypes);
 
         if (!this._makeObjectTypes && (hasNonAnyAdditionalProperties || (!hasProperties && hasAdditionalProperties))) {
-            const propertyTypes = unionOfSets(objectTypes.map(o => o.properties.map(cp => cp.typeRef).toOrderedSet()));
+            const propertyTypes = unionOfSets(
+                objectTypes.map(o =>
+                    o
+                        .getProperties()
+                        .map(cp => cp.typeRef)
+                        .toOrderedSet()
+                )
+            );
             const additionalPropertyTypes = OrderedSet(
                 objectTypes
-                    .filter(o => o.additionalProperties !== undefined)
-                    .map(o => defined(o.additionalProperties).typeRef)
+                    .filter(o => o.getAdditionalProperties() !== undefined)
+                    .map(o => defined(o.getAdditionalProperties()).typeRef)
             );
             const allPropertyTypes = propertyTypes.union(additionalPropertyTypes).toArray();
             const tref = this.typeBuilder.getMapType(this._unifyTypes(allPropertyTypes, emptyTypeAttributes));

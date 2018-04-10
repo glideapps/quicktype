@@ -219,6 +219,7 @@ export const GoLanguage: Language = {
     "6de06.json",
     "7eb30.json",
     "7681c.json",
+    "76ae1.json",
     "ae9ca.json",
     "af2d1.json",
     "be234.json",

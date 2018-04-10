@@ -401,7 +401,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["class ", className, " < Dry::Struct"], () => {
             let table: Sourcelike[][] = [];
-            let count = c.properties.count();
+            let count = c.getProperties().size;
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 const last = --count === 0;
                 const description = this.descriptionForClassProperty(c, jsonName);

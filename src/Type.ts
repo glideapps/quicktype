@@ -3,7 +3,7 @@
 import { OrderedSet, OrderedMap, Collection, Map, Set, is, hash } from "immutable";
 
 import { defined, panic, assert, assertNever, mapOptional } from "./Support";
-import { TypeRef, TypeReconstituter } from "./TypeBuilder";
+import { TypeRef, TypeReconstituter, BaseGraphRewriteBuilder } from "./TypeBuilder";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { ErrorMessage, messageAssert } from "./Messages";
@@ -62,7 +62,7 @@ export abstract class Type {
 
     abstract get isNullable(): boolean;
     abstract isPrimitive(): this is PrimitiveType;
-    abstract map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef;
+    abstract reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void;
 
     equals(other: any): boolean {
         if (!Object.prototype.hasOwnProperty.call(other, "typeRef")) {
@@ -182,9 +182,8 @@ export class PrimitiveType extends Type {
         return true;
     }
 
-    map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
-        // console.log(`${mapIndentation()}mapping ${this.kind}`);
-        return builder.getPrimitiveType(this.kind);
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+        builder.getPrimitiveType(this.kind);
     }
 
     protected structuralEqualityStep(_other: Type, _queue: (a: Type, b: Type) => boolean): boolean {
@@ -201,9 +200,8 @@ export class StringType extends PrimitiveType {
         super(typeRef, "string", false);
     }
 
-    map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
-        // console.log(`${mapIndentation()}mapping ${this.kind}`);
-        return builder.getStringType(this.enumCases);
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+        builder.getStringType(this.enumCases);
     }
 
     protected structuralEqualityStep(_other: Type, _queue: (a: Type, b: Type) => boolean): boolean {
@@ -249,12 +247,15 @@ export class ArrayType extends Type {
         return false;
     }
 
-    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        // console.log(`${mapIndentation()}mapping ${this.kind}`);
-        // mapPath.push("[]");
-        const result = builder.getArrayType(f(this.getItemsRef()));
-        // mapPath.pop();
-        return result;
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+        const itemsRef = this.getItemsRef();
+        const maybeItems = builder.lookup(itemsRef);
+        if (maybeItems === undefined) {
+            builder.getUniqueArrayType();
+            builder.setArrayItems(builder.reconstitute(this.getItemsRef()));
+        } else {
+            builder.getArrayType(maybeItems);
+        }
     }
 
     protected structuralEqualityStep(other: ArrayType, queue: (a: Type, b: Type) => boolean): boolean {
@@ -296,14 +297,16 @@ export class ObjectType extends Type {
         typeRef: TypeRef,
         kind: TypeKind,
         readonly isFixed: boolean,
-        readonly properties: OrderedMap<string, ClassProperty>,
+        private _properties: OrderedMap<string, ClassProperty> | undefined,
         private _additionalPropertiesRef: TypeRef | undefined
     ) {
         super(typeRef, kind);
 
         assert(kind === "object" || kind === "map" || kind === "class");
         if (kind === "map") {
-            assert(properties.isEmpty());
+            if (_properties !== undefined) {
+                assert(_properties.isEmpty());
+            }
             assert(!isFixed);
         } else if (kind === "class") {
             assert(_additionalPropertiesRef === undefined);
@@ -312,21 +315,43 @@ export class ObjectType extends Type {
         }
     }
 
-    get sortedProperties(): OrderedMap<string, ClassProperty> {
-        const properties = this.properties;
+    setProperties(properties: OrderedMap<string, ClassProperty>, additionalPropertiesRef: TypeRef | undefined) {
+        if (this instanceof MapType) {
+            assert(properties.isEmpty(), "Cannot set properties on map type");
+        } else if (this._properties !== undefined) {
+            return panic("Tried to set object properties again");
+        }
+
+        if (this instanceof ClassType) {
+            assert(additionalPropertiesRef === undefined, "Cannot set additional properties of class type");
+        }
+
+        this._properties = properties;
+        this._additionalPropertiesRef = additionalPropertiesRef;
+    }
+
+    getProperties(): OrderedMap<string, ClassProperty> {
+        return defined(this._properties);
+    }
+
+    getSortedProperties(): OrderedMap<string, ClassProperty> {
+        const properties = this.getProperties();
         const sortedKeys = properties.keySeq().sort();
         const props = sortedKeys.map((k: string): [string, ClassProperty] => [k, defined(properties.get(k))]);
         return OrderedMap(props);
     }
 
-    get additionalProperties(): Type | undefined {
+    getAdditionalProperties(): Type | undefined {
+        assert(this._properties !== undefined, "Properties are not set yet");
         if (this._additionalPropertiesRef === undefined) return undefined;
         return this._additionalPropertiesRef.deref()[0];
     }
 
     get children(): OrderedSet<Type> {
-        const children = this.sortedProperties.map(p => p.type).toOrderedSet();
-        const additionalProperties = this.additionalProperties;
+        const children = this.getSortedProperties()
+            .map(p => p.type)
+            .toOrderedSet();
+        const additionalProperties = this.getAdditionalProperties();
         if (additionalProperties === undefined) {
             return children;
         }
@@ -341,38 +366,63 @@ export class ObjectType extends Type {
         return false;
     }
 
-    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        // const indent = "  ".repeat(mapPath.length);
-        // const path = mapPath.join(".");
-        // console.log(`${indent} mapping class ${this.getCombinedName()} at ${path}`);
-        const properties = this.properties.map((p, _n) => {
-            // console.log(`${indent}  property ${path}.${n}`);
-            // mapPath.push(n);
-            const result = new ClassProperty(f(p.typeRef), p.isOptional);
-            // mapPath.pop();
-            return result;
-        });
-        const additionalProperties = mapOptional(f, this._additionalPropertiesRef);
-        switch (this.kind) {
-            case "object":
-                assert(this.isFixed);
-                return builder.getUniqueObjectType(properties, additionalProperties);
-            case "map":
-                return builder.getMapType(defined(additionalProperties));
-            case "class":
-                if (this.isFixed) {
-                    return builder.getUniqueClassType(true, properties);
-                } else {
-                    return builder.getClassType(properties);
-                }
-            default:
-                return panic(`Invalid object type kind ${this.kind}`);
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+        const maybePropertyTypes = builder.lookup(this.getProperties().map(cp => cp.typeRef));
+        const maybeAdditionalProperties = mapOptional(r => builder.lookup(r), this._additionalPropertiesRef);
+
+        if (
+            maybePropertyTypes !== undefined &&
+            (maybeAdditionalProperties !== undefined || this._additionalPropertiesRef === undefined)
+        ) {
+            const properties = this.getProperties().map(
+                (cp, n) => new ClassProperty(defined(maybePropertyTypes.get(n)), cp.isOptional)
+            );
+
+            switch (this.kind) {
+                case "object":
+                    assert(this.isFixed);
+                    builder.getObjectType(properties, maybeAdditionalProperties);
+                    break;
+                case "map":
+                    builder.getMapType(defined(maybeAdditionalProperties));
+                    break;
+                case "class":
+                    if (this.isFixed) {
+                        builder.getUniqueClassType(true, properties);
+                    } else {
+                        builder.getClassType(properties);
+                    }
+                    break;
+                default:
+                    return panic(`Invalid object type kind ${this.kind}`);
+            }
+        } else {
+            switch (this.kind) {
+                case "object":
+                    assert(this.isFixed);
+                    builder.getUniqueObjectType(undefined, undefined);
+                    break;
+                case "map":
+                    builder.getUniqueMapType();
+                    break;
+                case "class":
+                    builder.getUniqueClassType(this.isFixed, undefined);
+                    break;
+                default:
+                    return panic(`Invalid object type kind ${this.kind}`);
+            }
+
+            const properties = this.getProperties().map(
+                cp => new ClassProperty(builder.reconstitute(cp.typeRef), cp.isOptional)
+            );
+            const additionalProperties = mapOptional(r => builder.reconstitute(r), this._additionalPropertiesRef);
+            builder.setObjectProperties(properties, additionalProperties);
         }
     }
 
     protected structuralEqualityStep(other: ObjectType, queue: (a: Type, b: Type) => boolean): boolean {
-        const pa = this.properties;
-        const pb = other.properties;
+        const pa = this.getProperties();
+        const pb = other.getProperties();
         if (pa.size !== pb.size) return false;
         let failed = false;
         pa.forEach((cpa, name) => {
@@ -384,9 +434,11 @@ export class ObjectType extends Type {
         });
         if (failed) return false;
 
-        if ((this.additionalProperties === undefined) !== (other.additionalProperties === undefined)) return false;
-        if (this.additionalProperties === undefined || other.additionalProperties === undefined) return true;
-        return queue(this.additionalProperties, other.additionalProperties);
+        const thisAdditionalProperties = this.getAdditionalProperties();
+        const otherAdditionalProperties = other.getAdditionalProperties();
+        if ((thisAdditionalProperties === undefined) !== (otherAdditionalProperties === undefined)) return false;
+        if (thisAdditionalProperties === undefined || otherAdditionalProperties === undefined) return true;
+        return queue(thisAdditionalProperties, otherAdditionalProperties);
     }
 }
 
@@ -394,7 +446,7 @@ export class ClassType extends ObjectType {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "class";
 
-    constructor(typeRef: TypeRef, readonly isFixed: boolean, readonly properties: OrderedMap<string, ClassProperty>) {
+    constructor(typeRef: TypeRef, isFixed: boolean, properties: OrderedMap<string, ClassProperty> | undefined) {
         super(typeRef, "class", isFixed, properties, undefined);
     }
 }
@@ -403,12 +455,13 @@ export class MapType extends ObjectType {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: "map";
 
-    constructor(typeRef: TypeRef, valuesRef: TypeRef) {
+    constructor(typeRef: TypeRef, valuesRef: TypeRef | undefined) {
         super(typeRef, "map", false, OrderedMap(), valuesRef);
     }
 
+    // FIXME: Remove and use `getAdditionalProperties()` instead.
     get values(): Type {
-        return defined(this.additionalProperties);
+        return defined(this.getAdditionalProperties());
     }
 }
 
@@ -446,9 +499,8 @@ export class EnumType extends Type {
         return false;
     }
 
-    map(builder: TypeReconstituter, _: (tref: TypeRef) => TypeRef): TypeRef {
-        // console.log(`${mapIndentation()}mapping ${this.kind}`);
-        return builder.getEnumType(this.cases);
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+        builder.getEnumType(this.cases);
     }
 
     protected structuralEqualityStep(other: EnumType, _queue: (a: Type, b: Type) => void): boolean {
@@ -492,7 +544,7 @@ export abstract class SetOperationType extends Type {
         return false;
     }
 
-    protected structuralEqualityStep(other: UnionType, queue: (a: Type, b: Type) => boolean): boolean {
+    protected structuralEqualityStep(other: SetOperationType, queue: (a: Type, b: Type) => boolean): boolean {
         return setOperationCasesEqual(this.members, other.members, queue);
     }
 }
@@ -509,10 +561,15 @@ export class IntersectionType extends SetOperationType {
         return panic("isNullable not implemented for IntersectionType");
     }
 
-    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        const members = this.getMemberRefs().map(f);
-        // FIXME: Eventually switch to non-unique
-        return builder.getUniqueIntersectionType(members);
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+        const memberRefs = this.getMemberRefs();
+        const maybeMembers = builder.lookup(memberRefs);
+        if (maybeMembers === undefined) {
+            builder.getUniqueIntersectionType();
+            builder.setSetOperationMembers(builder.reconstitute(memberRefs));
+        } else {
+            builder.getIntersectionType(maybeMembers);
+        }
     }
 }
 
@@ -562,9 +619,15 @@ export class UnionType extends SetOperationType {
         return true;
     }
 
-    map(builder: TypeReconstituter, f: (tref: TypeRef) => TypeRef): TypeRef {
-        const members = this.getMemberRefs().map(f);
-        return builder.getUnionType(members);
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+        const memberRefs = this.getMemberRefs();
+        const maybeMembers = builder.lookup(memberRefs);
+        if (maybeMembers === undefined) {
+            builder.getUniqueUnionType();
+            builder.setSetOperationMembers(builder.reconstitute(memberRefs));
+        } else {
+            builder.getUnionType(maybeMembers);
+        }
     }
 }
 
@@ -633,13 +696,13 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
         .map(ts => ts.toArray());
 }
 
-export function combineTypeAttributesOfTypes(types: Collection<any, Type>): TypeAttributes {
-    return combineTypeAttributes(
-        types
-            .valueSeq()
-            .toArray()
-            .map(t => t.getAttributes())
-    );
+export function combineTypeAttributesOfTypes(types: Type[]): TypeAttributes;
+export function combineTypeAttributesOfTypes(types: Collection<any, Type>): TypeAttributes;
+export function combineTypeAttributesOfTypes(types: Type[] | Collection<any, Type>): TypeAttributes {
+    if (!Array.isArray(types)) {
+        types = types.valueSeq().toArray();
+    }
+    return combineTypeAttributes(types.map(t => t.getAttributes()));
 }
 
 export function setOperationCasesEqual(

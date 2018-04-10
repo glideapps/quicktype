@@ -31,8 +31,8 @@ function typeSetsCanBeCombined(s1: OrderedSet<Type>, s2: OrderedSet<Type>): bool
 }
 
 function canBeCombined(c1: ClassType, c2: ClassType): boolean {
-    const p1 = c1.properties;
-    const p2 = c2.properties;
+    const p1 = c1.getProperties();
+    const p2 = c2.getProperties();
     if (p1.size < p2.size * REQUIRED_OVERLAP || p2.size < p1.size * REQUIRED_OVERLAP) {
         return false;
     }
@@ -127,7 +127,8 @@ export function combineClasses(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
     alphabetizeProperties: boolean,
-    conflateNumbers: boolean
+    conflateNumbers: boolean,
+    debugPrintReconstitution: boolean
 ): TypeGraph {
     const cliques = findSimilarityCliques(graph, false);
 
@@ -148,5 +149,12 @@ export function combineClasses(
         );
     }
 
-    return graph.rewrite("combine classes", stringTypeMapping, alphabetizeProperties, cliques, makeCliqueClass);
+    return graph.rewrite(
+        "combine classes",
+        stringTypeMapping,
+        alphabetizeProperties,
+        cliques,
+        debugPrintReconstitution,
+        makeCliqueClass
+    );
 }
