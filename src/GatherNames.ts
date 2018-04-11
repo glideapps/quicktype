@@ -25,20 +25,20 @@ import { defined, panic } from "./Support";
 //    inner class.  We also then add `bar` to the name of the integer
 //    type.
 //
-// 2. Add some "direct" alternatives to the type names.  Direct
-//    alternatives are those that don't contain any ancestor names.
-//    In this case we would add `TopLevel_class`, and `foo_class` to
-//    the outer and inner classes, respectively.  We do similar stuff
-//    for all the other types.
-//
-// 3. Add "ancestor" alternatives and more direct alternatives.  The
-//    reason we're doing this separately from step 2 is because step 2
-//    only requires iterating over the types, wheras this step iterates
-//    over ancestor/descendant relationships.  What we do here is add
+// 2. Add "ancestor" alternatives and some "direct" alternatives.  
+//    Direct alternatives are those that don't contain any ancestor
+//    names, whereas ancestor alternatives do. What we do here is add
 //    names of the form `TopLevel_foo` and `TopLevel_foo_class` as
 //    ancestor alternatives to the inner class, and `foo_element` as
 //    a direct alternative, the latter because it's an element in an
 //    array.
+//
+// 3. Add more direct alternatives to the type names.  The reason we're
+//    doing this separately from step 2 is because step 2 only requires
+//    iterating over the types, wheras this step iterates over
+//    ancestor/descendant relationships.  In this case we would add
+//    `TopLevel_class`, and `foo_class` to the outer and inner classes,
+//    respectively.  We do similar stuff for all the other types.
 //
 // 4. For each type, set its inferred names to what we gathered in
 //    step 1, and its alternatives to a union of its direct and ancestor
@@ -146,25 +146,6 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
 
     // null means there are too many
     let directAlternativesForType = Map<Type, OrderedSet<string> | null>();
-
-    // FIXME: maybe do this last, so these names get considered last for naming?
-    graph.allTypesUnordered().forEach(t => {
-        const names = namesForType.get(t);
-        if (names === undefined) return;
-        if (names === null) {
-            directAlternativesForType = directAlternativesForType.set(t, null);
-            return;
-        }
-        let alternatives = directAlternativesForType.get(t);
-        if (alternatives === null) return;
-        if (alternatives === undefined) {
-            alternatives = OrderedSet();
-        }
-
-        alternatives = alternatives.union(names.map(name => `${name}_${t.kind}`));
-        directAlternativesForType = directAlternativesForType.set(t, alternatives);
-    });
-
     let ancestorAlternativesForType = Map<Type, OrderedSet<string> | null>();
     let pairsProcessed = Map<Type | undefined, Set<Type>>();
 
@@ -268,6 +249,23 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
     graph.topLevels.forEach(t => {
         processType(undefined, t, undefined);
     });
+
+    graph.allTypesUnordered().forEach(t => {
+        const names = namesForType.get(t);
+        if (names === undefined) return;
+        if (names === null) {
+            directAlternativesForType = directAlternativesForType.set(t, null);
+            return;
+        }
+        let alternatives = directAlternativesForType.get(t);
+        if (alternatives === null) return;
+        if (alternatives === undefined) {
+            alternatives = OrderedSet();
+        }
+
+        alternatives = alternatives.union(names.map(name => `${name}_${t.kind}`));
+        directAlternativesForType = directAlternativesForType.set(t, alternatives);
+    });    
 
     graph.allTypesUnordered().forEach(t => {
         const names = namesForType.get(t);
