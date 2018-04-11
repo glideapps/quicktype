@@ -13,7 +13,7 @@ import { TypeInference } from "./Inference";
 import { inferMaps } from "./InferMaps";
 import { TypeBuilder } from "./TypeBuilder";
 import { TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
-import { makeNamesTypeAttributes } from "./TypeNames";
+import { makeNamesTypeAttributes, initTypeNames } from "./TypeNames";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
 import { inferEnums, flattenStrings } from "./InferEnums";
@@ -66,6 +66,7 @@ export interface Options {
     debugPrintGraph: boolean;
     checkProvenance: boolean;
     debugPrintReconstitution: boolean;
+    debugPrintGatherNames: boolean;
 }
 
 const defaultOptions: Options = {
@@ -88,7 +89,8 @@ const defaultOptions: Options = {
     schemaStore: undefined,
     debugPrintGraph: false,
     checkProvenance: false,
-    debugPrintReconstitution: false
+    debugPrintReconstitution: false,
+    debugPrintGatherNames: false
 };
 
 export class Run {
@@ -246,7 +248,7 @@ export class Run {
         if (this._options.debugPrintGraph) {
             console.log("\n# gather names");
         }
-        gatherNames(graph);
+        gatherNames(graph, this._options.debugPrintGatherNames);
         if (this._options.debugPrintGraph) {
             graph.printGraph();
         }
@@ -262,6 +264,8 @@ export class Run {
     }
 
     public async run(): Promise<OrderedMap<string, SerializedRenderResult>> {
+        initTypeNames();
+
         const targetLanguage = getTargetLanguage(this._options.lang);
         let needIR =
             targetLanguage.names.indexOf("schema") < 0 ||

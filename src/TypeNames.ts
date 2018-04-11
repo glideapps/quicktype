@@ -1,11 +1,31 @@
 "use strict";
 
-import { OrderedSet, Collection } from "immutable";
+import { Set, OrderedSet, Collection } from "immutable";
 import * as pluralize from "pluralize";
+import { Chance } from "chance";
 
-import { panic, defined } from "./Support";
+import { panic, defined, assert, mapOptional } from "./Support";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { splitIntoWords } from "./Strings";
+
+let chance: Chance.Chance;
+let usedRandomNames: Set<string>;
+
+export function initTypeNames(): void {
+    chance = new Chance(31415);
+    usedRandomNames = Set();
+}
+
+initTypeNames();
+
+function makeRandomName(): string {
+    for (;;) {
+        const name = `${chance.city()} ${chance.animal()}`;
+        if (usedRandomNames.has(name)) continue;
+        usedRandomNames = usedRandomNames.add(name);
+        return name;
+    }
+}
 
 export type NameOrNames = string | TypeNames;
 
@@ -62,14 +82,55 @@ function combineNames(names: Collection<any, string>): string {
     return first;
 }
 
-export class TypeNames {
+export const tooManyNamesThreshold = 20;
+
+export abstract class TypeNames {
+    static make(
+        names: OrderedSet<string>,
+        alternativeNames: OrderedSet<string> | undefined,
+        areInferred: boolean
+    ): TypeNames {
+        if (names.size >= tooManyNamesThreshold) {
+            return new TooManyTypeNames(areInferred);
+        }
+
+        if (alternativeNames === undefined || alternativeNames.size > tooManyNamesThreshold) {
+            alternativeNames = undefined;
+        }
+
+        return new RegularTypeNames(names, alternativeNames, areInferred);
+    }
+
+    abstract get areInferred(): boolean;
+    abstract get names(): OrderedSet<string>;
+    abstract get combinedName(): string;
+    abstract get proposedNames(): OrderedSet<string>;
+
+    abstract add(names: TypeNames): TypeNames;
+    abstract clearInferred(): TypeNames;
+    abstract makeInferred(): TypeNames;
+    abstract singularize(): TypeNames;
+    abstract toString(): string;
+}
+
+export class RegularTypeNames extends TypeNames {
     constructor(
         readonly names: OrderedSet<string>,
-        private readonly _alternativeNames: OrderedSet<string>,
+        private readonly _alternativeNames: OrderedSet<string> | undefined,
         readonly areInferred: boolean
-    ) {}
+    ) {
+        super();
+    }
 
     add(names: TypeNames): TypeNames {
+        if (!(names instanceof RegularTypeNames)) {
+            assert(names instanceof TooManyTypeNames, "Unknown TypeNames instance");
+            if (this.areInferred === names.areInferred || !names.areInferred) {
+                return names;
+            }
+            return this;
+        }
+
         let newNames = this.names;
         let newAreInferred = this.areInferred;
         if (this.areInferred && !names.areInferred) {
@@ -78,13 +139,16 @@ export class TypeNames {
         } else if (this.areInferred === names.areInferred) {
             newNames = this.names.union(names.names);
         }
-        const newAlternativeNames = this._alternativeNames.union(names._alternativeNames);
-        return new TypeNames(newNames, newAlternativeNames, newAreInferred);
+        const newAlternativeNames =
+            this._alternativeNames === undefined || names._alternativeNames === undefined
+                ? undefined
+                : this._alternativeNames.union(names._alternativeNames);
+        return TypeNames.make(newNames, newAlternativeNames, newAreInferred);
     }
 
     clearInferred(): TypeNames {
         const newNames = this.areInferred ? OrderedSet() : this.names;
-        return new TypeNames(newNames, OrderedSet(), this.areInferred);
+        return TypeNames.make(newNames, OrderedSet(), this.areInferred);
     }
 
     get combinedName(): string {
@@ -92,33 +156,91 @@ export class TypeNames {
     }
 
     get proposedNames(): OrderedSet<string> {
-        return OrderedSet([this.combinedName]).union(this._alternativeNames);
+        const set = OrderedSet([this.combinedName]);
+        if (this._alternativeNames === undefined) {
+            return set;
+        }
+        return set.union(this._alternativeNames);
     }
 
     makeInferred(): TypeNames {
         if (this.areInferred) return this;
-        return new TypeNames(this.names, this._alternativeNames, true);
+        return TypeNames.make(this.names, this._alternativeNames, true);
     }
 
     singularize(): TypeNames {
-        return new TypeNames(this.names.map(pluralize.singular), this._alternativeNames.map(pluralize.singular), true);
+        return TypeNames.make(
+            this.names.map(pluralize.singular),
+            mapOptional(an => an.map(pluralize.singular), this._alternativeNames),
+            true
+        );
     }
 
     toString(): string {
         const inferred = this.areInferred ? "inferred" : "given";
-        return `${inferred} ${this.names.join(",")} (${this._alternativeNames.join(",")})`;
+        const names = `${inferred} ${this.names.join(",")}`;
+        if (this._alternativeNames === undefined) {
+            return names;
+        }
+        return `${names} (${this._alternativeNames.join(",")})`;
+    }
+}
+
+export class TooManyTypeNames extends TypeNames {
+    readonly names: OrderedSet<string>;
+
+    constructor(readonly areInferred: boolean) {
+        super();
+
+        this.names = OrderedSet([makeRandomName()]);
+    }
+
+    get combinedName(): string {
+        return defined(this.names.first());
+    }
+
+    get proposedNames(): OrderedSet<string> {
+        return this.names;
+    }
+
+    add(_names: TypeNames): TypeNames {
+        return this;
+    }
+
+    clearInferred(): TypeNames {
+        if (!this.areInferred) {
+            return this;
+        }
+        return TypeNames.make(OrderedSet(), OrderedSet(), true);
+    }
+
+    makeInferred(): TypeNames {
+        return this;
+    }
+
+    singularize(): TypeNames {
+        return this;
+    }
+
+    toString(): string {
+        return `too many ${this.combinedName}`;
     }
 }
 
 export function typeNamesUnion(c: Collection<any, TypeNames>): TypeNames {
-    let names = new TypeNames(OrderedSet(), OrderedSet(), true);
+    let names = TypeNames.make(OrderedSet(), OrderedSet(), true);
     c.forEach(n => {
         names = names.add(n);
     });
     return names;
 }
 
-export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>("names", (a, b) => a.add(b), a => a.makeInferred(), a => a.toString());
+export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>(
+    "names",
+    (a, b) => a.add(b),
+    a => a.makeInferred(),
+    a => a.toString()
+);
 
 export function modifyTypeNames(
     attributes: TypeAttributes,
@@ -137,7 +259,7 @@ export function singularizeTypeNames(attributes: TypeAttributes): TypeAttributes
 export function makeNamesTypeAttributes(nameOrNames: NameOrNames, areNamesInferred?: boolean): TypeAttributes {
     let typeNames: TypeNames;
     if (typeof nameOrNames === "string") {
-        typeNames = new TypeNames(OrderedSet([nameOrNames]), OrderedSet(), defined(areNamesInferred));
+        typeNames = TypeNames.make(OrderedSet([nameOrNames]), OrderedSet(), defined(areNamesInferred));
     } else {
         typeNames = nameOrNames as TypeNames;
     }

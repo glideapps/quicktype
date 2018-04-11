@@ -430,9 +430,8 @@ export function optionalToNullable(
                 } else {
                     members = OrderedSet([builder.reconstituteType(t), nullType]);
                 }
-                const attributes = namesTypeAttributeKind.setDefaultInAttributes(
-                    t.getAttributes(),
-                    () => new TypeNames(OrderedSet([name]), OrderedSet(), true)
+                const attributes = namesTypeAttributeKind.setDefaultInAttributes(t.getAttributes(), () =>
+                    TypeNames.make(OrderedSet([name]), OrderedSet(), true)
                 );
                 ref = builder.getUnionType(attributes, members);
             }

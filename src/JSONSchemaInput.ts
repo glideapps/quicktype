@@ -423,7 +423,7 @@ function makeAttributes(schema: StringMap, loc: Location, attributes: TypeAttrib
         }
 
         if (typeof title === "string") {
-            return new TypeNames(OrderedSet([title]), OrderedSet(), schema.$ref !== undefined);
+            return TypeNames.make(OrderedSet([title]), OrderedSet(), schema.$ref !== undefined);
         } else {
             return typeNames.makeInferred();
         }
@@ -756,7 +756,7 @@ export async function addTypesInSchema(
             const [target, newLoc] = await resolveVirtualRef(loc, virtualRef);
             const attributes = modifyTypeNames(typeAttributes, tn => {
                 if (!defined(tn).areInferred) return tn;
-                return new TypeNames(OrderedSet([newLoc.canonicalRef.name]), OrderedSet(), true);
+                return TypeNames.make(OrderedSet([newLoc.canonicalRef.name]), OrderedSet(), true);
             });
             types.push(await toType(target, newLoc, attributes));
         }
