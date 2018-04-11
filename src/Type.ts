@@ -65,9 +65,7 @@ export abstract class Type {
     abstract reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void;
 
     equals(other: any): boolean {
-        if (!Object.prototype.hasOwnProperty.call(other, "typeRef")) {
-            return false;
-        }
+        if (!(other instanceof Type)) return false;
         return this.typeRef.equals(other.typeRef);
     }
 

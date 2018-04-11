@@ -31,7 +31,6 @@ import {
 } from "./TypeAttributes";
 import { defined, assert, panic, assertNever, setUnion, mapOptional } from "./Support";
 
-// FIXME: Get rid of this eventually
 export class TypeRef {
     constructor(readonly graph: TypeGraph, readonly index: number) {}
 
