@@ -31,18 +31,12 @@ import {
 } from "./TypeAttributes";
 import { defined, assert, panic, assertNever, setUnion, mapOptional } from "./Support";
 
-export type TypeRefCallback = (index: number) => void;
-
 // FIXME: Get rid of this eventually
 export class TypeRef {
     constructor(readonly graph: TypeGraph, readonly maybeIndex: number) {}
 
     getIndex(): number {
         return this.maybeIndex;
-    }
-
-    callWhenResolved(callback: TypeRefCallback): void {
-        callback(this.getIndex());
     }
 
     deref(): [Type, TypeAttributes] {
@@ -169,12 +163,11 @@ export class TypeBuilder {
     }
 
     addAttributes(tref: TypeRef, attributes: TypeAttributes | undefined): void {
-        tref.callWhenResolved(index => {
-            if (attributes === undefined) {
-                attributes = Map();
-            }
-            this.typeAttributes[index] = combineTypeAttributes(this.typeAttributes[index], attributes);
-        });
+        if (attributes === undefined) {
+            attributes = Map();
+        }
+        const index = tref.getIndex();
+        this.typeAttributes[index] = combineTypeAttributes(this.typeAttributes[index], attributes);
     }
 
     makeNullable(tref: TypeRef, attributes: TypeAttributes): TypeRef {
