@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "chalk": "^2.1.0",
+    "chance": "^1.0.13",
     "command-line-args": "^4.0.6",
     "command-line-usage": "^4.0.0",
     "graphql": "^0.11.7",
@@ -40,6 +41,7 @@
     "uuid": "^3.2.1"
   },
   "devDependencies": {
+    "@types/chance": "^1.0.0",
     "@types/graphql": "^0.11.7",
     "@types/handlebars": "^4.0.36",
     "@types/is-url": "^1.2.28",

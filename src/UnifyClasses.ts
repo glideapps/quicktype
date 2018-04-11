@@ -67,9 +67,8 @@ function getCliqueProperties(
 
     const unifiedPropertiesArray = properties.map(([name, types, isOptional]) => {
         let attributes = combineTypeAttributesOfTypes(types);
-        attributes = namesTypeAttributeKind.setDefaultInAttributes(
-            attributes,
-            () => new TypeNames(OrderedSet([name]), OrderedSet(), true)
+        attributes = namesTypeAttributeKind.setDefaultInAttributes(attributes, () =>
+            TypeNames.make(OrderedSet([name]), OrderedSet(), true)
         );
         return [name, new ClassProperty(makePropertyType(attributes, types), isOptional)] as [string, ClassProperty];
     });

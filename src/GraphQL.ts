@@ -68,7 +68,7 @@ function makeNames(name: string, fieldName: string | null, containingTypeName: s
     if (fieldName) alternatives.push(fieldName);
     if (containingTypeName) alternatives.push(`${containingTypeName}_${name}`);
     if (fieldName && containingTypeName) alternatives.push(`${containingTypeName}_${fieldName}`);
-    return namesTypeAttributeKind.makeAttributes(new TypeNames(OrderedSet([name]), OrderedSet(alternatives), false));
+    return namesTypeAttributeKind.makeAttributes(TypeNames.make(OrderedSet([name]), OrderedSet(alternatives), false));
 }
 
 function makeNullable(
@@ -424,7 +424,7 @@ export function makeGraphQLQueryTypes(
         const dataType = query.makeType(builder, odn, queryName);
         const errorType = builder.getClassType(
             namesTypeAttributeKind.makeAttributes(
-                new TypeNames(OrderedSet(["error"]), OrderedSet(["graphQLError"]), false)
+                TypeNames.make(OrderedSet(["error"]), OrderedSet(["graphQLError"]), false)
             ),
             OrderedMap({ message: new ClassProperty(builder.getStringType(undefined, undefined), false) })
         );
@@ -432,7 +432,7 @@ export function makeGraphQLQueryTypes(
         builder.addAttributes(
             errorArray,
             namesTypeAttributeKind.makeAttributes(
-                new TypeNames(OrderedSet(["errors"]), OrderedSet(["graphQLErrors"]), false)
+                TypeNames.make(OrderedSet(["errors"]), OrderedSet(["graphQLErrors"]), false)
             )
         );
         const t = builder.getClassType(
