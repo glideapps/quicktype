@@ -86,7 +86,7 @@ export function declarationsForGraph(
 ): DeclarationIR {
     /*
     function nodeTitle(t: Type): string {
-        const indexAndKind = `${t.typeRef.getIndex()} ${t.kind}`;
+        const indexAndKind = `${t.typeRef.index} ${t.kind}`;
         if (t.hasNames) {
             return `${indexAndKind} ${t.getCombinedName()}`;
         } else {

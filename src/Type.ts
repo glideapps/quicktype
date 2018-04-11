@@ -28,7 +28,7 @@ export function isPrimitiveTypeKind(kind: TypeKind): kind is PrimitiveTypeKind {
 }
 
 function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
-    if (x.typeRef.getIndex() === y.typeRef.getIndex()) return true;
+    if (x.typeRef.index === y.typeRef.index) return true;
     if (x.kind === "none" || y.kind === "none") return true;
     return false;
 }
@@ -102,13 +102,13 @@ export abstract class Type {
 
         while (workList.length > 0) {
             let [a, b] = defined(workList.pop());
-            if (a.typeRef.getIndex() > b.typeRef.getIndex()) {
+            if (a.typeRef.index > b.typeRef.index) {
                 [a, b] = [b, a];
             }
 
             if (!a.isPrimitive()) {
-                let ai = a.typeRef.getIndex();
-                let bi = b.typeRef.getIndex();
+                let ai = a.typeRef.index;
+                let bi = b.typeRef.index;
 
                 let found = false;
                 for (const [dai, dbi] of done) {

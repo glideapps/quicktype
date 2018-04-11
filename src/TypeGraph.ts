@@ -37,7 +37,7 @@ export class TypeAttributeStore {
     private getTypeIndex(t: Type): number {
         const tref = t.typeRef;
         assert(tref.graph === this._typeGraph, "Using the wrong type attribute store");
-        return tref.getIndex();
+        return tref.index;
     }
 
     attributesForType(t: Type): TypeAttributes {
@@ -356,13 +356,13 @@ export class TypeGraph {
             const parents = defined(this._types).map(_ => Set());
             this.allTypesUnordered().forEach(p => {
                 p.children.forEach(c => {
-                    const index = c.typeRef.getIndex();
+                    const index = c.typeRef.index;
                     parents[index] = parents[index].add(p);
                 });
             });
             this._parents = parents;
         }
-        return this._parents[t.typeRef.getIndex()];
+        return this._parents[t.typeRef.index];
     }
 
     printGraph(): void {
@@ -373,7 +373,7 @@ export class TypeGraph {
             parts.push(`${t.kind}${t.hasNames ? ` ${t.getCombinedName()}` : ""}`);
             const children = t.children;
             if (!children.isEmpty()) {
-                parts.push(`children ${children.map(c => c.typeRef.getIndex()).join(",")}`);
+                parts.push(`children ${children.map(c => c.typeRef.index).join(",")}`);
             }
             t.getAttributes().forEach((value, kind) => {
                 const maybeString = kind.stringify(value);
