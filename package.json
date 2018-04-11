@@ -33,7 +33,7 @@
     "stream-json": "0.5.2",
     "string-to-stream": "^1.1.0",
     "typescript": "~2.6.2",
-    "typescript-json-schema": "quicktype/typescript-json-schema#dist",
+    "typescript-json-schema": "quicktype/typescript-json-schema#a380f47a6868e6d8dd6fc789852f8348c976eed6",
     "unicode-properties": "quicktype/unicode-properties#dist",
     "universal-analytics": "^0.4.16",
     "urijs": "^1.19.1",
@@ -69,7 +69,9 @@
     "uglify-js": "^3.0.26",
     "watch": "^1.0.2"
   },
-  "files": ["dist/**"],
+  "files": [
+    "dist/**"
+  ],
   "bin": "dist/cli/index.js",
   "jest": {
     "transform": {
@@ -81,6 +83,13 @@
       }
     },
     "testRegex": "(/__tests__/.*)\\.test\\.(tsx?)$",
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
   }
 }
