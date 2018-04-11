@@ -22,7 +22,8 @@ import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
 import { replaceObjectType } from "./ReplaceObjectType";
 import { ErrorMessage, messageError } from "./Messages";
-import { TypeSource, InputData } from "./Inputs";
+import { InputData } from "./Inputs";
+import { TypeSource } from "./TypeSource";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
