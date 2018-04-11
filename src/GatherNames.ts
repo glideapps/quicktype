@@ -24,6 +24,14 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
     let namesForType = Map<Type, OrderedSet<string> | null>();
 
     function addNames(t: Type, names: OrderedSet<string> | null) {
+        // Always use the type's given names if it has some
+        if (t.hasNames) {
+            const originalNames = t.getNames();
+            if (!originalNames.areInferred) {
+                names = originalNames.names;
+            }
+        }
+
         const oldNames = namesForType.get(t);
         if (oldNames === null) return;
 
