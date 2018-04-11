@@ -4,9 +4,45 @@ import { Set, OrderedSet, Map, isCollection } from "immutable";
 import * as pluralize from "pluralize";
 
 import { TypeGraph } from "./TypeGraph";
-import { matchCompoundType, Type, ObjectType } from "./Type";
+import { matchCompoundType, Type, ObjectType, nullableFromUnion } from "./Type";
 import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./TypeNames";
 import { defined, panic } from "./Support";
+
+// `gatherNames` infers names from given names and property names.
+//
+// 1. Propagate type and property names down to children.  Let's say
+//    we start with JSON like this, and we name the top-level `TopLevel`:
+//
+//    {
+//      "foos": [ [ { "bar": 123 } ] ]
+//    }
+//
+//    We use a work-list algorithm to first add the name `TopLevel` to
+//    the outermost class type.  Then we propagate the property name
+//    `foos` to the outer array, which in turn propagates its singular
+//    `foo` to the inner array type.  That tries to singularize `foo`,
+//    but it's already singular, so `foo` is added as a name for the
+//    inner class.  We also then add `bar` to the name of the integer
+//    type.
+//
+// 2. Add some "direct" alternatives to the type names.  Direct
+//    alternatives are those that don't contain any ancestor names.
+//    In this case we would add `TopLevel_class`, and `foo_class` to
+//    the outer and inner classes, respectively.  We do similar stuff
+//    for all the other types.
+//
+// 3. Add "ancestor" alternatives and more direct alternatives.  The
+//    reason we're doing this separately from step 2 is because step 2
+//    only requires iterating over the types, wheras this step iterates
+//    over ancestor/descendant relationships.  What we do here is add
+//    names of the form `TopLevel_foo` and `TopLevel_foo_class` as
+//    ancestor alternatives to the inner class, and `foo_element` as
+//    a direct alternative, the latter because it's an element in an
+//    array.
+//
+// 4. For each type, set its inferred names to what we gathered in
+//    step 1, and its alternatives to a union of its direct and ancestor
+//    alternatives, gathered in steps 2 and 3.
 
 export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
     function setNames(t: Type, tn: TypeNames): void {
@@ -207,20 +243,23 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
 
             const values = t.getAdditionalProperties();
             if (values !== undefined) {
-                processType(t, values, "value");
+                processType(properties.isEmpty() ? ancestor : t, values, "value");
             }
         } else {
             matchCompoundType(
                 t,
                 arrayType => {
-                    processType(t, arrayType.items, "element");
+                    processType(ancestor, arrayType.items, "element");
                 },
                 _classType => panic("We handled this above"),
                 _mapType => panic("We handled this above"),
                 _objectType => panic("We handled this above"),
                 unionType => {
                     const members = unionType.members.sortBy(member => member.kind);
-                    members.forEach(memberType => processType(t, memberType, undefined));
+                    const unionHasGivenName = unionType.hasNames && !unionType.getNames().areInferred;
+                    const unionIsAncestor = unionHasGivenName || nullableFromUnion(unionType) === null;
+                    const ancestorForMembers = unionIsAncestor ? unionType : ancestor;
+                    members.forEach(memberType => processType(ancestorForMembers, memberType, undefined));
                 }
             );
         }
@@ -245,14 +284,13 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
             if (ancestorAlternatives === null && directAlternatives === null) {
                 alternatives = undefined;
             } else {
-                if (isCollection(ancestorAlternatives)) {
-                    alternatives = ancestorAlternatives;
+                if (isCollection(directAlternatives)) {
+                    alternatives = directAlternatives;
                 } else {
                     alternatives = OrderedSet();
                 }
-
-                if (isCollection(directAlternatives)) {
-                    alternatives = alternatives.union(directAlternatives);
+                if (isCollection(ancestorAlternatives)) {
+                    alternatives = alternatives.union(ancestorAlternatives);
                 }
             }
 
