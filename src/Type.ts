@@ -7,6 +7,7 @@ import { TypeRef, TypeReconstituter, BaseGraphRewriteBuilder } from "./TypeBuild
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { ErrorMessage, messageAssert } from "./Messages";
+import { TypeGraph } from "./TypeGraph";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
@@ -28,13 +29,19 @@ export function isPrimitiveTypeKind(kind: TypeKind): kind is PrimitiveTypeKind {
 }
 
 function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
-    if (x.typeRef.index === y.typeRef.index) return true;
+    if (x.index === y.index) return true;
     if (x.kind === "none" || y.kind === "none") return true;
     return false;
 }
 
 export abstract class Type {
-    constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
+    protected readonly graph: TypeGraph;
+    readonly index: number;
+
+    constructor(typeRef: TypeRef, readonly kind: TypeKind) {
+        this.graph = typeRef.graph;
+        this.index = typeRef.index;
+    }
 
     abstract get children(): OrderedSet<Type>;
 
@@ -45,7 +52,7 @@ export abstract class Type {
     }
 
     getAttributes(): TypeAttributes {
-        return this.typeRef.deref()[1];
+        return this.graph.atIndex(this.index)[1];
     }
 
     get hasNames(): boolean {
@@ -66,11 +73,13 @@ export abstract class Type {
 
     equals(other: any): boolean {
         if (!(other instanceof Type)) return false;
-        return this.typeRef.equals(other.typeRef);
+
+        assert(this.graph === other.graph, "Comparing types of different graphs");
+        return this.index === other.index;
     }
 
     hashCode(): number {
-        return this.typeRef.hashCode();
+        return this.index | 0;
     }
 
     // This will only ever be called when `this` and `other` are not
@@ -100,13 +109,13 @@ export abstract class Type {
 
         while (workList.length > 0) {
             let [a, b] = defined(workList.pop());
-            if (a.typeRef.index > b.typeRef.index) {
+            if (a.index > b.index) {
                 [a, b] = [b, a];
             }
 
             if (!a.isPrimitive()) {
-                let ai = a.typeRef.index;
-                let bi = b.typeRef.index;
+                let ai = a.index;
+                let bi = b.index;
 
                 let found = false;
                 for (const [dai, dbi] of done) {
@@ -128,10 +137,10 @@ export abstract class Type {
     }
 
     getParentTypes(): Set<Type> {
-        return this.typeRef.graph.getParentsOfType(this);
+        return this.graph.getParentsOfType(this);
     }
 
-    getAncestorsNotInSet(set: Set<TypeRef>): Set<Type> {
+    getAncestorsNotInSet(set: Set<Type>): Set<Type> {
         const workList: Type[] = [this];
         let processed: Set<Type> = Set();
         let ancestors: Set<Type> = Set();
@@ -144,7 +153,7 @@ export abstract class Type {
             parents.forEach(p => {
                 if (processed.has(p)) return;
                 processed = processed.add(p);
-                if (set.has(p.typeRef)) {
+                if (set.has(p)) {
                     console.log(`adding ${p.kind}`);
                     workList.push(p);
                 } else {
@@ -211,26 +220,32 @@ export class ArrayType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: "array";
 
-    constructor(typeRef: TypeRef, private _itemsRef?: TypeRef) {
+    private _itemsIndex: number | undefined;
+
+    constructor(typeRef: TypeRef, itemsRef?: TypeRef) {
         super(typeRef, "array");
+
+        if (itemsRef !== undefined) {
+            this._itemsIndex = itemsRef.index;
+        }
     }
 
     setItems(itemsRef: TypeRef) {
-        if (this._itemsRef !== undefined) {
+        if (this._itemsIndex !== undefined) {
             return panic("Can only set array items once");
         }
-        this._itemsRef = itemsRef;
+        this._itemsIndex = itemsRef.index;
     }
 
-    private getItemsRef(): TypeRef {
-        if (this._itemsRef === undefined) {
+    private getItemsIndex(): number {
+        if (this._itemsIndex === undefined) {
             return panic("Array items accessed before they were set");
         }
-        return this._itemsRef;
+        return this._itemsIndex;
     }
 
     get items(): Type {
-        return this.getItemsRef().deref()[0];
+        return this.graph.atIndex(this.getItemsIndex())[0];
     }
 
     get children(): OrderedSet<Type> {
@@ -246,11 +261,10 @@ export class ArrayType extends Type {
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        const itemsRef = this.getItemsRef();
-        const maybeItems = builder.lookup(itemsRef);
+        const maybeItems = builder.lookup(this);
         if (maybeItems === undefined) {
             builder.getUniqueArrayType();
-            builder.setArrayItems(builder.reconstitute(this.getItemsRef()));
+            builder.setArrayItems(builder.reconstitute(this);
         } else {
             builder.getArrayType(maybeItems);
         }

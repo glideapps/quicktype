@@ -466,8 +466,8 @@ export class TypeBuilder {
 }
 
 export interface TypeLookerUp {
-    lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined;
-    reconstituteTypeRef(typeRef: TypeRef, forwardingRef?: TypeRef): TypeRef;
+    lookupTypes(types: Type[], forwardingRef?: TypeRef): TypeRef | undefined;
+    reconstituteType(type: Type, forwardingRef?: TypeRef): TypeRef;
 }
 
 export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
@@ -512,16 +512,16 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         this.register(tref);
     }
 
-    lookup(tref: TypeRef): TypeRef | undefined;
-    lookup<C extends Collection<any, TypeRef>>(trefs: C): C | undefined;
-    lookup<C extends Collection<any, TypeRef>>(trefs: TypeRef | C): TypeRef | C | undefined {
+    lookup(type: Type): TypeRef | undefined;
+    lookup<C extends Collection<any, Type>>(types: C): C | undefined;
+    lookup<C extends Collection<any, Type>>(types: Type | C): TypeRef | C | undefined {
         assert(!this._wasUsed, "Cannot lookup constituents after building type");
-        if (isCollection(trefs)) {
-            const maybeRefs = trefs.map(tref => this._typeBuilder.lookupTypeRefs([tref], undefined, false));
+        if (isCollection(types)) {
+            const maybeRefs = types.map(t => this._typeBuilder.lookupTypes([t], undefined, false));
             if (maybeRefs.some(tref => tref === undefined)) return undefined;
             return maybeRefs as C;
         }
-        return this._typeBuilder.lookupTypeRefs([trefs], undefined, false);
+        return this._typeBuilder.lookupTypes([t], undefined, false);
     }
 
     reconstitute(tref: TypeRef): TypeRef;

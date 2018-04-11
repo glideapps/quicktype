@@ -169,6 +169,7 @@ export class TypeGraph {
         return defined(this._topLevels);
     }
 
+    // FIXME: Most of the time we only need either one or the other.
     atIndex(index: number): [Type, TypeAttributes] {
         if (this._typeBuilder !== undefined) {
             return this._typeBuilder.atIndex(index);
