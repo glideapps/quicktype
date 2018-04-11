@@ -22,13 +22,15 @@ import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
 import { replaceObjectType } from "./ReplaceObjectType";
 import { ErrorMessage, messageError } from "./Messages";
-import { TypeSource, InputData } from "./Inputs";
+import { InputData } from "./Inputs";
+import { TypeSource } from "./TypeSource";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
 export { SerializedRenderResult, Annotation } from "./Source";
 export { all as languages, languageNamed } from "./Language/All";
 export { OptionDefinition } from "./RendererOptions";
+export { TypeSource, GraphQLTypeSource, JSONTypeSource, SchemaTypeSource, TypeScriptTypeSource } from "./TypeSource";
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {

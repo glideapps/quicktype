@@ -21,7 +21,7 @@ import {
     StringInput,
     SchemaTypeSource,
     TypeScriptTypeSource
-} from "../Inputs";
+} from "../TypeSource";
 import { OptionDefinition } from "../RendererOptions";
 import * as defaultTargetLanguages from "../Language/All";
 import { urlsFromURLGrammar } from "../URLGrammar";

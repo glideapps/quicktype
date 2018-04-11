@@ -1,6 +1,6 @@
 "use strict";
 
-import { JSONTypeSource } from "./Inputs";
+import { JSONTypeSource } from "./TypeSource";
 import { parseJSON } from "./Support";
 
 function isValidJSON(s: string): boolean {

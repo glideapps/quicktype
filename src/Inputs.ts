@@ -10,6 +10,15 @@ import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
 import { parseJSON, panic, assertNever, assert, forEachSync, defined } from "./Support";
 import { messageAssert, ErrorMessage } from "./Messages";
+import {
+    TypeSource,
+    SchemaTypeSource,
+    isSchemaSource,
+    isTypeScriptSource,
+    StringInput,
+    isGraphQLSource,
+    isJSONSource
+} from "./TypeSource";
 
 const stringToStream = require("string-to-stream");
 
@@ -21,39 +30,6 @@ async function toString(source: string | Readable): Promise<string> {
     return typeof source === "string" ? source : await getStream(source);
 }
 
-export type StringInput = string | Readable;
-
-export interface JSONTypeSource {
-    kind: "json";
-    name: string;
-    samples: StringInput[];
-    description?: string;
-}
-
-function isJSONSource(source: TypeSource): source is JSONTypeSource {
-    return source.kind === "json";
-}
-
-export interface TypeScriptTypeSource {
-    kind: "typescript";
-    sources: { [filename: string]: string };
-}
-
-function isTypeScriptSource(source: TypeSource): source is TypeScriptTypeSource {
-    return source.kind === "typescript";
-}
-
-export interface SchemaTypeSource {
-    kind: "schema";
-    name: string;
-    uris?: string[];
-    schema?: StringInput;
-}
-
-function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
-    return source.kind === "schema";
-}
-
 function toSchemaSource(source: TypeSource): [SchemaTypeSource, boolean] | undefined {
     if (isSchemaSource(source)) {
         return [source, true];
@@ -63,19 +39,6 @@ function toSchemaSource(source: TypeSource): [SchemaTypeSource, boolean] | undef
     }
     return undefined;
 }
-
-export interface GraphQLTypeSource {
-    kind: "graphql";
-    name: string;
-    schema: any;
-    query: StringInput;
-}
-
-function isGraphQLSource(source: TypeSource): source is GraphQLTypeSource {
-    return source.kind === "graphql";
-}
-
-export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource | TypeScriptTypeSource;
 
 class InputJSONSchemaStore extends JSONSchemaStore {
     constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
