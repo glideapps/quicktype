@@ -241,9 +241,11 @@ export class Run {
         // is different from the one we started out with.
         graph = graph.garbageCollect(this._options.alphabetizeProperties);
 
-        gatherNames(graph);
         if (this._options.debugPrintGraph) {
             console.log("\n# gather names");
+        }
+        gatherNames(graph);
+        if (this._options.debugPrintGraph) {
             graph.printGraph();
         }
 
