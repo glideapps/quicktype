@@ -828,7 +828,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected makeHandlebarsContextForType(t: Type): StringMap {
-        const value: StringMap = { type: { kind: t.kind, index: t.typeRef.getIndex() } };
+        const value: StringMap = { type: { kind: t.kind, index: t.typeRef.index } };
         const maybeName = this.nameStoreView.tryGet(t);
         if (maybeName !== undefined) {
             value.assignedName = this.names.get(maybeName);
@@ -872,7 +872,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 value.members = members;
             }
 
-            const index = t.typeRef.getIndex();
+            const index = t.typeRef.index;
             while (allTypes.length <= index) {
                 allTypes.push(undefined);
             }
@@ -881,13 +881,13 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         const namedTypes: any[] = [];
         const addNamedType = (t: Type): void => {
-            namedTypes.push(allTypes[t.typeRef.getIndex()]);
+            namedTypes.push(allTypes[t.typeRef.index]);
         };
         this.forEachNamedType("none", addNamedType, addNamedType, addNamedType);
 
         const topLevels: StringMap = {};
         this.topLevels.forEach((t, name) => {
-            const value = allTypes[t.typeRef.getIndex()];
+            const value = allTypes[t.typeRef.index];
             value.assignedTopLevelName = this.names.get(this.nameStoreView.getForTopLevel(name));
             topLevels[name] = value;
         });
