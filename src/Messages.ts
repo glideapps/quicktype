@@ -56,7 +56,7 @@ export class ErrorMessage {
 
     // IR
     static IRNoForwardDeclarableTypeInCycle = "Cannot resolve cycle because it doesn't contain types that can be forward declared";
-    static IRTypeAttributesNotPropagated = "Type attributes for ${count} types were not carried over to the new graph";
+    static IRTypeAttributesNotPropagated = "Type attributes for ${count} types were not carried over to the new graph: ${indexes}";
     static IRNoEmptyUnions = "Trying to make an empty union - do you have an impossible type in your schema?";
 
     // Rendering
@@ -121,7 +121,7 @@ type Error =
 
     // IR
     | { message: ErrorMessage.IRNoForwardDeclarableTypeInCycle; properties: {} }
-    | { message: ErrorMessage.IRTypeAttributesNotPropagated; properties: { count: number } }
+    | { message: ErrorMessage.IRTypeAttributesNotPropagated; properties: { count: number, indexes: number[] } }
     | { message: ErrorMessage.IRNoEmptyUnions; properties: {} }
 
     // Rendering
