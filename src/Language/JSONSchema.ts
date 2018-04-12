@@ -98,6 +98,13 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         return { $ref: `#/definitions/${this.nameForType(t)}` };
     }
 
+    private addDescription(t: Type, schema: Schema): void {
+        const description = this.typeGraph.attributeStore.tryGet(descriptionTypeAttributeKind, t);
+        if (description !== undefined) {
+            schema.description = description.join("\n");
+        }
+    }
+
     private schemaForType = (t: Type): Schema => {
         const schema = matchTypeExhaustive<{ [name: string]: any }>(
             t,
@@ -126,9 +133,8 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             _timeType => ({ type: "string", format: "time" }),
             _dateTimeType => ({ type: "string", format: "date-time" })
         );
-        const description = this.typeGraph.attributeStore.tryGet(descriptionTypeAttributeKind, t);
-        if (description !== undefined) {
-            schema.description = description.join("\n");
+        if (schema.$ref === undefined) {
+            this.addDescription(t, schema);
         }
         return schema;
     };
@@ -153,13 +159,15 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         }
         const additional = o.getAdditionalProperties();
         const additionalProperties = additional !== undefined ? this.schemaForType(additional) : false;
-        return {
+        const schema = {
             type: "object",
             additionalProperties,
             properties,
             required,
             title
         };
+        this.addDescription(o, schema);
+        return schema;
     }
 
     private definitionForUnion(u: UnionType, title?: string): Schema {
@@ -167,11 +175,14 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         if (title !== undefined) {
             oneOf.title = title;
         }
+        this.addDescription(u, oneOf);
         return oneOf;
     }
 
     private definitionForEnum(e: EnumType, title: string): Schema {
-        return { type: "string", enum: e.cases.toArray(), title };
+        const schema = { type: "string", enum: e.cases.toArray(), title };
+        this.addDescription(e, schema);
+        return schema;
     }
 
     protected emitSourceStructure(): void {
