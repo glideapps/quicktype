@@ -17,11 +17,17 @@ function mapFile(
 }
 
 function installPrereqs() {
-  shell.exec("npm install --ignore-scripts");
+  const result = shell.exec("npm install --ignore-scripts");
+  if (result.code !== 0) {
+    process.exit(result.code);
+  }
 }
 
 function buildTypeScript() {
-  shell.exec(`tsc --project src`);
+  const result = shell.exec(`tsc --project src`);
+  if (result.code !== 0) {
+    process.exit(result.code);
+  }
 }
 
 function makeDistributedCLIExecutable() {
