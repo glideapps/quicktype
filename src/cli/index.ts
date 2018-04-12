@@ -424,7 +424,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
         {
             name: "debug",
             type: String,
-            typeLabel: "OPTIONS",
+            typeLabel: "OPTIONS or all",
             description:
                 "Comma separated debug options: print-graph, provenance, print-reconstitution, print-gather-names"
         },
@@ -740,12 +740,13 @@ export async function makeQuicktypeOptions(
         handlebarsTemplate = fs.readFileSync(options.template, "utf8");
     }
 
-    let debugPrintGraph = false;
-    let checkProvenance = false;
-    let debugPrintReconstitution = false;
-    let debugPrintGatherNames = false;
-    if (options.debug !== undefined) {
-        const components = options.debug.split(",");
+    const components = mapOptional(d => d.split(","), options.debug);
+    const debugAll = components !== undefined && components.indexOf("all") >= 0;
+    let debugPrintGraph = debugAll;
+    let checkProvenance = debugAll;
+    let debugPrintReconstitution = debugAll;
+    let debugPrintGatherNames = debugAll;
+    if (components !== undefined) {
         for (let component of components) {
             component = component.trim();
             if (component === "print-graph") {
@@ -756,7 +757,7 @@ export async function makeQuicktypeOptions(
                 debugPrintGatherNames = true;
             } else if (component === "provenance") {
                 checkProvenance = true;
-            } else {
+            } else if (component !== "all") {
                 return messageError(ErrorMessage.DriverUnknownDebugOption, { option: component });
             }
         }

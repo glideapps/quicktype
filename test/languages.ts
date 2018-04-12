@@ -322,6 +322,7 @@ export const ElmLanguage: Language = {
     "recursive.json",
     "direct-recursive.json",
     "bug427.json",
+    "bug790.json",
     "list.json",
     "nst-test-suite.json",
     "keywords.json" // stack overflow

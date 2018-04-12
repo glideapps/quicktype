@@ -241,7 +241,8 @@ export class TypeGraph {
         const newProvenance = newGraph.allProvenance();
         if (oldProvenance.size !== newProvenance.size) {
             const difference = oldProvenance.subtract(newProvenance);
-            return messageError(ErrorMessage.IRTypeAttributesNotPropagated, { count: difference.size });
+            const indexes = difference.map(tr => tr.index).toArray();
+            return messageError(ErrorMessage.IRTypeAttributesNotPropagated, { count: difference.size, indexes });
         }
     }
 

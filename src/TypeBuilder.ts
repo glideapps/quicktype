@@ -136,7 +136,7 @@ export class TypeBuilder {
         creator: (tref: TypeRef) => T,
         attributes: TypeAttributes | undefined
     ): TypeRef {
-        if (forwardingRef !== undefined && forwardingRef.index !== undefined) {
+        if (forwardingRef !== undefined) {
             assert(this.types[forwardingRef.index] === undefined);
         }
         const tref = forwardingRef !== undefined ? forwardingRef : this.reserveTypeRef();
@@ -1034,6 +1034,12 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         return this.have("string");
     }
 
+    addNone(_attributes: TypeAttributes): void {
+        // FIXME: Add them to all members?  Or add them to the union, which means we'd have
+        // to change getMemberKinds() to also return the attributes for the union itself,
+        // or add a new method that does that.
+        this._lostTypeAttributes = true;
+    }
     addAny(attributes: TypeAttributes): void {
         this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "any", attributes);
         this._lostTypeAttributes = true;
@@ -1183,9 +1189,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
     private addType(t: Type, attributes: TypeAttributes): void {
         matchTypeExhaustive(
             t,
-            _noneType => {
-                return;
-            },
+            _noneType => this.addNone(attributes),
             _anyType => this.addAny(attributes),
             _nullType => this.addNull(attributes),
             _boolType => this.addBool(attributes),
