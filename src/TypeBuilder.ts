@@ -876,7 +876,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
                 this.changeDebugPrintIndent(-1);
                 console.log(
                     `${this.debugPrintIndentation}replaced set ${typesToReplace
-                        .map(t => t.typeRef.index.toString)
+                        .map(t => t.typeRef.index.toString())
                         .join(",")} as ${forwardingRef.index}`
                 );
             }

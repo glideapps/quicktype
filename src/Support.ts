@@ -127,11 +127,18 @@ export function repeatedCall<T>(n: number, producer: () => T): T[] {
     return arr;
 }
 
-export function withDefault<T>(x: T | null | undefined, theDefault: T): T {
-    if (x !== null && x !== undefined) {
+export function withDefault<T>(x: T | undefined, theDefault: T): T {
+    if (x !== undefined) {
         return x;
     }
     return theDefault;
+}
+
+export function errorMessage(e: any): string {
+    if (e instanceof Error) {
+        return e.message;
+    }
+    return e.toString();
 }
 
 export async function forEachSync<V>(coll: V[], f: (v: V, k: number) => Promise<void>): Promise<void>;

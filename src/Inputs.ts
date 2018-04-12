@@ -8,8 +8,8 @@ import { schemaForTypeScriptSources } from "./TypeScriptInput";
 import { Ref, checkJSONSchema, refsInSchemaForURI } from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
-import { parseJSON, panic, assertNever, assert, forEachSync, defined } from "./Support";
-import { messageAssert, ErrorMessage } from "./Messages";
+import { parseJSON, panic, assertNever, assert, forEachSync, defined, withDefault, errorMessage } from "./Support";
+import { messageAssert, ErrorMessage, messageError } from "./Messages";
 import {
     TypeSource,
     SchemaTypeSource,
@@ -94,7 +94,16 @@ export class InputData {
         } else if (isJSONSource(source)) {
             const { name, samples, description } = source;
             for (const sample of samples) {
-                const input = await this._compressedJSON.readFromStream(toReadable(sample));
+                let input: Value;
+                try {
+                    input = await this._compressedJSON.readFromStream(toReadable(sample));
+                } catch (e) {
+                    return messageError(ErrorMessage.MiscJSONParseError, {
+                        description: withDefault(description, "input"),
+                        address: name,
+                        message: errorMessage(e)
+                    });
+                }
                 if (!lodash.has(this._samples, [name])) {
                     this._samples[name] = { samples: [] };
                 }
