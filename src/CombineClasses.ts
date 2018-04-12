@@ -30,12 +30,19 @@ function typeSetsCanBeCombined(s1: OrderedSet<Type>, s2: OrderedSet<Type>): bool
     });
 }
 
-function canBeCombined(c1: ClassType, c2: ClassType): boolean {
+function canBeCombined(c1: ClassType, c2: ClassType, onlyWithSameProperties: boolean): boolean {
     const p1 = c1.getProperties();
     const p2 = c2.getProperties();
-    if (p1.size < p2.size * REQUIRED_OVERLAP || p2.size < p1.size * REQUIRED_OVERLAP) {
-        return false;
+    if (onlyWithSameProperties) {
+        if (p1.size !== p2.size) {
+            return false;
+        }
+    } else {
+        if (p1.size < p2.size * REQUIRED_OVERLAP || p2.size < p1.size * REQUIRED_OVERLAP) {
+            return false;
+        }
     }
+
     let larger: Map<string, ClassProperty>;
     let smaller: Map<string, ClassProperty>;
     if (p1.size > p2.size) {
@@ -45,8 +52,15 @@ function canBeCombined(c1: ClassType, c2: ClassType): boolean {
         larger = p2;
         smaller = p1;
     }
-    const minOverlap = Math.ceil(larger.size * REQUIRED_OVERLAP);
-    const maxFaults = smaller.size - minOverlap;
+
+    let maxFaults: number;
+    if (onlyWithSameProperties) {
+        maxFaults = 0;
+    } else {
+        const minOverlap = Math.ceil(larger.size * REQUIRED_OVERLAP);
+        maxFaults = smaller.size - minOverlap;
+    }
+
     assert(maxFaults >= 0, "Max faults negative");
     const commonProperties: string[] = [];
     let faults = 0;
@@ -74,7 +88,7 @@ function canBeCombined(c1: ClassType, c2: ClassType): boolean {
     return true;
 }
 
-function tryAddToClique(c: ClassType, clique: Clique): boolean {
+function tryAddToClique(c: ClassType, clique: Clique, onlyWithSameProperties: boolean): boolean {
     for (const prototype of clique.prototypes) {
         if (prototype.structurallyCompatible(c)) {
             clique.members.push(c);
@@ -82,7 +96,7 @@ function tryAddToClique(c: ClassType, clique: Clique): boolean {
         }
     }
     for (const prototype of clique.prototypes) {
-        if (canBeCombined(prototype, c)) {
+        if (canBeCombined(prototype, c, onlyWithSameProperties)) {
             clique.prototypes.push(c);
             clique.members.push(c);
             return true;
@@ -91,7 +105,11 @@ function tryAddToClique(c: ClassType, clique: Clique): boolean {
     return false;
 }
 
-export function findSimilarityCliques(graph: TypeGraph, includeFixedClasses: boolean): ClassType[][] {
+export function findSimilarityCliques(
+    graph: TypeGraph,
+    onlyWithSameProperties: boolean,
+    includeFixedClasses: boolean
+): ClassType[][] {
     let unprocessedClasses = graph
         .allNamedTypesSeparated()
         .objects.filter(o => o instanceof ClassType && (includeFixedClasses || !o.isFixed))
@@ -108,7 +126,7 @@ export function findSimilarityCliques(graph: TypeGraph, includeFixedClasses: boo
 
         for (let i = 1; i < unprocessedClasses.length; i++) {
             const c = unprocessedClasses[i];
-            if (!tryAddToClique(c, clique)) {
+            if (!tryAddToClique(c, clique, onlyWithSameProperties)) {
                 classesLeft.push(c);
             }
         }
@@ -128,9 +146,10 @@ export function combineClasses(
     stringTypeMapping: StringTypeMapping,
     alphabetizeProperties: boolean,
     conflateNumbers: boolean,
+    onlyWithSameProperties: boolean,
     debugPrintReconstitution: boolean
 ): TypeGraph {
-    const cliques = findSimilarityCliques(graph, false);
+    const cliques = findSimilarityCliques(graph, onlyWithSameProperties, false);
 
     function makeCliqueClass(
         clique: Set<ClassType>,
