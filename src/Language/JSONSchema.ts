@@ -176,7 +176,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         // FIXME: Find a better way to do multiple top-levels.  Maybe multiple files?
-        const schema = this.makeOneOf(this.topLevels);
+        const schema = this.makeOneOf(this.topLevels.toList());
         const definitions: { [name: string]: Schema } = {};
         this.forEachObject("none", (o: ObjectType, name: Name) => {
             const title = defined(this.names.get(name));
