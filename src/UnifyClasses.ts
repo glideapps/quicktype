@@ -129,6 +129,10 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
     ): TypeRef {
         const maybeTypeRef = this.typeBuilder.lookupTypeRefs(objectRefs, forwardingRef);
         if (maybeTypeRef !== undefined) {
+            assert(
+                forwardingRef === undefined || maybeTypeRef === forwardingRef,
+                "The forwarding ref must be consumed"
+            );
             this.typeBuilder.addAttributes(maybeTypeRef, typeAttributes);
             return maybeTypeRef;
         }
