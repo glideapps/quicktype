@@ -136,7 +136,7 @@ export class TypeBuilder {
         creator: (tref: TypeRef) => T,
         attributes: TypeAttributes | undefined
     ): TypeRef {
-        if (forwardingRef !== undefined && forwardingRef.index !== undefined) {
+        if (forwardingRef !== undefined) {
             assert(this.types[forwardingRef.index] === undefined);
         }
         const tref = forwardingRef !== undefined ? forwardingRef : this.reserveTypeRef();

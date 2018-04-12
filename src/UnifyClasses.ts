@@ -128,12 +128,7 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         const maybeTypeRef = this.typeBuilder.lookupTypeRefs(objectRefs, forwardingRef);
-        // FIXME: Comparing this to `forwardingRef` feels like it will come
-        // crashing on our heads eventually.  The reason we need it here is
-        // because `unifyTypes` registers the union that we're supposed to
-        // build here as a forwarding ref, and we end up with a circular
-        // ref if we just return it here.
-        if (maybeTypeRef !== undefined && maybeTypeRef !== forwardingRef) {
+        if (maybeTypeRef !== undefined) {
             this.typeBuilder.addAttributes(maybeTypeRef, typeAttributes);
             return maybeTypeRef;
         }
