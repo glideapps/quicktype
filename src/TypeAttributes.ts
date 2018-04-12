@@ -100,7 +100,17 @@ export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<str
     "description",
     setUnion,
     _ => OrderedSet(),
-    undefined
+    descriptions => {
+        let result = descriptions.first();
+        if (result === undefined) return undefined;
+        if (result.length > 5 + 3) {
+            result = `${result.substr(0, 5)}...`;
+        }
+        if (descriptions.size > 1) {
+            result = `${result}, ...`;
+        }
+        return result;
+    }
 );
 export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, OrderedSet<string>>>(
     "propertyDescriptions",
