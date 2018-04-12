@@ -217,13 +217,26 @@ export class Run {
         }
 
         if (this._options.combineClasses) {
-            graph = combineClasses(
+            const combinedGraph = combineClasses(
                 graph,
                 stringTypeMapping,
                 this._options.alphabetizeProperties,
                 conflateNumbers,
+                false,
                 debugPrintReconstitution
             );
+            if (combinedGraph === graph) {
+                graph = combinedGraph;
+            } else {
+                graph = combineClasses(
+                    combinedGraph,
+                    stringTypeMapping,
+                    this._options.alphabetizeProperties,
+                    conflateNumbers,
+                    true,
+                    debugPrintReconstitution
+                );
+            }
         }
         if (doInferEnums) {
             graph = inferEnums(graph, stringTypeMapping, debugPrintReconstitution);
@@ -301,7 +314,7 @@ export class Run {
         }
 
         if (this._options.findSimilarClassesSchemaURI !== undefined) {
-            const cliques = findSimilarityCliques(graph, true);
+            const cliques = findSimilarityCliques(graph, false, true);
             const lines: string[] = [];
             if (cliques.length === 0) {
                 lines.push("No similar classes found.");
