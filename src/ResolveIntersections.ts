@@ -3,16 +3,8 @@
 import { Set, OrderedSet, OrderedMap, Map } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
-import {
-    StringTypeMapping,
-    GraphRewriteBuilder,
-    TypeRef,
-    UnionTypeProvider,
-    UnionBuilder,
-    TypeBuilder,
-    TypeLookerUp,
-    TypeAttributeMap
-} from "./TypeBuilder";
+import { StringTypeMapping, GraphRewriteBuilder, TypeRef, TypeBuilder, TypeLookerUp } from "./TypeBuilder";
+import { UnionTypeProvider, UnionBuilder, TypeAttributeMap } from "./UnionBuilder";
 import {
     IntersectionType,
     Type,
