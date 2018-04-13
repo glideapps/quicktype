@@ -15,15 +15,13 @@ import {
 } from "./Type";
 import { defined, assert, mustNotBeCalled, panic } from "./Support";
 import {
-    GraphRewriteBuilder,
     TypeRef,
     TypeBuilder,
     StringTypeMapping,
     NoStringTypeMapping,
-    provenanceTypeAttributeKind,
-    GraphRemapBuilder,
-    BaseGraphRewriteBuilder
+    provenanceTypeAttributeKind
 } from "./TypeBuilder";
+import { GraphRewriteBuilder, GraphRemapBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";

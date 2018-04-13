@@ -3,7 +3,8 @@
 import { Set, OrderedMap, OrderedSet, Map } from "immutable";
 
 import { Type, ClassProperty, UnionType, ObjectType, combineTypeAttributesOfTypes, assertIsObject } from "./Type";
-import { TypeRef, TypeBuilder, TypeLookerUp, GraphRewriteBuilder } from "./TypeBuilder";
+import { TypeRef, TypeBuilder } from "./TypeBuilder";
+import { TypeLookerUp, GraphRewriteBuilder } from "./GraphRewriting";
 import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
 import { panic, assert, defined, unionOfSets } from "./Support";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";

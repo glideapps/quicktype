@@ -5,7 +5,8 @@ import { Map, Set, OrderedSet } from "immutable";
 import { Type, ClassType, setOperationCasesEqual, removeNullFromType, ClassProperty } from "./Type";
 import { defined, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
-import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { GraphRewriteBuilder } from "./GraphRewriting";
 import { unifyTypes, unionBuilderForUnification } from "./UnifyClasses";
 import { MarkovChain, load, evaluate } from "./MarkovChain";
 

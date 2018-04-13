@@ -4,7 +4,8 @@ import { Set, OrderedMap, OrderedSet } from "immutable";
 
 import { Type, StringType, UnionType, combineTypeAttributesOfTypes } from "./Type";
 import { TypeGraph } from "./TypeGraph";
-import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { GraphRewriteBuilder } from "./GraphRewriting";
 import { assert, defined } from "./Support";
 import { combineTypeAttributes } from "./TypeAttributes";
 

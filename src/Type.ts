@@ -3,7 +3,8 @@
 import { OrderedSet, OrderedMap, Collection, Map, Set, is, hash } from "immutable";
 
 import { defined, panic, assert, assertNever, mapOptional } from "./Support";
-import { TypeRef, TypeReconstituter, BaseGraphRewriteBuilder } from "./TypeBuilder";
+import { TypeRef } from "./TypeBuilder";
+import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { ErrorMessage, messageAssert } from "./Messages";
