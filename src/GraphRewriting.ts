@@ -7,7 +7,7 @@ import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes } from "./TypeAttributes";
 import { assert, panic } from "./Support";
-import { TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
+import { TypeRef, TypeBuilder } from "./TypeBuilder";
 
 export interface TypeLookerUp {
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined;
@@ -239,12 +239,11 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
 
     constructor(
         protected readonly originalGraph: TypeGraph,
-        stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         graphHasProvenanceAttributes: boolean,
         protected readonly debugPrint: boolean
     ) {
-        super(stringTypeMapping, alphabetizeProperties, false, false, graphHasProvenanceAttributes);
+        super(alphabetizeProperties, false, false, graphHasProvenanceAttributes);
     }
 
     reconstituteType(t: Type, forwardingRef?: TypeRef): TypeRef {
@@ -301,19 +300,12 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
 
     constructor(
         originalGraph: TypeGraph,
-        stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         graphHasProvenanceAttributes: boolean,
         private readonly _map: Map<Type, Type>,
         debugPrintRemapping: boolean
     ) {
-        super(
-            originalGraph,
-            stringTypeMapping,
-            alphabetizeProperties,
-            graphHasProvenanceAttributes,
-            debugPrintRemapping
-        );
+        super(originalGraph, alphabetizeProperties, graphHasProvenanceAttributes, debugPrintRemapping);
 
         _map.forEach((target, source) => {
             let maybeSources = this._attributeSources.get(target);
@@ -396,7 +388,6 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
 
     constructor(
         originalGraph: TypeGraph,
-        stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         graphHasProvenanceAttributes: boolean,
         setsToReplace: T[][],
@@ -407,13 +398,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
             forwardingRef: TypeRef
         ) => TypeRef
     ) {
-        super(
-            originalGraph,
-            stringTypeMapping,
-            alphabetizeProperties,
-            graphHasProvenanceAttributes,
-            debugPrintReconstitution
-        );
+        super(originalGraph, alphabetizeProperties, graphHasProvenanceAttributes, debugPrintReconstitution);
 
         this._setsToReplaceByMember = Map();
         for (const types of setsToReplace) {

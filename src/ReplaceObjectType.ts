@@ -3,7 +3,7 @@
 import { Set, OrderedMap } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
-import { StringTypeMapping, TypeRef } from "./TypeBuilder";
+import { TypeRef } from "./TypeBuilder";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { ObjectType, ClassProperty } from "./Type";
 import { defined } from "./Support";
@@ -11,7 +11,6 @@ import { emptyTypeAttributes } from "./TypeAttributes";
 
 export function replaceObjectType(
     graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
     _conflateNumbers: boolean,
     leaveFullObjects: boolean,
     debugPrintReconstitution: boolean
@@ -87,5 +86,5 @@ export function replaceObjectType(
         ? allObjectTypes.filter(o => o.getProperties().isEmpty() || o.getAdditionalProperties() === undefined)
         : allObjectTypes;
     const groups = objectTypesToReplace.toArray().map(t => [t]);
-    return graph.rewrite("replace object type", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
+    return graph.rewrite("replace object type", false, groups, debugPrintReconstitution, replace);
 }

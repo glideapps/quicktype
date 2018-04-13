@@ -5,7 +5,7 @@ import { Set, OrderedMap, OrderedSet } from "immutable";
 import { Type, StringType, UnionType } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
-import { TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { TypeRef } from "./TypeBuilder";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { assert, defined } from "./Support";
 import { combineTypeAttributes } from "./TypeAttributes";
@@ -71,35 +71,20 @@ function replaceUnion(group: Set<UnionType>, builder: GraphRewriteBuilder<UnionT
     return builder.getUnionType(u.getAttributes(), OrderedSet(types), undefined, forwardingRef);
 }
 
-export function inferEnums(
-    graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
-    debugPrintReconstitution: boolean
-): TypeGraph {
+export function inferEnums(graph: TypeGraph, debugPrintReconstitution: boolean): TypeGraph {
     const allStrings = graph
         .allTypesUnordered()
         .filter(t => t instanceof StringType && t.transformation === undefined)
         .map(t => [t])
         .toArray() as StringType[][];
-    return graph.rewrite("infer enums", stringTypeMapping, false, allStrings, debugPrintReconstitution, replaceString);
+    return graph.rewrite("infer enums", false, allStrings, debugPrintReconstitution, replaceString);
 }
 
-export function flattenStrings(
-    graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
-    debugPrintReconstitution: boolean
-): TypeGraph {
+export function flattenStrings(graph: TypeGraph, debugPrintReconstitution: boolean): TypeGraph {
     const allUnions = graph.allNamedTypesSeparated().unions;
     const unionsToReplace = allUnions
         .filter(unionNeedsReplacing)
         .map(t => [t])
         .toArray();
-    return graph.rewrite(
-        "flatten strings",
-        stringTypeMapping,
-        false,
-        unionsToReplace,
-        debugPrintReconstitution,
-        replaceUnion
-    );
+    return graph.rewrite("flatten strings", false, unionsToReplace, debugPrintReconstitution, replaceUnion);
 }

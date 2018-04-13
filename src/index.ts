@@ -106,10 +106,8 @@ export class Run {
         schemaStore: JSONSchemaStore | undefined
     ): Promise<TypeGraph> {
         const targetLanguage = getTargetLanguage(this._options.lang);
-        const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
         const typeBuilder = new TypeBuilder(
-            stringTypeMapping,
             this._options.alphabetizeProperties,
             this._options.allPropertiesOptional,
             this._options.checkProvenance,
@@ -164,7 +162,7 @@ export class Run {
         const debugPrintReconstitution = this._options.debugPrintReconstitution === true;
 
         if (typeBuilder.didAddForwardingIntersection) {
-            graph = removeIndirectionIntersections(graph, stringTypeMapping, debugPrintReconstitution);
+            graph = removeIndirectionIntersections(graph, debugPrintReconstitution);
         }
 
         let unionsDone = false;
@@ -173,20 +171,10 @@ export class Run {
             do {
                 const graphBeforeRewrites = graph;
                 if (!intersectionsDone) {
-                    [graph, intersectionsDone] = resolveIntersections(
-                        graph,
-                        stringTypeMapping,
-                        debugPrintReconstitution
-                    );
+                    [graph, intersectionsDone] = resolveIntersections(graph, debugPrintReconstitution);
                 }
                 if (!unionsDone) {
-                    [graph, unionsDone] = flattenUnions(
-                        graph,
-                        stringTypeMapping,
-                        conflateNumbers,
-                        true,
-                        debugPrintReconstitution
-                    );
+                    [graph, unionsDone] = flattenUnions(graph, conflateNumbers, true, debugPrintReconstitution);
                 }
 
                 if (graph === graphBeforeRewrites) {
@@ -197,19 +185,12 @@ export class Run {
 
         graph = replaceObjectType(
             graph,
-            stringTypeMapping,
             conflateNumbers,
             targetLanguage.supportsFullObjectType,
             debugPrintReconstitution
         );
         do {
-            [graph, unionsDone] = flattenUnions(
-                graph,
-                stringTypeMapping,
-                conflateNumbers,
-                false,
-                debugPrintReconstitution
-            );
+            [graph, unionsDone] = flattenUnions(graph, conflateNumbers, false, debugPrintReconstitution);
         } while (!unionsDone);
 
         if (this._options.findSimilarClassesSchemaURI !== undefined) {
@@ -219,7 +200,6 @@ export class Run {
         if (this._options.combineClasses) {
             const combinedGraph = combineClasses(
                 graph,
-                stringTypeMapping,
                 this._options.alphabetizeProperties,
                 conflateNumbers,
                 false,
@@ -230,7 +210,6 @@ export class Run {
             } else {
                 graph = combineClasses(
                     combinedGraph,
-                    stringTypeMapping,
                     this._options.alphabetizeProperties,
                     conflateNumbers,
                     true,
@@ -239,15 +218,15 @@ export class Run {
             }
         }
         if (doInferEnums) {
-            graph = inferEnums(graph, stringTypeMapping, debugPrintReconstitution);
+            graph = inferEnums(graph, debugPrintReconstitution);
         }
-        graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution);
+        graph = flattenStrings(graph, debugPrintReconstitution);
         if (this._options.inferMaps) {
-            graph = inferMaps(graph, stringTypeMapping, conflateNumbers, debugPrintReconstitution);
+            graph = inferMaps(graph, conflateNumbers, debugPrintReconstitution);
         }
-        graph = noneToAny(graph, stringTypeMapping, debugPrintReconstitution);
+        graph = noneToAny(graph, debugPrintReconstitution);
         if (!targetLanguage.supportsOptionalClassProperties) {
-            graph = optionalToNullable(graph, stringTypeMapping, debugPrintReconstitution);
+            graph = optionalToNullable(graph, debugPrintReconstitution);
         }
         // Sometimes we combine classes in ways that will the order come out
         // differently compared to what it would be from the equivalent schema,

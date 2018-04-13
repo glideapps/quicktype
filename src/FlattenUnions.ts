@@ -6,14 +6,13 @@ import { TypeGraph } from "./TypeGraph";
 import { Type, UnionType, IntersectionType } from "./Type";
 import { makeGroupsToFlatten } from "./TypeUtils";
 import { assert } from "./Support";
-import { TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { TypeRef } from "./TypeBuilder";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
 import { messageAssert, ErrorMessage } from "./Messages";
 
 export function flattenUnions(
     graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
     conflateNumbers: boolean,
     makeObjectTypes: boolean,
     debugPrintReconstitution: boolean
@@ -50,7 +49,7 @@ export function flattenUnions(
         foundIntersection = true;
         return false;
     });
-    graph = graph.rewrite("flatten unions", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
+    graph = graph.rewrite("flatten unions", false, groups, debugPrintReconstitution, replace);
 
     // console.log(`flattened ${nonCanonicalUnions.size} of ${unions.size} unions`);
     return [graph, !needsRepeat && !foundIntersection];

@@ -5,7 +5,7 @@ import { Map, Set, OrderedSet } from "immutable";
 import { ClassType, Type, ClassProperty } from "./Type";
 import { nonNullTypeCases, combineTypeAttributesOfTypes } from "./TypeUtils";
 
-import { TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { TypeRef } from "./TypeBuilder";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
@@ -146,7 +146,6 @@ export function findSimilarityCliques(
 
 export function combineClasses(
     graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
     alphabetizeProperties: boolean,
     conflateNumbers: boolean,
     onlyWithSameProperties: boolean,
@@ -171,12 +170,5 @@ export function combineClasses(
         );
     }
 
-    return graph.rewrite(
-        "combine classes",
-        stringTypeMapping,
-        alphabetizeProperties,
-        cliques,
-        debugPrintReconstitution,
-        makeCliqueClass
-    );
+    return graph.rewrite("combine classes", alphabetizeProperties, cliques, debugPrintReconstitution, makeCliqueClass);
 }

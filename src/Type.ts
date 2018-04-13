@@ -9,24 +9,18 @@ import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 import { ErrorMessage, messageAssert } from "./Messages";
 
-export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
-export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
+export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | "string";
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
 export type ObjectTypeKind = "object" | "map" | "class";
-
-export function isPrimitiveStringTypeKind(kind: TypeKind): kind is PrimitiveStringTypeKind {
-    return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
-}
 
 export function isNumberTypeKind(kind: TypeKind): kind is "integer" | "double" {
     return kind === "integer" || kind === "double";
 }
 
 export function isPrimitiveTypeKind(kind: TypeKind): kind is PrimitiveTypeKind {
-    if (isPrimitiveStringTypeKind(kind)) return true;
     if (isNumberTypeKind(kind)) return true;
-    return kind === "none" || kind === "any" || kind === "null" || kind === "bool";
+    return kind === "none" || kind === "any" || kind === "null" || kind === "bool" || kind === "string";
 }
 
 function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
@@ -44,7 +38,7 @@ function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
     return setArray[0].union(...setArray.slice(1));
 }
 
-export type Transformer = "parseInteger";
+export type Transformer = "date-from-string" | "time-from-string" | "date-time-from-string";
 
 export class Transformation {
     constructor(readonly transformer: Transformer, private readonly _targetRef: TypeRef) {}
