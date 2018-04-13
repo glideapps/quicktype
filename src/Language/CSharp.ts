@@ -3,18 +3,8 @@
 import { OrderedSet, Map } from "immutable";
 import * as handlebars from "handlebars";
 
-import {
-    TypeKind,
-    Type,
-    EnumType,
-    UnionType,
-    ClassType,
-    matchType,
-    nullableFromUnion,
-    removeNullFromUnion,
-    directlyReachableSingleNamedType,
-    ClassProperty
-} from "../Type";
+import { TypeKind, Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {

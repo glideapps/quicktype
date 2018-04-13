@@ -11,13 +11,13 @@ import {
     ArrayType,
     ClassType,
     UnionType,
-    removeNullFromUnion,
     PrimitiveStringTypeKind,
     StringType,
     ClassProperty,
     IntersectionType,
     ObjectType
 } from "./Type";
+import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind } from "./TypeAttributes";
 import { defined, assert, panic, setUnion, mapOptional } from "./Support";

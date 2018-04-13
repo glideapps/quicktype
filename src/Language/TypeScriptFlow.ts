@@ -1,6 +1,7 @@
 "use strict";
 
-import { Type, ArrayType, UnionType, ClassType, nullableFromUnion, matchType, EnumType, isNamedType } from "../Type";
+import { Type, ArrayType, UnionType, ClassType, EnumType } from "../Type";
+import { matchType, nullableFromUnion, isNamedType } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { utf16StringEscape, camelCase } from "../Strings";
 

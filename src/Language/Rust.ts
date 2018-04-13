@@ -16,7 +16,8 @@ import {
     isLetterOrUnderscore
 } from "../Strings";
 import { Name, Namer, funPrefixNamer } from "../Naming";
-import { UnionType, nullableFromUnion, Type, ClassType, matchType, removeNullFromUnion, EnumType } from "../Type";
+import { UnionType, Type, ClassType, EnumType } from "../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { BooleanOption, EnumOption, Option } from "../RendererOptions";

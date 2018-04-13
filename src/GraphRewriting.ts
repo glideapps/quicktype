@@ -2,7 +2,8 @@
 
 import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection } from "immutable";
 
-import { PrimitiveTypeKind, Type, ClassProperty, combineTypeAttributesOfTypes } from "./Type";
+import { PrimitiveTypeKind, Type, ClassProperty } from "./Type";
+import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes } from "./TypeAttributes";
 import { assert, panic } from "./Support";

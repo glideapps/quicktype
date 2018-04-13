@@ -2,7 +2,8 @@
 
 import { Map, Set, OrderedMap, OrderedSet } from "immutable";
 
-import { TypeKind, PrimitiveStringTypeKind, Type, UnionType, matchTypeExhaustive } from "./Type";
+import { TypeKind, PrimitiveStringTypeKind, Type, UnionType } from "./Type";
+import { matchTypeExhaustive } from "./TypeUtils";
 import {
     TypeAttributes,
     combineTypeAttributes,

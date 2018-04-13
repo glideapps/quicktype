@@ -2,7 +2,8 @@
 
 import { Set, OrderedMap, OrderedSet } from "immutable";
 
-import { Type, StringType, UnionType, combineTypeAttributesOfTypes } from "./Type";
+import { Type, StringType, UnionType } from "./Type";
+import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { GraphRewriteBuilder } from "./GraphRewriting";

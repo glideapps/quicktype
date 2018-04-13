@@ -2,16 +2,8 @@
 
 import { Map } from "immutable";
 
-import {
-    TypeKind,
-    Type,
-    ClassType,
-    EnumType,
-    UnionType,
-    nullableFromUnion,
-    matchType,
-    removeNullFromUnion
-} from "../Type";
+import { TypeKind, Type, ClassType, EnumType, UnionType } from "../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import {

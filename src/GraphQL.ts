@@ -4,7 +4,8 @@
 
 import { List, Map, OrderedSet, OrderedMap } from "immutable";
 
-import { removeNullFromUnion, UnionType, ClassProperty } from "./Type";
+import { UnionType, ClassProperty } from "./Type";
+import { removeNullFromUnion } from "./TypeUtils";
 import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
 import {
     DocumentNode,
