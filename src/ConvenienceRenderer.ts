@@ -524,6 +524,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 },
                 _enumType => "enum",
                 _unionType => "union",
+                transformedType => typeNameForUnionMember(transformedType.targetType),
                 _dateType => "date",
                 _timeType => "time",
                 _dateTimeType => "date_time"

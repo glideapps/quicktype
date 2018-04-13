@@ -260,6 +260,9 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
             _unionType => {
                 return panic("The unions should have been eliminated in attributesForTypesInUnion");
             },
+            _transformedType => {
+                return panic("We don't support transformed types in unions yet");
+            },
             _dateType => this.addStringType("date", attributes),
             _timeType => this.addStringType("time", attributes),
             _dateTimeType => this.addStringType("date-time", attributes)
@@ -321,7 +324,13 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             case "array":
                 return this.makeArray(typeProvider.arrayData, typeAttributes, forwardingRef);
             default:
-                if (kind === "union" || kind === "class" || kind === "map" || kind === "intersection") {
+                if (
+                    kind === "union" ||
+                    kind === "class" ||
+                    kind === "map" ||
+                    kind === "intersection" ||
+                    kind === "transformed"
+                ) {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
                 }
                 return assertNever(kind);

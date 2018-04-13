@@ -130,6 +130,9 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
                     members.forEach(memberType => {
                         addNames(memberType, names);
                     });
+                },
+                transformedType => {
+                    addNames(transformedType.targetType, names);
                 }
             );
         }
@@ -242,6 +245,9 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
                     const unionIsAncestor = unionHasGivenName || nullableFromUnion(unionType) === null;
                     const ancestorForMembers = unionIsAncestor ? unionType : ancestor;
                     members.forEach(memberType => processType(ancestorForMembers, memberType, undefined));
+                },
+                transformedType => {
+                    processType(ancestor, transformedType.targetType, alternativeSuffix);
                 }
             );
         }

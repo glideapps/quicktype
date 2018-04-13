@@ -247,6 +247,9 @@ class IntersectionAccumulator
                 );
                 this.addUnionSet(unionType.members);
             },
+            _transformedType => {
+                return panic("We don't support intersections with transformed types yet");
+            },
             dateType => this.addUnionSet(OrderedSet([dateType])),
             timeType => this.addUnionSet(OrderedSet([timeType])),
             dateTimeType => this.addUnionSet(OrderedSet([dateTimeType]))
