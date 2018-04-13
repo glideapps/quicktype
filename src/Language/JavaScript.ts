@@ -1,6 +1,7 @@
 "use strict";
 
-import { Type, matchType, directlyReachableSingleNamedType, ClassProperty, ClassType, ObjectType } from "../Type";
+import { Type, ClassProperty, ClassType, ObjectType } from "../Type";
+import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import {
     utf16LegalizeCharacters,

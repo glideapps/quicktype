@@ -3,7 +3,8 @@
 import { Collection } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, UnionType, matchTypeExhaustive, EnumType, ObjectType } from "../Type";
+import { Type, UnionType, EnumType, ObjectType } from "../Type";
+import { matchTypeExhaustive } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer, Name } from "../Naming";

@@ -3,16 +3,9 @@
 import { Set, OrderedSet, OrderedMap, Map } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
-import {
-    StringTypeMapping,
-    GraphRewriteBuilder,
-    TypeRef,
-    UnionTypeProvider,
-    UnionBuilder,
-    TypeBuilder,
-    TypeLookerUp,
-    TypeAttributeMap
-} from "./TypeBuilder";
+import { StringTypeMapping, TypeRef, TypeBuilder } from "./TypeBuilder";
+import { GraphRewriteBuilder, TypeLookerUp } from "./GraphRewriting";
+import { UnionTypeProvider, UnionBuilder, TypeAttributeMap } from "./UnionBuilder";
 import {
     IntersectionType,
     Type,
@@ -23,17 +16,19 @@ import {
     PrimitiveTypeKind,
     StringType,
     ArrayType,
-    matchTypeExhaustive,
     isPrimitiveStringTypeKind,
     isPrimitiveTypeKind,
     isNumberTypeKind,
     GenericClassProperty,
     TypeKind,
-    combineTypeAttributesOfTypes,
-    ObjectType,
-    setOperationMembersRecursively,
-    makeGroupsToFlatten
+    ObjectType
 } from "./Type";
+import {
+    setOperationMembersRecursively,
+    matchTypeExhaustive,
+    combineTypeAttributesOfTypes,
+    makeGroupsToFlatten
+} from "./TypeUtils";
 import { assert, defined, panic, mustNotHappen } from "./Support";
 import {
     combineTypeAttributes,

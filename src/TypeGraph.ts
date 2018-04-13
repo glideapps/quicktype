@@ -2,28 +2,17 @@
 
 import { Map, List, Set, OrderedSet, Collection } from "immutable";
 
-import {
-    Type,
-    separateNamedTypes,
-    SeparatedNamedTypes,
-    isNamedType,
-    ClassType,
-    ClassProperty,
-    UnionType,
-    combineTypeAttributesOfTypes,
-    IntersectionType
-} from "./Type";
+import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
+import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
 import { defined, assert, mustNotBeCalled, panic } from "./Support";
 import {
-    GraphRewriteBuilder,
     TypeRef,
     TypeBuilder,
     StringTypeMapping,
     NoStringTypeMapping,
-    provenanceTypeAttributeKind,
-    GraphRemapBuilder,
-    BaseGraphRewriteBuilder
+    provenanceTypeAttributeKind
 } from "./TypeBuilder";
+import { GraphRewriteBuilder, GraphRemapBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";

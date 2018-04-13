@@ -4,7 +4,8 @@ import { Map, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption, BooleanOption, Option } from "../RendererOptions";
-import { Type, matchType, nullableFromUnion, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
+import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
+import { matchType, nullableFromUnion } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Namer, Name, DependencyName, funPrefixNamer } from "../Naming";

@@ -4,7 +4,8 @@ import { Set, OrderedSet, Map, isCollection } from "immutable";
 import * as pluralize from "pluralize";
 
 import { TypeGraph } from "./TypeGraph";
-import { matchCompoundType, Type, ObjectType, nullableFromUnion } from "./Type";
+import { Type, ObjectType } from "./Type";
+import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
 import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./TypeNames";
 import { defined, panic } from "./Support";
 
@@ -25,7 +26,7 @@ import { defined, panic } from "./Support";
 //    inner class.  We also then add `bar` to the name of the integer
 //    type.
 //
-// 2. Add "ancestor" alternatives and some "direct" alternatives.  
+// 2. Add "ancestor" alternatives and some "direct" alternatives.
 //    Direct alternatives are those that don't contain any ancestor
 //    names, whereas ancestor alternatives do. What we do here is add
 //    names of the form `TopLevel_foo` and `TopLevel_foo_class` as
@@ -265,7 +266,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
 
         alternatives = alternatives.union(names.map(name => `${name}_${t.kind}`));
         directAlternativesForType = directAlternativesForType.set(t, alternatives);
-    });    
+    });
 
     graph.allTypesUnordered().forEach(t => {
         const names = namesForType.get(t);

@@ -2,20 +2,8 @@
 
 import { Map } from "immutable";
 
-import {
-    TypeKind,
-    Type,
-    ArrayType,
-    MapType,
-    EnumType,
-    UnionType,
-    ClassType,
-    matchType,
-    nullableFromUnion,
-    removeNullFromUnion,
-    directlyReachableSingleNamedType,
-    ClassProperty
-} from "../Type";
+import { TypeKind, Type, ArrayType, MapType, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import {

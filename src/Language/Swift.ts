@@ -1,19 +1,8 @@
 "use strict";
 
 import { TargetLanguage } from "../TargetLanguage";
-import {
-    Type,
-    ClassType,
-    EnumType,
-    UnionType,
-    ArrayType,
-    MapType,
-    matchType,
-    nullableFromUnion,
-    removeNullFromUnion,
-    TypeKind,
-    ClassProperty
-} from "../Type";
+import { Type, ClassType, EnumType, UnionType, ArrayType, MapType, TypeKind, ClassProperty } from "../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, EnumOption, Option, StringOption } from "../RendererOptions";

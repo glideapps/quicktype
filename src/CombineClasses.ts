@@ -2,8 +2,11 @@
 
 import { Map, Set, OrderedSet } from "immutable";
 
-import { ClassType, Type, nonNullTypeCases, ClassProperty, combineTypeAttributesOfTypes } from "./Type";
-import { GraphRewriteBuilder, TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { ClassType, Type, ClassProperty } from "./Type";
+import { nonNullTypeCases, combineTypeAttributesOfTypes } from "./TypeUtils";
+
+import { TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { GraphRewriteBuilder } from "./GraphRewriting";
 import { assert, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
 import { unifyTypes, unionBuilderForUnification } from "./UnifyClasses";

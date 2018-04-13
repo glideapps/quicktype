@@ -3,9 +3,11 @@
 import { Set, Map, OrderedSet } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
-import { Type, UnionType, IntersectionType, makeGroupsToFlatten } from "./Type";
+import { Type, UnionType, IntersectionType } from "./Type";
+import { makeGroupsToFlatten } from "./TypeUtils";
 import { assert } from "./Support";
-import { TypeRef, GraphRewriteBuilder, StringTypeMapping } from "./TypeBuilder";
+import { TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { GraphRewriteBuilder } from "./GraphRewriting";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
 import { messageAssert, ErrorMessage } from "./Messages";
 

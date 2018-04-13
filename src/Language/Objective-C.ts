@@ -4,17 +4,8 @@ import * as lo from "lodash";
 import { includes, repeat } from "lodash";
 
 import { TargetLanguage } from "../TargetLanguage";
-import {
-    Type,
-    ClassType,
-    EnumType,
-    nullableFromUnion,
-    matchType,
-    ArrayType,
-    MapType,
-    UnionType,
-    ClassProperty
-} from "../Type";
+import { Type, ClassType, EnumType, ArrayType, MapType, UnionType, ClassProperty } from "../Type";
+import { matchType, nullableFromUnion } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, modifySource } from "../Source";

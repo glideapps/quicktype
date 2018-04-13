@@ -3,20 +3,8 @@
 import { Map, Set, List, OrderedSet, OrderedMap, Collection } from "immutable";
 import * as handlebars from "handlebars";
 
-import {
-    Type,
-    ClassType,
-    EnumType,
-    UnionType,
-    separateNamedTypes,
-    nullableFromUnion,
-    matchTypeExhaustive,
-    TypeKind,
-    isNamedType,
-    ClassProperty,
-    MapType,
-    ObjectType
-} from "./Type";
+import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType, ObjectType } from "./Type";
+import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
 import { defined, panic, nonNull, StringMap, assert } from "./Support";

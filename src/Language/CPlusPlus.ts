@@ -3,7 +3,8 @@
 import { OrderedSet, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, ClassType, EnumType, UnionType, nullableFromUnion, matchType, removeNullFromUnion } from "../Type";
+import { Type, ClassType, EnumType, UnionType } from "../Type";
+import { nullableFromUnion, matchType, removeNullFromUnion } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";

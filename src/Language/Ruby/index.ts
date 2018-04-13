@@ -12,18 +12,8 @@ import { Option, BooleanOption, EnumOption } from "../../RendererOptions";
 
 import * as keywords from "./keywords";
 
-import {
-    Type,
-    EnumType,
-    ClassType,
-    nullableFromUnion,
-    matchType,
-    UnionType,
-    ArrayType,
-    MapType,
-    ClassProperty,
-    removeNullFromUnion
-} from "../../Type";
+import { Type, EnumType, ClassType, UnionType, ArrayType, MapType, ClassProperty } from "../../Type";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 
 import {
     legalizeCharacters,
