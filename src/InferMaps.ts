@@ -6,7 +6,7 @@ import { Type, ClassType, setOperationCasesEqual, ClassProperty } from "./Type";
 import { removeNullFromType } from "./TypeUtils";
 import { defined, panic } from "./Support";
 import { TypeGraph } from "./TypeGraph";
-import { TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { TypeRef } from "./TypeBuilder";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { unifyTypes, unionBuilderForUnification } from "./UnifyClasses";
 import { MarkovChain, load, evaluate } from "./MarkovChain";
@@ -88,12 +88,7 @@ function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefi
     return allCases;
 }
 
-export function inferMaps(
-    graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
-    conflateNumbers: boolean,
-    debugPrintReconstitution: boolean
-): TypeGraph {
+export function inferMaps(graph: TypeGraph, conflateNumbers: boolean, debugPrintReconstitution: boolean): TypeGraph {
     function replaceClass(
         setOfOneClass: Set<ClassType>,
         builder: GraphRewriteBuilder<ClassType>,
@@ -133,12 +128,5 @@ export function inferMaps(
     const classesToReplace = allClasses
         .filter(c => !c.isFixed && shouldBeMap(c.getProperties()) !== undefined)
         .toArray();
-    return graph.rewrite(
-        "infer maps",
-        stringTypeMapping,
-        false,
-        classesToReplace.map(c => [c]),
-        debugPrintReconstitution,
-        replaceClass
-    );
+    return graph.rewrite("infer maps", false, classesToReplace.map(c => [c]), debugPrintReconstitution, replaceClass);
 }

@@ -3,7 +3,7 @@
 import { Set, OrderedSet, OrderedMap, Map } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
-import { StringTypeMapping, TypeRef, TypeBuilder } from "./TypeBuilder";
+import { TypeRef, TypeBuilder } from "./TypeBuilder";
 import { GraphRewriteBuilder, TypeLookerUp } from "./GraphRewriting";
 import { UnionTypeProvider, UnionBuilder, TypeAttributeMap } from "./UnionBuilder";
 import {
@@ -12,11 +12,9 @@ import {
     ClassProperty,
     EnumType,
     UnionType,
-    PrimitiveStringTypeKind,
     PrimitiveTypeKind,
     StringType,
     ArrayType,
-    isPrimitiveStringTypeKind,
     isPrimitiveTypeKind,
     isNumberTypeKind,
     GenericClassProperty,
@@ -403,11 +401,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     }
 }
 
-export function resolveIntersections(
-    graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
-    debugPrintReconstitution: boolean
-): [TypeGraph, boolean] {
+export function resolveIntersections(graph: TypeGraph, debugPrintReconstitution: boolean): [TypeGraph, boolean] {
     let needsRepeat = false;
 
     function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
@@ -444,7 +438,7 @@ export function resolveIntersections(
     >;
     const resolvableIntersections = allIntersections.filter(canResolve);
     const groups = makeGroupsToFlatten(resolvableIntersections, undefined);
-    graph = graph.rewrite("resolve intersections", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
+    graph = graph.rewrite("resolve intersections", false, groups, debugPrintReconstitution, replace);
 
     // console.log(`resolved ${resolvableIntersections.size} of ${intersections.size} intersections`);
     return [graph, !needsRepeat && allIntersections.size === resolvableIntersections.size];

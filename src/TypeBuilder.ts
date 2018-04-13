@@ -11,7 +11,6 @@ import {
     ArrayType,
     ClassType,
     UnionType,
-    PrimitiveStringTypeKind,
     StringType,
     ClassProperty,
     IntersectionType,
@@ -62,18 +61,6 @@ export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>(
     provenanceToString
 );
 
-export type StringTypeMapping = {
-    date: PrimitiveStringTypeKind;
-    time: PrimitiveStringTypeKind;
-    dateTime: PrimitiveStringTypeKind;
-};
-
-export const NoStringTypeMapping: StringTypeMapping = {
-    date: "date",
-    time: "time",
-    dateTime: "date-time"
-};
-
 export class TypeBuilder {
     readonly typeGraph: TypeGraph;
 
@@ -84,7 +71,6 @@ export class TypeBuilder {
     private _addedForwardingIntersection: boolean = false;
 
     constructor(
-        private readonly _stringTypeMapping: StringTypeMapping,
         readonly alphabetizeProperties: boolean,
         private readonly _allPropertiesOptional: boolean,
         private readonly _addProvenanceAttributes: boolean,
@@ -209,9 +195,6 @@ export class TypeBuilder {
 
     getPrimitiveType(kind: PrimitiveTypeKind, forwardingRef?: TypeRef): TypeRef {
         assert(kind !== "string", "Use getStringType to create strings");
-        if (kind === "date") kind = this._stringTypeMapping.date;
-        if (kind === "time") kind = this._stringTypeMapping.time;
-        if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
         if (kind === "string") {
             return this.getStringType(undefined, undefined, forwardingRef);
         }

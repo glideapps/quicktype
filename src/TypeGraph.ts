@@ -5,13 +5,7 @@ import { Map, List, Set, OrderedSet, Collection } from "immutable";
 import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
 import { defined, assert, mustNotBeCalled, panic } from "./Support";
-import {
-    TypeRef,
-    TypeBuilder,
-    StringTypeMapping,
-    NoStringTypeMapping,
-    provenanceTypeAttributeKind
-} from "./TypeBuilder";
+import { TypeRef, TypeBuilder, provenanceTypeAttributeKind } from "./TypeBuilder";
 import { GraphRewriteBuilder, GraphRemapBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
@@ -249,7 +243,6 @@ export class TypeGraph {
     // carefully.
     rewrite<T extends Type>(
         title: string,
-        stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         replacementGroups: T[][],
         debugPrintReconstitution: boolean,
@@ -262,7 +255,6 @@ export class TypeGraph {
 
         const builder = new GraphRewriteBuilder(
             this,
-            stringTypeMapping,
             alphabetizeProperties,
             this._haveProvenanceAttributes,
             replacementGroups,
@@ -281,12 +273,11 @@ export class TypeGraph {
         if (!builder.didAddForwardingIntersection) return newGraph;
 
         assert(!force, "We shouldn't have introduced forwarding intersections in a forced rewrite");
-        return removeIndirectionIntersections(newGraph, stringTypeMapping, debugPrintReconstitution);
+        return removeIndirectionIntersections(newGraph, debugPrintReconstitution);
     }
 
     remap(
         title: string,
-        stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         map: Map<Type, Type>,
         debugPrintRemapping: boolean
@@ -297,7 +288,6 @@ export class TypeGraph {
 
         const builder = new GraphRemapBuilder(
             this,
-            stringTypeMapping,
             alphabetizeProperties,
             this._haveProvenanceAttributes,
             map,
@@ -318,15 +308,7 @@ export class TypeGraph {
     }
 
     garbageCollect(alphabetizeProperties: boolean): TypeGraph {
-        const newGraph = this.rewrite(
-            "GC",
-            NoStringTypeMapping,
-            alphabetizeProperties,
-            [],
-            false,
-            (_t, _b) => mustNotBeCalled(),
-            true
-        );
+        const newGraph = this.rewrite("GC", alphabetizeProperties, [], false, (_t, _b) => mustNotBeCalled(), true);
         // console.log(`GC: ${defined(newGraph._types).length} types`);
         return newGraph;
     }
@@ -376,11 +358,7 @@ export class TypeGraph {
     }
 }
 
-export function noneToAny(
-    graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
-    debugPrintReconstitution: boolean
-): TypeGraph {
+export function noneToAny(graph: TypeGraph, debugPrintReconstitution: boolean): TypeGraph {
     const noneTypes = graph.allTypesUnordered().filter(t => t.kind === "none");
     if (noneTypes.size === 0) {
         return graph;
@@ -388,7 +366,6 @@ export function noneToAny(
     assert(noneTypes.size === 1, "Cannot have more than one none type");
     return graph.rewrite(
         "none to any",
-        stringTypeMapping,
         false,
         [noneTypes.toArray()],
         debugPrintReconstitution,
@@ -401,11 +378,7 @@ export function noneToAny(
     );
 }
 
-export function optionalToNullable(
-    graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
-    debugPrintReconstitution: boolean
-): TypeGraph {
+export function optionalToNullable(graph: TypeGraph, debugPrintReconstitution: boolean): TypeGraph {
     function rewriteClass(c: ClassType, builder: GraphRewriteBuilder<ClassType>, forwardingRef: TypeRef): TypeRef {
         const properties = c.getProperties().map((p, name) => {
             const t = p.type;
@@ -443,7 +416,6 @@ export function optionalToNullable(
     }
     return graph.rewrite(
         "optional to nullable",
-        stringTypeMapping,
         false,
         replacementGroups,
         debugPrintReconstitution,
@@ -455,11 +427,7 @@ export function optionalToNullable(
     );
 }
 
-export function removeIndirectionIntersections(
-    graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
-    debugPrintRemapping: boolean
-): TypeGraph {
+export function removeIndirectionIntersections(graph: TypeGraph, debugPrintRemapping: boolean): TypeGraph {
     const map: [Type, Type][] = [];
 
     graph.allTypesUnordered().forEach(t => {
@@ -481,5 +449,5 @@ export function removeIndirectionIntersections(
         }
     });
 
-    return graph.remap("remove indirection intersections", stringTypeMapping, false, Map(map), debugPrintRemapping);
+    return graph.remap("remove indirection intersections", false, Map(map), debugPrintRemapping);
 }
