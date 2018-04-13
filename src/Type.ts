@@ -12,7 +12,7 @@ import { ErrorMessage, messageAssert } from "./Messages";
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
-export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
+export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection" | "transformed";
 
 export function isPrimitiveStringTypeKind(kind: TypeKind): kind is PrimitiveStringTypeKind {
     return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
@@ -267,7 +267,7 @@ export class ArrayType extends Type {
         const maybeItems = builder.lookup(itemsRef);
         if (maybeItems === undefined) {
             builder.getUniqueArrayType();
-            builder.setArrayItems(builder.reconstitute(this.getItemsRef()));
+            builder.setArrayItems(builder.reconstitute(itemsRef));
         } else {
             builder.getArrayType(maybeItems);
         }
@@ -646,5 +646,81 @@ export class UnionType extends SetOperationType {
         } else {
             builder.getUnionType(maybeMembers);
         }
+    }
+}
+
+export type Transformer = "parseInteger";
+
+export class TransformedType extends Type {
+    constructor(
+        typeRef: TypeRef,
+        readonly transformer: Transformer,
+        private _sourceRef?: TypeRef,
+        private _targetRef?: TypeRef
+    ) {
+        super(typeRef, "transformed");
+    }
+
+    setTypes(sourceRef: TypeRef, targetRef: TypeRef): void {
+        messageAssert(
+            this._sourceRef === undefined && this._targetRef === undefined,
+            "Can only set transformed type source and target once"
+        );
+
+        this._sourceRef = sourceRef;
+        this._targetRef = targetRef;
+    }
+
+    private getSourceRef(): TypeRef {
+        if (this._sourceRef === undefined) {
+            return panic("Source type accessed before it was set");
+        }
+        return this._sourceRef;
+    }
+
+    get sourceType(): Type {
+        return this.getSourceRef().deref()[0];
+    }
+
+    private getTargetRef(): TypeRef {
+        if (this._targetRef === undefined) {
+            return panic("Target type accessed before it was set");
+        }
+        return this._targetRef;
+    }
+
+    get targetType(): Type {
+        return this.getTargetRef().deref()[0];
+    }
+
+    get children(): OrderedSet<Type> {
+        return OrderedSet([this.sourceType, this.targetType]);
+    }
+
+    get isNullable(): boolean {
+        return this.targetType.isNullable;
+    }
+
+    isPrimitive(): this is PrimitiveType {
+        return false;
+    }
+
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+        const sourceRef = this.getSourceRef();
+        const targetRef = this.getTargetRef();
+        const maybeSource = builder.lookup(sourceRef);
+        const maybeTarget = builder.lookup(targetRef);
+        if (maybeSource === undefined || maybeTarget === undefined) {
+            builder.getUniqueTransformedType(this.transformer);
+            builder.setTransformedTypeTypes(builder.reconstitute(sourceRef), builder.reconstitute(targetRef));
+        } else {
+            builder.getTransformedType(this.transformer, maybeSource, maybeTarget);
+        }
+    }
+
+    protected structuralEqualityStep(other: TransformedType, queue: (a: Type, b: Type) => boolean): boolean {
+        if (this.transformer !== other.transformer) return false;
+
+        return queue(this.sourceType, other.sourceType) && queue(this.targetType, other.targetType);
     }
 }

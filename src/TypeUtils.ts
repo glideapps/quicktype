@@ -15,7 +15,8 @@ import {
     ClassType,
     ClassProperty,
     SetOperationType,
-    UnionType
+    UnionType,
+    TransformedType
 } from "./Type";
 
 export function assertIsObject(t: Type): ObjectType {
@@ -212,6 +213,7 @@ export function matchTypeExhaustive<U>(
     objectType: (objectType: ObjectType) => U,
     enumType: (enumType: EnumType) => U,
     unionType: (unionType: UnionType) => U,
+    transformedType: (transformedType: TransformedType) => U,
     dateType: (dateType: PrimitiveType) => U,
     timeType: (timeType: PrimitiveType) => U,
     dateTimeType: (dateTimeType: PrimitiveType) => U
@@ -237,6 +239,7 @@ export function matchTypeExhaustive<U>(
     else if (t instanceof ObjectType) return objectType(t);
     else if (t instanceof EnumType) return enumType(t);
     else if (t instanceof UnionType) return unionType(t);
+    else if (t instanceof TransformedType) return transformedType(t);
     return panic(`Unknown type ${t.kind}`);
 }
 
@@ -278,6 +281,7 @@ export function matchType<U>(
         typeNotSupported,
         enumType,
         unionType,
+        typeNotSupported,
         stringTypeMatchers.dateType || typeNotSupported,
         stringTypeMatchers.timeType || typeNotSupported,
         stringTypeMatchers.dateTimeType || typeNotSupported
@@ -291,7 +295,8 @@ export function matchCompoundType(
     classType: (classType: ClassType) => void,
     mapType: (mapType: MapType) => void,
     objectType: (objectType: ObjectType) => void,
-    unionType: (unionType: UnionType) => void
+    unionType: (unionType: UnionType) => void,
+    transformedType: (transformedType: TransformedType) => void
 ): void {
     function ignore<T extends Type>(_: T): void {
         return;
@@ -312,6 +317,7 @@ export function matchCompoundType(
         objectType,
         ignore,
         unionType,
+        transformedType,
         ignore,
         ignore,
         ignore

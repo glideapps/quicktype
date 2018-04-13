@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, OrderedMap, OrderedSet, Set } from "immutable";
+import { Map, OrderedMap, OrderedSet, Set, List } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -15,7 +15,9 @@ import {
     StringType,
     ClassProperty,
     IntersectionType,
-    ObjectType
+    ObjectType,
+    TransformedType,
+    Transformer
 } from "./Type";
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
@@ -203,6 +205,7 @@ export class TypeBuilder {
     private _classTypes: Map<Map<string, ClassProperty>, TypeRef> = Map();
     private _unionTypes: Map<Set<TypeRef>, TypeRef> = Map();
     private _intersectionTypes: Map<Set<TypeRef>, TypeRef> = Map();
+    private _transformedTypes: Map<List<any>, TypeRef> = Map();
 
     getPrimitiveType(kind: PrimitiveTypeKind, forwardingRef?: TypeRef): TypeRef {
         assert(kind !== "string", "Use getStringType to create strings");
@@ -453,5 +456,52 @@ export class TypeBuilder {
 
     setLostTypeAttributes(): void {
         return;
+    }
+
+    private registerTransformedType(
+        transformer: Transformer,
+        sourceRef: TypeRef,
+        targetRef: TypeRef,
+        tref: TypeRef
+    ): void {
+        const key = List([transformer, sourceRef, targetRef]);
+        if (this._transformedTypes.has(key)) return;
+        this._transformedTypes = this._transformedTypes.set(key, tref);
+    }
+
+    getTransformedType(
+        attributes: TypeAttributes,
+        transformer: Transformer,
+        sourceRef: TypeRef,
+        targetRef: TypeRef,
+        forwardingRef?: TypeRef
+    ): TypeRef {
+        const key = List([transformer, sourceRef, targetRef]);
+        let tref = this.forwardIfNecessary(forwardingRef, this._transformedTypes.get(key));
+        if (tref === undefined) {
+            tref = this.addType(
+                forwardingRef,
+                tr => new TransformedType(tr, transformer, sourceRef, targetRef),
+                attributes
+            );
+            this.registerTransformedType(transformer, sourceRef, targetRef, tref);
+        } else {
+            this.addAttributes(tref, attributes);
+        }
+        return tref;
+    }
+
+    getUniqueTransformedType(attributes: TypeAttributes, transformer: Transformer, forwardingRef?: TypeRef): TypeRef {
+        return this.addType(forwardingRef, tref => new TransformedType(tref, transformer), attributes);
+    }
+
+    setTransformedTypeTypes(ref: TypeRef, sourceRef: TypeRef, targetRef: TypeRef): void {
+        const type = ref.deref()[0];
+        if (!(type instanceof TransformedType)) {
+            return panic("Tried to set types of non-transformed type");
+        }
+
+        type.setTypes(sourceRef, targetRef);
+        this.registerTransformedType(type.transformer, sourceRef, targetRef, ref);
     }
 }

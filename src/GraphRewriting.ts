@@ -2,7 +2,7 @@
 
 import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection } from "immutable";
 
-import { PrimitiveTypeKind, Type, ClassProperty } from "./Type";
+import { PrimitiveTypeKind, Type, ClassProperty, Transformer } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes } from "./TypeAttributes";
@@ -178,6 +178,28 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
 
     setSetOperationMembers(members: OrderedSet<TypeRef>): void {
         this.builderForSetting().setSetOperationMembers(this.getResult(), members);
+    }
+
+    getTransformedType(transformer: Transformer, sourceRef: TypeRef, targetRef: TypeRef): void {
+        this.register(
+            this.builderForNewType().getTransformedType(
+                this._typeAttributes,
+                transformer,
+                sourceRef,
+                targetRef,
+                this._forwardingRef
+            )
+        );
+    }
+
+    getUniqueTransformedType(transformer: Transformer): void {
+        this.register(
+            this.builderForNewType().getUniqueTransformedType(this._typeAttributes, transformer, this._forwardingRef)
+        );
+    }
+
+    setTransformedTypeTypes(sourceRef: TypeRef, targetRef: TypeRef): void {
+        this.builderForSetting().setTransformedTypeTypes(this.getResult(), sourceRef, targetRef);
     }
 }
 
