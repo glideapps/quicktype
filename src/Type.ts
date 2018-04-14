@@ -10,17 +10,13 @@ import { TypeAttributes } from "./TypeAttributes";
 import { ErrorMessage, messageAssert } from "./Messages";
 
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | "string";
+export type PlatformTypeKind = "date" | "time" | "date-time";
 export type NamedTypeKind = "class" | "enum" | "union";
-export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
+export type TypeKind = PrimitiveTypeKind | PlatformTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
 export type ObjectTypeKind = "object" | "map" | "class";
 
 export function isNumberTypeKind(kind: TypeKind): kind is "integer" | "double" {
     return kind === "integer" || kind === "double";
-}
-
-export function isPrimitiveTypeKind(kind: TypeKind): kind is PrimitiveTypeKind {
-    if (isNumberTypeKind(kind)) return true;
-    return kind === "none" || kind === "any" || kind === "null" || kind === "bool" || kind === "string";
 }
 
 function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
@@ -267,6 +263,9 @@ export function stringTypeIdentity(
     transformation: Transformation | undefined
 ): List<any> | undefined {
     if (enumCases !== undefined) return undefined;
+    // FIXME: Some test cases don't produce enums anymore if we
+    // add the cases to the identity, and I don't know why.
+    // 00ec5.json is an example.
     // mapOptional(ec => ec.keySeq().toSet(), enumCases)
     return List(["string", transformation]);
 }
@@ -821,5 +820,34 @@ export class UnionType extends SetOperationType {
         } else {
             builder.getUnionType(maybeMembers, this.reconstituteTransformation(builder));
         }
+    }
+}
+
+export function platformTypeIdentity(kind: PlatformTypeKind, transformation: Transformation | undefined): List<any> {
+    return List([kind, transformation]);
+}
+
+export class PlatformType extends Type {
+    // @ts-ignore: This is initialized in the Type constructor
+    readonly kind: PlatformTypeKind;
+
+    constructor(typeRef: TypeRef, kind: PlatformTypeKind, transformation: Transformation | undefined) {
+        super(typeRef, kind, transformation);
+    }
+
+    get isNullable(): boolean {
+        return false;
+    }
+
+    isPrimitive(): this is PrimitiveType {
+        return false;
+    }
+
+    get identity(): List<any> {
+        return platformTypeIdentity(this.kind, this.transformation);
+    }
+
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+        builder.getPlatformType(this.kind, this.reconstituteTransformation(builder));
     }
 }

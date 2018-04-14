@@ -2,7 +2,7 @@
 
 import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection } from "immutable";
 
-import { PrimitiveTypeKind, Type, ClassProperty, Transformation } from "./Type";
+import { PrimitiveTypeKind, Type, ClassProperty, Transformation, PlatformTypeKind } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes } from "./TypeAttributes";
@@ -87,6 +87,12 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     getStringType(enumCases: OrderedMap<string, number> | undefined, transformation: Transformation | undefined): void {
         this.register(
             this.builderForNewType().getStringType(this._typeAttributes, enumCases, transformation, this._forwardingRef)
+        );
+    }
+
+    getPlatformType(kind: PlatformTypeKind, transformation: Transformation | undefined): void {
+        this.registerAndAddAttributes(
+            this.builderForNewType().getPlatformType(kind, transformation, this._forwardingRef)
         );
     }
 

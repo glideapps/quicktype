@@ -23,7 +23,10 @@ import {
     arrayTypeIdentity,
     classTypeIdentity,
     unionTypeIdentity,
-    intersectionTypeIdentity
+    intersectionTypeIdentity,
+    PlatformTypeKind,
+    PlatformType,
+    platformTypeIdentity
 } from "./Type";
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
@@ -216,7 +219,6 @@ export class TypeBuilder {
 
     private registerType(t: Type): void {
         this.registerTypeForIdentity(t.identity, t.typeRef);
-
     }
 
     getPrimitiveType(kind: PrimitiveTypeKind, transformation?: Transformation, forwardingRef?: TypeRef): TypeRef {
@@ -241,6 +243,19 @@ export class TypeBuilder {
             stringTypeIdentity(cases, transformation),
             tr => new StringType(tr, cases, transformation),
             attributes,
+            forwardingRef
+        );
+    }
+
+    getPlatformType(
+        kind: PlatformTypeKind,
+        transformation?: Transformation,
+        forwardingRef?: TypeRef
+    ): TypeRef {
+        return this.getOrAddType(
+            platformTypeIdentity(kind, transformation),
+            tr => new PlatformType(tr, kind, transformation),
+            undefined,
             forwardingRef
         );
     }
