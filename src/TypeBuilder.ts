@@ -16,8 +16,8 @@ import {
     ClassProperty,
     IntersectionType,
     ObjectType,
-    TransformedType,
-    Transformer
+    Transformer,
+    Transformation
 } from "./Type";
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
@@ -452,6 +452,11 @@ export class TypeBuilder {
         } else {
             return panic("Unknown set operation type ${type.kind}");
         }
+    }
+
+    setTransformation(ref: TypeRef, transformation: Transformation): void {
+        const type = ref.deref()[0];
+        type.setTransformation(transformation);
     }
 
     setLostTypeAttributes(): void {
