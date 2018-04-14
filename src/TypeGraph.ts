@@ -360,7 +360,7 @@ export class TypeGraph {
         for (let i = 0; i < types.length; i++) {
             const t = types[i];
             const parts: string[] = [];
-            parts.push(`${t.kind}${t.hasNames ? ` ${t.getCombinedName()}` : ""}`);
+            parts.push(`${t.debugPrintKind}${t.hasNames ? ` ${t.getCombinedName()}` : ""}`);
             const children = t.children;
             if (!children.isEmpty()) {
                 parts.push(`children ${children.map(c => c.typeRef.index).join(",")}`);

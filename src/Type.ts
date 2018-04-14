@@ -74,6 +74,10 @@ export abstract class Type {
     abstract isPrimitive(): this is PrimitiveType;
     abstract reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void;
 
+    get debugPrintKind(): string {
+        return this.kind;
+    }
+
     equals(other: any): boolean {
         if (!(other instanceof Type)) return false;
         return this.typeRef.equals(other.typeRef);
@@ -210,6 +214,13 @@ export class StringType extends PrimitiveType {
 
     protected structuralEqualityStep(_other: Type, _queue: (a: Type, b: Type) => boolean): boolean {
         return true;
+    }
+
+    get debugPrintKind(): string {
+        if (this.enumCases === undefined) {
+            return "string";
+        }
+        return `string (${this.enumCases.size} enums)`;
     }
 }
 
