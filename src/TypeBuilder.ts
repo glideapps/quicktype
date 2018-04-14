@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, OrderedMap, OrderedSet, Set, List } from "immutable";
+import { Map, OrderedMap, OrderedSet, Set } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -16,13 +16,12 @@ import {
     ClassProperty,
     IntersectionType,
     ObjectType,
-    Transformer,
     Transformation
 } from "./Type";
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind } from "./TypeAttributes";
-import { defined, assert, panic, setUnion, mapOptional } from "./Support";
+import { defined, assert, panic, setUnion, mapOptional, ifUndefined } from "./Support";
 
 export class TypeRef {
     constructor(readonly graph: TypeGraph, readonly index: number) {}
@@ -179,7 +178,7 @@ export class TypeBuilder {
 
     protected addForwardingIntersection(forwardingRef: TypeRef, tref: TypeRef): TypeRef {
         this._addedForwardingIntersection = true;
-        return this.addType(forwardingRef, tr => new IntersectionType(tr, OrderedSet([tref])), undefined);
+        return this.addType(forwardingRef, tr => new IntersectionType(tr, OrderedSet([tref]), undefined), undefined);
     }
 
     protected forwardIfNecessary(forwardingRef: TypeRef | undefined, tref: undefined): undefined;
@@ -205,20 +204,21 @@ export class TypeBuilder {
     private _classTypes: Map<Map<string, ClassProperty>, TypeRef> = Map();
     private _unionTypes: Map<Set<TypeRef>, TypeRef> = Map();
     private _intersectionTypes: Map<Set<TypeRef>, TypeRef> = Map();
-    private _transformedTypes: Map<List<any>, TypeRef> = Map();
 
-    getPrimitiveType(kind: PrimitiveTypeKind, forwardingRef?: TypeRef): TypeRef {
+    getPrimitiveType(kind: PrimitiveTypeKind, transformation?: Transformation, forwardingRef?: TypeRef): TypeRef {
         assert(kind !== "string", "Use getStringType to create strings");
         if (kind === "date") kind = this._stringTypeMapping.date;
         if (kind === "time") kind = this._stringTypeMapping.time;
         if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
         if (kind === "string") {
-            return this.getStringType(undefined, undefined, forwardingRef);
+            return this.getStringType(undefined, undefined, transformation, forwardingRef);
         }
-        let tref = this.forwardIfNecessary(forwardingRef, this._primitiveTypes.get(kind));
+        let tref = ifUndefined(transformation, () => this.forwardIfNecessary(forwardingRef, this._primitiveTypes.get(kind)));
         if (tref === undefined) {
-            tref = this.addType(forwardingRef, tr => new PrimitiveType(tr, kind), undefined);
-            this._primitiveTypes = this._primitiveTypes.set(kind, tref);
+            tref = this.addType(forwardingRef, tr => new PrimitiveType(tr, kind, transformation), undefined);
+            if (transformation === undefined) {
+                this._primitiveTypes = this._primitiveTypes.set(kind, tref);
+            }
         }
         return tref;
     }
@@ -226,6 +226,7 @@ export class TypeBuilder {
     getStringType(
         attributes: TypeAttributes | undefined,
         cases: OrderedMap<string, number> | undefined,
+        transformation?: Transformation,
         forwardingRef?: TypeRef
     ): TypeRef {
         if (cases === undefined) {
@@ -240,27 +241,32 @@ export class TypeBuilder {
             // out whether we do want string types to have names (we most
             // likely don't), and if not, still don't keep track of them.
             let result: TypeRef;
-            if (this._noEnumStringType === undefined) {
-                result = this._noEnumStringType = this.addType(
+            if (this._noEnumStringType === undefined || transformation !== undefined) {
+                result = this.addType(
                     forwardingRef,
-                    tr => new StringType(tr, undefined),
+                    tr => new StringType(tr, undefined, transformation),
                     undefined
                 );
+                if (transformation === undefined) {
+                    this._noEnumStringType = result;
+                }
             } else {
                 result = this.forwardIfNecessary(forwardingRef, this._noEnumStringType);
             }
-            this.addAttributes(this._noEnumStringType, attributes);
+            this.addAttributes(result, attributes);
             return result;
         }
-        return this.addType(forwardingRef, tr => new StringType(tr, cases), attributes);
+        return this.addType(forwardingRef, tr => new StringType(tr, cases, transformation), attributes);
     }
 
-    getEnumType(attributes: TypeAttributes, cases: OrderedSet<string>, forwardingRef?: TypeRef): TypeRef {
+    getEnumType(attributes: TypeAttributes, cases: OrderedSet<string>, transformation?: Transformation, forwardingRef?: TypeRef): TypeRef {
         const unorderedCases = cases.toSet();
-        let tref = this.forwardIfNecessary(forwardingRef, this._enumTypes.get(unorderedCases));
+        let tref = ifUndefined(transformation, () => this.forwardIfNecessary(forwardingRef, this._enumTypes.get(unorderedCases)));
         if (tref === undefined) {
-            tref = this.addType(forwardingRef, tr => new EnumType(tr, cases), attributes);
-            this._enumTypes = this._enumTypes.set(unorderedCases, tref);
+            tref = this.addType(forwardingRef, tr => new EnumType(tr, cases, transformation), attributes);
+            if (transformation === undefined) {
+                this._enumTypes = this._enumTypes.set(unorderedCases, tref);
+            }
         } else {
             this.addAttributes(tref, attributes);
         }
@@ -271,18 +277,19 @@ export class TypeBuilder {
         attributes: TypeAttributes,
         properties: OrderedMap<string, ClassProperty> | undefined,
         additionalProperties: TypeRef | undefined,
+        transformation?: Transformation,
         forwardingRef?: TypeRef
     ): TypeRef {
         properties = mapOptional(p => this.modifyPropertiesIfNecessary(p), properties);
         return this.addType(
             forwardingRef,
-            tref => new ObjectType(tref, "object", true, properties, additionalProperties),
+            tref => new ObjectType(tref, "object", true, properties, additionalProperties, transformation),
             attributes
         );
     }
 
     getUniqueMapType(forwardingRef?: TypeRef): TypeRef {
-        return this.addType(forwardingRef, tr => new MapType(tr, undefined), undefined);
+        return this.addType(forwardingRef, tr => new MapType(tr, undefined, undefined), undefined);
     }
 
     private registerMapType(values: TypeRef, tref: TypeRef): void {
@@ -290,11 +297,13 @@ export class TypeBuilder {
         this._mapTypes = this._mapTypes.set(values, tref);
     }
 
-    getMapType(values: TypeRef, forwardingRef?: TypeRef): TypeRef {
-        let tref = this.forwardIfNecessary(forwardingRef, this._mapTypes.get(values));
+    getMapType(values: TypeRef, transformation?: Transformation, forwardingRef?: TypeRef): TypeRef {
+        let tref = ifUndefined(transformation, () => this.forwardIfNecessary(forwardingRef, this._mapTypes.get(values)));
         if (tref === undefined) {
-            tref = this.addType(forwardingRef, tr => new MapType(tr, values), undefined);
-            this.registerMapType(values, tref);
+            tref = this.addType(forwardingRef, tr => new MapType(tr, values, transformation), undefined);
+            if (transformation === undefined) {
+                this.registerMapType(values, tref);
+            }
         }
         return tref;
     }
@@ -307,13 +316,16 @@ export class TypeBuilder {
     setObjectProperties(
         ref: TypeRef,
         properties: OrderedMap<string, ClassProperty>,
-        additionalProperties: TypeRef | undefined
+        additionalProperties: TypeRef | undefined,
+        transformation?: Transformation
     ): void {
         const type = ref.deref()[0];
         if (!(type instanceof ObjectType)) {
             return panic("Tried to set properties of non-object type");
         }
-        type.setProperties(this.modifyPropertiesIfNecessary(properties), additionalProperties);
+        type.setProperties(this.modifyPropertiesIfNecessary(properties), additionalProperties, transformation);
+
+        if (transformation !== undefined) return;
         if (type instanceof MapType) {
             this.registerMapType(defined(additionalProperties), ref);
         } else if (type instanceof ClassType) {
@@ -324,7 +336,7 @@ export class TypeBuilder {
     }
 
     getUniqueArrayType(forwardingRef?: TypeRef): TypeRef {
-        return this.addType(forwardingRef, tr => new ArrayType(tr, undefined), undefined);
+        return this.addType(forwardingRef, tr => new ArrayType(tr, undefined, undefined), undefined);
     }
 
     private registerArrayType(items: TypeRef, tref: TypeRef): void {
@@ -332,22 +344,26 @@ export class TypeBuilder {
         this._arrayTypes = this._arrayTypes.set(items, tref);
     }
 
-    getArrayType(items: TypeRef, forwardingRef?: TypeRef): TypeRef {
-        let tref = this.forwardIfNecessary(forwardingRef, this._arrayTypes.get(items));
+    getArrayType(items: TypeRef, transformation?: Transformation, forwardingRef?: TypeRef): TypeRef {
+        let tref = ifUndefined(transformation, () => this.forwardIfNecessary(forwardingRef, this._arrayTypes.get(items)));
         if (tref === undefined) {
-            tref = this.addType(forwardingRef, tr => new ArrayType(tr, items), undefined);
-            this.registerArrayType(items, tref);
+            tref = this.addType(forwardingRef, tr => new ArrayType(tr, items, transformation), undefined);
+            if (transformation === undefined) {
+                this.registerArrayType(items, tref);
+            }
         }
         return tref;
     }
 
-    setArrayItems(ref: TypeRef, items: TypeRef): void {
+    setArrayItems(ref: TypeRef, items: TypeRef, transformation?: Transformation): void {
         const type = ref.deref()[0];
         if (!(type instanceof ArrayType)) {
             return panic("Tried to set items of non-array type");
         }
-        type.setItems(items);
-        this.registerArrayType(items, ref);
+        type.setItems(items, transformation);
+        if (transformation === undefined) {
+            this.registerArrayType(items, ref);
+        }
     }
 
     modifyPropertiesIfNecessary(properties: OrderedMap<string, ClassProperty>): OrderedMap<string, ClassProperty> {
@@ -363,13 +379,16 @@ export class TypeBuilder {
     getClassType(
         attributes: TypeAttributes,
         properties: OrderedMap<string, ClassProperty>,
+        transformation?: Transformation,
         forwardingRef?: TypeRef
     ): TypeRef {
         properties = this.modifyPropertiesIfNecessary(properties);
-        let tref = this.forwardIfNecessary(forwardingRef, this._classTypes.get(properties.toMap()));
+        let tref = ifUndefined(transformation, () => this.forwardIfNecessary(forwardingRef, this._classTypes.get(properties.toMap())));
         if (tref === undefined) {
-            tref = this.addType(forwardingRef, tr => new ClassType(tr, false, properties), attributes);
-            this.registerClassType(properties, tref);
+            tref = this.addType(forwardingRef, tr => new ClassType(tr, false, properties, transformation), attributes);
+            if (transformation === undefined) {
+                this.registerClassType(properties, tref);
+            }
         } else {
             this.addAttributes(tref, attributes);
         }
@@ -387,18 +406,21 @@ export class TypeBuilder {
         attributes: TypeAttributes,
         isFixed: boolean,
         properties: OrderedMap<string, ClassProperty> | undefined,
+        transformation?: Transformation,
         forwardingRef?: TypeRef
     ): TypeRef {
         properties = mapOptional(p => this.modifyPropertiesIfNecessary(p), properties);
-        return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties), attributes);
+        return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties, transformation), attributes);
     }
 
-    getUnionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
+    getUnionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, transformation?: Transformation, forwardingRef?: TypeRef): TypeRef {
         const unorderedMembers = members.toSet();
-        let tref = this.forwardIfNecessary(forwardingRef, this._unionTypes.get(unorderedMembers));
+        let tref = ifUndefined(transformation, () => this.forwardIfNecessary(forwardingRef, this._unionTypes.get(unorderedMembers)));
         if (tref === undefined) {
-            tref = this.addType(forwardingRef, tr => new UnionType(tr, members), attributes);
-            this.registerUnionType(unorderedMembers, tref);
+            tref = this.addType(forwardingRef, tr => new UnionType(tr, members, transformation), attributes);
+            if (transformation === undefined) {
+                this.registerUnionType(unorderedMembers, tref);
+            }
         } else {
             this.addAttributes(tref, attributes);
         }
@@ -408,9 +430,10 @@ export class TypeBuilder {
     getUniqueUnionType(
         attributes: TypeAttributes,
         members: OrderedSet<TypeRef> | undefined,
+        transformation?: Transformation,
         forwardingRef?: TypeRef
     ): TypeRef {
-        return this.addType(forwardingRef, tref => new UnionType(tref, members), attributes);
+        return this.addType(forwardingRef, tref => new UnionType(tref, members, transformation), attributes);
     }
 
     private registerIntersectionType(members: Set<TypeRef>, tref: TypeRef): void {
@@ -418,12 +441,14 @@ export class TypeBuilder {
         this._intersectionTypes = this._intersectionTypes.set(members, tref);
     }
 
-    getIntersectionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
+    getIntersectionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, transformation?: Transformation, forwardingRef?: TypeRef): TypeRef {
         const unorderedMembers = members.toSet();
-        let tref = this.forwardIfNecessary(forwardingRef, this._intersectionTypes.get(unorderedMembers));
+        let tref = ifUndefined(transformation, () => this.forwardIfNecessary(forwardingRef, this._intersectionTypes.get(unorderedMembers)));
         if (tref === undefined) {
-            tref = this.addType(forwardingRef, tr => new IntersectionType(tr, members), attributes);
-            this.registerIntersectionType(unorderedMembers, tref);
+            tref = this.addType(forwardingRef, tr => new IntersectionType(tr, members, transformation), attributes);
+            if (transformation === undefined) {
+                this.registerIntersectionType(unorderedMembers, tref);
+            }
         } else {
             this.addAttributes(tref, attributes);
         }
@@ -433,17 +458,18 @@ export class TypeBuilder {
     getUniqueIntersectionType(
         attributes: TypeAttributes,
         members: OrderedSet<TypeRef> | undefined,
+        transformation?: Transformation,
         forwardingRef?: TypeRef
     ): TypeRef {
-        return this.addType(forwardingRef, tref => new IntersectionType(tref, members), attributes);
+        return this.addType(forwardingRef, tref => new IntersectionType(tref, members, transformation), attributes);
     }
 
-    setSetOperationMembers(ref: TypeRef, members: OrderedSet<TypeRef>): void {
+    setSetOperationMembers(ref: TypeRef, members: OrderedSet<TypeRef>, transformation?: Transformation): void {
         const type = ref.deref()[0];
         if (!(type instanceof UnionType || type instanceof IntersectionType)) {
             return panic("Tried to set members of non-set-operation type");
         }
-        type.setMembers(members);
+        type.setMembers(members, transformation);
         const unorderedMembers = members.toSet();
         if (type instanceof UnionType) {
             this.registerUnionType(unorderedMembers, ref);
@@ -454,59 +480,7 @@ export class TypeBuilder {
         }
     }
 
-    setTransformation(ref: TypeRef, transformation: Transformation): void {
-        const type = ref.deref()[0];
-        type.setTransformation(transformation);
-    }
-
     setLostTypeAttributes(): void {
         return;
-    }
-
-    private registerTransformedType(
-        transformer: Transformer,
-        sourceRef: TypeRef,
-        targetRef: TypeRef,
-        tref: TypeRef
-    ): void {
-        const key = List([transformer, sourceRef, targetRef]);
-        if (this._transformedTypes.has(key)) return;
-        this._transformedTypes = this._transformedTypes.set(key, tref);
-    }
-
-    getTransformedType(
-        attributes: TypeAttributes,
-        transformer: Transformer,
-        sourceRef: TypeRef,
-        targetRef: TypeRef,
-        forwardingRef?: TypeRef
-    ): TypeRef {
-        const key = List([transformer, sourceRef, targetRef]);
-        let tref = this.forwardIfNecessary(forwardingRef, this._transformedTypes.get(key));
-        if (tref === undefined) {
-            tref = this.addType(
-                forwardingRef,
-                tr => new TransformedType(tr, transformer, sourceRef, targetRef),
-                attributes
-            );
-            this.registerTransformedType(transformer, sourceRef, targetRef, tref);
-        } else {
-            this.addAttributes(tref, attributes);
-        }
-        return tref;
-    }
-
-    getUniqueTransformedType(attributes: TypeAttributes, transformer: Transformer, forwardingRef?: TypeRef): TypeRef {
-        return this.addType(forwardingRef, tref => new TransformedType(tref, transformer), attributes);
-    }
-
-    setTransformedTypeTypes(ref: TypeRef, sourceRef: TypeRef, targetRef: TypeRef): void {
-        const type = ref.deref()[0];
-        if (!(type instanceof TransformedType)) {
-            return panic("Tried to set types of non-transformed type");
-        }
-
-        type.setTypes(sourceRef, targetRef);
-        this.registerTransformedType(type.transformer, sourceRef, targetRef, ref);
     }
 }

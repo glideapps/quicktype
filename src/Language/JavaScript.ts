@@ -163,7 +163,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             mapType => ["m(", this.typeMapTypeFor(mapType.values), ")"],
             _enumType => panic("We handled this above"),
             unionType => {
-                const children = unionType.children.map(this.typeMapTypeFor);
+                const children = unionType.getChildren().map(this.typeMapTypeFor);
                 return ["u(", ...intercalate(", ", children).toArray(), ")"];
             }
         );

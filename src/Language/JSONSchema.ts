@@ -130,7 +130,6 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
                     return this.definitionForUnion(unionType);
                 }
             },
-            transformedType => this.schemaForType(transformedType.sourceType),
             _dateType => ({ type: "string", format: "date" }),
             _timeType => ({ type: "string", format: "time" }),
             _dateTimeType => ({ type: "string", format: "date-time" })

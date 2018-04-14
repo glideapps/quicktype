@@ -61,9 +61,13 @@ export class Transformation {
 }
 
 export abstract class Type {
-    constructor(readonly typeRef: TypeRef, readonly kind: TypeKind, private _transformation?: Transformation) {}
+    constructor(
+        readonly typeRef: TypeRef,
+        readonly kind: TypeKind,
+        private _transformation: Transformation | undefined
+    ) {}
 
-    setTransformation(transformation: Transformation): void {
+    setTransformation(transformation: Transformation | undefined): void {
         assert(this._transformation === undefined, "Tried to set transformation twice");
         this._transformation = transformation;
     }
@@ -72,7 +76,7 @@ export abstract class Type {
         return this._transformation;
     }
 
-    get children(): OrderedSet<Type> {
+    getChildren(): OrderedSet<Type> {
         if (this._transformation === undefined) {
             return OrderedSet();
         }
@@ -82,7 +86,7 @@ export abstract class Type {
     directlyReachableTypes<T>(setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
         const set = setForType(this);
         if (set) return set;
-        return orderedSetUnion(this.children.map((t: Type) => t.directlyReachableTypes(setForType)));
+        return orderedSetUnion(this.getChildren().map((t: Type) => t.directlyReachableTypes(setForType)));
     }
 
     getAttributes(): TypeAttributes {
@@ -103,15 +107,16 @@ export abstract class Type {
 
     abstract get isNullable(): boolean;
     abstract isPrimitive(): this is PrimitiveType;
+    abstract reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void;
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
+    protected reconstituteTransformation<T extends BaseGraphRewriteBuilder>(
+        builder: TypeReconstituter<T>
+    ): Transformation | undefined {
         const tform = this._transformation;
         if (tform === undefined) {
-            builder.setTransformationAndFinish();
+            return undefined;
         }
-        builder.setTransformationAndFinish(
-            new Transformation(tform.transformer, builder.reconstitute(tform.targetType.typeRef))
-        );
+        return new Transformation(tform.transformer, builder.reconstitute(tform.targetType.typeRef));
     }
 
     get debugPrintKind(): string {
@@ -226,15 +231,11 @@ export class PrimitiveType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: PrimitiveTypeKind;
 
-    constructor(typeRef: TypeRef, kind: PrimitiveTypeKind, checkKind: boolean = true) {
+    constructor(typeRef: TypeRef, kind: PrimitiveTypeKind, transformation: Transformation | undefined, checkKind: boolean = true) {
         if (checkKind) {
             assert(kind !== "string", "Cannot instantiate a PrimitiveType as string");
         }
-        super(typeRef, kind);
-    }
-
-    get children(): OrderedSet<Type> {
-        return OrderedSet();
+        super(typeRef, kind, transformation);
     }
 
     get isNullable(): boolean {
@@ -246,25 +247,21 @@ export class PrimitiveType extends Type {
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        builder.getPrimitiveType(this.kind);
-    }
-
-    protected structuralEqualityStep(_other: Type, _queue: (a: Type, b: Type) => boolean): boolean {
-        return true;
+        builder.getPrimitiveType(this.kind, this.reconstituteTransformation(builder));
     }
 }
 
 export class StringType extends PrimitiveType {
-    constructor(typeRef: TypeRef, readonly enumCases: OrderedMap<string, number> | undefined) {
-        super(typeRef, "string", false);
+    constructor(
+        typeRef: TypeRef,
+        readonly enumCases: OrderedMap<string, number> | undefined,
+        transformation: Transformation | undefined
+    ) {
+        super(typeRef, "string", transformation, false);
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        builder.getStringType(this.enumCases);
-    }
-
-    protected structuralEqualityStep(_other: Type, _queue: (a: Type, b: Type) => boolean): boolean {
-        return true;
+        builder.getStringType(this.enumCases, this.reconstituteTransformation(builder));
     }
 
     get debugPrintKind(): string {
@@ -279,15 +276,16 @@ export class ArrayType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: "array";
 
-    constructor(typeRef: TypeRef, private _itemsRef?: TypeRef) {
-        super(typeRef, "array");
+    constructor(typeRef: TypeRef, private _itemsRef: TypeRef | undefined, transformation: Transformation | undefined) {
+        super(typeRef, "array", transformation);
     }
 
-    setItems(itemsRef: TypeRef) {
+    setItems(itemsRef: TypeRef, transformation: Transformation | undefined) {
         if (this._itemsRef !== undefined) {
             return panic("Can only set array items once");
         }
         this._itemsRef = itemsRef;
+        super.setTransformation(transformation);
     }
 
     private getItemsRef(): TypeRef {
@@ -301,8 +299,8 @@ export class ArrayType extends Type {
         return this.getItemsRef().deref()[0];
     }
 
-    get children(): OrderedSet<Type> {
-        return OrderedSet([this.items]);
+    getChildren(): OrderedSet<Type> {
+        return super.getChildren().add(this.items);
     }
 
     get isNullable(): boolean {
@@ -318,14 +316,14 @@ export class ArrayType extends Type {
         const maybeItems = builder.lookup(itemsRef);
         if (maybeItems === undefined) {
             builder.getUniqueArrayType();
-            builder.setArrayItems(builder.reconstitute(itemsRef));
+            builder.setArrayItems(builder.reconstitute(itemsRef), this.reconstituteTransformation(builder));
         } else {
-            builder.getArrayType(maybeItems);
+            builder.getArrayType(maybeItems, this.reconstituteTransformation(builder));
         }
     }
 
     protected structuralEqualityStep(other: ArrayType, queue: (a: Type, b: Type) => boolean): boolean {
-        return queue(this.items, other.items);
+        return super.structuralEqualityStep(other, queue) && queue(this.items, other.items);
     }
 }
 
@@ -364,9 +362,10 @@ export class ObjectType extends Type {
         kind: TypeKind,
         readonly isFixed: boolean,
         private _properties: OrderedMap<string, ClassProperty> | undefined,
-        private _additionalPropertiesRef: TypeRef | undefined
+        private _additionalPropertiesRef: TypeRef | undefined,
+        transformation: Transformation | undefined
     ) {
-        super(typeRef, kind);
+        super(typeRef, kind, transformation);
 
         assert(kind === "object" || kind === "map" || kind === "class");
         if (kind === "map") {
@@ -381,7 +380,11 @@ export class ObjectType extends Type {
         }
     }
 
-    setProperties(properties: OrderedMap<string, ClassProperty>, additionalPropertiesRef: TypeRef | undefined) {
+    setProperties(
+        properties: OrderedMap<string, ClassProperty>,
+        additionalPropertiesRef: TypeRef | undefined,
+        transformation: Transformation | undefined
+    ) {
         if (this instanceof MapType) {
             assert(properties.isEmpty(), "Cannot set properties on map type");
         } else if (this._properties !== undefined) {
@@ -394,6 +397,8 @@ export class ObjectType extends Type {
 
         this._properties = properties;
         this._additionalPropertiesRef = additionalPropertiesRef;
+
+        this.setTransformation(transformation);
     }
 
     getProperties(): OrderedMap<string, ClassProperty> {
@@ -413,7 +418,7 @@ export class ObjectType extends Type {
         return this._additionalPropertiesRef.deref()[0];
     }
 
-    get children(): OrderedSet<Type> {
+    getChildren(): OrderedSet<Type> {
         const children = this.getSortedProperties()
             .map(p => p.type)
             .toOrderedSet();
@@ -421,7 +426,7 @@ export class ObjectType extends Type {
         if (additionalProperties === undefined) {
             return children;
         }
-        return children.add(additionalProperties);
+        return super.getChildren().union(children.add(additionalProperties));
     }
 
     get isNullable(): boolean {
@@ -443,20 +448,21 @@ export class ObjectType extends Type {
             const properties = this.getProperties().map(
                 (cp, n) => new ClassProperty(defined(maybePropertyTypes.get(n)), cp.isOptional)
             );
+            const tform = this.reconstituteTransformation(builder);
 
             switch (this.kind) {
                 case "object":
                     assert(this.isFixed);
-                    builder.getObjectType(properties, maybeAdditionalProperties);
+                    builder.getObjectType(properties, maybeAdditionalProperties, tform);
                     break;
                 case "map":
-                    builder.getMapType(defined(maybeAdditionalProperties));
+                    builder.getMapType(defined(maybeAdditionalProperties), tform);
                     break;
                 case "class":
                     if (this.isFixed) {
-                        builder.getUniqueClassType(true, properties);
+                        builder.getUniqueClassType(true, properties, tform);
                     } else {
-                        builder.getClassType(properties);
+                        builder.getClassType(properties, tform);
                     }
                     break;
                 default:
@@ -466,13 +472,13 @@ export class ObjectType extends Type {
             switch (this.kind) {
                 case "object":
                     assert(this.isFixed);
-                    builder.getUniqueObjectType(undefined, undefined);
+                    builder.getUniqueObjectType(undefined, undefined, undefined);
                     break;
                 case "map":
                     builder.getUniqueMapType();
                     break;
                 case "class":
-                    builder.getUniqueClassType(this.isFixed, undefined);
+                    builder.getUniqueClassType(this.isFixed, undefined, undefined);
                     break;
                 default:
                     return panic(`Invalid object type kind ${this.kind}`);
@@ -482,11 +488,13 @@ export class ObjectType extends Type {
                 cp => new ClassProperty(builder.reconstitute(cp.typeRef), cp.isOptional)
             );
             const additionalProperties = mapOptional(r => builder.reconstitute(r), this._additionalPropertiesRef);
-            builder.setObjectProperties(properties, additionalProperties);
+            builder.setObjectProperties(properties, additionalProperties, this.reconstituteTransformation(builder));
         }
     }
 
     protected structuralEqualityStep(other: ObjectType, queue: (a: Type, b: Type) => boolean): boolean {
+        if (!super.structuralEqualityStep(other, queue)) return false;
+
         const pa = this.getProperties();
         const pb = other.getProperties();
         if (pa.size !== pb.size) return false;
@@ -512,8 +520,13 @@ export class ClassType extends ObjectType {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "class";
 
-    constructor(typeRef: TypeRef, isFixed: boolean, properties: OrderedMap<string, ClassProperty> | undefined) {
-        super(typeRef, "class", isFixed, properties, undefined);
+    constructor(
+        typeRef: TypeRef,
+        isFixed: boolean,
+        properties: OrderedMap<string, ClassProperty> | undefined,
+        transformation: Transformation | undefined
+    ) {
+        super(typeRef, "class", isFixed, properties, undefined, transformation);
     }
 }
 
@@ -521,8 +534,8 @@ export class MapType extends ObjectType {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: "map";
 
-    constructor(typeRef: TypeRef, valuesRef: TypeRef | undefined) {
-        super(typeRef, "map", false, OrderedMap(), valuesRef);
+    constructor(typeRef: TypeRef, valuesRef: TypeRef | undefined, transformation: Transformation | undefined) {
+        super(typeRef, "map", false, OrderedMap(), valuesRef, transformation);
     }
 
     // FIXME: Remove and use `getAdditionalProperties()` instead.
@@ -535,12 +548,8 @@ export class EnumType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "enum";
 
-    constructor(typeRef: TypeRef, readonly cases: OrderedSet<string>) {
-        super(typeRef, "enum");
-    }
-
-    get children(): OrderedSet<Type> {
-        return OrderedSet();
+    constructor(typeRef: TypeRef, readonly cases: OrderedSet<string>, transformation: Transformation | undefined) {
+        super(typeRef, "enum", transformation);
     }
 
     get isNullable(): boolean {
@@ -552,11 +561,11 @@ export class EnumType extends Type {
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        builder.getEnumType(this.cases);
+        builder.getEnumType(this.cases, this.reconstituteTransformation(builder));
     }
 
-    protected structuralEqualityStep(other: EnumType, _queue: (a: Type, b: Type) => void): boolean {
-        return this.cases.toSet().equals(other.cases.toSet());
+    protected structuralEqualityStep(other: EnumType, queue: (a: Type, b: Type) => boolean): boolean {
+        return super.structuralEqualityStep(other, queue) && this.cases.toSet().equals(other.cases.toSet());
     }
 }
 
@@ -578,15 +587,24 @@ export function setOperationCasesEqual(
 }
 
 export abstract class SetOperationType extends Type {
-    constructor(typeRef: TypeRef, kind: TypeKind, private _memberRefs?: OrderedSet<TypeRef>) {
-        super(typeRef, kind);
+    constructor(
+        typeRef: TypeRef,
+        kind: TypeKind,
+        private _memberRefs: OrderedSet<TypeRef> | undefined,
+        transformation: Transformation | undefined
+    ) {
+        super(typeRef, kind, transformation);
+        assert(transformation === undefined, "We don't support set operations with transformations yet");
     }
 
-    setMembers(memberRefs: OrderedSet<TypeRef>): void {
+    setMembers(memberRefs: OrderedSet<TypeRef>, transformation: Transformation | undefined): void {
         if (this._memberRefs !== undefined) {
             return panic("Can only set map members once");
         }
         this._memberRefs = memberRefs;
+
+        assert(transformation === undefined, "We don't support set operations with transformations yet");
+        this.setTransformation(transformation);
     }
 
     protected getMemberRefs(): OrderedSet<TypeRef> {
@@ -605,8 +623,8 @@ export abstract class SetOperationType extends Type {
         return this.members.sortBy(t => t.kind);
     }
 
-    get children(): OrderedSet<Type> {
-        return this.sortedMembers;
+    getChildren(): OrderedSet<Type> {
+        return super.getChildren().union(this.sortedMembers);
     }
 
     isPrimitive(): this is PrimitiveType {
@@ -614,7 +632,7 @@ export abstract class SetOperationType extends Type {
     }
 
     protected structuralEqualityStep(other: SetOperationType, queue: (a: Type, b: Type) => boolean): boolean {
-        return setOperationCasesEqual(this.members, other.members, queue);
+        return super.structuralEqualityStep(other, queue) && setOperationCasesEqual(this.members, other.members, queue);
     }
 }
 
@@ -622,8 +640,8 @@ export class IntersectionType extends SetOperationType {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "intersection";
 
-    constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
-        super(typeRef, "intersection", memberRefs);
+    constructor(typeRef: TypeRef, memberRefs: OrderedSet<TypeRef> | undefined, transformation: Transformation | undefined) {
+        super(typeRef, "intersection", memberRefs, transformation);
     }
 
     get isNullable(): boolean {
@@ -635,9 +653,9 @@ export class IntersectionType extends SetOperationType {
         const maybeMembers = builder.lookup(memberRefs);
         if (maybeMembers === undefined) {
             builder.getUniqueIntersectionType();
-            builder.setSetOperationMembers(builder.reconstitute(memberRefs));
+            builder.setSetOperationMembers(builder.reconstitute(memberRefs), this.reconstituteTransformation(builder));
         } else {
-            builder.getIntersectionType(maybeMembers);
+            builder.getIntersectionType(maybeMembers, this.reconstituteTransformation(builder));
         }
     }
 }
@@ -646,16 +664,16 @@ export class UnionType extends SetOperationType {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "union";
 
-    constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
-        super(typeRef, "union", memberRefs);
+    constructor(typeRef: TypeRef, memberRefs: OrderedSet<TypeRef> | undefined, transformation: Transformation | undefined) {
+        super(typeRef, "union", memberRefs, transformation);
         if (memberRefs !== undefined) {
             messageAssert(!memberRefs.isEmpty(), ErrorMessage.IRNoEmptyUnions);
         }
     }
 
-    setMembers(memberRefs: OrderedSet<TypeRef>): void {
+    setMembers(memberRefs: OrderedSet<TypeRef>, transformation: Transformation | undefined): void {
         messageAssert(!memberRefs.isEmpty(), ErrorMessage.IRNoEmptyUnions);
-        super.setMembers(memberRefs);
+        super.setMembers(memberRefs, transformation);
     }
 
     get stringTypeMembers(): OrderedSet<Type> {
@@ -693,9 +711,9 @@ export class UnionType extends SetOperationType {
         const maybeMembers = builder.lookup(memberRefs);
         if (maybeMembers === undefined) {
             builder.getUniqueUnionType();
-            builder.setSetOperationMembers(builder.reconstitute(memberRefs));
+            builder.setSetOperationMembers(builder.reconstitute(memberRefs), this.reconstituteTransformation(builder));
         } else {
-            builder.getUnionType(maybeMembers);
+            builder.getUnionType(maybeMembers, this.reconstituteTransformation(builder));
         }
     }
 }

@@ -233,6 +233,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
     // There is a method analogous to this in the IntersectionAccumulator.  It might
     // make sense to find a common interface.
     private addType(t: Type, attributes: TypeAttributes): void {
+        assert(t.transformation === undefined, "We don't support transformations in unions yet");
         matchTypeExhaustive(
             t,
             _noneType => this.addNone(attributes),
@@ -259,9 +260,6 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
             enumType => this.addEnumCases(enumType.cases.toOrderedMap().map(_ => 1), attributes),
             _unionType => {
                 return panic("The unions should have been eliminated in attributesForTypesInUnion");
-            },
-            _transformedType => {
-                return panic("We don't support transformed types in unions yet");
             },
             _dateType => this.addStringType("date", attributes),
             _timeType => this.addStringType("time", attributes),
@@ -312,11 +310,11 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             case "date":
             case "time":
             case "date-time":
-                const t = this.typeBuilder.getPrimitiveType(kind, forwardingRef);
+                const t = this.typeBuilder.getPrimitiveType(kind, undefined, forwardingRef);
                 this.typeBuilder.addAttributes(t, typeAttributes);
                 return t;
             case "string":
-                return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
+                return this.typeBuilder.getStringType(typeAttributes, undefined, undefined, forwardingRef);
             case "enum":
                 return this.makeEnum(typeProvider.enumCases, typeProvider.enumCaseMap, typeAttributes, forwardingRef);
             case "object":
@@ -357,7 +355,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
         }
 
         const union = unique
-            ? this.typeBuilder.getUniqueUnionType(typeAttributes, undefined, forwardingRef)
+            ? this.typeBuilder.getUniqueUnionType(typeAttributes, undefined, undefined, forwardingRef)
             : undefined;
 
         const types: TypeRef[] = [];
@@ -369,7 +367,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             this.typeBuilder.setSetOperationMembers(union, typesSet);
             return union;
         } else {
-            return this.typeBuilder.getUnionType(typeAttributes, typesSet, forwardingRef);
+            return this.typeBuilder.getUnionType(typeAttributes, typesSet, undefined, forwardingRef);
         }
     }
 }

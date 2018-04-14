@@ -112,9 +112,9 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         if (this._makeEnums) {
-            return this.typeBuilder.getEnumType(typeAttributes, OrderedSet(enumCases), forwardingRef);
+            return this.typeBuilder.getEnumType(typeAttributes, OrderedSet(enumCases), undefined, forwardingRef);
         } else {
-            return this.typeBuilder.getStringType(typeAttributes, OrderedMap(counts), forwardingRef);
+            return this.typeBuilder.getStringType(typeAttributes, OrderedMap(counts), undefined, forwardingRef);
         }
     }
 
@@ -170,6 +170,7 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
                     typeAttributes,
                     properties,
                     additionalProperties,
+                    undefined,
                     forwardingRef
                 );
             } else {
@@ -178,6 +179,7 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
                     typeAttributes,
                     this._makeClassesFixed,
                     properties,
+                    undefined,
                     forwardingRef
                 );
             }
@@ -189,7 +191,7 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
-        const ref = this.typeBuilder.getArrayType(this._unifyTypes(arrays, Map()), forwardingRef);
+        const ref = this.typeBuilder.getArrayType(this._unifyTypes(arrays, Map()), undefined, forwardingRef);
         this.typeBuilder.addAttributes(ref, typeAttributes);
         return ref;
     }
@@ -222,6 +224,7 @@ export function unifyTypes<T extends Type>(
     conflateNumbers: boolean,
     maybeForwardingRef?: TypeRef
 ): TypeRef {
+    assert(types.every(t => t.transformation === undefined), "We don't support unifying types with transformations yet");
     if (types.isEmpty()) {
         return panic("Cannot unify empty set of types");
     } else if (types.count() === 1) {

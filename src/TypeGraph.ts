@@ -184,7 +184,7 @@ export class TypeGraph {
                 types = types.push(t);
             }
 
-            const children = childrenOfType !== undefined ? childrenOfType(t) : t.children;
+            const children = childrenOfType !== undefined ? childrenOfType(t) : t.getChildren();
             children.forEach(addFromType);
 
             if (!topDown && required) {
@@ -345,7 +345,7 @@ export class TypeGraph {
         if (this._parents === undefined) {
             const parents = defined(this._types).map(_ => Set());
             this.allTypesUnordered().forEach(p => {
-                p.children.forEach(c => {
+                p.getChildren().forEach(c => {
                     const index = c.typeRef.index;
                     parents[index] = parents[index].add(p);
                 });
@@ -361,7 +361,7 @@ export class TypeGraph {
             const t = types[i];
             const parts: string[] = [];
             parts.push(`${t.debugPrintKind}${t.hasNames ? ` ${t.getCombinedName()}` : ""}`);
-            const children = t.children;
+            const children = t.getChildren();
             if (!children.isEmpty()) {
                 parts.push(`children ${children.map(c => c.typeRef.index).join(",")}`);
             }
@@ -385,6 +385,7 @@ export function noneToAny(
     if (noneTypes.size === 0) {
         return graph;
     }
+    assert(noneTypes.every(t => t.transformation === undefined), "We don't support none types with transformations");
     assert(noneTypes.size === 1, "Cannot have more than one none type");
     return graph.rewrite(
         "none to any",
@@ -393,7 +394,7 @@ export function noneToAny(
         [noneTypes.toArray()],
         debugPrintReconstitution,
         (types, builder, forwardingRef) => {
-            const tref = builder.getPrimitiveType("any", forwardingRef);
+            const tref = builder.getPrimitiveType("any", undefined, forwardingRef);
             const attributes = combineTypeAttributesOfTypes(types);
             builder.addAttributes(tref, attributes);
             return tref;
@@ -428,15 +429,15 @@ export function optionalToNullable(
             return new ClassProperty(ref, false);
         });
         if (c.isFixed) {
-            return builder.getUniqueClassType(c.getAttributes(), true, properties, forwardingRef);
+            return builder.getUniqueClassType(c.getAttributes(), true, properties, undefined, forwardingRef);
         } else {
-            return builder.getClassType(c.getAttributes(), properties, forwardingRef);
+            return builder.getClassType(c.getAttributes(), properties, undefined, forwardingRef);
         }
     }
 
     const classesWithOptional = graph
         .allTypesUnordered()
-        .filter(t => t instanceof ClassType && t.getProperties().some(p => p.isOptional));
+        .filter(t => t instanceof ClassType && t.transformation === undefined && t.getProperties().some(p => p.isOptional));
     const replacementGroups = classesWithOptional.map(c => [c as ClassType]).toArray();
     if (classesWithOptional.size === 0) {
         return graph;

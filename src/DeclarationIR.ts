@@ -54,7 +54,7 @@ export function cycleBreakerTypesForGraph(
         if (visitedTypes.has(t)) return;
 
         if (isImplicitCycleBreaker(t)) {
-            queue.push(...t.children.toArray());
+            queue.push(...t.getChildren().toArray());
         } else {
             const maybeBreaker = findBreaker(t, path, canBreakCycles);
             if (maybeBreaker !== undefined) {
@@ -63,7 +63,7 @@ export function cycleBreakerTypesForGraph(
             }
 
             const pathForChildren = path.unshift(t);
-            t.children.forEach(c => visit(c, pathForChildren));
+            t.getChildren().forEach(c => visit(c, pathForChildren));
         }
 
         visitedTypes = visitedTypes.add(t);

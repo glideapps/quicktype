@@ -115,7 +115,7 @@ export function findSimilarityCliques(
 ): ClassType[][] {
     let unprocessedClasses = graph
         .allNamedTypesSeparated()
-        .objects.filter(o => o instanceof ClassType && (includeFixedClasses || !o.isFixed))
+        .objects.filter(o => o instanceof ClassType && o.transformation === undefined && (includeFixedClasses || !o.isFixed))
         .toArray() as ClassType[];
     const cliques: ClassType[][] = [];
 

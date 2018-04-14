@@ -31,7 +31,7 @@ export function replaceObjectType(
         }
 
         function makeClass(): TypeRef {
-            return builder.getUniqueClassType(attributes, true, reconstituteProperties(), forwardingRef);
+            return builder.getUniqueClassType(attributes, true, reconstituteProperties(), undefined, forwardingRef);
         }
 
         function reconstituteAdditionalProperties(): TypeRef {
@@ -43,7 +43,7 @@ export function replaceObjectType(
         }
 
         if (properties.isEmpty()) {
-            const tref = builder.getMapType(reconstituteAdditionalProperties(), forwardingRef);
+            const tref = builder.getMapType(reconstituteAdditionalProperties(), undefined, forwardingRef);
             builder.addAttributes(tref, attributes);
             return tref;
         }
@@ -77,12 +77,12 @@ export function replaceObjectType(
             */
         }
 
-        const mapType = builder.getMapType(union, forwardingRef);
+        const mapType = builder.getMapType(union, undefined, forwardingRef);
         builder.addAttributes(mapType, attributes);
         return mapType;
     }
 
-    const allObjectTypes = graph.allTypesUnordered().filter(t => t.kind === "object") as Set<ObjectType>;
+    const allObjectTypes = graph.allTypesUnordered().filter(t => t.kind === "object" && t.transformation === undefined) as Set<ObjectType>;
     const objectTypesToReplace = leaveFullObjects
         ? allObjectTypes.filter(o => o.getProperties().isEmpty() || o.getAdditionalProperties() === undefined)
         : allObjectTypes;
