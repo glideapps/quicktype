@@ -403,7 +403,7 @@ function objectTypeIdentify(
     additionalPropertiesRef: TypeRef | undefined,
     transformation: Transformation | undefined
 ): List<any> {
-    return List([kind, transformation, properties, additionalPropertiesRef]);
+    return List([kind, transformation, properties.toMap(), additionalPropertiesRef]);
 }
 
 export function classTypeIdentity(
@@ -677,7 +677,7 @@ export function setOperationTypeIdentity(
     memberRefs: OrderedSet<TypeRef>,
     transformation: Transformation | undefined
 ): List<any> {
-    return List([kind, transformation, memberRefs]);
+    return List([kind, transformation, memberRefs.toSet()]);
 }
 
 export function unionTypeIdentity(
