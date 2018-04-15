@@ -365,7 +365,7 @@ function objectTypeIdentify(
     properties: OrderedMap<string, ClassProperty>,
     additionalPropertiesRef: TypeRef | undefined
 ): List<any> {
-    return List([kind, properties, additionalPropertiesRef]);
+    return List([kind, properties.toMap(), additionalPropertiesRef]);
 }
 
 export function classTypeIdentity(properties: OrderedMap<string, ClassProperty>): List<any> {
@@ -627,7 +627,7 @@ export function setOperationCasesEqual(
 }
 
 export function setOperationTypeIdentity(kind: TypeKind, memberRefs: OrderedSet<TypeRef>): List<any> {
-    return List([kind, memberRefs]);
+    return List([kind, memberRefs.toSet()]);
 }
 
 export function unionTypeIdentity(memberRefs: OrderedSet<TypeRef>): List<any> {
