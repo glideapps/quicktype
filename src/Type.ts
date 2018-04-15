@@ -1,8 +1,8 @@
 "use strict";
 
-import { OrderedSet, OrderedMap, Set, is, hash } from "immutable";
+import { OrderedSet, OrderedMap, Set, is, hash, List } from "immutable";
 
-import { defined, panic, assert, mapOptional } from "./Support";
+import { defined, panic, assert, mapOptional, hashCodeInit, addHashCode } from "./Support";
 import { TypeRef } from "./TypeBuilder";
 import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
@@ -13,6 +13,7 @@ export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
+export type ObjectTypeKind = "object" | "map" | "class";
 
 export function isPrimitiveStringTypeKind(kind: TypeKind): kind is PrimitiveStringTypeKind {
     return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
@@ -46,17 +47,23 @@ function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
 export type Transformer = "parseInteger";
 
 export class Transformation {
-    constructor(readonly transformer: Transformer, private _targetRef?: TypeRef) {}
-
-    private getTargetRef(): TypeRef {
-        if (this._targetRef === undefined) {
-            return panic("Target type accessed before it was set");
-        }
-        return this._targetRef;
-    }
+    constructor(readonly transformer: Transformer, private readonly _targetRef: TypeRef) {}
 
     get targetType(): Type {
-        return this.getTargetRef().deref()[0];
+        return this._targetRef.deref()[0];
+    }
+
+    equals(other: any): boolean {
+        if (!(other instanceof Transformation)) return false;
+        if (this.transformer !== other.transformer) return false;
+        return this._targetRef.equals(other._targetRef);
+    }
+
+    hashCode(): number {
+        let hashCode = hashCodeInit;
+        hashCode = addHashCode(hashCode, hash(this.transformer));
+        hashCode = addHashCode(hashCode, hash(this._targetRef));
+        return hashCode;
     }
 }
 
@@ -106,7 +113,9 @@ export abstract class Type {
     }
 
     abstract get isNullable(): boolean;
+    // FIXME: Remove `isPrimitive`
     abstract isPrimitive(): this is PrimitiveType;
+    abstract get identity(): List<any> | undefined;
     abstract reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void;
 
     protected reconstituteTransformation<T extends BaseGraphRewriteBuilder>(
@@ -227,6 +236,10 @@ export abstract class Type {
     }
 }
 
+export function primitiveTypeIdentity(kind: PrimitiveTypeKind, transformation: Transformation | undefined): List<any> {
+    return List([kind, transformation]);
+}
+
 export class PrimitiveType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: PrimitiveTypeKind;
@@ -246,18 +259,38 @@ export class PrimitiveType extends Type {
         return true;
     }
 
+    get identity(): List<any> | undefined {
+        return primitiveTypeIdentity(this.kind, this.transformation);
+    }
+
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         builder.getPrimitiveType(this.kind, this.reconstituteTransformation(builder));
     }
 }
 
+export function stringTypeIdentity(
+    enumCases: OrderedMap<string, number> | undefined,
+    transformation: Transformation | undefined
+): List<any> | undefined {
+    if (enumCases !== undefined) return undefined;
+    // mapOptional(ec => ec.keySeq().toSet(), enumCases)
+    return List(["string", transformation]);
+}
+
 export class StringType extends PrimitiveType {
+    // @ts-ignore: This is initialized in the Type constructor
+    readonly kind: "string";
+
     constructor(
         typeRef: TypeRef,
         readonly enumCases: OrderedMap<string, number> | undefined,
         transformation: Transformation | undefined
     ) {
         super(typeRef, "string", transformation, false);
+    }
+
+    get identity(): List<any> | undefined {
+        return stringTypeIdentity(this.enumCases, this.transformation);
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -270,6 +303,10 @@ export class StringType extends PrimitiveType {
         }
         return `string (${this.enumCases.size} enums)`;
     }
+}
+
+export function arrayTypeIdentity(itemsRef: TypeRef, transformation: Transformation | undefined): List<any> {
+    return List(["array", transformation, itemsRef]);
 }
 
 export class ArrayType extends Type {
@@ -309,6 +346,10 @@ export class ArrayType extends Type {
 
     isPrimitive(): this is PrimitiveType {
         return false;
+    }
+
+    get identity(): List<any> {
+        return arrayTypeIdentity(this.getItemsRef(), this.transformation);
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -356,10 +397,36 @@ export class ClassProperty extends GenericClassProperty<TypeRef> {
     }
 }
 
+function objectTypeIdentify(
+    kind: ObjectTypeKind,
+    properties: OrderedMap<string, ClassProperty>,
+    additionalPropertiesRef: TypeRef | undefined,
+    transformation: Transformation | undefined
+): List<any> {
+    return List([kind, transformation, properties, additionalPropertiesRef]);
+}
+
+export function classTypeIdentity(
+    properties: OrderedMap<string, ClassProperty>,
+    transformation: Transformation | undefined
+): List<any> {
+    return objectTypeIdentify("class", properties, undefined, transformation);
+}
+
+export function mapTypeIdentify(
+    additionalPropertiesRef: TypeRef | undefined,
+    transformation: Transformation | undefined
+): List<any> {
+    return objectTypeIdentify("map", OrderedMap(), additionalPropertiesRef, transformation);
+}
+
 export class ObjectType extends Type {
+    // @ts-ignore: This is initialized in the Type constructor
+    readonly kind: ObjectTypeKind;
+
     constructor(
         typeRef: TypeRef,
-        kind: TypeKind,
+        kind: ObjectTypeKind,
         readonly isFixed: boolean,
         private _properties: OrderedMap<string, ClassProperty> | undefined,
         private _additionalPropertiesRef: TypeRef | undefined,
@@ -367,7 +434,6 @@ export class ObjectType extends Type {
     ) {
         super(typeRef, kind, transformation);
 
-        assert(kind === "object" || kind === "map" || kind === "class");
         if (kind === "map") {
             if (_properties !== undefined) {
                 assert(_properties.isEmpty());
@@ -385,6 +451,8 @@ export class ObjectType extends Type {
         additionalPropertiesRef: TypeRef | undefined,
         transformation: Transformation | undefined
     ) {
+        assert (this._properties === undefined, "Tried to set object properties twice");
+
         if (this instanceof MapType) {
             assert(properties.isEmpty(), "Cannot set properties on map type");
         } else if (this._properties !== undefined) {
@@ -412,10 +480,15 @@ export class ObjectType extends Type {
         return OrderedMap(props);
     }
 
-    getAdditionalProperties(): Type | undefined {
+    private getAdditionalPropertiesRef(): TypeRef | undefined {
         assert(this._properties !== undefined, "Properties are not set yet");
-        if (this._additionalPropertiesRef === undefined) return undefined;
-        return this._additionalPropertiesRef.deref()[0];
+        return this._additionalPropertiesRef;
+    }
+
+    getAdditionalProperties(): Type | undefined {
+        const tref = this.getAdditionalPropertiesRef();
+        if (tref === undefined) return undefined;
+        return tref.deref()[0];
     }
 
     getChildren(): OrderedSet<Type> {
@@ -435,6 +508,11 @@ export class ObjectType extends Type {
 
     isPrimitive(): this is PrimitiveType {
         return false;
+    }
+
+    get identity(): List<any> | undefined {
+        if (this.isFixed) return undefined;
+        return objectTypeIdentify(this.kind, this.getProperties(), this.getAdditionalPropertiesRef(), this.transformation);
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -535,13 +613,17 @@ export class MapType extends ObjectType {
     readonly kind: "map";
 
     constructor(typeRef: TypeRef, valuesRef: TypeRef | undefined, transformation: Transformation | undefined) {
-        super(typeRef, "map", false, OrderedMap(), valuesRef, transformation);
+        super(typeRef, "map", false, mapOptional(() => OrderedMap(), valuesRef), valuesRef, transformation);
     }
 
     // FIXME: Remove and use `getAdditionalProperties()` instead.
     get values(): Type {
         return defined(this.getAdditionalProperties());
     }
+}
+
+export function enumTypeIdentity(cases: OrderedSet<string>, transformation: Transformation | undefined): List<any> {
+    return List([transformation, cases.toSet()]);
 }
 
 export class EnumType extends Type {
@@ -558,6 +640,10 @@ export class EnumType extends Type {
 
     isPrimitive(): this is PrimitiveType {
         return false;
+    }
+
+    get identity(): List<any> {
+        return enumTypeIdentity(this.cases, this.transformation);
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -584,6 +670,28 @@ export function setOperationCasesEqual(
         }
     });
     return !failed;
+}
+
+export function setOperationTypeIdentity(
+    kind: TypeKind,
+    memberRefs: OrderedSet<TypeRef>,
+    transformation: Transformation | undefined
+): List<any> {
+    return List([kind, transformation, memberRefs]);
+}
+
+export function unionTypeIdentity(
+    memberRefs: OrderedSet<TypeRef>,
+    transformation: Transformation | undefined
+): List<any> {
+    return setOperationTypeIdentity("union", memberRefs, transformation);
+}
+
+export function intersectionTypeIdentity(
+    memberRefs: OrderedSet<TypeRef>,
+    transformation: Transformation | undefined
+): List<any> {
+    return setOperationTypeIdentity("intersection", memberRefs, transformation);
 }
 
 export abstract class SetOperationType extends Type {
@@ -629,6 +737,10 @@ export abstract class SetOperationType extends Type {
 
     isPrimitive(): this is PrimitiveType {
         return false;
+    }
+
+    get identity(): List<any> {
+        return setOperationTypeIdentity(this.kind, this.getMemberRefs(), this.transformation);
     }
 
     protected structuralEqualityStep(other: SetOperationType, queue: (a: Type, b: Type) => boolean): boolean {

@@ -73,14 +73,6 @@ export function mapOptional<T, U>(f: (x: T) => U, x: T | undefined): U | undefin
     return f(x);
 }
 
-export function ifUndefined<T>(x: any, f: () => T): T | undefined {
-    if (x === undefined) {
-        return f();
-    } else {
-        return undefined;
-    }
-}
-
 export function defined<T>(x: T | undefined): T {
     if (x !== undefined) return x;
     return panic("Defined value expected, but got undefined");
