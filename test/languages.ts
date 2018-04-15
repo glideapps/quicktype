@@ -95,6 +95,7 @@ export const RustLanguage: Language = {
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
+    "combinations.json",
     "bug427.json",
     "keywords.json",
     "recursive.json",
@@ -203,6 +204,7 @@ export const GoLanguage: Language = {
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
+    "combinations.json",
     "bug427.json",
     "github-events.json",
     "reddit.json",
@@ -253,6 +255,7 @@ export const CPlusPlusLanguage: Language = {
   diffViaSchema: true,
   skipDiffViaSchema: [
     "github-events.json",
+    "combinations.json",
     "bug427.json",
     "keywords.json",
     "0a91a.json",
@@ -358,6 +361,7 @@ export const SwiftLanguage: Language = {
     "337ed.json",
     "34702.json",
     "7f568.json",
+    "734ad.json",
     "76ae1.json",
     "c8c7e.json",
     "e53b5.json",
