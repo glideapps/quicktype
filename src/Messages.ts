@@ -33,6 +33,8 @@ export class ErrorMessage {
     static SchemaCannotIndexArrayWithNonNumber = "Trying to index array in schema with key that is not a number, but is ${actual} at ${ref}";
     static SchemaIndexNotInArray = "Index ${index} out of range of schema array at ${ref}";
     static SchemaKeyNotInObject = "Key ${key} not in schema object at ${ref}";
+    static SchemaFetchError = "Could not fetch schema ${address}, referred to from ${ref}: ${error}";
+    static SchemaFetchErrorTopLevel = "Could not fetch top-level schema ${address}: ${error}";
 
     // GraphQL input
     static GraphQLNoQueriesDefined = "GraphQL file doesn't have any queries defined.";
@@ -98,6 +100,8 @@ type Error =
     | { message: ErrorMessage.SchemaCannotIndexArrayWithNonNumber; properties: { actual: string; ref: Ref } }
     | { message: ErrorMessage.SchemaIndexNotInArray; properties: { index: number; ref: Ref } }
     | { message: ErrorMessage.SchemaKeyNotInObject; properties: { key: string; ref: Ref } }
+    | { message: ErrorMessage.SchemaFetchError; properties: { address: string; ref: Ref; error: any } }
+    | { message: ErrorMessage.SchemaFetchErrorTopLevel; properties: { address: string; error: any } }
 
     // GraphQL input
     | { message: ErrorMessage.GraphQLNoQueriesDefined; properties: {} }
@@ -173,6 +177,8 @@ export function messageError(message: string, properties?: StringMap): never {
             let value = properties[name];
             if (typeof value === "object" && typeof value.toString === "function") {
                 value = value.toString();
+            } else if (typeof value.message === "string") {
+                value = value.message;
             } else if (typeof value !== "string") {
                 value = JSON.stringify(value);
             }
