@@ -473,6 +473,18 @@ function checkRequiredArray(arr: any, loc: Location): string[] {
     return arr;
 }
 
+async function getFromStore(store: JSONSchemaStore, address: string, ref: Ref | undefined): Promise<JSONSchema> {
+    try {
+        return await store.get(address);
+    } catch (error) {
+        if (ref === undefined) {
+            return messageError(ErrorMessage.SchemaFetchErrorTopLevel, { address, error });
+        } else {
+            return messageError(ErrorMessage.SchemaFetchError, { address, ref, error });
+        }
+    }
+}
+
 export async function addTypesInSchema(
     typeBuilder: TypeBuilder,
     store: JSONSchemaStore,
@@ -483,7 +495,7 @@ export async function addTypesInSchema(
     async function resolveVirtualRef(base: Location | undefined, virtualRef: Ref): Promise<[JSONSchema, Location]> {
         const [canonical, fullVirtual] = canonizer.canonize(mapOptional(b => b.virtualRef, base), virtualRef);
         assert(canonical.hasAddress, "Canonical ref can't be resolved without an address");
-        const schema = await store.get(canonical.address);
+        const schema = await getFromStore(store, canonical.address, mapOptional(l => l.canonicalRef, base));
         canonizer.addSchema(schema, canonical.address);
         return [canonical.lookupRef(schema), new Location(canonical, fullVirtual)];
     }
@@ -843,7 +855,7 @@ export async function refsInSchemaForURI(
         propertiesAreTypes = false;
     }
 
-    const rootSchema = await store.get(ref.address);
+    const rootSchema = await getFromStore(store, ref.address, undefined);
     const schema = ref.lookupRef(rootSchema);
 
     if (propertiesAreTypes) {
