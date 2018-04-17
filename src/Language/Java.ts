@@ -632,12 +632,12 @@ export class JavaRenderer extends ConvenienceRenderer {
                 );
                 this.ensureBlankLine();
                 this.emitBlock(["private static ObjectReader ", this.readerGetterName(topLevelName), "()"], () => {
-                    this.emitLine("if (", readerName, " == null) instantiateMapper();");
+                    this.emitLine("if (", readerName, " == null) ", this.methodName("instantiate", "Mapper", topLevelName), "();");
                     this.emitLine("return ", readerName, ";");
                 });
                 this.ensureBlankLine();
                 this.emitBlock(["private static ObjectWriter ", this.writerGetterName(topLevelName), "()"], () => {
-                    this.emitLine("if (", writerName, " == null) instantiateMapper();");
+                    this.emitLine("if (", writerName, " == null) ", this.methodName("instantiate", "Mapper", topLevelName), "();");
                     this.emitLine("return ", writerName, ";");
                 });
             });
