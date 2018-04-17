@@ -2,7 +2,7 @@
 
 import { Map, Set, OrderedMap, OrderedSet } from "immutable";
 
-import { TypeKind, PrimitiveStringTypeKind, Type, UnionType } from "./Type";
+import { TypeKind, Type, UnionType, Transformation } from "./Type";
 import { matchTypeExhaustive } from "./TypeUtils";
 import {
     TypeAttributes,
@@ -31,7 +31,7 @@ export interface UnionTypeProvider<TArrayData, TObjectData> {
     readonly lostTypeAttributes: boolean;
 }
 
-export type TypeAttributeMap<T extends TypeKind> = OrderedMap<T, TypeAttributes>;
+export type TypeAttributeMap<T> = OrderedMap<T, TypeAttributes>;
 
 function addAttributes(
     accumulatorAttributes: TypeAttributes | undefined,
@@ -41,23 +41,26 @@ function addAttributes(
     return combineTypeAttributes(accumulatorAttributes, newAttributes);
 }
 
-function setAttributes<T extends TypeKind>(
+function setAttributes<T>(
     attributeMap: TypeAttributeMap<T>,
-    kind: T,
+    key: T,
     newAttributes: TypeAttributes
 ): TypeAttributeMap<T> {
-    return attributeMap.set(kind, addAttributes(attributeMap.get(kind), newAttributes));
+    return attributeMap.set(key, addAttributes(attributeMap.get(key), newAttributes));
 }
 
-function moveAttributes<T extends TypeKind>(map: TypeAttributeMap<T>, fromKind: T, toKind: T): TypeAttributeMap<T> {
-    const fromAttributes = defined(map.get(fromKind));
-    map = map.remove(fromKind);
-    return setAttributes(map, toKind, fromAttributes);
+function moveAttributes<T>(map: TypeAttributeMap<T>, fromKey: T, toKey: T): TypeAttributeMap<T> {
+    const fromAttributes = defined(map.get(fromKey));
+    map = map.remove(fromKey);
+    return setAttributes(map, toKey, fromAttributes);
 }
 
 export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArray[], TObject[]> {
     private _nonStringTypeAttributes: TypeAttributeMap<TypeKind> = OrderedMap();
-    private _stringTypeAttributes: TypeAttributeMap<PrimitiveStringTypeKind | "enum"> = OrderedMap();
+    // Once enums are not allowed anymore, this goes to undefined.
+    // Invariant: _enumTypeAttributes === undefined || _stringTypeAttributes.isEmpty()
+    private _enumTypeAttributes: TypeAttributes | undefined = Map();
+    private _stringTypeAttributes: TypeAttributeMap<Transformation | undefined> = OrderedMap();
 
     readonly arrayData: TArray[] = [];
     readonly objectData: TObject[] = [];
@@ -71,9 +74,15 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
     constructor(private readonly _conflateNumbers: boolean) {}
 
     private have(kind: TypeKind): boolean {
-        return (
-            this._nonStringTypeAttributes.has(kind) || this._stringTypeAttributes.has(kind as PrimitiveStringTypeKind)
-        );
+        if (kind === "string") {
+            return !this._stringTypeAttributes.isEmpty();
+        } else if (kind === "enum") {
+            return this._enumTypeAttributes !== undefined;
+        }
+        if (this._nonStringTypeAttributes.has(kind)) {
+            return true;
+        }
+        return false;
     }
 
     get haveString(): boolean {
@@ -103,22 +112,15 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "double", attributes);
     }
 
-    addStringType(kind: PrimitiveStringTypeKind, attributes: TypeAttributes): void {
-        if (this.have(kind)) {
-            this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, kind, attributes);
-            return;
+    addStringType(transformation: Transformation | undefined, attributes: TypeAttributes): void {
+        if (this._enumTypeAttributes !== undefined) {
+            attributes = combineTypeAttributes(this._enumTypeAttributes, attributes);
         }
-        // string overrides all other string types, as well as enum
-        if (kind === "string") {
-            const oldAttributes = combineTypeAttributes(this._stringTypeAttributes.valueSeq().toArray());
-            const newAttributes = addAttributes(oldAttributes, attributes);
-            this._stringTypeAttributes = this._stringTypeAttributes.clear().set(kind, newAttributes);
-
-            this.enumCaseMap = {};
-            this.enumCases = [];
-        } else {
-            this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, kind, attributes);
-        }
+        this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, transformation, attributes);
+        // string overrides enum
+        this._enumTypeAttributes = undefined;
+        this.enumCaseMap = {};
+        this.enumCases = [];
     }
     addArray(t: TArray, attributes: TypeAttributes): void {
         this.arrayData.push(t);
@@ -131,8 +133,11 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
 
     addEnumCases(cases: OrderedMap<string, number>, attributes: TypeAttributes): void {
         if (this.have("string")) {
-            this.addStringType("string", attributes);
+            this.addStringType(undefined, attributes);
             return;
+        }
+        if (this._enumTypeAttributes === undefined) {
+            return panic("State machine screwed up");
         }
 
         cases.forEach((count, s) => {
@@ -143,23 +148,46 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
             this.enumCaseMap[s] += count;
         });
 
-        this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, "enum", attributes);
+        this._enumTypeAttributes = combineTypeAttributes(this._enumTypeAttributes, attributes);
     }
     addEnumCase(s: string, count: number, attributes: TypeAttributes): void {
         this.addEnumCases(OrderedMap([[s, count] as [string, number]]), attributes);
     }
 
-    getMemberKinds(): TypeAttributeMap<TypeKind> {
-        let merged = this._nonStringTypeAttributes.merge(this._stringTypeAttributes);
+    getMemberKinds(): OrderedMap<TypeKind, [Transformation | undefined, TypeAttributes]> {
+        let merged = this._nonStringTypeAttributes.map(ta => [undefined, ta] as [Transformation | undefined, TypeAttributes]);
+        if (this._enumTypeAttributes !== undefined) {
+            assert(this._stringTypeAttributes.isEmpty(), "State machine screwed up");
+            if (this.enumCases.length > 0) {
+                merged = merged.set("enum", [undefined, this._enumTypeAttributes]);
+            } else {
+                assert(this._enumTypeAttributes.size === 0, "How do we have enum type attributes but no cases?");
+            }
+        }
+        if (this._stringTypeAttributes.size > 0) {
+            assert(this._enumTypeAttributes === undefined, "State machine screwed up");
+            const combinedAttributes = combineTypeAttributes(this._stringTypeAttributes.valueSeq().toArray());
+            const transformations = this._stringTypeAttributes.keySeq().toSet();
+            let transformation: Transformation | undefined;
+            if (transformations.has(undefined)) {
+                transformation = undefined;
+            } else if (transformations.size === 1) {
+                transformation = defined(transformations.first());
+            } else {
+                transformation = unionOfTransformations("string", transformations);
+            }
+            merged = merged.set("string", [transformation, combinedAttributes]);
+        }
+
         if (merged.isEmpty()) {
-            return OrderedMap([["none", Map()] as [TypeKind, TypeAttributes]]);
+            return OrderedMap([["none", [undefined, Map()]] as [TypeKind, [Transformation | undefined, TypeAttributes]]]);
         }
 
         if (this._nonStringTypeAttributes.has("any")) {
             assert(this._lostTypeAttributes, "This had to be set when we added 'any'");
 
-            const allAttributes = combineTypeAttributes(merged.valueSeq().toArray());
-            return OrderedMap([["any", allAttributes] as [TypeKind, TypeAttributes]]);
+            const allAttributes = combineTypeAttributes(merged.valueSeq().toArray().map(([_, ta]) => ta));
+            return OrderedMap([["any", [undefined, allAttributes]] as [TypeKind, [Transformation | undefined, TypeAttributes]]]);
         }
 
         if (this._conflateNumbers && this.have("integer") && this.have("double")) {
