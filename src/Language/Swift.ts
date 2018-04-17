@@ -31,8 +31,6 @@ import { List } from "immutable";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
-export type Version = 4 | 4.1;
-
 export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
     private readonly _convenienceInitializers = new BooleanOption("initializers", "Convenience initializers", true);
@@ -49,14 +47,6 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         ["struct", false],
         ["class", true]
     ]);
-
-    private readonly _versionOption = new EnumOption<Version>(
-        "swift-version",
-        "Swift version",
-        [["4", 4], ["4.1", 4.1]],
-        "4",
-        "secondary"
-    );
 
     private readonly _denseOption = new EnumOption(
         "density",
@@ -83,7 +73,6 @@ export default class SwiftTargetLanguage extends TargetLanguage {
             this._justTypesOption,
             this._classOption,
             this._denseOption,
-            this._versionOption,
             this._convenienceInitializers,
             this._accessLevelOption,
             this._alamofireHandlers,
@@ -252,7 +241,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
         private readonly _justTypes: boolean,
         private readonly _useClasses: boolean,
         private readonly _dense: boolean,
-        private readonly _version: Version,
         private readonly _convenienceInitializers: boolean,
         private readonly _accessLevel: string,
         private readonly _alamofire: boolean,
@@ -413,9 +401,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     private getProtocolString = (): Sourcelike => {
         let protocols: string[] = [];
-        if (this._version > 4) {
-            protocols.push("Hashable");
-        }
         if (!this._justTypes) {
             protocols.push("Codable");
         }
