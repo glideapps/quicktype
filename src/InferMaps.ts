@@ -121,6 +121,7 @@ export function inferMaps(
                 unionBuilderForUnification(builder, false, false, false, conflateNumbers),
                 conflateNumbers
             ),
+            undefined,
             forwardingRef
         );
         builder.addAttributes(tref, c.getAttributes());
@@ -131,7 +132,7 @@ export function inferMaps(
         ClassType
     >;
     const classesToReplace = allClasses
-        .filter(c => !c.isFixed && shouldBeMap(c.getProperties()) !== undefined)
+        .filter(c => c.transformation === undefined && !c.isFixed && shouldBeMap(c.getProperties()) !== undefined)
         .toArray();
     return graph.rewrite(
         "infer maps",

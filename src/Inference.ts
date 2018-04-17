@@ -49,7 +49,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         const caseMap = OrderedMap(cases.map((c: string): [string, number] => [c, counts[c]]));
-        return this.typeBuilder.getStringType(typeAttributes, caseMap, forwardingRef);
+        return this.typeBuilder.getStringType(typeAttributes, caseMap, undefined, forwardingRef);
     }
 
     protected makeObject(
@@ -179,9 +179,9 @@ export class TypeInference {
 
         const propertyMap = OrderedMap(properties);
         if (fixed) {
-            return this._typeBuilder.getUniqueClassType(typeAttributes, true, propertyMap, forwardingRef);
+            return this._typeBuilder.getUniqueClassType(typeAttributes, true, propertyMap, undefined, forwardingRef);
         } else {
-            return this._typeBuilder.getClassType(typeAttributes, propertyMap, forwardingRef);
+            return this._typeBuilder.getClassType(typeAttributes, propertyMap, undefined, forwardingRef);
         }
     }
 }

@@ -222,6 +222,7 @@ class IntersectionAccumulator
     }
 
     addType(t: Type): TypeAttributes {
+        assert(t.transformation === undefined, "We don't support intersections of transformations yet");
         let attributes = t.getAttributes();
         matchTypeExhaustive<void>(
             t,
@@ -364,7 +365,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
-        return this.typeBuilder.getEnumType(typeAttributes, OrderedSet(cases), forwardingRef);
+        return this.typeBuilder.getEnumType(typeAttributes, OrderedSet(cases), undefined, forwardingRef);
     }
 
     protected makeObject(
@@ -384,7 +385,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
             maybeAdditionalProperties === undefined
                 ? undefined
                 : this.makeIntersection(maybeAdditionalProperties, emptyTypeAttributes);
-        return this.typeBuilder.getUniqueObjectType(typeAttributes, properties, additionalProperties, forwardingRef);
+        return this.typeBuilder.getUniqueObjectType(typeAttributes, properties, additionalProperties, undefined, forwardingRef);
     }
 
     protected makeArray(
@@ -394,7 +395,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     ): TypeRef {
         // FIXME: attributes
         const itemsType = this.makeIntersection(arrays, Map());
-        const tref = this.typeBuilder.getArrayType(itemsType, forwardingRef);
+        const tref = this.typeBuilder.getArrayType(itemsType, undefined, forwardingRef);
         this.typeBuilder.addAttributes(tref, typeAttributes);
         return tref;
     }
@@ -411,7 +412,7 @@ export function resolveIntersections(
         const intersections = types.filter(t => t instanceof IntersectionType) as Set<IntersectionType>;
         const [members, intersectionAttributes] = setOperationMembersRecursively(intersections.toArray());
         if (members.isEmpty()) {
-            const t = builder.getPrimitiveType("any", forwardingRef);
+            const t = builder.getPrimitiveType("any", undefined, forwardingRef);
             builder.addAttributes(t, intersectionAttributes);
             return t;
         }

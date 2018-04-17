@@ -2,7 +2,7 @@
 
 import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection } from "immutable";
 
-import { PrimitiveTypeKind, Type, ClassProperty } from "./Type";
+import { PrimitiveTypeKind, Type, ClassProperty, Transformation } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes } from "./TypeAttributes";
@@ -78,44 +78,57 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         return this._typeBuilder.reconstituteTypeRef(trefs);
     }
 
-    getPrimitiveType(kind: PrimitiveTypeKind): void {
-        this.registerAndAddAttributes(this.builderForNewType().getPrimitiveType(kind, this._forwardingRef));
+    getPrimitiveType(kind: PrimitiveTypeKind, transformation: Transformation | undefined): void {
+        this.registerAndAddAttributes(
+            this.builderForNewType().getPrimitiveType(kind, transformation, this._forwardingRef)
+        );
     }
 
-    getStringType(enumCases: OrderedMap<string, number> | undefined): void {
-        this.register(this.builderForNewType().getStringType(this._typeAttributes, enumCases, this._forwardingRef));
+    getStringType(enumCases: OrderedMap<string, number> | undefined, transformation: Transformation | undefined): void {
+        this.register(
+            this.builderForNewType().getStringType(this._typeAttributes, enumCases, transformation, this._forwardingRef)
+        );
     }
 
-    getEnumType(cases: OrderedSet<string>): void {
-        this.register(this.builderForNewType().getEnumType(this._typeAttributes, cases, this._forwardingRef));
+    getEnumType(cases: OrderedSet<string>, transformation: Transformation | undefined): void {
+        this.register(
+            this.builderForNewType().getEnumType(this._typeAttributes, cases, transformation, this._forwardingRef)
+        );
     }
 
     getUniqueMapType(): void {
         this.registerAndAddAttributes(this.builderForNewType().getUniqueMapType(this._forwardingRef));
     }
 
-    getMapType(values: TypeRef): void {
-        this.registerAndAddAttributes(this.builderForNewType().getMapType(values, this._forwardingRef));
+    getMapType(values: TypeRef, transformation: Transformation | undefined): void {
+        this.registerAndAddAttributes(this.builderForNewType().getMapType(values, transformation, this._forwardingRef));
     }
 
     getUniqueArrayType(): void {
         this.registerAndAddAttributes(this.builderForNewType().getUniqueArrayType(this._forwardingRef));
     }
 
-    getArrayType(items: TypeRef): void {
-        this.registerAndAddAttributes(this.builderForNewType().getArrayType(items, this._forwardingRef));
+    getArrayType(items: TypeRef, transformation: Transformation | undefined): void {
+        this.registerAndAddAttributes(
+            this.builderForNewType().getArrayType(items, transformation, this._forwardingRef)
+        );
     }
 
-    setArrayItems(items: TypeRef): void {
-        this.builderForSetting().setArrayItems(this.getResult(), items);
+    setArrayItems(items: TypeRef, transformation: Transformation | undefined): void {
+        this.builderForSetting().setArrayItems(this.getResult(), items, transformation);
     }
 
-    getObjectType(properties: OrderedMap<string, ClassProperty>, additionalProperties: TypeRef | undefined): void {
+    getObjectType(
+        properties: OrderedMap<string, ClassProperty>,
+        additionalProperties: TypeRef | undefined,
+        transformation: Transformation | undefined
+    ): void {
         this.register(
             this.builderForNewType().getUniqueObjectType(
                 this._typeAttributes,
                 properties,
                 additionalProperties,
+                transformation,
                 this._forwardingRef
             )
         );
@@ -123,61 +136,98 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
 
     getUniqueObjectType(
         properties: OrderedMap<string, ClassProperty> | undefined,
-        additionalProperties: TypeRef | undefined
+        additionalProperties: TypeRef | undefined,
+        transformation: Transformation | undefined
     ): void {
         this.register(
             this.builderForNewType().getUniqueObjectType(
                 this._typeAttributes,
                 properties,
                 additionalProperties,
+                transformation,
                 this._forwardingRef
             )
         );
     }
 
-    getClassType(properties: OrderedMap<string, ClassProperty>): void {
+    getClassType(properties: OrderedMap<string, ClassProperty>, transformation: Transformation | undefined): void {
         if (this._makeClassUnique) {
-            this.getUniqueClassType(false, properties);
+            this.getUniqueClassType(false, properties, transformation);
             return;
         }
-        this.register(this.builderForNewType().getClassType(this._typeAttributes, properties, this._forwardingRef));
+        this.register(this.builderForNewType().getClassType(this._typeAttributes, properties, transformation, this._forwardingRef));
     }
 
-    getUniqueClassType(isFixed: boolean, properties: OrderedMap<string, ClassProperty> | undefined): void {
+    getUniqueClassType(
+        isFixed: boolean,
+        properties: OrderedMap<string, ClassProperty> | undefined,
+        transformation: Transformation | undefined
+    ): void {
         this.register(
-            this.builderForNewType().getUniqueClassType(this._typeAttributes, isFixed, properties, this._forwardingRef)
+            this.builderForNewType().getUniqueClassType(
+                this._typeAttributes,
+                isFixed,
+                properties,
+                transformation,
+                this._forwardingRef
+            )
         );
     }
 
     setObjectProperties(
         properties: OrderedMap<string, ClassProperty>,
-        additionalProperties: TypeRef | undefined
+        additionalProperties: TypeRef | undefined,
+        transformation: Transformation | undefined
     ): void {
-        this.builderForSetting().setObjectProperties(this.getResult(), properties, additionalProperties);
+        this.builderForSetting().setObjectProperties(
+            this.getResult(),
+            properties,
+            additionalProperties,
+            transformation
+        );
     }
 
-    getUnionType(members: OrderedSet<TypeRef>): void {
-        this.register(this.builderForNewType().getUnionType(this._typeAttributes, members, this._forwardingRef));
+    getUnionType(members: OrderedSet<TypeRef>, transformation: Transformation | undefined): void {
+        this.register(
+            this.builderForNewType().getUnionType(this._typeAttributes, members, transformation, this._forwardingRef)
+        );
     }
 
     getUniqueUnionType(): void {
         this.register(
-            this.builderForNewType().getUniqueUnionType(this._typeAttributes, undefined, this._forwardingRef)
+            this.builderForNewType().getUniqueUnionType(
+                this._typeAttributes,
+                undefined,
+                undefined,
+                this._forwardingRef
+            )
         );
     }
 
-    getIntersectionType(members: OrderedSet<TypeRef>): void {
-        this.register(this.builderForNewType().getIntersectionType(this._typeAttributes, members, this._forwardingRef));
-    }
-
-    getUniqueIntersectionType(members?: OrderedSet<TypeRef>): void {
+    getIntersectionType(members: OrderedSet<TypeRef>, transformation: Transformation | undefined): void {
         this.register(
-            this.builderForNewType().getUniqueIntersectionType(this._typeAttributes, members, this._forwardingRef)
+            this.builderForNewType().getIntersectionType(
+                this._typeAttributes,
+                members,
+                transformation,
+                this._forwardingRef
+            )
         );
     }
 
-    setSetOperationMembers(members: OrderedSet<TypeRef>): void {
-        this.builderForSetting().setSetOperationMembers(this.getResult(), members);
+    getUniqueIntersectionType(): void {
+        this.register(
+            this.builderForNewType().getUniqueIntersectionType(
+                this._typeAttributes,
+                undefined,
+                undefined,
+                this._forwardingRef
+            )
+        );
+    }
+
+    setSetOperationMembers(members: OrderedSet<TypeRef>, transformation: Transformation | undefined): void {
+        this.builderForSetting().setSetOperationMembers(this.getResult(), members, transformation);
     }
 }
 

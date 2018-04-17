@@ -132,6 +132,9 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
                     });
                 }
             );
+            if (t.transformation !== undefined) {
+                addNames(t.transformation.targetType, names);
+            }
         }
     }
 
@@ -244,6 +247,9 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
                     members.forEach(memberType => processType(ancestorForMembers, memberType, undefined));
                 }
             );
+            if (t.transformation !== undefined) {
+                processType(ancestor, t.transformation.targetType, alternativeSuffix);
+            }
         }
     }
 

@@ -448,7 +448,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 .sortBy((_, n) => defined(names.get(defined(propertyNameds.get(n)))));
             return sortedMap.toOrderedSet();
         }
-        return t.children.toOrderedSet();
+        return t.getChildren();
     };
 
     protected get namedUnions(): OrderedSet<UnionType> {
@@ -897,7 +897,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         function visit(t: Type) {
             if (visitedTypes.has(t)) return;
-            queue.push(...t.children.toArray());
+            queue.push(...t.getChildren().toArray());
             visitedTypes = visitedTypes.add(t);
             processed = processed.add(process(t));
         }

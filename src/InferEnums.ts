@@ -34,15 +34,15 @@ function replaceString(
     const attributes = t.getAttributes();
     const maybeEnumCases = shouldBeEnum(t);
     if (maybeEnumCases !== undefined) {
-        return builder.getEnumType(attributes, maybeEnumCases.keySeq().toOrderedSet(), forwardingRef);
+        return builder.getEnumType(attributes, maybeEnumCases.keySeq().toOrderedSet(), undefined, forwardingRef);
     }
-    return builder.getStringType(attributes, undefined, forwardingRef);
+    return builder.getStringType(attributes, undefined, undefined, forwardingRef);
 }
 
 // A union needs replacing if it contains more than one string type, one of them being
 // a basic string type.
 function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {
-    const stringMembers = u.stringTypeMembers;
+    const stringMembers = u.stringTypeMembers.filter(t => t.transformation === undefined);
     if (stringMembers.size <= 1) return undefined;
     if (u.findMember("string") === undefined) return undefined;
     return stringMembers;
@@ -63,11 +63,12 @@ function replaceUnion(group: Set<UnionType>, builder: GraphRewriteBuilder<UnionT
         return builder.getStringType(
             combineTypeAttributes(stringAttributes, u.getAttributes()),
             undefined,
+            undefined,
             forwardingRef
         );
     }
     types.push(builder.getStringType(stringAttributes, undefined));
-    return builder.getUnionType(u.getAttributes(), OrderedSet(types), forwardingRef);
+    return builder.getUnionType(u.getAttributes(), OrderedSet(types), undefined, forwardingRef);
 }
 
 export function inferEnums(
@@ -77,7 +78,7 @@ export function inferEnums(
 ): TypeGraph {
     const allStrings = graph
         .allTypesUnordered()
-        .filter(t => t instanceof StringType)
+        .filter(t => t instanceof StringType && t.transformation === undefined)
         .map(t => [t])
         .toArray() as StringType[][];
     return graph.rewrite("infer enums", stringTypeMapping, false, allStrings, debugPrintReconstitution, replaceString);

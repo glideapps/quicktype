@@ -233,6 +233,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
     // There is a method analogous to this in the IntersectionAccumulator.  It might
     // make sense to find a common interface.
     private addType(t: Type, attributes: TypeAttributes): void {
+        assert(t.transformation === undefined, "We don't support transformations in unions yet");
         matchTypeExhaustive(
             t,
             _noneType => this.addNone(attributes),
@@ -309,11 +310,11 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             case "date":
             case "time":
             case "date-time":
-                const t = this.typeBuilder.getPrimitiveType(kind, forwardingRef);
+                const t = this.typeBuilder.getPrimitiveType(kind, undefined, forwardingRef);
                 this.typeBuilder.addAttributes(t, typeAttributes);
                 return t;
             case "string":
-                return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
+                return this.typeBuilder.getStringType(typeAttributes, undefined, undefined, forwardingRef);
             case "enum":
                 return this.makeEnum(typeProvider.enumCases, typeProvider.enumCaseMap, typeAttributes, forwardingRef);
             case "object":
@@ -321,7 +322,13 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             case "array":
                 return this.makeArray(typeProvider.arrayData, typeAttributes, forwardingRef);
             default:
-                if (kind === "union" || kind === "class" || kind === "map" || kind === "intersection") {
+                if (
+                    kind === "union" ||
+                    kind === "class" ||
+                    kind === "map" ||
+                    kind === "intersection" ||
+                    kind === "transformed"
+                ) {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
                 }
                 return assertNever(kind);
@@ -348,7 +355,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
         }
 
         const union = unique
-            ? this.typeBuilder.getUniqueUnionType(typeAttributes, undefined, forwardingRef)
+            ? this.typeBuilder.getUniqueUnionType(typeAttributes, undefined, undefined, forwardingRef)
             : undefined;
 
         const types: TypeRef[] = [];
@@ -360,7 +367,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             this.typeBuilder.setSetOperationMembers(union, typesSet);
             return union;
         } else {
-            return this.typeBuilder.getUnionType(typeAttributes, typesSet, forwardingRef);
+            return this.typeBuilder.getUnionType(typeAttributes, typesSet, undefined, forwardingRef);
         }
     }
 }
