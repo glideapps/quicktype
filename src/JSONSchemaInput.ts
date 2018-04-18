@@ -10,7 +10,6 @@ import {
     panic,
     assertNever,
     StringMap,
-    checkStringMap,
     assert,
     defined,
     addHashCode,
@@ -77,13 +76,22 @@ function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props
     return Object.assign({ ref }, props === undefined ? {} : props);
 }
 
+export function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): StringMap {
+    if (Array.isArray(x)) {
+        return messageError(ErrorMessage.SchemaArrayIsInvalidSchema, withRef(refOrLoc));
+    }
+    if (x === null) {
+        return messageError(ErrorMessage.SchemaNullIsInvalidSchema, withRef(refOrLoc));
+    }
+    if (typeof x !== "object") {
+        return messageError(ErrorMessage.SchemaInvalidJSONSchemaType, withRef(refOrLoc, { type: typeof x }));
+    }
+    return x;
+}
+
 export function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema {
     if (typeof x === "boolean") return x;
-    if (Array.isArray(x)) return messageError(ErrorMessage.SchemaArrayIsInvalidSchema, withRef(refOrLoc));
-    if (x === null) return messageError(ErrorMessage.SchemaNullIsInvalidSchema, withRef(refOrLoc));
-    if (typeof x !== "object")
-        return messageError(ErrorMessage.SchemaInvalidJSONSchemaType, withRef(refOrLoc, { type: typeof x }));
-    return x;
+    return checkJSONSchemaObject(x, refOrLoc);
 }
 
 const numberRegexp = new RegExp("^[0-9]+$");
@@ -268,7 +276,7 @@ export class Ref {
                     if (!lodash.has(local, [key])) {
                         return messageError(ErrorMessage.SchemaKeyNotInObject, withRef(refMaker, { key }));
                     }
-                    return this.lookup(checkStringMap(local)[first.key], rest, root);
+                    return this.lookup(checkJSONSchemaObject(local, refMaker)[first.key], rest, root);
                 }
             case PathElementKind.Type:
                 return panic('Cannot look up path that indexes "type"');
@@ -600,14 +608,14 @@ export async function addTypesInSchema(
             let itemType: TypeRef;
             if (Array.isArray(items)) {
                 const itemsLoc = loc.push("items");
-                const itemTypes = await mapSync(
-                    items,
-                    async (item, i) =>
-                        await toType(checkStringMap(item), itemsLoc.push(i.toString()), singularAttributes)
-                );
+                const itemTypes = await mapSync(items, async (item, i) => {
+                    const itemLoc = itemsLoc.push(i.toString());
+                    return await toType(checkJSONSchema(item, itemLoc.canonicalRef), itemLoc, singularAttributes);
+                });
                 itemType = typeBuilder.getUnionType(emptyTypeAttributes, OrderedSet(itemTypes));
             } else if (typeof items === "object") {
-                itemType = await toType(checkStringMap(items), loc.push("items"), singularAttributes);
+                const itemsLoc = loc.push("items");
+                itemType = await toType(checkJSONSchema(items, itemsLoc.canonicalRef), itemsLoc, singularAttributes);
             } else if (items !== undefined) {
                 return messageError(ErrorMessage.SchemaArrayItemsMustBeStringOrArray, withRef(loc, { actual: items }));
             } else {
@@ -629,7 +637,7 @@ export async function addTypesInSchema(
             if (schema.properties === undefined) {
                 properties = {};
             } else {
-                properties = checkStringMap(schema.properties);
+                properties = checkJSONSchemaObject(schema.properties, loc.canonicalRef);
             }
 
             const additionalProperties = schema.additionalProperties;
@@ -646,15 +654,14 @@ export async function addTypesInSchema(
                 );
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
-            return await mapSync(
-                cases,
-                async (t, index) =>
-                    await toType(
-                        checkStringMap(t),
-                        kindLoc.push(index.toString()),
-                        makeTypeAttributesInferred(typeAttributes)
-                    )
-            );
+            return await mapSync(cases, async (t, index) => {
+                const caseLoc = kindLoc.push(index.toString());
+                return await toType(
+                    checkJSONSchema(t, caseLoc.canonicalRef),
+                    caseLoc,
+                    makeTypeAttributesInferred(typeAttributes)
+                );
+            });
         }
 
         async function convertOneOrAnyOf(cases: any, kind: string): Promise<TypeRef> {
