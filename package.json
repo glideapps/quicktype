@@ -34,7 +34,7 @@
     "stream-json": "0.5.2",
     "string-to-stream": "^1.1.0",
     "typescript": "~2.6.2",
-    "typescript-json-schema": "quicktype/typescript-json-schema#dfa55501e27caec9ac3abf6b6f8b4407498c3bab",
+    "typescript-json-schema": "quicktype/typescript-json-schema#29f0fc29ed44835009377335e512acf75a5e383b",
     "unicode-properties": "quicktype/unicode-properties#dist",
     "universal-analytics": "^0.4.16",
     "urijs": "^1.19.1",
