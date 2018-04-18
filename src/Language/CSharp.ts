@@ -171,7 +171,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return ["QuickType", "Type", "System", "Console", "Exception"];
+        return ["QuickType", "Type", "System", "Console", "Exception", "DateTimeOffset"];
     }
 
     protected forbiddenForObjectProperties(_: ClassType, classNamed: Name): ForbiddenWordsInfo {
@@ -253,7 +253,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 return this.nameForNamedType(unionType);
             },
             {
-                dateTimeType: _ => "System.DateTimeOffset"
+                dateTimeType: _ => "DateTimeOffset"
             }
         );
     }
@@ -753,8 +753,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                             this.emitLine("return;");
                         });
                     } else if (t.kind === "date-time") {
-                        this.emitLine("System.DateTimeOffset  dt;");
-                        this.emitLine("if (System.DateTimeOffset .TryParse(str, out dt))");
+                        this.emitLine("DateTimeOffset  dt;");
+                        this.emitLine("if (DateTimeOffset.TryParse(str, out dt))");
                         this.emitBlock(() => {
                             this.emitLine(fieldName, " = dt;");
                             this.emitLine("return;");
