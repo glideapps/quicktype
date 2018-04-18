@@ -19,7 +19,7 @@ import {
 } from "./Type";
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
-import { TypeAttributes, combineTypeAttributes, TypeAttributeKind } from "./TypeAttributes";
+import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic, setUnion, mapOptional } from "./Support";
 
 export class TypeRef {
@@ -109,7 +109,7 @@ export class TypeBuilder {
         const tref = new TypeRef(this.typeGraph, index);
         const attributes: TypeAttributes = this._addProvenanceAttributes
             ? provenanceTypeAttributeKind.makeAttributes(Set([tref]))
-            : Map();
+            : emptyTypeAttributes;
         this.typeAttributes.push(attributes);
         return tref;
     }
@@ -148,10 +148,7 @@ export class TypeBuilder {
         return [maybeType, maybeNames];
     }
 
-    addAttributes(tref: TypeRef, attributes: TypeAttributes | undefined): void {
-        if (attributes === undefined) {
-            attributes = Map();
-        }
+    addAttributes(tref: TypeRef, attributes: TypeAttributes): void {
         const index = tref.index;
         this.typeAttributes[index] = combineTypeAttributes(this.typeAttributes[index], attributes);
     }
@@ -246,7 +243,9 @@ export class TypeBuilder {
             } else {
                 result = this.forwardIfNecessary(forwardingRef, this._noEnumStringType);
             }
-            this.addAttributes(this._noEnumStringType, attributes);
+            if (attributes !== undefined) {
+                this.addAttributes(this._noEnumStringType, attributes);
+            }
             return result;
         }
         return this.addType(forwardingRef, tr => new StringType(tr, cases), attributes);

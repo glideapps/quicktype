@@ -16,7 +16,9 @@ import {
     mapSync,
     forEachSync,
     checkArray,
-    mapOptional
+    mapOptional,
+    isStringMap,
+    checkStringMap
 } from "./Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import { TypeNames } from "./TypeNames";
@@ -31,10 +33,10 @@ import {
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import {
     accessorNamesTypeAttributeKind,
-    checkAccessorNames,
     makeUnionIdentifierAttribute,
-    isAccessorEntry,
-    makeUnionMemberNamesAttribute
+    makeUnionMemberNamesAttribute,
+    AccessorNames,
+    AccessorEntry
 } from "./AccessorNames";
 import { ErrorMessage, messageAssert, messageError } from "./Messages";
 
@@ -438,10 +440,28 @@ function makeAttributes(schema: StringMap, loc: Location, attributes: TypeAttrib
     });
 }
 
+function isAccessorEntry(x: any): x is string | { [language: string]: string } {
+    if (typeof x === "string") {
+        return true;
+    }
+    return isStringMap(x, (v: any): v is string => typeof v === "string");
+}
+
+function makeAccessorEntry(ae: string | { [language: string]: string }): AccessorEntry {
+    if (typeof ae === "string") return ae;
+    return Map(ae);
+}
+
+function makeAccessorNames(x: any): AccessorNames {
+    // FIXME: Do proper error reporting
+    const stringMap = checkStringMap(x, isAccessorEntry);
+    return Map(stringMap).map(makeAccessorEntry);
+}
+
 function makeNonUnionAccessorAttributes(schema: StringMap): TypeAttributes | undefined {
     const maybeAccessors = schema["qt-accessors"];
     if (maybeAccessors === undefined) return undefined;
-    return accessorNamesTypeAttributeKind.makeAttributes(checkAccessorNames(maybeAccessors));
+    return accessorNamesTypeAttributeKind.makeAttributes(makeAccessorNames(maybeAccessors));
 }
 
 function checkTypeList(typeOrTypes: any, loc: Location): OrderedSet<string> {
@@ -682,7 +702,7 @@ export async function addTypesInSchema(
                 for (let i = 0; i < typeRefs.length; i++) {
                     typeBuilder.addAttributes(
                         typeRefs[i],
-                        makeUnionMemberNamesAttribute(identifierAttribute, accessors[i])
+                        makeUnionMemberNamesAttribute(identifierAttribute, makeAccessorEntry(accessors[i]))
                     );
                 }
             }

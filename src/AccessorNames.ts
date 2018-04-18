@@ -3,13 +3,13 @@
 import { Map, Set } from "immutable";
 
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
-import { checkStringMap, isStringMap, defined } from "./Support";
+import { defined } from "./Support";
 import { EnumType, UnionType, Type, ObjectType } from "./Type";
 import { messageAssert, ErrorMessage } from "./Messages";
 
-export type AccessorEntry = string | { [language: string]: string };
+export type AccessorEntry = string | Map<string, string>;
 
-export type AccessorNames = { [key: string]: AccessorEntry };
+export type AccessorNames = Map<string, AccessorEntry>;
 
 export const accessorNamesTypeAttributeKind = new TypeAttributeKind<AccessorNames>(
     "accessorNames",
@@ -18,34 +18,23 @@ export const accessorNamesTypeAttributeKind = new TypeAttributeKind<AccessorName
     undefined
 );
 
-export function isAccessorEntry(x: any): x is AccessorEntry {
-    if (typeof x === "string") {
-        return true;
-    }
-    return isStringMap(x, (v: any): v is string => typeof v === "string");
-}
-
-export function checkAccessorNames(x: any): AccessorNames {
-    return checkStringMap(x, isAccessorEntry);
-}
-
 // Returns [name, isFixed].
 function getFromEntry(entry: AccessorEntry, language: string): [string, boolean] | undefined {
     if (typeof entry === "string") return [entry, false];
 
-    const maybeForLanguage = entry[language];
+    const maybeForLanguage = entry.get(language);
     if (maybeForLanguage !== undefined) return [maybeForLanguage, true];
 
-    const maybeWildcard = entry["*"];
+    const maybeWildcard = entry.get("*");
     if (maybeWildcard !== undefined) return [maybeWildcard, false];
 
     return undefined;
 }
 
 function lookupKey(accessors: AccessorNames, key: string, language: string): [string, boolean] | undefined {
-    if (!Object.prototype.hasOwnProperty.call(accessors, key)) return undefined;
-
-    return getFromEntry(accessors[key], language);
+    const entry = accessors.get(key);
+    if (entry === undefined) return undefined;
+    return getFromEntry(entry, language);
 }
 
 export function objectPropertyNames(o: ObjectType, language: string): Map<string, [string, boolean] | undefined> {
@@ -71,6 +60,13 @@ export function getAccessorName(
     return maybeName;
 }
 
+// Union members can be recombined and reordered, and unions are combined as well, so
+// we can't just store an array of accessor entries in a union, one array entry for each
+// union member.  Instead, we give each union in the origin type graph a union identifier,
+// and each union member type gets a map from union identifiers to accessor entries.
+// That way, no matter how the types are recombined, if we find a union member, we can look
+// up its union's identifier(s), and then look up the member's accessor entries for that
+// identifier.  Of course we might find more than one, potentially conflicting.
 export const unionIdentifierTypeAttributeKind = new TypeAttributeKind<Set<number>>(
     "unionIdentifier",
     (a, b) => a.union(b),
