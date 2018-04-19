@@ -237,6 +237,7 @@ export function typeNamesUnion(c: Collection<any, TypeNames>): TypeNames {
 
 export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>(
     "names",
+    false,
     (a, b) => a.add(b),
     a => a.makeInferred(),
     a => a.toString()

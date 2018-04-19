@@ -73,6 +73,7 @@ export function getAccessorName(
 
 export const unionIdentifierTypeAttributeKind = new TypeAttributeKind<Set<number>>(
     "unionIdentifier",
+    true,
     (a, b) => a.union(b),
     _ => undefined,
     undefined
@@ -88,6 +89,7 @@ export function makeUnionIdentifierAttribute(): TypeAttributes {
 
 export const unionMemberNamesTypeAttributeKind = new TypeAttributeKind<Map<number, AccessorEntry>>(
     "unionMemberNames",
+    true,
     (a, b) => a.merge(b),
     _ => undefined,
     undefined

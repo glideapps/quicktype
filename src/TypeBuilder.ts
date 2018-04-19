@@ -66,6 +66,7 @@ function provenanceToString(p: Set<TypeRef>): string {
 // non-inferred form in the final graph.
 export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>(
     "provenance",
+    false,
     setUnion,
     a => a,
     provenanceToString
