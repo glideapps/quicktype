@@ -865,7 +865,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         // FIXME: Make Converter a Named
         let converterName: Sourcelike = ["Converter"];
         if (jsonConverter) converterName = converterName.concat([": JsonConverter"]);
-        this.emitType(undefined, AccessModifier.Internal, "class", converterName, undefined, () => {
+        const staticOrNot = jsonConverter ? "" : "static ";
+        this.emitType(undefined, AccessModifier.Internal, [staticOrNot, "class"], converterName, undefined, () => {
             if (jsonConverter) {
                 this.emitConverterMembers();
                 this.ensureBlankLine();
