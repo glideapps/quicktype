@@ -28,8 +28,16 @@ function typeSetsCanBeCombined(s1: OrderedSet<Type>, s2: OrderedSet<Type>): bool
     return s1.every(t => {
         const kind = t.kind;
         const other = s2ByKind.get(kind);
-        if (other === undefined) return false;
-        return t.structurallyCompatible(other);
+        if (other !== undefined) {
+            return t.structurallyCompatible(other);
+        }
+        if (kind === "integer") {
+            return s2ByKind.get("double") !== undefined;
+        }
+        if (kind === "double") {
+            return s2ByKind.get("integer") !== undefined;
+        }
+        return false;
     });
 }
 
