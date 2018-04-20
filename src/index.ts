@@ -221,7 +221,7 @@ export class Run {
                 graph,
                 stringTypeMapping,
                 this._options.alphabetizeProperties,
-                conflateNumbers,
+                true,
                 false,
                 debugPrintReconstitution
             );
@@ -232,7 +232,7 @@ export class Run {
                     combinedGraph,
                     stringTypeMapping,
                     this._options.alphabetizeProperties,
-                    conflateNumbers,
+                    false,
                     true,
                     debugPrintReconstitution
                 );
