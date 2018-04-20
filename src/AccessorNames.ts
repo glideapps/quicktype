@@ -13,6 +13,7 @@ export type AccessorNames = Map<string, AccessorEntry>;
 
 export const accessorNamesTypeAttributeKind = new TypeAttributeKind<AccessorNames>(
     "accessorNames",
+    false,
     undefined,
     _ => undefined,
     undefined
@@ -69,6 +70,7 @@ export function getAccessorName(
 // identifier.  Of course we might find more than one, potentially conflicting.
 export const unionIdentifierTypeAttributeKind = new TypeAttributeKind<Set<number>>(
     "unionIdentifier",
+    false,
     (a, b) => a.union(b),
     _ => undefined,
     undefined
@@ -84,6 +86,7 @@ export function makeUnionIdentifierAttribute(): TypeAttributes {
 
 export const unionMemberNamesTypeAttributeKind = new TypeAttributeKind<Map<number, AccessorEntry>>(
     "unionMemberNames",
+    false,
     (a, b) => a.merge(b),
     _ => undefined,
     undefined

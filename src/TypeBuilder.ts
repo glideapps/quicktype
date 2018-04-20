@@ -63,6 +63,7 @@ function provenanceToString(p: Set<TypeRef>): string {
 // non-inferred form in the final graph.
 export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>(
     "provenance",
+    false,
     setUnion,
     a => a,
     provenanceToString
@@ -157,6 +158,7 @@ export class TypeBuilder {
     }
 
     addAttributes(tref: TypeRef, attributes: TypeAttributes): void {
+        assert(attributes.every((_, k) => !k.inIdentity), "Can't add identity type attributes to an existing type");
         const index = tref.index;
         this.typeAttributes[index] = combineTypeAttributes(this.typeAttributes[index], attributes);
     }
@@ -241,10 +243,10 @@ export class TypeBuilder {
         if (kind === "time") kind = this._stringTypeMapping.time;
         if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
         if (kind === "string") {
-            return this.getStringType(undefined, undefined, forwardingRef);
+            return this.getStringType(emptyTypeAttributes, undefined, forwardingRef);
         }
         return this.getOrAddType(
-            primitiveTypeIdentity(kind),
+            primitiveTypeIdentity(kind, emptyTypeAttributes),
             tr => new PrimitiveType(tr, kind),
             undefined,
             forwardingRef
@@ -252,15 +254,25 @@ export class TypeBuilder {
     }
 
     getStringType(
-        attributes: TypeAttributes | undefined,
+        attributes: TypeAttributes,
         cases: OrderedMap<string, number> | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
-        return this.getOrAddType(stringTypeIdentity(cases), tr => new StringType(tr, cases), attributes, forwardingRef);
+        return this.getOrAddType(
+            stringTypeIdentity(attributes, cases),
+            tr => new StringType(tr, cases),
+            attributes,
+            forwardingRef
+        );
     }
 
     getEnumType(attributes: TypeAttributes, cases: OrderedSet<string>, forwardingRef?: TypeRef): TypeRef {
-        return this.getOrAddType(enumTypeIdentity(cases), tr => new EnumType(tr, cases), attributes, forwardingRef);
+        return this.getOrAddType(
+            enumTypeIdentity(attributes, cases),
+            tr => new EnumType(tr, cases),
+            attributes,
+            forwardingRef
+        );
     }
 
     getUniqueObjectType(
@@ -282,7 +294,12 @@ export class TypeBuilder {
     }
 
     getMapType(values: TypeRef, forwardingRef?: TypeRef): TypeRef {
-        return this.getOrAddType(mapTypeIdentify(values), tr => new MapType(tr, values), undefined, forwardingRef);
+        return this.getOrAddType(
+            mapTypeIdentify(emptyTypeAttributes, values),
+            tr => new MapType(tr, values),
+            undefined,
+            forwardingRef
+        );
     }
 
     setObjectProperties(
@@ -303,7 +320,12 @@ export class TypeBuilder {
     }
 
     getArrayType(items: TypeRef, forwardingRef?: TypeRef): TypeRef {
-        return this.getOrAddType(arrayTypeIdentity(items), tr => new ArrayType(tr, items), undefined, forwardingRef);
+        return this.getOrAddType(
+            arrayTypeIdentity(emptyTypeAttributes, items),
+            tr => new ArrayType(tr, items),
+            undefined,
+            forwardingRef
+        );
     }
 
     setArrayItems(ref: TypeRef, items: TypeRef): void {
@@ -332,7 +354,7 @@ export class TypeBuilder {
     ): TypeRef {
         properties = this.modifyPropertiesIfNecessary(properties);
         return this.getOrAddType(
-            classTypeIdentity(properties),
+            classTypeIdentity(attributes, properties),
             tr => new ClassType(tr, false, properties),
             attributes,
             forwardingRef
@@ -353,7 +375,7 @@ export class TypeBuilder {
 
     getUnionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            unionTypeIdentity(members),
+            unionTypeIdentity(attributes, members),
             tr => new UnionType(tr, members),
             attributes,
             forwardingRef
@@ -371,7 +393,7 @@ export class TypeBuilder {
 
     getIntersectionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            intersectionTypeIdentity(members),
+            intersectionTypeIdentity(attributes, members),
             tr => new IntersectionType(tr, members),
             attributes,
             forwardingRef

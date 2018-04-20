@@ -186,8 +186,12 @@ export abstract class Type {
     }
 }
 
-export function primitiveTypeIdentity(kind: PrimitiveTypeKind): List<any> {
-    return List([kind]);
+function identityAttributes(attributes: TypeAttributes): TypeAttributes {
+    return attributes.filter((_, kind) => kind.inIdentity);
+}
+
+export function primitiveTypeIdentity(kind: PrimitiveTypeKind, attributes: TypeAttributes): List<any> {
+    return List([kind, identityAttributes(attributes)]);
 }
 
 export class PrimitiveType extends Type {
@@ -214,7 +218,7 @@ export class PrimitiveType extends Type {
     }
 
     get identity(): List<any> | undefined {
-        return primitiveTypeIdentity(this.kind);
+        return primitiveTypeIdentity(this.kind, this.getAttributes());
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -230,10 +234,13 @@ export class PrimitiveType extends Type {
     }
 }
 
-export function stringTypeIdentity(enumCases: OrderedMap<string, number> | undefined): List<any> | undefined {
+export function stringTypeIdentity(
+    attributes: TypeAttributes,
+    enumCases: OrderedMap<string, number> | undefined
+): List<any> | undefined {
     if (enumCases !== undefined) return undefined;
     // mapOptional(ec => ec.keySeq().toSet(), enumCases)
-    return List(["string"]);
+    return List(["string", identityAttributes(attributes)]);
 }
 
 export class StringType extends PrimitiveType {
@@ -242,7 +249,7 @@ export class StringType extends PrimitiveType {
     }
 
     get identity(): List<any> | undefined {
-        return stringTypeIdentity(this.enumCases);
+        return stringTypeIdentity(this.getAttributes(), this.enumCases);
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -265,8 +272,8 @@ export class StringType extends PrimitiveType {
     }
 }
 
-export function arrayTypeIdentity(itemsRef: TypeRef): List<any> {
-    return List(["array", itemsRef]);
+export function arrayTypeIdentity(attributes: TypeAttributes, itemsRef: TypeRef): List<any> {
+    return List(["array", identityAttributes(attributes), itemsRef]);
 }
 
 export class ArrayType extends Type {
@@ -308,7 +315,7 @@ export class ArrayType extends Type {
     }
 
     get identity(): List<any> {
-        return arrayTypeIdentity(this.getItemsRef());
+        return arrayTypeIdentity(this.getAttributes(), this.getItemsRef());
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -362,18 +369,22 @@ export class ClassProperty extends GenericClassProperty<TypeRef> {
 
 function objectTypeIdentify(
     kind: ObjectTypeKind,
+    attributes: TypeAttributes,
     properties: OrderedMap<string, ClassProperty>,
     additionalPropertiesRef: TypeRef | undefined
 ): List<any> {
-    return List([kind, properties.toMap(), additionalPropertiesRef]);
+    return List([kind, identityAttributes(attributes), properties.toMap(), additionalPropertiesRef]);
 }
 
-export function classTypeIdentity(properties: OrderedMap<string, ClassProperty>): List<any> {
-    return objectTypeIdentify("class", properties, undefined);
+export function classTypeIdentity(
+    attributes: TypeAttributes,
+    properties: OrderedMap<string, ClassProperty>
+): List<any> {
+    return objectTypeIdentify("class", attributes, properties, undefined);
 }
 
-export function mapTypeIdentify(additionalPropertiesRef: TypeRef | undefined): List<any> {
-    return objectTypeIdentify("map", OrderedMap(), additionalPropertiesRef);
+export function mapTypeIdentify(attributes: TypeAttributes, additionalPropertiesRef: TypeRef | undefined): List<any> {
+    return objectTypeIdentify("map", attributes, OrderedMap(), additionalPropertiesRef);
 }
 
 export class ObjectType extends Type {
@@ -459,7 +470,12 @@ export class ObjectType extends Type {
 
     get identity(): List<any> | undefined {
         if (this.isFixed) return undefined;
-        return objectTypeIdentify(this.kind, this.getProperties(), this.getAdditionalPropertiesRef());
+        return objectTypeIdentify(
+            this.kind,
+            this.getAttributes(),
+            this.getProperties(),
+            this.getAdditionalPropertiesRef()
+        );
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -565,8 +581,8 @@ export class MapType extends ObjectType {
     }
 }
 
-export function enumTypeIdentity(cases: OrderedSet<string>): List<any> {
-    return List([cases.toSet()]);
+export function enumTypeIdentity(attributes: TypeAttributes, cases: OrderedSet<string>): List<any> {
+    return List(["enum", identityAttributes(attributes), cases.toSet()]);
 }
 
 export class EnumType extends Type {
@@ -590,7 +606,7 @@ export class EnumType extends Type {
     }
 
     get identity(): List<any> {
-        return enumTypeIdentity(this.cases);
+        return enumTypeIdentity(this.getAttributes(), this.cases);
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -626,16 +642,20 @@ export function setOperationCasesEqual(
     });
 }
 
-export function setOperationTypeIdentity(kind: TypeKind, memberRefs: OrderedSet<TypeRef>): List<any> {
-    return List([kind, memberRefs.toSet()]);
+export function setOperationTypeIdentity(
+    kind: TypeKind,
+    attributes: TypeAttributes,
+    memberRefs: OrderedSet<TypeRef>
+): List<any> {
+    return List([kind, identityAttributes(attributes), memberRefs.toSet()]);
 }
 
-export function unionTypeIdentity(memberRefs: OrderedSet<TypeRef>): List<any> {
-    return setOperationTypeIdentity("union", memberRefs);
+export function unionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): List<any> {
+    return setOperationTypeIdentity("union", attributes, memberRefs);
 }
 
-export function intersectionTypeIdentity(memberRefs: OrderedSet<TypeRef>): List<any> {
-    return setOperationTypeIdentity("intersection", memberRefs);
+export function intersectionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): List<any> {
+    return setOperationTypeIdentity("intersection", attributes, memberRefs);
 }
 
 export abstract class SetOperationType extends Type {
@@ -675,7 +695,7 @@ export abstract class SetOperationType extends Type {
     }
 
     get identity(): List<any> {
-        return setOperationTypeIdentity(this.kind, this.getMemberRefs());
+        return setOperationTypeIdentity(this.kind, this.getAttributes(), this.getMemberRefs());
     }
 
     protected structuralEqualityStep(

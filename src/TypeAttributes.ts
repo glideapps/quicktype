@@ -3,6 +3,7 @@
 import { Map, OrderedSet, hash } from "immutable";
 
 import { panic, setUnion } from "./Support";
+
 export class TypeAttributeKind<T> {
     public readonly combine: (a: T, b: T) => T;
     public readonly makeInferred: (a: T) => T | undefined;
@@ -10,6 +11,7 @@ export class TypeAttributeKind<T> {
 
     constructor(
         readonly name: string,
+        readonly inIdentity: boolean,
         combine: ((a: T, b: T) => T) | undefined,
         makeInferred: ((a: T) => T | undefined) | undefined,
         stringify: ((a: T) => string | undefined) | undefined
@@ -106,6 +108,7 @@ export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes
 
 export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>(
     "description",
+    false,
     setUnion,
     _ => OrderedSet(),
     descriptions => {
@@ -122,6 +125,7 @@ export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<str
 );
 export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, OrderedSet<string>>>(
     "propertyDescriptions",
+    false,
     (a, b) => a.mergeWith(setUnion, b),
     _ => Map(),
     undefined

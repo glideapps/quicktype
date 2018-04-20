@@ -46,21 +46,24 @@ function splitDescription(descriptions: OrderedSet<string> | undefined): string[
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
 
-const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName", undefined, undefined, undefined);
+const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName", false, undefined, undefined, undefined);
 const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
     "assignedPropertyNames",
+    false,
     undefined,
     undefined,
     undefined
 );
 const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>(
     "assignedMemberNames",
+    false,
     undefined,
     undefined,
     undefined
 );
 const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
     "assignedCaseNames",
+    false,
     undefined,
     undefined,
     undefined
