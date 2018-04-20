@@ -243,7 +243,7 @@ export class Run {
         }
         graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution);
         if (this._options.inferMaps) {
-            graph = inferMaps(graph, stringTypeMapping, conflateNumbers, debugPrintReconstitution);
+            graph = inferMaps(graph, stringTypeMapping, true, debugPrintReconstitution);
         }
         graph = noneToAny(graph, stringTypeMapping, debugPrintReconstitution);
         if (!targetLanguage.supportsOptionalClassProperties) {
