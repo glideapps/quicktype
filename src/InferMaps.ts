@@ -72,7 +72,7 @@ function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefi
             if (firstNonNullCases !== undefined) {
                 // The set of non-null cases for all other properties must
                 // be the the same, otherwise we won't infer a map.
-                if (!setOperationCasesEqual(nn, firstNonNullCases, (a, b) => a.structurallyCompatible(b))) {
+                if (!setOperationCasesEqual(nn, firstNonNullCases, true, (a, b) => a.structurallyCompatible(b, true))) {
                     canBeMap = false;
                     return false;
                 }

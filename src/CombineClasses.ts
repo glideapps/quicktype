@@ -2,7 +2,7 @@
 
 import { Map, Set, OrderedSet } from "immutable";
 
-import { ClassType, Type, ClassProperty } from "./Type";
+import { ClassType, Type, ClassProperty, setOperationCasesEqual } from "./Type";
 import { nonNullTypeCases, combineTypeAttributesOfTypes } from "./TypeUtils";
 
 import { TypeRef, StringTypeMapping } from "./TypeBuilder";
@@ -22,15 +22,7 @@ type Clique = {
 // enums with strings, integers with doubles, maps with objects of
 // the correct type.
 function typeSetsCanBeCombined(s1: OrderedSet<Type>, s2: OrderedSet<Type>): boolean {
-    if (s1.size !== s2.size) return false;
-
-    const s2ByKind = Map(s2.map((t): [string, Type] => [t.kind, t]));
-    return s1.every(t => {
-        const kind = t.kind;
-        const other = s2ByKind.get(kind);
-        if (other === undefined) return false;
-        return t.structurallyCompatible(other);
-    });
+    return setOperationCasesEqual(s1, s2, true, (a, b) => a.structurallyCompatible(b, true));
 }
 
 function canBeCombined(c1: ClassType, c2: ClassType, onlyWithSameProperties: boolean): boolean {

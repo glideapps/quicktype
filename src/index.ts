@@ -221,7 +221,7 @@ export class Run {
                 graph,
                 stringTypeMapping,
                 this._options.alphabetizeProperties,
-                conflateNumbers,
+                true,
                 false,
                 debugPrintReconstitution
             );
@@ -232,7 +232,7 @@ export class Run {
                     combinedGraph,
                     stringTypeMapping,
                     this._options.alphabetizeProperties,
-                    conflateNumbers,
+                    false,
                     true,
                     debugPrintReconstitution
                 );
@@ -243,7 +243,7 @@ export class Run {
         }
         graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution);
         if (this._options.inferMaps) {
-            graph = inferMaps(graph, stringTypeMapping, conflateNumbers, debugPrintReconstitution);
+            graph = inferMaps(graph, stringTypeMapping, true, debugPrintReconstitution);
         }
         graph = noneToAny(graph, stringTypeMapping, debugPrintReconstitution);
         if (!targetLanguage.supportsOptionalClassProperties) {

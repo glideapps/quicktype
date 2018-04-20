@@ -89,11 +89,23 @@ export abstract class Type {
 
     // This will only ever be called when `this` and `other` are not
     // equal, but `this.kind === other.kind`.
-    protected abstract structuralEqualityStep(other: Type, queue: (a: Type, b: Type) => boolean): boolean;
+    protected abstract structuralEqualityStep(
+        other: Type,
+        conflateNumbers: boolean,
+        queue: (a: Type, b: Type) => boolean
+    ): boolean;
 
-    structurallyCompatible(other: Type): boolean {
+    structurallyCompatible(other: Type, conflateNumbers: boolean = false): boolean {
+        function kindsCompatible(kind1: TypeKind, kind2: TypeKind): boolean {
+            if (kind1 === kind2) return true;
+            if (!conflateNumbers) return false;
+            if (kind1 === "integer") return kind2 === "double";
+            if (kind1 === "double") return kind2 === "integer";
+            return false;
+        }
+
         if (triviallyStructurallyCompatible(this, other)) return true;
-        if (this.kind !== other.kind) return false;
+        if (!kindsCompatible(this.kind, other.kind)) return false;
 
         const workList: [Type, Type][] = [[this, other]];
         // This contains a set of pairs which are the type pairs
@@ -104,7 +116,7 @@ export abstract class Type {
         let failed: boolean;
         const queue = (x: Type, y: Type): boolean => {
             if (triviallyStructurallyCompatible(x, y)) return true;
-            if (x.kind !== y.kind) {
+            if (!kindsCompatible(x.kind, y.kind)) {
                 failed = true;
                 return false;
             }
@@ -134,7 +146,7 @@ export abstract class Type {
             }
 
             failed = false;
-            if (!a.structuralEqualityStep(b, queue)) return false;
+            if (!a.structuralEqualityStep(b, conflateNumbers, queue)) return false;
             if (failed) return false;
         }
 
@@ -198,7 +210,11 @@ export class PrimitiveType extends Type {
         builder.getPrimitiveType(this.kind);
     }
 
-    protected structuralEqualityStep(_other: Type, _queue: (a: Type, b: Type) => boolean): boolean {
+    protected structuralEqualityStep(
+        _other: Type,
+        _conflateNumbers: boolean,
+        _queue: (a: Type, b: Type) => boolean
+    ): boolean {
         return true;
     }
 }
@@ -212,7 +228,11 @@ export class StringType extends PrimitiveType {
         builder.getStringType(this.enumCases);
     }
 
-    protected structuralEqualityStep(_other: Type, _queue: (a: Type, b: Type) => boolean): boolean {
+    protected structuralEqualityStep(
+        _other: Type,
+        _conflateNumbers: boolean,
+        _queue: (a: Type, b: Type) => boolean
+    ): boolean {
         return true;
     }
 
@@ -273,7 +293,11 @@ export class ArrayType extends Type {
         }
     }
 
-    protected structuralEqualityStep(other: ArrayType, queue: (a: Type, b: Type) => boolean): boolean {
+    protected structuralEqualityStep(
+        other: ArrayType,
+        _conflateNumbers: boolean,
+        queue: (a: Type, b: Type) => boolean
+    ): boolean {
         return queue(this.items, other.items);
     }
 }
@@ -435,7 +459,11 @@ export class ObjectType extends Type {
         }
     }
 
-    protected structuralEqualityStep(other: ObjectType, queue: (a: Type, b: Type) => boolean): boolean {
+    protected structuralEqualityStep(
+        other: ObjectType,
+        _conflateNumbers: boolean,
+        queue: (a: Type, b: Type) => boolean
+    ): boolean {
         const pa = this.getProperties();
         const pb = other.getProperties();
         if (pa.size !== pb.size) return false;
@@ -504,7 +532,11 @@ export class EnumType extends Type {
         builder.getEnumType(this.cases);
     }
 
-    protected structuralEqualityStep(other: EnumType, _queue: (a: Type, b: Type) => void): boolean {
+    protected structuralEqualityStep(
+        other: EnumType,
+        _conflateNumbers: boolean,
+        _queue: (a: Type, b: Type) => void
+    ): boolean {
         return this.cases.toSet().equals(other.cases.toSet());
     }
 }
@@ -512,18 +544,21 @@ export class EnumType extends Type {
 export function setOperationCasesEqual(
     ma: OrderedSet<Type>,
     mb: OrderedSet<Type>,
+    conflateNumbers: boolean,
     membersEqual: (a: Type, b: Type) => boolean
 ): boolean {
     if (ma.size !== mb.size) return false;
-    let failed = false;
-    ma.forEach(ta => {
+    return ma.every(ta => {
         const tb = mb.find(t => t.kind === ta.kind);
-        if (tb === undefined || !membersEqual(ta, tb)) {
-            failed = true;
-            return false;
+        if (tb !== undefined) {
+            if (membersEqual(ta, tb)) return true;
         }
+        if (conflateNumbers) {
+            if (ta.kind === "integer" && mb.some(t => t.kind === "double")) return true;
+            if (ta.kind === "double" && mb.some(t => t.kind === "integer")) return true;
+        }
+        return false;
     });
-    return !failed;
 }
 
 export abstract class SetOperationType extends Type {
@@ -562,8 +597,12 @@ export abstract class SetOperationType extends Type {
         return false;
     }
 
-    protected structuralEqualityStep(other: SetOperationType, queue: (a: Type, b: Type) => boolean): boolean {
-        return setOperationCasesEqual(this.members, other.members, queue);
+    protected structuralEqualityStep(
+        other: SetOperationType,
+        conflateNumbers: boolean,
+        queue: (a: Type, b: Type) => boolean
+    ): boolean {
+        return setOperationCasesEqual(this.members, other.members, conflateNumbers, queue);
     }
 }
 
