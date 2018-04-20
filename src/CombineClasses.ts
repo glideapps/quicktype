@@ -29,7 +29,7 @@ function typeSetsCanBeCombined(s1: OrderedSet<Type>, s2: OrderedSet<Type>): bool
         const kind = t.kind;
         const other = s2ByKind.get(kind);
         if (other !== undefined) {
-            return t.structurallyCompatible(other);
+            return t.structurallyCompatible(other, true);
         }
         if (kind === "integer") {
             return s2ByKind.get("double") !== undefined;

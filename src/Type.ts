@@ -91,9 +91,17 @@ export abstract class Type {
     // equal, but `this.kind === other.kind`.
     protected abstract structuralEqualityStep(other: Type, queue: (a: Type, b: Type) => boolean): boolean;
 
-    structurallyCompatible(other: Type): boolean {
+    structurallyCompatible(other: Type, conflateNumbers: boolean = false): boolean {
+        function kindsCompatible(kind1: TypeKind, kind2: TypeKind): boolean {
+            if (kind1 === kind2) return true;
+            if (!conflateNumbers) return false;
+            if (kind1 === "integer") return kind2 === "double";
+            if (kind1 === "double") return kind2 === "integer";
+            return false;
+        }
+
         if (triviallyStructurallyCompatible(this, other)) return true;
-        if (this.kind !== other.kind) return false;
+        if (!kindsCompatible(this.kind, other.kind)) return false;
 
         const workList: [Type, Type][] = [[this, other]];
         // This contains a set of pairs which are the type pairs
@@ -104,7 +112,7 @@ export abstract class Type {
         let failed: boolean;
         const queue = (x: Type, y: Type): boolean => {
             if (triviallyStructurallyCompatible(x, y)) return true;
-            if (x.kind !== y.kind) {
+            if (!kindsCompatible(x.kind, y.kind)) {
                 failed = true;
                 return false;
             }
