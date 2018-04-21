@@ -54,7 +54,16 @@ export const stringEnumCasesTypeAttributeKind = new TypeAttributeKind<OrderedMap
         return a.mergeWith((x, y) => x + y, b);
     },
     _ => undefined,
-    m => (m === null ? "no enum" : `${m.size.toString()} enums: ${m.keySeq().first()}, ...`)
+    m => {
+        if (m === null) {
+            return "no enum";
+        }
+        const firstKey = m.keySeq().first();
+        if (firstKey === undefined) {
+            return "enum with no cases";
+        }
+        return `${m.size.toString()} enums: ${firstKey} (${m.get(firstKey)}), ...`;
+    }
 );
 
 export abstract class Type {
