@@ -46,6 +46,7 @@ function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
 
 export const stringEnumCasesTypeAttributeKind = new TypeAttributeKind<OrderedMap<string, number> | null>(
     "stringEnumCases",
+    false,
     true,
     (a, b) => {
         if (a === null || b === null) {
@@ -65,6 +66,9 @@ export const stringEnumCasesTypeAttributeKind = new TypeAttributeKind<OrderedMap
         return `${m.size.toString()} enums: ${firstKey} (${m.get(firstKey)}), ...`;
     }
 );
+
+// undefined in case the identity is unique
+export type TypeIdentity = List<any> | undefined;
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
@@ -96,7 +100,7 @@ export abstract class Type {
     abstract get isNullable(): boolean;
     // FIXME: Remove `isPrimitive`
     abstract isPrimitive(): this is PrimitiveType;
-    abstract get identity(): List<any> | undefined;
+    abstract get identity(): TypeIdentity;
     abstract reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void;
 
     get debugPrintKind(): string {
@@ -208,11 +212,16 @@ export abstract class Type {
     }
 }
 
+function hasUniqueIdentityAttributes(attributes: TypeAttributes): boolean {
+    return attributes.keySeq().some(ta => ta.uniqueIdentity);
+}
+
 function identityAttributes(attributes: TypeAttributes): TypeAttributes {
     return attributes.filter((_, kind) => kind.inIdentity);
 }
 
-export function primitiveTypeIdentity(kind: PrimitiveTypeKind, attributes: TypeAttributes): List<any> {
+export function primitiveTypeIdentity(kind: PrimitiveTypeKind, attributes: TypeAttributes): TypeIdentity {
+    if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return List([kind, identityAttributes(attributes)]);
 }
 
@@ -232,7 +241,7 @@ export class PrimitiveType extends Type {
         return true;
     }
 
-    get identity(): List<any> | undefined {
+    get identity(): TypeIdentity {
         return primitiveTypeIdentity(this.kind, this.getAttributes());
     }
 
@@ -249,7 +258,8 @@ export class PrimitiveType extends Type {
     }
 }
 
-export function arrayTypeIdentity(attributes: TypeAttributes, itemsRef: TypeRef): List<any> {
+export function arrayTypeIdentity(attributes: TypeAttributes, itemsRef: TypeRef): TypeIdentity {
+    if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return List(["array", identityAttributes(attributes), itemsRef]);
 }
 
@@ -291,7 +301,7 @@ export class ArrayType extends Type {
         return false;
     }
 
-    get identity(): List<any> {
+    get identity(): TypeIdentity {
         return arrayTypeIdentity(this.getAttributes(), this.getItemsRef());
     }
 
@@ -349,18 +359,22 @@ function objectTypeIdentify(
     attributes: TypeAttributes,
     properties: OrderedMap<string, ClassProperty>,
     additionalPropertiesRef: TypeRef | undefined
-): List<any> {
+): TypeIdentity {
+    if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return List([kind, identityAttributes(attributes), properties.toMap(), additionalPropertiesRef]);
 }
 
 export function classTypeIdentity(
     attributes: TypeAttributes,
     properties: OrderedMap<string, ClassProperty>
-): List<any> {
+): TypeIdentity {
     return objectTypeIdentify("class", attributes, properties, undefined);
 }
 
-export function mapTypeIdentify(attributes: TypeAttributes, additionalPropertiesRef: TypeRef | undefined): List<any> {
+export function mapTypeIdentify(
+    attributes: TypeAttributes,
+    additionalPropertiesRef: TypeRef | undefined
+): TypeIdentity {
     return objectTypeIdentify("map", attributes, OrderedMap(), additionalPropertiesRef);
 }
 
@@ -445,7 +459,7 @@ export class ObjectType extends Type {
         return false;
     }
 
-    get identity(): List<any> | undefined {
+    get identity(): TypeIdentity {
         if (this.isFixed) return undefined;
         return objectTypeIdentify(
             this.kind,
@@ -558,7 +572,8 @@ export class MapType extends ObjectType {
     }
 }
 
-export function enumTypeIdentity(attributes: TypeAttributes, cases: OrderedSet<string>): List<any> {
+export function enumTypeIdentity(attributes: TypeAttributes, cases: OrderedSet<string>): TypeIdentity {
+    if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return List(["enum", identityAttributes(attributes), cases.toSet()]);
 }
 
@@ -582,7 +597,7 @@ export class EnumType extends Type {
         return false;
     }
 
-    get identity(): List<any> {
+    get identity(): TypeIdentity {
         return enumTypeIdentity(this.getAttributes(), this.cases);
     }
 
@@ -623,15 +638,16 @@ export function setOperationTypeIdentity(
     kind: TypeKind,
     attributes: TypeAttributes,
     memberRefs: OrderedSet<TypeRef>
-): List<any> {
+): TypeIdentity {
+    if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return List([kind, identityAttributes(attributes), memberRefs.toSet()]);
 }
 
-export function unionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): List<any> {
+export function unionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): TypeIdentity {
     return setOperationTypeIdentity("union", attributes, memberRefs);
 }
 
-export function intersectionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): List<any> {
+export function intersectionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): TypeIdentity {
     return setOperationTypeIdentity("intersection", attributes, memberRefs);
 }
 
@@ -671,7 +687,7 @@ export abstract class SetOperationType extends Type {
         return false;
     }
 
-    get identity(): List<any> {
+    get identity(): TypeIdentity {
         return setOperationTypeIdentity(this.kind, this.getAttributes(), this.getMemberRefs());
     }
 

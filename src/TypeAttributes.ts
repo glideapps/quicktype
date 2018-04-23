@@ -2,7 +2,7 @@
 
 import { Map, OrderedSet, hash } from "immutable";
 
-import { panic, setUnion } from "./Support";
+import { panic, setUnion, assert } from "./Support";
 
 export class TypeAttributeKind<T> {
     public readonly combine: (a: T, b: T) => T;
@@ -11,7 +11,8 @@ export class TypeAttributeKind<T> {
 
     constructor(
         readonly name: string,
-        readonly inIdentity: boolean,
+        private readonly _inIdentity: boolean,
+        readonly uniqueIdentity: boolean,
         combine: ((a: T, b: T) => T) | undefined,
         makeInferred: ((a: T) => T | undefined) | undefined,
         stringify: ((a: T) => string | undefined) | undefined
@@ -34,6 +35,11 @@ export class TypeAttributeKind<T> {
             stringify = () => undefined;
         }
         this.stringify = stringify;
+    }
+
+    get inIdentity(): boolean {
+        assert(!this.uniqueIdentity, "inIdentity is invalid for unique identity attributes");
+        return this._inIdentity;
     }
 
     makeAttributes(value: T): TypeAttributes {
@@ -109,6 +115,7 @@ export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes
 export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>(
     "description",
     false,
+    false,
     setUnion,
     _ => OrderedSet(),
     descriptions => {
@@ -125,6 +132,7 @@ export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<str
 );
 export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, OrderedSet<string>>>(
     "propertyDescriptions",
+    false,
     false,
     (a, b) => a.mergeWith(setUnion, b),
     _ => Map(),

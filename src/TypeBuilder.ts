@@ -63,6 +63,7 @@ function provenanceToString(p: Set<TypeRef>): string {
 export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>(
     "provenance",
     false,
+    false,
     setUnion,
     a => a,
     provenanceToString
