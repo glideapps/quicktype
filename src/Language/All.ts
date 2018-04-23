@@ -31,8 +31,11 @@ export const all: TargetLanguage[] = [
     new RubyTargetLanguage()
 ];
 
-export function languageNamed(name: string): TargetLanguage | undefined {
-    const maybeTargetLanguage = find(all, l => includes(l.names, name) || l.displayName === name);
+export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
+    if (targetLanguages === undefined) {
+        targetLanguages = all;
+    }
+    const maybeTargetLanguage = find(targetLanguages, l => includes(l.names, name) || l.displayName === name);
     if (maybeTargetLanguage !== undefined) return maybeTargetLanguage;
-    return find(all, l => l.extension === name);
+    return find(targetLanguages, l => l.extension === name);
 }
