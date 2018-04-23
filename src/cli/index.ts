@@ -236,7 +236,7 @@ function inferTopLevel(options: Partial<CLIOptions>): string {
     return "TopLevel";
 }
 
-export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: string): CLIOptions {
+function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLanguage | undefined): CLIOptions {
     let srcLang = opts.srcLang;
     if (opts.graphqlSchema !== undefined || opts.graphqlIntrospect !== undefined) {
         messageAssert(srcLang === undefined || srcLang === "graphql", ErrorMessage.DriverSourceLangMustBeGraphQL);
@@ -248,13 +248,16 @@ export function inferCLIOptions(opts: Partial<CLIOptions>, defaultLanguage?: str
         srcLang = withDefault<string>(srcLang, "json");
     }
 
-    if (defaultLanguage === undefined) {
-        defaultLanguage = defaultDefaultTargetLanguageName;
-    }
-    const lang = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultLanguage);
-    const language = languageNamed(lang);
-    if (language === undefined) {
-        return messageError(ErrorMessage.DriverUnknownOutputLanguage, { lang });
+    let language: TargetLanguage;
+    if (targetLanguage !== undefined) {
+        language = targetLanguage;
+    } else {
+        const languageName = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultDefaultTargetLanguageName);
+        const maybeLanguage = languageNamed(languageName);
+        if (maybeLanguage === undefined) {
+            return messageError(ErrorMessage.DriverUnknownOutputLanguage, { lang: languageName });
+        }
+        language = maybeLanguage;
     }
 
     /* tslint:disable:strict-boolean-expressions */
@@ -513,10 +516,8 @@ const sectionsAfterRenderers: UsageSection[] = [
 ];
 
 export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage): CLIOptions {
-    const defaultLanguage = targetLanguage === undefined ? defaultDefaultTargetLanguageName : targetLanguage.names[0];
-
     if (argv.length === 0) {
-        return inferCLIOptions({ help: true }, defaultLanguage);
+        return inferCLIOptions({ help: true }, targetLanguage);
     }
 
     const targetLanguages = targetLanguage === undefined ? defaultTargetLanguages.all : [targetLanguage];
@@ -526,7 +527,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
     // because there are renderer-specific options.  But we only know which renderer
     // is selected after we've parsed the options.  Hence, we parse the options
     // twice.  This is the first parse to get the renderer:
-    const incompleteOptions = inferCLIOptions(parseOptions(optionDefinitions, argv, true), defaultLanguage);
+    const incompleteOptions = inferCLIOptions(parseOptions(optionDefinitions, argv, true), targetLanguage);
     if (targetLanguage === undefined) {
         targetLanguage = getTargetLanguage(incompleteOptions.lang);
     }
@@ -534,7 +535,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
     // Use the global options as well as the renderer options from now on:
     const allOptionDefinitions = _.concat(optionDefinitions, rendererOptionDefinitions);
     // This is the parse that counts:
-    return inferCLIOptions(parseOptions(allOptionDefinitions, argv, false), defaultLanguage);
+    return inferCLIOptions(parseOptions(allOptionDefinitions, argv, false), targetLanguage);
 }
 
 // Parse the options in argv and split them into global options and renderer options,
@@ -768,8 +769,13 @@ export async function makeQuicktypeOptions(
         leadingComments = telemetry.TELEMETRY_HEADER.split("\n").concat(leadingComments);
     }
 
+    const lang = languageNamed(options.lang, targetLanguages);
+    if (lang === undefined) {
+        return messageError(ErrorMessage.DriverUnknownOutputLanguage, { lang: options.lang });
+    }
+
     return {
-        lang: options.lang,
+        lang,
         sources,
         inferMaps: !options.noMaps,
         inferEnums: !options.noEnums,
@@ -829,7 +835,7 @@ export async function main(args: string[] | Partial<CLIOptions>) {
     if (Array.isArray(args)) {
         cliOptions = parseCLIOptions(args);
     } else {
-        cliOptions = inferCLIOptions(args, defaultDefaultTargetLanguageName);
+        cliOptions = inferCLIOptions(args, undefined);
     }
 
     if (cliOptions.telemetry !== undefined) {
