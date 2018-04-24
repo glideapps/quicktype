@@ -12,7 +12,7 @@ export class TypeAttributeKind<T> {
     constructor(
         readonly name: string,
         private readonly _inIdentity: boolean,
-        readonly uniqueIdentity: boolean,
+        private readonly _uniqueIdentity: ((a: T) => boolean) | boolean,
         combine: ((a: T, b: T) => T) | undefined,
         makeInferred: ((a: T) => T | undefined) | undefined,
         stringify: ((a: T) => string | undefined) | undefined
@@ -37,8 +37,16 @@ export class TypeAttributeKind<T> {
         this.stringify = stringify;
     }
 
+    requiresUniqueIdentity(a: T): boolean {
+        const ui = this._uniqueIdentity;
+        if (typeof ui === "boolean") {
+            return ui;
+        }
+        return ui(a);
+    }
+
     get inIdentity(): boolean {
-        assert(!this.uniqueIdentity, "inIdentity is invalid for unique identity attributes");
+        assert(this._uniqueIdentity !== true, "inIdentity is invalid for unique identity attributes");
         return this._inIdentity;
     }
 

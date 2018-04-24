@@ -35,6 +35,7 @@ import {
     emptyTypeAttributes,
     makeTypeAttributesInferred
 } from "./TypeAttributes";
+import { MutableStringTypes, StringTypes } from "./StringTypes";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t)[0];
@@ -59,7 +60,7 @@ class IntersectionAccumulator
     private _otherPrimitiveTypes: OrderedSet<PrimitiveTypeKind> | undefined;
     private _otherPrimitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> = OrderedMap();
 
-    private _enumCases: OrderedSet<string> | undefined;
+    private _stringTypes: MutableStringTypes = MutableStringTypes.unrestricted;
     private _enumAttributes: TypeAttributes = emptyTypeAttributes;
 
     // * undefined: We haven't seen any types yet.
@@ -130,11 +131,7 @@ class IntersectionAccumulator
             return;
         }
         const newCases = OrderedSet<string>().union(...enums.map(t => t.cases).toArray());
-        if (this._enumCases === undefined) {
-            this._enumCases = newCases;
-        } else {
-            this._enumCases = this._enumCases.intersect(newCases);
-        }
+        this._stringTypes.intersectCasesWithSet(newCases);
     }
 
     private updateArrayItemTypes(members: OrderedSet<Type>): void {
@@ -269,14 +266,8 @@ class IntersectionAccumulator
         return [this._objectProperties, this._additionalPropertyTypes];
     }
 
-    get enumCases(): string[] {
-        return defined(this._enumCases).toArray();
-    }
-
-    get enumCaseMap(): { [name: string]: number } {
-        const caseMap: { [name: string]: number } = {};
-        defined(this._enumCases).forEach(n => (caseMap[n] = 1));
-        return caseMap;
+    get stringTypes(): StringTypes {
+        return this._stringTypes.toImmutable();
     }
 
     getMemberKinds(): TypeAttributeMap<TypeKind> {
@@ -303,7 +294,7 @@ class IntersectionAccumulator
 
         let kinds: TypeAttributeMap<TypeKind> = primitiveStringKinds.merge(otherPrimitiveKinds);
 
-        if (this._enumCases !== undefined && this._enumCases.size > 0) {
+        if (this._stringTypes.isRestrictedAndAllowed) {
             kinds = kinds.set("enum", this._enumAttributes);
         } else if (!this._enumAttributes.isEmpty()) {
             if (kinds.has("string")) {

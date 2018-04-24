@@ -6,7 +6,7 @@ import { defined, panic, assert, mapOptional } from "./Support";
 import { TypeRef } from "./TypeBuilder";
 import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
-import { TypeAttributes, TypeAttributeKind } from "./TypeAttributes";
+import { TypeAttributes } from "./TypeAttributes";
 import { ErrorMessage, messageAssert } from "./Messages";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
@@ -43,29 +43,6 @@ function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
     if (setArray.length === 1) return setArray[0];
     return setArray[0].union(...setArray.slice(1));
 }
-
-export const stringEnumCasesTypeAttributeKind = new TypeAttributeKind<OrderedMap<string, number> | null>(
-    "stringEnumCases",
-    false,
-    true,
-    (a, b) => {
-        if (a === null || b === null) {
-            return null;
-        }
-        return a.mergeWith((x, y) => x + y, b);
-    },
-    _ => undefined,
-    m => {
-        if (m === null) {
-            return "no enum";
-        }
-        const firstKey = m.keySeq().first();
-        if (firstKey === undefined) {
-            return "enum with no cases";
-        }
-        return `${m.size.toString()} enums: ${firstKey} (${m.get(firstKey)}), ...`;
-    }
-);
 
 // undefined in case the identity is unique
 export type TypeIdentity = List<any> | undefined;
@@ -213,7 +190,7 @@ export abstract class Type {
 }
 
 function hasUniqueIdentityAttributes(attributes: TypeAttributes): boolean {
-    return attributes.keySeq().some(ta => ta.uniqueIdentity);
+    return attributes.some((v, ta) => ta.requiresUniqueIdentity(v));
 }
 
 function identityAttributes(attributes: TypeAttributes): TypeAttributes {

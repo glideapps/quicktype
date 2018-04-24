@@ -14,9 +14,9 @@ import {
     ClassType,
     ClassProperty,
     SetOperationType,
-    UnionType,
-    stringEnumCasesTypeAttributeKind
+    UnionType
 } from "./Type";
+import { stringTypesTypeAttributeKind } from "./StringTypes";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {
@@ -193,14 +193,11 @@ export function directlyReachableSingleNamedType(type: Type): Type | undefined {
 
 export function stringEnumCases(t: PrimitiveType): OrderedMap<string, number> | undefined {
     assert(t.kind === "string", "Only strings can be considered enums");
-    const enumCases = stringEnumCasesTypeAttributeKind.tryGetInAttributes(t.getAttributes());
-    if (enumCases === undefined) {
+    const stringTypes = stringTypesTypeAttributeKind.tryGetInAttributes(t.getAttributes());
+    if (stringTypes === undefined) {
         return panic("All strings must have an enum case attribute");
     }
-    if (enumCases === null) {
-        return undefined;
-    }
-    return enumCases;
+    return stringTypes.cases;
 }
 
 export type StringTypeMatchers<U> = {

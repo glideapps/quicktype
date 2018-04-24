@@ -9,6 +9,7 @@ import { UnionBuilder, UnionAccumulator } from "./UnionBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { ClassProperty } from "./Type";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { StringTypes } from "./StringTypes";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
@@ -43,13 +44,11 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
     }
 
     protected makeEnum(
-        cases: string[],
-        counts: { [name: string]: number },
+        stringTypes: StringTypes,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
-        const caseMap = OrderedMap(cases.map((c: string): [string, number] => [c, counts[c]]));
-        return this.typeBuilder.getStringType(typeAttributes, caseMap, forwardingRef);
+        return this.typeBuilder.getStringType(typeAttributes, stringTypes, forwardingRef);
     }
 
     protected makeObject(

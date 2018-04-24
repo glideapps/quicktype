@@ -22,6 +22,7 @@ import * as graphql from "graphql/language";
 import { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { ErrorMessage, messageAssert } from "./Messages";
+import { StringTypes } from "./StringTypes";
 
 interface GQLType {
     kind: TypeKind;
@@ -113,7 +114,7 @@ function makeScalar(builder: TypeBuilder, ft: GQLType): TypeRef {
             return builder.getPrimitiveType("double");
         default:
             // FIXME: support ID specifically?
-            return builder.getStringType(emptyTypeAttributes, null);
+            return builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
     }
 }
 
@@ -427,7 +428,9 @@ export function makeGraphQLQueryTypes(
             namesTypeAttributeKind.makeAttributes(
                 TypeNames.make(OrderedSet(["error"]), OrderedSet(["graphQLError"]), false)
             ),
-            OrderedMap({ message: new ClassProperty(builder.getStringType(emptyTypeAttributes, null), false) })
+            OrderedMap({
+                message: new ClassProperty(builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted), false)
+            })
         );
         const errorArray = builder.getArrayType(errorType);
         builder.addAttributes(

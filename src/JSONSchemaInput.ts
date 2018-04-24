@@ -39,6 +39,7 @@ import {
     AccessorEntry
 } from "./AccessorNames";
 import { ErrorMessage, messageAssert, messageError } from "./Messages";
+import { StringTypes } from "./StringTypes";
 
 export enum PathElementKind {
     Root,
@@ -616,10 +617,10 @@ export async function addTypesInSchema(
                     default:
                         // FIXME: Output a warning here instead to indicate that
                         // the format is uninterpreted.
-                        return typeBuilder.getStringType(inferredAttributes, null);
+                        return typeBuilder.getStringType(inferredAttributes, StringTypes.unrestricted);
                 }
             }
-            return typeBuilder.getStringType(inferredAttributes, null);
+            return typeBuilder.getStringType(inferredAttributes, StringTypes.unrestricted);
         }
 
         async function makeArrayType(): Promise<TypeRef> {

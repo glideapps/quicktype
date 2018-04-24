@@ -2,13 +2,14 @@
 
 import { Set, OrderedMap, OrderedSet } from "immutable";
 
-import { Type, PrimitiveType, UnionType, stringEnumCasesTypeAttributeKind } from "./Type";
+import { Type, PrimitiveType, UnionType } from "./Type";
 import { combineTypeAttributesOfTypes, stringEnumCases } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { assert, defined } from "./Support";
 import { combineTypeAttributes } from "./TypeAttributes";
+import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -32,12 +33,12 @@ function replaceString(
 ): TypeRef {
     assert(group.size === 1);
     const t = defined(group.first());
-    const attributes = t.getAttributes().filterNot((_, k) => k === stringEnumCasesTypeAttributeKind);
+    const attributes = t.getAttributes().filterNot((_, k) => k === stringTypesTypeAttributeKind);
     const maybeEnumCases = shouldBeEnum(t);
     if (maybeEnumCases !== undefined) {
         return builder.getEnumType(attributes, maybeEnumCases.keySeq().toOrderedSet(), forwardingRef);
     }
-    return builder.getStringType(attributes, null, forwardingRef);
+    return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
 }
 
 // A union needs replacing if it contains more than one string type, one of them being

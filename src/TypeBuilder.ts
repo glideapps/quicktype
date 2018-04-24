@@ -21,13 +21,13 @@ import {
     arrayTypeIdentity,
     classTypeIdentity,
     unionTypeIdentity,
-    intersectionTypeIdentity,
-    stringEnumCasesTypeAttributeKind
+    intersectionTypeIdentity
 } from "./Type";
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic, setUnion, mapOptional } from "./Support";
+import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 
 export class TypeRef {
     constructor(readonly graph: TypeGraph, readonly index: number) {}
@@ -256,12 +256,13 @@ export class TypeBuilder {
         if (attributes === undefined) {
             attributes = emptyTypeAttributes;
         }
-        let enumCases = kind === "string" ? undefined : null;
+        // FIXME: Why do date/time types need a StringTypes attribute?
+        let stringTypes = kind === "string" ? undefined : StringTypes.unrestricted;
         if (kind === "date") kind = this._stringTypeMapping.date;
         if (kind === "time") kind = this._stringTypeMapping.time;
         if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
         if (kind === "string") {
-            return this.getStringType(attributes, enumCases, forwardingRef);
+            return this.getStringType(attributes, stringTypes, forwardingRef);
         }
         return this.getOrAddType(
             primitiveTypeIdentity(kind, emptyTypeAttributes),
@@ -271,20 +272,16 @@ export class TypeBuilder {
         );
     }
 
-    getStringType(
-        attributes: TypeAttributes,
-        cases: OrderedMap<string, number> | null | undefined,
-        forwardingRef?: TypeRef
-    ): TypeRef {
-        const existingEnumAttribute = attributes.find((_, k) => k === stringEnumCasesTypeAttributeKind);
+    getStringType(attributes: TypeAttributes, stringTypes: StringTypes | undefined, forwardingRef?: TypeRef): TypeRef {
+        const existingStringTypes = attributes.find((_, k) => k === stringTypesTypeAttributeKind);
         assert(
-            (cases === undefined) !== (existingEnumAttribute === undefined),
+            (stringTypes === undefined) !== (existingStringTypes === undefined),
             "Must instantiate string type with one enum case attribute"
         );
-        if (existingEnumAttribute === undefined) {
+        if (existingStringTypes === undefined) {
             attributes = combineTypeAttributes(
                 attributes,
-                stringEnumCasesTypeAttributeKind.makeAttributes(defined(cases))
+                stringTypesTypeAttributeKind.makeAttributes(defined(stringTypes))
             );
         }
         return this.getOrAddType(
