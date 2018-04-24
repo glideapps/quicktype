@@ -28,6 +28,15 @@ function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefi
     const numProperties = properties.size;
     if (numProperties < 2) return undefined;
 
+    // If all property names are digit-only, we always make a map, no
+    // questions asked.
+    if (properties.keySeq().every(n => n.match(/^[0-9]+$/) !== null)) {
+        return properties
+            .valueSeq()
+            .map(cp => cp.type)
+            .toSet();
+    }
+
     if (numProperties < mapSizeThreshold) {
         const names = properties.keySeq();
         const probabilities = names.map(nameProbability);

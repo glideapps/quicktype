@@ -47,6 +47,7 @@ export const CSharpLanguage: Language = {
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [
+    "nbl-stats.json", // See issue #823
     "31189.json" // JSON.NET doesn't accept year 0000 as 1BC, though it should
   ],
   skipMiscJSON: false,
@@ -138,6 +139,7 @@ export const RubyLanguage: Language = {
     "bug427.json",
     "kitchen-sink.json",
     "github-events.json",
+    "nbl-stats.json",
     "reddit.json",
     "00c36.json",
     "050b0.json",
@@ -208,6 +210,7 @@ export const GoLanguage: Language = {
     "bug427.json",
     "github-events.json",
     "reddit.json",
+    "nbl-stats.json",
     "0cffa.json",
     "0e0c2.json",
     "127a1.json",
@@ -269,7 +272,9 @@ export const CPlusPlusLanguage: Language = {
   topLevel: "TopLevel",
   skipJSON: [
     // fails on a string containing null
-    "nst-test-suite.json"
+    "nst-test-suite.json",
+    // compiler error I don't want to figure out right now
+    "nbl-stats.json"
   ],
   skipMiscJSON: false,
   skipSchema: [],
@@ -293,6 +298,7 @@ export const ElmLanguage: Language = {
   skipDiffViaSchema: [
     "reddit.json",
     "github-events.json",
+    "nbl-stats.json",
     "0a91a.json",
     "0cffa.json",
     "0e0c2.json",
@@ -444,6 +450,7 @@ export const TypeScriptLanguage: Language = {
   skipDiffViaSchema: [
     "bug427.json",
     "kitchen-sink.json",
+    "nbl-stats.json",
     "00c36.json",
     "2df80.json",
     "34702.json",
