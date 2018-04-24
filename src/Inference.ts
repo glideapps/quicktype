@@ -108,7 +108,7 @@ export class TypeInference {
                     accumulator.addDouble(emptyTypeAttributes);
                     break;
                 case Tag.InternedString:
-                    if (this._inferEnums && !accumulator.haveString) {
+                    if (this._inferEnums) {
                         const s = cjson.getStringForValue(value);
                         if (canBeEnumCase(s)) {
                             accumulator.addEnumCase(s, 1, emptyTypeAttributes);
