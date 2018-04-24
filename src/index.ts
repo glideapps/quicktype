@@ -243,7 +243,13 @@ export class Run {
         }
         graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution);
         if (this._options.inferMaps) {
-            graph = inferMaps(graph, stringTypeMapping, true, debugPrintReconstitution);
+            for (;;) {
+                const newGraph = inferMaps(graph, stringTypeMapping, true, debugPrintReconstitution);
+                if (newGraph === graph) {
+                    break;
+                }
+                graph = newGraph;
+            }
         }
         graph = noneToAny(graph, stringTypeMapping, debugPrintReconstitution);
         if (!targetLanguage.supportsOptionalClassProperties) {
