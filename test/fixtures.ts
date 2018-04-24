@@ -325,6 +325,11 @@ class JSONToXToYFixture extends JSONFixture {
       allowMissingNull: this.runLanguage.allowMissingNull
     });
   }
+
+  shouldSkipTest(sample: Sample): boolean {
+    if (super.shouldSkipTest(sample)) return true;
+    return _.includes(this.runLanguage.skipJSON, path.basename(sample.path));
+  }
 }
 
 // This tests generating Schema from JSON, and then generating
@@ -446,6 +451,7 @@ class JSONTypeScriptFixture extends JSONToXToYFixture {
   }
 
   shouldSkipTest(sample: Sample): boolean {
+    if (super.shouldSkipTest(sample)) return true;
     return skipTypeScriptTests.indexOf(path.basename(sample.path)) >= 0;
   }
 }
