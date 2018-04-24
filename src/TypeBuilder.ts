@@ -330,6 +330,7 @@ export class TypeBuilder {
         properties: OrderedMap<string, ClassProperty>,
         forwardingRef?: TypeRef
     ): TypeRef {
+        properties = this.modifyPropertiesIfNecessary(properties);
         return this.getOrAddType(
             classTypeIdentity(properties),
             tr => new ClassType(tr, false, properties),
