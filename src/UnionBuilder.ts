@@ -114,21 +114,19 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
     }
 
     addStringType(kind: PrimitiveStringTypeKind, attributes: TypeAttributes): void {
-        if (this.have(kind)) {
+        const maybeStringTypes = stringTypesTypeAttributeKind.tryGetInAttributes(attributes);
+        if (this.have(kind) || kind !== "string" || (maybeStringTypes !== undefined && maybeStringTypes.isRestricted)) {
             this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, kind, attributes);
             return;
         }
-        // string overrides all other string types, as well as enum
-        if (kind === "string") {
-            let newAttributes = combineTypeAttributes(this._stringTypeAttributes.valueSeq().toArray());
-            newAttributes = combineTypeAttributes(newAttributes, attributes);
-            if (stringTypesTypeAttributeKind.tryGetInAttributes(attributes) === undefined) {
-                newAttributes = stringTypesTypeAttributeKind.setInAttributes(newAttributes, StringTypes.unrestricted);
-            }
-            this._stringTypeAttributes = this._stringTypeAttributes.clear().set(kind, newAttributes);
-        } else {
-            this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, kind, attributes);
+
+        // unrestricted string overrides all other string types, as well as enum
+        let newAttributes = combineTypeAttributes(this._stringTypeAttributes.valueSeq().toArray());
+        newAttributes = combineTypeAttributes(newAttributes, attributes);
+        if (maybeStringTypes === undefined) {
+            newAttributes = stringTypesTypeAttributeKind.setInAttributes(newAttributes, StringTypes.unrestricted);
         }
+        this._stringTypeAttributes = this._stringTypeAttributes.clear().set(kind, newAttributes);
     }
     addArray(t: TArray, attributes: TypeAttributes): void {
         this.arrayData.push(t);
