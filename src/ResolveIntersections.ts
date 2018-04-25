@@ -407,7 +407,7 @@ export function resolveIntersections(
         );
         const attributes = combineTypeAttributes(intersectionAttributes, extraAttributes);
 
-        const unionBuilder = new IntersectionUnionBuilder(builder);
+        const unionBuilder = new IntersectionUnionBuilder(builder, true);
         const tref = unionBuilder.buildUnion(accumulator, true, attributes, forwardingRef);
         if (unionBuilder.createdNewIntersections) {
             needsRepeat = true;

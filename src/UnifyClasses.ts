@@ -90,11 +90,12 @@ function countProperties(
 export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
     constructor(
         typeBuilder: TypeBuilder & TypeLookerUp,
+        makeEnums: boolean,
         private readonly _makeObjectTypes: boolean,
         private readonly _makeClassesFixed: boolean,
         private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef
     ) {
-        super(typeBuilder);
+        super(typeBuilder, makeEnums);
     }
 
     protected makeObject(
@@ -173,16 +174,17 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
 
 export function unionBuilderForUnification<T extends Type>(
     typeBuilder: GraphRewriteBuilder<T>,
+    makeEnums: boolean,
     makeObjectTypes: boolean,
     makeClassesFixed: boolean,
     conflateNumbers: boolean
 ): UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
-    return new UnifyUnionBuilder(typeBuilder, makeObjectTypes, makeClassesFixed, trefs =>
+    return new UnifyUnionBuilder(typeBuilder, makeEnums, makeObjectTypes, makeClassesFixed, trefs =>
         unifyTypes(
             Set(trefs.map(tref => tref.deref()[0])),
             emptyTypeAttributes,
             typeBuilder,
-            unionBuilderForUnification(typeBuilder, makeObjectTypes, makeClassesFixed, conflateNumbers),
+            unionBuilderForUnification(typeBuilder, makeEnums, makeObjectTypes, makeClassesFixed, conflateNumbers),
             conflateNumbers
         )
     );

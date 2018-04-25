@@ -282,20 +282,24 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
 }
 
 export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TObjectData> {
-    constructor(protected readonly typeBuilder: TBuilder) {}
+    constructor(protected readonly typeBuilder: TBuilder, private readonly _makeEnums: boolean) {}
 
-    protected makeEnum(
+    private makeEnum(
         stringTypes: StringTypes,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
-        return this.typeBuilder.getEnumType(
-            typeAttributes,
-            defined(stringTypes.cases)
-                .keySeq()
-                .toOrderedSet(),
-            forwardingRef
-        );
+        if (this._makeEnums) {
+            return this.typeBuilder.getEnumType(
+                typeAttributes,
+                defined(stringTypes.cases)
+                    .keySeq()
+                    .toOrderedSet(),
+                forwardingRef
+            );
+        } else {
+            return this.typeBuilder.getStringType(typeAttributes, stringTypes, forwardingRef);
+        }
     }
 
     protected abstract makeObject(

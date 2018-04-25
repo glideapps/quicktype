@@ -22,7 +22,7 @@ export function flattenUnions(
     let needsRepeat = false;
 
     function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
-        const unionBuilder = new UnifyUnionBuilder(builder, makeObjectTypes, true, trefs => {
+        const unionBuilder = new UnifyUnionBuilder(builder, true, makeObjectTypes, true, trefs => {
             assert(trefs.length > 0, "Must have at least one type to build union");
             trefs = trefs.map(tref => builder.reconstituteType(tref.deref()[0]));
             if (trefs.length === 1) {

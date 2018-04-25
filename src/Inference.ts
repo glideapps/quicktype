@@ -9,7 +9,6 @@ import { UnionBuilder, UnionAccumulator } from "./UnionBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { ClassProperty } from "./Type";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-import { StringTypes } from "./StringTypes";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
@@ -40,15 +39,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         private readonly _cjson: CompressedJSON,
         private readonly _fixed: boolean
     ) {
-        super(typeBuilder);
-    }
-
-    protected makeEnum(
-        stringTypes: StringTypes,
-        typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
-    ): TypeRef {
-        return this.typeBuilder.getStringType(typeAttributes, stringTypes, forwardingRef);
+        super(typeBuilder, false);
     }
 
     protected makeObject(
