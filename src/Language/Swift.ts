@@ -524,10 +524,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 }
             }
 
-            // If using classes with convenience initializers,
             // this main initializer must be defined within the class
             // declaration since it assigns let constants
-            if (isClass && (this._convenienceInitializers || this._justTypes)) {
+            if (isClass) {
                 // Make an initializer that initalizes all fields
                 this.ensureBlankLine();
                 let properties: Sourcelike[] = [];
