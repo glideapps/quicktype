@@ -217,9 +217,7 @@ export function unifyTypes<T extends Type>(
     } else if (types.count() === 1) {
         const first = defined(types.first());
         if (!(first instanceof UnionType)) {
-            const tref = typeBuilder.reconstituteTypeRef(first.typeRef, maybeForwardingRef);
-            typeBuilder.addAttributes(tref, typeAttributes);
-            return tref;
+            return typeBuilder.reconstituteTypeRef(first.typeRef, typeAttributes, maybeForwardingRef);
         }
     }
 
