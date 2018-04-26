@@ -1,6 +1,6 @@
 "use strict";
 
-import { Map, OrderedMap, OrderedSet, Set, List } from "immutable";
+import { Map, OrderedMap, OrderedSet, Set, List, is } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -12,18 +12,17 @@ import {
     ClassType,
     UnionType,
     PrimitiveStringTypeKind,
-    StringType,
     ClassProperty,
     IntersectionType,
     ObjectType,
-    stringTypeIdentity,
     primitiveTypeIdentity,
     enumTypeIdentity,
     mapTypeIdentify,
     arrayTypeIdentity,
     classTypeIdentity,
     unionTypeIdentity,
-    intersectionTypeIdentity
+    intersectionTypeIdentity,
+    stringEnumCasesTypeAttributeKind
 } from "./Type";
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
@@ -141,7 +140,8 @@ export class TypeBuilder {
         }
         const tref = forwardingRef !== undefined ? forwardingRef : this.reserveTypeRef();
         if (attributes !== undefined) {
-            this.addAttributes(tref, attributes);
+            const index = tref.index;
+            this.typeAttributes[index] = combineTypeAttributes(this.typeAttributes[index], attributes);
         }
         const t = creator(tref);
         this.commitType(tref, t);
@@ -158,9 +158,19 @@ export class TypeBuilder {
     }
 
     addAttributes(tref: TypeRef, attributes: TypeAttributes): void {
-        assert(attributes.every((_, k) => !k.inIdentity), "Can't add identity type attributes to an existing type");
         const index = tref.index;
-        this.typeAttributes[index] = combineTypeAttributes(this.typeAttributes[index], attributes);
+        const existingAttributes = this.typeAttributes[index];
+        assert(
+            attributes.every((v, k) => {
+                if (!k.inIdentity) return true;
+                const existing = existingAttributes.get(k);
+                if (existing === undefined) return false;
+                return is(existing, v);
+            }),
+            "Can't add different identity type attributes to an existing type"
+        );
+        const nonIdentityAttributes = attributes.filterNot((_, k) => k.inIdentity);
+        this.typeAttributes[index] = combineTypeAttributes(existingAttributes, nonIdentityAttributes);
     }
 
     makeNullable(tref: TypeRef, attributes: TypeAttributes): TypeRef {
@@ -223,7 +233,11 @@ export class TypeBuilder {
         if (maybeTypeRef !== undefined) {
             const result = this.forwardIfNecessary(forwardingRef, maybeTypeRef);
             if (attributes !== undefined) {
-                this.addAttributes(result, attributes);
+                // We only add the attributes that are not in the identity, since
+                // we found the type based on its identity, i.e. all the identity
+                // attributes must be in there already, and we have a check that
+                // asserts that no identity attributes are added later.
+                this.addAttributes(result, attributes.filter((_, k) => !k.inIdentity));
             }
             return result;
         }
@@ -237,30 +251,44 @@ export class TypeBuilder {
         this.registerTypeForIdentity(t.identity, t.typeRef);
     }
 
-    getPrimitiveType(kind: PrimitiveTypeKind, forwardingRef?: TypeRef): TypeRef {
-        assert(kind !== "string", "Use getStringType to create strings");
+    getPrimitiveType(kind: PrimitiveTypeKind, attributes?: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
+        if (attributes === undefined) {
+            attributes = emptyTypeAttributes;
+        }
+        let enumCases = kind === "string" ? undefined : null;
         if (kind === "date") kind = this._stringTypeMapping.date;
         if (kind === "time") kind = this._stringTypeMapping.time;
         if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
         if (kind === "string") {
-            return this.getStringType(emptyTypeAttributes, undefined, forwardingRef);
+            return this.getStringType(attributes, enumCases, forwardingRef);
         }
         return this.getOrAddType(
             primitiveTypeIdentity(kind, emptyTypeAttributes),
             tr => new PrimitiveType(tr, kind),
-            undefined,
+            attributes,
             forwardingRef
         );
     }
 
     getStringType(
         attributes: TypeAttributes,
-        cases: OrderedMap<string, number> | undefined,
+        cases: OrderedMap<string, number> | null | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
+        const existingEnumAttribute = attributes.find((_, k) => k === stringEnumCasesTypeAttributeKind);
+        assert(
+            (cases === undefined) !== (existingEnumAttribute === undefined),
+            "Must instantiate string type with one enum case attribute"
+        );
+        if (existingEnumAttribute === undefined) {
+            attributes = combineTypeAttributes(
+                attributes,
+                stringEnumCasesTypeAttributeKind.makeAttributes(defined(cases))
+            );
+        }
         return this.getOrAddType(
-            stringTypeIdentity(attributes, cases),
-            tr => new StringType(tr, cases),
+            primitiveTypeIdentity("string", attributes),
+            tr => new PrimitiveType(tr, "string"),
             attributes,
             forwardingRef
         );

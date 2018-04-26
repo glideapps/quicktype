@@ -14,7 +14,6 @@ import {
     UnionType,
     PrimitiveStringTypeKind,
     PrimitiveTypeKind,
-    StringType,
     ArrayType,
     isPrimitiveStringTypeKind,
     isPrimitiveTypeKind,
@@ -96,7 +95,7 @@ class IntersectionAccumulator
 
         // If the unrestricted string type is part of the union, this doesn't add
         // any more restrictions.
-        if (members.find(t => t instanceof StringType) === undefined) {
+        if (members.find(t => t.kind === "string") === undefined) {
             this._primitiveStringTypes = this._primitiveStringTypes.intersect(kinds);
         }
     }
@@ -127,7 +126,7 @@ class IntersectionAccumulator
         const enums = members.filter(t => t instanceof EnumType) as OrderedSet<EnumType>;
         const attributes = combineTypeAttributesOfTypes(enums);
         this._enumAttributes = combineTypeAttributes(this._enumAttributes, attributes);
-        if (members.find(t => t instanceof StringType) !== undefined) {
+        if (members.find(t => t.kind === "string") !== undefined) {
             return;
         }
         const newCases = OrderedSet<string>().union(...enums.map(t => t.cases).toArray());
@@ -358,15 +357,6 @@ class IntersectionUnionBuilder extends UnionBuilder<
         return this._createdNewIntersections;
     }
 
-    protected makeEnum(
-        cases: string[],
-        _counts: { [name: string]: number },
-        typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
-    ): TypeRef {
-        return this.typeBuilder.getEnumType(typeAttributes, OrderedSet(cases), forwardingRef);
-    }
-
     protected makeObject(
         maybeData: [PropertyMap, OrderedSet<Type> | undefined] | undefined,
         typeAttributes: TypeAttributes,
@@ -411,8 +401,7 @@ export function resolveIntersections(
         const intersections = types.filter(t => t instanceof IntersectionType) as Set<IntersectionType>;
         const [members, intersectionAttributes] = setOperationMembersRecursively(intersections.toArray());
         if (members.isEmpty()) {
-            const t = builder.getPrimitiveType("any", forwardingRef);
-            builder.addAttributes(t, intersectionAttributes);
+            const t = builder.getPrimitiveType("any", intersectionAttributes, forwardingRef);
             return t;
         }
         if (members.size === 1) {

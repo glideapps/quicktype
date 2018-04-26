@@ -616,10 +616,10 @@ export async function addTypesInSchema(
                     default:
                         // FIXME: Output a warning here instead to indicate that
                         // the format is uninterpreted.
-                        return typeBuilder.getStringType(inferredAttributes, undefined);
+                        return typeBuilder.getStringType(inferredAttributes, null);
                 }
             }
-            return typeBuilder.getStringType(inferredAttributes, undefined);
+            return typeBuilder.getStringType(inferredAttributes, null);
         }
 
         async function makeArrayType(): Promise<TypeRef> {

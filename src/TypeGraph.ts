@@ -393,9 +393,8 @@ export function noneToAny(
         [noneTypes.toArray()],
         debugPrintReconstitution,
         (types, builder, forwardingRef) => {
-            const tref = builder.getPrimitiveType("any", forwardingRef);
             const attributes = combineTypeAttributesOfTypes(types);
-            builder.addAttributes(tref, attributes);
+            const tref = builder.getPrimitiveType("any", attributes, forwardingRef);
             return tref;
         }
     );

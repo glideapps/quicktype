@@ -2,7 +2,7 @@
 
 import { Map, Set, OrderedMap, OrderedSet } from "immutable";
 
-import { TypeKind, PrimitiveStringTypeKind, Type, UnionType } from "./Type";
+import { TypeKind, PrimitiveStringTypeKind, Type, UnionType, stringEnumCasesTypeAttributeKind } from "./Type";
 import { matchTypeExhaustive } from "./TypeUtils";
 import {
     TypeAttributes,
@@ -131,7 +131,8 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
 
     addEnumCases(cases: OrderedMap<string, number>, attributes: TypeAttributes): void {
         if (this.have("string")) {
-            this.addStringType("string", attributes);
+            const enumAttributes = stringEnumCasesTypeAttributeKind.makeAttributes(cases);
+            this.addStringType("string", combineTypeAttributes(attributes, enumAttributes));
             return;
         }
 
@@ -241,14 +242,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
             _boolType => this.addBool(attributes),
             _integerType => this.addInteger(attributes),
             _doubleType => this.addDouble(attributes),
-            stringType => {
-                const enumCases = stringType.enumCases;
-                if (enumCases === undefined) {
-                    this.addStringType("string", attributes);
-                } else {
-                    this.addEnumCases(enumCases, attributes);
-                }
-            },
+            _stringType => this.addStringType("string", attributes),
             arrayType => this.addArray(arrayType.items.typeRef, attributes),
             classType => this.addObject(classType.typeRef, attributes),
             mapType => this.addObject(mapType.typeRef, attributes),
@@ -276,12 +270,15 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
 export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TObjectData> {
     constructor(protected readonly typeBuilder: TBuilder) {}
 
-    protected abstract makeEnum(
+    protected makeEnum(
         cases: string[],
-        counts: { [name: string]: number },
+        _counts: { [name: string]: number },
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
-    ): TypeRef;
+    ): TypeRef {
+        return this.typeBuilder.getEnumType(typeAttributes, OrderedSet(cases), forwardingRef);
+    }
+
     protected abstract makeObject(
         objects: TObjectData,
         typeAttributes: TypeAttributes,
@@ -309,11 +306,15 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             case "date":
             case "time":
             case "date-time":
-                const t = this.typeBuilder.getPrimitiveType(kind, forwardingRef);
-                this.typeBuilder.addAttributes(t, typeAttributes);
-                return t;
+                return this.typeBuilder.getPrimitiveType(kind, typeAttributes, forwardingRef);
             case "string":
-                return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
+                return this.typeBuilder.getStringType(
+                    typeAttributes,
+                    typeAttributes.findKey((_, k) => k === stringEnumCasesTypeAttributeKind) !== undefined
+                        ? undefined
+                        : null,
+                    forwardingRef
+                );
             case "enum":
                 return this.makeEnum(typeProvider.enumCases, typeProvider.enumCaseMap, typeAttributes, forwardingRef);
             case "object":

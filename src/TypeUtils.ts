@@ -1,13 +1,12 @@
 "use strict";
 
-import { OrderedSet, Collection, Map, Set } from "immutable";
+import { OrderedSet, Collection, Map, Set, OrderedMap } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import {
     Type,
     PrimitiveType,
-    StringType,
     ArrayType,
     EnumType,
     ObjectType,
@@ -15,7 +14,8 @@ import {
     ClassType,
     ClassProperty,
     SetOperationType,
-    UnionType
+    UnionType,
+    stringEnumCasesTypeAttributeKind
 } from "./Type";
 
 export function assertIsObject(t: Type): ObjectType {
@@ -191,6 +191,18 @@ export function directlyReachableSingleNamedType(type: Type): Type | undefined {
     return definedTypes.first();
 }
 
+export function stringEnumCases(t: PrimitiveType): OrderedMap<string, number> | undefined {
+    assert(t.kind === "string", "Only strings can be considered enums");
+    const enumCases = stringEnumCasesTypeAttributeKind.tryGetInAttributes(t.getAttributes());
+    if (enumCases === undefined) {
+        return panic("All strings must have an enum case attribute");
+    }
+    if (enumCases === null) {
+        return undefined;
+    }
+    return enumCases;
+}
+
 export type StringTypeMatchers<U> = {
     dateType?: (dateType: PrimitiveType) => U;
     timeType?: (timeType: PrimitiveType) => U;
@@ -205,7 +217,7 @@ export function matchTypeExhaustive<U>(
     boolType: (boolType: PrimitiveType) => U,
     integerType: (integerType: PrimitiveType) => U,
     doubleType: (doubleType: PrimitiveType) => U,
-    stringType: (stringType: StringType) => U,
+    stringType: (stringType: PrimitiveType) => U,
     arrayType: (arrayType: ArrayType) => U,
     classType: (classType: ClassType) => U,
     mapType: (mapType: MapType) => U,
@@ -247,7 +259,7 @@ export function matchType<U>(
     boolType: (boolType: PrimitiveType) => U,
     integerType: (integerType: PrimitiveType) => U,
     doubleType: (doubleType: PrimitiveType) => U,
-    stringType: (stringType: StringType) => U,
+    stringType: (stringType: PrimitiveType) => U,
     arrayType: (arrayType: ArrayType) => U,
     classType: (classType: ClassType) => U,
     mapType: (mapType: MapType) => U,

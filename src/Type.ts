@@ -6,7 +6,7 @@ import { defined, panic, assert, mapOptional } from "./Support";
 import { TypeRef } from "./TypeBuilder";
 import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
-import { TypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, TypeAttributeKind } from "./TypeAttributes";
 import { ErrorMessage, messageAssert } from "./Messages";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
@@ -43,6 +43,19 @@ function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
     if (setArray.length === 1) return setArray[0];
     return setArray[0].union(...setArray.slice(1));
 }
+
+export const stringEnumCasesTypeAttributeKind = new TypeAttributeKind<OrderedMap<string, number> | null>(
+    "stringEnumCases",
+    true,
+    (a, b) => {
+        if (a === null || b === null) {
+            return null;
+        }
+        return a.mergeWith((x, y) => x + y, b);
+    },
+    _ => undefined,
+    m => (m === null ? "no enum" : `${m.size.toString()} enums: ${m.keySeq().first()}, ...`)
+);
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
@@ -198,13 +211,6 @@ export class PrimitiveType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: PrimitiveTypeKind;
 
-    constructor(typeRef: TypeRef, kind: PrimitiveTypeKind, checkKind: boolean = true) {
-        if (checkKind) {
-            assert(kind !== "string", "Cannot instantiate a PrimitiveType as string");
-        }
-        super(typeRef, kind);
-    }
-
     get children(): OrderedSet<Type> {
         return OrderedSet();
     }
@@ -231,44 +237,6 @@ export class PrimitiveType extends Type {
         _queue: (a: Type, b: Type) => boolean
     ): boolean {
         return true;
-    }
-}
-
-export function stringTypeIdentity(
-    attributes: TypeAttributes,
-    enumCases: OrderedMap<string, number> | undefined
-): List<any> | undefined {
-    if (enumCases !== undefined) return undefined;
-    // mapOptional(ec => ec.keySeq().toSet(), enumCases)
-    return List(["string", identityAttributes(attributes)]);
-}
-
-export class StringType extends PrimitiveType {
-    constructor(typeRef: TypeRef, readonly enumCases: OrderedMap<string, number> | undefined) {
-        super(typeRef, "string", false);
-    }
-
-    get identity(): List<any> | undefined {
-        return stringTypeIdentity(this.getAttributes(), this.enumCases);
-    }
-
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        builder.getStringType(this.enumCases);
-    }
-
-    protected structuralEqualityStep(
-        _other: Type,
-        _conflateNumbers: boolean,
-        _queue: (a: Type, b: Type) => boolean
-    ): boolean {
-        return true;
-    }
-
-    get debugPrintKind(): string {
-        if (this.enumCases === undefined) {
-            return "string";
-        }
-        return `string (${this.enumCases.size} enums)`;
     }
 }
 

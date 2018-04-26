@@ -79,11 +79,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     }
 
     getPrimitiveType(kind: PrimitiveTypeKind): void {
-        this.registerAndAddAttributes(this.builderForNewType().getPrimitiveType(kind, this._forwardingRef));
-    }
-
-    getStringType(enumCases: OrderedMap<string, number> | undefined): void {
-        this.register(this.builderForNewType().getStringType(this._typeAttributes, enumCases, this._forwardingRef));
+        this.register(this.builderForNewType().getPrimitiveType(kind, this._typeAttributes, this._forwardingRef));
     }
 
     getEnumType(cases: OrderedSet<string>): void {

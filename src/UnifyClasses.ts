@@ -90,25 +90,11 @@ function countProperties(
 export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
     constructor(
         typeBuilder: TypeBuilder & TypeLookerUp,
-        private readonly _makeEnums: boolean,
         private readonly _makeObjectTypes: boolean,
         private readonly _makeClassesFixed: boolean,
         private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef
     ) {
         super(typeBuilder);
-    }
-
-    protected makeEnum(
-        enumCases: string[],
-        counts: { [name: string]: number },
-        typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
-    ): TypeRef {
-        if (this._makeEnums) {
-            return this.typeBuilder.getEnumType(typeAttributes, OrderedSet(enumCases), forwardingRef);
-        } else {
-            return this.typeBuilder.getStringType(typeAttributes, OrderedMap(counts), forwardingRef);
-        }
     }
 
     protected makeObject(
@@ -149,7 +135,7 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
             return tref;
         } else {
             const [properties, additionalProperties, lostTypeAttributes] = getCliqueProperties(objectTypes, types => {
-                    assert(types.size > 0, "Property has no type");
+                assert(types.size > 0, "Property has no type");
                 return this._unifyTypes(types.map(t => t.typeRef).toArray());
             });
             if (lostTypeAttributes) {
@@ -187,17 +173,16 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
 
 export function unionBuilderForUnification<T extends Type>(
     typeBuilder: GraphRewriteBuilder<T>,
-    makeEnums: boolean,
     makeObjectTypes: boolean,
     makeClassesFixed: boolean,
     conflateNumbers: boolean
 ): UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
-    return new UnifyUnionBuilder(typeBuilder, makeEnums, makeObjectTypes, makeClassesFixed, trefs =>
+    return new UnifyUnionBuilder(typeBuilder, makeObjectTypes, makeClassesFixed, trefs =>
         unifyTypes(
             Set(trefs.map(tref => tref.deref()[0])),
             emptyTypeAttributes,
             typeBuilder,
-            unionBuilderForUnification(typeBuilder, makeEnums, makeObjectTypes, makeClassesFixed, conflateNumbers),
+            unionBuilderForUnification(typeBuilder, makeObjectTypes, makeClassesFixed, conflateNumbers),
             conflateNumbers
         )
     );

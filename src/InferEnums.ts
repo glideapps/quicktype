@@ -2,8 +2,8 @@
 
 import { Set, OrderedMap, OrderedSet } from "immutable";
 
-import { Type, StringType, UnionType } from "./Type";
-import { combineTypeAttributesOfTypes } from "./TypeUtils";
+import { Type, PrimitiveType, UnionType, stringEnumCasesTypeAttributeKind } from "./Type";
+import { combineTypeAttributesOfTypes, stringEnumCases } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { GraphRewriteBuilder } from "./GraphRewriting";
@@ -12,32 +12,32 @@ import { combineTypeAttributes } from "./TypeAttributes";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
-function shouldBeEnum(t: StringType): OrderedMap<string, number> | undefined {
-    const enumCases = t.enumCases;
+function shouldBeEnum(t: PrimitiveType): OrderedMap<string, number> | undefined {
+    const enumCases = stringEnumCases(t);
     if (enumCases !== undefined) {
         assert(enumCases.size > 0, "How did we end up with zero enum cases?");
         const someCaseIsNotNumber = enumCases.keySeq().some(key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false);
         const numValues = enumCases.map(n => n).reduce<number>((a, b) => a + b);
         if (numValues >= MIN_LENGTH_FOR_ENUM && enumCases.size < Math.sqrt(numValues) && someCaseIsNotNumber) {
-            return t.enumCases;
+            return enumCases;
         }
     }
     return undefined;
 }
 
 function replaceString(
-    group: Set<StringType>,
-    builder: GraphRewriteBuilder<StringType>,
+    group: Set<PrimitiveType>,
+    builder: GraphRewriteBuilder<PrimitiveType>,
     forwardingRef: TypeRef
 ): TypeRef {
     assert(group.size === 1);
     const t = defined(group.first());
-    const attributes = t.getAttributes();
+    const attributes = t.getAttributes().filterNot((_, k) => k === stringEnumCasesTypeAttributeKind);
     const maybeEnumCases = shouldBeEnum(t);
     if (maybeEnumCases !== undefined) {
         return builder.getEnumType(attributes, maybeEnumCases.keySeq().toOrderedSet(), forwardingRef);
     }
-    return builder.getStringType(attributes, undefined, forwardingRef);
+    return builder.getStringType(attributes, null, forwardingRef);
 }
 
 // A union needs replacing if it contains more than one string type, one of them being
@@ -78,9 +78,9 @@ export function inferEnums(
 ): TypeGraph {
     const allStrings = graph
         .allTypesUnordered()
-        .filter(t => t instanceof StringType)
+        .filter(t => t.kind === "string")
         .map(t => [t])
-        .toArray() as StringType[][];
+        .toArray() as PrimitiveType[][];
     return graph.rewrite("infer enums", stringTypeMapping, false, allStrings, debugPrintReconstitution, replaceString);
 }
 
