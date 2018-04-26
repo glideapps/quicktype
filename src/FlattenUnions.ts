@@ -1,6 +1,6 @@
 "use strict";
 
-import { Set, Map, OrderedSet } from "immutable";
+import { Set, OrderedSet } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
 import { Type, UnionType, IntersectionType } from "./Type";
@@ -10,6 +10,7 @@ import { TypeRef, StringTypeMapping } from "./TypeBuilder";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { unifyTypes, UnifyUnionBuilder } from "./UnifyClasses";
 import { messageAssert, ErrorMessage } from "./Messages";
+import { emptyTypeAttributes } from "./TypeAttributes";
 
 export function flattenUnions(
     graph: TypeGraph,
@@ -21,16 +22,16 @@ export function flattenUnions(
     let needsRepeat = false;
 
     function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
-        const unionBuilder = new UnifyUnionBuilder(builder, true, makeObjectTypes, true, (trefs, attributes) => {
+        const unionBuilder = new UnifyUnionBuilder(builder, true, makeObjectTypes, true, trefs => {
             assert(trefs.length > 0, "Must have at least one type to build union");
             trefs = trefs.map(tref => builder.reconstituteType(tref.deref()[0]));
             if (trefs.length === 1) {
                 return trefs[0];
             }
             needsRepeat = true;
-            return builder.getUnionType(attributes, OrderedSet(trefs));
+            return builder.getUnionType(emptyTypeAttributes, OrderedSet(trefs));
         });
-        return unifyTypes(types, Map(), builder, unionBuilder, conflateNumbers, forwardingRef);
+        return unifyTypes(types, emptyTypeAttributes, builder, unionBuilder, conflateNumbers, forwardingRef);
     }
 
     const allUnions = graph.allTypesUnordered().filter(t => t instanceof UnionType) as Set<UnionType>;
