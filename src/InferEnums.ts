@@ -16,6 +16,12 @@ function shouldBeEnum(t: StringType): OrderedMap<string, number> | undefined {
     const enumCases = t.enumCases;
     if (enumCases !== undefined) {
         assert(enumCases.size > 0, "How did we end up with zero enum cases?");
+
+        // If all enum cases are numbers, we don't make an enum.
+        if (enumCases.keySeq().every(key => parseFloat(key) !== NaN)) {
+            return undefined;
+        }
+
         const numValues = enumCases.map(n => n).reduce<number>((a, b) => a + b);
         if (numValues >= MIN_LENGTH_FOR_ENUM && enumCases.size < Math.sqrt(numValues)) {
             return t.enumCases;
