@@ -34,6 +34,7 @@ const MAX_SAMELINE_PROPERTIES = 4;
 export default class SwiftTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
     private readonly _convenienceInitializers = new BooleanOption("initializers", "Convenience initializers", true);
+    private readonly _urlSessionHandlers = new BooleanOption("url-session", "URLSession task extensions", false);
     private readonly _alamofireHandlers = new BooleanOption("alamofire", "Alamofire extensions", false);
     private readonly _namedTypePrefix = new StringOption(
         "type-prefix",
@@ -75,6 +76,7 @@ export default class SwiftTargetLanguage extends TargetLanguage {
             this._denseOption,
             this._convenienceInitializers,
             this._accessLevelOption,
+            this._urlSessionHandlers,
             this._alamofireHandlers,
             this._namedTypePrefix
         ];
@@ -243,6 +245,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         private readonly _dense: boolean,
         private readonly _convenienceInitializers: boolean,
         private readonly _accessLevel: string,
+        private readonly _urlSession: boolean,
         private readonly _alamofire: boolean,
         private readonly _namedTypePrefix: string
     ) {
@@ -374,6 +377,27 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     );
                 }
             });
+
+            if (this._urlSession) {
+                this.emitLine("//");
+                this.emitLine("// To read values from URLs:");
+                this.forEachTopLevel("none", (_, name) => {
+                    const lowerName = modifySource(camelCase, name);
+                    this.emitLine("//");
+                    this.emitLine(
+                        "//   let task = URLSession.shared.",
+                        lowerName,
+                        "Task(with: url) { ",
+                        lowerName,
+                        ", response, error in"
+                    );
+                    this.emitLine("//     if let ", lowerName, " = ", lowerName, " {");
+                    this.emitLine("//       ...");
+                    this.emitLine("//     }");
+                    this.emitLine("//   }");
+                    this.emitLine("//   task.resume()");
+                });
+            }
 
             if (this._alamofire) {
                 this.emitLine("//");
@@ -980,13 +1004,6 @@ ${this.accessLevel}class JSONAny: Codable {
         );
 
         if (!this._justTypes) {
-            if (this._alamofire) {
-                this.ensureBlankLine();
-                this.emitMark("Alamofire response handlers", true);
-                this.ensureBlankLine();
-                this.emitAlamofireExtension();
-            }
-
             // FIXME: We emit only the MARK line for top-level-enum.schema
             if (this._convenienceInitializers) {
                 this.ensureBlankLine();
@@ -1007,6 +1024,51 @@ ${this.accessLevel}class JSONAny: Codable {
             this.ensureBlankLine();
             this.emitSupportFunctions4();
         }
+
+        if (this._urlSession) {
+            this.ensureBlankLine();
+            this.emitMark("URLSession response handlers", true);
+            this.ensureBlankLine();
+            this.emitURLSessionExtension();
+        }
+
+        if (this._alamofire) {
+            this.ensureBlankLine();
+            this.emitMark("Alamofire response handlers", true);
+            this.ensureBlankLine();
+            this.emitAlamofireExtension();
+        }
+    }
+
+    private emitURLSessionExtension() {
+        this.ensureBlankLine();
+        this.emitBlockWithAccess("extension URLSession", () => {
+            this
+                .emitMultiline(`fileprivate func codableTask<T: Codable>(with url: URL, completionHandler: @escaping (T?, URLResponse?, Error?) -> Void) -> URLSessionDataTask {
+    return self.dataTask(with: url) { data, response, error in
+        guard let data = data, error == nil else {
+            completionHandler(nil, response, error)
+            return
+        }
+        completionHandler(try! JSONDecoder().decode(T.self, from: data), response, nil)
+    }
+}`);
+            this.ensureBlankLine();
+            this.forEachTopLevel("leading-and-interposing", (_, name) => {
+                this.emitBlockWithAccess(
+                    [
+                        "func ",
+                        modifySource(camelCase, name),
+                        "Task(with url: URL, completionHandler: @escaping (",
+                        name,
+                        "?, URLResponse?, Error?) -> Void) -> URLSessionDataTask"
+                    ],
+                    () => {
+                        this.emitLine(`return self.codableTask(with: url, completionHandler: completionHandler)`);
+                    }
+                );
+            });
+        });
     }
 
     private emitAlamofireExtension() {
