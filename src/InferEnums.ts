@@ -13,32 +13,11 @@ import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
-function shouldBeEnum(t: PrimitiveType): OrderedMap<string, number> | undefined {
-    const enumCases = stringEnumCases(t);
-    if (enumCases !== undefined) {
-        assert(enumCases.size > 0, "How did we end up with zero enum cases?");
-        const someCaseIsNotNumber = enumCases.keySeq().some(key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false);
-        const numValues = enumCases.map(n => n).reduce<number>((a, b) => a + b);
-        if (numValues >= MIN_LENGTH_FOR_ENUM && enumCases.size < Math.sqrt(numValues) && someCaseIsNotNumber) {
-            return enumCases;
-        }
-    }
-    return undefined;
-}
-
-function replaceString(
-    group: Set<PrimitiveType>,
-    builder: GraphRewriteBuilder<PrimitiveType>,
-    forwardingRef: TypeRef
-): TypeRef {
-    assert(group.size === 1);
-    const t = defined(group.first());
-    const attributes = t.getAttributes().filterNot((_, k) => k === stringTypesTypeAttributeKind);
-    const maybeEnumCases = shouldBeEnum(t);
-    if (maybeEnumCases !== undefined) {
-        return builder.getEnumType(attributes, maybeEnumCases.keySeq().toOrderedSet(), forwardingRef);
-    }
-    return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
+function shouldBeEnum(enumCases: OrderedMap<string, number>): boolean {
+    assert(enumCases.size > 0, "How did we end up with zero enum cases?");
+    const someCaseIsNotNumber = enumCases.keySeq().some(key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false);
+    const numValues = enumCases.map(n => n).reduce<number>((a, b) => a + b);
+    return numValues >= MIN_LENGTH_FOR_ENUM && enumCases.size < Math.sqrt(numValues) && someCaseIsNotNumber;
 }
 
 // A union needs replacing if it contains more than one string type, one of them being
@@ -75,11 +54,27 @@ function replaceUnion(group: Set<UnionType>, builder: GraphRewriteBuilder<UnionT
 export function inferEnums(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
+    makeAllEnums: boolean,
     debugPrintReconstitution: boolean
 ): TypeGraph {
+    function replaceString(
+        group: Set<PrimitiveType>,
+        builder: GraphRewriteBuilder<PrimitiveType>,
+        forwardingRef: TypeRef
+    ): TypeRef {
+        assert(group.size === 1);
+        const t = defined(group.first());
+        const attributes = t.getAttributes().filterNot((_, k) => k === stringTypesTypeAttributeKind);
+        const enumCases = defined(stringEnumCases(t));
+        if (makeAllEnums || shouldBeEnum(enumCases)) {
+            return builder.getEnumType(attributes, enumCases.keySeq().toOrderedSet(), forwardingRef);
+        }
+        return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
+    }
+
     const allStrings = graph
         .allTypesUnordered()
-        .filter(t => t.kind === "string")
+        .filter(t => t.kind === "string" && stringEnumCases(t as PrimitiveType) !== undefined)
         .map(t => [t])
         .toArray() as PrimitiveType[][];
     return graph.rewrite("infer enums", stringTypeMapping, false, allStrings, debugPrintReconstitution, replaceString);

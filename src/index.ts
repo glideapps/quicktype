@@ -238,9 +238,7 @@ export class Run {
                 );
             }
         }
-        if (doInferEnums) {
-            graph = inferEnums(graph, stringTypeMapping, debugPrintReconstitution);
-        }
+        graph = inferEnums(graph, stringTypeMapping, !doInferEnums, debugPrintReconstitution);
         graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution);
         if (this._options.inferMaps) {
             for (;;) {

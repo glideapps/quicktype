@@ -35,7 +35,7 @@ import {
     emptyTypeAttributes,
     makeTypeAttributesInferred
 } from "./TypeAttributes";
-import { MutableStringTypes, StringTypes } from "./StringTypes";
+import { MutableStringTypes } from "./StringTypes";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t)[0];
@@ -266,8 +266,8 @@ class IntersectionAccumulator
         return [this._objectProperties, this._additionalPropertyTypes];
     }
 
-    get stringTypes(): StringTypes {
-        return this._stringTypes.toImmutable();
+    get enumCases(): OrderedSet<string> {
+        return defined(this._stringTypes.enumCases);
     }
 
     getMemberKinds(): TypeAttributeMap<TypeKind> {
@@ -407,7 +407,7 @@ export function resolveIntersections(
         );
         const attributes = combineTypeAttributes(intersectionAttributes, extraAttributes);
 
-        const unionBuilder = new IntersectionUnionBuilder(builder, true);
+        const unionBuilder = new IntersectionUnionBuilder(builder);
         const tref = unionBuilder.buildUnion(accumulator, true, attributes, forwardingRef);
         if (unionBuilder.createdNewIntersections) {
             needsRepeat = true;

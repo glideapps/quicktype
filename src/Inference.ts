@@ -39,7 +39,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         private readonly _cjson: CompressedJSON,
         private readonly _fixed: boolean
     ) {
-        super(typeBuilder, false);
+        super(typeBuilder);
     }
 
     protected makeObject(
@@ -102,7 +102,7 @@ export class TypeInference {
                     if (this._inferEnums) {
                         const s = cjson.getStringForValue(value);
                         if (canBeEnumCase(s)) {
-                            accumulator.addEnumCase(s, 1, emptyTypeAttributes);
+                            accumulator.addStringCase(s, 1, emptyTypeAttributes);
                         } else {
                             accumulator.addStringType("string", emptyTypeAttributes);
                         }

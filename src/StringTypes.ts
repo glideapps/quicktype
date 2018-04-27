@@ -63,6 +63,8 @@ export class StringTypes {
     }
 }
 
+// FIXME: Why do we have this, just for intersections?  Either use it for unions, too,
+// or get rid of it.
 export class MutableStringTypes {
     static get unrestricted(): MutableStringTypes {
         return new MutableStringTypes({}, undefined);
@@ -119,6 +121,11 @@ export class MutableStringTypes {
             }
         }
         this._enumCases = newEnumCases;
+    }
+
+    get enumCases(): OrderedSet<string> | undefined {
+        if (this._enumCases === undefined) return undefined;
+        return OrderedSet(this._enumCases);
     }
 
     toImmutable(): StringTypes {

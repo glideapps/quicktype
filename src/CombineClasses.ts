@@ -157,7 +157,7 @@ export function combineClasses(
             clique,
             attributes,
             builder,
-            unionBuilderForUnification(builder, false, false, false, conflateNumbers),
+            unionBuilderForUnification(builder, false, false, conflateNumbers),
             conflateNumbers,
             forwardingRef
         );
