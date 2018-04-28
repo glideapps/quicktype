@@ -30,7 +30,7 @@ function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefi
 
     // If all property names are digit-only, we always make a map, no
     // questions asked.
-    if (properties.keySeq().every(n => n.match(/^[0-9]+$/) !== null)) {
+    if (properties.keySeq().every(n => /^[0-9]+$/.test(n))) {
         return properties
             .valueSeq()
             .map(cp => cp.type)

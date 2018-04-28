@@ -210,7 +210,7 @@ export class Ref {
 
             switch (e.kind) {
                 case PathElementKind.KeyOrIndex:
-                    if (e.key.match(numberRegexp) !== null) {
+                    if (numberRegexp.test(e.key)) {
                         return e.key;
                     }
                     break;
