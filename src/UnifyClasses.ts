@@ -215,7 +215,7 @@ export function unifyTypes<T extends Type>(
 
     const accumulator = new TypeRefUnionAccumulator(conflateNumbers);
     const nestedAttributes = accumulator.addTypes(types);
-    typeAttributes = combineTypeAttributes(typeAttributes, nestedAttributes);
+    typeAttributes = combineTypeAttributes("union", typeAttributes, nestedAttributes);
 
     return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {
         typeBuilder.registerUnion(typeRefs, forwardingRef);

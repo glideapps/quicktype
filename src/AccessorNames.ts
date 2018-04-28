@@ -16,6 +16,7 @@ export const accessorNamesTypeAttributeKind = new TypeAttributeKind<AccessorName
     false,
     false,
     undefined,
+    undefined,
     _ => undefined,
     undefined
 );
@@ -74,6 +75,7 @@ export const unionIdentifierTypeAttributeKind = new TypeAttributeKind<Set<number
     false,
     false,
     (a, b) => a.union(b),
+    undefined,
     _ => undefined,
     undefined
 );
@@ -91,6 +93,7 @@ export const unionMemberNamesTypeAttributeKind = new TypeAttributeKind<Map<numbe
     false,
     false,
     (a, b) => a.merge(b),
+    undefined,
     _ => undefined,
     undefined
 );

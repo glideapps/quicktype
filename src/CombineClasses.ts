@@ -152,7 +152,7 @@ export function combineClasses(
         forwardingRef: TypeRef
     ): TypeRef {
         assert(clique.size > 0, "Clique can't be empty");
-        const attributes = combineTypeAttributesOfTypes(clique);
+        const attributes = combineTypeAttributesOfTypes("union", clique);
         return unifyTypes(
             clique,
             attributes,

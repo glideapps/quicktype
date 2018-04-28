@@ -240,6 +240,7 @@ export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>(
     false,
     false,
     (a, b) => a.add(b),
+    undefined,
     a => a.makeInferred(),
     a => a.toString()
 );

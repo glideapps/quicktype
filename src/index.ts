@@ -16,7 +16,7 @@ import { TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersection
 import { makeNamesTypeAttributes, initTypeNames } from "./TypeNames";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
-import { inferEnums, flattenStrings } from "./InferEnums";
+import { expandStrings } from "./ExpandStrings";
 import { descriptionTypeAttributeKind } from "./TypeAttributes";
 import { flattenUnions } from "./FlattenUnions";
 import { resolveIntersections } from "./ResolveIntersections";
@@ -238,8 +238,7 @@ export class Run {
                 );
             }
         }
-        graph = inferEnums(graph, stringTypeMapping, !doInferEnums, debugPrintReconstitution);
-        graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution);
+
         if (this._options.inferMaps) {
             for (;;) {
                 const newGraph = inferMaps(graph, stringTypeMapping, true, debugPrintReconstitution);
@@ -249,10 +248,17 @@ export class Run {
                 graph = newGraph;
             }
         }
+
+        const enumInference = schemaInputs.isEmpty() ? (doInferEnums ? "infer" : "none") : "all";
+        graph = expandStrings(graph, stringTypeMapping, enumInference, debugPrintReconstitution);
+        [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false, debugPrintReconstitution);
+        assert(unionsDone, "We should only have to flatten unions once after expanding strings");
+
         graph = noneToAny(graph, stringTypeMapping, debugPrintReconstitution);
         if (!targetLanguage.supportsOptionalClassProperties) {
             graph = optionalToNullable(graph, stringTypeMapping, debugPrintReconstitution);
         }
+
         // Sometimes we combine classes in ways that will the order come out
         // differently compared to what it would be from the equivalent schema,
         // so we always just garbage collect to get a defined order and be done

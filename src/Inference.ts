@@ -9,6 +9,7 @@ import { UnionBuilder, UnionAccumulator } from "./UnionBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { ClassProperty } from "./Type";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { StringTypes } from "./StringTypes";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
@@ -120,13 +121,25 @@ export class TypeInference {
                     accumulator.addArray(cjson.getArrayForValue(value), emptyTypeAttributes);
                     break;
                 case Tag.Date:
-                    accumulator.addStringType(this._inferDates ? "date" : "string", emptyTypeAttributes);
+                    accumulator.addStringType(
+                        "string",
+                        emptyTypeAttributes,
+                        this._inferDates ? StringTypes.date : StringTypes.unrestricted
+                    );
                     break;
                 case Tag.Time:
-                    accumulator.addStringType(this._inferDates ? "time" : "string", emptyTypeAttributes);
+                    accumulator.addStringType(
+                        "string",
+                        emptyTypeAttributes,
+                        this._inferDates ? StringTypes.time : StringTypes.unrestricted
+                    );
                     break;
                 case Tag.DateTime:
-                    accumulator.addStringType(this._inferDates ? "date-time" : "string", emptyTypeAttributes);
+                    accumulator.addStringType(
+                        "string",
+                        emptyTypeAttributes,
+                        this._inferDates ? StringTypes.dateTime : StringTypes.unrestricted
+                    );
                     break;
                 default:
                     return assertNever(t);

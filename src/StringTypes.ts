@@ -1,21 +1,20 @@
-import { is, hash, OrderedMap, OrderedSet } from "immutable";
+import { is, hash, OrderedMap } from "immutable";
 
 import { TypeAttributeKind } from "./TypeAttributes";
-
-let unrestrictedStringTypes: StringTypes | undefined = undefined;
+import { addHashCode, defined, assert } from "./Support";
+import { StringTypeMapping } from "./TypeBuilder";
+import { PrimitiveStringTypeKind } from "./Type";
 
 export class StringTypes {
-    static get unrestricted(): StringTypes {
-        if (unrestrictedStringTypes === undefined) {
-            unrestrictedStringTypes = new StringTypes(undefined);
-        }
-        return unrestrictedStringTypes;
-    }
+    static readonly unrestricted: StringTypes = new StringTypes(undefined, false, false, false);
+    static readonly date: StringTypes = new StringTypes(OrderedMap(), true, false, false);
+    static readonly time: StringTypes = new StringTypes(OrderedMap(), false, true, false);
+    static readonly dateTime: StringTypes = new StringTypes(OrderedMap(), false, false, true);
 
     static fromCase(s: string, count: number): StringTypes {
         const caseMap: { [name: string]: number } = {};
         caseMap[s] = count;
-        return new StringTypes(OrderedMap([[s, count] as [string, number]]));
+        return new StringTypes(OrderedMap([[s, count] as [string, number]]), false, false, false);
     }
 
     static fromCases(cases: string[]): StringTypes {
@@ -23,124 +22,130 @@ export class StringTypes {
         for (const s of cases) {
             caseMap[s] = 1;
         }
-        return new StringTypes(OrderedMap(cases.map(s => [s, 1] as [string, number])));
+        return new StringTypes(OrderedMap(cases.map(s => [s, 1] as [string, number])), false, false, false);
     }
 
     // undefined means no restrictions
-    constructor(readonly cases: OrderedMap<string, number> | undefined) {}
+    constructor(
+        readonly cases: OrderedMap<string, number> | undefined,
+        readonly allowDate: boolean,
+        readonly allowTime: boolean,
+        readonly allowDateTime: boolean
+    ) {
+        if (cases === undefined) {
+            assert(
+                !this.allowDate && !this.allowTime && !this.allowDateTime,
+                "We can't have an unrestricted string that also allows date/times"
+            );
+        }
+    }
 
     get isRestricted(): boolean {
         return this.cases !== undefined;
     }
 
     union(other: StringTypes): StringTypes {
-        if (this.cases === undefined || other.cases === undefined) {
-            return new StringTypes(undefined);
+        const cases =
+            this.cases === undefined || other.cases === undefined
+                ? undefined
+                : this.cases.mergeWith((x, y) => x + y, other.cases);
+        const allowDate = cases !== undefined && (this.allowDate || other.allowDate);
+        const allowTime = cases !== undefined && (this.allowTime || other.allowTime);
+        const allowDateTime = cases !== undefined && (this.allowDateTime || other.allowDateTime);
+        return new StringTypes(cases, allowDate, allowTime, allowDateTime);
+    }
+
+    intersect(other: StringTypes): StringTypes {
+        const thisCases = this.cases;
+        const otherCases = other.cases;
+        let cases: OrderedMap<string, number> | undefined;
+        if (thisCases === undefined) {
+            cases = otherCases;
+        } else if (otherCases === undefined) {
+            cases = thisCases;
+        } else {
+            cases = thisCases
+                .keySeq()
+                .toOrderedSet()
+                .intersect(otherCases.keySeq().toOrderedSet())
+                .toOrderedMap()
+                .map(k => Math.min(defined(thisCases.get(k)), defined(otherCases.get(k))));
         }
-        return new StringTypes(this.cases.mergeWith((x, y) => x + y, other.cases));
+        const allowDate = this.allowDate && other.allowDate;
+        const allowTime = this.allowTime && other.allowTime;
+        const allowDateTime = this.allowDateTime && other.allowDateTime;
+        return new StringTypes(cases, allowDate, allowTime, allowDateTime);
+    }
+
+    applyStringTypeMapping(mapping: StringTypeMapping): StringTypes {
+        if (!this.isRestricted) return this;
+
+        const kinds: PrimitiveStringTypeKind[] = [];
+        if (this.allowDate) {
+            kinds.push(mapping.date);
+        }
+        if (this.allowTime) {
+            kinds.push(mapping.time);
+        }
+        if (this.allowDateTime) {
+            kinds.push(mapping.dateTime);
+        }
+        if (kinds.indexOf("string") >= 0) {
+            return StringTypes.unrestricted;
+        }
+        const allowDate = kinds.indexOf("date") >= 0;
+        const allowTime = kinds.indexOf("time") >= 0;
+        const allowDateTime = kinds.indexOf("date-time") >= 0;
+        return new StringTypes(this.cases, allowDate, allowTime, allowDateTime);
     }
 
     equals(other: any): boolean {
         if (!(other instanceof StringTypes)) return false;
-        return is(this.cases, other.cases);
+        return (
+            is(this.cases, other.cases) &&
+            this.allowDate === other.allowDate &&
+            this.allowTime === other.allowTime &&
+            this.allowDateTime === other.allowDateTime
+        );
     }
 
     hashCode(): number {
-        return hash(this.cases);
+        let h = hash(this.cases);
+        h = addHashCode(h, hash(this.allowDate));
+        h = addHashCode(h, hash(this.allowTime));
+        h = addHashCode(h, hash(this.allowDateTime));
+        return h;
     }
 
     toString(): string {
+        const parts: string[] = [];
+
         const enumCases = this.cases;
         if (enumCases === undefined) {
-            return "no enum";
-        }
-        const firstKey = enumCases.keySeq().first();
-        if (firstKey === undefined) {
-            return "enum with no cases";
-        }
-
-        return `${enumCases.size.toString()} enums: ${firstKey} (${enumCases.get(firstKey)}), ...`;
-    }
-}
-
-// FIXME: Why do we have this, just for intersections?  Either use it for unions, too,
-// or get rid of it.
-export class MutableStringTypes {
-    static get unrestricted(): MutableStringTypes {
-        return new MutableStringTypes({}, undefined);
-    }
-
-    static get none(): MutableStringTypes {
-        return new MutableStringTypes({}, []);
-    }
-
-    // _enumCases === undefined means no restrictions
-    protected constructor(private _enumCaseMap: { [name: string]: number }, private _enumCases: string[] | undefined) {}
-
-    get isRestrictedAndAllowed(): boolean {
-        return this._enumCases !== undefined && this._enumCases.length > 0;
-    }
-
-    makeUnrestricted(): void {
-        this._enumCaseMap = {};
-        this._enumCases = undefined;
-    }
-
-    addCase(s: string, count: number): void {
-        if (!Object.prototype.hasOwnProperty.call(this._enumCaseMap, s)) {
-            this._enumCaseMap[s] = 0;
-            if (this._enumCases === undefined) {
-                this._enumCases = [];
-            }
-            this._enumCases.push(s);
-        }
-        this._enumCaseMap[s] += count;
-    }
-
-    addCases(cases: string[]): void {
-        for (const s of cases) {
-            this.addCase(s, 1);
-        }
-    }
-
-    intersectCasesWithSet(newCases: OrderedSet<string>): void {
-        let newEnumCases: string[];
-        if (this._enumCases === undefined) {
-            newEnumCases = newCases.toArray();
-            for (const s of newEnumCases) {
-                this._enumCaseMap[s] = 1;
-            }
+            parts.push("unrestricted");
         } else {
-            newEnumCases = [];
-            for (const s of this._enumCases) {
-                if (newCases.has(s)) {
-                    newEnumCases.push(s);
-                } else {
-                    this._enumCaseMap[s] = 0;
-                }
+            const firstKey = enumCases.keySeq().first();
+            if (firstKey === undefined) {
+                parts.push("enum with no cases");
+            } else {
+                parts.push(`${enumCases.size.toString()} enums: ${firstKey} (${enumCases.get(firstKey)}), ...`);
             }
         }
-        this._enumCases = newEnumCases;
-    }
 
-    get enumCases(): OrderedSet<string> | undefined {
-        if (this._enumCases === undefined) return undefined;
-        return OrderedSet(this._enumCases);
-    }
+        if (this.allowDate) parts.push("d");
+        if (this.allowTime) parts.push("t");
+        if (this.allowDateTime) parts.push("dt");
 
-    toImmutable(): StringTypes {
-        if (this._enumCases === undefined) {
-            return new StringTypes(undefined);
-        }
-        return new StringTypes(OrderedMap(this._enumCases.map(s => [s, this._enumCaseMap[s]] as [string, number])));
+        return parts.join(",");
     }
 }
 
 export const stringTypesTypeAttributeKind = new TypeAttributeKind<StringTypes>(
     "stringTypes",
     true,
-    st => st.isRestricted,
+    st => st.cases !== undefined && !st.cases.isEmpty(),
     (a, b) => a.union(b),
+    (a, b) => a.intersect(b),
     _ => undefined,
     st => st.toString()
 );

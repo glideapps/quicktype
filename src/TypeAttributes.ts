@@ -6,6 +6,7 @@ import { panic, setUnion, assert } from "./Support";
 
 export class TypeAttributeKind<T> {
     public readonly combine: (a: T, b: T) => T;
+    public readonly intersect: (a: T, b: T) => T;
     public readonly makeInferred: (a: T) => T | undefined;
     public readonly stringify: (a: T) => string | undefined;
 
@@ -14,6 +15,7 @@ export class TypeAttributeKind<T> {
         private readonly _inIdentity: boolean,
         private readonly _uniqueIdentity: ((a: T) => boolean) | boolean,
         combine: ((a: T, b: T) => T) | undefined,
+        intersect: ((a: T, b: T) => T) | undefined,
         makeInferred: ((a: T) => T | undefined) | undefined,
         stringify: ((a: T) => string | undefined) | undefined
     ) {
@@ -23,6 +25,11 @@ export class TypeAttributeKind<T> {
             };
         }
         this.combine = combine;
+
+        if (intersect === undefined) {
+            intersect = combine;
+        }
+        this.intersect = intersect;
 
         if (makeInferred === undefined) {
             makeInferred = () => {
@@ -59,7 +66,7 @@ export class TypeAttributeKind<T> {
         return a.get(this);
     }
 
-    setInAttributes(a: TypeAttributes, value: T): TypeAttributes {
+    private setInAttributes(a: TypeAttributes, value: T): TypeAttributes {
         return a.set(this, value);
     }
 
@@ -69,6 +76,10 @@ export class TypeAttributeKind<T> {
             return a.remove(this);
         }
         return this.setInAttributes(a, modified);
+    }
+
+    combineInAttributes(a: TypeAttributes, value: T): TypeAttributes {
+        return this.modifyInAttributes(a, v => (v === undefined ? value : this.combine(v, value)));
     }
 
     setDefaultInAttributes(a: TypeAttributes, makeDefault: () => T): TypeAttributes {
@@ -92,12 +103,16 @@ export type TypeAttributes = Map<TypeAttributeKind<any>, any>;
 
 export const emptyTypeAttributes: TypeAttributes = Map();
 
-export function combineTypeAttributes(attributeArray: TypeAttributes[]): TypeAttributes;
-export function combineTypeAttributes(a: TypeAttributes, b: TypeAttributes): TypeAttributes;
+export type CombinationKind = "union" | "intersect";
+
+export function combineTypeAttributes(kind: CombinationKind, attributeArray: TypeAttributes[]): TypeAttributes;
+export function combineTypeAttributes(kind: CombinationKind, a: TypeAttributes, b: TypeAttributes): TypeAttributes;
 export function combineTypeAttributes(
+    combinationKind: CombinationKind,
     firstOrArray: TypeAttributes[] | TypeAttributes,
     second?: TypeAttributes
 ): TypeAttributes {
+    const union = combinationKind === "union";
     let attributeArray: TypeAttributes[];
     let first: TypeAttributes;
     let rest: TypeAttributes[];
@@ -113,7 +128,7 @@ export function combineTypeAttributes(
         first = firstOrArray;
         rest = [second];
     }
-    return first.mergeWith((aa, ab, kind) => kind.combine(aa, ab), ...rest);
+    return first.mergeWith((aa, ab, kind) => (union ? kind.combine(aa, ab) : kind.intersect(aa, ab)), ...rest);
 }
 
 export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
@@ -125,6 +140,7 @@ export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<str
     false,
     false,
     setUnion,
+    undefined,
     _ => OrderedSet(),
     descriptions => {
         let result = descriptions.first();
@@ -143,6 +159,7 @@ export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<s
     false,
     false,
     (a, b) => a.mergeWith(setUnion, b),
+    undefined,
     _ => Map(),
     undefined
 );

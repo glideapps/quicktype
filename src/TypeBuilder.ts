@@ -65,6 +65,7 @@ export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>(
     false,
     false,
     setUnion,
+    undefined,
     a => a,
     provenanceToString
 );
@@ -142,7 +143,7 @@ export class TypeBuilder {
         const tref = forwardingRef !== undefined ? forwardingRef : this.reserveTypeRef();
         if (attributes !== undefined) {
             const index = tref.index;
-            this.typeAttributes[index] = combineTypeAttributes(this.typeAttributes[index], attributes);
+            this.typeAttributes[index] = combineTypeAttributes("union", this.typeAttributes[index], attributes);
         }
         const t = creator(tref);
         this.commitType(tref, t);
@@ -171,7 +172,7 @@ export class TypeBuilder {
             "Can't add different identity type attributes to an existing type"
         );
         const nonIdentityAttributes = attributes.filterNot((_, k) => k.inIdentity);
-        this.typeAttributes[index] = combineTypeAttributes(existingAttributes, nonIdentityAttributes);
+        this.typeAttributes[index] = combineTypeAttributes("union", existingAttributes, nonIdentityAttributes);
     }
 
     makeNullable(tref: TypeRef, attributes: TypeAttributes): TypeRef {
@@ -280,6 +281,7 @@ export class TypeBuilder {
         );
         if (existingStringTypes === undefined) {
             attributes = combineTypeAttributes(
+                "union",
                 attributes,
                 stringTypesTypeAttributeKind.makeAttributes(defined(stringTypes))
             );

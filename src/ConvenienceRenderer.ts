@@ -52,12 +52,14 @@ const assignedNameAttributeKind = new TypeAttributeKind<Name>(
     false,
     undefined,
     undefined,
+    undefined,
     undefined
 );
 const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
     "assignedPropertyNames",
     false,
     false,
+    undefined,
     undefined,
     undefined,
     undefined
@@ -68,12 +70,14 @@ const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>(
     false,
     undefined,
     undefined,
+    undefined,
     undefined
 );
 const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
     "assignedCaseNames",
     false,
     false,
+    undefined,
     undefined,
     undefined,
     undefined

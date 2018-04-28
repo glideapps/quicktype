@@ -320,9 +320,13 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
             attributes = emptyTypeAttributes;
         }
         if (attributeSources === undefined) {
-            attributes = combineTypeAttributes(attributes, originalAttributes);
+            attributes = combineTypeAttributes("union", attributes, originalAttributes);
         } else {
-            attributes = combineTypeAttributes(attributes, combineTypeAttributesOfTypes(attributeSources));
+            attributes = combineTypeAttributes(
+                "union",
+                attributes,
+                combineTypeAttributesOfTypes("union", attributeSources)
+            );
         }
 
         const index = originalRef.index;
@@ -454,7 +458,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         if (attributes === undefined) {
             attributes = originalAttributes;
         } else {
-            attributes = combineTypeAttributes(attributes, originalAttributes);
+            attributes = combineTypeAttributes("union", attributes, originalAttributes);
         }
 
         const reconstituter = new TypeReconstituter(

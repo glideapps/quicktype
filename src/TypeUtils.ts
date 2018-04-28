@@ -1,9 +1,9 @@
 "use strict";
 
-import { OrderedSet, Collection, Map, Set, OrderedMap } from "immutable";
+import { OrderedSet, Collection, Map, Set } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./Support";
-import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes, CombinationKind } from "./TypeAttributes";
 import {
     Type,
     PrimitiveType,
@@ -16,7 +16,7 @@ import {
     SetOperationType,
     UnionType
 } from "./Type";
-import { stringTypesTypeAttributeKind } from "./StringTypes";
+import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {
@@ -33,13 +33,16 @@ export function assertIsClass(t: Type): ClassType {
 }
 
 export function setOperationMembersRecursively<T extends SetOperationType>(
-    setOperation: T
+    setOperation: T,
+    combinationKind: CombinationKind | undefined
 ): [OrderedSet<Type>, TypeAttributes];
 export function setOperationMembersRecursively<T extends SetOperationType>(
-    setOperations: T[]
+    setOperations: T[],
+    combinationKind: CombinationKind | undefined
 ): [OrderedSet<Type>, TypeAttributes];
 export function setOperationMembersRecursively<T extends SetOperationType>(
-    oneOrMany: T | T[]
+    oneOrMany: T | T[],
+    combinationKind: CombinationKind | undefined
 ): [OrderedSet<Type>, TypeAttributes] {
     const setOperations = Array.isArray(oneOrMany) ? oneOrMany : [oneOrMany];
     const kind = setOperations[0].kind;
@@ -53,12 +56,16 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
             const so = t as T;
             if (processedSetOperations.has(so)) return;
             processedSetOperations = processedSetOperations.add(so);
-            attributes = combineTypeAttributes(attributes, t.getAttributes());
+            if (combinationKind !== undefined) {
+                attributes = combineTypeAttributes(combinationKind, attributes, t.getAttributes());
+            }
             so.members.forEach(process);
         } else if (includeAny || t.kind !== "any") {
             members = members.add(t);
         } else {
-            attributes = combineTypeAttributes(attributes, t.getAttributes());
+            if (combinationKind !== undefined) {
+                attributes = combineTypeAttributes(combinationKind, attributes, t.getAttributes());
+            }
         }
     }
 
@@ -74,7 +81,7 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
 ): Type[][] {
     let typeGroups = Map<Set<Type>, OrderedSet<Type>>();
     setOperations.forEach(u => {
-        const members = setOperationMembersRecursively(u)[0].toSet();
+        const members = setOperationMembersRecursively(u, undefined)[0].toSet();
 
         if (include !== undefined) {
             if (!include(members)) return;
@@ -97,13 +104,19 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
         .map(ts => ts.toArray());
 }
 
-export function combineTypeAttributesOfTypes(types: Type[]): TypeAttributes;
-export function combineTypeAttributesOfTypes(types: Collection<any, Type>): TypeAttributes;
-export function combineTypeAttributesOfTypes(types: Type[] | Collection<any, Type>): TypeAttributes {
+export function combineTypeAttributesOfTypes(combinationKind: CombinationKind, types: Type[]): TypeAttributes;
+export function combineTypeAttributesOfTypes(
+    combinationKind: CombinationKind,
+    types: Collection<any, Type>
+): TypeAttributes;
+export function combineTypeAttributesOfTypes(
+    combinationKind: CombinationKind,
+    types: Type[] | Collection<any, Type>
+): TypeAttributes {
     if (!Array.isArray(types)) {
         types = types.valueSeq().toArray();
     }
-    return combineTypeAttributes(types.map(t => t.getAttributes()));
+    return combineTypeAttributes(combinationKind, types.map(t => t.getAttributes()));
 }
 
 // FIXME: We shouldn't have to sort here.  This is just because we're not getting
@@ -191,13 +204,13 @@ export function directlyReachableSingleNamedType(type: Type): Type | undefined {
     return definedTypes.first();
 }
 
-export function stringEnumCases(t: PrimitiveType): OrderedMap<string, number> | undefined {
-    assert(t.kind === "string", "Only strings can be considered enums");
+export function stringTypesForType(t: PrimitiveType): StringTypes {
+    assert(t.kind === "string", "Only strings can have string types");
     const stringTypes = stringTypesTypeAttributeKind.tryGetInAttributes(t.getAttributes());
     if (stringTypes === undefined) {
-        return panic("All strings must have an enum case attribute");
+        return panic("All strings must have a string type attribute");
     }
-    return stringTypes.cases;
+    return stringTypes;
 }
 
 export type StringTypeMatchers<U> = {

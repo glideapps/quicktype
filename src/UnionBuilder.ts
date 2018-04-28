@@ -38,7 +38,7 @@ function addAttributes(
     newAttributes: TypeAttributes
 ): TypeAttributes {
     if (accumulatorAttributes === undefined) return newAttributes;
-    return combineTypeAttributes(accumulatorAttributes, newAttributes);
+    return combineTypeAttributes("union", accumulatorAttributes, newAttributes);
 }
 
 function setAttributes<T extends TypeKind>(
@@ -97,15 +97,15 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "double", attributes);
     }
 
-    private addFullStringType(attributes: TypeAttributes, stringTypes: StringTypes | undefined): void {
+    protected addFullStringType(attributes: TypeAttributes, stringTypes: StringTypes | undefined): void {
         if (stringTypes === undefined) {
             stringTypes = stringTypesTypeAttributeKind.tryGetInAttributes(attributes);
         } else {
-            attributes = stringTypesTypeAttributeKind.setInAttributes(attributes, stringTypes);
+            attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
         }
         if (stringTypes === undefined) {
             stringTypes = StringTypes.unrestricted;
-            attributes = stringTypesTypeAttributeKind.setInAttributes(attributes, stringTypes);
+            attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
         }
 
         const maybeEnumAttributes = this._nonStringTypeAttributes.get("enum");
@@ -115,23 +115,22 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
                 "We can't add both an enum as well as a restricted string type to a union builder"
             );
         } else {
-            // unrestricted string overrides all other string types, as well as enum
-            let oldAttributes = combineTypeAttributes(this._stringTypeAttributes.valueSeq().toArray());
-            if (maybeEnumAttributes !== undefined) {
-                oldAttributes = combineTypeAttributes(oldAttributes, maybeEnumAttributes);
-                this._nonStringTypeAttributes = this._nonStringTypeAttributes.remove("enum");
-            }
-            attributes = combineTypeAttributes(oldAttributes, attributes);
-            this._stringTypeAttributes = this._stringTypeAttributes.clear();
+            assert(
+                this._stringTypeAttributes.every((_, k) => k === "string"),
+                "Can't add the full string type to a union builder that has others"
+            );
         }
 
         this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, "string", attributes);
     }
 
-    addStringType(kind: PrimitiveStringTypeKind, attributes: TypeAttributes): void {
+    addStringType(kind: PrimitiveStringTypeKind, attributes: TypeAttributes, stringTypes?: StringTypes): void {
         if (kind === "string") {
-            this.addFullStringType(attributes, undefined);
+            this.addFullStringType(attributes, stringTypes);
             return;
+        }
+        if (stringTypes !== undefined) {
+            attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
         }
         this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, kind, attributes);
     }
@@ -179,7 +178,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         if (this._nonStringTypeAttributes.has("any")) {
             assert(this._lostTypeAttributes, "This had to be set when we added 'any'");
 
-            const allAttributes = combineTypeAttributes(merged.valueSeq().toArray());
+            const allAttributes = combineTypeAttributes("union", merged.valueSeq().toArray());
             return OrderedMap([["any", allAttributes] as [TypeKind, TypeAttributes]]);
         }
 
@@ -233,7 +232,7 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
         const singleAncestors = unionForType.filter(u => defined(typesForUnion.get(u)).size === 1);
         assert(singleAncestors.every(u => defined(typesForUnion.get(u)).has(t)), "We messed up bookkeeping");
         const inheritedAttributes = singleAncestors.toArray().map(u => u.getAttributes());
-        return combineTypeAttributes([t.getAttributes()].concat(inheritedAttributes));
+        return combineTypeAttributes("union", [t.getAttributes()].concat(inheritedAttributes));
     });
     const unionAttributes = unions.toArray().map(u => {
         const t = typesForUnion.get(u);
@@ -246,7 +245,7 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
         }
         return makeTypeAttributesInferred(attributes);
     });
-    return [resultAttributes, combineTypeAttributes(unionAttributes)];
+    return [resultAttributes, combineTypeAttributes("union", unionAttributes)];
 }
 
 // FIXME: Move this to UnifyClasses.ts?
@@ -348,7 +347,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
 
         if (kinds.size === 1) {
             const [[kind, memberAttributes]] = kinds.toArray();
-            const allAttributes = combineTypeAttributes(typeAttributes, memberAttributes);
+            const allAttributes = combineTypeAttributes("union", typeAttributes, memberAttributes);
             const t = this.makeTypeOfKind(typeProvider, kind, allAttributes, forwardingRef);
             return t;
         }
