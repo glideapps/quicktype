@@ -48,12 +48,12 @@ export type TypeIdentity = List<any> | undefined;
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
 
-    abstract get children(): OrderedSet<Type>;
+    abstract getChildren(): OrderedSet<Type>;
 
     directlyReachableTypes<T>(setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
         const set = setForType(this);
         if (set) return set;
-        return orderedSetUnion(this.children.map((t: Type) => t.directlyReachableTypes(setForType)));
+        return orderedSetUnion(this.getChildren().map((t: Type) => t.directlyReachableTypes(setForType)));
     }
 
     getAttributes(): TypeAttributes {
@@ -204,7 +204,7 @@ export class PrimitiveType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: PrimitiveTypeKind;
 
-    get children(): OrderedSet<Type> {
+    getChildren(): OrderedSet<Type> {
         return OrderedSet();
     }
 
@@ -264,7 +264,7 @@ export class ArrayType extends Type {
         return this.getItemsRef().deref()[0];
     }
 
-    get children(): OrderedSet<Type> {
+    getChildren(): OrderedSet<Type> {
         return OrderedSet([this.items]);
     }
 
@@ -415,7 +415,7 @@ export class ObjectType extends Type {
         return tref.deref()[0];
     }
 
-    get children(): OrderedSet<Type> {
+    getChildren(): OrderedSet<Type> {
         const children = this.getSortedProperties()
             .map(p => p.type)
             .toOrderedSet();
@@ -560,7 +560,7 @@ export class EnumType extends Type {
         super(typeRef, "enum");
     }
 
-    get children(): OrderedSet<Type> {
+    getChildren(): OrderedSet<Type> {
         return OrderedSet();
     }
 
@@ -654,7 +654,7 @@ export abstract class SetOperationType extends Type {
         return this.members.sortBy(t => t.kind);
     }
 
-    get children(): OrderedSet<Type> {
+    getChildren(): OrderedSet<Type> {
         return this.sortedMembers;
     }
 
