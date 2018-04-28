@@ -606,21 +606,17 @@ export async function addTypesInSchema(
         const inferredAttributes = makeTypeAttributesInferred(typeAttributes);
 
         function makeStringType(): TypeRef {
-            let stringTypes = StringTypes.unrestricted;
             switch (schema.format) {
                 case "date":
-                    stringTypes = StringTypes.date;
-                    break;
+                    return typeBuilder.getPrimitiveType("date", inferredAttributes);
                 case "time":
-                    stringTypes = StringTypes.time;
-                    break;
+                    return typeBuilder.getPrimitiveType("time", inferredAttributes);
                 case "date-time":
-                    stringTypes = StringTypes.dateTime;
-                    break;
+                    return typeBuilder.getPrimitiveType("date-time", inferredAttributes);
                 default:
                     break;
             }
-            return typeBuilder.getStringType(inferredAttributes, stringTypes);
+            return typeBuilder.getStringType(inferredAttributes, StringTypes.unrestricted);
         }
 
         async function makeArrayType(): Promise<TypeRef> {

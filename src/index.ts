@@ -24,6 +24,7 @@ import { replaceObjectType } from "./ReplaceObjectType";
 import { ErrorMessage, messageError } from "./Messages";
 import { InputData } from "./Inputs";
 import { TypeSource } from "./TypeSource";
+import { flattenStrings } from "./FlattenStrings";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -253,6 +254,10 @@ export class Run {
         graph = expandStrings(graph, stringTypeMapping, enumInference, debugPrintReconstitution);
         [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false, debugPrintReconstitution);
         assert(unionsDone, "We should only have to flatten unions once after expanding strings");
+
+        if (!schemaInputs.isEmpty()) {
+            graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution);
+        }
 
         graph = noneToAny(graph, stringTypeMapping, debugPrintReconstitution);
         if (!targetLanguage.supportsOptionalClassProperties) {

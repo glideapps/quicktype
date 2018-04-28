@@ -258,6 +258,7 @@ export class TypeBuilder {
             attributes = emptyTypeAttributes;
         }
         // FIXME: Why do date/time types need a StringTypes attribute?
+        // FIXME: Remove this from here and put it into flattenStrings
         let stringTypes = kind === "string" ? undefined : StringTypes.unrestricted;
         if (kind === "date") kind = this._stringTypeMapping.date;
         if (kind === "time") kind = this._stringTypeMapping.time;

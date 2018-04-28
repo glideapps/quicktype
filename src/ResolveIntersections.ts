@@ -197,7 +197,7 @@ class IntersectionAccumulator
             _classType => panic("We should never see class types in intersections"),
             _mapType => panic("We should never see map types in intersections"),
             objectType => this.addUnionSet(OrderedSet([objectType])),
-            enumType => this.addUnionSet(OrderedSet([enumType])),
+            _enumType => panic("We should never see enum types in intersections"),
             unionType => {
                 attributes = combineTypeAttributes(
                     "intersect",
