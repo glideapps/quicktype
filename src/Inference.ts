@@ -1,5 +1,3 @@
-"use strict";
-
 import { OrderedMap, Map } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";

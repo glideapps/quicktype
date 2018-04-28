@@ -1,5 +1,3 @@
-"use strict";
-
 import { Set, OrderedSet, Collection } from "immutable";
 import * as pluralize from "pluralize";
 import { Chance } from "chance";

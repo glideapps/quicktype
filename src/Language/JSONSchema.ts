@@ -1,5 +1,3 @@
-"use strict";
-
 import { Collection } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";

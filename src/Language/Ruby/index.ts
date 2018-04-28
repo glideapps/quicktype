@@ -1,5 +1,3 @@
-"use strict";
-
 import { snakeCase, includes } from "lodash";
 const unicode = require("unicode-properties");
 

@@ -1,5 +1,3 @@
-"use strict";
-
 import { OrderedSet, Collection, Map, Set } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./Support";

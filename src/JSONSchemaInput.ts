@@ -1,5 +1,3 @@
-"use strict";
-
 import { List, OrderedSet, Map, Set, hash, OrderedMap } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";

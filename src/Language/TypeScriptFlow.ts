@@ -1,5 +1,3 @@
-"use strict";
-
 import { Type, ArrayType, UnionType, ClassType, EnumType } from "../Type";
 import { matchType, nullableFromUnion, isNamedType } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";

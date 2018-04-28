@@ -1,5 +1,3 @@
-"use strict";
-
 import { Set, OrderedSet } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";

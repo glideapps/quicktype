@@ -1,5 +1,3 @@
-"use strict";
-
 import { Set, OrderedSet, Map, isCollection } from "immutable";
 import * as pluralize from "pluralize";
 

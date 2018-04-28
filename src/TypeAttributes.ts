@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map, OrderedSet, hash } from "immutable";
 
 import { panic, setUnion, assert } from "./Support";

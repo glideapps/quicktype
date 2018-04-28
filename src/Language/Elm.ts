@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";

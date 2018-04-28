@@ -1,5 +1,3 @@
-"use strict";
-
 export class AnnotationData {}
 
 export class IssueAnnotationData extends AnnotationData {

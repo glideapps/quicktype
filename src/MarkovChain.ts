@@ -1,5 +1,3 @@
-"use strict";
-
 import { panic, assert, inflateBase64 } from "./Support";
 import { encodedMarkovChain } from "./EncodedMarkovChain";
 

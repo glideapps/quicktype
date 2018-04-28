@@ -1,5 +1,3 @@
-"use strict";
-
 import { RendererOptions } from "../dist";
 import * as process from "process";
 

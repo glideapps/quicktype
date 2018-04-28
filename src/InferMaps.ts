@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map, Set, OrderedSet } from "immutable";
 
 import { Type, ClassType, setOperationCasesEqual, ClassProperty } from "./Type";

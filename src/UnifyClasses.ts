@@ -1,5 +1,3 @@
-"use strict";
-
 import { Set, OrderedMap, OrderedSet } from "immutable";
 
 import { Type, ClassProperty, UnionType, ObjectType } from "./Type";

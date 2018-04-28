@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map } from "immutable";
 import { StringMap, assert } from "./Support";
 import { ErrorMessage, messageError } from "./Messages";

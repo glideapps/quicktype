@@ -1,5 +1,3 @@
-"use strict";
-
 import { assert, panic } from "./Support";
 
 export function breakCycles<T>(outEdges: number[][], chooseBreaker: (cycle: number[]) => [number, T]): [number, T][] {

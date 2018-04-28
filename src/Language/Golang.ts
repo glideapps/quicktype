@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map } from "immutable";
 
 import { TypeKind, Type, ClassType, EnumType, UnionType } from "../Type";

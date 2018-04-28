@@ -1,5 +1,3 @@
-"use strict";
-
 /* tslint:disable:strict-boolean-expressions */
 
 import { List, Map, OrderedSet, OrderedMap } from "immutable";

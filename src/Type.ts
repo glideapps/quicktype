@@ -1,5 +1,3 @@
-"use strict";
-
 import { OrderedSet, OrderedMap, Set, is, hash, List } from "immutable";
 
 import { defined, panic, assert, mapOptional } from "./Support";

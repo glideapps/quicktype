@@ -1,5 +1,3 @@
-"use strict";
-
 import { JSONTypeSource } from "./TypeSource";
 import { parseJSON } from "./Support";
 

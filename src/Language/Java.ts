@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map } from "immutable";
 
 import { TypeKind, Type, ArrayType, MapType, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
@@ -632,12 +630,24 @@ export class JavaRenderer extends ConvenienceRenderer {
                 );
                 this.ensureBlankLine();
                 this.emitBlock(["private static ObjectReader ", this.readerGetterName(topLevelName), "()"], () => {
-                    this.emitLine("if (", readerName, " == null) ", this.methodName("instantiate", "Mapper", topLevelName), "();");
+                    this.emitLine(
+                        "if (",
+                        readerName,
+                        " == null) ",
+                        this.methodName("instantiate", "Mapper", topLevelName),
+                        "();"
+                    );
                     this.emitLine("return ", readerName, ";");
                 });
                 this.ensureBlankLine();
                 this.emitBlock(["private static ObjectWriter ", this.writerGetterName(topLevelName), "()"], () => {
-                    this.emitLine("if (", writerName, " == null) ", this.methodName("instantiate", "Mapper", topLevelName), "();");
+                    this.emitLine(
+                        "if (",
+                        writerName,
+                        " == null) ",
+                        this.methodName("instantiate", "Mapper", topLevelName),
+                        "();"
+                    );
                     this.emitLine("return ", writerName, ";");
                 });
             });

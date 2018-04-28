@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map, Set } from "immutable";
 
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
