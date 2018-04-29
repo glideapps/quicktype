@@ -1,15 +1,15 @@
 import * as URI from "urijs";
 import * as lodash from "lodash";
 import { Map, List, Set } from "immutable";
-import { getStream } from "./get-stream";
+import { getStream } from "../get-stream";
 import { Readable } from "stream";
 
 import { schemaForTypeScriptSources } from "./TypeScriptInput";
 import { Ref, checkJSONSchema, refsInSchemaForURI } from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
-import { parseJSON, panic, assertNever, assert, forEachSync, defined, withDefault, errorMessage } from "./Support";
-import { messageAssert, ErrorMessage, messageError } from "./Messages";
+import { parseJSON, panic, assertNever, assert, forEachSync, defined, withDefault, errorMessage } from "../Support";
+import { messageAssert, ErrorMessage, messageError } from "../Messages";
 import {
     TypeSource,
     SchemaTypeSource,
@@ -18,7 +18,7 @@ import {
     StringInput,
     isGraphQLSource,
     isJSONSource
-} from "./TypeSource";
+} from "../TypeSource";
 
 const stringToStream = require("string-to-stream");
 

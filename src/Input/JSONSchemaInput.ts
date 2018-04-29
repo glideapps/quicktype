@@ -3,7 +3,7 @@ import * as pluralize from "pluralize";
 import * as URI from "urijs";
 import * as lodash from "lodash";
 
-import { ClassProperty, PrimitiveTypeKind } from "./Type";
+import { ClassProperty, PrimitiveTypeKind } from "../Type";
 import {
     panic,
     assertNever,
@@ -17,17 +17,17 @@ import {
     mapOptional,
     isStringMap,
     checkStringMap
-} from "./Support";
-import { TypeBuilder, TypeRef } from "./TypeBuilder";
-import { TypeNames } from "./TypeNames";
-import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "./TypeNames";
+} from "../Support";
+import { TypeBuilder, TypeRef } from "../TypeBuilder";
+import { TypeNames } from "../TypeNames";
+import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../TypeNames";
 import {
     TypeAttributes,
     descriptionTypeAttributeKind,
     propertyDescriptionsTypeAttributeKind,
     makeTypeAttributesInferred,
     emptyTypeAttributes
-} from "./TypeAttributes";
+} from "../TypeAttributes";
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import {
     accessorNamesTypeAttributeKind,
@@ -35,9 +35,9 @@ import {
     makeUnionMemberNamesAttribute,
     AccessorNames,
     AccessorEntry
-} from "./AccessorNames";
-import { ErrorMessage, messageAssert, messageError } from "./Messages";
-import { StringTypes } from "./StringTypes";
+} from "../AccessorNames";
+import { ErrorMessage, messageAssert, messageError } from "../Messages";
+import { StringTypes } from "../StringTypes";
 
 export enum PathElementKind {
     Root,
