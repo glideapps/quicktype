@@ -1,5 +1,5 @@
-import { JSONTypeSource } from "./TypeSource";
-import { parseJSON } from "./Support";
+import { JSONTypeSource } from "../TypeSource";
+import { parseJSON } from "../Support";
 
 function isValidJSON(s: string): boolean {
     try {

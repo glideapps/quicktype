@@ -1,6 +1,7 @@
 import { Map } from "immutable";
-import { StringMap, assert } from "./Support";
-import { ErrorMessage, messageError } from "./Messages";
+
+import { StringMap, assert } from "../Support";
+import { ErrorMessage, messageError } from "../Messages";
 
 export type JSONSchema = StringMap | boolean;
 

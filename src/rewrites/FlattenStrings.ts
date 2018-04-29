@@ -1,12 +1,12 @@
 import { Set, OrderedSet } from "immutable";
 
-import { PrimitiveType, UnionType, Type } from "./Type";
-import { stringTypesForType, combineTypeAttributesOfTypes } from "./TypeUtils";
-import { TypeGraph } from "./TypeGraph";
-import { TypeRef, StringTypeMapping } from "./TypeBuilder";
-import { GraphRewriteBuilder } from "./GraphRewriting";
-import { assert, defined } from "./Support";
-import { combineTypeAttributes } from "./TypeAttributes";
+import { PrimitiveType, UnionType, Type } from "../Type";
+import { stringTypesForType, combineTypeAttributesOfTypes } from "../TypeUtils";
+import { TypeGraph } from "../TypeGraph";
+import { TypeRef, StringTypeMapping } from "../TypeBuilder";
+import { GraphRewriteBuilder } from "../GraphRewriting";
+import { assert, defined } from "../Support";
+import { combineTypeAttributes } from "../TypeAttributes";
 
 // A union needs replacing if it contains more than one string type, one of them being
 // a basic string type.

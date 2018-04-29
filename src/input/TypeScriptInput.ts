@@ -1,9 +1,9 @@
 import * as ts from "typescript";
 import { PartialArgs, CompilerOptions, generateSchema } from "typescript-json-schema";
 
-import { panic, inflateBase64, defined } from "./Support";
+import { panic, inflateBase64, defined } from "../Support";
 import { encodedDefaultTypeScriptLibrary } from "./EncodedDefaultTypeScriptLibrary";
-import { ErrorMessage, messageError } from "./Messages";
+import { ErrorMessage, messageError } from "../Messages";
 
 const settings: PartialArgs = {
     required: true,

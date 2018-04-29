@@ -23,8 +23,8 @@ import {
     TypeScriptTypeSource
 } from "../TypeSource";
 import { OptionDefinition } from "../RendererOptions";
-import * as defaultTargetLanguages from "../Language/All";
-import { urlsFromURLGrammar } from "../URLGrammar";
+import * as defaultTargetLanguages from "../language/All";
+import { urlsFromURLGrammar } from "./URLGrammar";
 import { Annotation } from "../Source";
 import { IssueAnnotationData } from "../Annotation";
 import { Readable } from "stream";
@@ -32,7 +32,7 @@ import { panic, assert, defined, withDefault, mapOptional, assertNever, parseJSO
 import { introspectServer } from "../GraphQLIntrospection";
 import { getStream } from "../get-stream/index";
 import { train } from "../MarkovChain";
-import { sourcesFromPostmanCollection } from "../PostmanCollection";
+import { sourcesFromPostmanCollection } from "./PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
 import { ErrorMessage, messageError, messageAssert } from "../Messages";

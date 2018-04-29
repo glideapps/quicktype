@@ -1,13 +1,13 @@
 import { Set, OrderedMap, OrderedSet } from "immutable";
 
-import { PrimitiveType } from "./Type";
-import { stringTypesForType } from "./TypeUtils";
-import { TypeGraph } from "./TypeGraph";
-import { TypeRef, StringTypeMapping } from "./TypeBuilder";
-import { GraphRewriteBuilder } from "./GraphRewriting";
-import { assert, defined } from "./Support";
-import { emptyTypeAttributes } from "./TypeAttributes";
-import { StringTypes } from "./StringTypes";
+import { PrimitiveType } from "../Type";
+import { stringTypesForType } from "../TypeUtils";
+import { TypeGraph } from "../TypeGraph";
+import { TypeRef, StringTypeMapping } from "../TypeBuilder";
+import { GraphRewriteBuilder } from "../GraphRewriting";
+import { assert, defined } from "../Support";
+import { emptyTypeAttributes } from "../TypeAttributes";
+import { StringTypes } from "../StringTypes";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 

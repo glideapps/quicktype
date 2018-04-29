@@ -1,13 +1,13 @@
 import { Map, Set, OrderedSet } from "immutable";
 
-import { ClassType, Type, ClassProperty, setOperationCasesEqual } from "./Type";
-import { nonNullTypeCases, combineTypeAttributesOfTypes } from "./TypeUtils";
+import { ClassType, Type, ClassProperty, setOperationCasesEqual } from "../Type";
+import { nonNullTypeCases, combineTypeAttributesOfTypes } from "../TypeUtils";
 
-import { TypeRef, StringTypeMapping } from "./TypeBuilder";
-import { GraphRewriteBuilder } from "./GraphRewriting";
-import { assert, panic } from "./Support";
-import { TypeGraph } from "./TypeGraph";
-import { unifyTypes, unionBuilderForUnification } from "./UnifyClasses";
+import { TypeRef, StringTypeMapping } from "../TypeBuilder";
+import { GraphRewriteBuilder } from "../GraphRewriting";
+import { assert, panic } from "../Support";
+import { TypeGraph } from "../TypeGraph";
+import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
 
 const REQUIRED_OVERLAP = 3 / 4;
 

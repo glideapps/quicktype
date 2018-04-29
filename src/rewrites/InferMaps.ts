@@ -1,13 +1,13 @@
 import { Map, Set, OrderedSet } from "immutable";
 
-import { Type, ClassType, setOperationCasesEqual, ClassProperty } from "./Type";
-import { removeNullFromType } from "./TypeUtils";
-import { defined, panic } from "./Support";
-import { TypeGraph } from "./TypeGraph";
-import { TypeRef, StringTypeMapping } from "./TypeBuilder";
-import { GraphRewriteBuilder } from "./GraphRewriting";
-import { unifyTypes, unionBuilderForUnification } from "./UnifyClasses";
-import { MarkovChain, load, evaluate } from "./MarkovChain";
+import { Type, ClassType, setOperationCasesEqual, ClassProperty } from "../Type";
+import { removeNullFromType } from "../TypeUtils";
+import { defined, panic } from "../Support";
+import { TypeGraph } from "../TypeGraph";
+import { TypeRef, StringTypeMapping } from "../TypeBuilder";
+import { GraphRewriteBuilder } from "../GraphRewriting";
+import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
+import { MarkovChain, load, evaluate } from "../MarkovChain";
 
 const mapSizeThreshold = 20;
 
