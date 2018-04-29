@@ -1,5 +1,3 @@
-"use strict";
-
 import { OrderedSet, Map } from "immutable";
 import * as handlebars from "handlebars";
 

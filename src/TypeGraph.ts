@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map, List, Set, OrderedSet, Collection } from "immutable";
 
 import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
@@ -184,7 +182,7 @@ export class TypeGraph {
                 types = types.push(t);
             }
 
-            const children = childrenOfType !== undefined ? childrenOfType(t) : t.children;
+            const children = childrenOfType !== undefined ? childrenOfType(t) : t.getChildren();
             children.forEach(addFromType);
 
             if (!topDown && required) {
@@ -345,7 +343,7 @@ export class TypeGraph {
         if (this._parents === undefined) {
             const parents = defined(this._types).map(_ => Set());
             this.allTypesUnordered().forEach(p => {
-                p.children.forEach(c => {
+                p.getChildren().forEach(c => {
                     const index = c.typeRef.index;
                     parents[index] = parents[index].add(p);
                 });
@@ -361,7 +359,7 @@ export class TypeGraph {
             const t = types[i];
             const parts: string[] = [];
             parts.push(`${t.debugPrintKind}${t.hasNames ? ` ${t.getCombinedName()}` : ""}`);
-            const children = t.children;
+            const children = t.getChildren();
             if (!children.isEmpty()) {
                 parts.push(`children ${children.map(c => c.typeRef.index).join(",")}`);
             }
@@ -393,9 +391,8 @@ export function noneToAny(
         [noneTypes.toArray()],
         debugPrintReconstitution,
         (types, builder, forwardingRef) => {
-            const tref = builder.getPrimitiveType("any", forwardingRef);
-            const attributes = combineTypeAttributesOfTypes(types);
-            builder.addAttributes(tref, attributes);
+            const attributes = combineTypeAttributesOfTypes("union", types);
+            const tref = builder.getPrimitiveType("any", attributes, forwardingRef);
             return tref;
         }
     );

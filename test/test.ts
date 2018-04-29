@@ -1,10 +1,8 @@
-"use strict";
-
 import * as os from "os";
 import * as _ from "lodash";
 
 import { inParallel } from "./lib/multicore";
-import { exec, execAsync, Sample } from "./utils";
+import { execAsync, Sample } from "./utils";
 import { Fixture, allFixtures } from "./fixtures";
 import { affectedFixtures, divideParallelJobs } from "./buildkite";
 
@@ -76,10 +74,10 @@ async function main(sources: string[]) {
 
 function testCLI() {
   console.log(`* CLI sanity check`);
-  const qt = (args: string) => exec(`node dist/cli/index.js ${args}`);
+  //const qt = (args: string) => exec(`node dist/cli/index.js ${args}`);
 
-  console.log("* Ensure we can quicktype a URL");
-  qt(`https://blockchain.info/latestblock`);
+  //console.log("* Ensure we can quicktype a URL");
+  //qt(`https://blockchain.info/latestblock`);
 }
 
 // skip 2 `node` args

@@ -1,5 +1,3 @@
-"use strict";
-
 import { RendererOptions } from "../dist";
 import * as process from "process";
 
@@ -211,6 +209,7 @@ export const GoLanguage: Language = {
     "github-events.json",
     "reddit.json",
     "nbl-stats.json",
+    "recursive.json",
     "0cffa.json",
     "0e0c2.json",
     "127a1.json",

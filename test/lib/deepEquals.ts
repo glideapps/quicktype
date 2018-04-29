@@ -31,7 +31,13 @@ function momentsEqual(x: Moment, y: Moment, isTime: boolean): boolean {
 }
 
 // https://stackoverflow.com/questions/1068834/object-comparison-in-javascript
-export default function deepEquals(x: any, y: any, allowMissingNull: boolean, path: string[] = []): boolean {
+export default function deepEquals(
+  x: any,
+  y: any,
+  allowMissingNull: boolean,
+  assumeStringsEqual: boolean,
+  path: string[] = []
+): boolean {
   // remember that NaN === NaN returns false
   // and isNaN(undefined) returns true
   if (typeof x === "number" && typeof y === "number") {
@@ -54,13 +60,16 @@ export default function deepEquals(x: any, y: any, allowMissingNull: boolean, pa
   }
 
   if (typeof x === "string" && typeof y === "string") {
-    if (x === y) return true;
+    if (assumeStringsEqual || x === y) return true;
     const [xMoment, isTime] = tryParseMoment(x);
     const [yMoment] = tryParseMoment(y);
     if (xMoment !== undefined && yMoment !== undefined && momentsEqual(xMoment, yMoment, isTime)) {
       return true;
     }
-    console.error(`Strings not equal at path ${pathToString(path)}.`);
+    console.error(
+      `Strings not equal at path ${pathToString(path)}: ${JSON.stringify(x)} !== ${JSON.stringify(y)}.`
+    );
+    return false;
   }
 
   if (x instanceof String && y instanceof String) {
@@ -98,7 +107,7 @@ export default function deepEquals(x: any, y: any, allowMissingNull: boolean, pa
     }
     for (let i = 0; i < x.length; i++) {
       path.push(i.toString());
-      if (!deepEquals(x[i], y[i], allowMissingNull, path)) {
+      if (!deepEquals(x[i], y[i], allowMissingNull, assumeStringsEqual, path)) {
         return false;
       }
       path.pop();
@@ -141,7 +150,7 @@ export default function deepEquals(x: any, y: any, allowMissingNull: boolean, pa
     }
 
     path.push(p);
-    if (!deepEquals(x[p], y[p], allowMissingNull, path)) {
+    if (!deepEquals(x[p], y[p], allowMissingNull, assumeStringsEqual, path)) {
       return false;
     }
     path.pop();

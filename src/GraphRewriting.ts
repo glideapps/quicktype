@@ -1,17 +1,15 @@
-"use strict";
-
 import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection } from "immutable";
 
 import { PrimitiveTypeKind, Type, ClassProperty } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
-import { TypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 import { assert, panic } from "./Support";
 import { TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
 
 export interface TypeLookerUp {
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined;
-    reconstituteTypeRef(typeRef: TypeRef, forwardingRef?: TypeRef): TypeRef;
+    reconstituteTypeRef(typeRef: TypeRef, attributes?: TypeAttributes, forwardingRef?: TypeRef): TypeRef;
 }
 
 export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
@@ -79,11 +77,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     }
 
     getPrimitiveType(kind: PrimitiveTypeKind): void {
-        this.registerAndAddAttributes(this.builderForNewType().getPrimitiveType(kind, this._forwardingRef));
-    }
-
-    getStringType(enumCases: OrderedMap<string, number> | undefined): void {
-        this.register(this.builderForNewType().getStringType(this._typeAttributes, enumCases, this._forwardingRef));
+        this.register(this.builderForNewType().getPrimitiveType(kind, this._typeAttributes, this._forwardingRef));
     }
 
     getEnumType(cases: OrderedSet<string>): void {
@@ -198,18 +192,25 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
     }
 
     reconstituteType(t: Type, forwardingRef?: TypeRef): TypeRef {
-        return this.reconstituteTypeRef(t.typeRef, forwardingRef);
+        return this.reconstituteTypeRef(t.typeRef, undefined, forwardingRef);
     }
 
     abstract lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef, replaceSet?: boolean): TypeRef | undefined;
-    protected abstract forceReconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef;
+    protected abstract forceReconstituteTypeRef(
+        originalRef: TypeRef,
+        attributes?: TypeAttributes,
+        maybeForwardingRef?: TypeRef
+    ): TypeRef;
 
-    reconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
+    reconstituteTypeRef(originalRef: TypeRef, attributes?: TypeAttributes, maybeForwardingRef?: TypeRef): TypeRef {
         const maybeRef = this.lookupTypeRefs([originalRef], maybeForwardingRef);
         if (maybeRef !== undefined) {
+            if (attributes !== undefined) {
+                this.addAttributes(maybeRef, attributes);
+            }
             return maybeRef;
         }
-        return this.forceReconstituteTypeRef(originalRef, maybeForwardingRef);
+        return this.forceReconstituteTypeRef(originalRef, attributes, maybeForwardingRef);
     }
 
     protected assertTypeRefsToReconstitute(typeRefs: TypeRef[], forwardingRef?: TypeRef): void {
@@ -302,18 +303,28 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
         return first;
     }
 
-    protected forceReconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
+    protected forceReconstituteTypeRef(
+        originalRef: TypeRef,
+        attributes?: TypeAttributes,
+        maybeForwardingRef?: TypeRef
+    ): TypeRef {
         assert(maybeForwardingRef === undefined, "We can't have a forwarding ref when we remap");
 
         originalRef = this.getMapTarget(originalRef);
         const [originalType, originalAttributes] = originalRef.deref();
 
         const attributeSources = this._attributeSources.get(originalType);
-        let attributes: TypeAttributes;
+        if (attributes === undefined) {
+            attributes = emptyTypeAttributes;
+        }
         if (attributeSources === undefined) {
-            attributes = originalAttributes;
+            attributes = combineTypeAttributes("union", attributes, originalAttributes);
         } else {
-            attributes = combineTypeAttributesOfTypes(attributeSources);
+            attributes = combineTypeAttributes(
+                "union",
+                attributes,
+                combineTypeAttributesOfTypes("union", attributeSources)
+            );
         }
 
         const index = originalRef.index;
@@ -429,7 +440,11 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         });
     }
 
-    protected forceReconstituteTypeRef(originalRef: TypeRef, maybeForwardingRef?: TypeRef): TypeRef {
+    protected forceReconstituteTypeRef(
+        originalRef: TypeRef,
+        attributes?: TypeAttributes,
+        maybeForwardingRef?: TypeRef
+    ): TypeRef {
         const [originalType, originalAttributes] = originalRef.deref();
         const index = originalRef.index;
 
@@ -438,10 +453,16 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
             this.changeDebugPrintIndent(1);
         }
 
+        if (attributes === undefined) {
+            attributes = originalAttributes;
+        } else {
+            attributes = combineTypeAttributes("union", attributes, originalAttributes);
+        }
+
         const reconstituter = new TypeReconstituter(
             this,
             this.alphabetizeProperties,
-            originalAttributes,
+            attributes,
             maybeForwardingRef,
             tref => {
                 if (this.debugPrint) {

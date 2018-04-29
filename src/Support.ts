@@ -1,5 +1,3 @@
-"use strict";
-
 import { Collection, List, Set, isKeyed, isIndexed } from "immutable";
 
 import { Base64 } from "js-base64";

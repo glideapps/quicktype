@@ -1,5 +1,3 @@
-"use strict";
-
 import * as fs from "fs";
 import { Readable } from "stream";
 import { getStream } from "../get-stream/index";

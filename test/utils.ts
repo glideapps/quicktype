@@ -1,5 +1,3 @@
-"use strict";
-
 import * as fs from "fs";
 
 import * as _ from "lodash";
@@ -13,7 +11,8 @@ import deepEquals from "./lib/deepEquals";
 const chalk = require("chalk");
 const strictDeepEquals: (x: any, y: any) => boolean = require("deep-equal");
 
-const DEBUG = typeof process.env.DEBUG !== "undefined";
+const DEBUG = process.env.DEBUG !== undefined;
+const ASSUME_STRINGS_EQUAL = process.env.ASSUME_STRINGS_EQUAL !== undefined;
 
 export function debug<T>(x: T): T {
   if (DEBUG) {
@@ -181,11 +180,11 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
   const allowMissingNull = !!args.allowMissingNull;
   let jsonAreEqual = strict
     ? callAndReportFailure("Failed to strictly compare objects", () =>
-      strictDeepEquals(givenJSON, expectedJSON)
-    )
+        strictDeepEquals(givenJSON, expectedJSON)
+      )
     : callAndReportFailure("Failed to compare objects.", () =>
-      deepEquals(expectedJSON, givenJSON, allowMissingNull)
-    );
+        deepEquals(expectedJSON, givenJSON, allowMissingNull, ASSUME_STRINGS_EQUAL)
+      );
 
   if (!jsonAreEqual) {
     failWith("Error: Output is not equivalent to input.", {

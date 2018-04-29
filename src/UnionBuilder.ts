@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map, Set, OrderedMap, OrderedSet } from "immutable";
 
 import { TypeKind, PrimitiveStringTypeKind, Type, UnionType } from "./Type";
@@ -12,19 +10,19 @@ import {
 } from "./TypeAttributes";
 import { defined, assert, panic, assertNever } from "./Support";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
+import { StringTypes, stringTypesTypeAttributeKind } from "./StringTypes";
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be
 // implementable using the interface, not be part of it.  That
 // means we'll have to expose primitive types, too.
 //
-// FIXME: Also, only UnionAccumulator seems to implement it.
+// Well, maybe getMemberKinds() is fine as it is.
 export interface UnionTypeProvider<TArrayData, TObjectData> {
     readonly arrayData: TArrayData;
     readonly objectData: TObjectData;
-    // FIXME: We're losing order here.
-    enumCaseMap: { [name: string]: number };
-    enumCases: string[];
+
+    readonly enumCases: OrderedSet<string>;
 
     getMemberKinds(): TypeAttributeMap<TypeKind>;
 
@@ -38,7 +36,7 @@ function addAttributes(
     newAttributes: TypeAttributes
 ): TypeAttributes {
     if (accumulatorAttributes === undefined) return newAttributes;
-    return combineTypeAttributes(accumulatorAttributes, newAttributes);
+    return combineTypeAttributes("union", accumulatorAttributes, newAttributes);
 }
 
 function setAttributes<T extends TypeKind>(
@@ -57,16 +55,14 @@ function moveAttributes<T extends TypeKind>(map: TypeAttributeMap<T>, fromKind: 
 
 export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArray[], TObject[]> {
     private _nonStringTypeAttributes: TypeAttributeMap<TypeKind> = OrderedMap();
-    private _stringTypeAttributes: TypeAttributeMap<PrimitiveStringTypeKind | "enum"> = OrderedMap();
+    private _stringTypeAttributes: TypeAttributeMap<PrimitiveStringTypeKind> = OrderedMap();
 
     readonly arrayData: TArray[] = [];
     readonly objectData: TObject[] = [];
 
-    private _lostTypeAttributes: boolean = false;
+    private _enumCases: OrderedSet<string> = OrderedSet();
 
-    // FIXME: we're losing order here
-    enumCaseMap: { [name: string]: number } = {};
-    enumCases: string[] = [];
+    private _lostTypeAttributes: boolean = false;
 
     constructor(private readonly _conflateNumbers: boolean) {}
 
@@ -74,10 +70,6 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         return (
             this._nonStringTypeAttributes.has(kind) || this._stringTypeAttributes.has(kind as PrimitiveStringTypeKind)
         );
-    }
-
-    get haveString(): boolean {
-        return this.have("string");
     }
 
     addNone(_attributes: TypeAttributes): void {
@@ -103,23 +95,39 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "double", attributes);
     }
 
-    addStringType(kind: PrimitiveStringTypeKind, attributes: TypeAttributes): void {
-        if (this.have(kind)) {
-            this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, kind, attributes);
+    protected addFullStringType(attributes: TypeAttributes, stringTypes: StringTypes | undefined): void {
+        if (stringTypes === undefined) {
+            stringTypes = stringTypesTypeAttributeKind.tryGetInAttributes(attributes);
+        } else {
+            attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
+        }
+        if (stringTypes === undefined) {
+            stringTypes = StringTypes.unrestricted;
+            attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
+        }
+
+        const maybeEnumAttributes = this._nonStringTypeAttributes.get("enum");
+        if (stringTypes.isRestricted) {
+            assert(
+                maybeEnumAttributes === undefined,
+                "We can't add both an enum as well as a restricted string type to a union builder"
+            );
+        }
+
+        this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, "string", attributes);
+    }
+
+    addStringType(kind: PrimitiveStringTypeKind, attributes: TypeAttributes, stringTypes?: StringTypes): void {
+        if (kind === "string") {
+            this.addFullStringType(attributes, stringTypes);
             return;
         }
-        // string overrides all other string types, as well as enum
-        if (kind === "string") {
-            const oldAttributes = combineTypeAttributes(this._stringTypeAttributes.valueSeq().toArray());
-            const newAttributes = addAttributes(oldAttributes, attributes);
-            this._stringTypeAttributes = this._stringTypeAttributes.clear().set(kind, newAttributes);
-
-            this.enumCaseMap = {};
-            this.enumCases = [];
-        } else {
-            this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, kind, attributes);
+        if (stringTypes !== undefined) {
+            attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
         }
+        this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, kind, attributes);
     }
+
     addArray(t: TArray, attributes: TypeAttributes): void {
         this.arrayData.push(t);
         this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "array", attributes);
@@ -129,28 +137,36 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "object", attributes);
     }
 
-    addEnumCases(cases: OrderedMap<string, number>, attributes: TypeAttributes): void {
-        if (this.have("string")) {
-            this.addStringType("string", attributes);
+    addEnum(cases: OrderedSet<string>, attributes: TypeAttributes): void {
+        const maybeStringAttributes = this._stringTypeAttributes.get("string");
+        if (maybeStringAttributes !== undefined) {
+            assert(
+                !defined(stringTypesTypeAttributeKind.tryGetInAttributes(maybeStringAttributes)).isRestricted,
+                "We can't add an enum to a union builder that has a restricted string type"
+            );
+            this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, "string", attributes);
             return;
         }
-
-        cases.forEach((count, s) => {
-            if (!Object.prototype.hasOwnProperty.call(this.enumCaseMap, s)) {
-                this.enumCaseMap[s] = 0;
-                this.enumCases.push(s);
-            }
-            this.enumCaseMap[s] += count;
-        });
-
-        this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, "enum", attributes);
+        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "enum", attributes);
+        this._enumCases = this._enumCases.union(cases);
     }
-    addEnumCase(s: string, count: number, attributes: TypeAttributes): void {
-        this.addEnumCases(OrderedMap([[s, count] as [string, number]]), attributes);
+
+    addStringCases(cases: string[], attributes: TypeAttributes): void {
+        this.addFullStringType(attributes, StringTypes.fromCases(cases));
+    }
+    addStringCase(s: string, count: number, attributes: TypeAttributes): void {
+        this.addFullStringType(attributes, StringTypes.fromCase(s, count));
+    }
+
+    get enumCases(): OrderedSet<string> {
+        return this._enumCases;
     }
 
     getMemberKinds(): TypeAttributeMap<TypeKind> {
+        assert(!(this.have("enum") && this.have("string")), "We can't have both strings and enums in the same union");
+
         let merged = this._nonStringTypeAttributes.merge(this._stringTypeAttributes);
+
         if (merged.isEmpty()) {
             return OrderedMap([["none", Map()] as [TypeKind, TypeAttributes]]);
         }
@@ -158,7 +174,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         if (this._nonStringTypeAttributes.has("any")) {
             assert(this._lostTypeAttributes, "This had to be set when we added 'any'");
 
-            const allAttributes = combineTypeAttributes(merged.valueSeq().toArray());
+            const allAttributes = combineTypeAttributes("union", merged.valueSeq().toArray());
             return OrderedMap([["any", allAttributes] as [TypeKind, TypeAttributes]]);
         }
 
@@ -212,7 +228,7 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
         const singleAncestors = unionForType.filter(u => defined(typesForUnion.get(u)).size === 1);
         assert(singleAncestors.every(u => defined(typesForUnion.get(u)).has(t)), "We messed up bookkeeping");
         const inheritedAttributes = singleAncestors.toArray().map(u => u.getAttributes());
-        return combineTypeAttributes([t.getAttributes()].concat(inheritedAttributes));
+        return combineTypeAttributes("union", [t.getAttributes()].concat(inheritedAttributes));
     });
     const unionAttributes = unions.toArray().map(u => {
         const t = typesForUnion.get(u);
@@ -225,7 +241,7 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
         }
         return makeTypeAttributesInferred(attributes);
     });
-    return [resultAttributes, combineTypeAttributes(unionAttributes)];
+    return [resultAttributes, combineTypeAttributes("union", unionAttributes)];
 }
 
 // FIXME: Move this to UnifyClasses.ts?
@@ -241,14 +257,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
             _boolType => this.addBool(attributes),
             _integerType => this.addInteger(attributes),
             _doubleType => this.addDouble(attributes),
-            stringType => {
-                const enumCases = stringType.enumCases;
-                if (enumCases === undefined) {
-                    this.addStringType("string", attributes);
-                } else {
-                    this.addEnumCases(enumCases, attributes);
-                }
-            },
+            _stringType => this.addStringType("string", attributes),
             arrayType => this.addArray(arrayType.items.typeRef, attributes),
             classType => this.addObject(classType.typeRef, attributes),
             mapType => this.addObject(mapType.typeRef, attributes),
@@ -256,7 +265,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
             // FIXME: We're not carrying counts, so this is not correct if we do enum
             // inference.  JSON Schema input uses this case, however, without enum
             // inference, which is fine, but still a bit ugly.
-            enumType => this.addEnumCases(enumType.cases.toOrderedMap().map(_ => 1), attributes),
+            enumType => this.addEnum(enumType.cases, attributes),
             _unionType => {
                 return panic("The unions should have been eliminated in attributesForTypesInUnion");
             },
@@ -276,12 +285,6 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
 export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TObjectData> {
     constructor(protected readonly typeBuilder: TBuilder) {}
 
-    protected abstract makeEnum(
-        cases: string[],
-        counts: { [name: string]: number },
-        typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
-    ): TypeRef;
     protected abstract makeObject(
         objects: TObjectData,
         typeAttributes: TypeAttributes,
@@ -309,13 +312,11 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             case "date":
             case "time":
             case "date-time":
-                const t = this.typeBuilder.getPrimitiveType(kind, forwardingRef);
-                this.typeBuilder.addAttributes(t, typeAttributes);
-                return t;
+                return this.typeBuilder.getPrimitiveType(kind, typeAttributes, forwardingRef);
             case "string":
                 return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
             case "enum":
-                return this.makeEnum(typeProvider.enumCases, typeProvider.enumCaseMap, typeAttributes, forwardingRef);
+                return this.typeBuilder.getEnumType(typeAttributes, typeProvider.enumCases, forwardingRef);
             case "object":
                 return this.makeObject(typeProvider.objectData, typeAttributes, forwardingRef);
             case "array":
@@ -342,7 +343,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
 
         if (kinds.size === 1) {
             const [[kind, memberAttributes]] = kinds.toArray();
-            const allAttributes = combineTypeAttributes(typeAttributes, memberAttributes);
+            const allAttributes = combineTypeAttributes("union", typeAttributes, memberAttributes);
             const t = this.makeTypeOfKind(typeProvider, kind, allAttributes, forwardingRef);
             return t;
         }

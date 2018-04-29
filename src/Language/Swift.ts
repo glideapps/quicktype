@@ -1,5 +1,3 @@
-"use strict";
-
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, UnionType, ArrayType, MapType, TypeKind, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";

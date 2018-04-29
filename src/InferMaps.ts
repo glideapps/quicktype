@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map, Set, OrderedSet } from "immutable";
 
 import { Type, ClassType, setOperationCasesEqual, ClassProperty } from "./Type";
@@ -30,7 +28,7 @@ function shouldBeMap(properties: Map<string, ClassProperty>): Set<Type> | undefi
 
     // If all property names are digit-only, we always make a map, no
     // questions asked.
-    if (properties.keySeq().every(n => n.match(/^[0-9]+$/) !== null)) {
+    if (properties.keySeq().every(n => /^[0-9]+$/.test(n))) {
         return properties
             .valueSeq()
             .map(cp => cp.type)
@@ -127,7 +125,7 @@ export function inferMaps(
                 shouldBe,
                 c.getAttributes(),
                 builder,
-                unionBuilderForUnification(builder, false, false, false, conflateNumbers),
+                unionBuilderForUnification(builder, false, false, conflateNumbers),
                 conflateNumbers
             ),
             forwardingRef

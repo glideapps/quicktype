@@ -1,5 +1,3 @@
-"use strict";
-
 export const acronyms: string[] = [
     "aaa",
     "aabb",

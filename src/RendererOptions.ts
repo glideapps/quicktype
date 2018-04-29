@@ -1,5 +1,3 @@
-"use strict";
-
 import { assert } from "./Support";
 import { messageError, ErrorMessage } from "./Messages";
 

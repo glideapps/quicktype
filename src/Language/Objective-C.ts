@@ -1,5 +1,3 @@
-"use strict";
-
 import * as lo from "lodash";
 import { includes, repeat } from "lodash";
 

@@ -1,5 +1,3 @@
-"use strict";
-
 // https://github.com/epoberezkin/ajv/blob/4d76c6fb813b136b6ec4fe74990bc97233d75dea/lib/compile/formats.js
 
 /*

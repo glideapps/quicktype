@@ -1,5 +1,3 @@
-"use strict";
-
 import { List, OrderedSet, Map, Set, hash, OrderedMap } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
@@ -39,6 +37,7 @@ import {
     AccessorEntry
 } from "./AccessorNames";
 import { ErrorMessage, messageAssert, messageError } from "./Messages";
+import { StringTypes } from "./StringTypes";
 
 export enum PathElementKind {
     Root,
@@ -209,7 +208,7 @@ export class Ref {
 
             switch (e.kind) {
                 case PathElementKind.KeyOrIndex:
-                    if (e.key.match(numberRegexp) !== null) {
+                    if (numberRegexp.test(e.key)) {
                         return e.key;
                     }
                     break;
@@ -420,7 +419,7 @@ class Canonizer {
 function makeAttributes(schema: StringMap, loc: Location, attributes: TypeAttributes): TypeAttributes {
     const maybeDescription = schema.description;
     if (typeof maybeDescription === "string") {
-        attributes = descriptionTypeAttributeKind.setInAttributes(attributes, OrderedSet([maybeDescription]));
+        attributes = descriptionTypeAttributeKind.combineInAttributes(attributes, OrderedSet([maybeDescription]));
     }
     return modifyTypeNames(attributes, maybeTypeNames => {
         const typeNames = defined(maybeTypeNames);
@@ -559,7 +558,7 @@ export async function addTypesInSchema(
             })
             .filter(v => v !== undefined) as OrderedMap<string, OrderedSet<string>>;
         if (!propertyDescriptions.isEmpty()) {
-            attributes = propertyDescriptionsTypeAttributeKind.setInAttributes(attributes, propertyDescriptions);
+            attributes = propertyDescriptionsTypeAttributeKind.combineInAttributes(attributes, propertyDescriptions);
         }
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
@@ -605,21 +604,17 @@ export async function addTypesInSchema(
         const inferredAttributes = makeTypeAttributesInferred(typeAttributes);
 
         function makeStringType(): TypeRef {
-            if (schema.format !== undefined) {
-                switch (schema.format) {
-                    case "date":
-                        return typeBuilder.getPrimitiveType("date");
-                    case "time":
-                        return typeBuilder.getPrimitiveType("time");
-                    case "date-time":
-                        return typeBuilder.getPrimitiveType("date-time");
-                    default:
-                        // FIXME: Output a warning here instead to indicate that
-                        // the format is uninterpreted.
-                        return typeBuilder.getStringType(inferredAttributes, undefined);
-                }
+            switch (schema.format) {
+                case "date":
+                    return typeBuilder.getPrimitiveType("date", inferredAttributes);
+                case "time":
+                    return typeBuilder.getPrimitiveType("time", inferredAttributes);
+                case "date-time":
+                    return typeBuilder.getPrimitiveType("date-time", inferredAttributes);
+                default:
+                    break;
             }
-            return typeBuilder.getStringType(inferredAttributes, undefined);
+            return typeBuilder.getStringType(inferredAttributes, StringTypes.unrestricted);
         }
 
         async function makeArrayType(): Promise<TypeRef> {
@@ -770,9 +765,8 @@ export async function addTypesInSchema(
             }
 
             if (needStringEnum) {
-                let cases = enumArray as any[];
-                cases = cases.filter(x => typeof x === "string");
-                unionTypes.push(typeBuilder.getEnumType(inferredAttributes, OrderedSet(cases)));
+                const cases = (enumArray as any[]).filter(x => typeof x === "string") as string[];
+                unionTypes.push(typeBuilder.getStringType(inferredAttributes, StringTypes.fromCases(cases)));
             } else if (includePrimitiveType("string")) {
                 unionTypes.push(makeStringType());
             }

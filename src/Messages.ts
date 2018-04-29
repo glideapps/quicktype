@@ -1,5 +1,3 @@
-"use strict";
-
 import { StringMap } from "./Support";
 
 export class ErrorMessage {

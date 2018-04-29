@@ -1,5 +1,3 @@
-"use strict";
-
 import { panic, checkStringMap, checkArray } from "./Support";
 
 function expand(json: any): string[] {

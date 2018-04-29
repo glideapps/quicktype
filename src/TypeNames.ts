@@ -1,5 +1,3 @@
-"use strict";
-
 import { Set, OrderedSet, Collection } from "immutable";
 import * as pluralize from "pluralize";
 import { Chance } from "chance";
@@ -237,7 +235,10 @@ export function typeNamesUnion(c: Collection<any, TypeNames>): TypeNames {
 
 export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>(
     "names",
+    false,
+    false,
     (a, b) => a.add(b),
+    undefined,
     a => a.makeInferred(),
     a => a.toString()
 );

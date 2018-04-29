@@ -1,5 +1,3 @@
-"use strict";
-
 import { panic } from "./Support";
 import { introspectionQuery } from "graphql";
 

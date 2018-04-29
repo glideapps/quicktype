@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map, Set, List, OrderedSet, OrderedMap, Collection } from "immutable";
 import * as handlebars from "handlebars";
 
@@ -46,21 +44,38 @@ function splitDescription(descriptions: OrderedSet<string> | undefined): string[
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
 
-const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName", undefined, undefined, undefined);
+const assignedNameAttributeKind = new TypeAttributeKind<Name>(
+    "assignedName",
+    false,
+    false,
+    undefined,
+    undefined,
+    undefined,
+    undefined
+);
 const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
     "assignedPropertyNames",
+    false,
+    false,
+    undefined,
     undefined,
     undefined,
     undefined
 );
 const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>(
     "assignedMemberNames",
+    false,
+    false,
+    undefined,
     undefined,
     undefined,
     undefined
 );
 const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
     "assignedCaseNames",
+    false,
+    false,
+    undefined,
     undefined,
     undefined,
     undefined
@@ -448,7 +463,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 .sortBy((_, n) => defined(names.get(defined(propertyNameds.get(n)))));
             return sortedMap.toOrderedSet();
         }
-        return t.children.toOrderedSet();
+        return t.getChildren().toOrderedSet();
     };
 
     protected get namedUnions(): OrderedSet<UnionType> {
@@ -897,7 +912,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
         function visit(t: Type) {
             if (visitedTypes.has(t)) return;
-            queue.push(...t.children.toArray());
+            queue.push(...t.getChildren().toArray());
             visitedTypes = visitedTypes.add(t);
             processed = processed.add(process(t));
         }

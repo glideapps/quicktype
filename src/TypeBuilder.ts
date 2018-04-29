@@ -1,6 +1,4 @@
-"use strict";
-
-import { Map, OrderedMap, OrderedSet, Set, List } from "immutable";
+import { Map, OrderedMap, OrderedSet, Set, List, is } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -12,11 +10,9 @@ import {
     ClassType,
     UnionType,
     PrimitiveStringTypeKind,
-    StringType,
     ClassProperty,
     IntersectionType,
     ObjectType,
-    stringTypeIdentity,
     primitiveTypeIdentity,
     enumTypeIdentity,
     mapTypeIdentify,
@@ -29,6 +25,7 @@ import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic, setUnion, mapOptional } from "./Support";
+import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 
 export class TypeRef {
     constructor(readonly graph: TypeGraph, readonly index: number) {}
@@ -63,7 +60,10 @@ function provenanceToString(p: Set<TypeRef>): string {
 // non-inferred form in the final graph.
 export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>(
     "provenance",
+    false,
+    false,
     setUnion,
+    undefined,
     a => a,
     provenanceToString
 );
@@ -140,7 +140,8 @@ export class TypeBuilder {
         }
         const tref = forwardingRef !== undefined ? forwardingRef : this.reserveTypeRef();
         if (attributes !== undefined) {
-            this.addAttributes(tref, attributes);
+            const index = tref.index;
+            this.typeAttributes[index] = combineTypeAttributes("union", this.typeAttributes[index], attributes);
         }
         const t = creator(tref);
         this.commitType(tref, t);
@@ -158,7 +159,18 @@ export class TypeBuilder {
 
     addAttributes(tref: TypeRef, attributes: TypeAttributes): void {
         const index = tref.index;
-        this.typeAttributes[index] = combineTypeAttributes(this.typeAttributes[index], attributes);
+        const existingAttributes = this.typeAttributes[index];
+        assert(
+            attributes.every((v, k) => {
+                if (!k.inIdentity) return true;
+                const existing = existingAttributes.get(k);
+                if (existing === undefined) return false;
+                return is(existing, v);
+            }),
+            "Can't add different identity type attributes to an existing type"
+        );
+        const nonIdentityAttributes = attributes.filterNot((_, k) => k.inIdentity);
+        this.typeAttributes[index] = combineTypeAttributes("union", existingAttributes, nonIdentityAttributes);
     }
 
     makeNullable(tref: TypeRef, attributes: TypeAttributes): TypeRef {
@@ -221,7 +233,11 @@ export class TypeBuilder {
         if (maybeTypeRef !== undefined) {
             const result = this.forwardIfNecessary(forwardingRef, maybeTypeRef);
             if (attributes !== undefined) {
-                this.addAttributes(result, attributes);
+                // We only add the attributes that are not in the identity, since
+                // we found the type based on its identity, i.e. all the identity
+                // attributes must be in there already, and we have a check that
+                // asserts that no identity attributes are added later.
+                this.addAttributes(result, attributes.filter((_, k) => !k.inIdentity));
             }
             return result;
         }
@@ -235,32 +251,55 @@ export class TypeBuilder {
         this.registerTypeForIdentity(t.identity, t.typeRef);
     }
 
-    getPrimitiveType(kind: PrimitiveTypeKind, forwardingRef?: TypeRef): TypeRef {
-        assert(kind !== "string", "Use getStringType to create strings");
+    getPrimitiveType(kind: PrimitiveTypeKind, attributes?: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
+        if (attributes === undefined) {
+            attributes = emptyTypeAttributes;
+        }
+        // FIXME: Why do date/time types need a StringTypes attribute?
+        // FIXME: Remove this from here and put it into flattenStrings
+        let stringTypes = kind === "string" ? undefined : StringTypes.unrestricted;
         if (kind === "date") kind = this._stringTypeMapping.date;
         if (kind === "time") kind = this._stringTypeMapping.time;
         if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
         if (kind === "string") {
-            return this.getStringType(undefined, undefined, forwardingRef);
+            return this.getStringType(attributes, stringTypes, forwardingRef);
         }
         return this.getOrAddType(
-            primitiveTypeIdentity(kind),
+            primitiveTypeIdentity(kind, emptyTypeAttributes),
             tr => new PrimitiveType(tr, kind),
-            undefined,
+            attributes,
             forwardingRef
         );
     }
 
-    getStringType(
-        attributes: TypeAttributes | undefined,
-        cases: OrderedMap<string, number> | undefined,
-        forwardingRef?: TypeRef
-    ): TypeRef {
-        return this.getOrAddType(stringTypeIdentity(cases), tr => new StringType(tr, cases), attributes, forwardingRef);
+    getStringType(attributes: TypeAttributes, stringTypes: StringTypes | undefined, forwardingRef?: TypeRef): TypeRef {
+        const existingStringTypes = attributes.find((_, k) => k === stringTypesTypeAttributeKind);
+        assert(
+            (stringTypes === undefined) !== (existingStringTypes === undefined),
+            "Must instantiate string type with one enum case attribute"
+        );
+        if (existingStringTypes === undefined) {
+            attributes = combineTypeAttributes(
+                "union",
+                attributes,
+                stringTypesTypeAttributeKind.makeAttributes(defined(stringTypes))
+            );
+        }
+        return this.getOrAddType(
+            primitiveTypeIdentity("string", attributes),
+            tr => new PrimitiveType(tr, "string"),
+            attributes,
+            forwardingRef
+        );
     }
 
     getEnumType(attributes: TypeAttributes, cases: OrderedSet<string>, forwardingRef?: TypeRef): TypeRef {
-        return this.getOrAddType(enumTypeIdentity(cases), tr => new EnumType(tr, cases), attributes, forwardingRef);
+        return this.getOrAddType(
+            enumTypeIdentity(attributes, cases),
+            tr => new EnumType(tr, cases),
+            attributes,
+            forwardingRef
+        );
     }
 
     getUniqueObjectType(
@@ -282,7 +321,12 @@ export class TypeBuilder {
     }
 
     getMapType(values: TypeRef, forwardingRef?: TypeRef): TypeRef {
-        return this.getOrAddType(mapTypeIdentify(values), tr => new MapType(tr, values), undefined, forwardingRef);
+        return this.getOrAddType(
+            mapTypeIdentify(emptyTypeAttributes, values),
+            tr => new MapType(tr, values),
+            undefined,
+            forwardingRef
+        );
     }
 
     setObjectProperties(
@@ -303,7 +347,12 @@ export class TypeBuilder {
     }
 
     getArrayType(items: TypeRef, forwardingRef?: TypeRef): TypeRef {
-        return this.getOrAddType(arrayTypeIdentity(items), tr => new ArrayType(tr, items), undefined, forwardingRef);
+        return this.getOrAddType(
+            arrayTypeIdentity(emptyTypeAttributes, items),
+            tr => new ArrayType(tr, items),
+            undefined,
+            forwardingRef
+        );
     }
 
     setArrayItems(ref: TypeRef, items: TypeRef): void {
@@ -332,7 +381,7 @@ export class TypeBuilder {
     ): TypeRef {
         properties = this.modifyPropertiesIfNecessary(properties);
         return this.getOrAddType(
-            classTypeIdentity(properties),
+            classTypeIdentity(attributes, properties),
             tr => new ClassType(tr, false, properties),
             attributes,
             forwardingRef
@@ -353,7 +402,7 @@ export class TypeBuilder {
 
     getUnionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            unionTypeIdentity(members),
+            unionTypeIdentity(attributes, members),
             tr => new UnionType(tr, members),
             attributes,
             forwardingRef
@@ -371,7 +420,7 @@ export class TypeBuilder {
 
     getIntersectionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            intersectionTypeIdentity(members),
+            intersectionTypeIdentity(attributes, members),
             tr => new IntersectionType(tr, members),
             attributes,
             forwardingRef

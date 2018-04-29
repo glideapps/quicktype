@@ -1,5 +1,3 @@
-"use strict";
-
 import { snakeCase, includes } from "lodash";
 const unicode = require("unicode-properties");
 
@@ -487,7 +485,7 @@ export class RubyRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(u));
         this.emitBlock(["class ", unionName, " < Dry::Struct"], () => {
             const table: Sourcelike[][] = [];
-            this.forEachUnionMember(u, u.children, "none", null, (name, t) => {
+            this.forEachUnionMember(u, u.getChildren(), "none", null, (name, t) => {
                 table.push([["attribute :", name, ", "], [this.dryType(t, true)]]);
             });
             this.emitTable(table);
@@ -499,8 +497,8 @@ export class RubyRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             const [maybeNull, nonNulls] = removeNullFromUnion(u, false);
             this.emitBlock("def self.from_dynamic!(d)", () => {
-                const memberNames = u.children.map((member: Type) => this.nameForUnionMember(u, member));
-                this.forEachUnionMember(u, u.children, "none", null, (name, t) => {
+                const memberNames = u.getChildren().map((member: Type) => this.nameForUnionMember(u, member));
+                this.forEachUnionMember(u, u.getChildren(), "none", null, (name, t) => {
                     const nilMembers = memberNames
                         .remove(name)
                         .toArray()

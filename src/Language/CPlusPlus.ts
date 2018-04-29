@@ -1,5 +1,3 @@
-"use strict";
-
 import { OrderedSet, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";

@@ -1,19 +1,16 @@
-"use strict";
-
-import { Set, OrderedMap, OrderedSet, Map } from "immutable";
+import { Set, OrderedMap, OrderedSet } from "immutable";
 
 import { Type, ClassProperty, UnionType, ObjectType } from "./Type";
-import { combineTypeAttributesOfTypes, assertIsObject } from "./TypeUtils";
+import { assertIsObject } from "./TypeUtils";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
 import { TypeLookerUp, GraphRewriteBuilder } from "./GraphRewriting";
 import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
 import { panic, assert, defined, unionOfSets } from "./Support";
-import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 
 function getCliqueProperties(
     clique: ObjectType[],
-    makePropertyType: (attributes: TypeAttributes, types: OrderedSet<Type>) => TypeRef
+    makePropertyType: (types: OrderedSet<Type>) => TypeRef
 ): [OrderedMap<string, ClassProperty>, TypeRef | undefined, boolean] {
     let lostTypeAttributes = false;
     let propertyNames = OrderedSet<string>();
@@ -57,16 +54,10 @@ function getCliqueProperties(
     }
 
     const unifiedAdditionalProperties =
-        additionalProperties === undefined
-            ? undefined
-            : makePropertyType(combineTypeAttributesOfTypes(additionalProperties), additionalProperties);
+        additionalProperties === undefined ? undefined : makePropertyType(additionalProperties);
 
     const unifiedPropertiesArray = properties.map(([name, types, isOptional]) => {
-        let attributes = combineTypeAttributesOfTypes(types);
-        attributes = namesTypeAttributeKind.setDefaultInAttributes(attributes, () =>
-            TypeNames.make(OrderedSet([name]), OrderedSet(), true)
-        );
-        return [name, new ClassProperty(makePropertyType(attributes, types), isOptional)] as [string, ClassProperty];
+        return [name, new ClassProperty(makePropertyType(types), isOptional)] as [string, ClassProperty];
     });
     const unifiedProperties = OrderedMap(unifiedPropertiesArray);
 
@@ -97,25 +88,11 @@ function countProperties(
 export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
     constructor(
         typeBuilder: TypeBuilder & TypeLookerUp,
-        private readonly _makeEnums: boolean,
         private readonly _makeObjectTypes: boolean,
         private readonly _makeClassesFixed: boolean,
-        private readonly _unifyTypes: (typesToUnify: TypeRef[], typeAttributes: TypeAttributes) => TypeRef
+        private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef
     ) {
         super(typeBuilder);
-    }
-
-    protected makeEnum(
-        enumCases: string[],
-        counts: { [name: string]: number },
-        typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
-    ): TypeRef {
-        if (this._makeEnums) {
-            return this.typeBuilder.getEnumType(typeAttributes, OrderedSet(enumCases), forwardingRef);
-        } else {
-            return this.typeBuilder.getStringType(typeAttributes, OrderedMap(counts), forwardingRef);
-        }
     }
 
     protected makeObject(
@@ -151,17 +128,14 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
                     .map(o => defined(o.getAdditionalProperties()).typeRef)
             );
             const allPropertyTypes = propertyTypes.union(additionalPropertyTypes).toArray();
-            const tref = this.typeBuilder.getMapType(this._unifyTypes(allPropertyTypes, emptyTypeAttributes));
+            const tref = this.typeBuilder.getMapType(this._unifyTypes(allPropertyTypes));
             this.typeBuilder.addAttributes(tref, typeAttributes);
             return tref;
         } else {
-            const [properties, additionalProperties, lostTypeAttributes] = getCliqueProperties(
-                objectTypes,
-                (names, types) => {
-                    assert(types.size > 0, "Property has no type");
-                    return this._unifyTypes(types.map(t => t.typeRef).toArray(), names);
-                }
-            );
+            const [properties, additionalProperties, lostTypeAttributes] = getCliqueProperties(objectTypes, types => {
+                assert(types.size > 0, "Property has no type");
+                return this._unifyTypes(types.map(t => t.typeRef).toArray());
+            });
             if (lostTypeAttributes) {
                 this.typeBuilder.setLostTypeAttributes();
             }
@@ -189,7 +163,7 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
-        const ref = this.typeBuilder.getArrayType(this._unifyTypes(arrays, Map()), forwardingRef);
+        const ref = this.typeBuilder.getArrayType(this._unifyTypes(arrays), forwardingRef);
         this.typeBuilder.addAttributes(ref, typeAttributes);
         return ref;
     }
@@ -197,17 +171,16 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
 
 export function unionBuilderForUnification<T extends Type>(
     typeBuilder: GraphRewriteBuilder<T>,
-    makeEnums: boolean,
     makeObjectTypes: boolean,
     makeClassesFixed: boolean,
     conflateNumbers: boolean
 ): UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
-    return new UnifyUnionBuilder(typeBuilder, makeEnums, makeObjectTypes, makeClassesFixed, (trefs, names) =>
+    return new UnifyUnionBuilder(typeBuilder, makeObjectTypes, makeClassesFixed, trefs =>
         unifyTypes(
             Set(trefs.map(tref => tref.deref()[0])),
-            names,
+            emptyTypeAttributes,
             typeBuilder,
-            unionBuilderForUnification(typeBuilder, makeEnums, makeObjectTypes, makeClassesFixed, conflateNumbers),
+            unionBuilderForUnification(typeBuilder, makeObjectTypes, makeClassesFixed, conflateNumbers),
             conflateNumbers
         )
     );
@@ -227,9 +200,7 @@ export function unifyTypes<T extends Type>(
     } else if (types.count() === 1) {
         const first = defined(types.first());
         if (!(first instanceof UnionType)) {
-            const tref = typeBuilder.reconstituteTypeRef(first.typeRef, maybeForwardingRef);
-            typeBuilder.addAttributes(tref, typeAttributes);
-            return tref;
+            return typeBuilder.reconstituteTypeRef(first.typeRef, typeAttributes, maybeForwardingRef);
         }
     }
 
@@ -242,7 +213,7 @@ export function unifyTypes<T extends Type>(
 
     const accumulator = new TypeRefUnionAccumulator(conflateNumbers);
     const nestedAttributes = accumulator.addTypes(types);
-    typeAttributes = combineTypeAttributes(typeAttributes, nestedAttributes);
+    typeAttributes = combineTypeAttributes("union", typeAttributes, nestedAttributes);
 
     return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {
         typeBuilder.registerUnion(typeRefs, forwardingRef);

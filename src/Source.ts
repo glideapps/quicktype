@@ -1,5 +1,3 @@
-"use strict";
-
 import * as _ from "lodash";
 
 import { List, Map, Range } from "immutable";
@@ -66,7 +64,7 @@ export function newline(): NewlineSource {
 }
 
 export type Sourcelike = Source | string | Name | SourcelikeArray;
-export interface SourcelikeArray extends Array<Sourcelike> { }
+export interface SourcelikeArray extends Array<Sourcelike> {}
 
 export function sourcelikeToSource(sl: Sourcelike): Source {
     if (sl instanceof Array) {

@@ -1,5 +1,3 @@
-"use strict";
-
 import { OrderedMap, Map } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
@@ -9,6 +7,7 @@ import { UnionBuilder, UnionAccumulator } from "./UnionBuilder";
 import { isTime, isDateTime, isDate } from "./DateTime";
 import { ClassProperty } from "./Type";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { StringTypes } from "./StringTypes";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
@@ -40,16 +39,6 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         private readonly _fixed: boolean
     ) {
         super(typeBuilder);
-    }
-
-    protected makeEnum(
-        cases: string[],
-        counts: { [name: string]: number },
-        typeAttributes: TypeAttributes,
-        forwardingRef: TypeRef | undefined
-    ): TypeRef {
-        const caseMap = OrderedMap(cases.map((c: string): [string, number] => [c, counts[c]]));
-        return this.typeBuilder.getStringType(typeAttributes, caseMap, forwardingRef);
     }
 
     protected makeObject(
@@ -109,10 +98,10 @@ export class TypeInference {
                     accumulator.addDouble(emptyTypeAttributes);
                     break;
                 case Tag.InternedString:
-                    if (this._inferEnums && !accumulator.haveString) {
+                    if (this._inferEnums) {
                         const s = cjson.getStringForValue(value);
                         if (canBeEnumCase(s)) {
-                            accumulator.addEnumCase(s, 1, emptyTypeAttributes);
+                            accumulator.addStringCase(s, 1, emptyTypeAttributes);
                         } else {
                             accumulator.addStringType("string", emptyTypeAttributes);
                         }
@@ -130,13 +119,25 @@ export class TypeInference {
                     accumulator.addArray(cjson.getArrayForValue(value), emptyTypeAttributes);
                     break;
                 case Tag.Date:
-                    accumulator.addStringType(this._inferDates ? "date" : "string", emptyTypeAttributes);
+                    accumulator.addStringType(
+                        "string",
+                        emptyTypeAttributes,
+                        this._inferDates ? StringTypes.date : StringTypes.unrestricted
+                    );
                     break;
                 case Tag.Time:
-                    accumulator.addStringType(this._inferDates ? "time" : "string", emptyTypeAttributes);
+                    accumulator.addStringType(
+                        "string",
+                        emptyTypeAttributes,
+                        this._inferDates ? StringTypes.time : StringTypes.unrestricted
+                    );
                     break;
                 case Tag.DateTime:
-                    accumulator.addStringType(this._inferDates ? "date-time" : "string", emptyTypeAttributes);
+                    accumulator.addStringType(
+                        "string",
+                        emptyTypeAttributes,
+                        this._inferDates ? StringTypes.dateTime : StringTypes.unrestricted
+                    );
                     break;
                 default:
                     return assertNever(t);

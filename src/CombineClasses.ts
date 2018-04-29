@@ -1,5 +1,3 @@
-"use strict";
-
 import { Map, Set, OrderedSet } from "immutable";
 
 import { ClassType, Type, ClassProperty, setOperationCasesEqual } from "./Type";
@@ -152,12 +150,12 @@ export function combineClasses(
         forwardingRef: TypeRef
     ): TypeRef {
         assert(clique.size > 0, "Clique can't be empty");
-        const attributes = combineTypeAttributesOfTypes(clique);
+        const attributes = combineTypeAttributesOfTypes("union", clique);
         return unifyTypes(
             clique,
             attributes,
             builder,
-            unionBuilderForUnification(builder, false, false, false, conflateNumbers),
+            unionBuilderForUnification(builder, false, false, conflateNumbers),
             conflateNumbers,
             forwardingRef
         );
