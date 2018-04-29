@@ -1,9 +1,9 @@
 import { Set, OrderedSet, OrderedMap, Map } from "immutable";
 
-import { TypeGraph } from "./TypeGraph";
-import { StringTypeMapping, TypeRef, TypeBuilder } from "./TypeBuilder";
-import { GraphRewriteBuilder, TypeLookerUp } from "./GraphRewriting";
-import { UnionTypeProvider, UnionBuilder, TypeAttributeMap } from "./UnionBuilder";
+import { TypeGraph } from "../TypeGraph";
+import { StringTypeMapping, TypeRef, TypeBuilder } from "../TypeBuilder";
+import { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting";
+import { UnionTypeProvider, UnionBuilder, TypeAttributeMap } from "../UnionBuilder";
 import {
     IntersectionType,
     Type,
@@ -16,15 +16,15 @@ import {
     GenericClassProperty,
     TypeKind,
     ObjectType
-} from "./Type";
-import { setOperationMembersRecursively, matchTypeExhaustive, makeGroupsToFlatten } from "./TypeUtils";
-import { assert, defined, panic, mustNotHappen } from "./Support";
+} from "../Type";
+import { setOperationMembersRecursively, matchTypeExhaustive, makeGroupsToFlatten } from "../TypeUtils";
+import { assert, defined, panic, mustNotHappen } from "../Support";
 import {
     combineTypeAttributes,
     TypeAttributes,
     emptyTypeAttributes,
     makeTypeAttributesInferred
-} from "./TypeAttributes";
+} from "../TypeAttributes";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t, undefined)[0];

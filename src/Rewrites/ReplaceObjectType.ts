@@ -1,11 +1,11 @@
 import { Set, OrderedMap } from "immutable";
 
-import { TypeGraph } from "./TypeGraph";
-import { StringTypeMapping, TypeRef } from "./TypeBuilder";
-import { GraphRewriteBuilder } from "./GraphRewriting";
-import { ObjectType, ClassProperty } from "./Type";
-import { defined } from "./Support";
-import { emptyTypeAttributes } from "./TypeAttributes";
+import { TypeGraph } from "../TypeGraph";
+import { StringTypeMapping, TypeRef } from "../TypeBuilder";
+import { GraphRewriteBuilder } from "../GraphRewriting";
+import { ObjectType, ClassProperty } from "../Type";
+import { defined } from "../Support";
+import { emptyTypeAttributes } from "../TypeAttributes";
 
 export function replaceObjectType(
     graph: TypeGraph,
