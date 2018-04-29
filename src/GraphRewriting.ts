@@ -213,6 +213,10 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
         return this.forceReconstituteTypeRef(originalRef, attributes, maybeForwardingRef);
     }
 
+    reconstituteTypeAttributes(attributes: TypeAttributes): TypeAttributes {
+        return attributes.map((v, a) => a.reconstitute(this, v));
+    }
+
     protected assertTypeRefsToReconstitute(typeRefs: TypeRef[], forwardingRef?: TypeRef): void {
         assert(typeRefs.length > 0, "Must have at least one type to reconstitute");
         for (const originalRef of typeRefs) {
@@ -318,12 +322,16 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
             attributes = emptyTypeAttributes;
         }
         if (attributeSources === undefined) {
-            attributes = combineTypeAttributes("union", attributes, originalAttributes);
+            attributes = combineTypeAttributes(
+                "union",
+                attributes,
+                this.reconstituteTypeAttributes(originalAttributes)
+            );
         } else {
             attributes = combineTypeAttributes(
                 "union",
                 attributes,
-                combineTypeAttributesOfTypes("union", attributeSources)
+                this.reconstituteTypeAttributes(combineTypeAttributesOfTypes("union", attributeSources))
             );
         }
 
@@ -454,9 +462,13 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         }
 
         if (attributes === undefined) {
-            attributes = originalAttributes;
+            attributes = this.reconstituteTypeAttributes(originalAttributes);
         } else {
-            attributes = combineTypeAttributes("union", attributes, originalAttributes);
+            attributes = combineTypeAttributes(
+                "union",
+                attributes,
+                this.reconstituteTypeAttributes(originalAttributes)
+            );
         }
 
         const reconstituter = new TypeReconstituter(

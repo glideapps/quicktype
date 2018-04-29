@@ -1,6 +1,8 @@
 import { Map, OrderedSet, hash } from "immutable";
 
 import { panic, setUnion } from "./Support";
+import { Type } from "./Type";
+import { BaseGraphRewriteBuilder } from "./GraphRewriting";
 
 export class TypeAttributeKind<T> {
     constructor(readonly name: string) {}
@@ -17,6 +19,10 @@ export class TypeAttributeKind<T> {
         return panic(`Cannot make type attribute ${this.name} inferred`);
     }
 
+    children(_: T): OrderedSet<Type> {
+        return OrderedSet();
+    }
+
     stringify(_: T): string | undefined {
         return undefined;
     }
@@ -27,6 +33,10 @@ export class TypeAttributeKind<T> {
 
     requiresUniqueIdentity(_: T): boolean {
         return false;
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(_builder: TBuilder, a: T): T {
+        return a;
     }
 
     makeAttributes(value: T): TypeAttributes {
@@ -57,6 +67,10 @@ export class TypeAttributeKind<T> {
     setDefaultInAttributes(a: TypeAttributes, makeDefault: () => T): TypeAttributes {
         if (this.tryGetInAttributes(a) !== undefined) return a;
         return this.modifyInAttributes(a, makeDefault);
+    }
+
+    removeInAttributes(a: TypeAttributes): TypeAttributes {
+        return a.filterNot((_, k) => k === this);
     }
 
     equals(other: any): boolean {

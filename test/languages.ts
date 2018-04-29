@@ -28,7 +28,7 @@ export const CSharpLanguage: Language = {
   runCommand(sample: string) {
     return `dotnet run "${sample}"`;
   },
-  diffViaSchema: true,
+  diffViaSchema: false,
   skipDiffViaSchema: [
     "keywords.json",
     "00c36.json",

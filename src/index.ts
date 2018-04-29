@@ -25,6 +25,7 @@ import { messageError } from "./Messages";
 import { InputData } from "./input/Inputs";
 import { TypeSource } from "./TypeSource";
 import { flattenStrings } from "./rewrites/FlattenStrings";
+import { makeTransformations } from "./MakeTransformations";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -263,6 +264,10 @@ export class Run {
         if (!targetLanguage.supportsOptionalClassProperties) {
             graph = optionalToNullable(graph, stringTypeMapping, debugPrintReconstitution);
         }
+
+        graph = makeTransformations(graph, stringTypeMapping, targetLanguage, debugPrintReconstitution);
+        [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false, debugPrintReconstitution);
+        assert(unionsDone, "We should only have to flatten unions once after making transformations");
 
         // Sometimes we combine classes in ways that will the order come out
         // differently compared to what it would be from the equivalent schema,

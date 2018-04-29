@@ -6,6 +6,7 @@ import { Type, ObjectType } from "./Type";
 import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
 import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./TypeNames";
 import { defined, panic } from "./Support";
+import { transformationForType } from "./Transformers";
 
 // `gatherNames` infers names from given names and property names.
 //
@@ -83,6 +84,11 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
             newNames = null;
         }
         namesForType = namesForType.set(t, newNames);
+
+        const transformation = transformationForType(t);
+        if (transformation !== undefined) {
+            addNames(transformation.targetType, names);
+        }
 
         if (oldNames !== undefined && newNames !== null) {
             if (oldNames.size === newNames.size) {
@@ -174,6 +180,11 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         if (processedEntry.has(t)) return;
         processedEntry = processedEntry.add(t);
         pairsProcessed = pairsProcessed.set(ancestor, processedEntry);
+
+        const transformation = transformationForType(t);
+        if (transformation !== undefined) {
+            processType(ancestor, transformation.targetType, alternativeSuffix);
+        }
 
         let ancestorAlternatives = ancestorAlternativesForType.get(t);
         let directAlternatives = directAlternativesForType.get(t);

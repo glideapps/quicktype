@@ -48,7 +48,14 @@ export type TypeIdentity = List<any> | undefined;
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
 
-    abstract getChildren(): OrderedSet<Type>;
+    getChildren(): OrderedSet<Type> {
+        let result = OrderedSet<Type>();
+        this.getAttributes().forEach((v, k) => {
+            if (k.children === undefined) return;
+            result = result.union(k.children(v));
+        });
+        return result;
+    }
 
     directlyReachableTypes<T>(setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
         const set = setForType(this);
@@ -204,10 +211,6 @@ export class PrimitiveType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: PrimitiveTypeKind;
 
-    getChildren(): OrderedSet<Type> {
-        return OrderedSet();
-    }
-
     get isNullable(): boolean {
         return this.kind === "null" || this.kind === "any" || this.kind === "none";
     }
@@ -265,7 +268,7 @@ export class ArrayType extends Type {
     }
 
     getChildren(): OrderedSet<Type> {
-        return OrderedSet([this.items]);
+        return super.getChildren().add(this.items);
     }
 
     get isNullable(): boolean {
@@ -416,14 +419,16 @@ export class ObjectType extends Type {
     }
 
     getChildren(): OrderedSet<Type> {
-        const children = this.getSortedProperties()
-            .map(p => p.type)
-            .toOrderedSet();
+        let children = super.getChildren().union(
+            this.getSortedProperties()
+                .map(p => p.type)
+                .toOrderedSet()
+        );
         const additionalProperties = this.getAdditionalProperties();
-        if (additionalProperties === undefined) {
-            return children;
+        if (additionalProperties !== undefined) {
+            children = children.add(additionalProperties);
         }
-        return children.add(additionalProperties);
+        return children;
     }
 
     get isNullable(): boolean {
@@ -560,10 +565,6 @@ export class EnumType extends Type {
         super(typeRef, "enum");
     }
 
-    getChildren(): OrderedSet<Type> {
-        return OrderedSet();
-    }
-
     get isNullable(): boolean {
         return false;
     }
@@ -655,7 +656,7 @@ export abstract class SetOperationType extends Type {
     }
 
     getChildren(): OrderedSet<Type> {
-        return this.sortedMembers;
+        return super.getChildren().union(this.sortedMembers);
     }
 
     isPrimitive(): this is PrimitiveType {

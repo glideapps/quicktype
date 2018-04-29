@@ -17,6 +17,7 @@ import {
     propertyDescriptionsTypeAttributeKind
 } from "./TypeAttributes";
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
+import { transformationForType } from "./Transformers";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -32,6 +33,8 @@ const enumCaseNameOrder = 20;
 const assignedEnumCaseNameOrder = 10;
 
 const unionMemberNameOrder = 40;
+
+const transformerNameOrder = 40;
 
 function splitDescription(descriptions: OrderedSet<string> | undefined): string[] | undefined {
     if (descriptions === undefined) return undefined;
@@ -57,12 +60,14 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _propertyNamesStoreView: TypeAttributeStoreView<Map<string, Name>> | undefined;
     private _memberNamesStoreView: TypeAttributeStoreView<Map<Type, Name>> | undefined;
     private _caseNamesStoreView: TypeAttributeStoreView<Map<string, Name>> | undefined;
+    private _namesForTransformations: Map<Type, Name> | undefined;
 
     private _namedTypeNamer: Namer | undefined;
     // @ts-ignore: FIXME: Make this `Namer | undefined`
     private _unionMemberNamer: Namer | null;
     // @ts-ignore: FIXME: Make this `Namer | undefined`
     private _enumCaseNamer: Namer | null;
+    private _transformationNamer: Namer | undefined;
 
     private _declarationIR: DeclarationIR | undefined;
     private _namedTypes: List<Type> | undefined;
@@ -109,6 +114,10 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected abstract makeUnionMemberNamer(): Namer | null;
     protected abstract makeEnumCaseNamer(): Namer | null;
     protected abstract emitSourceStructure(givenOutputFilename: string): void;
+
+    protected makeTransformationNamer(): Namer | undefined {
+        return undefined;
+    }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
         if (isNamedType(type)) {
@@ -170,10 +179,12 @@ export abstract class ConvenienceRenderer extends Renderer {
             this.typeGraph.attributeStore,
             assignedCaseNamesAttributeKind
         );
+        this._namesForTransformations = Map();
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._unionMemberNamer = this.makeUnionMemberNamer();
         this._enumCaseNamer = this.makeEnumCaseNamer();
+        this._transformationNamer = this.makeTransformationNamer();
 
         this._globalForbiddenNamespace = keywordNamespace("forbidden", this.forbiddenNamesForGlobalNamespace());
         this._otherForbiddenNamespaces = Map();
@@ -195,6 +206,9 @@ export abstract class ConvenienceRenderer extends Renderer {
             const name = this.addNameForNamedType(u);
             this.addUnionMemberNames(u, name);
         });
+        if (this._transformationNamer !== undefined) {
+            this.typeGraph.allTypesUnordered().forEach(t => this.addNameForTransformation(t));
+        }
         return OrderedSet([this._globalForbiddenNamespace, this._globalNamespace]).union(
             this._otherForbiddenNamespaces.valueSeq()
         );
@@ -228,10 +242,14 @@ export abstract class ConvenienceRenderer extends Renderer {
         return name;
     };
 
-    protected makeNameForNamedType(t: Type): Name {
+    private makeNameForType(t: Type, namer: Namer, givenOrder: number, inferredOrder: number): Name {
         const names = t.getNames();
-        const order = names.areInferred ? inferredNameOrder : givenNameOrder;
-        return new SimpleName(names.proposedNames, defined(this._namedTypeNamer), order);
+        const order = names.areInferred ? inferredOrder : givenOrder;
+        return new SimpleName(names.proposedNames, namer, order);
+    }
+
+    protected makeNameForNamedType(t: Type): Name {
+        return this.makeNameForType(t, defined(this._namedTypeNamer), givenNameOrder, inferredNameOrder);
     }
 
     private addNameForNamedType = (type: Type): Name => {
@@ -245,6 +263,45 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.nameStoreView.set(type, name);
         return name;
     };
+
+    protected get typesWithNamedTransformations(): Map<Type, Name> {
+        return defined(this._namesForTransformations);
+    }
+
+    protected nameForTransformation(t: Type): Name | undefined {
+        assert(
+            this._transformationNamer !== undefined,
+            "Tried to look up a name for a transformation, but didn't define a namer"
+        );
+        const xf = transformationForType(t);
+        if (xf === undefined) return undefined;
+
+        const name = defined(this._namesForTransformations).get(t);
+        if (name === undefined) {
+            return panic("No name for transformation");
+        }
+        return name;
+    }
+
+    private addNameForTransformation(t: Type): void {
+        const xf = transformationForType(t);
+        if (xf === undefined) return;
+
+        assert(
+            defined(this._namesForTransformations).get(t) === undefined,
+            "Tried to give two names to the same transformation"
+        );
+
+        const name = this.makeNameForType(
+            xf.targetType,
+            defined(this._transformationNamer),
+            transformerNameOrder,
+            transformerNameOrder
+        );
+        this.globalNamespace.add(name);
+
+        this._namesForTransformations = defined(this._namesForTransformations).set(t, name);
+    }
 
     private processForbiddenWordsInfo(
         info: ForbiddenWordsInfo,
@@ -621,6 +678,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         const sortedCaseNames = caseNames.sortBy(n => this.names.get(n)).toOrderedMap();
         this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
     };
+
+    protected forEachTransformation(blankLocations: BlankLineLocations, f: (n: Name, t: Type) => void): void {
+        this.forEachWithBlankLines(defined(this._namesForTransformations), blankLocations, f);
+    }
 
     protected callForNamedType<T extends Type>(t: T, f: (t: T, name: Name) => void): void {
         f(t, this.nameForNamedType(t));
