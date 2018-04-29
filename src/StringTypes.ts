@@ -140,12 +140,34 @@ export class StringTypes {
     }
 }
 
-export const stringTypesTypeAttributeKind = new TypeAttributeKind<StringTypes>(
-    "stringTypes",
-    true,
-    st => st.cases !== undefined && !st.cases.isEmpty(),
-    (a, b) => a.union(b),
-    (a, b) => a.intersect(b),
-    _ => undefined,
-    st => st.toString()
-);
+class DescriptionTypeAttributeKind extends TypeAttributeKind<StringTypes> {
+    constructor() {
+        super("stringTypes");
+    }
+
+    get inIdentity(): boolean {
+        return true;
+    }
+
+    requiresUniqueIdentity(st: StringTypes): boolean {
+        return st.cases !== undefined && !st.cases.isEmpty();
+    }
+
+    combine(a: StringTypes, b: StringTypes): StringTypes {
+        return a.union(b);
+    }
+
+    intersect(a: StringTypes, b: StringTypes): StringTypes {
+        return a.intersect(b);
+    }
+
+    makeInferred(_: StringTypes): undefined {
+        return undefined;
+    }
+
+    stringify(st: StringTypes): string {
+        return st.toString();
+    }
+}
+
+export const stringTypesTypeAttributeKind: TypeAttributeKind<StringTypes> = new DescriptionTypeAttributeKind();

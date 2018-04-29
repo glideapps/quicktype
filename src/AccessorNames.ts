@@ -9,15 +9,7 @@ export type AccessorEntry = string | Map<string, string>;
 
 export type AccessorNames = Map<string, AccessorEntry>;
 
-export const accessorNamesTypeAttributeKind = new TypeAttributeKind<AccessorNames>(
-    "accessorNames",
-    false,
-    false,
-    undefined,
-    undefined,
-    _ => undefined,
-    undefined
-);
+export const accessorNamesTypeAttributeKind = new TypeAttributeKind<AccessorNames>("accessorNames");
 
 // Returns [name, isFixed].
 function getFromEntry(entry: AccessorEntry, language: string): [string, boolean] | undefined {
@@ -68,15 +60,17 @@ export function getAccessorName(
 // That way, no matter how the types are recombined, if we find a union member, we can look
 // up its union's identifier(s), and then look up the member's accessor entries for that
 // identifier.  Of course we might find more than one, potentially conflicting.
-export const unionIdentifierTypeAttributeKind = new TypeAttributeKind<Set<number>>(
-    "unionIdentifier",
-    false,
-    false,
-    (a, b) => a.union(b),
-    undefined,
-    _ => undefined,
-    undefined
-);
+class UnionIdentifierTypeAttributeKind extends TypeAttributeKind<Set<number>> {
+    constructor() {
+        super("unionIdentifier");
+    }
+
+    combine(a: Set<number>, b: Set<number>): Set<number> {
+        return a.union(b);
+    }
+}
+
+export const unionIdentifierTypeAttributeKind: TypeAttributeKind<Set<number>> = new UnionIdentifierTypeAttributeKind();
 
 let nextUnionIdentifier: number = 0;
 
@@ -86,15 +80,19 @@ export function makeUnionIdentifierAttribute(): TypeAttributes {
     return attributes;
 }
 
-export const unionMemberNamesTypeAttributeKind = new TypeAttributeKind<Map<number, AccessorEntry>>(
-    "unionMemberNames",
-    false,
-    false,
-    (a, b) => a.merge(b),
-    undefined,
-    _ => undefined,
-    undefined
-);
+class UnionMemberNamesTypeAttributeKind extends TypeAttributeKind<Map<number, AccessorEntry>> {
+    constructor() {
+        super("unionMemberNames");
+    }
+
+    combine(a: Map<number, AccessorEntry>, b: Map<number, AccessorEntry>): Map<number, AccessorEntry> {
+        return a.merge(b);
+    }
+}
+
+export const unionMemberNamesTypeAttributeKind: TypeAttributeKind<
+    Map<number, AccessorEntry>
+> = new UnionMemberNamesTypeAttributeKind();
 
 export function makeUnionMemberNamesAttribute(unionAttributes: TypeAttributes, entry: AccessorEntry): TypeAttributes {
     const identifiers = defined(unionIdentifierTypeAttributeKind.tryGetInAttributes(unionAttributes));

@@ -24,7 +24,7 @@ import {
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
-import { defined, assert, panic, setUnion, mapOptional } from "./Support";
+import { defined, assert, panic, mapOptional } from "./Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 
 export class TypeRef {
@@ -47,26 +47,32 @@ export class TypeRef {
     }
 }
 
-function provenanceToString(p: Set<TypeRef>): string {
-    return p
-        .map(r => r.index)
-        .toList()
-        .sort()
-        .map(i => i.toString())
-        .join(",");
-}
-
 // FIXME: Don't infer provenance.  All original types should be present in
 // non-inferred form in the final graph.
-export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>(
-    "provenance",
-    false,
-    false,
-    setUnion,
-    undefined,
-    a => a,
-    provenanceToString
-);
+class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<TypeRef>> {
+    constructor() {
+        super("provenance");
+    }
+
+    combine(a: Set<TypeRef>, b: Set<TypeRef>): Set<TypeRef> {
+        return a.union(b);
+    }
+
+    makeInferred(p: Set<TypeRef>): Set<TypeRef> {
+        return p;
+    }
+
+    stringify(p: Set<TypeRef>): string {
+        return p
+            .map(r => r.index)
+            .toList()
+            .sort()
+            .map(i => i.toString())
+            .join(",");
+    }
+}
+
+export const provenanceTypeAttributeKind: TypeAttributeKind<Set<TypeRef>> = new ProvenanceTypeAttributeKind();
 
 export type StringTypeMapping = {
     date: PrimitiveStringTypeKind;
