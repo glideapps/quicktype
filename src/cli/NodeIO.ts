@@ -2,7 +2,7 @@ import * as fs from "fs";
 import { Readable } from "stream";
 import { getStream } from "../get-stream/index";
 
-import { JSONSchemaStore, JSONSchema } from "../Input/JSONSchemaStore";
+import { JSONSchemaStore, JSONSchema } from "../input/JSONSchemaStore";
 import { messageError, ErrorMessage } from "../Messages";
 import { parseJSON } from "../Support";
 

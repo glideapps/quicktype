@@ -59,7 +59,7 @@ export const CSharpLanguage: Language = {
     { density: "dense" },
     { "number-type": "decimal" }
   ],
-  sourceFiles: ["src/Language/CSharp.ts"]
+  sourceFiles: ["src/language/CSharp.ts"]
 };
 
 export const JavaLanguage: Language = {
@@ -81,7 +81,7 @@ export const JavaLanguage: Language = {
   skipSchema: ["keyword-unions.schema"], // generates classes with names that are case-insensitively equal
   rendererOptions: {},
   quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/Java.ts"]
+  sourceFiles: ["src/language/Java.ts"]
 };
 
 export const RustLanguage: Language = {
@@ -117,7 +117,7 @@ export const RustLanguage: Language = {
     { visibility: "private" },
     { visibility: "public" }
   ],
-  sourceFiles: ["src/Language/Rust.ts"]
+  sourceFiles: ["src/language/Rust.ts"]
 };
 
 export const RubyLanguage: Language = {
@@ -193,7 +193,7 @@ export const RubyLanguage: Language = {
   skipMiscJSON: false,
   rendererOptions: {},
   quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/Ruby/index.ts"]
+  sourceFiles: ["src/language/ruby/index.ts"]
 };
 
 export const GoLanguage: Language = {
@@ -242,7 +242,7 @@ export const GoLanguage: Language = {
   ],
   rendererOptions: {},
   quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/Golang.ts"]
+  sourceFiles: ["src/language/Golang.ts"]
 };
 
 export const CPlusPlusLanguage: Language = {
@@ -279,7 +279,7 @@ export const CPlusPlusLanguage: Language = {
   skipSchema: [],
   rendererOptions: {},
   quickTestRendererOptions: [{ unions: "indirection" }],
-  sourceFiles: ["src/Language/CPlusPlus.ts"]
+  sourceFiles: ["src/language/CPlusPlus.ts"]
 };
 
 export const ElmLanguage: Language = {
@@ -347,7 +347,7 @@ export const ElmLanguage: Language = {
   ],
   rendererOptions: {},
   quickTestRendererOptions: [{ "array-type": "list" }],
-  sourceFiles: ["src/Language/Elm.ts"]
+  sourceFiles: ["src/language/Elm.ts"]
 };
 
 export const SwiftLanguage: Language = {
@@ -403,7 +403,7 @@ export const SwiftLanguage: Language = {
     { "access-level": "internal" },
     { "access-level": "public" }
   ],
-  sourceFiles: ["src/Language/Swift.ts"]
+  sourceFiles: ["src/language/Swift.ts"]
 };
 
 export const ObjectiveCLanguage: Language = {
@@ -435,7 +435,7 @@ export const ObjectiveCLanguage: Language = {
   skipSchema: [],
   rendererOptions: { functions: "true" },
   quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/Objective-C.ts"]
+  sourceFiles: ["src/language/Objective-C.ts"]
 };
 
 export const TypeScriptLanguage: Language = {
@@ -469,7 +469,7 @@ export const TypeScriptLanguage: Language = {
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: { "explicit-unions": "yes" },
   quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/TypeScript.ts"]
+  sourceFiles: ["src/language/TypeScript.ts"]
 };
 
 export const JavaScriptLanguage: Language = {
@@ -489,7 +489,7 @@ export const JavaScriptLanguage: Language = {
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: {},
   quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/JavaScript.ts"]
+  sourceFiles: ["src/language/JavaScript.ts"]
 };
 
 export const FlowLanguage: Language = {
@@ -510,5 +510,5 @@ export const FlowLanguage: Language = {
   ],
   rendererOptions: { "explicit-unions": "yes" },
   quickTestRendererOptions: [],
-  sourceFiles: ["src/Language/Flow.ts"]
+  sourceFiles: ["src/language/Flow.ts"]
 };

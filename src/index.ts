@@ -1,35 +1,35 @@
 import * as _ from "lodash";
 import { List, Map, OrderedMap, OrderedSet } from "immutable";
 
-import * as targetLanguages from "./Language/All";
+import * as targetLanguages from "./language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
 import { assert, defined } from "./Support";
-import { CompressedJSON } from "./Input/CompressedJSON";
-import { combineClasses, findSimilarityCliques } from "./Rewrites/CombineClasses";
-import { addTypesInSchema, Ref } from "./Input/JSONSchemaInput";
-import { JSONSchemaStore } from "./Input/JSONSchemaStore";
-import { TypeInference } from "./Input/Inference";
-import { inferMaps } from "./Rewrites/InferMaps";
+import { CompressedJSON } from "./input/CompressedJSON";
+import { combineClasses, findSimilarityCliques } from "./rewrites/CombineClasses";
+import { addTypesInSchema, Ref } from "./input/JSONSchemaInput";
+import { JSONSchemaStore } from "./input/JSONSchemaStore";
+import { TypeInference } from "./input/Inference";
+import { inferMaps } from "./rewrites/InferMaps";
 import { TypeBuilder } from "./TypeBuilder";
 import { TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
 import { makeNamesTypeAttributes, initTypeNames } from "./TypeNames";
 import { makeGraphQLQueryTypes } from "./GraphQL";
 import { gatherNames } from "./GatherNames";
-import { expandStrings } from "./Rewrites/ExpandStrings";
+import { expandStrings } from "./rewrites/ExpandStrings";
 import { descriptionTypeAttributeKind } from "./TypeAttributes";
-import { flattenUnions } from "./Rewrites/FlattenUnions";
-import { resolveIntersections } from "./Rewrites/ResolveIntersections";
-import { replaceObjectType } from "./Rewrites/ReplaceObjectType";
+import { flattenUnions } from "./rewrites/FlattenUnions";
+import { resolveIntersections } from "./rewrites/ResolveIntersections";
+import { replaceObjectType } from "./rewrites/ReplaceObjectType";
 import { ErrorMessage, messageError } from "./Messages";
-import { InputData } from "./Input/Inputs";
+import { InputData } from "./input/Inputs";
 import { TypeSource } from "./TypeSource";
-import { flattenStrings } from "./Rewrites/FlattenStrings";
+import { flattenStrings } from "./rewrites/FlattenStrings";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
 export { SerializedRenderResult, Annotation } from "./Source";
-export { all as languages, languageNamed } from "./Language/All";
+export { all as languages, languageNamed } from "./language/All";
 export { OptionDefinition } from "./RendererOptions";
 export { TypeSource, GraphQLTypeSource, JSONTypeSource, SchemaTypeSource, TypeScriptTypeSource } from "./TypeSource";
 

@@ -23,7 +23,7 @@ import {
     TypeScriptTypeSource
 } from "../TypeSource";
 import { OptionDefinition } from "../RendererOptions";
-import * as defaultTargetLanguages from "../Language/All";
+import * as defaultTargetLanguages from "../language/All";
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { Annotation } from "../Source";
 import { IssueAnnotationData } from "../Annotation";
