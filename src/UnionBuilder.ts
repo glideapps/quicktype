@@ -112,11 +112,6 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
                 maybeEnumAttributes === undefined,
                 "We can't add both an enum as well as a restricted string type to a union builder"
             );
-        } else {
-            assert(
-                this._stringTypeAttributes.every((_, k) => k === "string"),
-                "Can't add the full string type to a union builder that has others"
-            );
         }
 
         this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, "string", attributes);
@@ -145,7 +140,10 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
     addEnum(cases: OrderedSet<string>, attributes: TypeAttributes): void {
         const maybeStringAttributes = this._stringTypeAttributes.get("string");
         if (maybeStringAttributes !== undefined) {
-            // FIXME: Assert that the string types are unrestricted
+            assert(
+                !defined(stringTypesTypeAttributeKind.tryGetInAttributes(maybeStringAttributes)).isRestricted,
+                "We can't add an enum to a union builder that has a restricted string type"
+            );
             this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, "string", attributes);
             return;
         }

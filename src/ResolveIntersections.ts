@@ -11,7 +11,6 @@ import {
     UnionType,
     PrimitiveTypeKind,
     ArrayType,
-    isPrimitiveStringTypeKind,
     isPrimitiveTypeKind,
     isNumberTypeKind,
     GenericClassProperty,
@@ -68,7 +67,7 @@ class IntersectionAccumulator
     private _lostTypeAttributes: boolean = false;
 
     private updatePrimitiveTypes(members: OrderedSet<Type>): void {
-        const types = members.filter(t => isPrimitiveTypeKind(t.kind) && !isPrimitiveStringTypeKind(t.kind));
+        const types = members.filter(t => isPrimitiveTypeKind(t.kind));
         const attributes = attributesForTypes<PrimitiveTypeKind>(types);
         this._primitiveAttributes = this._primitiveAttributes.mergeWith(
             (a, b) => combineTypeAttributes("intersect", a, b),
