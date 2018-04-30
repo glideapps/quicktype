@@ -12,6 +12,7 @@
     "test": "npm run build && npm run tslint && jest && script/test",
     "start": "script/watch",
     "pkg": "script/make-pkgs.sh",
+    "docs": "cd src ; typedoc --out ../docs --mode modules .",
     "tslint": "tslint --project src --exclude 'src/get-stream/**' --exclude 'src/__tests__/**'"
   },
   "dependencies": {
@@ -68,6 +69,7 @@
     "ts-jest": "^22.4.2",
     "ts-node": "^3.3.0",
     "tslint": "^5.9.1",
+    "typedoc": "^0.11.1",
     "uglify-js": "^3.3.22",
     "watch": "^1.0.2"
   },

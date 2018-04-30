@@ -7,42 +7,45 @@ import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
 import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./TypeNames";
 import { defined, panic } from "./Support";
 
-// `gatherNames` infers names from given names and property names.
-//
-// 1. Propagate type and property names down to children.  Let's say
-//    we start with JSON like this, and we name the top-level `TopLevel`:
-//
-//    {
-//      "foos": [ [ { "bar": 123 } ] ]
-//    }
-//
-//    We use a work-list algorithm to first add the name `TopLevel` to
-//    the outermost class type.  Then we propagate the property name
-//    `foos` to the outer array, which in turn propagates its singular
-//    `foo` to the inner array type.  That tries to singularize `foo`,
-//    but it's already singular, so `foo` is added as a name for the
-//    inner class.  We also then add `bar` to the name of the integer
-//    type.
-//
-// 2. Add "ancestor" alternatives and some "direct" alternatives.
-//    Direct alternatives are those that don't contain any ancestor
-//    names, whereas ancestor alternatives do. What we do here is add
-//    names of the form `TopLevel_foo` and `TopLevel_foo_class` as
-//    ancestor alternatives to the inner class, and `foo_element` as
-//    a direct alternative, the latter because it's an element in an
-//    array.
-//
-// 3. Add more direct alternatives to the type names.  The reason we're
-//    doing this separately from step 2 is because step 2 only requires
-//    iterating over the types, wheras this step iterates over
-//    ancestor/descendant relationships.  In this case we would add
-//    `TopLevel_class`, and `foo_class` to the outer and inner classes,
-//    respectively.  We do similar stuff for all the other types.
-//
-// 4. For each type, set its inferred names to what we gathered in
-//    step 1, and its alternatives to a union of its direct and ancestor
-//    alternatives, gathered in steps 2 and 3.
-
+/**
+ * `gatherNames` infers names from given names and property names.
+ *
+ * 1. Propagate type and property names down to children.  Let's say
+ *    we start with JSON like this, and we name the top-level `TopLevel`:
+ *
+ *    ```json
+ *    {
+ *      "foos": [ [ { "bar": 123 } ] ]
+ *    }
+ *    ```
+ *
+ *    We use a work-list algorithm to first add the name `TopLevel` to
+ *    the outermost class type.  Then we propagate the property name
+ *    `foos` to the outer array, which in turn propagates its singular
+ *    `foo` to the inner array type.  That tries to singularize `foo`,
+ *    but it's already singular, so `foo` is added as a name for the
+ *    inner class.  We also then add `bar` to the name of the integer
+ *    type.
+ *
+ * 2. Add "ancestor" alternatives and some "direct" alternatives.
+ *    Direct alternatives are those that don't contain any ancestor
+ *    names, whereas ancestor alternatives do. What we do here is add
+ *    names of the form `TopLevel_foo` and `TopLevel_foo_class` as
+ *    ancestor alternatives to the inner class, and `foo_element` as
+ *    a direct alternative, the latter because it's an element in an
+ *    array.
+ *
+ * 3. Add more direct alternatives to the type names.  The reason we're
+ *    doing this separately from step 2 is because step 2 only requires
+ *    iterating over the types, wheras this step iterates over
+ *    ancestor/descendant relationships.  In this case we would add
+ *    `TopLevel_class`, and `foo_class` to the outer and inner classes,
+ *    respectively.  We do similar stuff for all the other types.
+ *
+ * 4. For each type, set its inferred names to what we gathered in
+ *    step 1, and its alternatives to a union of its direct and ancestor
+ *    alternatives, gathered in steps 2 and 3.
+ */
 export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
     function setNames(t: Type, tn: TypeNames): void {
         graph.attributeStore.set(namesTypeAttributeKind, t, tn);
