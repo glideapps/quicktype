@@ -12,7 +12,9 @@ const fetch = require("node-fetch");
 
 export async function readableFromFileOrURL(fileOrURL: string): Promise<Readable> {
     try {
-        if (isURL(fileOrURL)) {
+        if (fileOrURL === "-") {
+            return process.stdin;
+        } else if (isURL(fileOrURL)) {
             const response = await fetch(fileOrURL);
             return response.body;
         } else if (fs.existsSync(fileOrURL)) {
