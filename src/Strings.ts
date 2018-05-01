@@ -3,7 +3,7 @@ import { Set } from "immutable";
 import { assert, defined, panic } from "./Support";
 import { acronyms } from "./Acronyms";
 import * as _ from "lodash";
-import { ErrorMessage, messageAssert } from "./Messages";
+import { messageAssert } from "./Messages";
 
 const unicode = require("unicode-properties");
 
@@ -97,10 +97,7 @@ export function utf32ConcatMap(mapper: (codePoint: number) => string): (s: strin
                     const highSurrogate = cc;
                     i++;
                     const lowSurrogate = s.charCodeAt(i);
-                    messageAssert(
-                        isLowSurrogate(lowSurrogate),
-                        ErrorMessage.MiscUnicodeHighSurrogateWithoutLowSurrogate
-                    );
+                    messageAssert(isLowSurrogate(lowSurrogate), "MiscUnicodeHighSurrogateWithoutLowSurrogate", {});
                     const highBits = highSurrogate - 0xd800;
                     const lowBits = lowSurrogate - 0xdc00;
                     cc = 0x10000 + lowBits + (highBits << 10);

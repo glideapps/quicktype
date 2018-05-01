@@ -9,7 +9,7 @@ import { Ref, checkJSONSchema, refsInSchemaForURI } from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
 import { parseJSON, panic, assertNever, assert, forEachSync, defined, withDefault, errorMessage } from "../Support";
-import { messageAssert, ErrorMessage, messageError } from "../Messages";
+import { messageAssert, messageError } from "../Messages";
 import {
     TypeSource,
     SchemaTypeSource,
@@ -98,7 +98,7 @@ export class InputData {
                 try {
                     input = await this._compressedJSON.readFromStream(toReadable(sample));
                 } catch (e) {
-                    return messageError(ErrorMessage.MiscJSONParseError, {
+                    return messageError("MiscJSONParseError", {
                         description: withDefault(description, "input"),
                         address: name,
                         message: errorMessage(e)
@@ -183,7 +183,7 @@ export class InputData {
     }
 
     private addSchemaInput(name: string, ref: Ref): void {
-        messageAssert(!lodash.has(this._schemas, [name]), ErrorMessage.DriverMoreThanOneSchemaGiven, { name });
+        messageAssert(!lodash.has(this._schemas, [name]), "DriverMoreThanOneSchemaGiven", { name });
         this._schemas[name] = { ref };
     }
 

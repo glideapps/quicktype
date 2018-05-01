@@ -3,7 +3,7 @@ import { Readable } from "stream";
 import { getStream } from "../get-stream/index";
 
 import { JSONSchemaStore, JSONSchema } from "../input/JSONSchemaStore";
-import { messageError, ErrorMessage } from "../Messages";
+import { messageError } from "../Messages";
 import { parseJSON } from "../Support";
 
 // The typings for this module are screwy
@@ -22,9 +22,9 @@ export async function readableFromFileOrURL(fileOrURL: string): Promise<Readable
         }
     } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";
-        return messageError(ErrorMessage.MiscReadError, { fileOrURL, message });
+        return messageError("MiscReadError", { fileOrURL, message });
     }
-    return messageError(ErrorMessage.DriverInputFileDoesNotExist, { filename: fileOrURL });
+    return messageError("DriverInputFileDoesNotExist", { filename: fileOrURL });
 }
 
 export async function readFromFileOrURL(fileOrURL: string): Promise<string> {
@@ -33,7 +33,7 @@ export async function readFromFileOrURL(fileOrURL: string): Promise<string> {
         return await getStream(readable);
     } catch (e) {
         const message = typeof e.message === "string" ? e.message : "Unknown error";
-        return messageError(ErrorMessage.MiscReadError, { fileOrURL, message });
+        return messageError("MiscReadError", { fileOrURL, message });
     }
 }
 
