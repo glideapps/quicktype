@@ -1,158 +1,158 @@
 import { StringMap } from "./Support";
+import { Ref } from "./input/JSONSchemaInput";
 
-export class ErrorMessage {
-    static InternalError = "Internal error: ${message}";
-
-    // Misc
-    static MiscJSONParseError = "Syntax error in ${description} JSON ${address}: ${message}";
-    static MiscReadError = "Cannot read from file or URL ${fileOrURL}: ${message}";
-    static MiscUnicodeHighSurrogateWithoutLowSurrogate = "Malformed unicode: High surrogate not followed by low surrogate";
-
-    // JSON Schema input
-    static SchemaArrayIsInvalidSchema = "An array is not a valid JSON Schema at ${ref}";
-    static SchemaNullIsInvalidSchema = "null is not a valid JSON Schema at ${ref}";
-    static SchemaRefMustBeString = "$ref must be a string, but is an ${actual} at ${ref}";
-    static SchemaAdditionalTypesForbidRequired = "Can't have non-specified required properties but forbidden additionalTypes at ${ref}";
-    static SchemaNoTypeSpecified = "JSON Schema must specify at least one type at ${ref}";
-    static SchemaInvalidType = "Invalid type ${type} in JSON Schema at ${ref}";
-    static SchemaFalseNotSupported = 'Schema "false" is not supported at ${ref}';
-    static SchemaInvalidJSONSchemaType = "Value of type ${type} is not valid JSON Schema at ${ref}";
-    static SchemaRequiredMustBeStringOrStringArray = "`required` must be string or array of strings, but is ${actual} at ${ref}";
-    static SchemaRequiredElementMustBeString = "`required` must contain only strings, but it has ${element}, at ${ref}";
-    static SchemaTypeMustBeStringOrStringArray = "`type` must be string or array of strings, but is ${actual}";
-    static SchemaTypeElementMustBeString = "`type` must contain only strings, but it has ${element}";
-    static SchemaArrayItemsMustBeStringOrArray = "Array items must be an array or an object, but is ${actual}";
-    static SchemaIDMustHaveAddress = "$id ${id} doesn't have an address at ${ref}";
-    static SchemaWrongAccessorEntryArrayLength = "Accessor entry array must have the same number of entries as the ${operation} at ${ref}";
-    static SchemaSetOperationCasesIsNotArray = "${operation} cases must be an array, but is ${cases}, at ${ref}";
-    static SchemaCannotFetch = "Cannot fetch schema at address ${address}";
-    static SchemaMoreThanOneUnionMemberName = "More than one name given for union member: ${names}";
-    static SchemaCannotGetTypesFromBoolean = "Schema value to get top-level types from must be an object, but is boolean, at ${ref}";
-    static SchemaCannotIndexArrayWithNonNumber = "Trying to index array in schema with key that is not a number, but is ${actual} at ${ref}";
-    static SchemaIndexNotInArray = "Index ${index} out of range of schema array at ${ref}";
-    static SchemaKeyNotInObject = "Key ${key} not in schema object at ${ref}";
-    static SchemaFetchError = "Could not fetch schema ${address}, referred to from ${ref}: ${error}";
-    static SchemaFetchErrorTopLevel = "Could not fetch top-level schema ${address}: ${error}";
-
-    // GraphQL input
-    static GraphQLNoQueriesDefined = "GraphQL file doesn't have any queries defined.";
-
-    // Driver
-    static DriverUnknownSourceLanguage = "Unknown source language ${lang}";
-    static DriverUnknownOutputLanguage = "Unknown output language ${lang}";
-    static DriverMoreThanOneSchemaGiven = "More than one schema given for ${name}";
-    static DriverCannotInferNameForSchema = "Cannot infer name for schema ${uri}";
-    static DriverNoGraphQLQueryGiven = "Please specify at least one GraphQL query as input";
-    static DriverNoGraphQLSchemaInDir = "No GraphQL schema in ${dir}";
-    static DriverMoreThanOneGraphQLSchemaInDir = "More than one GraphQL schema in ${dir}";
-    static DriverSourceLangMustBeGraphQL = "If a GraphQL schema is specified, the source language must be GraphQL";
-    static DriverGraphQLSchemaNeeded = "Please specify a GraphQL schema with --graphql-schema or --graphql-introspect";
-    static DriverInputFileDoesNotExist = "Input file ${filename} does not exist";
-    static DriverCannotMixJSONWithOtherSamples = "Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript in input subdirectory ${dir}";
-    static DriverCannotMixNonJSONInputs = "Cannot mix JSON Schema, GraphQL, and TypeScript in an input subdirectory ${dir}";
-    static DriverUnknownDebugOption = "Unknown debug option ${option}";
-    static DriverNoLanguageOrExtension = "Please specify a language (--lang) or an output file extension";
-    static DriverCLIOptionParsingFailed = "Option parsing failed: ${message}";
-
-    // IR
-    static IRNoForwardDeclarableTypeInCycle = "Cannot resolve cycle because it doesn't contain types that can be forward declared";
-    static IRTypeAttributesNotPropagated = "Type attributes for ${count} types were not carried over to the new graph: ${indexes}";
-    static IRNoEmptyUnions = "Trying to make an empty union - do you have an impossible type in your schema?";
-
-    // Rendering
-    static RendererUnknownOptionValue = "Unknown value ${value} for option ${name}";
-
-    // TypeScript input
-    static TypeScriptCompilerError = "TypeScript error: ${message}";
-}
-
-/*
-type Error =
-    | { message: ErrorMessage.InternalError; properties: { message: string } }
+export type ErrorProperties =
+    | { kind: "InternalError"; properties: { message: string } }
 
     // Misc
-    | { message: ErrorMessage.MiscJSONParseError; properties: { description: string; address: string; message: string } }
-    | { message: ErrorMessage.MiscReadError; properties: { fileOrURL: string; message: string } }
-    | { message: ErrorMessage.MiscUnicodeHighSurrogateWithoutLowSurrogate; properties: {} }
+    | {
+          kind: "MiscJSONParseError";
+          properties: { description: string; address: string; message: string };
+      }
+    | { kind: "MiscReadError"; properties: { fileOrURL: string; message: string } }
+    | { kind: "MiscUnicodeHighSurrogateWithoutLowSurrogate"; properties: {} }
 
     // JSON Schema input
-    | { message: ErrorMessage.SchemaArrayIsInvalidSchema; properties: { ref: Ref } }
-    | { message: ErrorMessage.SchemaNullIsInvalidSchema; properties: { ref: Ref } }
-    | { message: ErrorMessage.SchemaRefMustBeString; properties: { actual: string; ref: Ref } }
-    | { message: ErrorMessage.SchemaAdditionalTypesForbidRequired; properties: { ref: Ref } }
-    | { message: ErrorMessage.SchemaNoTypeSpecified; properties: { ref: Ref } }
-    | { message: ErrorMessage.SchemaInvalidType; properties: { type: string; ref: Ref } }
-    | { message: ErrorMessage.SchemaFalseNotSupported; properties: { ref: Ref } }
-    | { message: ErrorMessage.SchemaInvalidJSONSchemaType; properties: { type: string, ref: Ref } }
-    | { message: ErrorMessage.SchemaRequiredMustBeStringOrStringArray; properties: { actual: any; ref: Ref } }
-    | { message: ErrorMessage.SchemaRequiredElementMustBeString; properties: { element: any; ref: Ref } }
-    | { message: ErrorMessage.SchemaTypeMustBeStringOrStringArray; properties: { actual: any } }
-    | { message: ErrorMessage.SchemaTypeElementMustBeString; properties: { element: any; ref: Ref } }
-    | { message: ErrorMessage.SchemaArrayItemsMustBeStringOrArray; properties: { actual: any; ref: Ref } }
-    | { message: ErrorMessage.SchemaIDMustHaveAddress, properties: { id: string; ref: Ref } }
-    | { message: ErrorMessage.SchemaWrongAccessorEntryArrayLength, properties: { operation: string; ref: Ref } }
-    | { message: ErrorMessage.SchemaSetOperationCasesIsNotArray; properties: { operation: string; cases: any; ref: Ref } }
-    | { message: ErrorMessage.SchemaCannotFetch; properties: { address: string } }
-    | { message: ErrorMessage.SchemaMoreThanOneUnionMemberName; properties: { names: string[] } }
-    | { message: ErrorMessage.SchemaCannotGetTypesFromBoolean; properties: { ref: string } }
-    | { message: ErrorMessage.SchemaCannotIndexArrayWithNonNumber; properties: { actual: string; ref: Ref } }
-    | { message: ErrorMessage.SchemaIndexNotInArray; properties: { index: number; ref: Ref } }
-    | { message: ErrorMessage.SchemaKeyNotInObject; properties: { key: string; ref: Ref } }
-    | { message: ErrorMessage.SchemaFetchError; properties: { address: string; ref: Ref; error: any } }
-    | { message: ErrorMessage.SchemaFetchErrorTopLevel; properties: { address: string; error: any } }
+    | { kind: "SchemaArrayIsInvalidSchema"; properties: { ref: Ref } }
+    | { kind: "SchemaNullIsInvalidSchema"; properties: { ref: Ref } }
+    | { kind: "SchemaRefMustBeString"; properties: { actual: string; ref: Ref } }
+    | { kind: "SchemaAdditionalTypesForbidRequired"; properties: { ref: Ref } }
+    | { kind: "SchemaNoTypeSpecified"; properties: { ref: Ref } }
+    | { kind: "SchemaInvalidType"; properties: { type: string; ref: Ref } }
+    | { kind: "SchemaFalseNotSupported"; properties: { ref: Ref } }
+    | { kind: "SchemaInvalidJSONSchemaType"; properties: { type: string; ref: Ref } }
+    | { kind: "SchemaRequiredMustBeStringOrStringArray"; properties: { actual: any; ref: Ref } }
+    | { kind: "SchemaRequiredElementMustBeString"; properties: { element: any; ref: Ref } }
+    | { kind: "SchemaTypeMustBeStringOrStringArray"; properties: { actual: any } }
+    | { kind: "SchemaTypeElementMustBeString"; properties: { element: any; ref: Ref } }
+    | { kind: "SchemaArrayItemsMustBeStringOrArray"; properties: { actual: any; ref: Ref } }
+    | { kind: "SchemaIDMustHaveAddress"; properties: { id: string; ref: Ref } }
+    | { kind: "SchemaWrongAccessorEntryArrayLength"; properties: { operation: string; ref: Ref } }
+    | {
+          kind: "SchemaSetOperationCasesIsNotArray";
+          properties: { operation: string; cases: any; ref: Ref };
+      }
+    | { kind: "SchemaCannotFetch"; properties: { address: string } }
+    | { kind: "SchemaMoreThanOneUnionMemberName"; properties: { names: string[] } }
+    | { kind: "SchemaCannotGetTypesFromBoolean"; properties: { ref: string } }
+    | { kind: "SchemaCannotIndexArrayWithNonNumber"; properties: { actual: string; ref: Ref } }
+    | { kind: "SchemaIndexNotInArray"; properties: { index: number; ref: Ref } }
+    | { kind: "SchemaKeyNotInObject"; properties: { key: string; ref: Ref } }
+    | { kind: "SchemaFetchError"; properties: { address: string; ref: Ref; error: any } }
+    | { kind: "SchemaFetchErrorTopLevel"; properties: { address: string; error: any } }
 
     // GraphQL input
-    | { message: ErrorMessage.GraphQLNoQueriesDefined; properties: {} }
+    | { kind: "GraphQLNoQueriesDefined"; properties: {} }
 
     // Driver
-    | { message: ErrorMessage.DriverUnknownSourceLanguage; properties: { lang: string } }
-    | { message: ErrorMessage.DriverUnknownOutputLanguage; properties: { lang: string } }
-    | { message: ErrorMessage.DriverMoreThanOneSchemaGiven; properties: { name: string } }
-    | { message: ErrorMessage.DriverCannotInferNameForSchema; properties: { uri: string } }
-    | { message: ErrorMessage.DriverNoGraphQLQueryGiven; properties: {} }
-    | { message: ErrorMessage.DriverNoGraphQLSchemaInDir; properties: { dir: string } }
-    | { message: ErrorMessage.DriverMoreThanOneGraphQLSchemaInDir; properties: { dir: string } }
-    | { message: ErrorMessage.DriverSourceLangMustBeGraphQL; properties: {} }
-    | { message: ErrorMessage.DriverGraphQLSchemaNeeded; properties: {} }
-    | { message: ErrorMessage.DriverInputFileDoesNotExist; properties: { filename: string } }
-    | { message: ErrorMessage.DriverCannotMixJSONWithOtherSamples; properties: { dir: string } }
-    | { message: ErrorMessage.DriverCannotMixNonJSONInputs; properties: { dir: string } }
-    | { message: ErrorMessage.DriverUnknownDebugOption; properties: { option: string } }
-    | { message: ErrorMessage.DriverNoLanguageOrExtension; properties: {} }
-    | { message: ErrorMessage.DriverCLIOptionParsingFailed; properties: { message: string } }
+    | { kind: "DriverUnknownSourceLanguage"; properties: { lang: string } }
+    | { kind: "DriverUnknownOutputLanguage"; properties: { lang: string } }
+    | { kind: "DriverMoreThanOneSchemaGiven"; properties: { name: string } }
+    | { kind: "DriverCannotInferNameForSchema"; properties: { uri: string } }
+    | { kind: "DriverNoGraphQLQueryGiven"; properties: {} }
+    | { kind: "DriverNoGraphQLSchemaInDir"; properties: { dir: string } }
+    | { kind: "DriverMoreThanOneGraphQLSchemaInDir"; properties: { dir: string } }
+    | { kind: "DriverSourceLangMustBeGraphQL"; properties: {} }
+    | { kind: "DriverGraphQLSchemaNeeded"; properties: {} }
+    | { kind: "DriverInputFileDoesNotExist"; properties: { filename: string } }
+    | { kind: "DriverCannotMixJSONWithOtherSamples"; properties: { dir: string } }
+    | { kind: "DriverCannotMixNonJSONInputs"; properties: { dir: string } }
+    | { kind: "DriverUnknownDebugOption"; properties: { option: string } }
+    | { kind: "DriverNoLanguageOrExtension"; properties: {} }
+    | { kind: "DriverCLIOptionParsingFailed"; properties: { message: string } }
 
     // IR
-    | { message: ErrorMessage.IRNoForwardDeclarableTypeInCycle; properties: {} }
-    | { message: ErrorMessage.IRTypeAttributesNotPropagated; properties: { count: number, indexes: number[] } }
-    | { message: ErrorMessage.IRNoEmptyUnions; properties: {} }
+    | { kind: "IRNoForwardDeclarableTypeInCycle"; properties: {} }
+    | { kind: "IRTypeAttributesNotPropagated"; properties: { count: number; indexes: number[] } }
+    | { kind: "IRNoEmptyUnions"; properties: {} }
 
     // Rendering
-    | { message: ErrorMessage.RendererUnknownOptionValue; properties: { value: string; name: string } }
+    | { kind: "RendererUnknownOptionValue"; properties: { value: string; name: string } }
 
     // TypeScript input
-    | { message: ErrorMessage.TypeScriptCompilerError; properties: { message: string } }
-    ;
-*/
+    | { kind: "TypeScriptCompilerError"; properties: { message: string } };
 
-/*
-type Errors =
-   { kind: "foo"; properties: { quux: number } } |
-   { kind: "bar"; properties: { frob: boolean } };
-type Kind = Errors extends { kind: infer T } ? T : never;
-type properties = Errors extends { properties: infer P } ? P : never;
-type KindFor<P> = Extract<Errors, { properties: P }> extends { kind: infer K } ? K : never;
+export type ErrorKinds = ErrorProperties extends { kind: infer K } ? K : never;
 
-const messages: { [kind in Kind]: string } = {
-    foo: "Foo error!",
-    bar: "A bar is missing!"
+type ErrorMessages = { readonly [K in ErrorKinds]: string };
+
+const errorMessages: ErrorMessages = {
+    InternalError: "Internal error: ${message}",
+
+    // Misc
+    MiscJSONParseError: "Syntax error in ${description} JSON ${address}: ${message}",
+    MiscReadError: "Cannot read from file or URL ${fileOrURL}: ${message}",
+    MiscUnicodeHighSurrogateWithoutLowSurrogate: "Malformed unicode: High surrogate not followed by low surrogate",
+
+    // JSON Schema input
+    SchemaArrayIsInvalidSchema: "An array is not a valid JSON Schema at ${ref}",
+    SchemaNullIsInvalidSchema: "null is not a valid JSON Schema at ${ref}",
+    SchemaRefMustBeString: "$ref must be a string, but is an ${actual} at ${ref}",
+    SchemaAdditionalTypesForbidRequired:
+        "Can't have non-specified required properties but forbidden additionalTypes at ${ref}",
+    SchemaNoTypeSpecified: "JSON Schema must specify at least one type at ${ref}",
+    SchemaInvalidType: "Invalid type ${type} in JSON Schema at ${ref}",
+    SchemaFalseNotSupported: 'Schema "false" is not supported at ${ref}',
+    SchemaInvalidJSONSchemaType: "Value of type ${type} is not valid JSON Schema at ${ref}",
+    SchemaRequiredMustBeStringOrStringArray:
+        "`required` must be string or array of strings, but is ${actual} at ${ref}",
+    SchemaRequiredElementMustBeString: "`required` must contain only strings, but it has ${element}, at ${ref}",
+    SchemaTypeMustBeStringOrStringArray: "`type` must be string or array of strings, but is ${actual}",
+    SchemaTypeElementMustBeString: "`type` must contain only strings, but it has ${element}",
+    SchemaArrayItemsMustBeStringOrArray: "Array items must be an array or an object, but is ${actual}",
+    SchemaIDMustHaveAddress: "$id ${id} doesn't have an address at ${ref}",
+    SchemaWrongAccessorEntryArrayLength:
+        "Accessor entry array must have the same number of entries as the ${operation} at ${ref}",
+    SchemaSetOperationCasesIsNotArray: "${operation} cases must be an array, but is ${cases}, at ${ref}",
+    SchemaCannotFetch: "Cannot fetch schema at address ${address}",
+    SchemaMoreThanOneUnionMemberName: "More than one name given for union member: ${names}",
+    SchemaCannotGetTypesFromBoolean:
+        "Schema value to get top-level types from must be an object, but is boolean, at ${ref}",
+    SchemaCannotIndexArrayWithNonNumber:
+        "Trying to index array in schema with key that is not a number, but is ${actual} at ${ref}",
+    SchemaIndexNotInArray: "Index ${index} out of range of schema array at ${ref}",
+    SchemaKeyNotInObject: "Key ${key} not in schema object at ${ref}",
+    SchemaFetchError: "Could not fetch schema ${address}, referred to from ${ref}: ${error}",
+    SchemaFetchErrorTopLevel: "Could not fetch top-level schema ${address}: ${error}",
+
+    // GraphQL input
+    GraphQLNoQueriesDefined: "GraphQL file doesn't have any queries defined.",
+
+    // Driver
+    DriverUnknownSourceLanguage: "Unknown source language ${lang}",
+    DriverUnknownOutputLanguage: "Unknown output language ${lang}",
+    DriverMoreThanOneSchemaGiven: "More than one schema given for ${name}",
+    DriverCannotInferNameForSchema: "Cannot infer name for schema ${uri}",
+    DriverNoGraphQLQueryGiven: "Please specify at least one GraphQL query as input",
+    DriverNoGraphQLSchemaInDir: "No GraphQL schema in ${dir}",
+    DriverMoreThanOneGraphQLSchemaInDir: "More than one GraphQL schema in ${dir}",
+    DriverSourceLangMustBeGraphQL: "If a GraphQL schema is specified, the source language must be GraphQL",
+    DriverGraphQLSchemaNeeded: "Please specify a GraphQL schema with --graphql-schema or --graphql-introspect",
+    DriverInputFileDoesNotExist: "Input file ${filename} does not exist",
+    DriverCannotMixJSONWithOtherSamples:
+        "Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript in input subdirectory ${dir}",
+    DriverCannotMixNonJSONInputs: "Cannot mix JSON Schema, GraphQL, and TypeScript in an input subdirectory ${dir}",
+    DriverUnknownDebugOption: "Unknown debug option ${option}",
+    DriverNoLanguageOrExtension: "Please specify a language (--lang) or an output file extension",
+    DriverCLIOptionParsingFailed: "Option parsing failed: ${message}",
+
+    // IR
+    IRNoForwardDeclarableTypeInCycle:
+        "Cannot resolve cycle because it doesn't contain types that can be forward declared",
+    IRTypeAttributesNotPropagated:
+        "Type attributes for ${count} types were not carried over to the new graph: ${indexes}",
+    IRNoEmptyUnions: "Trying to make an empty union - do you have an impossible type in your schema?",
+
+    // Rendering
+    RendererUnknownOptionValue: "Unknown value ${value} for option ${name}",
+
+    // TypeScript input
+    TypeScriptCompilerError: "TypeScript error: ${message}"
 };
 
-function error<P extends Props>(kind: KindFor<P>, props: P): void {
-    console.log(messages[kind as any], props);
-}
-
-error("foo", { quux: 123 });
-*/
+export type ErrorPropertiesForName<K> = Extract<ErrorProperties, { kind: K }> extends { properties: infer P }
+    ? P
+    : never;
 
 export class QuickTypeError extends Error {
     constructor(
@@ -165,45 +165,30 @@ export class QuickTypeError extends Error {
     }
 }
 
-export function messageError(message: string): never;
-export function messageError(message: string, properties: StringMap): never;
-export function messageError(message: string, properties?: StringMap): never {
+export function messageError<N extends ErrorKinds>(kind: N, properties: ErrorPropertiesForName<N>): never {
+    const message = errorMessages[kind];
     let userMessage: string = message;
 
-    if (properties !== undefined) {
-        for (const name of Object.getOwnPropertyNames(properties)) {
-            let value = properties[name];
-            if (typeof value === "object" && typeof value.toString === "function") {
-                value = value.toString();
-            } else if (typeof value.message === "string") {
-                value = value.message;
-            } else if (typeof value !== "string") {
-                value = JSON.stringify(value);
-            }
-            userMessage = userMessage.replace("${" + name + "}", value);
+    for (const name of Object.getOwnPropertyNames(properties)) {
+        let value = (properties as StringMap)[name];
+        if (typeof value === "object" && typeof value.toString === "function") {
+            value = value.toString();
+        } else if (typeof value.message === "string") {
+            value = value.message;
+        } else if (typeof value !== "string") {
+            value = JSON.stringify(value);
         }
-    } else {
-        properties = {};
+        userMessage = userMessage.replace("${" + name + "}", value);
     }
 
-    let messageName: string | undefined;
-    const errorMessages: { [name: string]: string } = ErrorMessage as any;
-    for (const name of Object.getOwnPropertyNames(ErrorMessage)) {
-        if ((errorMessages[name] as string) === message) {
-            messageName = name;
-            break;
-        }
-    }
-    if (messageName === undefined) {
-        messageName = "UnknownError";
-    }
-
-    throw new QuickTypeError(message, messageName, userMessage, properties);
+    throw new QuickTypeError(message, kind, userMessage, properties);
 }
 
-export function messageAssert(assertion: boolean, message: string): void;
-export function messageAssert(assertion: boolean, message: string, properties: StringMap): void;
-export function messageAssert(assertion: boolean, message: string, properties?: StringMap): void {
+export function messageAssert<N extends ErrorKinds>(
+    assertion: boolean,
+    kind: N,
+    properties: ErrorPropertiesForName<N>
+): void {
     if (assertion) return;
-    return (messageError as any)(message, properties);
+    return messageError(kind, properties);
 }

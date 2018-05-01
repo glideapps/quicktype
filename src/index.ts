@@ -21,7 +21,7 @@ import { descriptionTypeAttributeKind } from "./TypeAttributes";
 import { flattenUnions } from "./rewrites/FlattenUnions";
 import { resolveIntersections } from "./rewrites/ResolveIntersections";
 import { replaceObjectType } from "./rewrites/ReplaceObjectType";
-import { ErrorMessage, messageError } from "./Messages";
+import { messageError } from "./Messages";
 import { InputData } from "./input/Inputs";
 import { TypeSource } from "./TypeSource";
 import { flattenStrings } from "./rewrites/FlattenStrings";
@@ -41,7 +41,7 @@ export function getTargetLanguage(nameOrInstance: string | TargetLanguage): Targ
     if (language !== undefined) {
         return language;
     }
-    return messageError(ErrorMessage.DriverUnknownOutputLanguage, { lang: nameOrInstance });
+    return messageError("DriverUnknownOutputLanguage", { lang: nameOrInstance });
 }
 
 export type RendererOptions = { [name: string]: string };

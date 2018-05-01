@@ -35,7 +35,7 @@ import { train } from "../MarkovChain";
 import { sourcesFromPostmanCollection } from "./PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { ErrorMessage, messageError, messageAssert } from "../Messages";
+import { messageError, messageAssert } from "../Messages";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -122,7 +122,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
                     uris: [fileOrUrl]
                 });
             } else if (file.endsWith(".gqlschema")) {
-                messageAssert(graphQLSchema === undefined, ErrorMessage.DriverMoreThanOneGraphQLSchemaInDir, {
+                messageAssert(graphQLSchema === undefined, "DriverMoreThanOneGraphQLSchemaInDir", {
                     dir: dataDir
                 });
                 graphQLSchema = await readableFromFileOrURL(fileOrUrl);
@@ -139,7 +139,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
 
         if (graphQLSources.length > 0) {
             if (graphQLSchema === undefined) {
-                return messageError(ErrorMessage.DriverNoGraphQLSchemaInDir, { dir: dataDir });
+                return messageError("DriverNoGraphQLSchemaInDir", { dir: dataDir });
             }
             const schema = parseJSON(await getStream(graphQLSchema), "GraphQL schema", graphQLSchemaFileName);
             for (const source of graphQLSources) {
@@ -182,12 +182,12 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
         }
 
         if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length + typeScriptSources.length > 0) {
-            return messageError(ErrorMessage.DriverCannotMixJSONWithOtherSamples, { dir: dir });
+            return messageError("DriverCannotMixJSONWithOtherSamples", { dir: dir });
         }
 
         const oneUnlessEmpty = (xs: any[]) => Math.sign(xs.length);
         if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) + oneUnlessEmpty(typeScriptSources) > 1) {
-            return messageError(ErrorMessage.DriverCannotMixNonJSONInputs, { dir: dir });
+            return messageError("DriverCannotMixNonJSONInputs", { dir: dir });
         }
 
         if (jsonSamples.length > 0) {
@@ -209,7 +209,7 @@ function inferLang(options: Partial<CLIOptions>, defaultLanguage: string): strin
     if (options.out !== undefined) {
         let extension = path.extname(options.out);
         if (extension === "") {
-            return messageError(ErrorMessage.DriverNoLanguageOrExtension);
+            return messageError("DriverNoLanguageOrExtension", {});
         }
         return extension.substr(1);
     }
@@ -239,12 +239,12 @@ function inferTopLevel(options: Partial<CLIOptions>): string {
 function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLanguage | undefined): CLIOptions {
     let srcLang = opts.srcLang;
     if (opts.graphqlSchema !== undefined || opts.graphqlIntrospect !== undefined) {
-        messageAssert(srcLang === undefined || srcLang === "graphql", ErrorMessage.DriverSourceLangMustBeGraphQL);
+        messageAssert(srcLang === undefined || srcLang === "graphql", "DriverSourceLangMustBeGraphQL", {});
         srcLang = "graphql";
     } else if (opts.src !== undefined && opts.src.length > 0 && opts.src.every(file => _.endsWith(file, ".ts"))) {
         srcLang = "typescript";
     } else {
-        messageAssert(srcLang !== "graphql", ErrorMessage.DriverGraphQLSchemaNeeded);
+        messageAssert(srcLang !== "graphql", "DriverGraphQLSchemaNeeded", {});
         srcLang = withDefault<string>(srcLang, "json");
     }
 
@@ -255,7 +255,7 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         const languageName = opts.lang !== undefined ? opts.lang : inferLang(opts, defaultDefaultTargetLanguageName);
         const maybeLanguage = languageNamed(languageName);
         if (maybeLanguage === undefined) {
-            return messageError(ErrorMessage.DriverUnknownOutputLanguage, { lang: languageName });
+            return messageError("DriverUnknownOutputLanguage", { lang: languageName });
         }
         language = maybeLanguage;
     }
@@ -547,7 +547,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
         opts = commandLineArgs(definitions, { argv, partial });
     } catch (e) {
         assert(!partial, "Partial option parsing should not have failed");
-        return messageError(ErrorMessage.DriverCLIOptionParsingFailed, { message: e.message });
+        return messageError("DriverCLIOptionParsingFailed", { message: e.message });
     }
 
     const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
@@ -690,7 +690,7 @@ export async function makeQuicktypeOptions(
                     return undefined;
                 }
                 if (numSources === 0) {
-                    return messageError(ErrorMessage.DriverNoGraphQLQueryGiven);
+                    return messageError("DriverNoGraphQLQueryGiven", {});
                 }
             }
             const gqlSources: GraphQLTypeSource[] = [];
@@ -733,7 +733,7 @@ export async function makeQuicktypeOptions(
             }
             break;
         default:
-            return messageError(ErrorMessage.DriverUnknownSourceLanguage, { lang: options.srcLang });
+            return messageError("DriverUnknownSourceLanguage", { lang: options.srcLang });
     }
 
     let handlebarsTemplate: string | undefined = undefined;
@@ -759,7 +759,7 @@ export async function makeQuicktypeOptions(
             } else if (component === "provenance") {
                 checkProvenance = true;
             } else if (component !== "all") {
-                return messageError(ErrorMessage.DriverUnknownDebugOption, { option: component });
+                return messageError("DriverUnknownDebugOption", { option: component });
             }
         }
     }
@@ -771,7 +771,7 @@ export async function makeQuicktypeOptions(
 
     const lang = languageNamed(options.lang, targetLanguages);
     if (lang === undefined) {
-        return messageError(ErrorMessage.DriverUnknownOutputLanguage, { lang: options.lang });
+        return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
     }
 
     return {

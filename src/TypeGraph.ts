@@ -14,7 +14,7 @@ import { GraphRewriteBuilder, GraphRemapBuilder, BaseGraphRewriteBuilder } from 
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
-import { messageError, ErrorMessage } from "./Messages";
+import { messageError } from "./Messages";
 
 export class TypeAttributeStore {
     private _topLevelValues: Map<string, TypeAttributes> = Map();
@@ -229,7 +229,7 @@ export class TypeGraph {
         if (oldProvenance.size !== newProvenance.size) {
             const difference = oldProvenance.subtract(newProvenance);
             const indexes = difference.map(tr => tr.index).toArray();
-            return messageError(ErrorMessage.IRTypeAttributesNotPropagated, { count: difference.size, indexes });
+            return messageError("IRTypeAttributesNotPropagated", { count: difference.size, indexes });
         }
     }
 

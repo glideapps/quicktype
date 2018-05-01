@@ -36,7 +36,7 @@ import {
     AccessorNames,
     AccessorEntry
 } from "../AccessorNames";
-import { ErrorMessage, messageAssert, messageError } from "../Messages";
+import { messageAssert, messageError } from "../Messages";
 import { StringTypes } from "../StringTypes";
 
 export enum PathElementKind {
@@ -79,13 +79,13 @@ function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props
 
 export function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): StringMap {
     if (Array.isArray(x)) {
-        return messageError(ErrorMessage.SchemaArrayIsInvalidSchema, withRef(refOrLoc));
+        return messageError("SchemaArrayIsInvalidSchema", withRef(refOrLoc));
     }
     if (x === null) {
-        return messageError(ErrorMessage.SchemaNullIsInvalidSchema, withRef(refOrLoc));
+        return messageError("SchemaNullIsInvalidSchema", withRef(refOrLoc));
     }
     if (typeof x !== "object") {
-        return messageError(ErrorMessage.SchemaInvalidJSONSchemaType, withRef(refOrLoc, { type: typeof x }));
+        return messageError("SchemaInvalidJSONSchemaType", withRef(refOrLoc, { type: typeof x }));
     }
     return x;
 }
@@ -263,19 +263,16 @@ export class Ref {
                 const key = first.key;
                 if (Array.isArray(local)) {
                     if (!/^\d+$/.test(key)) {
-                        return messageError(
-                            ErrorMessage.SchemaCannotIndexArrayWithNonNumber,
-                            withRef(refMaker, { actual: key })
-                        );
+                        return messageError("SchemaCannotIndexArrayWithNonNumber", withRef(refMaker, { actual: key }));
                     }
                     const index = parseInt(first.key, 10);
                     if (index >= local.length) {
-                        return messageError(ErrorMessage.SchemaIndexNotInArray, withRef(refMaker, { index }));
+                        return messageError("SchemaIndexNotInArray", withRef(refMaker, { index }));
                     }
                     return this.lookup(local[index], rest, root);
                 } else {
                     if (!lodash.has(local, [key])) {
-                        return messageError(ErrorMessage.SchemaKeyNotInObject, withRef(refMaker, { key }));
+                        return messageError("SchemaKeyNotInObject", withRef(refMaker, { key }));
                     }
                     return this.lookup(checkJSONSchemaObject(local, refMaker)[first.key], rest, root);
                 }
@@ -361,7 +358,7 @@ class Canonizer {
 
     private addID(mapped: string, loc: Location): void {
         const ref = Ref.parse(mapped).resolveAgainst(loc.virtualRef);
-        messageAssert(ref.hasAddress, ErrorMessage.SchemaIDMustHaveAddress, withRef(loc, { id: mapped }));
+        messageAssert(ref.hasAddress, "SchemaIDMustHaveAddress", withRef(loc, { id: mapped }));
         this._map = this._map.set(ref, loc.canonicalRef);
     }
 
@@ -471,30 +468,30 @@ function checkTypeList(typeOrTypes: any, loc: Location): OrderedSet<string> {
         const arr: string[] = [];
         for (const t of typeOrTypes) {
             if (typeof t !== "string") {
-                return messageError(ErrorMessage.SchemaTypeElementMustBeString, withRef(loc, { element: t }));
+                return messageError("SchemaTypeElementMustBeString", withRef(loc, { element: t }));
             }
             arr.push(t);
         }
         set = OrderedSet(arr);
     } else {
-        return messageError(ErrorMessage.SchemaTypeMustBeStringOrStringArray, withRef(loc, { actual: typeOrTypes }));
+        return messageError("SchemaTypeMustBeStringOrStringArray", withRef(loc, { actual: typeOrTypes }));
     }
-    messageAssert(!set.isEmpty(), ErrorMessage.SchemaNoTypeSpecified, withRef(loc));
+    messageAssert(!set.isEmpty(), "SchemaNoTypeSpecified", withRef(loc));
     const validTypes = ["null", "boolean", "object", "array", "number", "string", "integer"];
     const maybeInvalid = set.find(s => validTypes.indexOf(s) < 0);
     if (maybeInvalid !== undefined) {
-        return messageError(ErrorMessage.SchemaInvalidType, withRef(loc, { type: maybeInvalid }));
+        return messageError("SchemaInvalidType", withRef(loc, { type: maybeInvalid }));
     }
     return set;
 }
 
 function checkRequiredArray(arr: any, loc: Location): string[] {
     if (!Array.isArray(arr)) {
-        return messageError(ErrorMessage.SchemaRequiredMustBeStringOrStringArray, withRef(loc, { actual: arr }));
+        return messageError("SchemaRequiredMustBeStringOrStringArray", withRef(loc, { actual: arr }));
     }
     for (const e of arr) {
         if (typeof e !== "string") {
-            return messageError(ErrorMessage.SchemaRequiredElementMustBeString, withRef(loc, { element: e }));
+            return messageError("SchemaRequiredElementMustBeString", withRef(loc, { element: e }));
         }
     }
     return arr;
@@ -505,9 +502,9 @@ async function getFromStore(store: JSONSchemaStore, address: string, ref: Ref | 
         return await store.get(address);
     } catch (error) {
         if (ref === undefined) {
-            return messageError(ErrorMessage.SchemaFetchErrorTopLevel, { address, error });
+            return messageError("SchemaFetchErrorTopLevel", { address, error });
         } else {
-            return messageError(ErrorMessage.SchemaFetchError, { address, ref, error });
+            return messageError("SchemaFetchError", { address, ref, error });
         }
     }
 }
@@ -590,7 +587,7 @@ export async function addTypesInSchema(
         if (!additionalRequired.isEmpty()) {
             const t = additionalPropertiesType;
             if (t === undefined) {
-                return messageError(ErrorMessage.SchemaAdditionalTypesForbidRequired, withRef(loc));
+                return messageError("SchemaAdditionalTypesForbidRequired", withRef(loc));
             }
 
             const additionalProps = additionalRequired.toOrderedMap().map(_name => new ClassProperty(t, false));
@@ -632,7 +629,7 @@ export async function addTypesInSchema(
                 const itemsLoc = loc.push("items");
                 itemType = await toType(checkJSONSchema(items, itemsLoc.canonicalRef), itemsLoc, singularAttributes);
             } else if (items !== undefined) {
-                return messageError(ErrorMessage.SchemaArrayItemsMustBeStringOrArray, withRef(loc, { actual: items }));
+                return messageError("SchemaArrayItemsMustBeStringOrArray", withRef(loc, { actual: items }));
             } else {
                 itemType = typeBuilder.getPrimitiveType("any");
             }
@@ -663,10 +660,7 @@ export async function addTypesInSchema(
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {
             const kindLoc = loc.push(kind);
             if (!Array.isArray(cases)) {
-                return messageError(
-                    ErrorMessage.SchemaSetOperationCasesIsNotArray,
-                    withRef(kindLoc, { operation: kind, cases })
-                );
+                return messageError("SchemaSetOperationCasesIsNotArray", withRef(kindLoc, { operation: kind, cases }));
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
             return await mapSync(cases, async (t, index) => {
@@ -691,7 +685,7 @@ export async function addTypesInSchema(
                 const accessors = checkArray(maybeAccessors, isAccessorEntry);
                 messageAssert(
                     typeRefs.length === accessors.length,
-                    ErrorMessage.SchemaWrongAccessorEntryArrayLength,
+                    "SchemaWrongAccessorEntryArrayLength",
                     withRef(() => loc.canonicalRef.push(kind), { operation: kind })
                 );
                 for (let i = 0; i < typeRefs.length; i++) {
@@ -783,7 +777,7 @@ export async function addTypesInSchema(
 
         if (schema.$ref !== undefined) {
             if (typeof schema.$ref !== "string") {
-                return messageError(ErrorMessage.SchemaRefMustBeString, withRef(loc, { actual: typeof schema.$ref }));
+                return messageError("SchemaRefMustBeString", withRef(loc, { actual: typeof schema.$ref }));
             }
             const virtualRef = Ref.parse(schema.$ref);
             const [target, newLoc] = await resolveVirtualRef(loc, virtualRef);
@@ -823,7 +817,7 @@ export async function addTypesInSchema(
         if (typeof schema === "boolean") {
             // FIXME: Empty union.  We'd have to check that it's supported everywhere,
             // in particular in union flattening.
-            messageAssert(schema === true, ErrorMessage.SchemaFalseNotSupported, withRef(loc));
+            messageAssert(schema === true, "SchemaFalseNotSupported", withRef(loc));
             result = typeBuilder.getPrimitiveType("any");
         } else {
             loc = loc.updateWithID(schema["$id"]);
@@ -858,7 +852,7 @@ function nameFromURI(uri: uri.URI): string | undefined {
     if (filename !== "") {
         return filename;
     }
-    return messageError(ErrorMessage.DriverCannotInferNameForSchema, { uri: uri.toString() });
+    return messageError("DriverCannotInferNameForSchema", { uri: uri.toString() });
 }
 
 export async function refsInSchemaForURI(
@@ -881,7 +875,7 @@ export async function refsInSchemaForURI(
 
     if (propertiesAreTypes) {
         if (typeof schema !== "object") {
-            return messageError(ErrorMessage.SchemaCannotGetTypesFromBoolean, { ref: ref.toString() });
+            return messageError("SchemaCannotGetTypesFromBoolean", { ref: ref.toString() });
         }
         return Map(schema).map((_, name) => ref.push(name));
     } else {

@@ -5,7 +5,7 @@ import { TypeRef } from "./TypeBuilder";
 import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
-import { ErrorMessage, messageAssert } from "./Messages";
+import { messageAssert } from "./Messages";
 
 export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
@@ -706,12 +706,12 @@ export class UnionType extends SetOperationType {
     constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
         super(typeRef, "union", memberRefs);
         if (memberRefs !== undefined) {
-            messageAssert(!memberRefs.isEmpty(), ErrorMessage.IRNoEmptyUnions);
+            messageAssert(!memberRefs.isEmpty(), "IRNoEmptyUnions", {});
         }
     }
 
     setMembers(memberRefs: OrderedSet<TypeRef>): void {
-        messageAssert(!memberRefs.isEmpty(), ErrorMessage.IRNoEmptyUnions);
+        messageAssert(!memberRefs.isEmpty(), "IRNoEmptyUnions", {});
         super.setMembers(memberRefs);
     }
 

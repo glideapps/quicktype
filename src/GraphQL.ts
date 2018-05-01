@@ -19,7 +19,7 @@ import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import * as graphql from "graphql/language";
 import { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-import { ErrorMessage, messageAssert } from "./Messages";
+import { messageAssert } from "./Messages";
 import { StringTypes } from "./StringTypes";
 
 interface GQLType {
@@ -162,7 +162,7 @@ class GQLQuery {
                 this._fragments[def.name.value] = def;
             }
         }
-        messageAssert(queries.length >= 1, ErrorMessage.GraphQLNoQueriesDefined);
+        messageAssert(queries.length >= 1, "GraphQLNoQueriesDefined", {});
         this.queries = List(queries);
     }
 

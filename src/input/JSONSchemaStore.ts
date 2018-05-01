@@ -1,7 +1,7 @@
 import { Map } from "immutable";
 
 import { StringMap, assert } from "../Support";
-import { ErrorMessage, messageError } from "../Messages";
+import { messageError } from "../Messages";
 
 export type JSONSchema = StringMap | boolean;
 
@@ -23,7 +23,7 @@ export abstract class JSONSchemaStore {
         }
         schema = await this.fetch(address);
         if (schema === undefined) {
-            return messageError(ErrorMessage.SchemaCannotFetch, { address });
+            return messageError("SchemaCannotFetch", { address });
         }
         this.add(address, schema);
         return schema;

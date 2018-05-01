@@ -3,7 +3,7 @@ import { Map, Set } from "immutable";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { defined } from "./Support";
 import { EnumType, UnionType, Type, ObjectType } from "./Type";
-import { messageAssert, ErrorMessage } from "./Messages";
+import { messageAssert } from "./Messages";
 
 export type AccessorEntry = string | Map<string, string>;
 
@@ -138,6 +138,6 @@ export function unionMemberName(u: UnionType, member: Type, language: string): [
         isFixed = false;
     }
 
-    messageAssert(size === 1, ErrorMessage.SchemaMoreThanOneUnionMemberName, { names });
+    messageAssert(size === 1, "SchemaMoreThanOneUnionMemberName", { names: names.toArray() });
     return [first, isFixed];
 }

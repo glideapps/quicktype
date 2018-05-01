@@ -1,5 +1,5 @@
 import { assert } from "./Support";
-import { messageError, ErrorMessage } from "./Messages";
+import { messageError } from "./Messages";
 
 export type OptionKind = "primary" | "secondary";
 
@@ -143,7 +143,7 @@ export class EnumOption<T> extends Option<T> {
         }
         const value = this._values[name];
         if (value === undefined) {
-            return messageError(ErrorMessage.RendererUnknownOptionValue, { value: name, name: this.definition.name });
+            return messageError("RendererUnknownOptionValue", { value: name, name: this.definition.name });
         }
         return value;
     }

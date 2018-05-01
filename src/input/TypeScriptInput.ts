@@ -3,7 +3,7 @@ import { PartialArgs, CompilerOptions, generateSchema } from "typescript-json-sc
 
 import { panic, inflateBase64, defined } from "../Support";
 import { encodedDefaultTypeScriptLibrary } from "./EncodedDefaultTypeScriptLibrary";
-import { ErrorMessage, messageError } from "../Messages";
+import { messageError } from "../Messages";
 
 const settings: PartialArgs = {
     required: true,
@@ -118,7 +118,7 @@ export function schemaForTypeScriptSources(
     const diagnostics = ts.getPreEmitDiagnostics(program);
     const error = diagnostics.find(d => d.category === ts.DiagnosticCategory.Error);
     if (error !== undefined) {
-        return messageError(ErrorMessage.TypeScriptCompilerError, {
+        return messageError("TypeScriptCompilerError", {
             message: ts.flattenDiagnosticMessageText(error.messageText, "\n")
         });
     }

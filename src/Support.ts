@@ -2,7 +2,7 @@ import { Collection, List, Set, isKeyed, isIndexed } from "immutable";
 
 import { Base64 } from "js-base64";
 import * as pako from "pako";
-import { messageError, ErrorMessage } from "./Messages";
+import { messageError } from "./Messages";
 
 export function intercalate<T>(separator: T, items: Collection<any, T>): List<T> {
     const acc: T[] = [];
@@ -82,17 +82,17 @@ export function nonNull<T>(x: T | null): T {
 }
 
 export function assertNever(x: never): never {
-    return messageError(ErrorMessage.InternalError, { message: `Unexpected object ${x}` });
+    return messageError("InternalError", { message: `Unexpected object ${x as any}` });
 }
 
 export function assert(condition: boolean, message: string = "Assertion failed"): void {
     if (!condition) {
-        return messageError(ErrorMessage.InternalError, { message });
+        return messageError("InternalError", { message });
     }
 }
 
 export function panic(message: string): never {
-    return messageError(ErrorMessage.InternalError, { message });
+    return messageError("InternalError", { message });
 }
 
 export function mustNotBeCalled(): never {
@@ -208,6 +208,6 @@ export function parseJSON(text: string, description: string, address: string = "
             message = `Unknown exception ${e}`;
         }
 
-        return messageError(ErrorMessage.MiscJSONParseError, { description, address, message });
+        return messageError("MiscJSONParseError", { description, address, message });
     }
 }
