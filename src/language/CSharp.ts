@@ -49,7 +49,7 @@ function noFollow(t: Type): Type {
 }
 
 function needTransformerForUnion(u: UnionType): boolean {
-    const supportedKinds: TypeKind[] = ["integer", "double", "bool", "string"];
+    const supportedKinds: TypeKind[] = ["integer", "double", "bool", "string", "class"];
     return u.members.every(t => supportedKinds.indexOf(t.kind) >= 0);
 }
 
@@ -1002,12 +1002,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         });
     }
 
-    private emitDecoderTransformerCase(
-        tokenCases: string[],
-        deserializeType: string,
-        xfer: Transformer | undefined,
-        targetType: Type
-    ): void {
+    private emitDecoderTransformerCase(tokenCases: string[], xfer: Transformer | undefined, targetType: Type): void {
         if (xfer === undefined) return;
 
         for (const tokenCase of tokenCases) {
@@ -1015,7 +1010,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         }
 
         this.indent(() => {
-            const value: Sourcelike = this.deserializeTypeCode(deserializeType);
+            const value: Sourcelike = this.deserializeTypeCode(this.csType(xfer.sourceType, noFollow));
             if (xfer instanceof UnionInstantiationTransformer) {
                 if (!(targetType instanceof UnionType)) {
                     return panic("Union instantiation transformer must produce a union type");
@@ -1039,15 +1034,15 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private emitDecodeTransformer(xfer: Transformer, targetType: Type): void {
         if (xfer instanceof DecodingTransformer) {
             this.emitDecoderSwitch(() => {
-                this.emitDecoderTransformerCase(["Float"], this.doubleType, xfer.doubleTransformer, targetType);
+                this.emitDecoderTransformerCase(["Integer"], xfer.integerTransformer, targetType);
                 this.emitDecoderTransformerCase(
-                    xfer.doubleTransformer === undefined ? ["Integer"] : ["Float", "Integer"],
-                    "long",
-                    xfer.integerTransformer,
+                    xfer.integerTransformer === undefined ? ["Integer", "Float"] : ["Float"],
+                    xfer.doubleTransformer,
                     targetType
                 );
-                this.emitDecoderTransformerCase(["Boolean"], "bool", xfer.boolTransformer, targetType);
-                this.emitDecoderTransformerCase(["String", "Date"], "string", xfer.stringTransformer, targetType);
+                this.emitDecoderTransformerCase(["Boolean"], xfer.boolTransformer, targetType);
+                this.emitDecoderTransformerCase(["String", "Date"], xfer.stringTransformer, targetType);
+                this.emitDecoderTransformerCase(["StartObject"], xfer.objectTransformer, targetType);
             });
 
             // FIXME: Put type name into message if there is one
