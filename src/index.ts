@@ -276,7 +276,7 @@ export class Run {
         // FIXME: We don't actually have to do this if any of the above graph
         // rewrites did anything.  We could just check whether the current graph
         // is different from the one we started out with.
-        graph = graph.garbageCollect(this._options.alphabetizeProperties);
+        graph = graph.garbageCollect(this._options.alphabetizeProperties, debugPrintReconstitution);
 
         if (this._options.debugPrintGraph) {
             console.log("\n# gather names");

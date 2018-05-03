@@ -315,13 +315,13 @@ export class TypeGraph {
         return newGraph;
     }
 
-    garbageCollect(alphabetizeProperties: boolean): TypeGraph {
+    garbageCollect(alphabetizeProperties: boolean, debugPrintReconstitution: boolean): TypeGraph {
         const newGraph = this.rewrite(
             "GC",
             NoStringTypeMapping,
             alphabetizeProperties,
             [],
-            false,
+            debugPrintReconstitution,
             (_t, _b) => mustNotBeCalled(),
             true
         );
