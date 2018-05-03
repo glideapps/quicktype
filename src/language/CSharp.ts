@@ -1,4 +1,4 @@
-import { OrderedSet, Map } from "immutable";
+import { OrderedSet, Map, Set } from "immutable";
 import * as handlebars from "handlebars";
 
 import { TypeKind, Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
@@ -808,12 +808,18 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private emitSerializeClass(): void {
         // FIXME: Make Serialize a Named
         this.emitType(undefined, AccessModifier.Public, "static class", "Serialize", undefined, () => {
-            this.topLevels.forEach((t: Type, _: string) => {
+            // Sometimes multiple top-levels will resolve to the same type, so we have to take care
+            // not to emit more than one extension method for the same type.
+            let seenTypes = Set<Type>();
+            this.forEachTopLevel("none", t => {
                 // FIXME: Make ToJson a Named
-                this.emitExpressionMember(
-                    ["public static string ToJson(this ", this.csType(t), " self)"],
-                    ["JsonConvert.SerializeObject(self, ", this.namespaceName, ".Converter.Settings)"]
-                );
+                if (!seenTypes.has(t)) {
+                    seenTypes = seenTypes.add(t);
+                    this.emitExpressionMember(
+                        ["public static string ToJson(this ", this.csType(t), " self)"],
+                        ["JsonConvert.SerializeObject(self, ", this.namespaceName, ".Converter.Settings)"]
+                    );
+                }
             });
         });
     }
