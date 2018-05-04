@@ -97,7 +97,7 @@ const keywords = [
 
 const typeNamingFunction = funPrefixNamer("types", n => scalaNameStyle(true, false, n));
 const propertyNamingFunction = funPrefixNamer("properties", n => scalaNameStyle(false, false, n));
-const enumCaseNamingFunction = funPrefixNamer("enum-cases", n => scalaNameStyle(true, true, n));
+const enumCaseNamingFunction = funPrefixNamer("enum-cases", n => scalaNameStyle(false, false, n));
 
 export const stringEscape = utf16ConcatMap(escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape));
 
@@ -246,19 +246,6 @@ export class ScalaRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected importsForType(t: ClassType | UnionType | EnumType): string[] {
-        if (t instanceof ClassType) {
-            return ["play.api.libs.json._"];
-        }
-        if (t instanceof UnionType) {
-            return ["play.api.libs.json._"];
-        }
-        if (t instanceof EnumType) {
-            return ["play.api.libs.json._"];
-        }
-        return assertNever(t);
-    }
-
     protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         this.emitLine("case class ", className, "(");
@@ -392,33 +379,21 @@ export class ScalaRenderer extends ConvenienceRenderer {
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
-        const caseNames: Sourcelike[] = [];
-        this.forEachEnumCase(e, "none", name => {
-            if (caseNames.length > 0) caseNames.push(", ");
-            caseNames.push(name);
-        });
-        caseNames.push(";");
-        this.emitBlock(["public enum ", enumName], () => {
-            this.emitLine(caseNames);
+        this.emitLine("object ", enumName, " extends Enumeration {");
+        this.indent(() => {
             this.ensureBlankLine();
-            this.emitLine("@JsonValue");
-            this.emitBlock("public String toValue()", () => {
-                this.emitLine("switch (this) {");
-                this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    this.emitLine("case ", name, ': return "', stringEscape(jsonName), '";');
-                });
-                this.emitLine("}");
-                this.emitLine("return null;");
-            });
+            this.emitLine("type ", enumName, " = Value");
             this.ensureBlankLine();
-            this.emitLine("@JsonCreator");
-            this.emitBlock(["public static ", enumName, " forValue(String value) throws IOException"], () => {
-                this.forEachEnumCase(e, "none", (name, jsonName) => {
-                    this.emitLine('if (value.equals("', stringEscape(jsonName), '")) return ', name, ";");
-                });
-                this.emitLine('throw new IOException("Cannot deserialize ', enumName, '");');
+
+            this.forEachEnumCase(e, "none", name => {
+                this.emitLine("val ", name, ' = Value("', name, '")');
             });
+
+            this.ensureBlankLine();
+            this.emitLine("implicit val ", enumName, "Reads = Reads.enumNameReads(", enumName, ")");
+            this.emitLine("implicit val ", enumName, "Writes = Writes.enumNameWrites");
         });
+        this.emitLine("}");
     }
 
     protected emitSourceStructure(): void {
