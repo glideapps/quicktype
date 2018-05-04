@@ -265,7 +265,7 @@ export class TypeBuilder {
             return this.getStringType(attributes, stringTypes, forwardingRef);
         }
         return this.getOrAddType(
-            primitiveTypeIdentity(kind, emptyTypeAttributes),
+            primitiveTypeIdentity(kind, attributes),
             tr => new PrimitiveType(tr, kind),
             attributes,
             forwardingRef
@@ -320,11 +320,11 @@ export class TypeBuilder {
         return this.addType(forwardingRef, tr => new MapType(tr, undefined), undefined);
     }
 
-    getMapType(values: TypeRef, forwardingRef?: TypeRef): TypeRef {
+    getMapType(attributes: TypeAttributes, values: TypeRef, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            mapTypeIdentify(emptyTypeAttributes, values),
+            mapTypeIdentify(attributes, values),
             tr => new MapType(tr, values),
-            undefined,
+            attributes,
             forwardingRef
         );
     }
