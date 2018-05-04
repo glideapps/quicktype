@@ -49,7 +49,7 @@ function noFollow(t: Type): Type {
 }
 
 function needTransformerForUnion(u: UnionType): boolean {
-    const supportedKinds: TypeKind[] = ["integer", "double", "bool", "string", "class"];
+    const supportedKinds: TypeKind[] = ["integer", "double", "bool", "string", "class", "array"];
     return u.members.every(t => supportedKinds.indexOf(t.kind) >= 0);
 }
 
@@ -1043,6 +1043,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.emitDecoderTransformerCase(["Boolean"], xfer.boolTransformer, targetType);
                 this.emitDecoderTransformerCase(["String", "Date"], xfer.stringTransformer, targetType);
                 this.emitDecoderTransformerCase(["StartObject"], xfer.objectTransformer, targetType);
+                this.emitDecoderTransformerCase(["StartArray"], xfer.arrayTransformer, targetType);
             });
 
             // FIXME: Put type name into message if there is one

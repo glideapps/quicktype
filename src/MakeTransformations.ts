@@ -38,7 +38,7 @@ function replace(
         transformerForKind("double"),
         transformerForKind("bool"),
         transformerForKind("string"),
-        undefined,
+        transformerForKind("array"),
         transformerForKind("class")
     );
     const transformation = new Transformation(reconstitutedUnion, transformer);

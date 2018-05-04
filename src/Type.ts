@@ -33,34 +33,21 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     return false;
 }
 
-// FIXME: The outer OrderedSet should be some Collection, but I can't figure out
-// which one.  Collection.Indexed doesn't work with OrderedSet, which is unfortunate.
-function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
-    const setArray = sets.toArray();
-    if (setArray.length === 0) return OrderedSet();
-    if (setArray.length === 1) return setArray[0];
-    return setArray[0].union(...setArray.slice(1));
-}
-
 // undefined in case the identity is unique
 export type TypeIdentity = List<any> | undefined;
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
 
+    abstract getNonAttributeChildren(): OrderedSet<Type>;
+
     getChildren(): OrderedSet<Type> {
-        let result = OrderedSet<Type>();
+        let result = this.getNonAttributeChildren();
         this.getAttributes().forEach((v, k) => {
             if (k.children === undefined) return;
             result = result.union(k.children(v));
         });
         return result;
-    }
-
-    directlyReachableTypes<T>(setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
-        const set = setForType(this);
-        if (set) return set;
-        return orderedSetUnion(this.getChildren().map((t: Type) => t.directlyReachableTypes(setForType)));
     }
 
     getAttributes(): TypeAttributes {
@@ -219,6 +206,10 @@ export class PrimitiveType extends Type {
         return true;
     }
 
+    getNonAttributeChildren(): OrderedSet<Type> {
+        return OrderedSet();
+    }
+
     get identity(): TypeIdentity {
         return primitiveTypeIdentity(this.kind, this.getAttributes());
     }
@@ -267,8 +258,8 @@ export class ArrayType extends Type {
         return this.getItemsRef().deref()[0];
     }
 
-    getChildren(): OrderedSet<Type> {
-        return super.getChildren().add(this.items);
+    getNonAttributeChildren(): OrderedSet<Type> {
+        return OrderedSet([this.items]);
     }
 
     get isNullable(): boolean {
@@ -418,12 +409,10 @@ export class ObjectType extends Type {
         return tref.deref()[0];
     }
 
-    getChildren(): OrderedSet<Type> {
-        let children = super.getChildren().union(
-            this.getSortedProperties()
-                .map(p => p.type)
-                .toOrderedSet()
-        );
+    getNonAttributeChildren(): OrderedSet<Type> {
+        let children = this.getSortedProperties()
+            .map(p => p.type)
+            .toOrderedSet();
         const additionalProperties = this.getAdditionalProperties();
         if (additionalProperties !== undefined) {
             children = children.add(additionalProperties);
@@ -577,6 +566,10 @@ export class EnumType extends Type {
         return enumTypeIdentity(this.getAttributes(), this.cases);
     }
 
+    getNonAttributeChildren(): OrderedSet<Type> {
+        return OrderedSet();
+    }
+
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
         builder.getEnumType(this.cases);
     }
@@ -655,8 +648,8 @@ export abstract class SetOperationType extends Type {
         return this.members.sortBy(t => t.kind);
     }
 
-    getChildren(): OrderedSet<Type> {
-        return super.getChildren().union(this.sortedMembers);
+    getNonAttributeChildren(): OrderedSet<Type> {
+        return this.sortedMembers;
     }
 
     isPrimitive(): this is PrimitiveType {
