@@ -128,9 +128,7 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
                     .map(o => defined(o.getAdditionalProperties()).typeRef)
             );
             const allPropertyTypes = propertyTypes.union(additionalPropertyTypes).toArray();
-            const tref = this.typeBuilder.getMapType(this._unifyTypes(allPropertyTypes));
-            this.typeBuilder.addAttributes(tref, typeAttributes);
-            return tref;
+            return this.typeBuilder.getMapType(typeAttributes, this._unifyTypes(allPropertyTypes));
         } else {
             const [properties, additionalProperties, lostTypeAttributes] = getCliqueProperties(objectTypes, types => {
                 assert(types.size > 0, "Property has no type");

@@ -41,9 +41,7 @@ export function replaceObjectType(
         }
 
         if (properties.isEmpty()) {
-            const tref = builder.getMapType(reconstituteAdditionalProperties(), forwardingRef);
-            builder.addAttributes(tref, attributes);
-            return tref;
+            return builder.getMapType(attributes, reconstituteAdditionalProperties(), forwardingRef);
         }
 
         if (additionalProperties.kind === "any") {
@@ -75,9 +73,7 @@ export function replaceObjectType(
             */
         }
 
-        const mapType = builder.getMapType(union, forwardingRef);
-        builder.addAttributes(mapType, attributes);
-        return mapType;
+        return builder.getMapType(attributes, union, forwardingRef);
     }
 
     const allObjectTypes = graph.allTypesUnordered().filter(t => t.kind === "object") as Set<ObjectType>;

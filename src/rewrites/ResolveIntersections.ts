@@ -334,9 +334,7 @@ export function resolveIntersections(
             return t;
         }
         if (members.size === 1) {
-            const single = builder.reconstituteType(defined(members.first()), forwardingRef);
-            builder.addAttributes(single, intersectionAttributes);
-            return single;
+            return builder.reconstituteType(defined(members.first()), intersectionAttributes, forwardingRef);
         }
 
         const accumulator = new IntersectionAccumulator();

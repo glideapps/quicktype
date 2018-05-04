@@ -89,7 +89,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     }
 
     getMapType(values: TypeRef): void {
-        this.registerAndAddAttributes(this.builderForNewType().getMapType(values, this._forwardingRef));
+        this.register(this.builderForNewType().getMapType(this._typeAttributes, values, this._forwardingRef));
     }
 
     getUniqueArrayType(): void {
@@ -191,8 +191,8 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
         super(stringTypeMapping, alphabetizeProperties, false, false, graphHasProvenanceAttributes);
     }
 
-    reconstituteType(t: Type, forwardingRef?: TypeRef): TypeRef {
-        return this.reconstituteTypeRef(t.typeRef, undefined, forwardingRef);
+    reconstituteType(t: Type, attributes?: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
+        return this.reconstituteTypeRef(t.typeRef, attributes, forwardingRef);
     }
 
     abstract lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef, replaceSet?: boolean): TypeRef | undefined;
