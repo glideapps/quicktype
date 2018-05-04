@@ -479,9 +479,6 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
                     this.reconstitutedTypes = this.reconstitutedTypes.set(index, tref);
                 } else {
                     assert(tref.equals(alreadyReconstitutedType), "We reconstituted a type twice differently");
-                    if (maybeForwardingRef === undefined) {
-                        return panic("Why do we reconstitute a type twice???");
-                    }
                 }
             }
         );
