@@ -128,9 +128,7 @@ export class ScalaRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _packageName: string,
-        private readonly _justTypes: boolean
+        leadingComments: string[] | undefined
     ) {
         super(targetLanguage, graph, leadingComments);
     }
