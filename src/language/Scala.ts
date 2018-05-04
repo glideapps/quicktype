@@ -112,10 +112,6 @@ function isPartCharacter(codePoint: number): boolean {
 
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
-// FIXME: Handle acronyms consistently.  In particular, that means that
-// we have to use namers to produce the getter and setter names - we can't
-// just capitalize and concatenate.
-// https://stackoverflow.com/questions/8277355/naming-convention-for-upper-case-abbreviations
 function scalaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
@@ -178,18 +174,6 @@ export class ScalaRenderer extends ConvenienceRenderer {
         return directlyReachableSingleNamedType(type);
     }
 
-    protected makeNamesForPropertyGetterAndSetter(
-        _c: ClassType,
-        _className: Name,
-        _p: ClassProperty,
-        _jsonName: string,
-        name: Name
-    ): [Name, Name] {
-        const getterName = new DependencyName(propertyNamingFunction, name.order, lookup => `get_${lookup(name)}`);
-        const setterName = new DependencyName(propertyNamingFunction, name.order, lookup => `set_${lookup(name)}`);
-        return [getterName, setterName];
-    }
-
     protected startFile(basename: Sourcelike): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         // FIXME: The filenames should actually be Sourcelikes, too
@@ -211,39 +195,29 @@ export class ScalaRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected scalaType(t: Type, withIssues: boolean = false): Sourcelike {
+    protected scalaType(t: Type): Sourcelike {
         return matchType<Sourcelike>(
             t,
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Any"),
-            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Any"),
+            _anyType => "Any",
+            _nullType => "Any",
             _boolType => "Boolean",
             _integerType => "Long",
             _doubleType => "Double",
             _stringType => "String",
-            arrayType => ["Seq[", this.scalaType(arrayType.items, withIssues), "]"],
+            arrayType => ["Seq[", this.scalaType(arrayType.items), "]"],
             classType => this.nameForNamedType(classType),
-            mapType => ["Map[String, ", this.scalaType(mapType.values, withIssues), "]"],
-            enumType => this.nameForNamedType(enumType),
+            mapType => ["Map[String, ", this.scalaType(mapType.values), "]"],
+            enumType => {
+                const name = this.nameForNamedType(enumType).toString();
+                if (name === "[object Object]") return "Enum";
+                else return name;
+            },
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return this.scalaType(nullable, withIssues);
-                return this.nameForNamedType(unionType);
+                if (nullable !== null) return "Option[" + this.scalaType(nullable) + "]";
+                return "Any";
             }
         );
-    }
-
-    protected scalaTypeWithoutGenerics(t: Type): Sourcelike {
-        if (t instanceof ArrayType) {
-            return [this.scalaTypeWithoutGenerics(t.items), "[]"];
-        } else if (t instanceof MapType) {
-            return "Map";
-        } else if (t instanceof UnionType) {
-            const nullable = nullableFromUnion(t);
-            if (nullable !== null) return this.scalaTypeWithoutGenerics(nullable);
-            return this.nameForNamedType(t);
-        } else {
-            return this.scalaType(t);
-        }
     }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
@@ -252,7 +226,9 @@ export class ScalaRenderer extends ConvenienceRenderer {
         this.indent(() => {
             this.forEachClassProperty(c, "none", (name, _, p) => {
                 // TODO remove last comma
-                this.emitLine(name, ": ", this.scalaType(p.type, true), ",");
+                this.emitDescription(this.descriptionForType(p.type));
+                this.emitLine(name, ": ", this.scalaType(p.type), ",");
+                this.ensureBlankLine();
             });
         });
         this.emitLine(")");
@@ -260,121 +236,6 @@ export class ScalaRenderer extends ConvenienceRenderer {
         this.emitLine("case object ", className, " {");
         this.emitLine("    val jsonReads: Reads[", className, "] = Json.reads[", className, "]");
         this.emitLine("}");
-    }
-
-    // TODO union???
-    protected unionField(
-        u: UnionType,
-        t: Type,
-        withIssues: boolean = false
-    ): { fieldType: Sourcelike; fieldName: Sourcelike } {
-        const fieldType = this.scalaType(t, withIssues);
-        // FIXME: "Value" should be part of the name.
-        const fieldName = [this.nameForUnionMember(u, t), "Value"];
-        return { fieldType, fieldName };
-    }
-
-    protected emitUnionDefinition(u: UnionType, unionName: Name): void {
-        const tokenCase = (tokenType: string): void => {
-            this.emitLine("case ", tokenType, ":");
-        };
-
-        const emitNullDeserializer = (): void => {
-            tokenCase("VALUE_NULL");
-            this.indent(() => this.emitLine("break;"));
-        };
-
-        const emitDeserializeType = (t: Type): void => {
-            const { fieldName } = this.unionField(u, t);
-            const rendered = this.scalaTypeWithoutGenerics(t);
-            this.emitLine("value.", fieldName, " = jsonParser.readValueAs(", rendered, ".class);");
-            this.emitLine("break;");
-        };
-
-        const emitDeserializer = (tokenTypes: string[], kind: TypeKind): void => {
-            const t = u.findMember(kind);
-            if (t === undefined) return;
-
-            for (const tokenType of tokenTypes) {
-                tokenCase(tokenType);
-            }
-            this.indent(() => emitDeserializeType(t));
-        };
-
-        const emitDoubleSerializer = (): void => {
-            const t = u.findMember("double");
-            if (t === undefined) return;
-
-            if (u.findMember("integer") === undefined) tokenCase("VALUE_NUMBER_INT");
-            tokenCase("VALUE_NUMBER_FLOAT");
-            this.indent(() => emitDeserializeType(t));
-        };
-
-        this.emitDescription(this.descriptionForType(u));
-        if (!this._justTypes) {
-            this.emitLine("@JsonDeserialize(using = ", unionName, ".Deserializer.class)");
-            this.emitLine("@JsonSerialize(using = ", unionName, ".Serializer.class)");
-        }
-        const [maybeNull, nonNulls] = removeNullFromUnion(u);
-        this.emitBlock(["public class ", unionName], () => {
-            nonNulls.forEach(t => {
-                const { fieldType, fieldName } = this.unionField(u, t, true);
-                this.emitLine("public ", fieldType, " ", fieldName, ";");
-            });
-            if (this._justTypes) return;
-            this.ensureBlankLine();
-            this.emitBlock(["static class Deserializer extends JsonDeserializer<", unionName, ">"], () => {
-                this.emitLine("@Override");
-                this.emitBlock(
-                    [
-                        "public ",
-                        unionName,
-                        " deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException"
-                    ],
-                    () => {
-                        this.emitLine(unionName, " value = new ", unionName, "();");
-                        this.emitLine("switch (jsonParser.getCurrentToken()) {");
-                        if (maybeNull !== null) emitNullDeserializer();
-                        emitDeserializer(["VALUE_NUMBER_INT"], "integer");
-                        emitDoubleSerializer();
-                        emitDeserializer(["VALUE_TRUE", "VALUE_FALSE"], "bool");
-                        emitDeserializer(["VALUE_STRING"], "string");
-                        emitDeserializer(["START_ARRAY"], "array");
-                        emitDeserializer(["START_OBJECT"], "class");
-                        emitDeserializer(["VALUE_STRING"], "enum");
-                        emitDeserializer(["START_OBJECT"], "map");
-                        this.emitLine('default: throw new IOException("Cannot deserialize ', unionName, '");');
-                        this.emitLine("}");
-                        this.emitLine("return value;");
-                    }
-                );
-            });
-            this.ensureBlankLine();
-            this.emitBlock(["static class Serializer extends JsonSerializer<", unionName, ">"], () => {
-                this.emitLine("@Override");
-                this.emitBlock(
-                    [
-                        "public void serialize(",
-                        unionName,
-                        " obj, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException"
-                    ],
-                    () => {
-                        nonNulls.forEach(t => {
-                            const { fieldName } = this.unionField(u, t, true);
-                            this.emitBlock(["if (obj.", fieldName, " != null)"], () => {
-                                this.emitLine("jsonGenerator.writeObject(obj.", fieldName, ");");
-                                this.emitLine("return;");
-                            });
-                        });
-                        if (maybeNull !== null) {
-                            this.emitLine("jsonGenerator.writeNull();");
-                        } else {
-                            this.emitLine('throw new IOException("', unionName, ' must not be null");');
-                        }
-                    }
-                );
-            });
-        });
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
@@ -407,7 +268,7 @@ export class ScalaRenderer extends ConvenienceRenderer {
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
             (e, n) => this.emitEnumDefinition(e, n),
-            (u, n) => this.emitUnionDefinition(u, n)
+            (u, n) => this.emitLine // this.emitUnionDefinition(u, n)
         );
 
         this.finishFile();
