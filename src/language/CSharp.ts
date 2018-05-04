@@ -32,6 +32,8 @@ export enum AccessModifier {
     Internal
 }
 
+export type CSharpTypeForAny = "object" | "dynamic";
+
 export default class CSharpTargetLanguage extends TargetLanguage {
     private readonly _listOption = new EnumOption("array-type", "Use T[] or List<T>", [
         ["array", false],
@@ -63,6 +65,13 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         "Fail if required properties are missing",
         false
     );
+    private readonly _typeForAnyOption = new EnumOption<CSharpTypeForAny>(
+        "any-type",
+        'Type to use for "any"',
+        [["object", "object"], ["dynamic", "dynamic"]],
+        "object",
+        "secondary"
+    );
     private readonly _useDecimalOption = new EnumOption(
         "number-type",
         "Type to use for numbers",
@@ -83,7 +92,8 @@ export default class CSharpTargetLanguage extends TargetLanguage {
             this._listOption,
             this._useDecimalOption,
             this._featuresOption,
-            this._checkRequiredOption
+            this._checkRequiredOption,
+            this._typeForAnyOption
         ];
     }
 
@@ -163,7 +173,8 @@ export class CSharpRenderer extends ConvenienceRenderer {
         private readonly _version: Version,
         protected readonly dense: boolean,
         private readonly _useList: boolean,
-        private readonly _useDecimal: boolean
+        private readonly _useDecimal: boolean,
+        private readonly _typeForAny: CSharpTypeForAny
     ) {
         super(targetLanguage, graph, leadingComments);
     }
@@ -228,8 +239,8 @@ export class CSharpRenderer extends ConvenienceRenderer {
     protected csType(t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "object"),
-            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "object"),
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this._typeForAny),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, this._typeForAny),
             _boolType => "bool",
             _integerType => "long",
             _doubleType => (this._useDecimal ? "decimal" : "double"),
@@ -505,9 +516,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         useList: boolean,
         useDecimal: boolean,
         outputFeatures: OutputFeatures,
-        private readonly _checkRequiredProperties: boolean
+        private readonly _checkRequiredProperties: boolean,
+        typeForAny: CSharpTypeForAny
     ) {
-        super(targetLanguage, graph, leadingComments, namespaceName, version, dense, useList, useDecimal);
+        super(targetLanguage, graph, leadingComments, namespaceName, version, dense, useList, useDecimal, typeForAny);
         this._needHelpers = outputFeatures.helpers;
         this._needAttributes = outputFeatures.attributes;
     }
@@ -615,6 +627,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         return this._needAttributes && !this.dense;
     }
 
+    // The "this" type can't be `dynamic`, so we have to force it to `object`.
+    private topLevelResultType(t: Type): Sourcelike {
+        return t.kind === "any" || t.kind === "none" ? "object" : this.csType(t);
+    }
+
     private emitFromJsonForTopLevel(t: Type, name: Name): void {
         if (t instanceof EnumType) return;
 
@@ -628,7 +645,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             partial = "";
             typeKind = "class";
         }
-        const csType = this.csType(t);
+        const csType = this.topLevelResultType(t);
         this.emitType(undefined, AccessModifier.Public, [partial, typeKind], name, this.superclassForType(t), () => {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
@@ -816,7 +833,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 if (!seenTypes.has(t)) {
                     seenTypes = seenTypes.add(t);
                     this.emitExpressionMember(
-                        ["public static string ToJson(this ", this.csType(t), " self)"],
+                        ["public static string ToJson(this ", this.topLevelResultType(t), " self)"],
                         ["JsonConvert.SerializeObject(self, ", this.namespaceName, ".Converter.Settings)"]
                     );
                 }
