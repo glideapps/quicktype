@@ -190,37 +190,6 @@ export class ScalaRenderer extends ConvenienceRenderer {
         return [getterName, setterName];
     }
 
-    private fieldOrMethodName(methodName: string, topLevelName: Name): Sourcelike {
-        if (this.topLevels.size === 1) {
-            return methodName;
-        }
-        return [topLevelName, capitalize(methodName)];
-    }
-
-    private methodName(prefix: string, suffix: string, topLevelName: Name): Sourcelike {
-        if (this.topLevels.size === 1) {
-            return [prefix, suffix];
-        }
-        return [prefix, topLevelName, suffix];
-    }
-
-    private decoderName(topLevelName: Name): Sourcelike {
-        return this.fieldOrMethodName("fromJsonString", topLevelName);
-    }
-
-    private encoderName(topLevelName: Name): Sourcelike {
-        return this.fieldOrMethodName("toJsonString", topLevelName);
-    }
-
-    // TODO remove
-    private readerGetterName(topLevelName: Name): Sourcelike {
-        return this.methodName("get", "ObjectReader", topLevelName);
-    }
-
-    private writerGetterName(topLevelName: Name): Sourcelike {
-        return this.methodName("get", "ObjectWriter", topLevelName);
-    }
-
     protected startFile(basename: Sourcelike): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         // FIXME: The filenames should actually be Sourcelikes, too
@@ -242,38 +211,38 @@ export class ScalaRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected scalaType(reference: boolean, t: Type, withIssues: boolean = false): Sourcelike {
+    protected scalaType(t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "Any"),
             _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "Any"),
-            _boolType => (reference ? "Boolean" : "boolean"),
-            _integerType => (reference ? "Long" : "long"),
-            _doubleType => (reference ? "Double" : "double"),
+            _boolType => "Boolean",
+            _integerType => "Long",
+            _doubleType => "Double",
             _stringType => "String",
-            arrayType => ["Seq[", this.scalaType(false, arrayType.items, withIssues), "]"],
+            arrayType => ["Seq[", this.scalaType(arrayType.items, withIssues), "]"],
             classType => this.nameForNamedType(classType),
-            mapType => ["Map[String, ", this.scalaType(true, mapType.values, withIssues), "]"],
+            mapType => ["Map[String, ", this.scalaType(mapType.values, withIssues), "]"],
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return this.scalaType(true, nullable, withIssues);
+                if (nullable !== null) return this.scalaType(nullable, withIssues);
                 return this.nameForNamedType(unionType);
             }
         );
     }
 
-    protected scalaTypeWithoutGenerics(reference: boolean, t: Type): Sourcelike {
+    protected scalaTypeWithoutGenerics(t: Type): Sourcelike {
         if (t instanceof ArrayType) {
-            return [this.scalaTypeWithoutGenerics(false, t.items), "[]"];
+            return [this.scalaTypeWithoutGenerics(t.items), "[]"];
         } else if (t instanceof MapType) {
             return "Map";
         } else if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
-            if (nullable !== null) return this.scalaTypeWithoutGenerics(true, nullable);
+            if (nullable !== null) return this.scalaTypeWithoutGenerics(nullable);
             return this.nameForNamedType(t);
         } else {
-            return this.scalaType(reference, t);
+            return this.scalaType(t);
         }
     }
 
@@ -296,7 +265,7 @@ export class ScalaRenderer extends ConvenienceRenderer {
         this.indent(() => {
             this.forEachClassProperty(c, "none", (name, _, p) => {
                 // TODO remove last comma
-                this.emitLine(name, ": ", this.scalaType(false, p.type, true), ",");
+                this.emitLine(name, ": ", this.scalaType(p.type, true), ",");
             });
         });
         this.emitLine(")");
@@ -312,7 +281,7 @@ export class ScalaRenderer extends ConvenienceRenderer {
         t: Type,
         withIssues: boolean = false
     ): { fieldType: Sourcelike; fieldName: Sourcelike } {
-        const fieldType = this.scalaType(true, t, withIssues);
+        const fieldType = this.scalaType(t, withIssues);
         // FIXME: "Value" should be part of the name.
         const fieldName = [this.nameForUnionMember(u, t), "Value"];
         return { fieldType, fieldName };
@@ -330,7 +299,7 @@ export class ScalaRenderer extends ConvenienceRenderer {
 
         const emitDeserializeType = (t: Type): void => {
             const { fieldName } = this.unionField(u, t);
-            const rendered = this.scalaTypeWithoutGenerics(true, t);
+            const rendered = this.scalaTypeWithoutGenerics(t);
             this.emitLine("value.", fieldName, " = jsonParser.readValueAs(", rendered, ".class);");
             this.emitLine("break;");
         };
