@@ -1,9 +1,7 @@
-import { Map } from "immutable";
-
-import { TypeKind, Type, ArrayType, MapType, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
-import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
+import { Type, EnumType, UnionType, ClassType } from "../Type";
+import { matchType, nullableFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
-import { Sourcelike, maybeAnnotated } from "../Source";
+import { Sourcelike } from "../Source";
 import {
     utf16LegalizeCharacters,
     escapeNonPrintableMapper,
@@ -12,19 +10,17 @@ import {
     isAscii,
     isLetter,
     isDigit,
-    capitalize,
     splitIntoWords,
     combineWords,
     allUpperWordStyle,
     firstUpperWordStyle,
     allLowerWordStyle
 } from "../Strings";
-import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
+import { Name, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption, Option } from "../RendererOptions";
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { defined, assert, assertNever } from "../Support";
+import { defined, assert } from "../Support";
 
 export class ScalaTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
@@ -209,6 +205,7 @@ export class ScalaRenderer extends ConvenienceRenderer {
             mapType => ["Map[String, ", this.scalaType(mapType.values), "]"],
             enumType => {
                 const name = this.nameForNamedType(enumType).toString();
+                // TODO extract the name of the Enum here
                 if (name === "[object Object]") return "Enum";
                 else return name;
             },
@@ -235,6 +232,7 @@ export class ScalaRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
         this.emitLine("case object ", className, " {");
         this.emitLine("    val jsonReads: Reads[", className, "] = Json.reads[", className, "]");
+        this.emitLine("    val jsonWrites: Writes[", className, "] = Json.writes[", className, "]");
         this.emitLine("}");
     }
 
@@ -264,11 +262,18 @@ export class ScalaRenderer extends ConvenienceRenderer {
         this.emitLine("import play.api.libs.json._");
         this.ensureBlankLine();
 
+        this.emitLine("// Add Play-Json to your build.sbt:");
+        this.emitLine('// libraryDependencies += "com.typesafe.play" %% "play-json" % "2.6.7"');
+        this.emitLine("// Read JSON with this:");
+        this.emitLine("// val myObject = Json.parse(myJsonString).as[MyObject]");
+        this.emitLine("// and write like this:");
+        this.emitLine("// val myJsValue = Json.toJson(myObject)");
+
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
             (e, n) => this.emitEnumDefinition(e, n),
-            (u, n) => this.emitLine // this.emitUnionDefinition(u, n)
+            () => this.emitLine
         );
 
         this.finishFile();
