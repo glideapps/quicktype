@@ -245,20 +245,8 @@ export class UnionMemberMatchTransformer extends Transformer {
 }
 
 export class UnionInstantiationTransformer extends Transformer {
-    constructor(sourceTypeRef: TypeRef, private readonly _unionRef: TypeRef) {
+    constructor(sourceTypeRef: TypeRef) {
         super(sourceTypeRef);
-    }
-
-    get unionType(): UnionType {
-        const t = this._unionRef.deref()[0];
-        if (!(t instanceof UnionType)) {
-            return panic("Union instantiator with the wrong type");
-        }
-        return t;
-    }
-
-    getChildren(): OrderedSet<Type> {
-        return super.getChildren().add(this.unionType);
     }
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
@@ -270,21 +258,12 @@ export class UnionInstantiationTransformer extends Transformer {
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
-        return new UnionInstantiationTransformer(
-            builder.reconstituteTypeRef(this.sourceTypeRef),
-            builder.reconstituteTypeRef(this._unionRef)
-        );
+        return new UnionInstantiationTransformer(builder.reconstituteTypeRef(this.sourceTypeRef));
     }
 
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
-        if (!(other instanceof UnionInstantiationTransformer)) return false;
-        return this._unionRef.equals(other._unionRef);
-    }
-
-    hashCode(): number {
-        const h = super.hashCode();
-        return addHashCode(h, this._unionRef.hashCode());
+        return other instanceof UnionInstantiationTransformer;
     }
 }
 

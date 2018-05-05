@@ -28,7 +28,7 @@ function replace(
     function transformerForKind(kind: TypeKind) {
         const member = union.findMember(kind);
         if (member === undefined) return undefined;
-        return new UnionInstantiationTransformer(builder.reconstituteType(member), reconstitutedUnion);
+        return new UnionInstantiationTransformer(builder.reconstituteType(member));
     }
 
     const transformerForClass = transformerForKind("class");
