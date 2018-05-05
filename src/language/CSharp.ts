@@ -49,7 +49,7 @@ function noFollow(t: Type): Type {
 }
 
 function needTransformerForUnion(u: UnionType): boolean {
-    const supportedKinds: TypeKind[] = ["integer", "double", "bool", "string", "class", "array"];
+    const supportedKinds: TypeKind[] = ["integer", "double", "bool", "string", "map", "class", "array"];
     return u.members.every(t => supportedKinds.indexOf(t.kind) >= 0);
 }
 

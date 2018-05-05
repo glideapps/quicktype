@@ -31,6 +31,14 @@ function replace(
         return new UnionInstantiationTransformer(builder.reconstituteType(member), reconstitutedUnion);
     }
 
+    const transformerForClass = transformerForKind("class");
+    const transformerForMap = transformerForKind("map");
+    assert(
+        transformerForClass === undefined || transformerForMap === undefined,
+        "Can't have both class and map in a transformed union"
+    );
+    const transformerForObject = transformerForClass !== undefined ? transformerForClass : transformerForMap;
+
     const transformer = new DecodingTransformer(
         builder.getPrimitiveType("any"),
         transformerForKind("null"),
@@ -39,7 +47,7 @@ function replace(
         transformerForKind("bool"),
         transformerForKind("string"),
         transformerForKind("array"),
-        transformerForKind("class")
+        transformerForObject
     );
     const transformation = new Transformation(reconstitutedUnion, transformer);
     const attributes = transformationTypeAttributeKind.makeAttributes(transformation);
