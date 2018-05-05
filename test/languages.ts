@@ -46,6 +46,7 @@ export const CSharpLanguage: Language = {
   topLevel: "TopLevel",
   skipJSON: [
     "nbl-stats.json", // See issue #823
+    "empty-enum.json", // https://github.com/JamesNK/Newtonsoft.Json/issues/1687
     "31189.json" // JSON.NET doesn't accept year 0000 as 1BC, though it should
   ],
   skipMiscJSON: false,
@@ -57,7 +58,8 @@ export const CSharpLanguage: Language = {
     { "array-type": "list" },
     { "csharp-version": "5" },
     { density: "dense" },
-    { "number-type": "decimal" }
+    { "number-type": "decimal" },
+    { "any-type": "dynamic" }
   ],
   sourceFiles: ["src/language/CSharp.ts"]
 };
