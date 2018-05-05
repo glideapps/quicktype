@@ -25,10 +25,13 @@ import {
     transformationForType,
     Transformer,
     DecodingTransformer,
+    DecodingChoiceTransformer,
     UnionInstantiationTransformer,
     ChoiceTransformer,
     UnionMemberMatchTransformer,
-    EncodingTransformer
+    EncodingTransformer,
+    StringMatchTransformer,
+    StringProducerTransformer
 } from "../Transformers";
 
 const unicode = require("unicode-properties");
@@ -130,6 +133,10 @@ export default class CSharpTargetLanguage extends TargetLanguage {
 
     needsTransformerForUnion(u: UnionType): boolean {
         return needTransformerForUnion(u);
+    }
+
+    get needsTransformerForEnums(): boolean {
+        return true;
     }
 
     protected get rendererClass(): new (
@@ -936,24 +943,14 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         this.emitBlock(emitBody);
     }
 
-    private emitConverterMembers(enumNames: OrderedSet<Name>, unionNames: OrderedSet<Name>): void {
-        const allNames = enumNames.union(unionNames);
-        const canConvertExprs = allNames.map((n: Name): Sourcelike => ["t == typeof(", n, ")"]);
-        const nullableCanConvertExprs = allNames.map((n: Name): Sourcelike => ["t == typeof(", n, "?)"]);
+    private emitConverterMembers(unionNames: OrderedSet<Name>): void {
+        const canConvertExprs = unionNames.map((n: Name): Sourcelike => ["t == typeof(", n, ")"]);
+        const nullableCanConvertExprs = unionNames.map((n: Name): Sourcelike => ["t == typeof(", n, "?)"]);
         const canConvertExpr = intercalate(" || ", canConvertExprs.union(nullableCanConvertExprs));
         // FIXME: make Iterable<any, Sourcelike> a Sourcelike, too?
         this.emitCanConvert(canConvertExpr.toArray());
         this.ensureBlankLine();
         this.emitReadJson(() => {
-            this.emitTypeSwitch(enumNames, t => ["t == typeof(", t, ")"], false, false, n => {
-                const extensionsName = defined(this._enumExtensionsNames.get(n));
-                this.emitLine("return ", extensionsName, ".ReadJson(reader, serializer);");
-            });
-            this.emitTypeSwitch(enumNames, t => ["t == typeof(", t, "?)"], true, false, n => {
-                this.emitLine("if (reader.TokenType == JsonToken.Null) return null;");
-                const extensionsName = defined(this._enumExtensionsNames.get(n));
-                this.emitLine("return ", extensionsName, ".ReadJson(reader, serializer);");
-            });
             // FIXME: call the constructor via reflection?
             this.emitTypeSwitch(unionNames, t => ["t == typeof(", t, ") || t == typeof(", t, "?)"], false, false, n => {
                 this.emitLine("return new ", n, "(reader, serializer);");
@@ -963,7 +960,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         this.ensureBlankLine();
         this.emitWriteJson("value", () => {
             this.emitLine("var t = value.GetType();");
-            this.emitTypeSwitch(allNames, t => ["t == typeof(", t, ")"], true, true, n => {
+            this.emitTypeSwitch(unionNames, t => ["t == typeof(", t, ")"], true, true, n => {
                 this.emitLine("((", n, ")value).WriteJson(writer, serializer);");
             });
             this.emitLine('throw new Exception("Unknown type");');
@@ -971,16 +968,15 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     private emitConverterClass(): void {
-        const enumNames = this.enums.map(this.nameForNamedType);
         const unionNames = this.namedUnions.filterNot(needTransformerForUnion).map(this.nameForNamedType);
-        const jsonConverter = enumNames.size + unionNames.size > 0;
+        const jsonConverter = unionNames.size > 0;
         // FIXME: Make Converter a Named
         const converterName: Sourcelike = ["Converter"];
         const superclass = jsonConverter ? "JsonConverter" : undefined;
         const staticOrNot = jsonConverter ? "" : "static ";
         this.emitType(undefined, AccessModifier.Internal, [staticOrNot, "class"], converterName, superclass, () => {
             if (jsonConverter) {
-                this.emitConverterMembers(enumNames, unionNames);
+                this.emitConverterMembers(unionNames);
                 this.ensureBlankLine();
             }
             this.emitLine("public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings");
@@ -1011,28 +1007,25 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
         this.indent(() => {
             const value: Sourcelike = this.deserializeTypeCode(this.csType(xfer.sourceType, noFollow));
-            if (xfer instanceof UnionInstantiationTransformer) {
-                if (!(targetType instanceof UnionType)) {
-                    return panic("Union instantiation transformer must produce a union type");
-                }
-
-                this.emitLine(
-                    "return new ",
-                    this.nameForNamedType(targetType),
-                    " { ",
-                    this.nameForUnionMember(targetType, xfer.sourceType),
-                    " = ",
-                    value,
-                    " };"
-                );
-            } else {
-                return panic("Unknown transformer");
-            }
+            this.emitTransformer(value, xfer, targetType);
         });
+    }
+
+    private emitConsume(value: Sourcelike, consumer: Transformer | undefined, targetType: Type): boolean {
+        if (consumer === undefined) {
+            this.emitLine("return ", value, ";");
+            return true;
+        } else {
+            return this.emitTransformer(value, consumer, targetType);
+        }
     }
 
     private emitDecodeTransformer(xfer: Transformer, targetType: Type): void {
         if (xfer instanceof DecodingTransformer) {
+            this.emitLine("var value = ", this.deserializeTypeCode(this.csType(xfer.sourceType, noFollow)), ";");
+            const allHandled = this.emitConsume("value", xfer.consumer, targetType);
+            if (allHandled) return;
+        } else if (xfer instanceof DecodingChoiceTransformer) {
             this.emitDecoderSwitch(() => {
                 this.emitDecoderTransformerCase(["Integer"], xfer.integerTransformer, targetType);
                 this.emitDecoderTransformerCase(
@@ -1045,27 +1038,55 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.emitDecoderTransformerCase(["StartObject"], xfer.objectTransformer, targetType);
                 this.emitDecoderTransformerCase(["StartArray"], xfer.arrayTransformer, targetType);
             });
-
-            // FIXME: Put type name into message if there is one
-            this.emitThrow('"Cannot convert"');
         } else {
             return panic("Unknown transformer");
         }
+
+        // FIXME: Put type name into message if there is one
+        this.emitThrow('"Cannot convert"');
     }
 
-    private emitTransformer(variable: Sourcelike, xfer: Transformer, targetType: Type): void {
+    private stringCaseValue(t: Type, stringCase: string): Sourcelike {
+        if (t.kind === "string") {
+            return ['"', utf16StringEscape(stringCase), '"'];
+        } else if (t instanceof EnumType) {
+            return [this.nameForNamedType(t), ".", this.nameForEnumCase(t, stringCase)];
+        }
+        return panic(`Type ${t.kind} does not have string cases`);
+    }
+
+    private emitTransformer(variable: Sourcelike, xfer: Transformer, targetType: Type): boolean {
         if (xfer instanceof ChoiceTransformer) {
-            xfer.transformers.forEach(caseXfer => this.emitTransformer(variable, caseXfer, targetType));
+            xfer.transformers.forEach(caseXfer => {
+                this.emitTransformer(variable, caseXfer, targetType);
+            });
         } else if (xfer instanceof UnionMemberMatchTransformer) {
             const memberName = this.nameForUnionMember(xfer.sourceType, xfer.memberType);
             const member: Sourcelike = [variable, ".", memberName];
             this.emitLine("if (", member, " != null)");
             this.emitBlock(() => this.emitTransformer(member, xfer.transformer, targetType));
+        } else if (xfer instanceof StringMatchTransformer) {
+            const value = this.stringCaseValue(xfer.sourceType, xfer.stringCase);
+            this.emitLine("if (", variable, " == ", value, ")");
+            this.emitBlock(() => this.emitTransformer(variable, xfer.transformer, targetType));
         } else if (xfer instanceof EncodingTransformer) {
             this.emitLine(this.serializeValueCode(variable), "; return;");
+            return true;
+        } else if (xfer instanceof StringProducerTransformer) {
+            const value = this.stringCaseValue(targetType, xfer.result);
+            return this.emitConsume(value, xfer.consumer, targetType);
+        } else if (xfer instanceof UnionInstantiationTransformer) {
+            if (!(targetType instanceof UnionType)) {
+                return panic("Union instantiation transformer must produce a union type");
+            }
+            const unionName = this.nameForNamedType(targetType);
+            const memberName = this.nameForUnionMember(targetType, xfer.sourceType);
+            this.emitLine("return new ", unionName, " { ", memberName, " = ", variable, " };");
+            return true;
         } else {
             return panic("Unknown transformer");
         }
+        return false;
     }
 
     private emitTransformation(converterName: Name, t: Type): void {
@@ -1082,11 +1103,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.ensureBlankLine();
             this.emitWriteJson("untypedValue", () => {
                 this.emitLine("var value = (", csType, ")untypedValue;");
-                this.emitTransformer("value", xf.reverseTransformer, xf.sourceType);
-
-                // FIXME: Only throw if there's the possibility of it not being exhaustive
-                // FIXME: Put type name into message if there is one
-                this.emitThrow('"Cannot convert"');
+                const allHandled = this.emitTransformer("value", xf.reverseTransformer, xf.sourceType);
+                if (!allHandled) {
+                    // FIXME: Put type name into message if there is one
+                    this.emitThrow('"Cannot convert"');
+                }
             });
         });
     }

@@ -1,9 +1,9 @@
 import { OrderedSet, is, hash, List } from "immutable";
 
-import { UnionType, Type } from "./Type";
+import { UnionType, Type, EnumType, PrimitiveType } from "./Type";
 import { TypeAttributeKind } from "./TypeAttributes";
 import { TypeRef } from "./TypeBuilder";
-import { panic, addHashCode, assert } from "./Support";
+import { panic, addHashCode, assert, mapOptional } from "./Support";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
 
 export abstract class Transformer {
@@ -28,6 +28,80 @@ export abstract class Transformer {
 
     hashCode(): number {
         return this.sourceTypeRef.hashCode();
+    }
+}
+
+export abstract class ProducerTransformer extends Transformer {
+    constructor(sourceTypeRef: TypeRef, readonly consumer: Transformer | undefined) {
+        super(sourceTypeRef);
+    }
+
+    getChildren(): OrderedSet<Type> {
+        const children = super.getChildren();
+        if (this.consumer === undefined) return children;
+        return children.union(this.consumer.getChildren());
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        if (!(other instanceof ProducerTransformer)) return false;
+        return is(this.consumer, other.consumer);
+    }
+
+    hashCode(): number {
+        const h = super.hashCode();
+        return addHashCode(h, hash(this.consumer));
+    }
+}
+
+export abstract class MatchTransformer extends Transformer {
+    constructor(sourceTypeRef: TypeRef, readonly transformer: Transformer) {
+        super(sourceTypeRef);
+    }
+
+    getChildren(): OrderedSet<Type> {
+        return super.getChildren().union(this.transformer.getChildren());
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        if (!(other instanceof MatchTransformer)) return false;
+        return this.transformer.equals(other.transformer);
+    }
+
+    hashCode(): number {
+        const h = super.hashCode();
+        return addHashCode(h, this.transformer.hashCode());
+    }
+}
+
+export class DecodingTransformer extends ProducerTransformer {
+    constructor(sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
+        super(sourceTypeRef, consumer);
+    }
+
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        if (continuationTransformer !== undefined) {
+            return panic("Reversing a decoding transformer cannot have a continuation");
+        }
+
+        if (this.consumer === undefined) {
+            return new EncodingTransformer(targetTypeRef);
+        } else {
+            return this.consumer.reverse(targetTypeRef, new EncodingTransformer(this.consumer.sourceTypeRef));
+        }
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new DecodingTransformer(
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            mapOptional(xfer => xfer.reconstitute(builder), this.consumer)
+        );
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        return other instanceof StringProducerTransformer;
     }
 }
 
@@ -60,8 +134,9 @@ export class ChoiceTransformer extends Transformer {
         return children;
     }
 
-    reverse(_targetTypeRef: TypeRef, _continuationTransformer: Transformer | undefined): Transformer {
-        return panic("Can't reverse choice transformer");
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        const transformers = this.transformers.map(xfer => xfer.reverse(targetTypeRef, continuationTransformer));
+        return new ChoiceTransformer(targetTypeRef, transformers);
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
@@ -83,7 +158,7 @@ export class ChoiceTransformer extends Transformer {
     }
 }
 
-export class DecodingTransformer extends Transformer {
+export class DecodingChoiceTransformer extends Transformer {
     constructor(
         sourceTypeRef: TypeRef,
         readonly nullTransformer: Transformer | undefined,
@@ -155,7 +230,7 @@ export class DecodingTransformer extends Transformer {
             return xf.reconstitute(builder);
         }
 
-        return new DecodingTransformer(
+        return new DecodingChoiceTransformer(
             builder.reconstituteTypeRef(this.sourceTypeRef),
             reconstitute(this.nullTransformer),
             reconstitute(this.integerTransformer),
@@ -169,7 +244,7 @@ export class DecodingTransformer extends Transformer {
 
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
-        if (!(other instanceof DecodingTransformer)) return false;
+        if (!(other instanceof DecodingChoiceTransformer)) return false;
         if (!is(this.nullTransformer, other.nullTransformer)) return false;
         if (!is(this.integerTransformer, other.integerTransformer)) return false;
         if (!is(this.doubleTransformer, other.doubleTransformer)) return false;
@@ -193,9 +268,9 @@ export class DecodingTransformer extends Transformer {
     }
 }
 
-export class UnionMemberMatchTransformer extends Transformer {
-    constructor(sourceTypeRef: TypeRef, private readonly _memberTypeRef: TypeRef, readonly transformer: Transformer) {
-        super(sourceTypeRef);
+export class UnionMemberMatchTransformer extends MatchTransformer {
+    constructor(sourceTypeRef: TypeRef, transformer: Transformer, private readonly _memberTypeRef: TypeRef) {
+        super(sourceTypeRef, transformer);
     }
 
     get sourceType(): UnionType {
@@ -211,10 +286,7 @@ export class UnionMemberMatchTransformer extends Transformer {
     }
 
     getChildren(): OrderedSet<Type> {
-        return super
-            .getChildren()
-            .add(this.memberType)
-            .union(this.transformer.getChildren());
+        return super.getChildren().add(this.memberType);
     }
 
     reverse(_targetTypeRef: TypeRef, _continuationTransformer: Transformer | undefined): Transformer {
@@ -224,23 +296,63 @@ export class UnionMemberMatchTransformer extends Transformer {
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
         return new UnionMemberMatchTransformer(
             builder.reconstituteTypeRef(this.sourceTypeRef),
-            builder.reconstituteTypeRef(this._memberTypeRef),
-            this.transformer.reconstitute(builder)
+            this.transformer.reconstitute(builder),
+            builder.reconstituteTypeRef(this._memberTypeRef)
         );
     }
 
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof UnionMemberMatchTransformer)) return false;
-        if (!this._memberTypeRef.equals(other._memberTypeRef)) return false;
-        return this.transformer.equals(other.transformer);
+        return this._memberTypeRef.equals(other._memberTypeRef);
     }
 
     hashCode(): number {
-        let h = super.hashCode();
-        h = addHashCode(h, this._memberTypeRef.hashCode());
-        h = addHashCode(h, this.transformer.hashCode());
-        return h;
+        const h = super.hashCode();
+        return addHashCode(h, this._memberTypeRef.hashCode());
+    }
+}
+
+/**
+ * This matches strings and enum cases.
+ */
+export class StringMatchTransformer extends MatchTransformer {
+    constructor(sourceTypeRef: TypeRef, transformer: Transformer, readonly stringCase: string) {
+        super(sourceTypeRef, transformer);
+    }
+
+    get sourceType(): EnumType | PrimitiveType {
+        const t = this.sourceTypeRef.deref()[0];
+        if (!(t instanceof EnumType) && !(t instanceof PrimitiveType && t.kind === "string")) {
+            return panic("The source of a string match transformer must be an enum or string type");
+        }
+        return t;
+    }
+
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        return this.transformer.reverse(
+            targetTypeRef,
+            new StringProducerTransformer(this.transformer.sourceTypeRef, continuationTransformer, this.stringCase)
+        );
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new StringMatchTransformer(
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            this.transformer.reconstitute(builder),
+            this.stringCase
+        );
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        if (!(other instanceof StringMatchTransformer)) return false;
+        return this.stringCase !== other.stringCase;
+    }
+
+    hashCode(): number {
+        const h = super.hashCode();
+        return addHashCode(h, hash(this.stringCase));
     }
 }
 
@@ -254,7 +366,7 @@ export class UnionInstantiationTransformer extends Transformer {
             return panic("Union instantiation transformer reverse must have a continuation");
         }
 
-        return new UnionMemberMatchTransformer(targetTypeRef, this.sourceTypeRef, continuationTransformer);
+        return new UnionMemberMatchTransformer(targetTypeRef, continuationTransformer, this.sourceTypeRef);
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
@@ -264,6 +376,49 @@ export class UnionInstantiationTransformer extends Transformer {
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         return other instanceof UnionInstantiationTransformer;
+    }
+}
+
+/**
+ * Produces a string or an enum case.
+ */
+export class StringProducerTransformer extends ProducerTransformer {
+    constructor(sourceTypeRef: TypeRef, consumer: Transformer | undefined, readonly result: string) {
+        super(sourceTypeRef, consumer);
+    }
+
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        if (continuationTransformer === undefined) {
+            return panic("Reversing a string producer transformer must have a continuation");
+        }
+
+        if (this.consumer === undefined) {
+            return new StringMatchTransformer(targetTypeRef, continuationTransformer, this.result);
+        } else {
+            return this.consumer.reverse(
+                targetTypeRef,
+                new StringMatchTransformer(this.consumer.sourceTypeRef, continuationTransformer, this.result)
+            );
+        }
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new StringProducerTransformer(
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            mapOptional(xfer => xfer.reconstitute(builder), this.consumer),
+            this.result
+        );
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        if (!(other instanceof StringProducerTransformer)) return false;
+        return this.result === other.result;
+    }
+
+    hashCode(): number {
+        const h = super.hashCode();
+        return addHashCode(h, hash(this.consumer));
     }
 }
 

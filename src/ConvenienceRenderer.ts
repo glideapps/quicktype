@@ -651,6 +651,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         );
     };
 
+    protected nameForEnumCase(e: EnumType, caseName: string): Name {
+        const caseNames = defined(this._caseNamesStoreView).get(e);
+        return defined(caseNames.get(caseName));
+    }
+
     protected forEachUnionMember = (
         u: UnionType,
         members: OrderedSet<Type> | null,

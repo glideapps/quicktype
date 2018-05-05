@@ -115,4 +115,8 @@ export abstract class TargetLanguage {
     needsTransformerForUnion(_u: UnionType): boolean {
         return false;
     }
+
+    get needsTransformerForEnums(): boolean {
+        return false;
+    }
 }
