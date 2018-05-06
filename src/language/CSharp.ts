@@ -861,7 +861,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitTokenCase(tokenCase);
         }
 
-        const deserialized = this.deserializeTypeCode(this.csType(xfer.sourceType, noFollow));
+        const deserialized = this.deserializeTypeCode(this.csType(xfer.sourceType, followTargetType));
         this.indent(() => {
             this.emitLine("var ", varName, " = ", deserialized, ";");
             const allHandled = this.emitTransformer(varName, xfer, targetType);
@@ -959,7 +959,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             } else {
                 caseXfers.forEach(caseXfer => {
                     this.emitTransformer(variable, caseXfer, targetType);
-                });    
+                });
             }
         } else if (xfer instanceof UnionMemberMatchTransformer) {
             let test: Sourcelike;

@@ -44,6 +44,10 @@ function replaceUnion(union: UnionType, builder: GraphRewriteBuilder<Type>, forw
         .map(m => builder.reconstituteType(m));
     const reconstitutedUnion = builder.getUnionType(union.getAttributes(), reconstitutedMembersByKind.toOrderedSet());
 
+    function memberForKind(kind: TypeKind) {
+        return defined(reconstitutedMembersByKind.get(kind));
+    }
+
     function transformerForKind(kind: TypeKind) {
         const member = union.findMember(kind);
         if (member === undefined) return undefined;
@@ -60,7 +64,7 @@ function replaceUnion(union: UnionType, builder: GraphRewriteBuilder<Type>, forw
     }
 
     function transformerForStringType(t: Type): Transformer {
-        const memberRef = defined(reconstitutedMembersByKind.get(t.kind));
+        const memberRef = memberForKind(t.kind);
         switch (t.kind) {
             case "string":
                 return defined(transformerForKind(t.kind));
@@ -83,7 +87,8 @@ function replaceUnion(union: UnionType, builder: GraphRewriteBuilder<Type>, forw
     if (stringTypes.isEmpty()) {
         transformerForString = undefined;
     } else if (stringTypes.size === 1) {
-        transformerForString = transformerForStringType(defined(stringTypes.first()));
+        const t = defined(stringTypes.first());
+        transformerForString = new UnionInstantiationTransformer(memberForKind(t.kind));
     } else {
         transformerForString = new ChoiceTransformer(
             getStringType(),
