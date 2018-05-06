@@ -935,9 +935,32 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         }
 
         if (xfer instanceof ChoiceTransformer) {
-            xfer.transformers.forEach(caseXfer => {
-                this.emitTransformer(variable, caseXfer, targetType);
-            });
+            const caseXfers = xfer.transformers;
+            if (caseXfers.size > 1 && caseXfers.every(caseXfer => caseXfer instanceof StringMatchTransformer)) {
+                this.emitLine("switch (", variable, ")");
+                this.emitBlock(() => {
+                    caseXfers.forEach(caseXfer => {
+                        const matchXfer = caseXfer as StringMatchTransformer;
+                        const value = this.stringCaseValue(
+                            followTargetType(matchXfer.sourceType),
+                            matchXfer.stringCase
+                        );
+                        this.emitLine("case ", value, ":");
+                        this.indent(() => {
+                            const allDone = this.emitTransformer(variable, matchXfer.transformer, targetType);
+                            if (!allDone) {
+                                this.emitLine("break;");
+                            }
+                        });
+                    });
+                });
+                // FIXME: Can we check for exhaustiveness?  For enums it should be easy.
+                return false;
+            } else {
+                caseXfers.forEach(caseXfer => {
+                    this.emitTransformer(variable, caseXfer, targetType);
+                });    
+            }
         } else if (xfer instanceof UnionMemberMatchTransformer) {
             let test: Sourcelike;
             let member: Sourcelike;
