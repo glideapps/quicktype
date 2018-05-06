@@ -4,7 +4,7 @@ import { PrimitiveTypeKind, Type, ClassProperty } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
-import { assert, panic } from "./Support";
+import { assert, panic, indentationString } from "./Support";
 import { TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
 
 export interface TypeLookerUp {
@@ -232,7 +232,7 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
     }
 
     protected get debugPrintIndentation(): string {
-        return "  ".repeat(this._printIndent);
+        return indentationString(this._printIndent);
     }
 
     finish(): TypeGraph {
@@ -497,6 +497,20 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         originalType.reconstitute(reconstituter);
         return reconstituter.getResult();
     }
+
+    /*
+    reconstituteTypeUnmodified(originalType: Type): TypeRef {
+        const reconstituter = new TypeReconstituter(
+            this,
+            this.alphabetizeProperties,
+            emptyTypeAttributes,
+            undefined,
+            () => {}
+        );
+        originalType.reconstitute(reconstituter);
+        return reconstituter.getResult();
+    }
+    */
 
     // If the union of these type refs have been, or are supposed to be, reconstituted to
     // one target type, return it.  Otherwise return undefined.

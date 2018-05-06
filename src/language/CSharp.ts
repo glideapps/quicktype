@@ -31,7 +31,9 @@ import {
     UnionMemberMatchTransformer,
     EncodingTransformer,
     StringMatchTransformer,
-    StringProducerTransformer
+    StringProducerTransformer,
+    ParseDateTimeTransformer,
+    StringifyDateTimeTransformer
 } from "../Transformers";
 
 const unicode = require("unicode-properties");
@@ -52,7 +54,17 @@ function noFollow(t: Type): Type {
 }
 
 function needTransformerForUnion(u: UnionType): boolean {
-    const supportedKinds: TypeKind[] = ["integer", "double", "bool", "string", "map", "class", "array"];
+    const supportedKinds: TypeKind[] = [
+        "integer",
+        "double",
+        "bool",
+        "string",
+        "enum",
+        "date-time",
+        "map",
+        "class",
+        "array"
+    ];
     return u.members.every(t => supportedKinds.indexOf(t.kind) >= 0);
 }
 
@@ -302,7 +314,8 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected nullableCSType(t: Type, withIssues: boolean = false): Sourcelike {
-        const csType = this.csType(t, followTargetType, withIssues);
+        t = followTargetType(t);
+        const csType = this.csType(t, noFollow, withIssues);
         if (isValueType(t)) {
             return [csType, "?"];
         } else {
@@ -998,7 +1011,12 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         });
     }
 
-    private emitDecoderTransformerCase(tokenCases: string[], xfer: Transformer | undefined, targetType: Type): void {
+    private emitDecoderTransformerCase(
+        tokenCases: string[],
+        varName: string,
+        xfer: Transformer | undefined,
+        targetType: Type
+    ): void {
         if (xfer === undefined) return;
 
         for (const tokenCase of tokenCases) {
@@ -1006,8 +1024,17 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         }
 
         this.indent(() => {
-            const value: Sourcelike = this.deserializeTypeCode(this.csType(xfer.sourceType, noFollow));
-            this.emitTransformer(value, xfer, targetType);
+            this.emitLine(
+                "var ",
+                varName,
+                " = ",
+                this.deserializeTypeCode(this.csType(xfer.sourceType, noFollow)),
+                ";"
+            );
+            const allHandled = this.emitTransformer(varName, xfer, targetType);
+            if (!allHandled) {
+                this.emitLine("break;");
+            }
         });
     }
 
@@ -1027,16 +1054,17 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             if (allHandled) return;
         } else if (xfer instanceof DecodingChoiceTransformer) {
             this.emitDecoderSwitch(() => {
-                this.emitDecoderTransformerCase(["Integer"], xfer.integerTransformer, targetType);
+                this.emitDecoderTransformerCase(["Integer"], "integerValue", xfer.integerTransformer, targetType);
                 this.emitDecoderTransformerCase(
                     xfer.integerTransformer === undefined ? ["Integer", "Float"] : ["Float"],
+                    "doubleValue",
                     xfer.doubleTransformer,
                     targetType
                 );
-                this.emitDecoderTransformerCase(["Boolean"], xfer.boolTransformer, targetType);
-                this.emitDecoderTransformerCase(["String", "Date"], xfer.stringTransformer, targetType);
-                this.emitDecoderTransformerCase(["StartObject"], xfer.objectTransformer, targetType);
-                this.emitDecoderTransformerCase(["StartArray"], xfer.arrayTransformer, targetType);
+                this.emitDecoderTransformerCase(["Boolean"], "boolValue", xfer.boolTransformer, targetType);
+                this.emitDecoderTransformerCase(["String", "Date"], "stringValue", xfer.stringTransformer, targetType);
+                this.emitDecoderTransformerCase(["StartObject"], "objectValue", xfer.objectTransformer, targetType);
+                this.emitDecoderTransformerCase(["StartArray"], "arrayValue", xfer.arrayTransformer, targetType);
             });
         } else {
             return panic("Unknown transformer");
@@ -1056,6 +1084,13 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     private emitTransformer(variable: Sourcelike, xfer: Transformer, targetType: Type): boolean {
+        function directTargetType(continuation: Transformer | undefined): Type {
+            if (continuation === undefined) {
+                return targetType;
+            }
+            return followTargetType(continuation.sourceType);
+        }
+
         if (xfer instanceof ChoiceTransformer) {
             xfer.transformers.forEach(caseXfer => {
                 this.emitTransformer(variable, caseXfer, targetType);
@@ -1066,14 +1101,20 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitLine("if (", member, " != null)");
             this.emitBlock(() => this.emitTransformer(member, xfer.transformer, targetType));
         } else if (xfer instanceof StringMatchTransformer) {
-            const value = this.stringCaseValue(xfer.sourceType, xfer.stringCase);
+            const value = this.stringCaseValue(followTargetType(xfer.sourceType), xfer.stringCase);
             this.emitLine("if (", variable, " == ", value, ")");
             this.emitBlock(() => this.emitTransformer(variable, xfer.transformer, targetType));
         } else if (xfer instanceof EncodingTransformer) {
             this.emitLine(this.serializeValueCode(variable), "; return;");
             return true;
+        } else if (xfer instanceof ParseDateTimeTransformer) {
+            this.emitLine("DateTimeOffset dt;");
+            this.emitLine("if (DateTimeOffset.TryParse(", variable, ", out dt))");
+            this.emitBlock(() => this.emitConsume("dt", xfer.consumer, targetType));
+        } else if (xfer instanceof StringifyDateTimeTransformer) {
+            return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType);
         } else if (xfer instanceof StringProducerTransformer) {
-            const value = this.stringCaseValue(targetType, xfer.result);
+            const value = this.stringCaseValue(directTargetType(xfer.consumer), xfer.result);
             return this.emitConsume(value, xfer.consumer, targetType);
         } else if (xfer instanceof UnionInstantiationTransformer) {
             if (!(targetType instanceof UnionType)) {
@@ -1091,6 +1132,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private emitTransformation(converterName: Name, t: Type): void {
         const xf = defined(transformationForType(t));
+        // xf.debugPrint();
+        const reverse = xf.reverse;
+        // reverse.debugPrint();
         const targetType = xf.targetType;
         const xfer = xf.transformer;
         this.emitType(undefined, AccessModifier.Internal, "class", converterName, "JsonConverter", () => {
@@ -1098,12 +1142,16 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitCanConvert(["t == typeof(", csType, ") || t == typeof(", csType, "?)"]);
             this.ensureBlankLine();
             this.emitReadJson(() => {
+                // FIXME: It's unsatisfying that we need this.  The reason is that we not
+                // only match T, but also T?.  If we didn't, then the T in T? would not be
+                // deserialized with our converter but with the default one.
+                this.emitLine("if (reader.TokenType == JsonToken.Null) return null;");
                 this.emitDecodeTransformer(xfer, targetType);
             });
             this.ensureBlankLine();
             this.emitWriteJson("untypedValue", () => {
                 this.emitLine("var value = (", csType, ")untypedValue;");
-                const allHandled = this.emitTransformer("value", xf.reverseTransformer, xf.sourceType);
+                const allHandled = this.emitTransformer("value", reverse.transformer, reverse.targetType);
                 if (!allHandled) {
                     // FIXME: Put type name into message if there is one
                     this.emitThrow('"Cannot convert"');

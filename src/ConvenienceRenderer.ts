@@ -17,7 +17,7 @@ import {
     propertyDescriptionsTypeAttributeKind
 } from "./TypeAttributes";
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
-import { transformationForType } from "./Transformers";
+import { transformationForType, followTargetType } from "./Transformers";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -427,7 +427,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
         let names = Map<Type, Name>();
         u.members.forEach(t => {
-            const name = this.makeNameForUnionMember(u, unionName, t);
+            const name = this.makeNameForUnionMember(u, unionName, followTargetType(t));
             names = names.set(t, ns.add(name));
         });
         defined(this._memberNamesStoreView).set(u, names);

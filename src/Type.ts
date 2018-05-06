@@ -7,7 +7,8 @@ import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
 
-export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
+export type DateTimeTypeKind = "date" | "time" | "date-time";
+export type PrimitiveStringTypeKind = "string" | DateTimeTypeKind;
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";

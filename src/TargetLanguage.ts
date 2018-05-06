@@ -119,4 +119,8 @@ export abstract class TargetLanguage {
     get needsTransformerForEnums(): boolean {
         return false;
     }
+
+    get needsTransformersForDateTime(): boolean {
+        return false;
+    }
 }
