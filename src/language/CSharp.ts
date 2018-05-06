@@ -880,11 +880,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         }
     }
 
-    private emitDecodeTransformer(xfer: Transformer, targetType: Type): void {
+    private emitDecodeTransformer(xfer: Transformer, targetType: Type): boolean {
         if (xfer instanceof DecodingTransformer) {
             this.emitLine("var value = ", this.deserializeTypeCode(this.csType(xfer.sourceType, noFollow)), ";");
-            const allHandled = this.emitConsume("value", xfer.consumer, targetType);
-            if (allHandled) return;
+            return this.emitConsume("value", xfer.consumer, targetType);
         } else if (xfer instanceof DecodingChoiceTransformer) {
             this.emitDecoderSwitch(() => {
                 const nullTransformer = xfer.nullTransformer;
@@ -909,12 +908,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.emitDecoderTransformerCase(["StartObject"], "objectValue", xfer.objectTransformer, targetType);
                 this.emitDecoderTransformerCase(["StartArray"], "arrayValue", xfer.arrayTransformer, targetType);
             });
+            return false;
         } else {
             return panic("Unknown transformer");
         }
-
-        // FIXME: Put type name into message if there is one
-        this.emitThrow('"Cannot convert"');
     }
 
     private stringCaseValue(t: Type, stringCase: string): Sourcelike {
@@ -1026,15 +1023,17 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 // only match T, but also T?.  If we didn't, then the T in T? would not be
                 // deserialized with our converter but with the default one.
                 this.emitLine("if (reader.TokenType == JsonToken.Null) return null;");
-                this.emitDecodeTransformer(xfer, targetType);
+                const allHandled = this.emitDecodeTransformer(xfer, targetType);
+                if (!allHandled) {
+                    this.emitThrow(['"Cannot unmarshal type ', csType, '"']);
+                }
             });
             this.ensureBlankLine();
             this.emitWriteJson("untypedValue", () => {
                 this.emitLine("var value = (", csType, ")untypedValue;");
                 const allHandled = this.emitTransformer("value", reverse.transformer, reverse.targetType);
                 if (!allHandled) {
-                    // FIXME: Put type name into message if there is one
-                    this.emitThrow('"Cannot convert"');
+                    this.emitThrow(['"Cannot marshal type ', csType, '"']);
                 }
             });
         });
