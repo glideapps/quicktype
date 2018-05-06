@@ -794,51 +794,16 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         this.emitBlock(emitBody);
     }
 
-    private emitConverterMembers(unionNames: OrderedSet<Name>): void {
-        const canConvertExprs = unionNames.map((n: Name): Sourcelike => ["t == typeof(", n, ")"]);
-        const nullableCanConvertExprs = unionNames.map((n: Name): Sourcelike => ["t == typeof(", n, "?)"]);
-        const canConvertExpr = intercalate(" || ", canConvertExprs.union(nullableCanConvertExprs));
-        // FIXME: make Iterable<any, Sourcelike> a Sourcelike, too?
-        this.emitCanConvert(canConvertExpr.toArray());
-        this.ensureBlankLine();
-        this.emitReadJson(() => {
-            // FIXME: call the constructor via reflection?
-            this.emitTypeSwitch(unionNames, t => ["t == typeof(", t, ") || t == typeof(", t, "?)"], false, false, n => {
-                this.emitLine("return new ", n, "(reader, serializer);");
-            });
-            this.emitLine('throw new Exception("Unknown type");');
-        });
-        this.ensureBlankLine();
-        this.emitWriteJson("value", () => {
-            this.emitLine("var t = value.GetType();");
-            this.emitTypeSwitch(unionNames, t => ["t == typeof(", t, ")"], true, true, n => {
-                this.emitLine("((", n, ")value).WriteJson(writer, serializer);");
-            });
-            this.emitLine('throw new Exception("Unknown type");');
-        });
-    }
-
     private emitConverterClass(): void {
-        const unionNames = this.namedUnions.filterNot(needTransformerForUnion).map(this.nameForNamedType);
-        const jsonConverter = unionNames.size > 0;
         // FIXME: Make Converter a Named
         const converterName: Sourcelike = ["Converter"];
-        const superclass = jsonConverter ? "JsonConverter" : undefined;
-        const staticOrNot = jsonConverter ? "" : "static ";
-        this.emitType(undefined, AccessModifier.Internal, [staticOrNot, "class"], converterName, superclass, () => {
-            if (jsonConverter) {
-                this.emitConverterMembers(unionNames);
-                this.ensureBlankLine();
-            }
+        this.emitType(undefined, AccessModifier.Internal, "static class", converterName, undefined, () => {
             this.emitLine("public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings");
             this.emitBlock(() => {
                 this.emitLine("MetadataPropertyHandling = MetadataPropertyHandling.Ignore,");
                 this.emitLine("DateParseHandling = DateParseHandling.None,");
                 this.emitLine("Converters = {");
                 this.indent(() => {
-                    if (jsonConverter) {
-                        this.emitLine("new Converter(),");
-                    }
                     this.typesWithNamedTransformations.forEach(converter => {
                         this.emitLine("new ", converter, "(),");
                     });
