@@ -140,7 +140,7 @@ export class StringTypes {
     }
 }
 
-class DescriptionTypeAttributeKind extends TypeAttributeKind<StringTypes> {
+class StringTypesTypeAttributeKind extends TypeAttributeKind<StringTypes> {
     constructor() {
         super("stringTypes");
     }
@@ -170,4 +170,4 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<StringTypes> {
     }
 }
 
-export const stringTypesTypeAttributeKind: TypeAttributeKind<StringTypes> = new DescriptionTypeAttributeKind();
+export const stringTypesTypeAttributeKind: TypeAttributeKind<StringTypes> = new StringTypesTypeAttributeKind();
