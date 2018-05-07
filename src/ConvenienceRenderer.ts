@@ -34,8 +34,6 @@ const assignedEnumCaseNameOrder = 10;
 
 const unionMemberNameOrder = 40;
 
-const transformerNameOrder = 40;
-
 function splitDescription(descriptions: OrderedSet<string> | undefined): string[] | undefined {
     if (descriptions === undefined) return undefined;
     const description = descriptions.join("\n\n").trim();
@@ -60,14 +58,13 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _propertyNamesStoreView: TypeAttributeStoreView<Map<string, Name>> | undefined;
     private _memberNamesStoreView: TypeAttributeStoreView<Map<Type, Name>> | undefined;
     private _caseNamesStoreView: TypeAttributeStoreView<Map<string, Name>> | undefined;
-    private _namesForTransformations: Map<Type, Name> | undefined;
+    private _namesForTransformations: OrderedMap<Type, Name> | undefined;
 
     private _namedTypeNamer: Namer | undefined;
     // @ts-ignore: FIXME: Make this `Namer | undefined`
     private _unionMemberNamer: Namer | null;
     // @ts-ignore: FIXME: Make this `Namer | undefined`
     private _enumCaseNamer: Namer | null;
-    private _transformationNamer: Namer | undefined;
 
     private _declarationIR: DeclarationIR | undefined;
     private _namedTypes: List<Type> | undefined;
@@ -115,7 +112,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected abstract makeEnumCaseNamer(): Namer | null;
     protected abstract emitSourceStructure(givenOutputFilename: string): void;
 
-    protected makeTransformationNamer(): Namer | undefined {
+    protected makeNameForTransformation(_t: Type, _typeName: Name | undefined): Name | undefined {
         return undefined;
     }
 
@@ -179,12 +176,11 @@ export abstract class ConvenienceRenderer extends Renderer {
             this.typeGraph.attributeStore,
             assignedCaseNamesAttributeKind
         );
-        this._namesForTransformations = Map();
+        this._namesForTransformations = OrderedMap();
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._unionMemberNamer = this.makeUnionMemberNamer();
         this._enumCaseNamer = this.makeEnumCaseNamer();
-        this._transformationNamer = this.makeTransformationNamer();
 
         this._globalForbiddenNamespace = keywordNamespace("forbidden", this.forbiddenNamesForGlobalNamespace());
         this._otherForbiddenNamespaces = Map();
@@ -206,9 +202,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             const name = this.addNameForNamedType(u);
             this.addUnionMemberNames(u, name);
         });
-        if (this._transformationNamer !== undefined) {
-            this.typeGraph.allTypesUnordered().forEach(t => this.addNameForTransformation(t));
-        }
+        this.typeGraph.allTypesUnordered().forEach(t => this.addNameForTransformation(t));
         return OrderedSet([this._globalForbiddenNamespace, this._globalNamespace]).union(
             this._otherForbiddenNamespaces.valueSeq()
         );
@@ -269,10 +263,6 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected nameForTransformation(t: Type): Name | undefined {
-        assert(
-            this._transformationNamer !== undefined,
-            "Tried to look up a name for a transformation, but didn't define a namer"
-        );
         const xf = transformationForType(t);
         if (xf === undefined) return undefined;
 
@@ -292,12 +282,8 @@ export abstract class ConvenienceRenderer extends Renderer {
             "Tried to give two names to the same transformation"
         );
 
-        const name = this.makeNameForType(
-            xf.targetType,
-            defined(this._transformationNamer),
-            transformerNameOrder,
-            transformerNameOrder
-        );
+        const name = this.makeNameForTransformation(xf.targetType, this.nameStoreView.tryGet(xf.targetType));
+        if (name === undefined) return;
         this.globalNamespace.add(name);
 
         this._namesForTransformations = defined(this._namesForTransformations).set(t, name);

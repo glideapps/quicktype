@@ -598,14 +598,21 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         return result;
     }
 
-    protected makeTransformationNamer(): Namer {
-        return funPrefixNamer("transformation-namer", n => csNameStyle(`${n}_converter`));
+    protected makeNameForTransformation(_t: Type, typeName: Name | undefined): Name {
+        if (typeName === undefined) {
+            return panic("We shouldn't have a transformation for an unnamed type");
+        }
+        return new DependencyName(namingFunction, typeName.order + 30, lookup => `${lookup(typeName)}_converter`);
     }
 
     protected makeNamedTypeDependencyNames(t: Type, name: Name): DependencyName[] {
         if (!(t instanceof EnumType)) return [];
 
-        const extensionsName = new DependencyName(namingFunction, name.order, lookup => `${lookup(name)}_extensions`);
+        const extensionsName = new DependencyName(
+            namingFunction,
+            name.order + 30,
+            lookup => `${lookup(name)}_extensions`
+        );
         this._enumExtensionsNames = this._enumExtensionsNames.set(name, extensionsName);
         return [extensionsName];
     }
