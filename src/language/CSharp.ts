@@ -281,7 +281,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             _doubleType => this.doubleType,
             _stringType => "string",
             arrayType => {
-                const itemsType = this.csType(arrayType.items, follow, withIssues);
+                const itemsType = this.csType(arrayType.items, noFollow, withIssues);
                 if (this._useList) {
                     return ["List<", itemsType, ">"];
                 } else {
@@ -289,7 +289,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 }
             },
             classType => this.nameForNamedType(classType),
-            mapType => ["Dictionary<string, ", this.csType(mapType.values, follow, withIssues), ">"],
+            mapType => ["Dictionary<string, ", this.csType(mapType.values, noFollow, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
