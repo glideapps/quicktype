@@ -659,21 +659,6 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private converterForType(_t: Type): Name | undefined {
         return undefined;
-        /*
-        for (;;) {
-            const name = this.nameForTransformation(t);
-            if (name !== undefined) {
-                return name;
-            }
-            if (t instanceof ArrayType) {
-                t = t.items;
-            } else if (t instanceof MapType) {
-                t = t.values;
-            } else {
-                return undefined;
-            }
-        }
-        */
     }
 
     protected attributesForProperty(property: ClassProperty, jsonName: string): Sourcelike[] | undefined {
