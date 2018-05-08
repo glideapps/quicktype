@@ -12,7 +12,7 @@ import {
     SerializedRenderResult,
     TargetLanguage,
     languageNamed
-} from "..";
+} from "quicktype-core/dist";
 
 import {
     JSONTypeSource,
@@ -21,28 +21,28 @@ import {
     StringInput,
     SchemaTypeSource,
     TypeScriptTypeSource
-} from "../TypeSource";
-import { OptionDefinition } from "../RendererOptions";
-import * as defaultTargetLanguages from "../language/All";
+} from "quicktype-core/dist/TypeSource";
+import { OptionDefinition } from "quicktype-core/dist/RendererOptions";
+import * as defaultTargetLanguages from "quicktype-core/dist/language/All";
 import { urlsFromURLGrammar } from "./URLGrammar";
-import { Annotation } from "../Source";
-import { IssueAnnotationData } from "../Annotation";
+import { Annotation } from "quicktype-core/dist/Source";
+import { IssueAnnotationData } from "quicktype-core/dist/Annotation";
 import { Readable } from "stream";
-import { panic, assert, defined, withDefault, mapOptional, assertNever, parseJSON } from "../Support";
-import { introspectServer } from "../GraphQLIntrospection";
-import { getStream } from "../get-stream/index";
-import { train } from "../MarkovChain";
+import { panic, assert, defined, withDefault, mapOptional, assertNever, parseJSON } from "quicktype-core/dist/Support";
+import { introspectServer } from "quicktype-core/dist/GraphQLIntrospection";
+import { getStream } from "quicktype-core/dist/get-stream/index";
+import { train } from "quicktype-core/dist/MarkovChain";
 import { sourcesFromPostmanCollection } from "./PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { messageError, messageAssert } from "../Messages";
+import { messageError, messageAssert } from "quicktype-core/dist/Messages";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
 const chalk = require("chalk");
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
-const packageJSON = require("../../package.json");
+const packageJSON = require("../package.json");
 
 export interface CLIOptions {
     lang: string;

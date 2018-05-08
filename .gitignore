@@ -1,12 +1,5 @@
-/bower_components/
-/node_modules/
-/.pulp-cache/
-/output/
-/generated-docs/
+node_modules/
 /test/awesome-json-results/
-/.psc*
-/.purs*
-/.psa*
 npm-debug.log
 test/csharp/QuickType.cs
 test/golang/quicktype.go
@@ -23,6 +16,7 @@ test/fixtures/java/target
 /test/runs
 test/fixtures/cplusplus/json.hpp
 /dist
+/src/core/dist/
 test/fixtures/objective-c/quicktype
 *.xcbkptlist
 *.xcuserstate
