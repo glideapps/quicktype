@@ -188,8 +188,25 @@ export function separateNamedTypes(types: Collection<any, Type>): SeparatedNamed
     return { objects, enums, unions };
 }
 
+function orderedSetUnion<T>(sets: OrderedSet<T>[]): OrderedSet<T> {
+    if (sets.length === 0) return OrderedSet();
+    if (sets.length === 1) return sets[0];
+    return sets[0].union(...sets.slice(1));
+}
+
+function directlyReachableTypes<T>(t: Type, setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
+    const set = setForType(t);
+    if (set) return set;
+    return orderedSetUnion(
+        t
+            .getNonAttributeChildren()
+            .toArray()
+            .map(c => directlyReachableTypes(c, setForType))
+    );
+}
+
 export function directlyReachableSingleNamedType(type: Type): Type | undefined {
-    const definedTypes = type.directlyReachableTypes(t => {
+    const definedTypes = directlyReachableTypes(type, t => {
         if (
             (!(t instanceof UnionType) && isNamedType(t)) ||
             (t instanceof UnionType && nullableFromUnion(t) === null)

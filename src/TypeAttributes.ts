@@ -1,58 +1,42 @@
 import { Map, OrderedSet, hash } from "immutable";
 
-import { panic, setUnion, assert } from "./Support";
+import { panic, setUnion } from "./Support";
+import { Type } from "./Type";
+import { BaseGraphRewriteBuilder } from "./GraphRewriting";
 
 export class TypeAttributeKind<T> {
-    public readonly combine: (a: T, b: T) => T;
-    public readonly intersect: (a: T, b: T) => T;
-    public readonly makeInferred: (a: T) => T | undefined;
-    public readonly stringify: (a: T) => string | undefined;
+    constructor(readonly name: string) {}
 
-    constructor(
-        readonly name: string,
-        private readonly _inIdentity: boolean,
-        private readonly _uniqueIdentity: ((a: T) => boolean) | boolean,
-        combine: ((a: T, b: T) => T) | undefined,
-        intersect: ((a: T, b: T) => T) | undefined,
-        makeInferred: ((a: T) => T | undefined) | undefined,
-        stringify: ((a: T) => string | undefined) | undefined
-    ) {
-        if (combine === undefined) {
-            combine = () => {
-                return panic(`Cannot combine type attribute ${name}`);
-            };
-        }
-        this.combine = combine;
-
-        if (intersect === undefined) {
-            intersect = combine;
-        }
-        this.intersect = intersect;
-
-        if (makeInferred === undefined) {
-            makeInferred = () => {
-                return panic(`Cannot make type attribute ${name} inferred`);
-            };
-        }
-        this.makeInferred = makeInferred;
-
-        if (stringify === undefined) {
-            stringify = () => undefined;
-        }
-        this.stringify = stringify;
+    combine(_a: T, _b: T): T {
+        return panic(`Cannot combine type attribute ${this.name}`);
     }
 
-    requiresUniqueIdentity(a: T): boolean {
-        const ui = this._uniqueIdentity;
-        if (typeof ui === "boolean") {
-            return ui;
-        }
-        return ui(a);
+    intersect(a: T, b: T): T {
+        return this.combine(a, b);
+    }
+
+    makeInferred(_: T): T | undefined {
+        return panic(`Cannot make type attribute ${this.name} inferred`);
+    }
+
+    children(_: T): OrderedSet<Type> {
+        return OrderedSet();
+    }
+
+    stringify(_: T): string | undefined {
+        return undefined;
     }
 
     get inIdentity(): boolean {
-        assert(this._uniqueIdentity !== true, "inIdentity is invalid for unique identity attributes");
-        return this._inIdentity;
+        return false;
+    }
+
+    requiresUniqueIdentity(_: T): boolean {
+        return false;
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(_builder: TBuilder, a: T): T {
+        return a;
     }
 
     makeAttributes(value: T): TypeAttributes {
@@ -83,6 +67,10 @@ export class TypeAttributeKind<T> {
     setDefaultInAttributes(a: TypeAttributes, makeDefault: () => T): TypeAttributes {
         if (this.tryGetInAttributes(a) !== undefined) return a;
         return this.modifyInAttributes(a, makeDefault);
+    }
+
+    removeInAttributes(a: TypeAttributes): TypeAttributes {
+        return a.filterNot((_, k) => k === this);
     }
 
     equals(other: any): boolean {
@@ -133,14 +121,20 @@ export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes
     return attr.map((value, kind) => kind.makeInferred(value)).filter(v => v !== undefined);
 }
 
-export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<string>>(
-    "description",
-    false,
-    false,
-    setUnion,
-    undefined,
-    _ => OrderedSet(),
-    descriptions => {
+class DescriptionTypeAttributeKind extends TypeAttributeKind<OrderedSet<string>> {
+    constructor() {
+        super("description");
+    }
+
+    combine(a: OrderedSet<string>, b: OrderedSet<string>): OrderedSet<string> {
+        return a.union(b);
+    }
+
+    makeInferred(_: OrderedSet<string>): OrderedSet<string> {
+        return OrderedSet();
+    }
+
+    stringify(descriptions: OrderedSet<string>): string | undefined {
         let result = descriptions.first();
         if (result === undefined) return undefined;
         if (result.length > 5 + 3) {
@@ -151,13 +145,24 @@ export const descriptionTypeAttributeKind = new TypeAttributeKind<OrderedSet<str
         }
         return result;
     }
-);
-export const propertyDescriptionsTypeAttributeKind = new TypeAttributeKind<Map<string, OrderedSet<string>>>(
-    "propertyDescriptions",
-    false,
-    false,
-    (a, b) => a.mergeWith(setUnion, b),
-    undefined,
-    _ => Map(),
-    undefined
-);
+}
+
+export const descriptionTypeAttributeKind: TypeAttributeKind<OrderedSet<string>> = new DescriptionTypeAttributeKind();
+
+class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string, OrderedSet<string>>> {
+    constructor() {
+        super("propertyDescriptions");
+    }
+
+    combine(a: Map<string, OrderedSet<string>>, b: Map<string, OrderedSet<string>>): Map<string, OrderedSet<string>> {
+        return a.mergeWith(setUnion, b);
+    }
+
+    makeInferred(_: Map<string, OrderedSet<string>>): Map<string, OrderedSet<string>> {
+        return Map();
+    }
+}
+
+export const propertyDescriptionsTypeAttributeKind: TypeAttributeKind<
+    Map<string, OrderedSet<string>>
+> = new PropertyDescriptionsTypeAttributeKind();

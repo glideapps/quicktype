@@ -25,6 +25,7 @@ import { messageError } from "./Messages";
 import { InputData } from "./input/Inputs";
 import { TypeSource } from "./TypeSource";
 import { flattenStrings } from "./rewrites/FlattenStrings";
+import { makeTransformations } from "./MakeTransformations";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -68,6 +69,7 @@ export interface Options {
     checkProvenance: boolean;
     debugPrintReconstitution: boolean;
     debugPrintGatherNames: boolean;
+    debugPrintTransformations: boolean;
 }
 
 const defaultOptions: Options = {
@@ -91,7 +93,8 @@ const defaultOptions: Options = {
     debugPrintGraph: false,
     checkProvenance: false,
     debugPrintReconstitution: false,
-    debugPrintGatherNames: false
+    debugPrintGatherNames: false,
+    debugPrintTransformations: false
 };
 
 export class Run {
@@ -264,6 +267,16 @@ export class Run {
             graph = optionalToNullable(graph, stringTypeMapping, debugPrintReconstitution);
         }
 
+        graph = makeTransformations(
+            graph,
+            stringTypeMapping,
+            targetLanguage,
+            this._options.debugPrintTransformations,
+            debugPrintReconstitution
+        );
+        [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false, debugPrintReconstitution);
+        assert(unionsDone, "We should only have to flatten unions once after making transformations");
+
         // Sometimes we combine classes in ways that will the order come out
         // differently compared to what it would be from the equivalent schema,
         // so we always just garbage collect to get a defined order and be done
@@ -271,7 +284,7 @@ export class Run {
         // FIXME: We don't actually have to do this if any of the above graph
         // rewrites did anything.  We could just check whether the current graph
         // is different from the one we started out with.
-        graph = graph.garbageCollect(this._options.alphabetizeProperties);
+        graph = graph.garbageCollect(this._options.alphabetizeProperties, debugPrintReconstitution);
 
         if (this._options.debugPrintGraph) {
             console.log("\n# gather names");

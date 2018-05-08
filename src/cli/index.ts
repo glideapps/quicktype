@@ -429,7 +429,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             type: String,
             typeLabel: "OPTIONS or all",
             description:
-                "Comma separated debug options: print-graph, provenance, print-reconstitution, print-gather-names"
+                "Comma separated debug options: print-graph, print-reconstitution, print-gather-names, print-transformations, provenance"
         },
         {
             name: "telemetry",
@@ -747,6 +747,7 @@ export async function makeQuicktypeOptions(
     let checkProvenance = debugAll;
     let debugPrintReconstitution = debugAll;
     let debugPrintGatherNames = debugAll;
+    let debugPrintTransformations = debugAll;
     if (components !== undefined) {
         for (let component of components) {
             component = component.trim();
@@ -756,6 +757,8 @@ export async function makeQuicktypeOptions(
                 debugPrintReconstitution = true;
             } else if (component === "print-gather-names") {
                 debugPrintGatherNames = true;
+            } else if (component === "print-transformations") {
+                debugPrintTransformations = true;
             } else if (component === "provenance") {
                 checkProvenance = true;
             } else if (component !== "all") {
@@ -794,7 +797,8 @@ export async function makeQuicktypeOptions(
         debugPrintGraph,
         checkProvenance,
         debugPrintReconstitution,
-        debugPrintGatherNames
+        debugPrintGatherNames,
+        debugPrintTransformations
     };
 }
 

@@ -7,7 +7,8 @@ import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
 
-export type PrimitiveStringTypeKind = "string" | "date" | "time" | "date-time";
+export type DateTimeTypeKind = "date" | "time" | "date-time";
+export type PrimitiveStringTypeKind = "string" | DateTimeTypeKind;
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
@@ -33,27 +34,21 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     return false;
 }
 
-// FIXME: The outer OrderedSet should be some Collection, but I can't figure out
-// which one.  Collection.Indexed doesn't work with OrderedSet, which is unfortunate.
-function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
-    const setArray = sets.toArray();
-    if (setArray.length === 0) return OrderedSet();
-    if (setArray.length === 1) return setArray[0];
-    return setArray[0].union(...setArray.slice(1));
-}
-
 // undefined in case the identity is unique
 export type TypeIdentity = List<any> | undefined;
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
 
-    abstract getChildren(): OrderedSet<Type>;
+    abstract getNonAttributeChildren(): OrderedSet<Type>;
 
-    directlyReachableTypes<T>(setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
-        const set = setForType(this);
-        if (set) return set;
-        return orderedSetUnion(this.getChildren().map((t: Type) => t.directlyReachableTypes(setForType)));
+    getChildren(): OrderedSet<Type> {
+        let result = this.getNonAttributeChildren();
+        this.getAttributes().forEach((v, k) => {
+            if (k.children === undefined) return;
+            result = result.union(k.children(v));
+        });
+        return result;
     }
 
     getAttributes(): TypeAttributes {
@@ -76,7 +71,10 @@ export abstract class Type {
     // FIXME: Remove `isPrimitive`
     abstract isPrimitive(): this is PrimitiveType;
     abstract get identity(): TypeIdentity;
-    abstract reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void;
+    abstract reconstitute<T extends BaseGraphRewriteBuilder>(
+        builder: TypeReconstituter<T>,
+        canonicalOrder: boolean
+    ): void;
 
     get debugPrintKind(): string {
         return this.kind;
@@ -204,16 +202,16 @@ export class PrimitiveType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: PrimitiveTypeKind;
 
-    getChildren(): OrderedSet<Type> {
-        return OrderedSet();
-    }
-
     get isNullable(): boolean {
         return this.kind === "null" || this.kind === "any" || this.kind === "none";
     }
 
     isPrimitive(): this is PrimitiveType {
         return true;
+    }
+
+    getNonAttributeChildren(): OrderedSet<Type> {
+        return OrderedSet();
     }
 
     get identity(): TypeIdentity {
@@ -264,7 +262,7 @@ export class ArrayType extends Type {
         return this.getItemsRef().deref()[0];
     }
 
-    getChildren(): OrderedSet<Type> {
+    getNonAttributeChildren(): OrderedSet<Type> {
         return OrderedSet([this.items]);
     }
 
@@ -415,15 +413,15 @@ export class ObjectType extends Type {
         return tref.deref()[0];
     }
 
-    getChildren(): OrderedSet<Type> {
-        const children = this.getSortedProperties()
+    getNonAttributeChildren(): OrderedSet<Type> {
+        let children = this.getSortedProperties()
             .map(p => p.type)
             .toOrderedSet();
         const additionalProperties = this.getAdditionalProperties();
-        if (additionalProperties === undefined) {
-            return children;
+        if (additionalProperties !== undefined) {
+            children = children.add(additionalProperties);
         }
-        return children.add(additionalProperties);
+        return children;
     }
 
     get isNullable(): boolean {
@@ -444,15 +442,17 @@ export class ObjectType extends Type {
         );
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        const maybePropertyTypes = builder.lookup(this.getProperties().map(cp => cp.typeRef));
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
+        const sortedProperties = this.getProperties().sortBy((_, n) => n);
+        const propertiesInNewOrder = canonicalOrder ? sortedProperties : this.getProperties();
+        const maybePropertyTypes = builder.lookup(sortedProperties.map(cp => cp.typeRef));
         const maybeAdditionalProperties = mapOptional(r => builder.lookup(r), this._additionalPropertiesRef);
 
         if (
             maybePropertyTypes !== undefined &&
             (maybeAdditionalProperties !== undefined || this._additionalPropertiesRef === undefined)
         ) {
-            const properties = this.getProperties().map(
+            const properties = propertiesInNewOrder.map(
                 (cp, n) => new ClassProperty(defined(maybePropertyTypes.get(n)), cp.isOptional)
             );
 
@@ -490,8 +490,9 @@ export class ObjectType extends Type {
                     return panic(`Invalid object type kind ${this.kind}`);
             }
 
-            const properties = this.getProperties().map(
-                cp => new ClassProperty(builder.reconstitute(cp.typeRef), cp.isOptional)
+            const reconstitutedTypes = sortedProperties.map(cp => builder.reconstitute(cp.typeRef));
+            const properties = propertiesInNewOrder.map(
+                (cp, n) => new ClassProperty(defined(reconstitutedTypes.get(n)), cp.isOptional)
             );
             const additionalProperties = mapOptional(r => builder.reconstitute(r), this._additionalPropertiesRef);
             builder.setObjectProperties(properties, additionalProperties);
@@ -560,10 +561,6 @@ export class EnumType extends Type {
         super(typeRef, "enum");
     }
 
-    getChildren(): OrderedSet<Type> {
-        return OrderedSet();
-    }
-
     get isNullable(): boolean {
         return false;
     }
@@ -574,6 +571,10 @@ export class EnumType extends Type {
 
     get identity(): TypeIdentity {
         return enumTypeIdentity(this.getAttributes(), this.cases);
+    }
+
+    getNonAttributeChildren(): OrderedSet<Type> {
+        return OrderedSet();
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -654,7 +655,7 @@ export abstract class SetOperationType extends Type {
         return this.members.sortBy(t => t.kind);
     }
 
-    getChildren(): OrderedSet<Type> {
+    getNonAttributeChildren(): OrderedSet<Type> {
         return this.sortedMembers;
     }
 
@@ -664,6 +665,23 @@ export abstract class SetOperationType extends Type {
 
     get identity(): TypeIdentity {
         return setOperationTypeIdentity(this.kind, this.getAttributes(), this.getMemberRefs());
+    }
+
+    protected reconstituteSetOperation<T extends BaseGraphRewriteBuilder>(
+        builder: TypeReconstituter<T>,
+        canonicalOrder: boolean,
+        getType: (members: OrderedSet<TypeRef> | undefined) => void
+    ): void {
+        const sortedMemberRefs = this.sortedMembers.toOrderedMap().map(t => t.typeRef);
+        const membersInOrder = canonicalOrder ? this.sortedMembers : this.members;
+        const maybeMembers = builder.lookup(sortedMemberRefs);
+        if (maybeMembers === undefined) {
+            getType(undefined);
+            const reconstituted = builder.reconstitute(sortedMemberRefs);
+            builder.setSetOperationMembers(membersInOrder.map(t => defined(reconstituted.get(t))));
+        } else {
+            getType(membersInOrder.map(t => defined(maybeMembers.get(t))));
+        }
     }
 
     protected structuralEqualityStep(
@@ -687,15 +705,14 @@ export class IntersectionType extends SetOperationType {
         return panic("isNullable not implemented for IntersectionType");
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        const memberRefs = this.getMemberRefs();
-        const maybeMembers = builder.lookup(memberRefs);
-        if (maybeMembers === undefined) {
-            builder.getUniqueIntersectionType();
-            builder.setSetOperationMembers(builder.reconstitute(memberRefs));
-        } else {
-            builder.getIntersectionType(maybeMembers);
-        }
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
+        this.reconstituteSetOperation(builder, canonicalOrder, members => {
+            if (members === undefined) {
+                builder.getUniqueIntersectionType();
+            } else {
+                builder.getIntersectionType(members);
+            }
+        });
     }
 }
 
@@ -745,14 +762,13 @@ export class UnionType extends SetOperationType {
         return true;
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        const memberRefs = this.getMemberRefs();
-        const maybeMembers = builder.lookup(memberRefs);
-        if (maybeMembers === undefined) {
-            builder.getUniqueUnionType();
-            builder.setSetOperationMembers(builder.reconstitute(memberRefs));
-        } else {
-            builder.getUnionType(maybeMembers);
-        }
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
+        this.reconstituteSetOperation(builder, canonicalOrder, members => {
+            if (members === undefined) {
+                builder.getUniqueUnionType();
+            } else {
+                builder.getUnionType(members);
+            }
+        });
     }
 }

@@ -233,15 +233,25 @@ export function typeNamesUnion(c: Collection<any, TypeNames>): TypeNames {
     return names;
 }
 
-export const namesTypeAttributeKind = new TypeAttributeKind<TypeNames>(
-    "names",
-    false,
-    false,
-    (a, b) => a.add(b),
-    undefined,
-    a => a.makeInferred(),
-    a => a.toString()
-);
+class DescriptionTypeAttributeKind extends TypeAttributeKind<TypeNames> {
+    constructor() {
+        super("names");
+    }
+
+    combine(a: TypeNames, b: TypeNames): TypeNames {
+        return a.add(b);
+    }
+
+    makeInferred(tn: TypeNames): TypeNames {
+        return tn.makeInferred();
+    }
+
+    stringify(tn: TypeNames): string {
+        return tn.toString();
+    }
+}
+
+export const namesTypeAttributeKind: TypeAttributeKind<TypeNames> = new DescriptionTypeAttributeKind();
 
 export function modifyTypeNames(
     attributes: TypeAttributes,

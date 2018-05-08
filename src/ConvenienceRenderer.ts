@@ -17,6 +17,7 @@ import {
     propertyDescriptionsTypeAttributeKind
 } from "./TypeAttributes";
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
+import { transformationForType, followTargetType } from "./Transformers";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -44,42 +45,10 @@ function splitDescription(descriptions: OrderedSet<string> | undefined): string[
 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
 
-const assignedNameAttributeKind = new TypeAttributeKind<Name>(
-    "assignedName",
-    false,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined
-);
-const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
-    "assignedPropertyNames",
-    false,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined
-);
-const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>(
-    "assignedMemberNames",
-    false,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined
-);
-const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>(
-    "assignedCaseNames",
-    false,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined
-);
+const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName");
+const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedPropertyNames");
+const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>("assignedMemberNames");
+const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedCaseNames");
 
 export abstract class ConvenienceRenderer extends Renderer {
     private _globalForbiddenNamespace: Namespace | undefined;
@@ -89,6 +58,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _propertyNamesStoreView: TypeAttributeStoreView<Map<string, Name>> | undefined;
     private _memberNamesStoreView: TypeAttributeStoreView<Map<Type, Name>> | undefined;
     private _caseNamesStoreView: TypeAttributeStoreView<Map<string, Name>> | undefined;
+    private _namesForTransformations: OrderedMap<Type, Name> | undefined;
 
     private _namedTypeNamer: Namer | undefined;
     // @ts-ignore: FIXME: Make this `Namer | undefined`
@@ -141,6 +111,10 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected abstract makeUnionMemberNamer(): Namer | null;
     protected abstract makeEnumCaseNamer(): Namer | null;
     protected abstract emitSourceStructure(givenOutputFilename: string): void;
+
+    protected makeNameForTransformation(_t: Type, _typeName: Name | undefined): Name | undefined {
+        return undefined;
+    }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
         if (isNamedType(type)) {
@@ -202,6 +176,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             this.typeGraph.attributeStore,
             assignedCaseNamesAttributeKind
         );
+        this._namesForTransformations = OrderedMap();
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._unionMemberNamer = this.makeUnionMemberNamer();
@@ -227,6 +202,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             const name = this.addNameForNamedType(u);
             this.addUnionMemberNames(u, name);
         });
+        this.typeGraph.allTypesUnordered().forEach(t => this.addNameForTransformation(t));
         return OrderedSet([this._globalForbiddenNamespace, this._globalNamespace]).union(
             this._otherForbiddenNamespaces.valueSeq()
         );
@@ -260,10 +236,14 @@ export abstract class ConvenienceRenderer extends Renderer {
         return name;
     };
 
-    protected makeNameForNamedType(t: Type): Name {
+    private makeNameForType(t: Type, namer: Namer, givenOrder: number, inferredOrder: number): Name {
         const names = t.getNames();
-        const order = names.areInferred ? inferredNameOrder : givenNameOrder;
-        return new SimpleName(names.proposedNames, defined(this._namedTypeNamer), order);
+        const order = names.areInferred ? inferredOrder : givenOrder;
+        return new SimpleName(names.proposedNames, namer, order);
+    }
+
+    protected makeNameForNamedType(t: Type): Name {
+        return this.makeNameForType(t, defined(this._namedTypeNamer), givenNameOrder, inferredNameOrder);
     }
 
     private addNameForNamedType = (type: Type): Name => {
@@ -277,6 +257,37 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.nameStoreView.set(type, name);
         return name;
     };
+
+    protected get typesWithNamedTransformations(): Map<Type, Name> {
+        return defined(this._namesForTransformations);
+    }
+
+    protected nameForTransformation(t: Type): Name | undefined {
+        const xf = transformationForType(t);
+        if (xf === undefined) return undefined;
+
+        const name = defined(this._namesForTransformations).get(t);
+        if (name === undefined) {
+            return panic("No name for transformation");
+        }
+        return name;
+    }
+
+    private addNameForTransformation(t: Type): void {
+        const xf = transformationForType(t);
+        if (xf === undefined) return;
+
+        assert(
+            defined(this._namesForTransformations).get(t) === undefined,
+            "Tried to give two names to the same transformation"
+        );
+
+        const name = this.makeNameForTransformation(xf.targetType, this.nameStoreView.tryGet(xf.targetType));
+        if (name === undefined) return;
+        this.globalNamespace.add(name);
+
+        this._namesForTransformations = defined(this._namesForTransformations).set(t, name);
+    }
 
     private processForbiddenWordsInfo(
         info: ForbiddenWordsInfo,
@@ -402,7 +413,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
         let names = Map<Type, Name>();
         u.members.forEach(t => {
-            const name = this.makeNameForUnionMember(u, unionName, t);
+            const name = this.makeNameForUnionMember(u, unionName, followTargetType(t));
             names = names.set(t, ns.add(name));
         });
         defined(this._memberNamesStoreView).set(u, names);
@@ -626,6 +637,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         );
     };
 
+    protected nameForEnumCase(e: EnumType, caseName: string): Name {
+        const caseNames = defined(this._caseNamesStoreView).get(e);
+        return defined(caseNames.get(caseName));
+    }
+
     protected forEachUnionMember = (
         u: UnionType,
         members: OrderedSet<Type> | null,
@@ -653,6 +669,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         const sortedCaseNames = caseNames.sortBy(n => this.names.get(n)).toOrderedMap();
         this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
     };
+
+    protected forEachTransformation(blankLocations: BlankLineLocations, f: (n: Name, t: Type) => void): void {
+        this.forEachWithBlankLines(defined(this._namesForTransformations), blankLocations, f);
+    }
 
     protected callForNamedType<T extends Type>(t: T, f: (t: T, name: Name) => void): void {
         f(t, this.nameForNamedType(t));

@@ -24,7 +24,7 @@ import {
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
-import { defined, assert, panic, setUnion, mapOptional } from "./Support";
+import { defined, assert, panic, mapOptional, withDefault } from "./Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 
 export class TypeRef {
@@ -47,26 +47,32 @@ export class TypeRef {
     }
 }
 
-function provenanceToString(p: Set<TypeRef>): string {
-    return p
-        .map(r => r.index)
-        .toList()
-        .sort()
-        .map(i => i.toString())
-        .join(",");
-}
-
 // FIXME: Don't infer provenance.  All original types should be present in
 // non-inferred form in the final graph.
-export const provenanceTypeAttributeKind = new TypeAttributeKind<Set<TypeRef>>(
-    "provenance",
-    false,
-    false,
-    setUnion,
-    undefined,
-    a => a,
-    provenanceToString
-);
+class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<TypeRef>> {
+    constructor() {
+        super("provenance");
+    }
+
+    combine(a: Set<TypeRef>, b: Set<TypeRef>): Set<TypeRef> {
+        return a.union(b);
+    }
+
+    makeInferred(p: Set<TypeRef>): Set<TypeRef> {
+        return p;
+    }
+
+    stringify(p: Set<TypeRef>): string {
+        return p
+            .map(r => r.index)
+            .toList()
+            .sort()
+            .map(i => i.toString())
+            .join(",");
+    }
+}
+
+export const provenanceTypeAttributeKind: TypeAttributeKind<Set<TypeRef>> = new ProvenanceTypeAttributeKind();
 
 export type StringTypeMapping = {
     date: PrimitiveStringTypeKind;
@@ -91,7 +97,7 @@ export class TypeBuilder {
 
     constructor(
         private readonly _stringTypeMapping: StringTypeMapping,
-        readonly alphabetizeProperties: boolean,
+        readonly canonicalOrder: boolean,
         private readonly _allPropertiesOptional: boolean,
         private readonly _addProvenanceAttributes: boolean,
         inheritsProvenanceAttributes: boolean
@@ -218,12 +224,17 @@ export class TypeBuilder {
         this._typeForIdentity = this._typeForIdentity.set(identity, tref);
     }
 
+    protected makeIdentity(maker: () => List<any> | undefined): List<any> | undefined {
+        return maker();
+    }
+
     private getOrAddType(
-        identity: List<any> | undefined,
+        identityMaker: () => List<any> | undefined,
         creator: (tr: TypeRef) => Type,
         attributes: TypeAttributes | undefined,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
+        const identity = this.makeIdentity(identityMaker);
         let maybeTypeRef: TypeRef | undefined;
         if (identity === undefined) {
             maybeTypeRef = undefined;
@@ -251,10 +262,8 @@ export class TypeBuilder {
         this.registerTypeForIdentity(t.identity, t.typeRef);
     }
 
-    getPrimitiveType(kind: PrimitiveTypeKind, attributes?: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
-        if (attributes === undefined) {
-            attributes = emptyTypeAttributes;
-        }
+    getPrimitiveType(kind: PrimitiveTypeKind, maybeAttributes?: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
+        const attributes = withDefault(maybeAttributes, emptyTypeAttributes);
         // FIXME: Why do date/time types need a StringTypes attribute?
         // FIXME: Remove this from here and put it into flattenStrings
         let stringTypes = kind === "string" ? undefined : StringTypes.unrestricted;
@@ -265,7 +274,7 @@ export class TypeBuilder {
             return this.getStringType(attributes, stringTypes, forwardingRef);
         }
         return this.getOrAddType(
-            primitiveTypeIdentity(kind, attributes),
+            () => primitiveTypeIdentity(kind, attributes),
             tr => new PrimitiveType(tr, kind),
             attributes,
             forwardingRef
@@ -286,7 +295,7 @@ export class TypeBuilder {
             );
         }
         return this.getOrAddType(
-            primitiveTypeIdentity("string", attributes),
+            () => primitiveTypeIdentity("string", attributes),
             tr => new PrimitiveType(tr, "string"),
             attributes,
             forwardingRef
@@ -295,7 +304,7 @@ export class TypeBuilder {
 
     getEnumType(attributes: TypeAttributes, cases: OrderedSet<string>, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            enumTypeIdentity(attributes, cases),
+            () => enumTypeIdentity(attributes, cases),
             tr => new EnumType(tr, cases),
             attributes,
             forwardingRef
@@ -322,7 +331,7 @@ export class TypeBuilder {
 
     getMapType(attributes: TypeAttributes, values: TypeRef, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            mapTypeIdentify(attributes, values),
+            () => mapTypeIdentify(attributes, values),
             tr => new MapType(tr, values),
             attributes,
             forwardingRef
@@ -348,7 +357,7 @@ export class TypeBuilder {
 
     getArrayType(items: TypeRef, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            arrayTypeIdentity(emptyTypeAttributes, items),
+            () => arrayTypeIdentity(emptyTypeAttributes, items),
             tr => new ArrayType(tr, items),
             undefined,
             forwardingRef
@@ -365,7 +374,7 @@ export class TypeBuilder {
     }
 
     modifyPropertiesIfNecessary(properties: OrderedMap<string, ClassProperty>): OrderedMap<string, ClassProperty> {
-        if (this.alphabetizeProperties) {
+        if (this.canonicalOrder) {
             properties = properties.sortBy((_, n) => n);
         }
         if (this._allPropertiesOptional) {
@@ -381,7 +390,7 @@ export class TypeBuilder {
     ): TypeRef {
         properties = this.modifyPropertiesIfNecessary(properties);
         return this.getOrAddType(
-            classTypeIdentity(attributes, properties),
+            () => classTypeIdentity(attributes, properties),
             tr => new ClassType(tr, false, properties),
             attributes,
             forwardingRef
@@ -402,7 +411,7 @@ export class TypeBuilder {
 
     getUnionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            unionTypeIdentity(attributes, members),
+            () => unionTypeIdentity(attributes, members),
             tr => new UnionType(tr, members),
             attributes,
             forwardingRef
@@ -420,7 +429,7 @@ export class TypeBuilder {
 
     getIntersectionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            intersectionTypeIdentity(attributes, members),
+            () => intersectionTypeIdentity(attributes, members),
             tr => new IntersectionType(tr, members),
             attributes,
             forwardingRef

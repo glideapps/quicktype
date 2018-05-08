@@ -7,6 +7,7 @@ import { serializeRenderResult, SerializedRenderResult } from "./Source";
 import { StringTypeMapping } from "./TypeBuilder";
 import { defined } from "./Support";
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
+import { UnionType } from "./Type";
 
 export abstract class TargetLanguage {
     constructor(readonly displayName: string, readonly names: string[], readonly extension: string) {}
@@ -108,6 +109,18 @@ export abstract class TargetLanguage {
     }
 
     get supportsFullObjectType(): boolean {
+        return false;
+    }
+
+    needsTransformerForUnion(_u: UnionType): boolean {
+        return false;
+    }
+
+    get needsTransformerForEnums(): boolean {
+        return false;
+    }
+
+    get needsTransformersForDateTime(): boolean {
         return false;
     }
 }

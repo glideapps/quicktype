@@ -1,10 +1,10 @@
-import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection } from "immutable";
+import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection, List } from "immutable";
 
 import { PrimitiveTypeKind, Type, ClassProperty } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
-import { assert, panic } from "./Support";
+import { assert, panic, indentationString } from "./Support";
 import { TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
 
 export interface TypeLookerUp {
@@ -191,6 +191,20 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
         super(stringTypeMapping, alphabetizeProperties, false, false, graphHasProvenanceAttributes);
     }
 
+    withForwardingRef(
+        maybeForwardingRef: TypeRef | undefined,
+        typeCreator: (forwardingRef: TypeRef) => TypeRef
+    ): TypeRef {
+        if (maybeForwardingRef !== undefined) {
+            return typeCreator(maybeForwardingRef);
+        }
+
+        const forwardingRef = this.reserveTypeRef();
+        const actualRef = typeCreator(forwardingRef);
+        assert(actualRef === forwardingRef, "Type creator didn't return its forwarding ref");
+        return actualRef;
+    }
+
     reconstituteType(t: Type, attributes?: TypeAttributes, forwardingRef?: TypeRef): TypeRef {
         return this.reconstituteTypeRef(t.typeRef, attributes, forwardingRef);
     }
@@ -213,6 +227,10 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
         return this.forceReconstituteTypeRef(originalRef, attributes, maybeForwardingRef);
     }
 
+    reconstituteTypeAttributes(attributes: TypeAttributes): TypeAttributes {
+        return attributes.map((v, a) => a.reconstitute(this, v));
+    }
+
     protected assertTypeRefsToReconstitute(typeRefs: TypeRef[], forwardingRef?: TypeRef): void {
         assert(typeRefs.length > 0, "Must have at least one type to reconstitute");
         for (const originalRef of typeRefs) {
@@ -228,7 +246,7 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
     }
 
     protected get debugPrintIndentation(): string {
-        return "  ".repeat(this._printIndent);
+        return indentationString(this._printIndent);
     }
 
     finish(): TypeGraph {
@@ -276,6 +294,10 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
         });
     }
 
+    protected makeIdentity(_maker: () => List<any> | undefined): List<any> | undefined {
+        return undefined;
+    }
+
     private getMapTarget(tref: TypeRef): TypeRef {
         const maybeType = this._map.get(tref.deref()[0]);
         if (maybeType === undefined) return tref;
@@ -308,9 +330,13 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
         attributes?: TypeAttributes,
         maybeForwardingRef?: TypeRef
     ): TypeRef {
+        originalRef = this.getMapTarget(originalRef);
+
+        const index = originalRef.index;
+        assert(this.reconstitutedTypes.get(index) === undefined, "Type has already been reconstituted");
+
         assert(maybeForwardingRef === undefined, "We can't have a forwarding ref when we remap");
 
-        originalRef = this.getMapTarget(originalRef);
         const [originalType, originalAttributes] = originalRef.deref();
 
         const attributeSources = this._attributeSources.get(originalType);
@@ -318,36 +344,44 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
             attributes = emptyTypeAttributes;
         }
         if (attributeSources === undefined) {
-            attributes = combineTypeAttributes("union", attributes, originalAttributes);
+            attributes = combineTypeAttributes(
+                "union",
+                attributes,
+                this.reconstituteTypeAttributes(originalAttributes)
+            );
         } else {
             attributes = combineTypeAttributes(
                 "union",
                 attributes,
-                combineTypeAttributesOfTypes("union", attributeSources)
+                this.reconstituteTypeAttributes(combineTypeAttributesOfTypes("union", attributeSources))
             );
         }
+        const newAttributes = attributes;
 
-        const index = originalRef.index;
+        return this.withForwardingRef(undefined, forwardingRef => {
+            this.reconstitutedTypes = this.reconstitutedTypes.set(index, forwardingRef);
 
-        if (this.debugPrint) {
-            console.log(`${this.debugPrintIndentation}reconstituting ${index}`);
-            this.changeDebugPrintIndent(1);
-        }
-
-        const reconstituter = new TypeReconstituter(this, this.alphabetizeProperties, attributes, undefined, tref => {
             if (this.debugPrint) {
-                this.changeDebugPrintIndent(-1);
-                console.log(`${this.debugPrintIndentation}reconstituted ${index} as ${tref.index}`);
+                console.log(`${this.debugPrintIndentation}reconstituting ${index} as ${forwardingRef.index}`);
+                this.changeDebugPrintIndent(1);
             }
 
-            const alreadyReconstitutedType = this.reconstitutedTypes.get(index);
-            if (alreadyReconstitutedType !== undefined) {
-                return panic("We can't remap a type twice");
-            }
-            this.reconstitutedTypes = this.reconstitutedTypes.set(index, tref);
+            const reconstituter = new TypeReconstituter(
+                this,
+                this.canonicalOrder,
+                newAttributes,
+                forwardingRef,
+                tref => {
+                    assert(tref === forwardingRef, "Reconstituted type as a different ref");
+                    if (this.debugPrint) {
+                        this.changeDebugPrintIndent(-1);
+                        console.log(`${this.debugPrintIndentation}reconstituted ${index} as ${tref.index}`);
+                    }
+                }
+            );
+            originalType.reconstitute(reconstituter, this.canonicalOrder);
+            return reconstituter.getResult();
         });
-        originalType.reconstitute(reconstituter);
-        return reconstituter.getResult();
     }
 }
 
@@ -391,20 +425,6 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         const set = Set(typeRefs);
         assert(!this._reconstitutedUnions.has(set), "Cannot register reconstituted set twice");
         this._reconstitutedUnions = this._reconstitutedUnions.set(set, reconstituted);
-    }
-
-    withForwardingRef(
-        maybeForwardingRef: TypeRef | undefined,
-        typeCreator: (forwardingRef: TypeRef) => TypeRef
-    ): TypeRef {
-        if (maybeForwardingRef !== undefined) {
-            return typeCreator(maybeForwardingRef);
-        }
-
-        const forwardingRef = this.reserveTypeRef();
-        const actualRef = typeCreator(forwardingRef);
-        assert(actualRef === forwardingRef, "Type creator didn't return its forwarding ref");
-        return actualRef;
     }
 
     private replaceSet(typesToReplace: Set<T>, maybeForwardingRef: TypeRef | undefined): TypeRef {
@@ -454,40 +474,49 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         }
 
         if (attributes === undefined) {
-            attributes = originalAttributes;
+            attributes = this.reconstituteTypeAttributes(originalAttributes);
         } else {
-            attributes = combineTypeAttributes("union", attributes, originalAttributes);
+            attributes = combineTypeAttributes(
+                "union",
+                attributes,
+                this.reconstituteTypeAttributes(originalAttributes)
+            );
         }
 
+        const reconstituter = new TypeReconstituter(this, this.canonicalOrder, attributes, maybeForwardingRef, tref => {
+            if (this.debugPrint) {
+                this.changeDebugPrintIndent(-1);
+                console.log(`${this.debugPrintIndentation}reconstituted ${index} as ${tref.index}`);
+            }
+
+            if (maybeForwardingRef !== undefined) {
+                assert(tref === maybeForwardingRef, "We didn't pass the forwarding ref");
+            }
+
+            const alreadyReconstitutedType = this.reconstitutedTypes.get(index);
+            if (alreadyReconstitutedType === undefined) {
+                this.reconstitutedTypes = this.reconstitutedTypes.set(index, tref);
+            } else {
+                assert(tref.equals(alreadyReconstitutedType), "We reconstituted a type twice differently");
+            }
+        });
+        originalType.reconstitute(reconstituter, this.canonicalOrder);
+        return reconstituter.getResult();
+    }
+
+    /*
+    reconstituteTypeUnmodified(originalType: Type): TypeRef {
         const reconstituter = new TypeReconstituter(
             this,
             this.alphabetizeProperties,
-            attributes,
-            maybeForwardingRef,
-            tref => {
-                if (this.debugPrint) {
-                    this.changeDebugPrintIndent(-1);
-                    console.log(`${this.debugPrintIndentation}reconstituted ${index} as ${tref.index}`);
-                }
-
-                if (maybeForwardingRef !== undefined) {
-                    assert(tref === maybeForwardingRef, "We didn't pass the forwarding ref");
-                }
-
-                const alreadyReconstitutedType = this.reconstitutedTypes.get(index);
-                if (alreadyReconstitutedType === undefined) {
-                    this.reconstitutedTypes = this.reconstitutedTypes.set(index, tref);
-                } else {
-                    assert(tref.equals(alreadyReconstitutedType), "We reconstituted a type twice differently");
-                    if (maybeForwardingRef === undefined) {
-                        return panic("Why do we reconstitute a type twice???");
-                    }
-                }
-            }
+            emptyTypeAttributes,
+            undefined,
+            () => {}
         );
         originalType.reconstitute(reconstituter);
         return reconstituter.getResult();
     }
+    */
 
     // If the union of these type refs have been, or are supposed to be, reconstituted to
     // one target type, return it.  Otherwise return undefined.

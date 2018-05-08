@@ -211,3 +211,7 @@ export function parseJSON(text: string, description: string, address: string = "
         return messageError("MiscJSONParseError", { description, address, message });
     }
 }
+
+export function indentationString(level: number): string {
+    return "  ".repeat(level);
+}
