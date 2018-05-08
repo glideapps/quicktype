@@ -188,19 +188,21 @@ export function separateNamedTypes(types: Collection<any, Type>): SeparatedNamed
     return { objects, enums, unions };
 }
 
-// FIXME: The outer OrderedSet should be some Collection, but I can't figure out
-// which one.  Collection.Indexed doesn't work with OrderedSet, which is unfortunate.
-function orderedSetUnion<T>(sets: OrderedSet<OrderedSet<T>>): OrderedSet<T> {
-    const setArray = sets.toArray();
-    if (setArray.length === 0) return OrderedSet();
-    if (setArray.length === 1) return setArray[0];
-    return setArray[0].union(...setArray.slice(1));
+function orderedSetUnion<T>(sets: OrderedSet<T>[]): OrderedSet<T> {
+    if (sets.length === 0) return OrderedSet();
+    if (sets.length === 1) return sets[0];
+    return sets[0].union(...sets.slice(1));
 }
 
 function directlyReachableTypes<T>(t: Type, setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
     const set = setForType(t);
     if (set) return set;
-    return orderedSetUnion(t.getNonAttributeChildren().map(c => directlyReachableTypes(c, setForType)));
+    return orderedSetUnion(
+        t
+            .getNonAttributeChildren()
+            .toArray()
+            .map(c => directlyReachableTypes(c, setForType))
+    );
 }
 
 export function directlyReachableSingleNamedType(type: Type): Type | undefined {
