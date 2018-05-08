@@ -138,6 +138,7 @@ export abstract class Renderer {
     }
 
     protected emitTable = (tableArray: Sourcelike[][]): void => {
+        if (tableArray.length === 0) return;
         const table = List(tableArray.map(r => List(r.map(sl => sourcelikeToSource(sl)))));
         this.emitItem({ kind: "table", table });
         this.emitNewline();
