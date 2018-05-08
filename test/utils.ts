@@ -3,8 +3,8 @@ import * as fs from "fs";
 import * as _ from "lodash";
 import * as shell from "shelljs";
 
-import { main as quicktype_, CLIOptions } from "../dist/cli";
-import { RendererOptions } from "../dist";
+import { main as quicktype_, CLIOptions } from "../dist";
+import { RendererOptions } from "quicktype-core/dist/";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 

@@ -1,4 +1,4 @@
-import { panic, checkStringMap, checkArray } from "../Support";
+import { panic, checkStringMap, checkArray } from "quicktype-core/dist/Support";
 
 function expand(json: any): string[] {
     if (typeof json === "string") {

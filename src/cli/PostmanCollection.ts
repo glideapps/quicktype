@@ -1,5 +1,5 @@
-import { JSONTypeSource } from "../TypeSource";
-import { parseJSON } from "../Support";
+import { JSONTypeSource } from "quicktype-core/dist/TypeSource";
+import { parseJSON } from "quicktype-core/dist/Support";
 
 function isValidJSON(s: string): boolean {
     try {
