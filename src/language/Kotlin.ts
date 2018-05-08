@@ -324,12 +324,16 @@ class KotlinRenderer extends ConvenienceRenderer {
                 this.emitLine("public fun toJson() = klaxon.toJsonString(this)");
                 this.ensureBlankLine();
                 this.emitBlock("companion object", () => {
-                    this.emitLine(
-                        "public fun fromJson(json: String) = klaxon.parse<HashMap<String, ",
-                        elementType,
-                        ">>(json)?.let { ",
-                        name,
-                        "(it) }"
+                    this.emitBlock(
+                        ["public fun fromJson(json: String) = ", name],
+                        () => {
+                            this.emitLine(
+                                "klaxon.parseJsonObject(java.io.StringReader(json)) as Map<String, ",
+                                elementType,
+                                ">"
+                            );
+                        },
+                        "paren"
                     );
                 });
             }

@@ -540,8 +540,6 @@ export const KotlinLanguage: Language = {
     "5f7fe.json",
     "f74d5.json",
     "a3d8c.json",
-    // Top-level maps do not work yet
-    "ed095.json",
     // Klaxon has a hard time with null inside collections
     "combinations.json",
     "unions.json",
