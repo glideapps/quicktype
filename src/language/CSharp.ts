@@ -981,9 +981,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private emitTransformation(converterName: Name, t: Type): void {
         const xf = defined(transformationForType(t));
-        // xf.debugPrint();
         const reverse = xf.reverse;
-        // reverse.debugPrint();
         const targetType = xf.targetType;
         const xfer = xf.transformer;
         this.emitType(undefined, AccessModifier.Internal, "class", converterName, "JsonConverter", () => {

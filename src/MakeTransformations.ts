@@ -21,8 +21,16 @@ import {
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { StringTypes } from "./StringTypes";
 
-function transformationAttributes(reconstitutedTargetType: TypeRef, transformer: Transformer): TypeAttributes {
+function transformationAttributes(
+    reconstitutedTargetType: TypeRef,
+    transformer: Transformer,
+    debugPrintTransformation: boolean
+): TypeAttributes {
     const transformation = new Transformation(reconstitutedTargetType, transformer);
+    if (debugPrintTransformation) {
+        console.log(`transformation for ${reconstitutedTargetType.index}:`);
+        transformation.debugPrint();
+    }
     return transformationTypeAttributeKind.makeAttributes(transformation);
 }
 
@@ -34,7 +42,12 @@ function makeEnumTransformer(enumType: EnumType, stringType: TypeRef, continuati
     return new ChoiceTransformer(stringType, caseTransformers);
 }
 
-function replaceUnion(union: UnionType, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef) {
+function replaceUnion(
+    union: UnionType,
+    builder: GraphRewriteBuilder<Type>,
+    forwardingRef: TypeRef,
+    debugPrintTransformations: boolean
+): TypeRef {
     assert(!union.members.isEmpty(), "We can't have empty unions");
 
     const reconstitutedMembersByKind = union.members
@@ -113,67 +126,41 @@ function replaceUnion(union: UnionType, builder: GraphRewriteBuilder<Type>, forw
         transformerForKind("array"),
         transformerForObject
     );
-    const attributes = transformationAttributes(reconstitutedUnion, transformer);
+    const attributes = transformationAttributes(reconstitutedUnion, transformer, debugPrintTransformations);
     return builder.getPrimitiveType("any", attributes, forwardingRef);
 }
 
-function replaceEnum(enumType: EnumType, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef) {
+function replaceEnum(
+    enumType: EnumType,
+    builder: GraphRewriteBuilder<Type>,
+    forwardingRef: TypeRef,
+    debugPrintTransformations: boolean
+): TypeRef {
     const stringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
     const transformer = new DecodingTransformer(stringType, makeEnumTransformer(enumType, stringType));
     const reconstitutedEnum = builder.getEnumType(enumType.getAttributes(), enumType.cases);
-    const attributes = transformationAttributes(reconstitutedEnum, transformer);
+    const attributes = transformationAttributes(reconstitutedEnum, transformer, debugPrintTransformations);
     return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
 }
-
-function replace(setOfOneUnion: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
-    const t = defined(setOfOneUnion.first());
-    if (t instanceof UnionType) {
-        return replaceUnion(t, builder, forwardingRef);
-    }
-    if (t instanceof EnumType) {
-        return replaceEnum(t, builder, forwardingRef);
-    }
-    return panic(`Cannot make transformation for type ${t.kind}`);
-}
-
-/*
-function gatherTypesToTransform(targetLanguage: TargetLanguage, queue: List<Type>): Type[] {
-    let typesDone: Set<Type> = Set();
-    const typesToTransform: Type[] = [];
-
-    for (;;) {
-        const first = queue.first();
-        if (first === undefined) break;
-        queue = queue.rest();
-
-        if (typesDone.has(first)) continue;
-        typesDone = typesDone.add(first);
-
-        if (first instanceof UnionType && targetLanguage.needsTransformerForUnion(first)) {
-            typesToTransform.push(first);
-
-            const stringMembers = first.stringTypeMembers;
-            if (stringMembers.size > 1) {
-                // This is a bit ugly.  The string members of the union will be transformed
-                // by the union transformation, so we must not 
-                queue = queue.concat(first.members.filterNot(t => stringMembers.has(t)));
-            }
-        } else if (first instanceof EnumType && targetLanguage.needsTransformerForEnums) {
-            typesToTransform.push(first);
-        }
-        // FIXME: handle date/time transformation
-
-        queue = queue.concat(first.getChildren());
-    }
-}
-*/
 
 export function makeTransformations(
     graph: TypeGraph,
     stringTypeMapping: StringTypeMapping,
     targetLanguage: TargetLanguage,
+    debugPrintTransformations: boolean,
     debugPrintReconstitution: boolean
 ): TypeGraph {
+    function replace(setOfOneUnion: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
+        const t = defined(setOfOneUnion.first());
+        if (t instanceof UnionType) {
+            return replaceUnion(t, builder, forwardingRef, debugPrintTransformations);
+        }
+        if (t instanceof EnumType) {
+            return replaceEnum(t, builder, forwardingRef, debugPrintTransformations);
+        }
+        return panic(`Cannot make transformation for type ${t.kind}`);
+    }
+
     const allTypesUnordered = graph.allTypesUnordered();
     const unions = allTypesUnordered.filter(t => t instanceof UnionType && targetLanguage.needsTransformerForUnion(t));
     const enums = targetLanguage.needsTransformerForEnums

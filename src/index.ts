@@ -69,6 +69,7 @@ export interface Options {
     checkProvenance: boolean;
     debugPrintReconstitution: boolean;
     debugPrintGatherNames: boolean;
+    debugPrintTransformations: boolean;
 }
 
 const defaultOptions: Options = {
@@ -92,7 +93,8 @@ const defaultOptions: Options = {
     debugPrintGraph: false,
     checkProvenance: false,
     debugPrintReconstitution: false,
-    debugPrintGatherNames: false
+    debugPrintGatherNames: false,
+    debugPrintTransformations: false
 };
 
 export class Run {
@@ -265,7 +267,13 @@ export class Run {
             graph = optionalToNullable(graph, stringTypeMapping, debugPrintReconstitution);
         }
 
-        graph = makeTransformations(graph, stringTypeMapping, targetLanguage, debugPrintReconstitution);
+        graph = makeTransformations(
+            graph,
+            stringTypeMapping,
+            targetLanguage,
+            this._options.debugPrintTransformations,
+            debugPrintReconstitution
+        );
         [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false, debugPrintReconstitution);
         assert(unionsDone, "We should only have to flatten unions once after making transformations");
 
