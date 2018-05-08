@@ -28,19 +28,8 @@ export const CSharpLanguage: Language = {
   runCommand(sample: string) {
     return `dotnet run "${sample}"`;
   },
-  diffViaSchema: false,
-  skipDiffViaSchema: [
-    "keywords.json",
-    "00c36.json",
-    "0a91a.json",
-    "34702.json",
-    "2df80.json",
-    "7fbfb.json",
-    "cda6c.json",
-    "c8c7e.json",
-    "e53b5.json",
-    "f82d9.json"
-  ],
+  diffViaSchema: true,
+  skipDiffViaSchema: ["bug427.json", "combinations.json", "keywords.json", "34702.json"],
   allowMissingNull: false,
   output: "QuickType.cs",
   topLevel: "TopLevel",

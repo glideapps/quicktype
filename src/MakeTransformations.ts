@@ -27,11 +27,10 @@ function transformationAttributes(reconstitutedTargetType: TypeRef, transformer:
 }
 
 function makeEnumTransformer(enumType: EnumType, stringType: TypeRef, continuation?: Transformer): Transformer {
-    const caseTransformers = enumType.cases
-        .toList()
-        .map(
-            c => new StringMatchTransformer(stringType, new StringProducerTransformer(stringType, continuation, c), c)
-        );
+    const sortedCases = enumType.cases.toList().sort();
+    const caseTransformers = sortedCases.map(
+        c => new StringMatchTransformer(stringType, new StringProducerTransformer(stringType, continuation, c), c)
+    );
     return new ChoiceTransformer(stringType, caseTransformers);
 }
 
@@ -184,5 +183,5 @@ export function makeTransformations(
         .union(enums)
         .toArray()
         .map(t => [t]);
-    return graph.rewrite("make-transformatios", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
+    return graph.rewrite("make-transformations", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
 }

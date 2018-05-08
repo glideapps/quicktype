@@ -410,7 +410,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     private emitUnionDefinition(u: UnionType, unionName: Name): void {
-        const nonNulls = removeNullFromUnion(u)[1];
+        const nonNulls = removeNullFromUnion(u, true)[1];
         this.emitType(
             this.descriptionForType(u),
             AccessModifier.Public,
