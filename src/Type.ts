@@ -71,7 +71,10 @@ export abstract class Type {
     // FIXME: Remove `isPrimitive`
     abstract isPrimitive(): this is PrimitiveType;
     abstract get identity(): TypeIdentity;
-    abstract reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void;
+    abstract reconstitute<T extends BaseGraphRewriteBuilder>(
+        builder: TypeReconstituter<T>,
+        canonicalOrder: boolean
+    ): void;
 
     get debugPrintKind(): string {
         return this.kind;
@@ -439,15 +442,17 @@ export class ObjectType extends Type {
         );
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        const maybePropertyTypes = builder.lookup(this.getProperties().map(cp => cp.typeRef));
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
+        const sortedProperties = this.getProperties().sortBy((_, n) => n);
+        const propertiesInNewOrder = canonicalOrder ? sortedProperties : this.getProperties();
+        const maybePropertyTypes = builder.lookup(sortedProperties.map(cp => cp.typeRef));
         const maybeAdditionalProperties = mapOptional(r => builder.lookup(r), this._additionalPropertiesRef);
 
         if (
             maybePropertyTypes !== undefined &&
             (maybeAdditionalProperties !== undefined || this._additionalPropertiesRef === undefined)
         ) {
-            const properties = this.getProperties().map(
+            const properties = propertiesInNewOrder.map(
                 (cp, n) => new ClassProperty(defined(maybePropertyTypes.get(n)), cp.isOptional)
             );
 
@@ -485,8 +490,9 @@ export class ObjectType extends Type {
                     return panic(`Invalid object type kind ${this.kind}`);
             }
 
-            const properties = this.getProperties().map(
-                cp => new ClassProperty(builder.reconstitute(cp.typeRef), cp.isOptional)
+            const reconstitutedTypes = sortedProperties.map(cp => builder.reconstitute(cp.typeRef));
+            const properties = propertiesInNewOrder.map(
+                (cp, n) => new ClassProperty(defined(reconstitutedTypes.get(n)), cp.isOptional)
             );
             const additionalProperties = mapOptional(r => builder.reconstitute(r), this._additionalPropertiesRef);
             builder.setObjectProperties(properties, additionalProperties);
@@ -661,6 +667,23 @@ export abstract class SetOperationType extends Type {
         return setOperationTypeIdentity(this.kind, this.getAttributes(), this.getMemberRefs());
     }
 
+    protected reconstituteSetOperation<T extends BaseGraphRewriteBuilder>(
+        builder: TypeReconstituter<T>,
+        canonicalOrder: boolean,
+        getType: (members: OrderedSet<TypeRef> | undefined) => void
+    ): void {
+        const sortedMemberRefs = this.sortedMembers.toOrderedMap().map(t => t.typeRef);
+        const membersInOrder = canonicalOrder ? this.sortedMembers : this.members;
+        const maybeMembers = builder.lookup(sortedMemberRefs);
+        if (maybeMembers === undefined) {
+            getType(undefined);
+            const reconstituted = builder.reconstitute(sortedMemberRefs);
+            builder.setSetOperationMembers(membersInOrder.map(t => defined(reconstituted.get(t))));
+        } else {
+            getType(membersInOrder.map(t => defined(maybeMembers.get(t))));
+        }
+    }
+
     protected structuralEqualityStep(
         other: SetOperationType,
         conflateNumbers: boolean,
@@ -682,15 +705,14 @@ export class IntersectionType extends SetOperationType {
         return panic("isNullable not implemented for IntersectionType");
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        const memberRefs = this.getMemberRefs();
-        const maybeMembers = builder.lookup(memberRefs);
-        if (maybeMembers === undefined) {
-            builder.getUniqueIntersectionType();
-            builder.setSetOperationMembers(builder.reconstitute(memberRefs));
-        } else {
-            builder.getIntersectionType(maybeMembers);
-        }
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
+        this.reconstituteSetOperation(builder, canonicalOrder, members => {
+            if (members === undefined) {
+                builder.getUniqueIntersectionType();
+            } else {
+                builder.getIntersectionType(members);
+            }
+        });
     }
 }
 
@@ -740,14 +762,13 @@ export class UnionType extends SetOperationType {
         return true;
     }
 
-    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
-        const memberRefs = this.getMemberRefs();
-        const maybeMembers = builder.lookup(memberRefs);
-        if (maybeMembers === undefined) {
-            builder.getUniqueUnionType();
-            builder.setSetOperationMembers(builder.reconstitute(memberRefs));
-        } else {
-            builder.getUnionType(maybeMembers);
-        }
+    reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
+        this.reconstituteSetOperation(builder, canonicalOrder, members => {
+            if (members === undefined) {
+                builder.getUniqueUnionType();
+            } else {
+                builder.getUnionType(members);
+            }
+        });
     }
 }
