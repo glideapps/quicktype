@@ -18,13 +18,11 @@
         "immutable": "^4.0.0-rc.9",
         "js-base64": "^2.4.3",
         "lodash": "^4.17.10",
-        "moment": "^2.22.1",
         "pako": "^1.0.6",
         "pluralize": "^7.0.0",
         "stream-json": "0.5.2",
         "string-to-stream": "^1.1.0",
         "unicode-properties": "github:quicktype/unicode-properties#dist",
-        "typescript-json-schema": "quicktype/typescript-json-schema#d16083d29c8b6702c666a981fa6b21113300c059",
         "urijs": "^1.19.1"
     },
     "devDependencies": {
@@ -40,5 +38,7 @@
         "typescript": "~2.8.3",
         "tslint": "^5.9.1"
     },
-    "files": ["dist/**"]
+    "files": [
+        "dist/**"
+    ]
 }

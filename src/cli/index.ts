@@ -19,8 +19,7 @@ import {
     TypeSource,
     GraphQLTypeSource,
     StringInput,
-    SchemaTypeSource,
-    TypeScriptTypeSource
+    SchemaTypeSource
 } from "quicktype-core/dist/TypeSource";
 import { OptionDefinition } from "quicktype-core/dist/RendererOptions";
 import * as defaultTargetLanguages from "quicktype-core/dist/language/All";
@@ -36,6 +35,7 @@ import { sourcesFromPostmanCollection } from "./PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
 import { messageError, messageAssert } from "quicktype-core/dist/Messages";
+import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -160,7 +160,6 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
         let jsonSamples: StringInput[] = [];
         const schemaSources: SchemaTypeSource[] = [];
         const graphQLSources: GraphQLTypeSource[] = [];
-        const typeScriptSources: TypeScriptTypeSource[] = [];
 
         for (const source of await readFilesOrURLsInDirectory(dir)) {
             switch (source.kind) {
@@ -173,20 +172,17 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
                 case "graphql":
                     graphQLSources.push(source);
                     break;
-                case "typescript":
-                    typeScriptSources.push(source);
-                    break;
                 default:
                     return assertNever(source);
             }
         }
 
-        if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length + typeScriptSources.length > 0) {
+        if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length) {
             return messageError("DriverCannotMixJSONWithOtherSamples", { dir: dir });
         }
 
         const oneUnlessEmpty = (xs: any[]) => Math.sign(xs.length);
-        if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) + oneUnlessEmpty(typeScriptSources) > 1) {
+        if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) > 1) {
             return messageError("DriverCannotMixNonJSONInputs", { dir: dir });
         }
 
@@ -634,7 +630,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     return sources;
 }
 
-function makeTypeScriptSource(fileNames: string[]): TypeScriptTypeSource {
+function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
     const sources: { [fileName: string]: string } = {};
 
     for (const fileName of fileNames) {
@@ -642,7 +638,7 @@ function makeTypeScriptSource(fileNames: string[]): TypeScriptTypeSource {
         sources[baseName] = defined(fs.readFileSync(fileName, "utf8"));
     }
 
-    return { kind: "typescript", sources };
+    return schemaForTypeScriptSources(sources);
 }
 
 export async function makeQuicktypeOptions(

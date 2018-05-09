@@ -17,6 +17,7 @@ test/fixtures/java/target
 test/fixtures/cplusplus/json.hpp
 /dist
 /src/core/dist/
+/src/typescript-input/dist/
 test/fixtures/objective-c/quicktype
 *.xcbkptlist
 *.xcuserstate

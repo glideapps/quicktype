@@ -9,16 +9,12 @@ export interface JSONTypeSource {
     description?: string;
 }
 
-export interface TypeScriptTypeSource {
-    kind: "typescript";
-    sources: { [filename: string]: string };
-}
-
 export interface SchemaTypeSource {
     kind: "schema";
     name: string;
     uris?: string[];
     schema?: StringInput;
+    isConverted?: boolean;
 }
 
 export interface GraphQLTypeSource {
@@ -28,14 +24,10 @@ export interface GraphQLTypeSource {
     query: StringInput;
 }
 
-export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource | TypeScriptTypeSource;
+export type TypeSource = GraphQLTypeSource | JSONTypeSource | SchemaTypeSource;
 
 export function isJSONSource(source: TypeSource): source is JSONTypeSource {
     return source.kind === "json";
-}
-
-export function isTypeScriptSource(source: TypeSource): source is TypeScriptTypeSource {
-    return source.kind === "typescript";
 }
 
 export function isSchemaSource(source: TypeSource): source is SchemaTypeSource {
