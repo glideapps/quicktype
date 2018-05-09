@@ -1,7 +1,7 @@
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
-import { EnumOption, Option } from "../RendererOptions";
+import { EnumOption, Option, StringOption } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     allLowerWordStyle,
@@ -38,12 +38,14 @@ export default class KotlinTargetLanguage extends TargetLanguage {
         "klaxon"
     );
 
+    private readonly _packageName = new StringOption("package", "Package", "PACKAGE", "quicktype");
+
     constructor() {
         super("Kotlin", ["kotlin"], "kt");
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._frameworkOption];
+        return [this._frameworkOption, this._packageName];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -155,7 +157,8 @@ class KotlinRenderer extends ConvenienceRenderer {
         targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
-        private readonly _framework: Framework
+        private readonly _framework: Framework,
+        private readonly _package: string
     ) {
         super(targetLanguage, graph, leadingComments);
     }
@@ -281,6 +284,9 @@ class KotlinRenderer extends ConvenienceRenderer {
                 this.emitLine("//   val ", modifySource(camelCase, name), " = ", name, ".fromJson(jsonString)");
             });
         }
+
+        this.ensureBlankLine();
+        this.emitLine("package ", this._package);
         this.ensureBlankLine();
 
         if (this._framework === Framework.Klaxon) {
@@ -358,7 +364,7 @@ class KotlinRenderer extends ConvenienceRenderer {
         if (this._framework === Framework.Klaxon) {
             this.emitLine("typealias ", className, " = JsonObject");
         } else {
-            // TODO what do we do when not using Klaxon?
+            this.emitLine("class ", className, "()");
         }
     }
 
