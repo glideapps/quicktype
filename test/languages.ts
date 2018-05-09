@@ -527,6 +527,7 @@ export const KotlinLanguage: Language = {
     // for some reason we're not reading unicode correctly on linux
     "pokedex.json",
     "us-senators.json",
+    "0b91a.json",
     // Some odd property names prevent Klaxon from mapping to constructors
     // https://github.com/cbeust/klaxon/issues/146
     "blns-object.json",
