@@ -1,10 +1,10 @@
 import * as ts from "typescript";
 import { PartialArgs, CompilerOptions, generateSchema } from "typescript-json-schema";
 
-import { panic, inflateBase64, defined } from "quicktype-core/dist/Support";
+import { panic, inflateBase64, defined } from "quicktype-core/Support";
 import { encodedDefaultTypeScriptLibrary } from "./EncodedDefaultTypeScriptLibrary";
-import { SchemaTypeSource } from "quicktype-core/dist/TypeSource";
-import { messageError } from "quicktype-core/dist/Messages";
+import { SchemaTypeSource } from "quicktype-core/TypeSource";
+import { messageError } from "quicktype-core/Messages";
 
 const settings: PartialArgs = {
     required: true,
