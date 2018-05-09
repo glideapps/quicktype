@@ -41,6 +41,11 @@ RUN cd libsysconfcpus && ./configure && make && make install
 RUN apt-get install ruby --assume-yes
 RUN gem install bundler
 
+# Kotlin
+RUN curl -s https://get.sdkman.io | bash
+RUN /bin/bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install kotlin"
+ENV PATH="/root/.sdkman/candidates/kotlin/current/bin:${PATH}"
+
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
 COPY . .
