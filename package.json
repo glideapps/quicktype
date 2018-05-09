@@ -8,17 +8,14 @@
   "scripts": {
     "pub": "script/publish.sh",
     "prepare": "npm run build",
-    "preinstall": "(cd src/core ; npm install) && (cd src/typescript-input ; npm install)",
     "build": "script/build.ts",
     "test": "script/test",
     "start": "script/watch",
     "pkg": "script/make-pkgs.sh",
-    "tslint": "(cd src/core ; npm run tslint) && (cd src/typescript-input ; npm run tslint) && tslint --project src --exclude 'src/__tests__/**'",
-    "clean": "rm -rf dist node_modules *~ && (cd src/core ; npm run clean) && (cd src/typescript-input ; npm run clean)"
+    "tslint": "tslint --project src --exclude 'src/__tests__/**'",
+    "clean": "rm -rf dist node_modules *~"
   },
   "dependencies": {
-    "quicktype-core": "file:src/core",
-    "quicktype-typescript-input": "file:src/typescript-input",
     "chalk": "^2.4.1",
     "command-line-args": "^4.0.6",
     "command-line-usage": "^4.1.0",
@@ -29,7 +26,18 @@
     "node-fetch": "^1.7.1",
     "node-persist": "^2.1.0",
     "universal-analytics": "^0.4.16",
-    "uuid": "^3.2.1"
+    "uuid": "^3.2.1",
+    "chance": "^1.0.13",
+    "graphql": "^0.11.7",
+    "handlebars": "^4.0.11",
+    "js-base64": "^2.4.3",
+    "pako": "^1.0.6",
+    "pluralize": "^7.0.0",
+    "stream-json": "0.5.2",
+    "string-to-stream": "^1.1.0",
+    "unicode-properties": "github:quicktype/unicode-properties#dist",
+    "urijs": "^1.19.1",
+    "typescript-json-schema": "quicktype/typescript-json-schema#d16083d29c8b6702c666a981fa6b21113300c059"
   },
   "devDependencies": {
     "@types/is-url": "^1.2.28",
@@ -55,7 +63,14 @@
     "tslint": "^5.9.1",
     "typescript": "~2.8.3",
     "uglify-js": "^3.3.22",
-    "watch": "^1.0.2"
+    "watch": "^1.0.2",
+    "@types/chance": "^1.0.0",
+    "@types/graphql": "^0.11.7",
+    "@types/handlebars": "^4.0.37",
+    "@types/js-base64": "^2.3.1",
+    "@types/pako": "^1.0.0",
+    "@types/pluralize": "0.0.28",
+    "@types/urijs": "github:quicktype/types-urijs"
   },
   "files": [
     "dist/**"

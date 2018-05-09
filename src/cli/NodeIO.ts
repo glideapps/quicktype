@@ -1,10 +1,10 @@
 import * as fs from "fs";
 import { Readable } from "stream";
-import { getStream } from "quicktype-core/dist/get-stream/index";
+import { getStream } from "quicktype-core/get-stream/index";
 
-import { JSONSchemaStore, JSONSchema } from "quicktype-core/dist/input/JSONSchemaStore";
-import { messageError } from "quicktype-core/dist/Messages";
-import { parseJSON } from "quicktype-core/dist/Support";
+import { JSONSchemaStore, JSONSchema } from "quicktype-core/input/JSONSchemaStore";
+import { messageError } from "quicktype-core/Messages";
+import { parseJSON } from "quicktype-core/Support";
 
 // The typings for this module are screwy
 const isURL = require("is-url");

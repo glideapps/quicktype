@@ -12,7 +12,7 @@ import {
     SerializedRenderResult,
     TargetLanguage,
     languageNamed
-} from "quicktype-core/dist";
+} from "quicktype-core/Run";
 
 import {
     JSONTypeSource,
@@ -20,21 +20,21 @@ import {
     GraphQLTypeSource,
     StringInput,
     SchemaTypeSource
-} from "quicktype-core/dist/TypeSource";
-import { OptionDefinition } from "quicktype-core/dist/RendererOptions";
-import * as defaultTargetLanguages from "quicktype-core/dist/language/All";
+} from "quicktype-core/TypeSource";
+import { OptionDefinition } from "quicktype-core/RendererOptions";
+import * as defaultTargetLanguages from "quicktype-core/language/All";
 import { urlsFromURLGrammar } from "./URLGrammar";
-import { Annotation } from "quicktype-core/dist/Source";
-import { IssueAnnotationData } from "quicktype-core/dist/Annotation";
+import { Annotation } from "quicktype-core/Source";
+import { IssueAnnotationData } from "quicktype-core/Annotation";
 import { Readable } from "stream";
-import { panic, assert, defined, withDefault, mapOptional, assertNever, parseJSON } from "quicktype-core/dist/Support";
-import { introspectServer } from "quicktype-core/dist/GraphQLIntrospection";
-import { getStream } from "quicktype-core/dist/get-stream/index";
-import { train } from "quicktype-core/dist/MarkovChain";
+import { panic, assert, defined, withDefault, mapOptional, assertNever, parseJSON } from "quicktype-core/Support";
+import { introspectServer } from "quicktype-core/GraphQLIntrospection";
+import { getStream } from "quicktype-core/get-stream/index";
+import { train } from "quicktype-core/MarkovChain";
 import { sourcesFromPostmanCollection } from "./PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { messageError, messageAssert } from "quicktype-core/dist/Messages";
+import { messageError, messageAssert } from "quicktype-core/Messages";
 import { schemaForTypeScriptSources } from "quicktype-typescript-input";
 
 const commandLineArgs = require("command-line-args");
