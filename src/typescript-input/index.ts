@@ -1,9 +1,10 @@
 import * as ts from "typescript";
 import { PartialArgs, CompilerOptions, generateSchema } from "typescript-json-schema";
 
-import { panic, inflateBase64, defined } from "../Support";
+import { panic, inflateBase64, defined } from "quicktype-core/dist/Support";
 import { encodedDefaultTypeScriptLibrary } from "./EncodedDefaultTypeScriptLibrary";
-import { messageError } from "../Messages";
+import { SchemaTypeSource } from "quicktype-core/dist/TypeSource";
+import { messageError } from "quicktype-core/dist/Messages";
 
 const settings: PartialArgs = {
     required: true,
@@ -96,13 +97,9 @@ class CompilerHost implements ts.CompilerHost {
 
 // FIXME: We're stringifying and then parsing this schema again.  Just pass around
 // the schema directly.
-export function schemaForTypeScriptSources(sourceFileNames: string[]): { schema: string; name: string; uris: string[] };
-export function schemaForTypeScriptSources(sources: {
-    [fileName: string]: string;
-}): { schema: string; name: string; uris: string[] };
-export function schemaForTypeScriptSources(
-    sources: string[] | { [fileName: string]: string }
-): { schema: string; name: string; uris: string[] } {
+export function schemaForTypeScriptSources(sourceFileNames: string[]): SchemaTypeSource;
+export function schemaForTypeScriptSources(sources: { [fileName: string]: string }): SchemaTypeSource;
+export function schemaForTypeScriptSources(sources: string[] | { [fileName: string]: string }): SchemaTypeSource {
     let fileNames: string[];
     let host: ts.CompilerHost;
 
@@ -166,5 +163,5 @@ export function schemaForTypeScriptSources(
     if (topLevelName === undefined) {
         topLevelName = "";
     }
-    return { schema: JSON.stringify(schema), name: topLevelName, uris };
+    return { kind: "schema", schema: JSON.stringify(schema), name: topLevelName, uris, isConverted: true };
 }

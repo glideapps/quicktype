@@ -32,7 +32,7 @@ export { TargetLanguage } from "./TargetLanguage";
 export { SerializedRenderResult, Annotation } from "./Source";
 export { all as languages, languageNamed } from "./language/All";
 export { OptionDefinition } from "./RendererOptions";
-export { TypeSource, GraphQLTypeSource, JSONTypeSource, SchemaTypeSource, TypeScriptTypeSource } from "./TypeSource";
+export { TypeSource, GraphQLTypeSource, JSONTypeSource, SchemaTypeSource } from "./TypeSource";
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {

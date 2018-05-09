@@ -4,7 +4,6 @@ import { Map, List, Set } from "immutable";
 import { getStream } from "../get-stream";
 import { Readable } from "stream";
 
-import { schemaForTypeScriptSources } from "./TypeScriptInput";
 import { Ref, checkJSONSchema, refsInSchemaForURI } from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
@@ -14,7 +13,6 @@ import {
     TypeSource,
     SchemaTypeSource,
     isSchemaSource,
-    isTypeScriptSource,
     StringInput,
     isGraphQLSource,
     isJSONSource
@@ -28,16 +26,6 @@ function toReadable(source: string | Readable): Readable {
 
 async function toString(source: string | Readable): Promise<string> {
     return typeof source === "string" ? source : await getStream(source);
-}
-
-function toSchemaSource(source: TypeSource): [SchemaTypeSource, boolean] | undefined {
-    if (isSchemaSource(source)) {
-        return [source, true];
-    } else if (isTypeScriptSource(source)) {
-        const { schema, name, uris } = schemaForTypeScriptSources(source.sources);
-        return [{ kind: "schema", name, schema, uris }, false];
-    }
-    return undefined;
 }
 
 class InputJSONSchemaStore extends JSONSchemaStore {
@@ -114,7 +102,7 @@ export class InputData {
             }
 
             return true;
-        } else if (isSchemaSource(source) || isTypeScriptSource(source)) {
+        } else if (isSchemaSource(source)) {
             return false;
         }
         return assertNever(source);
@@ -166,16 +154,13 @@ export class InputData {
         let needIR = false;
 
         for (const source of sources) {
-            const maybeSchemaSource = toSchemaSource(source);
-
-            if (maybeSchemaSource !== undefined) {
-                const [schemaSource, isDirectInput] = maybeSchemaSource;
+            if (isSchemaSource(source)) {
+                const isDirectInput = source.isConverted !== true;
                 needIR = isDirectInput || needIR;
 
-                this.addSchemaTypeSource(schemaSource);
+                this.addSchemaTypeSource(source);
             } else {
                 needIR = (await this.addOtherTypeSource(source)) || needIR;
-                continue;
             }
         }
 
