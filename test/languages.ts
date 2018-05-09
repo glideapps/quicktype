@@ -528,6 +528,7 @@ export const KotlinLanguage: Language = {
     "pokedex.json",
     "us-senators.json",
     "0b91a.json",
+    "0e0c2.json",
     // Some odd property names prevent Klaxon from mapping to constructors
     // https://github.com/cbeust/klaxon/issues/146
     "blns-object.json",
