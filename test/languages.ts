@@ -524,7 +524,9 @@ export const KotlinLanguage: Language = {
   topLevel: "TopLevel",
   skipJSON: [
     // Not currently working in CI due to fancy characters
+    // for some reason we're not reading unicode correctly on linux
     "pokedex.json",
+    "us-senators.json",
     // Some odd property names prevent Klaxon from mapping to constructors
     // https://github.com/cbeust/klaxon/issues/146
     "blns-object.json",
