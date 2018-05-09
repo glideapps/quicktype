@@ -104,6 +104,7 @@ const keywords = [
     "Long",
     "Int",
     "Short",
+    "System",
     "Byte",
     "String",
     "Array",
