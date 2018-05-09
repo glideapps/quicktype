@@ -19,9 +19,9 @@ import {
     splitIntoWords,
     utf32ConcatMap
 } from "../Strings";
-import { intercalateArray } from "../Support";
+import { intercalateArray, mustNotHappen } from "../Support";
 import { TargetLanguage } from "../TargetLanguage";
-import { ArrayType, ClassProperty, ClassType, EnumType, ObjectType, Type, UnionType, MapType } from "../Type";
+import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
@@ -241,7 +241,7 @@ class KotlinRenderer extends ConvenienceRenderer {
         );
     }
 
-    private fromJsonValue(t: Type, e: Sourcelike): Sourcelike {
+    private unionMemberFromJsonValue(t: Type, e: Sourcelike): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => [e, ".inside"],
@@ -254,11 +254,11 @@ class KotlinRenderer extends ConvenienceRenderer {
             _classType => [e, ".obj?.let { klaxon.parseFromJsonObject<", this.kotlinType(t), ">(it) }"],
             _mapType => [e, ".obj?.let { klaxon.parseFromJsonObject<", this.kotlinType(t), ">(it) }"],
             enumType => [e, ".string?.let { ", this.kotlinType(enumType), ".fromValue(it) }"],
-            _unionType => "false"
+            _unionType => mustNotHappen()
         );
     }
 
-    private toJsonValueGuard(t: Type, _e: Sourcelike): Sourcelike {
+    private unionMemberJsonValueGuard(t: Type, _e: Sourcelike): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => "is Any",
@@ -268,10 +268,14 @@ class KotlinRenderer extends ConvenienceRenderer {
             _doubleType => "is Double",
             _stringType => "is String",
             _arrayType => "is JsonArray<*>",
+            // These could be stricter, but for now we don't allow maps
+            // and objects in the same union
             _classType => "is JsonObject",
             _mapType => "is JsonObject",
-            _enumType => "is Any", // this.nameForNamedType(enumType),
-            _unionType => "is Any"
+            // This could be stricter, but for now we don't allow strings
+            // and enums in the same union
+            _enumType => "is String",
+            _unionType => mustNotHappen()
         );
     }
 
@@ -534,13 +538,16 @@ class KotlinRenderer extends ConvenienceRenderer {
                         let table: Sourcelike[][] = [];
                         this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
                             table.push([
-                                [this.toJsonValueGuard(t, "jv.inside")],
-                                [" -> ", name, "(", this.fromJsonValue(t, "jv"), "!!)"]
+                                [this.unionMemberJsonValueGuard(t, "jv.inside")],
+                                [" -> ", name, "(", this.unionMemberFromJsonValue(t, "jv"), "!!)"]
                             ]);
                         });
                         if (maybeNull !== null) {
                             const name = this.nameForUnionMember(u, maybeNull);
-                            table.push([[this.toJsonValueGuard(maybeNull, "jv.inside")], [" -> ", name, "()"]]);
+                            table.push([
+                                [this.unionMemberJsonValueGuard(maybeNull, "jv.inside")],
+                                [" -> ", name, "()"]
+                            ]);
                         }
                         table.push([["else"], [" -> throw IllegalArgumentException()"]]);
                         this.emitTable(table);
