@@ -1,12 +1,12 @@
 import { Set, OrderedSet, Collection } from "immutable";
 import * as pluralize from "pluralize";
-import { Chance } from "chance";
 
 import { panic, defined, assert, mapOptional } from "./support/Support";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { splitIntoWords } from "./support/Strings";
+import { Chance } from "./support/Chance";
 
-let chance: Chance.Chance;
+let chance: Chance;
 let usedRandomNames: Set<string>;
 
 export function initTypeNames(): void {
