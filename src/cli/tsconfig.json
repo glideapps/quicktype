@@ -11,6 +11,10 @@
         "outDir": "../../dist",
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "baseUrl": ".."
+        "baseUrl": "..,",
+        "paths": {
+            "../quicktype-core/*": ["quicktype-core/"],
+            "../quicktype-typescript-input/*": ["quicktype-typescript-input/"]
+        }
     }
 }

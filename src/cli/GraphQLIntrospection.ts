@@ -1,4 +1,4 @@
-import { panic } from "./Support";
+import { panic } from "../quicktype-core/Support";
 import { introspectionQuery } from "graphql";
 
 const fetch = require("node-fetch");
