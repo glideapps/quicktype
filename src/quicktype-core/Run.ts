@@ -4,7 +4,7 @@ import { List, Map, OrderedMap, OrderedSet } from "immutable";
 import * as targetLanguages from "./language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assert, defined } from "./Support";
+import { assert, defined } from "./support/Support";
 import { CompressedJSON } from "./input/CompressedJSON";
 import { combineClasses, findSimilarityCliques } from "./rewrites/CombineClasses";
 import { addTypesInSchema, Ref } from "./input/JSONSchemaInput";

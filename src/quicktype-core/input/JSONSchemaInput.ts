@@ -17,7 +17,7 @@ import {
     mapOptional,
     isStringMap,
     checkStringMap
-} from "../Support";
+} from "../support/Support";
 import { TypeBuilder, TypeRef } from "../TypeBuilder";
 import { TypeNames } from "../TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../TypeNames";

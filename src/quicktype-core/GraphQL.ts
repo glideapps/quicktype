@@ -14,7 +14,7 @@ import {
     DirectiveNode,
     FieldNode
 } from "graphql/language/ast";
-import { assertNever, panic } from "./Support";
+import { assertNever, panic } from "./support/Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import * as graphql from "graphql/language";
 import { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./TypeNames";

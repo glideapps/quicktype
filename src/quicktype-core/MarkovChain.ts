@@ -1,4 +1,4 @@
-import { panic, assert, inflateBase64 } from "./Support";
+import { panic, assert, inflateBase64 } from "./support/Support";
 import { encodedMarkovChain } from "./EncodedMarkovChain";
 
 // This must be null, not undefined, because we read it from JSON.

@@ -9,8 +9,8 @@ import {
     firstUpperWordStyle,
     allUpperWordStyle,
     camelCase
-} from "../Strings";
-import { intercalate, panic } from "../Support";
+} from "../support/Strings";
+import { intercalate, panic } from "../support/Support";
 
 import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";

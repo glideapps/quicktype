@@ -1,4 +1,4 @@
-import { assert } from "./Support";
+import { assert } from "./support/Support";
 import { messageError } from "./Messages";
 
 export type OptionKind = "primary" | "secondary";

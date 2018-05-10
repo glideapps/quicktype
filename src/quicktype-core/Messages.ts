@@ -1,4 +1,4 @@
-import { StringMap } from "./Support";
+import { StringMap } from "./support/Support";
 import { Ref } from "./input/JSONSchemaInput";
 
 export type ErrorProperties =

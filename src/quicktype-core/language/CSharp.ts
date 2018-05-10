@@ -12,8 +12,8 @@ import {
     combineWords,
     firstUpperWordStyle,
     camelCase
-} from "../Strings";
-import { intercalate, defined, assert, panic, StringMap } from "../Support";
+} from "../support/Strings";
+import { intercalate, defined, assert, panic, StringMap } from "../support/Support";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";

@@ -5,7 +5,7 @@ import { stringTypesForType, combineTypeAttributesOfTypes } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { TypeRef, StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
-import { assert, defined } from "../Support";
+import { assert, defined } from "../support/Support";
 import { combineTypeAttributes } from "../TypeAttributes";
 
 // A union needs replacing if it contains more than one string type, one of them being

@@ -3,7 +3,7 @@ import { Set, OrderedSet } from "immutable";
 import { TypeGraph } from "../TypeGraph";
 import { Type, UnionType, IntersectionType } from "../Type";
 import { makeGroupsToFlatten } from "../TypeUtils";
-import { assert } from "../Support";
+import { assert } from "../support/Support";
 import { TypeRef, StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { unifyTypes, UnifyUnionBuilder } from "../UnifyClasses";

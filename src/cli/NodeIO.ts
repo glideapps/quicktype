@@ -4,7 +4,7 @@ import { getStream } from "../quicktype-core/get-stream/index";
 
 import { JSONSchemaStore, JSONSchema } from "../quicktype-core/input/JSONSchemaStore";
 import { messageError } from "../quicktype-core/Messages";
-import { parseJSON } from "../quicktype-core/Support";
+import { parseJSON } from "../quicktype-core/support/Support";
 
 // The typings for this module are screwy
 const isURL = require("is-url");

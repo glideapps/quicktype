@@ -2,7 +2,7 @@ import { Set, List, OrderedSet, hash } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
 import { Type } from "./Type";
-import { panic, defined } from "./Support";
+import { panic, defined } from "./support/Support";
 import { Graph } from "./Graph";
 import { messageError } from "./Messages";
 

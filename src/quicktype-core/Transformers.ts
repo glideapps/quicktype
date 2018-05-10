@@ -3,7 +3,7 @@ import { OrderedSet, is, hash, List } from "immutable";
 import { UnionType, Type, EnumType, PrimitiveType } from "./Type";
 import { TypeAttributeKind } from "./TypeAttributes";
 import { TypeRef } from "./TypeBuilder";
-import { panic, addHashCode, assert, mapOptional, indentationString } from "./Support";
+import { panic, addHashCode, assert, mapOptional, indentationString } from "./support/Support";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
 
 function debugStringForType(t: Type): string {

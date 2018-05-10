@@ -19,11 +19,11 @@ import {
     firstUpperWordStyle,
     allUpperWordStyle,
     allLowerWordStyle
-} from "../Strings";
-import { defined, assertNever, panic, intercalate } from "../Support";
+} from "../support/Strings";
+import { defined, assertNever, panic, intercalate } from "../support/Support";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { StringOption, EnumOption, BooleanOption, Option } from "../RendererOptions";
-import { assert } from "../Support";
+import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 
 export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";

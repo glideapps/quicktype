@@ -18,8 +18,8 @@ import {
     legalizeCharacters,
     splitIntoWords,
     utf32ConcatMap
-} from "../Strings";
-import { intercalateArray, mustNotHappen } from "../Support";
+} from "../support/Strings";
+import { intercalateArray, mustNotHappen } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
 import { TypeGraph } from "../TypeGraph";

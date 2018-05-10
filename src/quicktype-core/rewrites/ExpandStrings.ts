@@ -5,7 +5,7 @@ import { stringTypesForType } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
 import { TypeRef, StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
-import { assert, defined } from "../Support";
+import { assert, defined } from "../support/Support";
 import { emptyTypeAttributes } from "../TypeAttributes";
 import { StringTypes } from "../StringTypes";
 

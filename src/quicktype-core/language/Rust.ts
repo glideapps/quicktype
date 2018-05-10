@@ -14,14 +14,14 @@ import {
     isPrintable,
     isAscii,
     isLetterOrUnderscore
-} from "../Strings";
+} from "../support/Strings";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { UnionType, Type, ClassType, EnumType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { BooleanOption, EnumOption, Option } from "../RendererOptions";
-import { defined } from "../Support";
+import { defined } from "../support/Support";
 
 export enum Density {
     Normal,

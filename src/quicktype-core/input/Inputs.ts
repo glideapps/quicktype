@@ -7,7 +7,16 @@ import { Readable } from "stream";
 import { Ref, checkJSONSchema, refsInSchemaForURI } from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
-import { parseJSON, panic, assertNever, assert, forEachSync, defined, withDefault, errorMessage } from "../Support";
+import {
+    parseJSON,
+    panic,
+    assertNever,
+    assert,
+    forEachSync,
+    defined,
+    withDefault,
+    errorMessage
+} from "../support/Support";
 import { messageAssert, messageError } from "../Messages";
 import {
     TypeSource,

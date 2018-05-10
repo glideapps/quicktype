@@ -1,14 +1,14 @@
 import { Type, ArrayType, UnionType, ClassType, EnumType } from "../Type";
 import { matchType, nullableFromUnion, isNamedType } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
-import { utf16StringEscape, camelCase } from "../Strings";
+import { utf16StringEscape, camelCase } from "../support/Strings";
 
 import { Sourcelike, modifySource, MultiWord, singleWord, parenIfNeeded, multiWord } from "../Source";
 import { Name } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { BooleanOption, Option } from "../RendererOptions";
 import { JavaScriptTargetLanguage, JavaScriptRenderer } from "./JavaScript";
-import { defined, panic } from "../Support";
+import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 
 export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {

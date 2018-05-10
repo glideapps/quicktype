@@ -5,7 +5,7 @@ import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType,
 import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
-import { defined, panic, nonNull, StringMap, assert } from "./Support";
+import { defined, panic, nonNull, StringMap, assert } from "./support/Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 import { trimEnd } from "lodash";

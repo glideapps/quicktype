@@ -4,7 +4,7 @@ import { List, Map, Range } from "immutable";
 
 import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
-import { intercalate, defined, assertNever, panic, assert, withDefault } from "./Support";
+import { intercalate, defined, assertNever, panic, assert, withDefault } from "./support/Support";
 
 export type Source =
     | TextSource
