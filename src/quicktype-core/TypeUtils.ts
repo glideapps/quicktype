@@ -1,6 +1,6 @@
 import { OrderedSet, Collection, Map, Set } from "immutable";
 
-import { defined, panic, assert, assertNever } from "./Support";
+import { defined, panic, assert, assertNever } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes, CombinationKind } from "./TypeAttributes";
 import {
     Type,

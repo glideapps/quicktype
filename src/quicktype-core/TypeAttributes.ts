@@ -1,6 +1,6 @@
 import { Map, OrderedSet, hash } from "immutable";
 
-import { panic, setUnion } from "./Support";
+import { panic, setUnion } from "./support/Support";
 import { Type } from "./Type";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
 

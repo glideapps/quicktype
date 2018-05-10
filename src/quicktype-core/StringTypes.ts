@@ -1,7 +1,7 @@
 import { is, hash, OrderedMap } from "immutable";
 
 import { TypeAttributeKind } from "./TypeAttributes";
-import { addHashCode, defined, assert } from "./Support";
+import { addHashCode, defined, assert } from "./support/Support";
 import { StringTypeMapping } from "./TypeBuilder";
 import { PrimitiveStringTypeKind } from "./Type";
 

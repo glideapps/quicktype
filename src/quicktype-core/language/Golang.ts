@@ -14,8 +14,8 @@ import {
     firstUpperWordStyle,
     allUpperWordStyle,
     camelCase
-} from "../Strings";
-import { defined } from "../Support";
+} from "../support/Strings";
+import { defined } from "../support/Support";
 import { StringOption, BooleanOption, Option } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";

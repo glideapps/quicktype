@@ -17,10 +17,10 @@ import {
     utf16LegalizeCharacters,
     stringEscape,
     addPrefixIfNecessary
-} from "../Strings";
+} from "../support/Strings";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { StringOption, BooleanOption, EnumOption, Option } from "../RendererOptions";
-import { assert, defined } from "../Support";
+import { assert, defined } from "../support/Support";
 
 const unicode = require("unicode-properties");
 

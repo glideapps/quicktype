@@ -5,7 +5,7 @@ import { Renderer } from "./Renderer";
 import { OptionDefinition, Option } from "./RendererOptions";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
 import { StringTypeMapping } from "./TypeBuilder";
-import { defined } from "./Support";
+import { defined } from "./support/Support";
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { UnionType } from "./Type";
 

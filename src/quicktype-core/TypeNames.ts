@@ -2,9 +2,9 @@ import { Set, OrderedSet, Collection } from "immutable";
 import * as pluralize from "pluralize";
 import { Chance } from "chance";
 
-import { panic, defined, assert, mapOptional } from "./Support";
+import { panic, defined, assert, mapOptional } from "./support/Support";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
-import { splitIntoWords } from "./Strings";
+import { splitIntoWords } from "./support/Strings";
 
 let chance: Chance.Chance;
 let usedRandomNames: Set<string>;

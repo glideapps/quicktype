@@ -24,7 +24,7 @@ import {
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
-import { defined, assert, panic, mapOptional, withDefault } from "./Support";
+import { defined, assert, panic, mapOptional, withDefault } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 
 export class TypeRef {

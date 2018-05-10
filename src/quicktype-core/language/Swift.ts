@@ -23,8 +23,8 @@ import {
     allUpperWordStyle,
     camelCase,
     addPrefixIfNecessary
-} from "../Strings";
-import { intercalate } from "../Support";
+} from "../support/Strings";
+import { intercalate } from "../support/Support";
 import { List } from "immutable";
 
 const MAX_SAMELINE_PROPERTIES = 4;

@@ -5,7 +5,7 @@ import { nonNullTypeCases, combineTypeAttributesOfTypes } from "../TypeUtils";
 
 import { TypeRef, StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
-import { assert, panic } from "../Support";
+import { assert, panic } from "../support/Support";
 import { TypeGraph } from "../TypeGraph";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
 

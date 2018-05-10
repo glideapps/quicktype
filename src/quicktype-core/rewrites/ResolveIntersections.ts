@@ -18,7 +18,7 @@ import {
     ObjectType
 } from "../Type";
 import { setOperationMembersRecursively, matchTypeExhaustive, makeGroupsToFlatten } from "../TypeUtils";
-import { assert, defined, panic, mustNotHappen } from "../Support";
+import { assert, defined, panic, mustNotHappen } from "../support/Support";
 import {
     combineTypeAttributes,
     TypeAttributes,

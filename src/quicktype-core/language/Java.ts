@@ -18,13 +18,13 @@ import {
     allUpperWordStyle,
     firstUpperWordStyle,
     allLowerWordStyle
-} from "../Strings";
+} from "../support/Strings";
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, StringOption, Option } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { defined, assert, assertNever } from "../Support";
+import { defined, assert, assertNever } from "../support/Support";
 
 export class JavaTargetLanguage extends TargetLanguage {
     private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);

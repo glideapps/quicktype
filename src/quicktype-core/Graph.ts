@@ -1,5 +1,5 @@
 import { Map, Set, OrderedSet, List } from "immutable";
-import { defined, repeated, assert, repeatedCall } from "./Support";
+import { defined, repeated, assert, repeatedCall } from "./support/Support";
 
 function countComponentGraphNodes(components: number[][]): number {
     if (components.length === 0) return 0;

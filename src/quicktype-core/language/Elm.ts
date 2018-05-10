@@ -19,8 +19,8 @@ import {
     firstUpperWordStyle,
     allLowerWordStyle,
     allUpperWordStyle
-} from "../Strings";
-import { defined, intercalate } from "../Support";
+} from "../support/Strings";
+import { defined, intercalate } from "../support/Support";
 import { Sourcelike, annotated, MultiWord, singleWord, multiWord, parenIfNeeded } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 

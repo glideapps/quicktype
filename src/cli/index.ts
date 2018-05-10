@@ -27,7 +27,15 @@ import { urlsFromURLGrammar } from "./URLGrammar";
 import { Annotation } from "../quicktype-core/Source";
 import { IssueAnnotationData } from "../quicktype-core/Annotation";
 import { Readable } from "stream";
-import { panic, assert, defined, withDefault, mapOptional, assertNever, parseJSON } from "../quicktype-core/Support";
+import {
+    panic,
+    assert,
+    defined,
+    withDefault,
+    mapOptional,
+    assertNever,
+    parseJSON
+} from "../quicktype-core/support/Support";
 import { introspectServer } from "./GraphQLIntrospection";
 import { getStream } from "../quicktype-core/get-stream/index";
 import { train } from "../quicktype-core/MarkovChain";

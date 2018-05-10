@@ -24,7 +24,7 @@ import {
     isPrintable,
     escapeNonPrintableMapper,
     intToHex
-} from "../../Strings";
+} from "../../support/Strings";
 
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";

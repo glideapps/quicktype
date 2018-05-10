@@ -2,7 +2,7 @@ import { Map, Set, OrderedSet } from "immutable";
 
 import { Type, ClassType, setOperationCasesEqual, ClassProperty } from "../Type";
 import { removeNullFromType } from "../TypeUtils";
-import { defined, panic } from "../Support";
+import { defined, panic } from "../support/Support";
 import { TypeGraph } from "../TypeGraph";
 import { TypeRef, StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";

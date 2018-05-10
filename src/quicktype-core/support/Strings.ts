@@ -3,7 +3,7 @@ import { Set } from "immutable";
 import { assert, defined, panic } from "./Support";
 import { acronyms } from "./Acronyms";
 import * as _ from "lodash";
-import { messageAssert } from "./Messages";
+import { messageAssert } from "../Messages";
 
 const unicode = require("unicode-properties");
 

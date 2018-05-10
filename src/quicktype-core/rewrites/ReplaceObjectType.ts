@@ -4,7 +4,7 @@ import { TypeGraph } from "../TypeGraph";
 import { StringTypeMapping, TypeRef } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { ObjectType, ClassProperty } from "../Type";
-import { defined } from "../Support";
+import { defined } from "../support/Support";
 import { emptyTypeAttributes } from "../TypeAttributes";
 
 export function replaceObjectType(

@@ -1,6 +1,6 @@
 import { Set, OrderedSet, List, Map, Collection, hash } from "immutable";
 
-import { defined, assert, panic } from "./Support";
+import { defined, assert, panic } from "./support/Support";
 
 export class Namespace {
     private readonly _name: string;

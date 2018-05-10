@@ -8,7 +8,7 @@ import {
     emptyTypeAttributes,
     makeTypeAttributesInferred
 } from "./TypeAttributes";
-import { defined, assert, panic, assertNever } from "./Support";
+import { defined, assert, panic, assertNever } from "./support/Support";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
 import { StringTypes, stringTypesTypeAttributeKind } from "./StringTypes";
 

@@ -1,4 +1,4 @@
-import { assert, panic } from "./Support";
+import { assert, panic } from "./support/Support";
 
 export function breakCycles<T>(outEdges: number[][], chooseBreaker: (cycle: number[]) => [number, T]): [number, T][] {
     const numNodes = outEdges.length;

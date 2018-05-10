@@ -2,7 +2,7 @@ import { Map, List, Set, OrderedSet, Collection } from "immutable";
 
 import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
-import { defined, assert, mustNotBeCalled, panic } from "./Support";
+import { defined, assert, mustNotBeCalled, panic } from "./support/Support";
 import {
     TypeRef,
     TypeBuilder,

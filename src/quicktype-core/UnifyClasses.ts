@@ -5,7 +5,7 @@ import { assertIsObject } from "./TypeUtils";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
 import { TypeLookerUp, GraphRewriteBuilder } from "./GraphRewriting";
 import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
-import { panic, assert, defined, unionOfSets } from "./Support";
+import { panic, assert, defined, unionOfSets } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 
 function getCliqueProperties(

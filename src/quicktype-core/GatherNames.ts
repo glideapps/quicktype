@@ -5,7 +5,7 @@ import { TypeGraph } from "./TypeGraph";
 import { Type, ObjectType } from "./Type";
 import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
 import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./TypeNames";
-import { defined, panic } from "./Support";
+import { defined, panic } from "./support/Support";
 import { transformationForType } from "./Transformers";
 
 // `gatherNames` infers names from given names and property names.

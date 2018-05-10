@@ -1,6 +1,6 @@
 import { OrderedSet, OrderedMap, Set, is, hash, List } from "immutable";
 
-import { defined, panic, assert, mapOptional } from "./Support";
+import { defined, panic, assert, mapOptional } from "./support/Support";
 import { TypeRef } from "./TypeBuilder";
 import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";

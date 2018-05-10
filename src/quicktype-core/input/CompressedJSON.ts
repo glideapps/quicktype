@@ -2,7 +2,7 @@ import * as stream from "stream";
 
 import { hash } from "immutable";
 
-import { defined, hashCodeInit, addHashCode, panic, assert } from "../Support";
+import { defined, hashCodeInit, addHashCode, panic, assert } from "../support/Support";
 import { isDate, isTime, isDateTime } from "../DateTime";
 
 const Combo = require("stream-json/Combo");

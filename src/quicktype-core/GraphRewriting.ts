@@ -4,7 +4,7 @@ import { PrimitiveTypeKind, Type, ClassProperty } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
-import { assert, panic, indentationString } from "./Support";
+import { assert, panic, indentationString } from "./support/Support";
 import { TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
 
 export interface TypeLookerUp {

@@ -1,7 +1,7 @@
 import { OrderedMap, Map } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
-import { assertNever } from "../Support";
+import { assertNever } from "../support/Support";
 import { TypeBuilder, TypeRef } from "../TypeBuilder";
 import { UnionBuilder, UnionAccumulator } from "../UnionBuilder";
 import { isTime, isDateTime, isDate } from "../DateTime";

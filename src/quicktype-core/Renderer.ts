@@ -5,7 +5,7 @@ import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
 import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newline } from "./Source";
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
-import { assert, panic, StringMap } from "./Support";
+import { assert, panic, StringMap } from "./support/Support";
 import { TargetLanguage } from "./TargetLanguage";
 
 export type RenderResult = {

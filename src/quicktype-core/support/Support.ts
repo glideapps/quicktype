@@ -2,7 +2,7 @@ import { Collection, List, Set, isKeyed, isIndexed } from "immutable";
 
 import { Base64 } from "js-base64";
 import * as pako from "pako";
-import { messageError } from "./Messages";
+import { messageError } from "../Messages";
 
 export function intercalate<T>(separator: T, items: Collection<any, T>): List<T> {
     const acc: T[] = [];

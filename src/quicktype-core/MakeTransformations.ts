@@ -5,7 +5,7 @@ import { TargetLanguage } from "./TargetLanguage";
 import { UnionType, TypeKind, EnumType, Type } from "./Type";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { TypeRef, StringTypeMapping } from "./TypeBuilder";
-import { defined, assert, panic } from "./Support";
+import { defined, assert, panic } from "./support/Support";
 import {
     UnionInstantiationTransformer,
     DecodingChoiceTransformer,

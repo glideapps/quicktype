@@ -1,7 +1,7 @@
 import { Map, Set } from "immutable";
 
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
-import { defined } from "./Support";
+import { defined } from "./support/Support";
 import { EnumType, UnionType, Type, ObjectType } from "./Type";
 import { messageAssert } from "./Messages";
 
