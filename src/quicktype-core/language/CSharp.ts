@@ -1,5 +1,4 @@
 import { OrderedSet, Map, Set, List } from "immutable";
-import * as handlebars from "handlebars";
 
 import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
@@ -13,7 +12,7 @@ import {
     firstUpperWordStyle,
     camelCase
 } from "../support/Strings";
-import { intercalate, defined, assert, panic, StringMap } from "../support/Support";
+import { intercalate, defined, assert, panic } from "../support/Support";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
@@ -529,23 +528,6 @@ export class CSharpRenderer extends ConvenienceRenderer {
             this.emitTypesAndSupport();
         }
     }
-
-    protected registerHandlebarsHelpers(context: StringMap): void {
-        super.registerHandlebarsHelpers(context);
-        handlebars.registerHelper("string_escape", utf16StringEscape);
-    }
-
-    protected makeHandlebarsContextForType(t: Type): StringMap {
-        const ctx = super.makeHandlebarsContextForType(t);
-        ctx.csType = this.sourcelikeToString(this.csType(t));
-        return ctx;
-    }
-
-    protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
-        const value = super.makeHandlebarsContextForUnionMember(t, name);
-        value.nullableCSType = this.sourcelikeToString(this.nullableCSType(t));
-        return value;
-    }
 }
 
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
@@ -1009,14 +991,5 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     protected needNamespace(): boolean {
         return this._needHelpers || this._needAttributes;
-    }
-
-    protected makeHandlebarsContextForType(t: Type): StringMap {
-        const ctx = super.makeHandlebarsContextForType(t);
-        if (t.kind === "enum") {
-            const name = this.nameForNamedType(t);
-            ctx.extensionsName = defined(this.names.get(defined(this._enumExtensionsNames.get(name))));
-        }
-        return ctx;
     }
 }

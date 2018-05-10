@@ -1,11 +1,10 @@
 import { Map, Set, List, OrderedSet, OrderedMap, Collection } from "immutable";
-import * as handlebars from "handlebars";
 
 import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType, ObjectType } from "./Type";
 import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
-import { defined, panic, nonNull, StringMap, assert } from "./support/Support";
+import { defined, panic, nonNull, assert } from "./support/Support";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
 import { trimEnd } from "lodash";
@@ -842,87 +841,6 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected emitSource(givenOutputFilename: string): void {
         this.processGraph();
         this.emitSourceStructure(givenOutputFilename);
-    }
-
-    protected makeHandlebarsContextForUnionMember(t: Type, name: Name): StringMap {
-        const value = this.makeHandlebarsContextForType(t);
-        value.assignedName = defined(this.names.get(name));
-        return value;
-    }
-
-    protected makeHandlebarsContextForType(t: Type): StringMap {
-        const value: StringMap = { type: { kind: t.kind, index: t.typeRef.index } };
-        const maybeName = this.nameStoreView.tryGet(t);
-        if (maybeName !== undefined) {
-            value.assignedName = this.names.get(maybeName);
-        }
-        return value;
-    }
-
-    protected makeHandlebarsContext(): StringMap {
-        this.processGraph();
-
-        const allTypes: any[] = [];
-        this.typeGraph.allTypesUnordered().forEach(t => {
-            const value = this.makeHandlebarsContextForType(t);
-            if (t instanceof ClassType) {
-                const properties: StringMap = {};
-                this.forEachClassProperty(t, "none", (name, jsonName, p) => {
-                    const propertyValue = this.makeHandlebarsContextForType(p.type);
-                    propertyValue.isOptional = p.isOptional;
-                    propertyValue.assignedName = defined(this.names.get(name));
-                    properties[jsonName] = propertyValue;
-                });
-                value.properties = properties;
-            } else if (t instanceof EnumType) {
-                const cases: StringMap = {};
-                this.forEachEnumCase(t, "none", (name, jsonName) => {
-                    cases[jsonName] = { assignedName: defined(this.names.get(name)) };
-                });
-                value.cases = cases;
-            } else if (t instanceof UnionType) {
-                const members: StringMap[] = [];
-                // FIXME: It's a bit ugly to have these two cases.
-                if (defined(this._memberNamesStoreView).tryGet(t) === undefined) {
-                    t.members.forEach(m => {
-                        members.push(this.makeHandlebarsContextForType(m));
-                    });
-                } else {
-                    this.forEachUnionMember(t, null, "none", null, (name, m) => {
-                        members.push(this.makeHandlebarsContextForUnionMember(m, name));
-                    });
-                }
-                value.members = members;
-            }
-
-            const index = t.typeRef.index;
-            while (allTypes.length <= index) {
-                allTypes.push(undefined);
-            }
-            allTypes[index] = value;
-        });
-
-        const namedTypes: any[] = [];
-        const addNamedType = (t: Type): void => {
-            namedTypes.push(allTypes[t.typeRef.index]);
-        };
-        this.forEachNamedType("none", addNamedType, addNamedType, addNamedType);
-
-        const topLevels: StringMap = {};
-        this.topLevels.forEach((t, name) => {
-            const value = allTypes[t.typeRef.index];
-            value.assignedTopLevelName = this.names.get(this.nameStoreView.getForTopLevel(name));
-            topLevels[name] = value;
-        });
-        return { allTypes, topLevels, namedTypes };
-    }
-
-    protected registerHandlebarsHelpers(context: StringMap): void {
-        super.registerHandlebarsHelpers(context);
-
-        handlebars.registerHelper("with_type", function(t: any, options: any): any {
-            return options.fn(context.allTypes[t.index]);
-        });
     }
 
     protected forEachType<TResult>(process: (t: Type) => TResult): Set<TResult> {

@@ -1,4 +1,4 @@
-import { List, OrderedMap } from "immutable";
+import { OrderedMap } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
 import { Renderer } from "./Renderer";
@@ -69,16 +69,6 @@ export abstract class TargetLanguage {
         }
         const renderResult = renderer.render(givenOutputFilename);
         return renderResult.sources.map(s => serializeRenderResult(s, renderResult.names, defined(indentation)));
-    }
-
-    processHandlebarsTemplate(
-        graph: TypeGraph,
-        rendererOptions: { [name: string]: any },
-        template: string
-    ): SerializedRenderResult {
-        const renderer = this.makeRenderer(graph, undefined, rendererOptions);
-        const output = renderer.processHandlebarsTemplate(template);
-        return { lines: output.split("\n"), annotations: List() };
     }
 
     protected get defaultIndentation(): string {
