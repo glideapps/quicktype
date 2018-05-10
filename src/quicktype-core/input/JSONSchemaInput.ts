@@ -1,7 +1,6 @@
 import { List, OrderedSet, Map, Set, hash, OrderedMap } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
-import * as lodash from "lodash";
 
 import { ClassProperty, PrimitiveTypeKind } from "../Type";
 import {
@@ -16,7 +15,8 @@ import {
     checkArray,
     mapOptional,
     isStringMap,
-    checkStringMap
+    checkStringMap,
+    hasOwnProperty
 } from "../support/Support";
 import { TypeBuilder, TypeRef } from "../TypeBuilder";
 import { TypeNames } from "../TypeNames";
@@ -271,7 +271,7 @@ export class Ref {
                     }
                     return this.lookup(local[index], rest, root);
                 } else {
-                    if (!lodash.has(local, [key])) {
+                    if (!hasOwnProperty(local, key)) {
                         return messageError("SchemaKeyNotInObject", withRef(refMaker, { key }));
                     }
                     return this.lookup(checkJSONSchemaObject(local, refMaker)[first.key], rest, root);

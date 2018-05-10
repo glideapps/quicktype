@@ -1,5 +1,4 @@
 import * as URI from "urijs";
-import * as lodash from "lodash";
 import { Map, List, Set } from "immutable";
 import { getStream } from "../get-stream";
 import { Readable } from "stream";
@@ -15,7 +14,8 @@ import {
     forEachSync,
     defined,
     withDefault,
-    errorMessage
+    errorMessage,
+    hasOwnProperty
 } from "../support/Support";
 import { messageAssert, messageError } from "../Messages";
 import {
@@ -101,7 +101,7 @@ export class InputData {
                         message: errorMessage(e)
                     });
                 }
-                if (!lodash.has(this._samples, [name])) {
+                if (!hasOwnProperty(this._samples, name)) {
                     this._samples[name] = { samples: [] };
                 }
                 this._samples[name].samples.push(input);
@@ -177,7 +177,7 @@ export class InputData {
     }
 
     private addSchemaInput(name: string, ref: Ref): void {
-        messageAssert(!lodash.has(this._schemas, [name]), "DriverMoreThanOneSchemaGiven", { name });
+        messageAssert(!hasOwnProperty(this._schemas, name), "DriverMoreThanOneSchemaGiven", { name });
         this._schemas[name] = { ref };
     }
 

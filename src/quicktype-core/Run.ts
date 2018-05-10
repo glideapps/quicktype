@@ -1,4 +1,3 @@
-import * as _ from "lodash";
 import { List, Map, OrderedMap, OrderedSet } from "immutable";
 
 import * as targetLanguages from "./language/All";
@@ -99,7 +98,7 @@ export class Run {
     private readonly _options: Options;
 
     constructor(options: Partial<Options>) {
-        this._options = _.mergeWith(_.clone(options), defaultOptions, (o, s) => (o === undefined ? s : o));
+        this._options = Object.assign(Object.assign({}, defaultOptions), options);
     }
 
     private async makeGraph(

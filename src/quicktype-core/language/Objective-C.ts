@@ -1,6 +1,3 @@
-import * as lo from "lodash";
-import { includes, repeat } from "lodash";
-
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, ArrayType, MapType, UnionType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion } from "../TypeUtils";
@@ -16,7 +13,9 @@ import {
     camelCase,
     utf16LegalizeCharacters,
     stringEscape,
-    addPrefixIfNecessary
+    addPrefixIfNecessary,
+    repeatString,
+    fastIsUpperCase
 } from "../support/Strings";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { StringOption, BooleanOption, EnumOption, Option } from "../RendererOptions";
@@ -97,14 +96,14 @@ function propertyNameStyle(original: string, isBool: boolean = false): string {
     if (isBool) {
         if (words.length === 0) {
             words = [{ word: "flag", isAcronym: false }];
-        } else if (!words[0].isAcronym && !includes(booleanPrefixes, words[0].word)) {
+        } else if (!words[0].isAcronym && booleanPrefixes.indexOf(words[0].word) < 0) {
             words = [{ word: "is", isAcronym: false }, ...words];
         }
     }
 
     // Properties cannot even begin with any of the forbidden names
     // For example, properies named new* are treated differently by ARC
-    if (words.length > 0 && includes(forbiddenPropertyNames, words[0].word)) {
+    if (words.length > 0 && forbiddenPropertyNames.indexOf(words[0].word) >= 0) {
         words = [{ word: "the", isAcronym: false }, ...words];
     }
 
@@ -209,7 +208,7 @@ function isStartCharacter(utf16Unit: number): boolean {
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return includes(["Nd", "Pc", "Mn", "Mc"], category) || isStartCharacter(utf16Unit);
+    return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
 }
 
 const legalizeName = utf16LegalizeCharacters(isPartCharacter);
@@ -251,8 +250,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private inferClassPrefix(name: string): string {
-        const caps = lo.initial(lo.takeWhile(name, s => s === s.toLocaleUpperCase())).join("");
-        return caps.length === 0 ? DEFAULT_CLASS_PREFIX : caps;
+        const l = name.length;
+        let firstNonUpper = 0;
+        while (firstNonUpper < l && fastIsUpperCase(name.charCodeAt(firstNonUpper))) {
+            firstNonUpper += 1;
+        }
+        if (firstNonUpper < 2) return DEFAULT_CLASS_PREFIX;
+        return name.substr(0, firstNonUpper - 1);
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -553,13 +557,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
 
     private topLevelToDataPrototype(name: Name, pad: boolean = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
-        const padding = pad ? repeat(" ", this.sourcelikeToString(name).length - "NSData".length) : "";
+        const padding = pad ? repeatString(" ", this.sourcelikeToString(name).length - "NSData".length) : "";
         return ["NSData", padding, " *_Nullable ", name, "ToData(", name, " *", parameter, ", NSError **error)"];
     }
 
     private topLevelToJSONPrototype(name: Name, pad: boolean = false): Sourcelike {
         const parameter = this.variableNameForTopLevel(name);
-        const padding = pad ? repeat(" ", this.sourcelikeToString(name).length - "NSString".length) : "";
+        const padding = pad ? repeatString(" ", this.sourcelikeToString(name).length - "NSString".length) : "";
         return [
             "NSString",
             padding,
