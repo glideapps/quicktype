@@ -5,9 +5,9 @@ import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
 import { Renderer, BlankLineLocations } from "./Renderer";
 import { defined, panic, nonNull, assert } from "./support/Support";
+import { trimEnd } from "./support/Strings";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
 
-import { trimEnd } from "lodash";
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 import { TypeAttributeStoreView } from "./TypeGraph";
 import {

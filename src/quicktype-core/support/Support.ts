@@ -4,6 +4,17 @@ import { Base64 } from "js-base64";
 import * as pako from "pako";
 import { messageError } from "../Messages";
 
+export function hasOwnProperty(obj: object, name: string): boolean {
+    return Object.prototype.hasOwnProperty.call(obj, name);
+}
+
+export function findInArray<T>(arr: T[], p: (t: T) => boolean): T | undefined {
+    for (const t of arr) {
+        if (p(t)) return t;
+    }
+    return undefined;
+}
+
 export function intercalate<T>(separator: T, items: Collection<any, T>): List<T> {
     const acc: T[] = [];
     items.forEach((x: T) => {

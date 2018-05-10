@@ -14,7 +14,6 @@
     "dependencies": {
         "immutable": "^4.0.0-rc.9",
         "js-base64": "^2.4.3",
-        "lodash": "^4.17.10",
         "pako": "^1.0.6",
         "pluralize": "^7.0.0",
         "stream-json": "0.5.2",
@@ -24,7 +23,6 @@
     },
     "devDependencies": {
         "@types/js-base64": "^2.3.1",
-        "@types/lodash": "^4.14.108",
         "@types/node": "^8.10.10",
         "@types/pako": "^1.0.0",
         "@types/pluralize": "0.0.28",

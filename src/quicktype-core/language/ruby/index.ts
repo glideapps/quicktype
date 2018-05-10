@@ -1,4 +1,3 @@
-import { snakeCase, includes } from "lodash";
 const unicode = require("unicode-properties");
 
 import { TypeGraph } from "../../TypeGraph";
@@ -28,6 +27,11 @@ import {
 
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
+}
+
+function snakeCase(str: string): string {
+    const words = splitIntoWords(str).map(({ word }) => word.toLowerCase());
+    return words.join("_");
 }
 
 const stringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, unicodeEscape));
@@ -78,7 +82,7 @@ function isStartCharacter(utf16Unit: number): boolean {
 
 function isPartCharacter(utf16Unit: number): boolean {
     const category: string = unicode.getCategory(utf16Unit);
-    return includes(["Nd", "Pc", "Mn", "Mc"], category) || isStartCharacter(utf16Unit);
+    return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
 }
 
 const legalizeName = legalizeCharacters(isPartCharacter);
@@ -201,7 +205,7 @@ export class RubyRenderer extends ConvenienceRenderer {
             classType => {
                 let info: { name: Name; prop: ClassProperty } | undefined;
                 this.forEachClassProperty(classType, "none", (name, _json, prop) => {
-                    if (includes(["class", "map", "array"], prop.type.kind)) {
+                    if (["class", "map", "array"].indexOf(prop.type.kind) >= 0) {
                         info = { name, prop };
                     } else if (info === undefined) {
                         info = { name, prop };

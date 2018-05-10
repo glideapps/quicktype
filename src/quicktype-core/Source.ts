@@ -1,10 +1,9 @@
-import * as _ from "lodash";
-
 import { List, Map, Range } from "immutable";
 
 import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
 import { intercalate, defined, assertNever, panic, assert, withDefault } from "./support/Support";
+import { repeatString } from "./support/Strings";
 
 export type Source =
     | TextSource
@@ -173,7 +172,7 @@ export function serializeRenderResult(
 
     function indentIfNeeded(): void {
         if (indentNeeded === 0) return;
-        currentLine.push(_.repeat(indentation, indentNeeded));
+        currentLine.push(repeatString(indentation, indentNeeded));
         indentNeeded = 0;
     }
 
@@ -226,7 +225,7 @@ export function serializeRenderResult(
                         const srcWidth = withDefault<number>(rowWidths.get(x), 0);
                         serializeToStringArray(src);
                         if (x < numColumns - 1 && srcWidth < colWidth) {
-                            currentLine.push(_.repeat(" ", colWidth - srcWidth));
+                            currentLine.push(repeatString(" ", colWidth - srcWidth));
                         }
                     }
                     if (y < numRows - 1) {

@@ -1,5 +1,3 @@
-import { find, includes } from "lodash";
-
 import { TargetLanguage } from "../TargetLanguage";
 
 import CSharpTargetLanguage from "./CSharp";
@@ -15,6 +13,7 @@ import ElmTargetLanguage from "./Elm";
 import JSONSchemaTargetLanguage from "./JSONSchema";
 import RustTargetLanguage from "./Rust";
 import RubyTargetLanguage from "./ruby";
+import { findInArray } from "../support/Support";
 
 export const all: TargetLanguage[] = [
     new CSharpTargetLanguage(),
@@ -37,7 +36,7 @@ export function languageNamed(name: string, targetLanguages?: TargetLanguage[]):
     if (targetLanguages === undefined) {
         targetLanguages = all;
     }
-    const maybeTargetLanguage = find(targetLanguages, l => includes(l.names, name) || l.displayName === name);
+    const maybeTargetLanguage = findInArray(targetLanguages, l => l.names.indexOf(name) >= 0 || l.displayName === name);
     if (maybeTargetLanguage !== undefined) return maybeTargetLanguage;
-    return find(targetLanguages, l => l.extension === name);
+    return findInArray(targetLanguages, l => l.extension === name);
 }

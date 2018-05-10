@@ -2,7 +2,6 @@ import { Set } from "immutable";
 
 import { assert, defined, panic } from "./Support";
 import { acronyms } from "./Acronyms";
-import * as _ from "lodash";
 import { messageAssert } from "../Messages";
 
 const unicode = require("unicode-properties");
@@ -131,10 +130,30 @@ export function legalizeCharacters(isLegal: (codePoint: number) => boolean): (s:
     return utf32ConcatMap(u => (u <= 0xffff && isLegal(u) ? String.fromCharCode(u) : ""));
 }
 
+export function repeatString(s: string, n: number): string {
+    assert(n >= 0, "Cannot repeat a string a negative number of times");
+    if (n === 0) return "";
+
+    // From https://github.com/lodash/lodash
+    // Leverage the exponentiation by squaring algorithm for a faster repeat.
+    // See https://en.wikipedia.org/wiki/Exponentiation_by_squaring for more details.
+    let result = "";
+    do {
+        if (n % 2 !== 0) {
+            result += s;
+        }
+        n = Math.floor(n / 2);
+        if (n > 0) {
+            s += s;
+        }
+    } while (n > 0);
+    return result;
+}
+
 export function intToHex(i: number, width: number): string {
     let str = i.toString(16);
     if (str.length >= width) return str;
-    return _.repeat("0", width - str.length) + str;
+    return repeatString("0", width - str.length) + str;
 }
 
 export function standardUnicodeHexEscape(codePoint: number): string {
@@ -240,6 +259,17 @@ export function isWordCharacter(codePoint: number): boolean {
     return isLetter(codePoint) || isDigit(codePoint);
 }
 
+export function trimEnd(str: string): string {
+    const l = str.length;
+    let firstWS = l;
+    for (let i = l - 1; i >= 0; i--) {
+        if (!unicode.isWhiteSpace(str.charCodeAt(i))) break;
+        firstWS = i;
+    }
+    if (firstWS === l) return str;
+    return str.substr(0, firstWS);
+}
+
 function modifyFirstChar(f: (c: string) => string, s: string): string {
     if (s === "") return s;
     return f(s[0]) + s.slice(1);
@@ -285,7 +315,7 @@ export type WordInName = {
 const fastIsWordCharacter = precomputedCodePointPredicate(isWordCharacter);
 const fastIsNonWordCharacter = precomputedCodePointPredicate(cp => !isWordCharacter(cp));
 const fastIsLowerCase = precomputedCodePointPredicate(cp => unicode.isLowerCase(cp));
-const fastIsUpperCase = precomputedCodePointPredicate(cp => unicode.isUpperCase(cp));
+export const fastIsUpperCase = precomputedCodePointPredicate(cp => unicode.isUpperCase(cp));
 const fastNonLetter = precomputedCodePointPredicate(cp => !unicode.isLowerCase(cp) && !unicode.isUpperCase(cp));
 const fastIsDigit = precomputedCodePointPredicate(isDigit);
 
