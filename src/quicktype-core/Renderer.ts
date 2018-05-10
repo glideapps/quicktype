@@ -1,11 +1,10 @@
 import { Map, Collection, OrderedSet, List, OrderedMap } from "immutable";
-import * as handlebars from "handlebars";
 
 import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
 import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newline } from "./Source";
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
-import { assert, panic, StringMap } from "./support/Support";
+import { assert, panic } from "./support/Support";
 import { TargetLanguage } from "./TargetLanguage";
 
 export type RenderResult = {
@@ -185,7 +184,6 @@ export abstract class Renderer {
 
     protected abstract setUpNaming(): OrderedSet<Namespace>;
     protected abstract emitSource(givenOutputFilename: string): void;
-    protected abstract makeHandlebarsContext(): StringMap;
 
     private assignNames(): Map<Name, string> {
         return assignNames(this.setUpNaming());
@@ -205,22 +203,6 @@ export abstract class Renderer {
             this.finishFile(givenOutputFilename);
         }
         return { sources: this._finishedFiles, names: this._names };
-    }
-
-    protected registerHandlebarsHelpers(_context: StringMap): void {
-        handlebars.registerHelper("if_eq", function(this: any, a: any, b: any, options: any): any {
-            if (a === b) {
-                return options.fn(this);
-            }
-        });
-    }
-
-    processHandlebarsTemplate(template: string): string {
-        this._names = this.assignNames();
-        const context = this.makeHandlebarsContext();
-        this.registerHandlebarsHelpers(context);
-        const compiledTemplate = handlebars.compile(template);
-        return compiledTemplate(context);
     }
 
     get names(): Map<Name, string> {

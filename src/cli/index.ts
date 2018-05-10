@@ -376,12 +376,6 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             description: "HTTP header for the GraphQL introspection query."
         },
         {
-            name: "template",
-            type: String,
-            typeLabel: "FILE",
-            description: "Handlebars template file."
-        },
-        {
             name: "no-maps",
             type: Boolean,
             description: "Don't infer maps, always use classes."
@@ -740,11 +734,6 @@ export async function makeQuicktypeOptions(
             return messageError("DriverUnknownSourceLanguage", { lang: options.srcLang });
     }
 
-    let handlebarsTemplate: string | undefined = undefined;
-    if (options.template !== undefined) {
-        handlebarsTemplate = fs.readFileSync(options.template, "utf8");
-    }
-
     const components = mapOptional(d => d.split(","), options.debug);
     const debugAll = components !== undefined && components.indexOf("all") >= 0;
     let debugPrintGraph = debugAll;
@@ -794,7 +783,6 @@ export async function makeQuicktypeOptions(
         noRender: options.noRender,
         rendererOptions: options.rendererOptions,
         leadingComments,
-        handlebarsTemplate,
         findSimilarClassesSchemaURI: options.findSimilarClassesSchema,
         outputFilename: mapOptional(path.basename, options.out),
         schemaStore: new FetchingJSONSchemaStore(),

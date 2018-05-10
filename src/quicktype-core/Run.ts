@@ -50,7 +50,6 @@ export type RendererOptions = { [name: string]: string };
 export interface Options {
     lang: string | TargetLanguage;
     sources: TypeSource[];
-    handlebarsTemplate: string | undefined;
     findSimilarClassesSchemaURI: string | undefined;
     inferMaps: boolean;
     inferEnums: boolean;
@@ -75,7 +74,6 @@ export interface Options {
 const defaultOptions: Options = {
     lang: "ts",
     sources: [],
-    handlebarsTemplate: undefined,
     findSimilarClassesSchemaURI: undefined,
     inferMaps: true,
     inferEnums: true,
@@ -309,9 +307,7 @@ export class Run {
 
         const targetLanguage = getTargetLanguage(this._options.lang);
         let needIR =
-            targetLanguage.names.indexOf("schema") < 0 ||
-            this._options.findSimilarClassesSchemaURI !== undefined ||
-            this._options.handlebarsTemplate !== undefined;
+            targetLanguage.names.indexOf("schema") < 0 || this._options.findSimilarClassesSchemaURI !== undefined;
 
         const mapping = targetLanguage.stringTypeMapping;
         const makeDate = mapping.date !== "string";
@@ -355,27 +351,14 @@ export class Run {
             return this.makeSimpleTextResult(lines);
         }
 
-        if (this._options.handlebarsTemplate !== undefined) {
-            return OrderedMap([
-                [
-                    this._options.outputFilename,
-                    targetLanguage.processHandlebarsTemplate(
-                        graph,
-                        this._options.rendererOptions,
-                        this._options.handlebarsTemplate
-                    )
-                ]
-            ] as [string, SerializedRenderResult][]);
-        } else {
-            return targetLanguage.renderGraphAndSerialize(
-                graph,
-                this._options.outputFilename,
-                this._options.alphabetizeProperties,
-                this._options.leadingComments,
-                this._options.rendererOptions,
-                this._options.indentation
-            );
-        }
+        return targetLanguage.renderGraphAndSerialize(
+            graph,
+            this._options.outputFilename,
+            this._options.alphabetizeProperties,
+            this._options.leadingComments,
+            this._options.rendererOptions,
+            this._options.indentation
+        );
     }
 }
 
