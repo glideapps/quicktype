@@ -11,38 +11,35 @@ import {
     quicktypeMultiFile,
     SerializedRenderResult,
     TargetLanguage,
-    languageNamed
-} from "../quicktype-core/Run";
-
-import {
+    languageNamed,
     JSONTypeSource,
     TypeSource,
     GraphQLTypeSource,
     StringInput,
-    SchemaTypeSource
-} from "../quicktype-core/TypeSource";
-import { OptionDefinition } from "../quicktype-core/RendererOptions";
-import * as defaultTargetLanguages from "../quicktype-core/language/All";
-import { urlsFromURLGrammar } from "./URLGrammar";
-import { Annotation } from "../quicktype-core/Source";
-import { IssueAnnotationData } from "../quicktype-core/Annotation";
-import { Readable } from "stream";
-import {
+    SchemaTypeSource,
+    OptionDefinition,
+    defaultTargetLanguages,
+    Annotation,
+    IssueAnnotationData,
     panic,
     assert,
     defined,
     withDefault,
     mapOptional,
     assertNever,
-    parseJSON
-} from "../quicktype-core/support/Support";
+    parseJSON,
+    getStream,
+    trainMarkovChain,
+    messageError,
+    messageAssert
+} from "../quicktype-core";
+
+import { urlsFromURLGrammar } from "./URLGrammar";
+import { Readable } from "stream";
 import { introspectServer } from "./GraphQLIntrospection";
-import { getStream } from "../quicktype-core/get-stream/index";
-import { train } from "../quicktype-core/MarkovChain";
 import { sourcesFromPostmanCollection } from "./PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { messageError, messageAssert } from "../quicktype-core/Messages";
 import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 
 const commandLineArgs = require("command-line-args");
@@ -518,7 +515,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
         return inferCLIOptions({ help: true }, targetLanguage);
     }
 
-    const targetLanguages = targetLanguage === undefined ? defaultTargetLanguages.all : [targetLanguage];
+    const targetLanguages = targetLanguage === undefined ? defaultTargetLanguages : [targetLanguage];
     const optionDefinitions = makeOptionDefinitions(targetLanguages);
 
     // We can only fully parse the options once we know which renderer is selected,
@@ -648,7 +645,7 @@ export async function makeQuicktypeOptions(
     targetLanguages?: TargetLanguage[]
 ): Promise<Partial<Options> | undefined> {
     if (options.help) {
-        usage(targetLanguages === undefined ? defaultTargetLanguages.all : targetLanguages);
+        usage(targetLanguages === undefined ? defaultTargetLanguages : targetLanguages);
         return undefined;
     }
     if (options.version) {
@@ -659,7 +656,7 @@ export async function makeQuicktypeOptions(
     if (options.buildMarkovChain !== undefined) {
         const contents = fs.readFileSync(options.buildMarkovChain).toString();
         const lines = contents.split("\n");
-        const mc = train(lines, 3);
+        const mc = trainMarkovChain(lines, 3);
         console.log(JSON.stringify(mc));
         return undefined;
     }
