@@ -13,7 +13,6 @@
     },
     "dependencies": {
         "chance": "^1.0.13",
-        "graphql": "^0.11.7",
         "handlebars": "^4.0.11",
         "immutable": "^4.0.0-rc.9",
         "js-base64": "^2.4.3",
