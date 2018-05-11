@@ -38,15 +38,15 @@ import { OrderedSet } from "immutable";
 import { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer";
 import { KotlinMoshiRenderer } from "./KotlinMoshiRenderer";
 
-export type RendererClass = new (
+export type KotlinRendererClass = new (
     targetLanguage: TargetLanguage,
     graph: TypeGraph,
     leadingComments: string[] | undefined,
     ...optionValues: any[]
-) => ConvenienceRenderer;
+) => KotlinRenderer;
 
 export default class KotlinTargetLanguage extends TargetLanguage {
-    private readonly _frameworkOption = new EnumOption<RendererClass>(
+    private readonly _frameworkOption = new EnumOption<KotlinRendererClass>(
         "framework",
         "Serialization framework",
         [["just-types", KotlinRenderer], ["klaxon", KotlinKlaxonRenderer], ["moshi", KotlinMoshiRenderer]],
@@ -71,19 +71,20 @@ export default class KotlinTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected get rendererClass(): RendererClass {
-        class Proxy {
+    protected get rendererClass(): KotlinRendererClass {
+        class KotlinRendererProxy extends KotlinRenderer {
             constructor(
                 targetLanguage: TargetLanguage,
                 graph: TypeGraph,
                 leadingComments: string[] | undefined,
-                rendererClass: RendererClass,
+                rendererClass: KotlinRendererClass,
                 packageName: string
             ) {
+                super(targetLanguage, graph, leadingComments, packageName);
                 return new rendererClass(targetLanguage, graph, leadingComments, packageName);
             }
         }
-        return Proxy as any;
+        return KotlinRendererProxy as any;
     }
 }
 
