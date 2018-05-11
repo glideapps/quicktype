@@ -3,6 +3,8 @@ import * as process from "process";
 
 export interface Language {
   name: string;
+  // Used to distinguish divergent instance of the same underlying language
+  flavor?: string;
   base: string;
   setupCommand?: string;
   compileCommand?: string;
@@ -506,6 +508,7 @@ export const FlowLanguage: Language = {
 
 export const KotlinLanguage: Language = {
   name: "kotlin",
+  flavor: "klaxon",
   base: "test/fixtures/kotlin",
   compileCommand: "./build.sh",
   runCommand(sample: string) {
@@ -564,6 +567,7 @@ export const KotlinLanguage: Language = {
 
 export const KotlinMoshiLanguage: Language = {
   name: "kotlin",
+  flavor: "moshi",
   base: "test/fixtures/kotlin-moshi",
   compileCommand: "./build.sh",
   runCommand(sample: string) {
