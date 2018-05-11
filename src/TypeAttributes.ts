@@ -114,7 +114,11 @@ export function combineTypeAttributes(
         first = firstOrArray;
         rest = [second];
     }
-    return first.mergeWith((aa, ab, kind) => (union ? kind.combine(aa, ab) : kind.intersect(aa, ab)), ...rest);
+
+    for (const r of rest) {
+        first = first.mergeWith((aa, ab, kind) => (union ? kind.combine(aa, ab) : kind.intersect(aa, ab)), r);
+    }
+    return first;
 }
 
 export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
