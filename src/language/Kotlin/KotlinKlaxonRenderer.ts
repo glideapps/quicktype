@@ -4,7 +4,7 @@ import { Name } from "../../Naming";
 import { Sourcelike } from "../../Source";
 import { mustNotHappen } from "../../Support";
 import { TargetLanguage } from "../../TargetLanguage";
-import { ClassType, Type, UnionType, PrimitiveType } from "../../Type";
+import { ClassType, Type, UnionType, PrimitiveType, MapType, ArrayType } from "../../Type";
 import { TypeGraph } from "../../TypeGraph";
 import { matchType, nullableFromUnion } from "../../TypeUtils";
 import { OrderedSet } from "immutable";
@@ -178,6 +178,40 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                 this.emitTable(table);
             });
             this.emitLine("}");
+        });
+    }
+
+    protected emitTopLevelArrayBody(t: ArrayType, name: Name): void {
+        const elementType = this.kotlinType(t.items);
+        this.emitLine("public fun toJson() = klaxon.toJsonString(this)");
+        this.ensureBlankLine();
+        this.emitBlock("companion object", () => {
+            this.emitLine(
+                "public fun fromJson(json: String) = ",
+                name,
+                "(klaxon.parseArray<",
+                elementType,
+                ">(json)!!)"
+            );
+        });
+    }
+
+    protected emitTopLevelMapBody(t: MapType, name: Name): void {
+        const elementType = this.kotlinType(t.values);
+        this.emitLine("public fun toJson() = klaxon.toJsonString(this)");
+        this.ensureBlankLine();
+        this.emitBlock("companion object", () => {
+            this.emitBlock(
+                ["public fun fromJson(json: String) = ", name],
+                () => {
+                    this.emitLine(
+                        "klaxon.parseJsonObject(java.io.StringReader(json)) as Map<String, ",
+                        elementType,
+                        ">"
+                    );
+                },
+                "paren"
+            );
         });
     }
 }

@@ -298,56 +298,48 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     }
 
+    protected emitTopLevelArrayBody(_t: ArrayType, _name: Name): void {
+        return;
+    }
+
     private emitTopLevelArray(t: ArrayType, name: Name): void {
         const elementType = this.kotlinType(t.items);
-        this.emitBlock(
-            ["class ", name, "(elements: Collection<", elementType, ">) : ArrayList<", elementType, ">(elements)"],
-            () => {
-                this.emitLine("public fun toJson() = klaxon.toJsonString(this)");
-                this.ensureBlankLine();
-                this.emitBlock("companion object", () => {
-                    this.emitLine(
-                        "public fun fromJson(json: String) = ",
-                        name,
-                        "(klaxon.parseArray<",
-                        elementType,
-                        ">(json)!!)"
-                    );
-                });
-            }
-        );
+        if (this.justTypes) {
+            this.emitLine("typealias ", name, " = Array<", elementType, ">");
+        } else {
+            this.emitBlock(
+                ["class ", name, "(elements: Collection<", elementType, ">) : ArrayList<", elementType, ">(elements)"],
+                () => {
+                    this.emitTopLevelArrayBody(t, name);
+                }
+            );
+        }
+    }
+
+    protected emitTopLevelMapBody(_t: MapType, _name: Name): void {
+        return;
     }
 
     private emitTopLevelMap(t: MapType, name: Name): void {
         const elementType = this.kotlinType(t.values);
-        this.emitBlock(
-            [
-                "class ",
-                name,
-                "(elements: Map<String, ",
-                elementType,
-                ">) : HashMap<String, ",
-                elementType,
-                ">(elements)"
-            ],
-            () => {
-                this.emitLine("public fun toJson() = klaxon.toJsonString(this)");
-                this.ensureBlankLine();
-                this.emitBlock("companion object", () => {
-                    this.emitBlock(
-                        ["public fun fromJson(json: String) = ", name],
-                        () => {
-                            this.emitLine(
-                                "klaxon.parseJsonObject(java.io.StringReader(json)) as Map<String, ",
-                                elementType,
-                                ">"
-                            );
-                        },
-                        "paren"
-                    );
-                });
-            }
-        );
+        if (this.justTypes) {
+            this.emitLine("typealias ", name, " = Map<String, ", elementType, ">");
+        } else {
+            this.emitBlock(
+                [
+                    "class ",
+                    name,
+                    "(elements: Map<String, ",
+                    elementType,
+                    ">) : HashMap<String, ",
+                    elementType,
+                    ">(elements)"
+                ],
+                () => {
+                    this.emitTopLevelMapBody(t, name);
+                }
+            );
+        }
     }
 
     protected makeRenameAttribute(escapedKotlinStringLiteral: String): Sourcelike {

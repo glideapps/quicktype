@@ -3,6 +3,8 @@ import { KotlinRenderer } from ".";
 import { Name } from "../../Naming";
 import { TargetLanguage } from "../../TargetLanguage";
 import { TypeGraph } from "../../TypeGraph";
+import { MapType, ArrayType, PrimitiveType, Type, UnionType } from "../../Type";
+import { OrderedSet } from "immutable";
 
 export class KotlinMoshiRenderer extends KotlinRenderer {
     constructor(
@@ -51,5 +53,22 @@ export class KotlinMoshiRenderer extends KotlinRenderer {
             this.emitLine("val adapter = moshi.adapter(", className, "::class.java)");
             this.emitLine("public fun fromJson(json: String) = adapter.fromJson(json)");
         });
+    }
+
+    protected emitUnionBody(
+        _u: UnionType,
+        _unionName: Name,
+        _maybeNull: PrimitiveType | null,
+        _nonNulls: OrderedSet<Type>
+    ): void {
+        this.emitLine("// TODO");
+    }
+
+    protected emitTopLevelArrayBody(_t: ArrayType, _name: Name): void {
+        this.emitLine("// TODO");
+    }
+
+    protected emitTopLevelMapBody(_t: MapType, _name: Name): void {
+        this.emitLine("// TODO");
     }
 }
