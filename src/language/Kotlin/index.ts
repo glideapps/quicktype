@@ -34,6 +34,7 @@ import {
 import { TypeGraph } from "../../TypeGraph";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
 import { OrderedSet } from "immutable";
+
 import { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer";
 import { KotlinMoshiRenderer } from "./KotlinMoshiRenderer";
 
@@ -335,9 +336,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
                     elementType,
                     ">(elements)"
                 ],
-                () => {
-                    this.emitTopLevelMapBody(t, name);
-                }
+                () => this.emitTopLevelMapBody(t, name)
             );
         }
     }
