@@ -3,6 +3,8 @@ import * as process from "process";
 
 export interface Language {
   name: string;
+  // Specify quicktype language name if name isn't really language (e.g. kotlin-moshi)
+  langauge?: string;
   base: string;
   setupCommand?: string;
   compileCommand?: string;
@@ -563,7 +565,8 @@ export const KotlinLanguage: Language = {
 };
 
 export const KotlinMoshiLanguage: Language = {
-  name: "kotlin",
+  name: "kotlin-moshi",
+  langauge: "kotlin",
   base: "test/fixtures/kotlin-moshi",
   compileCommand: "./build.sh",
   runCommand(sample: string) {
