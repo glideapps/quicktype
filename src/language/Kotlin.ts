@@ -19,23 +19,24 @@ import {
     splitIntoWords,
     utf32ConcatMap
 } from "../Strings";
-import { intercalateArray, mustNotHappen } from "../Support";
+import { mustNotHappen } from "../Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
 import { TypeGraph } from "../TypeGraph";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 
 enum Framework {
-    None,
-    Klaxon
+    None = "None",
+    Klaxon = "Klaxon",
+    Moshi = "Moshi"
 }
 
 export default class KotlinTargetLanguage extends TargetLanguage {
     private readonly _frameworkOption = new EnumOption(
         "framework",
         "Serialization framework",
-        [["just-types", Framework.None], ["klaxon", Framework.Klaxon]],
-        "klaxon"
+        [["just-types", Framework.None], ["klaxon", Framework.Klaxon], ["moshi", Framework.Moshi]],
+        "moshi"
     );
 
     private readonly _packageName = new StringOption("package", "Package", "PACKAGE", "quicktype");
@@ -283,7 +284,7 @@ class KotlinRenderer extends ConvenienceRenderer {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
         } else if (!this._justTypes) {
-            this.emitLine("// To parse the JSON, install Klaxon and do:");
+            this.emitLine(`// To parse the JSON, install ${this._framework} and do:`);
             this.emitLine("//");
             this.forEachTopLevel("none", (_, name) => {
                 this.emitLine("//   val ", modifySource(camelCase, name), " = ", name, ".fromJson(jsonString)");
@@ -294,9 +295,18 @@ class KotlinRenderer extends ConvenienceRenderer {
         this.emitLine("package ", this._package);
         this.ensureBlankLine();
 
-        if (this._framework === Framework.Klaxon) {
-            this.emitLine("import com.beust.klaxon.*");
+        switch (this._framework) {
+            case Framework.Klaxon:
+                this.emitLine("import com.beust.klaxon.*");
+                break;
+            case Framework.Moshi:
+                this.emitLine("import com.squareup.moshi.*");
+                this.emitLine("import com.squareup.moshi.kotlin.KotlinJsonAdapterFactory");
+                break;
+            default:
+                break;
         }
+        this.ensureBlankLine();
     }
 
     private emitTopLevelArray(t: ArrayType, name: Name): void {
@@ -351,17 +361,10 @@ class KotlinRenderer extends ConvenienceRenderer {
         );
     }
 
-    private klaxonRenameAttribute(propName: Name, jsonName: string, ignore: boolean = false): Sourcelike | undefined {
+    private renameAttribute(propName: Name, jsonName: string): Sourcelike | undefined {
         const escapedName = stringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
-        const properties: Sourcelike[] = [];
-        if (namesDiffer) {
-            properties.push(['name = "', escapedName, '"']);
-        }
-        if (ignore) {
-            properties.push("ignored = true");
-        }
-        return properties.length === 0 ? undefined : ["@Json(", intercalateArray(", ", properties), ")"];
+        return namesDiffer ? ['@Json(name = "', escapedName, '")'] : undefined;
     }
 
     private emitEmptyClassDefinition(c: ClassType, className: Name): void {
@@ -403,8 +406,8 @@ class KotlinRenderer extends ConvenienceRenderer {
                     meta.push(() => this.emitDescription(description));
                 }
 
-                if (this._framework === Framework.Klaxon) {
-                    const rename = this.klaxonRenameAttribute(name, jsonName);
+                if (this._framework !== Framework.None) {
+                    const rename = this.renameAttribute(name, jsonName);
                     if (rename !== undefined) {
                         meta.push(() => this.emitLine(rename));
                     }
@@ -429,7 +432,9 @@ class KotlinRenderer extends ConvenienceRenderer {
         });
 
         const isTopLevel = this.topLevels.findEntry(top => top.equals(c)) !== undefined;
-        if (this._framework === Framework.Klaxon && isTopLevel) {
+        if (!isTopLevel || this._framework === Framework.None) {
+            this.emitLine(")");
+        } else if (this._framework === Framework.Klaxon) {
             this.emitBlock(")", () => {
                 this.emitLine("public fun toJson() = klaxon.toJsonString(this)");
                 this.ensureBlankLine();
@@ -437,8 +442,15 @@ class KotlinRenderer extends ConvenienceRenderer {
                     this.emitLine("public fun fromJson(json: String) = klaxon.parse<", className, ">(json)");
                 });
             });
-        } else {
-            this.emitLine(")");
+        } else if (this._framework === Framework.Moshi) {
+            this.emitBlock(")", () => {
+                this.emitLine("public fun toJson() = ", className, ".adapter.toJson(this)");
+                this.ensureBlankLine();
+                this.emitBlock("companion object", () => {
+                    this.emitLine("val adapter = moshi.adapter(", className, "::class.java)");
+                    this.emitLine("public fun fromJson(json: String) = adapter.fromJson(json)");
+                });
+            });
         }
     }
 
@@ -467,7 +479,14 @@ class KotlinRenderer extends ConvenienceRenderer {
     private emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        if (this._framework === Framework.Klaxon) {
+        if (this._framework === Framework.None) {
+            this.emitBlock(["enum class ", enumName], () => {
+                let count = e.cases.count();
+                this.forEachEnumCase(e, "none", name => {
+                    this.emitLine(name, --count === 0 ? "" : ",");
+                });
+            });
+        } else {
             this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
                 let count = e.cases.count();
                 this.forEachEnumCase(e, "none", (name, json) => {
@@ -483,13 +502,6 @@ class KotlinRenderer extends ConvenienceRenderer {
                         table.push([["else"], [" -> throw IllegalArgumentException()"]]);
                         this.emitTable(table);
                     });
-                });
-            });
-        } else {
-            this.emitBlock(["enum class ", enumName], () => {
-                let count = e.cases.count();
-                this.forEachEnumCase(e, "none", name => {
-                    this.emitLine(name, --count === 0 ? "" : ",");
                 });
             });
         }
@@ -516,7 +528,7 @@ class KotlinRenderer extends ConvenienceRenderer {
                 }
                 this.emitTable(table);
             }
-            if (this._framework === Framework.Klaxon) {
+            if (this._framework !== Framework.None) {
                 this.ensureBlankLine();
                 this.emitLine("public fun toJson(): String = klaxon.toJsonString(when (this) {");
                 this.indent(() => {
@@ -596,6 +608,20 @@ class KotlinRenderer extends ConvenienceRenderer {
             if (converters.length > 0) {
                 this.indent(() => this.emitTable(converters));
             }
+        } else if (this._framework === Framework.Moshi) {
+            this.emitLine("private val moshi = Moshi.Builder()");
+            this.indent(() => {
+                this.emitLine(".add(KotlinJsonAdapterFactory())");
+                this.forEachEnum("none", (_, name) => {
+                    this.emitLine(".add(object {");
+                    this.indent(() => {
+                        this.emitLine("@ToJson fun toJson(e: ", name, ") = e.value");
+                        this.emitLine("@FromJson fun fromJson(v: String) = ", name, ".fromValue(v)");
+                    });
+                    this.emitLine("})");
+                });
+                this.emitLine(".build()");
+            });
         }
 
         // Top-level arrays, maps

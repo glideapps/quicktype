@@ -555,7 +555,31 @@ export const KotlinLanguage: Language = {
   ],
   skipSchema: [],
   skipMiscJSON: false,
-  rendererOptions: {},
+  rendererOptions: {
+    framework: "klaxon"
+  },
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Kotlin.ts"]
+};
+
+export const KotlinMoshiLanguage: Language = {
+  name: "kotlin",
+  base: "test/fixtures/kotlin-moshi",
+  compileCommand: "./build.sh",
+  runCommand(sample: string) {
+    return `cp "${sample}" sample.json && ./run.sh`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [],
+  allowMissingNull: true,
+  output: "TopLevel.kt",
+  topLevel: "TopLevel",
+  skipJSON: [],
+  skipSchema: [],
+  skipMiscJSON: false,
+  rendererOptions: {
+    framework: "moshi"
+  },
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/Kotlin.ts"]
 };

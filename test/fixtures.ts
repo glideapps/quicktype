@@ -591,6 +591,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.FlowLanguage),
   new JSONFixture(languages.JavaScriptLanguage),
   new JSONFixture(languages.KotlinLanguage),
+  new JSONFixture(languages.KotlinMoshiLanguage),
   new JSONSchemaJSONFixture(languages.CSharpLanguage),
   new JSONTypeScriptFixture(languages.CSharpLanguage),
   new JSONSchemaFixture(languages.CSharpLanguage),
