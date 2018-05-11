@@ -506,8 +506,9 @@ export const FlowLanguage: Language = {
   sourceFiles: ["src/language/Flow.ts"]
 };
 
-export const KotlinLanguage: Language = {
-  name: "kotlin",
+export const KotlinKlaxonLanguage: Language = {
+  name: "kotlin-klaxon",
+  langauge: "kotlin",
   base: "test/fixtures/kotlin",
   compileCommand: "./build.sh",
   runCommand(sample: string) {
