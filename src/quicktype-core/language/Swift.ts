@@ -1,9 +1,8 @@
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, UnionType, ArrayType, MapType, TypeKind, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
 import { Name, Namer, funPrefixNamer } from "../Naming";
-import { BooleanOption, EnumOption, Option, StringOption } from "../RendererOptions";
+import { BooleanOption, EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
@@ -26,57 +25,42 @@ import {
 } from "../support/Strings";
 import { intercalate } from "../support/Support";
 import { List } from "immutable";
+import { RenderContext } from "../Renderer";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
-export default class SwiftTargetLanguage extends TargetLanguage {
-    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-    private readonly _convenienceInitializers = new BooleanOption("initializers", "Convenience initializers", true);
-    private readonly _urlSessionHandlers = new BooleanOption("url-session", "URLSession task extensions", false);
-    private readonly _alamofireHandlers = new BooleanOption("alamofire", "Alamofire extensions", false);
-    private readonly _namedTypePrefix = new StringOption(
-        "type-prefix",
-        "Prefix for type names",
-        "PREFIX",
-        "",
-        "secondary"
-    );
-
-    private readonly _classOption = new EnumOption("struct-or-class", "Structs or classes", [
-        ["struct", false],
-        ["class", true]
-    ]);
-
-    private readonly _denseOption = new EnumOption(
-        "density",
-        "Code density",
-        [["dense", true], ["normal", false]],
-        "dense",
-        "secondary"
-    );
-
-    private readonly _accessLevelOption = new EnumOption(
+export const swiftOptions = {
+    justTypes: new BooleanOption("just-types", "Plain types only", false),
+    convenienceInitializers: new BooleanOption("initializers", "Convenience initializers", true),
+    urlSession: new BooleanOption("url-session", "URLSession task extensions", false),
+    alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
+    namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
+    useClasses: new EnumOption("struct-or-class", "Structs or classes", [["struct", false], ["class", true]]),
+    dense: new EnumOption("density", "Code density", [["dense", true], ["normal", false]], "dense", "secondary"),
+    accessLevel: new EnumOption(
         "access-level",
         "Access level",
         [["internal", "internal"], ["public", "public"]],
         "internal",
         "secondary"
-    );
+    )
+};
 
+export default class SwiftTargetLanguage extends TargetLanguage {
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
     }
 
     protected getOptions(): Option<any>[] {
         return [
-            this._justTypesOption,
-            this._classOption,
-            this._denseOption,
-            this._convenienceInitializers,
-            this._accessLevelOption,
-            this._urlSessionHandlers,
-            this._alamofireHandlers,
-            this._namedTypePrefix
+            swiftOptions.justTypes,
+            swiftOptions.useClasses,
+            swiftOptions.dense,
+            swiftOptions.convenienceInitializers,
+            swiftOptions.accessLevel,
+            swiftOptions.urlSession,
+            swiftOptions.alamofire,
+            swiftOptions.namedTypePrefix
         ];
     }
 
@@ -88,13 +72,8 @@ export default class SwiftTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return SwiftRenderer;
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): SwiftRenderer {
+        return new SwiftRenderer(this, renderContext, getOptionValues(swiftOptions, untypedOptionValues));
     }
 }
 
@@ -236,22 +215,14 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _justTypes: boolean,
-        private readonly _useClasses: boolean,
-        private readonly _dense: boolean,
-        private readonly _convenienceInitializers: boolean,
-        private readonly _accessLevel: string,
-        private readonly _urlSession: boolean,
-        private readonly _alamofire: boolean,
-        private readonly _namedTypePrefix: string
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof swiftOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        if (this._alamofire) {
+        if (this._options.alamofire) {
             return ["DataRequest", ...keywords];
         }
         return keywords;
@@ -270,7 +241,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("upper", s => swiftNameStyle(this._namedTypePrefix, true, s));
+        return funPrefixNamer("upper", s => swiftNameStyle(this._options.namedTypePrefix, true, s));
     }
 
     protected namerForObjectProperty(): Namer {
@@ -305,7 +276,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     private justTypesCase = (justTypes: Sourcelike, notJustTypes: Sourcelike): Sourcelike => {
-        if (this._justTypes) return justTypes;
+        if (this._options.justTypes) return justTypes;
         else return notJustTypes;
     };
 
@@ -358,11 +329,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private renderHeader = (): void => {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
-        } else if (!this._justTypes) {
+        } else if (!this._options.justTypes) {
             this.emitLine("// To parse the JSON, add this file to your project and do:");
             this.emitLine("//");
             this.forEachTopLevel("none", (t, name) => {
-                if (this._convenienceInitializers && !(t instanceof EnumType)) {
+                if (this._options.convenienceInitializers && !(t instanceof EnumType)) {
                     this.emitLine("//   let ", modifySource(camelCase, name), " = try ", name, "(json)");
                 } else {
                     this.emitLine(
@@ -376,7 +347,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 }
             });
 
-            if (this._urlSession) {
+            if (this._options.urlSession) {
                 this.emitLine("//");
                 this.emitLine("// To read values from URLs:");
                 this.forEachTopLevel("none", (_, name) => {
@@ -397,7 +368,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 });
             }
 
-            if (this._alamofire) {
+            if (this._options.alamofire) {
                 this.emitLine("//");
                 this.emitLine("// To parse values from Alamofire responses:");
                 this.forEachTopLevel("none", (_, name) => {
@@ -412,7 +383,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
         }
         this.ensureBlankLine();
         this.emitLine("import Foundation");
-        if (!this._justTypes && this._alamofire) {
+        if (!this._options.justTypes && this._options.alamofire) {
             this.emitLine("import Alamofire");
         }
     };
@@ -423,7 +394,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     private getProtocolString = (): Sourcelike => {
         let protocols: string[] = [];
-        if (!this._justTypes) {
+        if (!this._options.justTypes) {
             protocols.push("Codable");
         }
         return protocols.length > 0 ? ": " + protocols.join(", ") : "";
@@ -439,7 +410,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             const label = stringEscape(jsonName);
             const redundant = this.sourcelikeToString(name) === label;
 
-            if (this._dense && redundant) {
+            if (this._options.dense && redundant) {
                 group.push({ name });
             } else {
                 if (group.length > 0) {
@@ -459,9 +430,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     /// Access level with trailing space (e.g. "public "), or empty string
     private get accessLevel(): string {
-        return this._accessLevel === "internal"
+        return this._options.accessLevel === "internal"
             ? "" // internal is default, so we don't have to emit it
-            : this._accessLevel + " ";
+            : this._options.accessLevel + " ";
     }
 
     private renderClassDefinition = (c: ClassType, className: Name): void => {
@@ -475,10 +446,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
         this.emitDescription(this.descriptionForType(c));
 
-        const isClass = this._useClasses || this.isCycleBreakerType(c);
+        const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const structOrClass = isClass ? "class" : "struct";
         this.emitBlockWithAccess([structOrClass, " ", className, this.getProtocolString()], () => {
-            if (this._dense) {
+            if (this._options.dense) {
                 let lastProperty: ClassProperty | undefined = undefined;
                 let lastNames: Name[] = [];
 
@@ -525,7 +496,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 });
             }
 
-            if (!this._justTypes) {
+            if (!this._options.justTypes) {
                 const groups = this.getEnumPropertyGroups(c);
                 const allPropertiesRedundant = groups.every(group => {
                     return group.every(p => p.label === undefined);
@@ -566,7 +537,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     };
 
     private emitConvenienceInitializersExtension = (c: ClassType, className: Name): void => {
-        const isClass = this._useClasses || this.isCycleBreakerType(c);
+        const isClass = this._options.useClasses || this.isCycleBreakerType(c);
         const convenience = isClass ? "convenience " : "";
 
         this.emitBlockWithAccess(["extension ", className], () => {
@@ -615,7 +586,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
     private renderEnumDefinition = (e: EnumType, enumName: Name): void => {
         this.emitDescription(this.descriptionForType(e));
 
-        if (this._justTypes) {
+        if (this._options.justTypes) {
             this.emitBlockWithAccess(["enum ", enumName], () => {
                 this.forEachEnumCase(e, "none", name => {
                     this.emitLine("case ", name);
@@ -656,7 +627,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.emitLine("case ", this.nameForUnionMember(u, maybeNull));
             }
 
-            if (!this._justTypes) {
+            if (!this._options.justTypes) {
                 this.ensureBlankLine();
                 this.emitBlockWithAccess("init(from decoder: Decoder) throws", () => {
                     this.emitLine("let container = try decoder.singleValueContainer()");
@@ -1001,9 +972,9 @@ ${this.accessLevel}class JSONAny: Codable {
             this.renderUnionDefinition
         );
 
-        if (!this._justTypes) {
+        if (!this._options.justTypes) {
             // FIXME: We emit only the MARK line for top-level-enum.schema
-            if (this._convenienceInitializers) {
+            if (this._options.convenienceInitializers) {
                 this.ensureBlankLine();
                 this.emitMark("Convenience initializers");
                 this.forEachNamedType(
@@ -1023,14 +994,14 @@ ${this.accessLevel}class JSONAny: Codable {
             this.emitSupportFunctions4();
         }
 
-        if (this._urlSession) {
+        if (this._options.urlSession) {
             this.ensureBlankLine();
             this.emitMark("URLSession response handlers", true);
             this.ensureBlankLine();
             this.emitURLSessionExtension();
         }
 
-        if (this._alamofire) {
+        if (this._options.alamofire) {
             this.ensureBlankLine();
             this.emitMark("Alamofire response handlers", true);
             this.ensureBlankLine();

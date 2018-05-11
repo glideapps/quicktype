@@ -1,5 +1,4 @@
 import { TargetLanguage } from "../TargetLanguage";
-import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import {
     legalizeCharacters,
@@ -20,8 +19,9 @@ import { UnionType, Type, ClassType, EnumType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { BooleanOption, EnumOption, Option } from "../RendererOptions";
+import { BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { defined } from "../support/Support";
+import { RenderContext } from "../Renderer";
 
 export enum Density {
     Normal,
@@ -34,26 +34,19 @@ export enum Visibility {
     Public
 }
 
-export default class RustTargetLanguage extends TargetLanguage {
-    private readonly _denseOption = new EnumOption("density", "Density", [
-        ["normal", Density.Normal],
-        ["dense", Density.Dense]
-    ]);
-
-    private readonly _visibilityOption = new EnumOption("visibility", "Field visibility", [
+export const rustOptions = {
+    density: new EnumOption("density", "Density", [["normal", Density.Normal], ["dense", Density.Dense]]),
+    visibility: new EnumOption("visibility", "Field visibility", [
         ["private", Visibility.Private],
         ["crate", Visibility.Crate],
         ["public", Visibility.Public]
-    ]);
+    ]),
+    deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false)
+};
 
-    private readonly _deriveDebugOption = new BooleanOption("derive-debug", "Derive Debug impl", false);
-
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return RustRenderer;
+export default class RustTargetLanguage extends TargetLanguage {
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {
+        return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
     }
 
     constructor() {
@@ -61,7 +54,7 @@ export default class RustTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._denseOption, this._visibilityOption, this._deriveDebugOption];
+        return [rustOptions.density, rustOptions.visibility, rustOptions.deriveDebug];
     }
 }
 
@@ -188,13 +181,10 @@ const rustStringEscape = utf32ConcatMap(escapeNonPrintableMapper(isPrintable, st
 export class RustRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _density: Density,
-        private readonly _visibility: Visibility,
-        private readonly _deriveDebug: boolean
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof rustOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
     }
 
     protected makeNamedTypeNamer(): Namer {
@@ -283,15 +273,15 @@ export class RustRenderer extends ConvenienceRenderer {
     private emitRenameAttribute(propName: Name, jsonName: string) {
         const escapedName = rustStringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
-        if (namesDiffer || this._density === Density.Normal) {
+        if (namesDiffer || this._options.density === Density.Normal) {
             this.emitLine('#[serde(rename = "', escapedName, '")]');
         }
     }
 
     private get visibility(): string {
-        if (this._visibility === Visibility.Crate) {
+        if (this._options.visibility === Visibility.Crate) {
             return "pub(crate) ";
-        } else if (this._visibility === Visibility.Public) {
+        } else if (this._options.visibility === Visibility.Public) {
             return "pub ";
         }
         return "";
@@ -299,9 +289,9 @@ export class RustRenderer extends ConvenienceRenderer {
 
     protected emitStructDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
-        this.emitLine("#[derive(", this._deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
+        this.emitLine("#[derive(", this._options.deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
 
-        const blankLines = this._density === Density.Dense ? "none" : "interposing";
+        const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         const structBody = () =>
             this.forEachClassProperty(c, blankLines, (name, jsonName, prop) => {
                 this.emitDescription(this.descriptionForClassProperty(c, jsonName));
@@ -326,12 +316,12 @@ export class RustRenderer extends ConvenienceRenderer {
         }
 
         this.emitDescription(this.descriptionForType(u));
-        this.emitLine("#[derive(", this._deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
+        this.emitLine("#[derive(", this._options.deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
         this.emitLine("#[serde(untagged)]");
 
         const [, nonNulls] = removeNullFromUnion(u);
 
-        const blankLines = this._density === Density.Dense ? "none" : "interposing";
+        const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", unionName], () =>
             this.forEachUnionMember(u, nonNulls, blankLines, null, (fieldName, t) => {
                 const rustType = this.breakCycle(t, true);
@@ -342,9 +332,9 @@ export class RustRenderer extends ConvenienceRenderer {
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("#[derive(", this._deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
+        this.emitLine("#[derive(", this._options.deriveDebug ? "Debug, " : "", "Serialize, Deserialize)]");
 
-        const blankLines = this._density === Density.Dense ? "none" : "interposing";
+        const blankLines = this._options.density === Density.Dense ? "none" : "interposing";
         this.emitBlock(["pub enum ", enumName], () =>
             this.forEachEnumCase(e, blankLines, (name, jsonName) => {
                 this.emitRenameAttribute(name, jsonName);

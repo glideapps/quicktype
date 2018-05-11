@@ -1,7 +1,7 @@
 import { OrderedMap } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
-import { Renderer } from "./Renderer";
+import { Renderer, RenderContext } from "./Renderer";
 import { OptionDefinition, Option } from "./RendererOptions";
 import { serializeRenderResult, SerializedRenderResult } from "./Source";
 import { StringTypeMapping } from "./TypeBuilder";
@@ -32,28 +32,10 @@ export abstract class TargetLanguage {
         return defined(this.names[0]);
     }
 
-    protected abstract get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => Renderer;
-
-    private makeRenderer(
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        rendererOptions: { [name: string]: any }
-    ): Renderer {
-        return new this.rendererClass(
-            this,
-            graph,
-            leadingComments,
-            ...this.getOptions().map(o => o.getValue(rendererOptions))
-        );
-    }
+    protected abstract makeRenderer(renderContext: RenderContext, optionValues: { [name: string]: any }): Renderer;
 
     renderGraphAndSerialize(
-        graph: TypeGraph,
+        typeGraph: TypeGraph,
         givenOutputFilename: string,
         alphabetizeProperties: boolean,
         leadingComments: string[] | undefined,
@@ -63,7 +45,8 @@ export abstract class TargetLanguage {
         if (indentation === undefined) {
             indentation = this.defaultIndentation;
         }
-        const renderer = this.makeRenderer(graph, leadingComments, rendererOptions);
+        const renderContext = { typeGraph, leadingComments };
+        const renderer = this.makeRenderer(renderContext, rendererOptions);
         if ((renderer as any).setAlphabetizeProperties !== undefined) {
             (renderer as ConvenienceRenderer).setAlphabetizeProperties(alphabetizeProperties);
         }

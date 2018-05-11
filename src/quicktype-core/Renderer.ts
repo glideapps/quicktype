@@ -30,7 +30,15 @@ function lineIndentation(line: string): { indent: number; text: string | null } 
     return { indent: 0, text: null };
 }
 
+export type RenderContext = {
+    typeGraph: TypeGraph;
+    leadingComments: string[] | undefined;
+};
+
 export abstract class Renderer {
+    protected readonly typeGraph: TypeGraph;
+    protected readonly leadingComments: string[] | undefined;
+
     private _names: Map<Name, string> | undefined;
     private _finishedFiles: OrderedMap<string, Source>;
 
@@ -44,11 +52,10 @@ export abstract class Renderer {
     // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _preventBlankLine: boolean;
 
-    constructor(
-        protected readonly targetLanguage: TargetLanguage,
-        protected readonly typeGraph: TypeGraph,
-        protected readonly leadingComments: string[] | undefined
-    ) {
+    constructor(protected readonly targetLanguage: TargetLanguage, renderContext: RenderContext) {
+        this.typeGraph = renderContext.typeGraph;
+        this.leadingComments = renderContext.leadingComments;
+
         this._finishedFiles = Map();
         this.startEmit();
     }

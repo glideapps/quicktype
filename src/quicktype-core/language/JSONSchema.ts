@@ -3,14 +3,20 @@ import { Collection } from "immutable";
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, UnionType, EnumType, ObjectType } from "../Type";
 import { matchTypeExhaustive } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer, Name } from "../Naming";
-import { legalizeCharacters, splitIntoWords, combineWords, firstUpperWordStyle, allUpperWordStyle } from "../support/Strings";
+import {
+    legalizeCharacters,
+    splitIntoWords,
+    combineWords,
+    firstUpperWordStyle,
+    allUpperWordStyle
+} from "../support/Strings";
 import { defined, assert, panic } from "../support/Support";
 import { StringTypeMapping } from "../TypeBuilder";
 import { descriptionTypeAttributeKind } from "../TypeAttributes";
 import { Option } from "../RendererOptions";
+import { RenderContext } from "../Renderer";
 
 export default class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
@@ -33,13 +39,11 @@ export default class JSONSchemaTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return JSONSchemaRenderer;
+    protected makeRenderer(
+        renderContext: RenderContext,
+        _untypedOptionValues: { [name: string]: any }
+    ): JSONSchemaRenderer {
+        return new JSONSchemaRenderer(this, renderContext);
     }
 }
 

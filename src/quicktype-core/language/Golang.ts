@@ -2,7 +2,6 @@ import { Map } from "immutable";
 
 import { TypeKind, Type, ClassType, EnumType, UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import {
     legalizeCharacters,
@@ -16,35 +15,33 @@ import {
     camelCase
 } from "../support/Strings";
 import { defined } from "../support/Support";
-import { StringOption, BooleanOption, Option } from "../RendererOptions";
+import { StringOption, BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
+import { RenderContext } from "../Renderer";
+
+export const goOptions = {
+    justTypes: new BooleanOption("just-types", "Plain types only", false),
+    packageName: new StringOption("package", "Generated package name", "NAME", "main")
+};
 
 export default class GoTargetLanguage extends TargetLanguage {
-    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-    private readonly _packageOption = new StringOption("package", "Generated package name", "NAME", "main");
-
     constructor() {
         super("Go", ["go", "golang"], "go");
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._justTypesOption, this._packageOption];
+        return [goOptions.justTypes, goOptions.packageName];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return GoRenderer;
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): GoRenderer {
+        return new GoRenderer(this, renderContext, getOptionValues(goOptions, untypedOptionValues));
     }
 
     protected get defaultIndentation(): string {
@@ -88,12 +85,10 @@ export class GoRenderer extends ConvenienceRenderer {
 
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _justTypes: boolean,
-        private readonly _packageName: string
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof goOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
     }
 
     protected makeNamedTypeNamer(): Namer {
@@ -193,7 +188,7 @@ export class GoRenderer extends ConvenienceRenderer {
             this.emitLine("type ", name, " ", this.goType(t));
         }
 
-        if (this._justTypes) return;
+        if (this._options.justTypes) return;
 
         this.ensureBlankLine();
         this.emitFunc([unmarshalName, "(data []byte) (", name, ", error)"], () => {
@@ -275,7 +270,7 @@ export class GoRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(u));
         this.emitStruct(unionName, columns);
 
-        if (this._justTypes) return;
+        if (this._options.justTypes) return;
 
         this.ensureBlankLine();
         this.emitFunc(["(x *", unionName, ") UnmarshalJSON(data []byte) error"], () => {
@@ -316,7 +311,7 @@ export class GoRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
-        } else if (!this._justTypes) {
+        } else if (!this._options.justTypes) {
             this.emitLine("// To parse and unparse this JSON data, add this code to your project and do:");
             this.forEachTopLevel("none", (_: Type, name: Name) => {
                 this.emitLine("//");
@@ -325,9 +320,9 @@ export class GoRenderer extends ConvenienceRenderer {
                 this.emitLine("//    bytes, err = ", ref, ".Marshal()");
             });
         }
-        if (!this._justTypes) {
+        if (!this._options.justTypes) {
             this.ensureBlankLine();
-            this.emitLine("package ", this._packageName);
+            this.emitLine("package ", this._options.packageName);
             this.ensureBlankLine();
             if (this.haveNamedUnions) {
                 this.emitLine('import "bytes"');
@@ -338,13 +333,13 @@ export class GoRenderer extends ConvenienceRenderer {
         this.forEachTopLevel(
             "leading-and-interposing",
             this.emitTopLevel,
-            t => !this._justTypes || this.namedTypeToNameForTopLevel(t) === undefined
+            t => !this._options.justTypes || this.namedTypeToNameForTopLevel(t) === undefined
         );
         this.forEachObject("leading-and-interposing", this.emitClass);
         this.forEachEnum("leading-and-interposing", this.emitEnum);
         this.forEachUnion("leading-and-interposing", this.emitUnion);
 
-        if (this._justTypes) return;
+        if (this._options.justTypes) return;
 
         if (this.haveNamedUnions) {
             this.ensureBlankLine();

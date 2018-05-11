@@ -3,7 +3,6 @@ import { OrderedSet, List } from "immutable";
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, UnionType } from "../Type";
 import { nullableFromUnion, matchType, removeNullFromUnion } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -22,9 +21,10 @@ import {
 } from "../support/Strings";
 import { defined, assertNever, panic, intercalate } from "../support/Support";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { StringOption, EnumOption, BooleanOption, Option } from "../RendererOptions";
+import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
+import { RenderContext } from "../Renderer";
 
 export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
@@ -33,42 +33,41 @@ const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"]
 const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
 const upperUnderscoreValue: [string, NamingStyle] = ["upper-underscore-case", "upper-underscore"];
 
-export default class CPlusPlusTargetLanguage extends TargetLanguage {
-    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-    private readonly _namespaceOption = new StringOption(
-        "namespace",
-        "Name of the generated namespace(s)",
-        "NAME",
-        "quicktype"
-    );
-    private readonly _typeNamingStyleOption = new EnumOption<NamingStyle>("type-style", "Naming style for types", [
+export const cPlusPlusOptions = {
+    justTypes: new BooleanOption("just-types", "Plain types only", false),
+    namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
+    typeNamingStyle: new EnumOption<NamingStyle>("type-style", "Naming style for types", [
         pascalValue,
         underscoreValue,
         camelValue,
         upperUnderscoreValue
-    ]);
-    private readonly _memberNamingStyleOption = new EnumOption<NamingStyle>(
-        "member-style",
-        "Naming style for members",
-        [underscoreValue, pascalValue, camelValue, upperUnderscoreValue]
-    );
-    private readonly _enumeratorNamingStyleOption = new EnumOption<NamingStyle>(
-        "enumerator-style",
-        "Naming style for enumerators",
-        [upperUnderscoreValue, underscoreValue, pascalValue, camelValue]
-    );
+    ]),
+    memberNamingStyle: new EnumOption<NamingStyle>("member-style", "Naming style for members", [
+        underscoreValue,
+        pascalValue,
+        camelValue,
+        upperUnderscoreValue
+    ]),
+    enumeratorNamingStyle: new EnumOption<NamingStyle>("enumerator-style", "Naming style for enumerators", [
+        upperUnderscoreValue,
+        underscoreValue,
+        pascalValue,
+        camelValue
+    ])
+};
 
+export default class CPlusPlusTargetLanguage extends TargetLanguage {
     constructor() {
         super("C++", ["c++", "cpp", "cplusplus"], "cpp");
     }
 
     protected getOptions(): Option<any>[] {
         return [
-            this._justTypesOption,
-            this._namespaceOption,
-            this._typeNamingStyleOption,
-            this._memberNamingStyleOption,
-            this._enumeratorNamingStyleOption
+            cPlusPlusOptions.justTypes,
+            cPlusPlusOptions.namespace,
+            cPlusPlusOptions.typeNamingStyle,
+            cPlusPlusOptions.memberNamingStyle,
+            cPlusPlusOptions.enumeratorNamingStyle
         ];
     }
 
@@ -76,13 +75,11 @@ export default class CPlusPlusTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return CPlusPlusRenderer;
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: { [name: string]: any }
+    ): CPlusPlusRenderer {
+        return new CPlusPlusRenderer(this, renderContext, getOptionValues(cPlusPlusOptions, untypedOptionValues));
     }
 }
 
@@ -255,22 +252,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _justTypes: boolean,
-        namespaceName: string,
-        _typeNamingStyle: NamingStyle,
-        _memberNamingStyle: NamingStyle,
-        _enumeratorNamingStyle: NamingStyle
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof cPlusPlusOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
 
-        this._namespaceNames = List(namespaceName.split("::"));
+        this._namespaceNames = List(_options.namespace.split("::"));
 
-        this._typeNameStyle = cppNameStyle(_typeNamingStyle);
+        this._typeNameStyle = cppNameStyle(_options.typeNamingStyle);
         this._typeNamingFunction = funPrefixNamer("types", this._typeNameStyle);
-        this._memberNamingFunction = funPrefixNamer("members", cppNameStyle(_memberNamingStyle));
-        this._caseNamingFunction = funPrefixNamer("enumerators", cppNameStyle(_enumeratorNamingStyle));
+        this._memberNamingFunction = funPrefixNamer("members", cppNameStyle(_options.memberNamingStyle));
+        this._caseNamingFunction = funPrefixNamer("enumerators", cppNameStyle(_options.enumeratorNamingStyle));
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -715,12 +707,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     private emitTypes = (): void => {
-        if (!this._justTypes) {
+        if (!this._options.justTypes) {
             this.emitLine("using nlohmann::json;");
             this.ensureBlankLine();
         }
         this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
-        if (this._justTypes) return;
+        if (this._options.justTypes) return;
         this.forEachTopLevel(
             "leading",
             this.emitTopLevelTypedef,
@@ -747,7 +739,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
     protected emitSourceStructure(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
-        } else if (!this._justTypes) {
+        } else if (!this._options.justTypes) {
             this.emitCommentLines([
                 " To parse this JSON data, first install",
                 "",
@@ -781,16 +773,16 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
             this.emitLine(`#include ${name}`);
         };
         if (this.haveNamedUnions) include("<boost/variant.hpp>");
-        if (!this._justTypes) include('"json.hpp"');
+        if (!this._options.justTypes) include('"json.hpp"');
         this.ensureBlankLine();
 
-        if (this._justTypes) {
+        if (this._options.justTypes) {
             this.emitTypes();
         } else {
             this.emitNamespaces(this._namespaceNames, this.emitTypes);
         }
 
-        if (!this._justTypes && this.haveNamedTypes) {
+        if (!this._options.justTypes && this.haveNamedTypes) {
             this.ensureBlankLine();
             this.emitNamespaces(List(["nlohmann"]), () => {
                 if (this.haveUnions) {

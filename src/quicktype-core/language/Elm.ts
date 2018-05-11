@@ -1,10 +1,9 @@
 import { Map, List } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { EnumOption, StringOption, BooleanOption, Option } from "../RendererOptions";
+import { EnumOption, StringOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Namer, Name, DependencyName, funPrefixNamer } from "../Naming";
 import {
@@ -23,22 +22,22 @@ import {
 import { defined, intercalate } from "../support/Support";
 import { Sourcelike, annotated, MultiWord, singleWord, multiWord, parenIfNeeded } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
+import { RenderContext } from "../Renderer";
+
+export const elmOptions = {
+    justTypes: new BooleanOption("just-types", "Plain types only", false),
+    useList: new EnumOption("array-type", "Use Array or List", [["array", false], ["list", true]]),
+    // FIXME: Do this via a configurable named eventually.
+    moduleName: new StringOption("module", "Generated module name", "NAME", "QuickType")
+};
 
 export default class ElmTargetLanguage extends TargetLanguage {
-    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-    private readonly _listOption = new EnumOption("array-type", "Use Array or List", [
-        ["array", false],
-        ["list", true]
-    ]);
-    // FIXME: Do this via a configurable named eventually.
-    private readonly _moduleOption = new StringOption("module", "Generated module name", "NAME", "QuickType");
-
     constructor() {
         super("Elm", ["elm"], "elm");
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._justTypesOption, this._moduleOption, this._listOption];
+        return [elmOptions.justTypes, elmOptions.moduleName, elmOptions.useList];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -49,13 +48,8 @@ export default class ElmTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return ElmRenderer;
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): ElmRenderer {
+        return new ElmRenderer(this, renderContext, getOptionValues(elmOptions, untypedOptionValues));
     }
 }
 
@@ -154,13 +148,10 @@ export class ElmRenderer extends ConvenienceRenderer {
 
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _justTypes: boolean,
-        private readonly _moduleName: string,
-        private readonly _useList: boolean
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof elmOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -242,7 +233,7 @@ export class ElmRenderer extends ConvenienceRenderer {
     }
 
     private get arrayType(): string {
-        return this._useList ? "List" : "Array";
+        return this._options.useList ? "List" : "Array";
     }
 
     private elmType(t: Type, noOptional: boolean = false): MultiWord {
@@ -581,7 +572,7 @@ export class ElmRenderer extends ConvenienceRenderer {
 
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
-        } else if (!this._justTypes) {
+        } else if (!this._options.justTypes) {
             this.emitCommentLines([
                 "To decode the JSON data, add this file to your project, run",
                 "",
@@ -593,7 +584,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             ]);
             this.emitLine(
                 "--     import ",
-                this._moduleName,
+                this._options.moduleName,
                 " exposing (",
                 intercalate(", ", topLevelDecoders).toArray(),
                 ")"
@@ -610,9 +601,9 @@ export class ElmRenderer extends ConvenienceRenderer {
             });
         }
 
-        if (!this._justTypes) {
+        if (!this._options.justTypes) {
             this.ensureBlankLine();
-            this.emitLine("module ", this._moduleName, " exposing");
+            this.emitLine("module ", this._options.moduleName, " exposing");
             this.indent(() => {
                 for (let i = 0; i < exports.length; i++) {
                     this.emitLine(i === 0 ? "(" : ",", " ", exports[i]);
@@ -625,7 +616,7 @@ export class ElmRenderer extends ConvenienceRenderer {
 import Json.Decode.Pipeline as Jpipe
 import Json.Encode as Jenc
 import Dict exposing (Dict, map, toList)`);
-            if (this._useList) {
+            if (this._options.useList) {
                 this.emitLine("import List exposing (map)");
             } else {
                 this.emitLine("import Array exposing (Array, map)");
@@ -644,7 +635,7 @@ import Dict exposing (Dict, map, toList)`);
             this.emitUnionDefinition
         );
 
-        if (this._justTypes) return;
+        if (this._options.justTypes) return;
 
         this.ensureBlankLine();
         this.emitLine("-- decoders and encoders");
