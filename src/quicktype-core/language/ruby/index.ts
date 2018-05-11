@@ -1,11 +1,10 @@
 const unicode = require("unicode-properties");
 
-import { TypeGraph } from "../../TypeGraph";
 import { Sourcelike, modifySource } from "../../Source";
 import { Namer, Name } from "../../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../../ConvenienceRenderer";
 import { TargetLanguage } from "../../TargetLanguage";
-import { Option, BooleanOption, EnumOption } from "../../RendererOptions";
+import { Option, BooleanOption, EnumOption, OptionValues, getOptionValues } from "../../RendererOptions";
 
 import * as keywords from "./keywords";
 
@@ -24,6 +23,7 @@ import {
     escapeNonPrintableMapper,
     intToHex
 } from "../../support/Strings";
+import { RenderContext } from "../../Renderer";
 
 function unicodeEscape(codePoint: number): string {
     return "\\u{" + intToHex(codePoint, 0) + "}";
@@ -41,21 +41,23 @@ export enum Strictness {
     Coercible = "Coercible::",
     None = "Types::"
 }
-export default class RubyTargetLanguage extends TargetLanguage {
-    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
 
-    private readonly _strictnessOption = new EnumOption("strictness", "Type strictness", [
+export const rubyOptions = {
+    justTypes: new BooleanOption("just-types", "Plain types only", false),
+    strictness: new EnumOption("strictness", "Type strictness", [
         ["strict", Strictness.Strict],
         ["coercible", Strictness.Coercible],
         ["none", Strictness.None]
-    ]);
+    ])
+};
 
+export default class RubyTargetLanguage extends TargetLanguage {
     constructor() {
         super("Ruby", ["ruby"], "rb");
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._justTypesOption, this._strictnessOption];
+        return [rubyOptions.justTypes, rubyOptions.strictness];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -66,13 +68,8 @@ export default class RubyTargetLanguage extends TargetLanguage {
         return "  ";
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return RubyRenderer;
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RubyRenderer {
+        return new RubyRenderer(this, renderContext, getOptionValues(rubyOptions, untypedOptionValues));
     }
 }
 
@@ -118,12 +115,10 @@ function memberNameStyle(original: string): string {
 export class RubyRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _justTypes: boolean,
-        private readonly _strictness: Strictness
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof rubyOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
     }
 
     protected get commentLineStart(): string {
@@ -420,7 +415,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 this.emitTable(table);
             }
 
-            if (this._justTypes) {
+            if (this._options.justTypes) {
                 return;
             }
 
@@ -494,7 +489,7 @@ export class RubyRenderer extends ConvenienceRenderer {
             });
             this.emitTable(table);
 
-            if (this._justTypes) {
+            if (this._options.justTypes) {
                 return;
             }
 
@@ -563,7 +558,7 @@ export class RubyRenderer extends ConvenienceRenderer {
 
             const declarations: Sourcelike[][] = [];
 
-            if (this._strictness !== Strictness.None) {
+            if (this._options.strictness !== Strictness.None) {
                 let has = { int: false, nil: false, bool: false, hash: false, string: false, double: false };
                 this.forEachType(t => {
                     has = {
@@ -575,15 +570,18 @@ export class RubyRenderer extends ConvenienceRenderer {
                         double: has.double || t.kind === "double"
                     };
                 });
-                if (has.int) declarations.push([["Int"], [` = ${this._strictness}Int`]]);
-                if (this._strictness === Strictness.Strict) {
-                    if (has.nil) declarations.push([["Nil"], [` = ${this._strictness}Nil`]]);
+                if (has.int) declarations.push([["Int"], [` = ${this._options.strictness}Int`]]);
+                if (this._options.strictness === Strictness.Strict) {
+                    if (has.nil) declarations.push([["Nil"], [` = ${this._options.strictness}Nil`]]);
                 }
-                if (has.bool) declarations.push([["Bool"], [` = ${this._strictness}Bool`]]);
-                if (has.hash) declarations.push([["Hash"], [` = ${this._strictness}Hash`]]);
-                if (has.string) declarations.push([["String"], [` = ${this._strictness}String`]]);
+                if (has.bool) declarations.push([["Bool"], [` = ${this._options.strictness}Bool`]]);
+                if (has.hash) declarations.push([["Hash"], [` = ${this._options.strictness}Hash`]]);
+                if (has.string) declarations.push([["String"], [` = ${this._options.strictness}String`]]);
                 if (has.double)
-                    declarations.push([["Double"], [` = ${this._strictness}Float | ${this._strictness}Int`]]);
+                    declarations.push([
+                        ["Double"],
+                        [` = ${this._options.strictness}Float | ${this._options.strictness}Int`]
+                    ]);
             }
 
             this.forEachEnum("none", (enumType, enumName) => {
@@ -591,7 +589,7 @@ export class RubyRenderer extends ConvenienceRenderer {
                 this.forEachEnumCase(enumType, "none", (_name, json) => {
                     cases.push([cases.length === 0 ? "" : ", ", `"${stringEscape(json)}"`]);
                 });
-                declarations.push([[enumName], [" = ", this._strictness, "String.enum(", ...cases, ")"]]);
+                declarations.push([[enumName], [" = ", this._options.strictness, "String.enum(", ...cases, ")"]]);
             });
 
             if (declarations.length > 0) {
@@ -604,7 +602,7 @@ export class RubyRenderer extends ConvenienceRenderer {
     protected emitSourceStructure() {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
-        } else if (!this._justTypes) {
+        } else if (!this._options.justTypes) {
             this.emitLine("# This code may look unusually verbose for Ruby (and it is), but");
             this.emitLine("# it performs some subtle and complex validation of JSON data.");
             this.emitLine("#");
@@ -641,7 +639,7 @@ export class RubyRenderer extends ConvenienceRenderer {
             (u, n) => this.emitUnion(u, n)
         );
 
-        if (!this._justTypes) {
+        if (!this._options.justTypes) {
             this.forEachTopLevel(
                 "leading-and-interposing",
                 (topLevel, name) => {

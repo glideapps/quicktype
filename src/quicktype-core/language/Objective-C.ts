@@ -1,7 +1,6 @@
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, ArrayType, MapType, UnionType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
 import { Name, Namer, funPrefixNamer } from "../Naming";
 import { Sourcelike, modifySource } from "../Source";
 import {
@@ -18,8 +17,9 @@ import {
     fastIsUpperCase
 } from "../support/Strings";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { StringOption, BooleanOption, EnumOption, Option } from "../RendererOptions";
+import { StringOption, BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { assert, defined } from "../support/Support";
+import { RenderContext } from "../Renderer";
 
 const unicode = require("unicode-properties");
 
@@ -29,43 +29,38 @@ export type OutputFeatures = { interface: boolean; implementation: boolean };
 const DEBUG = false;
 const DEFAULT_CLASS_PREFIX = "QT";
 
-export default class ObjectiveCTargetLanguage extends TargetLanguage {
-    private readonly _featuresOption = new EnumOption("features", "Interface and implementation", [
+export const objcOptions = {
+    features: new EnumOption("features", "Interface and implementation", [
         ["all", { interface: true, implementation: true }],
         ["interface", { interface: true, implementation: false }],
         ["implementation", { interface: false, implementation: true }]
-    ]);
-    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-    private readonly _emitMarshallingFunctions = new BooleanOption("functions", "C-style functions", false);
-    private readonly _classPrefixOption = new StringOption(
-        "class-prefix",
-        "Class prefix",
-        "PREFIX",
-        DEFAULT_CLASS_PREFIX
-    );
-    private readonly _extraCommentsOption = new BooleanOption("extra-comments", "Extra comments", false);
+    ]),
+    justTypes: new BooleanOption("just-types", "Plain types only", false),
+    marshallingFunctions: new BooleanOption("functions", "C-style functions", false),
+    classPrefix: new StringOption("class-prefix", "Class prefix", "PREFIX", DEFAULT_CLASS_PREFIX),
+    extraComments: new BooleanOption("extra-comments", "Extra comments", false)
+};
 
+export default class ObjectiveCTargetLanguage extends TargetLanguage {
     constructor() {
         super("Objective-C", ["objc", "objective-c", "objectivec"], "m");
     }
 
     protected getOptions(): Option<any>[] {
         return [
-            this._justTypesOption,
-            this._classPrefixOption,
-            this._featuresOption,
-            this._extraCommentsOption,
-            this._emitMarshallingFunctions
+            objcOptions.justTypes,
+            objcOptions.classPrefix,
+            objcOptions.features,
+            objcOptions.extraComments,
+            objcOptions.marshallingFunctions
         ];
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return ObjectiveCRenderer;
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: { [name: string]: any }
+    ): ObjectiveCRenderer {
+        return new ObjectiveCRenderer(this, renderContext, getOptionValues(objcOptions, untypedOptionValues));
     }
 }
 
@@ -229,23 +224,21 @@ function splitExtension(filename: string): [string, string] {
 
 export class ObjectiveCRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
+    private readonly _classPrefix: string;
 
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _justTypes: boolean,
-        private _classPrefix: string,
-        private readonly _features: OutputFeatures,
-        private readonly _extraComments: boolean,
-        private readonly _marshalingFunctions: boolean
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof objcOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
 
         // Infer the class prefix from a top-level name if it's not given
-        if (this._classPrefix === DEFAULT_CLASS_PREFIX) {
+        if (_options.classPrefix === DEFAULT_CLASS_PREFIX) {
             const aTopLevel = defined(this.topLevels.keySeq().first());
             this._classPrefix = this.inferClassPrefix(aTopLevel);
+        } else {
+            this._classPrefix = _options.classPrefix;
         }
     }
 
@@ -316,7 +309,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private emitExtraComments = (...comments: Sourcelike[]) => {
-        if (!this._extraComments) return;
+        if (!this._options.extraComments) return;
         for (const comment of comments) {
             this.emitLine("// ", comment);
         }
@@ -660,7 +653,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             ];
         });
 
-        if (!this._justTypes && isTopLevel) {
+        if (!this._options.justTypes && isTopLevel) {
             if (!t.getProperties().isEmpty()) this.ensureBlankLine();
 
             this.emitLine(
@@ -690,7 +683,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         })();
 
         this.emitLine("@implementation ", className);
-        if (!this._justTypes) {
+        if (!this._options.justTypes) {
             this.emitMethod("+ (NSDictionary<NSString *, NSString *> *)properties", () => {
                 this.emitLine("static NSDictionary<NSString *, NSString *> *properties;");
                 this.emitLine("return properties = properties ? properties : @{");
@@ -900,12 +893,12 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         }
         const [filename, extension] = splitExtension(proposedFilename);
 
-        if (this._features.interface) {
+        if (this._options.features.interface) {
             this.startFile(filename, "h");
 
             if (this.leadingComments !== undefined) {
                 this.emitCommentLines(this.leadingComments);
-            } else if (!this._justTypes) {
+            } else if (!this._options.justTypes) {
                 this.emitCommentLines(["To parse this JSON:", ""]);
                 this.emitLine("//   NSError *error;");
                 this.forEachTopLevel("none", (t, topLevelName) => {
@@ -954,7 +947,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             );
 
             const hasTopLevelNonClassTypes = this.topLevels.some(t => !(t instanceof ClassType));
-            if (!this._justTypes && (hasTopLevelNonClassTypes || this._marshalingFunctions)) {
+            if (!this._options.justTypes && (hasTopLevelNonClassTypes || this._options.marshallingFunctions)) {
                 this.ensureBlankLine();
                 this.emitMark("Top-level marshaling functions");
                 this.forEachTopLevel(
@@ -962,7 +955,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                     (t, n) => this.emitTopLevelFunctionDeclarations(t, n),
                     // Objective-C developers get freaked out by C functions, so we don't
                     // declare them for top-level object types (we always need them for non-object types)
-                    t => this._marshalingFunctions || !(t instanceof ClassType)
+                    t => this._options.marshallingFunctions || !(t instanceof ClassType)
                 );
             }
 
@@ -974,13 +967,13 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             this.finishFile();
         }
 
-        if (this._features.implementation) {
+        if (this._options.features.implementation) {
             this.startFile(filename, extension);
 
             this.emitLine(`#import "${filename}.h"`);
             this.ensureBlankLine();
 
-            if (!this._justTypes) {
+            if (!this._options.justTypes) {
                 this.ensureBlankLine();
                 this.emitExtraComments("Shorthand for simple blocks");
                 this.emitLine(`#define λ(decl, expr) (^(decl) { return (expr); })`);
@@ -995,7 +988,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
 
                 // We wouldn't need to emit these private iterfaces if we emitted implementations in forward-order
                 // but the code is more readable and explicit if we do this.
-                if (this._extraComments) {
+                if (this._options.extraComments) {
                     this.emitMark("Private model interfaces");
                 }
 
@@ -1007,7 +1000,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 );
 
                 if (this.haveEnums) {
-                    if (this._extraComments) {
+                    if (this._options.extraComments) {
                         this.ensureBlankLine();
                         this.emitExtraComments(
                             "These enum-like reference types are needed so that enum",
@@ -1028,7 +1021,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
 
             this.forEachNamedType("leading-and-interposing", this.emitClassImplementation, () => null, () => null);
 
-            if (!this._justTypes) {
+            if (!this._options.justTypes) {
                 this.ensureBlankLine();
                 this.emitLine("NS_ASSUME_NONNULL_END");
             }

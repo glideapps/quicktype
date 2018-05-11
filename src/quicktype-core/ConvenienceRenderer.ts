@@ -3,7 +3,7 @@ import { Map, Set, List, OrderedSet, OrderedMap, Collection } from "immutable";
 import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType, ObjectType } from "./Type";
 import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
-import { Renderer, BlankLineLocations } from "./Renderer";
+import { Renderer, BlankLineLocations, RenderContext } from "./Renderer";
 import { defined, panic, nonNull, assert } from "./support/Support";
 import { trimEnd } from "./support/Strings";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
@@ -17,6 +17,7 @@ import {
 } from "./TypeAttributes";
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
 import { transformationForType, followTargetType } from "./Transformers";
+import { TargetLanguage } from "./TargetLanguage";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -76,6 +77,10 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _cycleBreakerTypes?: Set<Type> | undefined;
 
     private _alphabetizeProperties = false;
+
+    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
+        super(targetLanguage, renderContext);
+    }
 
     get topLevels(): Map<string, Type> {
         return this.typeGraph.topLevels;

@@ -2,7 +2,6 @@ import { Map } from "immutable";
 
 import { TypeKind, Type, ArrayType, MapType, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import {
     utf16LegalizeCharacters,
@@ -22,34 +21,32 @@ import {
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption, StringOption, Option } from "../RendererOptions";
+import { BooleanOption, StringOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { defined, assert, assertNever } from "../support/Support";
+import { RenderContext } from "../Renderer";
+
+export const javaOptions = {
+    justTypes: new BooleanOption("just-types", "Plain types only", false),
+    // FIXME: Do this via a configurable named eventually.
+    packageName: new StringOption("package", "Generated package name", "NAME", "io.quicktype")
+};
 
 export class JavaTargetLanguage extends TargetLanguage {
-    private readonly _justTypesOption = new BooleanOption("just-types", "Plain types only", false);
-    // FIXME: Do this via a configurable named eventually.
-    private readonly _packageOption = new StringOption("package", "Generated package name", "NAME", "io.quicktype");
-
     constructor() {
         super("Java", ["java"], "java");
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._packageOption, this._justTypesOption];
+        return [javaOptions.packageName, javaOptions.justTypes];
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return JavaRenderer;
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): JavaRenderer {
+        return new JavaRenderer(this, renderContext, getOptionValues(javaOptions, untypedOptionValues));
     }
 }
 
@@ -171,12 +168,10 @@ export class JavaRenderer extends ConvenienceRenderer {
 
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _packageName: string,
-        private readonly _justTypes: boolean
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof javaOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
         this._gettersAndSettersForPropertyName = Map();
     }
 
@@ -281,8 +276,8 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitPackageAndImports(imports: string[]): void {
-        const allImports = ["java.util.Map"].concat(this._justTypes ? [] : imports);
-        this.emitLine("package ", this._packageName, ";");
+        const allImports = ["java.util.Map"].concat(this._options.justTypes ? [] : imports);
+        this.emitLine("package ", this._options.packageName, ";");
         this.ensureBlankLine();
         for (const pkg of allImports) {
             this.emitLine("import ", pkg, ";");
@@ -342,7 +337,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassAttributes(c: ClassType, _className: Name): void {
-        if (c.getProperties().isEmpty() && !this._justTypes) {
+        if (c.getProperties().isEmpty() && !this._options.justTypes) {
             this.emitLine("@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)");
         }
     }
@@ -355,7 +350,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         _p: ClassProperty,
         _isSetter: boolean
     ): void {
-        if (!this._justTypes) {
+        if (!this._options.justTypes) {
             this.emitLine('@JsonProperty("', stringEscape(jsonName), '")');
         }
     }
@@ -448,7 +443,7 @@ export class JavaRenderer extends ConvenienceRenderer {
 
         this.emitFileHeader(unionName, this.importsForType(u));
         this.emitDescription(this.descriptionForType(u));
-        if (!this._justTypes) {
+        if (!this._options.justTypes) {
             this.emitLine("@JsonDeserialize(using = ", unionName, ".Deserializer.class)");
             this.emitLine("@JsonSerialize(using = ", unionName, ".Serializer.class)");
         }
@@ -458,7 +453,7 @@ export class JavaRenderer extends ConvenienceRenderer {
                 const { fieldType, fieldName } = this.unionField(u, t, true);
                 this.emitLine("public ", fieldType, " ", fieldName, ";");
             });
-            if (this._justTypes) return;
+            if (this._options.justTypes) return;
             this.ensureBlankLine();
             this.emitBlock(["static class Deserializer extends JsonDeserializer<", unionName, ">"], () => {
                 this.emitLine("@Override");
@@ -563,7 +558,7 @@ export class JavaRenderer extends ConvenienceRenderer {
                 ""
             ]);
         }
-        this.emitLine("//     import ", this._packageName, ".Converter;");
+        this.emitLine("//     import ", this._options.packageName, ".Converter;");
         this.emitMultiline(`//
 // Then you can deserialize a JSON string with
 //`);
@@ -656,7 +651,7 @@ export class JavaRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(): void {
-        if (!this._justTypes) {
+        if (!this._options.justTypes) {
             this.emitConverterClass();
         }
         this.forEachNamedType(

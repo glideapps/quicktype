@@ -39,6 +39,20 @@ export abstract class Option<T> {
     }
 }
 
+export type OptionValueType<O> = O extends Option<infer T> ? T : never;
+export type OptionValues<T> = { [P in keyof T]: OptionValueType<T[P]> };
+
+export function getOptionValues<T extends { [name: string]: Option<any> }>(
+    options: T,
+    untypedOptionValues: { [name: string]: any }
+): OptionValues<T> {
+    const optionValues: { [name: string]: any } = {};
+    for (const name of Object.getOwnPropertyNames(options)) {
+        optionValues[name] = options[name].getValue(untypedOptionValues);
+    }
+    return optionValues as OptionValues<T>;
+}
+
 export class BooleanOption extends Option<boolean> {
     constructor(name: string, description: string, defaultValue: boolean, kind: OptionKind = "primary") {
         super({

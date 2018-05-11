@@ -1,34 +1,33 @@
 import { Type, ArrayType, UnionType, ClassType, EnumType } from "../Type";
 import { matchType, nullableFromUnion, isNamedType } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
 import { utf16StringEscape, camelCase } from "../support/Strings";
 
 import { Sourcelike, modifySource, MultiWord, singleWord, parenIfNeeded, multiWord } from "../Source";
 import { Name } from "../Naming";
-import { ConvenienceRenderer } from "../ConvenienceRenderer";
-import { BooleanOption, Option } from "../RendererOptions";
-import { JavaScriptTargetLanguage, JavaScriptRenderer } from "./JavaScript";
+import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
+import { javaScriptOptions, JavaScriptTargetLanguage, JavaScriptRenderer } from "./JavaScript";
 import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
+import { RenderContext } from "../Renderer";
+
+export const tsFlowOptions = Object.assign(javaScriptOptions, {
+    justTypes: new BooleanOption("just-types", "Interfaces only", false),
+    declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false)
+});
 
 export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
-    private readonly _justTypes = new BooleanOption("just-types", "Interfaces only", false);
-    private readonly _declareUnions = new BooleanOption("explicit-unions", "Explicitly name unions", false);
-
     protected getOptions(): Option<any>[] {
-        return [this._justTypes, this._declareUnions, this.runtimeTypecheck];
+        return [tsFlowOptions.justTypes, tsFlowOptions.declareUnions, tsFlowOptions.runtimeTypecheck];
     }
 
     get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
-    protected abstract get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer;
+    protected abstract makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: { [name: string]: any }
+    ): JavaScriptRenderer;
 }
 
 export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
@@ -36,29 +35,21 @@ export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
         super("TypeScript", ["typescript", "ts", "tsx"], "ts");
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return TypeScriptRenderer;
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: { [name: string]: any }
+    ): TypeScriptRenderer {
+        return new TypeScriptRenderer(this, renderContext, getOptionValues(tsFlowOptions, untypedOptionValues));
     }
 }
 
 export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
-    private readonly _inlineUnions: boolean;
-
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _justTypes: boolean,
-        declareUnions: boolean,
-        runtimeTypecheck: boolean
+        renderContext: RenderContext,
+        private readonly _tsFlowOptions: OptionValues<typeof tsFlowOptions>
     ) {
-        super(targetLanguage, graph, leadingComments, runtimeTypecheck);
-        this._inlineUnions = !declareUnions;
+        super(targetLanguage, renderContext, _tsFlowOptions);
     }
 
     private sourceFor(t: Type): MultiWord {
@@ -76,7 +67,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             arrayType => {
                 const itemType = this.sourceFor(arrayType.items);
                 if (
-                    (arrayType.items instanceof UnionType && this._inlineUnions) ||
+                    (arrayType.items instanceof UnionType && !this._tsFlowOptions.declareUnions) ||
                     arrayType.items instanceof ArrayType
                 ) {
                     return singleWord(["Array<", itemType.source, ">"]);
@@ -88,7 +79,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             mapType => singleWord(["{ [key: string]: ", this.sourceFor(mapType.values).source, " }"]),
             _enumType => panic("We handled this above"),
             unionType => {
-                if (this._inlineUnions || nullableFromUnion(unionType) !== null) {
+                if (!this._tsFlowOptions.declareUnions || nullableFromUnion(unionType) !== null) {
                     const children = unionType.getChildren().map(c => parenIfNeeded(this.sourceFor(c)));
                     return multiWord(" | ", ...children.toArray());
                 } else {
@@ -115,7 +106,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     emitUnion(u: UnionType, unionName: Name) {
-        if (this._inlineUnions) {
+        if (!this._tsFlowOptions.declareUnions) {
             return;
         }
 
@@ -141,7 +132,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected emitUsageComments(): void {
-        if (this._justTypes) return;
+        if (this._tsFlowOptions.justTypes) return;
         super.emitUsageComments();
     }
 
@@ -181,7 +172,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected emitConvertModule(): void {
-        if (this._justTypes) return;
+        if (this._tsFlowOptions.justTypes) return;
         super.emitConvertModule();
     }
 }
@@ -240,13 +231,8 @@ export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
         super("Flow", ["flow"], "js");
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return FlowRenderer;
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): FlowRenderer {
+        return new FlowRenderer(this, renderContext, getOptionValues(tsFlowOptions, untypedOptionValues));
     }
 }
 

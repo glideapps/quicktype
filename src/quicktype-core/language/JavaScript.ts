@@ -1,6 +1,5 @@
 import { Type, ClassProperty, ClassType, ObjectType } from "../Type";
 import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
 import {
     utf16LegalizeCharacters,
     utf16StringEscape,
@@ -16,17 +15,16 @@ import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { BooleanOption, Option } from "../RendererOptions";
+import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
+import { RenderContext } from "../Renderer";
 
 const unicode = require("unicode-properties");
 
-export class JavaScriptTargetLanguage extends TargetLanguage {
-    protected readonly runtimeTypecheck = new BooleanOption(
-        "runtime-typecheck",
-        "Verify JSON.parse results at runtime",
-        true
-    );
+export const javaScriptOptions = {
+    runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true)
+};
 
+export class JavaScriptTargetLanguage extends TargetLanguage {
     constructor(
         displayName: string = "JavaScript",
         names: string[] = ["javascript", "js", "jsx"],
@@ -36,7 +34,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 
     protected getOptions(): Option<any>[] {
-        return [this.runtimeTypecheck];
+        return [javaScriptOptions.runtimeTypecheck];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -47,13 +45,11 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return JavaScriptRenderer;
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: { [name: string]: any }
+    ): JavaScriptRenderer {
+        return new JavaScriptRenderer(this, renderContext, getOptionValues(javaScriptOptions, untypedOptionValues));
     }
 }
 
@@ -102,11 +98,10 @@ function propertyNameStyle(original: string): string {
 export class JavaScriptRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _runtimeTypecheck: boolean
+        renderContext: RenderContext,
+        private readonly _jsOptions: OptionValues<typeof javaScriptOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
     }
 
     protected makeNamedTypeNamer(): Namer {
@@ -246,7 +241,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     private emitConvertModuleBody(): void {
         this.forEachTopLevel("interposing", (t, name) => {
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
-                if (!this._runtimeTypecheck) {
+                if (!this._jsOptions.runtimeTypecheck) {
                     this.emitLine("return JSON.parse(json);");
                 } else {
                     this.emitLine("return cast(JSON.parse(json), ", this.typeMapTypeFor(t), ");");
@@ -258,7 +253,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 this.emitLine("return JSON.stringify(value, null, 2);");
             });
         });
-        if (this._runtimeTypecheck) {
+        if (this._jsOptions.runtimeTypecheck) {
             const {
                 any: anyAnnotation,
                 anyArray: anyArrayAnnotation,
@@ -352,7 +347,7 @@ function r(name${stringAnnotation}) {
     protected emitConvertModule(): void {
         this.ensureBlankLine();
         this.emitMultiline(`// Converts JSON strings to/from your types`);
-        if (this._runtimeTypecheck) {
+        if (this._jsOptions.runtimeTypecheck) {
             this.emitMultiline(`// and asserts the results of JSON.parse at runtime`);
         }
         const moduleLine = this.moduleLine;
@@ -381,7 +376,7 @@ function r(name${stringAnnotation}) {
             const camelCaseName = modifySource(camelCase, name);
             this.emitLine("//   const ", camelCaseName, " = Convert.to", name, "(json);");
         });
-        if (this._runtimeTypecheck) {
+        if (this._jsOptions.runtimeTypecheck) {
             this.emitLine("//");
             this.emitLine("// These functions will throw an error if the JSON doesn't");
             this.emitLine("// match the expected interface, even if the JSON is valid.");

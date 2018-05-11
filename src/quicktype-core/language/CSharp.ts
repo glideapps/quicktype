@@ -2,7 +2,6 @@ import { OrderedSet, Map, Set, List } from "immutable";
 
 import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     utf16LegalizeCharacters,
@@ -16,7 +15,7 @@ import { intercalate, defined, assert, panic } from "../support/Support";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
-import { StringOption, EnumOption, Option, BooleanOption } from "../RendererOptions";
+import { StringOption, EnumOption, Option, BooleanOption, OptionValues, getOptionValues } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { StringTypeMapping } from "../TypeBuilder";
 import {
@@ -34,6 +33,7 @@ import {
     ParseDateTimeTransformer,
     StringifyDateTimeTransformer
 } from "../Transformers";
+import { RenderContext } from "../Renderer";
 
 const unicode = require("unicode-properties");
 
@@ -56,66 +56,49 @@ function needTransformerForUnion(u: UnionType): boolean {
     return nullableFromUnion(u) === null;
 }
 
-export default class CSharpTargetLanguage extends TargetLanguage {
-    private readonly _listOption = new EnumOption("array-type", "Use T[] or List<T>", [
-        ["array", false],
-        ["list", true]
-    ]);
-    private readonly _denseOption = new EnumOption(
-        "density",
-        "Property density",
-        [["normal", false], ["dense", true]],
-        "normal",
-        "secondary"
-    );
-    private readonly _featuresOption = new EnumOption("features", "Output features", [
+export const cSharpOptions = {
+    useList: new EnumOption("array-type", "Use T[] or List<T>", [["array", false], ["list", true]]),
+    dense: new EnumOption("density", "Property density", [["normal", false], ["dense", true]], "normal", "secondary"),
+    features: new EnumOption("features", "Output features", [
         ["complete", { helpers: true, attributes: true }],
         ["attributes-only", { helpers: false, attributes: true }],
         ["just-types", { helpers: false, attributes: false }]
-    ]);
+    ]),
     // FIXME: Do this via a configurable named eventually.
-    private readonly _namespaceOption = new StringOption("namespace", "Generated namespace", "NAME", "QuickType");
-    private readonly _versionOption = new EnumOption<Version>(
-        "csharp-version",
-        "C# version",
-        [["5", 5], ["6", 6]],
-        "6",
-        "secondary"
-    );
-    private readonly _checkRequiredOption = new BooleanOption(
-        "check-required",
-        "Fail if required properties are missing",
-        false
-    );
-    private readonly _typeForAnyOption = new EnumOption<CSharpTypeForAny>(
+    namespace: new StringOption("namespace", "Generated namespace", "NAME", "QuickType"),
+    version: new EnumOption<Version>("csharp-version", "C# version", [["5", 5], ["6", 6]], "6", "secondary"),
+    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
+    typeForAny: new EnumOption<CSharpTypeForAny>(
         "any-type",
         'Type to use for "any"',
         [["object", "object"], ["dynamic", "dynamic"]],
         "object",
         "secondary"
-    );
-    private readonly _useDecimalOption = new EnumOption(
+    ),
+    useDecimal: new EnumOption(
         "number-type",
         "Type to use for numbers",
         [["double", false], ["decimal", true]],
         "double",
         "secondary"
-    );
+    )
+};
 
+export default class CSharpTargetLanguage extends TargetLanguage {
     constructor() {
         super("C#", ["cs", "csharp"], "cs");
     }
 
     protected getOptions(): Option<any>[] {
         return [
-            this._namespaceOption,
-            this._versionOption,
-            this._denseOption,
-            this._listOption,
-            this._useDecimalOption,
-            this._featuresOption,
-            this._checkRequiredOption,
-            this._typeForAnyOption
+            cSharpOptions.namespace,
+            cSharpOptions.version,
+            cSharpOptions.dense,
+            cSharpOptions.useList,
+            cSharpOptions.useDecimal,
+            cSharpOptions.features,
+            cSharpOptions.checkRequired,
+            cSharpOptions.typeForAny
         ];
     }
 
@@ -139,13 +122,8 @@ export default class CSharpTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return NewtonsoftCSharpRenderer;
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): CSharpRenderer {
+        return new NewtonsoftCSharpRenderer(this, renderContext, getOptionValues(cSharpOptions, untypedOptionValues));
     }
 }
 
@@ -197,16 +175,10 @@ function isValueType(t: Type): boolean {
 export class CSharpRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        protected readonly namespaceName: string,
-        private readonly _version: Version,
-        protected readonly dense: boolean,
-        private readonly _useList: boolean,
-        private readonly _useDecimal: boolean,
-        private readonly _typeForAny: CSharpTypeForAny
+        renderContext: RenderContext,
+        private readonly _csOptions: OptionValues<typeof cSharpOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -267,21 +239,21 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected get doubleType(): string {
-        return this._useDecimal ? "decimal" : "double";
+        return this._csOptions.useDecimal ? "decimal" : "double";
     }
 
     protected csType(t: Type, follow: (t: Type) => Type = followTargetType, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             follow(t),
-            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this._typeForAny),
-            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, this._typeForAny),
+            _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this._csOptions.typeForAny),
+            _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, this._csOptions.typeForAny),
             _boolType => "bool",
             _integerType => "long",
             _doubleType => this.doubleType,
             _stringType => "string",
             arrayType => {
                 const itemsType = this.csType(arrayType.items, noFollow, withIssues);
-                if (this._useList) {
+                if (this._csOptions.useList) {
                     return ["List<", itemsType, ">"];
                 } else {
                     return [itemsType, "[]"];
@@ -346,7 +318,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
     protected emitDescriptionBlock(lines: string[]): void {
         const start = "/// <summary>";
-        if (this.dense) {
+        if (this._csOptions.dense) {
             this.emitLine(start, lines.join("; "), "</summary>");
         } else {
             this.emitCommentLines(lines, "/// ", start, "/// </summary>");
@@ -387,7 +359,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                         }
                         this.emitDescription(description);
                         this.emitLine(property);
-                    } else if (this.dense && attributes.length > 0) {
+                    } else if (this._csOptions.dense && attributes.length > 0) {
                         const comment = description === undefined ? "" : ` // ${description.join("; ")}`;
                         columns.push([attributes, " ", property, comment]);
                     } else {
@@ -441,7 +413,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected emitExpressionMember(declare: Sourcelike, define: Sourcelike, isProperty: boolean = false): void {
-        if (this._version === 5) {
+        if (this._csOptions.version === 5) {
             this.emitLine(declare);
             this.emitBlock(() => {
                 const stmt = ["return ", define, ";"];
@@ -518,7 +490,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
 
         this.ensureBlankLine();
         if (this.needNamespace()) {
-            this.emitLine("namespace ", this.namespaceName);
+            this.emitLine("namespace ", this._csOptions.namespace);
             this.emitBlock(() => {
                 this.emitUsings();
                 this.emitTypesAndSupport();
@@ -538,20 +510,12 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        namespaceName: string,
-        version: Version,
-        dense: boolean,
-        useList: boolean,
-        useDecimal: boolean,
-        outputFeatures: OutputFeatures,
-        private readonly _checkRequiredProperties: boolean,
-        typeForAny: CSharpTypeForAny
+        renderContext: RenderContext,
+        private readonly _options: OptionValues<typeof cSharpOptions>
     ) {
-        super(targetLanguage, graph, leadingComments, namespaceName, version, dense, useList, useDecimal, typeForAny);
-        this._needHelpers = outputFeatures.helpers;
-        this._needAttributes = outputFeatures.attributes;
+        super(targetLanguage, renderContext, _options);
+        this._needHelpers = _options.features.helpers;
+        this._needAttributes = _options.features.attributes;
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -568,7 +532,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             "FromJson",
             "Required"
         ];
-        if (this.dense) {
+        if (this._options.dense) {
             forbidden.push("J", "R", "N");
         }
         return super.forbiddenNamesForGlobalNamespace().concat(forbidden);
@@ -610,7 +574,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitUsing(ns);
         }
 
-        if (this.dense) {
+        if (this._options.dense) {
             this.emitUsing([denseJsonPropertyName, " = Newtonsoft.Json.JsonPropertyAttribute"]);
             this.emitUsing([denseRequiredEnumName, " = Newtonsoft.Json.Required"]);
             this.emitUsing([denseNullValueHandlingEnumName, " = Newtonsoft.Json.NullValueHandling"]);
@@ -626,7 +590,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             ":"
         );
         this.emitLine("//");
-        this.emitLine("//    using ", this.namespaceName, ";");
+        this.emitLine("//    using ", this._options.namespace, ";");
         this.emitLine("//");
         this.forEachTopLevel("none", (t, topLevelName) => {
             let rhs: Sourcelike;
@@ -648,16 +612,16 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
         const attributes: Sourcelike[] = [];
 
-        const jsonProperty = this.dense ? denseJsonPropertyName : "JsonProperty";
+        const jsonProperty = this._options.dense ? denseJsonPropertyName : "JsonProperty";
         const escapedName = utf16StringEscape(jsonName);
         const isNullable = followTargetType(property.type).isNullable;
         const isOptional = property.isOptional;
-        const requiredClass = this.dense ? "R" : "Required";
-        const nullValueHandlingClass = this.dense ? "N" : "NullValueHandling";
+        const requiredClass = this._options.dense ? "R" : "Required";
+        const nullValueHandlingClass = this._options.dense ? "N" : "NullValueHandling";
         const nullValueHandling =
             isOptional && !isNullable ? [", NullValueHandling = ", nullValueHandlingClass, ".Ignore"] : [];
         let required: Sourcelike;
-        if (!this._checkRequiredProperties || (isOptional && isNullable)) {
+        if (!this._options.checkRequired || (isOptional && isNullable)) {
             required = [nullValueHandling];
         } else if (isOptional && !isNullable) {
             required = [", Required = ", requiredClass, ".DisallowNull", nullValueHandling];
@@ -677,7 +641,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     protected blankLinesBetweenAttributes(): boolean {
-        return this._needAttributes && !this.dense;
+        return this._needAttributes && !this._options.dense;
     }
 
     // The "this" type can't be `dynamic`, so we have to force it to `object`.
@@ -703,7 +667,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
-                ["JsonConvert.DeserializeObject<", csType, ">(json, ", this.namespaceName, ".Converter.Settings)"]
+                ["JsonConvert.DeserializeObject<", csType, ">(json, ", this._options.namespace, ".Converter.Settings)"]
             );
         });
     }
@@ -741,7 +705,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     seenTypes = seenTypes.add(t);
                     this.emitExpressionMember(
                         ["public static string ToJson(this ", this.topLevelResultType(t), " self)"],
-                        ["JsonConvert.SerializeObject(self, ", this.namespaceName, ".Converter.Settings)"]
+                        ["JsonConvert.SerializeObject(self, ", this._options.namespace, ".Converter.Settings)"]
                     );
                 }
             });

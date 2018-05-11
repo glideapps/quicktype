@@ -1,7 +1,7 @@
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
-import { EnumOption, Option, StringOption } from "../RendererOptions";
+import { EnumOption, Option, StringOption, OptionValues, getOptionValues } from "../RendererOptions";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
     allLowerWordStyle,
@@ -22,30 +22,31 @@ import {
 import { intercalateArray, mustNotHappen } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
-import { TypeGraph } from "../TypeGraph";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+import { RenderContext } from "../Renderer";
 
-enum Framework {
+export enum Framework {
     None,
     Klaxon
 }
 
-export default class KotlinTargetLanguage extends TargetLanguage {
-    private readonly _frameworkOption = new EnumOption(
+export const kotlinOptions = {
+    framework: new EnumOption(
         "framework",
         "Serialization framework",
         [["just-types", Framework.None], ["klaxon", Framework.Klaxon]],
         "klaxon"
-    );
+    ),
+    packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
+};
 
-    private readonly _packageName = new StringOption("package", "Package", "PACKAGE", "quicktype");
-
+export default class KotlinTargetLanguage extends TargetLanguage {
     constructor() {
         super("Kotlin", ["kotlin"], "kt");
     }
 
     protected getOptions(): Option<any>[] {
-        return [this._frameworkOption, this._packageName];
+        return [kotlinOptions.framework, kotlinOptions.packageName];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -56,13 +57,11 @@ export default class KotlinTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        return KotlinRenderer;
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: { [name: string]: any }
+    ): ConvenienceRenderer {
+        return new KotlinRenderer(this, renderContext, getOptionValues(kotlinOptions, untypedOptionValues));
     }
 }
 
@@ -156,16 +155,14 @@ const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, 
 class KotlinRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        private readonly _framework: Framework,
-        private readonly _package: string
+        renderContext: RenderContext,
+        private readonly _kotlinOptions: OptionValues<typeof kotlinOptions>
     ) {
-        super(targetLanguage, graph, leadingComments);
+        super(targetLanguage, renderContext);
     }
 
     get _justTypes() {
-        return this._framework === Framework.None;
+        return this._kotlinOptions.framework === Framework.None;
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -291,10 +288,10 @@ class KotlinRenderer extends ConvenienceRenderer {
         }
 
         this.ensureBlankLine();
-        this.emitLine("package ", this._package);
+        this.emitLine("package ", this._kotlinOptions.packageName);
         this.ensureBlankLine();
 
-        if (this._framework === Framework.Klaxon) {
+        if (this._kotlinOptions.framework === Framework.Klaxon) {
             this.emitLine("import com.beust.klaxon.*");
         }
     }
@@ -366,7 +363,7 @@ class KotlinRenderer extends ConvenienceRenderer {
 
     private emitEmptyClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
-        if (this._framework === Framework.Klaxon) {
+        if (this._kotlinOptions.framework === Framework.Klaxon) {
             this.emitLine("typealias ", className, " = JsonObject");
         } else {
             this.emitLine("class ", className, "()");
@@ -403,7 +400,7 @@ class KotlinRenderer extends ConvenienceRenderer {
                     meta.push(() => this.emitDescription(description));
                 }
 
-                if (this._framework === Framework.Klaxon) {
+                if (this._kotlinOptions.framework === Framework.Klaxon) {
                     const rename = this.klaxonRenameAttribute(name, jsonName);
                     if (rename !== undefined) {
                         meta.push(() => this.emitLine(rename));
@@ -429,7 +426,7 @@ class KotlinRenderer extends ConvenienceRenderer {
         });
 
         const isTopLevel = this.topLevels.findEntry(top => top.equals(c)) !== undefined;
-        if (this._framework === Framework.Klaxon && isTopLevel) {
+        if (this._kotlinOptions.framework === Framework.Klaxon && isTopLevel) {
             this.emitBlock(")", () => {
                 this.emitLine("public fun toJson() = klaxon.toJsonString(this)");
                 this.ensureBlankLine();
@@ -467,7 +464,7 @@ class KotlinRenderer extends ConvenienceRenderer {
     private emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        if (this._framework === Framework.Klaxon) {
+        if (this._kotlinOptions.framework === Framework.Klaxon) {
             this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
                 let count = e.cases.count();
                 this.forEachEnumCase(e, "none", (name, json) => {
@@ -516,7 +513,7 @@ class KotlinRenderer extends ConvenienceRenderer {
                 }
                 this.emitTable(table);
             }
-            if (this._framework === Framework.Klaxon) {
+            if (this._kotlinOptions.framework === Framework.Klaxon) {
                 this.ensureBlankLine();
                 this.emitLine("public fun toJson(): String = klaxon.toJsonString(when (this) {");
                 this.indent(() => {
@@ -561,7 +558,7 @@ class KotlinRenderer extends ConvenienceRenderer {
     protected emitSourceStructure(): void {
         this.emitHeader();
 
-        if (this._framework === Framework.Klaxon) {
+        if (this._kotlinOptions.framework === Framework.Klaxon) {
             const hasUnions = this.typeGraph
                 .allNamedTypes()
                 .some(t => t instanceof UnionType && nullableFromUnion(t) === null);
