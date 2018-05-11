@@ -84,7 +84,7 @@ export default class KotlinTargetLanguage extends TargetLanguage {
                 return new rendererClass(targetLanguage, graph, leadingComments, packageName);
             }
         }
-        return KotlinRendererProxy as any;
+        return KotlinRendererProxy;
     }
 }
 
