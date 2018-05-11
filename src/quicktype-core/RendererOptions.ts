@@ -17,7 +17,7 @@ export interface OptionDefinition {
     legalValues?: string[];
 }
 
-export abstract class UntypedOption {
+export abstract class Option<T> {
     readonly definition: OptionDefinition;
 
     constructor(definition: OptionDefinition) {
@@ -26,18 +26,16 @@ export abstract class UntypedOption {
         assert(definition.kind !== undefined, "Renderer option kind must be defined");
     }
 
-    get cliDefinitions(): { display: OptionDefinition[]; actual: OptionDefinition[] } {
-        return { actual: [this.definition], display: [this.definition] };
-    }
-}
-
-export abstract class Option<T> extends UntypedOption {
     getValue(values: { [name: string]: any }): T {
         const value = values[this.definition.name];
         if (value === undefined) {
             return this.definition.defaultValue;
         }
         return value;
+    }
+
+    get cliDefinitions(): { display: OptionDefinition[]; actual: OptionDefinition[] } {
+        return { actual: [this.definition], display: [this.definition] };
     }
 }
 
