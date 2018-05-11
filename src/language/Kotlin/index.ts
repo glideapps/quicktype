@@ -38,17 +38,18 @@ import { OrderedSet } from "immutable";
 import { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer";
 import { KotlinMoshiRenderer } from "./KotlinMoshiRenderer";
 
-enum Framework {
-    None = "None",
-    Klaxon = "Klaxon",
-    Moshi = "Moshi"
-}
+export type RendererClass = new (
+    targetLanguage: TargetLanguage,
+    graph: TypeGraph,
+    leadingComments: string[] | undefined,
+    ...optionValues: any[]
+) => ConvenienceRenderer;
 
 export default class KotlinTargetLanguage extends TargetLanguage {
-    private readonly _frameworkOption = new EnumOption(
+    private readonly _frameworkOption = new EnumOption<RendererClass>(
         "framework",
         "Serialization framework",
-        [["just-types", Framework.None], ["klaxon", Framework.Klaxon], ["moshi", Framework.Moshi]],
+        [["just-types", KotlinRenderer], ["klaxon", KotlinKlaxonRenderer], ["moshi", KotlinMoshiRenderer]],
         "moshi"
     );
 
@@ -70,29 +71,19 @@ export default class KotlinTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    protected get rendererClass(): new (
-        targetLanguage: TargetLanguage,
-        graph: TypeGraph,
-        leadingComments: string[] | undefined,
-        ...optionValues: any[]
-    ) => ConvenienceRenderer {
-        class KotlinRendererDispatch {
+    protected get rendererClass(): RendererClass {
+        class Proxy {
             constructor(
                 targetLanguage: TargetLanguage,
                 graph: TypeGraph,
                 leadingComments: string[] | undefined,
-                framework: Framework,
-                _package: string
+                rendererClass: RendererClass,
+                packageName: string
             ) {
-                const renderer = {
-                    [Framework.None]: KotlinRenderer,
-                    [Framework.Klaxon]: KotlinKlaxonRenderer,
-                    [Framework.Moshi]: KotlinMoshiRenderer
-                }[framework];
-                return new (renderer as any)(targetLanguage, graph, leadingComments, _package);
+                return new rendererClass(targetLanguage, graph, leadingComments, packageName);
             }
         }
-        return KotlinRendererDispatch as any;
+        return Proxy as any;
     }
 }
 
