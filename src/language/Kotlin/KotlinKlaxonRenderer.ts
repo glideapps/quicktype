@@ -1,4 +1,4 @@
-import { KotlinRenderer } from ".";
+import { KotlinRenderer } from "./KotlinRenderer";
 
 import { Name } from "../../Naming";
 import { Sourcelike } from "../../Source";
