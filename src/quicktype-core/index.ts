@@ -3,6 +3,7 @@ export {
     RendererOptions,
     getTargetLanguage,
     quicktypeMultiFile,
+    quicktype,
     SerializedRenderResult,
     TargetLanguage,
     languageNamed
