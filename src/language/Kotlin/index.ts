@@ -1,8 +1,8 @@
-import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { Name, Namer, funPrefixNamer } from "../Naming";
-import { EnumOption, Option, StringOption } from "../RendererOptions";
-import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
+import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotation";
+import { ConvenienceRenderer, ForbiddenWordsInfo } from "../../ConvenienceRenderer";
+import { Name, Namer, funPrefixNamer } from "../../Naming";
+import { EnumOption, Option, StringOption } from "../../RendererOptions";
+import { Sourcelike, maybeAnnotated, modifySource, Source } from "../../Source";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
@@ -18,12 +18,24 @@ import {
     legalizeCharacters,
     splitIntoWords,
     utf32ConcatMap
-} from "../Strings";
-import { mustNotHappen } from "../Support";
-import { TargetLanguage } from "../TargetLanguage";
-import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
-import { TypeGraph } from "../TypeGraph";
-import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
+} from "../../Strings";
+import { TargetLanguage } from "../../TargetLanguage";
+import {
+    ArrayType,
+    ClassProperty,
+    ClassType,
+    EnumType,
+    MapType,
+    ObjectType,
+    Type,
+    UnionType,
+    PrimitiveType
+} from "../../Type";
+import { TypeGraph } from "../../TypeGraph";
+import { matchType, nullableFromUnion, removeNullFromUnion } from "../../TypeUtils";
+import { OrderedSet } from "immutable";
+import { KotlinKlaxonRenderer } from "./KotlinKlaxonRenderer";
+import { KotlinMoshiRenderer } from "./KotlinMoshiRenderer";
 
 enum Framework {
     None = "None",
@@ -63,7 +75,23 @@ export default class KotlinTargetLanguage extends TargetLanguage {
         leadingComments: string[] | undefined,
         ...optionValues: any[]
     ) => ConvenienceRenderer {
-        return KotlinRenderer;
+        class KotlinRendererDispatch {
+            constructor(
+                targetLanguage: TargetLanguage,
+                graph: TypeGraph,
+                leadingComments: string[] | undefined,
+                framework: Framework,
+                _package: string
+            ) {
+                const renderer = {
+                    [Framework.None]: KotlinRenderer,
+                    [Framework.Klaxon]: KotlinKlaxonRenderer,
+                    [Framework.Moshi]: KotlinMoshiRenderer
+                }[framework];
+                return new (renderer as any)(targetLanguage, graph, leadingComments, _package);
+            }
+        }
+        return KotlinRendererDispatch as any;
     }
 }
 
@@ -109,11 +137,7 @@ const keywords = [
     "Byte",
     "String",
     "Array",
-    "List",
-    "JsonObject",
-    "JsonValue",
-    "Converter",
-    "Klaxon"
+    "List"
 ];
 
 function isPartCharacter(codePoint: number): boolean {
@@ -154,23 +178,26 @@ function stringEscape(s: string): string {
 const upperNamingFunction = funPrefixNamer("upper", s => kotlinNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, s));
 
-class KotlinRenderer extends ConvenienceRenderer {
+export class KotlinRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         graph: TypeGraph,
         leadingComments: string[] | undefined,
-        private readonly _framework: Framework,
         private readonly _package: string
     ) {
         super(targetLanguage, graph, leadingComments);
     }
 
-    get _justTypes() {
-        return this._framework === Framework.None;
+    get justTypes() {
+        return this.frameworkName() === undefined;
+    }
+
+    protected frameworkForbiddenNames(): string[] {
+        return [];
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return keywords;
+        return keywords.concat(this.frameworkForbiddenNames());
     }
 
     protected forbiddenForObjectProperties(_o: ObjectType, _classNamed: Name): ForbiddenWordsInfo {
@@ -209,14 +236,14 @@ class KotlinRenderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 
-    private emitBlock(line: Sourcelike, f: () => void, delimiter: "curly" | "paren" = "curly"): void {
+    protected emitBlock(line: Sourcelike, f: () => void, delimiter: "curly" | "paren" = "curly"): void {
         const [open, close] = delimiter === "curly" ? ["{", "}"] : ["(", ")"];
         this.emitLine(line, " ", open);
         this.indent(f);
         this.emitLine(close);
     }
 
-    private kotlinType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
+    protected kotlinType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
             t,
@@ -242,49 +269,19 @@ class KotlinRenderer extends ConvenienceRenderer {
         );
     }
 
-    private unionMemberFromJsonValue(t: Type, e: Sourcelike): Sourcelike {
-        return matchType<Sourcelike>(
-            t,
-            _anyType => [e, ".inside"],
-            _nullType => "null",
-            _boolType => [e, ".boolean"],
-            _integerType => ["(", e, ".int?.toLong() ?: ", e, ".longValue)"],
-            _doubleType => [e, ".double"],
-            _stringType => [e, ".string"],
-            arrayType => [e, ".array?.let { klaxon.parseFromJsonArray<", this.kotlinType(arrayType.items), ">(it) }"],
-            _classType => [e, ".obj?.let { klaxon.parseFromJsonObject<", this.kotlinType(t), ">(it) }"],
-            _mapType => [e, ".obj?.let { klaxon.parseFromJsonObject<", this.kotlinType(t), ">(it) }"],
-            enumType => [e, ".string?.let { ", this.kotlinType(enumType), ".fromValue(it) }"],
-            _unionType => mustNotHappen()
-        );
+    protected frameworkName(): string | undefined {
+        return undefined;
     }
 
-    private unionMemberJsonValueGuard(t: Type, _e: Sourcelike): Sourcelike {
-        return matchType<Sourcelike>(
-            t,
-            _anyType => "is Any",
-            _nullType => "null",
-            _boolType => "is Boolean",
-            _integerType => "is Int, is Long",
-            _doubleType => "is Double",
-            _stringType => "is String",
-            _arrayType => "is JsonArray<*>",
-            // These could be stricter, but for now we don't allow maps
-            // and objects in the same union
-            _classType => "is JsonObject",
-            _mapType => "is JsonObject",
-            // This could be stricter, but for now we don't allow strings
-            // and enums in the same union
-            _enumType => "is String",
-            _unionType => mustNotHappen()
-        );
+    protected frameworkImports(): string[] {
+        return [];
     }
 
     private emitHeader(): void {
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
-        } else if (!this._justTypes) {
-            this.emitLine(`// To parse the JSON, install ${this._framework} and do:`);
+        } else if (!this.justTypes) {
+            this.emitLine(`// To parse the JSON, install ${this.frameworkName()} and do:`);
             this.emitLine("//");
             this.forEachTopLevel("none", (_, name) => {
                 this.emitLine("//   val ", modifySource(camelCase, name), " = ", name, ".fromJson(jsonString)");
@@ -295,16 +292,8 @@ class KotlinRenderer extends ConvenienceRenderer {
         this.emitLine("package ", this._package);
         this.ensureBlankLine();
 
-        switch (this._framework) {
-            case Framework.Klaxon:
-                this.emitLine("import com.beust.klaxon.*");
-                break;
-            case Framework.Moshi:
-                this.emitLine("import com.squareup.moshi.*");
-                this.emitLine("import com.squareup.moshi.kotlin.KotlinJsonAdapterFactory");
-                break;
-            default:
-                break;
+        for (const path of this.frameworkImports()) {
+            this.emitLine(`import ${path}`);
         }
         this.ensureBlankLine();
     }
@@ -361,24 +350,28 @@ class KotlinRenderer extends ConvenienceRenderer {
         );
     }
 
+    protected makeRenameAttribute(escapedKotlinStringLiteral: String): Sourcelike {
+        return ["@Json(name = ", escapedKotlinStringLiteral, ")"] as Sourcelike;
+    }
+
     private renameAttribute(propName: Name, jsonName: string): Sourcelike | undefined {
         const escapedName = stringEscape(jsonName);
         const namesDiffer = this.sourcelikeToString(propName) !== escapedName;
-        return namesDiffer ? ['@Json(name = "', escapedName, '")'] : undefined;
+        return namesDiffer ? this.makeRenameAttribute(`"${escapedName}"`) : undefined;
     }
 
-    private emitEmptyClassDefinition(c: ClassType, className: Name): void {
-        this.emitDescription(this.descriptionForType(c));
-        if (this._framework === Framework.Klaxon) {
-            this.emitLine("typealias ", className, " = JsonObject");
-        } else {
-            this.emitLine("class ", className, "()");
-        }
+    protected emitEmptyClassDefinition(className: Name): void {
+        this.emitLine("class ", className, "()");
+    }
+
+    protected emitClassBody(_className: Name): void {
+        return;
     }
 
     private emitClassDefinition(c: ClassType, className: Name): void {
         if (c.getProperties().count() === 0) {
-            this.emitEmptyClassDefinition(c, className);
+            this.emitDescription(this.descriptionForType(c));
+            this.emitEmptyClassDefinition(className);
             return;
         }
 
@@ -406,7 +399,7 @@ class KotlinRenderer extends ConvenienceRenderer {
                     meta.push(() => this.emitDescription(description));
                 }
 
-                if (this._framework !== Framework.None) {
+                if (!this.justTypes) {
                     const rename = this.renameAttribute(name, jsonName);
                     if (rename !== undefined) {
                         meta.push(() => this.emitLine(rename));
@@ -432,54 +425,17 @@ class KotlinRenderer extends ConvenienceRenderer {
         });
 
         const isTopLevel = this.topLevels.findEntry(top => top.equals(c)) !== undefined;
-        if (!isTopLevel || this._framework === Framework.None) {
+        if (!isTopLevel || this.justTypes) {
             this.emitLine(")");
-        } else if (this._framework === Framework.Klaxon) {
-            this.emitBlock(")", () => {
-                this.emitLine("public fun toJson() = klaxon.toJsonString(this)");
-                this.ensureBlankLine();
-                this.emitBlock("companion object", () => {
-                    this.emitLine("public fun fromJson(json: String) = klaxon.parse<", className, ">(json)");
-                });
-            });
-        } else if (this._framework === Framework.Moshi) {
-            this.emitBlock(")", () => {
-                this.emitLine("public fun toJson() = ", className, ".adapter.toJson(this)");
-                this.ensureBlankLine();
-                this.emitBlock("companion object", () => {
-                    this.emitLine("val adapter = moshi.adapter(", className, "::class.java)");
-                    this.emitLine("public fun fromJson(json: String) = adapter.fromJson(json)");
-                });
-            });
+        } else {
+            this.emitBlock(")", () => this.emitClassBody(className));
         }
-    }
-
-    private emitGenericConverter(): void {
-        this.ensureBlankLine();
-        this.emitLine(
-            "private fun <T> Klaxon.convert(k: kotlin.reflect.KClass<*>, fromJson: (JsonValue) -> T, toJson: (T) -> String, isUnion: Boolean = false) ="
-        );
-        this.indent(() => {
-            this.emitLine("this.converter(object: Converter {");
-            this.indent(() => {
-                this.emitLine(`@Suppress("UNCHECKED_CAST")`);
-                this.emitTable([
-                    ["override fun toJson(value: Any)", " = toJson(value as T)"],
-                    ["override fun fromJson(jv: JsonValue)", " = fromJson(jv) as Any"],
-                    [
-                        "override fun canConvert(cls: Class<*>)",
-                        " = cls == k.java || (isUnion && cls.superclass == k.java)"
-                    ]
-                ]);
-            });
-            this.emitLine("})");
-        });
     }
 
     private emitEnumDefinition(e: EnumType, enumName: Name): void {
         this.emitDescription(this.descriptionForType(e));
 
-        if (this._framework === Framework.None) {
+        if (this.justTypes) {
             this.emitBlock(["enum class ", enumName], () => {
                 let count = e.cases.count();
                 this.forEachEnumCase(e, "none", name => {
@@ -507,6 +463,15 @@ class KotlinRenderer extends ConvenienceRenderer {
         }
     }
 
+    protected emitUnionBody(
+        _u: UnionType,
+        _unionName: Name,
+        _maybeNull: PrimitiveType | null,
+        _nonNulls: OrderedSet<Type>
+    ): void {
+        return;
+    }
+
     private emitUnionDefinition(u: UnionType, unionName: Name): void {
         function sortBy(t: Type): string {
             const kind = t.kind;
@@ -518,111 +483,28 @@ class KotlinRenderer extends ConvenienceRenderer {
 
         const [maybeNull, nonNulls] = removeNullFromUnion(u, sortBy);
         this.emitBlock(["sealed class ", unionName], () => {
-            {
-                let table: Sourcelike[][] = [];
-                this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                    table.push([["class ", name, "(val value: ", this.kotlinType(t), ")"], [" : ", unionName, "()"]]);
-                });
-                if (maybeNull !== null) {
-                    table.push([["class ", this.nameForUnionMember(u, maybeNull), "()"], [" : ", unionName, "()"]]);
-                }
-                this.emitTable(table);
+            let table: Sourcelike[][] = [];
+            this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
+                table.push([["class ", name, "(val value: ", this.kotlinType(t), ")"], [" : ", unionName, "()"]]);
+            });
+            if (maybeNull !== null) {
+                table.push([["class ", this.nameForUnionMember(u, maybeNull), "()"], [" : ", unionName, "()"]]);
             }
-            if (this._framework !== Framework.None) {
+            this.emitTable(table);
+            if (!this.justTypes) {
                 this.ensureBlankLine();
-                this.emitLine("public fun toJson(): String = klaxon.toJsonString(when (this) {");
-                this.indent(() => {
-                    let toJsonTable: Sourcelike[][] = [];
-                    this.forEachUnionMember(u, nonNulls, "none", null, name => {
-                        toJsonTable.push([["is ", name], [" -> this.value"]]);
-                    });
-                    if (maybeNull !== null) {
-                        const name = this.nameForUnionMember(u, maybeNull);
-                        toJsonTable.push([["is ", name], [' -> "null"']]);
-                    }
-                    this.emitTable(toJsonTable);
-                });
-                this.emitLine("})");
-                this.ensureBlankLine();
-                this.emitBlock("companion object", () => {
-                    this.emitLine("public fun fromJson(jv: JsonValue): ", unionName, " = when (jv.inside) {");
-                    this.indent(() => {
-                        let table: Sourcelike[][] = [];
-                        this.forEachUnionMember(u, nonNulls, "none", null, (name, t) => {
-                            table.push([
-                                [this.unionMemberJsonValueGuard(t, "jv.inside")],
-                                [" -> ", name, "(", this.unionMemberFromJsonValue(t, "jv"), "!!)"]
-                            ]);
-                        });
-                        if (maybeNull !== null) {
-                            const name = this.nameForUnionMember(u, maybeNull);
-                            table.push([
-                                [this.unionMemberJsonValueGuard(maybeNull, "jv.inside")],
-                                [" -> ", name, "()"]
-                            ]);
-                        }
-                        table.push([["else"], [" -> throw IllegalArgumentException()"]]);
-                        this.emitTable(table);
-                    });
-                    this.emitLine("}");
-                });
+                this.emitUnionBody(u, unionName, maybeNull, nonNulls);
             }
         });
     }
 
+    protected emitFrameworkPreface(): void {
+        // Pass
+    }
+
     protected emitSourceStructure(): void {
         this.emitHeader();
-
-        if (this._framework === Framework.Klaxon) {
-            const hasUnions = this.typeGraph
-                .allNamedTypes()
-                .some(t => t instanceof UnionType && nullableFromUnion(t) === null);
-            const hasEmptyObjects = this.typeGraph
-                .allNamedTypes()
-                .some(c => c instanceof ClassType && c.getProperties().isEmpty());
-            if (hasUnions || this.haveEnums || hasEmptyObjects) {
-                this.emitGenericConverter();
-            }
-
-            let converters: Sourcelike[][] = [];
-            if (hasEmptyObjects) {
-                converters.push([[".convert(JsonObject::class,"], [" { it.obj!! },"], [" { it.toJsonString() })"]]);
-            }
-            this.forEachEnum("none", (_, name) => {
-                converters.push([
-                    [".convert(", name, "::class,"],
-                    [" { ", name, ".fromValue(it.string!!) },"],
-                    [' { "\\"${it.value}\\"" })']
-                ]);
-            });
-            this.forEachUnion("none", (_, name) => {
-                converters.push([
-                    [".convert(", name, "::class,"],
-                    [" { ", name, ".fromJson(it) },"],
-                    [" { it.toJson() }, true)"]
-                ]);
-            });
-
-            this.ensureBlankLine();
-            this.emitLine("private val klaxon = Klaxon()");
-            if (converters.length > 0) {
-                this.indent(() => this.emitTable(converters));
-            }
-        } else if (this._framework === Framework.Moshi) {
-            this.emitLine("private val moshi = Moshi.Builder()");
-            this.indent(() => {
-                this.emitLine(".add(KotlinJsonAdapterFactory())");
-                this.forEachEnum("none", (_, name) => {
-                    this.emitLine(".add(object {");
-                    this.indent(() => {
-                        this.emitLine("@ToJson fun toJson(e: ", name, ") = e.value");
-                        this.emitLine("@FromJson fun fromJson(v: String) = ", name, ".fromValue(v)");
-                    });
-                    this.emitLine("})");
-                });
-                this.emitLine(".build()");
-            });
-        }
+        this.emitFrameworkPreface();
 
         // Top-level arrays, maps
         this.forEachTopLevel("leading", (t, name) => {
