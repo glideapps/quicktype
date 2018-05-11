@@ -2,7 +2,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../../Annotatio
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../../Naming";
 import { EnumOption, Option, StringOption } from "../../RendererOptions";
-import { Sourcelike, maybeAnnotated, modifySource, Source } from "../../Source";
+import { Sourcelike, maybeAnnotated, modifySource } from "../../Source";
 import {
     allLowerWordStyle,
     allUpperWordStyle,
