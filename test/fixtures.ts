@@ -76,20 +76,12 @@ export abstract class Fixture {
     return `test/runs/${this.name}-${randomBytes(3).toString("hex")}`;
   }
 
-  private get nameWithFlavor(): string {
-    if (this.language.flavor === undefined) {
-      return this.name;
-    } else {
-      return `${this.name}-${this.language.flavor}`;
-    }
-  }
-
   runMessageStart(sample: Sample, index: number, total: number, cwd: string, shouldSkip: boolean): string {
     const rendererOptions = _.map(sample.additionalRendererOptions, (v, k) => `${k}: ${v}`).join(", ");
     const message = [
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
-      chalk.magenta(this.nameWithFlavor) + chalk.dim(`(${rendererOptions})`),
+      chalk.magenta(this.name) + chalk.dim(`(${rendererOptions})`),
       path.join(cwd, chalk.cyan(path.basename(sample.path))),
       shouldSkip ? chalk.red("SKIP") : ""
     ].join(" ");
