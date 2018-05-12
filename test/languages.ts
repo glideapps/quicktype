@@ -404,7 +404,7 @@ export const ObjectiveCLanguage: Language = {
   runCommand(sample: string) {
     return `cp "${sample}" sample.json && ./test sample.json`;
   },
-  diffViaSchema: true,
+  diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: true,
   output: "QTTopLevel.m",
