@@ -23,7 +23,8 @@ export {
     assertNever,
     parseJSON,
     checkStringMap,
-    checkArray
+    checkArray,
+    inflateBase64
 } from "./support/Support";
 export { getStream } from "./get-stream/index";
 export { train as trainMarkovChain } from "./MarkovChain";

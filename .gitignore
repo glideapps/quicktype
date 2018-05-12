@@ -11,13 +11,14 @@ test/elm/QuickType.elm
 test/fixtures/rust/target
 test/fixtures/java/target
 
+build/*/dist
+build/*/node_modules
+
 *.log
 /test/elm/libsysconfcpus/
 /test/runs
 test/fixtures/cplusplus/json.hpp
 /dist
-/src/core/dist/
-/src/typescript-input/dist/
 test/fixtures/objective-c/quicktype
 *.xcbkptlist
 *.xcuserstate
