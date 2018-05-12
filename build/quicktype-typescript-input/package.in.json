@@ -1,0 +1,25 @@
+{
+  "name": "quicktype-typescript-input",
+  "version": "0.0.1",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": "https://github.com/quicktype/quicktype",
+  "scripts": {
+    "clean": "rm -rf dist node_modules *~",
+    "prepare": "npm run build",
+    "build": "cd ../../src/quicktype-typescript-input ; tsc",
+    "tslint": "cd ../../src/quicktype-typescript-input ; tslint --project ."
+  },
+  "dependencies": {
+    "quicktype-core": "^0.0.5",
+    "typescript": "~2.8.3",
+    "typescript-json-schema":
+      "quicktype/typescript-json-schema#d16083d29c8b6702c666a981fa6b21113300c059"
+  },
+  "devDependencies": {
+    "quicktype-core": "file:../quicktype-core",
+    "tslint": "^5.9.1"
+  },
+  "files": ["dist/**"]
+}

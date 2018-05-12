@@ -32,7 +32,7 @@ function buildTypeScript() {
 
 function makeDistributedCLIExecutable() {
   const prefix = "#!/usr/bin/env node\n";
-  const cli = path.join(OUTDIR, "cli/index.js");
+  const cli = path.join(OUTDIR, "cli", "index.js");
   mapFile(cli, cli, content => {
     if (content.substr(0, prefix.length) === prefix) {
       return content;
@@ -40,6 +40,31 @@ function makeDistributedCLIExecutable() {
     return prefix + content;
   });
   shell.chmod("+x", cli);
+}
+
+function endsWith(str: string, suffix: string): boolean {
+  if (str.length < suffix.length) return false;
+  return str.substr(str.length - suffix.length) === suffix;
+}
+
+function remapRequires() {
+  const dir = path.join(OUTDIR, "quicktype-typescript-input");
+  for (const filename of fs.readdirSync(dir)) {
+    if (endsWith(filename, ".js") || endsWith(filename, ".d.ts")) {
+      const filePath = path.join(dir, filename);
+      console.log(`remapping ${filePath}`);
+      mapFile(filePath, filePath, content => {
+        for (;;) {
+          const newContent = content.replace(
+            'require("quicktype-core',
+            'require("../quicktype-core'
+          );
+          if (content === newContent) return content;
+          content = newContent;
+        }
+      });
+    }
+  }
 }
 
 function main() {
@@ -51,6 +76,7 @@ function main() {
 
   buildTypeScript();
   makeDistributedCLIExecutable();
+  remapRequires();
 }
 
 main();

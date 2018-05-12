@@ -5,11 +5,11 @@
         "lib": ["es2015", "esnext.asynciterable"],
         "allowJs": false,
         "declaration": true,
-        "typeRoots": ["node_modules/@types"],
         "strict": true,
         "alwaysStrict": true,
-        "outDir": "dist",
+        "outDir": "../../build/quicktype-typescript-input/dist",
         "noUnusedLocals": true,
-        "noUnusedParameters": true
+        "noUnusedParameters": true,
+        "baseUrl": "../../build/quicktype-typescript-input/node_modules"
     }
 }

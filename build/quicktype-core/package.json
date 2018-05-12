@@ -1,0 +1,36 @@
+{
+  "name": "quicktype-core",
+  "version": "0.0.5",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": "https://github.com/quicktype/quicktype",
+  "scripts": {
+    "clean": "rm -rf dist node_modules *~",
+    "prepare": "npm run build",
+    "build": "cd ../../src/quicktype-core ; tsc",
+    "tslint":
+      "cd ../../src/quicktype-core ; tslint --project . --exclude 'get-stream/**'"
+  },
+  "dependencies": {
+    "immutable": "^4.0.0-rc.9",
+    "js-base64": "^2.4.3",
+    "pako": "^1.0.6",
+    "pluralize": "^7.0.0",
+    "stream-json": "0.5.2",
+    "string-to-stream": "^1.1.0",
+    "unicode-properties": "github:quicktype/unicode-properties#dist",
+    "urijs": "^1.19.1",
+    "graphql": "^0.11.7"
+  },
+  "devDependencies": {
+    "@types/js-base64": "^2.3.1",
+    "@types/node": "^8.10.10",
+    "@types/pako": "^1.0.0",
+    "@types/pluralize": "0.0.28",
+    "@types/urijs": "github:quicktype/types-urijs",
+    "typescript": "~2.8.3",
+    "tslint": "^5.9.1"
+  },
+  "files": ["dist/**"]
+}
