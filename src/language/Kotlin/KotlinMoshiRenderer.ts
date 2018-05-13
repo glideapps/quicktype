@@ -74,7 +74,7 @@ export class KotlinMoshiRenderer extends KotlinRenderer {
                 elementType,
                 ">>(Types.newParameterizedType(List::class.java, ",
                 elementType,
-                "::class.java))"
+                "::class.javaObjectType))"
             );
             this.emitLine("public fun fromJson(json: String) = adapter.fromJson(json)?.let { ", name, "(it) }");
         });
@@ -90,7 +90,7 @@ export class KotlinMoshiRenderer extends KotlinRenderer {
                 elementType,
                 ">>(Types.newParameterizedType(Map::class.java, String::class.java, ",
                 elementType,
-                "::class.java))"
+                "::class.javaObjectType))"
             );
             this.emitLine("public fun fromJson(json: String) = adapter.fromJson(json)?.let { ", name, "(it) }");
         });
