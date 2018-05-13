@@ -436,7 +436,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitFrameworkPreface();
 
         // Top-level arrays, maps
-        this.forEachTopLevel("leading", (t, name) => {
+        this.forEachTopLevel("leading-and-interposing", (t, name) => {
             if (t instanceof ArrayType) {
                 this.emitTopLevelArray(t, name);
             } else if (t instanceof MapType) {
