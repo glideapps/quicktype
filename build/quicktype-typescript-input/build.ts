@@ -19,7 +19,7 @@ function run(cmd: string, args: string[]): void {
 try {
   writePackage("file:../quicktype-core");
   run("npm", ["install"]);
-  writePackage("^0.0.5");
+  writePackage("^0.0.6");
   run("npm", ["publish"]);
 } catch (e) {
   console.log(e);
