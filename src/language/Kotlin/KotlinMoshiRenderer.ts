@@ -64,11 +64,35 @@ export class KotlinMoshiRenderer extends KotlinRenderer {
         this.emitLine("// TODO");
     }
 
-    protected emitTopLevelArrayBody(_t: ArrayType, _name: Name): void {
-        this.emitLine("// TODO");
+    protected emitTopLevelArrayBody(t: ArrayType, name: Name): void {
+        const elementType = this.kotlinType(t.items);
+        this.emitLine("public fun toJson() = ", name, ".adapter.toJson(this.toList())");
+        this.ensureBlankLine();
+        this.emitBlock("companion object", () => {
+            this.emitLine(
+                "val adapter = moshi.adapter<List<",
+                elementType,
+                ">>(Types.newParameterizedType(List::class.java, ",
+                elementType,
+                "::class.java))"
+            );
+            this.emitLine("public fun fromJson(json: String) = adapter.fromJson(json)?.let { ", name, "(it) }");
+        });
     }
 
-    protected emitTopLevelMapBody(_t: MapType, _name: Name): void {
-        this.emitLine("// TODO");
+    protected emitTopLevelMapBody(t: MapType, name: Name): void {
+        const elementType = this.kotlinType(t.values);
+        this.emitLine("public fun toJson() = ", name, ".adapter.toJson(this)");
+        this.ensureBlankLine();
+        this.emitBlock("companion object", () => {
+            this.emitLine(
+                "val adapter = moshi.adapter<Map<String, ",
+                elementType,
+                ">>(Types.newParameterizedType(Map::class.java, String::class.java, ",
+                elementType,
+                "::class.java))"
+            );
+            this.emitLine("public fun fromJson(json: String) = adapter.fromJson(json)?.let { ", name, "(it) }");
+        });
     }
 }
