@@ -61,7 +61,6 @@ export interface CLIOptions {
     template?: string;
     out?: string;
     buildMarkovChain?: string;
-    findSimilarClassesSchema?: string;
 
     noMaps: boolean;
     noEnums: boolean;
@@ -280,7 +279,6 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         version: opts.version || false,
         out: opts.out,
         buildMarkovChain: opts.buildMarkovChain,
-        findSimilarClassesSchema: opts.findSimilarClassesSchema,
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         graphqlServerHeader: opts.graphqlServerHeader,
@@ -409,12 +407,6 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             description: "Markov chain corpus filename."
         },
         {
-            name: "find-similar-classes-schema",
-            type: String,
-            typeLabel: "FILE",
-            description: "Base schema for finding similar classes"
-        },
-        {
             name: "quiet",
             type: Boolean,
             description: "Don't show issues in the generated code."
@@ -478,7 +470,7 @@ function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSe
         {
             header: "Options",
             optionList: makeOptionDefinitions(targetLanguages),
-            hide: ["no-render", "build-markov-chain", "find-similar-classes-schema"]
+            hide: ["no-render", "build-markov-chain"]
         }
     ];
 }
@@ -780,7 +772,6 @@ export async function makeQuicktypeOptions(
         noRender: options.noRender,
         rendererOptions: options.rendererOptions,
         leadingComments,
-        findSimilarClassesSchemaURI: options.findSimilarClassesSchema,
         outputFilename: mapOptional(path.basename, options.out),
         schemaStore: new FetchingJSONSchemaStore(),
         debugPrintGraph,

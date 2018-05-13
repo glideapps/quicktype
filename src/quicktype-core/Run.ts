@@ -5,8 +5,8 @@ import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
 import { assert, defined } from "./support/Support";
 import { CompressedJSON } from "./input/CompressedJSON";
-import { combineClasses, findSimilarityCliques } from "./rewrites/CombineClasses";
-import { addTypesInSchema, Ref } from "./input/JSONSchemaInput";
+import { combineClasses } from "./rewrites/CombineClasses";
+import { addTypesInSchema } from "./input/JSONSchemaInput";
 import { JSONSchemaStore } from "./input/JSONSchemaStore";
 import { TypeInference } from "./input/Inference";
 import { inferMaps } from "./rewrites/InferMaps";
@@ -49,7 +49,6 @@ export type RendererOptions = { [name: string]: string };
 export interface Options {
     lang: string | TargetLanguage;
     sources: TypeSource[];
-    findSimilarClassesSchemaURI: string | undefined;
     inferMaps: boolean;
     inferEnums: boolean;
     inferDates: boolean;
@@ -73,7 +72,6 @@ export interface Options {
 const defaultOptions: Options = {
     lang: "ts",
     sources: [],
-    findSimilarClassesSchemaURI: undefined,
     inferMaps: true,
     inferEnums: true,
     inferDates: true,
@@ -119,9 +117,6 @@ export class Run {
 
         // JSON Schema
         let schemaInputs = allInputs.schemaInputs;
-        if (this._options.findSimilarClassesSchemaURI !== undefined) {
-            schemaInputs = schemaInputs.set("ComparisonBaseRoot", Ref.parse(this._options.findSimilarClassesSchemaURI));
-        }
         if (!schemaInputs.isEmpty()) {
             await addTypesInSchema(typeBuilder, defined(schemaStore), schemaInputs);
         }
@@ -213,10 +208,6 @@ export class Run {
             );
         } while (!unionsDone);
 
-        if (this._options.findSimilarClassesSchemaURI !== undefined) {
-            return graph;
-        }
-
         if (this._options.combineClasses) {
             const combinedGraph = combineClasses(
                 graph,
@@ -305,8 +296,7 @@ export class Run {
         initTypeNames();
 
         const targetLanguage = getTargetLanguage(this._options.lang);
-        let needIR =
-            targetLanguage.names.indexOf("schema") < 0 || this._options.findSimilarClassesSchemaURI !== undefined;
+        let needIR = targetLanguage.names.indexOf("schema") < 0;
 
         const mapping = targetLanguage.stringTypeMapping;
         const makeDate = mapping.date !== "string";
@@ -334,20 +324,6 @@ export class Run {
 
         if (this._options.noRender) {
             return this.makeSimpleTextResult(["Done.", ""]);
-        }
-
-        if (this._options.findSimilarClassesSchemaURI !== undefined) {
-            const cliques = findSimilarityCliques(graph, false, true);
-            const lines: string[] = [];
-            if (cliques.length === 0) {
-                lines.push("No similar classes found.");
-            } else {
-                for (let clique of cliques) {
-                    lines.push(`similar: ${clique.map(c => c.getCombinedName()).join(", ")}`);
-                }
-            }
-            lines.push("");
-            return this.makeSimpleTextResult(lines);
         }
 
         return targetLanguage.renderGraphAndSerialize(
