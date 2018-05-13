@@ -1,9 +1,7 @@
 import * as ts from "typescript";
 import { PartialArgs, CompilerOptions, generateSchema } from "typescript-json-schema";
 
-import { panic, inflateBase64, defined } from "quicktype-core";
-import { SchemaTypeSource } from "quicktype-core";
-import { messageError } from "quicktype-core";
+import { panic, inflateBase64, defined, SchemaTypeSource, messageError } from "../quicktype-core";
 
 import { encodedDefaultTypeScriptLibrary } from "./EncodedDefaultTypeScriptLibrary";
 

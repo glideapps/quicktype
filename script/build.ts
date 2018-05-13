@@ -42,31 +42,6 @@ function makeDistributedCLIExecutable() {
   shell.chmod("+x", cli);
 }
 
-function endsWith(str: string, suffix: string): boolean {
-  if (str.length < suffix.length) return false;
-  return str.substr(str.length - suffix.length) === suffix;
-}
-
-function remapRequires() {
-  const dir = path.join(OUTDIR, "quicktype-typescript-input");
-  for (const filename of fs.readdirSync(dir)) {
-    if (endsWith(filename, ".js") || endsWith(filename, ".d.ts")) {
-      const filePath = path.join(dir, filename);
-      console.log(`remapping ${filePath}`);
-      mapFile(filePath, filePath, content => {
-        for (;;) {
-          const newContent = content.replace(
-            'require("quicktype-core',
-            'require("../quicktype-core'
-          );
-          if (content === newContent) return content;
-          content = newContent;
-        }
-      });
-    }
-  }
-}
-
 function main() {
   const skipPrereqs = !!process.env.SKIP_INSTALL_PREREQUISITES;
 
@@ -76,7 +51,6 @@ function main() {
 
   buildTypeScript();
   makeDistributedCLIExecutable();
-  remapRequires();
 }
 
 main();
