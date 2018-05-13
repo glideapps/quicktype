@@ -47,7 +47,7 @@ export type ErrorProperties =
     // Driver
     | { kind: "DriverUnknownSourceLanguage"; properties: { lang: string } }
     | { kind: "DriverUnknownOutputLanguage"; properties: { lang: string } }
-    | { kind: "DriverMoreThanOneSchemaGiven"; properties: { name: string } }
+    | { kind: "DriverMoreThanOneInputGiven"; properties: { topLevel: string } }
     | { kind: "DriverCannotInferNameForSchema"; properties: { uri: string } }
     | { kind: "DriverNoGraphQLQueryGiven"; properties: {} }
     | { kind: "DriverNoGraphQLSchemaInDir"; properties: { dir: string } }
@@ -56,6 +56,7 @@ export type ErrorProperties =
     | { kind: "DriverGraphQLSchemaNeeded"; properties: {} }
     | { kind: "DriverInputFileDoesNotExist"; properties: { filename: string } }
     | { kind: "DriverCannotMixJSONWithOtherSamples"; properties: { dir: string } }
+    | { kind: "DriverCannotMixJSONWithOtherSamplesForTopLevel"; properties: { topLevel: string } }
     | { kind: "DriverCannotMixNonJSONInputs"; properties: { dir: string } }
     | { kind: "DriverUnknownDebugOption"; properties: { option: string } }
     | { kind: "DriverNoLanguageOrExtension"; properties: {} }
@@ -121,7 +122,7 @@ const errorMessages: ErrorMessages = {
     // Driver
     DriverUnknownSourceLanguage: "Unknown source language ${lang}",
     DriverUnknownOutputLanguage: "Unknown output language ${lang}",
-    DriverMoreThanOneSchemaGiven: "More than one schema given for ${name}",
+    DriverMoreThanOneInputGiven: "More than one input given for top-level ${topLevel}",
     DriverCannotInferNameForSchema: "Cannot infer name for schema ${uri}",
     DriverNoGraphQLQueryGiven: "Please specify at least one GraphQL query as input",
     DriverNoGraphQLSchemaInDir: "No GraphQL schema in ${dir}",
@@ -132,6 +133,8 @@ const errorMessages: ErrorMessages = {
     DriverCannotMixJSONWithOtherSamples:
         "Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript in input subdirectory ${dir}",
     DriverCannotMixNonJSONInputs: "Cannot mix JSON Schema, GraphQL, and TypeScript in an input subdirectory ${dir}",
+    DriverCannotMixJSONWithOtherSamplesForTopLevel:
+        "Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript for top-level ${topLevel}",
     DriverUnknownDebugOption: "Unknown debug option ${option}",
     DriverNoLanguageOrExtension: "Please specify a language (--lang) or an output file extension",
     DriverCLIOptionParsingFailed: "Option parsing failed: ${message}",
