@@ -31,13 +31,13 @@ import {
     getStream,
     trainMarkovChain,
     messageError,
-    messageAssert
+    messageAssert,
+    sourcesFromPostmanCollection
 } from "../quicktype-core";
 
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { Readable } from "stream";
 import { introspectServer } from "./GraphQLIntrospection";
-import { sourcesFromPostmanCollection } from "./PostmanCollection";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
 import { schemaForTypeScriptSources } from "../quicktype-typescript-input";

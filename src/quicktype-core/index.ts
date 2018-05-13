@@ -28,5 +28,6 @@ export {
 } from "./support/Support";
 export { getStream } from "./get-stream/index";
 export { train as trainMarkovChain } from "./MarkovChain";
-export { messageError, messageAssert } from "./Messages";
+export { QuickTypeError, messageError, messageAssert } from "./Messages";
 export { JSONSchemaStore, JSONSchema } from "./input/JSONSchemaStore";
+export { sourcesFromPostmanCollection } from "./input/PostmanCollection";
