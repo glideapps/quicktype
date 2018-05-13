@@ -181,7 +181,7 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
             }
         }
 
-        if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length) {
+        if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length > 0) {
             return messageError("DriverCannotMixJSONWithOtherSamples", { dir: dir });
         }
 
