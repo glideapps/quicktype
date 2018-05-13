@@ -207,14 +207,13 @@ export class TypeGraph {
         assert(this._haveProvenanceAttributes);
 
         const view = new TypeAttributeStoreView(this.attributeStore, provenanceTypeAttributeKind);
-        return this.allTypesUnordered()
-            .toList()
-            .map(t => {
-                const maybeSet = view.tryGet(t);
-                if (maybeSet !== undefined) return maybeSet;
-                return Set();
-            })
-            .reduce<Set<TypeRef>>((a, b) => a.union(b));
+        const typeList = this.allTypesUnordered().toList();
+        const sets = typeList.map(t => {
+            const maybeSet = view.tryGet(t);
+            if (maybeSet !== undefined) return maybeSet;
+            return Set();
+        });
+        return sets.reduce<Set<TypeRef>>((a, b) => a.union(b), Set());
     }
 
     setPrintOnRewrite(): void {

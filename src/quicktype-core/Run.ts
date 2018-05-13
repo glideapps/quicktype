@@ -1,27 +1,23 @@
-import { List, Map, OrderedMap, OrderedSet } from "immutable";
+import { List, Map, OrderedMap } from "immutable";
 
 import * as targetLanguages from "./language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assert, defined } from "./support/Support";
+import { assert } from "./support/Support";
 import { CompressedJSON } from "./input/CompressedJSON";
 import { combineClasses } from "./rewrites/CombineClasses";
-import { addTypesInSchema } from "./input/JSONSchemaInput";
 import { JSONSchemaStore } from "./input/JSONSchemaStore";
-import { TypeInference } from "./input/Inference";
 import { inferMaps } from "./rewrites/InferMaps";
 import { TypeBuilder } from "./TypeBuilder";
 import { TypeGraph, noneToAny, optionalToNullable, removeIndirectionIntersections } from "./TypeGraph";
-import { makeNamesTypeAttributes, initTypeNames } from "./TypeNames";
-import { makeGraphQLQueryTypes } from "./GraphQL";
+import { initTypeNames } from "./TypeNames";
 import { gatherNames } from "./GatherNames";
 import { expandStrings } from "./rewrites/ExpandStrings";
-import { descriptionTypeAttributeKind } from "./TypeAttributes";
 import { flattenUnions } from "./rewrites/FlattenUnions";
 import { resolveIntersections } from "./rewrites/ResolveIntersections";
 import { replaceObjectType } from "./rewrites/ReplaceObjectType";
 import { messageError } from "./Messages";
-import { InputData } from "./input/Inputs";
+import { InputData, JSONSchemaSources } from "./input/Inputs";
 import { TypeSource } from "./TypeSource";
 import { flattenStrings } from "./rewrites/FlattenStrings";
 import { makeTransformations } from "./MakeTransformations";
@@ -99,11 +95,7 @@ export class Run {
         this._options = Object.assign(Object.assign({}, defaultOptions), options);
     }
 
-    private async makeGraph(
-        allInputs: InputData,
-        compressedJSON: CompressedJSON,
-        schemaStore: JSONSchemaStore | undefined
-    ): Promise<TypeGraph> {
+    private async makeGraph(allInputs: InputData, compressedJSON: CompressedJSON): Promise<TypeGraph> {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
@@ -115,41 +107,13 @@ export class Run {
             false
         );
 
-        // JSON Schema
-        let schemaInputs = allInputs.schemaInputs;
-        if (!schemaInputs.isEmpty()) {
-            await addTypesInSchema(typeBuilder, defined(schemaStore), schemaInputs);
-        }
-
-        // GraphQL
-        const graphQLInputs = allInputs.graphQLInputs;
-        graphQLInputs.forEach(({ schema, query }, name) => {
-            const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
-            newTopLevels.forEach((t, actualName) => {
-                typeBuilder.addTopLevel(graphQLInputs.size === 1 ? name : actualName, t);
-            });
-        });
-
-        // JSON
-        const doInferEnums = this._options.inferEnums;
-        const jsonInputs = allInputs.jsonInputs;
-        if (!jsonInputs.isEmpty()) {
-            const inference = new TypeInference(typeBuilder, doInferEnums, this._options.inferDates);
-
-            jsonInputs.forEach(({ samples, description }, name) => {
-                const tref = inference.inferType(
-                    compressedJSON as CompressedJSON,
-                    makeNamesTypeAttributes(name, false),
-                    samples,
-                    this._options.fixedTopLevels
-                );
-                typeBuilder.addTopLevel(name, tref);
-                if (description !== undefined) {
-                    const attributes = descriptionTypeAttributeKind.makeAttributes(OrderedSet([description]));
-                    typeBuilder.addAttributes(tref, attributes);
-                }
-            });
-        }
+        await allInputs.addTypes(
+            typeBuilder,
+            compressedJSON,
+            this._options.inferEnums,
+            this._options.inferDates,
+            this._options.fixedTopLevels
+        );
 
         let graph = typeBuilder.finish();
         if (this._options.debugPrintGraph) {
@@ -164,7 +128,7 @@ export class Run {
         }
 
         let unionsDone = false;
-        if (!schemaInputs.isEmpty()) {
+        if (allInputs.needSchemaProcessing) {
             let intersectionsDone = false;
             do {
                 const graphBeforeRewrites = graph;
@@ -241,12 +205,12 @@ export class Run {
             }
         }
 
-        const enumInference = schemaInputs.isEmpty() ? (doInferEnums ? "infer" : "none") : "all";
+        const enumInference = allInputs.needSchemaProcessing ? "all" : this._options.inferEnums ? "infer" : "none";
         graph = expandStrings(graph, stringTypeMapping, enumInference, debugPrintReconstitution);
         [graph, unionsDone] = flattenUnions(graph, stringTypeMapping, conflateNumbers, false, debugPrintReconstitution);
         assert(unionsDone, "We should only have to flatten unions once after expanding strings");
 
-        if (!schemaInputs.isEmpty()) {
+        if (allInputs.needSchemaProcessing) {
             graph = flattenStrings(graph, stringTypeMapping, debugPrintReconstitution);
         }
 
@@ -304,13 +268,14 @@ export class Run {
         const makeDateTime = mapping.dateTime !== "string";
 
         const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
-        const allInputs = new InputData(compressedJSON, this._options.schemaStore);
+        const jsonSchemaSources = new JSONSchemaSources(this._options.schemaStore);
+        const allInputs = new InputData(compressedJSON);
 
-        if (await allInputs.addTypeSources(this._options.sources)) {
+        if (await allInputs.addTypeSources(this._options.sources, jsonSchemaSources)) {
             needIR = true;
         }
 
-        const schemaString = needIR ? undefined : allInputs.singleStringSchemaSource();
+        const schemaString = needIR ? undefined : jsonSchemaSources.singleStringSchemaSource();
         if (schemaString !== undefined) {
             const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
             lines.push("");
@@ -318,9 +283,9 @@ export class Run {
             return OrderedMap([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
         }
 
-        const schemaStore = await allInputs.addSchemaInputs();
+        await jsonSchemaSources.addInputs(allInputs);
 
-        const graph = await this.makeGraph(allInputs, compressedJSON, schemaStore);
+        const graph = await this.makeGraph(allInputs, compressedJSON);
 
         if (this._options.noRender) {
             return this.makeSimpleTextResult(["Done.", ""]);

@@ -1,9 +1,9 @@
 import * as URI from "urijs";
-import { Map, List, Set } from "immutable";
+import { OrderedMap, OrderedSet, Map, List, Set } from "immutable";
 import { getStream } from "../get-stream";
 import { Readable } from "stream";
 
-import { Ref, checkJSONSchema, refsInSchemaForURI } from "./JSONSchemaInput";
+import { Ref, checkJSONSchema, refsInSchemaForURI, addTypesInSchema } from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
 import {
@@ -14,8 +14,7 @@ import {
     forEachSync,
     defined,
     withDefault,
-    errorMessage,
-    hasOwnProperty
+    errorMessage
 } from "../support/Support";
 import { messageAssert, messageError } from "../Messages";
 import {
@@ -26,6 +25,11 @@ import {
     isGraphQLSource,
     isJSONSource
 } from "../TypeSource";
+import { makeGraphQLQueryTypes } from "../GraphQL";
+import { TypeBuilder } from "../TypeBuilder";
+import { makeNamesTypeAttributes } from "../TypeNames";
+import { descriptionTypeAttributeKind } from "../TypeAttributes";
+import { TypeInference } from "./Inference";
 
 const stringToStream = require("string-to-stream");
 
@@ -56,68 +60,120 @@ class InputJSONSchemaStore extends JSONSchemaStore {
     }
 }
 
-export class InputData {
-    private readonly _samples: { [name: string]: { samples: Value[]; description?: string } } = {};
-    private readonly _schemas: { [name: string]: { ref: Ref } } = {};
-    private readonly _graphQLs: { [name: string]: { schema: any; query: string } } = {};
+export abstract class Input {
+    constructor(readonly kind: string) {}
 
+    abstract get needSchemaProcessing(): boolean;
+
+    abstract async addTypesFromInputs(
+        inputs: OrderedMap<string, this>,
+        typeBuilder: TypeBuilder,
+        compressedJSON: CompressedJSON,
+        inferEnums: boolean,
+        inferDates: boolean,
+        fixedTopLevels: boolean
+    ): Promise<void>;
+
+    // FIXME: Put needIR in here
+}
+
+class GraphQLInput extends Input {
+    /* tslint:disable:no-unused-variable */
+    constructor(private readonly _schema: any, private readonly _query: string) {
+        super("graphql");
+    }
+
+    get needSchemaProcessing(): boolean {
+        return false;
+    }
+
+    async addTypesFromInputs(inputs: OrderedMap<string, this>, typeBuilder: TypeBuilder): Promise<void> {
+        inputs.forEach((input, name) => {
+            const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, input._schema, input._query);
+            newTopLevels.forEach((t, actualName) => {
+                typeBuilder.addTopLevel(inputs.size === 1 ? name : actualName, t);
+            });
+        });
+    }
+}
+
+class JSONInput extends Input {
+    /* tslint:disable:no-unused-variable */
+    constructor(private readonly _samples: Value[], private _description: string | undefined) {
+        super("json");
+    }
+
+    addSample(sample: Value): void {
+        this._samples.push(sample);
+    }
+
+    get description(): string | undefined {
+        return this._description;
+    }
+
+    setDescription(description: string): void {
+        this._description = description;
+    }
+
+    get needSchemaProcessing(): boolean {
+        return false;
+    }
+
+    async addTypesFromInputs(
+        inputs: OrderedMap<string, this>,
+        typeBuilder: TypeBuilder,
+        compressedJSON: CompressedJSON,
+        inferEnums: boolean,
+        inferDates: boolean,
+        fixedTopLevels: boolean
+    ): Promise<void> {
+        const inference = new TypeInference(typeBuilder, inferEnums, inferDates);
+
+        inputs.forEach((input, name) => {
+            const samples = input._samples;
+            const description = input.description;
+
+            const tref = inference.inferType(
+                compressedJSON as CompressedJSON,
+                makeNamesTypeAttributes(name, false),
+                samples,
+                fixedTopLevels
+            );
+            typeBuilder.addTopLevel(name, tref);
+            if (description !== undefined) {
+                const attributes = descriptionTypeAttributeKind.makeAttributes(OrderedSet([description]));
+                typeBuilder.addAttributes(tref, attributes);
+            }
+        });
+    }
+}
+
+class JSONSchemaInput extends Input {
+    /**
+     * We're assuming that all schema inputs use the same schema store, i.e., you have
+     * to pass in the same schema store into all your schema inputs.
+     */
+    /* tslint:disable:no-unused-variable */
+    constructor(private readonly _ref: Ref, private readonly _schemaStore: JSONSchemaStore) {
+        super("schema");
+    }
+
+    get needSchemaProcessing(): boolean {
+        return true;
+    }
+
+    async addTypesFromInputs(inputs: OrderedMap<string, this>, typeBuilder: TypeBuilder): Promise<void> {
+        await addTypesInSchema(typeBuilder, this._schemaStore, inputs.map(jsi => jsi._ref));
+    }
+}
+
+export class JSONSchemaSources {
     private _schemaInputs: Map<string, StringInput> = Map();
     private _schemaSources: List<[uri.URI, SchemaTypeSource]> = List();
 
-    constructor(
-        private readonly _compressedJSON: CompressedJSON,
-        private readonly _givenSchemaStore: JSONSchemaStore | undefined
-    ) {}
+    constructor(private readonly _givenSchemaStore: JSONSchemaStore | undefined) {}
 
-    get jsonInputs(): Map<string, { samples: Value[]; description?: string }> {
-        return Map(this._samples);
-    }
-
-    get schemaInputs(): Map<string, Ref> {
-        return Map(this._schemas).map(({ ref }) => ref);
-    }
-
-    get graphQLInputs(): Map<string, { schema: any; query: string }> {
-        return Map(this._graphQLs);
-    }
-
-    // Returns whether we need IR for this type source
-    private async addOtherTypeSource(source: TypeSource): Promise<boolean> {
-        if (isGraphQLSource(source)) {
-            const { name, schema, query } = source;
-            this._graphQLs[name] = { schema, query: await toString(query) };
-
-            return true;
-        } else if (isJSONSource(source)) {
-            const { name, samples, description } = source;
-            for (const sample of samples) {
-                let input: Value;
-                try {
-                    input = await this._compressedJSON.readFromStream(toReadable(sample));
-                } catch (e) {
-                    return messageError("MiscJSONParseError", {
-                        description: withDefault(description, "input"),
-                        address: name,
-                        message: errorMessage(e)
-                    });
-                }
-                if (!hasOwnProperty(this._samples, name)) {
-                    this._samples[name] = { samples: [] };
-                }
-                this._samples[name].samples.push(input);
-                if (description !== undefined) {
-                    this._samples[name].description = description;
-                }
-            }
-
-            return true;
-        } else if (isSchemaSource(source)) {
-            return false;
-        }
-        return assertNever(source);
-    }
-
-    private addSchemaTypeSource(schemaSource: SchemaTypeSource): void {
+    addSchemaTypeSource(schemaSource: SchemaTypeSource): void {
         const { uris, schema } = schemaSource;
 
         let normalizedURIs: uri.URI[];
@@ -158,45 +214,23 @@ export class InputData {
         }
     }
 
-    // Returns whether we need IR for this type source
-    async addTypeSources(sources: TypeSource[]): Promise<boolean> {
-        let needIR = false;
-
-        for (const source of sources) {
-            if (isSchemaSource(source)) {
-                const isDirectInput = source.isConverted !== true;
-                needIR = isDirectInput || needIR;
-
-                this.addSchemaTypeSource(source);
-            } else {
-                needIR = (await this.addOtherTypeSource(source)) || needIR;
-            }
-        }
-
-        return needIR;
-    }
-
-    private addSchemaInput(name: string, ref: Ref): void {
-        messageAssert(!hasOwnProperty(this._schemas, name), "DriverMoreThanOneSchemaGiven", { name });
-        this._schemas[name] = { ref };
-    }
-
-    async addSchemaInputs(): Promise<JSONSchemaStore | undefined> {
+    async addInputs(inputData: InputData): Promise<JSONSchemaStore | undefined> {
         if (this._schemaSources.isEmpty()) return undefined;
 
-        let schemaStore = this._givenSchemaStore;
+        let maybeSchemaStore = this._givenSchemaStore;
         if (this._schemaInputs.isEmpty()) {
-            if (schemaStore === undefined) {
+            if (maybeSchemaStore === undefined) {
                 return panic("Must have a schema store to process JSON Schema");
             }
         } else {
-            schemaStore = new InputJSONSchemaStore(this._schemaInputs, schemaStore);
+            maybeSchemaStore = new InputJSONSchemaStore(this._schemaInputs, maybeSchemaStore);
         }
+        const schemaStore = maybeSchemaStore;
 
         await forEachSync(this._schemaSources, async ([normalizedURI, source]) => {
             const givenName = source.name;
 
-            const refs = await refsInSchemaForURI(defined(schemaStore), normalizedURI, givenName);
+            const refs = await refsInSchemaForURI(schemaStore, normalizedURI, givenName);
             if (Array.isArray(refs)) {
                 let name: string;
                 if (this._schemaSources.size === 1) {
@@ -204,10 +238,10 @@ export class InputData {
                 } else {
                     name = refs[0];
                 }
-                this.addSchemaInput(name, refs[1]);
+                inputData.addInput(name, new JSONSchemaInput(refs[1], schemaStore));
             } else {
                 refs.forEach((ref, refName) => {
-                    this.addSchemaInput(refName, ref);
+                    inputData.addInput(refName, new JSONSchemaInput(ref, schemaStore));
                 });
             }
         });
@@ -224,5 +258,95 @@ export class InputData {
             return defined(set.first());
         }
         return undefined;
+    }
+}
+
+export class InputData {
+    private _inputs: OrderedMap<string, Input> = OrderedMap();
+
+    constructor(private readonly _compressedJSON: CompressedJSON) {}
+
+    addInput(name: string, input: Input): void {
+        messageAssert(!this._inputs.has(name), "DriverMoreThanOneInputGiven", { topLevel: name });
+        this._inputs = this._inputs.set(name, input);
+    }
+
+    // Returns whether we need IR for this type source
+    private async addOtherTypeSource(source: TypeSource): Promise<boolean> {
+        if (isGraphQLSource(source)) {
+            const { name, schema, query } = source;
+            this.addInput(name, new GraphQLInput(schema, await toString(query)));
+            return true;
+        } else if (isJSONSource(source)) {
+            const { name, samples, description } = source;
+            for (const sample of samples) {
+                let value: Value;
+                try {
+                    value = await this._compressedJSON.readFromStream(toReadable(sample));
+                } catch (e) {
+                    return messageError("MiscJSONParseError", {
+                        description: withDefault(description, "input"),
+                        address: name,
+                        message: errorMessage(e)
+                    });
+                }
+                let input = this._inputs.get(name);
+                if (input === undefined) {
+                    input = new JSONInput([], undefined);
+                    this.addInput(name, input);
+                } else {
+                    if (!(input instanceof JSONInput)) {
+                        return messageError("DriverCannotMixJSONWithOtherSamplesForTopLevel", { topLevel: name });
+                    }
+                }
+                const jsonInput = input as JSONInput;
+                jsonInput.addSample(value);
+                if (description !== undefined) {
+                    jsonInput.setDescription(description);
+                }
+            }
+
+            return true;
+        } else if (isSchemaSource(source)) {
+            return false;
+        }
+        return assertNever(source);
+    }
+
+    // Returns whether we need IR for this type source
+    async addTypeSources(sources: TypeSource[], jsonSchemaSources: JSONSchemaSources): Promise<boolean> {
+        let needIR = false;
+
+        for (const source of sources) {
+            if (isSchemaSource(source)) {
+                const isDirectInput = source.isConverted !== true;
+                needIR = isDirectInput || needIR;
+
+                jsonSchemaSources.addSchemaTypeSource(source);
+            } else {
+                needIR = (await this.addOtherTypeSource(source)) || needIR;
+            }
+        }
+
+        return needIR;
+    }
+
+    async addTypes(
+        typeBuilder: TypeBuilder,
+        compressedJSON: CompressedJSON,
+        inferEnums: boolean,
+        inferDates: boolean,
+        fixedTopLevels: boolean
+    ): Promise<void> {
+        let kinds = this._inputs.map(i => i.kind).toOrderedSet();
+        await forEachSync(kinds, async kind => {
+            const inputs = this._inputs.filter(i => i.kind === kind);
+            const first = defined(inputs.first());
+            await first.addTypesFromInputs(inputs, typeBuilder, compressedJSON, inferEnums, inferDates, fixedTopLevels);
+        });
+    }
+
+    get needSchemaProcessing(): boolean {
+        return this._inputs.some(i => i.needSchemaProcessing);
     }
 }
