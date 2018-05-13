@@ -98,7 +98,7 @@ function tryAddToClique(c: ClassType, clique: Clique, onlyWithSameProperties: bo
     return false;
 }
 
-export function findSimilarityCliques(
+function findSimilarityCliques(
     graph: TypeGraph,
     onlyWithSameProperties: boolean,
     includeFixedClasses: boolean
