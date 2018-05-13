@@ -8,17 +8,18 @@
   "scripts": {
     "clean": "rm -rf dist node_modules *~",
     "prepare": "npm run build",
-    "build": "cd ../../src/quicktype-typescript-input ; tsc",
-    "tslint": "cd ../../src/quicktype-typescript-input ; tslint --project ."
+    "build": "tsc",
+    "tslint": "tslint --project ."
   },
   "dependencies": {
     "quicktype-core": "^0.0.5",
+    "immutable": "^4.0.0-rc.9",
     "typescript": "~2.8.3",
     "typescript-json-schema":
       "quicktype/typescript-json-schema#d16083d29c8b6702c666a981fa6b21113300c059"
   },
   "devDependencies": {
-    "quicktype-core": "file:../quicktype-core",
+    "@types/node": "^8.10.10",
     "tslint": "^5.9.1"
   },
   "files": ["dist/**"]

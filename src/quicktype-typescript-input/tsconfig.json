@@ -7,9 +7,8 @@
         "declaration": true,
         "strict": true,
         "alwaysStrict": true,
-        "outDir": "../../build/quicktype-typescript-input/dist",
+        "outDir": "dist",
         "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "baseUrl": "../../build/quicktype-typescript-input/node_modules"
+        "noUnusedParameters": true
     }
 }
