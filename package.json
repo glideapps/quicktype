@@ -12,7 +12,7 @@
     "test": "script/test",
     "start": "script/watch",
     "pkg": "script/make-pkgs.sh",
-    "tslint": "tslint --project src --exclude 'src/__tests__/**'",
+    "tslint": "tslint --project src/cli --exclude 'src/__tests__/**' --exclude 'src/quicktype-core/get-stream/**'",
     "clean": "rm -rf dist node_modules *~"
   },
   "dependencies": {
