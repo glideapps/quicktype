@@ -66,7 +66,7 @@ export class KotlinMoshiRenderer extends KotlinRenderer {
 
     protected emitTopLevelArrayBody(t: ArrayType, name: Name): void {
         const elementType = this.kotlinType(t.items);
-        this.emitLine("public fun toJson() = ", name, ".adapter.toJson(this.toList())");
+        this.emitLine("public fun toJson() = ", name, ".adapter.toJson(this)");
         this.ensureBlankLine();
         this.emitBlock("companion object", () => {
             this.emitLine(
