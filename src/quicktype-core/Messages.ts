@@ -56,7 +56,6 @@ export type ErrorProperties =
     | { kind: "DriverGraphQLSchemaNeeded"; properties: {} }
     | { kind: "DriverInputFileDoesNotExist"; properties: { filename: string } }
     | { kind: "DriverCannotMixJSONWithOtherSamples"; properties: { dir: string } }
-    | { kind: "DriverCannotMixJSONWithOtherSamplesForTopLevel"; properties: { topLevel: string } }
     | { kind: "DriverCannotMixNonJSONInputs"; properties: { dir: string } }
     | { kind: "DriverUnknownDebugOption"; properties: { option: string } }
     | { kind: "DriverNoLanguageOrExtension"; properties: {} }
@@ -133,8 +132,6 @@ const errorMessages: ErrorMessages = {
     DriverCannotMixJSONWithOtherSamples:
         "Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript in input subdirectory ${dir}",
     DriverCannotMixNonJSONInputs: "Cannot mix JSON Schema, GraphQL, and TypeScript in an input subdirectory ${dir}",
-    DriverCannotMixJSONWithOtherSamplesForTopLevel:
-        "Cannot mix JSON samples with JSON Schems, GraphQL, or TypeScript for top-level ${topLevel}",
     DriverUnknownDebugOption: "Unknown debug option ${option}",
     DriverNoLanguageOrExtension: "Please specify a language (--lang) or an output file extension",
     DriverCLIOptionParsingFailed: "Option parsing failed: ${message}",

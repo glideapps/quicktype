@@ -60,15 +60,12 @@ class InputJSONSchemaStore extends JSONSchemaStore {
     }
 }
 
-export abstract class Input {
-    constructor(readonly kind: string) {}
+export interface Input {
+    readonly kind: string;
+    readonly needSchemaProcessing: boolean;
 
-    abstract get needSchemaProcessing(): boolean;
-
-    abstract async addTypesFromInputs(
-        inputs: OrderedMap<string, this>,
+    addTypes(
         typeBuilder: TypeBuilder,
-        compressedJSON: CompressedJSON,
         inferEnums: boolean,
         inferDates: boolean,
         fixedTopLevels: boolean
@@ -77,64 +74,67 @@ export abstract class Input {
     // FIXME: Put needIR in here
 }
 
-class GraphQLInput extends Input {
-    /* tslint:disable:no-unused-variable */
-    constructor(private readonly _schema: any, private readonly _query: string) {
-        super("graphql");
+type GraphQLTopLevel = { schema: any; query: string };
+
+class GraphQLInput implements Input {
+    readonly kind: string = "graphql";
+    readonly needSchemaProcessing: boolean = false;
+
+    private _topLevels: OrderedMap<string, GraphQLTopLevel> = OrderedMap();
+
+    addTopLevel(name: string, schema: any, query: string): void {
+        this._topLevels = this._topLevels.set(name, { schema, query });
     }
 
-    get needSchemaProcessing(): boolean {
-        return false;
-    }
-
-    async addTypesFromInputs(inputs: OrderedMap<string, this>, typeBuilder: TypeBuilder): Promise<void> {
-        inputs.forEach((input, name) => {
-            const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, input._schema, input._query);
+    async addTypes(typeBuilder: TypeBuilder): Promise<void> {
+        this._topLevels.forEach(({ schema, query }, name) => {
+            const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
             newTopLevels.forEach((t, actualName) => {
-                typeBuilder.addTopLevel(inputs.size === 1 ? name : actualName, t);
+                typeBuilder.addTopLevel(this._topLevels.size === 1 ? name : actualName, t);
             });
         });
     }
 }
 
-class JSONInput extends Input {
+type JSONTopLevel = { samples: Value[]; description: string | undefined };
+
+class JSONInput implements Input {
+    readonly kind: string = "json";
+    readonly needSchemaProcessing: boolean = false;
+
+    private _topLevels: OrderedMap<string, JSONTopLevel> = OrderedMap();
+
     /* tslint:disable:no-unused-variable */
-    constructor(private readonly _samples: Value[], private _description: string | undefined) {
-        super("json");
+    constructor(private readonly _compressedJSON: CompressedJSON) {}
+
+    addSample(topLevelName: string, sample: Value): void {
+        let topLevel = this._topLevels.get(topLevelName);
+        if (topLevel === undefined) {
+            topLevel = { samples: [], description: undefined };
+            this._topLevels = this._topLevels.set(topLevelName, topLevel);
+        }
+        topLevel.samples.push(sample);
     }
 
-    addSample(sample: Value): void {
-        this._samples.push(sample);
+    setDescription(topLevelName: string, description: string): void {
+        let topLevel = this._topLevels.get(topLevelName);
+        if (topLevel === undefined) {
+            return panic("Trying to set description for a top-level that doesn't exist");
+        }
+        topLevel.description = description;
     }
 
-    get description(): string | undefined {
-        return this._description;
-    }
-
-    setDescription(description: string): void {
-        this._description = description;
-    }
-
-    get needSchemaProcessing(): boolean {
-        return false;
-    }
-
-    async addTypesFromInputs(
-        inputs: OrderedMap<string, this>,
+    async addTypes(
         typeBuilder: TypeBuilder,
-        compressedJSON: CompressedJSON,
         inferEnums: boolean,
         inferDates: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
         const inference = new TypeInference(typeBuilder, inferEnums, inferDates);
 
-        inputs.forEach((input, name) => {
-            const samples = input._samples;
-            const description = input.description;
-
+        this._topLevels.forEach(({ samples, description }, name) => {
             const tref = inference.inferType(
-                compressedJSON as CompressedJSON,
+                this._compressedJSON,
                 makeNamesTypeAttributes(name, false),
                 samples,
                 fixedTopLevels
@@ -148,22 +148,20 @@ class JSONInput extends Input {
     }
 }
 
-class JSONSchemaInput extends Input {
-    /**
-     * We're assuming that all schema inputs use the same schema store, i.e., you have
-     * to pass in the same schema store into all your schema inputs.
-     */
-    /* tslint:disable:no-unused-variable */
-    constructor(private readonly _ref: Ref, private readonly _schemaStore: JSONSchemaStore) {
-        super("schema");
+class JSONSchemaInput implements Input {
+    readonly kind: string = "schema";
+    readonly needSchemaProcessing: boolean = true;
+
+    private _topLevels: OrderedMap<string, Ref> = OrderedMap();
+
+    constructor(private readonly _schemaStore: JSONSchemaStore) {}
+
+    addTopLevel(name: string, ref: Ref): void {
+        this._topLevels = this._topLevels.set(name, ref);
     }
 
-    get needSchemaProcessing(): boolean {
-        return true;
-    }
-
-    async addTypesFromInputs(inputs: OrderedMap<string, this>, typeBuilder: TypeBuilder): Promise<void> {
-        await addTypesInSchema(typeBuilder, this._schemaStore, inputs.map(jsi => jsi._ref));
+    async addTypes(typeBuilder: TypeBuilder): Promise<void> {
+        await addTypesInSchema(typeBuilder, this._schemaStore, this._topLevels);
     }
 }
 
@@ -227,6 +225,8 @@ export class JSONSchemaSources {
         }
         const schemaStore = maybeSchemaStore;
 
+        const schemaInput = new JSONSchemaInput(schemaStore);
+
         await forEachSync(this._schemaSources, async ([normalizedURI, source]) => {
             const givenName = source.name;
 
@@ -238,10 +238,12 @@ export class JSONSchemaSources {
                 } else {
                     name = refs[0];
                 }
-                inputData.addInput(name, new JSONSchemaInput(refs[1], schemaStore));
+                schemaInput.addTopLevel(name, refs[1]);
+                inputData.addInput(name, schemaInput);
             } else {
                 refs.forEach((ref, refName) => {
-                    inputData.addInput(refName, new JSONSchemaInput(ref, schemaStore));
+                    schemaInput.addTopLevel(refName, ref);
+                    inputData.addInput(refName, schemaInput);
                 });
             }
         });
@@ -273,12 +275,25 @@ export class InputData {
 
     // Returns whether we need IR for this type source
     private async addOtherTypeSource(source: TypeSource): Promise<boolean> {
+        let graphQLInput: GraphQLInput | undefined = undefined;
+        let jsonInput: JSONInput | undefined = undefined;
+
         if (isGraphQLSource(source)) {
             const { name, schema, query } = source;
-            this.addInput(name, new GraphQLInput(schema, await toString(query)));
+            if (graphQLInput === undefined) {
+                graphQLInput = new GraphQLInput();
+            }
+            graphQLInput.addTopLevel(name, schema, await toString(query));
+            this.addInput(name, graphQLInput);
             return true;
         } else if (isJSONSource(source)) {
             const { name, samples, description } = source;
+
+            if (jsonInput === undefined) {
+                jsonInput = new JSONInput(this._compressedJSON);
+            }
+            this.addInput(name, jsonInput);
+
             for (const sample of samples) {
                 let value: Value;
                 try {
@@ -290,19 +305,9 @@ export class InputData {
                         message: errorMessage(e)
                     });
                 }
-                let input = this._inputs.get(name);
-                if (input === undefined) {
-                    input = new JSONInput([], undefined);
-                    this.addInput(name, input);
-                } else {
-                    if (!(input instanceof JSONInput)) {
-                        return messageError("DriverCannotMixJSONWithOtherSamplesForTopLevel", { topLevel: name });
-                    }
-                }
-                const jsonInput = input as JSONInput;
-                jsonInput.addSample(value);
+                jsonInput.addSample(name, value);
                 if (description !== undefined) {
-                    jsonInput.setDescription(description);
+                    jsonInput.setDescription(name, description);
                 }
             }
 
@@ -333,16 +338,14 @@ export class InputData {
 
     async addTypes(
         typeBuilder: TypeBuilder,
-        compressedJSON: CompressedJSON,
         inferEnums: boolean,
         inferDates: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
-        let kinds = this._inputs.map(i => i.kind).toOrderedSet();
-        await forEachSync(kinds, async kind => {
-            const inputs = this._inputs.filter(i => i.kind === kind);
-            const first = defined(inputs.first());
-            await first.addTypesFromInputs(inputs, typeBuilder, compressedJSON, inferEnums, inferDates, fixedTopLevels);
+        // We're comparing for identity in this OrderedSet, i.e.,
+        // we do each input exactly once.
+        await forEachSync(this._inputs.toOrderedSet(), async input => {
+            await input.addTypes(typeBuilder, inferEnums, inferDates, fixedTopLevels);
         });
     }
 
