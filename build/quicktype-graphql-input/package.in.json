@@ -1,5 +1,5 @@
 {
-  "name": "quicktype-typescript-input",
+  "name": "quicktype-graphql-input",
   "version": "0.0.1",
   "license": "Apache-2.0",
   "main": "dist/index.js",
