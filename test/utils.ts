@@ -94,7 +94,7 @@ export async function quicktypeForLanguage(
   try {
     await quicktype({
       srcLang: sourceLanguage,
-      lang: language.name,
+      lang: language.langauge || language.name,
       src: [sourceFile],
       out: language.output,
       graphqlSchema,

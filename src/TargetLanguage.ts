@@ -39,7 +39,7 @@ export abstract class TargetLanguage {
         ...optionValues: any[]
     ) => Renderer;
 
-    private makeRenderer(
+    protected makeRenderer(
         graph: TypeGraph,
         leadingComments: string[] | undefined,
         rendererOptions: { [name: string]: any }

@@ -3,6 +3,8 @@ import * as process from "process";
 
 export interface Language {
   name: string;
+  // Specify quicktype language name if name isn't really language (e.g. kotlin-moshi)
+  langauge?: string;
   base: string;
   setupCommand?: string;
   compileCommand?: string;
@@ -504,8 +506,9 @@ export const FlowLanguage: Language = {
   sourceFiles: ["src/language/Flow.ts"]
 };
 
-export const KotlinLanguage: Language = {
-  name: "kotlin",
+export const KotlinKlaxonLanguage: Language = {
+  name: "kotlin-klaxon",
+  langauge: "kotlin",
   base: "test/fixtures/kotlin",
   compileCommand: "./build.sh",
   runCommand(sample: string) {
@@ -555,7 +558,32 @@ export const KotlinLanguage: Language = {
   ],
   skipSchema: [],
   skipMiscJSON: false,
-  rendererOptions: {},
+  rendererOptions: {
+    framework: "klaxon"
+  },
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Kotlin.ts"]
+};
+
+export const KotlinMoshiLanguage: Language = {
+  name: "kotlin-moshi",
+  langauge: "kotlin",
+  base: "test/fixtures/kotlin-moshi",
+  compileCommand: "./build.sh",
+  runCommand(sample: string) {
+    return `cp "${sample}" sample.json && ./run.sh`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [],
+  allowMissingNull: true,
+  output: "TopLevel.kt",
+  topLevel: "TopLevel",
+  skipJSON: [],
+  skipSchema: [],
+  skipMiscJSON: false,
+  rendererOptions: {
+    framework: "moshi"
+  },
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/Kotlin.ts"]
 };
