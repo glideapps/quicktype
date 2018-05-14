@@ -1,7 +1,5 @@
 import * as URI from "urijs";
 import { OrderedMap, OrderedSet, Map, List, Set } from "immutable";
-import { getStream } from "../get-stream";
-import { Readable } from "stream";
 
 import { Ref, checkJSONSchema, refsInSchemaForURI, addTypesInSchema } from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
@@ -9,37 +7,20 @@ import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
 import {
     parseJSON,
     panic,
-    assertNever,
     assert,
     forEachSync,
     defined,
     withDefault,
-    errorMessage
+    errorMessage,
+    toString,
+    toReadable
 } from "../support/Support";
 import { messageError } from "../Messages";
-import {
-    TypeSource,
-    SchemaTypeSource,
-    isSchemaSource,
-    StringInput,
-    isGraphQLSource,
-    isJSONSource
-} from "../TypeSource";
-import { makeGraphQLQueryTypes } from "../GraphQL";
+import { JSONTypeSource, SchemaTypeSource, StringInput } from "../TypeSource";
 import { TypeBuilder } from "../TypeBuilder";
 import { makeNamesTypeAttributes } from "../TypeNames";
 import { descriptionTypeAttributeKind } from "../TypeAttributes";
 import { TypeInference } from "./Inference";
-
-const stringToStream = require("string-to-stream");
-
-function toReadable(source: string | Readable): Readable {
-    return typeof source === "string" ? stringToStream(source) : source;
-}
-
-async function toString(source: string | Readable): Promise<string> {
-    return typeof source === "string" ? source : await getStream(source);
-}
 
 class InputJSONSchemaStore extends JSONSchemaStore {
     constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
@@ -62,6 +43,7 @@ class InputJSONSchemaStore extends JSONSchemaStore {
 
 export interface Input {
     readonly kind: string;
+    readonly needIR: boolean;
     readonly needSchemaProcessing: boolean;
 
     finishAddingInputs(): void;
@@ -74,42 +56,13 @@ export interface Input {
         inferDates: boolean,
         fixedTopLevels: boolean
     ): Promise<void>;
-
-    // FIXME: Put needIR in here
 }
 
-type GraphQLTopLevel = { schema: any; query: string };
+export type JSONTopLevel = { samples: Value[]; description: string | undefined };
 
-class GraphQLInput implements Input {
-    readonly kind: string = "graphql";
-    readonly needSchemaProcessing: boolean = false;
-
-    private _topLevels: OrderedMap<string, GraphQLTopLevel> = OrderedMap();
-
-    addTopLevel(name: string, schema: any, query: string): void {
-        this._topLevels = this._topLevels.set(name, { schema, query });
-    }
-
-    async finishAddingInputs(): Promise<void> {}
-
-    singleStringSchemaSource(): undefined {
-        return undefined;
-    }
-
-    async addTypes(typeBuilder: TypeBuilder): Promise<void> {
-        this._topLevels.forEach(({ schema, query }, name) => {
-            const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
-            newTopLevels.forEach((t, actualName) => {
-                typeBuilder.addTopLevel(this._topLevels.size === 1 ? name : actualName, t);
-            });
-        });
-    }
-}
-
-type JSONTopLevel = { samples: Value[]; description: string | undefined };
-
-class JSONInput implements Input {
+export class JSONInput implements Input {
     readonly kind: string = "json";
+    readonly needIR: boolean = true;
     readonly needSchemaProcessing: boolean = false;
 
     private _topLevels: OrderedMap<string, JSONTopLevel> = OrderedMap();
@@ -117,7 +70,7 @@ class JSONInput implements Input {
     /* tslint:disable:no-unused-variable */
     constructor(private readonly _compressedJSON: CompressedJSON) {}
 
-    addSample(topLevelName: string, sample: Value): void {
+    private addSample(topLevelName: string, sample: Value): void {
         let topLevel = this._topLevels.get(topLevelName);
         if (topLevel === undefined) {
             topLevel = { samples: [], description: undefined };
@@ -126,12 +79,33 @@ class JSONInput implements Input {
         topLevel.samples.push(sample);
     }
 
-    setDescription(topLevelName: string, description: string): void {
+    private setDescription(topLevelName: string, description: string): void {
         let topLevel = this._topLevels.get(topLevelName);
         if (topLevel === undefined) {
             return panic("Trying to set description for a top-level that doesn't exist");
         }
         topLevel.description = description;
+    }
+
+    async addSource(source: JSONTypeSource): Promise<void> {
+        const { name, samples, description } = source;
+
+        for (const sample of samples) {
+            let value: Value;
+            try {
+                value = await this._compressedJSON.readFromStream(toReadable(sample));
+            } catch (e) {
+                return messageError("MiscJSONParseError", {
+                    description: withDefault(description, "input"),
+                    address: name,
+                    message: errorMessage(e)
+                });
+            }
+            this.addSample(name, value);
+            if (description !== undefined) {
+                this.setDescription(name, description);
+            }
+        }
     }
 
     async finishAddingInputs(): Promise<void> {}
@@ -175,8 +149,14 @@ export class JSONSchemaInput implements Input {
 
     private _topLevels: OrderedMap<string, Ref> = OrderedMap();
 
+    private _needIR: boolean = false;
+
     constructor(givenSchemaStore: JSONSchemaStore | undefined) {
         this._schemaStore = givenSchemaStore;
+    }
+
+    get needIR(): boolean {
+        return this._needIR;
     }
 
     addTopLevel(name: string, ref: Ref): void {
@@ -188,7 +168,11 @@ export class JSONSchemaInput implements Input {
     }
 
     addSchemaTypeSource(schemaSource: SchemaTypeSource): void {
-        const { uris, schema } = schemaSource;
+        const { uris, schema, isConverted } = schemaSource;
+
+        if (isConverted !== true) {
+            this._needIR = true;
+        }
 
         let normalizedURIs: uri.URI[];
         const uriPath = `-${this._schemaInputs.size + 1}`;
@@ -278,85 +262,15 @@ export class InputData {
     // we do each input exactly once.
     private _inputs: OrderedSet<Input> = OrderedSet();
 
-    private _graphQLInput: GraphQLInput | undefined = undefined;
-    private _jsonInput: JSONInput | undefined = undefined;
-    private _schemaInput: JSONSchemaInput | undefined = undefined;
-
     addInput(input: Input): void {
         this._inputs = this._inputs.add(input);
     }
 
     // Returns whether we need IR for this type source
-    private async addTypeSource(
-        source: TypeSource,
-        compressedJSON: CompressedJSON,
-        jsonSchemaStore: JSONSchemaStore | undefined
-    ): Promise<boolean> {
-        if (isGraphQLSource(source)) {
-            const { name, schema, query } = source;
-            if (this._graphQLInput === undefined) {
-                this._graphQLInput = new GraphQLInput();
-                this.addInput(this._graphQLInput);
-            }
-            this._graphQLInput.addTopLevel(name, schema, await toString(query));
-            return true;
-        } else if (isJSONSource(source)) {
-            const { name, samples, description } = source;
-
-            if (this._jsonInput === undefined) {
-                this._jsonInput = new JSONInput(compressedJSON);
-                this.addInput(this._jsonInput);
-            }
-
-            for (const sample of samples) {
-                let value: Value;
-                try {
-                    value = await compressedJSON.readFromStream(toReadable(sample));
-                } catch (e) {
-                    return messageError("MiscJSONParseError", {
-                        description: withDefault(description, "input"),
-                        address: name,
-                        message: errorMessage(e)
-                    });
-                }
-                this._jsonInput.addSample(name, value);
-                if (description !== undefined) {
-                    this._jsonInput.setDescription(name, description);
-                }
-            }
-
-            return true;
-        } else if (isSchemaSource(source)) {
-            const isDirectInput = source.isConverted !== true;
-
-            if (this._schemaInput === undefined) {
-                this._schemaInput = new JSONSchemaInput(jsonSchemaStore);
-                this.addInput(this._schemaInput);
-            }
-            this._schemaInput.addSchemaTypeSource(source);
-
-            return isDirectInput;
-        }
-        return assertNever(source);
-    }
-
-    // Returns whether we need IR for this type source
-    async addTypeSources(
-        sources: TypeSource[],
-        compressedJSON: CompressedJSON,
-        jsonSchemaStore: JSONSchemaStore | undefined
-    ): Promise<boolean> {
-        let needIR = false;
-
-        for (const source of sources) {
-            needIR = (await this.addTypeSource(source, compressedJSON, jsonSchemaStore)) || needIR;
-        }
-
+    async finishAddingInputs(): Promise<void> {
         await forEachSync(this._inputs, async input => {
             await input.finishAddingInputs();
         });
-
-        return needIR;
     }
 
     async addTypes(

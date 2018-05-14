@@ -3,7 +3,7 @@ import { List, Map, OrderedMap } from "immutable";
 import * as targetLanguages from "./language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
-import { assert } from "./support/Support";
+import { assert, assertNever } from "./support/Support";
 import { CompressedJSON } from "./input/CompressedJSON";
 import { combineClasses } from "./rewrites/CombineClasses";
 import { JSONSchemaStore } from "./input/JSONSchemaStore";
@@ -17,10 +17,11 @@ import { flattenUnions } from "./rewrites/FlattenUnions";
 import { resolveIntersections } from "./rewrites/ResolveIntersections";
 import { replaceObjectType } from "./rewrites/ReplaceObjectType";
 import { messageError } from "./Messages";
-import { InputData } from "./input/Inputs";
-import { TypeSource } from "./TypeSource";
+import { InputData, JSONInput, JSONSchemaInput } from "./input/Inputs";
+import { TypeSource, isSchemaSource, isGraphQLSource, isJSONSource } from "./TypeSource";
 import { flattenStrings } from "./rewrites/FlattenStrings";
 import { makeTransformations } from "./MakeTransformations";
+import { GraphQLInput } from "./GraphQL";
 
 // Re-export essential types and functions
 export { TargetLanguage } from "./TargetLanguage";
@@ -255,23 +256,68 @@ export class Run {
         ][]);
     }
 
+    private async makeInputData(targetLanguage: TargetLanguage): Promise<[InputData, boolean]> {
+        const inputData = new InputData();
+        let needIR = false;
+
+        let graphQLInput: GraphQLInput | undefined = undefined;
+        let jsonInput: JSONInput | undefined = undefined;
+        let schemaInput: JSONSchemaInput | undefined = undefined;
+
+        for (const source of this._options.sources) {
+            if (isGraphQLSource(source)) {
+                if (graphQLInput === undefined) {
+                    graphQLInput = new GraphQLInput();
+                    inputData.addInput(graphQLInput);
+                }
+
+                await graphQLInput.addSource(source);
+
+                needIR = true;
+            } else if (isJSONSource(source)) {
+                if (jsonInput === undefined) {
+                    const mapping = targetLanguage.stringTypeMapping;
+                    const makeDate = mapping.date !== "string";
+                    const makeTime = mapping.time !== "string";
+                    const makeDateTime = mapping.dateTime !== "string";
+
+                    const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
+
+                    jsonInput = new JSONInput(compressedJSON);
+                    inputData.addInput(jsonInput);
+                }
+
+                await jsonInput.addSource(source);
+
+                needIR = true;
+            } else if (isSchemaSource(source)) {
+                if (schemaInput === undefined) {
+                    schemaInput = new JSONSchemaInput(this._options.schemaStore);
+                    inputData.addInput(schemaInput);
+                }
+
+                schemaInput.addSchemaTypeSource(source);
+
+                if (source.isConverted !== true) {
+                    needIR = true;
+                }
+            } else {
+                return assertNever(source);
+            }
+        }
+
+        await inputData.finishAddingInputs();
+
+        return [inputData, needIR];
+    }
+
     public async run(): Promise<OrderedMap<string, SerializedRenderResult>> {
         initTypeNames();
 
         const targetLanguage = getTargetLanguage(this._options.lang);
-        let needIR = targetLanguage.names.indexOf("schema") < 0;
 
-        const mapping = targetLanguage.stringTypeMapping;
-        const makeDate = mapping.date !== "string";
-        const makeTime = mapping.time !== "string";
-        const makeDateTime = mapping.dateTime !== "string";
-
-        const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
-        const allInputs = new InputData();
-
-        if (await allInputs.addTypeSources(this._options.sources, compressedJSON, this._options.schemaStore)) {
-            needIR = true;
-        }
+        const [allInputs, needIRFromInput] = await this.makeInputData(targetLanguage);
+        const needIR = needIRFromInput || targetLanguage.names.indexOf("schema") < 0;
 
         const schemaString = needIR ? undefined : allInputs.singleStringSchemaSource();
         if (schemaString !== undefined) {

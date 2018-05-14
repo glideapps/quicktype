@@ -1,8 +1,12 @@
 import { Collection, List, Set, isKeyed, isIndexed } from "immutable";
 
+import { Readable } from "stream";
+import { getStream } from "../get-stream";
 import { Base64 } from "js-base64";
 import * as pako from "pako";
 import { messageError } from "../Messages";
+
+const stringToStream = require("string-to-stream");
 
 export function hasOwnProperty(obj: object, name: string): boolean {
     return Object.prototype.hasOwnProperty.call(obj, name);
@@ -229,4 +233,12 @@ export function parseJSON(text: string, description: string, address: string = "
 
 export function indentationString(level: number): string {
     return "  ".repeat(level);
+}
+
+export function toReadable(source: string | Readable): Readable {
+    return typeof source === "string" ? stringToStream(source) : source;
+}
+
+export async function toString(source: string | Readable): Promise<string> {
+    return typeof source === "string" ? source : await getStream(source);
 }
