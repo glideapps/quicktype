@@ -13,10 +13,10 @@ import {
     withDefault,
     errorMessage,
     toString,
-    toReadable
+    toReadable,
+    StringInput
 } from "../support/Support";
 import { messageError } from "../Messages";
-import { JSONTypeSource, SchemaTypeSource, StringInput } from "../TypeSource";
 import { TypeBuilder } from "../TypeBuilder";
 import { makeNamesTypeAttributes } from "../TypeNames";
 import { descriptionTypeAttributeKind } from "../TypeAttributes";
@@ -58,7 +58,13 @@ export interface Input {
     ): Promise<void>;
 }
 
-export type JSONTopLevel = { samples: Value[]; description: string | undefined };
+type JSONTopLevel = { samples: Value[]; description: string | undefined };
+
+export interface JSONSourceData {
+    name: string;
+    samples: StringInput[];
+    description?: string;
+}
 
 export class JSONInput implements Input {
     readonly kind: string = "json";
@@ -87,9 +93,8 @@ export class JSONInput implements Input {
         topLevel.description = description;
     }
 
-    async addSource(source: JSONTypeSource): Promise<void> {
+    async addSource(source: JSONSourceData): Promise<void> {
         const { name, samples, description } = source;
-
         for (const sample of samples) {
             let value: Value;
             try {
@@ -108,7 +113,9 @@ export class JSONInput implements Input {
         }
     }
 
-    async finishAddingInputs(): Promise<void> {}
+    async finishAddingInputs(): Promise<void> {
+        return;
+    }
 
     singleStringSchemaSource(): undefined {
         return undefined;
@@ -138,6 +145,13 @@ export class JSONInput implements Input {
     }
 }
 
+export interface JSONSchemaSourceData {
+    name: string;
+    uris?: string[];
+    schema?: StringInput;
+    isConverted?: boolean;
+}
+
 export class JSONSchemaInput implements Input {
     readonly kind: string = "schema";
     readonly needSchemaProcessing: boolean = true;
@@ -145,7 +159,7 @@ export class JSONSchemaInput implements Input {
     private _schemaStore: JSONSchemaStore | undefined = undefined;
 
     private _schemaInputs: Map<string, StringInput> = Map();
-    private _schemaSources: List<[uri.URI, SchemaTypeSource]> = List();
+    private _schemaSources: List<[uri.URI, JSONSchemaSourceData]> = List();
 
     private _topLevels: OrderedMap<string, Ref> = OrderedMap();
 
@@ -167,7 +181,7 @@ export class JSONSchemaInput implements Input {
         await addTypesInSchema(typeBuilder, defined(this._schemaStore), this._topLevels);
     }
 
-    addSchemaTypeSource(schemaSource: SchemaTypeSource): void {
+    addSource(schemaSource: JSONSchemaSourceData): void {
         const { uris, schema, isConverted } = schemaSource;
 
         if (isConverted !== true) {

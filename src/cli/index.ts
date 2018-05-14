@@ -12,11 +12,12 @@ import {
     SerializedRenderResult,
     TargetLanguage,
     languageNamed,
-    JSONTypeSource,
-    TypeSource,
-    GraphQLTypeSource,
+    InputData,
+    JSONInput,
+    JSONSchemaInput,
+    GraphQLInput,
+    CompressedJSON,
     StringInput,
-    SchemaTypeSource,
     OptionDefinition,
     defaultTargetLanguages,
     Annotation,
@@ -38,6 +39,15 @@ import {
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { Readable } from "stream";
 import { introspectServer } from "./GraphQLIntrospection";
+import {
+    JSONTypeSource,
+    TypeSource,
+    GraphQLTypeSource,
+    SchemaTypeSource,
+    isJSONSource,
+    isSchemaSource,
+    isGraphQLSource
+} from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
 import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
@@ -629,7 +639,53 @@ function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
         sources[baseName] = defined(fs.readFileSync(fileName, "utf8"));
     }
 
-    return schemaForTypeScriptSources(sources);
+    return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(sources)) as SchemaTypeSource;
+}
+
+async function makeInputData(sources: TypeSource[], targetLanguage: TargetLanguage): Promise<InputData> {
+    const inputData = new InputData();
+
+    let graphQLInput: GraphQLInput | undefined = undefined;
+    let jsonInput: JSONInput | undefined = undefined;
+    let schemaInput: JSONSchemaInput | undefined = undefined;
+
+    for (const source of sources) {
+        if (isGraphQLSource(source)) {
+            if (graphQLInput === undefined) {
+                graphQLInput = new GraphQLInput();
+                inputData.addInput(graphQLInput);
+            }
+
+            await graphQLInput.addSource(source.name, source.schema, source.query);
+        } else if (isJSONSource(source)) {
+            if (jsonInput === undefined) {
+                const mapping = targetLanguage.stringTypeMapping;
+                const makeDate = mapping.date !== "string";
+                const makeTime = mapping.time !== "string";
+                const makeDateTime = mapping.dateTime !== "string";
+
+                const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
+
+                jsonInput = new JSONInput(compressedJSON);
+                inputData.addInput(jsonInput);
+            }
+
+            await jsonInput.addSource(source);
+        } else if (isSchemaSource(source)) {
+            if (schemaInput === undefined) {
+                schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
+                inputData.addInput(schemaInput);
+            }
+
+            schemaInput.addSource(source);
+        } else {
+            return assertNever(source);
+        }
+    }
+
+    await inputData.finishAddingInputs();
+
+    return inputData;
 }
 
 export async function makeQuicktypeOptions(
@@ -709,7 +765,7 @@ export async function makeQuicktypeOptions(
                     collectionFile
                 );
                 for (const src of postmanSources) {
-                    sources.push(src);
+                    sources.push(Object.assign({ kind: "json" }, src) as JSONTypeSource);
                 }
                 if (postmanSources.length > 1) {
                     fixedTopLevels = true;
@@ -759,9 +815,11 @@ export async function makeQuicktypeOptions(
         return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
     }
 
+    const inputData = await makeInputData(sources, lang);
+
     return {
         lang,
-        sources,
+        inputData,
         inferMaps: !options.noMaps,
         inferEnums: !options.noEnums,
         inferDates: !options.noDateTimes,
@@ -773,7 +831,6 @@ export async function makeQuicktypeOptions(
         rendererOptions: options.rendererOptions,
         leadingComments,
         outputFilename: mapOptional(path.basename, options.out),
-        schemaStore: new FetchingJSONSchemaStore(),
         debugPrintGraph,
         checkProvenance,
         debugPrintReconstitution,

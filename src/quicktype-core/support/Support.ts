@@ -235,10 +235,12 @@ export function indentationString(level: number): string {
     return "  ".repeat(level);
 }
 
-export function toReadable(source: string | Readable): Readable {
+export type StringInput = string | Readable;
+
+export function toReadable(source: StringInput): Readable {
     return typeof source === "string" ? stringToStream(source) : source;
 }
 
-export async function toString(source: string | Readable): Promise<string> {
+export async function toString(source: StringInput): Promise<string> {
     return typeof source === "string" ? source : await getStream(source);
 }

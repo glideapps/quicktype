@@ -1,5 +1,5 @@
 import { parseJSON } from "../support/Support";
-import { JSONTypeSource } from "../TypeSource";
+import { JSONSourceData } from "./Inputs";
 
 function isValidJSON(s: string): boolean {
     try {
@@ -13,8 +13,8 @@ function isValidJSON(s: string): boolean {
 export function sourcesFromPostmanCollection(
     collectionJSON: string,
     collectionJSONAddress?: string
-): { sources: JSONTypeSource[]; description: string | undefined } {
-    const sources: JSONTypeSource[] = [];
+): { sources: JSONSourceData[]; description: string | undefined } {
+    const sources: JSONSourceData[] = [];
     const descriptions: string[] = [];
 
     function processCollection(c: any): void {
@@ -35,7 +35,7 @@ export function sourcesFromPostmanCollection(
                 }
             }
             if (samples.length > 0) {
-                const source: JSONTypeSource = { kind: "json", name: c.name, samples };
+                const source: JSONSourceData = { name: c.name, samples };
                 const sourceDescription = [c.name];
 
                 if (typeof c.request === "object") {
