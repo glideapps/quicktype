@@ -19,12 +19,6 @@ import { InputData } from "./input/Inputs";
 import { flattenStrings } from "./rewrites/FlattenStrings";
 import { makeTransformations } from "./MakeTransformations";
 
-// Re-export essential types and functions
-export { TargetLanguage } from "./TargetLanguage";
-export { SerializedRenderResult, Annotation } from "./Source";
-export { all as languages, languageNamed } from "./language/All";
-export { OptionDefinition } from "./RendererOptions";
-
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
         return nameOrInstance;

@@ -15,7 +15,7 @@ import {
     InputData,
     JSONInput,
     JSONSchemaInput,
-    CompressedJSON,
+    jsonInputForTargetLanguage,
     StringInput,
     OptionDefinition,
     defaultTargetLanguages,
@@ -659,14 +659,7 @@ async function makeInputData(sources: TypeSource[], targetLanguage: TargetLangua
             await graphQLInput.addSource(source.name, source.schema, source.query);
         } else if (isJSONSource(source)) {
             if (jsonInput === undefined) {
-                const mapping = targetLanguage.stringTypeMapping;
-                const makeDate = mapping.date !== "string";
-                const makeTime = mapping.time !== "string";
-                const makeDateTime = mapping.dateTime !== "string";
-
-                const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
-
-                jsonInput = new JSONInput(compressedJSON);
+                jsonInput = jsonInputForTargetLanguage(targetLanguage);
                 inputData.addInput(jsonInput);
             }
 

@@ -1,18 +1,18 @@
-export {
-    Options,
-    RendererOptions,
-    getTargetLanguage,
-    quicktypeMultiFile,
-    quicktype,
-    SerializedRenderResult,
-    TargetLanguage,
-    languageNamed
-} from "./Run";
+export { Options, RendererOptions, getTargetLanguage, quicktypeMultiFile, quicktype } from "./Run";
 export { CompressedJSON } from "./input/CompressedJSON";
-export { Input, InputData, JSONInput, JSONSourceData, JSONSchemaInput, JSONSchemaSourceData } from "./input/Inputs";
+export {
+    Input,
+    InputData,
+    JSONInput,
+    JSONSourceData,
+    JSONSchemaInput,
+    JSONSchemaSourceData,
+    jsonInputForTargetLanguage
+} from "./input/Inputs";
 export { OptionDefinition } from "./RendererOptions";
-export { all as defaultTargetLanguages } from "./language/All";
-export { Annotation } from "./Source";
+export { TargetLanguage } from "./TargetLanguage";
+export { all as defaultTargetLanguages, languageNamed } from "./language/All";
+export { SerializedRenderResult, Annotation } from "./Source";
 export { IssueAnnotationData } from "./Annotation";
 export { Readable } from "stream";
 export {
