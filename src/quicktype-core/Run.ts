@@ -256,9 +256,8 @@ export class Run {
         ][]);
     }
 
-    private async makeInputData(targetLanguage: TargetLanguage): Promise<[InputData, boolean]> {
+    private async makeInputData(targetLanguage: TargetLanguage): Promise<InputData> {
         const inputData = new InputData();
-        let needIR = false;
 
         let graphQLInput: GraphQLInput | undefined = undefined;
         let jsonInput: JSONInput | undefined = undefined;
@@ -272,8 +271,6 @@ export class Run {
                 }
 
                 await graphQLInput.addSource(source);
-
-                needIR = true;
             } else if (isJSONSource(source)) {
                 if (jsonInput === undefined) {
                     const mapping = targetLanguage.stringTypeMapping;
@@ -288,8 +285,6 @@ export class Run {
                 }
 
                 await jsonInput.addSource(source);
-
-                needIR = true;
             } else if (isSchemaSource(source)) {
                 if (schemaInput === undefined) {
                     schemaInput = new JSONSchemaInput(this._options.schemaStore);
@@ -297,10 +292,6 @@ export class Run {
                 }
 
                 schemaInput.addSchemaTypeSource(source);
-
-                if (source.isConverted !== true) {
-                    needIR = true;
-                }
             } else {
                 return assertNever(source);
             }
@@ -308,7 +299,7 @@ export class Run {
 
         await inputData.finishAddingInputs();
 
-        return [inputData, needIR];
+        return inputData;
     }
 
     public async run(): Promise<OrderedMap<string, SerializedRenderResult>> {
@@ -316,10 +307,10 @@ export class Run {
 
         const targetLanguage = getTargetLanguage(this._options.lang);
 
-        const [allInputs, needIRFromInput] = await this.makeInputData(targetLanguage);
-        const needIR = needIRFromInput || targetLanguage.names.indexOf("schema") < 0;
+        const inputData = await this.makeInputData(targetLanguage);
+        const needIR = inputData.needIR || targetLanguage.names.indexOf("schema") < 0;
 
-        const schemaString = needIR ? undefined : allInputs.singleStringSchemaSource();
+        const schemaString = needIR ? undefined : inputData.singleStringSchemaSource();
         if (schemaString !== undefined) {
             const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
             lines.push("");
@@ -327,7 +318,7 @@ export class Run {
             return OrderedMap([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
         }
 
-        const graph = await this.makeGraph(allInputs);
+        const graph = await this.makeGraph(inputData);
 
         if (this._options.noRender) {
             return this.makeSimpleTextResult(["Done.", ""]);

@@ -284,6 +284,10 @@ export class InputData {
         });
     }
 
+    get needIR(): boolean {
+        return this._inputs.some(i => i.needIR);
+    }
+
     get needSchemaProcessing(): boolean {
         return this._inputs.some(i => i.needSchemaProcessing);
     }
