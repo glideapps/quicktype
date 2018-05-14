@@ -2,9 +2,6 @@
 
 import { List, Map, OrderedSet, OrderedMap } from "immutable";
 
-import { UnionType, ClassProperty } from "./Type";
-import { removeNullFromUnion } from "./TypeUtils";
-import { GraphQLSchema, TypeKind } from "./GraphQLSchema";
 import {
     DocumentNode,
     SelectionSetNode,
@@ -14,14 +11,29 @@ import {
     DirectiveNode,
     FieldNode
 } from "graphql/language/ast";
-import { assertNever, panic, toString, StringInput } from "./support/Support";
-import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import * as graphql from "graphql/language";
-import { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./TypeNames";
-import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-import { messageAssert } from "./Messages";
-import { StringTypes } from "./StringTypes";
-import { Input } from "./input/Inputs";
+
+import {
+    UnionType,
+    ClassProperty,
+    removeNullFromUnion,
+    assertNever,
+    panic,
+    toString,
+    StringInput,
+    TypeBuilder,
+    TypeRef,
+    TypeNames,
+    makeNamesTypeAttributes,
+    namesTypeAttributeKind,
+    messageAssert,
+    TypeAttributes,
+    emptyTypeAttributes,
+    StringTypes,
+    Input
+} from "../quicktype-core";
+
+import { TypeKind, GraphQLSchema } from "./GraphQLSchema";
 
 interface GQLType {
     kind: TypeKind;
