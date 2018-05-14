@@ -95,7 +95,7 @@ export class Run {
         this._options = Object.assign(Object.assign({}, defaultOptions), options);
     }
 
-    private async makeGraph(allInputs: InputData, compressedJSON: CompressedJSON): Promise<TypeGraph> {
+    private async makeGraph(allInputs: InputData): Promise<TypeGraph> {
         const targetLanguage = getTargetLanguage(this._options.lang);
         const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
@@ -109,7 +109,6 @@ export class Run {
 
         await allInputs.addTypes(
             typeBuilder,
-            compressedJSON,
             this._options.inferEnums,
             this._options.inferDates,
             this._options.fixedTopLevels
@@ -285,7 +284,7 @@ export class Run {
 
         await jsonSchemaSources.addInputs(allInputs);
 
-        const graph = await this.makeGraph(allInputs, compressedJSON);
+        const graph = await this.makeGraph(allInputs);
 
         if (this._options.noRender) {
             return this.makeSimpleTextResult(["Done.", ""]);
