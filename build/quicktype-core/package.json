@@ -1,6 +1,6 @@
 {
   "name": "quicktype-core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "EXPERIMENTAL: The quicktype engine as a library",
   "license": "Apache-2.0",
   "main": "dist/index.js",
@@ -28,7 +28,6 @@
     "@types/node": "^8.10.10",
     "@types/pako": "^1.0.0",
     "@types/pluralize": "0.0.28",
-    "@types/urijs": "github:quicktype/types-urijs",
     "typescript": "~2.8.3",
     "tslint": "^5.9.1"
   },
