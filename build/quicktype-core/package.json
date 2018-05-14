@@ -1,6 +1,6 @@
 {
   "name": "quicktype-core",
-  "version": "0.0.8",
+  "version": "1.0.0",
   "description": "EXPERIMENTAL: The quicktype engine as a library",
   "license": "Apache-2.0",
   "main": "dist/index.js",
@@ -10,8 +10,7 @@
     "clean": "rm -rf dist node_modules *~",
     "prepare": "npm run build",
     "build": "cd ../../src/quicktype-core ; tsc",
-    "tslint":
-      "cd ../../src/quicktype-core ; tslint --project . --exclude 'get-stream/**'"
+    "tslint": "cd ../../src/quicktype-core ; tslint --project . --exclude 'get-stream/**'"
   },
   "dependencies": {
     "@types/urijs": "github:quicktype/types-urijs",
@@ -22,8 +21,7 @@
     "stream-json": "0.5.2",
     "string-to-stream": "^1.1.0",
     "unicode-properties": "github:quicktype/unicode-properties#dist",
-    "urijs": "^1.19.1",
-    "graphql": "^0.11.7"
+    "urijs": "^1.19.1"
   },
   "devDependencies": {
     "@types/js-base64": "^2.3.1",
@@ -34,5 +32,7 @@
     "typescript": "~2.8.3",
     "tslint": "^5.9.1"
   },
-  "files": ["dist/**"]
+  "files": [
+    "dist/**"
+  ]
 }

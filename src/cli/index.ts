@@ -15,7 +15,6 @@ import {
     InputData,
     JSONInput,
     JSONSchemaInput,
-    GraphQLInput,
     CompressedJSON,
     StringInput,
     OptionDefinition,
@@ -35,6 +34,8 @@ import {
     messageAssert,
     sourcesFromPostmanCollection
 } from "../quicktype-core";
+import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
+import { GraphQLInput } from "../quicktype-graphql-input";
 
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { Readable } from "stream";
@@ -50,7 +51,6 @@ import {
 } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");

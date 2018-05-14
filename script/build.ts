@@ -45,10 +45,6 @@ function makeDistributedCLIExecutable() {
 function main() {
   const skipPrereqs = !!process.env.SKIP_INSTALL_PREREQUISITES;
 
-  if (!skipPrereqs) {
-    installPrereqs();
-  }
-
   buildTypeScript();
   makeDistributedCLIExecutable();
 }
