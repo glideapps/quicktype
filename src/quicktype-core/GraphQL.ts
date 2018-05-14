@@ -14,13 +14,15 @@ import {
     DirectiveNode,
     FieldNode
 } from "graphql/language/ast";
-import { assertNever, panic } from "./support/Support";
+import { assertNever, panic, toString } from "./support/Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import * as graphql from "graphql/language";
 import { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
 import { StringTypes } from "./StringTypes";
+import { GraphQLTypeSource } from "./TypeSource";
+import { Input } from "./input/Inputs";
 
 interface GQLType {
     kind: TypeKind;
@@ -407,7 +409,7 @@ class GQLSchemaFromJSON implements GQLSchema {
     };
 }
 
-export function makeGraphQLQueryTypes(
+function makeGraphQLQueryTypes(
     topLevelName: string,
     builder: TypeBuilder,
     json: any,
@@ -447,4 +449,38 @@ export function makeGraphQLQueryTypes(
         types = types.set(queryName, t);
     });
     return types;
+}
+
+export type GraphQLTopLevel = { schema: any; query: string };
+
+export class GraphQLInput implements Input {
+    readonly kind: string = "graphql";
+    readonly needIR: boolean = true;
+    readonly needSchemaProcessing: boolean = false;
+
+    private _topLevels: OrderedMap<string, GraphQLTopLevel> = OrderedMap();
+
+    private addTopLevel(name: string, schema: any, query: string): void {
+        this._topLevels = this._topLevels.set(name, { schema, query });
+    }
+
+    async addSource(source: GraphQLTypeSource): Promise<void> {
+        const { name, schema, query } = source;
+        this.addTopLevel(name, schema, await toString(query));
+    }
+
+    async finishAddingInputs(): Promise<void> {}
+
+    singleStringSchemaSource(): undefined {
+        return undefined;
+    }
+
+    async addTypes(typeBuilder: TypeBuilder): Promise<void> {
+        this._topLevels.forEach(({ schema, query }, name) => {
+            const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
+            newTopLevels.forEach((t, actualName) => {
+                typeBuilder.addTopLevel(this._topLevels.size === 1 ? name : actualName, t);
+            });
+        });
+    }
 }
