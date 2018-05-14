@@ -21,6 +21,8 @@ import { TypeBuilder } from "../TypeBuilder";
 import { makeNamesTypeAttributes } from "../TypeNames";
 import { descriptionTypeAttributeKind } from "../TypeAttributes";
 import { TypeInference } from "./Inference";
+import { TargetLanguage } from "../TargetLanguage";
+import { languageNamed } from "../language/All";
 
 class InputJSONSchemaStore extends JSONSchemaStore {
     constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
@@ -143,6 +145,31 @@ export class JSONInput implements Input {
             }
         });
     }
+}
+
+export function jsonInputForTargetLanguage(
+    targetLanguage: string | TargetLanguage,
+    languages?: TargetLanguage[]
+): JSONInput {
+    let lang: TargetLanguage;
+    if (typeof targetLanguage === "string") {
+        const maybeLang = languageNamed(targetLanguage, languages);
+        if (maybeLang === undefined) {
+            return messageError("DriverUnknownOutputLanguage", { lang: targetLanguage });
+        }
+        lang = maybeLang;
+    } else {
+        lang = targetLanguage;
+    }
+
+    const mapping = lang.stringTypeMapping;
+    const makeDate = mapping.date !== "string";
+    const makeTime = mapping.time !== "string";
+    const makeDateTime = mapping.dateTime !== "string";
+
+    const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
+
+    return new JSONInput(compressedJSON);
 }
 
 export interface JSONSchemaSourceData {
