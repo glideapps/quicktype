@@ -8,7 +8,9 @@ export {
     TargetLanguage,
     languageNamed
 } from "./Run";
-export { JSONTypeSource, TypeSource, GraphQLTypeSource, StringInput, SchemaTypeSource } from "./TypeSource";
+export { CompressedJSON } from "./input/CompressedJSON";
+export { InputData, JSONInput, JSONSourceData, JSONSchemaInput, JSONSchemaSourceData } from "./input/Inputs";
+export { GraphQLInput } from "./GraphQL";
 export { OptionDefinition } from "./RendererOptions";
 export { all as defaultTargetLanguages } from "./language/All";
 export { Annotation } from "./Source";
@@ -24,7 +26,8 @@ export {
     parseJSON,
     checkStringMap,
     checkArray,
-    inflateBase64
+    inflateBase64,
+    StringInput
 } from "./support/Support";
 export { getStream } from "./get-stream/index";
 export { train as trainMarkovChain } from "./MarkovChain";

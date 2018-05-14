@@ -1,20 +1,11 @@
-import { Readable } from "stream";
+import { StringInput, JSONSourceData, JSONSchemaSourceData } from "quicktype-core";
 
-export type StringInput = string | Readable;
-
-export interface JSONTypeSource {
+export interface JSONTypeSource extends JSONSourceData {
     kind: "json";
-    name: string;
-    samples: StringInput[];
-    description?: string;
 }
 
-export interface SchemaTypeSource {
+export interface SchemaTypeSource extends JSONSchemaSourceData {
     kind: "schema";
-    name: string;
-    uris?: string[];
-    schema?: StringInput;
-    isConverted?: boolean;
 }
 
 export interface GraphQLTypeSource {

@@ -14,14 +14,13 @@ import {
     DirectiveNode,
     FieldNode
 } from "graphql/language/ast";
-import { assertNever, panic, toString } from "./support/Support";
+import { assertNever, panic, toString, StringInput } from "./support/Support";
 import { TypeBuilder, TypeRef } from "./TypeBuilder";
 import * as graphql from "graphql/language";
 import { TypeNames, makeNamesTypeAttributes, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
 import { StringTypes } from "./StringTypes";
-import { GraphQLTypeSource } from "./TypeSource";
 import { Input } from "./input/Inputs";
 
 interface GQLType {
@@ -464,12 +463,13 @@ export class GraphQLInput implements Input {
         this._topLevels = this._topLevels.set(name, { schema, query });
     }
 
-    async addSource(source: GraphQLTypeSource): Promise<void> {
-        const { name, schema, query } = source;
+    async addSource(name: string, schema: any, query: StringInput): Promise<void> {
         this.addTopLevel(name, schema, await toString(query));
     }
 
-    async finishAddingInputs(): Promise<void> {}
+    async finishAddingInputs(): Promise<void> {
+        return;
+    }
 
     singleStringSchemaSource(): undefined {
         return undefined;
