@@ -17,7 +17,7 @@ import { flattenUnions } from "./rewrites/FlattenUnions";
 import { resolveIntersections } from "./rewrites/ResolveIntersections";
 import { replaceObjectType } from "./rewrites/ReplaceObjectType";
 import { messageError } from "./Messages";
-import { InputData, JSONSchemaSources } from "./input/Inputs";
+import { InputData } from "./input/Inputs";
 import { TypeSource } from "./TypeSource";
 import { flattenStrings } from "./rewrites/FlattenStrings";
 import { makeTransformations } from "./MakeTransformations";
@@ -267,22 +267,19 @@ export class Run {
         const makeDateTime = mapping.dateTime !== "string";
 
         const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
-        const jsonSchemaSources = new JSONSchemaSources(this._options.schemaStore);
-        const allInputs = new InputData(compressedJSON);
+        const allInputs = new InputData();
 
-        if (await allInputs.addTypeSources(this._options.sources, jsonSchemaSources)) {
+        if (await allInputs.addTypeSources(this._options.sources, compressedJSON, this._options.schemaStore)) {
             needIR = true;
         }
 
-        const schemaString = needIR ? undefined : jsonSchemaSources.singleStringSchemaSource();
+        const schemaString = needIR ? undefined : allInputs.singleStringSchemaSource();
         if (schemaString !== undefined) {
             const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
             lines.push("");
             const srr = { lines, annotations: List() };
             return OrderedMap([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
         }
-
-        await jsonSchemaSources.addInputs(allInputs);
 
         const graph = await this.makeGraph(allInputs);
 
