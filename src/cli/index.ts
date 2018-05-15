@@ -13,7 +13,6 @@ import {
     TargetLanguage,
     languageNamed,
     InputData,
-    JSONInput,
     JSONSchemaInput,
     jsonInputForTargetLanguage,
     StringInput,
@@ -40,15 +39,7 @@ import { GraphQLInput } from "../quicktype-graphql-input";
 import { urlsFromURLGrammar } from "./URLGrammar";
 import { Readable } from "stream";
 import { introspectServer } from "./GraphQLIntrospection";
-import {
-    JSONTypeSource,
-    TypeSource,
-    GraphQLTypeSource,
-    SchemaTypeSource,
-    isJSONSource,
-    isSchemaSource,
-    isGraphQLSource
-} from "./TypeSource";
+import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
 
@@ -645,34 +636,19 @@ function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
 async function makeInputData(sources: TypeSource[], targetLanguage: TargetLanguage): Promise<InputData> {
     const inputData = new InputData();
 
-    let graphQLInput: GraphQLInput | undefined = undefined;
-    let jsonInput: JSONInput | undefined = undefined;
-    let schemaInput: JSONSchemaInput | undefined = undefined;
-
     for (const source of sources) {
-        if (isGraphQLSource(source)) {
-            if (graphQLInput === undefined) {
-                graphQLInput = new GraphQLInput();
-                inputData.addInput(graphQLInput);
-            }
-
-            await graphQLInput.addSource(source.name, source.schema, source.query);
-        } else if (isJSONSource(source)) {
-            if (jsonInput === undefined) {
-                jsonInput = jsonInputForTargetLanguage(targetLanguage);
-                inputData.addInput(jsonInput);
-            }
-
-            await jsonInput.addSource(source);
-        } else if (isSchemaSource(source)) {
-            if (schemaInput === undefined) {
-                schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
-                inputData.addInput(schemaInput);
-            }
-
-            schemaInput.addSource(source);
-        } else {
-            return assertNever(source);
+        switch (source.kind) {
+            case "graphql":
+                await inputData.addSource("graphql", source, () => new GraphQLInput());
+                break;
+            case "json":
+                await inputData.addSource("json", source, () => jsonInputForTargetLanguage(targetLanguage));
+                break;
+            case "schema":
+                await inputData.addSource("schema", source, () => new JSONSchemaInput(new FetchingJSONSchemaStore()));
+                break;
+            default:
+                return assertNever(source);
         }
     }
 

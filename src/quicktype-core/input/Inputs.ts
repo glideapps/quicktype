@@ -43,10 +43,12 @@ class InputJSONSchemaStore extends JSONSchemaStore {
     }
 }
 
-export interface Input {
+export interface Input<T> {
     readonly kind: string;
     readonly needIR: boolean;
     readonly needSchemaProcessing: boolean;
+
+    addSource(source: T): Promise<void>;
 
     finishAddingInputs(): void;
 
@@ -68,7 +70,7 @@ export interface JSONSourceData {
     description?: string;
 }
 
-export class JSONInput implements Input {
+export class JSONInput implements Input<JSONSourceData> {
     readonly kind: string = "json";
     readonly needIR: boolean = true;
     readonly needSchemaProcessing: boolean = false;
@@ -179,7 +181,7 @@ export interface JSONSchemaSourceData {
     isConverted?: boolean;
 }
 
-export class JSONSchemaInput implements Input {
+export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     readonly kind: string = "schema";
     readonly needSchemaProcessing: boolean = true;
 
@@ -208,7 +210,7 @@ export class JSONSchemaInput implements Input {
         await addTypesInSchema(typeBuilder, defined(this._schemaStore), this._topLevels);
     }
 
-    addSource(schemaSource: JSONSchemaSourceData): void {
+    async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
         const { uris, schema, isConverted } = schemaSource;
 
         if (isConverted !== true) {
@@ -301,13 +303,23 @@ export class JSONSchemaInput implements Input {
 export class InputData {
     // We're comparing for identity in this OrderedSet, i.e.,
     // we do each input exactly once.
-    private _inputs: OrderedSet<Input> = OrderedSet();
+    // FIXME: Make into an OrderedMap, indexed by kind.
+    private _inputs: OrderedSet<Input<any>> = OrderedSet();
 
-    addInput(input: Input): void {
+    addInput<T>(input: Input<T>): void {
         this._inputs = this._inputs.add(input);
     }
 
-    // Returns whether we need IR for this type source
+    async addSource<T>(kind: string, source: T, makeInput: () => Input<T>): Promise<void> {
+        let input: Input<T> | undefined = this._inputs.find(i => i.kind === kind);
+        if (input === undefined) {
+            input = makeInput();
+            this.addInput(input);
+        }
+        await input.addSource(source);
+    }
+
+    // FIXME: Any reason we can't do this at the beginning of `addTypes`?
     async finishAddingInputs(): Promise<void> {
         await forEachSync(this._inputs, async input => {
             await input.finishAddingInputs();

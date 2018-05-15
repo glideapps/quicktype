@@ -462,21 +462,22 @@ function makeGraphQLQueryTypes(
     return types;
 }
 
-export type GraphQLTopLevel = { schema: any; query: string };
+export type GraphQLSourceData = { name: string; schema: any; query: StringInput };
 
-export class GraphQLInput implements Input {
+type GraphQLTopLevel = { schema: any; query: string };
+
+export class GraphQLInput implements Input<GraphQLSourceData> {
     readonly kind: string = "graphql";
     readonly needIR: boolean = true;
     readonly needSchemaProcessing: boolean = false;
 
     private _topLevels: OrderedMap<string, GraphQLTopLevel> = OrderedMap();
 
-    private addTopLevel(name: string, schema: any, query: string): void {
-        this._topLevels = this._topLevels.set(name, { schema, query });
-    }
-
-    async addSource(name: string, schema: any, query: StringInput): Promise<void> {
-        this.addTopLevel(name, schema, await toString(query));
+    async addSource(source: GraphQLSourceData): Promise<void> {
+        this._topLevels = this._topLevels.set(source.name, {
+            schema: source.schema,
+            query: await toString(source.query)
+        });
     }
 
     async finishAddingInputs(): Promise<void> {
