@@ -45,6 +45,9 @@ function ignoreExceptions(f) {
   } catch (e) {}
 }
 
+// FIXME: Figure out srcDir from the current directory name, and
+// check that ../../src/${srcDir} exists, just to make sure.  Take
+// coreVersion from package.in.json
 function buildPackage(srcDir, coreVersion, publish) {
   try {
     const pkg = JSON.parse(fs.readFileSync("./package.in.json", "utf8"));
