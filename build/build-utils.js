@@ -45,20 +45,23 @@ function ignoreExceptions(f) {
     } catch (e) {}
 }
 
-// FIXME: Figure out srcDir from the current directory name, and
-// check that ../../src/${srcDir} exists, just to make sure.  Take
-// coreVersion from package.in.json
-function buildPackage(buildDir, coreVersion, publish) {
+function buildPackage(buildDir, publish) {
     process.chdir(buildDir);
     const packageName = path.basename(buildDir);
-    const srcDir = path.join("..", "..", "src", packageName);
+
+    const srcBase = path.join("..", "..", "src");
+    const srcDir = path.join(srcBase, packageName);
+
+    const corePkg = JSON.parse(fs.readFileSync(path.join("..", "quicktype-core", "package.json")));
+    const coreVersion = corePkg["version"];
+
     if (!fs.existsSync(srcDir)) {
         console.error(`Error: Source directory ${srcDir} for package ${packageName} does not exist.`);
         process.exit(1);
     }
+
     try {
         const pkg = JSON.parse(fs.readFileSync("package.in.json", "utf8"));
-        const coreVersion = pkg["dependencies"]["quicktype-core"];
 
         console.log(`Building ${packageName}, using quicktype-core ${coreVersion}`);
 
@@ -78,7 +81,7 @@ function buildPackage(buildDir, coreVersion, publish) {
         writePackage(pkg, "file:../quicktype-core");
         run("npm", ["install"]);
         if (publish) {
-            writePackage(pkg, coreVersion);
+            writePackage(pkg, "^" + coreVersion);
             run("npm", ["publish"]);
         }
     } catch (e) {
