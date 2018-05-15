@@ -1,8 +1,8 @@
 import { OrderedSet, OrderedMap, Map, Set } from "immutable";
 
-import { TypeAttributeKind, TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { TypeAttributeKind, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { setUnion } from "./support/Support";
-import { JSONSchemaType, Ref } from "./input/JSONSchemaInput";
+import { JSONSchemaType, Ref, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 import { JSONSchema } from "./input/JSONSchemaStore";
 
 class DescriptionTypeAttributeKind extends TypeAttributeKind<OrderedSet<string>> {
@@ -14,8 +14,8 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<OrderedSet<string>>
         return a.union(b);
     }
 
-    makeInferred(_: OrderedSet<string>): OrderedSet<string> {
-        return OrderedSet();
+    makeInferred(_: OrderedSet<string>): undefined {
+        return undefined;
     }
 
     stringify(descriptions: OrderedSet<string>): string | undefined {
@@ -42,8 +42,8 @@ class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string
         return a.mergeWith(setUnion, b);
     }
 
-    makeInferred(_: Map<string, OrderedSet<string>>): Map<string, OrderedSet<string>> {
-        return Map();
+    makeInferred(_: Map<string, OrderedSet<string>>): undefined {
+        return undefined;
     }
 }
 
@@ -55,7 +55,7 @@ export function descriptionAttributeProducer(
     schema: JSONSchema,
     _canonicalRef: Ref,
     types: Set<JSONSchemaType>
-): TypeAttributes | undefined {
+): JSONSchemaAttributes | undefined {
     if (!(typeof schema === "object")) return undefined;
 
     let description = emptyTypeAttributes;
@@ -83,5 +83,5 @@ export function descriptionAttributeProducer(
         }
     }
 
-    return combineTypeAttributes("union", description, propertyDescription);
+    return { forType: combineTypeAttributes("union", description, propertyDescription) };
 }

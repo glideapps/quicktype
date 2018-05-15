@@ -1,15 +1,27 @@
 import { Map, Set } from "immutable";
 
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
-import { defined } from "./support/Support";
+import { defined, isStringMap, checkStringMap, checkArray } from "./support/Support";
 import { EnumType, UnionType, Type, ObjectType } from "./Type";
 import { messageAssert } from "./Messages";
+import { JSONSchema } from "./input/JSONSchemaStore";
+import { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 
 export type AccessorEntry = string | Map<string, string>;
 
 export type AccessorNames = Map<string, AccessorEntry>;
 
-export const accessorNamesTypeAttributeKind = new TypeAttributeKind<AccessorNames>("accessorNames");
+class AccessorNamesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
+    constructor() {
+        super("accessorNames");
+    }
+
+    makeInferred(_: AccessorNames): undefined {
+        return undefined;
+    }
+}
+
+export const accessorNamesTypeAttributeKind: TypeAttributeKind<AccessorNames> = new AccessorNamesTypeAttributeKind();
 
 // Returns [name, isFixed].
 function getFromEntry(entry: AccessorEntry, language: string): [string, boolean] | undefined {
@@ -67,6 +79,10 @@ class UnionIdentifierTypeAttributeKind extends TypeAttributeKind<Set<number>> {
 
     combine(a: Set<number>, b: Set<number>): Set<number> {
         return a.union(b);
+    }
+
+    makeInferred(_: Set<number>): Set<number> {
+        return Set();
     }
 }
 
@@ -138,4 +154,49 @@ export function unionMemberName(u: UnionType, member: Type, language: string): [
 
     messageAssert(size === 1, "SchemaMoreThanOneUnionMemberName", { names: names.toArray() });
     return [first, isFixed];
+}
+
+function isAccessorEntry(x: any): x is string | { [language: string]: string } {
+    if (typeof x === "string") {
+        return true;
+    }
+    return isStringMap(x, (v: any): v is string => typeof v === "string");
+}
+
+function makeAccessorEntry(ae: string | { [language: string]: string }): AccessorEntry {
+    if (typeof ae === "string") return ae;
+    return Map(ae);
+}
+
+function makeAccessorNames(x: any): AccessorNames {
+    // FIXME: Do proper error reporting
+    const stringMap = checkStringMap(x, isAccessorEntry);
+    return Map(stringMap).map(makeAccessorEntry);
+}
+
+export function accessorNamesAttributeProducer(
+    schema: JSONSchema,
+    canonicalRef: Ref,
+    _types: Set<JSONSchemaType>,
+    cases: JSONSchema[] | undefined
+): JSONSchemaAttributes | undefined {
+    if (typeof schema !== "object") return undefined;
+    const maybeAccessors = schema["qt-accessors"];
+    if (maybeAccessors === undefined) return undefined;
+
+    if (cases === undefined) {
+        return { forType: accessorNamesTypeAttributeKind.makeAttributes(makeAccessorNames(maybeAccessors)) };
+    } else {
+        const identifierAttribute = makeUnionIdentifierAttribute();
+
+        const accessors = checkArray(maybeAccessors, isAccessorEntry);
+        messageAssert(cases.length === accessors.length, "SchemaWrongAccessorEntryArrayLength", {
+            operation: "oneOf",
+            ref: canonicalRef.push("oneOf")
+        });
+        const caseAttributes = accessors.map(accessor =>
+            makeUnionMemberNamesAttribute(identifierAttribute, makeAccessorEntry(accessor))
+        );
+        return { forUnion: identifierAttribute, forCases: caseAttributes };
+    }
 }

@@ -12,10 +12,7 @@ import {
     addHashCode,
     mapSync,
     forEachSync,
-    checkArray,
     mapOptional,
-    isStringMap,
-    checkStringMap,
     hasOwnProperty
 } from "../support/Support";
 import { TypeBuilder, TypeRef } from "../TypeBuilder";
@@ -28,13 +25,6 @@ import {
     combineTypeAttributes
 } from "../TypeAttributes";
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
-import {
-    accessorNamesTypeAttributeKind,
-    makeUnionIdentifierAttribute,
-    makeUnionMemberNamesAttribute,
-    AccessorNames,
-    AccessorEntry
-} from "../AccessorNames";
 import { messageAssert, messageError } from "../Messages";
 import { StringTypes } from "../StringTypes";
 
@@ -412,30 +402,6 @@ class Canonizer {
     }
 }
 
-function isAccessorEntry(x: any): x is string | { [language: string]: string } {
-    if (typeof x === "string") {
-        return true;
-    }
-    return isStringMap(x, (v: any): v is string => typeof v === "string");
-}
-
-function makeAccessorEntry(ae: string | { [language: string]: string }): AccessorEntry {
-    if (typeof ae === "string") return ae;
-    return Map(ae);
-}
-
-function makeAccessorNames(x: any): AccessorNames {
-    // FIXME: Do proper error reporting
-    const stringMap = checkStringMap(x, isAccessorEntry);
-    return Map(stringMap).map(makeAccessorEntry);
-}
-
-function makeNonUnionAccessorAttributes(schema: StringMap): TypeAttributes | undefined {
-    const maybeAccessors = schema["qt-accessors"];
-    if (maybeAccessors === undefined) return undefined;
-    return accessorNamesTypeAttributeKind.makeAttributes(makeAccessorNames(maybeAccessors));
-}
-
 function checkTypeList(typeOrTypes: any, loc: Location): OrderedSet<string> {
     let set: OrderedSet<string>;
     if (typeof typeOrTypes === "string") {
@@ -498,11 +464,13 @@ export type JSONSchemaType = keyof typeof schemaTypeDict;
 
 const schemaTypes = Object.getOwnPropertyNames(schemaTypeDict) as JSONSchemaType[];
 
+export type JSONSchemaAttributes = { forType?: TypeAttributes; forUnion?: TypeAttributes; forCases?: TypeAttributes[] };
 export type JSONSchemaAttributeProducer = (
     schema: JSONSchema,
     canonicalRef: Ref,
-    types: Set<JSONSchemaType>
-) => TypeAttributes | undefined;
+    types: Set<JSONSchemaType>,
+    unionCases: JSONSchema[] | undefined
+) => JSONSchemaAttributes | undefined;
 
 export async function addTypesInSchema(
     typeBuilder: TypeBuilder,
@@ -607,11 +575,28 @@ export async function addTypesInSchema(
 
         const includedTypes = Set(schemaTypes.filter(isTypeIncluded));
 
-        function makeAttributes(attributes: TypeAttributes): TypeAttributes {
+        function forEachProducedAttribute(
+            cases: JSONSchema[] | undefined,
+            f: (attributes: JSONSchemaAttributes) => void
+        ): void {
             for (const producer of attributeProducers) {
-                const newAttributes = producer(schema, loc.canonicalRef, includedTypes);
+                const newAttributes = producer(schema, loc.canonicalRef, includedTypes, cases);
                 if (newAttributes === undefined) continue;
-                attributes = combineTypeAttributes("union", attributes, newAttributes);
+                f(newAttributes);
+            }
+        }
+
+        function makeAttributes(attributes: TypeAttributes): TypeAttributes {
+            if (schema.oneOf === undefined) {
+                forEachProducedAttribute(undefined, ({ forType, forUnion, forCases }) => {
+                    assert(
+                        forUnion === undefined && forCases === undefined,
+                        "We can't have attributes for unions and cases if we don't have a union"
+                    );
+                    if (forType !== undefined) {
+                        attributes = combineTypeAttributes("union", attributes, forType);
+                    }
+                });
             }
             return modifyTypeNames(attributes, maybeTypeNames => {
                 const typeNames = defined(maybeTypeNames);
@@ -707,29 +692,32 @@ export async function addTypesInSchema(
             });
         }
 
+        const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
+        await setTypeForLocation(loc, intersectionType);
+
         async function convertOneOrAnyOf(cases: any, kind: string): Promise<TypeRef> {
-            const maybeAccessors = schema["qt-accessors"];
-            const unionType = typeBuilder.getUniqueUnionType(makeTypeAttributesInferred(typeAttributes), undefined);
             const typeRefs = await makeTypesFromCases(cases, kind);
-
-            if (maybeAccessors !== undefined) {
-                const identifierAttribute = makeUnionIdentifierAttribute();
-                typeBuilder.addAttributes(unionType, identifierAttribute);
-
-                const accessors = checkArray(maybeAccessors, isAccessorEntry);
-                messageAssert(
-                    typeRefs.length === accessors.length,
-                    "SchemaWrongAccessorEntryArrayLength",
-                    withRef(() => loc.canonicalRef.push(kind), { operation: kind })
-                );
-                for (let i = 0; i < typeRefs.length; i++) {
-                    typeBuilder.addAttributes(
-                        typeRefs[i],
-                        makeUnionMemberNamesAttribute(identifierAttribute, makeAccessorEntry(accessors[i]))
-                    );
-                }
+            let unionAttributes = makeTypeAttributesInferred(typeAttributes);
+            if (kind === "oneOf") {
+                forEachProducedAttribute(cases as JSONSchema[], ({ forType, forUnion, forCases }) => {
+                    if (forType !== undefined) {
+                        typeBuilder.addAttributes(intersectionType, forType);
+                    }
+                    if (forUnion !== undefined) {
+                        unionAttributes = combineTypeAttributes("union", unionAttributes, forUnion);
+                    }
+                    if (forCases !== undefined) {
+                        assert(
+                            forCases.length === typeRefs.length,
+                            "Number of case attributes doesn't match number of cases"
+                        );
+                        for (let i = 0; i < typeRefs.length; i++) {
+                            typeBuilder.addAttributes(typeRefs[i], forCases[i]);
+                        }
+                    }
+                });
             }
-
+            const unionType = typeBuilder.getUniqueUnionType(unionAttributes, undefined);
             typeBuilder.setSetOperationMembers(unionType, OrderedSet(typeRefs));
             return unionType;
         }
@@ -748,8 +736,6 @@ export async function addTypesInSchema(
             schema.required !== undefined ||
             enumArray !== undefined;
 
-        const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
-        await setTypeForLocation(loc, intersectionType);
         const types: TypeRef[] = [];
 
         if (needUnion) {
@@ -801,11 +787,6 @@ export async function addTypesInSchema(
         }
         if (schema.oneOf !== undefined) {
             types.push(await convertOneOrAnyOf(schema.oneOf, "oneOf"));
-        } else {
-            const maybeAttributes = makeNonUnionAccessorAttributes(schema);
-            if (maybeAttributes !== undefined) {
-                typeBuilder.addAttributes(intersectionType, maybeAttributes);
-            }
         }
         if (schema.anyOf !== undefined) {
             types.push(await convertOneOrAnyOf(schema.anyOf, "anyOf"));

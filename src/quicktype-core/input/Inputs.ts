@@ -29,6 +29,7 @@ import { descriptionTypeAttributeKind, descriptionAttributeProducer } from "../D
 import { TypeInference } from "./Inference";
 import { TargetLanguage } from "../TargetLanguage";
 import { languageNamed } from "../language/All";
+import { accessorNamesAttributeProducer } from "../AccessorNames";
 
 class InputJSONSchemaStore extends JSONSchemaStore {
     constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
@@ -206,7 +207,9 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         additionalAttributeProducers: JSONSchemaAttributeProducer[] = []
     ) {
         this._schemaStore = givenSchemaStore;
-        this._attributeProducers = [descriptionAttributeProducer].concat(additionalAttributeProducers);
+        this._attributeProducers = [descriptionAttributeProducer, accessorNamesAttributeProducer].concat(
+            additionalAttributeProducers
+        );
     }
 
     get needIR(): boolean {
