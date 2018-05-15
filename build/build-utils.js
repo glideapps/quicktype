@@ -5,84 +5,90 @@ const path = require("path");
 const spawnSync = require("child_process").spawnSync;
 
 function mapFile(source, destination, transform) {
-  const content = fs.readFileSync(source, "utf8");
-  fs.writeFileSync(destination, transform(content));
+    const content = fs.readFileSync(source, "utf8");
+    fs.writeFileSync(destination, transform(content));
 }
 
 function writePackage(pkg, core) {
-  pkg["dependencies"]["quicktype-core"] = core;
-  fs.writeFileSync("package.json", JSON.stringify(pkg, undefined, 4));
+    pkg["dependencies"]["quicktype-core"] = core;
+    fs.writeFileSync("package.json", JSON.stringify(pkg, undefined, 4));
 }
 
 function run(cmd, args) {
-  const result = spawnSync(cmd, args, { stdio: "inherit" });
-  if (result.error) {
-    console.log(result.error);
-    process.exit(1);
-  }
+    const result = spawnSync(cmd, args, { stdio: "inherit" });
+    if (result.error) {
+        console.log(result.error);
+        process.exit(1);
+    }
 }
 
 function copyFile(src, dst) {
-  run("cp", [src, dst]);
+    run("cp", [src, dst]);
 }
 
 function endsWith(str, suffix) {
-  if (str.length < suffix.length) return false;
-  return str.substr(str.length - suffix.length) === suffix;
+    if (str.length < suffix.length) return false;
+    return str.substr(str.length - suffix.length) === suffix;
 }
 
 function replaceAll(content, from, to) {
-  for (;;) {
-    const newContent = content.replace(from, to);
-    if (content === newContent) return content;
-    content = newContent;
-  }
+    for (;;) {
+        const newContent = content.replace(from, to);
+        if (content === newContent) return content;
+        content = newContent;
+    }
 }
 
 function ignoreExceptions(f) {
-  try {
-    f();
-  } catch (e) {}
+    try {
+        f();
+    } catch (e) {}
 }
 
 // FIXME: Figure out srcDir from the current directory name, and
 // check that ../../src/${srcDir} exists, just to make sure.  Take
 // coreVersion from package.in.json
-function buildPackage(srcDir, coreVersion, publish) {
-  try {
-    const pkg = JSON.parse(fs.readFileSync("./package.in.json", "utf8"));
-
-    if (!fs.existsSync("src")) {
-      run("mkdir", ["src"]);
+function buildPackage(buildDir, coreVersion, publish) {
+    process.chdir(buildDir);
+    const packageName = path.basename(buildDir);
+    const srcDir = path.join("..", "..", "src", packageName);
+    if (!fs.existsSync(srcDir)) {
+        console.error(`Error: Source directory ${srcDir} for package ${packageName} does not exist.`);
+        process.exit(1);
     }
+    try {
+        const pkg = JSON.parse(fs.readFileSync("package.in.json", "utf8"));
+        const coreVersion = pkg["dependencies"]["quicktype-core"];
 
-    for (const fn of fs.readdirSync(srcDir).filter(fn => endsWith(fn, ".ts"))) {
-      const dstPath = path.join("src", fn);
-      copyFile(path.join(srcDir, fn), dstPath);
-      mapFile(dstPath, dstPath, content =>
-        replaceAll(
-          content,
-          '} from "../quicktype-core',
-          '} from "quicktype-core'
-        )
-      );
-    }
-    copyFile(path.join(srcDir, "tsconfig.json"), "./");
+        console.log(`Building ${packageName}, using quicktype-core ${coreVersion}`);
 
-    writePackage(pkg, "file:../quicktype-core");
-    run("npm", ["install"]);
-    if (publish) {
-      writePackage(pkg, coreVersion);
-      run("npm", ["publish"]);
+        if (!fs.existsSync("src")) {
+            run("mkdir", ["src"]);
+        }
+
+        for (const fn of fs.readdirSync(srcDir).filter(fn => endsWith(fn, ".ts"))) {
+            const dstPath = path.join("src", fn);
+            copyFile(path.join(srcDir, fn), dstPath);
+            mapFile(dstPath, dstPath, content =>
+                replaceAll(content, '} from "../quicktype-core', '} from "quicktype-core')
+            );
+        }
+        copyFile(path.join(srcDir, "tsconfig.json"), "./");
+
+        writePackage(pkg, "file:../quicktype-core");
+        run("npm", ["install"]);
+        if (publish) {
+            writePackage(pkg, coreVersion);
+            run("npm", ["publish"]);
+        }
+    } catch (e) {
+        console.error(e);
+        process.exit(1);
+    } finally {
+        ignoreExceptions(() => fs.unlinkSync("package.json"));
+        ignoreExceptions(() => fs.unlinkSync("tsconfig.json"));
+        ignoreExceptions(() => run("rm", ["-rf", "src"]));
     }
-  } catch (e) {
-    console.log(e);
-    process.exit(1);
-  } finally {
-    ignoreExceptions(() => fs.unlinkSync("package.json"));
-    ignoreExceptions(() => fs.unlinkSync("tsconfig.json"));
-    ignoreExceptions(() => run("rm", ["-rf", "src"]));
-  }
 }
 
 module.exports = { buildPackage };
