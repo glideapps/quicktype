@@ -1,7 +1,13 @@
 import * as URI from "urijs";
 import { OrderedMap, OrderedSet, Map, List, Set } from "immutable";
 
-import { Ref, checkJSONSchema, refsInSchemaForURI, addTypesInSchema } from "./JSONSchemaInput";
+import {
+    Ref,
+    checkJSONSchema,
+    refsInSchemaForURI,
+    addTypesInSchema,
+    JSONSchemaAttributeProducer
+} from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
 import {
@@ -19,7 +25,7 @@ import {
 import { messageError } from "../Messages";
 import { TypeBuilder } from "../TypeBuilder";
 import { makeNamesTypeAttributes } from "../TypeNames";
-import { descriptionTypeAttributeKind } from "../TypeAttributes";
+import { descriptionTypeAttributeKind, descriptionAttributeProducer } from "../Description";
 import { TypeInference } from "./Inference";
 import { TargetLanguage } from "../TargetLanguage";
 import { languageNamed } from "../language/All";
@@ -186,6 +192,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     readonly needSchemaProcessing: boolean = true;
 
     private _schemaStore: JSONSchemaStore | undefined = undefined;
+    private readonly _attributeProducers: JSONSchemaAttributeProducer[];
 
     private _schemaInputs: Map<string, StringInput> = Map();
     private _schemaSources: List<[uri.URI, JSONSchemaSourceData]> = List();
@@ -194,8 +201,12 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
 
     private _needIR: boolean = false;
 
-    constructor(givenSchemaStore: JSONSchemaStore | undefined) {
+    constructor(
+        givenSchemaStore: JSONSchemaStore | undefined,
+        additionalAttributeProducers: JSONSchemaAttributeProducer[] = []
+    ) {
         this._schemaStore = givenSchemaStore;
+        this._attributeProducers = [descriptionAttributeProducer].concat(additionalAttributeProducers);
     }
 
     get needIR(): boolean {
@@ -207,7 +218,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     }
 
     async addTypes(typeBuilder: TypeBuilder): Promise<void> {
-        await addTypesInSchema(typeBuilder, defined(this._schemaStore), this._topLevels);
+        await addTypesInSchema(typeBuilder, defined(this._schemaStore), this._topLevels, this._attributeProducers);
     }
 
     async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {

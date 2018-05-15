@@ -10,11 +10,8 @@ import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source"
 
 import { declarationsForGraph, DeclarationIR, cycleBreakerTypesForGraph, Declaration } from "./DeclarationIR";
 import { TypeAttributeStoreView } from "./TypeGraph";
-import {
-    TypeAttributeKind,
-    descriptionTypeAttributeKind,
-    propertyDescriptionsTypeAttributeKind
-} from "./TypeAttributes";
+import { TypeAttributeKind } from "./TypeAttributes";
+import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./Description";
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
 import { transformationForType, followTargetType } from "./Transformers";
 import { TargetLanguage } from "./TargetLanguage";

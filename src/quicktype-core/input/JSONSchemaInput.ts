@@ -23,10 +23,9 @@ import { TypeNames } from "../TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../TypeNames";
 import {
     TypeAttributes,
-    descriptionTypeAttributeKind,
-    propertyDescriptionsTypeAttributeKind,
     makeTypeAttributesInferred,
-    emptyTypeAttributes
+    emptyTypeAttributes,
+    combineTypeAttributes
 } from "../TypeAttributes";
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import {
@@ -413,29 +412,6 @@ class Canonizer {
     }
 }
 
-function makeAttributes(schema: StringMap, loc: Location, attributes: TypeAttributes): TypeAttributes {
-    const maybeDescription = schema.description;
-    if (typeof maybeDescription === "string") {
-        attributes = descriptionTypeAttributeKind.combineInAttributes(attributes, OrderedSet([maybeDescription]));
-    }
-    return modifyTypeNames(attributes, maybeTypeNames => {
-        const typeNames = defined(maybeTypeNames);
-        if (!typeNames.areInferred) {
-            return typeNames;
-        }
-        let title = schema.title;
-        if (typeof title !== "string") {
-            title = loc.canonicalRef.definitionName;
-        }
-
-        if (typeof title === "string") {
-            return TypeNames.make(OrderedSet([title]), OrderedSet(), schema.$ref !== undefined);
-        } else {
-            return typeNames.makeInferred();
-        }
-    });
-}
-
 function isAccessorEntry(x: any): x is string | { [language: string]: string } {
     if (typeof x === "string") {
         return true;
@@ -509,10 +485,30 @@ async function getFromStore(store: JSONSchemaStore, address: string, ref: Ref | 
     }
 }
 
+export const schemaTypeDict = {
+    null: true,
+    boolean: true,
+    string: true,
+    integer: true,
+    number: true,
+    array: true,
+    object: true
+};
+export type JSONSchemaType = keyof typeof schemaTypeDict;
+
+const schemaTypes = Object.getOwnPropertyNames(schemaTypeDict) as JSONSchemaType[];
+
+export type JSONSchemaAttributeProducer = (
+    schema: JSONSchema,
+    canonicalRef: Ref,
+    types: Set<JSONSchemaType>
+) => TypeAttributes | undefined;
+
 export async function addTypesInSchema(
     typeBuilder: TypeBuilder,
     store: JSONSchemaStore,
-    references: Map<string, Ref>
+    references: Map<string, Ref>,
+    attributeProducers: JSONSchemaAttributeProducer[]
 ): Promise<void> {
     const canonizer = new Canonizer();
 
@@ -543,20 +539,6 @@ export async function addTypesInSchema(
     ): Promise<TypeRef> {
         const required = OrderedSet(requiredArray);
         const propertiesMap = OrderedMap(properties).sortBy((_, k) => k.toLowerCase());
-        const propertyDescriptions = propertiesMap
-            .map(propSchema => {
-                if (typeof propSchema === "object") {
-                    const desc = propSchema.description;
-                    if (typeof desc === "string") {
-                        return OrderedSet([desc]);
-                    }
-                }
-                return undefined;
-            })
-            .filter(v => v !== undefined) as OrderedMap<string, OrderedSet<string>>;
-        if (!propertyDescriptions.isEmpty()) {
-            attributes = propertyDescriptionsTypeAttributeKind.combineInAttributes(attributes, propertyDescriptions);
-        }
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
         // we would use a JSON parser that preserves order.
@@ -597,7 +579,59 @@ export async function addTypesInSchema(
     }
 
     async function convertToType(schema: StringMap, loc: Location, typeAttributes: TypeAttributes): Promise<TypeRef> {
-        typeAttributes = makeAttributes(schema, loc, typeAttributes);
+        const enumArray = Array.isArray(schema.enum) ? schema.enum : undefined;
+        const typeSet = mapOptional(t => checkTypeList(t, loc), schema.type);
+
+        function isTypeIncluded(name: JSONSchemaType): boolean {
+            if (typeSet !== undefined && !typeSet.has(name)) {
+                return false;
+            }
+            if (enumArray !== undefined) {
+                let predicate: (x: any) => boolean;
+                switch (name) {
+                    case "null":
+                        predicate = (x: any) => x === null;
+                        break;
+                    case "integer":
+                        predicate = (x: any) => typeof x === "number" && x === Math.floor(x);
+                        break;
+                    default:
+                        predicate = (x: any) => typeof x === name;
+                        break;
+                }
+
+                return enumArray.find(predicate) !== undefined;
+            }
+            return true;
+        }
+
+        const includedTypes = Set(schemaTypes.filter(isTypeIncluded));
+
+        function makeAttributes(attributes: TypeAttributes): TypeAttributes {
+            for (const producer of attributeProducers) {
+                const newAttributes = producer(schema, loc.canonicalRef, includedTypes);
+                if (newAttributes === undefined) continue;
+                attributes = combineTypeAttributes("union", attributes, newAttributes);
+            }
+            return modifyTypeNames(attributes, maybeTypeNames => {
+                const typeNames = defined(maybeTypeNames);
+                if (!typeNames.areInferred) {
+                    return typeNames;
+                }
+                let title = schema.title;
+                if (typeof title !== "string") {
+                    title = loc.canonicalRef.definitionName;
+                }
+
+                if (typeof title === "string") {
+                    return TypeNames.make(OrderedSet([title]), OrderedSet(), schema.$ref !== undefined);
+                } else {
+                    return typeNames.makeInferred();
+                }
+            });
+        }
+
+        typeAttributes = makeAttributes(typeAttributes);
         const inferredAttributes = makeTypeAttributesInferred(typeAttributes);
 
         function makeStringType(): TypeRef {
@@ -700,36 +734,10 @@ export async function addTypesInSchema(
             return unionType;
         }
 
-        const enumArray = Array.isArray(schema.enum) ? schema.enum : undefined;
-        const typeSet = mapOptional(t => checkTypeList(t, loc), schema.type);
-
-        function includePrimitiveType(name: string): boolean {
-            if (typeSet !== undefined && !typeSet.has(name)) {
-                return false;
-            }
-            if (enumArray !== undefined) {
-                let predicate: (x: any) => boolean;
-                switch (name) {
-                    case "null":
-                        predicate = (x: any) => x === null;
-                        break;
-                    case "integer":
-                        predicate = (x: any) => typeof x === "number" && x === Math.floor(x);
-                        break;
-                    default:
-                        predicate = (x: any) => typeof x === name;
-                        break;
-                }
-
-                return enumArray.find(predicate) !== undefined;
-            }
-            return true;
-        }
-
         const includeObject = enumArray === undefined && (typeSet === undefined || typeSet.has("object"));
         const includeArray = enumArray === undefined && (typeSet === undefined || typeSet.has("array"));
         const needStringEnum =
-            includePrimitiveType("string") &&
+            includedTypes.has("string") &&
             enumArray !== undefined &&
             enumArray.find((x: any) => typeof x === "string") !== undefined;
         const needUnion =
@@ -752,8 +760,8 @@ export async function addTypesInSchema(
                 ["number", "double"],
                 ["integer", "integer"],
                 ["boolean", "bool"]
-            ] as [string, PrimitiveTypeKind][]) {
-                if (!includePrimitiveType(name)) continue;
+            ] as [JSONSchemaType, PrimitiveTypeKind][]) {
+                if (!includedTypes.has(name)) continue;
 
                 unionTypes.push(typeBuilder.getPrimitiveType(kind));
             }
@@ -761,7 +769,7 @@ export async function addTypesInSchema(
             if (needStringEnum) {
                 const cases = (enumArray as any[]).filter(x => typeof x === "string") as string[];
                 unionTypes.push(typeBuilder.getStringType(inferredAttributes, StringTypes.fromCases(cases)));
-            } else if (includePrimitiveType("string")) {
+            } else if (includedTypes.has("string")) {
                 unionTypes.push(makeStringType());
             }
 

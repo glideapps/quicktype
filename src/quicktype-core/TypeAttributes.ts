@@ -1,6 +1,6 @@
 import { Map, OrderedSet, hash } from "immutable";
 
-import { panic, setUnion } from "./support/Support";
+import { panic } from "./support/Support";
 import { Type } from "./Type";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
 
@@ -124,49 +124,3 @@ export function combineTypeAttributes(
 export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
     return attr.map((value, kind) => kind.makeInferred(value)).filter(v => v !== undefined);
 }
-
-class DescriptionTypeAttributeKind extends TypeAttributeKind<OrderedSet<string>> {
-    constructor() {
-        super("description");
-    }
-
-    combine(a: OrderedSet<string>, b: OrderedSet<string>): OrderedSet<string> {
-        return a.union(b);
-    }
-
-    makeInferred(_: OrderedSet<string>): OrderedSet<string> {
-        return OrderedSet();
-    }
-
-    stringify(descriptions: OrderedSet<string>): string | undefined {
-        let result = descriptions.first();
-        if (result === undefined) return undefined;
-        if (result.length > 5 + 3) {
-            result = `${result.substr(0, 5)}...`;
-        }
-        if (descriptions.size > 1) {
-            result = `${result}, ...`;
-        }
-        return result;
-    }
-}
-
-export const descriptionTypeAttributeKind: TypeAttributeKind<OrderedSet<string>> = new DescriptionTypeAttributeKind();
-
-class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string, OrderedSet<string>>> {
-    constructor() {
-        super("propertyDescriptions");
-    }
-
-    combine(a: Map<string, OrderedSet<string>>, b: Map<string, OrderedSet<string>>): Map<string, OrderedSet<string>> {
-        return a.mergeWith(setUnion, b);
-    }
-
-    makeInferred(_: Map<string, OrderedSet<string>>): Map<string, OrderedSet<string>> {
-        return Map();
-    }
-}
-
-export const propertyDescriptionsTypeAttributeKind: TypeAttributeKind<
-    Map<string, OrderedSet<string>>
-> = new PropertyDescriptionsTypeAttributeKind();

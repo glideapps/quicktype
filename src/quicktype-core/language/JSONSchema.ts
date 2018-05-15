@@ -14,7 +14,7 @@ import {
 } from "../support/Strings";
 import { defined, assert, panic } from "../support/Support";
 import { StringTypeMapping } from "../TypeBuilder";
-import { descriptionTypeAttributeKind } from "../TypeAttributes";
+import { descriptionTypeAttributeKind } from "../Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
 
