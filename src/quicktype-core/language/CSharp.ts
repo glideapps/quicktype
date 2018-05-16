@@ -59,15 +59,9 @@ function needTransformerForUnion(u: UnionType): boolean {
 export const cSharpOptions = {
     useList: new EnumOption("array-type", "Use T[] or List<T>", [["array", false], ["list", true]]),
     dense: new EnumOption("density", "Property density", [["normal", false], ["dense", true]], "normal", "secondary"),
-    features: new EnumOption("features", "Output features", [
-        ["complete", { helpers: true, attributes: true }],
-        ["attributes-only", { helpers: false, attributes: true }],
-        ["just-types", { helpers: false, attributes: false }]
-    ]),
     // FIXME: Do this via a configurable named eventually.
     namespace: new StringOption("namespace", "Generated namespace", "NAME", "QuickType"),
     version: new EnumOption<Version>("csharp-version", "C# version", [["5", 5], ["6", 6]], "6", "secondary"),
-    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false),
     typeForAny: new EnumOption<CSharpTypeForAny>(
         "any-type",
         'Type to use for "any"',
@@ -84,11 +78,7 @@ export const cSharpOptions = {
     )
 };
 
-export default class CSharpTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("C#", ["cs", "csharp"], "cs");
-    }
-
+export class CSharpTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
         return [
             cSharpOptions.namespace,
@@ -96,8 +86,6 @@ export default class CSharpTargetLanguage extends TargetLanguage {
             cSharpOptions.dense,
             cSharpOptions.useList,
             cSharpOptions.useDecimal,
-            cSharpOptions.features,
-            cSharpOptions.checkRequired,
             cSharpOptions.typeForAny
         ];
     }
@@ -123,7 +111,7 @@ export default class CSharpTargetLanguage extends TargetLanguage {
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): CSharpRenderer {
-        return new NewtonsoftCSharpRenderer(this, renderContext, getOptionValues(cSharpOptions, untypedOptionValues));
+        return new CSharpRenderer(this, renderContext, getOptionValues(cSharpOptions, untypedOptionValues));
     }
 }
 
@@ -502,6 +490,45 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 }
 
+export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
+    features: new EnumOption("features", "Output features", [
+        ["complete", { helpers: true, attributes: true }],
+        ["attributes-only", { helpers: false, attributes: true }],
+        ["just-types", { helpers: false, attributes: false }]
+    ]),
+    checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
+});
+
+export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
+    constructor() {
+        super("C#", ["cs", "csharp"], "cs");
+    }
+
+    protected getOptions(): Option<any>[] {
+        return [
+            newtonsoftCSharpOptions.namespace,
+            newtonsoftCSharpOptions.version,
+            newtonsoftCSharpOptions.dense,
+            newtonsoftCSharpOptions.useList,
+            newtonsoftCSharpOptions.useDecimal,
+            newtonsoftCSharpOptions.features,
+            newtonsoftCSharpOptions.checkRequired,
+            newtonsoftCSharpOptions.typeForAny
+        ];
+    }
+
+    protected makeRenderer(
+        renderContext: RenderContext,
+        untypedOptionValues: { [name: string]: any }
+    ): NewtonsoftCSharpRenderer {
+        return new NewtonsoftCSharpRenderer(
+            this,
+            renderContext,
+            getOptionValues(newtonsoftCSharpOptions, untypedOptionValues)
+        );
+    }
+}
+
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     private _enumExtensionsNames = Map<Name, Name>();
 
@@ -511,7 +538,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        private readonly _options: OptionValues<typeof cSharpOptions>
+        private readonly _options: OptionValues<typeof newtonsoftCSharpOptions>
     ) {
         super(targetLanguage, renderContext, _options);
         this._needHelpers = _options.features.helpers;

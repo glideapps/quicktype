@@ -1,9 +1,9 @@
 import { TargetLanguage } from "../TargetLanguage";
 
-import CSharpTargetLanguage from "./CSharp";
 import GoTargetLanguage from "./Golang";
 import CPlusPlusTargetLanguage from "./CPlusPlus";
 import ObjectiveCTargetLanguage from "./Objective-C";
+import { NewtonsoftCSharpTargetLanguage } from "./CSharp";
 import { JavaTargetLanguage } from "./Java";
 import { JavaScriptTargetLanguage } from "./JavaScript";
 import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
@@ -16,7 +16,7 @@ import RubyTargetLanguage from "./ruby";
 import { findInArray } from "../support/Support";
 
 export const all: TargetLanguage[] = [
-    new CSharpTargetLanguage(),
+    new NewtonsoftCSharpTargetLanguage(),
     new GoTargetLanguage(),
     new RustTargetLanguage(),
     new CPlusPlusTargetLanguage(),
