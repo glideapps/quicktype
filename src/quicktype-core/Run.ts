@@ -244,10 +244,13 @@ class Run {
     }
 
     public async run(): Promise<OrderedMap<string, SerializedRenderResult>> {
+        // FIXME: This makes quicktype not quite reentrant
         initTypeNames();
 
         const targetLanguage = getTargetLanguage(this._options.lang);
         const inputData = this._options.inputData;
+
+        await inputData.finishAddingInputs();
 
         const needIR = inputData.needIR || targetLanguage.names.indexOf("schema") < 0;
 

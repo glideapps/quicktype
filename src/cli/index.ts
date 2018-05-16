@@ -652,8 +652,6 @@ async function makeInputData(sources: TypeSource[], targetLanguage: TargetLangua
         }
     }
 
-    await inputData.finishAddingInputs();
-
     return inputData;
 }
 
