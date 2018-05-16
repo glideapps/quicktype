@@ -46,7 +46,7 @@ export const swiftOptions = {
     )
 };
 
-export default class SwiftTargetLanguage extends TargetLanguage {
+export class SwiftTargetLanguage extends TargetLanguage {
     constructor() {
         super("Swift", ["swift", "swift4"], "swift");
     }

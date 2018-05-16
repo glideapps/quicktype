@@ -44,7 +44,7 @@ export const rustOptions = {
     deriveDebug: new BooleanOption("derive-debug", "Derive Debug impl", false)
 };
 
-export default class RustTargetLanguage extends TargetLanguage {
+export class RustTargetLanguage extends TargetLanguage {
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): RustRenderer {
         return new RustRenderer(this, renderContext, getOptionValues(rustOptions, untypedOptionValues));
     }

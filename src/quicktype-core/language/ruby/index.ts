@@ -51,7 +51,7 @@ export const rubyOptions = {
     ])
 };
 
-export default class RubyTargetLanguage extends TargetLanguage {
+export class RubyTargetLanguage extends TargetLanguage {
     constructor() {
         super("Ruby", ["ruby"], "rb");
     }

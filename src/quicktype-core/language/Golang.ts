@@ -27,7 +27,7 @@ export const goOptions = {
     packageName: new StringOption("package", "Generated package name", "NAME", "main")
 };
 
-export default class GoTargetLanguage extends TargetLanguage {
+export class GoTargetLanguage extends TargetLanguage {
     constructor() {
         super("Go", ["go", "golang"], "go");
     }

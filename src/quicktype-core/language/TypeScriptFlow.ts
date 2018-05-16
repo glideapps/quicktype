@@ -10,7 +10,7 @@ import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { RenderContext } from "../Renderer";
 
-export const tsFlowOptions = Object.assign(javaScriptOptions, {
+export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     justTypes: new BooleanOption("just-types", "Interfaces only", false),
     declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false)
 });

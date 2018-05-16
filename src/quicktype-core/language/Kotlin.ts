@@ -40,7 +40,7 @@ export const kotlinOptions = {
     packageName: new StringOption("package", "Package", "PACKAGE", "quicktype")
 };
 
-export default class KotlinTargetLanguage extends TargetLanguage {
+export class KotlinTargetLanguage extends TargetLanguage {
     constructor() {
         super("Kotlin", ["kotlin"], "kt");
     }
@@ -152,7 +152,7 @@ function stringEscape(s: string): string {
 const upperNamingFunction = funPrefixNamer("upper", s => kotlinNameStyle(true, s));
 const lowerNamingFunction = funPrefixNamer("lower", s => kotlinNameStyle(false, s));
 
-class KotlinRenderer extends ConvenienceRenderer {
+export class KotlinRenderer extends ConvenienceRenderer {
     constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
