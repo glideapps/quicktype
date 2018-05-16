@@ -333,7 +333,6 @@ export class InputData {
         await input.addSource(source);
     }
 
-    // FIXME: Any reason we can't do this at the beginning of `addTypes`?
     async finishAddingInputs(): Promise<void> {
         await forEachSync(this._inputs, async input => {
             await input.finishAddingInputs();
