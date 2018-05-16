@@ -56,7 +56,7 @@ export const cPlusPlusOptions = {
     ])
 };
 
-export default class CPlusPlusTargetLanguage extends TargetLanguage {
+export class CPlusPlusTargetLanguage extends TargetLanguage {
     constructor() {
         super("C++", ["c++", "cpp", "cplusplus"], "cpp");
     }

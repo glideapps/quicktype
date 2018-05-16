@@ -1,19 +1,19 @@
 import { TargetLanguage } from "../TargetLanguage";
+import { findInArray } from "../support/Support";
 
-import GoTargetLanguage from "./Golang";
-import CPlusPlusTargetLanguage from "./CPlusPlus";
-import ObjectiveCTargetLanguage from "./Objective-C";
 import { NewtonsoftCSharpTargetLanguage } from "./CSharp";
+import { GoTargetLanguage } from "./Golang";
+import { CPlusPlusTargetLanguage } from "./CPlusPlus";
+import { ObjectiveCTargetLanguage } from "./Objective-C";
 import { JavaTargetLanguage } from "./Java";
 import { JavaScriptTargetLanguage } from "./JavaScript";
 import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
-import SwiftTargetLanguage from "./Swift";
-import KotlinTargetLanguage from "./Kotlin";
-import ElmTargetLanguage from "./Elm";
-import JSONSchemaTargetLanguage from "./JSONSchema";
-import RustTargetLanguage from "./Rust";
-import RubyTargetLanguage from "./ruby";
-import { findInArray } from "../support/Support";
+import { SwiftTargetLanguage } from "./Swift";
+import { KotlinTargetLanguage } from "./Kotlin";
+import { ElmTargetLanguage } from "./Elm";
+import { JSONSchemaTargetLanguage } from "./JSONSchema";
+import { RustTargetLanguage } from "./Rust";
+import { RubyTargetLanguage } from "./ruby";
 
 export const all: TargetLanguage[] = [
     new NewtonsoftCSharpTargetLanguage(),
