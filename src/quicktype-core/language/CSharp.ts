@@ -300,8 +300,19 @@ export class CSharpRenderer extends ConvenienceRenderer {
         this.emitBlock(emitter);
     }
 
-    protected attributesForProperty(_property: ClassProperty, _jsonName: string): Sourcelike[] | undefined {
+    protected attributesForProperty(
+        _property: ClassProperty,
+        _name: Name,
+        _c: ClassType,
+        _jsonName: string
+    ): Sourcelike[] | undefined {
         return undefined;
+    }
+
+    protected propertyDefinition(property: ClassProperty, name: Name, _c: ClassType, _jsonName: string): Sourcelike {
+        const t = followTargetType(property.type);
+        const csType = property.isOptional ? this.nullableCSType(t, true) : this.csType(t, noFollow, true);
+        return ["public ", csType, " ", name, " { get; set; }"];
     }
 
     protected emitDescriptionBlock(lines: string[]): void {
@@ -331,11 +342,9 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 let isFirstProperty = true;
                 let previousDescription: string[] | undefined = undefined;
                 this.forEachClassProperty(c, blankLines, (name, jsonName, p) => {
-                    const t = followTargetType(p.type);
-                    const csType = p.isOptional ? this.nullableCSType(t, true) : this.csType(t, noFollow, true);
-                    const attributes = this.attributesForProperty(p, jsonName);
+                    const attributes = this.attributesForProperty(p, name, c, jsonName);
                     const description = this.descriptionForClassProperty(c, jsonName);
-                    const property = ["public ", csType, " ", name, " { get; set; }"];
+                    const property = this.propertyDefinition(p, name, c, jsonName);
                     if (attributes === undefined) {
                         if (
                             // Descriptions should be preceded by an empty line
@@ -634,7 +643,12 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         return undefined;
     }
 
-    protected attributesForProperty(property: ClassProperty, jsonName: string): Sourcelike[] | undefined {
+    protected attributesForProperty(
+        property: ClassProperty,
+        _name: Name,
+        _c: ClassType,
+        jsonName: string
+    ): Sourcelike[] | undefined {
         if (!this._needAttributes) return undefined;
 
         const attributes: Sourcelike[] = [];
