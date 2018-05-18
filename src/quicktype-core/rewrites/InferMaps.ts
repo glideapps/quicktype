@@ -133,12 +133,10 @@ export function inferMaps(
         );
     }
 
-    const allClasses = graph.allNamedTypesSeparated().objects.filter(o => o instanceof ClassType) as OrderedSet<
-        ClassType
-    >;
-    const classesToReplace = allClasses
-        .filter(c => !c.isFixed && shouldBeMap(c.getProperties()) !== undefined)
-        .toArray();
+    const classesToReplace = Array.from(graph.allNamedTypesSeparated().objects).filter(o => {
+        if (!(o instanceof ClassType)) return false;
+        return !o.isFixed && shouldBeMap(o.getProperties()) !== undefined;
+    }) as ClassType[];
     return graph.rewrite(
         "infer maps",
         stringTypeMapping,

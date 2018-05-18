@@ -1,4 +1,4 @@
-import { Map, Set, OrderedSet, List } from "immutable";
+import { Map, OrderedSet, List } from "immutable";
 import { defined, repeated, assert, repeatedCall } from "./support/Support";
 
 function countComponentGraphNodes(components: number[][]): number {
@@ -165,20 +165,18 @@ function findRoots(successors: number[][]): number[] {
 }
 
 export class Graph<T> {
+    private readonly _nodes: ReadonlyArray<T>;
     private readonly _indexByNode: Map<T, number>;
     private readonly _successors: number[][];
 
-    constructor(private readonly _nodes: T[], invertDirection: boolean, edges: number[][] | ((node: T) => Set<T>)) {
-        this._indexByNode = Map(_nodes.map((n, i): [T, number] => [n, i]));
+    constructor(nodes: Iterable<T>, invertDirection: boolean, edges: number[][] | ((node: T) => ReadonlySet<T>)) {
+        this._nodes = Array.from(nodes);
+        this._indexByNode = Map(this._nodes.map((n, i): [T, number] => [n, i]));
         let edgesArray: number[][];
         if (Array.isArray(edges)) {
             edgesArray = edges;
         } else {
-            edgesArray = _nodes.map(n =>
-                edges(n)
-                    .toArray()
-                    .map(s => defined(this._indexByNode.get(s)))
-            );
+            edgesArray = this._nodes.map(n => Array.from(edges(n)).map(s => defined(this._indexByNode.get(s))));
         }
 
         if (invertDirection) {

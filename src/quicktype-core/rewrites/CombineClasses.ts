@@ -103,10 +103,9 @@ function findSimilarityCliques(
     onlyWithSameProperties: boolean,
     includeFixedClasses: boolean
 ): ClassType[][] {
-    let unprocessedClasses = graph
-        .allNamedTypesSeparated()
-        .objects.filter(o => o instanceof ClassType && (includeFixedClasses || !o.isFixed))
-        .toArray() as ClassType[];
+    let unprocessedClasses = Array.from(graph.allNamedTypesSeparated().objects).filter(
+        o => o instanceof ClassType && (includeFixedClasses || !o.isFixed)
+    ) as ClassType[];
     const cliques: ClassType[][] = [];
 
     // FIXME: Don't build cliques one by one.  Instead have a list of

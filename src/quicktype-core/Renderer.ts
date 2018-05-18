@@ -1,5 +1,3 @@
-import { Collection } from "immutable";
-
 import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
 import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newline } from "./Source";
@@ -158,23 +156,23 @@ export abstract class Renderer {
     }
 
     forEach<K, V>(
-        iterable: Collection<K, V>,
+        iterable: Iterable<[K, V]>,
         interposedBlankLines: boolean,
         leadingBlankLine: boolean,
         emitter: (v: V, k: K) => void
     ): void {
         let onFirst = true;
-        iterable.forEach((v: V, k: K) => {
+        for (const [k, v] of iterable) {
             if ((leadingBlankLine && onFirst) || (interposedBlankLines && !onFirst)) {
                 this.ensureBlankLine();
             }
             emitter(v, k);
             onFirst = false;
-        });
+        }
     }
 
     forEachWithBlankLines<K, V>(
-        iterable: Collection<K, V>,
+        iterable: Iterable<[K, V]>,
         blankLineLocations: BlankLineLocations,
         emitter: (v: V, k: K) => void
     ): void {

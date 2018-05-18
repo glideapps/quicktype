@@ -55,6 +55,14 @@ export function iterableMinBy<T>(it: Iterable<T>, key: (v: T) => number): T | un
     return minValue;
 }
 
+export function* iterableEnumerate<T>(it: Iterable<T>): IterableIterator<[number, T]> {
+    let i = 0;
+    for (const v of it) {
+        yield [i, v];
+        i += 1;
+    }
+}
+
 export function arrayIntercalate<T>(separator: T, items: Iterable<T>): T[] {
     const acc: T[] = [];
     for (const x of items) {
@@ -94,13 +102,35 @@ export function mapMergeInto<K, V>(dest: Map<K, V>, src: ReadonlyMap<K, V>): voi
     }
 }
 
-export function setUnion<T>(...sets: Iterable<T>[]): Set<T> {
-    const result = new Set<T>();
-    for (const set of sets) {
-        for (const v of set) {
+export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): void {
+    for (const src of srcs) {
+        for (const v of src) {
+            dest.add(v);
+        }
+    }
+}
+
+export function setIntersect<T>(s1: Iterable<T>, s2: ReadonlySet<T>): Set<T> {
+    const result = new Set();
+    for (const v of s1) {
+        if (s2.has(v)) {
             result.add(v);
         }
     }
+    return result;
+}
+
+export function setSubtract<T>(src: Iterable<T>, diff: Iterable<T>): Set<T> {
+    const result = new Set(src);
+    for (const v of diff) {
+        result.delete(v);
+    }
+    return result;
+}
+
+export function setUnion<T>(...sets: Iterable<T>[]): Set<T> {
+    const result = new Set<T>();
+    setUnionInto(result, ...sets);
     return result;
 }
 

@@ -25,11 +25,12 @@ import {
     emptyTypeAttributes,
     makeTypeAttributesInferred
 } from "../TypeAttributes";
+import { iterableFirst, iterableEvery } from "../support/Containers";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t, undefined)[0];
     if (members.size <= 1) return true;
-    return members.every(m => !(m instanceof UnionType) || m.isCanonical);
+    return iterableEvery(members, m => !(m instanceof UnionType) || m.isCanonical);
 }
 
 function attributesForTypes<T extends TypeKind>(types: OrderedSet<Type>): TypeAttributeMap<T> {
@@ -329,17 +330,17 @@ export function resolveIntersections(
     function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
         const intersections = types.filter(t => t instanceof IntersectionType) as Set<IntersectionType>;
         const [members, intersectionAttributes] = setOperationMembersRecursively(intersections.toArray(), "intersect");
-        if (members.isEmpty()) {
+        if (members.size === 0) {
             const t = builder.getPrimitiveType("any", intersectionAttributes, forwardingRef);
             return t;
         }
         if (members.size === 1) {
-            return builder.reconstituteType(defined(members.first()), intersectionAttributes, forwardingRef);
+            return builder.reconstituteType(defined(iterableFirst(members)), intersectionAttributes, forwardingRef);
         }
 
         const accumulator = new IntersectionAccumulator();
         const extraAttributes = makeTypeAttributesInferred(
-            combineTypeAttributes("intersect", members.toArray().map(t => accumulator.addType(t)))
+            combineTypeAttributes("intersect", Array.from(members).map(t => accumulator.addType(t)))
         );
         const attributes = combineTypeAttributes("intersect", intersectionAttributes, extraAttributes);
 
