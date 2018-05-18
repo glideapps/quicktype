@@ -1,4 +1,4 @@
-import { List, OrderedMap } from "immutable";
+import { OrderedMap } from "immutable";
 
 import * as targetLanguages from "./language/All";
 import { TargetLanguage } from "./TargetLanguage";
@@ -273,7 +273,7 @@ class Run {
     }
 
     private makeSimpleTextResult(lines: string[]): OrderedMap<string, SerializedRenderResult> {
-        return OrderedMap([[this._options.outputFilename, { lines, annotations: List() }]] as [
+        return OrderedMap([[this._options.outputFilename, { lines, annotations: [] }]] as [
             string,
             SerializedRenderResult
         ][]);
@@ -294,7 +294,7 @@ class Run {
         if (schemaString !== undefined) {
             const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
             lines.push("");
-            const srr = { lines, annotations: List() };
+            const srr = { lines, annotations: [] };
             return OrderedMap([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
         }
 
@@ -334,7 +334,7 @@ export async function quicktype(options: Partial<Options>): Promise<SerializedRe
     if (result.size <= 1) {
         const first = mapFirst(result);
         if (first === undefined) {
-            return { lines: [], annotations: List<Annotation>() };
+            return { lines: [], annotations: [] };
         }
         return first;
     }
@@ -344,8 +344,8 @@ export async function quicktype(options: Partial<Options>): Promise<SerializedRe
         const offset = lines.length + 2;
         lines = lines.concat([`// ${filename}`, ""], srr.lines);
         annotations = annotations.concat(
-            srr.annotations.map(ann => ({ annotation: ann.annotation, span: offsetSpan(ann.span, offset) })).toArray()
+            srr.annotations.map(ann => ({ annotation: ann.annotation, span: offsetSpan(ann.span, offset) }))
         );
     });
-    return { lines, annotations: List(annotations) };
+    return { lines, annotations };
 }

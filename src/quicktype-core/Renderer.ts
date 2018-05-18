@@ -1,4 +1,4 @@
-import { Collection, List } from "immutable";
+import { Collection } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
@@ -145,7 +145,7 @@ export abstract class Renderer {
 
     protected emitTable = (tableArray: Sourcelike[][]): void => {
         if (tableArray.length === 0) return;
-        const table = List(tableArray.map(r => List(r.map(sl => sourcelikeToSource(sl)))));
+        const table = tableArray.map(r => r.map(sl => sourcelikeToSource(sl)));
         this.emitItem({ kind: "table", table });
         this.emitNewline();
     };

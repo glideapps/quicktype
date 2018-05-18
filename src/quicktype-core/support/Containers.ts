@@ -32,6 +32,16 @@ export function iterableFirst<T>(it: Iterable<T>): T | undefined {
     return undefined;
 }
 
+export function iterableMax(it: Iterable<number>): number | undefined {
+    let max: number | undefined = undefined;
+    for (const v of it) {
+        if (max === undefined || v > max) {
+            max = v;
+        }
+    }
+    return max;
+}
+
 export function iterableMinBy<T>(it: Iterable<T>, key: (v: T) => number): T | undefined {
     let min: number | undefined = undefined;
     let minValue: T | undefined = undefined;
@@ -43,6 +53,15 @@ export function iterableMinBy<T>(it: Iterable<T>, key: (v: T) => number): T | un
         }
     }
     return minValue;
+}
+
+export function arrayIntercalate<T>(separator: T, items: Iterable<T>): T[] {
+    const acc: T[] = [];
+    for (const x of items) {
+        if (acc.length > 0) acc.push(separator);
+        acc.push(x);
+    }
+    return acc;
 }
 
 export function mapMap<K, V, W>(m: ReadonlyMap<K, V>, f: (v: V, k: K) => W): Map<K, W> {
