@@ -1,4 +1,4 @@
-import { List, OrderedMap } from "immutable";
+import { OrderedMap } from "immutable";
 
 import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType, ObjectType } from "./Type";
 import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
@@ -67,7 +67,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _enumCaseNamer: Namer | null;
 
     private _declarationIR: DeclarationIR | undefined;
-    private _namedTypes: List<Type> | undefined;
+    private _namedTypes: ReadonlyArray<Type> | undefined;
     private _namedObjects: Set<ObjectType> | undefined;
     private _namedEnums: Set<EnumType> | undefined;
     private _namedUnions: Set<UnionType> | undefined;
@@ -491,7 +491,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected get haveNamedTypes(): boolean {
-        return !defined(this._namedTypes).isEmpty();
+        return defined(this._namedTypes).length > 0;
     }
 
     protected get haveUnions(): boolean {
@@ -834,7 +834,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._haveMaps = iterableSome(types, t => t instanceof MapType);
         const classTypes = setFilter(types, t => t instanceof ClassType) as Set<ClassType>;
         this._haveOptionalProperties = iterableSome(classTypes, c => c.getProperties().some(p => p.isOptional));
-        this._namedTypes = List(this._declarationIR.declarations.filter(d => d.kind === "define").map(d => d.type));
+        this._namedTypes = this._declarationIR.declarations.filter(d => d.kind === "define").map(d => d.type);
         const { objects, enums, unions } = separateNamedTypes(this._namedTypes);
         this._namedObjects = new Set(objects);
         this._namedEnums = new Set(enums);
