@@ -1,5 +1,3 @@
-import { Map, List } from "immutable";
-
 import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
@@ -19,11 +17,11 @@ import {
     allLowerWordStyle,
     allUpperWordStyle
 } from "../support/Strings";
-import { defined, intercalate } from "../support/Support";
+import { defined } from "../support/Support";
 import { Sourcelike, annotated, MultiWord, singleWord, multiWord, parenIfNeeded } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { RenderContext } from "../Renderer";
-import { mapContains } from "../support/Containers";
+import { mapContains, arrayIntercalate } from "../support/Containers";
 
 export const elmOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -144,8 +142,8 @@ type NamedTypeDependent = {
 };
 
 export class ElmRenderer extends ConvenienceRenderer {
-    private _topLevelDependents: Map<Name, TopLevelDependent> = Map();
-    private _namedTypeDependents: Map<Name, NamedTypeDependent> = Map();
+    private readonly _topLevelDependents = new Map<Name, TopLevelDependent>();
+    private readonly _namedTypeDependents = new Map<Name, NamedTypeDependent>();
 
     constructor(
         targetLanguage: TargetLanguage,
@@ -169,7 +167,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         if (this.namedTypeToNameForTopLevel(t) === undefined) {
             decoder = new DependencyName(lowerNamingFunction, topLevelName.order, lookup => lookup(topLevelName));
         }
-        this._topLevelDependents = this._topLevelDependents.set(topLevelName, { encoder, decoder });
+        this._topLevelDependents.set(topLevelName, { encoder, decoder });
         if (decoder !== undefined) {
             return [encoder, decoder];
         }
@@ -183,7 +181,7 @@ export class ElmRenderer extends ConvenienceRenderer {
     protected makeNamedTypeDependencyNames(_: Type, typeName: Name): DependencyName[] {
         const encoder = new DependencyName(lowerNamingFunction, typeName.order, lookup => `encode_${lookup(typeName)}`);
         const decoder = new DependencyName(lowerNamingFunction, typeName.order, lookup => lookup(typeName));
-        this._namedTypeDependents = this._namedTypeDependents.set(typeName, { encoder, decoder });
+        this._namedTypeDependents.set(typeName, { encoder, decoder });
         return [encoder, decoder];
     }
 
@@ -552,13 +550,13 @@ export class ElmRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         const exports: Sourcelike[] = [];
-        let topLevelDecoders: List<Sourcelike> = List();
+        const topLevelDecoders: Sourcelike[] = [];
         this.forEachTopLevel("none", (_, name) => {
             let { encoder, decoder } = defined(this._topLevelDependents.get(name));
             if (decoder === undefined) {
                 decoder = defined(this._namedTypeDependents.get(name)).decoder;
             }
-            topLevelDecoders = topLevelDecoders.push(decoder);
+            topLevelDecoders.push(decoder);
             exports.push(name, encoder, decoder);
         });
         this.forEachObject("none", (t: ClassType, name: Name) => {
@@ -587,7 +585,7 @@ export class ElmRenderer extends ConvenienceRenderer {
                 "--     import ",
                 this._options.moduleName,
                 " exposing (",
-                intercalate(", ", topLevelDecoders).toArray(),
+                arrayIntercalate(", ", topLevelDecoders),
                 ")"
             );
             this.emitMultiline(`--
