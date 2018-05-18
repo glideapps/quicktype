@@ -1,4 +1,4 @@
-import { Set, OrderedMap, OrderedSet } from "immutable";
+import { OrderedMap, OrderedSet } from "immutable";
 
 import { PrimitiveType } from "../Type";
 import { stringTypesForType } from "../TypeUtils";
@@ -8,6 +8,7 @@ import { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined } from "../support/Support";
 import { emptyTypeAttributes } from "../TypeAttributes";
 import { StringTypes } from "../StringTypes";
+import { iterableFirst } from "../support/Containers";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -27,12 +28,12 @@ export function expandStrings(
     debugPrintReconstitution: boolean
 ): TypeGraph {
     function replaceString(
-        group: Set<PrimitiveType>,
+        group: ReadonlySet<PrimitiveType>,
         builder: GraphRewriteBuilder<PrimitiveType>,
         forwardingRef: TypeRef
     ): TypeRef {
         assert(group.size === 1);
-        const t = defined(group.first());
+        const t = defined(iterableFirst(group));
         const stringTypes = stringTypesForType(t);
         const attributes = t.getAttributes().filterNot(a => a === stringTypes);
         const mappedStringTypes = stringTypes.applyStringTypeMapping(stringTypeMapping);
@@ -63,11 +64,9 @@ export function expandStrings(
         return builder.getUnionType(attributes, OrderedSet(types), forwardingRef);
     }
 
-    const allStrings = graph
-        .allTypesUnordered()
+    const allStrings = Array.from(graph.allTypesUnordered())
         .filter(t => t.kind === "string" && stringTypesForType(t as PrimitiveType).isRestricted)
-        .map(t => [t])
-        .toArray() as PrimitiveType[][];
+        .map(t => [t]) as PrimitiveType[][];
     return graph.rewrite(
         "expand strings",
         stringTypeMapping,

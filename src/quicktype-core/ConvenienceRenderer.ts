@@ -15,7 +15,7 @@ import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } f
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
 import { transformationForType, followTargetType } from "./Transformers";
 import { TargetLanguage } from "./TargetLanguage";
-import { setUnion, setFilter, iterableEnumerate } from "./support/Containers";
+import { setUnion, setFilter, iterableEnumerate, iterableSome } from "./support/Containers";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -832,11 +832,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         );
 
         const types = this.typeGraph.allTypesUnordered();
-        this._haveUnions = types.some(t => t instanceof UnionType);
-        this._haveMaps = types.some(t => t instanceof MapType);
-        this._haveOptionalProperties = types
-            .filter(t => t instanceof ClassType)
-            .some(c => (c as ClassType).getProperties().some(p => p.isOptional));
+        this._haveUnions = iterableSome(types, t => t instanceof UnionType);
+        this._haveMaps = iterableSome(types, t => t instanceof MapType);
+        const classTypes = setFilter(types, t => t instanceof ClassType) as Set<ClassType>;
+        this._haveOptionalProperties = iterableSome(classTypes, c => c.getProperties().some(p => p.isOptional));
         this._namedTypes = List(this._declarationIR.declarations.filter(d => d.kind === "define").map(d => d.type));
         const { objects, enums, unions } = separateNamedTypes(this._namedTypes);
         this._namedObjects = new Set(objects);

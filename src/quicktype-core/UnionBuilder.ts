@@ -198,7 +198,7 @@ class FauxUnion {
     }
 }
 
-function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>, TypeAttributes] {
+function attributesForTypes(types: Iterable<Type>): [OrderedMap<Type, TypeAttributes>, TypeAttributes] {
     let unionsForType: OrderedMap<Type, Set<UnionType | FauxUnion>> = OrderedMap();
     let typesForUnion: Map<UnionType | FauxUnion, Set<Type>> = Map();
     let unions: OrderedSet<UnionType> = OrderedSet();
@@ -222,7 +222,10 @@ function attributesForTypes(types: Set<Type>): [OrderedMap<Type, TypeAttributes>
     }
 
     const rootPath = Set([new FauxUnion()]);
-    types.forEach(t => traverse(t, rootPath, types.size === 1));
+    const typesArray = Array.from(types);
+    for (const t of typesArray) {
+        traverse(t, rootPath, typesArray.length === 1);
+    }
 
     const resultAttributes = unionsForType.map((unionForType, t) => {
         const singleAncestors = unionForType.filter(u => defined(typesForUnion.get(u)).size === 1);
@@ -275,7 +278,7 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
         );
     }
 
-    addTypes(types: Set<Type>): TypeAttributes {
+    addTypes(types: Iterable<Type>): TypeAttributes {
         const [attributesMap, unionAttributes] = attributesForTypes(types);
         attributesMap.forEach((attributes, t) => this.addType(t, attributes));
         return unionAttributes;

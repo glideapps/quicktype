@@ -15,6 +15,7 @@ import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { messageError } from "./Messages";
+import { iterableFirst, setFilter } from "./support/Containers";
 
 export class TypeAttributeStore {
     private _topLevelValues: Map<string, TypeAttributes> = Map();
@@ -207,7 +208,7 @@ export class TypeGraph {
         assert(this._haveProvenanceAttributes);
 
         const view = new TypeAttributeStoreView(this.attributeStore, provenanceTypeAttributeKind);
-        const typeList = this.allTypesUnordered().toList();
+        const typeList = List(this.allTypesUnordered());
         const sets = typeList.map(t => {
             const maybeSet = view.tryGet(t);
             if (maybeSet !== undefined) return maybeSet;
@@ -250,7 +251,7 @@ export class TypeGraph {
         alphabetizeProperties: boolean,
         replacementGroups: T[][],
         debugPrintReconstitution: boolean,
-        replacer: (typesToReplace: Set<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef,
+        replacer: (typesToReplace: ReadonlySet<T>, builder: GraphRewriteBuilder<T>, forwardingRef: TypeRef) => TypeRef,
         force: boolean = false
     ): TypeGraph {
         this.printRewrite(title);
@@ -328,10 +329,10 @@ export class TypeGraph {
         return newGraph;
     }
 
-    allTypesUnordered = (): Set<Type> => {
+    allTypesUnordered(): ReadonlySet<Type> {
         assert(this.isFrozen, "Tried to get all graph types before it was frozen");
         return Set(defined(this._types));
-    };
+    }
 
     makeGraph(invertDirection: boolean, childrenOfType: (t: Type) => ReadonlySet<Type>): Graph<Type> {
         return new Graph(defined(this._types), invertDirection, childrenOfType);
@@ -378,7 +379,7 @@ export function noneToAny(
     stringTypeMapping: StringTypeMapping,
     debugPrintReconstitution: boolean
 ): TypeGraph {
-    const noneTypes = graph.allTypesUnordered().filter(t => t.kind === "none");
+    const noneTypes = setFilter(graph.allTypesUnordered(), t => t.kind === "none");
     if (noneTypes.size === 0) {
         return graph;
     }
@@ -387,7 +388,7 @@ export function noneToAny(
         "none to any",
         stringTypeMapping,
         false,
-        [noneTypes.toArray()],
+        [Array.from(noneTypes)],
         debugPrintReconstitution,
         (types, builder, forwardingRef) => {
             const attributes = combineTypeAttributesOfTypes("union", types);
@@ -430,10 +431,11 @@ export function optionalToNullable(
         }
     }
 
-    const classesWithOptional = graph
-        .allTypesUnordered()
-        .filter(t => t instanceof ClassType && t.getProperties().some(p => p.isOptional));
-    const replacementGroups = classesWithOptional.map(c => [c as ClassType]).toArray();
+    const classesWithOptional = setFilter(
+        graph.allTypesUnordered(),
+        t => t instanceof ClassType && t.getProperties().some(p => p.isOptional)
+    );
+    const replacementGroups = Array.from(classesWithOptional).map(c => [c as ClassType]);
     if (classesWithOptional.size === 0) {
         return graph;
     }
@@ -445,7 +447,7 @@ export function optionalToNullable(
         debugPrintReconstitution,
         (setOfClass, builder, forwardingRef) => {
             assert(setOfClass.size === 1);
-            const c = defined(setOfClass.first());
+            const c = defined(iterableFirst(setOfClass));
             return rewriteClass(c, builder, forwardingRef);
         }
     );

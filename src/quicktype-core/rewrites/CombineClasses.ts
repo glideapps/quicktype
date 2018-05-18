@@ -1,4 +1,4 @@
-import { Map, Set, OrderedSet } from "immutable";
+import { Map, OrderedSet } from "immutable";
 
 import { ClassType, Type, ClassProperty, setOperationCasesEqual } from "../Type";
 import { nonNullTypeCases, combineTypeAttributesOfTypes } from "../TypeUtils";
@@ -144,7 +144,7 @@ export function combineClasses(
     const cliques = findSimilarityCliques(graph, onlyWithSameProperties, false);
 
     function makeCliqueClass(
-        clique: Set<ClassType>,
+        clique: ReadonlySet<ClassType>,
         builder: GraphRewriteBuilder<ClassType>,
         forwardingRef: TypeRef
     ): TypeRef {

@@ -6,6 +6,7 @@ import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
+import { iterableEvery, iterableFind, iterableSome, toReadonlySet } from "./support/Containers";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
 export type PrimitiveStringTypeKind = "string" | DateTimeTypeKind;
@@ -591,20 +592,22 @@ export class EnumType extends Type {
 }
 
 export function setOperationCasesEqual(
-    ma: OrderedSet<Type>,
-    mb: OrderedSet<Type>,
+    typesA: Iterable<Type>,
+    typesB: Iterable<Type>,
     conflateNumbers: boolean,
     membersEqual: (a: Type, b: Type) => boolean
 ): boolean {
+    const ma = toReadonlySet(typesA);
+    const mb = toReadonlySet(typesB);
     if (ma.size !== mb.size) return false;
-    return ma.every(ta => {
-        const tb = mb.find(t => t.kind === ta.kind);
+    return iterableEvery(ma, ta => {
+        const tb = iterableFind(mb, t => t.kind === ta.kind);
         if (tb !== undefined) {
             if (membersEqual(ta, tb)) return true;
         }
         if (conflateNumbers) {
-            if (ta.kind === "integer" && mb.some(t => t.kind === "double")) return true;
-            if (ta.kind === "double" && mb.some(t => t.kind === "integer")) return true;
+            if (ta.kind === "integer" && iterableSome(mb, t => t.kind === "double")) return true;
+            if (ta.kind === "double" && iterableSome(mb, t => t.kind === "integer")) return true;
         }
         return false;
     });
