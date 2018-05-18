@@ -1,4 +1,4 @@
-import { Map, Collection, OrderedSet, List, OrderedMap } from "immutable";
+import { Collection, OrderedSet, List } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
@@ -8,8 +8,8 @@ import { assert, panic } from "./support/Support";
 import { TargetLanguage } from "./TargetLanguage";
 
 export type RenderResult = {
-    sources: OrderedMap<string, Source>;
-    names: Map<Name, string>;
+    sources: ReadonlyMap<string, Source>;
+    names: ReadonlyMap<Name, string>;
 };
 
 export type BlankLineLocations = "none" | "interposing" | "leading" | "leading-and-interposing";
@@ -39,8 +39,8 @@ export abstract class Renderer {
     protected readonly typeGraph: TypeGraph;
     protected readonly leadingComments: string[] | undefined;
 
-    private _names: Map<Name, string> | undefined;
-    private _finishedFiles: OrderedMap<string, Source>;
+    private _names: ReadonlyMap<Name, string> | undefined;
+    private _finishedFiles: Map<string, Source>;
 
     private _lastNewline?: NewlineSource;
     // @ts-ignore: Initialized in startEmit, which is called from the constructor
@@ -56,7 +56,7 @@ export abstract class Renderer {
         this.typeGraph = renderContext.typeGraph;
         this.leadingComments = renderContext.leadingComments;
 
-        this._finishedFiles = Map();
+        this._finishedFiles = new Map();
         this.startEmit();
     }
 
@@ -192,14 +192,14 @@ export abstract class Renderer {
     protected abstract setUpNaming(): OrderedSet<Namespace>;
     protected abstract emitSource(givenOutputFilename: string): void;
 
-    private assignNames(): Map<Name, string> {
+    private assignNames(): ReadonlyMap<Name, string> {
         return assignNames(this.setUpNaming());
     }
 
     protected finishFile(filename: string): void {
         assert(!this._finishedFiles.has(filename), `Tried to emit file ${filename} more than once`);
         const source = sourcelikeToSource(this._emitted);
-        this._finishedFiles = this._finishedFiles.set(filename, source);
+        this._finishedFiles.set(filename, source);
         this.startEmit();
     }
 
@@ -212,7 +212,7 @@ export abstract class Renderer {
         return { sources: this._finishedFiles, names: this._names };
     }
 
-    get names(): Map<Name, string> {
+    get names(): ReadonlyMap<Name, string> {
         if (this._names === undefined) {
             return panic("Names accessed before they were assigned");
         }

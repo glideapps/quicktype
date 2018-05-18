@@ -1,5 +1,3 @@
-import { OrderedMap } from "immutable";
-
 import { TypeGraph } from "./TypeGraph";
 import { Renderer, RenderContext } from "./Renderer";
 import { OptionDefinition, Option } from "./RendererOptions";
@@ -8,6 +6,7 @@ import { StringTypeMapping } from "./TypeBuilder";
 import { defined } from "./support/Support";
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { UnionType } from "./Type";
+import { mapMap } from "./support/Containers";
 
 export abstract class TargetLanguage {
     constructor(readonly displayName: string, readonly names: string[], readonly extension: string) {}
@@ -41,7 +40,7 @@ export abstract class TargetLanguage {
         leadingComments: string[] | undefined,
         rendererOptions: { [name: string]: any },
         indentation?: string
-    ): OrderedMap<string, SerializedRenderResult> {
+    ): ReadonlyMap<string, SerializedRenderResult> {
         if (indentation === undefined) {
             indentation = this.defaultIndentation;
         }
@@ -51,7 +50,7 @@ export abstract class TargetLanguage {
             (renderer as ConvenienceRenderer).setAlphabetizeProperties(alphabetizeProperties);
         }
         const renderResult = renderer.render(givenOutputFilename);
-        return renderResult.sources.map(s => serializeRenderResult(s, renderResult.names, defined(indentation)));
+        return mapMap(renderResult.sources, s => serializeRenderResult(s, renderResult.names, defined(indentation)));
     }
 
     protected get defaultIndentation(): string {

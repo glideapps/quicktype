@@ -1,4 +1,4 @@
-import { List, Map, Range } from "immutable";
+import { List, Range } from "immutable";
 
 import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
@@ -135,7 +135,7 @@ export interface SerializedRenderResult {
     annotations: List<Annotation>;
 }
 
-function sourceLineLength(source: Source, names: Map<Name, string>): number {
+function sourceLineLength(source: Source, names: ReadonlyMap<Name, string>): number {
     switch (source.kind) {
         case "text":
             return source.text.length;
@@ -160,7 +160,7 @@ function sourceLineLength(source: Source, names: Map<Name, string>): number {
 
 export function serializeRenderResult(
     rootSource: Source,
-    names: Map<Name, string>,
+    names: ReadonlyMap<Name, string>,
     indentation: string
 ): SerializedRenderResult {
     let indent = 0;
