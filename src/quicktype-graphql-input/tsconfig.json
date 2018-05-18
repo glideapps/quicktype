@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
-        "target": "es5",
+        "target": "es6",
         "module": "commonjs",
-        "lib": ["es2015", "esnext.asynciterable"],
+        "lib": ["es6", "esnext.asynciterable"],
         "allowJs": false,
         "declaration": true,
         "strict": true,

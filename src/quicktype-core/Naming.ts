@@ -1,6 +1,7 @@
 import { Set, OrderedSet, List, Map, Collection, hash } from "immutable";
 
 import { defined, assert, panic } from "./support/Support";
+import { setUnion, setMap, setFilter, setFind } from "./support/Containers";
 
 export class Namespace {
     private readonly _name: string;
@@ -334,16 +335,16 @@ export function keywordNamespace(name: string, keywords: string[]) {
     return ns;
 }
 
-function allNamespacesRecursively(namespaces: OrderedSet<Namespace>): OrderedSet<Namespace> {
-    return namespaces.union(...namespaces.map((ns: Namespace) => allNamespacesRecursively(ns.children)).toArray());
+function allNamespacesRecursively(namespaces: ReadonlySet<Namespace>): ReadonlySet<Namespace> {
+    return setUnion(namespaces, ...Array.from(setMap(namespaces, ns => allNamespacesRecursively(ns.children))));
 }
 
 class NamingContext {
     names: Map<Name, string> = Map();
     private _namedsForName: Map<string, Set<Name>> = Map();
-    readonly namespaces: OrderedSet<Namespace>;
+    readonly namespaces: ReadonlySet<Namespace>;
 
-    constructor(rootNamespaces: OrderedSet<Namespace>) {
+    constructor(rootNamespaces: ReadonlySet<Namespace>) {
         this.namespaces = allNamespacesRecursively(rootNamespaces);
     }
 
@@ -352,9 +353,9 @@ class NamingContext {
         return named.dependencies.every((n: Name) => this.names.has(n));
     };
 
-    areForbiddensFullyNamed = (namespace: Namespace): boolean => {
+    areForbiddensFullyNamed(namespace: Namespace): boolean {
         return namespace.forbiddenNameds.every((n: Name) => this.names.has(n));
-    };
+    }
 
     isConflicting = (namedNamespace: Namespace, proposed: string): boolean => {
         const namedsForProposed = this._namedsForName.get(proposed);
@@ -385,7 +386,7 @@ class NamingContext {
 }
 
 // Naming algorithm
-export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, string> {
+export function assignNames(rootNamespaces: ReadonlySet<Namespace>): Map<Name, string> {
     const ctx = new NamingContext(rootNamespaces);
 
     // Assign all fixed names.
@@ -402,8 +403,8 @@ export function assignNames(rootNamespaces: OrderedSet<Namespace>): Map<Name, st
         //    If no such namespace exists we're either done, or there's an unallowed
         //    cycle.
 
-        const unfinishedNamespaces = ctx.namespaces.filter(ctx.areForbiddensFullyNamed);
-        const readyNamespace = unfinishedNamespaces.find((ns: Namespace) => ns.members.some(ctx.isReadyToBeNamed));
+        const unfinishedNamespaces = setFilter(ctx.namespaces, ns => ctx.areForbiddensFullyNamed(ns));
+        const readyNamespace = setFind(unfinishedNamespaces, ns => ns.members.some(ctx.isReadyToBeNamed));
 
         if (!readyNamespace) {
             // FIXME: Check for cycles?
