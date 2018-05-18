@@ -1,5 +1,3 @@
-import { OrderedMap } from "immutable";
-
 import * as targetLanguages from "./language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
@@ -272,8 +270,8 @@ class Run {
         return graph;
     }
 
-    private makeSimpleTextResult(lines: string[]): OrderedMap<string, SerializedRenderResult> {
-        return OrderedMap([[this._options.outputFilename, { lines, annotations: [] }]] as [
+    private makeSimpleTextResult(lines: string[]): ReadonlyMap<string, SerializedRenderResult> {
+        return new Map([[this._options.outputFilename, { lines, annotations: [] }]] as [
             string,
             SerializedRenderResult
         ][]);
@@ -295,7 +293,7 @@ class Run {
             const lines = JSON.stringify(JSON.parse(schemaString), undefined, 4).split("\n");
             lines.push("");
             const srr = { lines, annotations: [] };
-            return OrderedMap([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
+            return new Map([[this._options.outputFilename, srr] as [string, SerializedRenderResult]]);
         }
 
         const graph = await this.makeGraph(inputData);
