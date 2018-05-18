@@ -58,7 +58,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     private _propertyNamesStoreView: TypeAttributeStoreView<ReadonlyMap<string, Name>> | undefined;
     private _memberNamesStoreView: TypeAttributeStoreView<ReadonlyMap<Type, Name>> | undefined;
     private _caseNamesStoreView: TypeAttributeStoreView<ReadonlyMap<string, Name>> | undefined;
-    private _namesForTransformations: OrderedMap<Type, Name> | undefined;
+    private _namesForTransformations: Map<Type, Name> | undefined;
 
     private _namedTypeNamer: Namer | undefined;
     // @ts-ignore: FIXME: Make this `Namer | undefined`
@@ -180,7 +180,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             this.typeGraph.attributeStore,
             assignedCaseNamesAttributeKind
         );
-        this._namesForTransformations = OrderedMap();
+        this._namesForTransformations = new Map();
 
         this._namedTypeNamer = this.makeNamedTypeNamer();
         this._unionMemberNamer = this.makeUnionMemberNamer();
@@ -291,7 +291,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (name === undefined) return;
         this.globalNamespace.add(name);
 
-        this._namesForTransformations = defined(this._namesForTransformations).set(t, name);
+        defined(this._namesForTransformations).set(t, name);
     }
 
     private processForbiddenWordsInfo(
