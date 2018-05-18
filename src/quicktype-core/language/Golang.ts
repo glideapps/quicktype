@@ -1,5 +1,3 @@
-import { Map } from "immutable";
-
 import { TypeKind, Type, ClassType, EnumType, UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
@@ -81,7 +79,7 @@ function singleDescriptionComment(description: string[] | undefined): string {
 }
 
 export class GoRenderer extends ConvenienceRenderer {
-    private _topLevelUnmarshalNames = Map<Name, Name>();
+    private readonly _topLevelUnmarshalNames = new Map<Name, Name>();
 
     constructor(
         targetLanguage: TargetLanguage,
@@ -117,7 +115,7 @@ export class GoRenderer extends ConvenienceRenderer {
             topLevelName.order,
             lookup => `unmarshal_${lookup(topLevelName)}`
         );
-        this._topLevelUnmarshalNames = this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
+        this._topLevelUnmarshalNames.set(topLevelName, unmarshalName);
         return [unmarshalName];
     }
 
