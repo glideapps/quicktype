@@ -189,11 +189,9 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(): void {
-        // FIXME: Find a better way to do multiple top-levels.  Maybe multiple files?
-        const schema = Object.assign(
-            { $schema: "http://json-schema.org/draft-06/schema#" },
-            this.makeOneOf(this.topLevels.toList())
-        );
+        // FIXME: Find a good way to do multiple top-levels.  Maybe multiple files?
+        const topLevelType = this.topLevels.size === 1 ? this.schemaForType(defined(this.topLevels.first())) : {};
+        const schema = Object.assign({ $schema: "http://json-schema.org/draft-06/schema#" }, topLevelType);
         const definitions: { [name: string]: Schema } = {};
         this.forEachObject("none", (o: ObjectType, name: Name) => {
             const title = defined(this.names.get(name));
