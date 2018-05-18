@@ -1,4 +1,4 @@
-import { OrderedSet, Map, Set } from "immutable";
+import { Map, Set } from "immutable";
 
 import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
@@ -429,14 +429,14 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected emitTypeSwitch<T extends Sourcelike>(
-        types: OrderedSet<T>,
+        types: Iterable<T>,
         condition: (t: T) => Sourcelike,
         withBlock: boolean,
         withReturn: boolean,
         f: (t: T) => void
     ): void {
         assert(!withReturn || withBlock, "Can only have return with block");
-        types.forEach(t => {
+        for (const t of types) {
             this.emitLine("if (", condition(t), ")");
             if (withBlock) {
                 this.emitBlock(() => {
@@ -448,7 +448,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             } else {
                 this.indent(() => f(t));
             }
-        });
+        }
     }
 
     protected emitUsing(ns: Sourcelike): void {
