@@ -1,5 +1,3 @@
-import { Set } from "immutable";
-
 import { assert, defined, panic } from "./Support";
 import { acronyms } from "./Acronyms";
 import { messageAssert } from "../Messages";
@@ -305,7 +303,7 @@ export function startWithLetter(
     return modify("the" + str);
 }
 
-const knownAcronyms = Set(acronyms);
+const knownAcronyms = new Set(acronyms);
 
 export type WordInName = {
     word: string;
