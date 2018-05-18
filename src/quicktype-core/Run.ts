@@ -1,4 +1,4 @@
-import { List, Map, OrderedMap } from "immutable";
+import { List, OrderedMap } from "immutable";
 
 import * as targetLanguages from "./language/All";
 import { TargetLanguage } from "./TargetLanguage";
@@ -18,6 +18,7 @@ import { messageError } from "./Messages";
 import { InputData } from "./input/Inputs";
 import { flattenStrings } from "./rewrites/FlattenStrings";
 import { makeTransformations } from "./MakeTransformations";
+import { mapSingle } from "./support/Containers";
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
@@ -278,7 +279,7 @@ class Run {
         ][]);
     }
 
-    public async run(): Promise<OrderedMap<string, SerializedRenderResult>> {
+    public async run(): Promise<ReadonlyMap<string, SerializedRenderResult>> {
         // FIXME: This makes quicktype not quite reentrant
         initTypeNames();
 
@@ -314,7 +315,9 @@ class Run {
     }
 }
 
-export async function quicktypeMultiFile(options: Partial<Options>): Promise<Map<string, SerializedRenderResult>> {
+export async function quicktypeMultiFile(
+    options: Partial<Options>
+): Promise<ReadonlyMap<string, SerializedRenderResult>> {
     return await new Run(options).run();
 }
 
@@ -329,7 +332,7 @@ function offsetSpan(span: Span, lineOffset: number): Span {
 export async function quicktype(options: Partial<Options>): Promise<SerializedRenderResult> {
     const result = await quicktypeMultiFile(options);
     if (result.size <= 1) {
-        const first = result.first();
+        const first = mapSingle(result);
         if (first === undefined) {
             return { lines: [], annotations: List<Annotation>() };
         }
