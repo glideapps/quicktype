@@ -23,9 +23,8 @@ import {
     camelCase,
     addPrefixIfNecessary
 } from "../support/Strings";
-import { intercalate } from "../support/Support";
-import { List } from "immutable";
 import { RenderContext } from "../Renderer";
+import { arrayIntercalate } from "../support/Containers";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 
@@ -509,8 +508,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
                             if (label !== undefined) {
                                 this.emitLine("case ", name, ' = "', label, '"');
                             } else {
-                                const names = intercalate<Sourcelike>(", ", List(group.map(p => p.name))).toArray();
-                                this.emitLine("case ", ...names);
+                                const names = arrayIntercalate<Sourcelike>(", ", group.map(p => p.name));
+                                this.emitLine("case ", names);
                             }
                         }
                     });
