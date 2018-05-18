@@ -1,5 +1,3 @@
-import { Map } from "immutable";
-
 import { TypeKind, Type, ArrayType, MapType, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated } from "../Source";
@@ -164,7 +162,7 @@ function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
 
 export class JavaRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
-    private _gettersAndSettersForPropertyName: Map<Name, [Name, Name]>;
+    private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name]>();
 
     constructor(
         targetLanguage: TargetLanguage,
@@ -172,7 +170,6 @@ export class JavaRenderer extends ConvenienceRenderer {
         private readonly _options: OptionValues<typeof javaOptions>
     ) {
         super(targetLanguage, renderContext);
-        this._gettersAndSettersForPropertyName = Map();
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -230,7 +227,7 @@ export class JavaRenderer extends ConvenienceRenderer {
         name: Name
     ): Name[] {
         const getterAndSetterNames = this.makeNamesForPropertyGetterAndSetter(c, className, p, jsonName, name);
-        this._gettersAndSettersForPropertyName = this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
+        this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
         return getterAndSetterNames;
     }
 
