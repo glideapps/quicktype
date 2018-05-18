@@ -20,7 +20,7 @@ import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer"
 import { StringOption, BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { assert, defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
-import { iterableSome } from "../support/Containers";
+import { iterableSome, iterableFirst, mapContains, mapFirst } from "../support/Containers";
 
 const unicode = require("unicode-properties");
 
@@ -236,7 +236,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
 
         // Infer the class prefix from a top-level name if it's not given
         if (_options.classPrefix === DEFAULT_CLASS_PREFIX) {
-            const aTopLevel = defined(this.topLevels.keySeq().first());
+            const aTopLevel = defined(iterableFirst(this.topLevels.keys()));
             this._classPrefix = this.inferClassPrefix(aTopLevel);
         } else {
             this._classPrefix = _options.classPrefix;
@@ -634,7 +634,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
     }
 
     private emitClassInterface = (t: ClassType, className: Name): void => {
-        const isTopLevel = this.topLevels.valueSeq().contains(t);
+        const isTopLevel = mapContains(this.topLevels, t);
 
         this.emitDescription(this.descriptionForType(t));
 
@@ -671,7 +671,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
 
     // TODO Implement NSCopying
     private emitClassImplementation = (t: ClassType, className: Name): void => {
-        const isTopLevel = this.topLevels.valueSeq().contains(t);
+        const isTopLevel = mapContains(this.topLevels, t);
 
         const [hasIrregularProperties, hasUnsafeProperties] = (() => {
             let irregular = false;
@@ -890,7 +890,8 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         const fileMode = proposedFilename !== "stdout";
         if (!fileMode) {
             // We don't have a filename, so we use a top-level name
-            proposedFilename = this.sourcelikeToString(this.nameForNamedType(defined(this.topLevels.first()))) + ".m";
+            const firstTopLevel = defined(mapFirst(this.topLevels));
+            proposedFilename = this.sourcelikeToString(this.nameForNamedType(firstTopLevel)) + ".m";
         }
         const [filename, extension] = splitExtension(proposedFilename);
 
@@ -947,7 +948,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 t => !(t instanceof ClassType)
             );
 
-            const hasTopLevelNonClassTypes = this.topLevels.some(t => !(t instanceof ClassType));
+            const hasTopLevelNonClassTypes = iterableSome(this.topLevels, ([_, t]) => !(t instanceof ClassType));
             if (!this._options.justTypes && (hasTopLevelNonClassTypes || this._options.marshallingFunctions)) {
                 this.ensureBlankLine();
                 this.emitMark("Top-level marshaling functions");
