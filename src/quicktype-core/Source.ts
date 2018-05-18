@@ -1,9 +1,8 @@
-import { List } from "immutable";
-
 import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
-import { intercalate, defined, assertNever, panic, assert, withDefault } from "./support/Support";
+import { defined, assertNever, panic, assert, withDefault } from "./support/Support";
 import { repeatString } from "./support/Strings";
+import { arrayIntercalate, iterableMax } from "./support/Containers";
 
 export type Source =
     | TextSource
@@ -31,12 +30,12 @@ export interface NewlineSource {
 
 export interface SequenceSource {
     kind: "sequence";
-    sequence: List<Source>;
+    sequence: ReadonlyArray<Source>;
 }
 
 export interface TableSource {
     kind: "table";
-    table: List<List<Source>>;
+    table: ReadonlyArray<ReadonlyArray<Source>>;
 }
 
 export interface AnnotatedSource {
@@ -69,7 +68,7 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
     if (sl instanceof Array) {
         return {
             kind: "sequence",
-            sequence: List(sl.map(sourcelikeToSource))
+            sequence: sl.map(sourcelikeToSource)
         };
     }
     if (typeof sl === "string") {
@@ -79,10 +78,7 @@ export function sourcelikeToSource(sl: Sourcelike): Source {
         }
         return {
             kind: "sequence",
-            sequence: intercalate(
-                newline(),
-                List(lines).map((l: string) => ({ kind: "text", text: l } as Source))
-            ).toList()
+            sequence: arrayIntercalate(newline(), lines.map((l: string) => ({ kind: "text", text: l } as Source)))
         };
     }
     if (sl instanceof Name) {
@@ -132,7 +128,7 @@ export interface Annotation {
 
 export interface SerializedRenderResult {
     lines: string[];
-    annotations: List<Annotation>;
+    annotations: ReadonlyArray<Annotation>;
 }
 
 function sourceLineLength(source: Source, names: ReadonlyMap<Name, string>): number {
@@ -207,23 +203,23 @@ export function serializeRenderResult(
                 break;
             case "table":
                 const t = source.table;
-                const numRows = t.size;
+                const numRows = t.length;
                 if (numRows === 0) break;
-                const widths = t.map(l => l.map(s => sourceLineLength(s, names)).toList()).toList();
-                const numColumns = defined(t.map(l => l.size).max());
+                const widths = t.map(l => l.map(s => sourceLineLength(s, names)));
+                const numColumns = defined(iterableMax(t.map(l => l.length)));
                 if (numColumns === 0) break;
                 const columnWidths: number[] = [];
                 for (let i = 0; i < numColumns; i++) {
-                    columnWidths.push(defined(widths.map(l => withDefault<number>(l.get(i), 0)).max()));
+                    columnWidths.push(defined(iterableMax(widths.map(l => withDefault<number>(l[i], 0)))));
                 }
                 for (let y = 0; y < numRows; y++) {
                     indentIfNeeded();
-                    const row = defined(t.get(y));
-                    const rowWidths = defined(widths.get(y));
+                    const row = defined(t[y]);
+                    const rowWidths = defined(widths[y]);
                     for (let x = 0; x < numColumns; x++) {
                         const colWidth = columnWidths[x];
-                        const src = withDefault<Source>(row.get(x), { kind: "text", text: "" });
-                        const srcWidth = withDefault<number>(rowWidths.get(x), 0);
+                        const src = withDefault<Source>(row[x], { kind: "text", text: "" });
+                        const srcWidth = withDefault<number>(rowWidths[x], 0);
                         serializeToStringArray(src);
                         if (x < numColumns - 1 && srcWidth < colWidth) {
                             currentLine.push(repeatString(" ", colWidth - srcWidth));
@@ -259,7 +255,7 @@ export function serializeRenderResult(
 
     serializeToStringArray(rootSource);
     finishLine();
-    return { lines, annotations: List(annotations) };
+    return { lines, annotations: annotations };
 }
 
 export type MultiWord = {
