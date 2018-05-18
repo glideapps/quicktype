@@ -1,5 +1,3 @@
-import { OrderedSet } from "immutable";
-
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, UnionType } from "../Type";
 import { nullableFromUnion, matchType, removeNullFromUnion } from "../TypeUtils";
@@ -25,7 +23,7 @@ import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, Optio
 import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 import { RenderContext } from "../Renderer";
-import { arrayIntercalate, toReadonlyArray } from "../support/Containers";
+import { arrayIntercalate, toReadonlyArray, iterableFirst } from "../support/Containers";
 
 export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
@@ -338,9 +336,9 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     };
 
-    private cppTypeInOptional = (nonNulls: OrderedSet<Type>, ctx: TypeContext, withIssues: boolean): Sourcelike => {
+    private cppTypeInOptional = (nonNulls: ReadonlySet<Type>, ctx: TypeContext, withIssues: boolean): Sourcelike => {
         if (nonNulls.size === 1) {
-            return this.cppType(defined(nonNulls.first()), ctx, withIssues);
+            return this.cppType(defined(iterableFirst(nonNulls)), ctx, withIssues);
         }
         const typeList: Sourcelike = [];
         nonNulls.forEach((t: Type) => {
