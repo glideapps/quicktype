@@ -1,4 +1,4 @@
-import { Set, OrderedSet, OrderedMap, Map } from "immutable";
+import { OrderedSet, OrderedMap, Map } from "immutable";
 
 import { TypeGraph } from "../TypeGraph";
 import { StringTypeMapping, TypeRef, TypeBuilder } from "../TypeBuilder";
@@ -25,7 +25,7 @@ import {
     emptyTypeAttributes,
     makeTypeAttributesInferred
 } from "../TypeAttributes";
-import { iterableFirst, iterableEvery } from "../support/Containers";
+import { iterableFirst, iterableEvery, setFilter } from "../support/Containers";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t, undefined)[0];
@@ -327,9 +327,12 @@ export function resolveIntersections(
 ): [TypeGraph, boolean] {
     let needsRepeat = false;
 
-    function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
-        const intersections = types.filter(t => t instanceof IntersectionType) as Set<IntersectionType>;
-        const [members, intersectionAttributes] = setOperationMembersRecursively(intersections.toArray(), "intersect");
+    function replace(types: ReadonlySet<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
+        const intersections = setFilter(types, t => t instanceof IntersectionType) as Set<IntersectionType>;
+        const [members, intersectionAttributes] = setOperationMembersRecursively(
+            Array.from(intersections),
+            "intersect"
+        );
         if (members.size === 0) {
             const t = builder.getPrimitiveType("any", intersectionAttributes, forwardingRef);
             return t;
@@ -353,10 +356,10 @@ export function resolveIntersections(
     }
     // FIXME: We need to handle intersections that resolve to the same set of types.
     // See for example the intersections-nested.schema example.
-    const allIntersections = graph.allTypesUnordered().filter(t => t instanceof IntersectionType) as Set<
+    const allIntersections = setFilter(graph.allTypesUnordered(), t => t instanceof IntersectionType) as Set<
         IntersectionType
     >;
-    const resolvableIntersections = allIntersections.filter(canResolve);
+    const resolvableIntersections = setFilter(allIntersections, canResolve);
     const groups = makeGroupsToFlatten(resolvableIntersections, undefined);
     graph = graph.rewrite("resolve intersections", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
 

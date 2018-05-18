@@ -20,6 +20,7 @@ import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer"
 import { StringOption, BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { assert, defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
+import { iterableSome } from "../support/Containers";
 
 const unicode = require("unicode-properties");
 
@@ -1038,7 +1039,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                 (t instanceof ClassType && t.getProperties().some(p => needsMap(p.type)))
             );
         }
-        return this.typeGraph.allTypesUnordered().some(needsMap);
+        return iterableSome(this.typeGraph.allTypesUnordered(), needsMap);
     }
 
     private emitMapFunction = () => {

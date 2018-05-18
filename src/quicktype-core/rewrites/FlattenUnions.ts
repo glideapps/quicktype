@@ -1,4 +1,4 @@
-import { Set, OrderedSet } from "immutable";
+import { OrderedSet } from "immutable";
 
 import { TypeGraph } from "../TypeGraph";
 import { Type, UnionType, IntersectionType } from "../Type";
@@ -9,6 +9,7 @@ import { GraphRewriteBuilder } from "../GraphRewriting";
 import { unifyTypes, UnifyUnionBuilder } from "../UnifyClasses";
 import { messageAssert } from "../Messages";
 import { emptyTypeAttributes } from "../TypeAttributes";
+import { setFilter } from "../support/Containers";
 
 export function flattenUnions(
     graph: TypeGraph,
@@ -19,7 +20,7 @@ export function flattenUnions(
 ): [TypeGraph, boolean] {
     let needsRepeat = false;
 
-    function replace(types: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
+    function replace(types: ReadonlySet<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
         const unionBuilder = new UnifyUnionBuilder(builder, makeObjectTypes, true, trefs => {
             assert(trefs.length > 0, "Must have at least one type to build union");
             trefs = trefs.map(tref => builder.reconstituteType(tref.deref()[0]));
@@ -32,8 +33,8 @@ export function flattenUnions(
         return unifyTypes(types, emptyTypeAttributes, builder, unionBuilder, conflateNumbers, forwardingRef);
     }
 
-    const allUnions = graph.allTypesUnordered().filter(t => t instanceof UnionType) as Set<UnionType>;
-    const nonCanonicalUnions = allUnions.filter(u => !u.isCanonical);
+    const allUnions = setFilter(graph.allTypesUnordered(), t => t instanceof UnionType) as Set<UnionType>;
+    const nonCanonicalUnions = setFilter(allUnions, u => !u.isCanonical);
     let foundIntersection = false;
     const groups = makeGroupsToFlatten(nonCanonicalUnions, members => {
         messageAssert(!members.isEmpty(), "IRNoEmptyUnions", {});
