@@ -22,6 +22,7 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
+import { mapFirst } from "../support/Containers";
 
 export enum Density {
     Normal,
@@ -348,7 +349,7 @@ export class RustRenderer extends ConvenienceRenderer {
     }
 
     protected emitUsageExample(): void {
-        const topLevelName = defined(this.topLevels.keySeq().first());
+        const topLevelName = defined(mapFirst(this.topLevels));
         this.emitMultiline(
             `// Example code that deserializes and serializes the model.
 // extern crate serde;

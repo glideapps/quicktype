@@ -25,6 +25,7 @@ import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, Optio
 import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 import { RenderContext } from "../Renderer";
+import { arrayIntercalate } from "../support/Containers";
 
 export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
@@ -771,7 +772,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
 
         const guardName: Sourcelike = [
             "__QUICKTYPE_",
-            intercalate("_", this.topLevels.keySeq().map(n => legalizeName(allUpperWordStyle(n)))).toArray(),
+            arrayIntercalate("_", Array.from(this.topLevels.keys()).map(n => legalizeName(allUpperWordStyle(n)))),
             "_HPP__"
         ];
         this.emitLine("#ifndef ", guardName);

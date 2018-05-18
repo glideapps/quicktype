@@ -102,6 +102,28 @@ export function mapMergeInto<K, V>(dest: Map<K, V>, src: ReadonlyMap<K, V>): voi
     }
 }
 
+export function mapFilter<K, V>(m: ReadonlyMap<K, V>, p: (v: V, k: K) => boolean): Map<K, V> {
+    const result = new Map<K, V>();
+    for (const [k, v] of m) {
+        if (p(v, k)) {
+            result.set(k, v);
+        }
+    }
+    return result;
+}
+
+export function mapSortBy<K, V>(m: Iterable<[K, V]>, sortKey: (v: V, k: K) => number | string): Map<K, V> {
+    const arr = Array.from(m);
+    arr.sort(([ka, va], [kb, vb]) => {
+        const sa = sortKey(va, ka);
+        const sb = sortKey(vb, kb);
+        if (sa < sb) return -1;
+        if (sa > sb) return 1;
+        return 0;
+    });
+    return new Map(arr);
+}
+
 export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): void {
     for (const src of srcs) {
         for (const v of src) {

@@ -23,6 +23,7 @@ import { defined, intercalate } from "../support/Support";
 import { Sourcelike, annotated, MultiWord, singleWord, multiWord, parenIfNeeded } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { RenderContext } from "../Renderer";
+import { mapContains } from "../support/Containers";
 
 export const elmOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -561,13 +562,13 @@ export class ElmRenderer extends ConvenienceRenderer {
             exports.push(name, encoder, decoder);
         });
         this.forEachObject("none", (t: ClassType, name: Name) => {
-            if (!this.topLevels.contains(t)) exports.push(name);
+            if (!mapContains(this.topLevels, t)) exports.push(name);
         });
         this.forEachEnum("none", (t, name) => {
-            if (!this.topLevels.contains(t)) exports.push([name, "(..)"]);
+            if (!mapContains(this.topLevels, t)) exports.push([name, "(..)"]);
         });
         this.forEachUnion("none", (t, name) => {
-            if (!this.topLevels.contains(t)) exports.push([name, "(..)"]);
+            if (!mapContains(this.topLevels, t)) exports.push([name, "(..)"]);
         });
 
         if (this.leadingComments !== undefined) {

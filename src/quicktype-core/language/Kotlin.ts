@@ -24,6 +24,7 @@ import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
+import { iterableSome } from "../support/Containers";
 
 export enum Framework {
     None,
@@ -425,7 +426,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
             });
         });
 
-        const isTopLevel = this.topLevels.findEntry(top => top.equals(c)) !== undefined;
+        const isTopLevel = iterableSome(this.topLevels, ([_, top]) => top.equals(c));
         if (this._kotlinOptions.framework === Framework.Klaxon && isTopLevel) {
             this.emitBlock(")", () => {
                 this.emitLine("public fun toJson() = klaxon.toJsonString(this)");
