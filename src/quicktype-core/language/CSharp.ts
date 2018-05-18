@@ -1,4 +1,4 @@
-import { OrderedSet, Map, Set, List } from "immutable";
+import { OrderedSet, Map, Set } from "immutable";
 
 import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
@@ -11,7 +11,7 @@ import {
     firstUpperWordStyle,
     camelCase
 } from "../support/Strings";
-import { intercalate, defined, assert, panic } from "../support/Support";
+import { defined, assert, panic } from "../support/Support";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
@@ -34,6 +34,7 @@ import {
     StringifyDateTimeTransformer
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
+import { arrayIntercalate } from "../support/Containers";
 
 const unicode = require("unicode-properties");
 
@@ -391,10 +392,11 @@ export class CSharpRenderer extends ConvenienceRenderer {
                     this.emitLine("public ", csType, " ", fieldName, ";");
                 });
                 this.ensureBlankLine();
-                const nullTests: List<Sourcelike> = nonNulls
-                    .toList()
-                    .map(t => [this.nameForUnionMember(u, t), " == null"]);
-                this.emitExpressionMember("public bool IsNull", intercalate(" && ", nullTests).toArray(), true);
+                const nullTests: Sourcelike[] = Array.from(nonNulls).map(t => [
+                    this.nameForUnionMember(u, t),
+                    " == null"
+                ]);
+                this.emitExpressionMember("public bool IsNull", arrayIntercalate(" && ", nullTests), true);
             }
         );
     }
