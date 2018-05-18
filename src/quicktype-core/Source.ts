@@ -1,4 +1,4 @@
-import { List, Range } from "immutable";
+import { List } from "immutable";
 
 import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
@@ -207,20 +207,21 @@ export function serializeRenderResult(
                 break;
             case "table":
                 const t = source.table;
-                const widths = t.map(l => l.map(s => sourceLineLength(s, names)).toList()).toList();
                 const numRows = t.size;
                 if (numRows === 0) break;
+                const widths = t.map(l => l.map(s => sourceLineLength(s, names)).toList()).toList();
                 const numColumns = defined(t.map(l => l.size).max());
                 if (numColumns === 0) break;
-                const columnWidths = defined(
-                    Range(0, numColumns).map(i => widths.map(l => withDefault<number>(l.get(i), 0)).max())
-                );
+                const columnWidths: number[] = [];
+                for (let i = 0; i < numColumns; i++) {
+                    columnWidths.push(defined(widths.map(l => withDefault<number>(l.get(i), 0)).max()));
+                }
                 for (let y = 0; y < numRows; y++) {
                     indentIfNeeded();
                     const row = defined(t.get(y));
                     const rowWidths = defined(widths.get(y));
                     for (let x = 0; x < numColumns; x++) {
-                        const colWidth = defined(columnWidths.get(x));
+                        const colWidth = columnWidths[x];
                         const src = withDefault<Source>(row.get(x), { kind: "text", text: "" });
                         const srcWidth = withDefault<number>(rowWidths.get(x), 0);
                         serializeToStringArray(src);
