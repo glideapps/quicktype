@@ -50,10 +50,9 @@ export function flattenStrings(
     debugPrintReconstitution: boolean
 ): TypeGraph {
     const allUnions = graph.allNamedTypesSeparated().unions;
-    const unionsToReplace = allUnions
+    const unionsToReplace = Array.from(allUnions)
         .filter(unionNeedsReplacing)
-        .map(t => [t])
-        .toArray();
+        .map(t => [t]);
     return graph.rewrite(
         "flatten strings",
         stringTypeMapping,

@@ -1,4 +1,4 @@
-import { OrderedSet, Collection, Map, Set } from "immutable";
+import { OrderedSet, Collection, Map, Set as ImmutableSet } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes, CombinationKind } from "./TypeAttributes";
@@ -15,6 +15,7 @@ import {
     UnionType
 } from "./Type";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
+import { setFilter } from "./support/Containers";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {
@@ -33,19 +34,19 @@ export function assertIsClass(t: Type): ClassType {
 export function setOperationMembersRecursively<T extends SetOperationType>(
     setOperation: T,
     combinationKind: CombinationKind | undefined
-): [OrderedSet<Type>, TypeAttributes];
+): [ReadonlySet<Type>, TypeAttributes];
 export function setOperationMembersRecursively<T extends SetOperationType>(
     setOperations: T[],
     combinationKind: CombinationKind | undefined
-): [OrderedSet<Type>, TypeAttributes];
+): [ReadonlySet<Type>, TypeAttributes];
 export function setOperationMembersRecursively<T extends SetOperationType>(
     oneOrMany: T | T[],
     combinationKind: CombinationKind | undefined
-): [OrderedSet<Type>, TypeAttributes] {
+): [ReadonlySet<Type>, TypeAttributes] {
     const setOperations = Array.isArray(oneOrMany) ? oneOrMany : [oneOrMany];
     const kind = setOperations[0].kind;
     const includeAny = kind !== "intersection";
-    let processedSetOperations = Set<T>();
+    let processedSetOperations = ImmutableSet<T>();
     let members = OrderedSet<Type>();
     let attributes = emptyTypeAttributes;
 
@@ -74,12 +75,12 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
 }
 
 export function makeGroupsToFlatten<T extends SetOperationType>(
-    setOperations: Set<T>,
-    include: ((members: Set<Type>) => boolean) | undefined
+    setOperations: ImmutableSet<T>,
+    include: ((members: ImmutableSet<Type>) => boolean) | undefined
 ): Type[][] {
-    let typeGroups = Map<Set<Type>, OrderedSet<Type>>();
+    let typeGroups = Map<ImmutableSet<Type>, OrderedSet<Type>>();
     setOperations.forEach(u => {
-        const members = setOperationMembersRecursively(u, undefined)[0].toSet();
+        const members = ImmutableSet(setOperationMembersRecursively(u, undefined)[0]);
 
         if (include !== undefined) {
             if (!include(members)) return;
@@ -173,17 +174,17 @@ export function isNamedType(t: Type): boolean {
 }
 
 export type SeparatedNamedTypes = {
-    objects: OrderedSet<ObjectType>;
-    enums: OrderedSet<EnumType>;
-    unions: OrderedSet<UnionType>;
+    objects: ReadonlySet<ObjectType>;
+    enums: ReadonlySet<EnumType>;
+    unions: ReadonlySet<UnionType>;
 };
 
-export function separateNamedTypes(types: Collection<any, Type>): SeparatedNamedTypes {
-    const objects = types.filter((t: Type) => t.kind === "object" || t.kind === "class").toOrderedSet() as OrderedSet<
+export function separateNamedTypes(types: Iterable<Type>): SeparatedNamedTypes {
+    const objects = (setFilter(types, t => t.kind === "object" || t.kind === "class") as Set<
         ObjectType
-    >;
-    const enums = types.filter((t: Type) => t instanceof EnumType).toOrderedSet() as OrderedSet<EnumType>;
-    const unions = types.filter((t: Type) => t instanceof UnionType).toOrderedSet() as OrderedSet<UnionType>;
+    >) as ReadonlySet<ObjectType>;
+    const enums = (setFilter(types, t => t instanceof EnumType) as Set<EnumType>) as ReadonlySet<EnumType>;
+    const unions = (setFilter(types, t => t instanceof UnionType) as Set<UnionType>) as ReadonlySet<UnionType>;
 
     return { objects, enums, unions };
 }

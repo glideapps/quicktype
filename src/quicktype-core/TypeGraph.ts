@@ -333,7 +333,7 @@ export class TypeGraph {
         return Set(defined(this._types));
     };
 
-    makeGraph(invertDirection: boolean, childrenOfType: (t: Type) => OrderedSet<Type>): Graph<Type> {
+    makeGraph(invertDirection: boolean, childrenOfType: (t: Type) => ReadonlySet<Type>): Graph<Type> {
         return new Graph(defined(this._types), invertDirection, childrenOfType);
     }
 

@@ -1,6 +1,7 @@
 import { defined, assert, panic } from "./support/Support";
 import {
     setUnion,
+    setUnionInto,
     setMap,
     setFilter,
     iterableFind,
@@ -408,7 +409,7 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): ReadonlyMap<Na
 
                     const names = namer.assignNames(ctx.names, forbiddenNames, nameds);
                     names.forEach((assigned: string, name: Name) => ctx.assign(name, readyNamespace, assigned));
-                    forbiddenNames = setUnion(forbiddenNames, names.values());
+                    setUnionInto(forbiddenNames, names.values());
                 });
             });
         }
