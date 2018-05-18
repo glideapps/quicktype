@@ -1,5 +1,3 @@
-import { Map } from "immutable";
-
 import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -541,7 +539,7 @@ export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
 }
 
 export class NewtonsoftCSharpRenderer extends CSharpRenderer {
-    private _enumExtensionsNames = Map<Name, Name>();
+    private readonly _enumExtensionsNames = new Map<Name, Name>();
 
     private readonly _needHelpers: boolean;
     private readonly _needAttributes: boolean;
@@ -597,7 +595,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             name.order + 30,
             lookup => `${lookup(name)}_extensions`
         );
-        this._enumExtensionsNames = this._enumExtensionsNames.set(name, extensionsName);
+        this._enumExtensionsNames.set(name, extensionsName);
         return [extensionsName];
     }
 
