@@ -1,4 +1,4 @@
-import { Collection, OrderedSet, List } from "immutable";
+import { Collection, List } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
@@ -189,7 +189,7 @@ export abstract class Renderer {
         this.changeIndent(-1);
     }
 
-    protected abstract setUpNaming(): OrderedSet<Namespace>;
+    protected abstract setUpNaming(): ReadonlySet<Namespace>;
     protected abstract emitSource(givenOutputFilename: string): void;
 
     private assignNames(): ReadonlyMap<Name, string> {
