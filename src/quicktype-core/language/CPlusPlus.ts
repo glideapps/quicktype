@@ -1,4 +1,4 @@
-import { OrderedSet, List } from "immutable";
+import { OrderedSet } from "immutable";
 
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, UnionType } from "../Type";
@@ -19,13 +19,13 @@ import {
     allUpperWordStyle,
     allLowerWordStyle
 } from "../support/Strings";
-import { defined, assertNever, panic, intercalate } from "../support/Support";
+import { defined, assertNever, panic } from "../support/Support";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 import { RenderContext } from "../Renderer";
-import { arrayIntercalate } from "../support/Containers";
+import { arrayIntercalate, toReadonlyArray } from "../support/Containers";
 
 export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
@@ -244,7 +244,7 @@ type TypeContext = {
 };
 
 export class CPlusPlusRenderer extends ConvenienceRenderer {
-    private readonly _namespaceNames: List<string>;
+    private readonly _namespaceNames: ReadonlyArray<string>;
 
     private readonly _typeNameStyle: (rawName: string) => string;
     private readonly _typeNamingFunction: Namer;
@@ -258,7 +258,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     ) {
         super(targetLanguage, renderContext);
 
-        this._namespaceNames = List(_options.namespace.split("::"));
+        this._namespaceNames = _options.namespace.split("::");
 
         this._typeNameStyle = cppNameStyle(_options.typeNamingStyle);
         this._typeNamingFunction = funPrefixNamer("types", this._typeNameStyle);
@@ -323,16 +323,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     };
 
-    private emitNamespaces = (namespaceNames: List<string>, f: () => void): void => {
-        const first = namespaceNames.first();
+    private emitNamespaces = (namespaceNames: Iterable<string>, f: () => void): void => {
+        const namesArray = toReadonlyArray(namespaceNames);
+        const first = namesArray[0];
         if (first === undefined) {
             f();
         } else {
             this.emitBlock(
                 ["namespace ", first],
                 false,
-                () => this.emitNamespaces(namespaceNames.rest(), f),
-                namespaceNames.size === 1
+                () => this.emitNamespaces(namesArray.slice(1), f),
+                namesArray.length === 1
             );
         }
     };
@@ -377,7 +378,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     };
 
     private ourQualifier = (inJsonNamespace: boolean): Sourcelike => {
-        return inJsonNamespace ? [intercalate("::", this._namespaceNames).toArray(), "::"] : [];
+        return inJsonNamespace ? [arrayIntercalate("::", this._namespaceNames), "::"] : [];
     };
 
     private jsonQualifier = (inJsonNamespace: boolean): Sourcelike => {
@@ -785,7 +786,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
 
         if (!this._options.justTypes && this.haveNamedTypes) {
             this.ensureBlankLine();
-            this.emitNamespaces(List(["nlohmann"]), () => {
+            this.emitNamespaces(["nlohmann"], () => {
                 if (this.haveUnions) {
                     this.emitOptionalHelpers();
                 }
