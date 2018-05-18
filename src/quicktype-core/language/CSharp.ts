@@ -1,4 +1,4 @@
-import { Map, Set } from "immutable";
+import { Map } from "immutable";
 
 import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
@@ -741,11 +741,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         this.emitType(undefined, AccessModifier.Public, "static class", "Serialize", undefined, () => {
             // Sometimes multiple top-levels will resolve to the same type, so we have to take care
             // not to emit more than one extension method for the same type.
-            let seenTypes = Set<Type>();
+            const seenTypes = new Set<Type>();
             this.forEachTopLevel("none", t => {
                 // FIXME: Make ToJson a Named
                 if (!seenTypes.has(t)) {
-                    seenTypes = seenTypes.add(t);
+                    seenTypes.add(t);
                     this.emitExpressionMember(
                         ["public static string ToJson(this ", this.topLevelResultType(t), " self)"],
                         ["JsonConvert.SerializeObject(self, ", this._options.namespace, ".Converter.Settings)"]
