@@ -1,4 +1,4 @@
-import { Map, List, OrderedMap } from "immutable";
+import { List, OrderedMap } from "immutable";
 
 import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType, ObjectType } from "./Type";
 import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
@@ -15,7 +15,7 @@ import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } f
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
 import { transformationForType, followTargetType } from "./Transformers";
 import { TargetLanguage } from "./TargetLanguage";
-import { setUnion, setFilter, iterableEnumerate, iterableSome } from "./support/Containers";
+import { setUnion, setFilter, iterableEnumerate, iterableSome, mapFilter, mapSortBy } from "./support/Containers";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -46,18 +46,18 @@ function splitDescription(descriptions: Iterable<string> | undefined): string[] 
 export type ForbiddenWordsInfo = { names: (Name | string)[]; includeGlobalForbidden: boolean };
 
 const assignedNameAttributeKind = new TypeAttributeKind<Name>("assignedName");
-const assignedPropertyNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedPropertyNames");
-const assignedMemberNamesAttributeKind = new TypeAttributeKind<Map<Type, Name>>("assignedMemberNames");
-const assignedCaseNamesAttributeKind = new TypeAttributeKind<Map<string, Name>>("assignedCaseNames");
+const assignedPropertyNamesAttributeKind = new TypeAttributeKind<ReadonlyMap<string, Name>>("assignedPropertyNames");
+const assignedMemberNamesAttributeKind = new TypeAttributeKind<ReadonlyMap<Type, Name>>("assignedMemberNames");
+const assignedCaseNamesAttributeKind = new TypeAttributeKind<ReadonlyMap<string, Name>>("assignedCaseNames");
 
 export abstract class ConvenienceRenderer extends Renderer {
     private _globalForbiddenNamespace: Namespace | undefined;
     private _otherForbiddenNamespaces: Map<string, Namespace> | undefined;
     private _globalNamespace: Namespace | undefined;
     private _nameStoreView: TypeAttributeStoreView<Name> | undefined;
-    private _propertyNamesStoreView: TypeAttributeStoreView<Map<string, Name>> | undefined;
-    private _memberNamesStoreView: TypeAttributeStoreView<Map<Type, Name>> | undefined;
-    private _caseNamesStoreView: TypeAttributeStoreView<Map<string, Name>> | undefined;
+    private _propertyNamesStoreView: TypeAttributeStoreView<ReadonlyMap<string, Name>> | undefined;
+    private _memberNamesStoreView: TypeAttributeStoreView<ReadonlyMap<Type, Name>> | undefined;
+    private _caseNamesStoreView: TypeAttributeStoreView<ReadonlyMap<string, Name>> | undefined;
     private _namesForTransformations: OrderedMap<Type, Name> | undefined;
 
     private _namedTypeNamer: Namer | undefined;
@@ -82,7 +82,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         super(targetLanguage, renderContext);
     }
 
-    get topLevels(): Map<string, Type> {
+    get topLevels(): ReadonlyMap<string, Type> {
         return this.typeGraph.topLevels;
     }
 
@@ -187,7 +187,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._enumCaseNamer = this.makeEnumCaseNamer();
 
         this._globalForbiddenNamespace = keywordNamespace("forbidden", this.forbiddenNamesForGlobalNamespace());
-        this._otherForbiddenNamespaces = Map();
+        this._otherForbiddenNamespaces = new Map();
         this._globalNamespace = new Namespace("global", undefined, [this._globalForbiddenNamespace], []);
         const { objects, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = setFilter(unions, u => this.unionNeedsName(u));
@@ -209,7 +209,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.typeGraph.allTypesUnordered().forEach(t => this.addNameForTransformation(t));
         return setUnion(
             [this._globalForbiddenNamespace, this._globalNamespace],
-            this._otherForbiddenNamespaces.valueSeq()
+            this._otherForbiddenNamespaces.values()
         );
     }
 
@@ -263,7 +263,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         return name;
     };
 
-    protected get typesWithNamedTransformations(): Map<Type, Name> {
+    protected get typesWithNamedTransformations(): ReadonlyMap<Type, Name> {
         return defined(this._namesForTransformations);
     }
 
@@ -416,10 +416,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         } else {
             ns = new Namespace(u.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
         }
-        let names = Map<Type, Name>();
+        let names = new Map<Type, Name>();
         u.members.forEach(t => {
             const name = this.makeNameForUnionMember(u, unionName, followTargetType(t));
-            names = names.set(t, ns.add(name));
+            names.set(t, ns.add(name));
         });
         defined(this._memberNamesStoreView).set(u, names);
     };
@@ -453,7 +453,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         } else {
             ns = new Namespace(e.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
         }
-        let names = Map<string, Name>();
+        let names = new Map<string, Name>();
         const accessorNames = enumCaseNames(e, this.targetLanguage.name);
         e.cases.forEach(caseName => {
             const [assignedName, isFixed] = getAccessorName(accessorNames, caseName);
@@ -463,7 +463,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             } else {
                 name = this.makeNameForEnumCase(e, enumName, caseName, assignedName);
             }
-            names = names.set(caseName, ns.add(name));
+            names.set(caseName, ns.add(name));
         });
         defined(this._caseNamesStoreView).set(e, names);
     };
@@ -595,9 +595,9 @@ export abstract class ConvenienceRenderer extends Renderer {
         f: (t: Type, name: Name) => void,
         predicate?: (t: Type) => boolean
     ): void => {
-        let topLevels: Map<string, Type>;
+        let topLevels: ReadonlyMap<string, Type>;
         if (predicate !== undefined) {
-            topLevels = this.topLevels.filter(predicate);
+            topLevels = mapFilter(this.topLevels, predicate);
         } else {
             topLevels = this.topLevels;
         }
@@ -621,7 +621,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     ): void => {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
         if (this._alphabetizeProperties) {
-            const alphabetizedPropertyNames = propertyNames.sortBy(n => this.names.get(n)).toOrderedMap();
+            const alphabetizedPropertyNames = mapSortBy(propertyNames, n => defined(this.names.get(n)));
             this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName) => {
                 const p = defined(o.getProperties().get(jsonName));
                 f(name, jsonName, p);
@@ -658,10 +658,8 @@ export abstract class ConvenienceRenderer extends Renderer {
         if (sortOrder === null) {
             sortOrder = n => defined(this.names.get(n));
         }
-        const memberNames = defined(this._memberNamesStoreView)
-            .get(u)
-            .filter((_, t) => iterateMembers.has(t));
-        const sortedMemberNames = memberNames.sortBy(sortOrder).toOrderedMap();
+        const memberNames = mapFilter(defined(this._memberNamesStoreView).get(u), (_, t) => iterateMembers.has(t));
+        const sortedMemberNames = mapSortBy(memberNames, sortOrder);
         this.forEachWithBlankLines(sortedMemberNames, blankLocations, f);
     };
 
@@ -671,7 +669,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         f: (name: Name, jsonName: string) => void
     ): void => {
         const caseNames = defined(this._caseNamesStoreView).get(e);
-        const sortedCaseNames = caseNames.sortBy(n => this.names.get(n)).toOrderedMap();
+        const sortedCaseNames = mapSortBy(caseNames, n => defined(this.names.get(n)));
         this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
     };
 
@@ -714,11 +712,11 @@ export abstract class ConvenienceRenderer extends Renderer {
         uniqueValue: (u: UnionType) => T,
         f: (firstUnion: UnionType, value: T) => void
     ): void {
-        let firstUnionByValue = OrderedMap<T, UnionType>();
+        const firstUnionByValue = new Map<T, UnionType>();
         this.namedUnions.forEach(u => {
             const v = uniqueValue(u);
             if (!firstUnionByValue.has(v)) {
-                firstUnionByValue = firstUnionByValue.set(v, u);
+                firstUnionByValue.set(v, u);
             }
         });
         this.forEachWithBlankLines(firstUnionByValue, blankLocations, f);

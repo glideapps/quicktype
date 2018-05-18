@@ -1,5 +1,3 @@
-import { Collection } from "immutable";
-
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, UnionType, EnumType, ObjectType } from "../Type";
 import { matchTypeExhaustive } from "../TypeUtils";
@@ -12,11 +10,12 @@ import {
     firstUpperWordStyle,
     allUpperWordStyle
 } from "../support/Strings";
-import { defined, assert, panic } from "../support/Support";
+import { defined, panic } from "../support/Support";
 import { StringTypeMapping } from "../TypeBuilder";
 import { descriptionTypeAttributeKind } from "../Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
+import { mapFirst, iterableFirst } from "../support/Containers";
 
 export class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {
@@ -88,13 +87,15 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         return defined(this.names.get(this.nameForNamedType(t)));
     };
 
-    private makeOneOf = (types: Collection<any, Type>): Schema => {
-        const count = types.count();
-        assert(count > 0, "Must have at least one type for oneOf");
-        if (count === 1) {
-            return this.schemaForType(defined(types.first()));
+    private makeOneOf = (types: ReadonlySet<Type>): Schema => {
+        const first = iterableFirst(types);
+        if (first === undefined) {
+            return panic("Must have at least one type for oneOf");
         }
-        return { oneOf: types.map(this.schemaForType).toArray() };
+        if (types.size === 1) {
+            return this.schemaForType(first);
+        }
+        return { oneOf: Array.from(types).map(this.schemaForType) };
     };
 
     private makeRef(t: Type): Schema {
@@ -190,7 +191,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
 
     protected emitSourceStructure(): void {
         // FIXME: Find a good way to do multiple top-levels.  Maybe multiple files?
-        const topLevelType = this.topLevels.size === 1 ? this.schemaForType(defined(this.topLevels.first())) : {};
+        const topLevelType = this.topLevels.size === 1 ? this.schemaForType(defined(mapFirst(this.topLevels))) : {};
         const schema = Object.assign({ $schema: "http://json-schema.org/draft-06/schema#" }, topLevelType);
         const definitions: { [name: string]: Schema } = {};
         this.forEachObject("none", (o: ObjectType, name: Name) => {
