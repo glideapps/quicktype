@@ -32,25 +32,60 @@ export function getTargetLanguage(nameOrInstance: string | TargetLanguage): Targ
 
 export type RendererOptions = { [name: string]: string };
 
+/** The options for main quicktype entry points */
 export interface Options {
+    /**
+     * The target language for which to produce code.  This can be either an instance of `TargetLanguage`,
+     * or a string specifying one of the names for quicktype's built-in target languages.  For example,
+     * both `cs` and `csharp` will generate C#.
+     */
     lang: string | TargetLanguage;
+    /** The input data from which to produce types */
     inputData: InputData;
+    /** Whether to infer map types from JSON data */
     inferMaps: boolean;
+    /** Whether to infer enum types from JSON data */
     inferEnums: boolean;
+    /** Whether to assume that JSON strings that look like dates are dates */
     inferDates: boolean;
+    /** Put class properties in alphabetical order, instead of in the order found in the JSON */
     alphabetizeProperties: boolean;
+    /** Make all class property optional */
     allPropertiesOptional: boolean;
+    /** Combine similar classes.  This doesn't apply to classes from a schema, only from inference. */
     combineClasses: boolean;
+    /**
+     * Make top-levels classes from JSON fixed.  That means even if two top-level classes are exactly
+     * the same, quicktype will still generate two separate types for them.
+     */
     fixedTopLevels: boolean;
+    /** Don't render output.  This is mainly useful for benchmarking. */
     noRender: boolean;
+    /** If given, output these comments at the beginning of the main output file */
     leadingComments: string[] | undefined;
+    /** Options for the target language's renderer */
     rendererOptions: RendererOptions;
+    /** String to use for one indentation level.  If not given, use the target language's default. */
     indentation: string | undefined;
+    /** Name of the output file.  Note that quicktype will not write that file, but you'll get its name
+     * back as a key in the resulting `Map`.
+     */
     outputFilename: string;
+    /** Print the type graph to the console at every processing step */
     debugPrintGraph: boolean;
+    /** Check that we're propagating all type attributes (unless we actually can't) */
     checkProvenance: boolean;
+    /**
+     * Print type reconstitution debug information to the console.  You'll only ever need this if
+     * you're working deep inside quicktype-core.
+     */
     debugPrintReconstitution: boolean;
+    /**
+     * Print name gathering debug information to the console.  This might help to figure out why
+     * your types get weird names, but the output is quite arcane.
+     */
     debugPrintGatherNames: boolean;
+    /** Print all transformations to the console prior to generating code */
     debugPrintTransformations: boolean;
 }
 
