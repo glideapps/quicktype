@@ -1,4 +1,4 @@
-import { Set, OrderedMap } from "immutable";
+import { OrderedMap } from "immutable";
 
 import { TypeGraph } from "../TypeGraph";
 import { StringTypeMapping, TypeRef } from "../TypeBuilder";
@@ -6,6 +6,7 @@ import { GraphRewriteBuilder } from "../GraphRewriting";
 import { ObjectType, ClassProperty } from "../Type";
 import { defined } from "../support/Support";
 import { emptyTypeAttributes } from "../TypeAttributes";
+import { setFilter, iterableFirst } from "../support/Containers";
 
 export function replaceObjectType(
     graph: TypeGraph,
@@ -15,11 +16,11 @@ export function replaceObjectType(
     debugPrintReconstitution: boolean
 ): TypeGraph {
     function replace(
-        setOfOneType: Set<ObjectType>,
+        setOfOneType: ReadonlySet<ObjectType>,
         builder: GraphRewriteBuilder<ObjectType>,
         forwardingRef: TypeRef
     ): TypeRef {
-        const o = defined(setOfOneType.first());
+        const o = defined(iterableFirst(setOfOneType));
         const attributes = o.getAttributes();
         const properties = o.getProperties();
         const additionalProperties = o.getAdditionalProperties();
@@ -76,10 +77,10 @@ export function replaceObjectType(
         return builder.getMapType(attributes, union, forwardingRef);
     }
 
-    const allObjectTypes = graph.allTypesUnordered().filter(t => t.kind === "object") as Set<ObjectType>;
+    const allObjectTypes = setFilter(graph.allTypesUnordered(), t => t.kind === "object") as Set<ObjectType>;
     const objectTypesToReplace = leaveFullObjects
-        ? allObjectTypes.filter(o => o.getProperties().isEmpty() || o.getAdditionalProperties() === undefined)
+        ? setFilter(allObjectTypes, o => o.getProperties().isEmpty() || o.getAdditionalProperties() === undefined)
         : allObjectTypes;
-    const groups = objectTypesToReplace.toArray().map(t => [t]);
+    const groups = Array.from(objectTypesToReplace).map(t => [t]);
     return graph.rewrite("replace object type", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
 }

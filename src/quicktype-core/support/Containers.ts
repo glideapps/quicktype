@@ -176,3 +176,8 @@ export function setGroupBy<T, G>(it: Iterable<T>, grouper: (v: T) => G): Map<G, 
     }
     return result;
 }
+
+export function toReadonlySet<T>(it: Iterable<T>): ReadonlySet<T> {
+    if (it instanceof Set) return it;
+    return new Set(it);
+}

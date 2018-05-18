@@ -7,6 +7,7 @@ import { TypeLookerUp, GraphRewriteBuilder } from "./GraphRewriting";
 import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
 import { panic, assert, defined, unionOfSets } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { iterableFirst } from "./support/Containers";
 
 function getCliqueProperties(
     clique: ObjectType[],
@@ -186,23 +187,23 @@ export function unionBuilderForUnification<T extends Type>(
 
 // FIXME: The UnionBuilder might end up not being used.
 export function unifyTypes<T extends Type>(
-    types: Set<Type>,
+    types: ReadonlySet<Type>,
     typeAttributes: TypeAttributes,
     typeBuilder: GraphRewriteBuilder<T>,
     unionBuilder: UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]>,
     conflateNumbers: boolean,
     maybeForwardingRef?: TypeRef
 ): TypeRef {
-    if (types.isEmpty()) {
+    if (types.size === 0) {
         return panic("Cannot unify empty set of types");
-    } else if (types.count() === 1) {
-        const first = defined(types.first());
+    } else if (types.size === 1) {
+        const first = defined(iterableFirst(types));
         if (!(first instanceof UnionType)) {
             return typeBuilder.reconstituteTypeRef(first.typeRef, typeAttributes, maybeForwardingRef);
         }
     }
 
-    const typeRefs = types.toArray().map(t => t.typeRef);
+    const typeRefs = Array.from(types).map(t => t.typeRef);
     const maybeTypeRef = typeBuilder.lookupTypeRefs(typeRefs, maybeForwardingRef);
     if (maybeTypeRef !== undefined) {
         typeBuilder.addAttributes(maybeTypeRef, typeAttributes);

@@ -1,4 +1,4 @@
-import { OrderedSet, Collection, Map, Set as ImmutableSet } from "immutable";
+import { OrderedSet, Map, Set as ImmutableSet } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes, CombinationKind } from "./TypeAttributes";
@@ -75,15 +75,15 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
 }
 
 export function makeGroupsToFlatten<T extends SetOperationType>(
-    setOperations: ImmutableSet<T>,
+    setOperations: Iterable<T>,
     include: ((members: ImmutableSet<Type>) => boolean) | undefined
 ): Type[][] {
     let typeGroups = Map<ImmutableSet<Type>, OrderedSet<Type>>();
-    setOperations.forEach(u => {
+    for (const u of setOperations) {
         const members = ImmutableSet(setOperationMembersRecursively(u, undefined)[0]);
 
         if (include !== undefined) {
-            if (!include(members)) return;
+            if (!include(members)) continue;
         }
 
         let maybeSet = typeGroups.get(members);
@@ -95,7 +95,7 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
         }
         maybeSet = maybeSet.add(u);
         typeGroups = typeGroups.set(members, maybeSet);
-    });
+    }
 
     return typeGroups
         .valueSeq()
@@ -103,19 +103,8 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
         .map(ts => ts.toArray());
 }
 
-export function combineTypeAttributesOfTypes(combinationKind: CombinationKind, types: Type[]): TypeAttributes;
-export function combineTypeAttributesOfTypes(
-    combinationKind: CombinationKind,
-    types: Collection<any, Type>
-): TypeAttributes;
-export function combineTypeAttributesOfTypes(
-    combinationKind: CombinationKind,
-    types: Type[] | Collection<any, Type>
-): TypeAttributes {
-    if (!Array.isArray(types)) {
-        types = types.valueSeq().toArray();
-    }
-    return combineTypeAttributes(combinationKind, types.map(t => t.getAttributes()));
+export function combineTypeAttributesOfTypes(combinationKind: CombinationKind, types: Iterable<Type>): TypeAttributes {
+    return combineTypeAttributes(combinationKind, Array.from(types).map(t => t.getAttributes()));
 }
 
 // FIXME: We shouldn't have to sort here.  This is just because we're not getting

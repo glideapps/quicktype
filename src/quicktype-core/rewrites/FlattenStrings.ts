@@ -1,4 +1,4 @@
-import { Set, OrderedSet } from "immutable";
+import { OrderedSet } from "immutable";
 
 import { PrimitiveType, UnionType, Type } from "../Type";
 import { stringTypesForType, combineTypeAttributesOfTypes } from "../TypeUtils";
@@ -7,6 +7,7 @@ import { TypeRef, StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined } from "../support/Support";
 import { combineTypeAttributes } from "../TypeAttributes";
+import { iterableFirst } from "../support/Containers";
 
 // A union needs replacing if it contains more than one string type, one of them being
 // a basic string type.
@@ -23,9 +24,13 @@ function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {
 }
 
 // Replaces all string types in an enum with the basic string type.
-function replaceUnion(group: Set<UnionType>, builder: GraphRewriteBuilder<UnionType>, forwardingRef: TypeRef): TypeRef {
+function replaceUnion(
+    group: ReadonlySet<UnionType>,
+    builder: GraphRewriteBuilder<UnionType>,
+    forwardingRef: TypeRef
+): TypeRef {
     assert(group.size === 1);
-    const u = defined(group.first());
+    const u = defined(iterableFirst(group));
     const stringMembers = defined(unionNeedsReplacing(u));
     const stringAttributes = combineTypeAttributesOfTypes("union", stringMembers);
     const types: TypeRef[] = [];

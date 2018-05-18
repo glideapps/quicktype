@@ -1,5 +1,3 @@
-import { Set } from "immutable";
-
 import { TypeGraph } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
 import { UnionType, TypeKind, EnumType, Type } from "./Type";
@@ -20,6 +18,7 @@ import {
 } from "./Transformers";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { StringTypes } from "./StringTypes";
+import { setFilter, setUnion, iterableFirst } from "./support/Containers";
 
 function transformationAttributes(
     reconstitutedTargetType: TypeRef,
@@ -150,8 +149,12 @@ export function makeTransformations(
     debugPrintTransformations: boolean,
     debugPrintReconstitution: boolean
 ): TypeGraph {
-    function replace(setOfOneUnion: Set<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
-        const t = defined(setOfOneUnion.first());
+    function replace(
+        setOfOneUnion: ReadonlySet<Type>,
+        builder: GraphRewriteBuilder<Type>,
+        forwardingRef: TypeRef
+    ): TypeRef {
+        const t = defined(iterableFirst(setOfOneUnion));
         if (t instanceof UnionType) {
             return replaceUnion(t, builder, forwardingRef, debugPrintTransformations);
         }
@@ -162,13 +165,13 @@ export function makeTransformations(
     }
 
     const allTypesUnordered = graph.allTypesUnordered();
-    const unions = allTypesUnordered.filter(t => t instanceof UnionType && targetLanguage.needsTransformerForUnion(t));
+    const unions = setFilter(
+        allTypesUnordered,
+        t => t instanceof UnionType && targetLanguage.needsTransformerForUnion(t)
+    );
     const enums = targetLanguage.needsTransformerForEnums
-        ? allTypesUnordered.filter(t => t instanceof EnumType)
-        : Set();
-    const groups = unions
-        .union(enums)
-        .toArray()
-        .map(t => [t]);
+        ? setFilter(allTypesUnordered, t => t instanceof EnumType)
+        : new Set();
+    const groups = Array.from(setUnion(unions, enums)).map(t => [t]);
     return graph.rewrite("make-transformations", stringTypeMapping, false, groups, debugPrintReconstitution, replace);
 }
