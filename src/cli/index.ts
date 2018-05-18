@@ -1,5 +1,3 @@
-import { Map } from "immutable";
-
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
@@ -806,7 +804,10 @@ export async function makeQuicktypeOptions(
     };
 }
 
-export function writeOutput(cliOptions: CLIOptions, resultsByFilename: Map<string, SerializedRenderResult>): void {
+export function writeOutput(
+    cliOptions: CLIOptions,
+    resultsByFilename: ReadonlyMap<string, SerializedRenderResult>
+): void {
     let onFirst = true;
     resultsByFilename.forEach(({ lines, annotations }, filename) => {
         const output = lines.join("\n");
