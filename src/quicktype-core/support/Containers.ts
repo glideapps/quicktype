@@ -72,6 +72,11 @@ export function arrayIntercalate<T>(separator: T, items: Iterable<T>): T[] {
     return acc;
 }
 
+export function toReadonlyArray<T>(it: Iterable<T>): ReadonlyArray<T> {
+    if (Array.isArray(it)) return it;
+    return Array.from(it);
+}
+
 export function mapMap<K, V, W>(m: ReadonlyMap<K, V>, f: (v: V, k: K) => W): Map<K, W> {
     const result = new Map<K, W>();
     for (const [k, v] of m) {
