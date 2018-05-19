@@ -200,16 +200,13 @@ export abstract class Name {
     nameAssignments(forbiddenNames: ReadonlySet<string>, assignedName: string): Map<Name, string> | null {
         if (forbiddenNames.has(assignedName)) return null;
         let assignments = Map<Name, string>().set(this, assignedName);
-        let success = true;
-        this._associates.forEach((an: AssociatedName) => {
+        for (const an of this._associates) {
             const associatedAssignedName = an.getName(assignedName);
             if (forbiddenNames.has(associatedAssignedName)) {
-                success = false;
-                return false;
+                return null;
             }
             assignments = assignments.set(an, associatedAssignedName);
-        });
-        if (!success) return null;
+        }
         return assignments;
     }
 }
