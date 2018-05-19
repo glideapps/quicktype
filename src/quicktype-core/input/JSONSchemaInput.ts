@@ -1,4 +1,4 @@
-import { List, OrderedSet, Map, Set, hash, OrderedMap } from "immutable";
+import { List, OrderedSet, Map, hash, OrderedMap } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
 
@@ -27,6 +27,7 @@ import {
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import { messageAssert, messageError } from "../Messages";
 import { StringTypes } from "../StringTypes";
+import { setFilter } from "../support/Containers";
 
 export enum PathElementKind {
     Root,
@@ -343,7 +344,7 @@ class Location {
 
 class Canonizer {
     private _map: Map<Ref, Ref> = Map();
-    private _schemaAddressesAdded: Set<string> = Set();
+    private readonly _schemaAddressesAdded = new Set<string>();
 
     private addID(mapped: string, loc: Location): void {
         const ref = Ref.parse(mapped).resolveAgainst(loc.virtualRef);
@@ -376,7 +377,7 @@ class Canonizer {
         if (this._schemaAddressesAdded.has(address)) return;
 
         this.addIDs(schema, new Location(Ref.root(address)));
-        this._schemaAddressesAdded = this._schemaAddressesAdded.add(address);
+        this._schemaAddressesAdded.add(address);
     }
 
     // Returns: Canonical ref, full virtual ref
@@ -573,7 +574,7 @@ export async function addTypesInSchema(
             return true;
         }
 
-        const includedTypes = Set(schemaTypes.filter(isTypeIncluded));
+        const includedTypes = setFilter(schemaTypes, isTypeIncluded);
 
         function forEachProducedAttribute(
             cases: JSONSchema[] | undefined,
