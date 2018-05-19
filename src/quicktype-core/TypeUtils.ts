@@ -187,12 +187,7 @@ function orderedSetUnion<T>(sets: OrderedSet<T>[]): OrderedSet<T> {
 function directlyReachableTypes<T>(t: Type, setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
     const set = setForType(t);
     if (set) return set;
-    return orderedSetUnion(
-        t
-            .getNonAttributeChildren()
-            .toArray()
-            .map(c => directlyReachableTypes(c, setForType))
-    );
+    return orderedSetUnion(Array.from(t.getNonAttributeChildren()).map(c => directlyReachableTypes(c, setForType)));
 }
 
 export function directlyReachableSingleNamedType(type: Type): Type | undefined {

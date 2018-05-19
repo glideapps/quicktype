@@ -1,4 +1,4 @@
-import { List, OrderedSet, hash, OrderedMap } from "immutable";
+import { List, hash, OrderedMap, OrderedSet } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
 
@@ -26,7 +26,15 @@ import {
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import { messageAssert, messageError } from "../Messages";
 import { StringTypes } from "../StringTypes";
-import { setFilter, EqualityMap, mapMap, mapFromObject } from "../support/Containers";
+import {
+    setFilter,
+    EqualityMap,
+    mapMap,
+    mapFromObject,
+    setSubtract,
+    mapFromIterable,
+    iterableFind
+} from "../support/Containers";
 
 export enum PathElementKind {
     Root,
@@ -402,10 +410,10 @@ class Canonizer {
     }
 }
 
-function checkTypeList(typeOrTypes: any, loc: Location): OrderedSet<string> {
-    let set: OrderedSet<string>;
+function checkTypeList(typeOrTypes: any, loc: Location): ReadonlySet<string> {
+    let set: Set<string>;
     if (typeof typeOrTypes === "string") {
-        set = OrderedSet([typeOrTypes]);
+        set = new Set([typeOrTypes]);
     } else if (Array.isArray(typeOrTypes)) {
         const arr: string[] = [];
         for (const t of typeOrTypes) {
@@ -414,13 +422,13 @@ function checkTypeList(typeOrTypes: any, loc: Location): OrderedSet<string> {
             }
             arr.push(t);
         }
-        set = OrderedSet(arr);
+        set = new Set(arr);
     } else {
         return messageError("SchemaTypeMustBeStringOrStringArray", withRef(loc, { actual: typeOrTypes }));
     }
-    messageAssert(!set.isEmpty(), "SchemaNoTypeSpecified", withRef(loc));
+    messageAssert(set.size > 0, "SchemaNoTypeSpecified", withRef(loc));
     const validTypes = ["null", "boolean", "object", "array", "number", "string", "integer"];
-    const maybeInvalid = set.find(s => validTypes.indexOf(s) < 0);
+    const maybeInvalid = iterableFind(set, s => validTypes.indexOf(s) < 0);
     if (maybeInvalid !== undefined) {
         return messageError("SchemaInvalidType", withRef(loc, { type: maybeInvalid }));
     }
@@ -505,7 +513,7 @@ export async function addTypesInSchema(
         requiredArray: string[],
         additionalProperties: any
     ): Promise<TypeRef> {
-        const required = OrderedSet(requiredArray);
+        const required = new Set(requiredArray);
         const propertiesMap = OrderedMap(properties).sortBy((_, k) => k.toLowerCase());
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
@@ -533,14 +541,14 @@ export async function addTypesInSchema(
                 singularizeTypeNames(attributes)
             );
         }
-        const additionalRequired = required.subtract(props.keySeq());
-        if (!additionalRequired.isEmpty()) {
+        const additionalRequired = setSubtract(required, props.keySeq());
+        if (additionalRequired.size > 0) {
             const t = additionalPropertiesType;
             if (t === undefined) {
                 return messageError("SchemaAdditionalTypesForbidRequired", withRef(loc));
             }
 
-            const additionalProps = additionalRequired.toOrderedMap().map(_name => new ClassProperty(t, false));
+            const additionalProps = mapFromIterable(additionalRequired, _name => new ClassProperty(t, false));
             props = props.merge(additionalProps);
         }
         return typeBuilder.getUniqueObjectType(attributes, props, additionalPropertiesType);
@@ -609,7 +617,7 @@ export async function addTypesInSchema(
                 }
 
                 if (typeof title === "string") {
-                    return TypeNames.make(OrderedSet([title]), OrderedSet(), schema.$ref !== undefined);
+                    return TypeNames.make(new Set([title]), new Set(), schema.$ref !== undefined);
                 } else {
                     return typeNames.makeInferred();
                 }
@@ -777,7 +785,7 @@ export async function addTypesInSchema(
             const [target, newLoc] = await resolveVirtualRef(loc, virtualRef);
             const attributes = modifyTypeNames(typeAttributes, tn => {
                 if (!defined(tn).areInferred) return tn;
-                return TypeNames.make(OrderedSet([newLoc.canonicalRef.name]), OrderedSet(), true);
+                return TypeNames.make(new Set([newLoc.canonicalRef.name]), new Set(), true);
             });
             types.push(await toType(target, newLoc, attributes));
         }
