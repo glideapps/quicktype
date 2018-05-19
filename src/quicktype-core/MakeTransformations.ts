@@ -18,7 +18,8 @@ import {
 } from "./Transformers";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { StringTypes } from "./StringTypes";
-import { setFilter, setUnion, iterableFirst } from "./support/Containers";
+import { setFilter, setUnion, iterableFirst, mapMapEntries } from "./support/Containers";
+import { OrderedSet } from "immutable";
 
 function transformationAttributes(
     reconstitutedTargetType: TypeRef,
@@ -49,11 +50,14 @@ function replaceUnion(
 ): TypeRef {
     assert(!union.members.isEmpty(), "We can't have empty unions");
 
-    const reconstitutedMembersByKind = union.members
-        .toOrderedMap()
-        .mapKeys(m => m.kind)
-        .map(m => builder.reconstituteType(m));
-    const reconstitutedUnion = builder.getUnionType(union.getAttributes(), reconstitutedMembersByKind.toOrderedSet());
+    const reconstitutedMembersByKind = mapMapEntries(union.members.entries(), m => [
+        m.kind,
+        builder.reconstituteType(m)
+    ]);
+    const reconstitutedUnion = builder.getUnionType(
+        union.getAttributes(),
+        OrderedSet(reconstitutedMembersByKind.values())
+    );
 
     function memberForKind(kind: TypeKind) {
         return defined(reconstitutedMembersByKind.get(kind));
