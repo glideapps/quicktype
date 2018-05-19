@@ -353,7 +353,6 @@ class NamingContext {
             this._namedsForName.set(name, namedsForName);
         }
         namedsForName.add(named);
-        this._namedsForName.set(name, namedsForName);
     };
 }
 
