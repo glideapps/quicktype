@@ -36,7 +36,7 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
 }
 
 // undefined in case the identity is unique
-export type TypeIdentity = List<any> | undefined;
+export type MaybeTypeIdentity = List<any> | undefined;
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
@@ -71,7 +71,7 @@ export abstract class Type {
     abstract get isNullable(): boolean;
     // FIXME: Remove `isPrimitive`
     abstract isPrimitive(): this is PrimitiveType;
-    abstract get identity(): TypeIdentity;
+    abstract get identity(): MaybeTypeIdentity;
     abstract reconstitute<T extends BaseGraphRewriteBuilder>(
         builder: TypeReconstituter<T>,
         canonicalOrder: boolean
@@ -194,7 +194,7 @@ function identityAttributes(attributes: TypeAttributes): TypeAttributes {
     return attributes.filter((_, kind) => kind.inIdentity);
 }
 
-export function primitiveTypeIdentity(kind: PrimitiveTypeKind, attributes: TypeAttributes): TypeIdentity {
+export function primitiveTypeIdentity(kind: PrimitiveTypeKind, attributes: TypeAttributes): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return List([kind, identityAttributes(attributes)]);
 }
@@ -215,7 +215,7 @@ export class PrimitiveType extends Type {
         return new Set();
     }
 
-    get identity(): TypeIdentity {
+    get identity(): MaybeTypeIdentity {
         return primitiveTypeIdentity(this.kind, this.getAttributes());
     }
 
@@ -232,7 +232,7 @@ export class PrimitiveType extends Type {
     }
 }
 
-export function arrayTypeIdentity(attributes: TypeAttributes, itemsRef: TypeRef): TypeIdentity {
+export function arrayTypeIdentity(attributes: TypeAttributes, itemsRef: TypeRef): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return List(["array", identityAttributes(attributes), itemsRef]);
 }
@@ -275,7 +275,7 @@ export class ArrayType extends Type {
         return false;
     }
 
-    get identity(): TypeIdentity {
+    get identity(): MaybeTypeIdentity {
         return arrayTypeIdentity(this.getAttributes(), this.getItemsRef());
     }
 
@@ -333,7 +333,7 @@ function objectTypeIdentify(
     attributes: TypeAttributes,
     properties: OrderedMap<string, ClassProperty>,
     additionalPropertiesRef: TypeRef | undefined
-): TypeIdentity {
+): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return List([kind, identityAttributes(attributes), properties.toMap(), additionalPropertiesRef]);
 }
@@ -341,14 +341,14 @@ function objectTypeIdentify(
 export function classTypeIdentity(
     attributes: TypeAttributes,
     properties: OrderedMap<string, ClassProperty>
-): TypeIdentity {
+): MaybeTypeIdentity {
     return objectTypeIdentify("class", attributes, properties, undefined);
 }
 
 export function mapTypeIdentify(
     attributes: TypeAttributes,
     additionalPropertiesRef: TypeRef | undefined
-): TypeIdentity {
+): MaybeTypeIdentity {
     return objectTypeIdentify("map", attributes, OrderedMap(), additionalPropertiesRef);
 }
 
@@ -433,7 +433,7 @@ export class ObjectType extends Type {
         return false;
     }
 
-    get identity(): TypeIdentity {
+    get identity(): MaybeTypeIdentity {
         if (this.isFixed) return undefined;
         return objectTypeIdentify(
             this.kind,
@@ -549,7 +549,7 @@ export class MapType extends ObjectType {
     }
 }
 
-export function enumTypeIdentity(attributes: TypeAttributes, cases: OrderedSet<string>): TypeIdentity {
+export function enumTypeIdentity(attributes: TypeAttributes, cases: OrderedSet<string>): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return List(["enum", identityAttributes(attributes), cases.toSet()]);
 }
@@ -570,7 +570,7 @@ export class EnumType extends Type {
         return false;
     }
 
-    get identity(): TypeIdentity {
+    get identity(): MaybeTypeIdentity {
         return enumTypeIdentity(this.getAttributes(), this.cases);
     }
 
@@ -617,16 +617,19 @@ export function setOperationTypeIdentity(
     kind: TypeKind,
     attributes: TypeAttributes,
     memberRefs: OrderedSet<TypeRef>
-): TypeIdentity {
+): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
     return List([kind, identityAttributes(attributes), memberRefs.toSet()]);
 }
 
-export function unionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): TypeIdentity {
+export function unionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): MaybeTypeIdentity {
     return setOperationTypeIdentity("union", attributes, memberRefs);
 }
 
-export function intersectionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): TypeIdentity {
+export function intersectionTypeIdentity(
+    attributes: TypeAttributes,
+    memberRefs: OrderedSet<TypeRef>
+): MaybeTypeIdentity {
     return setOperationTypeIdentity("intersection", attributes, memberRefs);
 }
 
@@ -666,7 +669,7 @@ export abstract class SetOperationType extends Type {
         return false;
     }
 
-    get identity(): TypeIdentity {
+    get identity(): MaybeTypeIdentity {
         return setOperationTypeIdentity(this.kind, this.getAttributes(), this.getMemberRefs());
     }
 
