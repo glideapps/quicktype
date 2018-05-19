@@ -1,4 +1,4 @@
-import { Map, List, OrderedSet, Collection } from "immutable";
+import { Map, List, OrderedSet } from "immutable";
 
 import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
@@ -165,11 +165,7 @@ export class TypeGraph {
         return [t, defined(this._attributeStore).attributesForType(t)];
     }
 
-    filterTypes(
-        predicate: ((t: Type) => boolean) | undefined,
-        childrenOfType: ((t: Type) => Collection<any, Type>) | undefined,
-        topDown: boolean
-    ): OrderedSet<Type> {
+    private filterTypes(predicate: ((t: Type) => boolean) | undefined): OrderedSet<Type> {
         const seen = new Set<Type>();
         let types = List<Type>();
 
@@ -179,15 +175,12 @@ export class TypeGraph {
 
             const required = predicate === undefined || predicate(t);
 
-            if (topDown && required) {
+            if (required) {
                 types = types.push(t);
             }
 
-            const children = childrenOfType !== undefined ? childrenOfType(t) : t.getChildren();
-            children.forEach(addFromType);
-
-            if (!topDown && required) {
-                types = types.push(t);
+            for (const c of t.getChildren()) {
+                addFromType(c);
             }
         }
 
@@ -195,14 +188,14 @@ export class TypeGraph {
         return types.toOrderedSet();
     }
 
-    allNamedTypes = (childrenOfType?: (t: Type) => Collection<any, Type>): OrderedSet<Type> => {
-        return this.filterTypes(isNamedType, childrenOfType, true);
-    };
+    allNamedTypes(): OrderedSet<Type> {
+        return this.filterTypes(isNamedType);
+    }
 
-    allNamedTypesSeparated = (childrenOfType?: (t: Type) => Collection<any, Type>): SeparatedNamedTypes => {
-        const types = this.allNamedTypes(childrenOfType);
+    allNamedTypesSeparated(): SeparatedNamedTypes {
+        const types = this.allNamedTypes();
         return separateNamedTypes(types);
-    };
+    }
 
     private allProvenance(): ReadonlySet<TypeRef> {
         assert(this._haveProvenanceAttributes);
@@ -362,8 +355,12 @@ export class TypeGraph {
             const parts: string[] = [];
             parts.push(`${t.debugPrintKind}${t.hasNames ? ` ${t.getCombinedName()}` : ""}`);
             const children = t.getChildren();
-            if (!children.isEmpty()) {
-                parts.push(`children ${children.map(c => c.typeRef.index).join(",")}`);
+            if (children.size > 0) {
+                parts.push(
+                    `children ${Array.from(children)
+                        .map(c => c.typeRef.index)
+                        .join(",")}`
+                );
             }
             t.getAttributes().forEach((value, kind) => {
                 const maybeString = kind.stringify(value);

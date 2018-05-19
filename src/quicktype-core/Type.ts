@@ -1,4 +1,4 @@
-import { OrderedSet, OrderedMap, Set, is, hash, List } from "immutable";
+import { OrderedSet, OrderedMap, is, hash, List } from "immutable";
 
 import { defined, panic, assert, mapOptional } from "./support/Support";
 import { TypeRef } from "./TypeBuilder";
@@ -6,7 +6,7 @@ import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
-import { iterableEvery, iterableFind, iterableSome, toReadonlySet } from "./support/Containers";
+import { iterableEvery, iterableFind, iterableSome, toReadonlySet, setUnion } from "./support/Containers";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
 export type PrimitiveStringTypeKind = "string" | DateTimeTypeKind;
@@ -41,13 +41,13 @@ export type TypeIdentity = List<any> | undefined;
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
 
-    abstract getNonAttributeChildren(): OrderedSet<Type>;
+    abstract getNonAttributeChildren(): ReadonlySet<Type>;
 
-    getChildren(): OrderedSet<Type> {
+    getChildren(): ReadonlySet<Type> {
         let result = this.getNonAttributeChildren();
         this.getAttributes().forEach((v, k) => {
             if (k.children === undefined) return;
-            result = result.union(k.children(v));
+            result = setUnion(result, k.children(v));
         });
         return result;
     }
@@ -160,10 +160,10 @@ export abstract class Type {
         return this.typeRef.graph.getParentsOfType(this);
     }
 
-    getAncestorsNotInSet(set: Set<TypeRef>): Set<Type> {
+    getAncestorsNotInSet(set: ReadonlySet<TypeRef>): ReadonlySet<Type> {
         const workList: Type[] = [this];
-        let processed: Set<Type> = Set();
-        let ancestors: Set<Type> = Set();
+        const processed = new Set<Type>();
+        const ancestors = new Set<Type>();
         for (;;) {
             const t = workList.pop();
             if (t === undefined) break;
@@ -172,13 +172,13 @@ export abstract class Type {
             console.log(`${parents.size} parents`);
             parents.forEach(p => {
                 if (processed.has(p)) return;
-                processed = processed.add(p);
+                processed.add(p);
                 if (set.has(p.typeRef)) {
                     console.log(`adding ${p.kind}`);
                     workList.push(p);
                 } else {
                     console.log(`found ${p.kind}`);
-                    ancestors = ancestors.add(p);
+                    ancestors.add(p);
                 }
             });
         }
@@ -211,8 +211,8 @@ export class PrimitiveType extends Type {
         return true;
     }
 
-    getNonAttributeChildren(): OrderedSet<Type> {
-        return OrderedSet();
+    getNonAttributeChildren(): ReadonlySet<Type> {
+        return new Set();
     }
 
     get identity(): TypeIdentity {
@@ -263,8 +263,8 @@ export class ArrayType extends Type {
         return this.getItemsRef().deref()[0];
     }
 
-    getNonAttributeChildren(): OrderedSet<Type> {
-        return OrderedSet([this.items]);
+    getNonAttributeChildren(): ReadonlySet<Type> {
+        return new Set([this.items]);
     }
 
     get isNullable(): boolean {
@@ -414,7 +414,7 @@ export class ObjectType extends Type {
         return tref.deref()[0];
     }
 
-    getNonAttributeChildren(): OrderedSet<Type> {
+    getNonAttributeChildren(): ReadonlySet<Type> {
         let children = this.getSortedProperties()
             .map(p => p.type)
             .toOrderedSet();

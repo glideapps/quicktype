@@ -496,12 +496,11 @@ export class RubyRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             const [maybeNull, nonNulls] = removeNullFromUnion(u, false);
             this.emitBlock("def self.from_dynamic!(d)", () => {
-                const memberNames = u.getChildren().map((member: Type) => this.nameForUnionMember(u, member));
+                const memberNames = Array.from(u.getChildren()).map(member => this.nameForUnionMember(u, member));
                 this.forEachUnionMember(u, u.getChildren(), "none", null, (name, t) => {
                     const nilMembers = memberNames
-                        .remove(name)
-                        .toArray()
-                        .map((memberName: Name) => [", ", memberName, ": nil"]);
+                        .filter(n => n !== name)
+                        .map(memberName => [", ", memberName, ": nil"]);
                     if (this.propertyTypeMarshalsImplicitlyFromDynamic(t)) {
                         this.emitBlock(["if schema[:", name, "].right.valid? d"], () => {
                             this.emitLine("return new(", name, ": d", nilMembers, ")");
