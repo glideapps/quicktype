@@ -1,6 +1,6 @@
-import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection, List } from "immutable";
+import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection } from "immutable";
 
-import { PrimitiveTypeKind, Type, ClassProperty } from "./Type";
+import { PrimitiveTypeKind, Type, ClassProperty, MaybeTypeIdentity } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
@@ -294,7 +294,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
         });
     }
 
-    protected makeIdentity(_maker: () => List<any> | undefined): List<any> | undefined {
+    protected makeIdentity(_maker: () => MaybeTypeIdentity): MaybeTypeIdentity {
         return undefined;
     }
 

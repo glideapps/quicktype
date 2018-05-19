@@ -1,12 +1,12 @@
-import { OrderedSet, OrderedMap, is, hash, List } from "immutable";
+import { OrderedSet, OrderedMap, is, hash } from "immutable";
 
-import { defined, panic, assert, mapOptional } from "./support/Support";
+import { defined, panic, assert, mapOptional, hashCodeInit, addHashCode } from "./support/Support";
 import { TypeRef } from "./TypeBuilder";
 import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
-import { iterableEvery, iterableFind, iterableSome, toReadonlySet, setUnion } from "./support/Containers";
+import { iterableEvery, iterableFind, iterableSome, toReadonlySet, setUnion, Equality } from "./support/Containers";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
 export type PrimitiveStringTypeKind = "string" | DateTimeTypeKind;
@@ -35,8 +35,32 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     return false;
 }
 
+export class TypeIdentity implements Equality {
+    constructor(private readonly _kind: TypeKind, private readonly _components: ReadonlyArray<any>) {}
+
+    equals(other: any): boolean {
+        if (!(other instanceof TypeIdentity)) return false;
+        if (this._kind !== other._kind) return false;
+        const n = this._components.length;
+        assert(n === other._components.length, "Components of a type kind's identity must have the same length");
+        for (let i = 0; i < n; i++) {
+            if (!is(this._components[i], other._components[i])) return false;
+        }
+        return true;
+    }
+
+    hashCode(): number {
+        let h = hashCodeInit;
+        h = addHashCode(h, hash(this._kind));
+        for (const c of this._components) {
+            h = addHashCode(h, hash(c));
+        }
+        return h;
+    }
+}
+
 // undefined in case the identity is unique
-export type MaybeTypeIdentity = List<any> | undefined;
+export type MaybeTypeIdentity = TypeIdentity | undefined;
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
@@ -196,7 +220,7 @@ function identityAttributes(attributes: TypeAttributes): TypeAttributes {
 
 export function primitiveTypeIdentity(kind: PrimitiveTypeKind, attributes: TypeAttributes): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
-    return List([kind, identityAttributes(attributes)]);
+    return new TypeIdentity(kind, [identityAttributes(attributes)]);
 }
 
 export class PrimitiveType extends Type {
@@ -234,7 +258,7 @@ export class PrimitiveType extends Type {
 
 export function arrayTypeIdentity(attributes: TypeAttributes, itemsRef: TypeRef): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
-    return List(["array", identityAttributes(attributes), itemsRef]);
+    return new TypeIdentity("array", [identityAttributes(attributes), itemsRef]);
 }
 
 export class ArrayType extends Type {
@@ -335,7 +359,7 @@ function objectTypeIdentify(
     additionalPropertiesRef: TypeRef | undefined
 ): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
-    return List([kind, identityAttributes(attributes), properties.toMap(), additionalPropertiesRef]);
+    return new TypeIdentity(kind, [identityAttributes(attributes), properties.toMap(), additionalPropertiesRef]);
 }
 
 export function classTypeIdentity(
@@ -551,7 +575,7 @@ export class MapType extends ObjectType {
 
 export function enumTypeIdentity(attributes: TypeAttributes, cases: OrderedSet<string>): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
-    return List(["enum", identityAttributes(attributes), cases.toSet()]);
+    return new TypeIdentity("enum", [identityAttributes(attributes), cases.toSet()]);
 }
 
 export class EnumType extends Type {
@@ -619,7 +643,7 @@ export function setOperationTypeIdentity(
     memberRefs: OrderedSet<TypeRef>
 ): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
-    return List([kind, identityAttributes(attributes), memberRefs.toSet()]);
+    return new TypeIdentity(kind, [identityAttributes(attributes), memberRefs.toSet()]);
 }
 
 export function unionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): MaybeTypeIdentity {
