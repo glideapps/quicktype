@@ -16,8 +16,8 @@ import {
 
 export class Namespace {
     private _children: OrderedSet<Namespace>;
-    readonly forbiddenNamespaces: ImmutableSet<Namespace>;
-    readonly additionalForbidden: ImmutableSet<Name>;
+    readonly forbiddenNamespaces: ReadonlySet<Namespace>;
+    readonly additionalForbidden: ReadonlySet<Name>;
     private _members: OrderedSet<Name>;
 
     constructor(
@@ -49,7 +49,7 @@ export class Namespace {
 
     get forbiddenNameds(): ReadonlySet<Name> {
         // FIXME: cache
-        return this.additionalForbidden.union(...this.forbiddenNamespaces.map(ns => ns.members).toArray());
+        return setUnion(this.additionalForbidden, ...Array.from(this.forbiddenNamespaces).map(ns => ns.members));
     }
 
     add<TName extends Name>(named: TName): TName {
@@ -295,7 +295,7 @@ export class DependencyName extends Name {
 }
 
 export function keywordNamespace(name: string, keywords: string[]) {
-    const ns = new Namespace(name, undefined, ImmutableSet(), ImmutableSet());
+    const ns = new Namespace(name, undefined, [], []);
     for (const kw of keywords) {
         ns.add(new FixedName(kw));
     }
