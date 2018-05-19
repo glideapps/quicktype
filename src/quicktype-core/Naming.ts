@@ -9,7 +9,8 @@ import {
     iterableSome,
     iterableMinBy,
     setGroupBy,
-    setFilterMap
+    setFilterMap,
+    iterableFirst
 } from "./support/Containers";
 
 export class Namespace {
@@ -113,10 +114,11 @@ export class Namer {
             const namingFunction = name.namingFunction;
             // Find the first proposed name that isn't proposed by
             // any of the other names and that isn't already forbidden.
-            const maybeUniqueName = proposedNames.find(
+            const maybeUniqueName = iterableFind(
+                proposedNames,
                 proposed =>
                     !forbiddenNames.has(namingFunction.nameStyle(proposed)) &&
-                    namesToAssign.every(n => n === name || !n.proposeUnstyledNames(names).contains(proposed))
+                    namesToAssign.every(n => n === name || !n.proposeUnstyledNames(names).has(proposed))
             );
             if (maybeUniqueName !== undefined) {
                 const styledName = namingFunction.nameStyle(maybeUniqueName);
@@ -136,7 +138,7 @@ export class Namer {
         let prefixes = this._prefixes;
         let suffixNumber = 1;
         for (const name of namesToPrefix) {
-            const originalName: string = defined(name.proposeUnstyledNames(names).first());
+            const originalName: string = defined(iterableFirst(name.proposeUnstyledNames(names)));
             for (;;) {
                 let nameToTry: string;
                 const prefix = prefixes.first();
@@ -213,11 +215,11 @@ export abstract class Name {
     }
 
     // Must return at least one proposal.  The proposals are considered in order.
-    abstract proposeUnstyledNames(names: Map<Name, string>): OrderedSet<string>;
+    abstract proposeUnstyledNames(names: Map<Name, string>): ReadonlySet<string>;
 
-    firstProposedName = (names: Map<Name, string>): string => {
-        return defined(this.proposeUnstyledNames(names).first());
-    };
+    firstProposedName(names: Map<Name, string>): string {
+        return defined(iterableFirst(this.proposeUnstyledNames(names)));
+    }
 
     nameAssignments(forbiddenNames: ReadonlySet<string>, assignedName: string): Map<Name, string> | null {
         if (forbiddenNames.has(assignedName)) return null;
@@ -254,7 +256,7 @@ export class FixedName extends Name {
         return this._fixedName;
     }
 
-    proposeUnstyledNames(_?: Map<Name, string>): OrderedSet<string> {
+    proposeUnstyledNames(_?: Map<Name, string>): ReadonlySet<string> {
         return panic("Only fixedName should be called on FixedName.");
     }
 
@@ -272,7 +274,7 @@ export class SimpleName extends Name {
         return List();
     }
 
-    proposeUnstyledNames(_?: Map<Name, string>): OrderedSet<string> {
+    proposeUnstyledNames(_?: Map<Name, string>): ReadonlySet<string> {
         return this._unstyledNames;
     }
 
@@ -316,7 +318,7 @@ export class DependencyName extends Name {
         return this._dependencies.toList();
     }
 
-    proposeUnstyledNames(names: Map<Name, string>): OrderedSet<string> {
+    proposeUnstyledNames(names: Map<Name, string>): ReadonlySet<string> {
         return OrderedSet([
             this._proposeUnstyledName(n => {
                 assert(this._dependencies.has(n), "DependencyName proposer is not pure");
