@@ -7,6 +7,7 @@ import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
 import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./TypeNames";
 import { defined, panic } from "./support/Support";
 import { transformationForType } from "./Transformers";
+import { setUnion, setMap } from "./support/Containers";
 
 // `gatherNames` infers names from given names and property names.
 //
@@ -57,9 +58,9 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
 
     let queue = OrderedSet<Type>();
     // null means there are too many
-    const namesForType = new Map<Type, OrderedSet<string> | null>();
+    const namesForType = new Map<Type, ReadonlySet<string> | null>();
 
-    function addNames(t: Type, names: OrderedSet<string> | null) {
+    function addNames(t: Type, names: ReadonlySet<string> | null) {
         // Always use the type's given names if it has some
         if (t.hasNames) {
             const originalNames = t.getNames();
@@ -71,13 +72,13 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         const oldNames = namesForType.get(t);
         if (oldNames === null) return;
 
-        let newNames: OrderedSet<string> | null;
+        let newNames: ReadonlySet<string> | null;
         if (oldNames === undefined) {
             newNames = names;
         } else if (names === null) {
             newNames = null;
         } else {
-            newNames = oldNames.union(names);
+            newNames = setUnion(oldNames, names);
         }
 
         if (newNames !== null && newNames.size >= tooManyNamesThreshold) {
@@ -118,13 +119,13 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
 
             const values = t.getAdditionalProperties();
             if (values !== undefined) {
-                addNames(values, names === null ? null : names.map(pluralize.singular));
+                addNames(values, names === null ? null : setMap(names, pluralize.singular));
             }
         } else {
             matchCompoundType(
                 t,
                 arrayType => {
-                    addNames(arrayType.items, names === null ? null : names.map(pluralize.singular));
+                    addNames(arrayType.items, names === null ? null : setMap(names, pluralize.singular));
                 },
                 _classType => panic("We handled this above"),
                 _mapType => panic("We handled this above"),
@@ -145,7 +146,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
             if (names === undefined) return;
 
             const index = t.typeRef.index;
-            console.log(`${index}: ${names === null ? "*** too many ***" : names.join(" ")}`);
+            console.log(`${index}: ${names === null ? "*** too many ***" : Array.from(names).join(" ")}`);
         });
     }
 
@@ -199,10 +200,10 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
                 } else if (ancestorNames !== undefined) {
                     const alternatives: string[] = [];
                     names.forEach(name => {
-                        alternatives.push(...ancestorNames.map(an => `${an}_${name}`).toArray());
+                        alternatives.push(...Array.from(ancestorNames).map(an => `${an}_${name}`));
                         // FIXME: add alternatives with the suffix here, too?
 
-                        alternatives.push(...ancestorNames.map(an => `${an}_${name}_${t.kind}`).toArray());
+                        alternatives.push(...Array.from(ancestorNames).map(an => `${an}_${name}_${t.kind}`));
                         // FIXME: add alternatives with the suffix here, too?
                     });
 
@@ -273,7 +274,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
             alternatives = OrderedSet();
         }
 
-        alternatives = alternatives.union(names.map(name => `${name}_${t.kind}`));
+        alternatives = alternatives.union(Array.from(names).map(name => `${name}_${t.kind}`));
         directAlternativesForType.set(t, alternatives);
     });
 
