@@ -1,4 +1,4 @@
-import { Set, OrderedMap, OrderedSet } from "immutable";
+import { OrderedMap, OrderedSet } from "immutable";
 
 import { Type, ClassProperty, UnionType, ObjectType } from "./Type";
 import { assertIsObject } from "./TypeUtils";
@@ -176,7 +176,7 @@ export function unionBuilderForUnification<T extends Type>(
 ): UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
     return new UnifyUnionBuilder(typeBuilder, makeObjectTypes, makeClassesFixed, trefs =>
         unifyTypes(
-            Set(trefs.map(tref => tref.deref()[0])),
+            new Set(trefs.map(tref => tref.deref()[0])),
             emptyTypeAttributes,
             typeBuilder,
             unionBuilderForUnification(typeBuilder, makeObjectTypes, makeClassesFixed, conflateNumbers),
