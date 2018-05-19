@@ -1,7 +1,7 @@
 import { Set, OrderedSet, List, Map, Collection, hash } from "immutable";
 
 import { defined, assert, panic } from "./support/Support";
-import { setUnion, setMap, setFilter, setFind } from "./support/Containers";
+import { setUnion, setMap, setFilter, iterableFind } from "./support/Containers";
 
 export class Namespace {
     private readonly _name: string;
@@ -335,7 +335,7 @@ export function keywordNamespace(name: string, keywords: string[]) {
     return ns;
 }
 
-function allNamespacesRecursively(namespaces: ReadonlySet<Namespace>): ReadonlySet<Namespace> {
+function allNamespacesRecursively(namespaces: Iterable<Namespace>): ReadonlySet<Namespace> {
     return setUnion(namespaces, ...Array.from(setMap(namespaces, ns => allNamespacesRecursively(ns.children))));
 }
 
@@ -344,7 +344,7 @@ class NamingContext {
     private _namedsForName: Map<string, Set<Name>> = Map();
     readonly namespaces: ReadonlySet<Namespace>;
 
-    constructor(rootNamespaces: ReadonlySet<Namespace>) {
+    constructor(rootNamespaces: Iterable<Namespace>) {
         this.namespaces = allNamespacesRecursively(rootNamespaces);
     }
 
@@ -386,7 +386,7 @@ class NamingContext {
 }
 
 // Naming algorithm
-export function assignNames(rootNamespaces: ReadonlySet<Namespace>): Map<Name, string> {
+export function assignNames(rootNamespaces: Iterable<Namespace>): Map<Name, string> {
     const ctx = new NamingContext(rootNamespaces);
 
     // Assign all fixed names.
@@ -404,7 +404,7 @@ export function assignNames(rootNamespaces: ReadonlySet<Namespace>): Map<Name, s
         //    cycle.
 
         const unfinishedNamespaces = setFilter(ctx.namespaces, ns => ctx.areForbiddensFullyNamed(ns));
-        const readyNamespace = setFind(unfinishedNamespaces, ns => ns.members.some(ctx.isReadyToBeNamed));
+        const readyNamespace = iterableFind(unfinishedNamespaces, ns => ns.members.some(ctx.isReadyToBeNamed));
 
         if (!readyNamespace) {
             // FIXME: Check for cycles?
