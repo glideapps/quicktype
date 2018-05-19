@@ -1,4 +1,4 @@
-import { OrderedMap, Map } from "immutable";
+import { Map as ImmutableMap } from "immutable";
 
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { assertNever } from "../support/Support";
@@ -55,7 +55,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, Map(), arrays, this._fixed, forwardingRef)
+            this._typeInference.inferType(this._cjson, ImmutableMap(), arrays, this._fixed, forwardingRef)
         );
     }
 }
@@ -170,19 +170,18 @@ export class TypeInference {
             }
         });
 
-        const properties: [string, ClassProperty][] = [];
+        const properties = new Map<string, ClassProperty>();
         for (const key of propertyNames) {
             const values = propertyValues[key];
-            const t = this.inferType(cjson, Map(), values, false);
+            const t = this.inferType(cjson, ImmutableMap(), values, false);
             const isOptional = values.length < objects.length;
-            properties.push([key, new ClassProperty(t, isOptional)]);
+            properties.set(key, new ClassProperty(t, isOptional));
         }
 
-        const propertyMap = OrderedMap(properties);
         if (fixed) {
-            return this._typeBuilder.getUniqueClassType(typeAttributes, true, propertyMap, forwardingRef);
+            return this._typeBuilder.getUniqueClassType(typeAttributes, true, properties, forwardingRef);
         } else {
-            return this._typeBuilder.getClassType(typeAttributes, propertyMap, forwardingRef);
+            return this._typeBuilder.getClassType(typeAttributes, properties, forwardingRef);
         }
     }
 }
