@@ -1,4 +1,4 @@
-import { Set, OrderedSet, Map } from "immutable";
+import { Set as ImmutableSet, OrderedSet, Map } from "immutable";
 
 import { defined, assert, panic } from "./support/Support";
 import {
@@ -15,15 +15,15 @@ import {
 
 export class Namespace {
     private _children: OrderedSet<Namespace>;
-    readonly forbiddenNamespaces: Set<Namespace>;
-    readonly additionalForbidden: Set<Name>;
+    readonly forbiddenNamespaces: ImmutableSet<Namespace>;
+    readonly additionalForbidden: ImmutableSet<Name>;
     private _members: OrderedSet<Name>;
 
     constructor(
         _name: string,
         parent: Namespace | undefined,
-        forbiddenNamespaces: Set<Namespace>,
-        additionalForbidden: Set<Name>
+        forbiddenNamespaces: ImmutableSet<Namespace>,
+        additionalForbidden: ImmutableSet<Name>
     ) {
         this.forbiddenNamespaces = forbiddenNamespaces;
         this.additionalForbidden = additionalForbidden;
@@ -46,7 +46,7 @@ export class Namespace {
         return this._members;
     }
 
-    get forbiddenNameds(): Set<Name> {
+    get forbiddenNameds(): ImmutableSet<Name> {
         // FIXME: cache
         return this.additionalForbidden.union(...this.forbiddenNamespaces.map(ns => ns.members).toArray());
     }
@@ -171,13 +171,13 @@ export function funPrefixNamer(name: string, nameStyle: NameStyle): Namer {
 // for `FixedName` or the non-fixed names.
 
 export abstract class Name {
-    private _associates = Set<AssociatedName>();
+    private readonly _associates = new Set<AssociatedName>();
 
     // If a Named is fixed, the namingFunction is undefined.
     constructor(private readonly _namingFunction: Namer | undefined, readonly order: number) {}
 
     addAssociate(associate: AssociatedName): void {
-        this._associates = this._associates.add(associate);
+        this._associates.add(associate);
     }
 
     abstract get dependencies(): ReadonlyArray<Name>;
@@ -294,7 +294,7 @@ export class DependencyName extends Name {
 }
 
 export function keywordNamespace(name: string, keywords: string[]) {
-    const ns = new Namespace(name, undefined, Set(), Set());
+    const ns = new Namespace(name, undefined, ImmutableSet(), ImmutableSet());
     for (const kw of keywords) {
         ns.add(new FixedName(kw));
     }
@@ -307,7 +307,7 @@ function allNamespacesRecursively(namespaces: Iterable<Namespace>): ReadonlySet<
 
 class NamingContext {
     names: Map<Name, string> = Map();
-    private _namedsForName: Map<string, Set<Name>> = Map();
+    private _namedsForName: Map<string, ImmutableSet<Name>> = Map();
     readonly namespaces: ReadonlySet<Namespace>;
 
     constructor(rootNamespaces: Iterable<Namespace>) {
@@ -344,7 +344,7 @@ class NamingContext {
         this.names = this.names.set(named, name);
         let namedsForName = this._namedsForName.get(name);
         if (namedsForName === undefined) {
-            namedsForName = Set();
+            namedsForName = ImmutableSet();
             this._namedsForName = this._namedsForName.set(name, namedsForName);
         }
         this._namedsForName.set(name, namedsForName.add(named));
