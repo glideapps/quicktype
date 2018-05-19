@@ -1,5 +1,3 @@
-import { OrderedMap } from "immutable";
-
 import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType, ObjectType } from "./Type";
 import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
@@ -15,7 +13,16 @@ import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } f
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
 import { transformationForType, followTargetType } from "./Transformers";
 import { TargetLanguage } from "./TargetLanguage";
-import { setUnion, setFilter, iterableEnumerate, iterableSome, mapFilter, mapSortBy } from "./support/Containers";
+import {
+    setUnion,
+    setFilter,
+    iterableEnumerate,
+    iterableSome,
+    mapFilter,
+    mapSortBy,
+    mapFilterMap,
+    mapSome
+} from "./support/Containers";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
@@ -366,27 +373,24 @@ export abstract class ConvenienceRenderer extends Renderer {
         let ns: Namespace | undefined;
 
         const accessorNames = objectPropertyNames(o, this.targetLanguage.name);
-        const names = o
-            .getSortedProperties()
-            .map((p, jsonName) => {
-                const [assignedName, isFixed] = getAccessorName(accessorNames, jsonName);
-                let name: Name | undefined;
-                if (isFixed) {
-                    name = new FixedName(defined(assignedName));
-                } else {
-                    name = this.makeNameForProperty(o, className, p, jsonName, assignedName);
-                }
-                if (name === undefined) return undefined;
-                if (ns === undefined) {
-                    ns = new Namespace(o.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
-                }
-                ns.add(name);
-                for (const depName of this.makePropertyDependencyNames(o, className, p, jsonName, name)) {
-                    ns.add(depName);
-                }
-                return name;
-            })
-            .filter(v => v !== undefined) as OrderedMap<string, SimpleName>;
+        const names = mapFilterMap(o.getSortedProperties(), (p, jsonName) => {
+            const [assignedName, isFixed] = getAccessorName(accessorNames, jsonName);
+            let name: Name | undefined;
+            if (isFixed) {
+                name = new FixedName(defined(assignedName));
+            } else {
+                name = this.makeNameForProperty(o, className, p, jsonName, assignedName);
+            }
+            if (name === undefined) return undefined;
+            if (ns === undefined) {
+                ns = new Namespace(o.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
+            }
+            ns.add(name);
+            for (const depName of this.makePropertyDependencyNames(o, className, p, jsonName, name)) {
+                ns.add(depName);
+            }
+            return name;
+        });
         defined(this._propertyNamesStoreView).set(o, names);
     };
 
@@ -472,12 +476,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         const names = this.names;
         if (t instanceof ClassType) {
             const propertyNameds = defined(this._propertyNamesStoreView).get(t);
-            const sortedMap = t
-                .getProperties()
-                .filter((_, n) => propertyNameds.get(n) !== undefined)
-                .map(p => p.type)
-                .sortBy((_, n) => defined(names.get(defined(propertyNameds.get(n)))));
-            return sortedMap.toOrderedSet();
+            const filteredMap = mapFilterMap(t.getProperties(), (p, n) => {
+                if (propertyNameds.get(n) === undefined) return undefined;
+                return p.type;
+            });
+            const sortedMap = mapSortBy(filteredMap, (_, n) => defined(names.get(defined(propertyNameds.get(n)))));
+            return new Set(sortedMap.values());
         }
         return t.getChildren();
     }
@@ -833,7 +837,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._haveUnions = iterableSome(types, t => t instanceof UnionType);
         this._haveMaps = iterableSome(types, t => t instanceof MapType);
         const classTypes = setFilter(types, t => t instanceof ClassType) as Set<ClassType>;
-        this._haveOptionalProperties = iterableSome(classTypes, c => c.getProperties().some(p => p.isOptional));
+        this._haveOptionalProperties = iterableSome(classTypes, c => mapSome(c.getProperties(), p => p.isOptional));
         this._namedTypes = this._declarationIR.declarations.filter(d => d.kind === "define").map(d => d.type);
         const { objects, enums, unions } = separateNamedTypes(this._namedTypes);
         this._namedObjects = new Set(objects);

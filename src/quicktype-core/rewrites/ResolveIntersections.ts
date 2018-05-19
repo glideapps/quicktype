@@ -130,7 +130,7 @@ class IntersectionAccumulator
         const allPropertyNames = this._objectProperties
             .keySeq()
             .toOrderedSet()
-            .union(maybeObject.getProperties().keySeq());
+            .union(maybeObject.getProperties().keys());
         allPropertyNames.forEach(name => {
             const existing = defined(this._objectProperties).get(name);
             const newProperty = maybeObject.getProperties().get(name);

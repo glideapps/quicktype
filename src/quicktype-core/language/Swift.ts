@@ -500,7 +500,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 const allPropertiesRedundant = groups.every(group => {
                     return group.every(p => p.label === undefined);
                 });
-                if (!allPropertiesRedundant && !c.getProperties().isEmpty()) {
+                if (!allPropertiesRedundant && c.getProperties().size > 0) {
                     this.ensureBlankLine();
                     this.emitBlock("enum CodingKeys: String, CodingKey", () => {
                         for (const group of groups) {

@@ -14,7 +14,10 @@ import {
     setUnion,
     Equality,
     hashCodeOf,
-    areEqual
+    areEqual,
+    mapMap,
+    setMap,
+    mapSortByKey
 } from "./support/Containers";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
@@ -47,7 +50,10 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
 export class TypeIdentity implements Equality {
     private readonly _hashCode: number;
 
-    constructor(private readonly _kind: TypeKind, private readonly _components: ReadonlyArray<Equality | undefined>) {
+    constructor(
+        private readonly _kind: TypeKind,
+        private readonly _components: ReadonlyArray<Equality | ReadonlyMap<any, any> | undefined>
+    ) {
         let h = hashCodeInit;
         h = addHashCode(h, hashCodeOf(this._kind));
         for (const c of _components) {
@@ -368,16 +374,16 @@ export class ClassProperty extends GenericClassProperty<TypeRef> {
 function objectTypeIdentify(
     kind: ObjectTypeKind,
     attributes: TypeAttributes,
-    properties: OrderedMap<string, ClassProperty>,
+    properties: ReadonlyMap<string, ClassProperty>,
     additionalPropertiesRef: TypeRef | undefined
 ): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
-    return new TypeIdentity(kind, [identityAttributes(attributes), properties.toMap(), additionalPropertiesRef]);
+    return new TypeIdentity(kind, [identityAttributes(attributes), properties, additionalPropertiesRef]);
 }
 
 export function classTypeIdentity(
     attributes: TypeAttributes,
-    properties: OrderedMap<string, ClassProperty>
+    properties: ReadonlyMap<string, ClassProperty>
 ): MaybeTypeIdentity {
     return objectTypeIdentify("class", attributes, properties, undefined);
 }
@@ -386,7 +392,7 @@ export function mapTypeIdentify(
     attributes: TypeAttributes,
     additionalPropertiesRef: TypeRef | undefined
 ): MaybeTypeIdentity {
-    return objectTypeIdentify("map", attributes, OrderedMap(), additionalPropertiesRef);
+    return objectTypeIdentify("map", attributes, new Map(), additionalPropertiesRef);
 }
 
 export class ObjectType extends Type {
@@ -397,14 +403,14 @@ export class ObjectType extends Type {
         typeRef: TypeRef,
         kind: ObjectTypeKind,
         readonly isFixed: boolean,
-        private _properties: OrderedMap<string, ClassProperty> | undefined,
+        private _properties: ReadonlyMap<string, ClassProperty> | undefined,
         private _additionalPropertiesRef: TypeRef | undefined
     ) {
         super(typeRef, kind);
 
         if (kind === "map") {
             if (_properties !== undefined) {
-                assert(_properties.isEmpty());
+                assert(_properties.size === 0);
             }
             assert(!isFixed);
         } else if (kind === "class") {
@@ -414,11 +420,11 @@ export class ObjectType extends Type {
         }
     }
 
-    setProperties(properties: OrderedMap<string, ClassProperty>, additionalPropertiesRef: TypeRef | undefined) {
+    setProperties(properties: ReadonlyMap<string, ClassProperty>, additionalPropertiesRef: TypeRef | undefined) {
         assert(this._properties === undefined, "Tried to set object properties twice");
 
         if (this instanceof MapType) {
-            assert(properties.isEmpty(), "Cannot set properties on map type");
+            assert(properties.size === 0, "Cannot set properties on map type");
         }
 
         if (this instanceof ClassType) {
@@ -429,15 +435,16 @@ export class ObjectType extends Type {
         this._additionalPropertiesRef = additionalPropertiesRef;
     }
 
-    getProperties(): OrderedMap<string, ClassProperty> {
+    getProperties(): ReadonlyMap<string, ClassProperty> {
         return defined(this._properties);
     }
 
-    getSortedProperties(): OrderedMap<string, ClassProperty> {
+    getSortedProperties(): ReadonlyMap<string, ClassProperty> {
+        // FIXME: We have lots of impromptu implementations of this via mapSortByKey
         const properties = this.getProperties();
-        const sortedKeys = properties.keySeq().sort();
-        const props = sortedKeys.map((k: string): [string, ClassProperty] => [k, defined(properties.get(k))]);
-        return OrderedMap(props);
+        const sortedKeys = Array.from(properties.keys()).sort();
+        const props = sortedKeys.map(k => [k, defined(properties.get(k))] as [string, ClassProperty]);
+        return new Map(props);
     }
 
     private getAdditionalPropertiesRef(): TypeRef | undefined {
@@ -452,12 +459,10 @@ export class ObjectType extends Type {
     }
 
     getNonAttributeChildren(): ReadonlySet<Type> {
-        let children = this.getSortedProperties()
-            .map(p => p.type)
-            .toOrderedSet();
+        const children = setMap(this.getSortedProperties().values(), p => p.type);
         const additionalProperties = this.getAdditionalProperties();
         if (additionalProperties !== undefined) {
-            children = children.add(additionalProperties);
+            children.add(additionalProperties);
         }
         return children;
     }
@@ -481,16 +486,17 @@ export class ObjectType extends Type {
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
-        const sortedProperties = this.getProperties().sortBy((_, n) => n);
+        const sortedProperties = mapSortByKey(this.getProperties());
         const propertiesInNewOrder = canonicalOrder ? sortedProperties : this.getProperties();
-        const maybePropertyTypes = builder.lookup(sortedProperties.map(cp => cp.typeRef));
+        const maybePropertyTypes = builder.lookupMap(mapMap(sortedProperties, cp => cp.typeRef));
         const maybeAdditionalProperties = mapOptional(r => builder.lookup(r), this._additionalPropertiesRef);
 
         if (
             maybePropertyTypes !== undefined &&
             (maybeAdditionalProperties !== undefined || this._additionalPropertiesRef === undefined)
         ) {
-            const properties = propertiesInNewOrder.map(
+            const properties = mapMap(
+                propertiesInNewOrder,
                 (cp, n) => new ClassProperty(defined(maybePropertyTypes.get(n)), cp.isOptional)
             );
 
@@ -528,8 +534,9 @@ export class ObjectType extends Type {
                     return panic(`Invalid object type kind ${this.kind}`);
             }
 
-            const reconstitutedTypes = sortedProperties.map(cp => builder.reconstitute(cp.typeRef));
-            const properties = propertiesInNewOrder.map(
+            const reconstitutedTypes = mapMap(sortedProperties, cp => builder.reconstitute(cp.typeRef));
+            const properties = mapMap(
+                propertiesInNewOrder,
                 (cp, n) => new ClassProperty(defined(reconstitutedTypes.get(n)), cp.isOptional)
             );
             const additionalProperties = mapOptional(r => builder.reconstitute(r), this._additionalPropertiesRef);
@@ -567,7 +574,7 @@ export class ClassType extends ObjectType {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "class";
 
-    constructor(typeRef: TypeRef, isFixed: boolean, properties: OrderedMap<string, ClassProperty> | undefined) {
+    constructor(typeRef: TypeRef, isFixed: boolean, properties: ReadonlyMap<string, ClassProperty> | undefined) {
         super(typeRef, "class", isFixed, properties, undefined);
     }
 }
@@ -717,7 +724,7 @@ export abstract class SetOperationType extends Type {
     ): void {
         const sortedMemberRefs = this.sortedMembers.toOrderedMap().map(t => t.typeRef);
         const membersInOrder = canonicalOrder ? this.sortedMembers : this.members;
-        const maybeMembers = builder.lookup(sortedMemberRefs);
+        const maybeMembers = builder.lookupMap(sortedMemberRefs);
         if (maybeMembers === undefined) {
             getType(undefined);
             const reconstituted = builder.reconstitute(sortedMemberRefs);

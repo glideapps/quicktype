@@ -1,4 +1,4 @@
-import { Map, OrderedMap, OrderedSet, Set, Collection, isCollection } from "immutable";
+import { Map, OrderedSet, Set, Collection, isCollection } from "immutable";
 
 import { PrimitiveTypeKind, Type, ClassProperty, MaybeTypeIdentity } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
@@ -55,15 +55,29 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     }
 
     lookup(tref: TypeRef): TypeRef | undefined;
-    lookup<C extends Collection<any, TypeRef>>(trefs: C): C | undefined;
-    lookup<C extends Collection<any, TypeRef>>(trefs: TypeRef | C): TypeRef | C | undefined {
+    lookup(trefs: Iterable<TypeRef>): ReadonlyArray<TypeRef> | undefined;
+    lookup(trefs: TypeRef | Iterable<TypeRef>): TypeRef | ReadonlyArray<TypeRef> | undefined {
         assert(!this._wasUsed, "Cannot lookup constituents after building type");
-        if (isCollection(trefs)) {
-            const maybeRefs = trefs.map(tref => this._typeBuilder.lookupTypeRefs([tref], undefined, false));
+        if (trefs instanceof TypeRef) {
+            return this._typeBuilder.lookupTypeRefs([trefs], undefined, false);
+        } else {
+            const maybeRefs = Array.from(trefs).map(tref => this._typeBuilder.lookupTypeRefs([tref], undefined, false));
             if (maybeRefs.some(tref => tref === undefined)) return undefined;
-            return maybeRefs as C;
+            return maybeRefs as ReadonlyArray<TypeRef>;
         }
-        return this._typeBuilder.lookupTypeRefs([trefs], undefined, false);
+    }
+
+    lookupMap<K>(trefs: ReadonlyMap<K, TypeRef>): ReadonlyMap<K, TypeRef> | undefined {
+        const resultValues = this.lookup(trefs.values());
+        if (resultValues === undefined) return undefined;
+        assert(resultValues.length === trefs.size, "Didn't get back the correct number of types");
+        let result = Map<K, TypeRef>();
+        let i = 0;
+        for (const k of trefs.keys()) {
+            result = result.set(k, resultValues[i]);
+            i += 1;
+        }
+        return result;
     }
 
     reconstitute(tref: TypeRef): TypeRef;
@@ -104,7 +118,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         this.builderForSetting().setArrayItems(this.getResult(), items);
     }
 
-    getObjectType(properties: OrderedMap<string, ClassProperty>, additionalProperties: TypeRef | undefined): void {
+    getObjectType(properties: ReadonlyMap<string, ClassProperty>, additionalProperties: TypeRef | undefined): void {
         this.register(
             this.builderForNewType().getUniqueObjectType(
                 this._typeAttributes,
@@ -116,7 +130,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     }
 
     getUniqueObjectType(
-        properties: OrderedMap<string, ClassProperty> | undefined,
+        properties: ReadonlyMap<string, ClassProperty> | undefined,
         additionalProperties: TypeRef | undefined
     ): void {
         this.register(
@@ -129,7 +143,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         );
     }
 
-    getClassType(properties: OrderedMap<string, ClassProperty>): void {
+    getClassType(properties: ReadonlyMap<string, ClassProperty>): void {
         if (this._makeClassUnique) {
             this.getUniqueClassType(false, properties);
             return;
@@ -137,14 +151,14 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         this.register(this.builderForNewType().getClassType(this._typeAttributes, properties, this._forwardingRef));
     }
 
-    getUniqueClassType(isFixed: boolean, properties: OrderedMap<string, ClassProperty> | undefined): void {
+    getUniqueClassType(isFixed: boolean, properties: ReadonlyMap<string, ClassProperty> | undefined): void {
         this.register(
             this.builderForNewType().getUniqueClassType(this._typeAttributes, isFixed, properties, this._forwardingRef)
         );
     }
 
     setObjectProperties(
-        properties: OrderedMap<string, ClassProperty>,
+        properties: ReadonlyMap<string, ClassProperty>,
         additionalProperties: TypeRef | undefined
     ): void {
         this.builderForSetting().setObjectProperties(this.getResult(), properties, additionalProperties);
