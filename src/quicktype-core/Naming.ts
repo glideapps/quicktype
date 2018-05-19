@@ -10,7 +10,8 @@ import {
     iterableMinBy,
     setGroupBy,
     setFilterMap,
-    iterableFirst
+    iterableFirst,
+    iterableEvery
 } from "./support/Containers";
 
 export class Namespace {
@@ -22,11 +23,11 @@ export class Namespace {
     constructor(
         _name: string,
         parent: Namespace | undefined,
-        forbiddenNamespaces: ImmutableSet<Namespace>,
-        additionalForbidden: ImmutableSet<Name>
+        forbiddenNamespaces: Iterable<Namespace>,
+        additionalForbidden: Iterable<Name>
     ) {
-        this.forbiddenNamespaces = forbiddenNamespaces;
-        this.additionalForbidden = additionalForbidden;
+        this.forbiddenNamespaces = ImmutableSet(forbiddenNamespaces);
+        this.additionalForbidden = ImmutableSet(additionalForbidden);
         this._children = OrderedSet();
         this._members = OrderedSet();
         if (parent !== undefined) {
@@ -46,7 +47,7 @@ export class Namespace {
         return this._members;
     }
 
-    get forbiddenNameds(): ImmutableSet<Name> {
+    get forbiddenNameds(): ReadonlySet<Name> {
         // FIXME: cache
         return this.additionalForbidden.union(...this.forbiddenNamespaces.map(ns => ns.members).toArray());
     }
@@ -320,7 +321,7 @@ class NamingContext {
     };
 
     areForbiddensFullyNamed(namespace: Namespace): boolean {
-        return namespace.forbiddenNameds.every((n: Name) => this.names.has(n));
+        return iterableEvery(namespace.forbiddenNameds, n => this.names.has(n));
     }
 
     isConflicting = (namedNamespace: Namespace, proposed: string): boolean => {
@@ -330,7 +331,7 @@ class NamingContext {
         // The name is assigned, but it might still not be forbidden.
         let conflicting: Name | undefined;
         namedsForProposed.forEach((n: Name) => {
-            if (namedNamespace.members.has(n) || namedNamespace.forbiddenNameds.contains(n)) {
+            if (namedNamespace.members.has(n) || namedNamespace.forbiddenNameds.has(n)) {
                 conflicting = n;
                 return false;
             }
