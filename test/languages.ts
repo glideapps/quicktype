@@ -91,6 +91,7 @@ export const RustLanguage: Language = {
     "recursive.json",
     "github-events.json",
     "0a91a.json",
+    "0cffa.json",
     "34702.json",
     "76ae1.json",
     "af2d1.json"
