@@ -118,6 +118,13 @@ export function mapMergeInto<K, V>(dest: Map<K, V>, src: ReadonlyMap<K, V>): voi
     }
 }
 
+export function mapMerge<K, V>(ma: Map<K, V>, mb: Map<K, V>): Map<K, V> {
+    const result = new Map<K, V>();
+    mapMergeInto(result, ma);
+    mapMergeInto(result, mb);
+    return result;
+}
+
 export function mapFilter<K, V>(m: ReadonlyMap<K, V>, p: (v: V, k: K) => boolean): Map<K, V> {
     const result = new Map<K, V>();
     for (const [k, v] of m) {
@@ -138,6 +145,22 @@ export function mapSortBy<K, V>(m: Iterable<[K, V]>, sortKey: (v: V, k: K) => nu
         return 0;
     });
     return new Map(arr);
+}
+
+export function mapFromObject<V>(obj: { [k: string]: V }): Map<string, V> {
+    const result = new Map<string, V>();
+    for (const k of Object.getOwnPropertyNames(obj)) {
+        result.set(k, obj[k]);
+    }
+    return result;
+}
+
+export function mapFromIterable<K, V>(it: Iterable<K>, valueForKey: (k: K) => V): Map<K, V> {
+    const result = new Map<K, V>();
+    for (const k of it) {
+        result.set(k, valueForKey(k));
+    }
+    return result;
 }
 
 export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): void {
@@ -218,4 +241,43 @@ export function setGroupBy<T, G>(it: Iterable<T>, grouper: (v: T) => G): Map<G, 
 export function toReadonlySet<T>(it: Iterable<T>): ReadonlySet<T> {
     if (it instanceof Set) return it;
     return new Set(it);
+}
+
+export interface Equality {
+    equals(other: any): boolean;
+    hashCode(): number;
+}
+
+export class EqualityMap<K extends Equality, V> {
+    private readonly _map = new Map<number, [K, V]>();
+
+    set(k: K, v: V): void {
+        let hash = k.hashCode() | 0;
+        for (;;) {
+            const kvp = this._map.get(hash);
+            if (kvp === undefined) {
+                this._map.set(hash, [k, v]);
+                return;
+            }
+            if (k.equals(kvp[0])) {
+                kvp[1] = v;
+                return;
+            }
+            hash = (hash + 1) | 0;
+        }
+    }
+
+    get(k: K): V | undefined {
+        let hash = k.hashCode() | 0;
+        for (;;) {
+            const kvp = this._map.get(hash);
+            if (kvp === undefined) {
+                return undefined;
+            }
+            if (k.equals(kvp[0])) {
+                return kvp[1];
+            }
+            hash = (hash + 1) | 0;
+        }
+    }
 }
