@@ -1,10 +1,11 @@
-import { Set, OrderedSet, Collection } from "immutable";
+import { Set, OrderedSet } from "immutable";
 import * as pluralize from "pluralize";
 
 import { panic, defined, assert, mapOptional } from "./support/Support";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { splitIntoWords } from "./support/Strings";
 import { Chance } from "./support/Chance";
+import { setUnion, setMap, iterableFirst, iterableSkip } from "./support/Containers";
 
 let chance: Chance;
 let usedRandomNames: Set<string>;
@@ -31,30 +32,28 @@ export type NameOrNames = string | TypeNames;
 // produce a name that includes the overlap twice.  For example, for
 // the names "aaa" and "aaaa" we have the common prefix "aaa" and the
 // common suffix "aaa", so we will produce the combined name "aaaaaa".
-function combineNames(names: Collection<any, string>): string {
-    let originalFirst = names.first();
+function combineNames(names: ReadonlySet<string>): string {
+    let originalFirst = iterableFirst(names);
     if (originalFirst === undefined) {
         return panic("Named type has no names");
     }
-    if (names.count() === 1) {
+    if (names.size === 1) {
         return originalFirst;
     }
 
-    const namesSet = names
-        .map(s =>
-            splitIntoWords(s)
-                .map(w => w.word.toLowerCase())
-                .join("_")
-        )
-        .toSet();
-    const first = defined(namesSet.first());
+    const namesSet = setMap(names, s =>
+        splitIntoWords(s)
+            .map(w => w.word.toLowerCase())
+            .join("_")
+    );
+    const first = defined(iterableFirst(namesSet));
     if (namesSet.size === 1) {
         return first;
     }
 
     let prefixLength = first.length;
     let suffixLength = first.length;
-    namesSet.rest().forEach(n => {
+    for (const n of iterableSkip(namesSet, 1)) {
         prefixLength = Math.min(prefixLength, n.length);
         for (let i = 0; i < prefixLength; i++) {
             if (first[i] !== n[i]) {
@@ -70,7 +69,7 @@ function combineNames(names: Collection<any, string>): string {
                 break;
             }
         }
-    });
+    }
     const prefix = prefixLength > 2 ? first.substr(0, prefixLength) : "";
     const suffix = suffixLength > 2 ? first.substr(first.length - suffixLength) : "";
     const combined = prefix + suffix;
@@ -84,8 +83,8 @@ export const tooManyNamesThreshold = 20;
 
 export abstract class TypeNames {
     static make(
-        names: OrderedSet<string>,
-        alternativeNames: OrderedSet<string> | undefined,
+        names: ReadonlySet<string>,
+        alternativeNames: ReadonlySet<string> | undefined,
         areInferred: boolean
     ): TypeNames {
         if (names.size >= tooManyNamesThreshold) {
@@ -100,9 +99,9 @@ export abstract class TypeNames {
     }
 
     abstract get areInferred(): boolean;
-    abstract get names(): OrderedSet<string>;
+    abstract get names(): ReadonlySet<string>;
     abstract get combinedName(): string;
-    abstract get proposedNames(): OrderedSet<string>;
+    abstract get proposedNames(): ReadonlySet<string>;
 
     abstract add(names: TypeNames): TypeNames;
     abstract clearInferred(): TypeNames;
@@ -113,8 +112,8 @@ export abstract class TypeNames {
 
 export class RegularTypeNames extends TypeNames {
     constructor(
-        readonly names: OrderedSet<string>,
-        private readonly _alternativeNames: OrderedSet<string> | undefined,
+        readonly names: ReadonlySet<string>,
+        private readonly _alternativeNames: ReadonlySet<string> | undefined,
         readonly areInferred: boolean
     ) {
         super();
@@ -135,12 +134,12 @@ export class RegularTypeNames extends TypeNames {
             newNames = names.names;
             newAreInferred = false;
         } else if (this.areInferred === names.areInferred) {
-            newNames = this.names.union(names.names);
+            newNames = setUnion(this.names, names.names);
         }
         const newAlternativeNames =
             this._alternativeNames === undefined || names._alternativeNames === undefined
                 ? undefined
-                : this._alternativeNames.union(names._alternativeNames);
+                : setUnion(this._alternativeNames, names._alternativeNames);
         return TypeNames.make(newNames, newAlternativeNames, newAreInferred);
     }
 
@@ -168,19 +167,19 @@ export class RegularTypeNames extends TypeNames {
 
     singularize(): TypeNames {
         return TypeNames.make(
-            this.names.map(pluralize.singular),
-            mapOptional(an => an.map(pluralize.singular), this._alternativeNames),
+            setMap(this.names, pluralize.singular),
+            mapOptional(an => setMap(an, pluralize.singular), this._alternativeNames),
             true
         );
     }
 
     toString(): string {
         const inferred = this.areInferred ? "inferred" : "given";
-        const names = `${inferred} ${this.names.join(",")}`;
+        const names = `${inferred} ${Array.from(this.names).join(",")}`;
         if (this._alternativeNames === undefined) {
             return names;
         }
-        return `${names} (${this._alternativeNames.join(",")})`;
+        return `${names} (${Array.from(this._alternativeNames).join(",")})`;
     }
 }
 
