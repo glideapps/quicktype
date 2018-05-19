@@ -80,8 +80,8 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             _enumType => panic("We handled this above"),
             unionType => {
                 if (!this._tsFlowOptions.declareUnions || nullableFromUnion(unionType) !== null) {
-                    const children = unionType.getChildren().map(c => parenIfNeeded(this.sourceFor(c)));
-                    return multiWord(" | ", ...children.toArray());
+                    const children = Array.from(unionType.getChildren()).map(c => parenIfNeeded(this.sourceFor(c)));
+                    return multiWord(" | ", ...children);
                 } else {
                     return singleWord(this.nameForNamedType(unionType));
                 }
@@ -112,13 +112,7 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
         this.emitDescription(this.descriptionForType(u));
 
-        const children = multiWord(
-            " | ",
-            ...u
-                .getChildren()
-                .map(c => parenIfNeeded(this.sourceFor(c)))
-                .toArray()
-        );
+        const children = multiWord(" | ", ...Array.from(u.getChildren()).map(c => parenIfNeeded(this.sourceFor(c))));
         this.emitLine("export type ", unionName, " = ", children.source, ";");
     }
 

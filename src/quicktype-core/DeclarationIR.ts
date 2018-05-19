@@ -49,7 +49,9 @@ export function cycleBreakerTypesForGraph(
         if (visitedTypes.has(t)) return;
 
         if (isImplicitCycleBreaker(t)) {
-            queue.push(...t.getChildren().toArray());
+            for (const c of t.getChildren()) {
+                queue.push(c);
+            }
         } else {
             const maybeBreaker = findBreaker(t, path, canBreakCycles);
             if (maybeBreaker !== undefined) {

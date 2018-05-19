@@ -9,7 +9,7 @@ import {
     allUpperWordStyle,
     camelCase
 } from "../support/Strings";
-import { intercalate, panic } from "../support/Support";
+import { panic } from "../support/Support";
 
 import { Sourcelike, modifySource } from "../Source";
 import { Namer, Name } from "../Naming";
@@ -17,6 +17,7 @@ import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
+import { arrayIntercalate } from "../support/Containers";
 
 const unicode = require("unicode-properties");
 
@@ -156,8 +157,8 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
             mapType => ["m(", this.typeMapTypeFor(mapType.values), ")"],
             _enumType => panic("We handled this above"),
             unionType => {
-                const children = unionType.getChildren().map(this.typeMapTypeFor);
-                return ["u(", ...intercalate(", ", children).toArray(), ")"];
+                const children = Array.from(unionType.getChildren()).map(this.typeMapTypeFor);
+                return ["u(", ...arrayIntercalate(", ", children), ")"];
             }
         );
     };
