@@ -189,7 +189,7 @@ export abstract class Renderer {
         this.changeIndent(-1);
     }
 
-    protected abstract setUpNaming(): ReadonlySet<Namespace>;
+    protected abstract setUpNaming(): Iterable<Namespace>;
     protected abstract emitSource(givenOutputFilename: string): void;
 
     private assignNames(): ReadonlyMap<Name, string> {
