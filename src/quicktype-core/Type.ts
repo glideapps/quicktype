@@ -440,11 +440,7 @@ export class ObjectType extends Type {
     }
 
     getSortedProperties(): ReadonlyMap<string, ClassProperty> {
-        // FIXME: We have lots of impromptu implementations of this via mapSortByKey
-        const properties = this.getProperties();
-        const sortedKeys = Array.from(properties.keys()).sort();
-        const props = sortedKeys.map(k => [k, defined(properties.get(k))] as [string, ClassProperty]);
-        return new Map(props);
+        return mapSortByKey(this.getProperties());
     }
 
     private getAdditionalPropertiesRef(): TypeRef | undefined {
@@ -486,7 +482,7 @@ export class ObjectType extends Type {
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>, canonicalOrder: boolean): void {
-        const sortedProperties = mapSortByKey(this.getProperties());
+        const sortedProperties = this.getSortedProperties();
         const propertiesInNewOrder = canonicalOrder ? sortedProperties : this.getProperties();
         const maybePropertyTypes = builder.lookupMap(mapMap(sortedProperties, cp => cp.typeRef));
         const maybeAdditionalProperties = mapOptional(r => builder.lookup(r), this._additionalPropertiesRef);
