@@ -1,4 +1,4 @@
-import { Set as ImmutableSet, OrderedSet, Map } from "immutable";
+import { OrderedSet, Map } from "immutable";
 
 import { defined, assert, panic } from "./support/Support";
 import {
@@ -26,8 +26,8 @@ export class Namespace {
         forbiddenNamespaces: Iterable<Namespace>,
         additionalForbidden: Iterable<Name>
     ) {
-        this.forbiddenNamespaces = ImmutableSet(forbiddenNamespaces);
-        this.additionalForbidden = ImmutableSet(additionalForbidden);
+        this.forbiddenNamespaces = new Set(forbiddenNamespaces);
+        this.additionalForbidden = new Set(additionalForbidden);
         this._children = OrderedSet();
         this._members = OrderedSet();
         if (parent !== undefined) {
