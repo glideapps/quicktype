@@ -102,9 +102,9 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         queue = queue.add(t);
     }
 
-    graph.topLevels.forEach((t, name) => {
+    for (const [name, t] of graph.topLevels) {
         addNames(t, OrderedSet([name]));
-    });
+    }
 
     while (!queue.isEmpty()) {
         const t = defined(queue.first());
@@ -199,13 +199,13 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
                     ancestorAlternatives = null;
                 } else if (ancestorNames !== undefined) {
                     const alternatives: string[] = [];
-                    names.forEach(name => {
+                    for (const name of names) {
                         alternatives.push(...Array.from(ancestorNames).map(an => `${an}_${name}`));
                         // FIXME: add alternatives with the suffix here, too?
 
                         alternatives.push(...Array.from(ancestorNames).map(an => `${an}_${name}_${t.kind}`));
                         // FIXME: add alternatives with the suffix here, too?
-                    });
+                    }
 
                     ancestorAlternatives = addAlternatives(ancestorAlternatives, alternatives);
                 }
@@ -274,7 +274,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
             alternatives = OrderedSet();
         }
 
-        alternatives = alternatives.union(Array.from(names).map(name => `${name}_${t.kind}`));
+        alternatives = alternatives.union(setMap(names, name => `${name}_${t.kind}`));
         directAlternativesForType.set(t, alternatives);
     });
 
