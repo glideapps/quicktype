@@ -63,6 +63,17 @@ export function* iterableEnumerate<T>(it: Iterable<T>): IterableIterator<[number
     }
 }
 
+export function* iterableSkip<T>(it: Iterable<T>, n: number): IterableIterator<T> {
+    let i = 0;
+    for (const v of it) {
+        if (i >= n) {
+            yield v;
+        } else {
+            i += 1;
+        }
+    }
+}
+
 export function arrayIntercalate<T>(separator: T, items: Iterable<T>): T[] {
     const acc: T[] = [];
     for (const x of items) {
