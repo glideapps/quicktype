@@ -225,14 +225,6 @@ export class TooManyTypeNames extends TypeNames {
     }
 }
 
-export function typeNamesUnion(c: Collection<any, TypeNames>): TypeNames {
-    let names = TypeNames.make(OrderedSet(), OrderedSet(), true);
-    c.forEach(n => {
-        names = names.add(n);
-    });
-    return names;
-}
-
 class DescriptionTypeAttributeKind extends TypeAttributeKind<TypeNames> {
     constructor() {
         super("names");
