@@ -1,4 +1,4 @@
-import { Set, OrderedSet, List, Map, hash } from "immutable";
+import { Set, OrderedSet, List, Map } from "immutable";
 
 import { defined, assert, panic } from "./support/Support";
 import {
@@ -14,26 +14,22 @@ import {
 } from "./support/Containers";
 
 export class Namespace {
-    private readonly _name: string;
-    private readonly _parent?: Namespace;
     private _children: OrderedSet<Namespace>;
     readonly forbiddenNamespaces: Set<Namespace>;
     readonly additionalForbidden: Set<Name>;
     private _members: OrderedSet<Name>;
 
     constructor(
-        name: string,
+        _name: string,
         parent: Namespace | undefined,
         forbiddenNamespaces: Set<Namespace>,
         additionalForbidden: Set<Name>
     ) {
-        this._name = name;
         this.forbiddenNamespaces = forbiddenNamespaces;
         this.additionalForbidden = additionalForbidden;
         this._children = OrderedSet();
         this._members = OrderedSet();
         if (parent !== undefined) {
-            this._parent = parent;
             parent.addChild(this);
         }
     }
@@ -58,18 +54,6 @@ export class Namespace {
     add<TName extends Name>(named: TName): TName {
         this._members = this._members.add(named);
         return named;
-    }
-
-    equals(other: any): boolean {
-        return this === other;
-    }
-
-    hashCode(): number {
-        let hashAccumulator = hash(this._name);
-        if (this._parent !== undefined) {
-            hashAccumulator += this._parent.hashCode();
-        }
-        return hashAccumulator | 0;
     }
 }
 
@@ -192,14 +176,6 @@ export abstract class Name {
     // If a Named is fixed, the namingFunction is undefined.
     constructor(private readonly _namingFunction: Namer | undefined, readonly order: number) {}
 
-    equals(other: any): boolean {
-        return this === other;
-    }
-
-    hashCode(): number {
-        return 0;
-    }
-
     addAssociate(associate: AssociatedName): void {
         this._associates = this._associates.add(associate);
     }
@@ -259,10 +235,6 @@ export class FixedName extends Name {
     proposeUnstyledNames(_?: Map<Name, string>): ReadonlySet<string> {
         return panic("Only fixedName should be called on FixedName.");
     }
-
-    hashCode(): number {
-        return (super.hashCode() + hash(this._fixedName)) | 0;
-    }
 }
 
 export class SimpleName extends Name {
@@ -276,10 +248,6 @@ export class SimpleName extends Name {
 
     proposeUnstyledNames(_?: Map<Name, string>): ReadonlySet<string> {
         return this._unstyledNames;
-    }
-
-    hashCode(): number {
-        return (super.hashCode() + this._unstyledNames.hashCode()) | 0;
     }
 }
 
@@ -325,10 +293,6 @@ export class DependencyName extends Name {
                 return defined(names.get(n));
             })
         ]);
-    }
-
-    hashCode(): number {
-        return (super.hashCode() + this._dependencies.hashCode()) | 0;
     }
 }
 
