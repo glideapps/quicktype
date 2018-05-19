@@ -1,4 +1,4 @@
-import { Set, OrderedSet, List, Map, Collection, hash } from "immutable";
+import { Set, OrderedSet, List, Map, hash } from "immutable";
 
 import { defined, assert, panic } from "./support/Support";
 import { setUnion, setMap, setFilter, iterableFind } from "./support/Containers";
@@ -92,19 +92,16 @@ export class Namer {
     assignNames(
         names: Map<Name, string>,
         forbiddenNames: Set<string>,
-        namesToAssign: Collection<any, Name>
+        namesToAssignIterable: Iterable<Name>
     ): Map<Name, string> {
-        assert(!namesToAssign.isEmpty(), "Number of names can't be less than 1");
+        const namesToAssign = Array.from(namesToAssignIterable);
+
+        assert(namesToAssign.length > 0, "Number of names can't be less than 1");
 
         let allAssignedNames = Map<Name, string>();
 
-        let remainingNamesToAssign = namesToAssign;
         let namesToPrefix = List<Name>();
-        for (;;) {
-            const name = remainingNamesToAssign.first();
-            if (name === undefined) break;
-            remainingNamesToAssign = remainingNamesToAssign.rest();
-
+        for (const name of namesToAssign) {
             const proposedNames = name.proposeUnstyledNames(names);
             const namingFunction = name.namingFunction;
             // Find the first proposed name that isn't proposed by
@@ -129,27 +126,26 @@ export class Namer {
             namesToPrefix = namesToPrefix.push(name);
         }
 
-        let prefixes = this._prefixes as Collection<any, string>;
+        let prefixes = this._prefixes;
         let suffixNumber = 1;
-        for (;;) {
-            const name = namesToPrefix.first();
-            if (name === undefined) break;
+        for (const name of namesToPrefix) {
             const originalName: string = defined(name.proposeUnstyledNames(names).first());
-            let nameToTry: string;
-            const prefix = prefixes.first();
-            if (prefix) {
-                nameToTry = `${prefix}_${originalName}`;
-                prefixes = prefixes.rest();
-            } else {
-                nameToTry = `${originalName}_${suffixNumber.toString()}`;
-                suffixNumber++;
+            for (;;) {
+                let nameToTry: string;
+                const prefix = prefixes.first();
+                if (prefix) {
+                    nameToTry = `${prefix}_${originalName}`;
+                    prefixes = prefixes.rest();
+                } else {
+                    nameToTry = `${originalName}_${suffixNumber.toString()}`;
+                    suffixNumber++;
+                }
+                const styledName = name.namingFunction.nameStyle(nameToTry);
+                const assigned = name.nameAssignments(forbiddenNames, styledName);
+                if (assigned === null) continue;
+                allAssignedNames = allAssignedNames.merge(assigned);
+                forbiddenNames = forbiddenNames.union(assigned.toSet());
             }
-            const styledName = name.namingFunction.nameStyle(nameToTry);
-            const assigned = name.nameAssignments(forbiddenNames, styledName);
-            if (assigned === null) continue;
-            allAssignedNames = allAssignedNames.merge(assigned);
-            forbiddenNames = forbiddenNames.union(assigned.toSet());
-            namesToPrefix = namesToPrefix.rest();
         }
 
         return allAssignedNames;
@@ -432,14 +428,14 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): Map<Name, stri
             // It would be nice if we had tuples, then we wouldn't have to do this in
             // two steps.
             const byNamingFunction = readyNames.groupBy(n => n.namingFunction);
-            byNamingFunction.forEach((namedsForNamingFunction: Collection<any, Name>, namer: Namer) => {
+            byNamingFunction.forEach((namedsForNamingFunction, namer) => {
                 const byProposed = namedsForNamingFunction.groupBy(n =>
                     n.namingFunction.nameStyle(n.firstProposedName(ctx.names))
                 );
-                byProposed.forEach((nameds: Collection<any, Name>, _: string) => {
+                byProposed.forEach(nameds => {
                     // 3. Use each set's naming function to name its members.
 
-                    const names = namer.assignNames(ctx.names, forbiddenNames, nameds);
+                    const names = namer.assignNames(ctx.names, forbiddenNames, nameds.valueSeq());
                     names.forEach((assigned: string, name: Name) => ctx.assign(name, readyNamespace, assigned));
                     forbiddenNames = forbiddenNames.union(names.toSet());
                 });
