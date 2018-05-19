@@ -1,11 +1,10 @@
-import { OrderedSet } from "immutable";
 import * as pluralize from "pluralize";
 
 import { panic, defined, assert, mapOptional } from "./support/Support";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { splitIntoWords } from "./support/Strings";
 import { Chance } from "./support/Chance";
-import { setUnion, setMap, iterableFirst, iterableSkip } from "./support/Containers";
+import { setUnion, setMap, iterableFirst, iterableSkip, setUnionInto } from "./support/Containers";
 
 let chance: Chance;
 let usedRandomNames: Set<string>;
@@ -144,20 +143,21 @@ export class RegularTypeNames extends TypeNames {
     }
 
     clearInferred(): TypeNames {
-        const newNames = this.areInferred ? OrderedSet() : this.names;
-        return TypeNames.make(newNames, OrderedSet(), this.areInferred);
+        const newNames = this.areInferred ? new Set() : this.names;
+        return TypeNames.make(newNames, new Set(), this.areInferred);
     }
 
     get combinedName(): string {
         return combineNames(this.names);
     }
 
-    get proposedNames(): OrderedSet<string> {
-        const set = OrderedSet([this.combinedName]);
+    get proposedNames(): ReadonlySet<string> {
+        const set = new Set([this.combinedName]);
         if (this._alternativeNames === undefined) {
             return set;
         }
-        return set.union(this._alternativeNames);
+        setUnionInto(set, this._alternativeNames);
+        return set;
     }
 
     makeInferred(): TypeNames {
@@ -184,19 +184,19 @@ export class RegularTypeNames extends TypeNames {
 }
 
 export class TooManyTypeNames extends TypeNames {
-    readonly names: OrderedSet<string>;
+    readonly names: ReadonlySet<string>;
 
     constructor(readonly areInferred: boolean) {
         super();
 
-        this.names = OrderedSet([makeRandomName()]);
+        this.names = new Set([makeRandomName()]);
     }
 
     get combinedName(): string {
-        return defined(this.names.first());
+        return defined(iterableFirst(this.names));
     }
 
-    get proposedNames(): OrderedSet<string> {
+    get proposedNames(): ReadonlySet<string> {
         return this.names;
     }
 
@@ -208,7 +208,7 @@ export class TooManyTypeNames extends TypeNames {
         if (!this.areInferred) {
             return this;
         }
-        return TypeNames.make(OrderedSet(), OrderedSet(), true);
+        return TypeNames.make(new Set(), new Set(), true);
     }
 
     makeInferred(): TypeNames {
@@ -261,7 +261,7 @@ export function singularizeTypeNames(attributes: TypeAttributes): TypeAttributes
 export function makeNamesTypeAttributes(nameOrNames: NameOrNames, areNamesInferred?: boolean): TypeAttributes {
     let typeNames: TypeNames;
     if (typeof nameOrNames === "string") {
-        typeNames = TypeNames.make(OrderedSet([nameOrNames]), OrderedSet(), defined(areNamesInferred));
+        typeNames = TypeNames.make(new Set([nameOrNames]), new Set(), defined(areNamesInferred));
     } else {
         typeNames = nameOrNames as TypeNames;
     }
