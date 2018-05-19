@@ -1,13 +1,50 @@
-import { Set, OrderedSet, isCollection } from "immutable";
 import * as pluralize from "pluralize";
 
 import { TypeGraph } from "./TypeGraph";
 import { Type, ObjectType } from "./Type";
 import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
 import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./TypeNames";
-import { defined, panic } from "./support/Support";
+import { defined, panic, assert } from "./support/Support";
 import { transformationForType } from "./Transformers";
 import { setUnion, setMap } from "./support/Containers";
+
+class UniqueQueue<T> {
+    private readonly _present = new Set<T>();
+    private _queue: (T | undefined)[] = [];
+    private _front = 0;
+
+    get size(): number {
+        return this._queue.length - this._front;
+    }
+
+    get isEmpty(): boolean {
+        return this.size <= 0;
+    }
+
+    push(v: T): void {
+        if (this._present.has(v)) return;
+        this._queue.push(v);
+        this._present.add(v);
+    }
+
+    unshift(): T {
+        assert(!this.isEmpty, "Trying to unshift from an empty queue");
+        const v = this._queue[this._front];
+        if (v === undefined) {
+            return panic("Value should have been present in queue");
+        }
+        this._queue[this._front] = undefined;
+        this._front += 1;
+        this._present.delete(v);
+
+        if (this._front > this.size) {
+            this._queue = this._queue.slice(this._front);
+            this._front = 0;
+        }
+
+        return v;
+    }
+}
 
 // `gatherNames` infers names from given names and property names.
 //
@@ -56,7 +93,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         }
     });
 
-    let queue = OrderedSet<Type>();
+    const queue = new UniqueQueue<Type>();
     // null means there are too many
     const namesForType = new Map<Type, ReadonlySet<string> | null>();
 
@@ -99,22 +136,21 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
             return;
         }
 
-        queue = queue.add(t);
+        queue.push(t);
     }
 
     for (const [name, t] of graph.topLevels) {
-        addNames(t, OrderedSet([name]));
+        addNames(t, new Set([name]));
     }
 
-    while (!queue.isEmpty()) {
-        const t = defined(queue.first());
-        queue = queue.rest();
+    while (!queue.isEmpty) {
+        const t = queue.unshift();
 
         const names = defined(namesForType.get(t));
         if (t instanceof ObjectType) {
             const properties = t.getProperties().sortBy((_, n) => n);
             properties.forEach((property, propertyName) => {
-                addNames(property.type, OrderedSet([propertyName]));
+                addNames(property.type, new Set([propertyName]));
             });
 
             const values = t.getAdditionalProperties();
@@ -151,22 +187,22 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
     }
 
     // null means there are too many
-    const directAlternativesForType = new Map<Type, OrderedSet<string> | null>();
-    const ancestorAlternativesForType = new Map<Type, OrderedSet<string> | null>();
+    const directAlternativesForType = new Map<Type, ReadonlySet<string> | null>();
+    const ancestorAlternativesForType = new Map<Type, ReadonlySet<string> | null>();
     const pairsProcessed = new Map<Type | undefined, Set<Type>>();
 
     function addAlternatives(
-        existing: OrderedSet<string> | undefined,
+        existing: ReadonlySet<string> | undefined,
         alternatives: string[]
-    ): OrderedSet<string> | undefined | null {
+    ): ReadonlySet<string> | undefined | null {
         if (alternatives.length === 0) {
             return existing;
         }
 
         if (existing === undefined) {
-            existing = OrderedSet();
+            existing = new Set();
         }
-        existing = existing.union(OrderedSet(alternatives));
+        existing = setUnion(existing, alternatives);
         if (existing.size < tooManyNamesThreshold) {
             return existing;
         }
@@ -177,9 +213,9 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         const names = defined(namesForType.get(t));
 
         let processedEntry = pairsProcessed.get(ancestor);
-        if (processedEntry === undefined) processedEntry = Set();
+        if (processedEntry === undefined) processedEntry = new Set();
         if (processedEntry.has(t)) return;
-        processedEntry = processedEntry.add(t);
+        processedEntry.add(t);
         pairsProcessed.set(ancestor, processedEntry);
 
         const transformation = transformationForType(t);
@@ -271,10 +307,10 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         let alternatives = directAlternativesForType.get(t);
         if (alternatives === null) return;
         if (alternatives === undefined) {
-            alternatives = OrderedSet();
+            alternatives = new Set();
         }
 
-        alternatives = alternatives.union(setMap(names, name => `${name}_${t.kind}`));
+        alternatives = setUnion(alternatives, setMap(names, name => `${name}_${t.kind}`));
         directAlternativesForType.set(t, alternatives);
     });
 
@@ -289,17 +325,17 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
             const ancestorAlternatives = ancestorAlternativesForType.get(t);
             const directAlternatives = directAlternativesForType.get(t);
 
-            let alternatives: OrderedSet<string> | undefined;
+            let alternatives: ReadonlySet<string> | undefined;
             if (ancestorAlternatives === null && directAlternatives === null) {
                 alternatives = undefined;
             } else {
-                if (isCollection(directAlternatives)) {
+                if (directAlternatives !== null && directAlternatives !== undefined) {
                     alternatives = directAlternatives;
                 } else {
-                    alternatives = OrderedSet();
+                    alternatives = new Set();
                 }
-                if (isCollection(ancestorAlternatives)) {
-                    alternatives = alternatives.union(ancestorAlternatives);
+                if (ancestorAlternatives !== null && ancestorAlternatives !== undefined) {
+                    alternatives = setUnion(alternatives, ancestorAlternatives);
                 }
             }
 
