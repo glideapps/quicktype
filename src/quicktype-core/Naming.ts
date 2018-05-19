@@ -81,10 +81,10 @@ export class Namer {
     }
 
     assignNames(
-        names: Map<Name, string>,
+        names: ReadonlyMap<Name, string>,
         forbiddenNames: ReadonlySet<string>,
         namesToAssignIterable: Iterable<Name>
-    ): Map<Name, string> {
+    ): ReadonlyMap<Name, string> {
         const namesToAssign = Array.from(namesToAssignIterable);
 
         assert(namesToAssign.length > 0, "Number of names can't be less than 1");
@@ -108,7 +108,7 @@ export class Namer {
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned) {
                     allAssignedNames = allAssignedNames.merge(assigned);
-                    forbiddenNames = setUnion(forbiddenNames, assigned.valueSeq());
+                    forbiddenNames = setUnion(forbiddenNames, assigned.values());
                     continue;
                 }
             }
@@ -135,7 +135,7 @@ export class Namer {
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned === null) continue;
                 allAssignedNames = allAssignedNames.merge(assigned);
-                forbiddenNames = setUnion(forbiddenNames, assigned.valueSeq());
+                forbiddenNames = setUnion(forbiddenNames, assigned.values());
             }
         }
 
@@ -189,13 +189,13 @@ export abstract class Name {
     }
 
     // Must return at least one proposal.  The proposals are considered in order.
-    abstract proposeUnstyledNames(names: Map<Name, string>): ReadonlySet<string>;
+    abstract proposeUnstyledNames(names: ReadonlyMap<Name, string>): ReadonlySet<string>;
 
-    firstProposedName(names: Map<Name, string>): string {
+    firstProposedName(names: ReadonlyMap<Name, string>): string {
         return defined(iterableFirst(this.proposeUnstyledNames(names)));
     }
 
-    nameAssignments(forbiddenNames: ReadonlySet<string>, assignedName: string): Map<Name, string> | null {
+    nameAssignments(forbiddenNames: ReadonlySet<string>, assignedName: string): ReadonlyMap<Name, string> | null {
         if (forbiddenNames.has(assignedName)) return null;
         let assignments = Map<Name, string>().set(this, assignedName);
         for (const an of this._associates) {
@@ -227,7 +227,7 @@ export class FixedName extends Name {
         return this._fixedName;
     }
 
-    proposeUnstyledNames(_?: Map<Name, string>): ReadonlySet<string> {
+    proposeUnstyledNames(_?: ReadonlyMap<Name, string>): ReadonlySet<string> {
         return panic("Only fixedName should be called on FixedName.");
     }
 }
@@ -244,7 +244,7 @@ export class SimpleName extends Name {
         return [];
     }
 
-    proposeUnstyledNames(_?: Map<Name, string>): ReadonlySet<string> {
+    proposeUnstyledNames(_?: ReadonlyMap<Name, string>): ReadonlySet<string> {
         return this._unstyledNames;
     }
 }
@@ -258,7 +258,7 @@ export class AssociatedName extends Name {
         return [this._sponsor];
     }
 
-    proposeUnstyledNames(_?: Map<Name, string>): never {
+    proposeUnstyledNames(_?: ReadonlyMap<Name, string>): never {
         return panic("AssociatedName must be assigned via its sponsor");
     }
 }
@@ -284,7 +284,7 @@ export class DependencyName extends Name {
         return Array.from(this._dependencies);
     }
 
-    proposeUnstyledNames(names: Map<Name, string>): ReadonlySet<string> {
+    proposeUnstyledNames(names: ReadonlyMap<Name, string>): ReadonlySet<string> {
         return new Set([
             this._proposeUnstyledName(n => {
                 assert(this._dependencies.has(n), "DependencyName proposer is not pure");
@@ -352,7 +352,7 @@ class NamingContext {
 }
 
 // Naming algorithm
-export function assignNames(rootNamespaces: Iterable<Namespace>): Map<Name, string> {
+export function assignNames(rootNamespaces: Iterable<Namespace>): ReadonlyMap<Name, string> {
     const ctx = new NamingContext(rootNamespaces);
 
     // Assign all fixed names.
@@ -403,7 +403,7 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): Map<Name, stri
 
                     const names = namer.assignNames(ctx.names, forbiddenNames, nameds);
                     names.forEach((assigned: string, name: Name) => ctx.assign(name, readyNamespace, assigned));
-                    forbiddenNames = setUnion(forbiddenNames, names.valueSeq());
+                    forbiddenNames = setUnion(forbiddenNames, names.values());
                 });
             });
         }
