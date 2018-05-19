@@ -308,7 +308,7 @@ function allNamespacesRecursively(namespaces: Iterable<Namespace>): ReadonlySet<
 
 class NamingContext {
     names: Map<Name, string> = Map();
-    private _namedsForName: Map<string, ImmutableSet<Name>> = Map();
+    private _namedsForName: Map<string, Set<Name>> = Map();
     readonly namespaces: ReadonlySet<Namespace>;
 
     constructor(rootNamespaces: Iterable<Namespace>) {
@@ -329,26 +329,25 @@ class NamingContext {
         // If the name is not assigned at all, there is no conflict.
         if (namedsForProposed === undefined) return false;
         // The name is assigned, but it might still not be forbidden.
-        let conflicting: Name | undefined;
-        namedsForProposed.forEach((n: Name) => {
+        for (const n of namedsForProposed) {
             if (namedNamespace.members.has(n) || namedNamespace.forbiddenNameds.has(n)) {
-                conflicting = n;
-                return false;
+                return true;
             }
-        });
-        return conflicting !== undefined;
+        }
+        return false;
     };
 
     assign = (named: Name, namedNamespace: Namespace, name: string): void => {
-        assert(!this.names.has(named), "Named assigned twice");
-        assert(!this.isConflicting(namedNamespace, name), "Assigned name conflicts");
+        assert(!this.names.has(named), `Name "${name}" assigned twice`);
+        assert(!this.isConflicting(namedNamespace, name), `Assigned name "${name}" conflicts`);
         this.names = this.names.set(named, name);
         let namedsForName = this._namedsForName.get(name);
         if (namedsForName === undefined) {
-            namedsForName = ImmutableSet();
+            namedsForName = new Set();
             this._namedsForName = this._namedsForName.set(name, namedsForName);
         }
-        this._namedsForName.set(name, namedsForName.add(named));
+        namedsForName.add(named);
+        this._namedsForName = this._namedsForName.set(name, namedsForName);
     };
 }
 
