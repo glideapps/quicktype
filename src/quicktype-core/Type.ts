@@ -6,7 +6,16 @@ import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
-import { iterableEvery, iterableFind, iterableSome, toReadonlySet, setUnion, Equality } from "./support/Containers";
+import {
+    iterableEvery,
+    iterableFind,
+    iterableSome,
+    toReadonlySet,
+    setUnion,
+    Equality,
+    hashCodeOf,
+    areEqual
+} from "./support/Containers";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
 export type PrimitiveStringTypeKind = "string" | DateTimeTypeKind;
@@ -36,7 +45,16 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
 }
 
 export class TypeIdentity implements Equality {
-    constructor(private readonly _kind: TypeKind, private readonly _components: ReadonlyArray<any>) {}
+    private readonly _hashCode: number;
+
+    constructor(private readonly _kind: TypeKind, private readonly _components: ReadonlyArray<Equality | undefined>) {
+        let h = hashCodeInit;
+        h = addHashCode(h, hashCodeOf(this._kind));
+        for (const c of _components) {
+            h = addHashCode(h, hashCodeOf(c));
+        }
+        this._hashCode = h;
+    }
 
     equals(other: any): boolean {
         if (!(other instanceof TypeIdentity)) return false;
@@ -44,18 +62,13 @@ export class TypeIdentity implements Equality {
         const n = this._components.length;
         assert(n === other._components.length, "Components of a type kind's identity must have the same length");
         for (let i = 0; i < n; i++) {
-            if (!is(this._components[i], other._components[i])) return false;
+            if (!areEqual(this._components[i], other._components[i])) return false;
         }
         return true;
     }
 
     hashCode(): number {
-        let h = hashCodeInit;
-        h = addHashCode(h, hash(this._kind));
-        for (const c of this._components) {
-            h = addHashCode(h, hash(c));
-        }
-        return h;
+        return this._hashCode;
     }
 }
 

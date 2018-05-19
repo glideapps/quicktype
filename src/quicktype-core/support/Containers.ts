@@ -1,3 +1,6 @@
+import { hashCodeInit, addHashCode, panic } from "./Support";
+import { hash } from "immutable";
+
 export function iterableFind<T>(it: Iterable<T>, p: (v: T) => boolean): T | undefined {
     for (const v of it) {
         if (p(v)) {
@@ -256,32 +259,94 @@ export class EqualityMap<K extends Equality, V> {
     private readonly _map = new Map<number, [K, V]>();
 
     set(k: K, v: V): void {
-        let hash = k.hashCode() | 0;
+        let h = k.hashCode() | 0;
         for (;;) {
-            const kvp = this._map.get(hash);
+            const kvp = this._map.get(h);
             if (kvp === undefined) {
-                this._map.set(hash, [k, v]);
+                this._map.set(h, [k, v]);
                 return;
             }
             if (k.equals(kvp[0])) {
                 kvp[1] = v;
                 return;
             }
-            hash = (hash + 1) | 0;
+            h = (h + 1) | 0;
         }
     }
 
     get(k: K): V | undefined {
-        let hash = k.hashCode() | 0;
+        let h = k.hashCode() | 0;
         for (;;) {
-            const kvp = this._map.get(hash);
+            const kvp = this._map.get(h);
             if (kvp === undefined) {
                 return undefined;
             }
             if (k.equals(kvp[0])) {
                 return kvp[1];
             }
-            hash = (hash + 1) | 0;
+            h = (h + 1) | 0;
         }
     }
+}
+
+export function areEqual(a: any, b: any): boolean {
+    if (a === b) {
+        return true;
+    }
+
+    if (typeof a.equals === "function" && typeof b.equals === "function") {
+        return a.equals(b);
+    }
+
+    if (a instanceof Set && b instanceof Set) {
+        if (a.size !== b.size) return false;
+
+        for (const x of a) {
+            if (!b.has(x)) return false;
+        }
+        return true;
+    }
+
+    if (a instanceof Map && b instanceof Map) {
+        if (a.size !== b.size) return false;
+
+        for (const [k, v] of a) {
+            const w = b.get(k);
+            if (!areEqual(v, w)) return false;
+        }
+        return true;
+    }
+
+    return false;
+}
+
+export function hashCodeOf(x: any): number {
+    if (typeof x === "number") return x | 0;
+    if (typeof x === "string") return hash(x);
+
+    let h = hashCodeInit;
+
+    if (x === undefined) return h;
+    if (x === true) return h + 1;
+    if (x === false) return h + 2;
+
+    if (typeof x.hashCode === "function") return x.hashCode();
+
+    if (x instanceof Set) {
+        for (const y of x) {
+            h += hashCodeOf(y);
+        }
+        return h;
+    }
+
+    if (x instanceof Map) {
+        let g = hashCodeInit;
+        for (const [k, v] of x) {
+            g += hashCodeOf(k);
+            h += hashCodeOf(v);
+        }
+        return addHashCode(g, h);
+    }
+
+    return panic(`Cannot hash ${x}`);
 }
