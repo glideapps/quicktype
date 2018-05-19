@@ -1,3 +1,50 @@
+export function iterableFind<T>(it: Iterable<T>, p: (v: T) => boolean): T | undefined {
+    for (const v of it) {
+        if (p(v)) {
+            return v;
+        }
+    }
+    return undefined;
+}
+
+export function iterableEvery<T>(it: Iterable<T>, p: (v: T) => boolean): boolean {
+    for (const v of it) {
+        if (!p(v)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+export function iterableSome<T>(it: Iterable<T>, p: (v: T) => boolean): boolean {
+    for (const v of it) {
+        if (p(v)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export function iterableFirst<T>(it: Iterable<T>): T | undefined {
+    for (const v of it) {
+        return v;
+    }
+    return undefined;
+}
+
+export function iterableMinBy<T>(it: Iterable<T>, key: (v: T) => number): T | undefined {
+    let min: number | undefined = undefined;
+    let minValue: T | undefined = undefined;
+    for (const v of it) {
+        const k = key(v);
+        if (min === undefined || k < min) {
+            min = k;
+            minValue = v;
+        }
+    }
+    return minValue;
+}
+
 export function mapMap<K, V, W>(m: ReadonlyMap<K, V>, f: (v: V, k: K) => W): Map<K, W> {
     const result = new Map<K, W>();
     for (const [k, v] of m) {
@@ -6,14 +53,29 @@ export function mapMap<K, V, W>(m: ReadonlyMap<K, V>, f: (v: V, k: K) => W): Map
     return result;
 }
 
-export function mapSingle<K, V>(m: ReadonlyMap<K, V>): V | undefined {
+export function mapFirst<K, V>(m: ReadonlyMap<K, V>): V | undefined {
     for (const v of m.values()) {
         return v;
     }
     return undefined;
 }
 
-export function setUnion<T>(...sets: ReadonlySet<T>[]): Set<T> {
+export function mapContains<K, V>(m: ReadonlyMap<K, V>, valueToFind: V): boolean {
+    for (const v of m.values()) {
+        if (v === valueToFind) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export function mapMergeInto<K, V>(dest: Map<K, V>, src: ReadonlyMap<K, V>): void {
+    for (const [k, v] of src) {
+        dest.set(k, v);
+    }
+}
+
+export function setUnion<T>(...sets: Iterable<T>[]): Set<T> {
     const result = new Set<T>();
     for (const set of sets) {
         for (const v of set) {
@@ -23,7 +85,7 @@ export function setUnion<T>(...sets: ReadonlySet<T>[]): Set<T> {
     return result;
 }
 
-export function setMap<T, U>(set: ReadonlySet<T>, f: (v: T) => U): Set<U> {
+export function setMap<T, U>(set: Iterable<T>, f: (v: T) => U): Set<U> {
     const result = new Set<U>();
     for (const v of set) {
         result.add(f(v));
@@ -31,7 +93,7 @@ export function setMap<T, U>(set: ReadonlySet<T>, f: (v: T) => U): Set<U> {
     return result;
 }
 
-export function setFilter<T>(set: ReadonlySet<T>, p: (v: T) => boolean): Set<T> {
+export function setFilter<T>(set: Iterable<T>, p: (v: T) => boolean): Set<T> {
     const result = new Set<T>();
     for (const v of set) {
         if (p(v)) {
@@ -41,11 +103,27 @@ export function setFilter<T>(set: ReadonlySet<T>, p: (v: T) => boolean): Set<T> 
     return result;
 }
 
-export function setFind<T>(set: ReadonlySet<T>, p: (v: T) => boolean): T | undefined {
+export function setFilterMap<T, U>(set: Iterable<T>, f: (v: T) => U | undefined): Set<U> {
+    const result = new Set<U>();
     for (const v of set) {
-        if (p(v)) {
-            return v;
+        const u = f(v);
+        if (u !== undefined) {
+            result.add(u);
         }
     }
-    return undefined;
+    return result;
+}
+
+export function setGroupBy<T, G>(it: Iterable<T>, grouper: (v: T) => G): Map<G, Set<T>> {
+    const result = new Map<G, Set<T>>();
+    for (const v of it) {
+        const g = grouper(v);
+        let group = result.get(g);
+        if (group === undefined) {
+            group = new Set();
+            result.set(g, group);
+        }
+        group.add(v);
+    }
+    return result;
 }
