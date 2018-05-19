@@ -1,4 +1,4 @@
-import { Set, OrderedSet, Map, isCollection } from "immutable";
+import { Set, OrderedSet, isCollection } from "immutable";
 import * as pluralize from "pluralize";
 
 import { TypeGraph } from "./TypeGraph";
@@ -57,7 +57,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
 
     let queue = OrderedSet<Type>();
     // null means there are too many
-    let namesForType = Map<Type, OrderedSet<string> | null>();
+    const namesForType = new Map<Type, OrderedSet<string> | null>();
 
     function addNames(t: Type, names: OrderedSet<string> | null) {
         // Always use the type's given names if it has some
@@ -83,7 +83,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         if (newNames !== null && newNames.size >= tooManyNamesThreshold) {
             newNames = null;
         }
-        namesForType = namesForType.set(t, newNames);
+        namesForType.set(t, newNames);
 
         const transformation = transformationForType(t);
         if (transformation !== undefined) {
@@ -150,9 +150,9 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
     }
 
     // null means there are too many
-    let directAlternativesForType = Map<Type, OrderedSet<string> | null>();
-    let ancestorAlternativesForType = Map<Type, OrderedSet<string> | null>();
-    let pairsProcessed = Map<Type | undefined, Set<Type>>();
+    const directAlternativesForType = new Map<Type, OrderedSet<string> | null>();
+    const ancestorAlternativesForType = new Map<Type, OrderedSet<string> | null>();
+    const pairsProcessed = new Map<Type | undefined, Set<Type>>();
 
     function addAlternatives(
         existing: OrderedSet<string> | undefined,
@@ -179,7 +179,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         if (processedEntry === undefined) processedEntry = Set();
         if (processedEntry.has(t)) return;
         processedEntry = processedEntry.add(t);
-        pairsProcessed = pairsProcessed.set(ancestor, processedEntry);
+        pairsProcessed.set(ancestor, processedEntry);
 
         const transformation = transformationForType(t);
         if (transformation !== undefined) {
@@ -222,10 +222,10 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         }
 
         if (ancestorAlternatives !== undefined) {
-            ancestorAlternativesForType = ancestorAlternativesForType.set(t, ancestorAlternatives);
+            ancestorAlternativesForType.set(t, ancestorAlternatives);
         }
         if (directAlternatives !== undefined) {
-            directAlternativesForType = directAlternativesForType.set(t, directAlternatives);
+            directAlternativesForType.set(t, directAlternatives);
         }
 
         if (t instanceof ObjectType) {
@@ -264,7 +264,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         const names = namesForType.get(t);
         if (names === undefined) return;
         if (names === null) {
-            directAlternativesForType = directAlternativesForType.set(t, null);
+            directAlternativesForType.set(t, null);
             return;
         }
         let alternatives = directAlternativesForType.get(t);
@@ -274,7 +274,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         }
 
         alternatives = alternatives.union(names.map(name => `${name}_${t.kind}`));
-        directAlternativesForType = directAlternativesForType.set(t, alternatives);
+        directAlternativesForType.set(t, alternatives);
     });
 
     graph.allTypesUnordered().forEach(t => {
