@@ -18,7 +18,7 @@ import { messageError } from "./Messages";
 import { InputData } from "./input/Inputs";
 import { flattenStrings } from "./rewrites/FlattenStrings";
 import { makeTransformations } from "./MakeTransformations";
-import { mapSingle } from "./support/Containers";
+import { mapFirst } from "./support/Containers";
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
@@ -332,7 +332,7 @@ function offsetSpan(span: Span, lineOffset: number): Span {
 export async function quicktype(options: Partial<Options>): Promise<SerializedRenderResult> {
     const result = await quicktypeMultiFile(options);
     if (result.size <= 1) {
-        const first = mapSingle(result);
+        const first = mapFirst(result);
         if (first === undefined) {
             return { lines: [], annotations: List<Annotation>() };
         }
