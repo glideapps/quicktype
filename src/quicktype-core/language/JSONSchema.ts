@@ -146,7 +146,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     private definitionForObject(o: ObjectType, title: string | undefined): Schema {
         let properties: Schema | undefined;
         let required: string[] | undefined;
-        if (o.getProperties().isEmpty()) {
+        if (o.getProperties().size === 0) {
             properties = undefined;
             required = undefined;
         } else {

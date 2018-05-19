@@ -372,7 +372,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     private emitClassDefinition(c: ClassType, className: Name): void {
-        if (c.getProperties().count() === 0) {
+        if (c.getProperties().size === 0) {
             this.emitEmptyClassDefinition(c, className);
             return;
         }
@@ -388,7 +388,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitDescription(this.descriptionForType(c));
         this.emitLine("data class ", className, " (");
         this.indent(() => {
-            let count = c.getProperties().count();
+            let count = c.getProperties().size;
             let first = true;
             this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                 const nullable = p.type.kind === "union" && nullableFromUnion(p.type as UnionType) !== null;
@@ -565,7 +565,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
                 .some(t => t instanceof UnionType && nullableFromUnion(t) === null);
             const hasEmptyObjects = this.typeGraph
                 .allNamedTypes()
-                .some(c => c instanceof ClassType && c.getProperties().isEmpty());
+                .some(c => c instanceof ClassType && c.getProperties().size === 0);
             if (hasUnions || this.haveEnums || hasEmptyObjects) {
                 this.emitGenericConverter();
             }

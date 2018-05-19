@@ -20,7 +20,7 @@ import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer"
 import { StringOption, BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { assert, defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
-import { iterableSome, iterableFirst, mapContains, mapFirst } from "../support/Containers";
+import { iterableSome, iterableFirst, mapContains, mapFirst, mapSome } from "../support/Containers";
 
 const unicode = require("unicode-properties");
 
@@ -655,7 +655,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
         });
 
         if (!this._options.justTypes && isTopLevel) {
-            if (!t.getProperties().isEmpty()) this.ensureBlankLine();
+            if (t.getProperties().size > 0) this.ensureBlankLine();
 
             this.emitLine(
                 "+ (_Nullable instancetype)fromJSON:(NSString *)json encoding:(NSStringEncoding)encoding error:(NSError *_Nullable *)error;"
@@ -1037,7 +1037,7 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
             return (
                 t instanceof MapType ||
                 t instanceof ArrayType ||
-                (t instanceof ClassType && t.getProperties().some(p => needsMap(p.type)))
+                (t instanceof ClassType && mapSome(t.getProperties(), p => needsMap(p.type)))
             );
         }
         return iterableSome(this.typeGraph.allTypesUnordered(), needsMap);

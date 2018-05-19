@@ -1,4 +1,4 @@
-import { Map, OrderedMap, OrderedSet, Set, is } from "immutable";
+import { Map, OrderedSet, Set, is } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -28,7 +28,7 @@ import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic, mapOptional, withDefault } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
-import { EqualityMap } from "./support/Containers";
+import { EqualityMap, mapMap, mapSortByKey } from "./support/Containers";
 
 export class TypeRef {
     constructor(readonly graph: TypeGraph, readonly index: number) {}
@@ -315,7 +315,7 @@ export class TypeBuilder {
 
     getUniqueObjectType(
         attributes: TypeAttributes,
-        properties: OrderedMap<string, ClassProperty> | undefined,
+        properties: ReadonlyMap<string, ClassProperty> | undefined,
         additionalProperties: TypeRef | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
@@ -342,7 +342,7 @@ export class TypeBuilder {
 
     setObjectProperties(
         ref: TypeRef,
-        properties: OrderedMap<string, ClassProperty>,
+        properties: ReadonlyMap<string, ClassProperty>,
         additionalProperties: TypeRef | undefined
     ): void {
         const type = ref.deref()[0];
@@ -375,19 +375,19 @@ export class TypeBuilder {
         this.registerType(type);
     }
 
-    modifyPropertiesIfNecessary(properties: OrderedMap<string, ClassProperty>): OrderedMap<string, ClassProperty> {
+    modifyPropertiesIfNecessary(properties: ReadonlyMap<string, ClassProperty>): ReadonlyMap<string, ClassProperty> {
         if (this.canonicalOrder) {
-            properties = properties.sortBy((_, n) => n);
+            properties = mapSortByKey(properties);
         }
         if (this._allPropertiesOptional) {
-            properties = properties.map(cp => new ClassProperty(cp.typeRef, true));
+            properties = mapMap(properties, cp => new ClassProperty(cp.typeRef, true));
         }
         return properties;
     }
 
     getClassType(
         attributes: TypeAttributes,
-        properties: OrderedMap<string, ClassProperty>,
+        properties: ReadonlyMap<string, ClassProperty>,
         forwardingRef?: TypeRef
     ): TypeRef {
         properties = this.modifyPropertiesIfNecessary(properties);
@@ -404,7 +404,7 @@ export class TypeBuilder {
     getUniqueClassType(
         attributes: TypeAttributes,
         isFixed: boolean,
-        properties: OrderedMap<string, ClassProperty> | undefined,
+        properties: ReadonlyMap<string, ClassProperty> | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
         properties = mapOptional(p => this.modifyPropertiesIfNecessary(p), properties);

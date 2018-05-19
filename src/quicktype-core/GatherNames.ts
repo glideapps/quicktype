@@ -6,7 +6,7 @@ import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
 import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./TypeNames";
 import { defined, panic, assert } from "./support/Support";
 import { transformationForType } from "./Transformers";
-import { setUnion, setMap } from "./support/Containers";
+import { setUnion, setMap, mapSortByKey } from "./support/Containers";
 
 class UniqueQueue<T> {
     private readonly _present = new Set<T>();
@@ -148,7 +148,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
 
         const names = defined(namesForType.get(t));
         if (t instanceof ObjectType) {
-            const properties = t.getProperties().sortBy((_, n) => n);
+            const properties = mapSortByKey(t.getProperties());
             properties.forEach((property, propertyName) => {
                 addNames(property.type, new Set([propertyName]));
             });
@@ -266,12 +266,12 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         }
 
         if (t instanceof ObjectType) {
-            const properties = t.getProperties().sortBy((_, n) => n);
+            const properties = mapSortByKey(t.getProperties());
             properties.forEach(property => processType(t, property.type, undefined));
 
             const values = t.getAdditionalProperties();
             if (values !== undefined) {
-                processType(properties.isEmpty() ? ancestor : t, values, "value");
+                processType(properties.size === 0 ? ancestor : t, values, "value");
             }
         } else {
             matchCompoundType(
