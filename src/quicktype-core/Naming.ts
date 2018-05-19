@@ -1,4 +1,4 @@
-import { OrderedSet, Map } from "immutable";
+import { Map } from "immutable";
 
 import { defined, assert, panic } from "./support/Support";
 import {
@@ -15,10 +15,10 @@ import {
 } from "./support/Containers";
 
 export class Namespace {
-    private _children: OrderedSet<Namespace>;
     readonly forbiddenNamespaces: ReadonlySet<Namespace>;
     readonly additionalForbidden: ReadonlySet<Name>;
-    private _members: OrderedSet<Name>;
+    private readonly _children = new Set<Namespace>();
+    private readonly _members = new Set<Name>();
 
     constructor(
         _name: string,
@@ -28,15 +28,13 @@ export class Namespace {
     ) {
         this.forbiddenNamespaces = new Set(forbiddenNamespaces);
         this.additionalForbidden = new Set(additionalForbidden);
-        this._children = OrderedSet();
-        this._members = OrderedSet();
         if (parent !== undefined) {
             parent.addChild(this);
         }
     }
 
     private addChild(child: Namespace): void {
-        this._children = this._children.add(child);
+        this._children.add(child);
     }
 
     get children(): ReadonlySet<Namespace> {
@@ -53,7 +51,7 @@ export class Namespace {
     }
 
     add<TName extends Name>(named: TName): TName {
-        this._members = this._members.add(named);
+        this._members.add(named);
         return named;
     }
 }
@@ -76,10 +74,10 @@ export type NameStyle = (rawName: string) => string;
 // collections.
 
 export class Namer {
-    private readonly _prefixes: OrderedSet<string>;
+    private readonly _prefixes: ReadonlySet<string>;
 
     constructor(readonly name: string, readonly nameStyle: NameStyle, prefixes: string[]) {
-        this._prefixes = OrderedSet(prefixes);
+        this._prefixes = new Set(prefixes);
     }
 
     assignNames(
@@ -120,16 +118,15 @@ export class Namer {
             namesToPrefix.push(name);
         }
 
-        let prefixes = this._prefixes;
+        let prefixes = this._prefixes.values();
         let suffixNumber = 1;
         for (const name of namesToPrefix) {
             const originalName: string = defined(iterableFirst(name.proposeUnstyledNames(names)));
             for (;;) {
                 let nameToTry: string;
-                const prefix = prefixes.first();
-                if (prefix) {
+                const { done, value: prefix } = prefixes.next();
+                if (!done) {
                     nameToTry = `${prefix}_${originalName}`;
-                    prefixes = prefixes.rest();
                 } else {
                     nameToTry = `${originalName}_${suffixNumber.toString()}`;
                     suffixNumber++;
@@ -236,8 +233,11 @@ export class FixedName extends Name {
 }
 
 export class SimpleName extends Name {
-    constructor(private readonly _unstyledNames: OrderedSet<string>, namingFunction: Namer, order: number) {
+    private readonly _unstyledNames: ReadonlySet<string>;
+
+    constructor(unstyledNames: Iterable<string>, namingFunction: Namer, order: number) {
         super(namingFunction, order);
+        this._unstyledNames = new Set(unstyledNames);
     }
 
     get dependencies(): ReadonlyArray<Name> {
@@ -264,7 +264,7 @@ export class AssociatedName extends Name {
 }
 
 export class DependencyName extends Name {
-    private readonly _dependencies: OrderedSet<Name>;
+    private readonly _dependencies: ReadonlySet<Name>;
 
     constructor(
         namingFunction: Namer | undefined,
@@ -277,7 +277,7 @@ export class DependencyName extends Name {
             dependencies.push(n);
             return "0xDEADBEEF";
         });
-        this._dependencies = OrderedSet(dependencies);
+        this._dependencies = new Set(dependencies);
     }
 
     get dependencies(): ReadonlyArray<Name> {
@@ -285,7 +285,7 @@ export class DependencyName extends Name {
     }
 
     proposeUnstyledNames(names: Map<Name, string>): ReadonlySet<string> {
-        return OrderedSet([
+        return new Set([
             this._proposeUnstyledName(n => {
                 assert(this._dependencies.has(n), "DependencyName proposer is not pure");
                 return defined(names.get(n));
