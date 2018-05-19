@@ -1,36 +1,34 @@
-import { OrderedMap, OrderedSet } from "immutable";
+import { OrderedMap } from "immutable";
 
 import { Type, ClassProperty, UnionType, ObjectType } from "./Type";
 import { assertIsObject } from "./TypeUtils";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
 import { TypeLookerUp, GraphRewriteBuilder } from "./GraphRewriting";
 import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
-import { panic, assert, defined, unionOfSets } from "./support/Support";
+import { panic, assert, defined } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-import { iterableFirst } from "./support/Containers";
+import { iterableFirst, setUnionInto, setUnion } from "./support/Containers";
 
 function getCliqueProperties(
     clique: ObjectType[],
-    makePropertyType: (types: OrderedSet<Type>) => TypeRef
+    makePropertyType: (types: ReadonlySet<Type>) => TypeRef
 ): [OrderedMap<string, ClassProperty>, TypeRef | undefined, boolean] {
     let lostTypeAttributes = false;
-    let propertyNames = OrderedSet<string>();
+    let propertyNames = new Set<string>();
     for (const o of clique) {
-        propertyNames = propertyNames.union(o.getProperties().keySeq());
+        setUnionInto(propertyNames, o.getProperties().keySeq());
     }
 
-    let properties = propertyNames
-        .toArray()
-        .map(name => [name, OrderedSet(), false] as [string, OrderedSet<Type>, boolean]);
-    let additionalProperties: OrderedSet<Type> | undefined = undefined;
+    let properties = Array.from(propertyNames).map(name => [name, new Set(), false] as [string, Set<Type>, boolean]);
+    let additionalProperties: Set<Type> | undefined = undefined;
     for (const o of clique) {
         let additional = o.getAdditionalProperties();
         if (additional !== undefined) {
             if (additionalProperties === undefined) {
-                additionalProperties = OrderedSet();
+                additionalProperties = new Set();
             }
             if (additional !== undefined) {
-                additionalProperties = additionalProperties.add(additional);
+                additionalProperties.add(additional);
             }
         }
 
@@ -40,16 +38,15 @@ function getCliqueProperties(
             if (maybeProperty === undefined) {
                 isOptional = true;
                 if (additional !== undefined && additional.kind !== "any") {
-                    types = types.add(additional);
+                    types.add(additional);
                 }
             } else {
                 if (maybeProperty.isOptional) {
                     isOptional = true;
                 }
-                types = types.add(maybeProperty.type);
+                types.add(maybeProperty.type);
             }
 
-            properties[i][1] = types;
             properties[i][2] = isOptional;
         }
     }
@@ -115,25 +112,25 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
         const { hasProperties, hasAdditionalProperties, hasNonAnyAdditionalProperties } = countProperties(objectTypes);
 
         if (!this._makeObjectTypes && (hasNonAnyAdditionalProperties || (!hasProperties && hasAdditionalProperties))) {
-            const propertyTypes = unionOfSets(
-                objectTypes.map(o =>
+            const propertyTypes = setUnion(
+                ...objectTypes.map(o =>
                     o
                         .getProperties()
                         .map(cp => cp.typeRef)
-                        .toOrderedSet()
+                        .values()
                 )
             );
-            const additionalPropertyTypes = OrderedSet(
+            const additionalPropertyTypes = new Set(
                 objectTypes
                     .filter(o => o.getAdditionalProperties() !== undefined)
                     .map(o => defined(o.getAdditionalProperties()).typeRef)
             );
-            const allPropertyTypes = propertyTypes.union(additionalPropertyTypes).toArray();
-            return this.typeBuilder.getMapType(typeAttributes, this._unifyTypes(allPropertyTypes));
+            setUnionInto(propertyTypes, additionalPropertyTypes);
+            return this.typeBuilder.getMapType(typeAttributes, this._unifyTypes(Array.from(propertyTypes)));
         } else {
             const [properties, additionalProperties, lostTypeAttributes] = getCliqueProperties(objectTypes, types => {
                 assert(types.size > 0, "Property has no type");
-                return this._unifyTypes(types.map(t => t.typeRef).toArray());
+                return this._unifyTypes(Array.from(types).map(t => t.typeRef));
             });
             if (lostTypeAttributes) {
                 this.typeBuilder.setLostTypeAttributes();
