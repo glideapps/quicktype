@@ -1,7 +1,15 @@
 import { Set, OrderedSet, List, Map, hash } from "immutable";
 
 import { defined, assert, panic } from "./support/Support";
-import { setUnion, setMap, setFilter, iterableFind } from "./support/Containers";
+import {
+    setUnion,
+    setMap,
+    setFilter,
+    iterableFind,
+    iterableSome,
+    iterableMinBy,
+    setGroupBy
+} from "./support/Containers";
 
 export class Namespace {
     private readonly _name: string;
@@ -32,19 +40,17 @@ export class Namespace {
         this._children = this._children.add(child);
     }
 
-    get children(): OrderedSet<Namespace> {
+    get children(): ReadonlySet<Namespace> {
         return this._children;
     }
 
-    get members(): OrderedSet<Name> {
+    get members(): ReadonlySet<Name> {
         return this._members;
     }
 
     get forbiddenNameds(): Set<Name> {
         // FIXME: cache
-        return this.additionalForbidden.union(
-            ...this.forbiddenNamespaces.map((ns: Namespace) => ns.members.toSet()).toArray()
-        );
+        return this.additionalForbidden.union(...this.forbiddenNamespaces.map(ns => ns.members).toArray());
     }
 
     add<TName extends Name>(named: TName): TName {
@@ -360,7 +366,7 @@ class NamingContext {
         // The name is assigned, but it might still not be forbidden.
         let conflicting: Name | undefined;
         namedsForProposed.forEach((n: Name) => {
-            if (namedNamespace.members.contains(n) || namedNamespace.forbiddenNameds.contains(n)) {
+            if (namedNamespace.members.has(n) || namedNamespace.forbiddenNameds.contains(n)) {
                 conflicting = n;
                 return false;
             }
@@ -400,15 +406,14 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): Map<Name, stri
         //    cycle.
 
         const unfinishedNamespaces = setFilter(ctx.namespaces, ns => ctx.areForbiddensFullyNamed(ns));
-        const readyNamespace = iterableFind(unfinishedNamespaces, ns => ns.members.some(ctx.isReadyToBeNamed));
+        const readyNamespace = iterableFind(unfinishedNamespaces, ns => iterableSome(ns.members, ctx.isReadyToBeNamed));
 
         if (!readyNamespace) {
             // FIXME: Check for cycles?
             return ctx.names;
         }
 
-        let forbiddenNames = readyNamespace.members
-            .toSet()
+        let forbiddenNames = Set(readyNamespace.members)
             .union(readyNamespace.forbiddenNameds)
             .filter((n: Name) => ctx.names.has(n))
             .map((n: Name) => defined(ctx.names.get(n)))
@@ -419,23 +424,23 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): Map<Name, stri
         //    function.
 
         for (;;) {
-            const allReadyNames = readyNamespace.members.filter(ctx.isReadyToBeNamed);
-            const minOrderName = allReadyNames.minBy(n => n.order);
+            const allReadyNames = setFilter(readyNamespace.members, ctx.isReadyToBeNamed);
+            const minOrderName = iterableMinBy(allReadyNames, n => n.order);
             if (minOrderName === undefined) break;
             const minOrder = minOrderName.order;
-            const readyNames = allReadyNames.filter(n => n.order === minOrder);
+            const readyNames = setFilter(allReadyNames, n => n.order === minOrder);
 
             // It would be nice if we had tuples, then we wouldn't have to do this in
             // two steps.
-            const byNamingFunction = readyNames.groupBy(n => n.namingFunction);
+            const byNamingFunction = setGroupBy(readyNames, n => n.namingFunction);
             byNamingFunction.forEach((namedsForNamingFunction, namer) => {
-                const byProposed = namedsForNamingFunction.groupBy(n =>
+                const byProposed = setGroupBy(namedsForNamingFunction, n =>
                     n.namingFunction.nameStyle(n.firstProposedName(ctx.names))
                 );
                 byProposed.forEach(nameds => {
                     // 3. Use each set's naming function to name its members.
 
-                    const names = namer.assignNames(ctx.names, forbiddenNames, nameds.valueSeq());
+                    const names = namer.assignNames(ctx.names, forbiddenNames, nameds);
                     names.forEach((assigned: string, name: Name) => ctx.assign(name, readyNamespace, assigned));
                     forbiddenNames = forbiddenNames.union(names.toSet());
                 });
