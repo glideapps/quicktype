@@ -1,4 +1,4 @@
-import { Set, OrderedSet, List, Map } from "immutable";
+import { Set, OrderedSet, Map } from "immutable";
 
 import { defined, assert, panic } from "./support/Support";
 import {
@@ -92,7 +92,7 @@ export class Namer {
 
         let allAssignedNames = Map<Name, string>();
 
-        let namesToPrefix = List<Name>();
+        let namesToPrefix: Name[] = [];
         for (const name of namesToAssign) {
             const proposedNames = name.proposeUnstyledNames(names);
             const namingFunction = name.namingFunction;
@@ -116,7 +116,7 @@ export class Namer {
 
             // There's no unique name, or it couldn't be assigned, so
             // we need to prefix-name this one.
-            namesToPrefix = namesToPrefix.push(name);
+            namesToPrefix.push(name);
         }
 
         let prefixes = this._prefixes;
@@ -180,7 +180,7 @@ export abstract class Name {
         this._associates = this._associates.add(associate);
     }
 
-    abstract get dependencies(): List<Name>;
+    abstract get dependencies(): ReadonlyArray<Name>;
 
     isFixed(): this is FixedName {
         return this instanceof FixedName;
@@ -220,8 +220,8 @@ export class FixedName extends Name {
         super(undefined, 0);
     }
 
-    get dependencies(): List<Name> {
-        return List();
+    get dependencies(): ReadonlyArray<Name> {
+        return [];
     }
 
     addAssociate(_: AssociatedName): never {
@@ -242,8 +242,8 @@ export class SimpleName extends Name {
         super(namingFunction, order);
     }
 
-    get dependencies(): List<Name> {
-        return List();
+    get dependencies(): ReadonlyArray<Name> {
+        return [];
     }
 
     proposeUnstyledNames(_?: Map<Name, string>): ReadonlySet<string> {
@@ -256,8 +256,8 @@ export class AssociatedName extends Name {
         super(undefined, order);
     }
 
-    get dependencies(): List<Name> {
-        return List([this._sponsor]);
+    get dependencies(): ReadonlyArray<Name> {
+        return [this._sponsor];
     }
 
     proposeUnstyledNames(_?: Map<Name, string>): never {
@@ -282,8 +282,8 @@ export class DependencyName extends Name {
         this._dependencies = OrderedSet(dependencies);
     }
 
-    get dependencies(): List<Name> {
-        return this._dependencies.toList();
+    get dependencies(): ReadonlyArray<Name> {
+        return Array.from(this._dependencies);
     }
 
     proposeUnstyledNames(names: Map<Name, string>): ReadonlySet<string> {
