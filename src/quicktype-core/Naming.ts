@@ -1,5 +1,3 @@
-import { Map as ImmutableMap } from "immutable";
-
 import { defined, assert, panic } from "./support/Support";
 import {
     setUnion,
@@ -81,6 +79,8 @@ export class Namer {
         this._prefixes = new Set(prefixes);
     }
 
+    // The namesIterable comes directly out of the context and will
+    // be modified if we assign
     assignNames(
         names: ReadonlyMap<Name, string>,
         forbiddenNames: ReadonlySet<string>,
@@ -308,21 +308,25 @@ function allNamespacesRecursively(namespaces: Iterable<Namespace>): ReadonlySet<
 }
 
 class NamingContext {
-    names: ImmutableMap<Name, string> = ImmutableMap();
-    private _namedsForName: ImmutableMap<string, Set<Name>> = ImmutableMap();
+    private readonly _names: Map<Name, string> = new Map();
+    private readonly _namedsForName: Map<string, Set<Name>> = new Map();
     readonly namespaces: ReadonlySet<Namespace>;
 
     constructor(rootNamespaces: Iterable<Namespace>) {
         this.namespaces = allNamespacesRecursively(rootNamespaces);
     }
 
+    get names(): ReadonlyMap<Name, string> {
+        return this._names;
+    }
+
     isReadyToBeNamed = (named: Name): boolean => {
-        if (this.names.has(named)) return false;
-        return named.dependencies.every((n: Name) => this.names.has(n));
+        if (this._names.has(named)) return false;
+        return named.dependencies.every((n: Name) => this._names.has(n));
     };
 
     areForbiddensFullyNamed(namespace: Namespace): boolean {
-        return iterableEvery(namespace.forbiddenNameds, n => this.names.has(n));
+        return iterableEvery(namespace.forbiddenNameds, n => this._names.has(n));
     }
 
     isConflicting = (namedNamespace: Namespace, proposed: string): boolean => {
@@ -341,14 +345,14 @@ class NamingContext {
     assign = (named: Name, namedNamespace: Namespace, name: string): void => {
         assert(!this.names.has(named), `Name "${name}" assigned twice`);
         assert(!this.isConflicting(namedNamespace, name), `Assigned name "${name}" conflicts`);
-        this.names = this.names.set(named, name);
+        this._names.set(named, name);
         let namedsForName = this._namedsForName.get(name);
         if (namedsForName === undefined) {
             namedsForName = new Set();
-            this._namedsForName = this._namedsForName.set(name, namedsForName);
+            this._namedsForName.set(name, namedsForName);
         }
         namedsForName.add(named);
-        this._namedsForName = this._namedsForName.set(name, namedsForName);
+        this._namedsForName.set(name, namedsForName);
     };
 }
 
