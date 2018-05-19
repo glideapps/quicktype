@@ -1,4 +1,4 @@
-import { OrderedSet, OrderedMap, is, hash } from "immutable";
+import { OrderedSet, is, hash } from "immutable";
 
 import { defined, panic, assert, mapOptional, hashCodeInit, addHashCode } from "./support/Support";
 import { TypeRef } from "./TypeBuilder";
@@ -580,7 +580,7 @@ export class MapType extends ObjectType {
     readonly kind: "map";
 
     constructor(typeRef: TypeRef, valuesRef: TypeRef | undefined) {
-        super(typeRef, "map", false, mapOptional(() => OrderedMap(), valuesRef), valuesRef);
+        super(typeRef, "map", false, mapOptional(() => new Map(), valuesRef), valuesRef);
     }
 
     // FIXME: Remove and use `getAdditionalProperties()` instead.
