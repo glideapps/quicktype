@@ -1,11 +1,10 @@
-import { Map, Set } from "immutable";
-
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { defined, isStringMap, checkStringMap, checkArray } from "./support/Support";
 import { EnumType, UnionType, Type, ObjectType } from "./Type";
 import { messageAssert } from "./Messages";
 import { JSONSchema } from "./input/JSONSchemaStore";
 import { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
+import { setUnion, iterableFirst, mapFromIterable, mapMap, mapMerge, mapFromObject } from "./support/Containers";
 
 export type AccessorEntry = string | Map<string, string>;
 
@@ -45,15 +44,15 @@ function lookupKey(accessors: AccessorNames, key: string, language: string): [st
 export function objectPropertyNames(o: ObjectType, language: string): Map<string, [string, boolean] | undefined> {
     const accessors = accessorNamesTypeAttributeKind.tryGetInAttributes(o.getAttributes());
     const map = o.getProperties();
-    if (accessors === undefined) return map.map(_ => undefined);
-    return map.map((_cp, n) => lookupKey(accessors, n, language));
+    if (accessors === undefined) return mapMap(map, _ => undefined);
+    return mapMap(map, (_cp, n) => lookupKey(accessors, n, language));
 }
 
 export function enumCaseNames(e: EnumType, language: string): Map<string, [string, boolean] | undefined> {
     const accessors = accessorNamesTypeAttributeKind.tryGetInAttributes(e.getAttributes());
     const map = e.cases.toMap();
-    if (accessors === undefined) return map.map(_ => undefined);
-    return map.map(c => lookupKey(accessors, c, language));
+    if (accessors === undefined) return mapMap(map, _ => undefined);
+    return mapMap(map, c => lookupKey(accessors, c, language));
 }
 
 export function getAccessorName(
@@ -72,26 +71,28 @@ export function getAccessorName(
 // That way, no matter how the types are recombined, if we find a union member, we can look
 // up its union's identifier(s), and then look up the member's accessor entries for that
 // identifier.  Of course we might find more than one, potentially conflicting.
-class UnionIdentifierTypeAttributeKind extends TypeAttributeKind<Set<number>> {
+class UnionIdentifierTypeAttributeKind extends TypeAttributeKind<ReadonlySet<number>> {
     constructor() {
         super("unionIdentifier");
     }
 
-    combine(a: Set<number>, b: Set<number>): Set<number> {
-        return a.union(b);
+    combine(a: ReadonlySet<number>, b: ReadonlySet<number>): ReadonlySet<number> {
+        return setUnion(a, b);
     }
 
-    makeInferred(_: Set<number>): Set<number> {
-        return Set();
+    makeInferred(_: ReadonlySet<number>): ReadonlySet<number> {
+        return new Set();
     }
 }
 
-export const unionIdentifierTypeAttributeKind: TypeAttributeKind<Set<number>> = new UnionIdentifierTypeAttributeKind();
+export const unionIdentifierTypeAttributeKind: TypeAttributeKind<
+    ReadonlySet<number>
+> = new UnionIdentifierTypeAttributeKind();
 
 let nextUnionIdentifier: number = 0;
 
 export function makeUnionIdentifierAttribute(): TypeAttributes {
-    const attributes = unionIdentifierTypeAttributeKind.makeAttributes(Set([nextUnionIdentifier]));
+    const attributes = unionIdentifierTypeAttributeKind.makeAttributes(new Set([nextUnionIdentifier]));
     nextUnionIdentifier += 1;
     return attributes;
 }
@@ -102,7 +103,7 @@ class UnionMemberNamesTypeAttributeKind extends TypeAttributeKind<Map<number, Ac
     }
 
     combine(a: Map<number, AccessorEntry>, b: Map<number, AccessorEntry>): Map<number, AccessorEntry> {
-        return a.merge(b);
+        return mapMerge(a, b);
     }
 }
 
@@ -112,7 +113,7 @@ export const unionMemberNamesTypeAttributeKind: TypeAttributeKind<
 
 export function makeUnionMemberNamesAttribute(unionAttributes: TypeAttributes, entry: AccessorEntry): TypeAttributes {
     const identifiers = defined(unionIdentifierTypeAttributeKind.tryGetInAttributes(unionAttributes));
-    const map = identifiers.toMap().map(_ => entry);
+    const map = mapFromIterable(identifiers, _ => entry);
     return unionMemberNamesTypeAttributeKind.makeAttributes(map);
 }
 
@@ -123,8 +124,8 @@ export function unionMemberName(u: UnionType, member: Type, language: string): [
     const memberNames = unionMemberNamesTypeAttributeKind.tryGetInAttributes(member.getAttributes());
     if (memberNames === undefined) return [undefined, false];
 
-    let names: Set<string> = Set();
-    let fixedNames: Set<string> = Set();
+    const names = new Set<string>();
+    const fixedNames = new Set<string>();
     identifiers.forEach(i => {
         const maybeEntry = memberNames.get(i);
         if (maybeEntry === undefined) return;
@@ -132,27 +133,27 @@ export function unionMemberName(u: UnionType, member: Type, language: string): [
         if (maybeName === undefined) return;
         const [name, isNameFixed] = maybeName;
         if (isNameFixed) {
-            fixedNames = fixedNames.add(name);
+            fixedNames.add(name);
         } else {
-            names = names.add(name);
+            names.add(name);
         }
     });
 
     let size: number;
     let isFixed: boolean;
-    let first = fixedNames.first();
+    let first = iterableFirst(fixedNames);
     if (first !== undefined) {
         size = fixedNames.size;
         isFixed = true;
     } else {
-        first = names.first();
+        first = iterableFirst(names);
         if (first === undefined) return [undefined, false];
 
         size = names.size;
         isFixed = false;
     }
 
-    messageAssert(size === 1, "SchemaMoreThanOneUnionMemberName", { names: names.toArray() });
+    messageAssert(size === 1, "SchemaMoreThanOneUnionMemberName", { names: Array.from(names) });
     return [first, isFixed];
 }
 
@@ -165,13 +166,13 @@ function isAccessorEntry(x: any): x is string | { [language: string]: string } {
 
 function makeAccessorEntry(ae: string | { [language: string]: string }): AccessorEntry {
     if (typeof ae === "string") return ae;
-    return Map(ae);
+    return mapFromObject(ae);
 }
 
 function makeAccessorNames(x: any): AccessorNames {
     // FIXME: Do proper error reporting
     const stringMap = checkStringMap(x, isAccessorEntry);
-    return Map(stringMap).map(makeAccessorEntry);
+    return mapMap(mapFromObject(stringMap), makeAccessorEntry);
 }
 
 export function accessorNamesAttributeProducer(

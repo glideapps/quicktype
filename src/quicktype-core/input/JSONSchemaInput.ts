@@ -1,4 +1,4 @@
-import { List, OrderedSet, Map, hash, OrderedMap } from "immutable";
+import { List, OrderedSet, hash, OrderedMap } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
 
@@ -11,7 +11,6 @@ import {
     defined,
     addHashCode,
     mapSync,
-    forEachSync,
     mapOptional,
     hasOwnProperty
 } from "../support/Support";
@@ -27,7 +26,7 @@ import {
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import { messageAssert, messageError } from "../Messages";
 import { StringTypes } from "../StringTypes";
-import { setFilter } from "../support/Containers";
+import { setFilter, EqualityMap, mapMap, mapFromObject } from "../support/Containers";
 
 export enum PathElementKind {
     Root,
@@ -343,13 +342,13 @@ class Location {
 }
 
 class Canonizer {
-    private _map: Map<Ref, Ref> = Map();
+    private readonly _map = new EqualityMap<Ref, Ref>();
     private readonly _schemaAddressesAdded = new Set<string>();
 
     private addID(mapped: string, loc: Location): void {
         const ref = Ref.parse(mapped).resolveAgainst(loc.virtualRef);
         messageAssert(ref.hasAddress, "SchemaIDMustHaveAddress", withRef(loc, { id: mapped }));
-        this._map = this._map.set(ref, loc.canonicalRef);
+        this._map.set(ref, loc.canonicalRef);
     }
 
     private addIDs(schema: any, loc: Location) {
@@ -476,7 +475,7 @@ export type JSONSchemaAttributeProducer = (
 export async function addTypesInSchema(
     typeBuilder: TypeBuilder,
     store: JSONSchemaStore,
-    references: Map<string, Ref>,
+    references: ReadonlyMap<string, Ref>,
     attributeProducers: JSONSchemaAttributeProducer[]
 ): Promise<void> {
     const canonizer = new Canonizer();
@@ -489,14 +488,14 @@ export async function addTypesInSchema(
         return [canonical.lookupRef(schema), new Location(canonical, fullVirtual)];
     }
 
-    let typeForCanonicalRef = Map<Ref, TypeRef>();
+    let typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
 
     async function setTypeForLocation(loc: Location, t: TypeRef): Promise<void> {
         const maybeRef = await typeForCanonicalRef.get(loc.canonicalRef);
         if (maybeRef !== undefined) {
             assert(maybeRef === t, "Trying to set path again to different type");
         }
-        typeForCanonicalRef = typeForCanonicalRef.set(loc.canonicalRef, t);
+        typeForCanonicalRef.set(loc.canonicalRef, t);
     }
 
     async function makeObject(
@@ -818,11 +817,11 @@ export async function addTypesInSchema(
         return result;
     }
 
-    await forEachSync(references, async (topLevelRef, topLevelName) => {
+    for (const [topLevelName, topLevelRef] of references) {
         const [target, loc] = await resolveVirtualRef(undefined, topLevelRef);
         const t = await toType(target, loc, makeNamesTypeAttributes(topLevelName, false));
         typeBuilder.addTopLevel(topLevelName, t);
-    });
+    }
 }
 
 function nameFromURI(uri: uri.URI): string | undefined {
@@ -849,7 +848,7 @@ export async function refsInSchemaForURI(
     store: JSONSchemaStore,
     uri: uri.URI,
     defaultName: string
-): Promise<Map<string, Ref> | [string, Ref]> {
+): Promise<ReadonlyMap<string, Ref> | [string, Ref]> {
     const fragment = uri.fragment();
     let propertiesAreTypes = fragment.endsWith("/");
     if (propertiesAreTypes) {
@@ -867,7 +866,7 @@ export async function refsInSchemaForURI(
         if (typeof schema !== "object") {
             return messageError("SchemaCannotGetTypesFromBoolean", { ref: ref.toString() });
         }
-        return Map(schema).map((_, name) => ref.push(name));
+        return mapMap(mapFromObject(schema), (_, name) => ref.push(name));
     } else {
         let name: string;
         if (typeof schema === "object" && typeof schema.title === "string") {
