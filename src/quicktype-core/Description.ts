@@ -1,4 +1,4 @@
-import { OrderedSet, OrderedMap, Map, Set } from "immutable";
+import { OrderedSet, OrderedMap, Map } from "immutable";
 
 import { TypeAttributeKind, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { setUnion } from "./support/Support";
