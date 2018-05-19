@@ -1,4 +1,4 @@
-import { Map, OrderedMap, OrderedSet, Set, List, is } from "immutable";
+import { Map, OrderedMap, OrderedSet, Set, is } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -19,7 +19,9 @@ import {
     arrayTypeIdentity,
     classTypeIdentity,
     unionTypeIdentity,
-    intersectionTypeIdentity
+    intersectionTypeIdentity,
+    MaybeTypeIdentity,
+    TypeIdentity
 } from "./Type";
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
@@ -217,19 +219,19 @@ export class TypeBuilder {
         return this._addedForwardingIntersection;
     }
 
-    private readonly _typeForIdentity: EqualityMap<List<any>, TypeRef> = new EqualityMap();
+    private readonly _typeForIdentity: EqualityMap<TypeIdentity, TypeRef> = new EqualityMap();
 
-    private registerTypeForIdentity(identity: List<any> | undefined, tref: TypeRef): void {
+    private registerTypeForIdentity(identity: MaybeTypeIdentity, tref: TypeRef): void {
         if (identity === undefined) return;
         this._typeForIdentity.set(identity, tref);
     }
 
-    protected makeIdentity(maker: () => List<any> | undefined): List<any> | undefined {
+    protected makeIdentity(maker: () => MaybeTypeIdentity): MaybeTypeIdentity {
         return maker();
     }
 
     private getOrAddType(
-        identityMaker: () => List<any> | undefined,
+        identityMaker: () => MaybeTypeIdentity,
         creator: (tr: TypeRef) => Type,
         attributes: TypeAttributes | undefined,
         forwardingRef: TypeRef | undefined
