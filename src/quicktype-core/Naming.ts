@@ -84,9 +84,10 @@ export class Namer {
     // be modified if we assign
     assignNames(
         names: ReadonlyMap<Name, string>,
-        forbiddenNames: ReadonlySet<string>,
+        forbiddenNamesIterable: Iterable<string>,
         namesToAssignIterable: Iterable<Name>
     ): ReadonlyMap<Name, string> {
+        const forbiddenNames = new Set(forbiddenNamesIterable);
         const namesToAssign = Array.from(namesToAssignIterable);
 
         assert(namesToAssign.length > 0, "Number of names can't be less than 1");
@@ -110,7 +111,7 @@ export class Namer {
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned) {
                     mapMergeInto(allAssignedNames, assigned);
-                    forbiddenNames = setUnion(forbiddenNames, assigned.values());
+                    setUnionInto(forbiddenNames, assigned.values());
                     continue;
                 }
             }
@@ -137,7 +138,7 @@ export class Namer {
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned === null) continue;
                 mapMergeInto(allAssignedNames, assigned);
-                forbiddenNames = setUnion(forbiddenNames, assigned.values());
+                setUnionInto(forbiddenNames, assigned.values());
                 break;
             }
         }
