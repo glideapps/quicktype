@@ -718,12 +718,12 @@ export abstract class SetOperationType extends Type {
         canonicalOrder: boolean,
         getType: (members: OrderedSet<TypeRef> | undefined) => void
     ): void {
-        const sortedMemberRefs = this.sortedMembers.toOrderedMap().map(t => t.typeRef);
+        const sortedMemberRefs = mapMap(this.sortedMembers.entries(), t => t.typeRef);
         const membersInOrder = canonicalOrder ? this.sortedMembers : this.members;
         const maybeMembers = builder.lookupMap(sortedMemberRefs);
         if (maybeMembers === undefined) {
             getType(undefined);
-            const reconstituted = builder.reconstitute(sortedMemberRefs);
+            const reconstituted = builder.reconstituteMap(sortedMemberRefs);
             builder.setSetOperationMembers(membersInOrder.map(t => defined(reconstituted.get(t))));
         } else {
             getType(membersInOrder.map(t => defined(maybeMembers.get(t))));
