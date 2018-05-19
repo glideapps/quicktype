@@ -1,16 +1,14 @@
-import { Map } from "immutable";
-
 import { StringMap, assert } from "../support/Support";
 import { messageError } from "../Messages";
 
 export type JSONSchema = StringMap | boolean;
 
 export abstract class JSONSchemaStore {
-    private _schemas: Map<string, JSONSchema> = Map();
+    private readonly _schemas = new Map<string, JSONSchema>();
 
     private add(address: string, schema: JSONSchema): void {
         assert(!this._schemas.has(address), "Cannot set a schema for an address twice");
-        this._schemas = this._schemas.set(address, schema);
+        this._schemas.set(address, schema);
     }
 
     // FIXME: Remove the undefined option
