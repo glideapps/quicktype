@@ -1,4 +1,4 @@
-import { Map } from "immutable";
+import { Map as ImmutableMap } from "immutable";
 
 import { defined, assert, panic } from "./support/Support";
 import {
@@ -11,7 +11,8 @@ import {
     setGroupBy,
     setFilterMap,
     iterableFirst,
-    iterableEvery
+    iterableEvery,
+    mapMergeInto
 } from "./support/Containers";
 
 export class Namespace {
@@ -89,7 +90,7 @@ export class Namer {
 
         assert(namesToAssign.length > 0, "Number of names can't be less than 1");
 
-        let allAssignedNames = Map<Name, string>();
+        const allAssignedNames = new Map<Name, string>();
 
         let namesToPrefix: Name[] = [];
         for (const name of namesToAssign) {
@@ -107,7 +108,7 @@ export class Namer {
                 const styledName = namingFunction.nameStyle(maybeUniqueName);
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned) {
-                    allAssignedNames = allAssignedNames.merge(assigned);
+                    mapMergeInto(allAssignedNames, assigned);
                     forbiddenNames = setUnion(forbiddenNames, assigned.values());
                     continue;
                 }
@@ -134,7 +135,7 @@ export class Namer {
                 const styledName = name.namingFunction.nameStyle(nameToTry);
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned === null) continue;
-                allAssignedNames = allAssignedNames.merge(assigned);
+                mapMergeInto(allAssignedNames, assigned);
                 forbiddenNames = setUnion(forbiddenNames, assigned.values());
             }
         }
@@ -197,13 +198,13 @@ export abstract class Name {
 
     nameAssignments(forbiddenNames: ReadonlySet<string>, assignedName: string): ReadonlyMap<Name, string> | null {
         if (forbiddenNames.has(assignedName)) return null;
-        let assignments = Map<Name, string>().set(this, assignedName);
+        const assignments = new Map<Name, string>([[this, assignedName]]);
         for (const an of this._associates) {
             const associatedAssignedName = an.getName(assignedName);
             if (forbiddenNames.has(associatedAssignedName)) {
                 return null;
             }
-            assignments = assignments.set(an, associatedAssignedName);
+            assignments.set(an, associatedAssignedName);
         }
         return assignments;
     }
@@ -307,8 +308,8 @@ function allNamespacesRecursively(namespaces: Iterable<Namespace>): ReadonlySet<
 }
 
 class NamingContext {
-    names: Map<Name, string> = Map();
-    private _namedsForName: Map<string, Set<Name>> = Map();
+    names: ImmutableMap<Name, string> = ImmutableMap();
+    private _namedsForName: ImmutableMap<string, Set<Name>> = ImmutableMap();
     readonly namespaces: ReadonlySet<Namespace>;
 
     constructor(rootNamespaces: Iterable<Namespace>) {
