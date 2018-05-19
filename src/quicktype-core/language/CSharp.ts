@@ -335,7 +335,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             className,
             this.superclassForType(c),
             () => {
-                if (c.getProperties().isEmpty()) return;
+                if (c.getProperties().size === 0) return;
                 const blankLines = this.blankLinesBetweenAttributes() ? "interposing" : "none";
                 let columns: Sourcelike[][] = [];
                 let isFirstProperty = true;

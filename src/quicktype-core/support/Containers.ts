@@ -115,6 +115,15 @@ export function mapContains<K, V>(m: ReadonlyMap<K, V>, valueToFind: V): boolean
     return false;
 }
 
+export function mapSome<K, V>(m: ReadonlyMap<K, V>, p: (v: V, k: K) => boolean): boolean {
+    for (const [k, v] of m) {
+        if (p(v, k)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 export function mapMergeInto<K, V>(dest: Map<K, V>, src: ReadonlyMap<K, V>): void {
     for (const [k, v] of src) {
         dest.set(k, v);
@@ -138,6 +147,17 @@ export function mapFilter<K, V>(m: ReadonlyMap<K, V>, p: (v: V, k: K) => boolean
     return result;
 }
 
+export function mapFilterMap<K, V, W>(m: ReadonlyMap<K, V>, f: (v: V, k: K) => W | undefined): Map<K, W> {
+    const result = new Map<K, W>();
+    for (const [k, v] of m) {
+        const w = f(v, k);
+        if (w !== undefined) {
+            result.set(k, w);
+        }
+    }
+    return result;
+}
+
 export function mapSortBy<K, V>(m: Iterable<[K, V]>, sortKey: (v: V, k: K) => number | string): Map<K, V> {
     const arr = Array.from(m);
     arr.sort(([ka, va], [kb, vb]) => {
@@ -148,6 +168,10 @@ export function mapSortBy<K, V>(m: Iterable<[K, V]>, sortKey: (v: V, k: K) => nu
         return 0;
     });
     return new Map(arr);
+}
+
+export function mapSortByKey<K extends number | string, V>(m: Iterable<[K, V]>): Map<K, V> {
+    return mapSortBy(m, (_, k) => k);
 }
 
 export function mapFromObject<V>(obj: { [k: string]: V }): Map<string, V> {

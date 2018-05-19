@@ -15,7 +15,7 @@ import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { messageError } from "./Messages";
-import { iterableFirst, setFilter, setUnion, setSubtract } from "./support/Containers";
+import { iterableFirst, setFilter, setUnion, setSubtract, mapMap, mapSome } from "./support/Containers";
 
 export class TypeAttributeStore {
     private _topLevelValues: Map<string, TypeAttributes> = Map();
@@ -401,7 +401,7 @@ export function optionalToNullable(
     debugPrintReconstitution: boolean
 ): TypeGraph {
     function rewriteClass(c: ClassType, builder: GraphRewriteBuilder<ClassType>, forwardingRef: TypeRef): TypeRef {
-        const properties = c.getProperties().map((p, name) => {
+        const properties = mapMap(c.getProperties(), (p, name) => {
             const t = p.type;
             let ref: TypeRef;
             if (!p.isOptional || t.isNullable) {
@@ -430,7 +430,7 @@ export function optionalToNullable(
 
     const classesWithOptional = setFilter(
         graph.allTypesUnordered(),
-        t => t instanceof ClassType && t.getProperties().some(p => p.isOptional)
+        t => t instanceof ClassType && mapSome(t.getProperties(), p => p.isOptional)
     );
     const replacementGroups = Array.from(classesWithOptional).map(c => [c as ClassType]);
     if (classesWithOptional.size === 0) {

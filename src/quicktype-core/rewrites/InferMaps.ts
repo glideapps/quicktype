@@ -1,4 +1,4 @@
-import { Map, OrderedSet } from "immutable";
+import { OrderedSet } from "immutable";
 
 import { Type, ClassType, setOperationCasesEqual, ClassProperty } from "../Type";
 import { removeNullFromType } from "../TypeUtils";
@@ -8,7 +8,7 @@ import { TypeRef, StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
 import { MarkovChain, load, evaluate } from "../MarkovChain";
-import { toReadonlySet, iterableFirst } from "../support/Containers";
+import { iterableFirst, iterableEvery, setMap } from "../support/Containers";
 
 const mapSizeThreshold = 20;
 
@@ -21,7 +21,7 @@ function nameProbability(name: string): number {
     return evaluate(markovChain, name);
 }
 
-function shouldBeMap(properties: Map<string, ClassProperty>): ReadonlySet<Type> | undefined {
+function shouldBeMap(properties: ReadonlyMap<string, ClassProperty>): ReadonlySet<Type> | undefined {
     // Only classes with a certain number of properties are inferred
     // as maps.
     const numProperties = properties.size;
@@ -29,12 +29,12 @@ function shouldBeMap(properties: Map<string, ClassProperty>): ReadonlySet<Type> 
 
     // If all property names are digit-only, we always make a map, no
     // questions asked.
-    if (properties.keySeq().every(n => /^[0-9]+$/.test(n))) {
-        return toReadonlySet(properties.valueSeq().map(cp => cp.type));
+    if (iterableEvery(properties.keys(), n => /^[0-9]+$/.test(n))) {
+        return setMap(properties.values(), cp => cp.type);
     }
 
     if (numProperties < mapSizeThreshold) {
-        const names = properties.keySeq();
+        const names = Array.from(properties.keys());
         const probabilities = names.map(nameProbability);
         const product = probabilities.reduce((a, b) => a * b, 1);
         const probability = Math.pow(product, 1 / numProperties);

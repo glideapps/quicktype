@@ -7,7 +7,7 @@ import { TypeLookerUp, GraphRewriteBuilder } from "./GraphRewriting";
 import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
 import { panic, assert, defined } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-import { iterableFirst, setUnionInto, setUnion } from "./support/Containers";
+import { iterableFirst, setUnionInto } from "./support/Containers";
 
 function getCliqueProperties(
     clique: ObjectType[],
@@ -16,7 +16,7 @@ function getCliqueProperties(
     let lostTypeAttributes = false;
     let propertyNames = new Set<string>();
     for (const o of clique) {
-        setUnionInto(propertyNames, o.getProperties().keySeq());
+        setUnionInto(propertyNames, o.getProperties().keys());
     }
 
     let properties = Array.from(propertyNames).map(name => [name, new Set(), false] as [string, Set<Type>, boolean]);
@@ -69,7 +69,7 @@ function countProperties(
     let hasAdditionalProperties = false;
     let hasNonAnyAdditionalProperties = false;
     for (const o of clique) {
-        if (!o.getProperties().isEmpty()) {
+        if (o.getProperties().size > 0) {
             hasProperties = true;
         }
         const additional = o.getAdditionalProperties();
@@ -112,14 +112,10 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
         const { hasProperties, hasAdditionalProperties, hasNonAnyAdditionalProperties } = countProperties(objectTypes);
 
         if (!this._makeObjectTypes && (hasNonAnyAdditionalProperties || (!hasProperties && hasAdditionalProperties))) {
-            const propertyTypes = setUnion(
-                ...objectTypes.map(o =>
-                    o
-                        .getProperties()
-                        .map(cp => cp.typeRef)
-                        .values()
-                )
-            );
+            const propertyTypes = new Set<TypeRef>();
+            for (const o of objectTypes) {
+                setUnionInto(propertyTypes, Array.from(o.getProperties().values()).map(cp => cp.typeRef));
+            }
             const additionalPropertyTypes = new Set(
                 objectTypes
                     .filter(o => o.getAdditionalProperties() !== undefined)

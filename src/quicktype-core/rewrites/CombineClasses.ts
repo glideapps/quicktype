@@ -1,4 +1,4 @@
-import { Map, OrderedSet } from "immutable";
+import { OrderedSet } from "immutable";
 
 import { ClassType, Type, ClassProperty, setOperationCasesEqual } from "../Type";
 import { nonNullTypeCases, combineTypeAttributesOfTypes } from "../TypeUtils";
@@ -36,8 +36,8 @@ function canBeCombined(c1: ClassType, c2: ClassType, onlyWithSameProperties: boo
         }
     }
 
-    let larger: Map<string, ClassProperty>;
-    let smaller: Map<string, ClassProperty>;
+    let larger: ReadonlyMap<string, ClassProperty>;
+    let smaller: ReadonlyMap<string, ClassProperty>;
     if (p1.size > p2.size) {
         larger = p1;
         smaller = p2;
