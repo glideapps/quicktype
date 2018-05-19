@@ -1,4 +1,4 @@
-import { Map, OrderedSet, Set, Collection, isCollection } from "immutable";
+import { Map, OrderedSet, Set } from "immutable";
 
 import { PrimitiveTypeKind, Type, ClassProperty, MaybeTypeIdentity } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
@@ -6,6 +6,7 @@ import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 import { assert, panic, indentationString } from "./support/Support";
 import { TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
+import { mapMap } from "./support/Containers";
 
 export interface TypeLookerUp {
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined;
@@ -81,13 +82,18 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     }
 
     reconstitute(tref: TypeRef): TypeRef;
-    reconstitute<C extends Collection<any, TypeRef>>(trefs: C): C;
-    reconstitute<C extends Collection<any, TypeRef>>(trefs: TypeRef | C): TypeRef | C {
+    reconstitute(trefs: Iterable<TypeRef>): ReadonlyArray<TypeRef>;
+    reconstitute(trefs: TypeRef | Iterable<TypeRef>): TypeRef | ReadonlyArray<TypeRef> {
         assert(this._wasUsed, "Cannot reconstitute constituents before building type");
-        if (isCollection(trefs)) {
-            return trefs.map(tref => this._typeBuilder.reconstituteTypeRef(tref)) as C;
+        if (trefs instanceof TypeRef) {
+            return this._typeBuilder.reconstituteTypeRef(trefs);
+        } else {
+            return Array.from(trefs).map(tref => this._typeBuilder.reconstituteTypeRef(tref));
         }
-        return this._typeBuilder.reconstituteTypeRef(trefs);
+    }
+
+    reconstituteMap<K>(trefs: ReadonlyMap<K, TypeRef>): ReadonlyMap<K, TypeRef> {
+        return mapMap(trefs, tref => this._typeBuilder.reconstituteTypeRef(tref));
     }
 
     getPrimitiveType(kind: PrimitiveTypeKind): void {
