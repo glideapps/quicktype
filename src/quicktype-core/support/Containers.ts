@@ -91,7 +91,7 @@ export function toReadonlyArray<T>(it: Iterable<T>): ReadonlyArray<T> {
     return Array.from(it);
 }
 
-export function mapMap<K, V, W>(m: ReadonlyMap<K, V>, f: (v: V, k: K) => W): Map<K, W> {
+export function mapMap<K, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) => W): Map<K, W> {
     const result = new Map<K, W>();
     for (const [k, v] of m) {
         result.set(k, f(v, k));
@@ -115,7 +115,7 @@ export function mapContains<K, V>(m: ReadonlyMap<K, V>, valueToFind: V): boolean
     return false;
 }
 
-export function mapSome<K, V>(m: ReadonlyMap<K, V>, p: (v: V, k: K) => boolean): boolean {
+export function mapSome<K, V>(m: Iterable<[K, V]>, p: (v: V, k: K) => boolean): boolean {
     for (const [k, v] of m) {
         if (p(v, k)) {
             return true;
@@ -124,20 +124,20 @@ export function mapSome<K, V>(m: ReadonlyMap<K, V>, p: (v: V, k: K) => boolean):
     return false;
 }
 
-export function mapMergeInto<K, V>(dest: Map<K, V>, src: ReadonlyMap<K, V>): void {
+export function mapMergeInto<K, V>(dest: Map<K, V>, src: Iterable<[K, V]>): void {
     for (const [k, v] of src) {
         dest.set(k, v);
     }
 }
 
-export function mapMerge<K, V>(ma: Map<K, V>, mb: Map<K, V>): Map<K, V> {
+export function mapMerge<K, V>(ma: Iterable<[K, V]>, mb: Iterable<[K, V]>): Map<K, V> {
     const result = new Map<K, V>();
     mapMergeInto(result, ma);
     mapMergeInto(result, mb);
     return result;
 }
 
-export function mapFilter<K, V>(m: ReadonlyMap<K, V>, p: (v: V, k: K) => boolean): Map<K, V> {
+export function mapFilter<K, V>(m: Iterable<[K, V]>, p: (v: V, k: K) => boolean): Map<K, V> {
     const result = new Map<K, V>();
     for (const [k, v] of m) {
         if (p(v, k)) {
@@ -147,7 +147,7 @@ export function mapFilter<K, V>(m: ReadonlyMap<K, V>, p: (v: V, k: K) => boolean
     return result;
 }
 
-export function mapFilterMap<K, V, W>(m: ReadonlyMap<K, V>, f: (v: V, k: K) => W | undefined): Map<K, W> {
+export function mapFilterMap<K, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) => W | undefined): Map<K, W> {
     const result = new Map<K, W>();
     for (const [k, v] of m) {
         const w = f(v, k);
