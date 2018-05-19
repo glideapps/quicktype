@@ -174,6 +174,15 @@ export function mapSortByKey<K extends number | string, V>(m: Iterable<[K, V]>):
     return mapSortBy(m, (_, k) => k);
 }
 
+export function mapMapEntries<K, L, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) => [L, W]): Map<L, W> {
+    const result = new Map<L, W>();
+    for (const [k, v] of m) {
+        const [l, w] = f(v, k);
+        result.set(l, w);
+    }
+    return result;
+}
+
 export function mapFromObject<V>(obj: { [k: string]: V }): Map<string, V> {
     const result = new Map<string, V>();
     for (const k of Object.getOwnPropertyNames(obj)) {
