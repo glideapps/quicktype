@@ -8,7 +8,8 @@ import {
     iterableFind,
     iterableSome,
     iterableMinBy,
-    setGroupBy
+    setGroupBy,
+    setFilterMap
 } from "./support/Containers";
 
 export class Namespace {
@@ -97,7 +98,7 @@ export class Namer {
 
     assignNames(
         names: Map<Name, string>,
-        forbiddenNames: Set<string>,
+        forbiddenNames: ReadonlySet<string>,
         namesToAssignIterable: Iterable<Name>
     ): Map<Name, string> {
         const namesToAssign = Array.from(namesToAssignIterable);
@@ -122,7 +123,7 @@ export class Namer {
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned) {
                     allAssignedNames = allAssignedNames.merge(assigned);
-                    forbiddenNames = forbiddenNames.union(assigned.toSet());
+                    forbiddenNames = setUnion(forbiddenNames, assigned.valueSeq());
                     continue;
                 }
             }
@@ -150,7 +151,7 @@ export class Namer {
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
                 if (assigned === null) continue;
                 allAssignedNames = allAssignedNames.merge(assigned);
-                forbiddenNames = forbiddenNames.union(assigned.toSet());
+                forbiddenNames = setUnion(forbiddenNames, assigned.valueSeq());
             }
         }
 
@@ -218,7 +219,7 @@ export abstract class Name {
         return defined(this.proposeUnstyledNames(names).first());
     };
 
-    nameAssignments(forbiddenNames: Set<string>, assignedName: string): Map<Name, string> | null {
+    nameAssignments(forbiddenNames: ReadonlySet<string>, assignedName: string): Map<Name, string> | null {
         if (forbiddenNames.has(assignedName)) return null;
         let assignments = Map<Name, string>().set(this, assignedName);
         let success = true;
@@ -413,11 +414,8 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): Map<Name, stri
             return ctx.names;
         }
 
-        let forbiddenNames = Set(readyNamespace.members)
-            .union(readyNamespace.forbiddenNameds)
-            .filter((n: Name) => ctx.names.has(n))
-            .map((n: Name) => defined(ctx.names.get(n)))
-            .toSet();
+        const allForbiddenNames = setUnion(readyNamespace.members, readyNamespace.forbiddenNameds);
+        let forbiddenNames = setFilterMap(allForbiddenNames, n => ctx.names.get(n));
 
         // 2. From low order to high order, sort those names into sets where all
         //    members of a set propose the same name and have the same naming
@@ -442,7 +440,7 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): Map<Name, stri
 
                     const names = namer.assignNames(ctx.names, forbiddenNames, nameds);
                     names.forEach((assigned: string, name: Name) => ctx.assign(name, readyNamespace, assigned));
-                    forbiddenNames = forbiddenNames.union(names.toSet());
+                    forbiddenNames = setUnion(forbiddenNames, names.valueSeq());
                 });
             });
         }
