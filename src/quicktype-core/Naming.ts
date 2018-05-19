@@ -138,6 +138,7 @@ export class Namer {
                 if (assigned === null) continue;
                 mapMergeInto(allAssignedNames, assigned);
                 forbiddenNames = setUnion(forbiddenNames, assigned.values());
+                break;
             }
         }
 
