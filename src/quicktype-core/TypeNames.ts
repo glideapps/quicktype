@@ -1,4 +1,4 @@
-import { Set, OrderedSet } from "immutable";
+import { OrderedSet } from "immutable";
 import * as pluralize from "pluralize";
 
 import { panic, defined, assert, mapOptional } from "./support/Support";
@@ -12,7 +12,7 @@ let usedRandomNames: Set<string>;
 
 export function initTypeNames(): void {
     chance = new Chance(31415);
-    usedRandomNames = Set();
+    usedRandomNames = new Set();
 }
 
 initTypeNames();
@@ -21,7 +21,7 @@ function makeRandomName(): string {
     for (;;) {
         const name = `${chance.city()} ${chance.animal()}`;
         if (usedRandomNames.has(name)) continue;
-        usedRandomNames = usedRandomNames.add(name);
+        usedRandomNames.add(name);
         return name;
     }
 }
