@@ -26,6 +26,7 @@ import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic, mapOptional, withDefault } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
+import { EqualityMap } from "./support/Containers";
 
 export class TypeRef {
     constructor(readonly graph: TypeGraph, readonly index: number) {}
@@ -216,12 +217,11 @@ export class TypeBuilder {
         return this._addedForwardingIntersection;
     }
 
-    // FIXME: make mutable?
-    private _typeForIdentity: Map<List<any>, TypeRef> = Map();
+    private readonly _typeForIdentity: EqualityMap<List<any>, TypeRef> = new EqualityMap();
 
     private registerTypeForIdentity(identity: List<any> | undefined, tref: TypeRef): void {
         if (identity === undefined) return;
-        this._typeForIdentity = this._typeForIdentity.set(identity, tref);
+        this._typeForIdentity.set(identity, tref);
     }
 
     protected makeIdentity(maker: () => List<any> | undefined): List<any> | undefined {
