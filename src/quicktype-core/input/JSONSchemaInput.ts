@@ -1,4 +1,4 @@
-import { List, hash, OrderedMap, OrderedSet } from "immutable";
+import { List, hash, OrderedSet } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
 
@@ -33,7 +33,10 @@ import {
     mapFromObject,
     setSubtract,
     mapFromIterable,
-    iterableFind
+    iterableFind,
+    mapSortBy,
+    mapMapSync,
+    mapMergeInto
 } from "../support/Containers";
 
 export enum PathElementKind {
@@ -514,11 +517,11 @@ export async function addTypesInSchema(
         additionalProperties: any
     ): Promise<TypeRef> {
         const required = new Set(requiredArray);
-        const propertiesMap = OrderedMap(properties).sortBy((_, k) => k.toLowerCase());
+        const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) => k.toLowerCase());
         // FIXME: We're using a Map instead of an OrderedMap here because we represent
         // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
         // we would use a JSON parser that preserves order.
-        let props = (await mapSync(propertiesMap, async (propSchema, propName) => {
+        const props = await mapMapSync(propertiesMap, async (propSchema, propName) => {
             const propLoc = loc.push("properties", propName);
             const t = await toType(
                 checkJSONSchema(propSchema, propLoc.canonicalRef),
@@ -527,7 +530,7 @@ export async function addTypesInSchema(
             );
             const isOptional = !required.has(propName);
             return new ClassProperty(t, isOptional);
-        })).toOrderedMap();
+        });
         let additionalPropertiesType: TypeRef | undefined;
         if (additionalProperties === undefined || additionalProperties === true) {
             additionalPropertiesType = typeBuilder.getPrimitiveType("any");
@@ -541,7 +544,7 @@ export async function addTypesInSchema(
                 singularizeTypeNames(attributes)
             );
         }
-        const additionalRequired = setSubtract(required, props.keySeq());
+        const additionalRequired = setSubtract(required, props.keys());
         if (additionalRequired.size > 0) {
             const t = additionalPropertiesType;
             if (t === undefined) {
@@ -549,7 +552,7 @@ export async function addTypesInSchema(
             }
 
             const additionalProps = mapFromIterable(additionalRequired, _name => new ClassProperty(t, false));
-            props = props.merge(additionalProps);
+            mapMergeInto(props, additionalProps);
         }
         return typeBuilder.getUniqueObjectType(attributes, props, additionalPropertiesType);
     }
