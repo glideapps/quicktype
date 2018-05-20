@@ -1,4 +1,3 @@
-import { Map } from "immutable";
 import { defined, repeated, assert, repeatedCall } from "./support/Support";
 import { setMap } from "./support/Containers";
 
@@ -167,12 +166,12 @@ function findRoots(successors: number[][]): number[] {
 
 export class Graph<T> {
     private readonly _nodes: ReadonlyArray<T>;
-    private readonly _indexByNode: Map<T, number>;
+    private readonly _indexByNode: ReadonlyMap<T, number>;
     private readonly _successors: number[][];
 
     constructor(nodes: Iterable<T>, invertDirection: boolean, edges: number[][] | ((node: T) => ReadonlySet<T>)) {
         this._nodes = Array.from(nodes);
-        this._indexByNode = Map(this._nodes.map((n, i): [T, number] => [n, i]));
+        this._indexByNode = new Map(this._nodes.map((n, i): [T, number] => [n, i]));
         let edgesArray: number[][];
         if (Array.isArray(edges)) {
             edgesArray = edges;
