@@ -316,9 +316,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
 }
 
 export class InputData {
-    // We're comparing for identity in this OrderedSet, i.e.,
-    // we do each input exactly once.
-    // FIXME: Make into an OrderedMap, indexed by kind.
+    // FIXME: Make into a Map, indexed by kind.
     private _inputs: Set<Input<any>> = new Set();
 
     addInput<T>(input: Input<T>): void {
