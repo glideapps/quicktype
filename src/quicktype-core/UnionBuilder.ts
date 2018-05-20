@@ -1,4 +1,4 @@
-import { Set, OrderedSet } from "immutable";
+import { OrderedSet } from "immutable";
 
 import { TypeKind, PrimitiveStringTypeKind, Type, UnionType } from "./Type";
 import { matchTypeExhaustive } from "./TypeUtils";
@@ -11,7 +11,7 @@ import {
 import { defined, assert, panic, assertNever } from "./support/Support";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
 import { StringTypes, stringTypesTypeAttributeKind } from "./StringTypes";
-import { mapMerge, mapUpdateInto, mapMap, setUnion } from "./support/Containers";
+import { mapMerge, mapUpdateInto, mapMap, setUnion, setUnionInto } from "./support/Containers";
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be
@@ -199,46 +199,49 @@ class FauxUnion {
     }
 }
 
+type UnionOrFaux = UnionType | FauxUnion;
+
 function attributesForTypes(types: Iterable<Type>): [ReadonlyMap<Type, TypeAttributes>, TypeAttributes] {
     // These two maps are the reverse of each other.  unionsForType is all the unions
     // that are ancestors of that type, when going from one of the given types, only
     // following unions.
-    const unionsForType = new Map<Type, Set<UnionType | FauxUnion>>();
-    const typesForUnion = new Map<UnionType | FauxUnion, Set<Type>>();
+    const unionsForType = new Map<Type, Set<UnionOrFaux>>();
+    const typesForUnion = new Map<UnionOrFaux, Set<Type>>();
 
     // All the unions we've seen, starting from types, stopping when we hit non-unions.
     let unions: OrderedSet<UnionType> = OrderedSet();
     // All the unions that are equivalent to the single root type.  If more than one type
     // is given, this will be empty.
-    let unionsEquivalentToRoot: Set<UnionType> = Set();
-    function traverse(t: Type, path: Set<UnionType | FauxUnion>, isEquivalentToRoot: boolean): void {
+    let unionsEquivalentToRoot: Set<UnionType> = new Set();
+    function traverse(t: Type, path: UnionOrFaux[], isEquivalentToRoot: boolean): void {
         if (t instanceof UnionType) {
             unions = unions.add(t);
             if (isEquivalentToRoot) {
                 unionsEquivalentToRoot = unionsEquivalentToRoot.add(t);
             }
 
-            path = path.add(t);
             isEquivalentToRoot = isEquivalentToRoot && t.members.size === 1;
+            path.push(t);
             t.members.forEach(m => traverse(m, path, isEquivalentToRoot));
+            path.pop();
         } else {
-            mapUpdateInto(unionsForType, t, s => (s === undefined ? Set(path) : s.union(path)));
-            path.forEach(u => {
-                mapUpdateInto(typesForUnion, u, s => (s === undefined ? Set([t]) : s.add(t)));
-            });
+            mapUpdateInto(unionsForType, t, s => (s === undefined ? new Set(path) : setUnionInto(s, path)));
+            for (const u of path) {
+                mapUpdateInto(typesForUnion, u, s => (s === undefined ? new Set([t]) : s.add(t)));
+            }
         }
     }
 
-    const rootPath = Set([new FauxUnion()]);
+    const rootPath = [new FauxUnion()];
     const typesArray = Array.from(types);
     for (const t of typesArray) {
         traverse(t, rootPath, typesArray.length === 1);
     }
 
     const resultAttributes = mapMap(unionsForType, (unionForType, t) => {
-        const singleAncestors = unionForType.filter(u => defined(typesForUnion.get(u)).size === 1);
+        const singleAncestors = Array.from(unionForType).filter(u => defined(typesForUnion.get(u)).size === 1);
         assert(singleAncestors.every(u => defined(typesForUnion.get(u)).has(t)), "We messed up bookkeeping");
-        const inheritedAttributes = singleAncestors.toArray().map(u => u.getAttributes());
+        const inheritedAttributes = singleAncestors.map(u => u.getAttributes());
         return combineTypeAttributes("union", [t.getAttributes()].concat(inheritedAttributes));
     });
     const unionAttributes = unions.toArray().map(u => {
