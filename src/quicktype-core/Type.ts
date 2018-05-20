@@ -12,7 +12,6 @@ import {
     iterableSome,
     toReadonlySet,
     setUnion,
-    Equality,
     hashCodeOf,
     areEqual,
     mapMap,
@@ -51,13 +50,10 @@ function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
     return false;
 }
 
-export class TypeIdentity implements Equality {
+export class TypeIdentity {
     private readonly _hashCode: number;
 
-    constructor(
-        private readonly _kind: TypeKind,
-        private readonly _components: ReadonlyArray<Equality | ReadonlyMap<any, any> | ReadonlySet<any> | undefined>
-    ) {
+    constructor(private readonly _kind: TypeKind, private readonly _components: ReadonlyArray<any>) {
         let h = hashCodeInit;
         h = addHashCode(h, hashCodeOf(this._kind));
         for (const c of _components) {
