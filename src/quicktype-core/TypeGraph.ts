@@ -1,4 +1,4 @@
-import { Map as ImmutableMap, List, OrderedSet } from "immutable";
+import { Map as ImmutableMap, List } from "immutable";
 
 import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
@@ -170,7 +170,7 @@ export class TypeGraph {
         return [t, defined(this._attributeStore).attributesForType(t)];
     }
 
-    private filterTypes(predicate: ((t: Type) => boolean) | undefined): OrderedSet<Type> {
+    private filterTypes(predicate: ((t: Type) => boolean) | undefined): ReadonlySet<Type> {
         const seen = new Set<Type>();
         let types = List<Type>();
 
@@ -193,7 +193,7 @@ export class TypeGraph {
         return types.toOrderedSet();
     }
 
-    allNamedTypes(): OrderedSet<Type> {
+    allNamedTypes(): ReadonlySet<Type> {
         return this.filterTypes(isNamedType);
     }
 
@@ -417,10 +417,10 @@ export function optionalToNullable(
                 if (t instanceof UnionType) {
                     members = setMap(t.members, m => builder.reconstituteType(m)).add(nullType);
                 } else {
-                    members = OrderedSet([builder.reconstituteType(t), nullType]);
+                    members = new Set([builder.reconstituteType(t), nullType]);
                 }
                 const attributes = namesTypeAttributeKind.setDefaultInAttributes(t.getAttributes(), () =>
-                    TypeNames.make(OrderedSet([name]), OrderedSet(), true)
+                    TypeNames.make(new Set([name]), new Set(), true)
                 );
                 ref = builder.getUnionType(attributes, members);
             }
