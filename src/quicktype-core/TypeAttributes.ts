@@ -1,4 +1,4 @@
-import { OrderedSet, hash } from "immutable";
+import { hash } from "immutable";
 
 import { panic } from "./support/Support";
 import { Type } from "./Type";
@@ -20,8 +20,8 @@ export class TypeAttributeKind<T> {
         return panic(`Cannot make type attribute ${this.name} inferred`);
     }
 
-    children(_: T): OrderedSet<Type> {
-        return OrderedSet();
+    children(_: T): ReadonlySet<Type> {
+        return new Set();
     }
 
     stringify(_: T): string | undefined {
