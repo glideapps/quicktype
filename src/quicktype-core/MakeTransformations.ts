@@ -1,4 +1,4 @@
-import { OrderedSet, List } from "immutable";
+import { List } from "immutable";
 
 import { TypeGraph } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
@@ -57,7 +57,7 @@ function replaceUnion(
     ]);
     const reconstitutedUnion = builder.getUnionType(
         union.getAttributes(),
-        OrderedSet(reconstitutedMembersByKind.values())
+        new Set(reconstitutedMembersByKind.values())
     );
 
     function memberForKind(kind: TypeKind) {
