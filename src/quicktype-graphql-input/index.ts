@@ -30,11 +30,11 @@ import {
     StringTypes,
     Input,
     setMap,
-    iterableFirst
+    iterableFirst,
+    mapFromObject
 } from "../quicktype-core";
 
 import { TypeKind, GraphQLSchema } from "./GraphQLSchema";
-import { mapFromObject } from "../quicktype-core/support/Containers";
 
 interface GQLType {
     kind: TypeKind;

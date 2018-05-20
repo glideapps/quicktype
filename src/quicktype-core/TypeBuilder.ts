@@ -1,5 +1,3 @@
-import { is } from "immutable";
-
 import {
     PrimitiveTypeKind,
     Type,
@@ -36,7 +34,8 @@ import {
     mapFilter,
     mapFind,
     setMap,
-    setUnion
+    setUnion,
+    areEqual
 } from "./support/Containers";
 
 export class TypeRef {
@@ -182,7 +181,7 @@ export class TypeBuilder {
                 if (!k.inIdentity) return true;
                 const existing = existingAttributes.get(k);
                 if (existing === undefined) return false;
-                return is(existing, v);
+                return areEqual(existing, v);
             }),
             "Can't add different identity type attributes to an existing type"
         );

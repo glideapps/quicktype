@@ -13,7 +13,6 @@
     },
     "dependencies": {
         "quicktype-core": "^1.0.2",
-        "immutable": "^4.0.0-rc.9",
         "graphql": "^0.11.7"
     },
     "devDependencies": {
