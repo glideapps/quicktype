@@ -85,6 +85,25 @@ export function* iterableSkip<T>(it: Iterable<T>, n: number): IterableIterator<T
     }
 }
 
+/** n === 1 will give the last element. */
+export function arrayGetFromEnd<T>(arr: ReadonlyArray<T>, i: number): T | undefined {
+    const l = arr.length;
+    if (i > l) return undefined;
+    return arr[l - i];
+}
+
+export function arrayLast<T>(arr: ReadonlyArray<T>): T | undefined {
+    return arrayGetFromEnd(arr, 1);
+}
+
+export function arrayPop<T>(arr: ReadonlyArray<T>): T[] {
+    const l = arr.length;
+    if (l === 0) {
+        return panic("Cannot pop empty array");
+    }
+    return arr.slice(0, l - 1);
+}
+
 export function arrayIntercalate<T>(separator: T, items: Iterable<T>): T[] {
     const acc: T[] = [];
     for (const x of items) {
