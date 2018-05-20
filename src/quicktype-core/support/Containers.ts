@@ -131,9 +131,30 @@ export function mapMergeInto<K, V>(dest: Map<K, V>, src: Iterable<[K, V]>): void
 }
 
 export function mapMerge<K, V>(ma: Iterable<[K, V]>, mb: Iterable<[K, V]>): Map<K, V> {
-    const result = new Map<K, V>();
-    mapMergeInto(result, ma);
+    const result = new Map(ma);
     mapMergeInto(result, mb);
+    return result;
+}
+
+export function mapMergeWithInto<K, V>(ma: Map<K, V>, mb: Iterable<[K, V]>, merger: (va: V, vb: V, k: K) => V): void {
+    for (const [k, vb] of mb) {
+        const va = ma.get(k);
+        const v = va === undefined ? vb : merger(va, vb, k);
+        ma.set(k, v);
+    }
+}
+
+export function mapMergeWith<K, V>(
+    ma: Iterable<[K, V]>,
+    mb: Iterable<[K, V]>,
+    merger: (va: V, vb: V, k: K) => V
+): Map<K, V> {
+    const result = new Map(ma);
+    for (const [k, vb] of mb) {
+        const va = result.get(k);
+        const v = va === undefined ? vb : merger(va, vb, k);
+        result.set(k, v);
+    }
     return result;
 }
 
@@ -197,6 +218,15 @@ export function mapFromIterable<K, V>(it: Iterable<K>, valueForKey: (k: K) => V)
         result.set(k, valueForKey(k));
     }
     return result;
+}
+
+export function mapFind<K, V>(it: Iterable<[K, V]>, p: (v: V, k: K) => boolean): V | undefined {
+    for (const [k, v] of it) {
+        if (p(v, k)) {
+            return v;
+        }
+    }
+    return undefined;
 }
 
 export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): void {

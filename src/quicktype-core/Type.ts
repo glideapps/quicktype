@@ -17,7 +17,9 @@ import {
     areEqual,
     mapMap,
     setMap,
-    mapSortByKey
+    mapSortByKey,
+    mapSome,
+    mapFilter
 } from "./support/Containers";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
@@ -230,11 +232,11 @@ export abstract class Type {
 }
 
 function hasUniqueIdentityAttributes(attributes: TypeAttributes): boolean {
-    return attributes.some((v, ta) => ta.requiresUniqueIdentity(v));
+    return mapSome(attributes, (v, ta) => ta.requiresUniqueIdentity(v));
 }
 
 function identityAttributes(attributes: TypeAttributes): TypeAttributes {
-    return attributes.filter((_, kind) => kind.inIdentity);
+    return mapFilter(attributes, (_, kind) => kind.inIdentity);
 }
 
 export function primitiveTypeIdentity(kind: PrimitiveTypeKind, attributes: TypeAttributes): MaybeTypeIdentity {
