@@ -58,6 +58,14 @@ export function iterableMinBy<T>(it: Iterable<T>, key: (v: T) => number): T | un
     return minValue;
 }
 
+export function iterableReduce<R, V>(it: Iterable<V>, unit: R, reducer: (r: R, v: V) => R): R {
+    let result = unit;
+    for (const v of it) {
+        result = reducer(result, v);
+    }
+    return result;
+}
+
 export function* iterableEnumerate<T>(it: Iterable<T>): IterableIterator<[number, T]> {
     let i = 0;
     for (const v of it) {
