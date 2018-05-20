@@ -386,6 +386,10 @@ export class EqualityMap<K, V> {
         }
     }
 
+    has(k: K): boolean {
+        return this.get(k) !== undefined;
+    }
+
     *values(): IterableIterator<V> {
         for (const [_h, [_k, v]] of this._map) {
             yield v;
