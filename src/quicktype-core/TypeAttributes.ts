@@ -121,7 +121,7 @@ export function combineTypeAttributes(
     }
 
     for (const r of rest) {
-        mapMergeWithInto(first, r, (aa, ab, kind) => (union ? kind.combine(aa, ab) : kind.intersect(aa, ab)));
+        mapMergeWithInto(first, (aa, ab, kind) => (union ? kind.combine(aa, ab) : kind.intersect(aa, ab)), r);
     }
     return first;
 }
