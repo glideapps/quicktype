@@ -9,7 +9,7 @@ import { GraphRewriteBuilder } from "../GraphRewriting";
 import { unifyTypes, UnifyUnionBuilder } from "../UnifyClasses";
 import { messageAssert } from "../Messages";
 import { emptyTypeAttributes } from "../TypeAttributes";
-import { setFilter } from "../support/Containers";
+import { setFilter, iterableSome } from "../support/Containers";
 
 export function flattenUnions(
     graph: TypeGraph,
@@ -37,8 +37,8 @@ export function flattenUnions(
     const nonCanonicalUnions = setFilter(allUnions, u => !u.isCanonical);
     let foundIntersection = false;
     const groups = makeGroupsToFlatten(nonCanonicalUnions, members => {
-        messageAssert(!members.isEmpty(), "IRNoEmptyUnions", {});
-        if (!members.some(m => m instanceof IntersectionType)) return true;
+        messageAssert(members.size > 0, "IRNoEmptyUnions", {});
+        if (!iterableSome(members, m => m instanceof IntersectionType)) return true;
 
         // FIXME: This is stupid.  `flattenUnions` returns true when no more union
         // flattening is necessary, but `resolveIntersections` can introduce new

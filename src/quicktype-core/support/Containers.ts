@@ -339,23 +339,18 @@ export function toReadonlySet<T>(it: Iterable<T>): ReadonlySet<T> {
     return new Set(it);
 }
 
-export interface Equality {
-    equals(other: any): boolean;
-    hashCode(): number;
-}
-
-export class EqualityMap<K extends Equality, V> {
+export class EqualityMap<K, V> {
     private readonly _map = new Map<number, [K, V]>();
 
     set(k: K, v: V): void {
-        let h = k.hashCode() | 0;
+        let h = hashCodeOf(k) | 0;
         for (;;) {
             const kvp = this._map.get(h);
             if (kvp === undefined) {
                 this._map.set(h, [k, v]);
                 return;
             }
-            if (k.equals(kvp[0])) {
+            if (areEqual(k, kvp[0])) {
                 kvp[1] = v;
                 return;
             }
@@ -364,16 +359,22 @@ export class EqualityMap<K extends Equality, V> {
     }
 
     get(k: K): V | undefined {
-        let h = k.hashCode() | 0;
+        let h = hashCodeOf(k) | 0;
         for (;;) {
             const kvp = this._map.get(h);
             if (kvp === undefined) {
                 return undefined;
             }
-            if (k.equals(kvp[0])) {
+            if (areEqual(k, kvp[0])) {
                 return kvp[1];
             }
             h = (h + 1) | 0;
+        }
+    }
+
+    *values(): IterableIterator<V> {
+        for (const [_h, [_k, v]] of this._map) {
+            yield v;
         }
     }
 }
@@ -416,8 +417,8 @@ export function hashCodeOf(x: any): number {
     let h = hashCodeInit;
 
     if (x === undefined) return h;
-    if (x === true) return h + 1;
-    if (x === false) return h + 2;
+    if (x === true) return (h + 1) | 0;
+    if (x === false) return (h + 2) | 0;
 
     if (typeof x.hashCode === "function") return x.hashCode();
 
