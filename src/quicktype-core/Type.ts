@@ -86,10 +86,10 @@ export abstract class Type {
 
     getChildren(): ReadonlySet<Type> {
         let result = this.getNonAttributeChildren();
-        this.getAttributes().forEach((v, k) => {
-            if (k.children === undefined) return;
+        for (const [k, v] of this.getAttributes()) {
+            if (k.children === undefined) continue;
             result = setUnion(result, k.children(v));
-        });
+        }
         return result;
     }
 
@@ -211,8 +211,8 @@ export abstract class Type {
 
             const parents = t.getParentTypes();
             console.log(`${parents.size} parents`);
-            parents.forEach(p => {
-                if (processed.has(p)) return;
+            for (const p of parents) {
+                if (processed.has(p)) continue;
                 processed.add(p);
                 if (set.has(p.typeRef)) {
                     console.log(`adding ${p.kind}`);
@@ -221,7 +221,7 @@ export abstract class Type {
                     console.log(`found ${p.kind}`);
                     ancestors.add(p);
                 }
-            });
+            }
         }
         return ancestors;
     }
@@ -547,13 +547,13 @@ export class ObjectType extends Type {
         const pb = other.getProperties();
         if (pa.size !== pb.size) return false;
         let failed = false;
-        pa.forEach((cpa, name) => {
+        for (const [name, cpa] of pa) {
             const cpb = pb.get(name);
             if (cpb === undefined || cpa.isOptional !== cpb.isOptional || !queue(cpa.type, cpb.type)) {
                 failed = true;
                 return false;
             }
-        });
+        }
         if (failed) return false;
 
         const thisAdditionalProperties = this.getAdditionalProperties();

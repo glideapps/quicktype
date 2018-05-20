@@ -268,9 +268,9 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
     }
 
     finish(): TypeGraph {
-        this.originalGraph.topLevels.forEach((t, name) => {
+        for (const [name, t] of this.originalGraph.topLevels) {
             this.addTopLevel(name, this.reconstituteType(t));
-        });
+        }
         return super.finish();
     }
 
@@ -302,14 +302,14 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
             debugPrintRemapping
         );
 
-        _map.forEach((target, source) => {
+        for (const [source, target] of _map) {
             let maybeSources = this._attributeSources.get(target);
             if (maybeSources === undefined) {
                 maybeSources = [target];
                 this._attributeSources.set(target, maybeSources);
             }
             maybeSources.push(source);
-        });
+        }
     }
 
     protected makeIdentity(_maker: () => MaybeTypeIdentity): MaybeTypeIdentity {
@@ -456,12 +456,12 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
                 this.changeDebugPrintIndent(1);
             }
 
-            typesToReplace.forEach(t => {
+            for (const t of typesToReplace) {
                 const originalRef = t.typeRef;
                 const index = originalRef.index;
                 this.reconstitutedTypes.set(index, forwardingRef);
                 this._setsToReplaceByMember.delete(index);
-            });
+            }
             const result = this._replacer(typesToReplace, this, forwardingRef);
             assert(result === forwardingRef, "The forwarding ref got lost when replacing");
 

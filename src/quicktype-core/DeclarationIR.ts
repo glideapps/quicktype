@@ -61,11 +61,11 @@ export function cycleBreakerTypesForGraph(
                 return;
             }
 
-            t.getChildren().forEach(c => {
+            for (const c of t.getChildren()) {
                 path.unshift(t);
                 visit(c, path);
                 path.shift();
-            });
+            }
         }
 
         visitedTypes.add(t);
@@ -143,9 +143,9 @@ export function declarationsForGraph(
             // forward declarations.  Just declare all of them and be done
             // with it.
             if (canBeForwardDeclared === undefined) {
-                declarationNeeded.forEach(t => {
+                for (const t of declarationNeeded) {
                     declarations.push({ kind: "define", type: t });
-                });
+                }
                 return;
             }
 
@@ -159,16 +159,16 @@ export function declarationsForGraph(
             if (forwardDeclarable.size === 0) {
                 return messageError("IRNoForwardDeclarableTypeInCycle", {});
             }
-            forwardDeclarable.forEach(t => {
+            for (const t of forwardDeclarable) {
                 declarations.push({ kind: "forward", type: t });
-            });
+            }
             setUnionInto(forwardedTypes, forwardDeclarable);
             const rest = setSubtract(component, forwardDeclarable);
             const restGraph = new Graph(rest, true, t => setIntersect(childrenOfType(t), rest));
             processGraph(restGraph, false);
-            forwardDeclarable.forEach(t => {
+            for (const t of forwardDeclarable) {
                 declarations.push({ kind: "define", type: t });
-            });
+            }
             return;
         }
 
@@ -187,9 +187,9 @@ export function declarationsForGraph(
 
         const rootsUnordered = componentsGraph.findRoots();
         const roots = rootsUnordered;
-        roots.forEach(component => {
+        for (const component of roots) {
             componentsGraph.dfsTraversal(component, topDown, visitComponent);
-        });
+        }
     }
 
     const fullGraph = typeGraph.makeGraph(false, childrenOfType);

@@ -341,7 +341,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             return this.cppType(defined(iterableFirst(nonNulls)), ctx, withIssues);
         }
         const typeList: Sourcelike = [];
-        nonNulls.forEach((t: Type) => {
+        for (const t of nonNulls) {
             if (typeList.length !== 0) {
                 typeList.push(", ");
             }
@@ -356,7 +356,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     withIssues
                 )
             );
-        });
+        }
         return ["boost::variant<", typeList, ">"];
     };
 
@@ -572,7 +572,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitBlock(["inline void to_json(json& _j, const ", variantType, "& _x)"], false, () => {
             this.emitBlock("switch (_x.which())", false, () => {
                 let i = 0;
-                nonNulls.forEach((t: Type) => {
+                for (const t of nonNulls) {
                     this.emitLine("case ", i.toString(), ":");
                     this.indent(() => {
                         this.emitLine(
@@ -591,7 +591,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitLine("break;");
                     });
                     i++;
-                });
+                }
                 this.emitLine('default: throw "Input JSON does not conform to schema";');
             });
         });

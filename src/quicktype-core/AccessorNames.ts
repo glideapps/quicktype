@@ -125,18 +125,18 @@ export function unionMemberName(u: UnionType, member: Type, language: string): [
 
     const names = new Set<string>();
     const fixedNames = new Set<string>();
-    identifiers.forEach(i => {
+    for (const i of identifiers) {
         const maybeEntry = memberNames.get(i);
-        if (maybeEntry === undefined) return;
+        if (maybeEntry === undefined) continue;
         const maybeName = getFromEntry(maybeEntry, language);
-        if (maybeName === undefined) return;
+        if (maybeName === undefined) continue;
         const [name, isNameFixed] = maybeName;
         if (isNameFixed) {
             fixedNames.add(name);
         } else {
             names.add(name);
         }
-    });
+    }
 
     let size: number;
     let isFixed: boolean;

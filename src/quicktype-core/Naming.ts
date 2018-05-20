@@ -363,12 +363,12 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): ReadonlyMap<Na
     const ctx = new NamingContext(rootNamespaces);
 
     // Assign all fixed names.
-    ctx.namespaces.forEach((ns: Namespace) =>
-        ns.members.forEach((n: Name) => {
-            if (!n.isFixed()) return;
+    for (const ns of ctx.namespaces) {
+        for (const n of ns.members) {
+            if (!n.isFixed()) continue;
             ctx.assign(n, ns, n.fixedName);
-        })
-    );
+        }
+    }
 
     for (;;) {
         // 1. Find a namespace whose forbiddens are all fully named, and which has
@@ -401,18 +401,20 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): ReadonlyMap<Na
             // It would be nice if we had tuples, then we wouldn't have to do this in
             // two steps.
             const byNamingFunction = setGroupBy(readyNames, n => n.namingFunction);
-            byNamingFunction.forEach((namedsForNamingFunction, namer) => {
+            for (const [namer, namedsForNamingFunction] of byNamingFunction) {
                 const byProposed = setGroupBy(namedsForNamingFunction, n =>
                     n.namingFunction.nameStyle(n.firstProposedName(ctx.names))
                 );
-                byProposed.forEach(nameds => {
+                for (const [_, nameds] of byProposed) {
                     // 3. Use each set's naming function to name its members.
 
                     const names = namer.assignNames(ctx.names, forbiddenNames, nameds);
-                    names.forEach((assigned: string, name: Name) => ctx.assign(name, readyNamespace, assigned));
+                    for (const [name, assigned] of names) {
+                        ctx.assign(name, readyNamespace, assigned);
+                    }
                     setUnionInto(forbiddenNames, names.values());
-                });
-            });
+                }
+            }
         }
     }
 }

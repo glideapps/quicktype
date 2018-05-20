@@ -164,9 +164,9 @@ export class ChoiceTransformer extends Transformer {
 
     getChildren(): Set<Type> {
         let children = super.getChildren();
-        this.transformers.forEach(xfer => {
+        for (const xfer of this.transformers) {
             setUnionInto(children, xfer.getChildren());
-        });
+        }
         return children;
     }
 
@@ -194,7 +194,9 @@ export class ChoiceTransformer extends Transformer {
     }
 
     protected debugPrintContinuations(indent: number): void {
-        this.transformers.forEach(xfer => xfer.debugPrint(indent));
+        for (const xfer of this.transformers) {
+            xfer.debugPrint(indent);
+        }
     }
 }
 

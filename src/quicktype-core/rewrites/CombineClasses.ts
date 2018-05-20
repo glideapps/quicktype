@@ -55,14 +55,14 @@ function canBeCombined(c1: ClassType, c2: ClassType, onlyWithSameProperties: boo
     assert(maxFaults >= 0, "Max faults negative");
     const commonProperties: string[] = [];
     let faults = 0;
-    smaller.forEach((_, name) => {
+    for (const [name, _] of smaller) {
         if (larger.has(name)) {
             commonProperties.push(name);
         } else {
             faults += 1;
-            if (faults > maxFaults) return false;
+            if (faults > maxFaults) break;
         }
-    });
+    }
     if (faults > maxFaults) return false;
     for (const name of commonProperties) {
         let ts = smaller.get(name);

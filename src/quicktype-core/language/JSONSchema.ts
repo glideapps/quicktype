@@ -152,12 +152,12 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         } else {
             const props: Schema = {};
             const req: string[] = [];
-            o.getProperties().forEach((p, name) => {
+            for (const [name, p] of o.getProperties()) {
                 props[name] = this.schemaForType(p.type);
                 if (!p.isOptional) {
                     req.push(name);
                 }
-            });
+            }
             properties = props;
             required = req.sort();
         }

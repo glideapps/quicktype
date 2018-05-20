@@ -184,7 +184,9 @@ export class TypeGraph {
             }
         }
 
-        this.topLevels.forEach(addFromType);
+        for (const [_, t] of this.topLevels) {
+            addFromType(t);
+        }
         return new Set(types);
     }
 
@@ -336,12 +338,12 @@ export class TypeGraph {
         assert(t.typeRef.graph === this, "Called on wrong type graph");
         if (this._parents === undefined) {
             const parents = defined(this._types).map(_ => new Set());
-            this.allTypesUnordered().forEach(p => {
-                p.getChildren().forEach(c => {
+            for (const p of this.allTypesUnordered()) {
+                for (const c of p.getChildren()) {
                     const index = c.typeRef.index;
                     parents[index] = parents[index].add(p);
-                });
-            });
+                }
+            }
             this._parents = parents;
         }
         return this._parents[t.typeRef.index];
@@ -361,12 +363,12 @@ export class TypeGraph {
                         .join(",")}`
                 );
             }
-            t.getAttributes().forEach((value, kind) => {
+            for (const [kind, value] of t.getAttributes()) {
                 const maybeString = kind.stringify(value);
                 if (maybeString !== undefined) {
                     parts.push(maybeString);
                 }
-            });
+            }
             console.log(`${i}: ${parts.join(" | ")}`);
         }
     }
@@ -458,15 +460,15 @@ export function removeIndirectionIntersections(
 ): TypeGraph {
     const map: [Type, Type][] = [];
 
-    graph.allTypesUnordered().forEach(t => {
-        if (!(t instanceof IntersectionType)) return;
+    for (const t of graph.allTypesUnordered()) {
+        if (!(t instanceof IntersectionType)) continue;
         const seen = new Set([t]);
         let current = t;
         while (current.members.size === 1) {
             const member = defined(iterableFirst(current.members));
             if (!(member instanceof IntersectionType)) {
                 map.push([t, member]);
-                return;
+                break;
             }
             if (seen.has(member)) {
                 // FIXME: Technically, this is an any type.
@@ -475,7 +477,7 @@ export function removeIndirectionIntersections(
             seen.add(member);
             current = member;
         }
-    });
+    }
 
     return graph.remap("remove indirection intersections", stringTypeMapping, false, new Map(map), debugPrintRemapping);
 }

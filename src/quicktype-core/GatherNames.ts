@@ -87,11 +87,11 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         graph.attributeStore.set(namesTypeAttributeKind, t, tn);
     }
 
-    graph.allTypesUnordered().forEach(t => {
+    for (const t of graph.allTypesUnordered()) {
         if (t.hasNames) {
             setNames(t, t.getNames().clearInferred());
         }
-    });
+    }
 
     const queue = new UniqueQueue<Type>();
     // null means there are too many
@@ -149,9 +149,9 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         const names = defined(namesForType.get(t));
         if (t instanceof ObjectType) {
             const properties = t.getSortedProperties();
-            properties.forEach((property, propertyName) => {
+            for (const [propertyName, property] of properties) {
                 addNames(property.type, new Set([propertyName]));
-            });
+            }
 
             const values = t.getAdditionalProperties();
             if (values !== undefined) {
@@ -168,22 +168,22 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
                 _objectType => panic("We handled this above"),
                 unionType => {
                     const members = setSortBy(unionType.members, member => member.kind);
-                    members.forEach(memberType => {
+                    for (const memberType of members) {
                         addNames(memberType, names);
-                    });
+                    }
                 }
             );
         }
     }
 
     if (debugPrint) {
-        graph.allTypesUnordered().forEach(t => {
+        for (const t of graph.allTypesUnordered()) {
             const names = namesForType.get(t);
             if (names === undefined) return;
 
             const index = t.typeRef.index;
             console.log(`${index}: ${names === null ? "*** too many ***" : Array.from(names).join(" ")}`);
-        });
+        }
     }
 
     // null means there are too many
@@ -249,10 +249,10 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
 
             if (alternativeSuffix !== undefined && directAlternatives !== null) {
                 const alternatives: string[] = [];
-                names.forEach(name => {
+                for (const name of names) {
                     // FIXME: we should only add these for names we couldn't singularize
                     alternatives.push(`${name}_${alternativeSuffix}`);
-                });
+                }
 
                 directAlternatives = addAlternatives(directAlternatives, alternatives);
             }
@@ -267,7 +267,9 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
 
         if (t instanceof ObjectType) {
             const properties = t.getSortedProperties();
-            properties.forEach(property => processType(t, property.type, undefined));
+            for (const [_, property] of properties) {
+                processType(t, property.type, undefined);
+            }
 
             const values = t.getAdditionalProperties();
             if (values !== undefined) {
@@ -287,36 +289,38 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
                     const unionHasGivenName = unionType.hasNames && !unionType.getNames().areInferred;
                     const unionIsAncestor = unionHasGivenName || nullableFromUnion(unionType) === null;
                     const ancestorForMembers = unionIsAncestor ? unionType : ancestor;
-                    members.forEach(memberType => processType(ancestorForMembers, memberType, undefined));
+                    for (const memberType of members) {
+                        processType(ancestorForMembers, memberType, undefined);
+                    }
                 }
             );
         }
     }
 
-    graph.topLevels.forEach(t => {
+    for (const [_, t] of graph.topLevels) {
         processType(undefined, t, undefined);
-    });
+    }
 
-    graph.allTypesUnordered().forEach(t => {
+    for (const t of graph.allTypesUnordered()) {
         const names = namesForType.get(t);
-        if (names === undefined) return;
+        if (names === undefined) continue;
         if (names === null) {
             directAlternativesForType.set(t, null);
-            return;
+            continue;
         }
         let alternatives = directAlternativesForType.get(t);
-        if (alternatives === null) return;
+        if (alternatives === null) continue;
         if (alternatives === undefined) {
             alternatives = new Set();
         }
 
         alternatives = setUnion(alternatives, setMap(names, name => `${name}_${t.kind}`));
         directAlternativesForType.set(t, alternatives);
-    });
+    }
 
-    graph.allTypesUnordered().forEach(t => {
+    for (const t of graph.allTypesUnordered()) {
         const names = namesForType.get(t);
-        if (names === undefined) return;
+        if (names === undefined) continue;
 
         let typeNames: TypeNames;
         if (names === null) {
@@ -343,5 +347,5 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
         }
 
         setNames(t, t.hasNames ? t.getNames().add(typeNames) : typeNames);
-    });
+    }
 }
