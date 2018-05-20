@@ -293,7 +293,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         graphHasProvenanceAttributes: boolean,
-        private readonly _map: Map<Type, Type>,
+        private readonly _map: ReadonlyMap<Type, Type>,
         debugPrintRemapping: boolean
     ) {
         super(
