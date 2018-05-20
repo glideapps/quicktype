@@ -1,4 +1,4 @@
-import { Set, OrderedMap, OrderedSet } from "immutable";
+import { Set, OrderedSet } from "immutable";
 
 import { TypeKind, PrimitiveStringTypeKind, Type, UnionType } from "./Type";
 import { matchTypeExhaustive } from "./TypeUtils";
@@ -11,7 +11,7 @@ import {
 import { defined, assert, panic, assertNever } from "./support/Support";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
 import { StringTypes, stringTypesTypeAttributeKind } from "./StringTypes";
-import { mapMerge, mapUpdateInto } from "./support/Containers";
+import { mapMerge, mapUpdateInto, mapMap } from "./support/Containers";
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be
@@ -199,11 +199,11 @@ class FauxUnion {
     }
 }
 
-function attributesForTypes(types: Iterable<Type>): [OrderedMap<Type, TypeAttributes>, TypeAttributes] {
+function attributesForTypes(types: Iterable<Type>): [ReadonlyMap<Type, TypeAttributes>, TypeAttributes] {
     // These two maps are the reverse of each other.  unionsForType is all the unions
     // that are ancestors of that type, when going from one of the given types, only
     // following unions.
-    let unionsForType: OrderedMap<Type, Set<UnionType | FauxUnion>> = OrderedMap();
+    const unionsForType = new Map<Type, Set<UnionType | FauxUnion>>();
     const typesForUnion = new Map<UnionType | FauxUnion, Set<Type>>();
 
     // All the unions we've seen, starting from types, stopping when we hit non-unions.
@@ -222,7 +222,7 @@ function attributesForTypes(types: Iterable<Type>): [OrderedMap<Type, TypeAttrib
             isEquivalentToRoot = isEquivalentToRoot && t.members.size === 1;
             t.members.forEach(m => traverse(m, path, isEquivalentToRoot));
         } else {
-            unionsForType = unionsForType.update(t, Set(), s => s.union(path));
+            mapUpdateInto(unionsForType, t, s => (s === undefined ? Set(path) : s.union(path)));
             path.forEach(u => {
                 mapUpdateInto(typesForUnion, u, s => (s === undefined ? Set([t]) : s.add(t)));
             });
@@ -235,7 +235,7 @@ function attributesForTypes(types: Iterable<Type>): [OrderedMap<Type, TypeAttrib
         traverse(t, rootPath, typesArray.length === 1);
     }
 
-    const resultAttributes = unionsForType.map((unionForType, t) => {
+    const resultAttributes = mapMap(unionsForType, (unionForType, t) => {
         const singleAncestors = unionForType.filter(u => defined(typesForUnion.get(u)).size === 1);
         assert(singleAncestors.every(u => defined(typesForUnion.get(u)).has(t)), "We messed up bookkeeping");
         const inheritedAttributes = singleAncestors.toArray().map(u => u.getAttributes());
