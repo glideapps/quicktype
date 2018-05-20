@@ -132,10 +132,11 @@ export function mapSome<K, V>(m: Iterable<[K, V]>, p: (v: V, k: K) => boolean): 
     return false;
 }
 
-export function mapMergeInto<K, V>(dest: Map<K, V>, src: Iterable<[K, V]>): void {
+export function mapMergeInto<K, V>(dest: Map<K, V>, src: Iterable<[K, V]>): Map<K, V> {
     for (const [k, v] of src) {
         dest.set(k, v);
     }
+    return dest;
 }
 
 export function mapMerge<K, V>(ma: Iterable<[K, V]>, mb: Iterable<[K, V]>): Map<K, V> {
@@ -144,12 +145,17 @@ export function mapMerge<K, V>(ma: Iterable<[K, V]>, mb: Iterable<[K, V]>): Map<
     return result;
 }
 
-export function mapMergeWithInto<K, V>(ma: Map<K, V>, merger: (va: V, vb: V, k: K) => V, mb: Iterable<[K, V]>): void {
+export function mapMergeWithInto<K, V>(
+    ma: Map<K, V>,
+    merger: (va: V, vb: V, k: K) => V,
+    mb: Iterable<[K, V]>
+): Map<K, V> {
     for (const [k, vb] of mb) {
         const va = ma.get(k);
         const v = va === undefined ? vb : merger(va, vb, k);
         ma.set(k, v);
     }
+    return ma;
 }
 
 export function mapMergeWith<K, V>(
@@ -212,8 +218,9 @@ export function mapMapEntries<K, L, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) =
     return result;
 }
 
-export function mapUpdateInto<K, V>(m: Map<K, V>, k: K, updater: (v: V | undefined) => V): void {
+export function mapUpdateInto<K, V>(m: Map<K, V>, k: K, updater: (v: V | undefined) => V): Map<K, V> {
     m.set(k, updater(m.get(k)));
+    return m;
 }
 
 export function mapFromObject<V>(obj: { [k: string]: V }): Map<string, V> {
@@ -249,16 +256,17 @@ export async function mapMapSync<K, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) =
     return result;
 }
 
-export function setUnionIntoMany<T>(dest: Set<T>, srcs: Iterable<Iterable<T>>): void {
+export function setUnionIntoMany<T>(dest: Set<T>, srcs: Iterable<Iterable<T>>): Set<T> {
     for (const src of srcs) {
         for (const v of src) {
             dest.add(v);
         }
     }
+    return dest;
 }
 
-export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): void {
-    setUnionIntoMany(dest, srcs);
+export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): Set<T> {
+    return setUnionIntoMany(dest, srcs);
 }
 
 export function setIntersect<T>(s1: Iterable<T>, s2: ReadonlySet<T>): Set<T> {
