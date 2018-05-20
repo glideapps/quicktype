@@ -1,8 +1,6 @@
-import { List } from "immutable";
-
 import { TypeGraph } from "./TypeGraph";
 import { Type } from "./Type";
-import { panic, defined } from "./support/Support";
+import { panic, defined, assert } from "./support/Support";
 import { Graph } from "./Graph";
 import { messageError } from "./Messages";
 import { setUnionInto, setFilter, iterableFirst, setSubtract, setIntersect } from "./support/Containers";
@@ -22,13 +20,17 @@ export class DeclarationIR {
     }
 }
 
-function findBreaker(t: Type, path: List<Type>, canBreak: ((t: Type) => boolean) | undefined): Type | undefined {
+function findBreaker(
+    t: Type,
+    path: ReadonlyArray<Type>,
+    canBreak: ((t: Type) => boolean) | undefined
+): Type | undefined {
     const index = path.indexOf(t);
     if (index < 0) return undefined;
     if (canBreak === undefined) {
-        return path.get(index);
+        return path[index];
     }
-    const potentialBreakers = path.take(index + 1).reverse();
+    const potentialBreakers = path.slice(0, index + 1).reverse();
     const maybeBreaker = potentialBreakers.find(canBreak);
     if (maybeBreaker === undefined) {
         return panic("Found a cycle that cannot be broken");
@@ -45,9 +47,7 @@ export function cycleBreakerTypesForGraph(
     const cycleBreakerTypes = new Set<Type>();
     const queue: Type[] = Array.from(graph.topLevels.values());
 
-    // FIXME: We never push anything onto the path.  How can this
-    // be correct?
-    function visit(t: Type, path: List<Type>): void {
+    function visit(t: Type, path: Type[]): void {
         if (visitedTypes.has(t)) return;
 
         if (isImplicitCycleBreaker(t)) {
@@ -61,8 +61,11 @@ export function cycleBreakerTypesForGraph(
                 return;
             }
 
-            const pathForChildren = path.unshift(t);
-            t.getChildren().forEach(c => visit(c, pathForChildren));
+            t.getChildren().forEach(c => {
+                path.unshift(t);
+                visit(c, path);
+                path.shift();
+            });
         }
 
         visitedTypes.add(t);
@@ -71,7 +74,9 @@ export function cycleBreakerTypesForGraph(
     for (;;) {
         const maybeType = queue.pop();
         if (maybeType === undefined) break;
-        visit(maybeType, List());
+        const path: Type[] = [];
+        visit(maybeType, path);
+        assert(path.length === 0);
     }
 
     return cycleBreakerTypes;
