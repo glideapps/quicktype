@@ -208,6 +208,10 @@ export function mapMapEntries<K, L, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) =
     return result;
 }
 
+export function mapUpdateInto<K, V>(m: Map<K, V>, k: K, updater: (v: V | undefined) => V): void {
+    m.set(k, updater(m.get(k)));
+}
+
 export function mapFromObject<V>(obj: { [k: string]: V }): Map<string, V> {
     const result = new Map<string, V>();
     for (const k of Object.getOwnPropertyNames(obj)) {

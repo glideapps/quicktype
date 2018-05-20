@@ -1,4 +1,4 @@
-import { OrderedSet, OrderedMap, Map } from "immutable";
+import { OrderedSet, OrderedMap } from "immutable";
 
 import { TypeGraph } from "../TypeGraph";
 import { StringTypeMapping, TypeRef, TypeBuilder } from "../TypeBuilder";
@@ -25,7 +25,15 @@ import {
     emptyTypeAttributes,
     makeTypeAttributesInferred
 } from "../TypeAttributes";
-import { iterableFirst, iterableEvery, setFilter } from "../support/Containers";
+import {
+    iterableFirst,
+    iterableEvery,
+    setFilter,
+    mapMapEntries,
+    mapMergeWithInto,
+    mapMap,
+    mapUpdateInto
+} from "../support/Containers";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t, undefined)[0];
@@ -34,10 +42,7 @@ function canResolve(t: IntersectionType): boolean {
 }
 
 function attributesForTypes<T extends TypeKind>(types: OrderedSet<Type>): TypeAttributeMap<T> {
-    return types
-        .toMap()
-        .map(t => t.getAttributes())
-        .mapKeys(t => t.kind) as Map<T, TypeAttributes>;
+    return mapMapEntries(types.entries(), t => [t.kind, t.getAttributes()] as [T, TypeAttributes]);
 }
 
 type PropertyMap = OrderedMap<string, GenericClassProperty<OrderedSet<Type>>>;
@@ -45,7 +50,7 @@ type PropertyMap = OrderedMap<string, GenericClassProperty<OrderedSet<Type>>>;
 class IntersectionAccumulator
     implements UnionTypeProvider<OrderedSet<Type>, [PropertyMap, OrderedSet<Type> | undefined] | undefined> {
     private _primitiveTypes: OrderedSet<PrimitiveTypeKind> | undefined;
-    private _primitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> = OrderedMap();
+    private readonly _primitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> = new Map();
 
     // * undefined: We haven't seen any types yet.
     // * OrderedSet: All types we've seen can be arrays.
@@ -70,10 +75,7 @@ class IntersectionAccumulator
     private updatePrimitiveTypes(members: OrderedSet<Type>): void {
         const types = members.filter(t => isPrimitiveTypeKind(t.kind));
         const attributes = attributesForTypes<PrimitiveTypeKind>(types);
-        this._primitiveAttributes = this._primitiveAttributes.mergeWith(
-            (a, b) => combineTypeAttributes("intersect", a, b),
-            attributes
-        );
+        mapMergeWithInto(this._primitiveAttributes, (a, b) => combineTypeAttributes("intersect", a, b), attributes);
 
         const kinds = types.map(t => t.kind) as OrderedSet<PrimitiveTypeKind>;
         if (this._primitiveTypes === undefined) {
@@ -231,26 +233,26 @@ class IntersectionAccumulator
     }
 
     getMemberKinds(): TypeAttributeMap<TypeKind> {
-        let kinds: TypeAttributeMap<TypeKind> = defined(this._primitiveTypes)
-            .toOrderedMap()
-            .map(k => defined(this._primitiveAttributes.get(k)));
+        const kinds: TypeAttributeMap<TypeKind> = mapMap(defined(this._primitiveTypes).entries(), k =>
+            defined(this._primitiveAttributes.get(k))
+        );
         const maybeDoubleAttributes = this._primitiveAttributes.get("double");
         // If double was eliminated, add its attributes to integer
-        if (maybeDoubleAttributes !== undefined && !kinds.has("double")) {
-            kinds = kinds.map((a, k) => {
-                if (k !== "integer") return a;
-                return combineTypeAttributes("intersect", a, maybeDoubleAttributes);
+        if (maybeDoubleAttributes !== undefined && !kinds.has("double") && kinds.has("integer")) {
+            // FIXME: How can this ever happen???  Where do we "eliminate" double?
+            mapUpdateInto(kinds, "integer", a => {
+                return combineTypeAttributes("intersect", defined(a), maybeDoubleAttributes);
             });
         }
 
         if (OrderedSet.isOrderedSet(this._arrayItemTypes)) {
-            kinds = kinds.set("array", this._arrayAttributes);
+            kinds.set("array", this._arrayAttributes);
         } else if (this._arrayAttributes.size > 0) {
             this._lostTypeAttributes = true;
         }
 
         if (this._objectProperties !== undefined) {
-            kinds = kinds.set("object", this._objectAttributes);
+            kinds.set("object", this._objectAttributes);
         } else if (this._objectAttributes.size > 0) {
             this._lostTypeAttributes = true;
         }
@@ -298,7 +300,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
 
         const [propertyTypes, maybeAdditionalProperties] = maybeData;
         const properties = propertyTypes.map(
-            cp => new ClassProperty(this.makeIntersection(cp.typeData, Map()), cp.isOptional)
+            cp => new ClassProperty(this.makeIntersection(cp.typeData, emptyTypeAttributes), cp.isOptional)
         );
         const additionalProperties =
             maybeAdditionalProperties === undefined
@@ -313,7 +315,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         // FIXME: attributes
-        const itemsType = this.makeIntersection(arrays, Map());
+        const itemsType = this.makeIntersection(arrays, emptyTypeAttributes);
         const tref = this.typeBuilder.getArrayType(itemsType, forwardingRef);
         this.typeBuilder.addAttributes(tref, typeAttributes);
         return tref;
