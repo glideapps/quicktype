@@ -1,5 +1,3 @@
-import { Map } from "immutable";
-
 import { PrimitiveTypeKind, Type, ClassProperty, MaybeTypeIdentity } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import { TypeGraph } from "./TypeGraph";
@@ -72,10 +70,10 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         const resultValues = this.lookup(trefs.values());
         if (resultValues === undefined) return undefined;
         assert(resultValues.length === trefs.size, "Didn't get back the correct number of types");
-        let result = Map<K, TypeRef>();
+        const result = new Map<K, TypeRef>();
         let i = 0;
         for (const k of trefs.keys()) {
-            result = result.set(k, resultValues[i]);
+            result.set(k, resultValues[i]);
             i += 1;
         }
         return result;
@@ -196,7 +194,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
 }
 
 export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements TypeLookerUp {
-    protected reconstitutedTypes: Map<number, TypeRef> = Map();
+    protected readonly reconstitutedTypes: Map<number, TypeRef> = new Map();
 
     private _lostTypeAttributes: boolean = false;
     private _printIndent = 0;
@@ -286,7 +284,7 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
 }
 
 export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
-    private _attributeSources: Map<Type, Type[]> = Map();
+    private readonly _attributeSources: Map<Type, Type[]> = new Map();
 
     constructor(
         originalGraph: TypeGraph,
@@ -308,7 +306,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
             let maybeSources = this._attributeSources.get(target);
             if (maybeSources === undefined) {
                 maybeSources = [target];
-                this._attributeSources = this._attributeSources.set(target, maybeSources);
+                this._attributeSources.set(target, maybeSources);
             }
             maybeSources.push(source);
         });
@@ -379,7 +377,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
         const newAttributes = attributes;
 
         return this.withForwardingRef(undefined, forwardingRef => {
-            this.reconstitutedTypes = this.reconstitutedTypes.set(index, forwardingRef);
+            this.reconstitutedTypes.set(index, forwardingRef);
 
             if (this.debugPrint) {
                 console.log(`${this.debugPrintIndentation}reconstituting ${index} as ${forwardingRef.index}`);
@@ -406,7 +404,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
 }
 
 export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder {
-    private _setsToReplaceByMember: Map<number, Set<T>>;
+    private readonly _setsToReplaceByMember: Map<number, Set<T>>;
     private readonly _reconstitutedUnions: EqualityMap<Set<TypeRef>, TypeRef> = new EqualityMap();
 
     constructor(
@@ -430,13 +428,13 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
             debugPrintReconstitution
         );
 
-        this._setsToReplaceByMember = Map();
+        this._setsToReplaceByMember = new Map();
         for (const types of setsToReplace) {
             const set = new Set(types);
             for (const t of set) {
                 const index = t.typeRef.index;
                 assert(!this._setsToReplaceByMember.has(index), "A type is member of more than one set to be replaced");
-                this._setsToReplaceByMember = this._setsToReplaceByMember.set(index, set);
+                this._setsToReplaceByMember.set(index, set);
             }
         }
     }
@@ -461,8 +459,8 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
             typesToReplace.forEach(t => {
                 const originalRef = t.typeRef;
                 const index = originalRef.index;
-                this.reconstitutedTypes = this.reconstitutedTypes.set(index, forwardingRef);
-                this._setsToReplaceByMember = this._setsToReplaceByMember.remove(index);
+                this.reconstitutedTypes.set(index, forwardingRef);
+                this._setsToReplaceByMember.delete(index);
             });
             const result = this._replacer(typesToReplace, this, forwardingRef);
             assert(result === forwardingRef, "The forwarding ref got lost when replacing");
@@ -515,7 +513,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
 
             const alreadyReconstitutedType = this.reconstitutedTypes.get(index);
             if (alreadyReconstitutedType === undefined) {
-                this.reconstitutedTypes = this.reconstitutedTypes.set(index, tref);
+                this.reconstitutedTypes.set(index, tref);
             } else {
                 assert(tref.equals(alreadyReconstitutedType), "We reconstituted a type twice differently");
             }
