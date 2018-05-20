@@ -15,7 +15,7 @@ import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { messageError } from "./Messages";
-import { iterableFirst, setFilter, setUnion, setSubtract, mapMap, mapSome } from "./support/Containers";
+import { iterableFirst, setFilter, setUnion, setSubtract, mapMap, mapSome, setMap } from "./support/Containers";
 
 export class TypeAttributeStore {
     private _topLevelValues: ImmutableMap<string, TypeAttributes> = ImmutableMap();
@@ -413,9 +413,9 @@ export function optionalToNullable(
                 ref = builder.reconstituteType(t);
             } else {
                 const nullType = builder.getPrimitiveType("null");
-                let members: OrderedSet<TypeRef>;
+                let members: ReadonlySet<TypeRef>;
                 if (t instanceof UnionType) {
-                    members = t.members.map(m => builder.reconstituteType(m)).add(nullType);
+                    members = setMap(t.members, m => builder.reconstituteType(m)).add(nullType);
                 } else {
                     members = OrderedSet([builder.reconstituteType(t), nullType]);
                 }
@@ -467,7 +467,7 @@ export function removeIndirectionIntersections(
         const seen = new Set([t]);
         let current = t;
         while (current.members.size === 1) {
-            const member = defined(current.members.first());
+            const member = defined(iterableFirst(current.members));
             if (!(member instanceof IntersectionType)) {
                 map.push([t, member]);
                 return;

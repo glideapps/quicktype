@@ -184,7 +184,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     }
 
     private definitionForEnum(e: EnumType, title: string): Schema {
-        const schema = { type: "string", enum: e.cases.toArray(), title };
+        const schema = { type: "string", enum: Array.from(e.cases), title };
         this.addDescription(e, schema);
         return schema;
     }
