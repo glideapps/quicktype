@@ -1,4 +1,4 @@
-import { Map, is } from "immutable";
+import { is } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -100,7 +100,7 @@ export const NoStringTypeMapping: StringTypeMapping = {
 export class TypeBuilder {
     readonly typeGraph: TypeGraph;
 
-    protected topLevels: Map<string, TypeRef> = Map();
+    protected readonly topLevels: Map<string, TypeRef> = new Map();
     protected readonly types: (Type | undefined)[] = [];
     private readonly typeAttributes: TypeAttributes[] = [];
 
@@ -124,7 +124,7 @@ export class TypeBuilder {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
         assert(!this.topLevels.has(name), "Trying to add top-level with existing name");
         assert(this.types[tref.index] !== undefined, "Trying to add a top-level type that doesn't exist (yet?)");
-        this.topLevels = this.topLevels.set(name, tref);
+        this.topLevels.set(name, tref);
     }
 
     reserveTypeRef(): TypeRef {
