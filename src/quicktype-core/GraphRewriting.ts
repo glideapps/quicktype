@@ -1,4 +1,4 @@
-import { Map, Set } from "immutable";
+import { Map } from "immutable";
 
 import { PrimitiveTypeKind, Type, ClassProperty, MaybeTypeIdentity } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
@@ -6,7 +6,7 @@ import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 import { assert, panic, indentationString } from "./support/Support";
 import { TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
-import { mapMap } from "./support/Containers";
+import { mapMap, EqualityMap } from "./support/Containers";
 
 export interface TypeLookerUp {
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined;
@@ -407,7 +407,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
 
 export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder {
     private _setsToReplaceByMember: Map<number, Set<T>>;
-    private _reconstitutedUnions: Map<Set<TypeRef>, TypeRef> = Map();
+    private readonly _reconstitutedUnions: EqualityMap<Set<TypeRef>, TypeRef> = new EqualityMap();
 
     constructor(
         originalGraph: TypeGraph,
@@ -417,7 +417,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         setsToReplace: T[][],
         debugPrintReconstitution: boolean,
         private readonly _replacer: (
-            typesToReplace: Set<T>,
+            typesToReplace: ReadonlySet<T>,
             builder: GraphRewriteBuilder<T>,
             forwardingRef: TypeRef
         ) => TypeRef
@@ -432,26 +432,26 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
 
         this._setsToReplaceByMember = Map();
         for (const types of setsToReplace) {
-            const set = Set(types);
-            set.forEach(t => {
+            const set = new Set(types);
+            for (const t of set) {
                 const index = t.typeRef.index;
                 assert(!this._setsToReplaceByMember.has(index), "A type is member of more than one set to be replaced");
                 this._setsToReplaceByMember = this._setsToReplaceByMember.set(index, set);
-            });
+            }
         }
     }
 
     registerUnion(typeRefs: TypeRef[], reconstituted: TypeRef): void {
-        const set = Set(typeRefs);
+        const set = new Set(typeRefs);
         assert(!this._reconstitutedUnions.has(set), "Cannot register reconstituted set twice");
-        this._reconstitutedUnions = this._reconstitutedUnions.set(set, reconstituted);
+        this._reconstitutedUnions.set(set, reconstituted);
     }
 
-    private replaceSet(typesToReplace: Set<T>, maybeForwardingRef: TypeRef | undefined): TypeRef {
+    private replaceSet(typesToReplace: ReadonlySet<T>, maybeForwardingRef: TypeRef | undefined): TypeRef {
         return this.withForwardingRef(maybeForwardingRef, forwardingRef => {
             if (this.debugPrint) {
                 console.log(
-                    `${this.debugPrintIndentation}replacing set ${typesToReplace
+                    `${this.debugPrintIndentation}replacing set ${Array.from(typesToReplace)
                         .map(t => t.typeRef.index.toString())
                         .join(",")} as ${forwardingRef.index}`
                 );
@@ -470,7 +470,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
             if (this.debugPrint) {
                 this.changeDebugPrintIndent(-1);
                 console.log(
-                    `${this.debugPrintIndentation}replaced set ${typesToReplace
+                    `${this.debugPrintIndentation}replaced set ${Array.from(typesToReplace)
                         .map(t => t.typeRef.index.toString())
                         .join(",")} as ${forwardingRef.index}`
                 );
@@ -560,7 +560,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         }
 
         // Has this been reconstituted as a set?
-        maybeRef = this._reconstitutedUnions.get(Set(typeRefs));
+        maybeRef = this._reconstitutedUnions.get(new Set(typeRefs));
         if (maybeRef !== undefined && maybeRef !== forwardingRef) {
             return this.forwardIfNecessary(forwardingRef, maybeRef);
         }

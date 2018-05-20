@@ -853,7 +853,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected forEachType<TResult>(process: (t: Type) => TResult): Set<TResult> {
         const visitedTypes = new Set();
         const processed = new Set();
-        const queue = this.typeGraph.topLevels.valueSeq().toArray();
+        const queue = Array.from(this.typeGraph.topLevels.values());
 
         function visit(t: Type) {
             if (visitedTypes.has(t)) return;
