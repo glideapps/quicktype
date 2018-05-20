@@ -105,7 +105,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
     private addDescription(t: Type, schema: Schema): void {
         const description = this.typeGraph.attributeStore.tryGet(descriptionTypeAttributeKind, t);
         if (description !== undefined) {
-            schema.description = description.join("\n");
+            schema.description = Array.from(description).join("\n");
         }
     }
 

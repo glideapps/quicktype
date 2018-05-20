@@ -1,26 +1,23 @@
-import { OrderedSet } from "immutable";
-
 import { TypeAttributeKind, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-import { setUnion } from "./support/Support";
 import { JSONSchemaType, Ref, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 import { JSONSchema } from "./input/JSONSchemaStore";
-import { mapMergeWith, mapFilterMap, mapFromObject } from "./support/Containers";
+import { mapMergeWith, mapFilterMap, mapFromObject, setUnion, iterableFirst } from "./support/Containers";
 
-class DescriptionTypeAttributeKind extends TypeAttributeKind<OrderedSet<string>> {
+class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>> {
     constructor() {
         super("description");
     }
 
-    combine(a: OrderedSet<string>, b: OrderedSet<string>): OrderedSet<string> {
-        return a.union(b);
+    combine(a: ReadonlySet<string>, b: ReadonlySet<string>): ReadonlySet<string> {
+        return setUnion(a, b);
     }
 
-    makeInferred(_: OrderedSet<string>): undefined {
+    makeInferred(_: ReadonlySet<string>): undefined {
         return undefined;
     }
 
-    stringify(descriptions: OrderedSet<string>): string | undefined {
-        let result = descriptions.first();
+    stringify(descriptions: ReadonlySet<string>): string | undefined {
+        let result = iterableFirst(descriptions);
         if (result === undefined) return undefined;
         if (result.length > 5 + 3) {
             result = `${result.substr(0, 5)}...`;
@@ -32,24 +29,27 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<OrderedSet<string>>
     }
 }
 
-export const descriptionTypeAttributeKind: TypeAttributeKind<OrderedSet<string>> = new DescriptionTypeAttributeKind();
+export const descriptionTypeAttributeKind: TypeAttributeKind<ReadonlySet<string>> = new DescriptionTypeAttributeKind();
 
-class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string, OrderedSet<string>>> {
+class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string, ReadonlySet<string>>> {
     constructor() {
         super("propertyDescriptions");
     }
 
-    combine(a: Map<string, OrderedSet<string>>, b: Map<string, OrderedSet<string>>): Map<string, OrderedSet<string>> {
+    combine(
+        a: Map<string, ReadonlySet<string>>,
+        b: Map<string, ReadonlySet<string>>
+    ): Map<string, ReadonlySet<string>> {
         return mapMergeWith(a, setUnion, b);
     }
 
-    makeInferred(_: Map<string, OrderedSet<string>>): undefined {
+    makeInferred(_: Map<string, ReadonlySet<string>>): undefined {
         return undefined;
     }
 }
 
 export const propertyDescriptionsTypeAttributeKind: TypeAttributeKind<
-    Map<string, OrderedSet<string>>
+    Map<string, ReadonlySet<string>>
 > = new PropertyDescriptionsTypeAttributeKind();
 
 export function descriptionAttributeProducer(
@@ -64,7 +64,7 @@ export function descriptionAttributeProducer(
 
     const maybeDescription = schema.description;
     if (typeof maybeDescription === "string") {
-        description = descriptionTypeAttributeKind.makeAttributes(OrderedSet([maybeDescription]));
+        description = descriptionTypeAttributeKind.makeAttributes(new Set([maybeDescription]));
     }
 
     if (types.has("object") && typeof schema.properties === "object") {
@@ -72,7 +72,7 @@ export function descriptionAttributeProducer(
             if (typeof propSchema === "object") {
                 const desc = propSchema.description;
                 if (typeof desc === "string") {
-                    return OrderedSet([desc]);
+                    return new Set([desc]);
                 }
             }
             return undefined;
