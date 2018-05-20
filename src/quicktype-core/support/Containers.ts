@@ -237,6 +237,14 @@ export function mapFind<K, V>(it: Iterable<[K, V]>, p: (v: V, k: K) => boolean):
     return undefined;
 }
 
+export async function mapMapSync<K, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) => Promise<W>): Promise<Map<K, W>> {
+    const result = new Map<K, W>();
+    for (const [k, v] of m) {
+        result.set(k, await f(v, k));
+    }
+    return result;
+}
+
 export function setUnionIntoMany<T>(dest: Set<T>, srcs: Iterable<Iterable<T>>): void {
     for (const src of srcs) {
         for (const v of src) {
