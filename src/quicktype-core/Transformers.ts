@@ -1,10 +1,11 @@
-import { OrderedSet, is, hash, List } from "immutable";
+import { is, hash, List } from "immutable";
 
 import { UnionType, Type, EnumType, PrimitiveType } from "./Type";
 import { TypeAttributeKind } from "./TypeAttributes";
 import { TypeRef } from "./TypeBuilder";
 import { panic, addHashCode, assert, mapOptional, indentationString } from "./support/Support";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
+import { setUnionInto } from "./support/Containers";
 
 function debugStringForType(t: Type): string {
     const target = followTargetType(t);
@@ -21,8 +22,9 @@ export abstract class Transformer {
         return this.sourceTypeRef.deref()[0];
     }
 
-    getChildren(): OrderedSet<Type> {
-        return OrderedSet([this.sourceType]);
+    /** This must return a newly constructed set. */
+    getChildren(): Set<Type> {
+        return new Set([this.sourceType]);
     }
 
     abstract reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer;
@@ -57,10 +59,10 @@ export abstract class ProducerTransformer extends Transformer {
         super(kind, sourceTypeRef);
     }
 
-    getChildren(): OrderedSet<Type> {
+    getChildren(): Set<Type> {
         const children = super.getChildren();
         if (this.consumer === undefined) return children;
-        return children.union(this.consumer.getChildren());
+        return setUnionInto(children, this.consumer.getChildren());
     }
 
     equals(other: any): boolean {
@@ -85,8 +87,8 @@ export abstract class MatchTransformer extends Transformer {
         super(kind, sourceTypeRef);
     }
 
-    getChildren(): OrderedSet<Type> {
-        return super.getChildren().union(this.transformer.getChildren());
+    getChildren(): Set<Type> {
+        return setUnionInto(super.getChildren(), this.transformer.getChildren());
     }
 
     equals(other: any): boolean {
@@ -160,10 +162,10 @@ export class ChoiceTransformer extends Transformer {
         super("choice", sourceTypeRef);
     }
 
-    getChildren(): OrderedSet<Type> {
+    getChildren(): Set<Type> {
         let children = super.getChildren();
         this.transformers.forEach(xfer => {
-            children = children.union(xfer.getChildren());
+            setUnionInto(children, xfer.getChildren());
         });
         return children;
     }
@@ -210,28 +212,28 @@ export class DecodingChoiceTransformer extends Transformer {
         super("decoding-choice", sourceTypeRef);
     }
 
-    getChildren(): OrderedSet<Type> {
+    getChildren(): Set<Type> {
         let children = super.getChildren();
         if (this.nullTransformer !== undefined) {
-            children = children.union(this.nullTransformer.getChildren());
+            setUnionInto(children, this.nullTransformer.getChildren());
         }
         if (this.integerTransformer !== undefined) {
-            children = children.union(this.integerTransformer.getChildren());
+            setUnionInto(children, this.integerTransformer.getChildren());
         }
         if (this.doubleTransformer !== undefined) {
-            children = children.union(this.doubleTransformer.getChildren());
+            setUnionInto(children, this.doubleTransformer.getChildren());
         }
         if (this.boolTransformer !== undefined) {
-            children = children.union(this.boolTransformer.getChildren());
+            setUnionInto(children, this.boolTransformer.getChildren());
         }
         if (this.stringTransformer !== undefined) {
-            children = children.union(this.stringTransformer.getChildren());
+            setUnionInto(children, this.stringTransformer.getChildren());
         }
         if (this.arrayTransformer !== undefined) {
-            children = children.union(this.arrayTransformer.getChildren());
+            setUnionInto(children, this.arrayTransformer.getChildren());
         }
         if (this.objectTransformer !== undefined) {
-            children = children.union(this.objectTransformer.getChildren());
+            setUnionInto(children, this.objectTransformer.getChildren());
         }
         return children;
     }
@@ -333,7 +335,7 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
         return this._memberTypeRef.deref()[0];
     }
 
-    getChildren(): OrderedSet<Type> {
+    getChildren(): Set<Type> {
         return super.getChildren().add(this.memberType);
     }
 
@@ -558,7 +560,7 @@ export class Transformation {
         );
     }
 
-    getChildren(): OrderedSet<Type> {
+    getChildren(): Set<Type> {
         return this.transformer.getChildren().add(this.targetType);
     }
 
@@ -595,7 +597,7 @@ class TransformationTypeAttributeKind extends TypeAttributeKind<Transformation> 
         return true;
     }
 
-    children(xf: Transformation): OrderedSet<Type> {
+    children(xf: Transformation): Set<Type> {
         return xf.getChildren();
     }
 
