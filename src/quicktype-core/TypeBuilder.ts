@@ -1,4 +1,4 @@
-import { Map, OrderedSet, Set, is } from "immutable";
+import { Map, OrderedSet, is } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -28,7 +28,16 @@ import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic, mapOptional, withDefault } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
-import { EqualityMap, mapMap, mapSortByKey, iterableEvery, mapFilter, mapFind, setMap } from "./support/Containers";
+import {
+    EqualityMap,
+    mapMap,
+    mapSortByKey,
+    iterableEvery,
+    mapFilter,
+    mapFind,
+    setMap,
+    setUnion
+} from "./support/Containers";
 
 export class TypeRef {
     constructor(readonly graph: TypeGraph, readonly index: number) {}
@@ -58,7 +67,7 @@ class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<TypeRef>> {
     }
 
     combine(a: Set<TypeRef>, b: Set<TypeRef>): Set<TypeRef> {
-        return a.union(b);
+        return setUnion(a, b);
     }
 
     makeInferred(p: Set<TypeRef>): Set<TypeRef> {
@@ -66,9 +75,8 @@ class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<TypeRef>> {
     }
 
     stringify(p: Set<TypeRef>): string {
-        return p
+        return Array.from(p)
             .map(r => r.index)
-            .toList()
             .sort()
             .map(i => i.toString())
             .join(",");
@@ -125,7 +133,7 @@ export class TypeBuilder {
         this.types.push(undefined);
         const tref = new TypeRef(this.typeGraph, index);
         const attributes: TypeAttributes = this._addProvenanceAttributes
-            ? provenanceTypeAttributeKind.makeAttributes(Set([tref]))
+            ? provenanceTypeAttributeKind.makeAttributes(new Set([tref]))
             : emptyTypeAttributes;
         this.typeAttributes.push(attributes);
         return tref;
