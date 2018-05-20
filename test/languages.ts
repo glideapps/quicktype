@@ -92,6 +92,7 @@ export const RustLanguage: Language = {
     "github-events.json",
     "0a91a.json",
     "0cffa.json",
+    "127a1.json",
     "34702.json",
     "76ae1.json",
     "af2d1.json"
@@ -254,6 +255,7 @@ export const CPlusPlusLanguage: Language = {
     "bug427.json",
     "keywords.json",
     "0a91a.json",
+    "0cffa.json",
     "34702.json",
     "7f568.json",
     "e8b04.json",
