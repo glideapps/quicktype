@@ -1,5 +1,6 @@
-import { Map, OrderedSet, List } from "immutable";
+import { Map, List } from "immutable";
 import { defined, repeated, assert, repeatedCall } from "./support/Support";
+import { setMap } from "./support/Containers";
 
 function countComponentGraphNodes(components: number[][]): number {
     if (components.length === 0) return 0;
@@ -193,9 +194,9 @@ export class Graph<T> {
         return List(this._nodes);
     }
 
-    findRoots(): OrderedSet<T> {
+    findRoots(): ReadonlySet<T> {
         const roots = findRoots(this._successors);
-        return OrderedSet(roots.map(n => this._nodes[n]));
+        return new Set(roots.map(n => this._nodes[n]));
     }
 
     // The subgraph starting at `root` must be acyclic.
@@ -222,10 +223,10 @@ export class Graph<T> {
         visit(defined(this._indexByNode.get(root)));
     }
 
-    stronglyConnectedComponents(): Graph<OrderedSet<T>> {
+    stronglyConnectedComponents(): Graph<ReadonlySet<T>> {
         const components = stronglyConnectedComponents(this._successors);
         const componentSuccessors = buildMetaSuccessors(this._successors, components);
-        return new Graph(components.map(ns => OrderedSet(ns.map(n => this._nodes[n]))), false, componentSuccessors);
+        return new Graph(components.map(ns => setMap(ns, n => this._nodes[n])), false, componentSuccessors);
     }
 
     makeDot(includeNode: (n: T) => boolean, nodeLabel: (n: T) => string): string {
