@@ -1,4 +1,4 @@
-import { OrderedSet, Map, Set as ImmutableSet } from "immutable";
+import { Map, Set as ImmutableSet } from "immutable";
 
 import { defined, panic, assert, assertNever } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes, CombinationKind } from "./TypeAttributes";
@@ -15,7 +15,7 @@ import {
     UnionType
 } from "./Type";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
-import { setFilter, setSortBy, iterableFirst } from "./support/Containers";
+import { setFilter, setSortBy, iterableFirst, setUnion } from "./support/Containers";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {
@@ -47,7 +47,7 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
     const kind = setOperations[0].kind;
     const includeAny = kind !== "intersection";
     let processedSetOperations = ImmutableSet<T>();
-    let members = OrderedSet<Type>();
+    const members = new Set<Type>();
     let attributes = emptyTypeAttributes;
 
     function process(t: Type): void {
@@ -60,7 +60,7 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
             }
             so.members.forEach(process);
         } else if (includeAny || t.kind !== "any") {
-            members = members.add(t);
+            members.add(t);
         } else {
             if (combinationKind !== undefined) {
                 attributes = combineTypeAttributes(combinationKind, attributes, t.getAttributes());
@@ -78,7 +78,7 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
     setOperations: Iterable<T>,
     include: ((members: ImmutableSet<Type>) => boolean) | undefined
 ): Type[][] {
-    let typeGroups = Map<ImmutableSet<Type>, OrderedSet<Type>>();
+    let typeGroups = Map<ImmutableSet<Type>, Set<Type>>();
     for (const u of setOperations) {
         const members = ImmutableSet(setOperationMembersRecursively(u, undefined)[0]);
 
@@ -88,19 +88,19 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
 
         let maybeSet = typeGroups.get(members);
         if (maybeSet === undefined) {
-            maybeSet = OrderedSet();
+            maybeSet = new Set();
             if (members.size === 1) {
-                maybeSet = maybeSet.add(defined(members.first()));
+                maybeSet.add(defined(members.first()));
             }
         }
-        maybeSet = maybeSet.add(u);
+        maybeSet.add(u);
         typeGroups = typeGroups.set(members, maybeSet);
     }
 
     return typeGroups
         .valueSeq()
         .toArray()
-        .map(ts => ts.toArray());
+        .map(ts => Array.from(ts));
 }
 
 export function combineTypeAttributesOfTypes(combinationKind: CombinationKind, types: Iterable<Type>): TypeAttributes {
@@ -129,10 +129,10 @@ export function removeNullFromUnion(
 
 export function removeNullFromType(t: Type): [PrimitiveType | null, ReadonlySet<Type>] {
     if (t.kind === "null") {
-        return [t as PrimitiveType, OrderedSet()];
+        return [t as PrimitiveType, new Set()];
     }
     if (!(t instanceof UnionType)) {
-        return [null, OrderedSet([t])];
+        return [null, new Set([t])];
     }
     return removeNullFromUnion(t);
 }
@@ -178,16 +178,10 @@ export function separateNamedTypes(types: Iterable<Type>): SeparatedNamedTypes {
     return { objects, enums, unions };
 }
 
-function orderedSetUnion<T>(sets: OrderedSet<T>[]): OrderedSet<T> {
-    if (sets.length === 0) return OrderedSet();
-    if (sets.length === 1) return sets[0];
-    return sets[0].union(...sets.slice(1));
-}
-
-function directlyReachableTypes<T>(t: Type, setForType: (t: Type) => OrderedSet<T> | null): OrderedSet<T> {
+function directlyReachableTypes<T>(t: Type, setForType: (t: Type) => ReadonlySet<T> | null): ReadonlySet<T> {
     const set = setForType(t);
     if (set) return set;
-    return orderedSetUnion(Array.from(t.getNonAttributeChildren()).map(c => directlyReachableTypes(c, setForType)));
+    return setUnion(...Array.from(t.getNonAttributeChildren()).map(c => directlyReachableTypes(c, setForType)));
 }
 
 export function directlyReachableSingleNamedType(type: Type): Type | undefined {
@@ -196,12 +190,12 @@ export function directlyReachableSingleNamedType(type: Type): Type | undefined {
             (!(t instanceof UnionType) && isNamedType(t)) ||
             (t instanceof UnionType && nullableFromUnion(t) === null)
         ) {
-            return OrderedSet([t]);
+            return new Set([t]);
         }
         return null;
     });
     assert(definedTypes.size <= 1, "Cannot have more than one defined type per top-level");
-    return definedTypes.first();
+    return iterableFirst(definedTypes);
 }
 
 export function stringTypesForType(t: PrimitiveType): StringTypes {
