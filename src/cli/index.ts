@@ -40,6 +40,7 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
+import { hasOwnProperty } from "../quicktype-core/support/Support";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -538,7 +539,7 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
 
     const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
     definitions.forEach(o => {
-        if (!(o.name in opts)) return;
+        if (!hasOwnProperty(opts, o.name)) return;
         const v = opts[o.name];
         if (o.renderer !== undefined) options.rendererOptions[o.name] = v;
         else {
