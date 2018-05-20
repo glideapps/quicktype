@@ -144,7 +144,7 @@ export function mapMerge<K, V>(ma: Iterable<[K, V]>, mb: Iterable<[K, V]>): Map<
     return result;
 }
 
-export function mapMergeWithInto<K, V>(ma: Map<K, V>, mb: Iterable<[K, V]>, merger: (va: V, vb: V, k: K) => V): void {
+export function mapMergeWithInto<K, V>(ma: Map<K, V>, merger: (va: V, vb: V, k: K) => V, mb: Iterable<[K, V]>): void {
     for (const [k, vb] of mb) {
         const va = ma.get(k);
         const v = va === undefined ? vb : merger(va, vb, k);
@@ -154,15 +154,11 @@ export function mapMergeWithInto<K, V>(ma: Map<K, V>, mb: Iterable<[K, V]>, merg
 
 export function mapMergeWith<K, V>(
     ma: Iterable<[K, V]>,
-    mb: Iterable<[K, V]>,
-    merger: (va: V, vb: V, k: K) => V
+    merger: (va: V, vb: V, k: K) => V,
+    mb: Iterable<[K, V]>
 ): Map<K, V> {
     const result = new Map(ma);
-    for (const [k, vb] of mb) {
-        const va = result.get(k);
-        const v = va === undefined ? vb : merger(va, vb, k);
-        result.set(k, v);
-    }
+    mapMergeWithInto(result, merger, mb);
     return result;
 }
 
