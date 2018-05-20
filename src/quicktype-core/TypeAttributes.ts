@@ -1,8 +1,9 @@
-import { Map, OrderedSet, hash } from "immutable";
+import { OrderedSet, hash } from "immutable";
 
 import { panic } from "./support/Support";
 import { Type } from "./Type";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
+import { mapFilterMap, mapFilter, mapMergeWithInto } from "./support/Containers";
 
 export class TypeAttributeKind<T> {
     constructor(readonly name: string) {}
@@ -41,7 +42,7 @@ export class TypeAttributeKind<T> {
 
     makeAttributes(value: T): TypeAttributes {
         const kvps: [this, T][] = [[this, value]];
-        return Map(kvps);
+        return new Map(kvps);
     }
 
     tryGetInAttributes(a: TypeAttributes): T | undefined {
@@ -49,13 +50,17 @@ export class TypeAttributeKind<T> {
     }
 
     private setInAttributes(a: TypeAttributes, value: T): TypeAttributes {
-        return a.set(this, value);
+        // FIXME: This is potentially super slow
+        return new Map(a).set(this, value);
     }
 
     modifyInAttributes(a: TypeAttributes, modify: (value: T | undefined) => T | undefined): TypeAttributes {
         const modified = modify(this.tryGetInAttributes(a));
         if (modified === undefined) {
-            return a.remove(this);
+            // FIXME: This is potentially super slow
+            const result = new Map(a);
+            result.delete(this);
+            return result;
         }
         return this.setInAttributes(a, modified);
     }
@@ -70,7 +75,7 @@ export class TypeAttributeKind<T> {
     }
 
     removeInAttributes(a: TypeAttributes): TypeAttributes {
-        return a.filterNot((_, k) => k === this);
+        return mapFilter(a, (_, k) => k !== this);
     }
 
     equals(other: any): boolean {
@@ -85,9 +90,9 @@ export class TypeAttributeKind<T> {
     }
 }
 
-export type TypeAttributes = Map<TypeAttributeKind<any>, any>;
+export type TypeAttributes = ReadonlyMap<TypeAttributeKind<any>, any>;
 
-export const emptyTypeAttributes: TypeAttributes = Map();
+export const emptyTypeAttributes: TypeAttributes = new Map();
 
 export type CombinationKind = "union" | "intersect";
 
@@ -100,27 +105,27 @@ export function combineTypeAttributes(
 ): TypeAttributes {
     const union = combinationKind === "union";
     let attributeArray: TypeAttributes[];
-    let first: TypeAttributes;
+    let first: Map<TypeAttributeKind<any>, any>;
     let rest: TypeAttributes[];
     if (Array.isArray(firstOrArray)) {
         attributeArray = firstOrArray;
-        if (attributeArray.length === 0) return Map();
-        first = attributeArray[0];
+        if (attributeArray.length === 0) return emptyTypeAttributes;
+        first = new Map(attributeArray[0]);
         rest = attributeArray.slice(1);
     } else {
         if (second === undefined) {
             return panic("Must have on array or two attributes");
         }
-        first = firstOrArray;
+        first = new Map(firstOrArray);
         rest = [second];
     }
 
     for (const r of rest) {
-        first = first.mergeWith((aa, ab, kind) => (union ? kind.combine(aa, ab) : kind.intersect(aa, ab)), r);
+        mapMergeWithInto(first, r, (aa, ab, kind) => (union ? kind.combine(aa, ab) : kind.intersect(aa, ab)));
     }
     return first;
 }
 
 export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
-    return attr.map((value, kind) => kind.makeInferred(value)).filter(v => v !== undefined);
+    return mapFilterMap(attr, (value, kind) => kind.makeInferred(value));
 }

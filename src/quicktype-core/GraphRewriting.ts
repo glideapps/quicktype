@@ -248,7 +248,7 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
     }
 
     reconstituteTypeAttributes(attributes: TypeAttributes): TypeAttributes {
-        return attributes.map((v, a) => a.reconstitute(this, v));
+        return mapMap(attributes, (v, a) => a.reconstitute(this, v));
     }
 
     protected assertTypeRefsToReconstitute(typeRefs: TypeRef[], forwardingRef?: TypeRef): void {

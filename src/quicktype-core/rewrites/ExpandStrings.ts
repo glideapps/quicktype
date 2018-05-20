@@ -8,7 +8,7 @@ import { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined } from "../support/Support";
 import { emptyTypeAttributes } from "../TypeAttributes";
 import { StringTypes } from "../StringTypes";
-import { iterableFirst } from "../support/Containers";
+import { iterableFirst, mapFilter } from "../support/Containers";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -35,7 +35,7 @@ export function expandStrings(
         assert(group.size === 1);
         const t = defined(iterableFirst(group));
         const stringTypes = stringTypesForType(t);
-        const attributes = t.getAttributes().filterNot(a => a === stringTypes);
+        const attributes = mapFilter(t.getAttributes(), a => a !== stringTypes);
         const mappedStringTypes = stringTypes.applyStringTypeMapping(stringTypeMapping);
 
         if (!mappedStringTypes.isRestricted) {

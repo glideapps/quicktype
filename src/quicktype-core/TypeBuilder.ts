@@ -28,7 +28,7 @@ import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic, mapOptional, withDefault } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
-import { EqualityMap, mapMap, mapSortByKey } from "./support/Containers";
+import { EqualityMap, mapMap, mapSortByKey, iterableEvery, mapFilter, mapFind } from "./support/Containers";
 
 export class TypeRef {
     constructor(readonly graph: TypeGraph, readonly index: number) {}
@@ -170,7 +170,7 @@ export class TypeBuilder {
         const index = tref.index;
         const existingAttributes = this.typeAttributes[index];
         assert(
-            attributes.every((v, k) => {
+            iterableEvery(attributes, ([k, v]) => {
                 if (!k.inIdentity) return true;
                 const existing = existingAttributes.get(k);
                 if (existing === undefined) return false;
@@ -178,7 +178,7 @@ export class TypeBuilder {
             }),
             "Can't add different identity type attributes to an existing type"
         );
-        const nonIdentityAttributes = attributes.filterNot((_, k) => k.inIdentity);
+        const nonIdentityAttributes = mapFilter(attributes, (_, k) => !k.inIdentity);
         this.typeAttributes[index] = combineTypeAttributes("union", existingAttributes, nonIdentityAttributes);
     }
 
@@ -250,7 +250,7 @@ export class TypeBuilder {
                 // we found the type based on its identity, i.e. all the identity
                 // attributes must be in there already, and we have a check that
                 // asserts that no identity attributes are added later.
-                this.addAttributes(result, attributes.filter((_, k) => !k.inIdentity));
+                this.addAttributes(result, mapFilter(attributes, (_, k) => !k.inIdentity));
             }
             return result;
         }
@@ -284,7 +284,7 @@ export class TypeBuilder {
     }
 
     getStringType(attributes: TypeAttributes, stringTypes: StringTypes | undefined, forwardingRef?: TypeRef): TypeRef {
-        const existingStringTypes = attributes.find((_, k) => k === stringTypesTypeAttributeKind);
+        const existingStringTypes = mapFind(attributes, (_, k) => k === stringTypesTypeAttributeKind);
         assert(
             (stringTypes === undefined) !== (existingStringTypes === undefined),
             "Must instantiate string type with one enum case attribute"
