@@ -1,4 +1,4 @@
-import { Collection, Set, isKeyed, isIndexed } from "immutable";
+import { Set } from "immutable";
 
 import { Readable } from "stream";
 import { getStream } from "../get-stream";
@@ -143,58 +143,6 @@ export function errorMessage(e: any): string {
         return e.message;
     }
     return e.toString();
-}
-
-export async function forEachSync<V>(coll: V[], f: (v: V, k: number) => Promise<void>): Promise<void>;
-export async function forEachSync<K, V>(coll: Collection.Keyed<K, V>, f: (v: V, k: K) => Promise<void>): Promise<void>;
-export async function forEachSync<V>(coll: Collection.Set<V>, f: (v: V, k: V) => Promise<void>): Promise<void>;
-export async function forEachSync<V>(coll: Collection.Indexed<V>, f: (v: V, k: number) => Promise<void>): Promise<void>;
-export async function forEachSync<K, V>(coll: Collection<K, V> | V[], f: (v: V, k: K) => Promise<void>): Promise<void> {
-    if (Array.isArray(coll) || isIndexed(coll)) {
-        const arr = Array.isArray(coll) ? coll : (coll as Collection.Indexed<V>).toArray();
-        for (let i = 0; i < arr.length; i++) {
-            // If the collection is indexed, then `K` is `number`, but
-            // TypeScript doesn't know this.
-            await f(arr[i], i as any);
-        }
-    } else if (isKeyed(coll)) {
-        for (const [k, v] of (coll as Collection.Keyed<K, V>).toArray()) {
-            await f(v, k);
-        }
-    } else {
-        // I don't understand why we can't directly cast to `Collection.Set`.
-        for (const v of ((coll as any) as Collection.Set<V>).toArray()) {
-            // If the collection is a set, then `K` is the same as `v`,
-            // but TypeScript doesn't know this.
-            await f(v, v as any);
-        }
-    }
-}
-
-export async function mapSync<V, U>(coll: V[], f: (v: V, k: number) => Promise<U>): Promise<U[]>;
-export async function mapSync<K, V, U>(
-    coll: Collection.Keyed<K, V>,
-    f: (v: V, k: K) => Promise<U>
-): Promise<Collection.Keyed<K, U>>;
-export async function mapSync<V, U>(coll: Collection.Set<V>, f: (v: V, k: V) => Promise<U>): Promise<Collection.Set<U>>;
-export async function mapSync<V, U>(
-    coll: Collection.Indexed<V>,
-    f: (v: V, k: number) => Promise<U>
-): Promise<Collection.Indexed<U>>;
-export async function mapSync<K, V, U>(
-    coll: Collection<K, V> | V[],
-    f: (v: V, k: K) => Promise<U>
-): Promise<Collection<K, U> | U[]> {
-    const results: U[] = [];
-    await forEachSync(coll as any, async (v, k) => {
-        results.push(await f(v as any, k as any));
-    });
-
-    let index = 0;
-    if (Array.isArray(coll)) {
-        return results;
-    }
-    return coll.map(_v => results[index++]);
 }
 
 export function inflateBase64(encoded: string): string {
