@@ -1,7 +1,5 @@
 /* tslint:disable:strict-boolean-expressions */
 
-import { Map, OrderedMap } from "immutable";
-
 import {
     DocumentNode,
     SelectionSetNode,
@@ -36,6 +34,7 @@ import {
 } from "../quicktype-core";
 
 import { TypeKind, GraphQLSchema } from "./GraphQLSchema";
+import { mapFromObject } from "../quicktype-core/support/Containers";
 
 interface GQLType {
     kind: TypeKind;
@@ -281,7 +280,7 @@ class GQLQuery {
             return panic("Object, interface, or union type doesn't have a name.");
         }
         const nameOrOverride = overrideName || gqlType.name;
-        let properties = Map<string, ClassProperty>();
+        const properties = new Map<string, ClassProperty>();
         let selections = expandSelectionSet(selectionSet, gqlType, false);
         for (;;) {
             const nextItem = selections.pop();
@@ -293,7 +292,7 @@ class GQLQuery {
                     const givenName = selection.alias ? selection.alias.value : fieldName;
                     const field = getField(inType, fieldName);
                     let fieldType = this.makeIRTypeFromFieldNode(builder, selection, field.type, nameOrOverride);
-                    properties = properties.set(givenName, new ClassProperty(fieldType, optional));
+                    properties.set(givenName, new ClassProperty(fieldType, optional));
                     break;
                 case "FragmentSpread": {
                     const fragment = this.getFragment(selection.name.value);
@@ -430,7 +429,7 @@ function makeGraphQLQueryTypes(
 ): Map<string, TypeRef> {
     const schema = new GQLSchemaFromJSON(json);
     const query = new GQLQuery(schema, queryString);
-    let types: Map<string, TypeRef> = Map();
+    const types = new Map<string, TypeRef>();
     query.queries.forEach(odn => {
         const queryName = odn.name ? odn.name.value : topLevelName;
         if (types.has(queryName)) {
@@ -439,7 +438,7 @@ function makeGraphQLQueryTypes(
         const dataType = query.makeType(builder, odn, queryName);
         const errorType = builder.getClassType(
             namesTypeAttributeKind.makeAttributes(TypeNames.make(new Set(["error"]), new Set(["graphQLError"]), false)),
-            OrderedMap({
+            mapFromObject({
                 message: new ClassProperty(builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted), false)
             })
         );
@@ -452,12 +451,12 @@ function makeGraphQLQueryTypes(
         );
         const t = builder.getClassType(
             makeNamesTypeAttributes(queryName, false),
-            OrderedMap({
+            mapFromObject({
                 data: new ClassProperty(dataType, false),
                 errors: new ClassProperty(errorArray, true)
             })
         );
-        types = types.set(queryName, t);
+        types.set(queryName, t);
     });
     return types;
 }
@@ -471,10 +470,10 @@ export class GraphQLInput implements Input<GraphQLSourceData> {
     readonly needIR: boolean = true;
     readonly needSchemaProcessing: boolean = false;
 
-    private _topLevels: OrderedMap<string, GraphQLTopLevel> = OrderedMap();
+    private readonly _topLevels: Map<string, GraphQLTopLevel> = new Map();
 
     async addSource(source: GraphQLSourceData): Promise<void> {
-        this._topLevels = this._topLevels.set(source.name, {
+        this._topLevels.set(source.name, {
             schema: source.schema,
             query: await toString(source.query)
         });
