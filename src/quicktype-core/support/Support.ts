@@ -1,4 +1,4 @@
-import { Collection, List, Set, isKeyed, isIndexed } from "immutable";
+import { Collection, Set, isKeyed, isIndexed } from "immutable";
 
 import { Readable } from "stream";
 import { getStream } from "../get-stream";
@@ -17,19 +17,6 @@ export function findInArray<T>(arr: T[], p: (t: T) => boolean): T | undefined {
         if (p(t)) return t;
     }
     return undefined;
-}
-
-export function intercalate<T>(separator: T, items: Collection<any, T>): List<T> {
-    const acc: T[] = [];
-    items.forEach((x: T) => {
-        if (acc.length > 0) acc.push(separator);
-        acc.push(x);
-    });
-    return List(acc);
-}
-
-export function intercalateArray<T>(separator: T, items: T[]): T[] {
-    return intercalate(separator, List(items)).toArray();
 }
 
 export function setUnion<T, TSet extends Set<T>>(a: TSet, b: TSet): TSet {

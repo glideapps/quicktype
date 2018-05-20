@@ -19,12 +19,12 @@ import {
     splitIntoWords,
     utf32ConcatMap
 } from "../support/Strings";
-import { intercalateArray, mustNotHappen } from "../support/Support";
+import { mustNotHappen } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
-import { iterableSome } from "../support/Containers";
+import { iterableSome, arrayIntercalate } from "../support/Containers";
 
 export enum Framework {
     None,
@@ -359,7 +359,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
         if (ignore) {
             properties.push("ignored = true");
         }
-        return properties.length === 0 ? undefined : ["@Json(", intercalateArray(", ", properties), ")"];
+        return properties.length === 0 ? undefined : ["@Json(", arrayIntercalate(", ", properties), ")"];
     }
 
     private emitEmptyClassDefinition(c: ClassType, className: Name): void {
