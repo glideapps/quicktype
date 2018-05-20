@@ -1,4 +1,4 @@
-import { hash } from "immutable";
+import stringHash = require("string-hash");
 
 import { panic } from "./support/Support";
 import { Type } from "./Type";
@@ -86,7 +86,7 @@ export class TypeAttributeKind<T> {
     }
 
     hashCode(): number {
-        return hash(this.name);
+        return stringHash(this.name);
     }
 }
 

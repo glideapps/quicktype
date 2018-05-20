@@ -1,6 +1,6 @@
 import * as stream from "stream";
 
-import { hash } from "immutable";
+import stringHash = require("string-hash");
 
 import { defined, hashCodeInit, addHashCode, panic, assert } from "../support/Support";
 import { isDate, isTime, isDateTime } from "../DateTime";
@@ -303,11 +303,11 @@ export class CompressedJSON {
     hashCode = (): number => {
         let hashAccumulator = hashCodeInit;
         for (const s of this._strings) {
-            hashAccumulator = addHashCode(hashAccumulator, hash(s));
+            hashAccumulator = addHashCode(hashAccumulator, stringHash(s));
         }
 
         for (const s of Object.getOwnPropertyNames(this._stringValues).sort()) {
-            hashAccumulator = addHashCode(hashAccumulator, hash(s));
+            hashAccumulator = addHashCode(hashAccumulator, stringHash(s));
             hashAccumulator = addHashCode(hashAccumulator, this._stringValues[s]);
         }
 
