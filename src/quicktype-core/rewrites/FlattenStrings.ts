@@ -32,10 +32,10 @@ function replaceUnion(
     const stringMembers = defined(unionNeedsReplacing(u));
     const stringAttributes = combineTypeAttributesOfTypes("union", stringMembers);
     const types: TypeRef[] = [];
-    u.members.forEach(t => {
-        if (stringMembers.has(t)) return;
+    for (const t of u.members) {
+        if (stringMembers.has(t)) continue;
         types.push(builder.reconstituteType(t));
-    });
+    }
     if (types.length === 0) {
         return builder.getStringType(
             combineTypeAttributes("union", stringAttributes, u.getAttributes()),

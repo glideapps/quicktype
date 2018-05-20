@@ -446,10 +446,10 @@ export class JavaRenderer extends ConvenienceRenderer {
         }
         const [maybeNull, nonNulls] = removeNullFromUnion(u);
         this.emitBlock(["public class ", unionName], () => {
-            nonNulls.forEach(t => {
+            for (const t of nonNulls) {
                 const { fieldType, fieldName } = this.unionField(u, t, true);
                 this.emitLine("public ", fieldType, " ", fieldName, ";");
-            });
+            }
             if (this._options.justTypes) return;
             this.ensureBlankLine();
             this.emitBlock(["static class Deserializer extends JsonDeserializer<", unionName, ">"], () => {
@@ -488,13 +488,13 @@ export class JavaRenderer extends ConvenienceRenderer {
                         " obj, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException"
                     ],
                     () => {
-                        nonNulls.forEach(t => {
+                        for (const t of nonNulls) {
                             const { fieldName } = this.unionField(u, t, true);
                             this.emitBlock(["if (obj.", fieldName, " != null)"], () => {
                                 this.emitLine("jsonGenerator.writeObject(obj.", fieldName, ");");
                                 this.emitLine("return;");
                             });
-                        });
+                        }
                         if (maybeNull !== null) {
                             this.emitLine("jsonGenerator.writeNull();");
                         } else {

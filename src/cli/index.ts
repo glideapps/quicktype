@@ -16,7 +16,6 @@ import {
     StringInput,
     OptionDefinition,
     defaultTargetLanguages,
-    Annotation,
     IssueAnnotationData,
     panic,
     assert,
@@ -538,8 +537,8 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
     }
 
     const options: { rendererOptions: RendererOptions; [key: string]: any } = { rendererOptions: {} };
-    definitions.forEach(o => {
-        if (!hasOwnProperty(opts, o.name)) return;
+    for (const o of definitions) {
+        if (!hasOwnProperty(opts, o.name)) continue;
         const v = opts[o.name];
         if (o.renderer !== undefined) options.rendererOptions[o.name] = v;
         else {
@@ -551,22 +550,22 @@ function parseOptions(definitions: OptionDefinition[], argv: string[], partial: 
             );
             options[k] = v;
         }
-    });
+    }
     return options;
 }
 
 function usage(targetLanguages: TargetLanguage[]) {
     const rendererSections: UsageSection[] = [];
 
-    _.forEach(targetLanguages, language => {
+    for (const language of targetLanguages) {
         const definitions = language.cliOptionDefinitions.display;
-        if (definitions.length === 0) return;
+        if (definitions.length === 0) continue;
 
         rendererSections.push({
             header: `Options for ${language.displayName}`,
             optionList: definitions
         });
-    });
+    }
 
     const sections = _.concat(makeSectionsBeforeRenderers(targetLanguages), rendererSections, sectionsAfterRenderers);
 
@@ -810,7 +809,7 @@ export function writeOutput(
     resultsByFilename: ReadonlyMap<string, SerializedRenderResult>
 ): void {
     let onFirst = true;
-    resultsByFilename.forEach(({ lines, annotations }, filename) => {
+    for (const [filename, { lines, annotations }] of resultsByFilename) {
         const output = lines.join("\n");
 
         if (cliOptions.out !== undefined) {
@@ -822,19 +821,19 @@ export function writeOutput(
             process.stdout.write(output);
         }
         if (cliOptions.quiet) {
-            return;
+            continue;
         }
-        annotations.forEach((sa: Annotation) => {
+        for (const sa of annotations) {
             const annotation = sa.annotation;
-            if (!(annotation instanceof IssueAnnotationData)) return;
+            if (!(annotation instanceof IssueAnnotationData)) continue;
             const lineNumber = sa.span.start.line;
             const humanLineNumber = lineNumber + 1;
             console.error(`\nIssue in line ${humanLineNumber}: ${annotation.message}`);
             console.error(`${humanLineNumber}: ${lines[lineNumber]}`);
-        });
+        }
 
         onFirst = false;
-    });
+    }
 }
 
 export async function main(args: string[] | Partial<CLIOptions>) {

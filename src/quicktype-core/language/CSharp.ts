@@ -783,9 +783,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.emitLine("DateParseHandling = DateParseHandling.None,");
                 this.emitLine("Converters = {");
                 this.indent(() => {
-                    this.typesWithNamedTransformations.forEach(converter => {
+                    for (const [_, converter] of this.typesWithNamedTransformations) {
                         this.emitLine("new ", converter, "(),");
-                    });
+                    }
                     this.emitLine("new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal }");
                 });
                 this.emitLine(`},`);
@@ -880,7 +880,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             if (caseXfers.length > 1 && caseXfers.every(caseXfer => caseXfer instanceof StringMatchTransformer)) {
                 this.emitLine("switch (", variable, ")");
                 this.emitBlock(() => {
-                    caseXfers.forEach(caseXfer => {
+                    for (const caseXfer of caseXfers) {
                         const matchXfer = caseXfer as StringMatchTransformer;
                         const value = this.stringCaseValue(
                             followTargetType(matchXfer.sourceType),
@@ -893,14 +893,14 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                                 this.emitLine("break;");
                             }
                         });
-                    });
+                    }
                 });
                 // FIXME: Can we check for exhaustiveness?  For enums it should be easy.
                 return false;
             } else {
-                caseXfers.forEach(caseXfer => {
+                for (const caseXfer of caseXfers) {
                     this.emitTransformer(variable, caseXfer, targetType);
-                });
+                }
             }
         } else if (xfer instanceof UnionMemberMatchTransformer) {
             let test: Sourcelike;

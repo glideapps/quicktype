@@ -56,7 +56,9 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
             if (combinationKind !== undefined) {
                 attributes = combineTypeAttributes(combinationKind, attributes, t.getAttributes());
             }
-            so.members.forEach(process);
+            for (const m of so.members) {
+                process(m);
+            }
         } else if (includeAny || t.kind !== "any") {
             members.add(t);
         } else {

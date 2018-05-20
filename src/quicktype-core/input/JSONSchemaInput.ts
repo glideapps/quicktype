@@ -310,7 +310,7 @@ export class Ref {
 
     hashCode(): number {
         let acc = hashCodeOf(mapOptional(u => u.toString(), this.addressURI));
-        this.path.forEach(pe => {
+        for (const pe of this.path) {
             acc = addHashCode(acc, pe.kind);
             switch (pe.kind) {
                 case PathElementKind.Type:
@@ -322,7 +322,7 @@ export class Ref {
                 default:
                     break;
             }
-        });
+        }
         return acc;
     }
 }

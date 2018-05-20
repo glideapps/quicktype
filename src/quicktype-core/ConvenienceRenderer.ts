@@ -198,22 +198,24 @@ export abstract class ConvenienceRenderer extends Renderer {
         this._globalNamespace = new Namespace("global", undefined, [this._globalForbiddenNamespace], []);
         const { objects, enums, unions } = this.typeGraph.allNamedTypesSeparated();
         const namedUnions = setFilter(unions, u => this.unionNeedsName(u));
-        this.topLevels.forEach((t, name) => {
+        for (const [name, t] of this.topLevels) {
             this.nameStoreView.setForTopLevel(name, this.addNameForTopLevel(t, name));
-        });
-        objects.forEach((o: ObjectType) => {
+        }
+        for (const o of objects) {
             const name = this.addNameForNamedType(o);
             this.addPropertyNames(o, name);
-        });
-        enums.forEach((e: EnumType) => {
+        }
+        for (const e of enums) {
             const name = this.addNameForNamedType(e);
             this.addEnumCaseNames(e, name);
-        });
-        namedUnions.forEach((u: UnionType) => {
+        }
+        for (const u of namedUnions) {
             const name = this.addNameForNamedType(u);
             this.addUnionMemberNames(u, name);
-        });
-        this.typeGraph.allTypesUnordered().forEach(t => this.addNameForTransformation(t));
+        }
+        for (const t of this.typeGraph.allTypesUnordered()) {
+            this.addNameForTransformation(t);
+        }
         return setUnion(
             [this._globalForbiddenNamespace, this._globalNamespace],
             this._otherForbiddenNamespaces.values()
@@ -421,10 +423,10 @@ export abstract class ConvenienceRenderer extends Renderer {
             ns = new Namespace(u.getCombinedName(), this.globalNamespace, forbiddenNamespaces, forbiddenNames);
         }
         let names = new Map<Type, Name>();
-        u.members.forEach(t => {
+        for (const t of u.members) {
             const name = this.makeNameForUnionMember(u, unionName, followTargetType(t));
             names.set(t, ns.add(name));
-        });
+        }
         defined(this._memberNamesStoreView).set(u, names);
     };
 
@@ -459,7 +461,7 @@ export abstract class ConvenienceRenderer extends Renderer {
         }
         let names = new Map<string, Name>();
         const accessorNames = enumCaseNames(e, this.targetLanguage.name);
-        e.cases.forEach(caseName => {
+        for (const caseName of e.cases) {
             const [assignedName, isFixed] = getAccessorName(accessorNames, caseName);
             let name: Name;
             if (isFixed) {
@@ -468,7 +470,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 name = this.makeNameForEnumCase(e, enumName, caseName, assignedName);
             }
             names.set(caseName, ns.add(name));
-        });
+        }
         defined(this._caseNamesStoreView).set(e, names);
     };
 
@@ -717,12 +719,12 @@ export abstract class ConvenienceRenderer extends Renderer {
         f: (firstUnion: UnionType, value: T) => void
     ): void {
         const firstUnionByValue = new Map<T, UnionType>();
-        this.namedUnions.forEach(u => {
+        for (const u of this.namedUnions) {
             const v = uniqueValue(u);
             if (!firstUnionByValue.has(v)) {
                 firstUnionByValue.set(v, u);
             }
-        });
+        }
         this.forEachWithBlankLines(firstUnionByValue, blankLocations, f);
     }
 

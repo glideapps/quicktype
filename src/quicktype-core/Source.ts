@@ -199,7 +199,9 @@ export function serializeRenderResult(
                 indentNeeded = indent;
                 break;
             case "sequence":
-                source.sequence.forEach(s => serializeToStringArray(s));
+                for (const s of source.sequence) {
+                    serializeToStringArray(s);
+                }
                 break;
             case "table":
                 const t = source.table;

@@ -430,7 +430,7 @@ function makeGraphQLQueryTypes(
     const schema = new GQLSchemaFromJSON(json);
     const query = new GQLQuery(schema, queryString);
     const types = new Map<string, TypeRef>();
-    query.queries.forEach(odn => {
+    for (const odn of query.queries) {
         const queryName = odn.name ? odn.name.value : topLevelName;
         if (types.has(queryName)) {
             return panic(`Duplicate query name ${queryName}`);
@@ -457,7 +457,7 @@ function makeGraphQLQueryTypes(
             })
         );
         types.set(queryName, t);
-    });
+    }
     return types;
 }
 
@@ -488,11 +488,11 @@ export class GraphQLInput implements Input<GraphQLSourceData> {
     }
 
     async addTypes(typeBuilder: TypeBuilder): Promise<void> {
-        this._topLevels.forEach(({ schema, query }, name) => {
+        for (const [name, { schema, query }] of this._topLevels) {
             const newTopLevels = makeGraphQLQueryTypes(name, typeBuilder, schema, query);
-            newTopLevels.forEach((t, actualName) => {
+            for (const [actualName, t] of newTopLevels) {
                 typeBuilder.addTopLevel(this._topLevels.size === 1 ? name : actualName, t);
-            });
-        });
+            }
+        }
     }
 }
