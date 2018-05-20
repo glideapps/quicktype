@@ -45,6 +45,8 @@ export function cycleBreakerTypesForGraph(
     const cycleBreakerTypes = new Set<Type>();
     const queue: Type[] = graph.topLevels.valueSeq().toArray();
 
+    // FIXME: We never push anything onto the path.  How can this
+    // be correct?
     function visit(t: Type, path: List<Type>): void {
         if (visitedTypes.has(t)) return;
 
