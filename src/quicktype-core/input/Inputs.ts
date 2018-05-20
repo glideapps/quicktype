@@ -1,5 +1,5 @@
 import * as URI from "urijs";
-import { OrderedMap, OrderedSet, Map, List, Set } from "immutable";
+import { OrderedMap, OrderedSet, List, Set } from "immutable";
 
 import {
     Ref,
@@ -195,7 +195,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     private _schemaStore: JSONSchemaStore | undefined = undefined;
     private readonly _attributeProducers: JSONSchemaAttributeProducer[];
 
-    private _schemaInputs: Map<string, StringInput> = Map();
+    private readonly _schemaInputs: Map<string, StringInput> = new Map();
     private _schemaSources: List<[uri.URI, JSONSchemaSourceData]> = List();
 
     private _topLevels: OrderedMap<string, Ref> = OrderedMap();
@@ -254,7 +254,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             assert(uris !== undefined, "URIs must be given if schema source is not specified");
         } else {
             for (const normalizedURI of normalizedURIs) {
-                this._schemaInputs = this._schemaInputs.set(
+                this._schemaInputs.set(
                     normalizedURI
                         .clone()
                         .hash("")
@@ -273,7 +273,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         if (this._schemaSources.isEmpty()) return;
 
         let maybeSchemaStore = this._schemaStore;
-        if (this._schemaInputs.isEmpty()) {
+        if (this._schemaInputs.size === 0) {
             if (maybeSchemaStore === undefined) {
                 return panic("Must have a schema store to process JSON Schema");
             }
