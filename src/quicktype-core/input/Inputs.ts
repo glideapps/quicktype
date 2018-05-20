@@ -13,7 +13,6 @@ import {
     parseJSON,
     panic,
     assert,
-    forEachSync,
     defined,
     withDefault,
     errorMessage,
@@ -282,7 +281,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         }
         const schemaStore = maybeSchemaStore;
 
-        await forEachSync(this._schemaSources, async ([normalizedURI, source]) => {
+        for (const [normalizedURI, source] of this._schemaSources) {
             const givenName = source.name;
 
             const refs = await refsInSchemaForURI(schemaStore, normalizedURI, givenName);
@@ -299,7 +298,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
                     this.addTopLevel(refName, ref);
                 });
             }
-        });
+        }
     }
 
     singleStringSchemaSource(): string | undefined {
