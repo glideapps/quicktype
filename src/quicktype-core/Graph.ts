@@ -1,4 +1,4 @@
-import { Map, List } from "immutable";
+import { Map } from "immutable";
 import { defined, repeated, assert, repeatedCall } from "./support/Support";
 import { setMap } from "./support/Containers";
 
@@ -190,8 +190,8 @@ export class Graph<T> {
         return this._nodes.length;
     }
 
-    get nodes(): List<T> {
-        return List(this._nodes);
+    get nodes(): ReadonlyArray<T> {
+        return this._nodes;
     }
 
     findRoots(): ReadonlySet<T> {
