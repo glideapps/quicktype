@@ -1,10 +1,10 @@
-import { is, hash, OrderedSet } from "immutable";
+import { is, hash } from "immutable";
 
 import { TypeAttributeKind } from "./TypeAttributes";
 import { addHashCode, defined, assert } from "./support/Support";
 import { StringTypeMapping } from "./TypeBuilder";
 import { PrimitiveStringTypeKind } from "./Type";
-import { mapMergeWith, mapMap, iterableFirst } from "./support/Containers";
+import { mapMergeWith, mapMap, iterableFirst, setIntersect } from "./support/Containers";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, false, false, false);
@@ -65,11 +65,8 @@ export class StringTypes {
         } else if (otherCases === undefined) {
             cases = thisCases;
         } else {
-            cases = mapMap(
-                OrderedSet(thisCases.keys())
-                    .intersect(OrderedSet(otherCases.keys()))
-                    .entries(),
-                k => Math.min(defined(thisCases.get(k)), defined(otherCases.get(k)))
+            cases = mapMap(setIntersect(thisCases.keys(), new Set(otherCases.keys())).entries(), k =>
+                Math.min(defined(thisCases.get(k)), defined(otherCases.get(k)))
             );
         }
         const allowDate = this.allowDate && other.allowDate;
