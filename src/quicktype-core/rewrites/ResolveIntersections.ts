@@ -55,7 +55,7 @@ class IntersectionAccumulator
     private readonly _primitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> = new Map();
 
     // * undefined: We haven't seen any types yet.
-    // * OrderedSet: All types we've seen can be arrays.
+    // * Set: All types we've seen can be arrays.
     // * false: At least one of the types seen can't be an array.
     private _arrayItemTypes: Set<Type> | undefined | false;
     private _arrayAttributes: TypeAttributes = emptyTypeAttributes;
