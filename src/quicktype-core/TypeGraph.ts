@@ -1,4 +1,4 @@
-import { Map as ImmutableMap, List } from "immutable";
+import { Map as ImmutableMap } from "immutable";
 
 import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
@@ -206,8 +206,7 @@ export class TypeGraph {
         assert(this._haveProvenanceAttributes);
 
         const view = new TypeAttributeStoreView(this.attributeStore, provenanceTypeAttributeKind);
-        const typeList = List(this.allTypesUnordered());
-        const sets = typeList.map(t => {
+        const sets = Array.from(this.allTypesUnordered()).map(t => {
             const maybeSet = view.tryGet(t);
             if (maybeSet !== undefined) return maybeSet;
             return new Set();
