@@ -76,7 +76,7 @@ class IntersectionAccumulator
 
     private _lostTypeAttributes: boolean = false;
 
-    private updatePrimitiveTypes(members: ReadonlySet<Type>): void {
+    private updatePrimitiveTypes(members: Iterable<Type>): void {
         const types = setFilter(members, t => isPrimitiveTypeKind(t.kind));
         const attributes = attributesForTypes<PrimitiveTypeKind>(types);
         mapMergeWithInto(this._primitiveAttributes, (a, b) => combineTypeAttributes("intersect", a, b), attributes);
@@ -98,7 +98,7 @@ class IntersectionAccumulator
         }
     }
 
-    private updateArrayItemTypes(members: ReadonlySet<Type>): void {
+    private updateArrayItemTypes(members: Iterable<Type>): void {
         const maybeArray = iterableFind(members, t => t instanceof ArrayType) as ArrayType | undefined;
         if (maybeArray === undefined) {
             this._arrayItemTypes = false;
@@ -114,7 +114,7 @@ class IntersectionAccumulator
         }
     }
 
-    private updateObjectProperties(members: ReadonlySet<Type>): void {
+    private updateObjectProperties(members: Iterable<Type>): void {
         const maybeObject = iterableFind(members, t => t instanceof ObjectType) as ObjectType | undefined;
         if (maybeObject === undefined) {
             this._objectProperties = undefined;
@@ -175,7 +175,7 @@ class IntersectionAccumulator
         }
     }
 
-    private addUnionSet(members: ReadonlySet<Type>): void {
+    private addUnionSet(members: Iterable<Type>): void {
         this.updatePrimitiveTypes(members);
         this.updateArrayItemTypes(members);
         this.updateObjectProperties(members);
@@ -191,15 +191,15 @@ class IntersectionAccumulator
             _anyType => {
                 return panic("The any type should have been filtered out in setOperationMembersRecursively");
             },
-            nullType => this.addUnionSet(OrderedSet([nullType])),
-            boolType => this.addUnionSet(OrderedSet([boolType])),
-            integerType => this.addUnionSet(OrderedSet([integerType])),
-            doubleType => this.addUnionSet(OrderedSet([doubleType])),
-            stringType => this.addUnionSet(OrderedSet([stringType])),
-            arrayType => this.addUnionSet(OrderedSet([arrayType])),
+            nullType => this.addUnionSet([nullType]),
+            boolType => this.addUnionSet([boolType]),
+            integerType => this.addUnionSet([integerType]),
+            doubleType => this.addUnionSet([doubleType]),
+            stringType => this.addUnionSet([stringType]),
+            arrayType => this.addUnionSet([arrayType]),
             _classType => panic("We should never see class types in intersections"),
             _mapType => panic("We should never see map types in intersections"),
-            objectType => this.addUnionSet(OrderedSet([objectType])),
+            objectType => this.addUnionSet([objectType]),
             _enumType => panic("We should never see enum types in intersections"),
             unionType => {
                 attributes = combineTypeAttributes(
@@ -208,14 +208,14 @@ class IntersectionAccumulator
                 );
                 this.addUnionSet(unionType.members);
             },
-            dateType => this.addUnionSet(OrderedSet([dateType])),
-            timeType => this.addUnionSet(OrderedSet([timeType])),
-            dateTimeType => this.addUnionSet(OrderedSet([dateTimeType]))
+            dateType => this.addUnionSet([dateType]),
+            timeType => this.addUnionSet([timeType]),
+            dateTimeType => this.addUnionSet([dateTimeType])
         );
         return makeTypeAttributesInferred(attributes);
     }
 
-    get arrayData(): OrderedSet<Type> {
+    get arrayData(): ReadonlySet<Type> {
         if (this._arrayItemTypes === undefined || this._arrayItemTypes === false) {
             return panic("This should not be called if the type can't be an array");
         }
@@ -231,7 +231,7 @@ class IntersectionAccumulator
         return [this._objectProperties, this._additionalPropertyTypes];
     }
 
-    get enumCases(): OrderedSet<string> {
+    get enumCases(): ReadonlySet<string> {
         return panic("We don't support enums in intersections");
     }
 
@@ -314,7 +314,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     }
 
     protected makeArray(
-        arrays: OrderedSet<Type>,
+        arrays: ReadonlySet<Type>,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
