@@ -1,5 +1,3 @@
-import { Map as ImmutableMap } from "immutable";
-
 import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
 import { defined, assert, mustNotBeCalled, panic } from "./support/Support";
@@ -18,7 +16,7 @@ import { messageError } from "./Messages";
 import { iterableFirst, setFilter, setUnion, setSubtract, mapMap, mapSome, setMap } from "./support/Containers";
 
 export class TypeAttributeStore {
-    private _topLevelValues: ImmutableMap<string, TypeAttributes> = ImmutableMap();
+    private readonly _topLevelValues: Map<string, TypeAttributes> = new Map();
 
     constructor(private readonly _typeGraph: TypeGraph, private _values: (TypeAttributes | undefined)[]) {}
 
@@ -59,10 +57,7 @@ export class TypeAttributeStore {
     }
 
     setForTopLevel<T>(kind: TypeAttributeKind<T>, topLevelName: string, value: T): void {
-        this._topLevelValues = this._topLevelValues.set(
-            topLevelName,
-            this.setInMap(this.attributesForTopLevel(topLevelName), kind, value)
-        );
+        this._topLevelValues.set(topLevelName, this.setInMap(this.attributesForTopLevel(topLevelName), kind, value));
     }
 
     private tryGetInMap<T>(attributes: TypeAttributes, kind: TypeAttributeKind<T>): T | undefined {
@@ -115,7 +110,7 @@ export class TypeGraph {
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
-    private _topLevels?: ImmutableMap<string, Type> = ImmutableMap();
+    private _topLevels: Map<string, Type> = new Map();
 
     private _types?: Type[];
 
@@ -136,7 +131,7 @@ export class TypeGraph {
     }
 
     freeze(
-        topLevels: ImmutableMap<string, TypeRef>,
+        topLevels: ReadonlyMap<string, TypeRef>,
         types: Type[],
         typeAttributes: (TypeAttributes | undefined)[]
     ): void {
@@ -154,12 +149,12 @@ export class TypeGraph {
         // either a _typeBuilder or a _types.
         this._types = types;
         this._typeBuilder = undefined;
-        this._topLevels = topLevels.map(tref => tref.deref()[0]);
+        this._topLevels = mapMap(topLevels, tref => tref.deref()[0]);
     }
 
-    get topLevels(): ImmutableMap<string, Type> {
+    get topLevels(): ReadonlyMap<string, Type> {
         assert(this.isFrozen, "Cannot get top-levels from a non-frozen graph");
-        return defined(this._topLevels);
+        return this._topLevels;
     }
 
     atIndex(index: number): [Type, TypeAttributes] {
@@ -480,11 +475,5 @@ export function removeIndirectionIntersections(
         }
     });
 
-    return graph.remap(
-        "remove indirection intersections",
-        stringTypeMapping,
-        false,
-        ImmutableMap(map),
-        debugPrintRemapping
-    );
+    return graph.remap("remove indirection intersections", stringTypeMapping, false, new Map(map), debugPrintRemapping);
 }
