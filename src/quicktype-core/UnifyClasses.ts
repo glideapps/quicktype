@@ -1,5 +1,3 @@
-import { OrderedMap } from "immutable";
-
 import { Type, ClassProperty, UnionType, ObjectType } from "./Type";
 import { assertIsObject } from "./TypeUtils";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
@@ -12,7 +10,7 @@ import { iterableFirst, setUnionInto } from "./support/Containers";
 function getCliqueProperties(
     clique: ObjectType[],
     makePropertyType: (types: ReadonlySet<Type>) => TypeRef
-): [OrderedMap<string, ClassProperty>, TypeRef | undefined, boolean] {
+): [ReadonlyMap<string, ClassProperty>, TypeRef | undefined, boolean] {
     let lostTypeAttributes = false;
     let propertyNames = new Set<string>();
     for (const o of clique) {
@@ -57,7 +55,7 @@ function getCliqueProperties(
     const unifiedPropertiesArray = properties.map(([name, types, isOptional]) => {
         return [name, new ClassProperty(makePropertyType(types), isOptional)] as [string, ClassProperty];
     });
-    const unifiedProperties = OrderedMap(unifiedPropertiesArray);
+    const unifiedProperties = new Map(unifiedPropertiesArray);
 
     return [unifiedProperties, unifiedAdditionalProperties, lostTypeAttributes];
 }
