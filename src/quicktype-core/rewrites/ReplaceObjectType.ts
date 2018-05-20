@@ -1,5 +1,3 @@
-import { OrderedSet } from "immutable";
-
 import { TypeGraph } from "../TypeGraph";
 import { StringTypeMapping, TypeRef } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
@@ -56,7 +54,7 @@ export function replaceObjectType(
         let union = builder.lookupTypeRefs(Array.from(propertyTypes).map(t => t.typeRef));
         if (union === undefined) {
             const reconstitutedTypes = setMap(propertyTypes, t => builder.reconstituteType(t));
-            union = builder.getUniqueUnionType(emptyTypeAttributes, OrderedSet(reconstitutedTypes));
+            union = builder.getUniqueUnionType(emptyTypeAttributes, new Set(reconstitutedTypes));
 
             // This is the direct unification alternative.  Weirdly enough, it is a tiny
             // bit slower.  It gives the same results.

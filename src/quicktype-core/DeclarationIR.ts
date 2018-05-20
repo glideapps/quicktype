@@ -90,8 +90,8 @@ export function declarationsForGraph(
             return indexAndKind;
         }
     }
-    function componentName(c: OrderedSet<Type>): string {
-        return c.map(nodeTitle).join(", ");
+    function componentName(c: Iterable<Type>): string {
+        return Array.from(c).map(nodeTitle).join(", ");
     }
     */
 
