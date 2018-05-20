@@ -35,7 +35,8 @@ import {
     mapUpdateInto,
     setMap,
     iterableFind,
-    setIntersect
+    setIntersect,
+    setUnionInto
 } from "../support/Containers";
 
 function canResolve(t: IntersectionType): boolean {
@@ -48,10 +49,10 @@ function attributesForTypes<T extends TypeKind>(types: ReadonlySet<Type>): TypeA
     return mapMapEntries(types.entries(), t => [t.kind, t.getAttributes()] as [T, TypeAttributes]);
 }
 
-type PropertyMap = Map<string, GenericClassProperty<OrderedSet<Type>>>;
+type PropertyMap = Map<string, GenericClassProperty<Set<Type>>>;
 
 class IntersectionAccumulator
-    implements UnionTypeProvider<OrderedSet<Type>, [PropertyMap, OrderedSet<Type> | undefined] | undefined> {
+    implements UnionTypeProvider<ReadonlySet<Type>, [PropertyMap, ReadonlySet<Type> | undefined] | undefined> {
     private _primitiveTypes: Set<PrimitiveTypeKind> | undefined;
     private readonly _primitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> = new Map();
 
@@ -71,7 +72,7 @@ class IntersectionAccumulator
     // _additionalPropertyTypes must also be undefined;
     private _objectProperties: PropertyMap | undefined = new Map();
     private _objectAttributes: TypeAttributes = emptyTypeAttributes;
-    private _additionalPropertyTypes: OrderedSet<Type> | undefined = OrderedSet();
+    private _additionalPropertyTypes: Set<Type> | undefined = new Set();
 
     private _lostTypeAttributes: boolean = false;
 
@@ -133,7 +134,10 @@ class IntersectionAccumulator
             return;
         }
 
-        const allPropertyNames = OrderedSet(this._objectProperties.keys()).union(maybeObject.getProperties().keys());
+        const allPropertyNames = setUnionInto(
+            new Set(this._objectProperties.keys()),
+            maybeObject.getProperties().keys()
+        );
         allPropertyNames.forEach(name => {
             const existing = defined(this._objectProperties).get(name);
             const newProperty = maybeObject.getProperties().get(name);
@@ -153,7 +157,8 @@ class IntersectionAccumulator
             } else if (existing !== undefined) {
                 defined(this._objectProperties).delete(name);
             } else if (newProperty !== undefined && this._additionalPropertyTypes !== undefined) {
-                const types = this._additionalPropertyTypes.add(newProperty.type);
+                // FIXME: This is potentially slow
+                const types = new Set(this._additionalPropertyTypes).add(newProperty.type);
                 defined(this._objectProperties).set(name, new GenericClassProperty(types, newProperty.isOptional));
             } else if (newProperty !== undefined) {
                 defined(this._objectProperties).delete(name);
@@ -163,7 +168,7 @@ class IntersectionAccumulator
         });
 
         if (this._additionalPropertyTypes !== undefined && objectAdditionalProperties !== undefined) {
-            this._additionalPropertyTypes = this._additionalPropertyTypes.add(objectAdditionalProperties);
+            this._additionalPropertyTypes.add(objectAdditionalProperties);
         } else if (this._additionalPropertyTypes !== undefined || objectAdditionalProperties !== undefined) {
             this._additionalPropertyTypes = undefined;
             this._lostTypeAttributes = true;
@@ -217,7 +222,7 @@ class IntersectionAccumulator
         return this._arrayItemTypes;
     }
 
-    get objectData(): [PropertyMap, OrderedSet<Type> | undefined] | undefined {
+    get objectData(): [PropertyMap, ReadonlySet<Type> | undefined] | undefined {
         if (this._objectProperties === undefined) {
             assert(this._additionalPropertyTypes === undefined);
             return undefined;
@@ -265,15 +270,15 @@ class IntersectionAccumulator
 
 class IntersectionUnionBuilder extends UnionBuilder<
     TypeBuilder & TypeLookerUp,
-    OrderedSet<Type>,
-    [PropertyMap, OrderedSet<Type> | undefined] | undefined
+    ReadonlySet<Type>,
+    [PropertyMap, ReadonlySet<Type> | undefined] | undefined
 > {
     private _createdNewIntersections: boolean = false;
 
-    private makeIntersection(members: OrderedSet<Type>, attributes: TypeAttributes): TypeRef {
-        const reconstitutedMembers = members.map(t => this.typeBuilder.reconstituteTypeRef(t.typeRef));
+    private makeIntersection(members: ReadonlySet<Type>, attributes: TypeAttributes): TypeRef {
+        const reconstitutedMembers = setMap(members, t => this.typeBuilder.reconstituteTypeRef(t.typeRef));
 
-        const first = defined(reconstitutedMembers.first());
+        const first = defined(iterableFirst(reconstitutedMembers));
         if (reconstitutedMembers.size === 1) {
             this.typeBuilder.addAttributes(first, attributes);
             return first;
@@ -288,7 +293,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     }
 
     protected makeObject(
-        maybeData: [PropertyMap, OrderedSet<Type> | undefined] | undefined,
+        maybeData: [PropertyMap, ReadonlySet<Type> | undefined] | undefined,
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
