@@ -139,7 +139,7 @@ export class JSONInput implements Input<JSONSourceData> {
     ): Promise<void> {
         const inference = new TypeInference(typeBuilder, inferEnums, inferDates);
 
-        this._topLevels.forEach(({ samples, description }, name) => {
+        for (const [name, { samples, description }] of this._topLevels) {
             const tref = inference.inferType(
                 this._compressedJSON,
                 makeNamesTypeAttributes(name, false),
@@ -151,7 +151,7 @@ export class JSONInput implements Input<JSONSourceData> {
                 const attributes = descriptionTypeAttributeKind.makeAttributes(new Set([description]));
                 typeBuilder.addAttributes(tref, attributes);
             }
-        });
+        }
     }
 }
 
@@ -294,9 +294,9 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
                 }
                 this.addTopLevel(name, refs[1]);
             } else {
-                refs.forEach((ref, refName) => {
+                for (const [refName, ref] of refs) {
                     this.addTopLevel(refName, ref);
-                });
+                }
             }
         }
     }

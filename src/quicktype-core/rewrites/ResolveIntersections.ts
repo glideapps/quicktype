@@ -136,7 +136,7 @@ class IntersectionAccumulator
             new Set(this._objectProperties.keys()),
             maybeObject.getProperties().keys()
         );
-        allPropertyNames.forEach(name => {
+        for (const name of allPropertyNames) {
             const existing = defined(this._objectProperties).get(name);
             const newProperty = maybeObject.getProperties().get(name);
 
@@ -163,7 +163,7 @@ class IntersectionAccumulator
             } else {
                 return mustNotHappen();
             }
-        });
+        }
 
         if (this._additionalPropertyTypes !== undefined && objectAdditionalProperties !== undefined) {
             this._additionalPropertyTypes.add(objectAdditionalProperties);

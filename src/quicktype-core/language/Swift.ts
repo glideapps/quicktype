@@ -634,10 +634,10 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     if (boolMember !== undefined) renderUnionCase(boolMember);
                     const integerMember = u.findMember("integer");
                     if (integerMember !== undefined) renderUnionCase(integerMember);
-                    nonNulls.forEach(t => {
-                        if (t.kind === "bool" || t.kind === "integer") return;
+                    for (const t of nonNulls) {
+                        if (t.kind === "bool" || t.kind === "integer") continue;
                         renderUnionCase(t);
-                    });
+                    }
                     if (maybeNull !== null) {
                         this.emitBlock("if container.decodeNil()", () => {
                             this.emitLine("self = .", this.nameForUnionMember(u, maybeNull));

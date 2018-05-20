@@ -338,12 +338,12 @@ export async function quicktype(options: Partial<Options>): Promise<SerializedRe
     }
     let lines: string[] = [];
     let annotations: Annotation[] = [];
-    result.forEach((srr, filename) => {
+    for (const [filename, srr] of result) {
         const offset = lines.length + 2;
         lines = lines.concat([`// ${filename}`, ""], srr.lines);
         annotations = annotations.concat(
             srr.annotations.map(ann => ({ annotation: ann.annotation, span: offsetSpan(ann.span, offset) }))
         );
-    });
+    }
     return { lines, annotations };
 }

@@ -220,7 +220,9 @@ function attributesForTypes(types: Iterable<Type>): [ReadonlyMap<Type, TypeAttri
 
             isEquivalentToRoot = isEquivalentToRoot && t.members.size === 1;
             path.push(t);
-            t.members.forEach(m => traverse(m, path, isEquivalentToRoot));
+            for (const m of t.members) {
+                traverse(m, path, isEquivalentToRoot);
+            }
             path.pop();
         } else {
             mapUpdateInto(unionsForType, t, s => (s === undefined ? new Set(path) : setUnionInto(s, path)));
@@ -289,7 +291,9 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
 
     addTypes(types: Iterable<Type>): TypeAttributes {
         const [attributesMap, unionAttributes] = attributesForTypes(types);
-        attributesMap.forEach((attributes, t) => this.addType(t, attributes));
+        for (const [t, attributes] of attributesMap) {
+            this.addType(t, attributes);
+        }
         return unionAttributes;
     }
 }
@@ -365,9 +369,9 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             : undefined;
 
         const types: TypeRef[] = [];
-        kinds.forEach((memberAttributes, kind) => {
+        for (const [kind, memberAttributes] of kinds) {
             types.push(this.makeTypeOfKind(typeProvider, kind, memberAttributes, undefined));
-        });
+        }
         const typesSet = new Set(types);
         if (union !== undefined) {
             this.typeBuilder.setSetOperationMembers(union, typesSet);

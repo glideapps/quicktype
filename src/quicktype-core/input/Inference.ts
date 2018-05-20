@@ -26,7 +26,11 @@ function forEachArrayInNestedValueArray(va: NestedValueArray, f: (va: Value[]) =
 }
 
 function forEachValueInNestedValueArray(va: NestedValueArray, f: (v: Value) => void): void {
-    forEachArrayInNestedValueArray(va, a => a.forEach(f));
+    forEachArrayInNestedValueArray(va, a => {
+        for (const x of a) {
+            f(x);
+        }
+    });
 }
 
 class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, NestedValueArray> {
