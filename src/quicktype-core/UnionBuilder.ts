@@ -1,5 +1,3 @@
-import { OrderedSet } from "immutable";
-
 import { TypeKind, PrimitiveStringTypeKind, Type, UnionType } from "./Type";
 import { matchTypeExhaustive } from "./TypeUtils";
 import {
@@ -11,7 +9,7 @@ import {
 import { defined, assert, panic, assertNever } from "./support/Support";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
 import { StringTypes, stringTypesTypeAttributeKind } from "./StringTypes";
-import { mapMerge, mapUpdateInto, mapMap, setUnion, setUnionInto } from "./support/Containers";
+import { mapMerge, mapUpdateInto, mapMap, setUnionInto } from "./support/Containers";
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be
@@ -61,7 +59,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
     readonly arrayData: TArray[] = [];
     readonly objectData: TObject[] = [];
 
-    private _enumCases: ReadonlySet<string> = OrderedSet();
+    private readonly _enumCases: Set<string> = new Set();
 
     private _lostTypeAttributes: boolean = false;
 
@@ -149,7 +147,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
             return;
         }
         setAttributes(this._nonStringTypeAttributes, "enum", attributes);
-        this._enumCases = setUnion(this._enumCases, cases);
+        setUnionInto(this._enumCases, cases);
     }
 
     addStringCases(cases: string[], attributes: TypeAttributes): void {
@@ -209,13 +207,13 @@ function attributesForTypes(types: Iterable<Type>): [ReadonlyMap<Type, TypeAttri
     const typesForUnion = new Map<UnionOrFaux, Set<Type>>();
 
     // All the unions we've seen, starting from types, stopping when we hit non-unions.
-    let unions: OrderedSet<UnionType> = OrderedSet();
+    const unions = new Set<UnionType>();
     // All the unions that are equivalent to the single root type.  If more than one type
     // is given, this will be empty.
     let unionsEquivalentToRoot: Set<UnionType> = new Set();
     function traverse(t: Type, path: UnionOrFaux[], isEquivalentToRoot: boolean): void {
         if (t instanceof UnionType) {
-            unions = unions.add(t);
+            unions.add(t);
             if (isEquivalentToRoot) {
                 unionsEquivalentToRoot = unionsEquivalentToRoot.add(t);
             }
@@ -244,7 +242,7 @@ function attributesForTypes(types: Iterable<Type>): [ReadonlyMap<Type, TypeAttri
         const inheritedAttributes = singleAncestors.map(u => u.getAttributes());
         return combineTypeAttributes("union", [t.getAttributes()].concat(inheritedAttributes));
     });
-    const unionAttributes = unions.toArray().map(u => {
+    const unionAttributes = Array.from(unions).map(u => {
         const t = typesForUnion.get(u);
         if (t !== undefined && t.size === 1) {
             return emptyTypeAttributes;
@@ -370,7 +368,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
         kinds.forEach((memberAttributes, kind) => {
             types.push(this.makeTypeOfKind(typeProvider, kind, memberAttributes, undefined));
         });
-        const typesSet = OrderedSet(types);
+        const typesSet = new Set(types);
         if (union !== undefined) {
             this.typeBuilder.setSetOperationMembers(union, typesSet);
             return union;
