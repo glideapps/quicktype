@@ -1,5 +1,5 @@
 import * as URI from "urijs";
-import { OrderedMap, OrderedSet, List, Set } from "immutable";
+import { OrderedSet, List, Set } from "immutable";
 
 import {
     Ref,
@@ -82,7 +82,7 @@ export class JSONInput implements Input<JSONSourceData> {
     readonly needIR: boolean = true;
     readonly needSchemaProcessing: boolean = false;
 
-    private _topLevels: OrderedMap<string, JSONTopLevel> = OrderedMap();
+    private readonly _topLevels: Map<string, JSONTopLevel> = new Map();
 
     /* tslint:disable:no-unused-variable */
     constructor(private readonly _compressedJSON: CompressedJSON) {}
@@ -91,7 +91,7 @@ export class JSONInput implements Input<JSONSourceData> {
         let topLevel = this._topLevels.get(topLevelName);
         if (topLevel === undefined) {
             topLevel = { samples: [], description: undefined };
-            this._topLevels = this._topLevels.set(topLevelName, topLevel);
+            this._topLevels.set(topLevelName, topLevel);
         }
         topLevel.samples.push(sample);
     }
@@ -198,7 +198,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     private readonly _schemaInputs: Map<string, StringInput> = new Map();
     private _schemaSources: List<[uri.URI, JSONSchemaSourceData]> = List();
 
-    private _topLevels: OrderedMap<string, Ref> = OrderedMap();
+    private readonly _topLevels: Map<string, Ref> = new Map();
 
     private _needIR: boolean = false;
 
@@ -217,7 +217,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     }
 
     addTopLevel(name: string, ref: Ref): void {
-        this._topLevels = this._topLevels.set(name, ref);
+        this._topLevels.set(name, ref);
     }
 
     async addTypes(typeBuilder: TypeBuilder): Promise<void> {
