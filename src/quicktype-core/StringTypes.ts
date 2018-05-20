@@ -1,10 +1,10 @@
-import { is, hash } from "immutable";
+import { is } from "immutable";
 
 import { TypeAttributeKind } from "./TypeAttributes";
 import { addHashCode, defined, assert } from "./support/Support";
 import { StringTypeMapping } from "./TypeBuilder";
 import { PrimitiveStringTypeKind } from "./Type";
-import { mapMergeWith, mapMap, iterableFirst, setIntersect } from "./support/Containers";
+import { mapMergeWith, mapMap, iterableFirst, setIntersect, hashCodeOf } from "./support/Containers";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, false, false, false);
@@ -108,10 +108,10 @@ export class StringTypes {
     }
 
     hashCode(): number {
-        let h = hash(this.cases);
-        h = addHashCode(h, hash(this.allowDate));
-        h = addHashCode(h, hash(this.allowTime));
-        h = addHashCode(h, hash(this.allowDateTime));
+        let h = hashCodeOf(this.cases);
+        h = addHashCode(h, hashCodeOf(this.allowDate));
+        h = addHashCode(h, hashCodeOf(this.allowTime));
+        h = addHashCode(h, hashCodeOf(this.allowDateTime));
         return h;
     }
 

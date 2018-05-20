@@ -1,5 +1,6 @@
+import stringHash = require("string-hash");
+
 import { hashCodeInit, addHashCode, panic } from "./Support";
-import { hash } from "immutable";
 
 export function iterableFind<T>(it: Iterable<T>, p: (v: T) => boolean): T | undefined {
     for (const v of it) {
@@ -463,7 +464,7 @@ export function areEqual(a: any, b: any): boolean {
 
 export function hashCodeOf(x: any): number {
     if (typeof x === "number") return x | 0;
-    if (typeof x === "string") return hash(x);
+    if (typeof x === "string") return stringHash(x);
 
     let h = hashCodeInit;
 
