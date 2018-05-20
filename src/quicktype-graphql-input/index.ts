@@ -1,6 +1,6 @@
 /* tslint:disable:strict-boolean-expressions */
 
-import { List, Map, OrderedSet, OrderedMap } from "immutable";
+import { List, Map, OrderedMap } from "immutable";
 
 import {
     DocumentNode,
@@ -83,7 +83,7 @@ function makeNames(name: string, fieldName: string | null, containingTypeName: s
     if (fieldName) alternatives.push(fieldName);
     if (containingTypeName) alternatives.push(`${containingTypeName}_${name}`);
     if (fieldName && containingTypeName) alternatives.push(`${containingTypeName}_${fieldName}`);
-    return namesTypeAttributeKind.makeAttributes(TypeNames.make(OrderedSet([name]), OrderedSet(alternatives), false));
+    return namesTypeAttributeKind.makeAttributes(TypeNames.make(new Set([name]), new Set(alternatives), false));
 }
 
 function makeNullable(
@@ -96,7 +96,7 @@ function makeNullable(
     const typeNames = makeNames(name, fieldName, containingTypeName);
     const t = tref.deref();
     if (!(t instanceof UnionType)) {
-        return builder.getUnionType(typeNames, OrderedSet([tref, builder.getPrimitiveType("null")]));
+        return builder.getUnionType(typeNames, new Set([tref, builder.getPrimitiveType("null")]));
     }
     const [maybeNull, nonNulls] = removeNullFromUnion(t);
     if (maybeNull) return tref;
@@ -226,7 +226,7 @@ class GQLQuery {
                     name = fieldNode.name.value;
                     fieldName = null;
                 }
-                result = builder.getEnumType(makeNames(name, fieldName, containingTypeName), OrderedSet(values));
+                result = builder.getEnumType(makeNames(name, fieldName, containingTypeName), new Set(values));
                 break;
             case TypeKind.INPUT_OBJECT:
                 return panic("FIXME: Support input objects");
@@ -438,9 +438,7 @@ function makeGraphQLQueryTypes(
         }
         const dataType = query.makeType(builder, odn, queryName);
         const errorType = builder.getClassType(
-            namesTypeAttributeKind.makeAttributes(
-                TypeNames.make(OrderedSet(["error"]), OrderedSet(["graphQLError"]), false)
-            ),
+            namesTypeAttributeKind.makeAttributes(TypeNames.make(new Set(["error"]), new Set(["graphQLError"]), false)),
             OrderedMap({
                 message: new ClassProperty(builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted), false)
             })
@@ -449,7 +447,7 @@ function makeGraphQLQueryTypes(
         builder.addAttributes(
             errorArray,
             namesTypeAttributeKind.makeAttributes(
-                TypeNames.make(OrderedSet(["errors"]), OrderedSet(["graphQLErrors"]), false)
+                TypeNames.make(new Set(["errors"]), new Set(["graphQLErrors"]), false)
             )
         );
         const t = builder.getClassType(
