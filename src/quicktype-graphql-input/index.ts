@@ -1,6 +1,6 @@
 /* tslint:disable:strict-boolean-expressions */
 
-import { List, Map, OrderedMap } from "immutable";
+import { Map, OrderedMap } from "immutable";
 
 import {
     DocumentNode,
@@ -161,7 +161,7 @@ class GQLQuery {
     private readonly _schema: GQLSchema;
     private readonly _fragments: { [name: string]: FragmentDefinitionNode };
 
-    readonly queries: List<OperationDefinitionNode>;
+    readonly queries: ReadonlyArray<OperationDefinitionNode>;
 
     constructor(schema: GQLSchema, queryString: string) {
         this._schema = schema;
@@ -178,7 +178,7 @@ class GQLQuery {
             }
         }
         messageAssert(queries.length >= 1, "GraphQLNoQueriesDefined", {});
-        this.queries = List(queries);
+        this.queries = queries;
     }
 
     private makeIRTypeFromFieldNode = (
