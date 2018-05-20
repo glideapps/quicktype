@@ -1,9 +1,10 @@
-import { OrderedSet, OrderedMap, Map } from "immutable";
+import { OrderedSet } from "immutable";
 
 import { TypeAttributeKind, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { setUnion } from "./support/Support";
 import { JSONSchemaType, Ref, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 import { JSONSchema } from "./input/JSONSchemaStore";
+import { mapMergeWith, mapFilterMap, mapFromObject } from "./support/Containers";
 
 class DescriptionTypeAttributeKind extends TypeAttributeKind<OrderedSet<string>> {
     constructor() {
@@ -39,7 +40,7 @@ class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string
     }
 
     combine(a: Map<string, OrderedSet<string>>, b: Map<string, OrderedSet<string>>): Map<string, OrderedSet<string>> {
-        return a.mergeWith(setUnion, b);
+        return mapMergeWith(a, setUnion, b);
     }
 
     makeInferred(_: Map<string, OrderedSet<string>>): undefined {
@@ -67,18 +68,16 @@ export function descriptionAttributeProducer(
     }
 
     if (types.has("object") && typeof schema.properties === "object") {
-        const propertyDescriptions = OrderedMap<string, any>(schema.properties)
-            .map(propSchema => {
-                if (typeof propSchema === "object") {
-                    const desc = propSchema.description;
-                    if (typeof desc === "string") {
-                        return OrderedSet([desc]);
-                    }
+        const propertyDescriptions = mapFilterMap(mapFromObject<any>(schema.properties), propSchema => {
+            if (typeof propSchema === "object") {
+                const desc = propSchema.description;
+                if (typeof desc === "string") {
+                    return OrderedSet([desc]);
                 }
-                return undefined;
-            })
-            .filter(v => v !== undefined) as OrderedMap<string, OrderedSet<string>>;
-        if (!propertyDescriptions.isEmpty()) {
+            }
+            return undefined;
+        });
+        if (propertyDescriptions.size > 0) {
             propertyDescription = propertyDescriptionsTypeAttributeKind.makeAttributes(propertyDescriptions);
         }
     }
