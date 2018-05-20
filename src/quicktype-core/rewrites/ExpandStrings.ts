@@ -1,4 +1,4 @@
-import { OrderedMap, OrderedSet } from "immutable";
+import { OrderedSet } from "immutable";
 
 import { PrimitiveType } from "../Type";
 import { stringTypesForType } from "../TypeUtils";
@@ -8,14 +8,17 @@ import { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined } from "../support/Support";
 import { emptyTypeAttributes } from "../TypeAttributes";
 import { StringTypes } from "../StringTypes";
-import { iterableFirst, mapFilter } from "../support/Containers";
+import { iterableFirst, mapFilter, iterableSome, iterableReduce } from "../support/Containers";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
-function shouldBeEnum(enumCases: OrderedMap<string, number>): boolean {
+function shouldBeEnum(enumCases: ReadonlyMap<string, number>): boolean {
     assert(enumCases.size > 0, "How did we end up with zero enum cases?");
-    const someCaseIsNotNumber = enumCases.keySeq().some(key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false);
-    const numValues = enumCases.map(n => n).reduce<number>((a, b) => a + b);
+    const someCaseIsNotNumber = iterableSome(
+        enumCases.keys(),
+        key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false
+    );
+    const numValues = iterableReduce(enumCases.values(), 0, (a, b) => a + b);
     return numValues >= MIN_LENGTH_FOR_ENUM && enumCases.size < Math.sqrt(numValues) && someCaseIsNotNumber;
 }
 
