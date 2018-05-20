@@ -1,5 +1,3 @@
-import { Map, Set as ImmutableSet } from "immutable";
-
 import { defined, panic, assert, assertNever } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes, CombinationKind } from "./TypeAttributes";
 import {
@@ -15,7 +13,7 @@ import {
     UnionType
 } from "./Type";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
-import { setFilter, setSortBy, iterableFirst, setUnion } from "./support/Containers";
+import { setFilter, setSortBy, iterableFirst, setUnion, EqualityMap } from "./support/Containers";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {
@@ -46,7 +44,7 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
     const setOperations = Array.isArray(oneOrMany) ? oneOrMany : [oneOrMany];
     const kind = setOperations[0].kind;
     const includeAny = kind !== "intersection";
-    let processedSetOperations = ImmutableSet<T>();
+    const processedSetOperations = new Set<T>();
     const members = new Set<Type>();
     let attributes = emptyTypeAttributes;
 
@@ -54,7 +52,7 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
         if (t.kind === kind) {
             const so = t as T;
             if (processedSetOperations.has(so)) return;
-            processedSetOperations = processedSetOperations.add(so);
+            processedSetOperations.add(so);
             if (combinationKind !== undefined) {
                 attributes = combineTypeAttributes(combinationKind, attributes, t.getAttributes());
             }
@@ -76,11 +74,13 @@ export function setOperationMembersRecursively<T extends SetOperationType>(
 
 export function makeGroupsToFlatten<T extends SetOperationType>(
     setOperations: Iterable<T>,
-    include: ((members: ImmutableSet<Type>) => boolean) | undefined
+    include: ((members: ReadonlySet<Type>) => boolean) | undefined
 ): Type[][] {
-    let typeGroups = Map<ImmutableSet<Type>, Set<Type>>();
+    const typeGroups = new EqualityMap<Set<Type>, Set<Type>>();
     for (const u of setOperations) {
-        const members = ImmutableSet(setOperationMembersRecursively(u, undefined)[0]);
+        // FIXME: We shouldn't have to make a new set here once we got rid
+        // of immutable.
+        const members = new Set(setOperationMembersRecursively(u, undefined)[0]);
 
         if (include !== undefined) {
             if (!include(members)) continue;
@@ -90,17 +90,14 @@ export function makeGroupsToFlatten<T extends SetOperationType>(
         if (maybeSet === undefined) {
             maybeSet = new Set();
             if (members.size === 1) {
-                maybeSet.add(defined(members.first()));
+                maybeSet.add(defined(iterableFirst(members)));
             }
         }
         maybeSet.add(u);
-        typeGroups = typeGroups.set(members, maybeSet);
+        typeGroups.set(members, maybeSet);
     }
 
-    return typeGroups
-        .valueSeq()
-        .toArray()
-        .map(ts => Array.from(ts));
+    return Array.from(typeGroups.values()).map(ts => Array.from(ts));
 }
 
 export function combineTypeAttributesOfTypes(combinationKind: CombinationKind, types: Iterable<Type>): TypeAttributes {
