@@ -1,5 +1,4 @@
 import * as URI from "urijs";
-import { List } from "immutable";
 
 import {
     Ref,
@@ -197,7 +196,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     private readonly _attributeProducers: JSONSchemaAttributeProducer[];
 
     private readonly _schemaInputs: Map<string, StringInput> = new Map();
-    private _schemaSources: List<[uri.URI, JSONSchemaSourceData]> = List();
+    private _schemaSources: [uri.URI, JSONSchemaSourceData][] = [];
 
     private readonly _topLevels: Map<string, Ref> = new Map();
 
@@ -266,12 +265,12 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         }
 
         for (const normalizedURI of normalizedURIs) {
-            this._schemaSources = this._schemaSources.push([normalizedURI, schemaSource]);
+            this._schemaSources.push([normalizedURI, schemaSource]);
         }
     }
 
     async finishAddingInputs(): Promise<void> {
-        if (this._schemaSources.isEmpty()) return;
+        if (this._schemaSources.length === 0) return;
 
         let maybeSchemaStore = this._schemaStore;
         if (this._schemaInputs.size === 0) {
@@ -289,7 +288,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             const refs = await refsInSchemaForURI(schemaStore, normalizedURI, givenName);
             if (Array.isArray(refs)) {
                 let name: string;
-                if (this._schemaSources.size === 1) {
+                if (this._schemaSources.length === 1) {
                     name = givenName;
                 } else {
                     name = refs[0];
