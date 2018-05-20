@@ -1,4 +1,4 @@
-import { Map, List, OrderedSet } from "immutable";
+import { Map as ImmutableMap, List, OrderedSet } from "immutable";
 
 import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
@@ -13,12 +13,12 @@ import {
 import { GraphRewriteBuilder, GraphRemapBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
-import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
+import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { messageError } from "./Messages";
 import { iterableFirst, setFilter, setUnionIntoMany, setSubtract, mapMap, mapSome } from "./support/Containers";
 
 export class TypeAttributeStore {
-    private _topLevelValues: Map<string, TypeAttributes> = Map();
+    private _topLevelValues: ImmutableMap<string, TypeAttributes> = ImmutableMap();
 
     constructor(private readonly _typeGraph: TypeGraph, private _values: (TypeAttributes | undefined)[]) {}
 
@@ -34,7 +34,7 @@ export class TypeAttributeStore {
         if (maybeAttributes !== undefined) {
             return maybeAttributes;
         }
-        return Map();
+        return emptyTypeAttributes;
     }
 
     attributesForTopLevel(name: string): TypeAttributes {
@@ -42,11 +42,12 @@ export class TypeAttributeStore {
         if (maybeAttributes !== undefined) {
             return maybeAttributes;
         }
-        return Map();
+        return emptyTypeAttributes;
     }
 
     private setInMap<T>(attributes: TypeAttributes, kind: TypeAttributeKind<T>, value: T): TypeAttributes {
-        return attributes.set(kind, value);
+        // FIXME: This is potentially super slow
+        return new Map(attributes).set(kind, value);
     }
 
     set<T>(kind: TypeAttributeKind<T>, t: Type, value: T): void {
@@ -114,7 +115,7 @@ export class TypeGraph {
 
     // FIXME: OrderedMap?  We lose the order in PureScript right now, though,
     // and maybe even earlier in the TypeScript driver.
-    private _topLevels?: Map<string, Type> = Map();
+    private _topLevels?: ImmutableMap<string, Type> = ImmutableMap();
 
     private _types?: Type[];
 
@@ -134,7 +135,11 @@ export class TypeGraph {
         return defined(this._attributeStore);
     }
 
-    freeze(topLevels: Map<string, TypeRef>, types: Type[], typeAttributes: (TypeAttributes | undefined)[]): void {
+    freeze(
+        topLevels: ImmutableMap<string, TypeRef>,
+        types: Type[],
+        typeAttributes: (TypeAttributes | undefined)[]
+    ): void {
         assert(!this.isFrozen, "Tried to freeze TypeGraph a second time");
         assert(
             types.every(t => t.typeRef.graph === this),
@@ -152,7 +157,7 @@ export class TypeGraph {
         this._topLevels = topLevels.map(tref => tref.deref()[0]);
     }
 
-    get topLevels(): Map<string, Type> {
+    get topLevels(): ImmutableMap<string, Type> {
         assert(this.isFrozen, "Cannot get top-levels from a non-frozen graph");
         return defined(this._topLevels);
     }
@@ -281,7 +286,7 @@ export class TypeGraph {
         title: string,
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
-        map: Map<Type, Type>,
+        map: ImmutableMap<Type, Type>,
         debugPrintRemapping: boolean
     ): TypeGraph {
         this.printRewrite(title);
@@ -478,5 +483,11 @@ export function removeIndirectionIntersections(
         }
     });
 
-    return graph.remap("remove indirection intersections", stringTypeMapping, false, Map(map), debugPrintRemapping);
+    return graph.remap(
+        "remove indirection intersections",
+        stringTypeMapping,
+        false,
+        ImmutableMap(map),
+        debugPrintRemapping
+    );
 }

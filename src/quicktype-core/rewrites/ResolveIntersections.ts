@@ -245,13 +245,13 @@ class IntersectionAccumulator
 
         if (OrderedSet.isOrderedSet(this._arrayItemTypes)) {
             kinds = kinds.set("array", this._arrayAttributes);
-        } else if (!this._arrayAttributes.isEmpty()) {
+        } else if (this._arrayAttributes.size > 0) {
             this._lostTypeAttributes = true;
         }
 
         if (this._objectProperties !== undefined) {
             kinds = kinds.set("object", this._objectAttributes);
-        } else if (!this._objectAttributes.isEmpty()) {
+        } else if (this._objectAttributes.size > 0) {
             this._lostTypeAttributes = true;
         }
 
