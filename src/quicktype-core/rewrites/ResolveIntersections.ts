@@ -1,4 +1,4 @@
-import { OrderedSet, OrderedMap } from "immutable";
+import { OrderedSet } from "immutable";
 
 import { TypeGraph } from "../TypeGraph";
 import { StringTypeMapping, TypeRef, TypeBuilder } from "../TypeBuilder";
@@ -45,7 +45,7 @@ function attributesForTypes<T extends TypeKind>(types: OrderedSet<Type>): TypeAt
     return mapMapEntries(types.entries(), t => [t.kind, t.getAttributes()] as [T, TypeAttributes]);
 }
 
-type PropertyMap = OrderedMap<string, GenericClassProperty<OrderedSet<Type>>>;
+type PropertyMap = Map<string, GenericClassProperty<OrderedSet<Type>>>;
 
 class IntersectionAccumulator
     implements UnionTypeProvider<OrderedSet<Type>, [PropertyMap, OrderedSet<Type> | undefined] | undefined> {
@@ -66,7 +66,7 @@ class IntersectionAccumulator
     // properties are allowed anymore.  If _classProperties is
     // undefined, no object types are allowed, in which case
     // _additionalPropertyTypes must also be undefined;
-    private _objectProperties: PropertyMap | undefined = OrderedMap();
+    private _objectProperties: PropertyMap | undefined = new Map();
     private _objectAttributes: TypeAttributes = emptyTypeAttributes;
     private _additionalPropertyTypes: OrderedSet<Type> | undefined = OrderedSet();
 
@@ -129,10 +129,7 @@ class IntersectionAccumulator
             return;
         }
 
-        const allPropertyNames = this._objectProperties
-            .keySeq()
-            .toOrderedSet()
-            .union(maybeObject.getProperties().keys());
+        const allPropertyNames = OrderedSet(this._objectProperties.keys()).union(maybeObject.getProperties().keys());
         allPropertyNames.forEach(name => {
             const existing = defined(this._objectProperties).get(name);
             const newProperty = maybeObject.getProperties().get(name);
@@ -142,23 +139,20 @@ class IntersectionAccumulator
                     existing.typeData.add(newProperty.type),
                     existing.isOptional && newProperty.isOptional
                 );
-                this._objectProperties = defined(this._objectProperties).set(name, cp);
+                defined(this._objectProperties).set(name, cp);
             } else if (existing !== undefined && objectAdditionalProperties !== undefined) {
                 const cp = new GenericClassProperty(
                     existing.typeData.add(objectAdditionalProperties),
                     existing.isOptional
                 );
-                this._objectProperties = defined(this._objectProperties).set(name, cp);
+                defined(this._objectProperties).set(name, cp);
             } else if (existing !== undefined) {
-                this._objectProperties = defined(this._objectProperties).remove(name);
+                defined(this._objectProperties).delete(name);
             } else if (newProperty !== undefined && this._additionalPropertyTypes !== undefined) {
                 const types = this._additionalPropertyTypes.add(newProperty.type);
-                this._objectProperties = defined(this._objectProperties).set(
-                    name,
-                    new GenericClassProperty(types, newProperty.isOptional)
-                );
+                defined(this._objectProperties).set(name, new GenericClassProperty(types, newProperty.isOptional));
             } else if (newProperty !== undefined) {
-                this._objectProperties = defined(this._objectProperties).remove(name);
+                defined(this._objectProperties).delete(name);
             } else {
                 return mustNotHappen();
             }
@@ -299,7 +293,8 @@ class IntersectionUnionBuilder extends UnionBuilder<
         }
 
         const [propertyTypes, maybeAdditionalProperties] = maybeData;
-        const properties = propertyTypes.map(
+        const properties = mapMap(
+            propertyTypes,
             cp => new ClassProperty(this.makeIntersection(cp.typeData, emptyTypeAttributes), cp.isOptional)
         );
         const additionalProperties =
