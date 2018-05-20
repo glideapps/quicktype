@@ -1,4 +1,4 @@
-import { Map, Set, OrderedMap, OrderedSet } from "immutable";
+import { Set, OrderedMap, OrderedSet } from "immutable";
 
 import { TypeKind, PrimitiveStringTypeKind, Type, UnionType } from "./Type";
 import { matchTypeExhaustive } from "./TypeUtils";
@@ -11,6 +11,7 @@ import {
 import { defined, assert, panic, assertNever } from "./support/Support";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
 import { StringTypes, stringTypesTypeAttributeKind } from "./StringTypes";
+import { mapMerge, mapUpdateInto } from "./support/Containers";
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be
@@ -29,7 +30,7 @@ export interface UnionTypeProvider<TArrayData, TObjectData> {
     readonly lostTypeAttributes: boolean;
 }
 
-export type TypeAttributeMap<T extends TypeKind> = OrderedMap<T, TypeAttributes>;
+export type TypeAttributeMap<T extends TypeKind> = Map<T, TypeAttributes>;
 
 function addAttributes(
     accumulatorAttributes: TypeAttributes | undefined,
@@ -43,19 +44,19 @@ function setAttributes<T extends TypeKind>(
     attributeMap: TypeAttributeMap<T>,
     kind: T,
     newAttributes: TypeAttributes
-): TypeAttributeMap<T> {
-    return attributeMap.set(kind, addAttributes(attributeMap.get(kind), newAttributes));
+): void {
+    attributeMap.set(kind, addAttributes(attributeMap.get(kind), newAttributes));
 }
 
-function moveAttributes<T extends TypeKind>(map: TypeAttributeMap<T>, fromKind: T, toKind: T): TypeAttributeMap<T> {
+function moveAttributes<T extends TypeKind>(map: TypeAttributeMap<T>, fromKind: T, toKind: T): void {
     const fromAttributes = defined(map.get(fromKind));
-    map = map.remove(fromKind);
-    return setAttributes(map, toKind, fromAttributes);
+    map.delete(fromKind);
+    setAttributes(map, toKind, fromAttributes);
 }
 
 export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArray[], TObject[]> {
-    private _nonStringTypeAttributes: TypeAttributeMap<TypeKind> = OrderedMap();
-    private _stringTypeAttributes: TypeAttributeMap<PrimitiveStringTypeKind> = OrderedMap();
+    private readonly _nonStringTypeAttributes: TypeAttributeMap<TypeKind> = new Map();
+    private readonly _stringTypeAttributes: TypeAttributeMap<PrimitiveStringTypeKind> = new Map();
 
     readonly arrayData: TArray[] = [];
     readonly objectData: TObject[] = [];
@@ -79,20 +80,20 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         this._lostTypeAttributes = true;
     }
     addAny(attributes: TypeAttributes): void {
-        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "any", attributes);
+        setAttributes(this._nonStringTypeAttributes, "any", attributes);
         this._lostTypeAttributes = true;
     }
     addNull(attributes: TypeAttributes): void {
-        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "null", attributes);
+        setAttributes(this._nonStringTypeAttributes, "null", attributes);
     }
     addBool(attributes: TypeAttributes): void {
-        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "bool", attributes);
+        setAttributes(this._nonStringTypeAttributes, "bool", attributes);
     }
     addInteger(attributes: TypeAttributes): void {
-        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "integer", attributes);
+        setAttributes(this._nonStringTypeAttributes, "integer", attributes);
     }
     addDouble(attributes: TypeAttributes): void {
-        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "double", attributes);
+        setAttributes(this._nonStringTypeAttributes, "double", attributes);
     }
 
     protected addFullStringType(attributes: TypeAttributes, stringTypes: StringTypes | undefined): void {
@@ -114,7 +115,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
             );
         }
 
-        this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, "string", attributes);
+        setAttributes(this._stringTypeAttributes, "string", attributes);
     }
 
     addStringType(kind: PrimitiveStringTypeKind, attributes: TypeAttributes, stringTypes?: StringTypes): void {
@@ -125,16 +126,16 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         if (stringTypes !== undefined) {
             attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
         }
-        this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, kind, attributes);
+        setAttributes(this._stringTypeAttributes, kind, attributes);
     }
 
     addArray(t: TArray, attributes: TypeAttributes): void {
         this.arrayData.push(t);
-        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "array", attributes);
+        setAttributes(this._nonStringTypeAttributes, "array", attributes);
     }
     addObject(t: TObject, attributes: TypeAttributes): void {
         this.objectData.push(t);
-        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "object", attributes);
+        setAttributes(this._nonStringTypeAttributes, "object", attributes);
     }
 
     addEnum(cases: OrderedSet<string>, attributes: TypeAttributes): void {
@@ -144,10 +145,10 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
                 !defined(stringTypesTypeAttributeKind.tryGetInAttributes(maybeStringAttributes)).isRestricted,
                 "We can't add an enum to a union builder that has a restricted string type"
             );
-            this._stringTypeAttributes = setAttributes(this._stringTypeAttributes, "string", attributes);
+            setAttributes(this._stringTypeAttributes, "string", attributes);
             return;
         }
-        this._nonStringTypeAttributes = setAttributes(this._nonStringTypeAttributes, "enum", attributes);
+        setAttributes(this._nonStringTypeAttributes, "enum", attributes);
         this._enumCases = this._enumCases.union(cases);
     }
 
@@ -165,24 +166,24 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
     getMemberKinds(): TypeAttributeMap<TypeKind> {
         assert(!(this.have("enum") && this.have("string")), "We can't have both strings and enums in the same union");
 
-        let merged = this._nonStringTypeAttributes.merge(this._stringTypeAttributes);
+        let merged = mapMerge(this._nonStringTypeAttributes, this._stringTypeAttributes);
 
-        if (merged.isEmpty()) {
-            return OrderedMap([["none", Map()] as [TypeKind, TypeAttributes]]);
+        if (merged.size === 0) {
+            return new Map([["none", emptyTypeAttributes] as [TypeKind, TypeAttributes]]);
         }
 
         if (this._nonStringTypeAttributes.has("any")) {
             assert(this._lostTypeAttributes, "This had to be set when we added 'any'");
 
-            const allAttributes = combineTypeAttributes("union", merged.valueSeq().toArray());
-            return OrderedMap([["any", allAttributes] as [TypeKind, TypeAttributes]]);
+            const allAttributes = combineTypeAttributes("union", Array.from(merged.values()));
+            return new Map([["any", allAttributes] as [TypeKind, TypeAttributes]]);
         }
 
         if (this._conflateNumbers && this.have("integer") && this.have("double")) {
-            merged = moveAttributes(merged, "integer", "double");
+            moveAttributes(merged, "integer", "double");
         }
         if (this.have("map")) {
-            merged = moveAttributes(merged, "map", "class");
+            moveAttributes(merged, "map", "class");
         }
         return merged;
     }
@@ -199,9 +200,16 @@ class FauxUnion {
 }
 
 function attributesForTypes(types: Iterable<Type>): [OrderedMap<Type, TypeAttributes>, TypeAttributes] {
+    // These two maps are the reverse of each other.  unionsForType is all the unions
+    // that are ancestors of that type, when going from one of the given types, only
+    // following unions.
     let unionsForType: OrderedMap<Type, Set<UnionType | FauxUnion>> = OrderedMap();
-    let typesForUnion: Map<UnionType | FauxUnion, Set<Type>> = Map();
+    const typesForUnion = new Map<UnionType | FauxUnion, Set<Type>>();
+
+    // All the unions we've seen, starting from types, stopping when we hit non-unions.
     let unions: OrderedSet<UnionType> = OrderedSet();
+    // All the unions that are equivalent to the single root type.  If more than one type
+    // is given, this will be empty.
     let unionsEquivalentToRoot: Set<UnionType> = Set();
     function traverse(t: Type, path: Set<UnionType | FauxUnion>, isEquivalentToRoot: boolean): void {
         if (t instanceof UnionType) {
@@ -216,7 +224,7 @@ function attributesForTypes(types: Iterable<Type>): [OrderedMap<Type, TypeAttrib
         } else {
             unionsForType = unionsForType.update(t, Set(), s => s.union(path));
             path.forEach(u => {
-                typesForUnion = typesForUnion.update(u, Set(), s => s.add(t));
+                mapUpdateInto(typesForUnion, u, s => (s === undefined ? Set([t]) : s.add(t)));
             });
         }
     }
@@ -345,7 +353,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
         }
 
         if (kinds.size === 1) {
-            const [[kind, memberAttributes]] = kinds.toArray();
+            const [[kind, memberAttributes]] = Array.from(kinds);
             const allAttributes = combineTypeAttributes("union", typeAttributes, memberAttributes);
             const t = this.makeTypeOfKind(typeProvider, kind, allAttributes, forwardingRef);
             return t;
