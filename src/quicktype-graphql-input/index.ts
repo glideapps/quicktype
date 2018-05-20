@@ -30,7 +30,9 @@ import {
     TypeAttributes,
     emptyTypeAttributes,
     StringTypes,
-    Input
+    Input,
+    setMap,
+    iterableFirst
 } from "../quicktype-core";
 
 import { TypeKind, GraphQLSchema } from "./GraphQLSchema";
@@ -98,7 +100,7 @@ function makeNullable(
     }
     const [maybeNull, nonNulls] = removeNullFromUnion(t);
     if (maybeNull) return tref;
-    return builder.getUnionType(typeNames, nonNulls.map(nn => nn.typeRef).add(builder.getPrimitiveType("null")));
+    return builder.getUnionType(typeNames, setMap(nonNulls, nn => nn.typeRef).add(builder.getPrimitiveType("null")));
 }
 
 function removeNull(builder: TypeBuilder, tref: TypeRef): TypeRef {
@@ -107,10 +109,10 @@ function removeNull(builder: TypeBuilder, tref: TypeRef): TypeRef {
         return tref;
     }
     const nonNulls = removeNullFromUnion(t)[1];
-    const first = nonNulls.first();
+    const first = iterableFirst(nonNulls);
     if (first) {
         if (nonNulls.size === 1) return first.typeRef;
-        return builder.getUnionType(t.getAttributes(), nonNulls.map(nn => nn.typeRef));
+        return builder.getUnionType(t.getAttributes(), setMap(nonNulls, nn => nn.typeRef));
     }
     return panic("Trying to remove null results in empty union.");
 }

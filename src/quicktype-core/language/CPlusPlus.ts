@@ -23,7 +23,7 @@ import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, Optio
 import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 import { RenderContext } from "../Renderer";
-import { arrayIntercalate, toReadonlyArray, iterableFirst } from "../support/Containers";
+import { arrayIntercalate, toReadonlyArray, iterableFirst, iterableFind } from "../support/Containers";
 
 export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
@@ -550,7 +550,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitBlock(["inline void from_json(const json& _j, ", variantType, "& _x)"], false, () => {
             let onFirst = true;
             for (const [kind, func] of functionForKind) {
-                const typeForKind = nonNulls.find((t: Type) => t.kind === kind);
+                const typeForKind = iterableFind(nonNulls, t => t.kind === kind);
                 if (typeForKind === undefined) continue;
                 this.emitLine(onFirst ? "if" : "else if", " (_j.", func, "())");
                 this.indent(() => {

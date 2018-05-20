@@ -32,7 +32,9 @@ import {
     mapMapEntries,
     mapMergeWithInto,
     mapMap,
-    mapUpdateInto
+    mapUpdateInto,
+    setMap,
+    iterableFind
 } from "../support/Containers";
 
 function canResolve(t: IntersectionType): boolean {
@@ -41,7 +43,7 @@ function canResolve(t: IntersectionType): boolean {
     return iterableEvery(members, m => !(m instanceof UnionType) || m.isCanonical);
 }
 
-function attributesForTypes<T extends TypeKind>(types: OrderedSet<Type>): TypeAttributeMap<T> {
+function attributesForTypes<T extends TypeKind>(types: ReadonlySet<Type>): TypeAttributeMap<T> {
     return mapMapEntries(types.entries(), t => [t.kind, t.getAttributes()] as [T, TypeAttributes]);
 }
 
@@ -72,19 +74,20 @@ class IntersectionAccumulator
 
     private _lostTypeAttributes: boolean = false;
 
-    private updatePrimitiveTypes(members: OrderedSet<Type>): void {
-        const types = members.filter(t => isPrimitiveTypeKind(t.kind));
+    private updatePrimitiveTypes(members: ReadonlySet<Type>): void {
+        const types = setFilter(members, t => isPrimitiveTypeKind(t.kind));
         const attributes = attributesForTypes<PrimitiveTypeKind>(types);
         mapMergeWithInto(this._primitiveAttributes, (a, b) => combineTypeAttributes("intersect", a, b), attributes);
 
-        const kinds = types.map(t => t.kind) as OrderedSet<PrimitiveTypeKind>;
+        const kinds = setMap(types, t => t.kind) as ReadonlySet<PrimitiveTypeKind>;
         if (this._primitiveTypes === undefined) {
-            this._primitiveTypes = kinds;
+            this._primitiveTypes = OrderedSet(kinds);
             return;
         }
 
         const haveNumber =
-            this._primitiveTypes.find(isNumberTypeKind) !== undefined && kinds.find(isNumberTypeKind) !== undefined;
+            this._primitiveTypes.find(isNumberTypeKind) !== undefined &&
+            iterableFind(kinds, isNumberTypeKind) !== undefined;
         this._primitiveTypes = this._primitiveTypes.intersect(kinds);
         if (haveNumber && this._primitiveTypes.find(isNumberTypeKind) === undefined) {
             // One set has integer, the other has double.  The intersection
@@ -93,8 +96,8 @@ class IntersectionAccumulator
         }
     }
 
-    private updateArrayItemTypes(members: OrderedSet<Type>): void {
-        const maybeArray = members.find(t => t instanceof ArrayType) as ArrayType | undefined;
+    private updateArrayItemTypes(members: ReadonlySet<Type>): void {
+        const maybeArray = iterableFind(members, t => t instanceof ArrayType) as ArrayType | undefined;
         if (maybeArray === undefined) {
             this._arrayItemTypes = false;
             return;
@@ -109,8 +112,8 @@ class IntersectionAccumulator
         }
     }
 
-    private updateObjectProperties(members: OrderedSet<Type>): void {
-        const maybeObject = members.find(t => t instanceof ObjectType) as ObjectType | undefined;
+    private updateObjectProperties(members: ReadonlySet<Type>): void {
+        const maybeObject = iterableFind(members, t => t instanceof ObjectType) as ObjectType | undefined;
         if (maybeObject === undefined) {
             this._objectProperties = undefined;
             this._additionalPropertyTypes = undefined;
@@ -166,7 +169,7 @@ class IntersectionAccumulator
         }
     }
 
-    private addUnionSet(members: OrderedSet<Type>): void {
+    private addUnionSet(members: ReadonlySet<Type>): void {
         this.updatePrimitiveTypes(members);
         this.updateArrayItemTypes(members);
         this.updateObjectProperties(members);
@@ -195,7 +198,7 @@ class IntersectionAccumulator
             unionType => {
                 attributes = combineTypeAttributes(
                     "intersect",
-                    [attributes].concat(unionType.members.toArray().map(m => m.getAttributes()))
+                    [attributes].concat(Array.from(unionType.members).map(m => m.getAttributes()))
                 );
                 this.addUnionSet(unionType.members);
             },

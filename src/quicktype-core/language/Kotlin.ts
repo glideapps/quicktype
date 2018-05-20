@@ -467,7 +467,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
 
         if (this._kotlinOptions.framework === Framework.Klaxon) {
             this.emitBlock(["enum class ", enumName, "(val value: String)"], () => {
-                let count = e.cases.count();
+                let count = e.cases.size;
                 this.forEachEnumCase(e, "none", (name, json) => {
                     this.emitLine(name, `("${stringEscape(json)}")`, --count === 0 ? ";" : ",");
                 });
@@ -485,7 +485,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
             });
         } else {
             this.emitBlock(["enum class ", enumName], () => {
-                let count = e.cases.count();
+                let count = e.cases.size;
                 this.forEachEnumCase(e, "none", name => {
                     this.emitLine(name, --count === 0 ? "" : ",");
                 });

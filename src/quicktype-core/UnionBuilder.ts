@@ -11,7 +11,7 @@ import {
 import { defined, assert, panic, assertNever } from "./support/Support";
 import { TypeRef, TypeBuilder } from "./TypeBuilder";
 import { StringTypes, stringTypesTypeAttributeKind } from "./StringTypes";
-import { mapMerge, mapUpdateInto, mapMap } from "./support/Containers";
+import { mapMerge, mapUpdateInto, mapMap, setUnion } from "./support/Containers";
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be
@@ -23,7 +23,7 @@ export interface UnionTypeProvider<TArrayData, TObjectData> {
     readonly arrayData: TArrayData;
     readonly objectData: TObjectData;
 
-    readonly enumCases: OrderedSet<string>;
+    readonly enumCases: ReadonlySet<string>;
 
     getMemberKinds(): TypeAttributeMap<TypeKind>;
 
@@ -61,7 +61,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
     readonly arrayData: TArray[] = [];
     readonly objectData: TObject[] = [];
 
-    private _enumCases: OrderedSet<string> = OrderedSet();
+    private _enumCases: ReadonlySet<string> = OrderedSet();
 
     private _lostTypeAttributes: boolean = false;
 
@@ -138,7 +138,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         setAttributes(this._nonStringTypeAttributes, "object", attributes);
     }
 
-    addEnum(cases: OrderedSet<string>, attributes: TypeAttributes): void {
+    addEnum(cases: ReadonlySet<string>, attributes: TypeAttributes): void {
         const maybeStringAttributes = this._stringTypeAttributes.get("string");
         if (maybeStringAttributes !== undefined) {
             assert(
@@ -149,7 +149,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
             return;
         }
         setAttributes(this._nonStringTypeAttributes, "enum", attributes);
-        this._enumCases = this._enumCases.union(cases);
+        this._enumCases = setUnion(this._enumCases, cases);
     }
 
     addStringCases(cases: string[], attributes: TypeAttributes): void {
@@ -159,7 +159,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         this.addFullStringType(attributes, StringTypes.fromCase(s, count));
     }
 
-    get enumCases(): OrderedSet<string> {
+    get enumCases(): ReadonlySet<string> {
         return this._enumCases;
     }
 

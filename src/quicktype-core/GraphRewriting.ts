@@ -1,4 +1,4 @@
-import { Map, OrderedSet, Set } from "immutable";
+import { Map, Set } from "immutable";
 
 import { PrimitiveTypeKind, Type, ClassProperty, MaybeTypeIdentity } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
@@ -100,7 +100,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         this.register(this.builderForNewType().getPrimitiveType(kind, this._typeAttributes, this._forwardingRef));
     }
 
-    getEnumType(cases: OrderedSet<string>): void {
+    getEnumType(cases: ReadonlySet<string>): void {
         this.register(this.builderForNewType().getEnumType(this._typeAttributes, cases, this._forwardingRef));
     }
 
@@ -170,7 +170,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         this.builderForSetting().setObjectProperties(this.getResult(), properties, additionalProperties);
     }
 
-    getUnionType(members: OrderedSet<TypeRef>): void {
+    getUnionType(members: ReadonlySet<TypeRef>): void {
         this.register(this.builderForNewType().getUnionType(this._typeAttributes, members, this._forwardingRef));
     }
 
@@ -180,17 +180,17 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         );
     }
 
-    getIntersectionType(members: OrderedSet<TypeRef>): void {
+    getIntersectionType(members: ReadonlySet<TypeRef>): void {
         this.register(this.builderForNewType().getIntersectionType(this._typeAttributes, members, this._forwardingRef));
     }
 
-    getUniqueIntersectionType(members?: OrderedSet<TypeRef>): void {
+    getUniqueIntersectionType(members?: ReadonlySet<TypeRef>): void {
         this.register(
             this.builderForNewType().getUniqueIntersectionType(this._typeAttributes, members, this._forwardingRef)
         );
     }
 
-    setSetOperationMembers(members: OrderedSet<TypeRef>): void {
+    setSetOperationMembers(members: ReadonlySet<TypeRef>): void {
         this.builderForSetting().setSetOperationMembers(this.getResult(), members);
     }
 }

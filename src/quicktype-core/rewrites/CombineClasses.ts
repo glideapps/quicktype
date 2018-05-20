@@ -1,5 +1,3 @@
-import { OrderedSet } from "immutable";
-
 import { ClassType, Type, ClassProperty, setOperationCasesEqual } from "../Type";
 import { nonNullTypeCases, combineTypeAttributesOfTypes } from "../TypeUtils";
 
@@ -19,7 +17,7 @@ type Clique = {
 // FIXME: Allow some type combinations to unify, like different enums,
 // enums with strings, integers with doubles, maps with objects of
 // the correct type.
-function typeSetsCanBeCombined(s1: OrderedSet<Type>, s2: OrderedSet<Type>): boolean {
+function typeSetsCanBeCombined(s1: Iterable<Type>, s2: Iterable<Type>): boolean {
     return setOperationCasesEqual(s1, s2, true, (a, b) => a.structurallyCompatible(b, true));
 }
 
@@ -74,7 +72,7 @@ function canBeCombined(c1: ClassType, c2: ClassType, onlyWithSameProperties: boo
         }
         const tsCases = nonNullTypeCases(ts.type);
         const tlCases = nonNullTypeCases(tl.type);
-        if (!tsCases.isEmpty() && !tlCases.isEmpty() && !typeSetsCanBeCombined(tsCases, tlCases)) {
+        if (tsCases.size > 0 && tlCases.size > 0 && !typeSetsCanBeCombined(tsCases, tlCases)) {
             return false;
         }
     }

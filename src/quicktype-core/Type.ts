@@ -1,4 +1,4 @@
-import { OrderedSet, is, hash } from "immutable";
+import { is, hash } from "immutable";
 
 import { defined, panic, assert, mapOptional, hashCodeInit, addHashCode } from "./support/Support";
 import { TypeRef } from "./TypeBuilder";
@@ -19,7 +19,9 @@ import {
     setMap,
     mapSortByKey,
     mapSome,
-    mapFilter
+    mapFilter,
+    setSortBy,
+    setFilter
 } from "./support/Containers";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
@@ -54,7 +56,7 @@ export class TypeIdentity implements Equality {
 
     constructor(
         private readonly _kind: TypeKind,
-        private readonly _components: ReadonlyArray<Equality | ReadonlyMap<any, any> | undefined>
+        private readonly _components: ReadonlyArray<Equality | ReadonlyMap<any, any> | ReadonlySet<any> | undefined>
     ) {
         let h = hashCodeInit;
         h = addHashCode(h, hashCodeOf(this._kind));
@@ -591,16 +593,16 @@ export class MapType extends ObjectType {
     }
 }
 
-export function enumTypeIdentity(attributes: TypeAttributes, cases: OrderedSet<string>): MaybeTypeIdentity {
+export function enumTypeIdentity(attributes: TypeAttributes, cases: ReadonlySet<string>): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
-    return new TypeIdentity("enum", [identityAttributes(attributes), cases.toSet()]);
+    return new TypeIdentity("enum", [identityAttributes(attributes), cases]);
 }
 
 export class EnumType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "enum";
 
-    constructor(typeRef: TypeRef, readonly cases: OrderedSet<string>) {
+    constructor(typeRef: TypeRef, readonly cases: ReadonlySet<string>) {
         super(typeRef, "enum");
     }
 
@@ -616,8 +618,8 @@ export class EnumType extends Type {
         return enumTypeIdentity(this.getAttributes(), this.cases);
     }
 
-    getNonAttributeChildren(): OrderedSet<Type> {
-        return OrderedSet();
+    getNonAttributeChildren(): ReadonlySet<Type> {
+        return new Set();
     }
 
     reconstitute<T extends BaseGraphRewriteBuilder>(builder: TypeReconstituter<T>): void {
@@ -629,7 +631,7 @@ export class EnumType extends Type {
         _conflateNumbers: boolean,
         _queue: (a: Type, b: Type) => void
     ): boolean {
-        return this.cases.toSet().equals(other.cases.toSet());
+        return areEqual(this.cases, other.cases);
     }
 }
 
@@ -658,52 +660,52 @@ export function setOperationCasesEqual(
 export function setOperationTypeIdentity(
     kind: TypeKind,
     attributes: TypeAttributes,
-    memberRefs: OrderedSet<TypeRef>
+    memberRefs: ReadonlySet<TypeRef>
 ): MaybeTypeIdentity {
     if (hasUniqueIdentityAttributes(attributes)) return undefined;
-    return new TypeIdentity(kind, [identityAttributes(attributes), memberRefs.toSet()]);
+    return new TypeIdentity(kind, [identityAttributes(attributes), memberRefs]);
 }
 
-export function unionTypeIdentity(attributes: TypeAttributes, memberRefs: OrderedSet<TypeRef>): MaybeTypeIdentity {
+export function unionTypeIdentity(attributes: TypeAttributes, memberRefs: ReadonlySet<TypeRef>): MaybeTypeIdentity {
     return setOperationTypeIdentity("union", attributes, memberRefs);
 }
 
 export function intersectionTypeIdentity(
     attributes: TypeAttributes,
-    memberRefs: OrderedSet<TypeRef>
+    memberRefs: ReadonlySet<TypeRef>
 ): MaybeTypeIdentity {
     return setOperationTypeIdentity("intersection", attributes, memberRefs);
 }
 
 export abstract class SetOperationType extends Type {
-    constructor(typeRef: TypeRef, kind: TypeKind, private _memberRefs?: OrderedSet<TypeRef>) {
+    constructor(typeRef: TypeRef, kind: TypeKind, private _memberRefs?: ReadonlySet<TypeRef>) {
         super(typeRef, kind);
     }
 
-    setMembers(memberRefs: OrderedSet<TypeRef>): void {
+    setMembers(memberRefs: ReadonlySet<TypeRef>): void {
         if (this._memberRefs !== undefined) {
             return panic("Can only set map members once");
         }
         this._memberRefs = memberRefs;
     }
 
-    protected getMemberRefs(): OrderedSet<TypeRef> {
+    protected getMemberRefs(): ReadonlySet<TypeRef> {
         if (this._memberRefs === undefined) {
             return panic("Map members accessed before they were set");
         }
         return this._memberRefs;
     }
 
-    get members(): OrderedSet<Type> {
-        return this.getMemberRefs().map(tref => tref.deref()[0]);
+    get members(): ReadonlySet<Type> {
+        return setMap(this.getMemberRefs(), tref => tref.deref()[0]);
     }
 
-    get sortedMembers(): OrderedSet<Type> {
+    get sortedMembers(): ReadonlySet<Type> {
         // FIXME: We're assuming no two members of the same kind.
-        return this.members.sortBy(t => t.kind);
+        return setSortBy(this.members, t => t.kind);
     }
 
-    getNonAttributeChildren(): OrderedSet<Type> {
+    getNonAttributeChildren(): ReadonlySet<Type> {
         return this.sortedMembers;
     }
 
@@ -718,7 +720,7 @@ export abstract class SetOperationType extends Type {
     protected reconstituteSetOperation<T extends BaseGraphRewriteBuilder>(
         builder: TypeReconstituter<T>,
         canonicalOrder: boolean,
-        getType: (members: OrderedSet<TypeRef> | undefined) => void
+        getType: (members: ReadonlySet<TypeRef> | undefined) => void
     ): void {
         const sortedMemberRefs = mapMap(this.sortedMembers.entries(), t => t.typeRef);
         const membersInOrder = canonicalOrder ? this.sortedMembers : this.members;
@@ -726,9 +728,9 @@ export abstract class SetOperationType extends Type {
         if (maybeMembers === undefined) {
             getType(undefined);
             const reconstituted = builder.reconstituteMap(sortedMemberRefs);
-            builder.setSetOperationMembers(membersInOrder.map(t => defined(reconstituted.get(t))));
+            builder.setSetOperationMembers(setMap(membersInOrder, t => defined(reconstituted.get(t))));
         } else {
-            getType(membersInOrder.map(t => defined(maybeMembers.get(t))));
+            getType(setMap(membersInOrder, t => defined(maybeMembers.get(t))));
         }
     }
 
@@ -745,7 +747,7 @@ export class IntersectionType extends SetOperationType {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "intersection";
 
-    constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
+    constructor(typeRef: TypeRef, memberRefs?: ReadonlySet<TypeRef>) {
         super(typeRef, "intersection", memberRefs);
     }
 
@@ -768,24 +770,24 @@ export class UnionType extends SetOperationType {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "union";
 
-    constructor(typeRef: TypeRef, memberRefs?: OrderedSet<TypeRef>) {
+    constructor(typeRef: TypeRef, memberRefs?: ReadonlySet<TypeRef>) {
         super(typeRef, "union", memberRefs);
         if (memberRefs !== undefined) {
-            messageAssert(!memberRefs.isEmpty(), "IRNoEmptyUnions", {});
+            messageAssert(memberRefs.size > 0, "IRNoEmptyUnions", {});
         }
     }
 
-    setMembers(memberRefs: OrderedSet<TypeRef>): void {
-        messageAssert(!memberRefs.isEmpty(), "IRNoEmptyUnions", {});
+    setMembers(memberRefs: ReadonlySet<TypeRef>): void {
+        messageAssert(memberRefs.size > 0, "IRNoEmptyUnions", {});
         super.setMembers(memberRefs);
     }
 
-    get stringTypeMembers(): OrderedSet<Type> {
-        return this.members.filter(t => ["string", "date", "time", "date-time", "enum"].indexOf(t.kind) >= 0);
+    get stringTypeMembers(): ReadonlySet<Type> {
+        return setFilter(this.members, t => ["string", "date", "time", "date-time", "enum"].indexOf(t.kind) >= 0);
     }
 
     findMember(kind: TypeKind): Type | undefined {
-        return this.members.find((t: Type) => t.kind === kind);
+        return iterableFind(this.members, t => t.kind === kind);
     }
 
     get isNullable(): boolean {
@@ -795,7 +797,7 @@ export class UnionType extends SetOperationType {
     get isCanonical(): boolean {
         const members = this.members;
         if (members.size <= 1) return false;
-        const kinds = members.map(t => t.kind);
+        const kinds = setMap(members, t => t.kind);
         if (kinds.size < members.size) return false;
         if (kinds.has("union") || kinds.has("intersection")) return false;
         if (kinds.has("none") || kinds.has("any")) return false;

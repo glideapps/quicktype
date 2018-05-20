@@ -6,7 +6,7 @@ import { matchCompoundType, nullableFromUnion } from "./TypeUtils";
 import { TypeNames, namesTypeAttributeKind, TooManyTypeNames, tooManyNamesThreshold } from "./TypeNames";
 import { defined, panic, assert } from "./support/Support";
 import { transformationForType } from "./Transformers";
-import { setUnion, setMap } from "./support/Containers";
+import { setUnion, setMap, setSortBy } from "./support/Containers";
 
 class UniqueQueue<T> {
     private readonly _present = new Set<T>();
@@ -167,7 +167,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
                 _mapType => panic("We handled this above"),
                 _objectType => panic("We handled this above"),
                 unionType => {
-                    const members = unionType.members.sortBy(member => member.kind);
+                    const members = setSortBy(unionType.members, member => member.kind);
                     members.forEach(memberType => {
                         addNames(memberType, names);
                     });
@@ -283,7 +283,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
                 _mapType => panic("We handled this above"),
                 _objectType => panic("We handled this above"),
                 unionType => {
-                    const members = unionType.members.sortBy(member => member.kind);
+                    const members = setSortBy(unionType.members, member => member.kind);
                     const unionHasGivenName = unionType.hasNames && !unionType.getNames().areInferred;
                     const unionIsAncestor = unionHasGivenName || nullableFromUnion(unionType) === null;
                     const ancestorForMembers = unionIsAncestor ? unionType : ancestor;

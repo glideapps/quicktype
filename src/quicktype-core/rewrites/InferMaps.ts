@@ -1,5 +1,3 @@
-import { OrderedSet } from "immutable";
-
 import { Type, ClassType, setOperationCasesEqual, ClassProperty } from "../Type";
 import { removeNullFromType } from "../TypeUtils";
 import { defined, panic } from "../support/Support";
@@ -66,14 +64,14 @@ function shouldBeMap(properties: ReadonlyMap<string, ClassProperty>): ReadonlySe
     // 1. All property types are null.
     // 2. Some property types are null or nullable.
     // 3. No property types are null or nullable.
-    let firstNonNullCases: OrderedSet<Type> | undefined = undefined;
+    let firstNonNullCases: ReadonlySet<Type> | undefined = undefined;
     const allCases = new Set<Type>();
     let canBeMap = true;
     // Check that all the property types are the same, modulo nullability.
     properties.forEach(p => {
         // The set of types first property can be, minus null.
         const nn = removeNullFromType(p.type)[1];
-        if (!nn.isEmpty()) {
+        if (nn.size > 0) {
             if (firstNonNullCases !== undefined) {
                 // The set of non-null cases for all other properties must
                 // be the the same, otherwise we won't infer a map.
