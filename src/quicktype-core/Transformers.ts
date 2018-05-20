@@ -1,11 +1,11 @@
-import { is, hash, List } from "immutable";
+import { is, hash } from "immutable";
 
 import { UnionType, Type, EnumType, PrimitiveType } from "./Type";
 import { TypeAttributeKind } from "./TypeAttributes";
 import { TypeRef } from "./TypeBuilder";
 import { panic, addHashCode, assert, mapOptional, indentationString } from "./support/Support";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { setUnionInto } from "./support/Containers";
+import { setUnionInto, areEqual, hashCodeOf } from "./support/Containers";
 
 function debugStringForType(t: Type): string {
     const target = followTargetType(t);
@@ -158,7 +158,7 @@ export class EncodingTransformer extends Transformer {
 }
 
 export class ChoiceTransformer extends Transformer {
-    constructor(sourceTypeRef: TypeRef, public readonly transformers: List<Transformer>) {
+    constructor(sourceTypeRef: TypeRef, public readonly transformers: ReadonlyArray<Transformer>) {
         super("choice", sourceTypeRef);
     }
 
@@ -185,12 +185,12 @@ export class ChoiceTransformer extends Transformer {
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof ChoiceTransformer)) return false;
-        return this.transformers.equals(other.transformers);
+        return areEqual(this.transformers, other.transformers);
     }
 
     hashCode(): number {
         const h = super.hashCode();
-        return addHashCode(h, this.transformers.hashCode());
+        return addHashCode(h, hashCodeOf(this.transformers));
     }
 
     protected debugPrintContinuations(indent: number): void {
@@ -244,13 +244,11 @@ export class DecodingChoiceTransformer extends Transformer {
             "Reversing a decoding transformer can't have a target transformer"
         );
 
-        let transformers: List<Transformer> = List();
+        let transformers: Transformer[] = [];
 
         function addCase(transformer: Transformer | undefined) {
             if (transformer === undefined) return;
-            transformers = transformers.push(
-                transformer.reverse(targetTypeRef, new EncodingTransformer(transformer.sourceTypeRef))
-            );
+            transformers.push(transformer.reverse(targetTypeRef, new EncodingTransformer(transformer.sourceTypeRef)));
         }
 
         addCase(this.nullTransformer);

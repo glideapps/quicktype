@@ -877,7 +877,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
         if (xfer instanceof ChoiceTransformer) {
             const caseXfers = xfer.transformers;
-            if (caseXfers.size > 1 && caseXfers.every(caseXfer => caseXfer instanceof StringMatchTransformer)) {
+            if (caseXfers.length > 1 && caseXfers.every(caseXfer => caseXfer instanceof StringMatchTransformer)) {
                 this.emitLine("switch (", variable, ")");
                 this.emitBlock(() => {
                     caseXfers.forEach(caseXfer => {
