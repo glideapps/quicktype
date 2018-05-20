@@ -28,7 +28,7 @@ import { TypeGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic, mapOptional, withDefault } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
-import { EqualityMap, mapMap, mapSortByKey, iterableEvery, mapFilter, mapFind } from "./support/Containers";
+import { EqualityMap, mapMap, mapSortByKey, iterableEvery, mapFilter, mapFind, setMap } from "./support/Containers";
 
 export class TypeRef {
     constructor(readonly graph: TypeGraph, readonly index: number) {}
@@ -193,7 +193,7 @@ export class TypeBuilder {
         }
         const [maybeNull, nonNulls] = removeNullFromUnion(t);
         if (maybeNull !== null) return tref;
-        return this.getUnionType(attributes, nonNulls.map(nn => nn.typeRef).add(nullType));
+        return this.getUnionType(attributes, setMap(nonNulls, nn => nn.typeRef).add(nullType));
     }
 
     finish(): TypeGraph {
@@ -304,7 +304,7 @@ export class TypeBuilder {
         );
     }
 
-    getEnumType(attributes: TypeAttributes, cases: OrderedSet<string>, forwardingRef?: TypeRef): TypeRef {
+    getEnumType(attributes: TypeAttributes, cases: ReadonlySet<string>, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
             () => enumTypeIdentity(attributes, cases),
             tr => new EnumType(tr, cases),
@@ -411,7 +411,7 @@ export class TypeBuilder {
         return this.addType(forwardingRef, tref => new ClassType(tref, isFixed, properties), attributes);
     }
 
-    getUnionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
+    getUnionType(attributes: TypeAttributes, members: ReadonlySet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
             () => unionTypeIdentity(attributes, members),
             tr => new UnionType(tr, members),
@@ -423,13 +423,13 @@ export class TypeBuilder {
     // FIXME: why do we sometimes call this with defined members???
     getUniqueUnionType(
         attributes: TypeAttributes,
-        members: OrderedSet<TypeRef> | undefined,
+        members: ReadonlySet<TypeRef> | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
         return this.addType(forwardingRef, tref => new UnionType(tref, members), attributes);
     }
 
-    getIntersectionType(attributes: TypeAttributes, members: OrderedSet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
+    getIntersectionType(attributes: TypeAttributes, members: ReadonlySet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
             () => intersectionTypeIdentity(attributes, members),
             tr => new IntersectionType(tr, members),
@@ -441,13 +441,13 @@ export class TypeBuilder {
     // FIXME: why do we sometimes call this with defined members???
     getUniqueIntersectionType(
         attributes: TypeAttributes,
-        members: OrderedSet<TypeRef> | undefined,
+        members: ReadonlySet<TypeRef> | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
         return this.addType(forwardingRef, tref => new IntersectionType(tref, members), attributes);
     }
 
-    setSetOperationMembers(ref: TypeRef, members: OrderedSet<TypeRef>): void {
+    setSetOperationMembers(ref: TypeRef, members: ReadonlySet<TypeRef>): void {
         const type = ref.deref()[0];
         if (!(type instanceof UnionType || type instanceof IntersectionType)) {
             return panic("Tried to set members of non-set-operation type");

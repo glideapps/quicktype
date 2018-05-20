@@ -183,14 +183,18 @@ export function mapFilterMap<K, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) => W 
     return result;
 }
 
+function compareKeys(sa: any, sb: any): number {
+    if (sa < sb) return -1;
+    if (sa > sb) return 1;
+    return 0;
+}
+
 export function mapSortBy<K, V>(m: Iterable<[K, V]>, sortKey: (v: V, k: K) => number | string): Map<K, V> {
     const arr = Array.from(m);
     arr.sort(([ka, va], [kb, vb]) => {
         const sa = sortKey(va, ka);
         const sb = sortKey(vb, kb);
-        if (sa < sb) return -1;
-        if (sa > sb) return 1;
-        return 0;
+        return compareKeys(sa, sb);
     });
     return new Map(arr);
 }
@@ -308,6 +312,12 @@ export function setFilterMap<T, U>(set: Iterable<T>, f: (v: T) => U | undefined)
         }
     }
     return result;
+}
+
+export function setSortBy<T>(it: Iterable<T>, sortKey: (v: T) => number | string): Set<T> {
+    const arr = Array.from(it);
+    arr.sort((a, b) => compareKeys(sortKey(a), sortKey(b)));
+    return new Set(arr);
 }
 
 export function setGroupBy<T, G>(it: Iterable<T>, grouper: (v: T) => G): Map<G, Set<T>> {

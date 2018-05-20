@@ -15,7 +15,7 @@ import {
     UnionType
 } from "./Type";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
-import { setFilter } from "./support/Containers";
+import { setFilter, setSortBy, iterableFirst } from "./support/Containers";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {
@@ -113,21 +113,21 @@ export function combineTypeAttributesOfTypes(combinationKind: CombinationKind, t
 export function removeNullFromUnion(
     t: UnionType,
     sortBy: boolean | ((t: Type) => any) = false
-): [PrimitiveType | null, OrderedSet<Type>] {
-    function sort(s: OrderedSet<Type>): OrderedSet<Type> {
+): [PrimitiveType | null, ReadonlySet<Type>] {
+    function sort(s: ReadonlySet<Type>): ReadonlySet<Type> {
         if (sortBy === false) return s;
-        if (sortBy === true) return s.sortBy(m => m.kind);
-        return s.sortBy(sortBy);
+        if (sortBy === true) return setSortBy(s, m => m.kind);
+        return setSortBy(s, sortBy);
     }
 
     const nullType = t.findMember("null");
     if (nullType === undefined) {
         return [null, sort(t.members)];
     }
-    return [nullType as PrimitiveType, sort(t.members.filterNot(m => m.kind === "null"))];
+    return [nullType as PrimitiveType, sort(setFilter(t.members, m => m.kind !== "null"))];
 }
 
-export function removeNullFromType(t: Type): [PrimitiveType | null, OrderedSet<Type>] {
+export function removeNullFromType(t: Type): [PrimitiveType | null, ReadonlySet<Type>] {
     if (t.kind === "null") {
         return [t as PrimitiveType, OrderedSet()];
     }
@@ -141,14 +141,14 @@ export function nullableFromUnion(t: UnionType): Type | null {
     const [hasNull, nonNulls] = removeNullFromUnion(t);
     if (hasNull === null) return null;
     if (nonNulls.size !== 1) return null;
-    return defined(nonNulls.first());
+    return defined(iterableFirst(nonNulls));
 }
 
-export function nonNullTypeCases(t: Type): OrderedSet<Type> {
+export function nonNullTypeCases(t: Type): ReadonlySet<Type> {
     return removeNullFromType(t)[1];
 }
 
-export function getNullAsOptional(cp: ClassProperty): [boolean, OrderedSet<Type>] {
+export function getNullAsOptional(cp: ClassProperty): [boolean, ReadonlySet<Type>] {
     const [maybeNull, nonNulls] = removeNullFromType(cp.type);
     if (cp.isOptional) {
         return [true, nonNulls];

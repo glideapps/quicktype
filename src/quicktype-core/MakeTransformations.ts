@@ -1,3 +1,5 @@
+import { OrderedSet, List } from "immutable";
+
 import { TypeGraph } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
 import { UnionType, TypeKind, EnumType, Type } from "./Type";
@@ -19,7 +21,6 @@ import {
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { StringTypes } from "./StringTypes";
 import { setFilter, setUnion, iterableFirst, mapMapEntries } from "./support/Containers";
-import { OrderedSet } from "immutable";
 
 function transformationAttributes(
     reconstitutedTargetType: TypeRef,
@@ -35,7 +36,7 @@ function transformationAttributes(
 }
 
 function makeEnumTransformer(enumType: EnumType, stringType: TypeRef, continuation?: Transformer): Transformer {
-    const sortedCases = enumType.cases.toList().sort();
+    const sortedCases = List(enumType.cases).sort();
     const caseTransformers = sortedCases.map(
         c => new StringMatchTransformer(stringType, new StringProducerTransformer(stringType, continuation, c), c)
     );
@@ -48,7 +49,7 @@ function replaceUnion(
     forwardingRef: TypeRef,
     debugPrintTransformations: boolean
 ): TypeRef {
-    assert(!union.members.isEmpty(), "We can't have empty unions");
+    assert(union.members.size > 0, "We can't have empty unions");
 
     const reconstitutedMembersByKind = mapMapEntries(union.members.entries(), m => [
         m.kind,
@@ -99,16 +100,13 @@ function replaceUnion(
 
     const stringTypes = union.stringTypeMembers;
     let transformerForString: Transformer | undefined;
-    if (stringTypes.isEmpty()) {
+    if (stringTypes.size === 0) {
         transformerForString = undefined;
     } else if (stringTypes.size === 1) {
-        const t = defined(stringTypes.first());
+        const t = defined(iterableFirst(stringTypes));
         transformerForString = new UnionInstantiationTransformer(memberForKind(t.kind));
     } else {
-        transformerForString = new ChoiceTransformer(
-            getStringType(),
-            stringTypes.toList().map(transformerForStringType)
-        );
+        transformerForString = new ChoiceTransformer(getStringType(), List(stringTypes).map(transformerForStringType));
     }
 
     const transformerForClass = transformerForKind("class");

@@ -50,9 +50,8 @@ export function objectPropertyNames(o: ObjectType, language: string): Map<string
 
 export function enumCaseNames(e: EnumType, language: string): Map<string, [string, boolean] | undefined> {
     const accessors = accessorNamesTypeAttributeKind.tryGetInAttributes(e.getAttributes());
-    const map = e.cases.toMap();
-    if (accessors === undefined) return mapMap(map, _ => undefined);
-    return mapMap(map, c => lookupKey(accessors, c, language));
+    if (accessors === undefined) return mapMap(e.cases.entries(), _ => undefined);
+    return mapMap(e.cases.entries(), c => lookupKey(accessors, c, language));
 }
 
 export function getAccessorName(

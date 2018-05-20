@@ -11,7 +11,7 @@ import { iterableFirst } from "../support/Containers";
 
 // A union needs replacing if it contains more than one string type, one of them being
 // a basic string type.
-function unionNeedsReplacing(u: UnionType): OrderedSet<Type> | undefined {
+function unionNeedsReplacing(u: UnionType): ReadonlySet<Type> | undefined {
     const stringMembers = u.stringTypeMembers;
     if (stringMembers.size <= 1) return undefined;
     const stringType = u.findMember("string");
