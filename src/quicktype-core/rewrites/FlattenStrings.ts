@@ -1,5 +1,3 @@
-import { OrderedSet } from "immutable";
-
 import { PrimitiveType, UnionType, Type } from "../Type";
 import { stringTypesForType, combineTypeAttributesOfTypes } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
@@ -46,7 +44,7 @@ function replaceUnion(
         );
     }
     types.push(builder.getStringType(stringAttributes, undefined));
-    return builder.getUnionType(u.getAttributes(), OrderedSet(types), forwardingRef);
+    return builder.getUnionType(u.getAttributes(), new Set(types), forwardingRef);
 }
 
 export function flattenStrings(
