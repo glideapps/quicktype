@@ -172,7 +172,7 @@ export class TypeGraph {
 
     private filterTypes(predicate: ((t: Type) => boolean) | undefined): ReadonlySet<Type> {
         const seen = new Set<Type>();
-        let types = List<Type>();
+        let types: Type[] = [];
 
         function addFromType(t: Type): void {
             if (seen.has(t)) return;
@@ -181,7 +181,7 @@ export class TypeGraph {
             const required = predicate === undefined || predicate(t);
 
             if (required) {
-                types = types.push(t);
+                types.push(t);
             }
 
             for (const c of t.getChildren()) {
@@ -190,7 +190,7 @@ export class TypeGraph {
         }
 
         this.topLevels.forEach(addFromType);
-        return types.toOrderedSet();
+        return new Set(types);
     }
 
     allNamedTypes(): ReadonlySet<Type> {
@@ -284,12 +284,12 @@ export class TypeGraph {
         title: string,
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
-        map: ImmutableMap<Type, Type>,
+        map: ReadonlyMap<Type, Type>,
         debugPrintRemapping: boolean
     ): TypeGraph {
         this.printRewrite(title);
 
-        if (map.isEmpty()) return this;
+        if (map.size === 0) return this;
 
         const builder = new GraphRemapBuilder(
             this,
