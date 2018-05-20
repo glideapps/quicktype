@@ -421,6 +421,16 @@ export function areEqual(a: any, b: any): boolean {
         return true;
     }
 
+    if (Array.isArray(a) && Array.isArray(b)) {
+        const n = a.length;
+        if (n !== b.length) return false;
+
+        for (let i = 0; i < n; i++) {
+            if (!areEqual(a[i], b[i])) return false;
+        }
+        return true;
+    }
+
     return false;
 }
 
@@ -450,6 +460,13 @@ export function hashCodeOf(x: any): number {
             h += hashCodeOf(v);
         }
         return addHashCode(g, h);
+    }
+
+    if (Array.isArray(x)) {
+        for (const y of x) {
+            h = addHashCode(h, hashCodeOf(y));
+        }
+        return h;
     }
 
     return panic(`Cannot hash ${x}`);

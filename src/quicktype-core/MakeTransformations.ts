@@ -1,5 +1,3 @@
-import { List } from "immutable";
-
 import { TypeGraph } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
 import { UnionType, TypeKind, EnumType, Type } from "./Type";
@@ -36,7 +34,7 @@ function transformationAttributes(
 }
 
 function makeEnumTransformer(enumType: EnumType, stringType: TypeRef, continuation?: Transformer): Transformer {
-    const sortedCases = List(enumType.cases).sort();
+    const sortedCases = Array.from(enumType.cases).sort();
     const caseTransformers = sortedCases.map(
         c => new StringMatchTransformer(stringType, new StringProducerTransformer(stringType, continuation, c), c)
     );
@@ -106,7 +104,10 @@ function replaceUnion(
         const t = defined(iterableFirst(stringTypes));
         transformerForString = new UnionInstantiationTransformer(memberForKind(t.kind));
     } else {
-        transformerForString = new ChoiceTransformer(getStringType(), List(stringTypes).map(transformerForStringType));
+        transformerForString = new ChoiceTransformer(
+            getStringType(),
+            Array.from(stringTypes).map(transformerForStringType)
+        );
     }
 
     const transformerForClass = transformerForKind("class");
