@@ -1,5 +1,3 @@
-import { OrderedSet } from "immutable";
-
 import { TypeGraph } from "../TypeGraph";
 import { Type, UnionType, IntersectionType } from "../Type";
 import { makeGroupsToFlatten } from "../TypeUtils";
@@ -28,7 +26,7 @@ export function flattenUnions(
                 return trefs[0];
             }
             needsRepeat = true;
-            return builder.getUnionType(emptyTypeAttributes, OrderedSet(trefs));
+            return builder.getUnionType(emptyTypeAttributes, new Set(trefs));
         });
         return unifyTypes(types, emptyTypeAttributes, builder, unionBuilder, conflateNumbers, forwardingRef);
     }
