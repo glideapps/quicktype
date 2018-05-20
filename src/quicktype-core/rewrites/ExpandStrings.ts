@@ -49,7 +49,7 @@ export function expandStrings(
         const cases = defined(mappedStringTypes.cases);
         if (cases.size > 0) {
             if (inference === "all" || (inference === "infer" && shouldBeEnum(cases))) {
-                types.push(builder.getEnumType(emptyTypeAttributes, cases.keySeq().toOrderedSet()));
+                types.push(builder.getEnumType(emptyTypeAttributes, OrderedSet(cases.keys())));
             } else {
                 return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
             }

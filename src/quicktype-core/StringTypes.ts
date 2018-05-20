@@ -1,20 +1,21 @@
-import { is, hash, OrderedMap } from "immutable";
+import { is, hash, OrderedSet } from "immutable";
 
 import { TypeAttributeKind } from "./TypeAttributes";
 import { addHashCode, defined, assert } from "./support/Support";
 import { StringTypeMapping } from "./TypeBuilder";
 import { PrimitiveStringTypeKind } from "./Type";
+import { mapMergeWith, mapMap, iterableFirst } from "./support/Containers";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, false, false, false);
-    static readonly date: StringTypes = new StringTypes(OrderedMap(), true, false, false);
-    static readonly time: StringTypes = new StringTypes(OrderedMap(), false, true, false);
-    static readonly dateTime: StringTypes = new StringTypes(OrderedMap(), false, false, true);
+    static readonly date: StringTypes = new StringTypes(new Map(), true, false, false);
+    static readonly time: StringTypes = new StringTypes(new Map(), false, true, false);
+    static readonly dateTime: StringTypes = new StringTypes(new Map(), false, false, true);
 
     static fromCase(s: string, count: number): StringTypes {
         const caseMap: { [name: string]: number } = {};
         caseMap[s] = count;
-        return new StringTypes(OrderedMap([[s, count] as [string, number]]), false, false, false);
+        return new StringTypes(new Map([[s, count] as [string, number]]), false, false, false);
     }
 
     static fromCases(cases: string[]): StringTypes {
@@ -22,12 +23,12 @@ export class StringTypes {
         for (const s of cases) {
             caseMap[s] = 1;
         }
-        return new StringTypes(OrderedMap(cases.map(s => [s, 1] as [string, number])), false, false, false);
+        return new StringTypes(new Map(cases.map(s => [s, 1] as [string, number])), false, false, false);
     }
 
     // undefined means no restrictions
     constructor(
-        readonly cases: OrderedMap<string, number> | undefined,
+        readonly cases: ReadonlyMap<string, number> | undefined,
         readonly allowDate: boolean,
         readonly allowTime: boolean,
         readonly allowDateTime: boolean
@@ -48,7 +49,7 @@ export class StringTypes {
         const cases =
             this.cases === undefined || other.cases === undefined
                 ? undefined
-                : this.cases.mergeWith((x, y) => x + y, other.cases);
+                : mapMergeWith(this.cases, (x, y) => x + y, other.cases);
         const allowDate = cases !== undefined && (this.allowDate || other.allowDate);
         const allowTime = cases !== undefined && (this.allowTime || other.allowTime);
         const allowDateTime = cases !== undefined && (this.allowDateTime || other.allowDateTime);
@@ -58,18 +59,18 @@ export class StringTypes {
     intersect(other: StringTypes): StringTypes {
         const thisCases = this.cases;
         const otherCases = other.cases;
-        let cases: OrderedMap<string, number> | undefined;
+        let cases: ReadonlyMap<string, number> | undefined;
         if (thisCases === undefined) {
             cases = otherCases;
         } else if (otherCases === undefined) {
             cases = thisCases;
         } else {
-            cases = thisCases
-                .keySeq()
-                .toOrderedSet()
-                .intersect(otherCases.keySeq().toOrderedSet())
-                .toOrderedMap()
-                .map(k => Math.min(defined(thisCases.get(k)), defined(otherCases.get(k))));
+            cases = mapMap(
+                OrderedSet(thisCases.keys())
+                    .intersect(OrderedSet(otherCases.keys()))
+                    .entries(),
+                k => Math.min(defined(thisCases.get(k)), defined(otherCases.get(k)))
+            );
         }
         const allowDate = this.allowDate && other.allowDate;
         const allowTime = this.allowTime && other.allowTime;
@@ -124,7 +125,7 @@ export class StringTypes {
         if (enumCases === undefined) {
             parts.push("unrestricted");
         } else {
-            const firstKey = enumCases.keySeq().first();
+            const firstKey = iterableFirst(enumCases.keys());
             if (firstKey === undefined) {
                 parts.push("enum with no cases");
             } else {
@@ -150,7 +151,7 @@ class StringTypesTypeAttributeKind extends TypeAttributeKind<StringTypes> {
     }
 
     requiresUniqueIdentity(st: StringTypes): boolean {
-        return st.cases !== undefined && !st.cases.isEmpty();
+        return st.cases !== undefined && st.cases.size > 0;
     }
 
     combine(a: StringTypes, b: StringTypes): StringTypes {
