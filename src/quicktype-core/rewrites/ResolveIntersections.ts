@@ -34,7 +34,8 @@ import {
     mapMap,
     mapUpdateInto,
     setMap,
-    iterableFind
+    iterableFind,
+    setIntersect
 } from "../support/Containers";
 
 function canResolve(t: IntersectionType): boolean {
@@ -51,7 +52,7 @@ type PropertyMap = Map<string, GenericClassProperty<OrderedSet<Type>>>;
 
 class IntersectionAccumulator
     implements UnionTypeProvider<OrderedSet<Type>, [PropertyMap, OrderedSet<Type> | undefined] | undefined> {
-    private _primitiveTypes: OrderedSet<PrimitiveTypeKind> | undefined;
+    private _primitiveTypes: Set<PrimitiveTypeKind> | undefined;
     private readonly _primitiveAttributes: TypeAttributeMap<PrimitiveTypeKind> = new Map();
 
     // * undefined: We haven't seen any types yet.
@@ -81,15 +82,15 @@ class IntersectionAccumulator
 
         const kinds = setMap(types, t => t.kind) as ReadonlySet<PrimitiveTypeKind>;
         if (this._primitiveTypes === undefined) {
-            this._primitiveTypes = OrderedSet(kinds);
+            this._primitiveTypes = new Set(kinds);
             return;
         }
 
         const haveNumber =
-            this._primitiveTypes.find(isNumberTypeKind) !== undefined &&
+            iterableFind(this._primitiveTypes, isNumberTypeKind) !== undefined &&
             iterableFind(kinds, isNumberTypeKind) !== undefined;
-        this._primitiveTypes = this._primitiveTypes.intersect(kinds);
-        if (haveNumber && this._primitiveTypes.find(isNumberTypeKind) === undefined) {
+        this._primitiveTypes = setIntersect(this._primitiveTypes, kinds);
+        if (haveNumber && iterableFind(this._primitiveTypes, isNumberTypeKind) === undefined) {
             // One set has integer, the other has double.  The intersection
             // of that is integer.
             this._primitiveTypes = this._primitiveTypes.add("integer");
