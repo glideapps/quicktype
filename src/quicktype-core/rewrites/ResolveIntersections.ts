@@ -1,5 +1,3 @@
-import { OrderedSet } from "immutable";
-
 import { TypeGraph } from "../TypeGraph";
 import { StringTypeMapping, TypeRef, TypeBuilder } from "../TypeBuilder";
 import { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting";
@@ -59,7 +57,7 @@ class IntersectionAccumulator
     // * undefined: We haven't seen any types yet.
     // * OrderedSet: All types we've seen can be arrays.
     // * false: At least one of the types seen can't be an array.
-    private _arrayItemTypes: OrderedSet<Type> | undefined | false;
+    private _arrayItemTypes: Set<Type> | undefined | false;
     private _arrayAttributes: TypeAttributes = emptyTypeAttributes;
 
     // We start out with all object types allowed, which means
@@ -108,9 +106,9 @@ class IntersectionAccumulator
         this._arrayAttributes = combineTypeAttributes("intersect", this._arrayAttributes, maybeArray.getAttributes());
 
         if (this._arrayItemTypes === undefined) {
-            this._arrayItemTypes = OrderedSet();
+            this._arrayItemTypes = new Set();
         } else if (this._arrayItemTypes !== false) {
-            this._arrayItemTypes = this._arrayItemTypes.add(maybeArray.items);
+            this._arrayItemTypes.add(maybeArray.items);
         }
     }
 
@@ -248,7 +246,7 @@ class IntersectionAccumulator
             });
         }
 
-        if (OrderedSet.isOrderedSet(this._arrayItemTypes)) {
+        if (this._arrayItemTypes instanceof Set) {
             kinds.set("array", this._arrayAttributes);
         } else if (this._arrayAttributes.size > 0) {
             this._lostTypeAttributes = true;
