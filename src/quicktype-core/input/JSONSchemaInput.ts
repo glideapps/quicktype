@@ -1,6 +1,6 @@
-import { hash } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
+import stringHash = require("string-hash");
 
 import { ClassProperty, PrimitiveTypeKind } from "../Type";
 import {
@@ -39,7 +39,8 @@ import {
     arrayMapSync,
     arrayLast,
     arrayGetFromEnd,
-    arrayPop
+    arrayPop,
+    hashCodeOf
 } from "../support/Containers";
 
 export enum PathElementKind {
@@ -308,7 +309,7 @@ export class Ref {
     }
 
     hashCode(): number {
-        let acc = hash(mapOptional(u => u.toString(), this.addressURI));
+        let acc = hashCodeOf(mapOptional(u => u.toString(), this.addressURI));
         this.path.forEach(pe => {
             acc = addHashCode(acc, pe.kind);
             switch (pe.kind) {
@@ -316,7 +317,7 @@ export class Ref {
                     acc = addHashCode(acc, pe.index);
                     break;
                 case PathElementKind.KeyOrIndex:
-                    acc = addHashCode(acc, hash(pe.key));
+                    acc = addHashCode(acc, stringHash(pe.key));
                     break;
                 default:
                     break;
