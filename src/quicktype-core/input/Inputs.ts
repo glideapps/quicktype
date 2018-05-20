@@ -1,5 +1,5 @@
 import * as URI from "urijs";
-import { OrderedSet, List, Set } from "immutable";
+import { List } from "immutable";
 
 import {
     Ref,
@@ -30,6 +30,7 @@ import { TypeInference } from "./Inference";
 import { TargetLanguage } from "../TargetLanguage";
 import { languageNamed } from "../language/All";
 import { accessorNamesAttributeProducer } from "../AccessorNames";
+import { iterableFirst, iterableFind, iterableSome, setFilterMap } from "../support/Containers";
 
 class InputJSONSchemaStore extends JSONSchemaStore {
     constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
@@ -149,7 +150,7 @@ export class JSONInput implements Input<JSONSourceData> {
             );
             typeBuilder.addTopLevel(name, tref);
             if (description !== undefined) {
-                const attributes = descriptionTypeAttributeKind.makeAttributes(OrderedSet([description]));
+                const attributes = descriptionTypeAttributeKind.makeAttributes(new Set([description]));
                 typeBuilder.addAttributes(tref, attributes);
             }
         });
@@ -306,9 +307,9 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         if (!this._schemaSources.every(([_, { schema }]) => typeof schema === "string")) {
             return undefined;
         }
-        const set = Set(this._schemaSources.map(([_, { schema }]) => schema as string));
+        const set = new Set(this._schemaSources.map(([_, { schema }]) => schema as string));
         if (set.size === 1) {
-            return defined(set.first());
+            return defined(iterableFirst(set));
         }
         return undefined;
     }
@@ -318,14 +319,14 @@ export class InputData {
     // We're comparing for identity in this OrderedSet, i.e.,
     // we do each input exactly once.
     // FIXME: Make into an OrderedMap, indexed by kind.
-    private _inputs: OrderedSet<Input<any>> = OrderedSet();
+    private _inputs: Set<Input<any>> = new Set();
 
     addInput<T>(input: Input<T>): void {
         this._inputs = this._inputs.add(input);
     }
 
     async addSource<T>(kind: string, source: T, makeInput: () => Input<T>): Promise<void> {
-        let input: Input<T> | undefined = this._inputs.find(i => i.kind === kind);
+        let input: Input<T> | undefined = iterableFind(this._inputs, i => i.kind === kind);
         if (input === undefined) {
             input = makeInput();
             this.addInput(input);
@@ -334,9 +335,9 @@ export class InputData {
     }
 
     async finishAddingInputs(): Promise<void> {
-        await forEachSync(this._inputs, async input => {
+        for (const input of this._inputs) {
             await input.finishAddingInputs();
-        });
+        }
     }
 
     async addTypes(
@@ -345,24 +346,24 @@ export class InputData {
         inferDates: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
-        await forEachSync(this._inputs, async input => {
+        for (const input of this._inputs) {
             await input.addTypes(typeBuilder, inferEnums, inferDates, fixedTopLevels);
-        });
+        }
     }
 
     get needIR(): boolean {
-        return this._inputs.some(i => i.needIR);
+        return iterableSome(this._inputs, i => i.needIR);
     }
 
     get needSchemaProcessing(): boolean {
-        return this._inputs.some(i => i.needSchemaProcessing);
+        return iterableSome(this._inputs, i => i.needSchemaProcessing);
     }
 
     singleStringSchemaSource(): string | undefined {
-        const schemaStrings = this._inputs.map(i => i.singleStringSchemaSource()).filter(s => s !== undefined);
+        const schemaStrings = setFilterMap(this._inputs, i => i.singleStringSchemaSource());
         if (schemaStrings.size > 1) {
             return panic("We have more than one input with a string schema source");
         }
-        return schemaStrings.first();
+        return iterableFirst(schemaStrings);
     }
 }
