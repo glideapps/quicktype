@@ -1,4 +1,4 @@
-import { is, hash } from "immutable";
+import stringHash = require("string-hash");
 
 import { UnionType, Type, EnumType, PrimitiveType } from "./Type";
 import { TypeAttributeKind } from "./TypeAttributes";
@@ -68,12 +68,12 @@ export abstract class ProducerTransformer extends Transformer {
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof ProducerTransformer)) return false;
-        return is(this.consumer, other.consumer);
+        return areEqual(this.consumer, other.consumer);
     }
 
     hashCode(): number {
         const h = super.hashCode();
-        return addHashCode(h, hash(this.consumer));
+        return addHashCode(h, hashCodeOf(this.consumer));
     }
 
     protected debugPrintContinuations(indent: number): void {
@@ -283,25 +283,25 @@ export class DecodingChoiceTransformer extends Transformer {
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof DecodingChoiceTransformer)) return false;
-        if (!is(this.nullTransformer, other.nullTransformer)) return false;
-        if (!is(this.integerTransformer, other.integerTransformer)) return false;
-        if (!is(this.doubleTransformer, other.doubleTransformer)) return false;
-        if (!is(this.boolTransformer, other.boolTransformer)) return false;
-        if (!is(this.stringTransformer, other.stringTransformer)) return false;
-        if (!is(this.arrayTransformer, other.arrayTransformer)) return false;
-        if (!is(this.objectTransformer, other.objectTransformer)) return false;
+        if (!areEqual(this.nullTransformer, other.nullTransformer)) return false;
+        if (!areEqual(this.integerTransformer, other.integerTransformer)) return false;
+        if (!areEqual(this.doubleTransformer, other.doubleTransformer)) return false;
+        if (!areEqual(this.boolTransformer, other.boolTransformer)) return false;
+        if (!areEqual(this.stringTransformer, other.stringTransformer)) return false;
+        if (!areEqual(this.arrayTransformer, other.arrayTransformer)) return false;
+        if (!areEqual(this.objectTransformer, other.objectTransformer)) return false;
         return true;
     }
 
     hashCode(): number {
         let h = super.hashCode();
-        h = addHashCode(h, hash(this.nullTransformer));
-        h = addHashCode(h, hash(this.integerTransformer));
-        h = addHashCode(h, hash(this.doubleTransformer));
-        h = addHashCode(h, hash(this.boolTransformer));
-        h = addHashCode(h, hash(this.stringTransformer));
-        h = addHashCode(h, hash(this.arrayTransformer));
-        h = addHashCode(h, hash(this.objectTransformer));
+        h = addHashCode(h, hashCodeOf(this.nullTransformer));
+        h = addHashCode(h, hashCodeOf(this.integerTransformer));
+        h = addHashCode(h, hashCodeOf(this.doubleTransformer));
+        h = addHashCode(h, hashCodeOf(this.boolTransformer));
+        h = addHashCode(h, hashCodeOf(this.stringTransformer));
+        h = addHashCode(h, hashCodeOf(this.arrayTransformer));
+        h = addHashCode(h, hashCodeOf(this.objectTransformer));
         return h;
     }
 
@@ -404,7 +404,7 @@ export class StringMatchTransformer extends MatchTransformer {
 
     hashCode(): number {
         const h = super.hashCode();
-        return addHashCode(h, hash(this.stringCase));
+        return addHashCode(h, stringHash(this.stringCase));
     }
 
     protected debugDescription(): string {
@@ -474,7 +474,7 @@ export class StringProducerTransformer extends ProducerTransformer {
 
     hashCode(): number {
         const h = super.hashCode();
-        return addHashCode(h, hash(this.consumer));
+        return addHashCode(h, hashCodeOf(this.consumer));
     }
 
     protected debugDescription(): string {

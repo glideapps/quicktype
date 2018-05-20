@@ -14,7 +14,6 @@
     },
     "dependencies": {
         "@types/urijs": "github:quicktype/types-urijs",
-        "immutable": "^4.0.0-rc.9",
         "js-base64": "^2.4.3",
         "pako": "^1.0.6",
         "pluralize": "^7.0.0",

@@ -1,5 +1,3 @@
-import { is, hash } from "immutable";
-
 import { defined, panic, assert, mapOptional, hashCodeInit, addHashCode } from "./support/Support";
 import { TypeRef } from "./TypeBuilder";
 import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
@@ -349,11 +347,11 @@ export class GenericClassProperty<T> {
         if (!(other instanceof GenericClassProperty)) {
             return false;
         }
-        return is(this.typeData, other.typeData) && this.isOptional === other.isOptional;
+        return areEqual(this.typeData, other.typeData) && this.isOptional === other.isOptional;
     }
 
     hashCode(): number {
-        return hash(this.typeData) + (this.isOptional ? 17 : 23);
+        return hashCodeOf(this.typeData) + (this.isOptional ? 17 : 23);
     }
 }
 
