@@ -1,4 +1,4 @@
-import { List, hash, OrderedSet } from "immutable";
+import { List, hash } from "immutable";
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
 
@@ -518,9 +518,6 @@ export async function addTypesInSchema(
     ): Promise<TypeRef> {
         const required = new Set(requiredArray);
         const propertiesMap = mapSortBy(mapFromObject(properties), (_, k) => k.toLowerCase());
-        // FIXME: We're using a Map instead of an OrderedMap here because we represent
-        // the JSON Schema as a JavaScript object, which has no map ordering.  Ideally
-        // we would use a JSON parser that preserves order.
         const props = await mapMapSync(propertiesMap, async (propSchema, propName) => {
             const propLoc = loc.push("properties", propName);
             const t = await toType(
@@ -654,7 +651,7 @@ export async function addTypesInSchema(
                     const itemLoc = itemsLoc.push(i.toString());
                     return await toType(checkJSONSchema(item, itemLoc.canonicalRef), itemLoc, singularAttributes);
                 });
-                itemType = typeBuilder.getUnionType(emptyTypeAttributes, OrderedSet(itemTypes));
+                itemType = typeBuilder.getUnionType(emptyTypeAttributes, new Set(itemTypes));
             } else if (typeof items === "object") {
                 const itemsLoc = loc.push("items");
                 itemType = await toType(checkJSONSchema(items, itemsLoc.canonicalRef), itemsLoc, singularAttributes);
@@ -729,7 +726,7 @@ export async function addTypesInSchema(
                 });
             }
             const unionType = typeBuilder.getUniqueUnionType(unionAttributes, undefined);
-            typeBuilder.setSetOperationMembers(unionType, OrderedSet(typeRefs));
+            typeBuilder.setSetOperationMembers(unionType, new Set(typeRefs));
             return unionType;
         }
 
@@ -777,7 +774,7 @@ export async function addTypesInSchema(
                 unionTypes.push(await makeObjectType());
             }
 
-            types.push(typeBuilder.getUniqueUnionType(inferredAttributes, OrderedSet(unionTypes)));
+            types.push(typeBuilder.getUniqueUnionType(inferredAttributes, new Set(unionTypes)));
         }
 
         if (schema.$ref !== undefined) {
@@ -803,7 +800,7 @@ export async function addTypesInSchema(
             types.push(await convertOneOrAnyOf(schema.anyOf, "anyOf"));
         }
 
-        typeBuilder.setSetOperationMembers(intersectionType, OrderedSet(types));
+        typeBuilder.setSetOperationMembers(intersectionType, new Set(types));
         return intersectionType;
     }
 
