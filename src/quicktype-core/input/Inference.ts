@@ -1,5 +1,3 @@
-import { Map as ImmutableMap } from "immutable";
-
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { assertNever } from "../support/Support";
 import { TypeBuilder, TypeRef } from "../TypeBuilder";
@@ -55,7 +53,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, ImmutableMap(), arrays, this._fixed, forwardingRef)
+            this._typeInference.inferType(this._cjson, new Map(), arrays, this._fixed, forwardingRef)
         );
     }
 }
@@ -173,7 +171,7 @@ export class TypeInference {
         const properties = new Map<string, ClassProperty>();
         for (const key of propertyNames) {
             const values = propertyValues[key];
-            const t = this.inferType(cjson, ImmutableMap(), values, false);
+            const t = this.inferType(cjson, new Map(), values, false);
             const isOptional = values.length < objects.length;
             properties.set(key, new ClassProperty(t, isOptional));
         }
