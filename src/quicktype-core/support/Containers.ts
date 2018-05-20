@@ -94,6 +94,16 @@ export function arrayIntercalate<T>(separator: T, items: Iterable<T>): T[] {
     return acc;
 }
 
+export async function arrayMapSync<T, U>(set: Iterable<T>, f: (v: T, i: number) => Promise<U>): Promise<U[]> {
+    const result: U[] = [];
+    let i = 0;
+    for (const v of set) {
+        result.push(await f(v, i));
+        i += 1;
+    }
+    return result;
+}
+
 export function toReadonlyArray<T>(it: Iterable<T>): ReadonlyArray<T> {
     if (Array.isArray(it)) return it;
     return Array.from(it);

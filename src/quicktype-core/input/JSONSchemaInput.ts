@@ -10,7 +10,6 @@ import {
     assert,
     defined,
     addHashCode,
-    mapSync,
     mapOptional,
     hasOwnProperty
 } from "../support/Support";
@@ -36,7 +35,8 @@ import {
     iterableFind,
     mapSortBy,
     mapMapSync,
-    mapMergeInto
+    mapMergeInto,
+    arrayMapSync
 } from "../support/Containers";
 
 export enum PathElementKind {
@@ -647,7 +647,7 @@ export async function addTypesInSchema(
             let itemType: TypeRef;
             if (Array.isArray(items)) {
                 const itemsLoc = loc.push("items");
-                const itemTypes = await mapSync(items, async (item, i) => {
+                const itemTypes = await arrayMapSync(items, async (item, i) => {
                     const itemLoc = itemsLoc.push(i.toString());
                     return await toType(checkJSONSchema(item, itemLoc.canonicalRef), itemLoc, singularAttributes);
                 });
@@ -690,7 +690,7 @@ export async function addTypesInSchema(
                 return messageError("SchemaSetOperationCasesIsNotArray", withRef(kindLoc, { operation: kind, cases }));
             }
             // FIXME: This cast shouldn't be necessary, but TypeScript forces our hand.
-            return await mapSync(cases, async (t, index) => {
+            return await arrayMapSync(cases, async (t, index) => {
                 const caseLoc = kindLoc.push(index.toString());
                 return await toType(
                     checkJSONSchema(t, caseLoc.canonicalRef),
