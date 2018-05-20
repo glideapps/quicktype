@@ -1,5 +1,3 @@
-import { OrderedSet } from "immutable";
-
 import { PrimitiveType } from "../Type";
 import { stringTypesForType } from "../TypeUtils";
 import { TypeGraph } from "../TypeGraph";
@@ -49,7 +47,7 @@ export function expandStrings(
         const cases = defined(mappedStringTypes.cases);
         if (cases.size > 0) {
             if (inference === "all" || (inference === "infer" && shouldBeEnum(cases))) {
-                types.push(builder.getEnumType(emptyTypeAttributes, OrderedSet(cases.keys())));
+                types.push(builder.getEnumType(emptyTypeAttributes, new Set(cases.keys())));
             } else {
                 return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
             }
@@ -64,7 +62,7 @@ export function expandStrings(
             types.push(builder.getPrimitiveType("date-time"));
         }
         assert(types.length > 0, "We got an empty string type");
-        return builder.getUnionType(attributes, OrderedSet(types), forwardingRef);
+        return builder.getUnionType(attributes, new Set(types), forwardingRef);
     }
 
     const allStrings = Array.from(graph.allTypesUnordered())
