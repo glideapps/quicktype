@@ -560,12 +560,14 @@ export class KotlinRenderer extends ConvenienceRenderer {
         this.emitHeader();
 
         if (this._kotlinOptions.framework === Framework.Klaxon) {
-            const hasUnions = this.typeGraph
-                .allNamedTypes()
-                .some(t => t instanceof UnionType && nullableFromUnion(t) === null);
-            const hasEmptyObjects = this.typeGraph
-                .allNamedTypes()
-                .some(c => c instanceof ClassType && c.getProperties().size === 0);
+            const hasUnions = iterableSome(
+                this.typeGraph.allNamedTypes(),
+                t => t instanceof UnionType && nullableFromUnion(t) === null
+            );
+            const hasEmptyObjects = iterableSome(
+                this.typeGraph.allNamedTypes(),
+                c => c instanceof ClassType && c.getProperties().size === 0
+            );
             if (hasUnions || this.haveEnums || hasEmptyObjects) {
                 this.emitGenericConverter();
             }
