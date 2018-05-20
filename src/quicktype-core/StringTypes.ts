@@ -1,10 +1,8 @@
-import { is } from "immutable";
-
 import { TypeAttributeKind } from "./TypeAttributes";
 import { addHashCode, defined, assert } from "./support/Support";
 import { StringTypeMapping } from "./TypeBuilder";
 import { PrimitiveStringTypeKind } from "./Type";
-import { mapMergeWith, mapMap, iterableFirst, setIntersect, hashCodeOf } from "./support/Containers";
+import { mapMergeWith, mapMap, iterableFirst, setIntersect, hashCodeOf, areEqual } from "./support/Containers";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, false, false, false);
@@ -100,7 +98,7 @@ export class StringTypes {
     equals(other: any): boolean {
         if (!(other instanceof StringTypes)) return false;
         return (
-            is(this.cases, other.cases) &&
+            areEqual(this.cases, other.cases) &&
             this.allowDate === other.allowDate &&
             this.allowTime === other.allowTime &&
             this.allowDateTime === other.allowDateTime
