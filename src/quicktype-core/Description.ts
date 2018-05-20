@@ -40,7 +40,7 @@ class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string
         a: Map<string, ReadonlySet<string>>,
         b: Map<string, ReadonlySet<string>>
     ): Map<string, ReadonlySet<string>> {
-        return mapMergeWith(a, setUnion, b);
+        return mapMergeWith(a, (sa, sb) => setUnion(sa, sb), b);
     }
 
     makeInferred(_: Map<string, ReadonlySet<string>>): undefined {
