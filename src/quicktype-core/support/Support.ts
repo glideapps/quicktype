@@ -1,5 +1,3 @@
-import { Set } from "immutable";
-
 import { Readable } from "stream";
 import { getStream } from "../get-stream";
 import { Base64 } from "js-base64";
@@ -17,17 +15,6 @@ export function findInArray<T>(arr: T[], p: (t: T) => boolean): T | undefined {
         if (p(t)) return t;
     }
     return undefined;
-}
-
-export function setUnion<T, TSet extends Set<T>>(a: TSet, b: TSet): TSet {
-    return a.union(b) as TSet;
-}
-
-export function unionOfSets<T, TSet extends Set<T>>(sets: TSet[]): TSet {
-    if (sets.length === 0) {
-        return Set() as TSet;
-    }
-    return sets[0].union(...sets.slice(1)) as TSet;
 }
 
 export type StringMap = { [name: string]: any };
