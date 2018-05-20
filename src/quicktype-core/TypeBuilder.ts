@@ -1,4 +1,4 @@
-import { Map, OrderedSet, is } from "immutable";
+import { Map, is } from "immutable";
 
 import {
     PrimitiveTypeKind,
@@ -197,7 +197,7 @@ export class TypeBuilder {
         }
         const nullType = this.getPrimitiveType("null");
         if (!(t instanceof UnionType)) {
-            return this.getUnionType(attributes, OrderedSet([tref, nullType]));
+            return this.getUnionType(attributes, new Set([tref, nullType]));
         }
         const [maybeNull, nonNulls] = removeNullFromUnion(t);
         if (maybeNull !== null) return tref;
@@ -211,7 +211,7 @@ export class TypeBuilder {
 
     protected addForwardingIntersection(forwardingRef: TypeRef, tref: TypeRef): TypeRef {
         this._addedForwardingIntersection = true;
-        return this.addType(forwardingRef, tr => new IntersectionType(tr, OrderedSet([tref])), undefined);
+        return this.addType(forwardingRef, tr => new IntersectionType(tr, new Set([tref])), undefined);
     }
 
     protected forwardIfNecessary(forwardingRef: TypeRef | undefined, tref: undefined): undefined;
