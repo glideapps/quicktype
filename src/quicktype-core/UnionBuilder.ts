@@ -30,6 +30,8 @@ export interface UnionTypeProvider<TArrayData, TObjectData> {
 
 export type TypeAttributeMap<T extends TypeKind> = Map<T, TypeAttributes>;
 
+type TypeAttributeMapBuilder<T extends TypeKind> = Map<T, TypeAttributes[]>;
+
 function addAttributes(
     accumulatorAttributes: TypeAttributes | undefined,
     newAttributes: TypeAttributes
@@ -46,6 +48,23 @@ function setAttributes<T extends TypeKind>(
     attributeMap.set(kind, addAttributes(attributeMap.get(kind), newAttributes));
 }
 
+function addAttributesToBuilder<T extends TypeKind>(
+    builder: TypeAttributeMapBuilder<T>,
+    kind: T,
+    newAttributes: TypeAttributes
+): void {
+    let arr = builder.get(kind);
+    if (arr === undefined) {
+        arr = [];
+        builder.set(kind, arr);
+    }
+    arr.push(newAttributes);
+}
+
+function buildTypeAttributeMap<T extends TypeKind>(builder: TypeAttributeMapBuilder<T>): TypeAttributeMap<T> {
+    return mapMap(builder, arr => combineTypeAttributes("union", arr));
+}
+
 function moveAttributes<T extends TypeKind>(map: TypeAttributeMap<T>, fromKind: T, toKind: T): void {
     const fromAttributes = defined(map.get(fromKind));
     map.delete(fromKind);
@@ -54,7 +73,7 @@ function moveAttributes<T extends TypeKind>(map: TypeAttributeMap<T>, fromKind: 
 
 export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArray[], TObject[]> {
     private readonly _nonStringTypeAttributes: TypeAttributeMap<TypeKind> = new Map();
-    private readonly _stringTypeAttributes: TypeAttributeMap<PrimitiveStringTypeKind> = new Map();
+    private readonly _stringTypeAttributes: TypeAttributeMapBuilder<PrimitiveStringTypeKind> = new Map();
 
     readonly arrayData: TArray[] = [];
     readonly objectData: TObject[] = [];
@@ -113,7 +132,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
             );
         }
 
-        setAttributes(this._stringTypeAttributes, "string", attributes);
+        addAttributesToBuilder(this._stringTypeAttributes, "string", attributes);
     }
 
     addStringType(kind: PrimitiveStringTypeKind, attributes: TypeAttributes, stringTypes?: StringTypes): void {
@@ -124,7 +143,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         if (stringTypes !== undefined) {
             attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
         }
-        setAttributes(this._stringTypeAttributes, kind, attributes);
+        addAttributesToBuilder(this._stringTypeAttributes, kind, attributes);
     }
 
     addArray(t: TArray, attributes: TypeAttributes): void {
@@ -139,11 +158,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
     addEnum(cases: ReadonlySet<string>, attributes: TypeAttributes): void {
         const maybeStringAttributes = this._stringTypeAttributes.get("string");
         if (maybeStringAttributes !== undefined) {
-            assert(
-                !defined(stringTypesTypeAttributeKind.tryGetInAttributes(maybeStringAttributes)).isRestricted,
-                "We can't add an enum to a union builder that has a restricted string type"
-            );
-            setAttributes(this._stringTypeAttributes, "string", attributes);
+            addAttributesToBuilder(this._stringTypeAttributes, "string", attributes);
             return;
         }
         setAttributes(this._nonStringTypeAttributes, "enum", attributes);
@@ -164,7 +179,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
     getMemberKinds(): TypeAttributeMap<TypeKind> {
         assert(!(this.have("enum") && this.have("string")), "We can't have both strings and enums in the same union");
 
-        let merged = mapMerge(this._nonStringTypeAttributes, this._stringTypeAttributes);
+        let merged = mapMerge(this._nonStringTypeAttributes, buildTypeAttributeMap(this._stringTypeAttributes));
 
         if (merged.size === 0) {
             return new Map([["none", emptyTypeAttributes] as [TypeKind, TypeAttributes]]);
