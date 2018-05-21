@@ -225,14 +225,18 @@ function compareKeys(sa: any, sb: any): number {
     return 0;
 }
 
-export function mapSortBy<K, V>(m: Iterable<[K, V]>, sortKey: (v: V, k: K) => number | string): Map<K, V> {
+export function mapSortToArray<K, V>(m: Iterable<[K, V]>, sortKey: (v: V, k: K) => number | string): [K, V][] {
     const arr = Array.from(m);
     arr.sort(([ka, va], [kb, vb]) => {
         const sa = sortKey(va, ka);
         const sb = sortKey(vb, kb);
         return compareKeys(sa, sb);
     });
-    return new Map(arr);
+    return arr;
+}
+
+export function mapSortBy<K, V>(m: Iterable<[K, V]>, sortKey: (v: V, k: K) => number | string): Map<K, V> {
+    return new Map(mapSortToArray(m, sortKey));
 }
 
 export function mapSortByKey<K extends number | string, V>(m: Iterable<[K, V]>): Map<K, V> {
@@ -278,6 +282,21 @@ export function mapFind<K, V>(it: Iterable<[K, V]>, p: (v: V, k: K) => boolean):
     return undefined;
 }
 
+export function mapTranspose<K, V>(maps: ReadonlyMap<K, V>[]): Map<K, V[]> {
+    const result = new Map<K, V[]>();
+    for (const m of maps) {
+        for (const [k, v] of m) {
+            let arr = result.get(k);
+            if (arr === undefined) {
+                arr = [];
+                result.set(k, arr);
+            }
+            arr.push(v);
+        }
+    }
+    return result;
+}
+
 export async function mapMapSync<K, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) => Promise<W>): Promise<Map<K, W>> {
     const result = new Map<K, W>();
     for (const [k, v] of m) {
@@ -286,12 +305,17 @@ export async function mapMapSync<K, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) =
     return result;
 }
 
-export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): Set<T> {
+export function setUnionManyInto<T>(dest: Set<T>, srcs: Iterable<T>[]): Set<T> {
     for (const src of srcs) {
         for (const v of src) {
             dest.add(v);
         }
     }
+    return dest;
+}
+
+export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): Set<T> {
+    setUnionManyInto(dest, srcs);
     return dest;
 }
 
