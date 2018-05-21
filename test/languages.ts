@@ -132,6 +132,7 @@ export const RubyLanguage: Language = {
     "recursive.json",
     "combinations.json",
     "bug427.json",
+    "bug863.json",
     "kitchen-sink.json",
     "github-events.json",
     "nbl-stats.json",
@@ -203,6 +204,7 @@ export const GoLanguage: Language = {
   skipDiffViaSchema: [
     "combinations.json",
     "bug427.json",
+    "bug863.json",
     "github-events.json",
     "reddit.json",
     "nbl-stats.json",
@@ -299,6 +301,7 @@ export const ElmLanguage: Language = {
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
+    "bug863.json",
     "reddit.json",
     "github-events.json",
     "nbl-stats.json",
@@ -453,6 +456,7 @@ export const TypeScriptLanguage: Language = {
   diffViaSchema: true,
   skipDiffViaSchema: [
     "bug427.json",
+    "bug863.json",
     "kitchen-sink.json",
     "nbl-stats.json",
     "00c36.json",
