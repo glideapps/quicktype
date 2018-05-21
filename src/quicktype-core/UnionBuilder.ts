@@ -72,7 +72,7 @@ function moveAttributes<T extends TypeKind>(map: TypeAttributeMap<T>, fromKind: 
 }
 
 export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArray[], TObject[]> {
-    private readonly _nonStringTypeAttributes: TypeAttributeMap<TypeKind> = new Map();
+    private readonly _nonStringTypeAttributes: TypeAttributeMapBuilder<TypeKind> = new Map();
     private readonly _stringTypeAttributes: TypeAttributeMapBuilder<PrimitiveStringTypeKind> = new Map();
 
     readonly arrayData: TArray[] = [];
@@ -97,20 +97,20 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         this._lostTypeAttributes = true;
     }
     addAny(attributes: TypeAttributes): void {
-        setAttributes(this._nonStringTypeAttributes, "any", attributes);
+        addAttributesToBuilder(this._nonStringTypeAttributes, "any", attributes);
         this._lostTypeAttributes = true;
     }
     addNull(attributes: TypeAttributes): void {
-        setAttributes(this._nonStringTypeAttributes, "null", attributes);
+        addAttributesToBuilder(this._nonStringTypeAttributes, "null", attributes);
     }
     addBool(attributes: TypeAttributes): void {
-        setAttributes(this._nonStringTypeAttributes, "bool", attributes);
+        addAttributesToBuilder(this._nonStringTypeAttributes, "bool", attributes);
     }
     addInteger(attributes: TypeAttributes): void {
-        setAttributes(this._nonStringTypeAttributes, "integer", attributes);
+        addAttributesToBuilder(this._nonStringTypeAttributes, "integer", attributes);
     }
     addDouble(attributes: TypeAttributes): void {
-        setAttributes(this._nonStringTypeAttributes, "double", attributes);
+        addAttributesToBuilder(this._nonStringTypeAttributes, "double", attributes);
     }
 
     protected addFullStringType(attributes: TypeAttributes, stringTypes: StringTypes | undefined): void {
@@ -148,11 +148,11 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
 
     addArray(t: TArray, attributes: TypeAttributes): void {
         this.arrayData.push(t);
-        setAttributes(this._nonStringTypeAttributes, "array", attributes);
+        addAttributesToBuilder(this._nonStringTypeAttributes, "array", attributes);
     }
     addObject(t: TObject, attributes: TypeAttributes): void {
         this.objectData.push(t);
-        setAttributes(this._nonStringTypeAttributes, "object", attributes);
+        addAttributesToBuilder(this._nonStringTypeAttributes, "object", attributes);
     }
 
     addEnum(cases: ReadonlySet<string>, attributes: TypeAttributes): void {
@@ -161,7 +161,7 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
             addAttributesToBuilder(this._stringTypeAttributes, "string", attributes);
             return;
         }
-        setAttributes(this._nonStringTypeAttributes, "enum", attributes);
+        addAttributesToBuilder(this._nonStringTypeAttributes, "enum", attributes);
         setUnionInto(this._enumCases, cases);
     }
 
@@ -179,7 +179,10 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
     getMemberKinds(): TypeAttributeMap<TypeKind> {
         assert(!(this.have("enum") && this.have("string")), "We can't have both strings and enums in the same union");
 
-        let merged = mapMerge(this._nonStringTypeAttributes, buildTypeAttributeMap(this._stringTypeAttributes));
+        let merged = mapMerge(
+            buildTypeAttributeMap(this._nonStringTypeAttributes),
+            buildTypeAttributeMap(this._stringTypeAttributes)
+        );
 
         if (merged.size === 0) {
             return new Map([["none", emptyTypeAttributes] as [TypeKind, TypeAttributes]]);
