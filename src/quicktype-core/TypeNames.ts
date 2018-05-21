@@ -4,7 +4,7 @@ import { panic, defined, assert, mapOptional } from "./support/Support";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { splitIntoWords } from "./support/Strings";
 import { Chance } from "./support/Chance";
-import { setUnion, setMap, iterableFirst, iterableSkip, setUnionInto } from "./support/Containers";
+import { setMap, iterableFirst, iterableSkip, setUnionInto } from "./support/Containers";
 
 let chance: Chance;
 let usedRandomNames: Set<string>;
@@ -102,7 +102,7 @@ export abstract class TypeNames {
     abstract get combinedName(): string;
     abstract get proposedNames(): ReadonlySet<string>;
 
-    abstract add(names: TypeNames): TypeNames;
+    abstract add(namesArray: TypeNames[], startIndex?: number): TypeNames;
     abstract clearInferred(): TypeNames;
     abstract makeInferred(): TypeNames;
     abstract singularize(): TypeNames;
@@ -118,27 +118,43 @@ export class RegularTypeNames extends TypeNames {
         super();
     }
 
-    add(names: TypeNames): TypeNames {
-        if (!(names instanceof RegularTypeNames)) {
-            assert(names instanceof TooManyTypeNames, "Unknown TypeNames instance");
-            if (this.areInferred === names.areInferred || !names.areInferred) {
-                return names;
-            }
-            return this;
-        }
-
-        let newNames = this.names;
+    add(namesArray: TypeNames[], startIndex: number = 0): TypeNames {
+        let newNames = new Set(this.names);
         let newAreInferred = this.areInferred;
-        if (this.areInferred && !names.areInferred) {
-            newNames = names.names;
-            newAreInferred = false;
-        } else if (this.areInferred === names.areInferred) {
-            newNames = setUnion(this.names, names.names);
+        let newAlternativeNames = mapOptional(s => new Set(s), this._alternativeNames);
+
+        for (let i = startIndex; i < namesArray.length; i++) {
+            const other = namesArray[i];
+            if (!(other instanceof RegularTypeNames)) {
+                assert(other instanceof TooManyTypeNames, "Unknown TypeNames instance");
+                if (!other.areInferred) {
+                    // The other one is given, so it's the final word
+                    return other;
+                }
+                if (newAreInferred === other.areInferred) {
+                    // Both are inferred, so we let the TooMany sort it out
+                    return other.add(namesArray, i + 1);
+                }
+                // Ours is given, the other inferred, so ignore it
+                continue;
+            }
+
+            if (newAreInferred && !other.areInferred) {
+                // Ours is inferred, the other one given, so take the
+                // other's names
+                newNames = new Set(other.names);
+                newAreInferred = false;
+            } else if (this.areInferred === other.areInferred) {
+                setUnionInto(newNames, other.names);
+            }
+
+            if (other._alternativeNames !== undefined) {
+                if (newAlternativeNames === undefined) {
+                    newAlternativeNames = new Set();
+                }
+                setUnionInto(newAlternativeNames, other._alternativeNames);
+            }
         }
-        const newAlternativeNames =
-            this._alternativeNames === undefined || names._alternativeNames === undefined
-                ? undefined
-                : setUnion(this._alternativeNames, names._alternativeNames);
         return TypeNames.make(newNames, newAlternativeNames, newAreInferred);
     }
 
@@ -200,11 +216,17 @@ export class TooManyTypeNames extends TypeNames {
         return this.names;
     }
 
-    add(names: TypeNames): TypeNames {
-        if (names instanceof TooManyTypeNames) {
+    add(namesArray: TypeNames[], startIndex: number = 0): TypeNames {
+        if (!this.areInferred) return this;
+
+        for (let i = startIndex; i < namesArray.length; i++) {
+            const other = namesArray[i];
+            if (!other.areInferred) {
+                return other.add(namesArray, i + 1);
+            }
+        }
+
         return this;
-    }
-        return names.add(this);
     }
 
     clearInferred(): TypeNames {
@@ -232,8 +254,10 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<TypeNames> {
         super("names");
     }
 
-    combine(a: TypeNames, b: TypeNames): TypeNames {
-        return a.add(b);
+    combine(namesArray: TypeNames[]): TypeNames {
+        assert(namesArray.length > 0, "Can't combine zero type names");
+
+        return namesArray[0].add(namesArray, 1);
     }
 
     makeInferred(tn: TypeNames): TypeNames {

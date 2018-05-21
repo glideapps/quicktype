@@ -346,6 +346,6 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
             typeNames = TypeNames.make(names, alternatives, true);
         }
 
-        setNames(t, t.hasNames ? t.getNames().add(typeNames) : typeNames);
+        setNames(t, t.hasNames ? t.getNames().add([typeNames]) : typeNames);
     }
 }

@@ -1,15 +1,22 @@
 import { TypeAttributeKind, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { JSONSchemaType, Ref, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 import { JSONSchema } from "./input/JSONSchemaStore";
-import { mapMergeWith, mapFilterMap, mapFromObject, setUnion, iterableFirst } from "./support/Containers";
+import {
+    mapFilterMap,
+    mapFromObject,
+    setUnion,
+    iterableFirst,
+    setUnionManyInto,
+    mapMergeWithInto
+} from "./support/Containers";
 
 class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>> {
     constructor() {
         super("description");
     }
 
-    combine(a: ReadonlySet<string>, b: ReadonlySet<string>): ReadonlySet<string> {
-        return setUnion(a, b);
+    combine(attrs: ReadonlySet<string>[]): ReadonlySet<string> {
+        return setUnionManyInto(new Set(), attrs);
     }
 
     makeInferred(_: ReadonlySet<string>): undefined {
@@ -36,11 +43,13 @@ class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string
         super("propertyDescriptions");
     }
 
-    combine(
-        a: Map<string, ReadonlySet<string>>,
-        b: Map<string, ReadonlySet<string>>
-    ): Map<string, ReadonlySet<string>> {
-        return mapMergeWith(a, (sa, sb) => setUnion(sa, sb), b);
+    combine(attrs: Map<string, ReadonlySet<string>>[]): Map<string, ReadonlySet<string>> {
+        // FIXME: Implement this with mutable sets
+        const result = new Map<string, ReadonlySet<string>>();
+        for (const attr of attrs) {
+            mapMergeWithInto(result, (sa, sb) => setUnion(sa, sb), attr);
+        }
+        return result;
     }
 
     makeInferred(_: Map<string, ReadonlySet<string>>): undefined {
