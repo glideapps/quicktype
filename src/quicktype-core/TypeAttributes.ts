@@ -1,19 +1,19 @@
 import stringHash = require("string-hash");
 
-import { panic } from "./support/Support";
+import { panic, assert } from "./support/Support";
 import { Type } from "./Type";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { mapFilterMap, mapFilter, mapMergeWithInto } from "./support/Containers";
+import { mapFilterMap, mapFilter, mapTranspose, mapMap } from "./support/Containers";
 
 export class TypeAttributeKind<T> {
     constructor(readonly name: string) {}
 
-    combine(_a: T, _b: T): T {
+    combine(_attrs: T[]): T {
         return panic(`Cannot combine type attribute ${this.name}`);
     }
 
-    intersect(a: T, b: T): T {
-        return this.combine(a, b);
+    intersect(attrs: T[]): T {
+        return this.combine(attrs);
     }
 
     makeInferred(_: T): T | undefined {
@@ -65,10 +65,6 @@ export class TypeAttributeKind<T> {
         return this.setInAttributes(a, modified);
     }
 
-    combineInAttributes(a: TypeAttributes, value: T): TypeAttributes {
-        return this.modifyInAttributes(a, v => (v === undefined ? value : this.combine(v, value)));
-    }
-
     setDefaultInAttributes(a: TypeAttributes, makeDefault: () => T): TypeAttributes {
         if (this.tryGetInAttributes(a) !== undefined) return a;
         return this.modifyInAttributes(a, makeDefault);
@@ -105,25 +101,28 @@ export function combineTypeAttributes(
 ): TypeAttributes {
     const union = combinationKind === "union";
     let attributeArray: TypeAttributes[];
-    let first: Map<TypeAttributeKind<any>, any>;
-    let rest: TypeAttributes[];
     if (Array.isArray(firstOrArray)) {
         attributeArray = firstOrArray;
-        if (attributeArray.length === 0) return emptyTypeAttributes;
-        first = new Map(attributeArray[0]);
-        rest = attributeArray.slice(1);
     } else {
         if (second === undefined) {
             return panic("Must have on array or two attributes");
         }
-        first = new Map(firstOrArray);
-        rest = [second];
+        attributeArray = [firstOrArray, second];
     }
 
-    for (const r of rest) {
-        mapMergeWithInto(first, (aa, ab, kind) => (union ? kind.combine(aa, ab) : kind.intersect(aa, ab)), r);
+    const attributesByKind = mapTranspose(attributeArray);
+
+    function combine(attrs: any[], kind: TypeAttributeKind<any>): any {
+        assert(attrs.length > 0, "Cannot combine zero type attributes");
+        if (attrs.length === 1) return attrs[0];
+        if (union) {
+            return kind.combine(attrs);
+        } else {
+            return kind.intersect(attrs);
+        }
     }
-    return first;
+
+    return mapMap(attributesByKind, combine);
 }
 
 export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {

@@ -1,8 +1,8 @@
 import { TypeAttributeKind } from "./TypeAttributes";
-import { addHashCode, defined, assert } from "./support/Support";
+import { addHashCode, defined, assert, mapOptional } from "./support/Support";
 import { StringTypeMapping } from "./TypeBuilder";
 import { PrimitiveStringTypeKind } from "./Type";
-import { mapMergeWith, mapMap, iterableFirst, setIntersect, hashCodeOf, areEqual } from "./support/Containers";
+import { mapMap, iterableFirst, setIntersect, hashCodeOf, areEqual, mapMergeWithInto } from "./support/Containers";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, false, false, false);
@@ -43,33 +43,51 @@ export class StringTypes {
         return this.cases !== undefined;
     }
 
-    union(other: StringTypes): StringTypes {
-        const cases =
-            this.cases === undefined || other.cases === undefined
-                ? undefined
-                : mapMergeWith(this.cases, (x, y) => x + y, other.cases);
-        const allowDate = cases !== undefined && (this.allowDate || other.allowDate);
-        const allowTime = cases !== undefined && (this.allowTime || other.allowTime);
-        const allowDateTime = cases !== undefined && (this.allowDateTime || other.allowDateTime);
+    union(othersArray: StringTypes[], startIndex: number): StringTypes {
+        if (this.cases === undefined) return this;
+
+        let cases = new Map(this.cases);
+        let allowDate = this.allowDate;
+        let allowTime = this.allowTime;
+        let allowDateTime = this.allowDateTime;
+
+        for (let i = startIndex; i < othersArray.length; i++) {
+            const other = othersArray[i];
+
+            if (other.cases === undefined) return other;
+            mapMergeWithInto(cases, (x, y) => x + y, other.cases);
+
+            allowDate = allowDate || other.allowDate;
+            allowTime = allowTime || other.allowTime;
+            allowDateTime = allowDateTime || other.allowDateTime;
+        }
+
         return new StringTypes(cases, allowDate, allowTime, allowDateTime);
     }
 
-    intersect(other: StringTypes): StringTypes {
-        const thisCases = this.cases;
-        const otherCases = other.cases;
-        let cases: ReadonlyMap<string, number> | undefined;
-        if (thisCases === undefined) {
-            cases = otherCases;
-        } else if (otherCases === undefined) {
-            cases = thisCases;
-        } else {
-            cases = mapMap(setIntersect(thisCases.keys(), new Set(otherCases.keys())).entries(), k =>
-                Math.min(defined(thisCases.get(k)), defined(otherCases.get(k)))
-            );
+    intersect(othersArray: StringTypes[], startIndex: number): StringTypes {
+        let cases = this.cases;
+        let allowDate = this.allowDate;
+        let allowTime = this.allowTime;
+        let allowDateTime = this.allowDateTime;
+
+        for (let i = startIndex; i < othersArray.length; i++) {
+            const other = othersArray[i];
+
+            if (cases === undefined) {
+                cases = mapOptional(m => new Map(m), other.cases);
+            } else if (other.cases !== undefined) {
+                const thisCases = cases;
+                const otherCases = other.cases;
+                cases = mapMap(setIntersect(thisCases.keys(), new Set(otherCases.keys())).entries(), k =>
+                    Math.min(defined(thisCases.get(k)), defined(otherCases.get(k)))
+                );
+            }
+
+            allowDate = allowDate && other.allowDate;
+            allowTime = allowTime && other.allowTime;
+            allowDateTime = allowDateTime && other.allowDateTime;
         }
-        const allowDate = this.allowDate && other.allowDate;
-        const allowTime = this.allowTime && other.allowTime;
-        const allowDateTime = this.allowDateTime && other.allowDateTime;
         return new StringTypes(cases, allowDate, allowTime, allowDateTime);
     }
 
@@ -149,12 +167,14 @@ class StringTypesTypeAttributeKind extends TypeAttributeKind<StringTypes> {
         return st.cases !== undefined && st.cases.size > 0;
     }
 
-    combine(a: StringTypes, b: StringTypes): StringTypes {
-        return a.union(b);
+    combine(arr: StringTypes[]): StringTypes {
+        assert(arr.length > 0);
+        return arr[0].union(arr, 1);
     }
 
-    intersect(a: StringTypes, b: StringTypes): StringTypes {
-        return a.intersect(b);
+    intersect(arr: StringTypes[]): StringTypes {
+        assert(arr.length > 0);
+        return arr[0].intersect(arr, 1);
     }
 
     makeInferred(_: StringTypes): undefined {
