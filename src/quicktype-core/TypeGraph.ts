@@ -13,7 +13,7 @@ import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { messageError } from "./Messages";
-import { iterableFirst, setFilter, setUnionIntoMany, setSubtract, mapMap, mapSome, setMap } from "./support/Containers";
+import { iterableFirst, setFilter, setUnionManyInto, setSubtract, mapMap, mapSome, setMap } from "./support/Containers";
 
 export class TypeAttributeStore {
     private readonly _topLevelValues: Map<string, TypeAttributes> = new Map();
@@ -209,7 +209,7 @@ export class TypeGraph {
             return new Set();
         });
         const result = new Set();
-        setUnionIntoMany(result, sets);
+        setUnionManyInto(result, sets);
         return result;
     }
 

@@ -305,7 +305,7 @@ export async function mapMapSync<K, V, W>(m: Iterable<[K, V]>, f: (v: V, k: K) =
     return result;
 }
 
-export function setUnionIntoMany<T>(dest: Set<T>, srcs: Iterable<Iterable<T>>): Set<T> {
+export function setUnionManyInto<T>(dest: Set<T>, srcs: Iterable<Iterable<T>>): Set<T> {
     for (const src of srcs) {
         for (const v of src) {
             dest.add(v);
@@ -315,7 +315,7 @@ export function setUnionIntoMany<T>(dest: Set<T>, srcs: Iterable<Iterable<T>>): 
 }
 
 export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): Set<T> {
-    return setUnionIntoMany(dest, srcs);
+    return setUnionManyInto(dest, srcs);
 }
 
 export function setIntersect<T>(s1: Iterable<T>, s2: ReadonlySet<T>): Set<T> {

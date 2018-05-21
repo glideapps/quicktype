@@ -4,7 +4,14 @@ import { EnumType, UnionType, Type, ObjectType } from "./Type";
 import { messageAssert } from "./Messages";
 import { JSONSchema } from "./input/JSONSchemaStore";
 import { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
-import { setUnion, iterableFirst, mapFromIterable, mapMap, mapMerge, mapFromObject } from "./support/Containers";
+import {
+    iterableFirst,
+    mapFromIterable,
+    mapMap,
+    mapFromObject,
+    setUnionManyInto,
+    mapMergeInto
+} from "./support/Containers";
 
 export type AccessorEntry = string | Map<string, string>;
 
@@ -75,8 +82,8 @@ class UnionIdentifierTypeAttributeKind extends TypeAttributeKind<ReadonlySet<num
         super("unionIdentifier");
     }
 
-    combine(a: ReadonlySet<number>, b: ReadonlySet<number>): ReadonlySet<number> {
-        return setUnion(a, b);
+    combine(arr: ReadonlySet<number>[]): ReadonlySet<number> {
+        return setUnionManyInto(new Set(), arr);
     }
 
     makeInferred(_: ReadonlySet<number>): ReadonlySet<number> {
@@ -101,8 +108,12 @@ class UnionMemberNamesTypeAttributeKind extends TypeAttributeKind<Map<number, Ac
         super("unionMemberNames");
     }
 
-    combine(a: Map<number, AccessorEntry>, b: Map<number, AccessorEntry>): Map<number, AccessorEntry> {
-        return mapMerge(a, b);
+    combine(arr: Map<number, AccessorEntry>[]): Map<number, AccessorEntry> {
+        const result = new Map<number, AccessorEntry>();
+        for (const m of arr) {
+            mapMergeInto(result, m);
+        }
+        return result;
     }
 }
 

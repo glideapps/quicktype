@@ -34,8 +34,8 @@ import {
     mapFilter,
     mapFind,
     setMap,
-    setUnion,
-    areEqual
+    areEqual,
+    setUnionManyInto
 } from "./support/Containers";
 
 export class TypeRef {
@@ -65,8 +65,8 @@ class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<TypeRef>> {
         super("provenance");
     }
 
-    combine(a: Set<TypeRef>, b: Set<TypeRef>): Set<TypeRef> {
-        return setUnion(a, b);
+    combine(arr: Set<TypeRef>[]): Set<TypeRef> {
+        return setUnionManyInto(new Set(), arr);
     }
 
     makeInferred(p: Set<TypeRef>): Set<TypeRef> {
