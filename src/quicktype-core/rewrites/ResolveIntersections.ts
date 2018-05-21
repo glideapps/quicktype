@@ -246,7 +246,7 @@ class IntersectionAccumulator
             });
         }
 
-        if (this._arrayItemTypes instanceof Set) {
+        if (this._arrayItemTypes !== undefined && this._arrayItemTypes !== false) {
             kinds.set("array", this._arrayAttributes);
         } else if (this._arrayAttributes.size > 0) {
             this._lostTypeAttributes = true;
