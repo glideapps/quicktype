@@ -200,8 +200,11 @@ export class TooManyTypeNames extends TypeNames {
         return this.names;
     }
 
-    add(_names: TypeNames): TypeNames {
+    add(names: TypeNames): TypeNames {
+        if (names instanceof TooManyTypeNames) {
         return this;
+    }
+        return names.add(this);
     }
 
     clearInferred(): TypeNames {
