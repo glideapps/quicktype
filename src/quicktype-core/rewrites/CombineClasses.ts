@@ -1,11 +1,12 @@
 import { ClassType, Type, ClassProperty, setOperationCasesEqual } from "../Type";
 import { nonNullTypeCases, combineTypeAttributesOfTypes } from "../TypeUtils";
 
-import { TypeRef, StringTypeMapping } from "../TypeBuilder";
+import { TypeRef } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, panic } from "../support/Support";
 import { TypeGraph } from "../TypeGraph";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
+import { RunContext } from "../Run";
 
 const REQUIRED_OVERLAP = 3 / 4;
 
@@ -132,14 +133,16 @@ function findSimilarityCliques(
 }
 
 export function combineClasses(
+    ctx: RunContext,
     graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
     alphabetizeProperties: boolean,
     conflateNumbers: boolean,
     onlyWithSameProperties: boolean,
     debugPrintReconstitution: boolean
 ): TypeGraph {
-    const cliques = findSimilarityCliques(graph, onlyWithSameProperties, false);
+    const cliques = ctx.time("  find similarity cliques", () =>
+        findSimilarityCliques(graph, onlyWithSameProperties, false)
+    );
 
     function makeCliqueClass(
         clique: ReadonlySet<ClassType>,
@@ -160,7 +163,7 @@ export function combineClasses(
 
     return graph.rewrite(
         "combine classes",
-        stringTypeMapping,
+        ctx.stringTypeMapping,
         alphabetizeProperties,
         cliques,
         debugPrintReconstitution,
