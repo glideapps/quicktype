@@ -9,7 +9,6 @@ import {
     iterableFind,
     iterableSome,
     toReadonlySet,
-    setUnion,
     hashCodeOf,
     areEqual,
     mapMap,
@@ -18,7 +17,9 @@ import {
     mapSome,
     mapFilter,
     setSortBy,
-    setFilter
+    setFilter,
+    setUnionInto,
+    mapSortToArray
 } from "./support/Containers";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
@@ -82,13 +83,14 @@ export type MaybeTypeIdentity = TypeIdentity | undefined;
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
 
-    abstract getNonAttributeChildren(): ReadonlySet<Type>;
+    // This must return a newly allocated set
+    abstract getNonAttributeChildren(): Set<Type>;
 
     getChildren(): ReadonlySet<Type> {
         let result = this.getNonAttributeChildren();
         for (const [k, v] of this.getAttributes()) {
             if (k.children === undefined) continue;
-            result = setUnion(result, k.children(v));
+            setUnionInto(result, k.children(v));
         }
         return result;
     }
@@ -252,7 +254,7 @@ export class PrimitiveType extends Type {
         return true;
     }
 
-    getNonAttributeChildren(): ReadonlySet<Type> {
+    getNonAttributeChildren(): Set<Type> {
         return new Set();
     }
 
@@ -304,7 +306,7 @@ export class ArrayType extends Type {
         return this.getItemsRef().deref()[0];
     }
 
-    getNonAttributeChildren(): ReadonlySet<Type> {
+    getNonAttributeChildren(): Set<Type> {
         return new Set([this.items]);
     }
 
@@ -452,13 +454,13 @@ export class ObjectType extends Type {
         return tref.deref()[0];
     }
 
-    getNonAttributeChildren(): ReadonlySet<Type> {
-        const children = setMap(this.getSortedProperties().values(), p => p.type);
+    getNonAttributeChildren(): Set<Type> {
+        const types = mapSortToArray(this.getProperties(), (_, k) => k).map(([_, p]) => p.type);
         const additionalProperties = this.getAdditionalProperties();
         if (additionalProperties !== undefined) {
-            children.add(additionalProperties);
+            types.push(additionalProperties);
         }
-        return children;
+        return new Set(types);
     }
 
     get isNullable(): boolean {
@@ -612,7 +614,7 @@ export class EnumType extends Type {
         return enumTypeIdentity(this.getAttributes(), this.cases);
     }
 
-    getNonAttributeChildren(): ReadonlySet<Type> {
+    getNonAttributeChildren(): Set<Type> {
         return new Set();
     }
 
@@ -695,12 +697,12 @@ export abstract class SetOperationType extends Type {
     }
 
     get sortedMembers(): ReadonlySet<Type> {
-        // FIXME: We're assuming no two members of the same kind.
-        return setSortBy(this.members, t => t.kind);
+        return this.getNonAttributeChildren();
     }
 
-    getNonAttributeChildren(): ReadonlySet<Type> {
-        return this.sortedMembers;
+    getNonAttributeChildren(): Set<Type> {
+        // FIXME: We're assuming no two members of the same kind.
+        return setSortBy(this.members, t => t.kind);
     }
 
     isPrimitive(): this is PrimitiveType {
