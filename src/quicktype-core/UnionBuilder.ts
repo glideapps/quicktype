@@ -114,14 +114,15 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
     }
 
     protected addFullStringType(attributes: TypeAttributes, stringTypes: StringTypes | undefined): void {
+        let stringTypesAttributes: TypeAttributes | undefined = undefined;
         if (stringTypes === undefined) {
             stringTypes = stringTypesTypeAttributeKind.tryGetInAttributes(attributes);
         } else {
-            attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
+            stringTypesAttributes = stringTypesTypeAttributeKind.makeAttributes(stringTypes);
         }
         if (stringTypes === undefined) {
             stringTypes = StringTypes.unrestricted;
-            attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
+            stringTypesAttributes = stringTypesTypeAttributeKind.makeAttributes(stringTypes);
         }
 
         const maybeEnumAttributes = this._nonStringTypeAttributes.get("enum");
@@ -133,6 +134,9 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         }
 
         addAttributesToBuilder(this._stringTypeAttributes, "string", attributes);
+        if (stringTypesAttributes !== undefined) {
+            addAttributesToBuilder(this._stringTypeAttributes, "string", stringTypesAttributes);
+        }
     }
 
     addStringType(kind: PrimitiveStringTypeKind, attributes: TypeAttributes, stringTypes?: StringTypes): void {
@@ -140,10 +144,14 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
             this.addFullStringType(attributes, stringTypes);
             return;
         }
-        if (stringTypes !== undefined) {
-            attributes = stringTypesTypeAttributeKind.combineInAttributes(attributes, stringTypes);
-        }
         addAttributesToBuilder(this._stringTypeAttributes, kind, attributes);
+        if (stringTypes !== undefined) {
+            addAttributesToBuilder(
+                this._stringTypeAttributes,
+                kind,
+                stringTypesTypeAttributeKind.makeAttributes(stringTypes)
+            );
+        }
     }
 
     addArray(t: TArray, attributes: TypeAttributes): void {
