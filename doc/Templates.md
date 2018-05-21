@@ -1,3 +1,7 @@
+# NOTE
+
+This was a prototype that we've since removed from quicktype. If you'd like to play with it, please use commit `8eba491ac167a51203eaa6100609ec73ad553236`. If you find it useful and would like us to bring it back, please let us know - it's probably fairly easy.
+
 # Templates
 
 quicktype allows the processing of [Handlebars](http://handlebarsjs.com) templates based on the types specified in or inferred from the input. Templates are always processed in the context of a specific target language, which makes it possible for their output to interact with the types generated for that target language.

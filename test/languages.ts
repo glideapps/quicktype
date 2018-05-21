@@ -1,4 +1,4 @@
-import { RendererOptions } from "../dist";
+import { RendererOptions } from "../dist/quicktype-core/Run";
 import * as process from "process";
 
 export interface Language {
@@ -91,9 +91,15 @@ export const RustLanguage: Language = {
     "recursive.json",
     "github-events.json",
     "0a91a.json",
+    "0cffa.json",
+    "127a1.json",
+    "26b49.json",
     "34702.json",
+    "7681c.json",
     "76ae1.json",
-    "af2d1.json"
+    "af2d1.json",
+    "c3303.json",
+    "f6a65.json"
   ],
   allowMissingNull: false,
   output: "module_under_test.rs",
@@ -204,6 +210,7 @@ export const GoLanguage: Language = {
     "0cffa.json",
     "0e0c2.json",
     "127a1.json",
+    "26b49.json",
     "29f47.json",
     "2df80.json",
     "32431.json",
@@ -252,9 +259,15 @@ export const CPlusPlusLanguage: Language = {
     "bug427.json",
     "keywords.json",
     "0a91a.json",
+    "0cffa.json",
+    "127a1.json",
+    "26b49.json",
     "34702.json",
+    "7681c.json",
     "7f568.json",
+    "c3303.json",
     "e8b04.json",
+    "f6a65.json",
     "fcca3.json"
   ],
   allowMissingNull: false,

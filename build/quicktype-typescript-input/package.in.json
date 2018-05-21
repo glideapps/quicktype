@@ -1,0 +1,24 @@
+{
+    "name": "quicktype-typescript-input",
+    "version": "0.0.3",
+    "license": "Apache-2.0",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "repository": "https://github.com/quicktype/quicktype",
+    "scripts": {
+        "clean": "rm -rf dist node_modules *~",
+        "prepare": "npm run build",
+        "build": "tsc",
+        "tslint": "tslint --project ."
+    },
+    "dependencies": {
+        "quicktype-core": "the build script replaces this",
+        "graphql": "^0.11.7"
+    },
+    "devDependencies": {
+        "@types/node": "^8.10.10",
+        "typescript": "~2.8.3",
+        "tslint": "^5.9.1"
+    },
+    "files": ["dist/**"]
+}

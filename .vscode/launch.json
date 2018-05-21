@@ -12,7 +12,7 @@
       "runtimeArgs": ["--nolazy"],
       "args": [
         "--project",
-        "src/tsconfig.json",
+        "src/cli/tsconfig.json",
         "src/cli/index.ts",
         "--lang",
         "ts",
