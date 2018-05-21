@@ -102,34 +102,34 @@ function findSimilarityCliques(
     onlyWithSameProperties: boolean,
     includeFixedClasses: boolean
 ): ClassType[][] {
-    let unprocessedClasses = Array.from(graph.allNamedTypesSeparated().objects).filter(
+    const classCandidates = Array.from(graph.allNamedTypesSeparated().objects).filter(
         o => o instanceof ClassType && (includeFixedClasses || !o.isFixed)
     ) as ClassType[];
-    const cliques: ClassType[][] = [];
+    const cliques: Clique[] = [];
 
-    // FIXME: Don't build cliques one by one.  Instead have a list of
-    // cliques-in-progress and iterate over all classes.  Add the class
-    // to the first clique that it's part of.  If there's none, make it
-    // into a new clique.
-    while (unprocessedClasses.length > 0) {
-        const classesLeft: ClassType[] = [];
-        const clique: Clique = { members: [unprocessedClasses[0]], prototypes: [unprocessedClasses[0]] };
-
-        for (let i = 1; i < unprocessedClasses.length; i++) {
-            const c = unprocessedClasses[i];
-            if (!tryAddToClique(c, clique, onlyWithSameProperties)) {
-                classesLeft.push(c);
+    for (const c of classCandidates) {
+        let cliqueIndex: number | undefined = undefined;
+        for (let i = 0; i < cliques.length; i++) {
+            if (tryAddToClique(c, cliques[i], onlyWithSameProperties)) {
+                cliqueIndex = i;
+                break;
             }
         }
-
-        if (clique.members.length > 1) {
-            cliques.push(clique.members);
+        if (cliqueIndex === undefined) {
+            // New clique
+            cliqueIndex = cliques.length;
+            cliques.push({ members: [c], prototypes: [c] });
         }
 
-        unprocessedClasses = classesLeft;
+        // Move the clique we just added to to the front, in the hope that
+        // some cliques are more often added to than others, and they'll
+        // move to the front.
+        const tmp = cliques[0];
+        cliques[0] = cliques[cliqueIndex];
+        cliques[cliqueIndex] = tmp;
     }
 
-    return cliques;
+    return cliques.map(clique => clique.members);
 }
 
 export function combineClasses(
