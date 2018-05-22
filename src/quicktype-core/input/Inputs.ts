@@ -62,6 +62,7 @@ export interface Input<T> {
 
     addTypes(
         typeBuilder: TypeBuilder,
+        inferMaps: boolean,
         inferEnums: boolean,
         inferDates: boolean,
         fixedTopLevels: boolean
@@ -133,11 +134,12 @@ export class JSONInput implements Input<JSONSourceData> {
 
     async addTypes(
         typeBuilder: TypeBuilder,
+        inferMaps: boolean,
         inferEnums: boolean,
         inferDates: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
-        const inference = new TypeInference(this._compressedJSON, typeBuilder, inferEnums, inferDates);
+        const inference = new TypeInference(this._compressedJSON, typeBuilder, inferMaps, inferEnums, inferDates);
 
         for (const [name, { samples, description }] of this._topLevels) {
             const tref = inference.inferType(makeNamesTypeAttributes(name, false), samples, fixedTopLevels);
@@ -333,12 +335,13 @@ export class InputData {
 
     async addTypes(
         typeBuilder: TypeBuilder,
+        inferMaps: boolean,
         inferEnums: boolean,
         inferDates: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
         for (const input of this._inputs) {
-            await input.addTypes(typeBuilder, inferEnums, inferDates, fixedTopLevels);
+            await input.addTypes(typeBuilder, inferMaps, inferEnums, inferDates, fixedTopLevels);
         }
     }
 

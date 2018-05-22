@@ -1,0 +1,7002 @@
+{
+  "752514": {
+    "id": 752514,
+    "code": "freyat2FreyChamp",
+    "emoticon_set": 557708,
+    "channel_id": "153959861",
+    "channel_name": "freyatopmid"
+  },
+  "588803": {
+    "id": 588803,
+    "code": "maxdoeHAA",
+    "emoticon_set": 255753,
+    "channel_id": "70726632",
+    "channel_name": "maxdoestwitchtv"
+  },
+  "637850": {
+    "id": 637850,
+    "code": "maxdoeHEY",
+    "emoticon_set": 255754,
+    "channel_id": "70726632",
+    "channel_name": "maxdoestwitchtv"
+  },
+  "588829": {
+    "id": 588829,
+    "code": "maxdoeThink",
+    "emoticon_set": 255755,
+    "channel_id": "70726632",
+    "channel_name": "maxdoestwitchtv"
+  },
+  "890005": {
+    "id": 890005,
+    "code": "cutewh1PrincessPeach",
+    "emoticon_set": 688612,
+    "channel_id": "206046957",
+    "channel_name": "cutewhitegirls"
+  },
+  "889997": {
+    "id": 889997,
+    "code": "cutewh1OOOOO",
+    "emoticon_set": 688614,
+    "channel_id": "206046957",
+    "channel_name": "cutewhitegirls"
+  },
+  "889999": {
+    "id": 889999,
+    "code": "cutewh1KingAndKong",
+    "emoticon_set": 688615,
+    "channel_id": "206046957",
+    "channel_name": "cutewhitegirls"
+  },
+  "542002": {
+    "id": 542002,
+    "code": "chefde1R",
+    "emoticon_set": 413696,
+    "channel_id": "75468441",
+    "channel_name": "chef_deets"
+  },
+  "820324": {
+    "id": 820324,
+    "code": "chefde1N",
+    "emoticon_set": 413698,
+    "channel_id": "75468441",
+    "channel_name": "chef_deets"
+  },
+  "820328": {
+    "id": 820328,
+    "code": "chefde1V",
+    "emoticon_set": 413701,
+    "channel_id": "75468441",
+    "channel_name": "chef_deets"
+  },
+  "627754": {
+    "id": 627754,
+    "code": "waffle17WaffleLove",
+    "emoticon_set": 465049,
+    "channel_id": "28308158",
+    "channel_name": "wafflesomd"
+  },
+  "762608": {
+    "id": 762608,
+    "code": "ebzleiHiya",
+    "emoticon_set": 440815,
+    "channel_id": "144859833",
+    "channel_name": "ebzleigh"
+  },
+  "728207": {
+    "id": 728207,
+    "code": "dollieUmad",
+    "emoticon_set": 99551,
+    "channel_id": "99098525",
+    "channel_name": "dolley"
+  },
+  "432773": {
+    "id": 432773,
+    "code": "seerdoO",
+    "emoticon_set": 331060,
+    "channel_id": "111345200",
+    "channel_name": "seerdoo"
+  },
+  "847382": {
+    "id": 847382,
+    "code": "greshkMistakes",
+    "emoticon_set": 644880,
+    "channel_id": "28811337",
+    "channel_name": "greshk"
+  },
+  "849541": {
+    "id": 849541,
+    "code": "greshkTup",
+    "emoticon_set": 644881,
+    "channel_id": "28811337",
+    "channel_name": "greshk"
+  },
+  "849557": {
+    "id": 849557,
+    "code": "greshkWow",
+    "emoticon_set": 644882,
+    "channel_id": "28811337",
+    "channel_name": "greshk"
+  },
+  "857654": {
+    "id": 857654,
+    "code": "gamerc10GC",
+    "emoticon_set": 641482,
+    "channel_id": "191801361",
+    "channel_name": "gamercopx"
+  },
+  "871805": {
+    "id": 871805,
+    "code": "gamerc10GC2",
+    "emoticon_set": 641483,
+    "channel_id": "191801361",
+    "channel_name": "gamercopx"
+  },
+  "871808": {
+    "id": 871808,
+    "code": "gamerc10GC4",
+    "emoticon_set": 641484,
+    "channel_id": "191801361",
+    "channel_name": "gamercopx"
+  },
+  "456668": {
+    "id": 456668,
+    "code": "surrea2Freakin",
+    "emoticon_set": 359027,
+    "channel_id": "29904165",
+    "channel_name": "sbthecommissar"
+  },
+  "826636": {
+    "id": 826636,
+    "code": "camelsHype",
+    "emoticon_set": 626809,
+    "channel_id": "186663725",
+    "channel_name": "camelshorts"
+  },
+  "826639": {
+    "id": 826639,
+    "code": "camelsWut",
+    "emoticon_set": 626810,
+    "channel_id": "186663725",
+    "channel_name": "camelshorts"
+  },
+  "583768": {
+    "id": 583768,
+    "code": "stormc4Activated",
+    "emoticon_set": 448271,
+    "channel_id": "53961378",
+    "channel_name": "stormchris_"
+  },
+  "596564": {
+    "id": 596564,
+    "code": "stormc4Hello",
+    "emoticon_set": 448272,
+    "channel_id": "53961378",
+    "channel_name": "stormchris_"
+  },
+  "492423": {
+    "id": 492423,
+    "code": "chaosm3Ship",
+    "emoticon_set": 305802,
+    "channel_id": "161853695",
+    "channel_name": "chaosmachinegr"
+  },
+  "492425": {
+    "id": 492425,
+    "code": "chaosm3Pirate",
+    "emoticon_set": 305808,
+    "channel_id": "161853695",
+    "channel_name": "chaosmachinegr"
+  },
+  "492426": {
+    "id": 492426,
+    "code": "chaosm3Skull",
+    "emoticon_set": 305809,
+    "channel_id": "161853695",
+    "channel_name": "chaosmachinegr"
+  },
+  "335822": {
+    "id": 335822,
+    "code": "peiyumSixSix",
+    "emoticon_set": 176653,
+    "channel_id": "120894129",
+    "channel_name": "peiyummy"
+  },
+  "335823": {
+    "id": 335823,
+    "code": "peiyumHiHi",
+    "emoticon_set": 176655,
+    "channel_id": "120894129",
+    "channel_name": "peiyummy"
+  },
+  "335824": {
+    "id": 335824,
+    "code": "peiyumHeart",
+    "emoticon_set": 176656,
+    "channel_id": "120894129",
+    "channel_name": "peiyummy"
+  },
+  "213777": {
+    "id": 213777,
+    "code": "antinoraGgal",
+    "emoticon_set": 22740,
+    "channel_id": "138290736",
+    "channel_name": "sdwshow"
+  },
+  "33134": {
+    "id": 33134,
+    "code": "venHeyGamers",
+    "emoticon_set": 10392,
+    "channel_id": "12322261",
+    "channel_name": "venick"
+  },
+  "161879": {
+    "id": 161879,
+    "code": "venHOT",
+    "emoticon_set": 10392,
+    "channel_id": "12322261",
+    "channel_name": "venick"
+  },
+  "168237": {
+    "id": 168237,
+    "code": "venMoo",
+    "emoticon_set": 10392,
+    "channel_id": "12322261",
+    "channel_name": "venick"
+  },
+  "313884": {
+    "id": 313884,
+    "code": "venBling",
+    "emoticon_set": 10392,
+    "channel_id": "12322261",
+    "channel_name": "venick"
+  },
+  "178670": {
+    "id": 178670,
+    "code": "venPhatStacks",
+    "emoticon_set": 24597,
+    "channel_id": "12322261",
+    "channel_name": "venick"
+  },
+  "744444": {
+    "id": 744444,
+    "code": "lexiloTurtleCove",
+    "emoticon_set": 525298,
+    "channel_id": "174917730",
+    "channel_name": "lexilovee23"
+  },
+  "465375": {
+    "id": 465375,
+    "code": "klonyaEkbabay",
+    "emoticon_set": 351101,
+    "channel_id": "25631204",
+    "channel_name": "klonyarik"
+  },
+  "519482": {
+    "id": 519482,
+    "code": "klonyaHorosh",
+    "emoticon_set": 351102,
+    "channel_id": "25631204",
+    "channel_name": "klonyarik"
+  },
+  "519966": {
+    "id": 519966,
+    "code": "klonyaImposibru",
+    "emoticon_set": 351103,
+    "channel_id": "25631204",
+    "channel_name": "klonyarik"
+  },
+  "674593": {
+    "id": 674593,
+    "code": "lepazuHi",
+    "emoticon_set": 109979,
+    "channel_id": "40425122",
+    "channel_name": "lepazu"
+  },
+  "995668": {
+    "id": 995668,
+    "code": "mrpricSubGang",
+    "emoticon_set": 770419,
+    "channel_id": "79368429",
+    "channel_name": "mrpriceo0"
+  },
+  "580099": {
+    "id": 580099,
+    "code": "alpandWp",
+    "emoticon_set": 198780,
+    "channel_id": "155944045",
+    "channel_name": "panda__"
+  },
+  "364998": {
+    "id": 364998,
+    "code": "alpandLove",
+    "emoticon_set": 198783,
+    "channel_id": "155944045",
+    "channel_name": "panda__"
+  },
+  "366214": {
+    "id": 366214,
+    "code": "alpandAngry",
+    "emoticon_set": 198784,
+    "channel_id": "155944045",
+    "channel_name": "panda__"
+  },
+  "987811": {
+    "id": 987811,
+    "code": "lightr3Yeah",
+    "emoticon_set": 774884,
+    "channel_id": "52370389",
+    "channel_name": "lightreaven"
+  },
+  "987816": {
+    "id": 987816,
+    "code": "lightr3Salty",
+    "emoticon_set": 774885,
+    "channel_id": "52370389",
+    "channel_name": "lightreaven"
+  },
+  "987818": {
+    "id": 987818,
+    "code": "lightr3Cry",
+    "emoticon_set": 774886,
+    "channel_id": "52370389",
+    "channel_name": "lightreaven"
+  },
+  "920452": {
+    "id": 920452,
+    "code": "tiltan2TILT",
+    "emoticon_set": 703080,
+    "channel_id": "87879414",
+    "channel_name": "tiltani"
+  },
+  "920454": {
+    "id": 920454,
+    "code": "tiltan200IQ",
+    "emoticon_set": 703081,
+    "channel_id": "87879414",
+    "channel_name": "tiltani"
+  },
+  "462818": {
+    "id": 462818,
+    "code": "zazaarGBAN3",
+    "emoticon_set": 110710,
+    "channel_id": "144780669",
+    "channel_name": "zazaarg"
+  },
+  "368201": {
+    "id": 368201,
+    "code": "zazaarGfolloow",
+    "emoticon_set": 110712,
+    "channel_id": "144780669",
+    "channel_name": "zazaarg"
+  },
+  "857774": {
+    "id": 857774,
+    "code": "mannyt1Emote1",
+    "emoticon_set": 623495,
+    "channel_id": "39145043",
+    "channel_name": "mannytheekidd"
+  },
+  "869820": {
+    "id": 869820,
+    "code": "mannyt1Emote2",
+    "emoticon_set": 623496,
+    "channel_id": "39145043",
+    "channel_name": "mannytheekidd"
+  },
+  "869934": {
+    "id": 869934,
+    "code": "mannyt1Emote3",
+    "emoticon_set": 623497,
+    "channel_id": "39145043",
+    "channel_name": "mannytheekidd"
+  },
+  "892690": {
+    "id": 892690,
+    "code": "yiogamESLMAO",
+    "emoticon_set": 685907,
+    "channel_id": "51310549",
+    "channel_name": "yiogames"
+  },
+  "892707": {
+    "id": 892707,
+    "code": "yiogamEsAngry",
+    "emoticon_set": 685908,
+    "channel_id": "51310549",
+    "channel_name": "yiogames"
+  },
+  "850496": {
+    "id": 850496,
+    "code": "hikari8Hikari",
+    "emoticon_set": 555835,
+    "channel_id": "137301853",
+    "channel_name": "hikarijundo"
+  },
+  "24389": {
+    "id": 24389,
+    "code": "heliorCarrea",
+    "emoticon_set": 7913,
+    "channel_id": "30131260",
+    "channel_name": "helior"
+  },
+  "24397": {
+    "id": 24397,
+    "code": "heliorJuliostito",
+    "emoticon_set": 7913,
+    "channel_id": "30131260",
+    "channel_name": "helior"
+  },
+  "275362": {
+    "id": 275362,
+    "code": "heliorHaha",
+    "emoticon_set": 7913,
+    "channel_id": "30131260",
+    "channel_name": "helior"
+  },
+  "425922": {
+    "id": 425922,
+    "code": "heliorZeicro",
+    "emoticon_set": 7913,
+    "channel_id": "30131260",
+    "channel_name": "helior"
+  },
+  "476873": {
+    "id": 476873,
+    "code": "heliorQuebuena",
+    "emoticon_set": 7913,
+    "channel_id": "30131260",
+    "channel_name": "helior"
+  },
+  "476936": {
+    "id": 476936,
+    "code": "heliorPalakasina",
+    "emoticon_set": 7913,
+    "channel_id": "30131260",
+    "channel_name": "helior"
+  },
+  "476946": {
+    "id": 476946,
+    "code": "heliorKappa",
+    "emoticon_set": 7913,
+    "channel_id": "30131260",
+    "channel_name": "helior"
+  },
+  "267054": {
+    "id": 267054,
+    "code": "heliorSwag",
+    "emoticon_set": 38190,
+    "channel_id": "30131260",
+    "channel_name": "helior"
+  },
+  "267057": {
+    "id": 267057,
+    "code": "heliorGold",
+    "emoticon_set": 38191,
+    "channel_id": "30131260",
+    "channel_name": "helior"
+  },
+  "357529": {
+    "id": 357529,
+    "code": "pupgamYAY",
+    "emoticon_set": 256391,
+    "channel_id": "88596577",
+    "channel_name": "pupgames"
+  },
+  "360664": {
+    "id": 360664,
+    "code": "pupgamCRY",
+    "emoticon_set": 256392,
+    "channel_id": "88596577",
+    "channel_name": "pupgames"
+  },
+  "357534": {
+    "id": 357534,
+    "code": "pupgamAA",
+    "emoticon_set": 256393,
+    "channel_id": "88596577",
+    "channel_name": "pupgames"
+  },
+  "670997": {
+    "id": 670997,
+    "code": "kitten14MooseWat",
+    "emoticon_set": 386615,
+    "channel_id": "168567631",
+    "channel_name": "kittenmeatz"
+  },
+  "671000": {
+    "id": 671000,
+    "code": "kitten14GradeAMeatz",
+    "emoticon_set": 386616,
+    "channel_id": "168567631",
+    "channel_name": "kittenmeatz"
+  },
+  "671003": {
+    "id": 671003,
+    "code": "kitten14DarkDarkPizzanatti",
+    "emoticon_set": 386617,
+    "channel_id": "168567631",
+    "channel_name": "kittenmeatz"
+  },
+  "468715": {
+    "id": 468715,
+    "code": "affoxeFive",
+    "emoticon_set": 372063,
+    "channel_id": "40140558",
+    "channel_name": "affoxed"
+  },
+  "680216": {
+    "id": 680216,
+    "code": "terrab3Chickendinner",
+    "emoticon_set": 468928,
+    "channel_id": "70975244",
+    "channel_name": "terrabeat"
+  },
+  "680220": {
+    "id": 680220,
+    "code": "terrab3GG",
+    "emoticon_set": 468929,
+    "channel_id": "70975244",
+    "channel_name": "terrabeat"
+  },
+  "680222": {
+    "id": 680222,
+    "code": "terrab3RAGE",
+    "emoticon_set": 468930,
+    "channel_id": "70975244",
+    "channel_name": "terrabeat"
+  },
+  "746483": {
+    "id": 746483,
+    "code": "ipekliMuk",
+    "emoticon_set": 234038,
+    "channel_id": "98056852",
+    "channel_name": "ipeklihilal"
+  },
+  "746586": {
+    "id": 746586,
+    "code": "ipekliGolddigger",
+    "emoticon_set": 234040,
+    "channel_id": "98056852",
+    "channel_name": "ipeklihilal"
+  },
+  "616368": {
+    "id": 616368,
+    "code": "kaniexSIONORAZA",
+    "emoticon_set": 469714,
+    "channel_id": "178183871",
+    "channel_name": "kaniexo"
+  },
+  "607701": {
+    "id": 607701,
+    "code": "kaniexLil",
+    "emoticon_set": 469716,
+    "channel_id": "178183871",
+    "channel_name": "kaniexo"
+  },
+  "317015": {
+    "id": 317015,
+    "code": "smizumDogo",
+    "emoticon_set": 105590,
+    "channel_id": "31415103",
+    "channel_name": "sm_izumi"
+  },
+  "433308": {
+    "id": 433308,
+    "code": "smizumRosa",
+    "emoticon_set": 105593,
+    "channel_id": "31415103",
+    "channel_name": "sm_izumi"
+  },
+  "747914": {
+    "id": 747914,
+    "code": "smizumMiku",
+    "emoticon_set": 105594,
+    "channel_id": "31415103",
+    "channel_name": "sm_izumi"
+  },
+  "75": {
+    "id": 75,
+    "code": "dayJ",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "1018": {
+    "id": 1018,
+    "code": "dayHmm",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "3144": {
+    "id": 3144,
+    "code": "dayHeart",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "3503": {
+    "id": 3503,
+    "code": "dayDerp",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "4384": {
+    "id": 4384,
+    "code": "dayTroll",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "33770": {
+    "id": 33770,
+    "code": "dayG",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "33771": {
+    "id": 33771,
+    "code": "dayB",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "33772": {
+    "id": 33772,
+    "code": "dayP",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "34909": {
+    "id": 34909,
+    "code": "dayJoy",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "35652": {
+    "id": 35652,
+    "code": "dayDespy",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "35654": {
+    "id": 35654,
+    "code": "daySheriff",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "36248": {
+    "id": 36248,
+    "code": "dayRope",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "41651": {
+    "id": 41651,
+    "code": "dayKnight",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "50408": {
+    "id": 50408,
+    "code": "dayGoblin",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "53359": {
+    "id": 53359,
+    "code": "daySave",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "58744": {
+    "id": 58744,
+    "code": "dayBroken",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "79624": {
+    "id": 79624,
+    "code": "dayGG",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "330564": {
+    "id": 330564,
+    "code": "dayStory",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "398294": {
+    "id": 398294,
+    "code": "dayPwr",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "398296": {
+    "id": 398296,
+    "code": "dayHot",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "425582": {
+    "id": 425582,
+    "code": "daySick",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "431625": {
+    "id": 431625,
+    "code": "dayMug",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "445172": {
+    "id": 445172,
+    "code": "dayLuck",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "634585": {
+    "id": 634585,
+    "code": "dayHey",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "839944": {
+    "id": 839944,
+    "code": "dayGLHF",
+    "emoticon_set": 2,
+    "channel_id": "18587270",
+    "channel_name": "day9tv"
+  },
+  "423035": {
+    "id": 423035,
+    "code": "gon3ulKa",
+    "emoticon_set": 146946,
+    "channel_id": "120766957",
+    "channel_name": "vnaturekipitok"
+  },
+  "439558": {
+    "id": 439558,
+    "code": "freshwIndLove",
+    "emoticon_set": 342690,
+    "channel_id": "100926759",
+    "channel_name": "fresh_wind"
+  },
+  "338179": {
+    "id": 338179,
+    "code": "kidffMAD",
+    "emoticon_set": 231957,
+    "channel_id": "127395816",
+    "channel_name": "kidff"
+  },
+  "343748": {
+    "id": 343748,
+    "code": "kidffVAC",
+    "emoticon_set": 231960,
+    "channel_id": "127395816",
+    "channel_name": "kidff"
+  },
+  "301643": {
+    "id": 301643,
+    "code": "kidffSELLOUT",
+    "emoticon_set": 231961,
+    "channel_id": "127395816",
+    "channel_name": "kidff"
+  },
+  "585163": {
+    "id": 585163,
+    "code": "autosaVehype",
+    "emoticon_set": 451943,
+    "channel_id": "92951546",
+    "channel_name": "autosaveares"
+  },
+  "585173": {
+    "id": 585173,
+    "code": "autosaVeheart",
+    "emoticon_set": 451944,
+    "channel_id": "92951546",
+    "channel_name": "autosaveares"
+  },
+  "585185": {
+    "id": 585185,
+    "code": "autosaVegod",
+    "emoticon_set": 451945,
+    "channel_id": "92951546",
+    "channel_name": "autosaveares"
+  },
+  "547365": {
+    "id": 547365,
+    "code": "sasoreSSS",
+    "emoticon_set": 81259,
+    "channel_id": "29824775",
+    "channel_name": "sasorei"
+  },
+  "791288": {
+    "id": 791288,
+    "code": "sasoreDS",
+    "emoticon_set": 81262,
+    "channel_id": "29824775",
+    "channel_name": "sasorei"
+  },
+  "791293": {
+    "id": 791293,
+    "code": "sasoreMe",
+    "emoticon_set": 81263,
+    "channel_id": "29824775",
+    "channel_name": "sasorei"
+  },
+  "452838": {
+    "id": 452838,
+    "code": "divine6Pizza",
+    "emoticon_set": 134057,
+    "channel_id": "46897359",
+    "channel_name": "divinecarly"
+  },
+  "435287": {
+    "id": 435287,
+    "code": "divine6Bobs",
+    "emoticon_set": 134060,
+    "channel_id": "46897359",
+    "channel_name": "divinecarly"
+  },
+  "438177": {
+    "id": 438177,
+    "code": "divine6Sellout",
+    "emoticon_set": 134061,
+    "channel_id": "46897359",
+    "channel_name": "divinecarly"
+  },
+  "518085": {
+    "id": 518085,
+    "code": "xbananBanana",
+    "emoticon_set": 214728,
+    "channel_id": "82552240",
+    "channel_name": "bananacowow"
+  },
+  "958973": {
+    "id": 958973,
+    "code": "xbananCree",
+    "emoticon_set": 214732,
+    "channel_id": "82552240",
+    "channel_name": "bananacowow"
+  },
+  "523203": {
+    "id": 523203,
+    "code": "xbananLucio",
+    "emoticon_set": 214733,
+    "channel_id": "82552240",
+    "channel_name": "bananacowow"
+  },
+  "221810": {
+    "id": 221810,
+    "code": "jawhzSub",
+    "emoticon_set": 229023,
+    "channel_id": "40113235",
+    "channel_name": "jawhz"
+  },
+  "303092": {
+    "id": 303092,
+    "code": "jawhzCreep",
+    "emoticon_set": 229025,
+    "channel_id": "40113235",
+    "channel_name": "jawhz"
+  },
+  "712884": {
+    "id": 712884,
+    "code": "koixxxA",
+    "emoticon_set": 212493,
+    "channel_id": "108610524",
+    "channel_name": "koixxtv"
+  },
+  "403581": {
+    "id": 403581,
+    "code": "koixxxGasm",
+    "emoticon_set": 212496,
+    "channel_id": "108610524",
+    "channel_name": "koixxtv"
+  },
+  "403584": {
+    "id": 403584,
+    "code": "koixxxC",
+    "emoticon_set": 212497,
+    "channel_id": "108610524",
+    "channel_name": "koixxtv"
+  },
+  "987501": {
+    "id": 987501,
+    "code": "rocket39HeartEyes",
+    "emoticon_set": 711753,
+    "channel_id": "158813709",
+    "channel_name": "rocketwolf0"
+  },
+  "928990": {
+    "id": 928990,
+    "code": "rocket39Justright",
+    "emoticon_set": 711754,
+    "channel_id": "158813709",
+    "channel_name": "rocketwolf0"
+  },
+  "828800": {
+    "id": 828800,
+    "code": "derexe0",
+    "emoticon_set": 631138,
+    "channel_id": "189971256",
+    "channel_name": "derexendrome"
+  },
+  "828803": {
+    "id": 828803,
+    "code": "derexe1",
+    "emoticon_set": 631139,
+    "channel_id": "189971256",
+    "channel_name": "derexendrome"
+  },
+  "557722": {
+    "id": 557722,
+    "code": "maddog6W",
+    "emoticon_set": 426115,
+    "channel_id": "32410178",
+    "channel_name": "maddogppp"
+  },
+  "722672": {
+    "id": 722672,
+    "code": "jayzTheDeadsetLegend",
+    "emoticon_set": 436012,
+    "channel_id": "42840250",
+    "channel_name": "jay_z_"
+  },
+  "545055": {
+    "id": 545055,
+    "code": "perkylOve",
+    "emoticon_set": 325853,
+    "channel_id": "44678911",
+    "channel_name": "perky_lynx"
+  },
+  "903292": {
+    "id": 903292,
+    "code": "perkylOppy",
+    "emoticon_set": 325856,
+    "channel_id": "44678911",
+    "channel_name": "perky_lynx"
+  },
+  "727747": {
+    "id": 727747,
+    "code": "always21Always21",
+    "emoticon_set": 546808,
+    "channel_id": "72116487",
+    "channel_name": "alwayswitty89"
+  },
+  "840843": {
+    "id": 840843,
+    "code": "puglyfHi",
+    "emoticon_set": 638206,
+    "channel_id": "94735088",
+    "channel_name": "puglyfetv"
+  },
+  "840846": {
+    "id": 840846,
+    "code": "puglyfHype",
+    "emoticon_set": 638207,
+    "channel_id": "94735088",
+    "channel_name": "puglyfetv"
+  },
+  "844326": {
+    "id": 844326,
+    "code": "puglyfLove",
+    "emoticon_set": 638208,
+    "channel_id": "94735088",
+    "channel_name": "puglyfetv"
+  },
+  "254979": {
+    "id": 254979,
+    "code": "kaitocThumbs",
+    "emoticon_set": 167586,
+    "channel_id": "23415640",
+    "channel_name": "kaitocain"
+  },
+  "625400": {
+    "id": 625400,
+    "code": "kaitocHype",
+    "emoticon_set": 167591,
+    "channel_id": "23415640",
+    "channel_name": "kaitocain"
+  },
+  "255040": {
+    "id": 255040,
+    "code": "kaitocAirship",
+    "emoticon_set": 167592,
+    "channel_id": "23415640",
+    "channel_name": "kaitocain"
+  },
+  "956328": {
+    "id": 956328,
+    "code": "thetusHappy",
+    "emoticon_set": 757816,
+    "channel_id": "76327923",
+    "channel_name": "the_tush_chewer"
+  },
+  "924943": {
+    "id": 924943,
+    "code": "endles17Fiance",
+    "emoticon_set": 710967,
+    "channel_id": "56927076",
+    "channel_name": "endlessbacklog"
+  },
+  "949351": {
+    "id": 949351,
+    "code": "endles17Champ",
+    "emoticon_set": 710968,
+    "channel_id": "56927076",
+    "channel_name": "endlessbacklog"
+  },
+  "391395": {
+    "id": 391395,
+    "code": "maxogtMaxog",
+    "emoticon_set": 317149,
+    "channel_id": "167281549",
+    "channel_name": "phalconislive"
+  },
+  "863917": {
+    "id": 863917,
+    "code": "joker2GodPlans",
+    "emoticon_set": 326263,
+    "channel_id": "83251086",
+    "channel_name": "joker2facetv"
+  },
+  "847374": {
+    "id": 847374,
+    "code": "joker2BlkOMG",
+    "emoticon_set": 326271,
+    "channel_id": "83251086",
+    "channel_name": "joker2facetv"
+  },
+  "873515": {
+    "id": 873515,
+    "code": "joker2ItsLit",
+    "emoticon_set": 326272,
+    "channel_id": "83251086",
+    "channel_name": "joker2facetv"
+  },
+  "625339": {
+    "id": 625339,
+    "code": "marmot1WOO",
+    "emoticon_set": 139457,
+    "channel_id": "86574110",
+    "channel_name": "marmoth_dunkelauge"
+  },
+  "694113": {
+    "id": 694113,
+    "code": "furrwiCatEye",
+    "emoticon_set": 504439,
+    "channel_id": "124046113",
+    "channel_name": "furrwizzer"
+  },
+  "694164": {
+    "id": 694164,
+    "code": "furrwiCatGoof",
+    "emoticon_set": 504440,
+    "channel_id": "124046113",
+    "channel_name": "furrwizzer"
+  },
+  "695426": {
+    "id": 695426,
+    "code": "furrwiSanta",
+    "emoticon_set": 504441,
+    "channel_id": "124046113",
+    "channel_name": "furrwizzer"
+  },
+  "866106": {
+    "id": 866106,
+    "code": "paraguGolosina",
+    "emoticon_set": 601810,
+    "channel_id": "71876254",
+    "channel_name": "paragua_"
+  },
+  "544244": {
+    "id": 544244,
+    "code": "phxcsgT",
+    "emoticon_set": 327513,
+    "channel_id": "42829644",
+    "channel_name": "phx_csgo"
+  },
+  "515847": {
+    "id": 515847,
+    "code": "torqfeHype",
+    "emoticon_set": 347449,
+    "channel_id": "74277318",
+    "channel_name": "torqfeeds"
+  },
+  "515854": {
+    "id": 515854,
+    "code": "torqfeGGs",
+    "emoticon_set": 347454,
+    "channel_id": "74277318",
+    "channel_name": "torqfeeds"
+  },
+  "431477": {
+    "id": 431477,
+    "code": "hyp3rcDerp",
+    "emoticon_set": 340457,
+    "channel_id": "45984217",
+    "channel_name": "hyp3r_cs"
+  },
+  "223769": {
+    "id": 223769,
+    "code": "basileHey",
+    "emoticon_set": 150511,
+    "channel_id": "120796023",
+    "channel_name": "basilelf"
+  },
+  "809662": {
+    "id": 809662,
+    "code": "zocksoLechucki",
+    "emoticon_set": 315056,
+    "channel_id": "80936274",
+    "channel_name": "lechucki_tv"
+  },
+  "809664": {
+    "id": 809664,
+    "code": "zocksoShip",
+    "emoticon_set": 315057,
+    "channel_id": "80936274",
+    "channel_name": "lechucki_tv"
+  },
+  "809665": {
+    "id": 809665,
+    "code": "zocksoFlag",
+    "emoticon_set": 315058,
+    "channel_id": "80936274",
+    "channel_name": "lechucki_tv"
+  },
+  "661727": {
+    "id": 661727,
+    "code": "eman22Hyper",
+    "emoticon_set": 173611,
+    "channel_id": "36028837",
+    "channel_name": "eman220"
+  },
+  "662241": {
+    "id": 662241,
+    "code": "eman22Love",
+    "emoticon_set": 173612,
+    "channel_id": "36028837",
+    "channel_name": "eman220"
+  },
+  "324031": {
+    "id": 324031,
+    "code": "aikuziAPPROVE",
+    "emoticon_set": 161001,
+    "channel_id": "116036675",
+    "channel_name": "aikuzi"
+  },
+  "506949": {
+    "id": 506949,
+    "code": "aikuziLurk",
+    "emoticon_set": 161006,
+    "channel_id": "116036675",
+    "channel_name": "aikuzi"
+  },
+  "987181": {
+    "id": 987181,
+    "code": "indcasAs2",
+    "emoticon_set": 788023,
+    "channel_id": "166537139",
+    "channel_name": "indcasagrande"
+  },
+  "987189": {
+    "id": 987189,
+    "code": "indcasAchocada",
+    "emoticon_set": 788024,
+    "channel_id": "166537139",
+    "channel_name": "indcasagrande"
+  },
+  "987204": {
+    "id": 987204,
+    "code": "indcasAwar",
+    "emoticon_set": 788025,
+    "channel_id": "166537139",
+    "channel_name": "indcasagrande"
+  },
+  "661708": {
+    "id": 661708,
+    "code": "mcgen7LUL",
+    "emoticon_set": 515197,
+    "channel_id": "108150314",
+    "channel_name": "mcgen7"
+  },
+  "929325": {
+    "id": 929325,
+    "code": "digita23Wand",
+    "emoticon_set": 397425,
+    "channel_id": "106233418",
+    "channel_name": "digital_spell"
+  },
+  "326570": {
+    "id": 326570,
+    "code": "zimlicKRIP",
+    "emoticon_set": 204139,
+    "channel_id": "40568334",
+    "channel_name": "zimlick"
+  },
+  "329216": {
+    "id": 329216,
+    "code": "zimlicKthrist",
+    "emoticon_set": 204144,
+    "channel_id": "40568334",
+    "channel_name": "zimlick"
+  },
+  "283997": {
+    "id": 283997,
+    "code": "byebyeTrashCan",
+    "emoticon_set": 237677,
+    "channel_id": "86503497",
+    "channel_name": "byebyeface"
+  },
+  "404748": {
+    "id": 404748,
+    "code": "byebyeZF",
+    "emoticon_set": 237678,
+    "channel_id": "86503497",
+    "channel_name": "byebyeface"
+  },
+  "404750": {
+    "id": 404750,
+    "code": "byebyeGoldT",
+    "emoticon_set": 237679,
+    "channel_id": "86503497",
+    "channel_name": "byebyeface"
+  },
+  "993545": {
+    "id": 993545,
+    "code": "omgahoBasic",
+    "emoticon_set": 797149,
+    "channel_id": "207004542",
+    "channel_name": "omg_a_hoe"
+  },
+  "712223": {
+    "id": 712223,
+    "code": "mpaktvFire",
+    "emoticon_set": 550281,
+    "channel_id": "129337265",
+    "channel_name": "mpaktv"
+  },
+  "301580": {
+    "id": 301580,
+    "code": "ghostr2Hug",
+    "emoticon_set": 209043,
+    "channel_id": "86007876",
+    "channel_name": "ghostroad_100"
+  },
+  "791706": {
+    "id": 791706,
+    "code": "roguemDoge",
+    "emoticon_set": 609344,
+    "channel_id": "194683239",
+    "channel_name": "roguemeg"
+  },
+  "791707": {
+    "id": 791707,
+    "code": "roguemDogewink",
+    "emoticon_set": 609345,
+    "channel_id": "194683239",
+    "channel_name": "roguemeg"
+  },
+  "791708": {
+    "id": 791708,
+    "code": "roguemSideeye",
+    "emoticon_set": 609346,
+    "channel_id": "194683239",
+    "channel_name": "roguemeg"
+  },
+  "931401": {
+    "id": 931401,
+    "code": "grokteSnow",
+    "emoticon_set": 730473,
+    "channel_id": "138351006",
+    "channel_name": "groktehwalrus"
+  },
+  "931549": {
+    "id": 931549,
+    "code": "grokteGrok",
+    "emoticon_set": 730474,
+    "channel_id": "138351006",
+    "channel_name": "groktehwalrus"
+  },
+  "931840": {
+    "id": 931840,
+    "code": "grokteWalrus",
+    "emoticon_set": 730475,
+    "channel_id": "138351006",
+    "channel_name": "groktehwalrus"
+  },
+  "368745": {
+    "id": 368745,
+    "code": "dxlFeelsVult",
+    "emoticon_set": 173757,
+    "channel_id": "35063141",
+    "channel_name": "dx_l"
+  },
+  "486621": {
+    "id": 486621,
+    "code": "smiethSammy",
+    "emoticon_set": 273000,
+    "channel_id": "135003986",
+    "channel_name": "smiethiee"
+  },
+  "634684": {
+    "id": 634684,
+    "code": "zimaroPalm",
+    "emoticon_set": 470389,
+    "channel_id": "78203286",
+    "channel_name": "zimaron"
+  },
+  "329572": {
+    "id": 329572,
+    "code": "sp1nMYRNG",
+    "emoticon_set": 253193,
+    "channel_id": "3091066",
+    "channel_name": "sp1n"
+  },
+  "335377": {
+    "id": 335377,
+    "code": "sp1nDREAM",
+    "emoticon_set": 253195,
+    "channel_id": "3091066",
+    "channel_name": "sp1n"
+  },
+  "844698": {
+    "id": 844698,
+    "code": "sp1nC",
+    "emoticon_set": 253196,
+    "channel_id": "3091066",
+    "channel_name": "sp1n"
+  },
+  "991838": {
+    "id": 991838,
+    "code": "eliora1Eliora1",
+    "emoticon_set": 779024,
+    "channel_id": "132693742",
+    "channel_name": "elioraa"
+  },
+  "329455": {
+    "id": 329455,
+    "code": "tridenHype",
+    "emoticon_set": 104353,
+    "channel_id": "56283106",
+    "channel_name": "tridentpandi"
+  },
+  "329458": {
+    "id": 329458,
+    "code": "tridenRage",
+    "emoticon_set": 104355,
+    "channel_id": "56283106",
+    "channel_name": "tridentpandi"
+  },
+  "329460": {
+    "id": 329460,
+    "code": "tridenPirate",
+    "emoticon_set": 104356,
+    "channel_id": "56283106",
+    "channel_name": "tridentpandi"
+  },
+  "991614": {
+    "id": 991614,
+    "code": "itsmen3NoobFace",
+    "emoticon_set": 769177,
+    "channel_id": "206875977",
+    "channel_name": "itsme_noobtuber_119"
+  },
+  "136150": {
+    "id": 136150,
+    "code": "neckoRip",
+    "emoticon_set": 16602,
+    "channel_id": "108353322",
+    "channel_name": "neckolol"
+  },
+  "207799": {
+    "id": 207799,
+    "code": "neckoMad",
+    "emoticon_set": 16602,
+    "channel_id": "108353322",
+    "channel_name": "neckolol"
+  },
+  "207800": {
+    "id": 207800,
+    "code": "neckoGasm",
+    "emoticon_set": 16602,
+    "channel_id": "108353322",
+    "channel_name": "neckolol"
+  },
+  "207801": {
+    "id": 207801,
+    "code": "neckoAsco",
+    "emoticon_set": 16602,
+    "channel_id": "108353322",
+    "channel_name": "neckolol"
+  },
+  "207803": {
+    "id": 207803,
+    "code": "neckoSad",
+    "emoticon_set": 16602,
+    "channel_id": "108353322",
+    "channel_name": "neckolol"
+  },
+  "207805": {
+    "id": 207805,
+    "code": "neckoHype",
+    "emoticon_set": 16602,
+    "channel_id": "108353322",
+    "channel_name": "neckolol"
+  },
+  "207806": {
+    "id": 207806,
+    "code": "neckoLove",
+    "emoticon_set": 29064,
+    "channel_id": "108353322",
+    "channel_name": "neckolol"
+  },
+  "349238": {
+    "id": 349238,
+    "code": "x1keyzAlienKing",
+    "emoticon_set": 291638,
+    "channel_id": "113068519",
+    "channel_name": "1keyz"
+  },
+  "538123": {
+    "id": 538123,
+    "code": "swadgiSwadgroot",
+    "emoticon_set": 298881,
+    "channel_id": "95052326",
+    "channel_name": "swadgique"
+  },
+  "344144": {
+    "id": 344144,
+    "code": "swadgiSWAD",
+    "emoticon_set": 298882,
+    "channel_id": "95052326",
+    "channel_name": "swadgique"
+  },
+  "344142": {
+    "id": 344142,
+    "code": "swadgiSWADGIQUE",
+    "emoticon_set": 298883,
+    "channel_id": "95052326",
+    "channel_name": "swadgique"
+  },
+  "601763": {
+    "id": 601763,
+    "code": "bdogsgCLD9",
+    "emoticon_set": 469261,
+    "channel_id": "80005848",
+    "channel_name": "bdogs_gaming"
+  },
+  "552043": {
+    "id": 552043,
+    "code": "burntpLove",
+    "emoticon_set": 394855,
+    "channel_id": "85598195",
+    "channel_name": "burnt_pixels"
+  },
+  "815170": {
+    "id": 815170,
+    "code": "tzone1Baby",
+    "emoticon_set": 570947,
+    "channel_id": "191176295",
+    "channel_name": "tzone1222"
+  },
+  "453787": {
+    "id": 453787,
+    "code": "bullnWoah",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "645471": {
+    "id": 645471,
+    "code": "bullnF",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "645473": {
+    "id": 645473,
+    "code": "bullnL",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "645485": {
+    "id": 645485,
+    "code": "bullnTx",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "645486": {
+    "id": 645486,
+    "code": "bullnLul",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "877464": {
+    "id": 877464,
+    "code": "bullnS",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "877859": {
+    "id": 877859,
+    "code": "bullnGG",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "886453": {
+    "id": 886453,
+    "code": "bullnCreep",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "923524": {
+    "id": 923524,
+    "code": "bullnHuh",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "923670": {
+    "id": 923670,
+    "code": "bullnGasm",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "923672": {
+    "id": 923672,
+    "code": "bullnRage",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "923675": {
+    "id": 923675,
+    "code": "bullnRIP",
+    "emoticon_set": 359800,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "645487": {
+    "id": 645487,
+    "code": "bullnC",
+    "emoticon_set": 359801,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "648737": {
+    "id": 648737,
+    "code": "bullnKing",
+    "emoticon_set": 359802,
+    "channel_id": "137201480",
+    "channel_name": "bullnizzle"
+  },
+  "914394": {
+    "id": 914394,
+    "code": "evachiKiller",
+    "emoticon_set": 649292,
+    "channel_id": "154106189",
+    "channel_name": "evachiller"
+  },
+  "428997": {
+    "id": 428997,
+    "code": "tobiboLOVE",
+    "emoticon_set": 101804,
+    "channel_id": "81177514",
+    "channel_name": "tobibound"
+  },
+  "923531": {
+    "id": 923531,
+    "code": "tobiboAww",
+    "emoticon_set": 101808,
+    "channel_id": "81177514",
+    "channel_name": "tobibound"
+  },
+  "921167": {
+    "id": 921167,
+    "code": "tobiboHype",
+    "emoticon_set": 101809,
+    "channel_id": "81177514",
+    "channel_name": "tobibound"
+  },
+  "330600": {
+    "id": 330600,
+    "code": "siems5SMUG",
+    "emoticon_set": 274315,
+    "channel_id": "89688713",
+    "channel_name": "siems56"
+  },
+  "468127": {
+    "id": 468127,
+    "code": "shekal1",
+    "emoticon_set": 364011,
+    "channel_id": "104728543",
+    "channel_name": "shekalla"
+  },
+  "981185": {
+    "id": 981185,
+    "code": "jaithoHype1",
+    "emoticon_set": 758076,
+    "channel_id": "51431331",
+    "channel_name": "jaithorn24"
+  },
+  "966039": {
+    "id": 966039,
+    "code": "jaithoHype",
+    "emoticon_set": 758077,
+    "channel_id": "51431331",
+    "channel_name": "jaithorn24"
+  },
+  "942259": {
+    "id": 942259,
+    "code": "wibrapNani",
+    "emoticon_set": 741169,
+    "channel_id": "92087549",
+    "channel_name": "raptoriginal"
+  },
+  "329793": {
+    "id": 329793,
+    "code": "abstruHYPE",
+    "emoticon_set": 264649,
+    "channel_id": "29559664",
+    "channel_name": "abstructo"
+  },
+  "666810": {
+    "id": 666810,
+    "code": "abstruHEY",
+    "emoticon_set": 264650,
+    "channel_id": "29559664",
+    "channel_name": "abstructo"
+  },
+  "733155": {
+    "id": 733155,
+    "code": "marcoxHYPE",
+    "emoticon_set": 297541,
+    "channel_id": "101456846",
+    "channel_name": "marcoxgamer1"
+  },
+  "777040": {
+    "id": 777040,
+    "code": "offici34LOVE",
+    "emoticon_set": 171721,
+    "channel_id": "114269223",
+    "channel_name": "official_timmy"
+  },
+  "34447": {
+    "id": 34447,
+    "code": "glpTroll",
+    "emoticon_set": 340,
+    "channel_id": "12670539",
+    "channel_name": "germanletsplay"
+  },
+  "34533": {
+    "id": 34533,
+    "code": "glpPuffi",
+    "emoticon_set": 340,
+    "channel_id": "12670539",
+    "channel_name": "germanletsplay"
+  },
+  "38792": {
+    "id": 38792,
+    "code": "glpMLG",
+    "emoticon_set": 340,
+    "channel_id": "12670539",
+    "channel_name": "germanletsplay"
+  },
+  "38793": {
+    "id": 38793,
+    "code": "glpSad",
+    "emoticon_set": 340,
+    "channel_id": "12670539",
+    "channel_name": "germanletsplay"
+  },
+  "39027": {
+    "id": 39027,
+    "code": "glpFratze",
+    "emoticon_set": 340,
+    "channel_id": "12670539",
+    "channel_name": "germanletsplay"
+  },
+  "210371": {
+    "id": 210371,
+    "code": "glpKlumpi",
+    "emoticon_set": 340,
+    "channel_id": "12670539",
+    "channel_name": "germanletsplay"
+  },
+  "938775": {
+    "id": 938775,
+    "code": "chamohCFF",
+    "emoticon_set": 377332,
+    "channel_id": "99407183",
+    "channel_name": "chamoh45"
+  },
+  "864658": {
+    "id": 864658,
+    "code": "vahanyCarrot",
+    "emoticon_set": 450949,
+    "channel_id": "179341649",
+    "channel_name": "vahanya"
+  },
+  "864701": {
+    "id": 864701,
+    "code": "vahanyHot",
+    "emoticon_set": 450950,
+    "channel_id": "179341649",
+    "channel_name": "vahanya"
+  },
+  "793228": {
+    "id": 793228,
+    "code": "vahanyGasm",
+    "emoticon_set": 450951,
+    "channel_id": "179341649",
+    "channel_name": "vahanya"
+  },
+  "642701": {
+    "id": 642701,
+    "code": "nrdragPotatoaim",
+    "emoticon_set": 377612,
+    "channel_id": "169849964",
+    "channel_name": "nrdragegaming"
+  },
+  "614590": {
+    "id": 614590,
+    "code": "cather1YayHamster",
+    "emoticon_set": 256765,
+    "channel_id": "132413022",
+    "channel_name": "catherineconsiglio"
+  },
+  "953229": {
+    "id": 953229,
+    "code": "sportbillyTL",
+    "emoticon_set": 663941,
+    "channel_id": "112457494",
+    "channel_name": "sportbilly"
+  },
+  "981649": {
+    "id": 981649,
+    "code": "guccip3HEY",
+    "emoticon_set": 603504,
+    "channel_id": "75413340",
+    "channel_name": "gucciplato"
+  },
+  "978538": {
+    "id": 978538,
+    "code": "guccip3UGH",
+    "emoticon_set": 603505,
+    "channel_id": "75413340",
+    "channel_name": "gucciplato"
+  },
+  "810635": {
+    "id": 810635,
+    "code": "thedod2OhGawd",
+    "emoticon_set": 568778,
+    "channel_id": "87560322",
+    "channel_name": "thedodger90"
+  },
+  "810673": {
+    "id": 810673,
+    "code": "thedod2ByeB",
+    "emoticon_set": 568779,
+    "channel_id": "87560322",
+    "channel_name": "thedodger90"
+  },
+  "810680": {
+    "id": 810680,
+    "code": "thedod2Rage",
+    "emoticon_set": 568780,
+    "channel_id": "87560322",
+    "channel_name": "thedodger90"
+  },
+  "829024": {
+    "id": 829024,
+    "code": "paynosW",
+    "emoticon_set": 622254,
+    "channel_id": "97841106",
+    "channel_name": "paynostv"
+  },
+  "835849": {
+    "id": 835849,
+    "code": "xcptjeHuhu",
+    "emoticon_set": 610061,
+    "channel_id": "161742913",
+    "channel_name": "xcptjennyx3"
+  },
+  "795591": {
+    "id": 795591,
+    "code": "pullitDatDia",
+    "emoticon_set": 405660,
+    "channel_id": "148596313",
+    "channel_name": "pullitommy"
+  },
+  "860488": {
+    "id": 860488,
+    "code": "delekaH",
+    "emoticon_set": 665369,
+    "channel_id": "48112919",
+    "channel_name": "delekates"
+  },
+  "130242": {
+    "id": 130242,
+    "code": "kasperWaffle",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348981": {
+    "id": 348981,
+    "code": "kasperGasm",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348983": {
+    "id": 348983,
+    "code": "kasperHeart",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348984": {
+    "id": 348984,
+    "code": "kasperHi",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348985": {
+    "id": 348985,
+    "code": "kasperLewd",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348986": {
+    "id": 348986,
+    "code": "kasperLuna",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348987": {
+    "id": 348987,
+    "code": "kasperLurk",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348988": {
+    "id": 348988,
+    "code": "kasperOmg",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348990": {
+    "id": 348990,
+    "code": "kasperPip",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348991": {
+    "id": 348991,
+    "code": "kasperRaid",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348992": {
+    "id": 348992,
+    "code": "kasperSellout",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348993": {
+    "id": 348993,
+    "code": "kasperSenpai",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348994": {
+    "id": 348994,
+    "code": "kasperW",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348995": {
+    "id": 348995,
+    "code": "kasperWaifu",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348997": {
+    "id": 348997,
+    "code": "kasperBaka",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "348998": {
+    "id": 348998,
+    "code": "kasperHype",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "349000": {
+    "id": 349000,
+    "code": "kasperLove",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "357644": {
+    "id": 357644,
+    "code": "kasperPeeko",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "399112": {
+    "id": 399112,
+    "code": "kasperBlank",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "420560": {
+    "id": 420560,
+    "code": "kasperCry",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "608068": {
+    "id": 608068,
+    "code": "kasperBless",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "622354": {
+    "id": 622354,
+    "code": "kasperThink",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "622615": {
+    "id": 622615,
+    "code": "kasperShrug",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "652406": {
+    "id": 652406,
+    "code": "kasperRage",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "652408": {
+    "id": 652408,
+    "code": "kasperPls",
+    "emoticon_set": 1963,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "652403": {
+    "id": 652403,
+    "code": "kasperPoop",
+    "emoticon_set": 25092,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "652404": {
+    "id": 652404,
+    "code": "kasperGold",
+    "emoticon_set": 25093,
+    "channel_id": "22919041",
+    "channel_name": "ikasperr"
+  },
+  "671553": {
+    "id": 671553,
+    "code": "zaine3ErDuInZaine",
+    "emoticon_set": 212190,
+    "channel_id": "132626372",
+    "channel_name": "zainetv"
+  },
+  "593760": {
+    "id": 593760,
+    "code": "crezuhDog",
+    "emoticon_set": 284699,
+    "channel_id": "117558364",
+    "channel_name": "creza"
+  },
+  "898640": {
+    "id": 898640,
+    "code": "silent79Cutie",
+    "emoticon_set": 631525,
+    "channel_id": "190782226",
+    "channel_name": "silentchaosgames"
+  },
+  "823862": {
+    "id": 823862,
+    "code": "silent79Trash",
+    "emoticon_set": 631526,
+    "channel_id": "190782226",
+    "channel_name": "silentchaosgames"
+  },
+  "887103": {
+    "id": 887103,
+    "code": "silent79Rip",
+    "emoticon_set": 631527,
+    "channel_id": "190782226",
+    "channel_name": "silentchaosgames"
+  },
+  "917087": {
+    "id": 917087,
+    "code": "hateli1FeelsWeirdMan",
+    "emoticon_set": 698977,
+    "channel_id": "129753602",
+    "channel_name": "hatelist"
+  },
+  "478038": {
+    "id": 478038,
+    "code": "starwiNspooky",
+    "emoticon_set": 72807,
+    "channel_id": "5587220",
+    "channel_name": "starwin"
+  },
+  "505030": {
+    "id": 505030,
+    "code": "starwiNsmug",
+    "emoticon_set": 72808,
+    "channel_id": "5587220",
+    "channel_name": "starwin"
+  },
+  "921583": {
+    "id": 921583,
+    "code": "ryanaiLuv",
+    "emoticon_set": 294671,
+    "channel_id": "142077337",
+    "channel_name": "ryanaide"
+  },
+  "431745": {
+    "id": 431745,
+    "code": "papatoEZ",
+    "emoticon_set": 341121,
+    "channel_id": "121864912",
+    "channel_name": "papatouille"
+  },
+  "790252": {
+    "id": 790252,
+    "code": "bigred2Love",
+    "emoticon_set": 550488,
+    "channel_id": "96000078",
+    "channel_name": "bigred_og"
+  },
+  "790249": {
+    "id": 790249,
+    "code": "bigred2Derp",
+    "emoticon_set": 550489,
+    "channel_id": "96000078",
+    "channel_name": "bigred_og"
+  },
+  "741824": {
+    "id": 741824,
+    "code": "som3thUsa",
+    "emoticon_set": 526423,
+    "channel_id": "144405303",
+    "channel_name": "som3thingsimpl3"
+  },
+  "834190": {
+    "id": 834190,
+    "code": "som3thHype",
+    "emoticon_set": 526425,
+    "channel_id": "144405303",
+    "channel_name": "som3thingsimpl3"
+  },
+  "254347": {
+    "id": 254347,
+    "code": "koshki1Hi",
+    "emoticon_set": 149701,
+    "channel_id": "135089077",
+    "channel_name": "koshkin__dom"
+  },
+  "284861": {
+    "id": 284861,
+    "code": "koshki1Salute",
+    "emoticon_set": 149702,
+    "channel_id": "135089077",
+    "channel_name": "koshkin__dom"
+  },
+  "536870": {
+    "id": 536870,
+    "code": "koshki1Kek",
+    "emoticon_set": 149703,
+    "channel_id": "135089077",
+    "channel_name": "koshkin__dom"
+  },
+  "491859": {
+    "id": 491859,
+    "code": "supeleSup",
+    "emoticon_set": 273852,
+    "channel_id": "119451830",
+    "channel_name": "supelele"
+  },
+  "491867": {
+    "id": 491867,
+    "code": "supeleSubsup",
+    "emoticon_set": 273853,
+    "channel_id": "119451830",
+    "channel_name": "supelele"
+  },
+  "491872": {
+    "id": 491872,
+    "code": "supeleSub2sup",
+    "emoticon_set": 273854,
+    "channel_id": "119451830",
+    "channel_name": "supelele"
+  },
+  "73045": {
+    "id": 73045,
+    "code": "ctkMary",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "154480": {
+    "id": 154480,
+    "code": "ctkOMG",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "178563": {
+    "id": 178563,
+    "code": "ctkCute",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "178565": {
+    "id": 178565,
+    "code": "ctkBooty",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "178566": {
+    "id": 178566,
+    "code": "ctkBurp",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "178570": {
+    "id": 178570,
+    "code": "ctkDerp",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "178572": {
+    "id": 178572,
+    "code": "ctkGasp",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "178573": {
+    "id": 178573,
+    "code": "ctkRIP",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "178574": {
+    "id": 178574,
+    "code": "ctkSweetJesus",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "187661": {
+    "id": 187661,
+    "code": "ctkBaby",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "187912": {
+    "id": 187912,
+    "code": "ctkLoot",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "188621": {
+    "id": 188621,
+    "code": "ctkCry",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "188622": {
+    "id": 188622,
+    "code": "ctkNo",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "188623": {
+    "id": 188623,
+    "code": "ctkYes",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "193944": {
+    "id": 193944,
+    "code": "ctkBearhat",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "193945": {
+    "id": 193945,
+    "code": "ctkChair",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "193947": {
+    "id": 193947,
+    "code": "ctkLol",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "193949": {
+    "id": 193949,
+    "code": "ctkNerd",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "193951": {
+    "id": 193951,
+    "code": "ctkRage",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "193952": {
+    "id": 193952,
+    "code": "ctkSass",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "195574": {
+    "id": 195574,
+    "code": "ctkHand",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "550453": {
+    "id": 550453,
+    "code": "ctkCrit",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "551064": {
+    "id": 551064,
+    "code": "ctkRekt",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "559822": {
+    "id": 559822,
+    "code": "ctkMonster",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "590693": {
+    "id": 590693,
+    "code": "ctkHi",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "945957": {
+    "id": 945957,
+    "code": "ctkFist",
+    "emoticon_set": 4379,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "559817": {
+    "id": 559817,
+    "code": "ctkGold",
+    "emoticon_set": 30537,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "559819": {
+    "id": 559819,
+    "code": "ctkGod",
+    "emoticon_set": 30538,
+    "channel_id": "30482057",
+    "channel_name": "cinnamontoastken"
+  },
+  "615009": {
+    "id": 615009,
+    "code": "martyyV",
+    "emoticon_set": 480391,
+    "channel_id": "38054107",
+    "channel_name": "martyyvengeance"
+  },
+  "635066": {
+    "id": 635066,
+    "code": "martyyOO",
+    "emoticon_set": 480393,
+    "channel_id": "38054107",
+    "channel_name": "martyyvengeance"
+  },
+  "635088": {
+    "id": 635088,
+    "code": "martyyPZ",
+    "emoticon_set": 480394,
+    "channel_id": "38054107",
+    "channel_name": "martyyvengeance"
+  },
+  "757378": {
+    "id": 757378,
+    "code": "powerm3Powermac77Rip",
+    "emoticon_set": 483016,
+    "channel_id": "102586041",
+    "channel_name": "powermac77"
+  },
+  "702474": {
+    "id": 702474,
+    "code": "imjust2Peachy",
+    "emoticon_set": 289471,
+    "channel_id": "158505925",
+    "channel_name": "justpeaches"
+  },
+  "983206": {
+    "id": 983206,
+    "code": "imjust2Gasp",
+    "emoticon_set": 289472,
+    "channel_id": "158505925",
+    "channel_name": "justpeaches"
+  },
+  "988912": {
+    "id": 988912,
+    "code": "chinnjDontcrykid",
+    "emoticon_set": 653939,
+    "channel_id": "142153298",
+    "channel_name": "chinnj"
+  },
+  "111807": {
+    "id": 111807,
+    "code": "xploCHOKE",
+    "emoticon_set": 18724,
+    "channel_id": "86226514",
+    "channel_name": "xplosivo7"
+  },
+  "119073": {
+    "id": 119073,
+    "code": "xploHYPE",
+    "emoticon_set": 18724,
+    "channel_id": "86226514",
+    "channel_name": "xplosivo7"
+  },
+  "462587": {
+    "id": 462587,
+    "code": "xploTL",
+    "emoticon_set": 18724,
+    "channel_id": "86226514",
+    "channel_name": "xplosivo7"
+  },
+  "462588": {
+    "id": 462588,
+    "code": "xploTR",
+    "emoticon_set": 18724,
+    "channel_id": "86226514",
+    "channel_name": "xplosivo7"
+  },
+  "462590": {
+    "id": 462590,
+    "code": "xploBL",
+    "emoticon_set": 18724,
+    "channel_id": "86226514",
+    "channel_name": "xplosivo7"
+  },
+  "462591": {
+    "id": 462591,
+    "code": "xploBR",
+    "emoticon_set": 18724,
+    "channel_id": "86226514",
+    "channel_name": "xplosivo7"
+  },
+  "462668": {
+    "id": 462668,
+    "code": "xploGears",
+    "emoticon_set": 18724,
+    "channel_id": "86226514",
+    "channel_name": "xplosivo7"
+  },
+  "471792": {
+    "id": 471792,
+    "code": "xploGG",
+    "emoticon_set": 18724,
+    "channel_id": "86226514",
+    "channel_name": "xplosivo7"
+  },
+  "414259": {
+    "id": 414259,
+    "code": "clashaDab",
+    "emoticon_set": 67440,
+    "channel_id": "125453010",
+    "channel_name": "sargtrain"
+  },
+  "279781": {
+    "id": 279781,
+    "code": "clashaREKT",
+    "emoticon_set": 67441,
+    "channel_id": "125453010",
+    "channel_name": "sargtrain"
+  },
+  "541053": {
+    "id": 541053,
+    "code": "excrutResidentex",
+    "emoticon_set": 417319,
+    "channel_id": "79942833",
+    "channel_name": "excrutiation"
+  },
+  "536199": {
+    "id": 536199,
+    "code": "antownOMG",
+    "emoticon_set": 358920,
+    "channel_id": "43289346",
+    "channel_name": "antownplz"
+  },
+  "696533": {
+    "id": 696533,
+    "code": "antownRoi",
+    "emoticon_set": 358921,
+    "channel_id": "43289346",
+    "channel_name": "antownplz"
+  },
+  "262365": {
+    "id": 262365,
+    "code": "b1gn1cHey",
+    "emoticon_set": 106960,
+    "channel_id": "114148336",
+    "channel_name": "b1gn1ck9869"
+  },
+  "946062": {
+    "id": 946062,
+    "code": "egantvABCDEFG123",
+    "emoticon_set": 727486,
+    "channel_id": "148044839",
+    "channel_name": "egan_tv"
+  },
+  "412405": {
+    "id": 412405,
+    "code": "zoruatRawr",
+    "emoticon_set": 173121,
+    "channel_id": "103512236",
+    "channel_name": "zoritheshinyfox"
+  },
+  "228333": {
+    "id": 228333,
+    "code": "dropbeAr",
+    "emoticon_set": 115714,
+    "channel_id": "132306245",
+    "channel_name": "dropbearinteractive"
+  },
+  "372826": {
+    "id": 372826,
+    "code": "dropbeDropbear2",
+    "emoticon_set": 115715,
+    "channel_id": "132306245",
+    "channel_name": "dropbearinteractive"
+  },
+  "678061": {
+    "id": 678061,
+    "code": "brunodTipsy",
+    "emoticon_set": 80793,
+    "channel_id": "52678969",
+    "channel_name": "brunodiaz_"
+  },
+  "369809": {
+    "id": 369809,
+    "code": "brunodTrig",
+    "emoticon_set": 80794,
+    "channel_id": "52678969",
+    "channel_name": "brunodiaz_"
+  },
+  "517887": {
+    "id": 517887,
+    "code": "brunodDaisy",
+    "emoticon_set": 80795,
+    "channel_id": "52678969",
+    "channel_name": "brunodiaz_"
+  },
+  "385370": {
+    "id": 385370,
+    "code": "frilloJAZZTIME",
+    "emoticon_set": 263332,
+    "channel_id": "53890843",
+    "channel_name": "frillopolska"
+  },
+  "910782": {
+    "id": 910782,
+    "code": "subzer5Wolf1",
+    "emoticon_set": 714077,
+    "channel_id": "195474751",
+    "channel_name": "naloxone"
+  },
+  "736235": {
+    "id": 736235,
+    "code": "yikeeYikes",
+    "emoticon_set": 559775,
+    "channel_id": "48327444",
+    "channel_name": "yikee"
+  },
+  "234443": {
+    "id": 234443,
+    "code": "mehrunHappy",
+    "emoticon_set": 73624,
+    "channel_id": "56759549",
+    "channel_name": "mehrunnisa"
+  },
+  "656565": {
+    "id": 656565,
+    "code": "ryukorWave",
+    "emoticon_set": 457951,
+    "channel_id": "59495425",
+    "channel_name": "ryukoreiakuma"
+  },
+  "361921": {
+    "id": 361921,
+    "code": "jsnappRead",
+    "emoticon_set": 121741,
+    "channel_id": "76328737",
+    "channel_name": "jsnapp1982"
+  },
+  "943975": {
+    "id": 943975,
+    "code": "fairyp2Hi",
+    "emoticon_set": 707946,
+    "channel_id": "52764079",
+    "channel_name": "fairypuff"
+  },
+  "928642": {
+    "id": 928642,
+    "code": "nakabaIchel",
+    "emoticon_set": 90072,
+    "channel_id": "41904588",
+    "channel_name": "nakabazi"
+  },
+  "315761": {
+    "id": 315761,
+    "code": "nakabaZilol",
+    "emoticon_set": 90073,
+    "channel_id": "41904588",
+    "channel_name": "nakabazi"
+  },
+  "563043": {
+    "id": 563043,
+    "code": "nakabaZiPiero",
+    "emoticon_set": 90074,
+    "channel_id": "41904588",
+    "channel_name": "nakabazi"
+  },
+  "397682": {
+    "id": 397682,
+    "code": "xreiyuMeiCool",
+    "emoticon_set": 263262,
+    "channel_id": "113132866",
+    "channel_name": "xreiyu"
+  },
+  "529193": {
+    "id": 529193,
+    "code": "itsmar3Marialove",
+    "emoticon_set": 406827,
+    "channel_id": "77977154",
+    "channel_name": "its_maria"
+  },
+  "529199": {
+    "id": 529199,
+    "code": "itsmar3Mariaflowereye",
+    "emoticon_set": 406829,
+    "channel_id": "77977154",
+    "channel_name": "its_maria"
+  },
+  "529202": {
+    "id": 529202,
+    "code": "itsmar3Mariaeyemask",
+    "emoticon_set": 406830,
+    "channel_id": "77977154",
+    "channel_name": "its_maria"
+  },
+  "508942": {
+    "id": 508942,
+    "code": "hdigglHi",
+    "emoticon_set": 87392,
+    "channel_id": "76003592",
+    "channel_name": "hdiggler"
+  },
+  "511649": {
+    "id": 511649,
+    "code": "hdigglPFFT",
+    "emoticon_set": 87395,
+    "channel_id": "76003592",
+    "channel_name": "hdiggler"
+  },
+  "274098": {
+    "id": 274098,
+    "code": "l4dymaMerbssss",
+    "emoticon_set": 237729,
+    "channel_id": "71330614",
+    "channel_name": "l4dy_marbles_"
+  },
+  "295059": {
+    "id": 295059,
+    "code": "l4dymaHype",
+    "emoticon_set": 237733,
+    "channel_id": "71330614",
+    "channel_name": "l4dy_marbles_"
+  },
+  "283876": {
+    "id": 283876,
+    "code": "ellabaHi",
+    "emoticon_set": 239776,
+    "channel_id": "134615177",
+    "channel_name": "ellabama_"
+  },
+  "652085": {
+    "id": 652085,
+    "code": "ellabaKluk",
+    "emoticon_set": 239776,
+    "channel_id": "134615177",
+    "channel_name": "ellabama_"
+  },
+  "652086": {
+    "id": 652086,
+    "code": "ellabaLove",
+    "emoticon_set": 239776,
+    "channel_id": "134615177",
+    "channel_name": "ellabama_"
+  },
+  "652087": {
+    "id": 652087,
+    "code": "ellabaLUL",
+    "emoticon_set": 239776,
+    "channel_id": "134615177",
+    "channel_name": "ellabama_"
+  },
+  "652092": {
+    "id": 652092,
+    "code": "ellabaPout",
+    "emoticon_set": 239776,
+    "channel_id": "134615177",
+    "channel_name": "ellabama_"
+  },
+  "652095": {
+    "id": 652095,
+    "code": "ellabaS",
+    "emoticon_set": 239776,
+    "channel_id": "134615177",
+    "channel_name": "ellabama_"
+  },
+  "652098": {
+    "id": 652098,
+    "code": "ellabaSad",
+    "emoticon_set": 239776,
+    "channel_id": "134615177",
+    "channel_name": "ellabama_"
+  },
+  "652100": {
+    "id": 652100,
+    "code": "ellabaShrug",
+    "emoticon_set": 239776,
+    "channel_id": "134615177",
+    "channel_name": "ellabama_"
+  },
+  "567223": {
+    "id": 567223,
+    "code": "ellabaAw",
+    "emoticon_set": 239778,
+    "channel_id": "134615177",
+    "channel_name": "ellabama_"
+  },
+  "566982": {
+    "id": 566982,
+    "code": "ellabaShy",
+    "emoticon_set": 239779,
+    "channel_id": "134615177",
+    "channel_name": "ellabama_"
+  },
+  "899342": {
+    "id": 899342,
+    "code": "therea360Realmiss",
+    "emoticon_set": 698949,
+    "channel_id": "207519463",
+    "channel_name": "therealmissjessica"
+  },
+  "806629": {
+    "id": 806629,
+    "code": "malletMallet",
+    "emoticon_set": 554959,
+    "channel_id": "160910407",
+    "channel_name": "malleteditor"
+  },
+  "526345": {
+    "id": 526345,
+    "code": "nemoo88",
+    "emoticon_set": 172667,
+    "channel_id": "31424892",
+    "channel_name": "nemoo88"
+  },
+  "530399": {
+    "id": 530399,
+    "code": "nemoo8Rekt",
+    "emoticon_set": 172670,
+    "channel_id": "31424892",
+    "channel_name": "nemoo88"
+  },
+  "251260": {
+    "id": 251260,
+    "code": "nemoo8HIM",
+    "emoticon_set": 172671,
+    "channel_id": "31424892",
+    "channel_name": "nemoo88"
+  },
+  "309083": {
+    "id": 309083,
+    "code": "thecooPshout",
+    "emoticon_set": 181810,
+    "channel_id": "130424402",
+    "channel_name": "itz_coop"
+  },
+  "856689": {
+    "id": 856689,
+    "code": "mauschW",
+    "emoticon_set": 660299,
+    "channel_id": "86967373",
+    "channel_name": "mauschari"
+  },
+  "375018": {
+    "id": 375018,
+    "code": "zarlezJaaman",
+    "emoticon_set": 315476,
+    "channel_id": "76329509",
+    "channel_name": "zarlezar1"
+  },
+  "377881": {
+    "id": 377881,
+    "code": "zarlezKappa",
+    "emoticon_set": 315477,
+    "channel_id": "76329509",
+    "channel_name": "zarlezar1"
+  },
+  "696479": {
+    "id": 696479,
+    "code": "wizzyhWOW",
+    "emoticon_set": 526303,
+    "channel_id": "182147758",
+    "channel_name": "wizzy_hat"
+  },
+  "696508": {
+    "id": 696508,
+    "code": "wizzyhHm",
+    "emoticon_set": 526304,
+    "channel_id": "182147758",
+    "channel_name": "wizzy_hat"
+  },
+  "297769": {
+    "id": 297769,
+    "code": "vitek8Falloutvitek85xxxx",
+    "emoticon_set": 207266,
+    "channel_id": "74044645",
+    "channel_name": "vitek85xxx"
+  },
+  "297863": {
+    "id": 297863,
+    "code": "vitek8Denaturatxxx85",
+    "emoticon_set": 207268,
+    "channel_id": "74044645",
+    "channel_name": "vitek85xxx"
+  },
+  "297866": {
+    "id": 297866,
+    "code": "vitek8Homer85xxx",
+    "emoticon_set": 207269,
+    "channel_id": "74044645",
+    "channel_name": "vitek85xxx"
+  },
+  "979379": {
+    "id": 979379,
+    "code": "xdmichGGK",
+    "emoticon_set": 779821,
+    "channel_id": "76686636",
+    "channel_name": "xdmichaelbxd"
+  },
+  "904478": {
+    "id": 904478,
+    "code": "jajestEmOkejka",
+    "emoticon_set": 682907,
+    "channel_id": "202405253",
+    "channel_name": "jajestemmadzia"
+  },
+  "900355": {
+    "id": 900355,
+    "code": "jajestEmBuuu",
+    "emoticon_set": 682908,
+    "channel_id": "202405253",
+    "channel_name": "jajestemmadzia"
+  },
+  "900358": {
+    "id": 900358,
+    "code": "jajestEmPlaczek",
+    "emoticon_set": 682909,
+    "channel_id": "202405253",
+    "channel_name": "jajestemmadzia"
+  },
+  "431852": {
+    "id": 431852,
+    "code": "mintrS",
+    "emoticon_set": 340242,
+    "channel_id": "74985309",
+    "channel_name": "mintr"
+  },
+  "715483": {
+    "id": 715483,
+    "code": "tecklePotato",
+    "emoticon_set": 480448,
+    "channel_id": "38512953",
+    "channel_name": "teckley"
+  },
+  "715487": {
+    "id": 715487,
+    "code": "teckleOOF",
+    "emoticon_set": 480449,
+    "channel_id": "38512953",
+    "channel_name": "teckley"
+  },
+  "795581": {
+    "id": 795581,
+    "code": "input3Raph",
+    "emoticon_set": 610305,
+    "channel_id": "161063815",
+    "channel_name": "input3tv"
+  },
+  "244580": {
+    "id": 244580,
+    "code": "mrbear2Hype",
+    "emoticon_set": 179248,
+    "channel_id": "91438832",
+    "channel_name": "mrbeardsome"
+  },
+  "759075": {
+    "id": 759075,
+    "code": "mrbear2Chickendinner",
+    "emoticon_set": 179250,
+    "channel_id": "91438832",
+    "channel_name": "mrbeardsome"
+  },
+  "751975": {
+    "id": 751975,
+    "code": "mrbear2Jamoin",
+    "emoticon_set": 179251,
+    "channel_id": "91438832",
+    "channel_name": "mrbeardsome"
+  },
+  "186202": {
+    "id": 186202,
+    "code": "poliHELLO",
+    "emoticon_set": 6550,
+    "channel_id": "39721377",
+    "channel_name": "lolpoli"
+  },
+  "229759": {
+    "id": 229759,
+    "code": "poliHUH",
+    "emoticon_set": 6550,
+    "channel_id": "39721377",
+    "channel_name": "lolpoli"
+  },
+  "574493": {
+    "id": 574493,
+    "code": "poliYes",
+    "emoticon_set": 6550,
+    "channel_id": "39721377",
+    "channel_name": "lolpoli"
+  },
+  "574495": {
+    "id": 574495,
+    "code": "poliHype",
+    "emoticon_set": 6550,
+    "channel_id": "39721377",
+    "channel_name": "lolpoli"
+  },
+  "574503": {
+    "id": 574503,
+    "code": "poliSleep",
+    "emoticon_set": 6550,
+    "channel_id": "39721377",
+    "channel_name": "lolpoli"
+  },
+  "574506": {
+    "id": 574506,
+    "code": "poliArt",
+    "emoticon_set": 6550,
+    "channel_id": "39721377",
+    "channel_name": "lolpoli"
+  },
+  "574510": {
+    "id": 574510,
+    "code": "poliOH",
+    "emoticon_set": 41152,
+    "channel_id": "39721377",
+    "channel_name": "lolpoli"
+  },
+  "574511": {
+    "id": 574511,
+    "code": "poliMAD",
+    "emoticon_set": 41153,
+    "channel_id": "39721377",
+    "channel_name": "lolpoli"
+  },
+  "363673": {
+    "id": 363673,
+    "code": "mikelo1Luck",
+    "emoticon_set": 295265,
+    "channel_id": "12593261",
+    "channel_name": "mikelorus"
+  },
+  "934042": {
+    "id": 934042,
+    "code": "wtf574Hey",
+    "emoticon_set": 250822,
+    "channel_id": "148161160",
+    "channel_name": "whatthefoole"
+  },
+  "934050": {
+    "id": 934050,
+    "code": "wtf574SBurn",
+    "emoticon_set": 250824,
+    "channel_id": "148161160",
+    "channel_name": "whatthefoole"
+  },
+  "934056": {
+    "id": 934056,
+    "code": "wtf574Fail",
+    "emoticon_set": 250825,
+    "channel_id": "148161160",
+    "channel_name": "whatthefoole"
+  },
+  "744531": {
+    "id": 744531,
+    "code": "tiltoyNee",
+    "emoticon_set": 413012,
+    "channel_id": "60944955",
+    "channel_name": "tiltoyuncucarry"
+  },
+  "744546": {
+    "id": 744546,
+    "code": "tiltoyTekyedin",
+    "emoticon_set": 413013,
+    "channel_id": "60944955",
+    "channel_name": "tiltoyuncucarry"
+  },
+  "744565": {
+    "id": 744565,
+    "code": "tiltoyUncuCarry",
+    "emoticon_set": 413014,
+    "channel_id": "60944955",
+    "channel_name": "tiltoyuncucarry"
+  },
+  "812177": {
+    "id": 812177,
+    "code": "gbatemTempy",
+    "emoticon_set": 626566,
+    "channel_id": "83007711",
+    "channel_name": "gbatemptv"
+  },
+  "743220": {
+    "id": 743220,
+    "code": "canadi123",
+    "emoticon_set": 553284,
+    "channel_id": "106800589",
+    "channel_name": "canadia_tv"
+  },
+  "242045": {
+    "id": 242045,
+    "code": "latrisRupia",
+    "emoticon_set": 74922,
+    "channel_id": "31290811",
+    "channel_name": "latrish_"
+  },
+  "483568": {
+    "id": 483568,
+    "code": "latrisTeza",
+    "emoticon_set": 74923,
+    "channel_id": "31290811",
+    "channel_name": "latrish_"
+  },
+  "781904": {
+    "id": 781904,
+    "code": "tyler3Cool",
+    "emoticon_set": 598819,
+    "channel_id": "29726548",
+    "channel_name": "tyler"
+  },
+  "465274": {
+    "id": 465274,
+    "code": "unusua4Tita",
+    "emoticon_set": 302230,
+    "channel_id": "33465787",
+    "channel_name": "unusual79"
+  },
+  "596265": {
+    "id": 596265,
+    "code": "master82OhYeah",
+    "emoticon_set": 463960,
+    "channel_id": "25428855",
+    "channel_name": "masterdincht"
+  },
+  "68462": {
+    "id": 68462,
+    "code": "carlFroggy",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "69426": {
+    "id": 69426,
+    "code": "carlTroll",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "82629": {
+    "id": 82629,
+    "code": "carlMoney",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "110478": {
+    "id": 110478,
+    "code": "carlSwag",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "113945": {
+    "id": 113945,
+    "code": "carlUck",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "113946": {
+    "id": 113946,
+    "code": "carlCoffee",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "113948": {
+    "id": 113948,
+    "code": "carl1",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "114046": {
+    "id": 114046,
+    "code": "carl2",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "121293": {
+    "id": 121293,
+    "code": "carlOhBby",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "121294": {
+    "id": 121294,
+    "code": "carlGasm",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "128653": {
+    "id": 128653,
+    "code": "carlLOL",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "169664": {
+    "id": 169664,
+    "code": "carlLove",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "176331": {
+    "id": 176331,
+    "code": "carlW",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "176333": {
+    "id": 176333,
+    "code": "carlUnf",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "176347": {
+    "id": 176347,
+    "code": "carlScience",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "176354": {
+    "id": 176354,
+    "code": "carlClap",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "196920": {
+    "id": 196920,
+    "code": "carlSoLong",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "348813": {
+    "id": 348813,
+    "code": "carlSlurp",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "818244": {
+    "id": 818244,
+    "code": "carlThink",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "818258": {
+    "id": 818258,
+    "code": "carlGlare",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "818260": {
+    "id": 818260,
+    "code": "carlShame",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "818261": {
+    "id": 818261,
+    "code": "carlShock",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "821020": {
+    "id": 821020,
+    "code": "carlRIP",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "874249": {
+    "id": 874249,
+    "code": "carlBlind",
+    "emoticon_set": 14860,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "348821": {
+    "id": 348821,
+    "code": "carlTapDis",
+    "emoticon_set": 30173,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "196931": {
+    "id": 196931,
+    "code": "carlTapDat",
+    "emoticon_set": 30174,
+    "channel_id": "20702886",
+    "channel_name": "carlsagan42"
+  },
+  "704319": {
+    "id": 704319,
+    "code": "srzSalut",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "704322": {
+    "id": 704322,
+    "code": "srzLove",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "704328": {
+    "id": 704328,
+    "code": "srzAngry",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "704329": {
+    "id": 704329,
+    "code": "srzNooo",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "704331": {
+    "id": 704331,
+    "code": "srzTriste",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "705684": {
+    "id": 705684,
+    "code": "srzGg",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "705687": {
+    "id": 705687,
+    "code": "srzTop1bis",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "705689": {
+    "id": 705689,
+    "code": "srzToprien",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "705691": {
+    "id": 705691,
+    "code": "srzFun",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "763883": {
+    "id": 763883,
+    "code": "srzGG",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "763884": {
+    "id": 763884,
+    "code": "srzTOP1",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "880866": {
+    "id": 880866,
+    "code": "srzGroKon",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "924978": {
+    "id": 924978,
+    "code": "srz1hp",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "924980": {
+    "id": 924980,
+    "code": "srz7hp",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "924982": {
+    "id": 924982,
+    "code": "srzBuisson",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "924983": {
+    "id": 924983,
+    "code": "srzCafe",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "924984": {
+    "id": 924984,
+    "code": "srzPopo",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "924986": {
+    "id": 924986,
+    "code": "srzRip",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "924988": {
+    "id": 924988,
+    "code": "srz1",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "924990": {
+    "id": 924990,
+    "code": "srzVictoire",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "924991": {
+    "id": 924991,
+    "code": "srzRoyale",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "953322": {
+    "id": 953322,
+    "code": "srzMalaise",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "953323": {
+    "id": 953323,
+    "code": "srzMoney",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "953324": {
+    "id": 953324,
+    "code": "srzRIP",
+    "emoticon_set": 12526,
+    "channel_id": "52349411",
+    "channel_name": "skyrroztv"
+  },
+  "915359": {
+    "id": 915359,
+    "code": "mardcaEye",
+    "emoticon_set": 598575,
+    "channel_id": "93533084",
+    "channel_name": "mardcaos"
+  },
+  "790847": {
+    "id": 790847,
+    "code": "mardcaHeart",
+    "emoticon_set": 598576,
+    "channel_id": "93533084",
+    "channel_name": "mardcaos"
+  },
+  "790849": {
+    "id": 790849,
+    "code": "mardcaHype",
+    "emoticon_set": 598577,
+    "channel_id": "93533084",
+    "channel_name": "mardcaos"
+  },
+  "379208": {
+    "id": 379208,
+    "code": "rlshauBag",
+    "emoticon_set": 241181,
+    "channel_id": "75787370",
+    "channel_name": "rl_shaun"
+  },
+  "379210": {
+    "id": 379210,
+    "code": "rlshauHype",
+    "emoticon_set": 241184,
+    "channel_id": "75787370",
+    "channel_name": "rl_shaun"
+  },
+  "379213": {
+    "id": 379213,
+    "code": "rlshauGg",
+    "emoticon_set": 241185,
+    "channel_id": "75787370",
+    "channel_name": "rl_shaun"
+  },
+  "879823": {
+    "id": 879823,
+    "code": "kinggi2Heart",
+    "emoticon_set": 662438,
+    "channel_id": "75210756",
+    "channel_name": "kinggilga"
+  },
+  "248047": {
+    "id": 248047,
+    "code": "sirharRISA",
+    "emoticon_set": 185702,
+    "channel_id": "135904720",
+    "channel_name": "sirharri"
+  },
+  "248093": {
+    "id": 248093,
+    "code": "sirharSAD",
+    "emoticon_set": 185705,
+    "channel_id": "135904720",
+    "channel_name": "sirharri"
+  },
+  "248121": {
+    "id": 248121,
+    "code": "sirharHYPE",
+    "emoticon_set": 185706,
+    "channel_id": "135904720",
+    "channel_name": "sirharri"
+  },
+  "844091": {
+    "id": 844091,
+    "code": "wereverCry",
+    "emoticon_set": 634624,
+    "channel_id": "198790630",
+    "channel_name": "werevertumorro"
+  },
+  "845251": {
+    "id": 845251,
+    "code": "wereverOrgas",
+    "emoticon_set": 634624,
+    "channel_id": "198790630",
+    "channel_name": "werevertumorro"
+  },
+  "846622": {
+    "id": 846622,
+    "code": "wereverLove",
+    "emoticon_set": 634624,
+    "channel_id": "198790630",
+    "channel_name": "werevertumorro"
+  },
+  "856144": {
+    "id": 856144,
+    "code": "wereverFool",
+    "emoticon_set": 634624,
+    "channel_id": "198790630",
+    "channel_name": "werevertumorro"
+  },
+  "856147": {
+    "id": 856147,
+    "code": "wereverAngry",
+    "emoticon_set": 634624,
+    "channel_id": "198790630",
+    "channel_name": "werevertumorro"
+  },
+  "864320": {
+    "id": 864320,
+    "code": "wereverBarf",
+    "emoticon_set": 634624,
+    "channel_id": "198790630",
+    "channel_name": "werevertumorro"
+  },
+  "868935": {
+    "id": 868935,
+    "code": "wereverNinio",
+    "emoticon_set": 634624,
+    "channel_id": "198790630",
+    "channel_name": "werevertumorro"
+  },
+  "890872": {
+    "id": 890872,
+    "code": "wereverNoob",
+    "emoticon_set": 634624,
+    "channel_id": "198790630",
+    "channel_name": "werevertumorro"
+  },
+  "878973": {
+    "id": 878973,
+    "code": "wereverMant",
+    "emoticon_set": 634625,
+    "channel_id": "198790630",
+    "channel_name": "werevertumorro"
+  },
+  "881834": {
+    "id": 881834,
+    "code": "wereverRainbow",
+    "emoticon_set": 634626,
+    "channel_id": "198790630",
+    "channel_name": "werevertumorro"
+  },
+  "769143": {
+    "id": 769143,
+    "code": "huzbuzRedToque",
+    "emoticon_set": 494762,
+    "channel_id": "181827562",
+    "channel_name": "huzbuzz"
+  },
+  "769161": {
+    "id": 769161,
+    "code": "huzbuzBlueToque",
+    "emoticon_set": 494763,
+    "channel_id": "181827562",
+    "channel_name": "huzbuzz"
+  },
+  "769152": {
+    "id": 769152,
+    "code": "huzbuzYellowToque",
+    "emoticon_set": 494764,
+    "channel_id": "181827562",
+    "channel_name": "huzbuzz"
+  },
+  "339093": {
+    "id": 339093,
+    "code": "mikemeCamera",
+    "emoticon_set": 285997,
+    "channel_id": "48717501",
+    "channel_name": "mikemedran0"
+  },
+  "454676": {
+    "id": 454676,
+    "code": "wildla1LarkyLove",
+    "emoticon_set": 310547,
+    "channel_id": "140027252",
+    "channel_name": "wildlark"
+  },
+  "877132": {
+    "id": 877132,
+    "code": "wildla1LarkySalt",
+    "emoticon_set": 310549,
+    "channel_id": "140027252",
+    "channel_name": "wildlark"
+  },
+  "877134": {
+    "id": 877134,
+    "code": "wildla1LarkyHype",
+    "emoticon_set": 310550,
+    "channel_id": "140027252",
+    "channel_name": "wildlark"
+  },
+  "494668": {
+    "id": 494668,
+    "code": "screec1Sloth",
+    "emoticon_set": 379736,
+    "channel_id": "19685337",
+    "channel_name": "screech24"
+  },
+  "576625": {
+    "id": 576625,
+    "code": "screec1Goat",
+    "emoticon_set": 379737,
+    "channel_id": "19685337",
+    "channel_name": "screech24"
+  },
+  "961926": {
+    "id": 961926,
+    "code": "simply49Love",
+    "emoticon_set": 641287,
+    "channel_id": "130170359",
+    "channel_name": "simplycurio"
+  },
+  "961929": {
+    "id": 961929,
+    "code": "simply49Tilt",
+    "emoticon_set": 641288,
+    "channel_id": "130170359",
+    "channel_name": "simplycurio"
+  },
+  "979177": {
+    "id": 979177,
+    "code": "missio309",
+    "emoticon_set": 740676,
+    "channel_id": "190222218",
+    "channel_name": "mission114"
+  },
+  "914250": {
+    "id": 914250,
+    "code": "wurstoWurst",
+    "emoticon_set": 687944,
+    "channel_id": "74414894",
+    "channel_name": "wurstonair"
+  },
+  "914301": {
+    "id": 914301,
+    "code": "wurstoOnFire",
+    "emoticon_set": 687946,
+    "channel_id": "74414894",
+    "channel_name": "wurstonair"
+  },
+  "914317": {
+    "id": 914317,
+    "code": "wurstoSport",
+    "emoticon_set": 687947,
+    "channel_id": "74414894",
+    "channel_name": "wurstonair"
+  },
+  "748975": {
+    "id": 748975,
+    "code": "trista7Trista7",
+    "emoticon_set": 576185,
+    "channel_id": "95209027",
+    "channel_name": "tristanthemoose"
+  },
+  "771330": {
+    "id": 771330,
+    "code": "gevaudGG",
+    "emoticon_set": 565796,
+    "channel_id": "93786861",
+    "channel_name": "gevaudan93"
+  },
+  "783307": {
+    "id": 783307,
+    "code": "gevaudWAA",
+    "emoticon_set": 565797,
+    "channel_id": "93786861",
+    "channel_name": "gevaudan93"
+  },
+  "83433": {
+    "id": 83433,
+    "code": "bdgamingArmy",
+    "emoticon_set": 16168,
+    "channel_id": "77433369",
+    "channel_name": "bdtraining"
+  },
+  "83815": {
+    "id": 83815,
+    "code": "bdgamingLove",
+    "emoticon_set": 16168,
+    "channel_id": "77433369",
+    "channel_name": "bdtraining"
+  },
+  "83826": {
+    "id": 83826,
+    "code": "bdgamingSubhype",
+    "emoticon_set": 16168,
+    "channel_id": "77433369",
+    "channel_name": "bdtraining"
+  },
+  "91939": {
+    "id": 91939,
+    "code": "bdgamingGg",
+    "emoticon_set": 16168,
+    "channel_id": "77433369",
+    "channel_name": "bdtraining"
+  },
+  "91940": {
+    "id": 91940,
+    "code": "bdgamingRage",
+    "emoticon_set": 16168,
+    "channel_id": "77433369",
+    "channel_name": "bdtraining"
+  },
+  "91941": {
+    "id": 91941,
+    "code": "bdgamingKaffee",
+    "emoticon_set": 16168,
+    "channel_id": "77433369",
+    "channel_name": "bdtraining"
+  },
+  "122272": {
+    "id": 122272,
+    "code": "bdgamingProteine",
+    "emoticon_set": 16168,
+    "channel_id": "77433369",
+    "channel_name": "bdtraining"
+  },
+  "125678": {
+    "id": 125678,
+    "code": "bdgamingTot",
+    "emoticon_set": 16168,
+    "channel_id": "77433369",
+    "channel_name": "bdtraining"
+  },
+  "942262": {
+    "id": 942262,
+    "code": "vido18Puter",
+    "emoticon_set": 742276,
+    "channel_id": "59500381",
+    "channel_name": "vido18tuvy"
+  },
+  "887349": {
+    "id": 887349,
+    "code": "abraha4Sopresa",
+    "emoticon_set": 623213,
+    "channel_id": "192173578",
+    "channel_name": "abrahamvic"
+  },
+  "866394": {
+    "id": 866394,
+    "code": "btrsabTiger",
+    "emoticon_set": 664181,
+    "channel_id": "74378531",
+    "channel_name": "btr_saber"
+  },
+  "908628": {
+    "id": 908628,
+    "code": "pixelb2Ball",
+    "emoticon_set": 618118,
+    "channel_id": "39513373",
+    "channel_name": "pixelbypixelstudios"
+  },
+  "982326": {
+    "id": 982326,
+    "code": "pixelb2BallT2",
+    "emoticon_set": 618119,
+    "channel_id": "39513373",
+    "channel_name": "pixelbypixelstudios"
+  },
+  "982329": {
+    "id": 982329,
+    "code": "pixelb2BallT3",
+    "emoticon_set": 618120,
+    "channel_id": "39513373",
+    "channel_name": "pixelbypixelstudios"
+  },
+  "643155": {
+    "id": 643155,
+    "code": "teemo1",
+    "emoticon_set": 9616,
+    "channel_id": "36143129",
+    "channel_name": "masterfiend"
+  },
+  "643157": {
+    "id": 643157,
+    "code": "teemo2",
+    "emoticon_set": 9616,
+    "channel_id": "36143129",
+    "channel_name": "masterfiend"
+  },
+  "868721": {
+    "id": 868721,
+    "code": "teemoXD",
+    "emoticon_set": 9616,
+    "channel_id": "36143129",
+    "channel_name": "masterfiend"
+  },
+  "900874": {
+    "id": 900874,
+    "code": "teemoQT",
+    "emoticon_set": 9616,
+    "channel_id": "36143129",
+    "channel_name": "masterfiend"
+  },
+  "900876": {
+    "id": 900876,
+    "code": "teemoINGAME",
+    "emoticon_set": 9616,
+    "channel_id": "36143129",
+    "channel_name": "masterfiend"
+  },
+  "901216": {
+    "id": 901216,
+    "code": "teemoMouse",
+    "emoticon_set": 9616,
+    "channel_id": "36143129",
+    "channel_name": "masterfiend"
+  },
+  "901927": {
+    "id": 901927,
+    "code": "teemoKiss",
+    "emoticon_set": 9616,
+    "channel_id": "36143129",
+    "channel_name": "masterfiend"
+  },
+  "900835": {
+    "id": 900835,
+    "code": "teemoRich",
+    "emoticon_set": 39625,
+    "channel_id": "36143129",
+    "channel_name": "masterfiend"
+  },
+  "485443": {
+    "id": 485443,
+    "code": "x4boxChickenHype",
+    "emoticon_set": 283366,
+    "channel_id": "120462985",
+    "channel_name": "4box"
+  },
+  "523438": {
+    "id": 523438,
+    "code": "karhocKW",
+    "emoticon_set": 398281,
+    "channel_id": "23117536",
+    "channel_name": "karhock"
+  },
+  "387490": {
+    "id": 387490,
+    "code": "itsric1Heart",
+    "emoticon_set": 231971,
+    "channel_id": "69875201",
+    "channel_name": "ricn"
+  },
+  "387491": {
+    "id": 387491,
+    "code": "itsric1Rage",
+    "emoticon_set": 231972,
+    "channel_id": "69875201",
+    "channel_name": "ricn"
+  },
+  "387493": {
+    "id": 387493,
+    "code": "itsric1Flirt",
+    "emoticon_set": 231973,
+    "channel_id": "69875201",
+    "channel_name": "ricn"
+  },
+  "392569": {
+    "id": 392569,
+    "code": "vergil1Boy",
+    "emoticon_set": 280862,
+    "channel_id": "42717569",
+    "channel_name": "vergiliusso"
+  },
+  "824075": {
+    "id": 824075,
+    "code": "cddewiGovn",
+    "emoticon_set": 633973,
+    "channel_id": "104716819",
+    "channel_name": "cddewich"
+  },
+  "779700": {
+    "id": 779700,
+    "code": "chelse6Daisy",
+    "emoticon_set": 574847,
+    "channel_id": "133992761",
+    "channel_name": "chels_eh"
+  },
+  "996926": {
+    "id": 996926,
+    "code": "chelse6W",
+    "emoticon_set": 574848,
+    "channel_id": "133992761",
+    "channel_name": "chels_eh"
+  },
+  "980145": {
+    "id": 980145,
+    "code": "alakerPLAT",
+    "emoticon_set": 659829,
+    "channel_id": "68678149",
+    "channel_name": "alakeram"
+  },
+  "521474": {
+    "id": 521474,
+    "code": "inspir2Omg",
+    "emoticon_set": 376231,
+    "channel_id": "129984886",
+    "channel_name": "inspiration_n"
+  },
+  "487001": {
+    "id": 487001,
+    "code": "inspir2Poka",
+    "emoticon_set": 376233,
+    "channel_id": "129984886",
+    "channel_name": "inspiration_n"
+  },
+  "522163": {
+    "id": 522163,
+    "code": "inspir2Shitooooo",
+    "emoticon_set": 376234,
+    "channel_id": "129984886",
+    "channel_name": "inspiration_n"
+  },
+  "297110": {
+    "id": 297110,
+    "code": "viktor2Dropex",
+    "emoticon_set": 210000,
+    "channel_id": "85007895",
+    "channel_name": "lucky_one_name"
+  },
+  "3100": {
+    "id": 3100,
+    "code": "turkNUKE",
+    "emoticon_set": 844,
+    "channel_id": "31336206",
+    "channel_name": "turknukem"
+  },
+  "3103": {
+    "id": 3103,
+    "code": "turkATA",
+    "emoticon_set": 844,
+    "channel_id": "31336206",
+    "channel_name": "turknukem"
+  },
+  "3132": {
+    "id": 3132,
+    "code": "turkFACE",
+    "emoticon_set": 844,
+    "channel_id": "31336206",
+    "channel_name": "turknukem"
+  },
+  "3133": {
+    "id": 3133,
+    "code": "turkBAN",
+    "emoticon_set": 844,
+    "channel_id": "31336206",
+    "channel_name": "turknukem"
+  },
+  "3251": {
+    "id": 3251,
+    "code": "turkBABY",
+    "emoticon_set": 844,
+    "channel_id": "31336206",
+    "channel_name": "turknukem"
+  },
+  "3252": {
+    "id": 3252,
+    "code": "turkNAH",
+    "emoticon_set": 844,
+    "channel_id": "31336206",
+    "channel_name": "turknukem"
+  },
+  "542727": {
+    "id": 542727,
+    "code": "mitchm2Face",
+    "emoticon_set": 337222,
+    "channel_id": "75697637",
+    "channel_name": "mitchmake"
+  },
+  "466187": {
+    "id": 466187,
+    "code": "marcin210",
+    "emoticon_set": 277918,
+    "channel_id": "39022454",
+    "channel_name": "marcin7420"
+  },
+  "255951": {
+    "id": 255951,
+    "code": "jedsblHype",
+    "emoticon_set": 123662,
+    "channel_id": "29912486",
+    "channel_name": "jedsblog"
+  },
+  "255956": {
+    "id": 255956,
+    "code": "jedsblBaemaker",
+    "emoticon_set": 123668,
+    "channel_id": "29912486",
+    "channel_name": "jedsblog"
+  },
+  "255959": {
+    "id": 255959,
+    "code": "jedsblBeardo",
+    "emoticon_set": 123669,
+    "channel_id": "29912486",
+    "channel_name": "jedsblog"
+  },
+  "774930": {
+    "id": 774930,
+    "code": "niniskDEAD",
+    "emoticon_set": 571531,
+    "channel_id": "81084937",
+    "channel_name": "niniskya"
+  },
+  "281735": {
+    "id": 281735,
+    "code": "dirtycGASM",
+    "emoticon_set": 100089,
+    "channel_id": "17571608",
+    "channel_name": "dirtyclassic"
+  },
+  "469074": {
+    "id": 469074,
+    "code": "windu1Saber",
+    "emoticon_set": 152305,
+    "channel_id": "46467268",
+    "channel_name": "winduthemace"
+  },
+  "469098": {
+    "id": 469098,
+    "code": "windu1Stare",
+    "emoticon_set": 152306,
+    "channel_id": "46467268",
+    "channel_name": "winduthemace"
+  },
+  "469119": {
+    "id": 469119,
+    "code": "windu1Wtf",
+    "emoticon_set": 152307,
+    "channel_id": "46467268",
+    "channel_name": "winduthemace"
+  },
+  "473444": {
+    "id": 473444,
+    "code": "chetifChetivnr",
+    "emoticon_set": 372860,
+    "channel_id": "140985501",
+    "channel_name": "chetiflore"
+  },
+  "909197": {
+    "id": 909197,
+    "code": "chetifPls",
+    "emoticon_set": 372861,
+    "channel_id": "140985501",
+    "channel_name": "chetiflore"
+  },
+  "937666": {
+    "id": 937666,
+    "code": "bunnicSmirk",
+    "emoticon_set": 688590,
+    "channel_id": "83943369",
+    "channel_name": "bunniccino"
+  },
+  "293881": {
+    "id": 293881,
+    "code": "brittsLove",
+    "emoticon_set": 156202,
+    "channel_id": "104537002",
+    "channel_name": "brittsmagee"
+  },
+  "355503": {
+    "id": 355503,
+    "code": "brittsAim",
+    "emoticon_set": 156204,
+    "channel_id": "104537002",
+    "channel_name": "brittsmagee"
+  },
+  "355505": {
+    "id": 355505,
+    "code": "brittsG",
+    "emoticon_set": 156205,
+    "channel_id": "104537002",
+    "channel_name": "brittsmagee"
+  },
+  "613514": {
+    "id": 613514,
+    "code": "nashraOMFG",
+    "emoticon_set": 479311,
+    "channel_id": "137747132",
+    "channel_name": "nashray_"
+  },
+  "613518": {
+    "id": 613518,
+    "code": "nashraPECHEUR",
+    "emoticon_set": 479312,
+    "channel_id": "137747132",
+    "channel_name": "nashray_"
+  },
+  "613520": {
+    "id": 613520,
+    "code": "nashraPINGU",
+    "emoticon_set": 479313,
+    "channel_id": "137747132",
+    "channel_name": "nashray_"
+  },
+  "396822": {
+    "id": 396822,
+    "code": "digita7Bleach",
+    "emoticon_set": 139946,
+    "channel_id": "28347950",
+    "channel_name": "digital_nex"
+  },
+  "18085": {
+    "id": 18085,
+    "code": "ndjBASTI",
+    "emoticon_set": 5348,
+    "channel_id": "39548541",
+    "channel_name": "norddeutscherjunge"
+  },
+  "20375": {
+    "id": 20375,
+    "code": "ndjMoin",
+    "emoticon_set": 5348,
+    "channel_id": "39548541",
+    "channel_name": "norddeutscherjunge"
+  },
+  "20376": {
+    "id": 20376,
+    "code": "ndjFail",
+    "emoticon_set": 5348,
+    "channel_id": "39548541",
+    "channel_name": "norddeutscherjunge"
+  },
+  "20377": {
+    "id": 20377,
+    "code": "ndjProst",
+    "emoticon_set": 5348,
+    "channel_id": "39548541",
+    "channel_name": "norddeutscherjunge"
+  },
+  "26939": {
+    "id": 26939,
+    "code": "ndjRekt",
+    "emoticon_set": 5348,
+    "channel_id": "39548541",
+    "channel_name": "norddeutscherjunge"
+  },
+  "35650": {
+    "id": 35650,
+    "code": "ndjBastion",
+    "emoticon_set": 5348,
+    "channel_id": "39548541",
+    "channel_name": "norddeutscherjunge"
+  },
+  "35653": {
+    "id": 35653,
+    "code": "ndjKaffee",
+    "emoticon_set": 5348,
+    "channel_id": "39548541",
+    "channel_name": "norddeutscherjunge"
+  },
+  "35655": {
+    "id": 35655,
+    "code": "ndjHype",
+    "emoticon_set": 5348,
+    "channel_id": "39548541",
+    "channel_name": "norddeutscherjunge"
+  },
+  "124912": {
+    "id": 124912,
+    "code": "ndjToasty",
+    "emoticon_set": 5348,
+    "channel_id": "39548541",
+    "channel_name": "norddeutscherjunge"
+  },
+  "124913": {
+    "id": 124913,
+    "code": "ndjSchelle",
+    "emoticon_set": 5348,
+    "channel_id": "39548541",
+    "channel_name": "norddeutscherjunge"
+  },
+  "456736": {
+    "id": 456736,
+    "code": "movingScrewed",
+    "emoticon_set": 144817,
+    "channel_id": "95751633",
+    "channel_name": "movingtarget_086"
+  },
+  "456732": {
+    "id": 456732,
+    "code": "movingDasBOOT",
+    "emoticon_set": 144820,
+    "channel_id": "95751633",
+    "channel_name": "movingtarget_086"
+  },
+  "480552": {
+    "id": 480552,
+    "code": "movingTargetAcquired",
+    "emoticon_set": 144821,
+    "channel_id": "95751633",
+    "channel_name": "movingtarget_086"
+  },
+  "528282": {
+    "id": 528282,
+    "code": "angeltHype",
+    "emoticon_set": 132266,
+    "channel_id": "51069183",
+    "channel_name": "angeltjee"
+  },
+  "528289": {
+    "id": 528289,
+    "code": "angeltBoo",
+    "emoticon_set": 132270,
+    "channel_id": "51069183",
+    "channel_name": "angeltjee"
+  },
+  "238036": {
+    "id": 238036,
+    "code": "angeltMine",
+    "emoticon_set": 132271,
+    "channel_id": "51069183",
+    "channel_name": "angeltjee"
+  },
+  "966925": {
+    "id": 966925,
+    "code": "mrtjayHerz",
+    "emoticon_set": 649931,
+    "channel_id": "88380486",
+    "channel_name": "mrtjaysplaytv"
+  },
+  "975471": {
+    "id": 975471,
+    "code": "mrtjayFail",
+    "emoticon_set": 649932,
+    "channel_id": "88380486",
+    "channel_name": "mrtjaysplaytv"
+  },
+  "554112": {
+    "id": 554112,
+    "code": "ryusihwaBob",
+    "emoticon_set": 21396,
+    "channel_id": "47835007",
+    "channel_name": "ryusihwa"
+  },
+  "567902": {
+    "id": 567902,
+    "code": "ryusihwaSdq",
+    "emoticon_set": 21396,
+    "channel_id": "47835007",
+    "channel_name": "ryusihwa"
+  },
+  "567903": {
+    "id": 567903,
+    "code": "ryusihwaSed",
+    "emoticon_set": 21396,
+    "channel_id": "47835007",
+    "channel_name": "ryusihwa"
+  },
+  "567905": {
+    "id": 567905,
+    "code": "ryusihwaDd",
+    "emoticon_set": 21396,
+    "channel_id": "47835007",
+    "channel_name": "ryusihwa"
+  },
+  "762748": {
+    "id": 762748,
+    "code": "m4shjpIcon",
+    "emoticon_set": 340700,
+    "channel_id": "114895510",
+    "channel_name": "m4_sh"
+  },
+  "762754": {
+    "id": 762754,
+    "code": "m4shjpMISOLD",
+    "emoticon_set": 340701,
+    "channel_id": "114895510",
+    "channel_name": "m4_sh"
+  },
+  "60371": {
+    "id": 60371,
+    "code": "evlPause",
+    "emoticon_set": 14059,
+    "channel_id": "74861290",
+    "channel_name": "evltv"
+  },
+  "62913": {
+    "id": 62913,
+    "code": "evlGecks",
+    "emoticon_set": 14059,
+    "channel_id": "74861290",
+    "channel_name": "evltv"
+  },
+  "486120": {
+    "id": 486120,
+    "code": "jellyo1HYPE",
+    "emoticon_set": 384561,
+    "channel_id": "125537604",
+    "channel_name": "jellyow"
+  },
+  "486163": {
+    "id": 486163,
+    "code": "jellyo1SCARED",
+    "emoticon_set": 384562,
+    "channel_id": "125537604",
+    "channel_name": "jellyow"
+  },
+  "312309": {
+    "id": 312309,
+    "code": "bearwiSalute",
+    "emoticon_set": 192339,
+    "channel_id": "67111489",
+    "channel_name": "yogi_bear1235"
+  },
+  "312335": {
+    "id": 312335,
+    "code": "bearwiSpaceGun",
+    "emoticon_set": 192343,
+    "channel_id": "67111489",
+    "channel_name": "yogi_bear1235"
+  },
+  "312379": {
+    "id": 312379,
+    "code": "bearwiHype",
+    "emoticon_set": 192344,
+    "channel_id": "67111489",
+    "channel_name": "yogi_bear1235"
+  },
+  "804357": {
+    "id": 804357,
+    "code": "yabudmHi",
+    "emoticon_set": 85534,
+    "channel_id": "375053",
+    "channel_name": "yabudmiko"
+  },
+  "804358": {
+    "id": 804358,
+    "code": "yabudmThink",
+    "emoticon_set": 85537,
+    "channel_id": "375053",
+    "channel_name": "yabudmiko"
+  },
+  "512469": {
+    "id": 512469,
+    "code": "gdkkinSP",
+    "emoticon_set": 302603,
+    "channel_id": "148000181",
+    "channel_name": "gdkkind1"
+  },
+  "512472": {
+    "id": 512472,
+    "code": "gdkkinEhdgk",
+    "emoticon_set": 302603,
+    "channel_id": "148000181",
+    "channel_name": "gdkkind1"
+  },
+  "528179": {
+    "id": 528179,
+    "code": "gdkkinSingHa",
+    "emoticon_set": 302603,
+    "channel_id": "148000181",
+    "channel_name": "gdkkind1"
+  },
+  "528185": {
+    "id": 528185,
+    "code": "gdkkinKEHEHEK",
+    "emoticon_set": 302606,
+    "channel_id": "148000181",
+    "channel_name": "gdkkind1"
+  },
+  "800787": {
+    "id": 800787,
+    "code": "missmyBastet",
+    "emoticon_set": 59109,
+    "channel_id": "138925295",
+    "channel_name": "missmyu_"
+  },
+  "326056": {
+    "id": 326056,
+    "code": "sleepy1Moan",
+    "emoticon_set": 65013,
+    "channel_id": "148678215",
+    "channel_name": "sleepytimee"
+  },
+  "326059": {
+    "id": 326059,
+    "code": "sleepy1YAY",
+    "emoticon_set": 65014,
+    "channel_id": "148678215",
+    "channel_name": "sleepytimee"
+  },
+  "326060": {
+    "id": 326060,
+    "code": "sleepy1Toxic",
+    "emoticon_set": 65015,
+    "channel_id": "148678215",
+    "channel_name": "sleepytimee"
+  },
+  "997500": {
+    "id": 997500,
+    "code": "magnus2Liderlig",
+    "emoticon_set": 291712,
+    "channel_id": "41679579",
+    "channel_name": "magnusdkei"
+  },
+  "941990": {
+    "id": 941990,
+    "code": "jamesm3Oehjames",
+    "emoticon_set": 737793,
+    "channel_id": "126661710",
+    "channel_name": "jamesmcghinny"
+  },
+  "285518": {
+    "id": 285518,
+    "code": "nolagoNacle",
+    "emoticon_set": 62134,
+    "channel_id": "27398650",
+    "channel_name": "nolagold"
+  },
+  "344105": {
+    "id": 344105,
+    "code": "nolagoGoon",
+    "emoticon_set": 62137,
+    "channel_id": "27398650",
+    "channel_name": "nolagold"
+  },
+  "344106": {
+    "id": 344106,
+    "code": "nolagoStory",
+    "emoticon_set": 62138,
+    "channel_id": "27398650",
+    "channel_name": "nolagold"
+  },
+  "852976": {
+    "id": 852976,
+    "code": "caboseEwok",
+    "emoticon_set": 644403,
+    "channel_id": "24715711",
+    "channel_name": "cabosetv"
+  },
+  "852978": {
+    "id": 852978,
+    "code": "caboseAhh",
+    "emoticon_set": 644405,
+    "channel_id": "24715711",
+    "channel_name": "cabosetv"
+  },
+  "852983": {
+    "id": 852983,
+    "code": "caboseFeels",
+    "emoticon_set": 644406,
+    "channel_id": "24715711",
+    "channel_name": "cabosetv"
+  },
+  "705196": {
+    "id": 705196,
+    "code": "majorp1WASGEHT",
+    "emoticon_set": 524639,
+    "channel_id": "149245978",
+    "channel_name": "major_paan"
+  },
+  "669917": {
+    "id": 669917,
+    "code": "mirochLove",
+    "emoticon_set": 489653,
+    "channel_id": "150486915",
+    "channel_name": "mirochkamrr"
+  },
+  "953385": {
+    "id": 953385,
+    "code": "heyaedHypee",
+    "emoticon_set": 723580,
+    "channel_id": "198100569",
+    "channel_name": "heyaedam_tv"
+  },
+  "238108": {
+    "id": 238108,
+    "code": "niyanGG",
+    "emoticon_set": 91830,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "390765": {
+    "id": 390765,
+    "code": "niyanKALP",
+    "emoticon_set": 91830,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "390881": {
+    "id": 390881,
+    "code": "niyanRAGE",
+    "emoticon_set": 91830,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "442527": {
+    "id": 442527,
+    "code": "niyanCHICK",
+    "emoticon_set": 91830,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "465432": {
+    "id": 465432,
+    "code": "niyanJILET",
+    "emoticon_set": 91830,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "526350": {
+    "id": 526350,
+    "code": "niyanOLEY",
+    "emoticon_set": 91830,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "526397": {
+    "id": 526397,
+    "code": "niyanMVP",
+    "emoticon_set": 91830,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "946270": {
+    "id": 946270,
+    "code": "niyanTISS",
+    "emoticon_set": 91830,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "946357": {
+    "id": 946357,
+    "code": "niyanMRB",
+    "emoticon_set": 91830,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "946382": {
+    "id": 946382,
+    "code": "niyanEFKAR",
+    "emoticon_set": 91830,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "390894": {
+    "id": 390894,
+    "code": "niyanCAT",
+    "emoticon_set": 91831,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "390892": {
+    "id": 390892,
+    "code": "niyanDOC",
+    "emoticon_set": 91832,
+    "channel_id": "83078163",
+    "channel_name": "niyan"
+  },
+  "330618": {
+    "id": 330618,
+    "code": "katzehHEY",
+    "emoticon_set": 80988,
+    "channel_id": "101746685",
+    "channel_name": "katzehalifornia"
+  },
+  "361561": {
+    "id": 361561,
+    "code": "ernaayErnShrug",
+    "emoticon_set": 218618,
+    "channel_id": "95334631",
+    "channel_name": "ernaayy"
+  },
+  "361563": {
+    "id": 361563,
+    "code": "ernaayPintoErn",
+    "emoticon_set": 218620,
+    "channel_id": "95334631",
+    "channel_name": "ernaayy"
+  },
+  "361565": {
+    "id": 361565,
+    "code": "ernaayErnFett",
+    "emoticon_set": 218621,
+    "channel_id": "95334631",
+    "channel_name": "ernaayy"
+  },
+  "762421": {
+    "id": 762421,
+    "code": "weeabuDiediekawaii",
+    "emoticon_set": 574994,
+    "channel_id": "173027336",
+    "channel_name": "weeabuwu"
+  },
+  "875178": {
+    "id": 875178,
+    "code": "kublapChego",
+    "emoticon_set": 589937,
+    "channel_id": "135437497",
+    "channel_name": "kubla_play"
+  },
+  "875188": {
+    "id": 875188,
+    "code": "kublapHey",
+    "emoticon_set": 589938,
+    "channel_id": "135437497",
+    "channel_name": "kubla_play"
+  },
+  "875195": {
+    "id": 875195,
+    "code": "kublapXaxa",
+    "emoticon_set": 589939,
+    "channel_id": "135437497",
+    "channel_name": "kubla_play"
+  },
+  "220390": {
+    "id": 220390,
+    "code": "jrod31Hey",
+    "emoticon_set": 100098,
+    "channel_id": "39392",
+    "channel_name": "jrod311"
+  },
+  "284002": {
+    "id": 284002,
+    "code": "jrod311Love",
+    "emoticon_set": 100101,
+    "channel_id": "39392",
+    "channel_name": "jrod311"
+  },
+  "283990": {
+    "id": 283990,
+    "code": "jrod311GoldOh",
+    "emoticon_set": 100102,
+    "channel_id": "39392",
+    "channel_name": "jrod311"
+  },
+  "659193": {
+    "id": 659193,
+    "code": "gamere2Aprv",
+    "emoticon_set": 237359,
+    "channel_id": "102360319",
+    "channel_name": "gamerebeltv"
+  },
+  "659195": {
+    "id": 659195,
+    "code": "gamere2Stan",
+    "emoticon_set": 237360,
+    "channel_id": "102360319",
+    "channel_name": "gamerebeltv"
+  },
+  "659198": {
+    "id": 659198,
+    "code": "gamere2Love",
+    "emoticon_set": 237361,
+    "channel_id": "102360319",
+    "channel_name": "gamerebeltv"
+  },
+  "834754": {
+    "id": 834754,
+    "code": "jelenhHi",
+    "emoticon_set": 232622,
+    "channel_id": "148378476",
+    "channel_name": "s3jk"
+  },
+  "842207": {
+    "id": 842207,
+    "code": "mocellW",
+    "emoticon_set": 538874,
+    "channel_id": "58348650",
+    "channel_name": "dreamocell"
+  },
+  "461615": {
+    "id": 461615,
+    "code": "s7umblWhiff",
+    "emoticon_set": 332510,
+    "channel_id": "124893740",
+    "channel_name": "s7umbles"
+  },
+  "598235": {
+    "id": 598235,
+    "code": "s7umblJeff",
+    "emoticon_set": 332511,
+    "channel_id": "124893740",
+    "channel_name": "s7umbles"
+  },
+  "114378": {
+    "id": 114378,
+    "code": "zomgRoode",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "122478": {
+    "id": 122478,
+    "code": "zomgDelete",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "140252": {
+    "id": 140252,
+    "code": "zomgRage",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "171885": {
+    "id": 171885,
+    "code": "zomgStop",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "172010": {
+    "id": 172010,
+    "code": "zomgHA",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "373649": {
+    "id": 373649,
+    "code": "zomgSure",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "636546": {
+    "id": 636546,
+    "code": "zomgNerd",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "691071": {
+    "id": 691071,
+    "code": "zomgSweet",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "691072": {
+    "id": 691072,
+    "code": "zomgBraun",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "691073": {
+    "id": 691073,
+    "code": "zomgJB",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "691074": {
+    "id": 691074,
+    "code": "zomgRusev",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "759151": {
+    "id": 759151,
+    "code": "zomgBurn",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "832637": {
+    "id": 832637,
+    "code": "zomgPat",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "882478": {
+    "id": 882478,
+    "code": "zomgYES",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "934339": {
+    "id": 934339,
+    "code": "zomgHere",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "934343": {
+    "id": 934343,
+    "code": "zomgTheList",
+    "emoticon_set": 15590,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "934345": {
+    "id": 934345,
+    "code": "zomgKappa",
+    "emoticon_set": 28032,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "691078": {
+    "id": 691078,
+    "code": "zomgChamp",
+    "emoticon_set": 28033,
+    "channel_id": "58857695",
+    "channel_name": "superzomgbbq"
+  },
+  "293755": {
+    "id": 293755,
+    "code": "averag7EXCITE",
+    "emoticon_set": 145961,
+    "channel_id": "130864184",
+    "channel_name": "averageants"
+  },
+  "431265": {
+    "id": 431265,
+    "code": "c4ndyHi",
+    "emoticon_set": 17694,
+    "channel_id": "119960855",
+    "channel_name": "c4ndytv"
+  },
+  "431278": {
+    "id": 431278,
+    "code": "c4ndyWtf",
+    "emoticon_set": 17694,
+    "channel_id": "119960855",
+    "channel_name": "c4ndytv"
+  },
+  "816927": {
+    "id": 816927,
+    "code": "abinorBuckshot001",
+    "emoticon_set": 630271,
+    "channel_id": "172461949",
+    "channel_name": "abinormaluk"
+  },
+  "825817": {
+    "id": 825817,
+    "code": "abinorBuckshot002",
+    "emoticon_set": 630273,
+    "channel_id": "172461949",
+    "channel_name": "abinormaluk"
+  },
+  "922368": {
+    "id": 922368,
+    "code": "abinorBushNinja",
+    "emoticon_set": 630274,
+    "channel_id": "172461949",
+    "channel_name": "abinormaluk"
+  },
+  "275010": {
+    "id": 275010,
+    "code": "suickiNmeow",
+    "emoticon_set": 110233,
+    "channel_id": "126219597",
+    "channel_name": "suickin"
+  },
+  "877590": {
+    "id": 877590,
+    "code": "ibustoBoyzz",
+    "emoticon_set": 510391,
+    "channel_id": "28140618",
+    "channel_name": "ibustos"
+  },
+  "90079": {
+    "id": 90079,
+    "code": "sp51402002Pig",
+    "emoticon_set": 5844,
+    "channel_id": "29126796",
+    "channel_name": "sp51402002"
+  },
+  "90080": {
+    "id": 90080,
+    "code": "sp51402002Pigg",
+    "emoticon_set": 5844,
+    "channel_id": "29126796",
+    "channel_name": "sp51402002"
+  },
+  "957136": {
+    "id": 957136,
+    "code": "wh1tejSop",
+    "emoticon_set": 587376,
+    "channel_id": "117132357",
+    "channel_name": "wh1tej0ker"
+  },
+  "393583": {
+    "id": 393583,
+    "code": "kickpuWrongorder",
+    "emoticon_set": 255298,
+    "channel_id": "150635682",
+    "channel_name": "kickpunchshootemup"
+  },
+  "503035": {
+    "id": 503035,
+    "code": "storylHYPE",
+    "emoticon_set": 155140,
+    "channel_id": "71107116",
+    "channel_name": "storylinegamer"
+  },
+  "503040": {
+    "id": 503040,
+    "code": "storylREKT",
+    "emoticon_set": 155142,
+    "channel_id": "71107116",
+    "channel_name": "storylinegamer"
+  },
+  "503045": {
+    "id": 503045,
+    "code": "storylSRSLY",
+    "emoticon_set": 155143,
+    "channel_id": "71107116",
+    "channel_name": "storylinegamer"
+  },
+  "345216": {
+    "id": 345216,
+    "code": "cherusHai",
+    "emoticon_set": 84215,
+    "channel_id": "94919676",
+    "channel_name": "cherushimetsumari"
+  },
+  "323956": {
+    "id": 323956,
+    "code": "cherusLove",
+    "emoticon_set": 84218,
+    "channel_id": "94919676",
+    "channel_name": "cherushimetsumari"
+  },
+  "326709": {
+    "id": 326709,
+    "code": "cherusBlossom",
+    "emoticon_set": 84219,
+    "channel_id": "94919676",
+    "channel_name": "cherushimetsumari"
+  },
+  "835144": {
+    "id": 835144,
+    "code": "brocolBrocosub",
+    "emoticon_set": 637160,
+    "channel_id": "175206081",
+    "channel_name": "brocolitv"
+  },
+  "835162": {
+    "id": 835162,
+    "code": "brocolBrocosub2",
+    "emoticon_set": 637163,
+    "channel_id": "175206081",
+    "channel_name": "brocolitv"
+  },
+  "835168": {
+    "id": 835168,
+    "code": "brocolBrocosub3",
+    "emoticon_set": 637164,
+    "channel_id": "175206081",
+    "channel_name": "brocolitv"
+  },
+  "278486": {
+    "id": 278486,
+    "code": "podevaRekt",
+    "emoticon_set": 91458,
+    "channel_id": "29087475",
+    "channel_name": "podevan"
+  },
+  "278489": {
+    "id": 278489,
+    "code": "podevaThink",
+    "emoticon_set": 91460,
+    "channel_id": "29087475",
+    "channel_name": "podevan"
+  },
+  "278490": {
+    "id": 278490,
+    "code": "podevaRage",
+    "emoticon_set": 91461,
+    "channel_id": "29087475",
+    "channel_name": "podevan"
+  },
+  "891980": {
+    "id": 891980,
+    "code": "mrcyllSurprise",
+    "emoticon_set": 688979,
+    "channel_id": "116712071",
+    "channel_name": "mrcyllex"
+  },
+  "400261": {
+    "id": 400261,
+    "code": "banghoBamgil",
+    "emoticon_set": 220182,
+    "channel_id": "141533974",
+    "channel_name": "bamgil"
+  },
+  "346936": {
+    "id": 346936,
+    "code": "oukay2ITZOUKAY",
+    "emoticon_set": 255999,
+    "channel_id": "90361177",
+    "channel_name": "ou_kay21"
+  },
+  "347014": {
+    "id": 347014,
+    "code": "oukay2MACHINE",
+    "emoticon_set": 256003,
+    "channel_id": "90361177",
+    "channel_name": "ou_kay21"
+  },
+  "446551": {
+    "id": 446551,
+    "code": "kingof10GETJINXED",
+    "emoticon_set": 273777,
+    "channel_id": "130125493",
+    "channel_name": "kingofmarksman"
+  },
+  "669835": {
+    "id": 669835,
+    "code": "psycho5Tach",
+    "emoticon_set": 125740,
+    "channel_id": "137358677",
+    "channel_name": "psychoyoshi"
+  },
+  "669838": {
+    "id": 669838,
+    "code": "psycho5Love",
+    "emoticon_set": 125742,
+    "channel_id": "137358677",
+    "channel_name": "psychoyoshi"
+  },
+  "669840": {
+    "id": 669840,
+    "code": "psycho5Hype",
+    "emoticon_set": 125743,
+    "channel_id": "137358677",
+    "channel_name": "psychoyoshi"
+  },
+  "19436": {
+    "id": 19436,
+    "code": "cybmattCool",
+    "emoticon_set": 6370,
+    "channel_id": "260981",
+    "channel_name": "cyborgmatt"
+  },
+  "19440": {
+    "id": 19440,
+    "code": "cybmattShagbark",
+    "emoticon_set": 6370,
+    "channel_id": "260981",
+    "channel_name": "cyborgmatt"
+  },
+  "20631": {
+    "id": 20631,
+    "code": "cybmattKappurion",
+    "emoticon_set": 6370,
+    "channel_id": "260981",
+    "channel_name": "cyborgmatt"
+  },
+  "20979": {
+    "id": 20979,
+    "code": "cybmattFuriongasm",
+    "emoticon_set": 6370,
+    "channel_id": "260981",
+    "channel_name": "cyborgmatt"
+  },
+  "21082": {
+    "id": 21082,
+    "code": "cybmattSquee",
+    "emoticon_set": 6370,
+    "channel_id": "260981",
+    "channel_name": "cyborgmatt"
+  },
+  "29736": {
+    "id": 29736,
+    "code": "cybmatt322",
+    "emoticon_set": 6370,
+    "channel_id": "260981",
+    "channel_name": "cyborgmatt"
+  },
+  "813295": {
+    "id": 813295,
+    "code": "richhoThugga",
+    "emoticon_set": 262593,
+    "channel_id": "149433614",
+    "channel_name": "rich_homie_thugga"
+  },
+  "719593": {
+    "id": 719593,
+    "code": "richhoXO",
+    "emoticon_set": 262594,
+    "channel_id": "149433614",
+    "channel_name": "rich_homie_thugga"
+  },
+  "720098": {
+    "id": 720098,
+    "code": "richhoYT",
+    "emoticon_set": 262595,
+    "channel_id": "149433614",
+    "channel_name": "rich_homie_thugga"
+  },
+  "842189": {
+    "id": 842189,
+    "code": "itsthe9LOVE",
+    "emoticon_set": 214641,
+    "channel_id": "95790169",
+    "channel_name": "grizzz"
+  },
+  "619897": {
+    "id": 619897,
+    "code": "itsthe9Hypu",
+    "emoticon_set": 214645,
+    "channel_id": "95790169",
+    "channel_name": "grizzz"
+  },
+  "841862": {
+    "id": 841862,
+    "code": "itsthe9L",
+    "emoticon_set": 214646,
+    "channel_id": "95790169",
+    "channel_name": "grizzz"
+  },
+  "953336": {
+    "id": 953336,
+    "code": "hotgamH",
+    "emoticon_set": 143575,
+    "channel_id": "82077393",
+    "channel_name": "mesmerizelive"
+  },
+  "953339": {
+    "id": 953339,
+    "code": "hotgamD",
+    "emoticon_set": 143576,
+    "channel_id": "82077393",
+    "channel_name": "mesmerizelive"
+  },
+  "953355": {
+    "id": 953355,
+    "code": "hotgamC",
+    "emoticon_set": 143577,
+    "channel_id": "82077393",
+    "channel_name": "mesmerizelive"
+  },
+  "966374": {
+    "id": 966374,
+    "code": "calvin4WHAT",
+    "emoticon_set": 290195,
+    "channel_id": "103190876",
+    "channel_name": "calvinsete"
+  },
+  "86640": {
+    "id": 86640,
+    "code": "dispensaTjohnson",
+    "emoticon_set": 15211,
+    "channel_id": "86053292",
+    "channel_name": "tommydispensa"
+  },
+  "563508": {
+    "id": 563508,
+    "code": "joefisC",
+    "emoticon_set": 122578,
+    "channel_id": "37348021",
+    "channel_name": "joefisx20s"
+  },
+  "876620": {
+    "id": 876620,
+    "code": "joefisS",
+    "emoticon_set": 122580,
+    "channel_id": "37348021",
+    "channel_name": "joefisx20s"
+  },
+  "364173": {
+    "id": 364173,
+    "code": "ikoogaGya",
+    "emoticon_set": 178141,
+    "channel_id": "32973292",
+    "channel_name": "ikoogar"
+  },
+  "527518": {
+    "id": 527518,
+    "code": "ikoogaIffy",
+    "emoticon_set": 178143,
+    "channel_id": "32973292",
+    "channel_name": "ikoogar"
+  },
+  "527519": {
+    "id": 527519,
+    "code": "ikoogaTia",
+    "emoticon_set": 178144,
+    "channel_id": "32973292",
+    "channel_name": "ikoogar"
+  },
+  "581310": {
+    "id": 581310,
+    "code": "dovahoRekt",
+    "emoticon_set": 300877,
+    "channel_id": "92908708",
+    "channel_name": "dovahorganos"
+  },
+  "860619": {
+    "id": 860619,
+    "code": "snakylSnakyGasm",
+    "emoticon_set": 608966,
+    "channel_id": "38696419",
+    "channel_name": "snakylul"
+  },
+  "287849": {
+    "id": 287849,
+    "code": "mai7viBAN",
+    "emoticon_set": 173227,
+    "channel_id": "73490386",
+    "channel_name": "mai7viac"
+  },
+  "287955": {
+    "id": 287955,
+    "code": "mai7viFIRE",
+    "emoticon_set": 173228,
+    "channel_id": "73490386",
+    "channel_name": "mai7viac"
+  },
+  "287997": {
+    "id": 287997,
+    "code": "mai7viLIGHT",
+    "emoticon_set": 173229,
+    "channel_id": "73490386",
+    "channel_name": "mai7viac"
+  },
+  "30131": {
+    "id": 30131,
+    "code": "hen1Minimo4k",
+    "emoticon_set": 9716,
+    "channel_id": "42582027",
+    "channel_name": "henriquehen1"
+  },
+  "30289": {
+    "id": 30289,
+    "code": "hen1Jacare",
+    "emoticon_set": 9716,
+    "channel_id": "42582027",
+    "channel_name": "henriquehen1"
+  },
+  "30335": {
+    "id": 30335,
+    "code": "hen1Pula",
+    "emoticon_set": 9716,
+    "channel_id": "42582027",
+    "channel_name": "henriquehen1"
+  },
+  "987828": {
+    "id": 987828,
+    "code": "opbus72",
+    "emoticon_set": 784426,
+    "channel_id": "175826416",
+    "channel_name": "op_bus"
+  },
+  "412760": {
+    "id": 412760,
+    "code": "eyecyeSass",
+    "emoticon_set": 126006,
+    "channel_id": "39121715",
+    "channel_name": "eyecye"
+  },
+  "953778": {
+    "id": 953778,
+    "code": "jibzeeBahaha",
+    "emoticon_set": 757218,
+    "channel_id": "75907457",
+    "channel_name": "jibzee"
+  },
+  "954178": {
+    "id": 954178,
+    "code": "jibzeeSquidzee",
+    "emoticon_set": 757219,
+    "channel_id": "75907457",
+    "channel_name": "jibzee"
+  },
+  "827665": {
+    "id": 827665,
+    "code": "vindic3EMOU",
+    "emoticon_set": 638428,
+    "channel_id": "52617720",
+    "channel_name": "vindictauk"
+  },
+  "633701": {
+    "id": 633701,
+    "code": "offici165ProteinW",
+    "emoticon_set": 494645,
+    "channel_id": "94115221",
+    "channel_name": "officialprotein"
+  },
+  "350338": {
+    "id": 350338,
+    "code": "firstDean",
+    "emoticon_set": 301392,
+    "channel_id": "134218516",
+    "channel_name": "firstinspires"
+  },
+  "350339": {
+    "id": 350339,
+    "code": "firstWoodie",
+    "emoticon_set": 301392,
+    "channel_id": "134218516",
+    "channel_name": "firstinspires"
+  },
+  "350341": {
+    "id": 350341,
+    "code": "firstBlue",
+    "emoticon_set": 301392,
+    "channel_id": "134218516",
+    "channel_name": "firstinspires"
+  },
+  "350345": {
+    "id": 350345,
+    "code": "firstRed",
+    "emoticon_set": 301392,
+    "channel_id": "134218516",
+    "channel_name": "firstinspires"
+  },
+  "350348": {
+    "id": 350348,
+    "code": "firstHype",
+    "emoticon_set": 301392,
+    "channel_id": "134218516",
+    "channel_name": "firstinspires"
+  },
+  "350350": {
+    "id": 350350,
+    "code": "firstSad",
+    "emoticon_set": 301392,
+    "channel_id": "134218516",
+    "channel_name": "firstinspires"
+  },
+  "350353": {
+    "id": 350353,
+    "code": "firstWater",
+    "emoticon_set": 301392,
+    "channel_id": "134218516",
+    "channel_name": "firstinspires"
+  },
+  "964801": {
+    "id": 964801,
+    "code": "fourevFOUREVAPOW",
+    "emoticon_set": 768775,
+    "channel_id": "54893002",
+    "channel_name": "fourevaplay"
+  },
+  "345176": {
+    "id": 345176,
+    "code": "jordan11JustOP",
+    "emoticon_set": 299555,
+    "channel_id": "152116477",
+    "channel_name": "jordanopgamer"
+  },
+  "345201": {
+    "id": 345201,
+    "code": "jordan11OPSavage",
+    "emoticon_set": 299556,
+    "channel_id": "152116477",
+    "channel_name": "jordanopgamer"
+  },
+  "327479": {
+    "id": 327479,
+    "code": "somdaaRUKA",
+    "emoticon_set": 287462,
+    "channel_id": "120608594",
+    "channel_name": "somdaaaa"
+  },
+  "916390": {
+    "id": 916390,
+    "code": "ltcellSup",
+    "emoticon_set": 293023,
+    "channel_id": "1244378",
+    "channel_name": "ltcellis"
+  },
+  "436392": {
+    "id": 436392,
+    "code": "maniac9Bos",
+    "emoticon_set": 359144,
+    "channel_id": "129234734",
+    "channel_name": "maniacmad"
+  },
+  "754616": {
+    "id": 754616,
+    "code": "maniac9S",
+    "emoticon_set": 359148,
+    "channel_id": "129234734",
+    "channel_name": "maniacmad"
+  },
+  "680397": {
+    "id": 680397,
+    "code": "maniac9H",
+    "emoticon_set": 359149,
+    "channel_id": "129234734",
+    "channel_name": "maniacmad"
+  },
+  "738893": {
+    "id": 738893,
+    "code": "deepfr2Korn",
+    "emoticon_set": 561257,
+    "channel_id": "184948796",
+    "channel_name": "deepfriedunikorn"
+  },
+  "762128": {
+    "id": 762128,
+    "code": "deepfr2Rainblood",
+    "emoticon_set": 561258,
+    "channel_id": "184948796",
+    "channel_name": "deepfriedunikorn"
+  },
+  "762136": {
+    "id": 762136,
+    "code": "deepfr2Butter",
+    "emoticon_set": 561259,
+    "channel_id": "184948796",
+    "channel_name": "deepfriedunikorn"
+  },
+  "974574": {
+    "id": 974574,
+    "code": "diceheDicehead",
+    "emoticon_set": 779279,
+    "channel_id": "180769272",
+    "channel_name": "dicehead_tv"
+  },
+  "974582": {
+    "id": 974582,
+    "code": "diceheOne",
+    "emoticon_set": 779280,
+    "channel_id": "180769272",
+    "channel_name": "dicehead_tv"
+  },
+  "990840": {
+    "id": 990840,
+    "code": "toosmaSmart",
+    "emoticon_set": 252003,
+    "channel_id": "66490891",
+    "channel_name": "toosmartna"
+  },
+  "615411": {
+    "id": 615411,
+    "code": "thenomHYPE",
+    "emoticon_set": 480823,
+    "channel_id": "38091100",
+    "channel_name": "thenom"
+  },
+  "615436": {
+    "id": 615436,
+    "code": "thenomLIFE",
+    "emoticon_set": 480824,
+    "channel_id": "38091100",
+    "channel_name": "thenom"
+  },
+  "615448": {
+    "id": 615448,
+    "code": "thenomFEELS",
+    "emoticon_set": 480825,
+    "channel_id": "38091100",
+    "channel_name": "thenom"
+  },
+  "343702": {
+    "id": 343702,
+    "code": "matzlaE",
+    "emoticon_set": 295345,
+    "channel_id": "96717011",
+    "channel_name": "matzlatz"
+  },
+  "865694": {
+    "id": 865694,
+    "code": "matzlaEG",
+    "emoticon_set": 295350,
+    "channel_id": "96717011",
+    "channel_name": "matzlatz"
+  },
+  "343772": {
+    "id": 343772,
+    "code": "matzlaFG",
+    "emoticon_set": 295351,
+    "channel_id": "96717011",
+    "channel_name": "matzlatz"
+  },
+  "838396": {
+    "id": 838396,
+    "code": "skinleHookah",
+    "emoticon_set": 645930,
+    "channel_id": "52339574",
+    "channel_name": "skinless87"
+  },
+  "838514": {
+    "id": 838514,
+    "code": "skinleHookah2",
+    "emoticon_set": 645931,
+    "channel_id": "52339574",
+    "channel_name": "skinless87"
+  },
+  "838519": {
+    "id": 838519,
+    "code": "skinleHookah3",
+    "emoticon_set": 645932,
+    "channel_id": "52339574",
+    "channel_name": "skinless87"
+  },
+  "601568": {
+    "id": 601568,
+    "code": "junnymDrag",
+    "emoticon_set": 410148,
+    "channel_id": "91276852",
+    "channel_name": "junny_mishima"
+  },
+  "601453": {
+    "id": 601453,
+    "code": "junnymKap",
+    "emoticon_set": 410149,
+    "channel_id": "91276852",
+    "channel_name": "junny_mishima"
+  },
+  "364238": {
+    "id": 364238,
+    "code": "mrdeldNut",
+    "emoticon_set": 295546,
+    "channel_id": "29086502",
+    "channel_name": "mrdeldongo"
+  },
+  "534725": {
+    "id": 534725,
+    "code": "mrdeldMeow",
+    "emoticon_set": 295550,
+    "channel_id": "29086502",
+    "channel_name": "mrdeldongo"
+  },
+  "443336": {
+    "id": 443336,
+    "code": "mrdeldBeef",
+    "emoticon_set": 295551,
+    "channel_id": "29086502",
+    "channel_name": "mrdeldongo"
+  },
+  "633853": {
+    "id": 633853,
+    "code": "komykoCall",
+    "emoticon_set": 232031,
+    "channel_id": "115845858",
+    "channel_name": "fooxx"
+  },
+  "623693": {
+    "id": 623693,
+    "code": "komykoVg",
+    "emoticon_set": 232032,
+    "channel_id": "115845858",
+    "channel_name": "fooxx"
+  },
+  "441104": {
+    "id": 441104,
+    "code": "shoryuALED",
+    "emoticon_set": 348470,
+    "channel_id": "65574281",
+    "channel_name": "shoryupiff"
+  },
+  "440858": {
+    "id": 440858,
+    "code": "shoryuDitto",
+    "emoticon_set": 348472,
+    "channel_id": "65574281",
+    "channel_name": "shoryupiff"
+  },
+  "767068": {
+    "id": 767068,
+    "code": "realsiSubmetic",
+    "emoticon_set": 570878,
+    "channel_id": "94996436",
+    "channel_name": "realsimetic"
+  },
+  "555885": {
+    "id": 555885,
+    "code": "allensLove",
+    "emoticon_set": 419343,
+    "channel_id": "169944557",
+    "channel_name": "allenspectrum"
+  },
+  "253650": {
+    "id": 253650,
+    "code": "prawilFace",
+    "emoticon_set": 69364,
+    "channel_id": "83391773",
+    "channel_name": "prawilnybigos"
+  },
+  "893539": {
+    "id": 893539,
+    "code": "rubyfeGasm",
+    "emoticon_set": 586669,
+    "channel_id": "116387202",
+    "channel_name": "rubyfennec"
+  },
+  "833786": {
+    "id": 833786,
+    "code": "azorokGasm",
+    "emoticon_set": 98341,
+    "channel_id": "91403976",
+    "channel_name": "azorokazu"
+  },
+  "662927": {
+    "id": 662927,
+    "code": "azorokLove",
+    "emoticon_set": 98342,
+    "channel_id": "91403976",
+    "channel_name": "azorokazu"
+  },
+  "836226": {
+    "id": 836226,
+    "code": "azorokStare",
+    "emoticon_set": 98343,
+    "channel_id": "91403976",
+    "channel_name": "azorokazu"
+  },
+  "676935": {
+    "id": 676935,
+    "code": "prodig2ER",
+    "emoticon_set": 124586,
+    "channel_id": "102535155",
+    "channel_name": "prodigyxxi"
+  },
+  "676938": {
+    "id": 676938,
+    "code": "prodig2RAGE",
+    "emoticon_set": 124589,
+    "channel_id": "102535155",
+    "channel_name": "prodigyxxi"
+  },
+  "633217": {
+    "id": 633217,
+    "code": "benmolHi",
+    "emoticon_set": 484632,
+    "channel_id": "105371440",
+    "channel_name": "benmolearts"
+  },
+  "621499": {
+    "id": 621499,
+    "code": "expireLove",
+    "emoticon_set": 405193,
+    "channel_id": "126895131",
+    "channel_name": "expiredbl"
+  },
+  "532329": {
+    "id": 532329,
+    "code": "expireAngery",
+    "emoticon_set": 405194,
+    "channel_id": "126895131",
+    "channel_name": "expiredbl"
+  },
+  "532331": {
+    "id": 532331,
+    "code": "expireLul",
+    "emoticon_set": 405195,
+    "channel_id": "126895131",
+    "channel_name": "expiredbl"
+  },
+  "681967": {
+    "id": 681967,
+    "code": "bigbob123",
+    "emoticon_set": 401985,
+    "channel_id": "53853524",
+    "channel_name": "bigbobrosstv"
+  },
+  "406919": {
+    "id": 406919,
+    "code": "nasgalAH",
+    "emoticon_set": 330279,
+    "channel_id": "36153866",
+    "channel_name": "nasgalyn"
+  },
+  "924819": {
+    "id": 924819,
+    "code": "draishVAMPISMILE",
+    "emoticon_set": 727291,
+    "channel_id": "122153700",
+    "channel_name": "draishak"
+  },
+  "924889": {
+    "id": 924889,
+    "code": "draishANGRY",
+    "emoticon_set": 727292,
+    "channel_id": "122153700",
+    "channel_name": "draishak"
+  },
+  "924918": {
+    "id": 924918,
+    "code": "draishLOVE",
+    "emoticon_set": 727293,
+    "channel_id": "122153700",
+    "channel_name": "draishak"
+  },
+  "724607": {
+    "id": 724607,
+    "code": "bbwolfEevil",
+    "emoticon_set": 77003,
+    "channel_id": "12252216",
+    "channel_name": "bbwolfe"
+  },
+  "724614": {
+    "id": 724614,
+    "code": "bbwolfEWinn",
+    "emoticon_set": 77008,
+    "channel_id": "12252216",
+    "channel_name": "bbwolfe"
+  },
+  "724601": {
+    "id": 724601,
+    "code": "bbwolfEZZ",
+    "emoticon_set": 77009,
+    "channel_id": "12252216",
+    "channel_name": "bbwolfe"
+  },
+  "755946": {
+    "id": 755946,
+    "code": "fanyeaShr",
+    "emoticon_set": 563207,
+    "channel_id": "86421598",
+    "channel_name": "fanyeah1748"
+  },
+  "836444": {
+    "id": 836444,
+    "code": "atestuDio",
+    "emoticon_set": 538127,
+    "channel_id": "162314010",
+    "channel_name": "atestudio"
+  },
+  "185026": {
+    "id": 185026,
+    "code": "popuLove",
+    "emoticon_set": 22913,
+    "channel_id": "39921265",
+    "channel_name": "popushii"
+  },
+  "185027": {
+    "id": 185027,
+    "code": "popuSing",
+    "emoticon_set": 22913,
+    "channel_id": "39921265",
+    "channel_name": "popushii"
+  },
+  "185028": {
+    "id": 185028,
+    "code": "popuRage",
+    "emoticon_set": 22913,
+    "channel_id": "39921265",
+    "channel_name": "popushii"
+  },
+  "185029": {
+    "id": 185029,
+    "code": "popuSneeze",
+    "emoticon_set": 22913,
+    "channel_id": "39921265",
+    "channel_name": "popushii"
+  },
+  "185030": {
+    "id": 185030,
+    "code": "popuKimchi",
+    "emoticon_set": 22913,
+    "channel_id": "39921265",
+    "channel_name": "popushii"
+  },
+  "191802": {
+    "id": 191802,
+    "code": "popuTehe",
+    "emoticon_set": 22913,
+    "channel_id": "39921265",
+    "channel_name": "popushii"
+  },
+  "192848": {
+    "id": 192848,
+    "code": "popuLewd",
+    "emoticon_set": 22913,
+    "channel_id": "39921265",
+    "channel_name": "popushii"
+  },
+  "718049": {
+    "id": 718049,
+    "code": "wattieHype",
+    "emoticon_set": 169219,
+    "channel_id": "103651062",
+    "channel_name": "watties"
+  },
+  "721913": {
+    "id": 721913,
+    "code": "wattieDerpdevil",
+    "emoticon_set": 169222,
+    "channel_id": "103651062",
+    "channel_name": "watties"
+  },
+  "728065": {
+    "id": 728065,
+    "code": "wattiePwn",
+    "emoticon_set": 169223,
+    "channel_id": "103651062",
+    "channel_name": "watties"
+  },
+  "360471": {
+    "id": 360471,
+    "code": "medicnNick83",
+    "emoticon_set": 303375,
+    "channel_id": "141980186",
+    "channel_name": "medicnick83"
+  },
+  "285490": {
+    "id": 285490,
+    "code": "incura1Love",
+    "emoticon_set": 170146,
+    "channel_id": "52832641",
+    "channel_name": "incurablyfluffy"
+  },
+  "690322": {
+    "id": 690322,
+    "code": "bamgauHi",
+    "emoticon_set": 514957,
+    "channel_id": "94401505",
+    "channel_name": "bam_gau"
+  },
+  "690327": {
+    "id": 690327,
+    "code": "bamgauGoofed",
+    "emoticon_set": 514958,
+    "channel_id": "94401505",
+    "channel_name": "bam_gau"
+  },
+  "690330": {
+    "id": 690330,
+    "code": "bamgauLove",
+    "emoticon_set": 514959,
+    "channel_id": "94401505",
+    "channel_name": "bam_gau"
+  },
+  "933409": {
+    "id": 933409,
+    "code": "letspl6ITW",
+    "emoticon_set": 422129,
+    "channel_id": "51625011",
+    "channel_name": "chrisdolman"
+  },
+  "933355": {
+    "id": 933355,
+    "code": "letspl6RIP",
+    "emoticon_set": 422130,
+    "channel_id": "51625011",
+    "channel_name": "chrisdolman"
+  },
+  "295660": {
+    "id": 295660,
+    "code": "rafalLece",
+    "emoticon_set": 58638,
+    "channel_id": "58502991",
+    "channel_name": "rafalepka"
+  },
+  "295662": {
+    "id": 295662,
+    "code": "rafalHi",
+    "emoticon_set": 58638,
+    "channel_id": "58502991",
+    "channel_name": "rafalepka"
+  },
+  "295663": {
+    "id": 295663,
+    "code": "rafalHype",
+    "emoticon_set": 58638,
+    "channel_id": "58502991",
+    "channel_name": "rafalepka"
+  },
+  "295665": {
+    "id": 295665,
+    "code": "rafalHaha",
+    "emoticon_set": 58638,
+    "channel_id": "58502991",
+    "channel_name": "rafalepka"
+  },
+  "965614": {
+    "id": 965614,
+    "code": "drunke25Barzo",
+    "emoticon_set": 651644,
+    "channel_id": "120197735",
+    "channel_name": "drunkenbarzo"
+  },
+  "829187": {
+    "id": 829187,
+    "code": "imanexPRESSION",
+    "emoticon_set": 334052,
+    "channel_id": "36542848",
+    "channel_name": "imanex"
+  },
+  "922360": {
+    "id": 922360,
+    "code": "thegar4WTF",
+    "emoticon_set": 723262,
+    "channel_id": "120583051",
+    "channel_name": "thegarris"
+  },
+  "992449": {
+    "id": 992449,
+    "code": "thegar4GG",
+    "emoticon_set": 723263,
+    "channel_id": "120583051",
+    "channel_name": "thegarris"
+  },
+  "947292": {
+    "id": 947292,
+    "code": "crazyc20Lovez",
+    "emoticon_set": 700356,
+    "channel_id": "72034367",
+    "channel_name": "crazycatzuly"
+  },
+  "943243": {
+    "id": 943243,
+    "code": "mrblac8Love",
+    "emoticon_set": 727240,
+    "channel_id": "143769529",
+    "channel_name": "mrblackawesome"
+  },
+  "314456": {
+    "id": 314456,
+    "code": "rbrlSpreadthelove",
+    "emoticon_set": 266048,
+    "channel_id": "139027213",
+    "channel_name": "rocketbaguette"
+  },
+  "476543": {
+    "id": 476543,
+    "code": "rbrlBoyan",
+    "emoticon_set": 266048,
+    "channel_id": "139027213",
+    "channel_name": "rocketbaguette"
+  },
+  "768205": {
+    "id": 768205,
+    "code": "rbrlDigLUL",
+    "emoticon_set": 266048,
+    "channel_id": "139027213",
+    "channel_name": "rocketbaguette"
+  },
+  "783001": {
+    "id": 783001,
+    "code": "rbrlHighlight",
+    "emoticon_set": 266048,
+    "channel_id": "139027213",
+    "channel_name": "rocketbaguette"
+  },
+  "933536": {
+    "id": 933536,
+    "code": "rbrlBachiHey",
+    "emoticon_set": 266048,
+    "channel_id": "139027213",
+    "channel_name": "rocketbaguette"
+  },
+  "933537": {
+    "id": 933537,
+    "code": "rbrlMindGame",
+    "emoticon_set": 266048,
+    "channel_id": "139027213",
+    "channel_name": "rocketbaguette"
+  },
+  "933539": {
+    "id": 933539,
+    "code": "rbrlSpleenGasm",
+    "emoticon_set": 266048,
+    "channel_id": "139027213",
+    "channel_name": "rocketbaguette"
+  },
+  "952200": {
+    "id": 952200,
+    "code": "rbrlDTap",
+    "emoticon_set": 266048,
+    "channel_id": "139027213",
+    "channel_name": "rocketbaguette"
+  },
+  "1504": {
+    "id": 1504,
+    "code": "emeyBerniCap",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "1505": {
+    "id": 1505,
+    "code": "emeyDuNase",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "21368": {
+    "id": 21368,
+    "code": "emeyKapp",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "28892": {
+    "id": 28892,
+    "code": "emeyDongle",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "41628": {
+    "id": 41628,
+    "code": "emeyParty",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "68488": {
+    "id": 68488,
+    "code": "emeyHand",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "122906": {
+    "id": 122906,
+    "code": "emeyAmdoodle",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "187870": {
+    "id": 187870,
+    "code": "emeyBlind",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "187872": {
+    "id": 187872,
+    "code": "emeyFeed",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "187873": {
+    "id": 187873,
+    "code": "emeyFiesta",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "187874": {
+    "id": 187874,
+    "code": "emeyGasm",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "187875": {
+    "id": 187875,
+    "code": "emeyHai",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "187877": {
+    "id": 187877,
+    "code": "emeyHuh",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "187878": {
+    "id": 187878,
+    "code": "emeySmirk",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "187880": {
+    "id": 187880,
+    "code": "emeyRage",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "187882": {
+    "id": 187882,
+    "code": "emeyLewd",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "252409": {
+    "id": 252409,
+    "code": "emeyLorc",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "297808": {
+    "id": 297808,
+    "code": "emeyHype",
+    "emoticon_set": 178,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "297813": {
+    "id": 297813,
+    "code": "emeyHypee",
+    "emoticon_set": 24507,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "297815": {
+    "id": 297815,
+    "code": "emeyHyped",
+    "emoticon_set": 24508,
+    "channel_id": "9652911",
+    "channel_name": "emero"
+  },
+  "232355": {
+    "id": 232355,
+    "code": "qwadruSleeper",
+    "emoticon_set": 202833,
+    "channel_id": "69216115",
+    "channel_name": "qwadruple"
+  },
+  "232367": {
+    "id": 232367,
+    "code": "qwadruHype",
+    "emoticon_set": 202837,
+    "channel_id": "69216115",
+    "channel_name": "qwadruple"
+  },
+  "232370": {
+    "id": 232370,
+    "code": "qwadruFeed",
+    "emoticon_set": 202838,
+    "channel_id": "69216115",
+    "channel_name": "qwadruple"
+  },
+  "879516": {
+    "id": 879516,
+    "code": "supers9ChewyRage",
+    "emoticon_set": 168145,
+    "channel_id": "123726706",
+    "channel_name": "supersaiyanchewbakka"
+  },
+  "911166": {
+    "id": 911166,
+    "code": "iamjakE8bit",
+    "emoticon_set": 714544,
+    "channel_id": "129482102",
+    "channel_name": "iamjakegaming"
+  },
+  "498309": {
+    "id": 498309,
+    "code": "realrnHYPE",
+    "emoticon_set": 376156,
+    "channel_id": "170302596",
+    "channel_name": "realrnrphantom"
+  },
+  "808497": {
+    "id": 808497,
+    "code": "jackomKappa",
+    "emoticon_set": 426058,
+    "channel_id": "31317231",
+    "channel_name": "jackomatrus"
+  },
+  "192945": {
+    "id": 192945,
+    "code": "blaOMG",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "192952": {
+    "id": 192952,
+    "code": "blaLove",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "192963": {
+    "id": 192963,
+    "code": "blaCheer",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "192964": {
+    "id": 192964,
+    "code": "blaLUL",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "192966": {
+    "id": 192966,
+    "code": "blaNo",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "192970": {
+    "id": 192970,
+    "code": "blaZ",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "192972": {
+    "id": 192972,
+    "code": "blaWave",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "192973": {
+    "id": 192973,
+    "code": "blaYeah",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "192995": {
+    "id": 192995,
+    "code": "blaThink",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "193006": {
+    "id": 193006,
+    "code": "blaRIP",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "196716": {
+    "id": 196716,
+    "code": "blaDad",
+    "emoticon_set": 1201,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "435745": {
+    "id": 435745,
+    "code": "blaNime",
+    "emoticon_set": 34409,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "439604": {
+    "id": 439604,
+    "code": "blaGM",
+    "emoticon_set": 34410,
+    "channel_id": "11075489",
+    "channel_name": "blacklightattack"
+  },
+  "694555": {
+    "id": 694555,
+    "code": "thepri2CH",
+    "emoticon_set": 538175,
+    "channel_id": "121263137",
+    "channel_name": "theprie5t"
+  },
+  "300715": {
+    "id": 300715,
+    "code": "ysteriLOL",
+    "emoticon_set": 114433,
+    "channel_id": "60544887",
+    "channel_name": "ysteriamw"
+  },
+  "676402": {
+    "id": 676402,
+    "code": "thedig1PB",
+    "emoticon_set": 75651,
+    "channel_id": "46252823",
+    "channel_name": "thedigitalcowboy"
+  },
+  "353597": {
+    "id": 353597,
+    "code": "link54Link54",
+    "emoticon_set": 273973,
+    "channel_id": "106027211",
+    "channel_name": "link_54"
+  },
+  "990344": {
+    "id": 990344,
+    "code": "gammbeWinnerwinner",
+    "emoticon_set": 135355,
+    "channel_id": "50897763",
+    "channel_name": "gammbet"
+  },
+  "990393": {
+    "id": 990393,
+    "code": "gammbeSAVAGECLUB",
+    "emoticon_set": 135355,
+    "channel_id": "50897763",
+    "channel_name": "gammbet"
+  },
+  "990436": {
+    "id": 990436,
+    "code": "gammbeREKT",
+    "emoticon_set": 135355,
+    "channel_id": "50897763",
+    "channel_name": "gammbet"
+  },
+  "396064": {
+    "id": 396064,
+    "code": "pandap4Rofl",
+    "emoticon_set": 330935,
+    "channel_id": "75703476",
+    "channel_name": "pandapple01"
+  },
+  "621894": {
+    "id": 621894,
+    "code": "msambeHype",
+    "emoticon_set": 482056,
+    "channel_id": "63962482",
+    "channel_name": "msamber"
+  },
+  "621922": {
+    "id": 621922,
+    "code": "msambeLURK",
+    "emoticon_set": 482057,
+    "channel_id": "63962482",
+    "channel_name": "msamber"
+  },
+  "621926": {
+    "id": 621926,
+    "code": "msambeLOVE",
+    "emoticon_set": 482058,
+    "channel_id": "63962482",
+    "channel_name": "msamber"
+  },
+  "582808": {
+    "id": 582808,
+    "code": "watersHype",
+    "emoticon_set": 65829,
+    "channel_id": "57799152",
+    "channel_name": "waterspolle"
+  },
+  "242244": {
+    "id": 242244,
+    "code": "watersTot",
+    "emoticon_set": 65830,
+    "channel_id": "57799152",
+    "channel_name": "waterspolle"
+  },
+  "242307": {
+    "id": 242307,
+    "code": "watersKiller",
+    "emoticon_set": 65831,
+    "channel_id": "57799152",
+    "channel_name": "waterspolle"
+  },
+  "741195": {
+    "id": 741195,
+    "code": "diamon26D",
+    "emoticon_set": 570716,
+    "channel_id": "163098228",
+    "channel_name": "diamondleaguerl"
+  },
+  "645320": {
+    "id": 645320,
+    "code": "victor1Flare",
+    "emoticon_set": 64113,
+    "channel_id": "57809474",
+    "channel_name": "victorsevengames"
+  },
+  "645322": {
+    "id": 645322,
+    "code": "victor1Wiggle",
+    "emoticon_set": 64114,
+    "channel_id": "57809474",
+    "channel_name": "victorsevengames"
+  },
+  "645383": {
+    "id": 645383,
+    "code": "victor1Pretty",
+    "emoticon_set": 64115,
+    "channel_id": "57809474",
+    "channel_name": "victorsevengames"
+  },
+  "904039": {
+    "id": 904039,
+    "code": "stolen2Shrug",
+    "emoticon_set": 349075,
+    "channel_id": "45543172",
+    "channel_name": "stolenfaun"
+  },
+  "955308": {
+    "id": 955308,
+    "code": "gruntrHype",
+    "emoticon_set": 255267,
+    "channel_id": "114750288",
+    "channel_name": "agent_grunt"
+  },
+  "955310": {
+    "id": 955310,
+    "code": "gruntrRage",
+    "emoticon_set": 255272,
+    "channel_id": "114750288",
+    "channel_name": "agent_grunt"
+  },
+  "955311": {
+    "id": 955311,
+    "code": "gruntrMerica",
+    "emoticon_set": 255273,
+    "channel_id": "114750288",
+    "channel_name": "agent_grunt"
+  },
+  "758072": {
+    "id": 758072,
+    "code": "ketuyaGekioko",
+    "emoticon_set": 477226,
+    "channel_id": "123354384",
+    "channel_name": "ketuyabe"
+  },
+  "761967": {
+    "id": 761967,
+    "code": "ketuyaOgyaogyaogyaaaaaaaaa",
+    "emoticon_set": 477227,
+    "channel_id": "123354384",
+    "channel_name": "ketuyabe"
+  },
+  "593721": {
+    "id": 593721,
+    "code": "glengrLMAO",
+    "emoticon_set": 461209,
+    "channel_id": "177736117",
+    "channel_name": "glengratz"
+  },
+  "392967": {
+    "id": 392967,
+    "code": "milleuCRA",
+    "emoticon_set": 312461,
+    "channel_id": "67881074",
+    "channel_name": "milleuspro"
+  },
+  "388474": {
+    "id": 388474,
+    "code": "taters1TaterS",
+    "emoticon_set": 322330,
+    "channel_id": "132105522",
+    "channel_name": "tatershot_"
+  },
+  "971184": {
+    "id": 971184,
+    "code": "punchp1PPMWow",
+    "emoticon_set": 545711,
+    "channel_id": "150122186",
+    "channel_name": "punchpunchmagic"
+  },
+  "983839": {
+    "id": 983839,
+    "code": "punchp1Andi",
+    "emoticon_set": 545712,
+    "channel_id": "150122186",
+    "channel_name": "punchpunchmagic"
+  },
+  "704533": {
+    "id": 704533,
+    "code": "punchp1RAGE",
+    "emoticon_set": 545713,
+    "channel_id": "150122186",
+    "channel_name": "punchpunchmagic"
+  },
+  "803972": {
+    "id": 803972,
+    "code": "doblecDC",
+    "emoticon_set": 619577,
+    "channel_id": "193586268",
+    "channel_name": "doblecharlie"
+  },
+  "50217": {
+    "id": 50217,
+    "code": "romeoHairDay",
+    "emoticon_set": 13142,
+    "channel_id": "44817586",
+    "channel_name": "romeocoh2"
+  },
+  "50222": {
+    "id": 50222,
+    "code": "romeoHype",
+    "emoticon_set": 13142,
+    "channel_id": "44817586",
+    "channel_name": "romeocoh2"
+  },
+  "50318": {
+    "id": 50318,
+    "code": "romeoMug",
+    "emoticon_set": 13142,
+    "channel_id": "44817586",
+    "channel_name": "romeocoh2"
+  },
+  "50319": {
+    "id": 50319,
+    "code": "romeoPls",
+    "emoticon_set": 13142,
+    "channel_id": "44817586",
+    "channel_name": "romeocoh2"
+  },
+  "50978": {
+    "id": 50978,
+    "code": "romeoBANG",
+    "emoticon_set": 13142,
+    "channel_id": "44817586",
+    "channel_name": "romeocoh2"
+  },
+  "50981": {
+    "id": 50981,
+    "code": "romeoPro",
+    "emoticon_set": 13142,
+    "channel_id": "44817586",
+    "channel_name": "romeocoh2"
+  },
+  "607801": {
+    "id": 607801,
+    "code": "stardr1Hype",
+    "emoticon_set": 445988,
+    "channel_id": "172437520",
+    "channel_name": "stardraws"
+  },
+  "612868": {
+    "id": 612868,
+    "code": "stardr1McScuse",
+    "emoticon_set": 445989,
+    "channel_id": "172437520",
+    "channel_name": "stardraws"
+  },
+  "972577": {
+    "id": 972577,
+    "code": "tomggNocry",
+    "emoticon_set": 638702,
+    "channel_id": "145346518",
+    "channel_name": "tomgg"
+  },
+  "954454": {
+    "id": 954454,
+    "code": "sparkl21Piratepup",
+    "emoticon_set": 750216,
+    "channel_id": "181976893",
+    "channel_name": "sparklingwrackspurt"
+  },
+  "815404": {
+    "id": 815404,
+    "code": "onyxzeRker",
+    "emoticon_set": 626110,
+    "channel_id": "153795029",
+    "channel_name": "onyxzebra"
+  },
+  "919169": {
+    "id": 919169,
+    "code": "onyxzeLucy",
+    "emoticon_set": 626111,
+    "channel_id": "153795029",
+    "channel_name": "onyxzebra"
+  },
+  "919206": {
+    "id": 919206,
+    "code": "onyxzeCool",
+    "emoticon_set": 626112,
+    "channel_id": "153795029",
+    "channel_name": "onyxzebra"
+  },
+  "687829": {
+    "id": 687829,
+    "code": "whitet1OMG",
+    "emoticon_set": 220047,
+    "channel_id": "83891412",
+    "channel_name": "white_task"
+  },
+  "872887": {
+    "id": 872887,
+    "code": "whitet123",
+    "emoticon_set": 220050,
+    "channel_id": "83891412",
+    "channel_name": "white_task"
+  },
+  "144579": {
+    "id": 144579,
+    "code": "zugW",
+    "emoticon_set": 20669,
+    "channel_id": "27827421",
+    "channel_name": "zugrug"
+  },
+  "148933": {
+    "id": 148933,
+    "code": "zugMurky",
+    "emoticon_set": 20669,
+    "channel_id": "27827421",
+    "channel_name": "zugrug"
+  },
+  "151635": {
+    "id": 151635,
+    "code": "zugFeed",
+    "emoticon_set": 20669,
+    "channel_id": "27827421",
+    "channel_name": "zugrug"
+  },
+  "166111": {
+    "id": 166111,
+    "code": "zugBug",
+    "emoticon_set": 20669,
+    "channel_id": "27827421",
+    "channel_name": "zugrug"
+  },
+  "166112": {
+    "id": 166112,
+    "code": "zugLotus",
+    "emoticon_set": 20669,
+    "channel_id": "27827421",
+    "channel_name": "zugrug"
+  },
+  "738522": {
+    "id": 738522,
+    "code": "zugWhat",
+    "emoticon_set": 20669,
+    "channel_id": "27827421",
+    "channel_name": "zugrug"
+  },
+  "766107": {
+    "id": 766107,
+    "code": "zugTF",
+    "emoticon_set": 20669,
+    "channel_id": "27827421",
+    "channel_name": "zugrug"
+  },
+  "837387": {
+    "id": 837387,
+    "code": "zugHands",
+    "emoticon_set": 20669,
+    "channel_id": "27827421",
+    "channel_name": "zugrug"
+  },
+  "868555": {
+    "id": 868555,
+    "code": "zugZ",
+    "emoticon_set": 20669,
+    "channel_id": "27827421",
+    "channel_name": "zugrug"
+  },
+  "868538": {
+    "id": 868538,
+    "code": "zugRacc",
+    "emoticon_set": 37279,
+    "channel_id": "27827421",
+    "channel_name": "zugrug"
+  },
+  "908305": {
+    "id": 908305,
+    "code": "mxjdS",
+    "emoticon_set": 542583,
+    "channel_id": "78742870",
+    "channel_name": "mxjd"
+  },
+  "860362": {
+    "id": 860362,
+    "code": "zartheZarthehype",
+    "emoticon_set": 255195,
+    "channel_id": "89668520",
+    "channel_name": "zarthe"
+  },
+  "860363": {
+    "id": 860363,
+    "code": "zartheZarthefeels",
+    "emoticon_set": 255203,
+    "channel_id": "89668520",
+    "channel_name": "zarthe"
+  },
+  "860364": {
+    "id": 860364,
+    "code": "zartheZarthelove",
+    "emoticon_set": 255204,
+    "channel_id": "89668520",
+    "channel_name": "zarthe"
+  },
+  "216677": {
+    "id": 216677,
+    "code": "fluxisLove",
+    "emoticon_set": 93484,
+    "channel_id": "94761400",
+    "channel_name": "fluxisnice"
+  },
+  "217098": {
+    "id": 217098,
+    "code": "fluxisOmg",
+    "emoticon_set": 93485,
+    "channel_id": "94761400",
+    "channel_name": "fluxisnice"
+  },
+  "217933": {
+    "id": 217933,
+    "code": "fluxisGold",
+    "emoticon_set": 93486,
+    "channel_id": "94761400",
+    "channel_name": "fluxisnice"
+  },
+  "715997": {
+    "id": 715997,
+    "code": "yuzuhiBDrunk",
+    "emoticon_set": 549915,
+    "channel_id": "143334344",
+    "channel_name": "yuzu_hibiki"
+  },
+  "982377": {
+    "id": 982377,
+    "code": "yuzuhiBiStare",
+    "emoticon_set": 549916,
+    "channel_id": "143334344",
+    "channel_name": "yuzu_hibiki"
+  },
+  "856317": {
+    "id": 856317,
+    "code": "yuzuhiBiCool",
+    "emoticon_set": 549917,
+    "channel_id": "143334344",
+    "channel_name": "yuzu_hibiki"
+  },
+  "302106": {
+    "id": 302106,
+    "code": "alch51WOO",
+    "emoticon_set": 193137,
+    "channel_id": "95454112",
+    "channel_name": "alch514"
+  },
+  "302113": {
+    "id": 302113,
+    "code": "alch51Bank",
+    "emoticon_set": 193140,
+    "channel_id": "95454112",
+    "channel_name": "alch514"
+  },
+  "582995": {
+    "id": 582995,
+    "code": "gr4b3r51th",
+    "emoticon_set": 101761,
+    "channel_id": "27079004",
+    "channel_name": "gr4b3r"
+  },
+  "223240": {
+    "id": 223240,
+    "code": "veetGasm",
+    "emoticon_set": 159428,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "457949": {
+    "id": 457949,
+    "code": "veetHype",
+    "emoticon_set": 159428,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "491701": {
+    "id": 491701,
+    "code": "veetHey",
+    "emoticon_set": 159428,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "536174": {
+    "id": 536174,
+    "code": "veetLUL",
+    "emoticon_set": 159428,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "566161": {
+    "id": 566161,
+    "code": "veetK",
+    "emoticon_set": 159428,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "712994": {
+    "id": 712994,
+    "code": "veetFRICKS",
+    "emoticon_set": 159428,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "713145": {
+    "id": 713145,
+    "code": "veetRigged",
+    "emoticon_set": 159428,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "738332": {
+    "id": 738332,
+    "code": "veetWashedUp",
+    "emoticon_set": 159428,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "841379": {
+    "id": 841379,
+    "code": "veetLADS",
+    "emoticon_set": 159428,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "223363": {
+    "id": 223363,
+    "code": "veetLikeThis",
+    "emoticon_set": 159431,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "223763": {
+    "id": 223763,
+    "code": "veetRage",
+    "emoticon_set": 159432,
+    "channel_id": "219086",
+    "channel_name": "veetus"
+  },
+  "784950": {
+    "id": 784950,
+    "code": "marwinWhat",
+    "emoticon_set": 604131,
+    "channel_id": "81519350",
+    "channel_name": "marwin143"
+  },
+  "784948": {
+    "id": 784948,
+    "code": "marwinAngry",
+    "emoticon_set": 604132,
+    "channel_id": "81519350",
+    "channel_name": "marwin143"
+  },
+  "784955": {
+    "id": 784955,
+    "code": "marwinFacepalm",
+    "emoticon_set": 604133,
+    "channel_id": "81519350",
+    "channel_name": "marwin143"
+  },
+  "395369": {
+    "id": 395369,
+    "code": "lawyerLDDxD",
+    "emoticon_set": 330013,
+    "channel_id": "143365165",
+    "channel_name": "lawyerdentistdoctor"
+  },
+  "897727": {
+    "id": 897727,
+    "code": "frzgodPALM",
+    "emoticon_set": 606341,
+    "channel_id": "143867581",
+    "channel_name": "frzgod1"
+  },
+  "910670": {
+    "id": 910670,
+    "code": "facepa3MankeyK",
+    "emoticon_set": 677440,
+    "channel_id": "202711370",
+    "channel_name": "facepalmzzit0"
+  },
+  "545220": {
+    "id": 545220,
+    "code": "ladyst2PotatoTrooper",
+    "emoticon_set": 400291,
+    "channel_id": "78481952",
+    "channel_name": "ladystormtrooper"
+  },
+  "355326": {
+    "id": 355326,
+    "code": "amberrPt",
+    "emoticon_set": 165943,
+    "channel_id": "44129903",
+    "channel_name": "amberrc"
+  },
+  "121633": {
+    "id": 121633,
+    "code": "yunnKappa",
+    "emoticon_set": 19462,
+    "channel_id": "97616929",
+    "channel_name": "yun_willyspower"
+  },
+  "121635": {
+    "id": 121635,
+    "code": "yunnLatigo",
+    "emoticon_set": 19462,
+    "channel_id": "97616929",
+    "channel_name": "yun_willyspower"
+  },
+  "125946": {
+    "id": 125946,
+    "code": "yunnWi",
+    "emoticon_set": 19462,
+    "channel_id": "97616929",
+    "channel_name": "yun_willyspower"
+  },
+  "125947": {
+    "id": 125947,
+    "code": "yunnAim",
+    "emoticon_set": 19462,
+    "channel_id": "97616929",
+    "channel_name": "yun_willyspower"
+  },
+  "133777": {
+    "id": 133777,
+    "code": "yunnHoli",
+    "emoticon_set": 19462,
+    "channel_id": "97616929",
+    "channel_name": "yun_willyspower"
+  },
+  "144520": {
+    "id": 144520,
+    "code": "yunnRage",
+    "emoticon_set": 19462,
+    "channel_id": "97616929",
+    "channel_name": "yun_willyspower"
+  },
+  "183397": {
+    "id": 183397,
+    "code": "yunnFail",
+    "emoticon_set": 19462,
+    "channel_id": "97616929",
+    "channel_name": "yun_willyspower"
+  },
+  "183398": {
+    "id": 183398,
+    "code": "yunnLol",
+    "emoticon_set": 23803,
+    "channel_id": "97616929",
+    "channel_name": "yun_willyspower"
+  },
+  "183401": {
+    "id": 183401,
+    "code": "yunnZzz",
+    "emoticon_set": 23804,
+    "channel_id": "97616929",
+    "channel_name": "yun_willyspower"
+  },
+  "332357": {
+    "id": 332357,
+    "code": "changBye",
+    "emoticon_set": 279584,
+    "channel_id": "139346767",
+    "channel_name": "teamkongdoo_changsik"
+  },
+  "332359": {
+    "id": 332359,
+    "code": "changHi",
+    "emoticon_set": 279584,
+    "channel_id": "139346767",
+    "channel_name": "teamkongdoo_changsik"
+  },
+  "332362": {
+    "id": 332362,
+    "code": "changKungs",
+    "emoticon_set": 279584,
+    "channel_id": "139346767",
+    "channel_name": "teamkongdoo_changsik"
+  },
+  "332363": {
+    "id": 332363,
+    "code": "changLion",
+    "emoticon_set": 279584,
+    "channel_id": "139346767",
+    "channel_name": "teamkongdoo_changsik"
+  },
+  "332365": {
+    "id": 332365,
+    "code": "changSmile",
+    "emoticon_set": 279585,
+    "channel_id": "139346767",
+    "channel_name": "teamkongdoo_changsik"
+  },
+  "332366": {
+    "id": 332366,
+    "code": "changGirl",
+    "emoticon_set": 279586,
+    "channel_id": "139346767",
+    "channel_name": "teamkongdoo_changsik"
+  }
+}

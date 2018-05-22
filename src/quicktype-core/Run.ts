@@ -170,6 +170,7 @@ class Run implements RunContext {
             async () =>
                 await allInputs.addTypes(
                     typeBuilder,
+                    this._options.inferMaps,
                     this._options.inferEnums,
                     this._options.inferDates,
                     this._options.fixedTopLevels
