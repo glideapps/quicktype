@@ -1,4 +1,4 @@
-import { Map, List, Set, OrderedSet, Collection } from "immutable";
+import { Map, List, OrderedSet, Collection } from "immutable";
 
 import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
@@ -15,7 +15,7 @@ import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { messageError } from "./Messages";
-import { iterableFirst, setFilter } from "./support/Containers";
+import { iterableFirst, setFilter, setSubtract, setUnionIntoMany } from "./support/Containers";
 
 export class TypeAttributeStore {
     private _topLevelValues: Map<string, TypeAttributes> = Map();
@@ -170,12 +170,12 @@ export class TypeGraph {
         childrenOfType: ((t: Type) => Collection<any, Type>) | undefined,
         topDown: boolean
     ): OrderedSet<Type> {
-        let seen = Set<Type>();
+        const seen = new Set<Type>();
         let types = List<Type>();
 
         function addFromType(t: Type): void {
             if (seen.has(t)) return;
-            seen = seen.add(t);
+            seen.add(t);
 
             const required = predicate === undefined || predicate(t);
 
@@ -204,7 +204,7 @@ export class TypeGraph {
         return separateNamedTypes(types);
     };
 
-    private allProvenance(): Set<TypeRef> {
+    private allProvenance(): ReadonlySet<TypeRef> {
         assert(this._haveProvenanceAttributes);
 
         const view = new TypeAttributeStoreView(this.attributeStore, provenanceTypeAttributeKind);
@@ -212,9 +212,11 @@ export class TypeGraph {
         const sets = typeList.map(t => {
             const maybeSet = view.tryGet(t);
             if (maybeSet !== undefined) return maybeSet;
-            return Set();
+            return new Set();
         });
-        return sets.reduce<Set<TypeRef>>((a, b) => a.union(b), Set());
+        const result = new Set();
+        setUnionIntoMany(result, sets);
+        return result;
     }
 
     setPrintOnRewrite(): void {
@@ -227,8 +229,8 @@ export class TypeGraph {
         const oldProvenance = this.allProvenance();
         const newProvenance = newGraph.allProvenance();
         if (oldProvenance.size !== newProvenance.size) {
-            const difference = oldProvenance.subtract(newProvenance);
-            const indexes = difference.map(tr => tr.index).toArray();
+            const difference = setSubtract(oldProvenance, newProvenance);
+            const indexes = Array.from(difference).map(tr => tr.index);
             return messageError("IRTypeAttributesNotPropagated", { count: difference.size, indexes });
         }
     }
@@ -331,7 +333,7 @@ export class TypeGraph {
 
     allTypesUnordered(): ReadonlySet<Type> {
         assert(this.isFrozen, "Tried to get all graph types before it was frozen");
-        return Set(defined(this._types));
+        return new Set(defined(this._types));
     }
 
     makeGraph(invertDirection: boolean, childrenOfType: (t: Type) => ReadonlySet<Type>): Graph<Type> {
@@ -341,7 +343,7 @@ export class TypeGraph {
     getParentsOfType(t: Type): Set<Type> {
         assert(t.typeRef.graph === this, "Called on wrong type graph");
         if (this._parents === undefined) {
-            const parents = defined(this._types).map(_ => Set());
+            const parents = defined(this._types).map(_ => new Set());
             this.allTypesUnordered().forEach(p => {
                 p.getChildren().forEach(c => {
                     const index = c.typeRef.index;
@@ -462,7 +464,7 @@ export function removeIndirectionIntersections(
 
     graph.allTypesUnordered().forEach(t => {
         if (!(t instanceof IntersectionType)) return;
-        let seen = Set([t]);
+        const seen = new Set([t]);
         let current = t;
         while (current.members.size === 1) {
             const member = defined(current.members.first());
@@ -474,7 +476,7 @@ export function removeIndirectionIntersections(
                 // FIXME: Technically, this is an any type.
                 return panic("There's a cycle of intersection types");
             }
-            seen = seen.add(member);
+            seen.add(member);
             current = member;
         }
     });
