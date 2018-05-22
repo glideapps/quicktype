@@ -60,29 +60,28 @@ export class TypeRef {
 
 // FIXME: Don't infer provenance.  All original types should be present in
 // non-inferred form in the final graph.
-class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<TypeRef>> {
+class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<number>> {
     constructor() {
         super("provenance");
     }
 
-    combine(arr: Set<TypeRef>[]): Set<TypeRef> {
+    combine(arr: Set<number>[]): Set<number> {
         return setUnionManyInto(new Set(), arr);
     }
 
-    makeInferred(p: Set<TypeRef>): Set<TypeRef> {
+    makeInferred(p: Set<number>): Set<number> {
         return p;
     }
 
-    stringify(p: Set<TypeRef>): string {
+    stringify(p: Set<number>): string {
         return Array.from(p)
-            .map(r => r.index)
             .sort()
             .map(i => i.toString())
             .join(",");
     }
 }
 
-export const provenanceTypeAttributeKind: TypeAttributeKind<Set<TypeRef>> = new ProvenanceTypeAttributeKind();
+export const provenanceTypeAttributeKind: TypeAttributeKind<Set<number>> = new ProvenanceTypeAttributeKind();
 
 export type StringTypeMapping = {
     date: PrimitiveStringTypeKind;
@@ -132,7 +131,7 @@ export class TypeBuilder {
         this.types.push(undefined);
         const tref = new TypeRef(this.typeGraph, index);
         const attributes: TypeAttributes = this._addProvenanceAttributes
-            ? provenanceTypeAttributeKind.makeAttributes(new Set([tref]))
+            ? provenanceTypeAttributeKind.makeAttributes(new Set([index]))
             : emptyTypeAttributes;
         this.typeAttributes.push(attributes);
         return tref;
