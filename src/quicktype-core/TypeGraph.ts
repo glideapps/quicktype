@@ -44,7 +44,7 @@ function getGraph(graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): TypeGrap
 export function derefTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): Type {
     const graph = getGraph(graphOrBuilder);
     assertTypeRefGraph(tref, graph);
-    return graph.atIndex(typeRefIndex(tref))[0];
+    return graph.typeAtIndex(typeRefIndex(tref));
 }
 
 export function attributesForTypeRef(
@@ -210,11 +210,18 @@ export class TypeGraph {
         return this._topLevels;
     }
 
+    typeAtIndex(index: number): Type {
+        if (this._typeBuilder !== undefined) {
+            return this._typeBuilder.typeAtIndex(index);
+        }
+        return defined(this._types)[index];
+    }
+
     atIndex(index: number): [Type, TypeAttributes] {
         if (this._typeBuilder !== undefined) {
             return this._typeBuilder.atIndex(index);
         }
-        const t = defined(this._types)[index];
+        const t = this.typeAtIndex(index);
         return [t, defined(this._attributeStore).attributesForType(t)];
     }
 

@@ -147,13 +147,18 @@ export class TypeBuilder {
         return tref;
     }
 
-    atIndex(index: number): [Type, TypeAttributes] {
+    typeAtIndex(index: number): Type {
         const maybeType = this.types[index];
         if (maybeType === undefined) {
             return panic("Trying to deref an undefined type in a type builder");
         }
-        const maybeNames = this.typeAttributes[index];
-        return [maybeType, maybeNames];
+        return maybeType;
+    }
+
+    atIndex(index: number): [Type, TypeAttributes] {
+        const t = this.typeAtIndex(index);
+        const attribtues = this.typeAttributes[index];
+        return [t, attribtues];
     }
 
     addAttributes(tref: TypeRef, attributes: TypeAttributes): void {
