@@ -157,6 +157,7 @@ class Run implements RunContext {
         const stringTypeMapping = targetLanguage.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
         const typeBuilder = new TypeBuilder(
+            0,
             stringTypeMapping,
             this._options.alphabetizeProperties,
             this._options.allPropertiesOptional,

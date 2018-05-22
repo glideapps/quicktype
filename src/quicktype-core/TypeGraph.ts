@@ -159,7 +159,11 @@ export class TypeGraph {
 
     private _printOnRewrite: boolean = false;
 
-    constructor(typeBuilder: TypeBuilder, private readonly _haveProvenanceAttributes: boolean) {
+    constructor(
+        typeBuilder: TypeBuilder,
+        readonly serial: number,
+        private readonly _haveProvenanceAttributes: boolean
+    ) {
         this._typeBuilder = typeBuilder;
     }
 

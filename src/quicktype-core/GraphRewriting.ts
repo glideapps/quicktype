@@ -218,7 +218,14 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
         graphHasProvenanceAttributes: boolean,
         protected readonly debugPrint: boolean
     ) {
-        super(stringTypeMapping, alphabetizeProperties, false, false, graphHasProvenanceAttributes);
+        super(
+            originalGraph.serial + 1,
+            stringTypeMapping,
+            alphabetizeProperties,
+            false,
+            false,
+            graphHasProvenanceAttributes
+        );
     }
 
     withForwardingRef(

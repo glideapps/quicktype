@@ -85,6 +85,7 @@ export class TypeBuilder {
     private _addedForwardingIntersection: boolean = false;
 
     constructor(
+        typeGraphSerial: number,
         private readonly _stringTypeMapping: StringTypeMapping,
         readonly canonicalOrder: boolean,
         private readonly _allPropertiesOptional: boolean,
@@ -95,7 +96,7 @@ export class TypeBuilder {
             !_addProvenanceAttributes || !inheritsProvenanceAttributes,
             "We can't both inherit as well as add provenance"
         );
-        this.typeGraph = new TypeGraph(this, _addProvenanceAttributes || inheritsProvenanceAttributes);
+        this.typeGraph = new TypeGraph(this, typeGraphSerial, _addProvenanceAttributes || inheritsProvenanceAttributes);
     }
 
     addTopLevel(name: string, tref: TypeRef): void {
