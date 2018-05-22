@@ -4,7 +4,7 @@ import * as _ from "lodash";
 import * as shell from "shelljs";
 
 import { main as quicktype_, CLIOptions } from "../dist/cli";
-import { RendererOptions } from "../dist";
+import { RendererOptions } from "../dist/quicktype-core/Run";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 

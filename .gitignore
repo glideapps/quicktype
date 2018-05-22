@@ -1,12 +1,5 @@
-/bower_components/
-/node_modules/
-/.pulp-cache/
-/output/
-/generated-docs/
+node_modules/
 /test/awesome-json-results/
-/.psc*
-/.purs*
-/.psa*
 npm-debug.log
 test/csharp/QuickType.cs
 test/golang/quicktype.go
@@ -17,6 +10,9 @@ test/elm/elm.js
 test/elm/QuickType.elm
 test/fixtures/rust/target
 test/fixtures/java/target
+
+build/*/dist
+build/*/node_modules
 
 *.log
 /test/elm/libsysconfcpus/
