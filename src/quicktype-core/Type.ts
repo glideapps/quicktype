@@ -156,7 +156,7 @@ export abstract class Type {
         return true;
     }
 
-    getParentTypes(): Set<Type> {
+    getParentTypes(): ReadonlySet<Type> {
         return this.typeRef.graph.getParentsOfType(this);
     }
 

@@ -124,12 +124,16 @@ export function mapSortBy<K, V>(m: Iterable<[K, V]>, sortKey: (v: V, k: K) => nu
     return new Map(arr);
 }
 
-export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): void {
+export function setUnionIntoMany<T>(dest: Set<T>, srcs: Iterable<Iterable<T>>): void {
     for (const src of srcs) {
         for (const v of src) {
             dest.add(v);
         }
     }
+}
+
+export function setUnionInto<T>(dest: Set<T>, ...srcs: Iterable<T>[]): void {
+    setUnionIntoMany(dest, srcs);
 }
 
 export function setIntersect<T>(s1: Iterable<T>, s2: ReadonlySet<T>): Set<T> {
