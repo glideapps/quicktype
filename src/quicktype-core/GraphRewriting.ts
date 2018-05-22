@@ -6,7 +6,8 @@ import {
     derefTypeRef,
     typeAndAttributesForTypeRef,
     assertTypeRefGraph,
-    typeRefIndex
+    typeRefIndex,
+    isTypeRef
 } from "./TypeGraph";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 import { assert, panic, indentationString } from "./support/Support";
@@ -64,7 +65,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     lookup(trefs: Iterable<TypeRef>): ReadonlyArray<TypeRef> | undefined;
     lookup(trefs: TypeRef | Iterable<TypeRef>): TypeRef | ReadonlyArray<TypeRef> | undefined {
         assert(!this._wasUsed, "Cannot lookup constituents after building type");
-        if (trefs instanceof TypeRef) {
+        if (isTypeRef(trefs)) {
             return this._typeBuilder.lookupTypeRefs([trefs], undefined, false);
         } else {
             const maybeRefs = Array.from(trefs).map(tref => this._typeBuilder.lookupTypeRefs([tref], undefined, false));
@@ -90,7 +91,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     reconstitute(trefs: Iterable<TypeRef>): ReadonlyArray<TypeRef>;
     reconstitute(trefs: TypeRef | Iterable<TypeRef>): TypeRef | ReadonlyArray<TypeRef> {
         assert(this._wasUsed, "Cannot reconstitute constituents before building type");
-        if (trefs instanceof TypeRef) {
+        if (isTypeRef(trefs)) {
             return this._typeBuilder.reconstituteTypeRef(trefs);
         } else {
             return Array.from(trefs).map(tref => this._typeBuilder.reconstituteTypeRef(tref));

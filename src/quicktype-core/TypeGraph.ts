@@ -9,45 +9,22 @@ import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAt
 import { messageError } from "./Messages";
 import { iterableFirst, setFilter, setUnionManyInto, setSubtract, mapMap, mapSome, setMap } from "./support/Containers";
 
-export class TypeRef {
-    constructor(private readonly graph: TypeGraph, private readonly index: number) {}
+export type TypeRef = number;
 
-    deref(graph: TypeGraph): [Type, TypeAttributes] {
-        assert(graph === this.graph, "Trying to deref with wrong graph");
-        return this.graph.atIndex(this.index);
-    }
-
-    getIndex(): number {
-        return this.index;
-    }
-
-    getTypeGraph(): TypeGraph {
-        return this.graph;
-    }
-
-    equals(other: any): boolean {
-        if (!(other instanceof TypeRef)) {
-            return false;
-        }
-        assert(this.graph === other.graph, "Comparing type refs of different graphs");
-        return this.index === other.index;
-    }
-
-    hashCode(): number {
-        return this.index | 0;
-    }
+export function isTypeRef(x: any): x is TypeRef {
+    return typeof x === "number";
 }
 
-export function makeTypeRef(graph: TypeGraph, index: number): TypeRef {
-    return new TypeRef(graph, index);
+export function makeTypeRef(_graph: TypeGraph, index: number): TypeRef {
+    return index;
 }
 
 export function typeRefIndex(tref: TypeRef): number {
-    return tref.getIndex();
+    return tref;
 }
 
-export function assertTypeRefGraph(tref: TypeRef, graph: TypeGraph): void {
-    assert(tref.getTypeGraph() === graph, "Mixing the wrong type reference and graph");
+export function assertTypeRefGraph(_tref: TypeRef, _graph: TypeGraph): void {
+    // assert(tref.getTypeGraph() === graph, "Mixing the wrong type reference and graph");
 }
 
 function getGraph(graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): TypeGraph {
@@ -57,8 +34,8 @@ function getGraph(graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): TypeGrap
 
 export function derefTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): Type {
     const graph = getGraph(graphOrBuilder);
+    return graph.atIndex(tref)[0];
     // assert(tref.graph === graph, "Trying to deref with wrong graph");
-    return tref.deref(graph)[0];
 }
 
 export function attributesForTypeRef(
@@ -66,8 +43,8 @@ export function attributesForTypeRef(
     graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder
 ): TypeAttributes {
     const graph = getGraph(graphOrBuilder);
+    return graph.atIndex(tref)[1];
     // assert(tref.graph === graph, "Trying to deref with wrong graph");
-    return tref.deref(graph)[1];
 }
 
 export function typeAndAttributesForTypeRef(
@@ -75,8 +52,8 @@ export function typeAndAttributesForTypeRef(
     graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder
 ): [Type, TypeAttributes] {
     const graph = getGraph(graphOrBuilder);
+    return graph.atIndex(tref);
     // assert(tref.graph === graph, "Trying to deref with wrong graph");
-    return tref.deref(graph);
 }
 
 export class TypeAttributeStore {

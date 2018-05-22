@@ -130,11 +130,11 @@ export abstract class Type {
 
     equals(other: any): boolean {
         if (!(other instanceof Type)) return false;
-        return this.typeRef.equals(other.typeRef);
+        return this.typeRef === other.typeRef;
     }
 
     hashCode(): number {
-        return this.typeRef.hashCode();
+        return hashCodeOf(this.typeRef);
     }
 
     // This will only ever be called when `this` and `other` are not

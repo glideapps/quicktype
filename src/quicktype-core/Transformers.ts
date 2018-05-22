@@ -33,11 +33,11 @@ export abstract class Transformer {
 
     equals(other: any): boolean {
         if (!(other instanceof Transformer)) return false;
-        return this.sourceTypeRef.equals(other.sourceTypeRef);
+        return this.sourceTypeRef === other.sourceTypeRef;
     }
 
     hashCode(): number {
-        return this.sourceTypeRef.hashCode();
+        return hashCodeOf(this.sourceTypeRef);
     }
 
     protected debugDescription(): string {
@@ -369,12 +369,12 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof UnionMemberMatchTransformer)) return false;
-        return this._memberTypeRef.equals(other._memberTypeRef);
+        return this._memberTypeRef === other._memberTypeRef;
     }
 
     hashCode(): number {
         const h = super.hashCode();
-        return addHashCode(h, this._memberTypeRef.hashCode());
+        return addHashCode(h, hashCodeOf(this._memberTypeRef));
     }
 
     protected debugDescription(): string {
@@ -608,11 +608,11 @@ export class Transformation {
 
     equals(other: any): boolean {
         if (!(other instanceof Transformation)) return false;
-        return this._targetTypeRef.equals(other._targetTypeRef) && this.transformer.equals(other.transformer);
+        return this._targetTypeRef === other._targetTypeRef && this.transformer.equals(other.transformer);
     }
 
     hashCode(): number {
-        let h = this._targetTypeRef.hashCode();
+        let h = hashCodeOf(this._targetTypeRef);
         h = addHashCode(h, this.transformer.hashCode());
         return h;
     }
