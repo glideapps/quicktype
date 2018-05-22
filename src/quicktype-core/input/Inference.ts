@@ -38,7 +38,6 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
     constructor(
         typeBuilder: TypeBuilder,
         private readonly _typeInference: TypeInference,
-        private readonly _cjson: CompressedJSON,
         private readonly _fixed: boolean
     ) {
         super(typeBuilder);
@@ -49,7 +48,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
-        return this._typeInference.inferClassType(this._cjson, typeAttributes, objects, this._fixed, forwardingRef);
+        return this._typeInference.inferClassType(typeAttributes, objects, this._fixed, forwardingRef);
     }
 
     protected makeArray(
@@ -58,7 +57,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         return this.typeBuilder.getArrayType(
-            this._typeInference.inferType(this._cjson, new Map(), arrays, this._fixed, forwardingRef)
+            this._typeInference.inferType(emptyTypeAttributes, arrays, this._fixed, forwardingRef)
         );
     }
 }
@@ -68,91 +67,110 @@ function canBeEnumCase(s: string): boolean {
     return !isDate(s) && !isTime(s) && !isDateTime(s);
 }
 
+export type Accumulator = UnionAccumulator<NestedValueArray, NestedValueArray>;
+
 export class TypeInference {
     constructor(
+        private readonly _cjson: CompressedJSON,
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferEnums: boolean,
         private readonly _inferDates: boolean
     ) {}
 
+    addValueToAccumulator(value: Value, accumulator: Accumulator): void {
+        const t = valueTag(value);
+        switch (t) {
+            case Tag.Null:
+                accumulator.addNull(emptyTypeAttributes);
+                break;
+            case Tag.False:
+            case Tag.True:
+                accumulator.addBool(emptyTypeAttributes);
+                break;
+            case Tag.Integer:
+                accumulator.addInteger(emptyTypeAttributes);
+                break;
+            case Tag.Double:
+                accumulator.addDouble(emptyTypeAttributes);
+                break;
+            case Tag.InternedString:
+                if (this._inferEnums) {
+                    const s = this._cjson.getStringForValue(value);
+                    if (canBeEnumCase(s)) {
+                        accumulator.addStringCase(s, 1, emptyTypeAttributes);
+                    } else {
+                        accumulator.addStringType("string", emptyTypeAttributes);
+                    }
+                } else {
+                    accumulator.addStringType("string", emptyTypeAttributes);
+                }
+                break;
+            case Tag.UninternedString:
+                accumulator.addStringType("string", emptyTypeAttributes);
+                break;
+            case Tag.Object:
+                accumulator.addObject(this._cjson.getObjectForValue(value), emptyTypeAttributes);
+                break;
+            case Tag.Array:
+                accumulator.addArray(this._cjson.getArrayForValue(value), emptyTypeAttributes);
+                break;
+            case Tag.Date:
+                accumulator.addStringType(
+                    "string",
+                    emptyTypeAttributes,
+                    this._inferDates ? StringTypes.date : StringTypes.unrestricted
+                );
+                break;
+            case Tag.Time:
+                accumulator.addStringType(
+                    "string",
+                    emptyTypeAttributes,
+                    this._inferDates ? StringTypes.time : StringTypes.unrestricted
+                );
+                break;
+            case Tag.DateTime:
+                accumulator.addStringType(
+                    "string",
+                    emptyTypeAttributes,
+                    this._inferDates ? StringTypes.dateTime : StringTypes.unrestricted
+                );
+                break;
+            default:
+                return assertNever(t);
+        }
+    }
+
     inferType(
-        cjson: CompressedJSON,
         typeAttributes: TypeAttributes,
         valueArray: NestedValueArray,
         fixed: boolean,
         forwardingRef?: TypeRef
     ): TypeRef {
+        const accumulator = this.accumulatorForArray(valueArray);
+        return this.makeTypeFromAccumulator(accumulator, typeAttributes, fixed, forwardingRef);
+    }
+
+    accumulatorForArray(valueArray: NestedValueArray): Accumulator {
         const accumulator = new UnionAccumulator<NestedValueArray, NestedValueArray>(true);
 
         forEachValueInNestedValueArray(valueArray, value => {
-            const t = valueTag(value);
-            switch (t) {
-                case Tag.Null:
-                    accumulator.addNull(emptyTypeAttributes);
-                    break;
-                case Tag.False:
-                case Tag.True:
-                    accumulator.addBool(emptyTypeAttributes);
-                    break;
-                case Tag.Integer:
-                    accumulator.addInteger(emptyTypeAttributes);
-                    break;
-                case Tag.Double:
-                    accumulator.addDouble(emptyTypeAttributes);
-                    break;
-                case Tag.InternedString:
-                    if (this._inferEnums) {
-                        const s = cjson.getStringForValue(value);
-                        if (canBeEnumCase(s)) {
-                            accumulator.addStringCase(s, 1, emptyTypeAttributes);
-                        } else {
-                            accumulator.addStringType("string", emptyTypeAttributes);
-                        }
-                    } else {
-                        accumulator.addStringType("string", emptyTypeAttributes);
-                    }
-                    break;
-                case Tag.UninternedString:
-                    accumulator.addStringType("string", emptyTypeAttributes);
-                    break;
-                case Tag.Object:
-                    accumulator.addObject(cjson.getObjectForValue(value), emptyTypeAttributes);
-                    break;
-                case Tag.Array:
-                    accumulator.addArray(cjson.getArrayForValue(value), emptyTypeAttributes);
-                    break;
-                case Tag.Date:
-                    accumulator.addStringType(
-                        "string",
-                        emptyTypeAttributes,
-                        this._inferDates ? StringTypes.date : StringTypes.unrestricted
-                    );
-                    break;
-                case Tag.Time:
-                    accumulator.addStringType(
-                        "string",
-                        emptyTypeAttributes,
-                        this._inferDates ? StringTypes.time : StringTypes.unrestricted
-                    );
-                    break;
-                case Tag.DateTime:
-                    accumulator.addStringType(
-                        "string",
-                        emptyTypeAttributes,
-                        this._inferDates ? StringTypes.dateTime : StringTypes.unrestricted
-                    );
-                    break;
-                default:
-                    return assertNever(t);
-            }
+            this.addValueToAccumulator(value, accumulator);
         });
 
-        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, cjson, fixed);
+        return accumulator;
+    }
+
+    makeTypeFromAccumulator(
+        accumulator: Accumulator,
+        typeAttributes: TypeAttributes,
+        fixed: boolean,
+        forwardingRef?: TypeRef
+    ): TypeRef {
+        const unionBuilder = new InferenceUnionBuilder(this._typeBuilder, this, fixed);
         return unionBuilder.buildUnion(accumulator, false, typeAttributes, forwardingRef);
     }
 
     inferClassType(
-        cjson: CompressedJSON,
         typeAttributes: TypeAttributes,
         objects: NestedValueArray,
         fixed: boolean,
@@ -163,7 +181,7 @@ export class TypeInference {
 
         forEachArrayInNestedValueArray(objects, arr => {
             for (let i = 0; i < arr.length; i += 2) {
-                const key = cjson.getStringForValue(arr[i]);
+                const key = this._cjson.getStringForValue(arr[i]);
                 const value = arr[i + 1];
                 if (!Object.prototype.hasOwnProperty.call(propertyValues, key)) {
                     propertyNames.push(key);
@@ -176,7 +194,7 @@ export class TypeInference {
         const properties = new Map<string, ClassProperty>();
         for (const key of propertyNames) {
             const values = propertyValues[key];
-            const t = this.inferType(cjson, new Map(), values, false);
+            const t = this.inferType(emptyTypeAttributes, values, false);
             const isOptional = values.length < objects.length;
             properties.set(key, this._typeBuilder.makeClassProperty(t, isOptional));
         }

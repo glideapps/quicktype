@@ -137,15 +137,10 @@ export class JSONInput implements Input<JSONSourceData> {
         inferDates: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
-        const inference = new TypeInference(typeBuilder, inferEnums, inferDates);
+        const inference = new TypeInference(this._compressedJSON, typeBuilder, inferEnums, inferDates);
 
         for (const [name, { samples, description }] of this._topLevels) {
-            const tref = inference.inferType(
-                this._compressedJSON,
-                makeNamesTypeAttributes(name, false),
-                samples,
-                fixedTopLevels
-            );
+            const tref = inference.inferType(makeNamesTypeAttributes(name, false), samples, fixedTopLevels);
             typeBuilder.addTopLevel(name, tref);
             if (description !== undefined) {
                 const attributes = descriptionTypeAttributeKind.makeAttributes(new Set([description]));
