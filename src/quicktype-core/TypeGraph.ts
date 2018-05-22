@@ -11,20 +11,29 @@ import { iterableFirst, setFilter, setUnionManyInto, setSubtract, mapMap, mapSom
 
 export type TypeRef = number;
 
+const indexBits = 26;
+const indexMask = (1 << indexBits) - 1;
+const serialBits = 31 - indexBits;
+const serialMask = (1 << serialBits) - 1;
+
 export function isTypeRef(x: any): x is TypeRef {
     return typeof x === "number";
 }
 
-export function makeTypeRef(_graph: TypeGraph, index: number): TypeRef {
-    return index;
+export function makeTypeRef(graph: TypeGraph, index: number): TypeRef {
+    assert(index <= indexMask, "Too many types in graph");
+    return ((graph.serial & serialMask) << indexBits) | index;
 }
 
 export function typeRefIndex(tref: TypeRef): number {
-    return tref;
+    return tref & indexMask;
 }
 
-export function assertTypeRefGraph(_tref: TypeRef, _graph: TypeGraph): void {
-    // assert(tref.getTypeGraph() === graph, "Mixing the wrong type reference and graph");
+export function assertTypeRefGraph(tref: TypeRef, graph: TypeGraph): void {
+    assert(
+        ((tref >> indexBits) & serialBits) === (graph.serial & serialBits),
+        "Mixing the wrong type reference and graph"
+    );
 }
 
 function getGraph(graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): TypeGraph {
@@ -34,8 +43,8 @@ function getGraph(graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): TypeGrap
 
 export function derefTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): Type {
     const graph = getGraph(graphOrBuilder);
-    return graph.atIndex(tref)[0];
-    // assert(tref.graph === graph, "Trying to deref with wrong graph");
+    assertTypeRefGraph(tref, graph);
+    return graph.atIndex(typeRefIndex(tref))[0];
 }
 
 export function attributesForTypeRef(
@@ -43,8 +52,8 @@ export function attributesForTypeRef(
     graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder
 ): TypeAttributes {
     const graph = getGraph(graphOrBuilder);
-    return graph.atIndex(tref)[1];
-    // assert(tref.graph === graph, "Trying to deref with wrong graph");
+    assertTypeRefGraph(tref, graph);
+    return graph.atIndex(typeRefIndex(tref))[1];
 }
 
 export function typeAndAttributesForTypeRef(
@@ -52,8 +61,8 @@ export function typeAndAttributesForTypeRef(
     graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder
 ): [Type, TypeAttributes] {
     const graph = getGraph(graphOrBuilder);
-    return graph.atIndex(tref);
-    // assert(tref.graph === graph, "Trying to deref with wrong graph");
+    assertTypeRefGraph(tref, graph);
+    return graph.atIndex(typeRefIndex(tref));
 }
 
 export class TypeAttributeStore {
