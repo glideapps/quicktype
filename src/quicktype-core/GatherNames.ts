@@ -181,7 +181,7 @@ export function gatherNames(graph: TypeGraph, debugPrint: boolean): void {
             const names = namesForType.get(t);
             if (names === undefined) return;
 
-            const index = t.typeRef.index;
+            const index = t.index;
             console.log(`${index}: ${names === null ? "*** too many ***" : Array.from(names).join(" ")}`);
         }
     }

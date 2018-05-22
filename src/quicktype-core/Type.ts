@@ -20,7 +20,7 @@ import {
     setUnionInto,
     mapSortToArray
 } from "./support/Containers";
-import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph } from "./TypeGraph";
+import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph, typeRefIndex } from "./TypeGraph";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
 export type PrimitiveStringTypeKind = "string" | DateTimeTypeKind;
@@ -44,7 +44,7 @@ export function isPrimitiveTypeKind(kind: TypeKind): kind is PrimitiveTypeKind {
 }
 
 function triviallyStructurallyCompatible(x: Type, y: Type): boolean {
-    if (x.typeRef.index === y.typeRef.index) return true;
+    if (x.index === y.index) return true;
     if (x.kind === "none" || y.kind === "none") return true;
     return false;
 }
@@ -82,6 +82,10 @@ export type MaybeTypeIdentity = TypeIdentity | undefined;
 
 export abstract class Type {
     constructor(readonly typeRef: TypeRef, protected readonly graph: TypeGraph, readonly kind: TypeKind) {}
+
+    get index(): number {
+        return typeRefIndex(this.typeRef);
+    }
 
     // This must return a newly allocated set
     abstract getNonAttributeChildren(): Set<Type>;
@@ -172,13 +176,13 @@ export abstract class Type {
 
         while (workList.length > 0) {
             let [a, b] = defined(workList.pop());
-            if (a.typeRef.index > b.typeRef.index) {
+            if (a.index > b.index) {
                 [a, b] = [b, a];
             }
 
             if (!a.isPrimitive()) {
-                let ai = a.typeRef.index;
-                let bi = b.typeRef.index;
+                let ai = a.index;
+                let bi = b.index;
 
                 let found = false;
                 for (const [dai, dbi] of done) {
@@ -200,7 +204,7 @@ export abstract class Type {
     }
 
     getParentTypes(): ReadonlySet<Type> {
-        return this.typeRef.graph.getParentsOfType(this);
+        return this.graph.getParentsOfType(this);
     }
 
     getAncestorsNotInSet(set: ReadonlySet<TypeRef>): ReadonlySet<Type> {

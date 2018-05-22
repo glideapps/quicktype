@@ -1,6 +1,13 @@
 import { PrimitiveTypeKind, Type, ClassProperty, MaybeTypeIdentity } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
-import { TypeGraph, TypeRef, derefTypeRef, typeAndAttributesForTypeRef } from "./TypeGraph";
+import {
+    TypeGraph,
+    TypeRef,
+    derefTypeRef,
+    typeAndAttributesForTypeRef,
+    assertTypeRefGraph,
+    typeRefIndex
+} from "./TypeGraph";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 import { assert, panic, indentationString } from "./support/Support";
 import { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
@@ -256,10 +263,10 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
     protected assertTypeRefsToReconstitute(typeRefs: TypeRef[], forwardingRef?: TypeRef): void {
         assert(typeRefs.length > 0, "Must have at least one type to reconstitute");
         for (const originalRef of typeRefs) {
-            assert(originalRef.graph === this.originalGraph, "Trying to reconstitute a type from the wrong graph");
+            assertTypeRefGraph(originalRef, this.originalGraph);
         }
         if (forwardingRef !== undefined) {
-            assert(forwardingRef.graph === this.typeGraph, "Trying to forward a type to the wrong graph");
+            assertTypeRefGraph(forwardingRef, this.typeGraph);
         }
     }
 
@@ -336,11 +343,11 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
 
         this.assertTypeRefsToReconstitute(typeRefs, forwardingRef);
 
-        const first = this.reconstitutedTypes.get(this.getMapTarget(typeRefs[0]).index);
+        const first = this.reconstitutedTypes.get(typeRefIndex(this.getMapTarget(typeRefs[0])));
         if (first === undefined) return undefined;
 
         for (let i = 1; i < typeRefs.length; i++) {
-            const other = this.reconstitutedTypes.get(this.getMapTarget(typeRefs[i]).index);
+            const other = this.reconstitutedTypes.get(typeRefIndex(this.getMapTarget(typeRefs[i])));
             if (first !== other) return undefined;
         }
 
@@ -354,7 +361,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
     ): TypeRef {
         originalRef = this.getMapTarget(originalRef);
 
-        const index = originalRef.index;
+        const index = typeRefIndex(originalRef);
         assert(this.reconstitutedTypes.get(index) === undefined, "Type has already been reconstituted");
 
         assert(maybeForwardingRef === undefined, "We can't have a forwarding ref when we remap");
@@ -384,7 +391,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
             this.reconstitutedTypes.set(index, forwardingRef);
 
             if (this.debugPrint) {
-                console.log(`${this.debugPrintIndentation}reconstituting ${index} as ${forwardingRef.index}`);
+                console.log(`${this.debugPrintIndentation}reconstituting ${index} as ${typeRefIndex(forwardingRef)}`);
                 this.changeDebugPrintIndent(1);
             }
 
@@ -397,7 +404,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
                     assert(tref === forwardingRef, "Reconstituted type as a different ref");
                     if (this.debugPrint) {
                         this.changeDebugPrintIndent(-1);
-                        console.log(`${this.debugPrintIndentation}reconstituted ${index} as ${tref.index}`);
+                        console.log(`${this.debugPrintIndentation}reconstituted ${index} as ${typeRefIndex(tref)}`);
                     }
                 }
             );
@@ -436,7 +443,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         for (const types of setsToReplace) {
             const set = new Set(types);
             for (const t of set) {
-                const index = t.typeRef.index;
+                const index = t.index;
                 assert(!this._setsToReplaceByMember.has(index), "A type is member of more than one set to be replaced");
                 this._setsToReplaceByMember.set(index, set);
             }
@@ -454,15 +461,15 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
             if (this.debugPrint) {
                 console.log(
                     `${this.debugPrintIndentation}replacing set ${Array.from(typesToReplace)
-                        .map(t => t.typeRef.index.toString())
-                        .join(",")} as ${forwardingRef.index}`
+                        .map(t => t.index.toString())
+                        .join(",")} as ${typeRefIndex(forwardingRef)}`
                 );
                 this.changeDebugPrintIndent(1);
             }
 
             for (const t of typesToReplace) {
                 const originalRef = t.typeRef;
-                const index = originalRef.index;
+                const index = typeRefIndex(originalRef);
                 this.reconstitutedTypes.set(index, forwardingRef);
                 this._setsToReplaceByMember.delete(index);
             }
@@ -473,8 +480,8 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
                 this.changeDebugPrintIndent(-1);
                 console.log(
                     `${this.debugPrintIndentation}replaced set ${Array.from(typesToReplace)
-                        .map(t => t.typeRef.index.toString())
-                        .join(",")} as ${forwardingRef.index}`
+                        .map(t => t.index.toString())
+                        .join(",")} as ${typeRefIndex(forwardingRef)}`
                 );
             }
 
@@ -488,7 +495,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         maybeForwardingRef?: TypeRef
     ): TypeRef {
         const [originalType, originalAttributes] = typeAndAttributesForTypeRef(originalRef, this.originalGraph);
-        const index = originalRef.index;
+        const index = typeRefIndex(originalRef);
 
         if (this.debugPrint) {
             console.log(`${this.debugPrintIndentation}reconstituting ${index}`);
@@ -508,7 +515,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         const reconstituter = new TypeReconstituter(this, this.canonicalOrder, attributes, maybeForwardingRef, tref => {
             if (this.debugPrint) {
                 this.changeDebugPrintIndent(-1);
-                console.log(`${this.debugPrintIndentation}reconstituted ${index} as ${tref.index}`);
+                console.log(`${this.debugPrintIndentation}reconstituted ${index} as ${typeRefIndex(tref)}`);
             }
 
             if (maybeForwardingRef !== undefined) {
@@ -547,11 +554,11 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
 
         // Check whether we have already reconstituted them.  That means ensuring
         // that they all have the same target type.
-        let maybeRef = this.reconstitutedTypes.get(typeRefs[0].index);
+        let maybeRef = this.reconstitutedTypes.get(typeRefIndex(typeRefs[0]));
         if (maybeRef !== undefined && maybeRef !== forwardingRef) {
             let allEqual = true;
             for (let i = 1; i < typeRefs.length; i++) {
-                if (this.reconstitutedTypes.get(typeRefs[i].index) !== maybeRef) {
+                if (this.reconstitutedTypes.get(typeRefIndex(typeRefs[i])) !== maybeRef) {
                     allEqual = false;
                     break;
                 }
@@ -568,12 +575,12 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         }
 
         // Is this set requested to be replaced?  If not, we're out of options.
-        const maybeSet = this._setsToReplaceByMember.get(typeRefs[0].index);
+        const maybeSet = this._setsToReplaceByMember.get(typeRefIndex(typeRefs[0]));
         if (maybeSet === undefined) {
             return undefined;
         }
         for (let i = 1; i < typeRefs.length; i++) {
-            if (this._setsToReplaceByMember.get(typeRefs[i].index) !== maybeSet) {
+            if (this._setsToReplaceByMember.get(typeRefIndex(typeRefs[i])) !== maybeSet) {
                 return undefined;
             }
         }

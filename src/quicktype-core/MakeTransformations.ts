@@ -1,4 +1,4 @@
-import { TypeGraph, TypeRef } from "./TypeGraph";
+import { TypeGraph, TypeRef, typeRefIndex } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
 import { UnionType, TypeKind, EnumType, Type } from "./Type";
 import { GraphRewriteBuilder } from "./GraphRewriting";
@@ -28,7 +28,7 @@ function transformationAttributes(
 ): TypeAttributes {
     const transformation = new Transformation(graph, reconstitutedTargetType, transformer);
     if (debugPrintTransformation) {
-        console.log(`transformation for ${reconstitutedTargetType.index}:`);
+        console.log(`transformation for ${typeRefIndex(reconstitutedTargetType)}:`);
         transformation.debugPrint();
     }
     return transformationTypeAttributeKind.makeAttributes(transformation);

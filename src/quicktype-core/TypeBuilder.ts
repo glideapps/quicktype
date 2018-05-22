@@ -22,7 +22,7 @@ import {
     TypeIdentity
 } from "./Type";
 import { removeNullFromUnion } from "./TypeUtils";
-import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef } from "./TypeGraph";
+import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef, typeRefIndex } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic, mapOptional, withDefault } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
@@ -101,7 +101,10 @@ export class TypeBuilder {
     addTopLevel(name: string, tref: TypeRef): void {
         // assert(t.typeGraph === this.typeGraph, "Adding top-level to wrong type graph");
         assert(!this.topLevels.has(name), "Trying to add top-level with existing name");
-        assert(this.types[tref.index] !== undefined, "Trying to add a top-level type that doesn't exist (yet?)");
+        assert(
+            this.types[typeRefIndex(tref)] !== undefined,
+            "Trying to add a top-level type that doesn't exist (yet?)"
+        );
         this.topLevels.set(name, tref);
     }
 
@@ -118,7 +121,7 @@ export class TypeBuilder {
     }
 
     private commitType = (tref: TypeRef, t: Type): void => {
-        const index = tref.index;
+        const index = typeRefIndex(tref);
         // const name = names !== undefined ? ` ${names.combinedName}` : "";
         // console.log(`committing ${t.kind}${name} to ${index}`);
         assert(this.types[index] === undefined, "A type index was committed twice");
@@ -131,11 +134,11 @@ export class TypeBuilder {
         attributes: TypeAttributes | undefined
     ): TypeRef {
         if (forwardingRef !== undefined) {
-            assert(this.types[forwardingRef.index] === undefined);
+            assert(this.types[typeRefIndex(forwardingRef)] === undefined);
         }
         const tref = forwardingRef !== undefined ? forwardingRef : this.reserveTypeRef();
         if (attributes !== undefined) {
-            const index = tref.index;
+            const index = typeRefIndex(tref);
             this.typeAttributes[index] = combineTypeAttributes("union", this.typeAttributes[index], attributes);
         }
         const t = creator(tref);
@@ -153,7 +156,7 @@ export class TypeBuilder {
     }
 
     addAttributes(tref: TypeRef, attributes: TypeAttributes): void {
-        const index = tref.index;
+        const index = typeRefIndex(tref);
         const existingAttributes = this.typeAttributes[index];
         assert(
             iterableEvery(attributes, ([k, v]) => {
@@ -169,7 +172,7 @@ export class TypeBuilder {
     }
 
     makeNullable(tref: TypeRef, attributes: TypeAttributes): TypeRef {
-        const t = defined(this.types[tref.index]);
+        const t = defined(this.types[typeRefIndex(tref)]);
         if (t.kind === "null" || t.kind === "any") {
             return tref;
         }

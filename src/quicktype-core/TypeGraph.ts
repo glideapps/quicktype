@@ -10,13 +10,20 @@ import { messageError } from "./Messages";
 import { iterableFirst, setFilter, setUnionManyInto, setSubtract, mapMap, mapSome, setMap } from "./support/Containers";
 
 export class TypeRef {
-    constructor(readonly graph: TypeGraph, readonly index: number) {}
+    constructor(private readonly graph: TypeGraph, private readonly index: number) {}
 
-    /*
-    deref(): [Type, TypeAttributes] {
+    deref(graph: TypeGraph): [Type, TypeAttributes] {
+        assert(graph === this.graph, "Trying to deref with wrong graph");
         return this.graph.atIndex(this.index);
     }
-    */
+
+    getIndex(): number {
+        return this.index;
+    }
+
+    getTypeGraph(): TypeGraph {
+        return this.graph;
+    }
 
     equals(other: any): boolean {
         if (!(other instanceof TypeRef)) {
@@ -35,30 +42,41 @@ export function makeTypeRef(graph: TypeGraph, index: number): TypeRef {
     return new TypeRef(graph, index);
 }
 
+export function typeRefIndex(tref: TypeRef): number {
+    return tref.getIndex();
+}
+
+export function assertTypeRefGraph(tref: TypeRef, graph: TypeGraph): void {
+    assert(tref.getTypeGraph() === graph, "Mixing the wrong type reference and graph");
+}
+
 function getGraph(graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): TypeGraph {
     if (graphOrBuilder instanceof TypeGraph) return graphOrBuilder;
     return graphOrBuilder.originalGraph;
 }
 
 export function derefTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): Type {
-    assert(tref.graph === getGraph(graphOrBuilder), "Trying to deref with wrong graph");
-    return tref.graph.atIndex(tref.index)[0];
+    const graph = getGraph(graphOrBuilder);
+    // assert(tref.graph === graph, "Trying to deref with wrong graph");
+    return tref.deref(graph)[0];
 }
 
 export function attributesForTypeRef(
     tref: TypeRef,
     graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder
 ): TypeAttributes {
-    assert(tref.graph === getGraph(graphOrBuilder), "Trying to deref with wrong graph");
-    return tref.graph.atIndex(tref.index)[1];
+    const graph = getGraph(graphOrBuilder);
+    // assert(tref.graph === graph, "Trying to deref with wrong graph");
+    return tref.deref(graph)[1];
 }
 
 export function typeAndAttributesForTypeRef(
     tref: TypeRef,
     graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder
 ): [Type, TypeAttributes] {
-    assert(tref.graph === getGraph(graphOrBuilder), "Trying to deref with wrong graph");
-    return tref.graph.atIndex(tref.index);
+    const graph = getGraph(graphOrBuilder);
+    // assert(tref.graph === graph, "Trying to deref with wrong graph");
+    return tref.deref(graph);
 }
 
 export class TypeAttributeStore {
@@ -68,8 +86,8 @@ export class TypeAttributeStore {
 
     private getTypeIndex(t: Type): number {
         const tref = t.typeRef;
-        assert(tref.graph === this._typeGraph, "Using the wrong type attribute store");
-        return tref.index;
+        assertTypeRefGraph(tref, this._typeGraph);
+        return typeRefIndex(tref);
     }
 
     attributesForType(t: Type): TypeAttributes {
@@ -182,10 +200,9 @@ export class TypeGraph {
         typeAttributes: (TypeAttributes | undefined)[]
     ): void {
         assert(!this.isFrozen, "Tried to freeze TypeGraph a second time");
-        assert(
-            types.every(t => t.typeRef.graph === this),
-            "Trying to freeze a graph with types that don't belong in it"
-        );
+        for (const t of types) {
+            assertTypeRefGraph(t.typeRef, this);
+        }
 
         this._attributeStore = new TypeAttributeStore(this, typeAttributes);
 
@@ -381,18 +398,18 @@ export class TypeGraph {
     }
 
     getParentsOfType(t: Type): Set<Type> {
-        assert(t.typeRef.graph === this, "Called on wrong type graph");
+        assertTypeRefGraph(t.typeRef, this);
         if (this._parents === undefined) {
             const parents = defined(this._types).map(_ => new Set());
             for (const p of this.allTypesUnordered()) {
                 for (const c of p.getChildren()) {
-                    const index = c.typeRef.index;
+                    const index = c.index;
                     parents[index] = parents[index].add(p);
                 }
             }
             this._parents = parents;
         }
-        return this._parents[t.typeRef.index];
+        return this._parents[t.index];
     }
 
     printGraph(): void {
@@ -405,7 +422,7 @@ export class TypeGraph {
             if (children.size > 0) {
                 parts.push(
                     `children ${Array.from(children)
-                        .map(c => c.typeRef.index)
+                        .map(c => c.index)
                         .join(",")}`
                 );
             }
