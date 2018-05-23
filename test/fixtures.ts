@@ -20,9 +20,9 @@ import {
   testsInDir
 } from "./utils";
 import * as languages from "./languages";
-import { RendererOptions } from "../dist";
-import { mustNotBeCalled } from "../dist/Support";
-import { isDateTime } from "../dist/DateTime";
+import { RendererOptions } from "../dist/quicktype-core/Run";
+import { mustNotBeCalled } from "../dist/quicktype-core/support/Support";
+import { isDateTime } from "../dist/quicktype-core/DateTime";
 
 const chalk = require("chalk");
 const timeout = require("promise-timeout").timeout;
