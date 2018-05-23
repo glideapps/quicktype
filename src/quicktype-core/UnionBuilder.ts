@@ -7,9 +7,10 @@ import {
     makeTypeAttributesInferred
 } from "./TypeAttributes";
 import { defined, assert, panic, assertNever } from "./support/Support";
-import { TypeRef, TypeBuilder } from "./TypeBuilder";
+import { TypeBuilder } from "./TypeBuilder";
 import { StringTypes, stringTypesTypeAttributeKind } from "./StringTypes";
 import { mapMerge, mapUpdateInto, mapMap, setUnionInto } from "./support/Containers";
+import { TypeRef } from "./TypeGraph";
 
 // FIXME: This interface is badly designed.  All the properties
 // should use immutable types, and getMemberKinds should be

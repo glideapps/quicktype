@@ -1,8 +1,8 @@
-import { TypeGraph } from "./TypeGraph";
+import { TypeGraph, TypeRef } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
 import { UnionType, TypeKind, EnumType, Type } from "./Type";
 import { GraphRewriteBuilder } from "./GraphRewriting";
-import { TypeRef, StringTypeMapping } from "./TypeBuilder";
+import { StringTypeMapping } from "./TypeBuilder";
 import { defined, assert, panic } from "./support/Support";
 import {
     UnionInstantiationTransformer,
@@ -21,11 +21,12 @@ import { StringTypes } from "./StringTypes";
 import { setFilter, setUnion, iterableFirst, mapMapEntries } from "./support/Containers";
 
 function transformationAttributes(
+    graph: TypeGraph,
     reconstitutedTargetType: TypeRef,
     transformer: Transformer,
     debugPrintTransformation: boolean
 ): TypeAttributes {
-    const transformation = new Transformation(reconstitutedTargetType, transformer);
+    const transformation = new Transformation(graph, reconstitutedTargetType, transformer);
     if (debugPrintTransformation) {
         console.log(`transformation for ${reconstitutedTargetType.index}:`);
         transformation.debugPrint();
@@ -33,12 +34,23 @@ function transformationAttributes(
     return transformationTypeAttributeKind.makeAttributes(transformation);
 }
 
-function makeEnumTransformer(enumType: EnumType, stringType: TypeRef, continuation?: Transformer): Transformer {
+function makeEnumTransformer(
+    graph: TypeGraph,
+    enumType: EnumType,
+    stringType: TypeRef,
+    continuation?: Transformer
+): Transformer {
     const sortedCases = Array.from(enumType.cases).sort();
     const caseTransformers = sortedCases.map(
-        c => new StringMatchTransformer(stringType, new StringProducerTransformer(stringType, continuation, c), c)
+        c =>
+            new StringMatchTransformer(
+                graph,
+                stringType,
+                new StringProducerTransformer(graph, stringType, continuation, c),
+                c
+            )
     );
-    return new ChoiceTransformer(stringType, caseTransformers);
+    return new ChoiceTransformer(graph, stringType, caseTransformers);
 }
 
 function replaceUnion(
@@ -47,6 +59,8 @@ function replaceUnion(
     forwardingRef: TypeRef,
     debugPrintTransformations: boolean
 ): TypeRef {
+    const graph = builder.typeGraph;
+
     assert(union.members.size > 0, "We can't have empty unions");
 
     const reconstitutedMembersByKind = mapMapEntries(union.members.entries(), m => [
@@ -66,7 +80,7 @@ function replaceUnion(
         const member = union.findMember(kind);
         if (member === undefined) return undefined;
         const memberTypeRef = defined(reconstitutedMembersByKind.get(kind));
-        return new UnionInstantiationTransformer(memberTypeRef);
+        return new UnionInstantiationTransformer(graph, memberTypeRef);
     }
 
     let maybeStringType: TypeRef | undefined = undefined;
@@ -84,11 +98,20 @@ function replaceUnion(
                 return defined(transformerForKind(t.kind));
 
             case "date-time":
-                return new ParseDateTimeTransformer(getStringType(), new UnionInstantiationTransformer(memberRef));
+                return new ParseDateTimeTransformer(
+                    graph,
+                    getStringType(),
+                    new UnionInstantiationTransformer(graph, memberRef)
+                );
 
             case "enum": {
                 const enumType = t as EnumType;
-                return makeEnumTransformer(enumType, getStringType(), new UnionInstantiationTransformer(memberRef));
+                return makeEnumTransformer(
+                    graph,
+                    enumType,
+                    getStringType(),
+                    new UnionInstantiationTransformer(graph, memberRef)
+                );
             }
 
             default:
@@ -102,9 +125,10 @@ function replaceUnion(
         transformerForString = undefined;
     } else if (stringTypes.size === 1) {
         const t = defined(iterableFirst(stringTypes));
-        transformerForString = new UnionInstantiationTransformer(memberForKind(t.kind));
+        transformerForString = new UnionInstantiationTransformer(graph, memberForKind(t.kind));
     } else {
         transformerForString = new ChoiceTransformer(
+            graph,
             getStringType(),
             Array.from(stringTypes).map(transformerForStringType)
         );
@@ -119,6 +143,7 @@ function replaceUnion(
     const transformerForObject = transformerForClass !== undefined ? transformerForClass : transformerForMap;
 
     const transformer = new DecodingChoiceTransformer(
+        graph,
         builder.getPrimitiveType("any"),
         transformerForKind("null"),
         transformerForKind("integer"),
@@ -128,7 +153,7 @@ function replaceUnion(
         transformerForKind("array"),
         transformerForObject
     );
-    const attributes = transformationAttributes(reconstitutedUnion, transformer, debugPrintTransformations);
+    const attributes = transformationAttributes(graph, reconstitutedUnion, transformer, debugPrintTransformations);
     return builder.getPrimitiveType("any", attributes, forwardingRef);
 }
 
@@ -139,9 +164,18 @@ function replaceEnum(
     debugPrintTransformations: boolean
 ): TypeRef {
     const stringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
-    const transformer = new DecodingTransformer(stringType, makeEnumTransformer(enumType, stringType));
+    const transformer = new DecodingTransformer(
+        builder.typeGraph,
+        stringType,
+        makeEnumTransformer(builder.typeGraph, enumType, stringType)
+    );
     const reconstitutedEnum = builder.getEnumType(enumType.getAttributes(), enumType.cases);
-    const attributes = transformationAttributes(reconstitutedEnum, transformer, debugPrintTransformations);
+    const attributes = transformationAttributes(
+        builder.typeGraph,
+        reconstitutedEnum,
+        transformer,
+        debugPrintTransformations
+    );
     return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
 }
 

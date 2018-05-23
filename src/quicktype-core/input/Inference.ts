@@ -1,11 +1,12 @@
 import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { assertNever } from "../support/Support";
-import { TypeBuilder, TypeRef } from "../TypeBuilder";
+import { TypeBuilder } from "../TypeBuilder";
 import { UnionBuilder, UnionAccumulator } from "../UnionBuilder";
 import { isTime, isDateTime, isDate } from "../DateTime";
 import { ClassProperty } from "../Type";
 import { TypeAttributes, emptyTypeAttributes } from "../TypeAttributes";
 import { StringTypes } from "../StringTypes";
+import { TypeRef } from "../TypeGraph";
 
 // This should be the recursive type
 //   Value[] | NestedValueArray[]
@@ -177,7 +178,7 @@ export class TypeInference {
             const values = propertyValues[key];
             const t = this.inferType(cjson, new Map(), values, false);
             const isOptional = values.length < objects.length;
-            properties.set(key, new ClassProperty(t, isOptional));
+            properties.set(key, this._typeBuilder.makeClassProperty(t, isOptional));
         }
 
         if (fixed) {

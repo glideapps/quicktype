@@ -31,7 +31,8 @@ import {
     Input,
     setMap,
     iterableFirst,
-    mapFromObject
+    mapFromObject,
+    derefTypeRef
 } from "../quicktype-core";
 
 import { TypeKind, GraphQLSchema } from "./GraphQLSchema";
@@ -93,7 +94,7 @@ function makeNullable(
     containingTypeName: string
 ): TypeRef {
     const typeNames = makeNames(name, fieldName, containingTypeName);
-    const t = tref.deref();
+    const t = derefTypeRef(tref, builder.typeGraph);
     if (!(t instanceof UnionType)) {
         return builder.getUnionType(typeNames, new Set([tref, builder.getPrimitiveType("null")]));
     }
@@ -102,8 +103,14 @@ function makeNullable(
     return builder.getUnionType(typeNames, setMap(nonNulls, nn => nn.typeRef).add(builder.getPrimitiveType("null")));
 }
 
+// This is really not the way to do this, but it's easy and works.  By default
+// all types in GraphQL are nullable, and non-nullability must be specially marked,
+// so we just construct a nullable type first, and then remove the null from the
+// union if the type is modified to be non-nullable.  That means that the union
+// (and the null) might be left unreachable in the graph.  Provenance checking
+// won't work in this case, which is why it's disabled in testing for GraphQL.
 function removeNull(builder: TypeBuilder, tref: TypeRef): TypeRef {
-    const t = tref.deref();
+    const t = derefTypeRef(tref, builder.typeGraph);
     if (!(t instanceof UnionType)) {
         return tref;
     }
@@ -292,7 +299,7 @@ class GQLQuery {
                     const givenName = selection.alias ? selection.alias.value : fieldName;
                     const field = getField(inType, fieldName);
                     let fieldType = this.makeIRTypeFromFieldNode(builder, selection, field.type, nameOrOverride);
-                    properties.set(givenName, new ClassProperty(fieldType, optional));
+                    properties.set(givenName, builder.makeClassProperty(fieldType, optional));
                     break;
                 case "FragmentSpread": {
                     const fragment = this.getFragment(selection.name.value);
@@ -439,7 +446,10 @@ function makeGraphQLQueryTypes(
         const errorType = builder.getClassType(
             namesTypeAttributeKind.makeAttributes(TypeNames.make(new Set(["error"]), new Set(["graphQLError"]), false)),
             mapFromObject({
-                message: new ClassProperty(builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted), false)
+                message: builder.makeClassProperty(
+                    builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted),
+                    false
+                )
             })
         );
         const errorArray = builder.getArrayType(errorType);
@@ -452,8 +462,8 @@ function makeGraphQLQueryTypes(
         const t = builder.getClassType(
             makeNamesTypeAttributes(queryName, false),
             mapFromObject({
-                data: new ClassProperty(dataType, false),
-                errors: new ClassProperty(errorArray, true)
+                data: builder.makeClassProperty(dataType, false),
+                errors: builder.makeClassProperty(errorArray, true)
             })
         );
         types.set(queryName, t);

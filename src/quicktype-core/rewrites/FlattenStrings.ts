@@ -1,7 +1,7 @@
 import { PrimitiveType, UnionType, Type } from "../Type";
 import { stringTypesForType, combineTypeAttributesOfTypes } from "../TypeUtils";
-import { TypeGraph } from "../TypeGraph";
-import { TypeRef, StringTypeMapping } from "../TypeBuilder";
+import { TypeGraph, TypeRef } from "../TypeGraph";
+import { StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined } from "../support/Support";
 import { combineTypeAttributes } from "../TypeAttributes";

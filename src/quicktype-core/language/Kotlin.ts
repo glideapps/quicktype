@@ -426,7 +426,7 @@ export class KotlinRenderer extends ConvenienceRenderer {
             });
         });
 
-        const isTopLevel = iterableSome(this.topLevels, ([_, top]) => top.equals(c));
+        const isTopLevel = iterableSome(this.topLevels, ([_, top]) => top === c);
         if (this._kotlinOptions.framework === Framework.Klaxon && isTopLevel) {
             this.emitBlock(")", () => {
                 this.emitLine("public fun toJson() = klaxon.toJsonString(this)");

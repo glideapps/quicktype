@@ -1,19 +1,65 @@
-import { Type, ClassType, ClassProperty, UnionType, IntersectionType } from "./Type";
+import { Type, ClassType, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
 import { defined, assert, mustNotBeCalled, panic } from "./support/Support";
-import {
-    TypeRef,
-    TypeBuilder,
-    StringTypeMapping,
-    NoStringTypeMapping,
-    provenanceTypeAttributeKind
-} from "./TypeBuilder";
+import { TypeBuilder, StringTypeMapping, NoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
 import { GraphRewriteBuilder, GraphRemapBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
 import { TypeAttributeKind, TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { messageError } from "./Messages";
 import { iterableFirst, setFilter, setUnionManyInto, setSubtract, mapMap, mapSome, setMap } from "./support/Containers";
+
+export class TypeRef {
+    constructor(readonly graph: TypeGraph, readonly index: number) {}
+
+    /*
+    deref(): [Type, TypeAttributes] {
+        return this.graph.atIndex(this.index);
+    }
+    */
+
+    equals(other: any): boolean {
+        if (!(other instanceof TypeRef)) {
+            return false;
+        }
+        assert(this.graph === other.graph, "Comparing type refs of different graphs");
+        return this.index === other.index;
+    }
+
+    hashCode(): number {
+        return this.index | 0;
+    }
+}
+
+export function makeTypeRef(graph: TypeGraph, index: number): TypeRef {
+    return new TypeRef(graph, index);
+}
+
+function getGraph(graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): TypeGraph {
+    if (graphOrBuilder instanceof TypeGraph) return graphOrBuilder;
+    return graphOrBuilder.originalGraph;
+}
+
+export function derefTypeRef(tref: TypeRef, graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder): Type {
+    assert(tref.graph === getGraph(graphOrBuilder), "Trying to deref with wrong graph");
+    return tref.graph.atIndex(tref.index)[0];
+}
+
+export function attributesForTypeRef(
+    tref: TypeRef,
+    graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder
+): TypeAttributes {
+    assert(tref.graph === getGraph(graphOrBuilder), "Trying to deref with wrong graph");
+    return tref.graph.atIndex(tref.index)[1];
+}
+
+export function typeAndAttributesForTypeRef(
+    tref: TypeRef,
+    graphOrBuilder: TypeGraph | BaseGraphRewriteBuilder
+): [Type, TypeAttributes] {
+    assert(tref.graph === getGraph(graphOrBuilder), "Trying to deref with wrong graph");
+    return tref.graph.atIndex(tref.index);
+}
 
 export class TypeAttributeStore {
     private readonly _topLevelValues: Map<string, TypeAttributes> = new Map();
@@ -149,7 +195,7 @@ export class TypeGraph {
         // either a _typeBuilder or a _types.
         this._types = types;
         this._typeBuilder = undefined;
-        this._topLevels = mapMap(topLevels, tref => tref.deref()[0]);
+        this._topLevels = mapMap(topLevels, tref => derefTypeRef(tref, this));
     }
 
     get topLevels(): ReadonlyMap<string, Type> {
@@ -199,7 +245,7 @@ export class TypeGraph {
         return separateNamedTypes(types);
     }
 
-    private allProvenance(): ReadonlySet<TypeRef> {
+    private allProvenance(): ReadonlySet<number> {
         assert(this._haveProvenanceAttributes);
 
         const view = new TypeAttributeStoreView(this.attributeStore, provenanceTypeAttributeKind);
@@ -224,7 +270,7 @@ export class TypeGraph {
         const newProvenance = newGraph.allProvenance();
         if (oldProvenance.size !== newProvenance.size) {
             const difference = setSubtract(oldProvenance, newProvenance);
-            const indexes = Array.from(difference).map(tr => tr.index);
+            const indexes = Array.from(difference);
             return messageError("IRTypeAttributesNotPropagated", { count: difference.size, indexes });
         }
     }
@@ -422,7 +468,7 @@ export function optionalToNullable(
                 );
                 ref = builder.getUnionType(attributes, members);
             }
-            return new ClassProperty(ref, false);
+            return builder.makeClassProperty(ref, false);
         });
         if (c.isFixed) {
             return builder.getUniqueClassType(c.getAttributes(), true, properties, forwardingRef);

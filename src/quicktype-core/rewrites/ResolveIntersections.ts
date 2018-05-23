@@ -1,11 +1,10 @@
-import { TypeGraph } from "../TypeGraph";
-import { StringTypeMapping, TypeRef, TypeBuilder } from "../TypeBuilder";
+import { TypeGraph, TypeRef } from "../TypeGraph";
+import { StringTypeMapping, TypeBuilder } from "../TypeBuilder";
 import { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting";
 import { UnionTypeProvider, UnionBuilder, TypeAttributeMap } from "../UnionBuilder";
 import {
     IntersectionType,
     Type,
-    ClassProperty,
     UnionType,
     PrimitiveTypeKind,
     ArrayType,
@@ -300,9 +299,8 @@ class IntersectionUnionBuilder extends UnionBuilder<
         }
 
         const [propertyTypes, maybeAdditionalProperties] = maybeData;
-        const properties = mapMap(
-            propertyTypes,
-            cp => new ClassProperty(this.makeIntersection(cp.typeData, emptyTypeAttributes), cp.isOptional)
+        const properties = mapMap(propertyTypes, cp =>
+            this.typeBuilder.makeClassProperty(this.makeIntersection(cp.typeData, emptyTypeAttributes), cp.isOptional)
         );
         const additionalProperties =
             maybeAdditionalProperties === undefined

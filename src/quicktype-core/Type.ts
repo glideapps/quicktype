@@ -1,5 +1,4 @@
 import { defined, panic, assert, mapOptional, hashCodeInit, addHashCode } from "./support/Support";
-import { TypeRef } from "./TypeBuilder";
 import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";
@@ -21,6 +20,7 @@ import {
     setUnionInto,
     mapSortToArray
 } from "./support/Containers";
+import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph } from "./TypeGraph";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
 export type PrimitiveStringTypeKind = "string" | DateTimeTypeKind;
@@ -81,7 +81,7 @@ export class TypeIdentity {
 export type MaybeTypeIdentity = TypeIdentity | undefined;
 
 export abstract class Type {
-    constructor(readonly typeRef: TypeRef, readonly kind: TypeKind) {}
+    constructor(readonly typeRef: TypeRef, protected readonly graph: TypeGraph, readonly kind: TypeKind) {}
 
     // This must return a newly allocated set
     abstract getNonAttributeChildren(): Set<Type>;
@@ -96,7 +96,7 @@ export abstract class Type {
     }
 
     getAttributes(): TypeAttributes {
-        return this.typeRef.deref()[1];
+        return attributesForTypeRef(this.typeRef, this.graph);
     }
 
     get hasNames(): boolean {
@@ -284,8 +284,8 @@ export class ArrayType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: "array";
 
-    constructor(typeRef: TypeRef, private _itemsRef?: TypeRef) {
-        super(typeRef, "array");
+    constructor(typeRef: TypeRef, graph: TypeGraph, private _itemsRef?: TypeRef) {
+        super(typeRef, graph, "array");
     }
 
     setItems(itemsRef: TypeRef) {
@@ -303,7 +303,7 @@ export class ArrayType extends Type {
     }
 
     get items(): Type {
-        return this.getItemsRef().deref()[0];
+        return derefTypeRef(this.getItemsRef(), this.graph);
     }
 
     getNonAttributeChildren(): Set<Type> {
@@ -358,7 +358,7 @@ export class GenericClassProperty<T> {
 }
 
 export class ClassProperty extends GenericClassProperty<TypeRef> {
-    constructor(typeRef: TypeRef, isOptional: boolean) {
+    constructor(typeRef: TypeRef, readonly graph: TypeGraph, isOptional: boolean) {
         super(typeRef, isOptional);
     }
 
@@ -367,7 +367,7 @@ export class ClassProperty extends GenericClassProperty<TypeRef> {
     }
 
     get type(): Type {
-        return this.typeRef.deref()[0];
+        return derefTypeRef(this.typeRef, this.graph);
     }
 }
 
@@ -401,12 +401,13 @@ export class ObjectType extends Type {
 
     constructor(
         typeRef: TypeRef,
+        graph: TypeGraph,
         kind: ObjectTypeKind,
         readonly isFixed: boolean,
         private _properties: ReadonlyMap<string, ClassProperty> | undefined,
         private _additionalPropertiesRef: TypeRef | undefined
     ) {
-        super(typeRef, kind);
+        super(typeRef, graph, kind);
 
         if (kind === "map") {
             if (_properties !== undefined) {
@@ -451,7 +452,7 @@ export class ObjectType extends Type {
     getAdditionalProperties(): Type | undefined {
         const tref = this.getAdditionalPropertiesRef();
         if (tref === undefined) return undefined;
-        return tref.deref()[0];
+        return derefTypeRef(tref, this.graph);
     }
 
     getNonAttributeChildren(): Set<Type> {
@@ -491,9 +492,8 @@ export class ObjectType extends Type {
             maybePropertyTypes !== undefined &&
             (maybeAdditionalProperties !== undefined || this._additionalPropertiesRef === undefined)
         ) {
-            const properties = mapMap(
-                propertiesInNewOrder,
-                (cp, n) => new ClassProperty(defined(maybePropertyTypes.get(n)), cp.isOptional)
+            const properties = mapMap(propertiesInNewOrder, (cp, n) =>
+                builder.makeClassProperty(defined(maybePropertyTypes.get(n)), cp.isOptional)
             );
 
             switch (this.kind) {
@@ -531,9 +531,8 @@ export class ObjectType extends Type {
             }
 
             const reconstitutedTypes = mapMap(sortedProperties, cp => builder.reconstitute(cp.typeRef));
-            const properties = mapMap(
-                propertiesInNewOrder,
-                (cp, n) => new ClassProperty(defined(reconstitutedTypes.get(n)), cp.isOptional)
+            const properties = mapMap(propertiesInNewOrder, (cp, n) =>
+                builder.makeClassProperty(defined(reconstitutedTypes.get(n)), cp.isOptional)
             );
             const additionalProperties = mapOptional(r => builder.reconstitute(r), this._additionalPropertiesRef);
             builder.setObjectProperties(properties, additionalProperties);
@@ -570,8 +569,13 @@ export class ClassType extends ObjectType {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "class";
 
-    constructor(typeRef: TypeRef, isFixed: boolean, properties: ReadonlyMap<string, ClassProperty> | undefined) {
-        super(typeRef, "class", isFixed, properties, undefined);
+    constructor(
+        typeRef: TypeRef,
+        graph: TypeGraph,
+        isFixed: boolean,
+        properties: ReadonlyMap<string, ClassProperty> | undefined
+    ) {
+        super(typeRef, graph, "class", isFixed, properties, undefined);
     }
 }
 
@@ -579,8 +583,8 @@ export class MapType extends ObjectType {
     // @ts-ignore: This is initialized in the Type constructor
     readonly kind: "map";
 
-    constructor(typeRef: TypeRef, valuesRef: TypeRef | undefined) {
-        super(typeRef, "map", false, mapOptional(() => new Map(), valuesRef), valuesRef);
+    constructor(typeRef: TypeRef, graph: TypeGraph, valuesRef: TypeRef | undefined) {
+        super(typeRef, graph, "map", false, mapOptional(() => new Map(), valuesRef), valuesRef);
     }
 
     // FIXME: Remove and use `getAdditionalProperties()` instead.
@@ -598,8 +602,8 @@ export class EnumType extends Type {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "enum";
 
-    constructor(typeRef: TypeRef, readonly cases: ReadonlySet<string>) {
-        super(typeRef, "enum");
+    constructor(typeRef: TypeRef, graph: TypeGraph, readonly cases: ReadonlySet<string>) {
+        super(typeRef, graph, "enum");
     }
 
     get isNullable(): boolean {
@@ -674,8 +678,8 @@ export function intersectionTypeIdentity(
 }
 
 export abstract class SetOperationType extends Type {
-    constructor(typeRef: TypeRef, kind: TypeKind, private _memberRefs?: ReadonlySet<TypeRef>) {
-        super(typeRef, kind);
+    constructor(typeRef: TypeRef, graph: TypeGraph, kind: TypeKind, private _memberRefs?: ReadonlySet<TypeRef>) {
+        super(typeRef, graph, kind);
     }
 
     setMembers(memberRefs: ReadonlySet<TypeRef>): void {
@@ -693,7 +697,7 @@ export abstract class SetOperationType extends Type {
     }
 
     get members(): ReadonlySet<Type> {
-        return setMap(this.getMemberRefs(), tref => tref.deref()[0]);
+        return setMap(this.getMemberRefs(), tref => derefTypeRef(tref, this.graph));
     }
 
     get sortedMembers(): ReadonlySet<Type> {
@@ -743,8 +747,8 @@ export class IntersectionType extends SetOperationType {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "intersection";
 
-    constructor(typeRef: TypeRef, memberRefs?: ReadonlySet<TypeRef>) {
-        super(typeRef, "intersection", memberRefs);
+    constructor(typeRef: TypeRef, graph: TypeGraph, memberRefs?: ReadonlySet<TypeRef>) {
+        super(typeRef, graph, "intersection", memberRefs);
     }
 
     get isNullable(): boolean {
@@ -766,8 +770,8 @@ export class UnionType extends SetOperationType {
     // @ts-ignore: This is initialized in the Type constructor
     kind: "union";
 
-    constructor(typeRef: TypeRef, memberRefs?: ReadonlySet<TypeRef>) {
-        super(typeRef, "union", memberRefs);
+    constructor(typeRef: TypeRef, graph: TypeGraph, memberRefs?: ReadonlySet<TypeRef>) {
+        super(typeRef, graph, "union", memberRefs);
         if (memberRefs !== undefined) {
             messageAssert(memberRefs.size > 0, "IRNoEmptyUnions", {});
         }

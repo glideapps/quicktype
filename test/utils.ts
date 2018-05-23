@@ -103,7 +103,9 @@ export async function quicktypeForLanguage(
       rendererOptions: _.merge({}, language.rendererOptions, additionalRendererOptions),
       quiet: true,
       telemetry: "disable",
-      debug: "provenance"
+      // GraphQL input can leave unreachable types in the graph, which means
+      // their provenance won't be propagated.  It does that for non-nullables.
+      debug: graphqlSchema === undefined ? "provenance" : undefined
     });
   } catch (e) {
     failWith("quicktype threw an exception", { error: e });

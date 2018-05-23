@@ -2,7 +2,7 @@ import * as pluralize from "pluralize";
 import * as URI from "urijs";
 import stringHash = require("string-hash");
 
-import { ClassProperty, PrimitiveTypeKind } from "../Type";
+import { PrimitiveTypeKind } from "../Type";
 import {
     panic,
     assertNever,
@@ -13,7 +13,7 @@ import {
     mapOptional,
     hasOwnProperty
 } from "../support/Support";
-import { TypeBuilder, TypeRef } from "../TypeBuilder";
+import { TypeBuilder } from "../TypeBuilder";
 import { TypeNames } from "../TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../TypeNames";
 import {
@@ -42,6 +42,7 @@ import {
     arrayPop,
     hashCodeOf
 } from "../support/Containers";
+import { TypeRef } from "../TypeGraph";
 
 export enum PathElementKind {
     Root,
@@ -534,7 +535,7 @@ export async function addTypesInSchema(
                 makeNamesTypeAttributes(pluralize.singular(propName), true)
             );
             const isOptional = !required.has(propName);
-            return new ClassProperty(t, isOptional);
+            return typeBuilder.makeClassProperty(t, isOptional);
         });
         let additionalPropertiesType: TypeRef | undefined;
         if (additionalProperties === undefined || additionalProperties === true) {
@@ -556,7 +557,9 @@ export async function addTypesInSchema(
                 return messageError("SchemaAdditionalTypesForbidRequired", withRef(loc));
             }
 
-            const additionalProps = mapFromIterable(additionalRequired, _name => new ClassProperty(t, false));
+            const additionalProps = mapFromIterable(additionalRequired, _name =>
+                typeBuilder.makeClassProperty(t, false)
+            );
             mapMergeInto(props, additionalProps);
         }
         return typeBuilder.getUniqueObjectType(attributes, props, additionalPropertiesType);

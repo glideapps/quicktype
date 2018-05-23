@@ -2,10 +2,10 @@ import stringHash = require("string-hash");
 
 import { UnionType, Type, EnumType, PrimitiveType } from "./Type";
 import { TypeAttributeKind } from "./TypeAttributes";
-import { TypeRef } from "./TypeBuilder";
 import { panic, addHashCode, assert, mapOptional, indentationString } from "./support/Support";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { setUnionInto, areEqual, hashCodeOf } from "./support/Containers";
+import { TypeRef, derefTypeRef, TypeGraph } from "./TypeGraph";
 
 function debugStringForType(t: Type): string {
     const target = followTargetType(t);
@@ -16,10 +16,10 @@ function debugStringForType(t: Type): string {
 }
 
 export abstract class Transformer {
-    constructor(readonly kind: string, readonly sourceTypeRef: TypeRef) {}
+    constructor(readonly kind: string, protected readonly graph: TypeGraph, readonly sourceTypeRef: TypeRef) {}
 
     get sourceType(): Type {
-        return this.sourceTypeRef.deref()[0];
+        return derefTypeRef(this.sourceTypeRef, this.graph);
     }
 
     /** This must return a newly constructed set. */
@@ -55,8 +55,8 @@ export abstract class Transformer {
 }
 
 export abstract class ProducerTransformer extends Transformer {
-    constructor(kind: string, sourceTypeRef: TypeRef, readonly consumer: Transformer | undefined) {
-        super(kind, sourceTypeRef);
+    constructor(kind: string, graph: TypeGraph, sourceTypeRef: TypeRef, readonly consumer: Transformer | undefined) {
+        super(kind, graph, sourceTypeRef);
     }
 
     getChildren(): Set<Type> {
@@ -83,8 +83,8 @@ export abstract class ProducerTransformer extends Transformer {
 }
 
 export abstract class MatchTransformer extends Transformer {
-    constructor(kind: string, sourceTypeRef: TypeRef, readonly transformer: Transformer) {
-        super(kind, sourceTypeRef);
+    constructor(kind: string, graph: TypeGraph, sourceTypeRef: TypeRef, readonly transformer: Transformer) {
+        super(kind, graph, sourceTypeRef);
     }
 
     getChildren(): Set<Type> {
@@ -108,8 +108,8 @@ export abstract class MatchTransformer extends Transformer {
 }
 
 export class DecodingTransformer extends ProducerTransformer {
-    constructor(sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
-        super("decode", sourceTypeRef, consumer);
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
+        super("decode", graph, sourceTypeRef, consumer);
     }
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
@@ -118,14 +118,18 @@ export class DecodingTransformer extends ProducerTransformer {
         }
 
         if (this.consumer === undefined) {
-            return new EncodingTransformer(targetTypeRef);
+            return new EncodingTransformer(this.graph, targetTypeRef);
         } else {
-            return this.consumer.reverse(targetTypeRef, new EncodingTransformer(this.consumer.sourceTypeRef));
+            return this.consumer.reverse(
+                targetTypeRef,
+                new EncodingTransformer(this.graph, this.consumer.sourceTypeRef)
+            );
         }
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
         return new DecodingTransformer(
+            builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             mapOptional(xfer => xfer.reconstitute(builder), this.consumer)
         );
@@ -138,8 +142,8 @@ export class DecodingTransformer extends ProducerTransformer {
 }
 
 export class EncodingTransformer extends Transformer {
-    constructor(sourceTypeRef: TypeRef) {
-        super("encode", sourceTypeRef);
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef) {
+        super("encode", graph, sourceTypeRef);
     }
 
     reverse(_targetTypeRef: TypeRef, _continuationTransformer: Transformer | undefined): Transformer {
@@ -147,7 +151,7 @@ export class EncodingTransformer extends Transformer {
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
-        return new EncodingTransformer(builder.reconstituteTypeRef(this.sourceTypeRef));
+        return new EncodingTransformer(builder.typeGraph, builder.reconstituteTypeRef(this.sourceTypeRef));
     }
 
     equals(other: any): boolean {
@@ -158,8 +162,8 @@ export class EncodingTransformer extends Transformer {
 }
 
 export class ChoiceTransformer extends Transformer {
-    constructor(sourceTypeRef: TypeRef, public readonly transformers: ReadonlyArray<Transformer>) {
-        super("choice", sourceTypeRef);
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, public readonly transformers: ReadonlyArray<Transformer>) {
+        super("choice", graph, sourceTypeRef);
     }
 
     getChildren(): Set<Type> {
@@ -172,11 +176,12 @@ export class ChoiceTransformer extends Transformer {
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         const transformers = this.transformers.map(xfer => xfer.reverse(targetTypeRef, continuationTransformer));
-        return new ChoiceTransformer(targetTypeRef, transformers);
+        return new ChoiceTransformer(this.graph, targetTypeRef, transformers);
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
         return new ChoiceTransformer(
+            builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             this.transformers.map(xfer => xfer.reconstitute(builder))
         );
@@ -202,6 +207,7 @@ export class ChoiceTransformer extends Transformer {
 
 export class DecodingChoiceTransformer extends Transformer {
     constructor(
+        graph: TypeGraph,
         sourceTypeRef: TypeRef,
         readonly nullTransformer: Transformer | undefined,
         readonly integerTransformer: Transformer | undefined,
@@ -211,7 +217,7 @@ export class DecodingChoiceTransformer extends Transformer {
         readonly arrayTransformer: Transformer | undefined,
         readonly objectTransformer: Transformer | undefined
     ) {
-        super("decoding-choice", sourceTypeRef);
+        super("decoding-choice", graph, sourceTypeRef);
     }
 
     getChildren(): Set<Type> {
@@ -248,10 +254,12 @@ export class DecodingChoiceTransformer extends Transformer {
 
         let transformers: Transformer[] = [];
 
-        function addCase(transformer: Transformer | undefined) {
+        const addCase = (transformer: Transformer | undefined) => {
             if (transformer === undefined) return;
-            transformers.push(transformer.reverse(targetTypeRef, new EncodingTransformer(transformer.sourceTypeRef)));
-        }
+            transformers.push(
+                transformer.reverse(targetTypeRef, new EncodingTransformer(this.graph, transformer.sourceTypeRef))
+            );
+        };
 
         addCase(this.nullTransformer);
         addCase(this.integerTransformer);
@@ -261,7 +269,7 @@ export class DecodingChoiceTransformer extends Transformer {
         addCase(this.arrayTransformer);
         addCase(this.objectTransformer);
 
-        return new ChoiceTransformer(targetTypeRef, transformers);
+        return new ChoiceTransformer(this.graph, targetTypeRef, transformers);
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
@@ -271,6 +279,7 @@ export class DecodingChoiceTransformer extends Transformer {
         }
 
         return new DecodingChoiceTransformer(
+            builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             reconstitute(this.nullTransformer),
             reconstitute(this.integerTransformer),
@@ -319,12 +328,17 @@ export class DecodingChoiceTransformer extends Transformer {
 }
 
 export class UnionMemberMatchTransformer extends MatchTransformer {
-    constructor(sourceTypeRef: TypeRef, transformer: Transformer, private readonly _memberTypeRef: TypeRef) {
-        super("union-member-match", sourceTypeRef, transformer);
+    constructor(
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        transformer: Transformer,
+        private readonly _memberTypeRef: TypeRef
+    ) {
+        super("union-member-match", graph, sourceTypeRef, transformer);
     }
 
     get sourceType(): UnionType {
-        const t = this.sourceTypeRef.deref()[0];
+        const t = derefTypeRef(this.sourceTypeRef, this.graph);
         if (!(t instanceof UnionType)) {
             return panic("The source of a union member match transformer must be a union type");
         }
@@ -332,7 +346,7 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
     }
 
     get memberType(): Type {
-        return this._memberTypeRef.deref()[0];
+        return derefTypeRef(this._memberTypeRef, this.graph);
     }
 
     getChildren(): Set<Type> {
@@ -345,6 +359,7 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
         return new UnionMemberMatchTransformer(
+            builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             this.transformer.reconstitute(builder),
             builder.reconstituteTypeRef(this._memberTypeRef)
@@ -371,12 +386,12 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
  * This matches strings and enum cases.
  */
 export class StringMatchTransformer extends MatchTransformer {
-    constructor(sourceTypeRef: TypeRef, transformer: Transformer, readonly stringCase: string) {
-        super("string-match", sourceTypeRef, transformer);
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, transformer: Transformer, readonly stringCase: string) {
+        super("string-match", graph, sourceTypeRef, transformer);
     }
 
     get sourceType(): EnumType | PrimitiveType {
-        const t = this.sourceTypeRef.deref()[0];
+        const t = derefTypeRef(this.sourceTypeRef, this.graph);
         if (!(t instanceof EnumType) && !(t instanceof PrimitiveType && t.kind === "string")) {
             return panic("The source of a string match transformer must be an enum or string type");
         }
@@ -386,12 +401,18 @@ export class StringMatchTransformer extends MatchTransformer {
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         return this.transformer.reverse(
             targetTypeRef,
-            new StringProducerTransformer(this.transformer.sourceTypeRef, continuationTransformer, this.stringCase)
+            new StringProducerTransformer(
+                this.graph,
+                this.transformer.sourceTypeRef,
+                continuationTransformer,
+                this.stringCase
+            )
         );
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
         return new StringMatchTransformer(
+            builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             this.transformer.reconstitute(builder),
             this.stringCase
@@ -415,8 +436,8 @@ export class StringMatchTransformer extends MatchTransformer {
 }
 
 export class UnionInstantiationTransformer extends Transformer {
-    constructor(sourceTypeRef: TypeRef) {
-        super("union-instantiation", sourceTypeRef);
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef) {
+        super("union-instantiation", graph, sourceTypeRef);
     }
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
@@ -424,11 +445,11 @@ export class UnionInstantiationTransformer extends Transformer {
             return panic("Union instantiation transformer reverse must have a continuation");
         }
 
-        return new UnionMemberMatchTransformer(targetTypeRef, continuationTransformer, this.sourceTypeRef);
+        return new UnionMemberMatchTransformer(this.graph, targetTypeRef, continuationTransformer, this.sourceTypeRef);
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
-        return new UnionInstantiationTransformer(builder.reconstituteTypeRef(this.sourceTypeRef));
+        return new UnionInstantiationTransformer(builder.typeGraph, builder.reconstituteTypeRef(this.sourceTypeRef));
     }
 
     equals(other: any): boolean {
@@ -441,8 +462,8 @@ export class UnionInstantiationTransformer extends Transformer {
  * Produces a string or an enum case.
  */
 export class StringProducerTransformer extends ProducerTransformer {
-    constructor(sourceTypeRef: TypeRef, consumer: Transformer | undefined, readonly result: string) {
-        super("string-producer", sourceTypeRef, consumer);
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined, readonly result: string) {
+        super("string-producer", graph, sourceTypeRef, consumer);
     }
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
@@ -451,17 +472,23 @@ export class StringProducerTransformer extends ProducerTransformer {
         }
 
         if (this.consumer === undefined) {
-            return new StringMatchTransformer(targetTypeRef, continuationTransformer, this.result);
+            return new StringMatchTransformer(this.graph, targetTypeRef, continuationTransformer, this.result);
         } else {
             return this.consumer.reverse(
                 targetTypeRef,
-                new StringMatchTransformer(this.consumer.sourceTypeRef, continuationTransformer, this.result)
+                new StringMatchTransformer(
+                    this.graph,
+                    this.consumer.sourceTypeRef,
+                    continuationTransformer,
+                    this.result
+                )
             );
         }
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
         return new StringProducerTransformer(
+            builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             mapOptional(xfer => xfer.reconstitute(builder), this.consumer),
             this.result
@@ -485,23 +512,24 @@ export class StringProducerTransformer extends ProducerTransformer {
 }
 
 export class ParseDateTimeTransformer extends ProducerTransformer {
-    constructor(sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
-        super("parse-date-time", sourceTypeRef, consumer);
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
+        super("parse-date-time", graph, sourceTypeRef, consumer);
     }
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         if (this.consumer === undefined) {
-            return new StringifyDateTimeTransformer(targetTypeRef, continuationTransformer);
+            return new StringifyDateTimeTransformer(this.graph, targetTypeRef, continuationTransformer);
         } else {
             return this.consumer.reverse(
                 targetTypeRef,
-                new StringifyDateTimeTransformer(this.consumer.sourceTypeRef, continuationTransformer)
+                new StringifyDateTimeTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
             );
         }
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
         return new ParseDateTimeTransformer(
+            builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             mapOptional(xfer => xfer.reconstitute(builder), this.consumer)
         );
@@ -514,23 +542,24 @@ export class ParseDateTimeTransformer extends ProducerTransformer {
 }
 
 export class StringifyDateTimeTransformer extends ProducerTransformer {
-    constructor(sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
-        super("stringify-date-time", sourceTypeRef, consumer);
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
+        super("stringify-date-time", graph, sourceTypeRef, consumer);
     }
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         if (this.consumer === undefined) {
-            return new ParseDateTimeTransformer(targetTypeRef, continuationTransformer);
+            return new ParseDateTimeTransformer(this.graph, targetTypeRef, continuationTransformer);
         } else {
             return this.consumer.reverse(
                 targetTypeRef,
-                new ParseDateTimeTransformer(this.consumer.sourceTypeRef, continuationTransformer)
+                new ParseDateTimeTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
             );
         }
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
         return new StringifyDateTimeTransformer(
+            builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             mapOptional(xfer => xfer.reconstitute(builder), this.consumer)
         );
@@ -543,18 +572,23 @@ export class StringifyDateTimeTransformer extends ProducerTransformer {
 }
 
 export class Transformation {
-    constructor(private readonly _targetTypeRef: TypeRef, readonly transformer: Transformer) {}
+    constructor(
+        private readonly _graph: TypeGraph,
+        private readonly _targetTypeRef: TypeRef,
+        readonly transformer: Transformer
+    ) {}
 
     get sourceType(): Type {
         return this.transformer.sourceType;
     }
 
     get targetType(): Type {
-        return this._targetTypeRef.deref()[0];
+        return derefTypeRef(this._targetTypeRef, this._graph);
     }
 
     get reverse(): Transformation {
         return new Transformation(
+            this._graph,
             this.transformer.sourceTypeRef,
             this.transformer.reverse(this._targetTypeRef, undefined)
         );
@@ -566,6 +600,7 @@ export class Transformation {
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformation {
         return new Transformation(
+            builder.typeGraph,
             builder.reconstituteTypeRef(this._targetTypeRef),
             this.transformer.reconstitute(builder)
         );

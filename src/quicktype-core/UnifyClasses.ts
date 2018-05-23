@@ -1,14 +1,16 @@
 import { Type, ClassProperty, UnionType, ObjectType } from "./Type";
 import { assertIsObject } from "./TypeUtils";
-import { TypeRef, TypeBuilder } from "./TypeBuilder";
-import { TypeLookerUp, GraphRewriteBuilder } from "./GraphRewriting";
+import { TypeBuilder } from "./TypeBuilder";
+import { TypeLookerUp, GraphRewriteBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
 import { panic, assert, defined } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { iterableFirst, setUnionInto } from "./support/Containers";
+import { TypeRef, derefTypeRef } from "./TypeGraph";
 
 function getCliqueProperties(
     clique: ObjectType[],
+    builder: TypeBuilder,
     makePropertyType: (types: ReadonlySet<Type>) => TypeRef
 ): [ReadonlyMap<string, ClassProperty>, TypeRef | undefined, boolean] {
     let lostTypeAttributes = false;
@@ -53,7 +55,7 @@ function getCliqueProperties(
         additionalProperties === undefined ? undefined : makePropertyType(additionalProperties);
 
     const unifiedPropertiesArray = properties.map(([name, types, isOptional]) => {
-        return [name, new ClassProperty(makePropertyType(types), isOptional)] as [string, ClassProperty];
+        return [name, builder.makeClassProperty(makePropertyType(types), isOptional)] as [string, ClassProperty];
     });
     const unifiedProperties = new Map(unifiedPropertiesArray);
 
@@ -81,9 +83,9 @@ function countProperties(
     return { hasProperties, hasAdditionalProperties, hasNonAnyAdditionalProperties };
 }
 
-export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
+export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, TypeRef[], TypeRef[]> {
     constructor(
-        typeBuilder: TypeBuilder & TypeLookerUp,
+        typeBuilder: BaseGraphRewriteBuilder,
         private readonly _makeObjectTypes: boolean,
         private readonly _makeClassesFixed: boolean,
         private readonly _unifyTypes: (typesToUnify: TypeRef[]) => TypeRef
@@ -106,7 +108,7 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
             return maybeTypeRef;
         }
 
-        const objectTypes = objectRefs.map(r => assertIsObject(r.deref()[0]));
+        const objectTypes = objectRefs.map(r => assertIsObject(derefTypeRef(r, this.typeBuilder)));
         const { hasProperties, hasAdditionalProperties, hasNonAnyAdditionalProperties } = countProperties(objectTypes);
 
         if (!this._makeObjectTypes && (hasNonAnyAdditionalProperties || (!hasProperties && hasAdditionalProperties))) {
@@ -122,10 +124,14 @@ export class UnifyUnionBuilder extends UnionBuilder<TypeBuilder & TypeLookerUp, 
             setUnionInto(propertyTypes, additionalPropertyTypes);
             return this.typeBuilder.getMapType(typeAttributes, this._unifyTypes(Array.from(propertyTypes)));
         } else {
-            const [properties, additionalProperties, lostTypeAttributes] = getCliqueProperties(objectTypes, types => {
-                assert(types.size > 0, "Property has no type");
-                return this._unifyTypes(Array.from(types).map(t => t.typeRef));
-            });
+            const [properties, additionalProperties, lostTypeAttributes] = getCliqueProperties(
+                objectTypes,
+                this.typeBuilder,
+                types => {
+                    assert(types.size > 0, "Property has no type");
+                    return this._unifyTypes(Array.from(types).map(t => t.typeRef));
+                }
+            );
             if (lostTypeAttributes) {
                 this.typeBuilder.setLostTypeAttributes();
             }
@@ -167,7 +173,7 @@ export function unionBuilderForUnification<T extends Type>(
 ): UnionBuilder<TypeBuilder & TypeLookerUp, TypeRef[], TypeRef[]> {
     return new UnifyUnionBuilder(typeBuilder, makeObjectTypes, makeClassesFixed, trefs =>
         unifyTypes(
-            new Set(trefs.map(tref => tref.deref()[0])),
+            new Set(trefs.map(tref => derefTypeRef(tref, typeBuilder))),
             emptyTypeAttributes,
             typeBuilder,
             unionBuilderForUnification(typeBuilder, makeObjectTypes, makeClassesFixed, conflateNumbers),

@@ -1,8 +1,8 @@
-import { TypeGraph } from "../TypeGraph";
+import { TypeGraph, TypeRef, derefTypeRef } from "../TypeGraph";
 import { Type, UnionType, IntersectionType } from "../Type";
 import { makeGroupsToFlatten } from "../TypeUtils";
 import { assert } from "../support/Support";
-import { TypeRef, StringTypeMapping } from "../TypeBuilder";
+import { StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { unifyTypes, UnifyUnionBuilder } from "../UnifyClasses";
 import { messageAssert } from "../Messages";
@@ -21,7 +21,7 @@ export function flattenUnions(
     function replace(types: ReadonlySet<Type>, builder: GraphRewriteBuilder<Type>, forwardingRef: TypeRef): TypeRef {
         const unionBuilder = new UnifyUnionBuilder(builder, makeObjectTypes, true, trefs => {
             assert(trefs.length > 0, "Must have at least one type to build union");
-            trefs = trefs.map(tref => builder.reconstituteType(tref.deref()[0]));
+            trefs = trefs.map(tref => builder.reconstituteType(derefTypeRef(tref, graph)));
             if (trefs.length === 1) {
                 return trefs[0];
             }

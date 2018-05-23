@@ -1,10 +1,9 @@
 import { ClassType, Type, ClassProperty, setOperationCasesEqual } from "../Type";
 import { nonNullTypeCases, combineTypeAttributesOfTypes } from "../TypeUtils";
 
-import { TypeRef } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, panic } from "../support/Support";
-import { TypeGraph } from "../TypeGraph";
+import { TypeGraph, TypeRef } from "../TypeGraph";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
 import { RunContext } from "../Run";
 

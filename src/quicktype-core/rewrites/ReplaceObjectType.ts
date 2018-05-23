@@ -1,5 +1,5 @@
-import { TypeGraph } from "../TypeGraph";
-import { StringTypeMapping, TypeRef } from "../TypeBuilder";
+import { TypeGraph, TypeRef } from "../TypeGraph";
+import { StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { ObjectType, ClassProperty } from "../Type";
 import { defined } from "../support/Support";
@@ -24,7 +24,9 @@ export function replaceObjectType(
         const additionalProperties = o.getAdditionalProperties();
 
         function reconstituteProperties(): ReadonlyMap<string, ClassProperty> {
-            return mapMap(properties, cp => new ClassProperty(builder.reconstituteTypeRef(cp.typeRef), cp.isOptional));
+            return mapMap(properties, cp =>
+                builder.makeClassProperty(builder.reconstituteTypeRef(cp.typeRef), cp.isOptional)
+            );
         }
 
         function makeClass(): TypeRef {

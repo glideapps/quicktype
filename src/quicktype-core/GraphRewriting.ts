@@ -1,9 +1,9 @@
 import { PrimitiveTypeKind, Type, ClassProperty, MaybeTypeIdentity } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
-import { TypeGraph } from "./TypeGraph";
+import { TypeGraph, TypeRef, derefTypeRef, typeAndAttributesForTypeRef } from "./TypeGraph";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 import { assert, panic, indentationString } from "./support/Support";
-import { TypeRef, TypeBuilder, StringTypeMapping } from "./TypeBuilder";
+import { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
 import { mapMap, EqualityMap } from "./support/Containers";
 
 export interface TypeLookerUp {
@@ -122,6 +122,10 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
         this.builderForSetting().setArrayItems(this.getResult(), items);
     }
 
+    makeClassProperty(tref: TypeRef, isOptional: boolean): ClassProperty {
+        return this._typeBuilder.makeClassProperty(tref, isOptional);
+    }
+
     getObjectType(properties: ReadonlyMap<string, ClassProperty>, additionalProperties: TypeRef | undefined): void {
         this.register(
             this.builderForNewType().getUniqueObjectType(
@@ -200,7 +204,7 @@ export abstract class BaseGraphRewriteBuilder extends TypeBuilder implements Typ
     private _printIndent = 0;
 
     constructor(
-        protected readonly originalGraph: TypeGraph,
+        readonly originalGraph: TypeGraph,
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         graphHasProvenanceAttributes: boolean,
@@ -317,7 +321,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
     }
 
     private getMapTarget(tref: TypeRef): TypeRef {
-        const maybeType = this._map.get(tref.deref()[0]);
+        const maybeType = this._map.get(derefTypeRef(tref, this.originalGraph));
         if (maybeType === undefined) return tref;
         assert(this._map.get(maybeType) === undefined, "We have a type that's remapped to a remapped type");
         return maybeType.typeRef;
@@ -355,7 +359,7 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
 
         assert(maybeForwardingRef === undefined, "We can't have a forwarding ref when we remap");
 
-        const [originalType, originalAttributes] = originalRef.deref();
+        const [originalType, originalAttributes] = typeAndAttributesForTypeRef(originalRef, this.originalGraph);
 
         const attributeSources = this._attributeSources.get(originalType);
         if (attributes === undefined) {
@@ -483,7 +487,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
         attributes?: TypeAttributes,
         maybeForwardingRef?: TypeRef
     ): TypeRef {
-        const [originalType, originalAttributes] = originalRef.deref();
+        const [originalType, originalAttributes] = typeAndAttributesForTypeRef(originalRef, this.originalGraph);
         const index = originalRef.index;
 
         if (this.debugPrint) {
@@ -515,7 +519,7 @@ export class GraphRewriteBuilder<T extends Type> extends BaseGraphRewriteBuilder
             if (alreadyReconstitutedType === undefined) {
                 this.reconstitutedTypes.set(index, tref);
             } else {
-                assert(tref.equals(alreadyReconstitutedType), "We reconstituted a type twice differently");
+                assert(tref === alreadyReconstitutedType, "We reconstituted a type twice differently");
             }
         });
         originalType.reconstitute(reconstituter, this.canonicalOrder);
