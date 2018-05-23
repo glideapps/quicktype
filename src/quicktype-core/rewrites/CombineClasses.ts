@@ -128,7 +128,7 @@ function findSimilarityCliques(
         cliques[cliqueIndex] = tmp;
     }
 
-    return cliques.map(clique => clique.members);
+    return cliques.map(clique => clique.members).filter(cl => cl.length > 1);
 }
 
 export function combineClasses(
