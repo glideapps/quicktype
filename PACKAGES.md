@@ -8,7 +8,7 @@
 
 * `quicktype`: This is the command line interface for quicktype. It's a monolithic package that doesn't depend on the other packages, but contains all their code directly. This is mainly for ease of development. Packages that want to use quicktype's CLI interface, such as [json-to-azure-node-schema](https://github.com/json-helpers/json-to-azure-node-schema) will have to use this package.
 
-# Building and module resolution
+# Module resolution
 
 `quicktype-typescript-input` and `quicktype-graphql-input` have to work both as their own packages, depending on the `quicktype-core` package, as well as part of `quicktype`, referring to the files in the local `src/quicktype-core` directory.
 
@@ -21,3 +21,15 @@ In addition, since those two input packages depend on `quicktype-core`, we would
 ## Issues
 
 Module resolution in Node is such that if a package is not found in the local `node_modules` directory, it goes up the directory hierarchy and tries every `node_modules` directory it finds. We have a `node_modules` in the root directory of our repo, so a subpackage build will fall back to that if it can't find a package locally. The main consequence of that seems to be that the build won't catch missing dependencies in those packages if they're present in the root package. Moving the root `package.json` to `build/quicktype` screws with lots of tooling.
+
+# Building
+
+The root `quicktype` package does everything from its `package.json`.
+
+The other packages each have a `build.js` in their `build/PACKAGE` directory. It is not required to build the root package before building the others, but it is required to build `quicktype-core` before building the ones that depend on it. This is how to build all of them:
+
+```shell
+( cd build/quicktype-core ; node build.js )
+( cd build/quicktype-typescript-input ; node build.js )
+( cd build/quicktype-graphql-input ; node build.js )
+```

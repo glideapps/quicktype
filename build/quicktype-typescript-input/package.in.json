@@ -1,6 +1,6 @@
 {
     "name": "quicktype-typescript-input",
-    "version": "0.0.4",
+    "version": "0.0.6",
     "license": "Apache-2.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -13,11 +13,11 @@
     },
     "dependencies": {
         "quicktype-core": "the build script replaces this",
-        "graphql": "^0.11.7"
+        "typescript": "~2.8.3",
+        "typescript-json-schema": "quicktype/typescript-json-schema#d16083d29c8b6702c666a981fa6b21113300c059"
     },
     "devDependencies": {
         "@types/node": "^8.10.10",
-        "typescript": "~2.8.3",
         "tslint": "^5.9.1"
     },
     "files": ["dist/**"]

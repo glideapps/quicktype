@@ -13,11 +13,12 @@
     },
     "dependencies": {
         "quicktype-core": "the build script replaces this",
-        "typescript": "~2.8.3",
-        "typescript-json-schema": "quicktype/typescript-json-schema#d16083d29c8b6702c666a981fa6b21113300c059"
+        "graphql": "^0.11.7"
     },
     "devDependencies": {
         "@types/node": "^8.10.10",
+        "@types/graphql": "^0.11.7",
+        "typescript": "~2.8.3",
         "tslint": "^5.9.1"
     },
     "files": ["dist/**"]

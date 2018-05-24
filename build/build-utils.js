@@ -86,10 +86,14 @@ function inDir(dir, f) {
     }
 }
 
-function withPackage(update, f) {
+function makePackage(update) {
     const pkg = JSON.parse(fs.readFileSync("package.in.json", "utf8"));
     update(pkg);
     fs.writeFileSync("package.json", JSON.stringify(pkg, undefined, 4));
+}
+
+function withPackage(update, f) {
+    makePackage(update);
     try {
         f();
     } finally {
@@ -114,16 +118,6 @@ function checkCore(packageName) {
     }
 }
 
-function buildCore(buildDir) {
-    inDir(buildDir, packageName => {
-        checkCore(packageName);
-
-        console.log(`Building ${packageName}`);
-
-        run("npm", ["install"]);
-    });
-}
-
 function srcDirForPackage(packageName) {
     const srcBase = path.join("..", "..", "src");
     const srcDir = path.join(srcBase, packageName);
@@ -136,24 +130,54 @@ function srcDirForPackage(packageName) {
     return srcDir;
 }
 
+function mkdirs(dir) {
+    const components = dir.split(path.sep);
+    if (components.length === 0) {
+        throw new Error("mkdirs must be called with at least one path component");
+    }
+    let soFar = ".";
+    for (const c of components) {
+        soFar = path.join(soFar, c);
+        try {
+            fs.mkdirSync(soFar);
+        } catch (e) {
+            const stat = fs.statSync(soFar);
+            if (stat.isDirectory()) continue;
+            throw e;
+        }
+    }
+}
+
+function copyFilesInDir(srcDir, dstDir, suffix, transform) {
+    let directoryMade = false;
+    for (const fn of fs.readdirSync(srcDir)) {
+        const srcPath = path.join(srcDir, fn);
+        const dstPath = path.join(dstDir, fn);
+        const stat = fs.statSync(srcPath);
+        if (stat.isDirectory()) {
+            copyFilesInDir(srcPath, dstPath, suffix, transform);
+        } else if (fn.endsWith(suffix)) {
+            if (!directoryMade) {
+                mkdirs(dstDir);
+                directoryMade = true;
+            }
+            if (transform !== undefined) {
+                mapFile(srcPath, dstPath, transform);
+            } else {
+                copyFile(srcPath, dstPath);
+            }
+        }
+    }
+}
+
 function copySources(buildDir, then) {
     inDir(buildDir, packageName => {
         const srcDir = srcDirForPackage(packageName);
 
-        console.log(`Building ${packageName}`);
-
         try {
-            if (!fs.existsSync("src")) {
-                run("mkdir", ["src"]);
-            }
-
-            for (const fn of fs.readdirSync(srcDir).filter(fn => endsWith(fn, ".ts"))) {
-                const dstPath = path.join("src", fn);
-                copyFile(path.join(srcDir, fn), dstPath);
-                mapFile(dstPath, dstPath, content =>
-                    replaceAll(content, '} from "../quicktype-core', '} from "quicktype-core')
-                );
-            }
+            copyFilesInDir(srcDir, "src", ".ts", content =>
+                replaceAll(content, '} from "../quicktype-core', '} from "quicktype-core')
+            );
             copyFile(path.join(srcDir, "tsconfig.json"), "./");
 
             then(packageName);
@@ -167,11 +191,24 @@ function copySources(buildDir, then) {
     });
 }
 
-function buildPackage(buildDir, doPublish) {
+function buildCore(buildDir) {
     copySources(buildDir, packageName => {
+        checkCore(packageName);
+
+        console.log(`Building ${packageName}`);
+
+        makePackage(() => undefined);
+        run("npm", ["install"]);
+    });
+}
+
+function buildPackage(buildDir, options) {
+    copySources(buildDir, packageName => {
+        console.log(`Building ${packageName}`);
+
         withPackage(pkg => setQuicktypeCore(pkg, "file:../quicktype-core"), () => run("npm", ["install"]));
 
-        if (!doPublish) return;
+        if (!options.publish) return;
 
         const corePkg = JSON.parse(fs.readFileSync(path.join("..", "quicktype-core", "package.json")));
         const coreVersion = corePkg["version"];
@@ -180,7 +217,7 @@ function buildPackage(buildDir, doPublish) {
             packageName,
             commit =>
                 console.log(`Publishing ${packageName} with commit ${commit} using quicktype-core ${coreVersion}`),
-            () => setQuicktypeCore(pkg, coreVersion)
+            pkg => setQuicktypeCore(pkg, coreVersion)
         );
     });
 }
@@ -196,6 +233,7 @@ function publish(packageName, print, update) {
         process.exit(1);
     }
 
+    /*
     const latestVersion = latestPackageVersion(packageName);
 
     const latestCommit = packageCommit(packageName, latestVersion);
@@ -207,10 +245,17 @@ function publish(packageName, print, update) {
         console.log("No changes since the last package - not publishing");
         return;
     }
+    */
 
-    print(commit);
+    console.log(`publishing with commit ${commit}`);
 
-    withPackage(pkg => setCommit(pkg, commit), () => run("npm", ["publish"]));
+    withPackage(
+        pkg => {
+            setCommit(pkg, commit);
+            update(pkg);
+        },
+        () => run("npm", ["publish"])
+    );
 }
 
 function publishCore(buildDir) {
@@ -220,4 +265,24 @@ function publishCore(buildDir) {
     });
 }
 
-module.exports = { buildCore, buildPackage, publishCore };
+function usage() {
+    console.log(`Usage: ${process.argv[1]} [publish]`);
+}
+
+function getOptions() {
+    if (process.argv.length === 2) {
+        return { publish: false };
+    } else if (process.argv.length === 3) {
+        const arg = process.argv[2];
+        if (arg === "help") {
+            usage();
+            process.exit(0);
+        } else if (arg === "publish") {
+            return { publish: true };
+        }
+    }
+    usage();
+    process.exit(1);
+}
+
+module.exports = { buildCore, buildPackage, publishCore, getOptions };

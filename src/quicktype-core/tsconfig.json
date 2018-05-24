@@ -7,9 +7,8 @@
         "declaration": true,
         "strict": true,
         "alwaysStrict": true,
-        "outDir": "../../build/quicktype-core/dist",
+        "outDir": "dist",
         "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "baseUrl": "../../build/quicktype-core/node_modules"
+        "noUnusedParameters": true
     }
 }

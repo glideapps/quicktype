@@ -9,8 +9,8 @@
     "scripts": {
         "clean": "rm -rf dist node_modules *~",
         "prepare": "npm run build",
-        "build": "cd ../../src/quicktype-core ; tsc",
-        "tslint": "cd ../../src/quicktype-core ; tslint --project . --exclude 'get-stream/**'"
+        "build": "tsc",
+        "tslint": "tslint --project . --exclude 'get-stream/**'"
     },
     "dependencies": {
         "@types/urijs": "github:quicktype/types-urijs",
@@ -28,6 +28,7 @@
         "@types/node": "^8.10.10",
         "@types/pako": "^1.0.0",
         "@types/pluralize": "0.0.28",
+        "@types/string-hash": "^1.1.1",
         "typescript": "~2.8.3",
         "tslint": "^5.9.1"
     },
