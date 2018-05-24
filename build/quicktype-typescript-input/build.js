@@ -1,5 +1,5 @@
 "use strict";
 
-const buildPackage = require("../build-utils").buildPackage;
+const { buildPackage, publishPackage } = require("../build-utils");
 
 buildPackage(__dirname, true);
