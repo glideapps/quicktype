@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const spawnSync = require("child_process").spawnSync;
+const semver = require("semver");
 
 function mapFile(source, destination, transform) {
     const content = fs.readFileSync(source, "utf8");
@@ -39,9 +40,17 @@ function gitHasDiff(oldRev, inDir) {
     return run("git", ["diff", "--quiet", oldRev, inDir], false, true) !== 0;
 }
 
+function npmShow(packageName, path) {
+    return JSON.parse(run("npm", ["show", "--json", packageName, path], true));
+}
+
 function latestPackageVersion(packageName) {
-    const versions = JSON.parse(run("npm", ["show", "--json", packageName, "versions"], true));
+    const versions = npmShow(packageName, "versions");
     return versions[versions.length - 1];
+}
+
+function quicktypeCoreDependency(packageName) {
+    return npmShow(packageName, "dependencies.quicktype-core");
 }
 
 function packageCommit(packageName, version) {
@@ -86,8 +95,19 @@ function inDir(dir, f) {
     }
 }
 
+function readPackageFile(fn) {
+    if (fn === undefined) {
+        fn = "package.in.json";
+    }
+    return JSON.parse(fs.readFileSync(fn, "utf8"));
+}
+
+function versionInPackageFile() {
+    return readPackageFile().version;
+}
+
 function makePackage(update) {
-    const pkg = JSON.parse(fs.readFileSync("package.in.json", "utf8"));
+    const pkg = readPackageFile();
     update(pkg);
     fs.writeFileSync("package.json", JSON.stringify(pkg, undefined, 4));
 }
@@ -197,32 +217,63 @@ function buildCore(buildDir) {
 
         console.log(`Building ${packageName}`);
 
-        makePackage(() => undefined);
+        makePackage(pkg => {
+            pkg.version = latestPackageVersion(packageName);
+        });
         run("npm", ["install"]);
     });
+}
+
+function versionToPublish(latestVersion) {
+    // auto-increment patch version
+    const versionInPackage = versionInPackageFile();
+    if (semver.lte(versionInPackage, latestVersion)) {
+        return semver.inc(latestVersion, "patch");
+    } else {
+        return versionInPackage;
+    }
 }
 
 function buildPackage(buildDir, options) {
     copySources(buildDir, packageName => {
         console.log(`Building ${packageName}`);
 
-        withPackage(pkg => setQuicktypeCore(pkg, "file:../quicktype-core"), () => run("npm", ["install"]));
+        withPackage(
+            pkg => {
+                pkg.version = latestPackageVersion(packageName);
+                setQuicktypeCore(pkg, "file:../quicktype-core");
+            },
+            () => run("npm", ["install"])
+        );
 
         if (!options.publish) return;
 
-        const corePkg = JSON.parse(fs.readFileSync(path.join("..", "quicktype-core", "package.json")));
-        const coreVersion = corePkg["version"];
+        const coreVersion = readPackageFile(path.join("..", "quicktype-core", "package.json")).version;
+
+        const latestCoreDependency = quicktypeCoreDependency(packageName);
+
+        const coreDependencyUpToDate = semver.satisfies(coreVersion, latestCoreDependency);
+
+        console.log(
+            `quicktype-core dependency ${latestCoreDependency} of latest package is ${
+                coreDependencyUpToDate ? "" : "in"
+            }compatible with current version ${coreVersion}.`
+        );
+        if (!coreDependencyUpToDate) {
+            console.log("Publishing new package whether there are code changes or not.");
+        }
 
         publish(
             packageName,
+            coreDependencyUpToDate,
             commit =>
                 console.log(`Publishing ${packageName} with commit ${commit} using quicktype-core ${coreVersion}`),
-            pkg => setQuicktypeCore(pkg, coreVersion)
+            pkg => setQuicktypeCore(pkg, "^" + coreVersion)
         );
     });
 }
 
-function publish(packageName, print, update) {
+function publish(packageName, checkChanges, print, update) {
     const commit = gitRevParse("HEAD");
 
     const srcDir = srcDirForPackage(packageName);
@@ -233,24 +284,27 @@ function publish(packageName, print, update) {
         process.exit(1);
     }
 
-    /*
     const latestVersion = latestPackageVersion(packageName);
 
-    const latestCommit = packageCommit(packageName, latestVersion);
-    const hasChangesToPackage = gitHasDiff(latestCommit, srcDir);
+    if (checkChanges) {
+        const latestCommit = packageCommit(packageName, latestVersion);
+        const hasChangesToPackage = gitHasDiff(latestCommit, srcDir);
 
-    console.log(`latest version is ${latestVersion} commit ${latestCommit}`);
+        console.log(`latest version is ${latestVersion} commit ${latestCommit}`);
 
-    if (!hasChangesToPackage) {
-        console.log("No changes since the last package - not publishing");
-        return;
+        if (!hasChangesToPackage) {
+            console.log("No changes since the last package - not publishing");
+            return;
+        }
     }
-    */
 
-    console.log(`publishing with commit ${commit}`);
+    const newVersion = versionToPublish(latestVersion);
+    console.log(`Publishing version ${newVersion} with commit ${commit}`);
+    process.exit(0);
 
     withPackage(
         pkg => {
+            pkg.version = newVersion;
             setCommit(pkg, commit);
             update(pkg);
         },
@@ -261,7 +315,12 @@ function publish(packageName, print, update) {
 function publishCore(buildDir) {
     inDir(buildDir, packageName => {
         checkCore(packageName);
-        publish(packageName, commit => console.log(`Publishing ${packageName} with commit ${commit}`), () => undefined);
+        publish(
+            packageName,
+            true,
+            commit => console.log(`Publishing ${packageName} with commit ${commit}`),
+            () => undefined
+        );
     });
 }
 

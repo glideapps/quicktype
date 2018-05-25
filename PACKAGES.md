@@ -26,9 +26,10 @@ Module resolution in Node is such that if a package is not found in the local `n
 
 The root `quicktype` package does everything from its `package.json`.
 
-The other packages each have a `build.js` in their `build/PACKAGE` directory. It is not required to build the root package before building the others, but it is required to build `quicktype-core` before building the ones that depend on it. This is how to build all of them:
+The other packages each have a `build.js` in their `build/PACKAGE` directory. It is required to build the root package before building the others, because it will install the `semver` package which the build script for the other packages depend on. It's also required to build `quicktype-core` before building the ones that depend on it. This is how to build everything:
 
 ```shell
+npm install
 ( cd build/quicktype-core ; node build.js )
 ( cd build/quicktype-typescript-input ; node build.js )
 ( cd build/quicktype-graphql-input ; node build.js )
