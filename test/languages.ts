@@ -1,4 +1,4 @@
-import { RendererOptions } from "../dist";
+import { RendererOptions } from "../dist/quicktype-core/Run";
 import * as process from "process";
 
 export interface Language {

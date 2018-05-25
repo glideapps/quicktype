@@ -11,31 +11,37 @@ import {
     quicktypeMultiFile,
     SerializedRenderResult,
     TargetLanguage,
-    languageNamed
-} from "..";
-
-import {
-    JSONTypeSource,
-    TypeSource,
-    GraphQLTypeSource,
+    languageNamed,
+    InputData,
+    JSONSchemaInput,
+    jsonInputForTargetLanguage,
     StringInput,
-    SchemaTypeSource,
-    TypeScriptTypeSource
-} from "../TypeSource";
-import { OptionDefinition } from "../RendererOptions";
-import * as defaultTargetLanguages from "../language/All";
+    OptionDefinition,
+    defaultTargetLanguages,
+    Annotation,
+    IssueAnnotationData,
+    panic,
+    assert,
+    defined,
+    withDefault,
+    mapOptional,
+    assertNever,
+    parseJSON,
+    getStream,
+    trainMarkovChain,
+    messageError,
+    messageAssert,
+    sourcesFromPostmanCollection
+} from "../quicktype-core";
+import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
+import { GraphQLInput } from "../quicktype-graphql-input";
+
 import { urlsFromURLGrammar } from "./URLGrammar";
-import { Annotation } from "../Source";
-import { IssueAnnotationData } from "../Annotation";
 import { Readable } from "stream";
-import { panic, assert, defined, withDefault, mapOptional, assertNever, parseJSON } from "../Support";
-import { introspectServer } from "../GraphQLIntrospection";
-import { getStream } from "../get-stream/index";
-import { train } from "../MarkovChain";
-import { sourcesFromPostmanCollection } from "./PostmanCollection";
+import { introspectServer } from "./GraphQLIntrospection";
+import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { messageError, messageAssert } from "../Messages";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -56,7 +62,6 @@ export interface CLIOptions {
     template?: string;
     out?: string;
     buildMarkovChain?: string;
-    findSimilarClassesSchema?: string;
 
     noMaps: boolean;
     noEnums: boolean;
@@ -160,7 +165,6 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
         let jsonSamples: StringInput[] = [];
         const schemaSources: SchemaTypeSource[] = [];
         const graphQLSources: GraphQLTypeSource[] = [];
-        const typeScriptSources: TypeScriptTypeSource[] = [];
 
         for (const source of await readFilesOrURLsInDirectory(dir)) {
             switch (source.kind) {
@@ -173,20 +177,17 @@ async function samplesFromDirectory(dataDir: string): Promise<TypeSource[]> {
                 case "graphql":
                     graphQLSources.push(source);
                     break;
-                case "typescript":
-                    typeScriptSources.push(source);
-                    break;
                 default:
                     return assertNever(source);
             }
         }
 
-        if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length + typeScriptSources.length > 0) {
+        if (jsonSamples.length > 0 && schemaSources.length + graphQLSources.length > 0) {
             return messageError("DriverCannotMixJSONWithOtherSamples", { dir: dir });
         }
 
         const oneUnlessEmpty = (xs: any[]) => Math.sign(xs.length);
-        if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) + oneUnlessEmpty(typeScriptSources) > 1) {
+        if (oneUnlessEmpty(schemaSources) + oneUnlessEmpty(graphQLSources) > 1) {
             return messageError("DriverCannotMixNonJSONInputs", { dir: dir });
         }
 
@@ -279,7 +280,6 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         version: opts.version || false,
         out: opts.out,
         buildMarkovChain: opts.buildMarkovChain,
-        findSimilarClassesSchema: opts.findSimilarClassesSchema,
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         graphqlServerHeader: opts.graphqlServerHeader,
@@ -372,12 +372,6 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             description: "HTTP header for the GraphQL introspection query."
         },
         {
-            name: "template",
-            type: String,
-            typeLabel: "FILE",
-            description: "Handlebars template file."
-        },
-        {
             name: "no-maps",
             type: Boolean,
             description: "Don't infer maps, always use classes."
@@ -412,12 +406,6 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             type: String,
             typeLabel: "FILE",
             description: "Markov chain corpus filename."
-        },
-        {
-            name: "find-similar-classes-schema",
-            type: String,
-            typeLabel: "FILE",
-            description: "Base schema for finding similar classes"
         },
         {
             name: "quiet",
@@ -483,7 +471,7 @@ function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSe
         {
             header: "Options",
             optionList: makeOptionDefinitions(targetLanguages),
-            hide: ["no-render", "build-markov-chain", "find-similar-classes-schema"]
+            hide: ["no-render", "build-markov-chain"]
         }
     ];
 }
@@ -520,7 +508,7 @@ export function parseCLIOptions(argv: string[], targetLanguage?: TargetLanguage)
         return inferCLIOptions({ help: true }, targetLanguage);
     }
 
-    const targetLanguages = targetLanguage === undefined ? defaultTargetLanguages.all : [targetLanguage];
+    const targetLanguages = targetLanguage === undefined ? defaultTargetLanguages : [targetLanguage];
     const optionDefinitions = makeOptionDefinitions(targetLanguages);
 
     // We can only fully parse the options once we know which renderer is selected,
@@ -634,7 +622,7 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
     return sources;
 }
 
-function makeTypeScriptSource(fileNames: string[]): TypeScriptTypeSource {
+function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
     const sources: { [fileName: string]: string } = {};
 
     for (const fileName of fileNames) {
@@ -642,7 +630,29 @@ function makeTypeScriptSource(fileNames: string[]): TypeScriptTypeSource {
         sources[baseName] = defined(fs.readFileSync(fileName, "utf8"));
     }
 
-    return { kind: "typescript", sources };
+    return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(sources)) as SchemaTypeSource;
+}
+
+async function makeInputData(sources: TypeSource[], targetLanguage: TargetLanguage): Promise<InputData> {
+    const inputData = new InputData();
+
+    for (const source of sources) {
+        switch (source.kind) {
+            case "graphql":
+                await inputData.addSource("graphql", source, () => new GraphQLInput());
+                break;
+            case "json":
+                await inputData.addSource("json", source, () => jsonInputForTargetLanguage(targetLanguage));
+                break;
+            case "schema":
+                await inputData.addSource("schema", source, () => new JSONSchemaInput(new FetchingJSONSchemaStore()));
+                break;
+            default:
+                return assertNever(source);
+        }
+    }
+
+    return inputData;
 }
 
 export async function makeQuicktypeOptions(
@@ -650,7 +660,7 @@ export async function makeQuicktypeOptions(
     targetLanguages?: TargetLanguage[]
 ): Promise<Partial<Options> | undefined> {
     if (options.help) {
-        usage(targetLanguages === undefined ? defaultTargetLanguages.all : targetLanguages);
+        usage(targetLanguages === undefined ? defaultTargetLanguages : targetLanguages);
         return undefined;
     }
     if (options.version) {
@@ -661,7 +671,7 @@ export async function makeQuicktypeOptions(
     if (options.buildMarkovChain !== undefined) {
         const contents = fs.readFileSync(options.buildMarkovChain).toString();
         const lines = contents.split("\n");
-        const mc = train(lines, 3);
+        const mc = trainMarkovChain(lines, 3);
         console.log(JSON.stringify(mc));
         return undefined;
     }
@@ -722,7 +732,7 @@ export async function makeQuicktypeOptions(
                     collectionFile
                 );
                 for (const src of postmanSources) {
-                    sources.push(src);
+                    sources.push(Object.assign({ kind: "json" }, src) as JSONTypeSource);
                 }
                 if (postmanSources.length > 1) {
                     fixedTopLevels = true;
@@ -734,11 +744,6 @@ export async function makeQuicktypeOptions(
             break;
         default:
             return messageError("DriverUnknownSourceLanguage", { lang: options.srcLang });
-    }
-
-    let handlebarsTemplate: string | undefined = undefined;
-    if (options.template !== undefined) {
-        handlebarsTemplate = fs.readFileSync(options.template, "utf8");
     }
 
     const components = mapOptional(d => d.split(","), options.debug);
@@ -777,9 +782,11 @@ export async function makeQuicktypeOptions(
         return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
     }
 
+    const inputData = await makeInputData(sources, lang);
+
     return {
         lang,
-        sources,
+        inputData,
         inferMaps: !options.noMaps,
         inferEnums: !options.noEnums,
         inferDates: !options.noDateTimes,
@@ -790,10 +797,7 @@ export async function makeQuicktypeOptions(
         noRender: options.noRender,
         rendererOptions: options.rendererOptions,
         leadingComments,
-        handlebarsTemplate,
-        findSimilarClassesSchemaURI: options.findSimilarClassesSchema,
         outputFilename: mapOptional(path.basename, options.out),
-        schemaStore: new FetchingJSONSchemaStore(),
         debugPrintGraph,
         checkProvenance,
         debugPrintReconstitution,

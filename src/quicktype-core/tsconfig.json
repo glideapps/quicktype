@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "lib": ["es2015", "esnext.asynciterable"],
+        "allowJs": false,
+        "declaration": true,
+        "strict": true,
+        "alwaysStrict": true,
+        "outDir": "../../build/quicktype-core/dist",
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "baseUrl": "../../build/quicktype-core/node_modules"
+    }
+}
