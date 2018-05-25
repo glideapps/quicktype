@@ -314,7 +314,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitCommentLines(lines, " * ", "/**", " */");
     }
 
-    private emitBlock = (line: Sourcelike, withSemicolon: boolean, f: () => void, withIndent: boolean = true): void => {
+    protected emitBlock = (line: Sourcelike, withSemicolon: boolean, f: () => void, withIndent: boolean = true): void => {
         this.emitLine(line, " {");
         this.preventBlankLine();
         if (withIndent) {
@@ -330,7 +330,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     };
 
-    private emitNamespaces = (namespaceNames: List<string>, f: () => void): void => {
+    protected emitNamespaces = (namespaceNames: List<string>, f: () => void): void => {
         const first = namespaceNames.first();
         if (first === undefined) {
             f();
@@ -344,7 +344,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     };
 
-    private cppTypeInOptional = (nonNulls: OrderedSet<Type>, ctx: TypeContext, withIssues: boolean): Sourcelike => {
+    protected cppTypeInOptional = (nonNulls: OrderedSet<Type>, ctx: TypeContext, withIssues: boolean): Sourcelike => {
         if (nonNulls.size === 1) {
             return this.cppType(defined(nonNulls.first()), ctx, withIssues);
         }
@@ -368,7 +368,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return ["boost::variant<", typeList, ">"];
     };
 
-    private variantType = (u: UnionType, inJsonNamespace: boolean): Sourcelike => {
+    protected variantType = (u: UnionType, inJsonNamespace: boolean): Sourcelike => {
         const [maybeNull, nonNulls] = removeNullFromUnion(u, true);
         assert(nonNulls.size >= 2, "Variant not needed for less than two types.");
         const indirection = maybeNull !== null;
@@ -383,20 +383,20 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return [optionalType, "<", variant, ">"];
     };
 
-    private ourQualifier = (inJsonNamespace: boolean): Sourcelike => {
+    protected ourQualifier = (inJsonNamespace: boolean): Sourcelike => {
         return inJsonNamespace ? [intercalate("::", this._namespaceNames).toArray(), "::"] : [];
     };
 
-    private jsonQualifier = (inJsonNamespace: boolean): Sourcelike => {
+    protected jsonQualifier = (inJsonNamespace: boolean): Sourcelike => {
         return inJsonNamespace ? [] : "nlohmann::";
     };
 
-    private variantIndirection = (needIndirection: boolean, typeSrc: Sourcelike): Sourcelike => {
+    protected variantIndirection = (needIndirection: boolean, typeSrc: Sourcelike): Sourcelike => {
         if (!needIndirection) return typeSrc;
         return ["std::unique_ptr<", typeSrc, ">"];
     };
 
-    private cppType = (t: Type, ctx: TypeContext, withIssues: boolean): Sourcelike => {
+    protected cppType = (t: Type, ctx: TypeContext, withIssues: boolean): Sourcelike => {
         const inJsonNamespace = ctx.inJsonNamespace;
         return matchType<Sourcelike>(
             t,
@@ -450,26 +450,30 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         );
     };
 
-    private emitClass = (c: ClassType, className: Name): void => {
-        this.emitDescription(this.descriptionForType(c));
-        this.emitBlock(["struct ", className], true, () => {
-            this.forEachClassProperty(c, "none", (name, jsonName, property) => {
-                this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-                this.emitLine(
-                    this.cppType(
-                        property.type,
-                        { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
-                        true
-                    ),
-                    " ",
-                    name,
-                    ";"
-                );
-            });
+    protected emitClassMembers = (c: ClassType): void => {
+        this.forEachClassProperty(c, "none", (name, jsonName, property) => {
+            this.emitDescription(this.descriptionForClassProperty(c, jsonName));
+            this.emitLine(
+                this.cppType(
+                    property.type,
+                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
+                    true
+                ),
+                " ",
+                name,
+                ";"
+            );
         });
     };
 
-    private emitClassFunctions = (c: ClassType, className: Name): void => {
+    protected emitClass = (c: ClassType, className: Name): void => {
+        this.emitDescription(this.descriptionForType(c));
+        this.emitBlock(["struct ", className], true, () => {
+            this.emitClassMembers(c);
+        });
+    };
+
+    protected emitClassFunctions = (c: ClassType, className: Name): void => {
         const ourQualifier = this.ourQualifier(true);
         this.emitBlock(
             ["inline void from_json(const json& _j, struct ", ourQualifier, className, "& _x)"],
@@ -524,7 +528,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         });
     };
 
-    private emitEnum = (e: EnumType, enumName: Name): void => {
+    protected emitEnum = (e: EnumType, enumName: Name): void => {
         const caseNames: Sourcelike[] = [];
         this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
@@ -534,11 +538,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitLine("enum class ", enumName, " { ", caseNames, " };");
     };
 
-    private emitUnionTypedefs = (u: UnionType, unionName: Name): void => {
+    protected emitUnionTypedefs = (u: UnionType, unionName: Name): void => {
         this.emitLine("typedef ", this.variantType(u, false), " ", unionName, ";");
     };
 
-    private emitUnionFunctions = (u: UnionType): void => {
+    protected emitUnionFunctions = (u: UnionType): void => {
         const functionForKind: [string, string][] = [
             ["bool", "is_boolean"],
             ["integer", "is_number_integer"],
@@ -605,7 +609,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         });
     };
 
-    private emitEnumFunctions = (e: EnumType, enumName: Name): void => {
+    protected emitEnumFunctions = (e: EnumType, enumName: Name): void => {
         const ourQualifier = this.ourQualifier(true);
         this.emitBlock(["inline void from_json(const json& _j, ", ourQualifier, enumName, "& _x)"], false, () => {
             let onFirst = true;
@@ -646,7 +650,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         });
     };
 
-    private emitTopLevelTypedef = (t: Type, name: Name): void => {
+    protected emitTopLevelTypedef = (t: Type, name: Name): void => {
         this.emitLine(
             "typedef ",
             this.cppType(
@@ -660,7 +664,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         );
     };
 
-    private emitAllUnionFunctions = (): void => {
+    protected emitAllUnionFunctions = (): void => {
         this.forEachUniqueUnion(
             "interposing",
             u =>
@@ -675,7 +679,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         );
     };
 
-    private emitOptionalHelpers = (): void => {
+    protected emitOptionalHelpers = (): void => {
         this.emitLine("template <typename T>");
         this.emitMultiline(`struct adl_serializer<std::unique_ptr<T>> {
     static void to_json(json& j, const std::unique_ptr<T>& opt) {
@@ -694,7 +698,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 };`);
     };
 
-    private emitDeclaration(decl: Declaration): void {
+    protected emitDeclaration(decl: Declaration): void {
         if (decl.kind === "forward") {
             this.emitLine("struct ", this.nameForNamedType(decl.type), ";");
         } else if (decl.kind === "define") {
@@ -714,7 +718,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
-    private emitTypes = (): void => {
+    protected emitTypes = (): void => {
         if (!this._justTypes) {
             this.emitLine("using nlohmann::json;");
             this.ensureBlankLine();
