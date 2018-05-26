@@ -9,6 +9,7 @@ import ObjectiveCTargetLanguage from "./Objective-C";
 import { JavaTargetLanguage } from "./Java";
 import { JavaScriptTargetLanguage } from "./JavaScript";
 import { TypeScriptTargetLanguage, FlowTargetLanguage } from "./TypeScriptFlow";
+import { ScalaTargetLanguage } from "./Scala";
 import SwiftTargetLanguage from "./Swift";
 import KotlinTargetLanguage from "./Kotlin";
 import ElmTargetLanguage from "./Elm";
@@ -26,6 +27,7 @@ export const all: TargetLanguage[] = [
     new TypeScriptTargetLanguage(),
     new JavaScriptTargetLanguage(),
     new FlowTargetLanguage(),
+    new ScalaTargetLanguage(),
     new SwiftTargetLanguage(),
     new KotlinTargetLanguage(),
     new ElmTargetLanguage(),
