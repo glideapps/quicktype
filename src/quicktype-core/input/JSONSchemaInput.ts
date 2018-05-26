@@ -510,8 +510,8 @@ export async function addTypesInSchema(
 
     let typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
 
-    async function setTypeForLocation(loc: Location, t: TypeRef): Promise<void> {
-        const maybeRef = await typeForCanonicalRef.get(loc.canonicalRef);
+    function setTypeForLocation(loc: Location, t: TypeRef): void {
+        const maybeRef = typeForCanonicalRef.get(loc.canonicalRef);
         if (maybeRef !== undefined) {
             assert(maybeRef === t, "Trying to set path again to different type");
         }
@@ -712,7 +712,7 @@ export async function addTypesInSchema(
         }
 
         const intersectionType = typeBuilder.getUniqueIntersectionType(typeAttributes, undefined);
-        await setTypeForLocation(loc, intersectionType);
+        setTypeForLocation(loc, intersectionType);
 
         async function convertOneOrAnyOf(cases: any, kind: string): Promise<TypeRef> {
             const typeRefs = await makeTypesFromCases(cases, kind);
@@ -832,7 +832,7 @@ export async function addTypesInSchema(
             result = await convertToType(schema, loc, typeAttributes);
         }
 
-        await setTypeForLocation(loc, result);
+        setTypeForLocation(loc, result);
         return result;
     }
 

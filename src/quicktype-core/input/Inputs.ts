@@ -56,7 +56,7 @@ export interface Input<T> {
 
     addSource(source: T): Promise<void>;
 
-    finishAddingInputs(): void;
+    finishAddingInputs(): Promise<void>;
 
     singleStringSchemaSource(): string | undefined;
 

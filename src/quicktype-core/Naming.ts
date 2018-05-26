@@ -109,7 +109,7 @@ export class Namer {
             if (maybeUniqueName !== undefined) {
                 const styledName = namingFunction.nameStyle(maybeUniqueName);
                 const assigned = name.nameAssignments(forbiddenNames, styledName);
-                if (assigned) {
+                if (assigned !== null) {
                     mapMergeInto(allAssignedNames, assigned);
                     setUnionInto(forbiddenNames, assigned.values());
                     continue;
@@ -379,7 +379,7 @@ export function assignNames(rootNamespaces: Iterable<Namespace>): ReadonlyMap<Na
         const unfinishedNamespaces = setFilter(ctx.namespaces, ns => ctx.areForbiddensFullyNamed(ns));
         const readyNamespace = iterableFind(unfinishedNamespaces, ns => iterableSome(ns.members, ctx.isReadyToBeNamed));
 
-        if (!readyNamespace) {
+        if (readyNamespace === undefined) {
             // FIXME: Check for cycles?
             return ctx.names;
         }
