@@ -52,3 +52,4 @@ COPY . .
 
 ENV CI=true
 RUN npm install --unsafe-perm
+RUN npm run tslint
