@@ -230,8 +230,9 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected csType(t: Type, follow: (t: Type) => Type = followTargetType, withIssues: boolean = false): Sourcelike {
+        const actualType = follow(t);
         return matchType<Sourcelike>(
-            follow(t),
+            actualType,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, this._csOptions.typeForAny),
             _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, this._csOptions.typeForAny),
             _boolType => "bool",
@@ -239,7 +240,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             _doubleType => this.doubleType,
             _stringType => "string",
             arrayType => {
-                const itemsType = this.csType(arrayType.items, noFollow, withIssues);
+                const itemsType = this.csType(arrayType.items, follow, withIssues);
                 if (this._csOptions.useList) {
                     return ["List<", itemsType, ">"];
                 } else {
@@ -247,7 +248,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 }
             },
             classType => this.nameForNamedType(classType),
-            mapType => ["Dictionary<string, ", this.csType(mapType.values, noFollow, withIssues), ">"],
+            mapType => ["Dictionary<string, ", this.csType(mapType.values, follow, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);

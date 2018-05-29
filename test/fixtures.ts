@@ -391,6 +391,7 @@ const skipTypeScriptTests = [
   "pokedex.json", // Enums are screwed up: https://github.com/YousefED/typescript-json-schema/issues/186
   "github-events.json",
   "bug855-short.json",
+  "bug863.json",
   "00c36.json",
   "010b1.json",
   "050b0.json",
