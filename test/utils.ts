@@ -4,7 +4,7 @@ import * as _ from "lodash";
 import * as shell from "shelljs";
 
 import { main as quicktype_, CLIOptions } from "../dist/cli";
-import { RendererOptions } from "../dist";
+import { RendererOptions } from "../dist/quicktype-core/Run";
 import * as languages from "./languages";
 import deepEquals from "./lib/deepEquals";
 
@@ -103,7 +103,9 @@ export async function quicktypeForLanguage(
       rendererOptions: _.merge({}, language.rendererOptions, additionalRendererOptions),
       quiet: true,
       telemetry: "disable",
-      debug: "provenance"
+      // GraphQL input can leave unreachable types in the graph, which means
+      // their provenance won't be propagated.  It does that for non-nullables.
+      debug: graphqlSchema === undefined ? "provenance" : undefined
     });
   } catch (e) {
     failWith("quicktype threw an exception", { error: e });

@@ -1,10 +1,6 @@
 import * as fs from "fs";
 import { Readable } from "stream";
-import { getStream } from "../get-stream/index";
-
-import { JSONSchemaStore, JSONSchema } from "../input/JSONSchemaStore";
-import { messageError } from "../Messages";
-import { parseJSON } from "../Support";
+import { messageError, getStream, JSONSchemaStore, JSONSchema, parseJSON } from "../quicktype-core";
 
 // The typings for this module are screwy
 const isURL = require("is-url");

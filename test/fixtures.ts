@@ -20,9 +20,9 @@ import {
   testsInDir
 } from "./utils";
 import * as languages from "./languages";
-import { RendererOptions } from "../dist";
-import { mustNotBeCalled } from "../dist/Support";
-import { isDateTime } from "../dist/DateTime";
+import { RendererOptions } from "../dist/quicktype-core/Run";
+import { mustNotBeCalled } from "../dist/quicktype-core/support/Support";
+import { isDateTime } from "../dist/quicktype-core/DateTime";
 
 const chalk = require("chalk");
 const timeout = require("promise-timeout").timeout;
@@ -390,6 +390,7 @@ const skipTypeScriptTests = [
   "optional-union.json",
   "pokedex.json", // Enums are screwed up: https://github.com/YousefED/typescript-json-schema/issues/186
   "github-events.json",
+  "bug855-short.json",
   "00c36.json",
   "010b1.json",
   "050b0.json",

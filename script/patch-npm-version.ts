@@ -5,7 +5,7 @@
 // on top of the npm version so we can publish.
 
 import * as shell from "shelljs";
-const compareVersions = require("compare-versions");
+import * as semver from "semver";
 
 function exec(command: string) {
   const result = shell.exec(command, { silent: true });
@@ -20,7 +20,7 @@ const PUBLISHED = (() => {
 
 const CURRENT = exec(`npm version`).match(/quicktype: '(.+)'/)[1];
 
-switch (compareVersions(CURRENT, PUBLISHED)) {
+switch (semver.compare(CURRENT, PUBLISHED)) {
   case -1:
     console.error(
       `* package.json version is ${CURRENT} but ${PUBLISHED} is published. Patching...`
