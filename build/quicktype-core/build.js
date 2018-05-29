@@ -1,10 +1,5 @@
 "use strict";
 
-const { buildCore, publishCore, getOptions } = require("../build-utils");
+const { buildCore, getOptions } = require("../build-utils");
 
-const options = getOptions();
-
-buildCore(__dirname);
-if (options.publish) {
-    publishCore(__dirname);
-}
+buildCore(__dirname, getOptions());

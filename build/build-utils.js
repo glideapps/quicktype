@@ -211,7 +211,7 @@ function copySources(buildDir, then) {
     });
 }
 
-function buildCore(buildDir) {
+function buildCore(buildDir, options) {
     copySources(buildDir, packageName => {
         checkCore(packageName);
 
@@ -221,6 +221,16 @@ function buildCore(buildDir) {
             pkg.version = latestPackageVersion(packageName);
         });
         run("npm", ["install"]);
+
+        if (!options.publish) return;
+
+        checkCore(packageName);
+        publish(
+            packageName,
+            true,
+            commit => console.log(`Publishing ${packageName} with commit ${commit}`),
+            () => undefined
+        );
     });
 }
 
@@ -300,7 +310,6 @@ function publish(packageName, checkChanges, print, update) {
 
     const newVersion = versionToPublish(latestVersion);
     console.log(`Publishing version ${newVersion} with commit ${commit}`);
-    process.exit(0);
 
     withPackage(
         pkg => {
@@ -310,18 +319,6 @@ function publish(packageName, checkChanges, print, update) {
         },
         () => run("npm", ["publish"])
     );
-}
-
-function publishCore(buildDir) {
-    inDir(buildDir, packageName => {
-        checkCore(packageName);
-        publish(
-            packageName,
-            true,
-            commit => console.log(`Publishing ${packageName} with commit ${commit}`),
-            () => undefined
-        );
-    });
 }
 
 function usage() {
@@ -344,4 +341,4 @@ function getOptions() {
     process.exit(1);
 }
 
-module.exports = { buildCore, buildPackage, publishCore, getOptions };
+module.exports = { buildCore, buildPackage, getOptions };
