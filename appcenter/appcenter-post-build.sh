@@ -55,6 +55,10 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
 
     # We only submit PRs when patch version ends in 0
     if [[ `npm show quicktype version` == *0 ]]; then
+        # Set git credentials for the Homebrew PR
+        git config --global user.name "David Siegel"
+        git config --global user.email "djsiegel@gmail.com"
+        
         script/homebrew-update.sh
         slack_notify_homebrew_bump
     fi
