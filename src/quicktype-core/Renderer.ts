@@ -4,6 +4,7 @@ import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newli
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
 import { assert, panic } from "./support/Support";
 import { TargetLanguage } from "./TargetLanguage";
+import { iterableEnumerate } from "./support/Containers";
 
 export type RenderResult = {
     sources: ReadonlyMap<string, Source>;
@@ -32,6 +33,8 @@ export type RenderContext = {
     typeGraph: TypeGraph;
     leadingComments: string[] | undefined;
 };
+
+export type ForEachPosition = "first" | "last" | "middle" | "only";
 
 export abstract class Renderer {
     protected readonly typeGraph: TypeGraph;
@@ -159,14 +162,17 @@ export abstract class Renderer {
         iterable: Iterable<[K, V]>,
         interposedBlankLines: boolean,
         leadingBlankLine: boolean,
-        emitter: (v: V, k: K) => void
+        emitter: (v: V, k: K, position: ForEachPosition) => void
     ): void {
+        const items = Array.from(iterable);
         let onFirst = true;
-        for (const [k, v] of iterable) {
+        for (const [i, [k, v]] of iterableEnumerate(items)) {
             if ((leadingBlankLine && onFirst) || (interposedBlankLines && !onFirst)) {
                 this.ensureBlankLine();
             }
-            emitter(v, k);
+            const position =
+                items.length === 1 ? "only" : onFirst ? "first" : i === items.length - 1 ? "last" : "middle";
+            emitter(v, k, position);
             onFirst = false;
         }
     }
@@ -174,7 +180,7 @@ export abstract class Renderer {
     forEachWithBlankLines<K, V>(
         iterable: Iterable<[K, V]>,
         blankLineLocations: BlankLineLocations,
-        emitter: (v: V, k: K) => void
+        emitter: (v: V, k: K, position: ForEachPosition) => void
     ): void {
         const interposing = ["interposing", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
         const leading = ["leading", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
