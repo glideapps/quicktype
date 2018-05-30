@@ -7,15 +7,11 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import {
     legalizeCharacters,
     isAscii,
-    isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit,
     stringEscape,
-    splitIntoWords,
-    combineWords,
-    WordStyle,
-    firstUpperWordStyle,
     allUpperWordStyle,
-    allLowerWordStyle
+    NamingStyle,
+    makeNameStyle
 } from "../support/Strings";
 import { defined, assertNever, panic } from "../support/Support";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
@@ -24,8 +20,6 @@ import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 import { RenderContext } from "../Renderer";
 import { arrayIntercalate, toReadonlyArray, iterableFirst, iterableFind } from "../support/Containers";
-
-export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
@@ -56,8 +50,8 @@ export const cPlusPlusOptions = {
 };
 
 export class CPlusPlusTargetLanguage extends TargetLanguage {
-    constructor() {
-        super("C++", ["c++", "cpp", "cplusplus"], "cpp");
+    constructor(displayName: string = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension: string = "cpp") {
+        super(displayName, names, extension);
     }
 
     protected getOptions(): Option<any>[] {
@@ -83,52 +77,6 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
 }
 
 const legalizeName = legalizeCharacters(cp => isAscii(cp) && isLetterOrUnderscoreOrDigit(cp));
-
-function cppNameStyle(namingStyle: NamingStyle): (rawName: string) => string {
-    let separator: string;
-    let firstWordStyle: WordStyle;
-    let restWordStyle: WordStyle;
-    let firstWordAcronymStyle: WordStyle;
-    let restAcronymStyle: WordStyle;
-
-    if (namingStyle === "pascal" || namingStyle === "camel") {
-        separator = "";
-        restWordStyle = firstUpperWordStyle;
-        restAcronymStyle = allUpperWordStyle;
-    } else {
-        separator = "_";
-    }
-    switch (namingStyle) {
-        case "pascal":
-            firstWordStyle = firstWordAcronymStyle = firstUpperWordStyle;
-            break;
-        case "camel":
-            firstWordStyle = firstWordAcronymStyle = allLowerWordStyle;
-            break;
-        case "underscore":
-            firstWordStyle = restWordStyle = firstWordAcronymStyle = restAcronymStyle = allLowerWordStyle;
-            break;
-        case "upper-underscore":
-            firstWordStyle = restWordStyle = firstWordAcronymStyle = restAcronymStyle = allUpperWordStyle;
-            break;
-        default:
-            return assertNever(namingStyle);
-    }
-
-    return (original: string) => {
-        const words = splitIntoWords(original);
-        return combineWords(
-            words,
-            legalizeName,
-            firstWordStyle,
-            restWordStyle,
-            firstWordAcronymStyle,
-            restAcronymStyle,
-            separator,
-            isLetterOrUnderscore
-        );
-    };
-}
 
 const keywords = [
     "alignas",
@@ -244,10 +192,10 @@ type TypeContext = {
 export class CPlusPlusRenderer extends ConvenienceRenderer {
     private readonly _namespaceNames: ReadonlyArray<string>;
 
-    private readonly _typeNameStyle: (rawName: string) => string;
-    private readonly _typeNamingFunction: Namer;
     private readonly _memberNamingFunction: Namer;
-    private readonly _caseNamingFunction: Namer;
+
+    protected readonly typeNamingStyle: NamingStyle;
+    protected readonly enumeratorNamingStyle: NamingStyle;
 
     constructor(
         targetLanguage: TargetLanguage,
@@ -258,10 +206,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this._namespaceNames = _options.namespace.split("::");
 
-        this._typeNameStyle = cppNameStyle(_options.typeNamingStyle);
-        this._typeNamingFunction = funPrefixNamer("types", this._typeNameStyle);
-        this._memberNamingFunction = funPrefixNamer("members", cppNameStyle(_options.memberNamingStyle));
-        this._caseNamingFunction = funPrefixNamer("enumerators", cppNameStyle(_options.enumeratorNamingStyle));
+        this.typeNamingStyle = _options.typeNamingStyle;
+        this.enumeratorNamingStyle = _options.enumeratorNamingStyle;
+
+        this._memberNamingFunction = funPrefixNamer("members", makeNameStyle(_options.memberNamingStyle, legalizeName));
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -277,7 +225,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return this._typeNamingFunction;
+        return funPrefixNamer("types", makeNameStyle(this.typeNamingStyle, legalizeName));
     }
 
     protected namerForObjectProperty(): Namer {
@@ -289,7 +237,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return this._caseNamingFunction;
+        return funPrefixNamer("enumerators", makeNameStyle(this.enumeratorNamingStyle, legalizeName));
     }
 
     protected get needsTypeDeclarationBeforeUse(): boolean {
