@@ -557,10 +557,10 @@ export function makeNameStyle(
             isLetterOrUnderscore
         );
 
-        if (prefix) {
-            return addPrefixIfNecessary(prefix, styledName);
-        } else {
+        if (prefix === undefined) {
             return styledName;
+        } else {
+            return addPrefixIfNecessary(prefix, styledName);
         }
     };
 }

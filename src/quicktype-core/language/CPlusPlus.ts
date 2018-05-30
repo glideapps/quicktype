@@ -50,7 +50,7 @@ export const cPlusPlusOptions = {
 };
 
 export class CPlusPlusTargetLanguage extends TargetLanguage {
-    constructor(displayName: string = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension: "cpp") {
+    constructor(displayName: string = "C++", names: string[] = ["c++", "cpp", "cplusplus"], extension: string = "cpp") {
         super(displayName, names, extension);
     }
 
