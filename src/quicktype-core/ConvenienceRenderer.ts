@@ -596,49 +596,56 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this._cycleBreakerTypes.has(t);
     }
 
-    protected forEachTopLevel = (
+    protected forEachTopLevel(
         blankLocations: BlankLineLocations,
-        f: (t: Type, name: Name) => void,
+        f: (t: Type, name: Name, onFirst: boolean, onLast: boolean) => void,
         predicate?: (t: Type) => boolean
-    ): void => {
+    ): void {
         let topLevels: ReadonlyMap<string, Type>;
         if (predicate !== undefined) {
             topLevels = mapFilter(this.topLevels, predicate);
         } else {
             topLevels = this.topLevels;
         }
-        this.forEachWithBlankLines(topLevels, blankLocations, (t: Type, name: string) =>
-            f(t, this.nameStoreView.getForTopLevel(name))
+        this.forEachWithBlankLines(topLevels, blankLocations, (t, name, onFirst, onLast) =>
+            f(t, this.nameStoreView.getForTopLevel(name), onFirst, onLast)
         );
-    };
+    }
 
-    protected forEachDeclaration(blankLocations: BlankLineLocations, f: (decl: Declaration) => void) {
-        this.forEachWithBlankLines(iterableEnumerate(defined(this._declarationIR).declarations), blankLocations, f);
+    protected forEachDeclaration(
+        blankLocations: BlankLineLocations,
+        f: (decl: Declaration, onFirst: boolean, onLast: boolean) => void
+    ) {
+        this.forEachWithBlankLines(
+            iterableEnumerate(defined(this._declarationIR).declarations),
+            blankLocations,
+            (decl, _, onFirst, onLast) => f(decl, onFirst, onLast)
+        );
     }
 
     setAlphabetizeProperties = (value: boolean): void => {
         this._alphabetizeProperties = value;
     };
 
-    protected forEachClassProperty = (
+    protected forEachClassProperty(
         o: ObjectType,
         blankLocations: BlankLineLocations,
-        f: (name: Name, jsonName: string, p: ClassProperty) => void
-    ): void => {
+        f: (name: Name, jsonName: string, p: ClassProperty, onFirst: boolean, onLast: boolean) => void
+    ): void {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
         if (this._alphabetizeProperties) {
             const alphabetizedPropertyNames = mapSortBy(propertyNames, n => defined(this.names.get(n)));
-            this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName) => {
+            this.forEachWithBlankLines(alphabetizedPropertyNames, blankLocations, (name, jsonName, onFirst, onLast) => {
                 const p = defined(o.getProperties().get(jsonName));
-                f(name, jsonName, p);
+                f(name, jsonName, p, onFirst, onLast);
             });
         } else {
-            this.forEachWithBlankLines(o.getProperties(), blankLocations, (p, jsonName) => {
+            this.forEachWithBlankLines(o.getProperties(), blankLocations, (p, jsonName, onFirst, onLast) => {
                 const name = defined(propertyNames.get(jsonName));
-                f(name, jsonName, p);
+                f(name, jsonName, p, onFirst, onLast);
             });
         }
-    };
+    }
 
     protected nameForUnionMember = (u: UnionType, t: Type): Name => {
         return defined(
@@ -653,13 +660,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         return defined(caseNames.get(caseName));
     }
 
-    protected forEachUnionMember = (
+    protected forEachUnionMember(
         u: UnionType,
         members: ReadonlySet<Type> | null,
         blankLocations: BlankLineLocations,
         sortOrder: ((n: Name, t: Type) => string) | null,
-        f: (name: Name, t: Type) => void
-    ): void => {
+        f: (name: Name, t: Type, onFirst: boolean, onLast: boolean) => void
+    ): void {
         const iterateMembers = members === null ? u.members : members;
         if (sortOrder === null) {
             sortOrder = n => defined(this.names.get(n));
@@ -667,56 +674,63 @@ export abstract class ConvenienceRenderer extends Renderer {
         const memberNames = mapFilter(defined(this._memberNamesStoreView).get(u), (_, t) => iterateMembers.has(t));
         const sortedMemberNames = mapSortBy(memberNames, sortOrder);
         this.forEachWithBlankLines(sortedMemberNames, blankLocations, f);
-    };
+    }
 
-    protected forEachEnumCase = (
+    protected forEachEnumCase(
         e: EnumType,
         blankLocations: BlankLineLocations,
-        f: (name: Name, jsonName: string) => void
-    ): void => {
+        f: (name: Name, jsonName: string, onFirst: boolean, onLast: boolean) => void
+    ): void {
         const caseNames = defined(this._caseNamesStoreView).get(e);
         const sortedCaseNames = mapSortBy(caseNames, n => defined(this.names.get(n)));
         this.forEachWithBlankLines(sortedCaseNames, blankLocations, f);
-    };
-
-    protected forEachTransformation(blankLocations: BlankLineLocations, f: (n: Name, t: Type) => void): void {
-        this.forEachWithBlankLines(defined(this._namesForTransformations), blankLocations, f);
     }
 
-    protected callForNamedType<T extends Type>(t: T, f: (t: T, name: Name) => void): void {
-        f(t, this.nameForNamedType(t));
+    protected forEachTransformation(
+        blankLocations: BlankLineLocations,
+        f: (n: Name, t: Type, onFirst: boolean, onLast: boolean) => void
+    ): void {
+        this.forEachWithBlankLines(defined(this._namesForTransformations), blankLocations, f);
     }
 
     protected forEachSpecificNamedType<T extends Type>(
         blankLocations: BlankLineLocations,
         types: Iterable<[any, T]>,
-        f: (t: T, name: Name) => void
+        f: (t: T, name: Name, onFirst: boolean, onLast: boolean) => void
     ): void {
-        this.forEachWithBlankLines(types, blankLocations, t => {
-            this.callForNamedType(t, f);
-        });
+        this.forEachWithBlankLines(types, blankLocations, (t, _, onFirst, onLast) =>
+            f(t, this.nameForNamedType(t), onFirst, onLast)
+        );
     }
 
     protected forEachObject(
         blankLocations: BlankLineLocations,
-        f: ((c: ClassType, className: Name) => void) | ((o: ObjectType, objectName: Name) => void)
+        f:
+            | ((c: ClassType, className: Name, onFirst: boolean, onLast: boolean) => void)
+            | ((o: ObjectType, objectName: Name, onFirst: boolean, onLast: boolean) => void)
     ): void {
         // FIXME: This is ugly.
         this.forEachSpecificNamedType<ObjectType>(blankLocations, defined(this._namedObjects).entries(), f as any);
     }
 
-    protected forEachEnum(blankLocations: BlankLineLocations, f: (u: EnumType, enumName: Name) => void): void {
+    protected forEachEnum(
+        blankLocations: BlankLineLocations,
+        f: (u: EnumType, enumName: Name, onFirst: boolean, onLast: boolean) => void
+    ): void {
         this.forEachSpecificNamedType(blankLocations, this.enums.entries(), f);
     }
 
-    protected forEachUnion(blankLocations: BlankLineLocations, f: (u: UnionType, unionName: Name) => void): void {
+    protected forEachUnion(
+        blankLocations: BlankLineLocations,
+        f: (u: UnionType, unionName: Name, onFirst: boolean, onLast: boolean) => void
+    ): void {
         this.forEachSpecificNamedType(blankLocations, this.namedUnions.entries(), f);
     }
 
     protected forEachUniqueUnion<T>(
         blankLocations: BlankLineLocations,
         uniqueValue: (u: UnionType) => T,
-        f: (firstUnion: UnionType, value: T) => void
+        f: (firstUnion: UnionType, value: T, onFirst: boolean, onLast: boolean) => void
     ): void {
         const firstUnionByValue = new Map<T, UnionType>();
         for (const u of this.namedUnions) {
@@ -728,26 +742,29 @@ export abstract class ConvenienceRenderer extends Renderer {
         this.forEachWithBlankLines(firstUnionByValue, blankLocations, f);
     }
 
-    protected forEachNamedType = (
+    protected forEachNamedType(
         blankLocations: BlankLineLocations,
-        objectFunc: ((c: ClassType, className: Name) => void) | ((o: ObjectType, objectName: Name) => void),
-        enumFunc: (e: EnumType, enumName: Name) => void,
-        unionFunc: (u: UnionType, unionName: Name) => void
-    ): void => {
-        this.forEachWithBlankLines(defined(this._namedTypes).entries(), blankLocations, (t: Type) => {
+        objectFunc:
+            | ((c: ClassType, className: Name, onFirst: boolean, onLast: boolean) => void)
+            | ((o: ObjectType, objectName: Name, onFirst: boolean, onLast: boolean) => void),
+        enumFunc: (e: EnumType, enumName: Name, onFirst: boolean, onLast: boolean) => void,
+        unionFunc: (u: UnionType, unionName: Name, onFirst: boolean, onLast: boolean) => void
+    ): void {
+        this.forEachWithBlankLines(defined(this._namedTypes).entries(), blankLocations, (t, _, onFirst, onLast) => {
+            const name = this.nameForNamedType(t);
             if (t instanceof ObjectType) {
                 // FIXME: This is ugly.  We can't runtime check that the function
                 // takes full object types if we have them.
-                this.callForNamedType<ClassType>(t as any, objectFunc);
+                (objectFunc as any)(t, name, onFirst, onLast);
             } else if (t instanceof EnumType) {
-                this.callForNamedType(t, enumFunc);
+                enumFunc(t, name, onFirst, onLast);
             } else if (t instanceof UnionType) {
-                this.callForNamedType(t, unionFunc);
+                unionFunc(t, name, onFirst, onLast);
             } else {
                 return panic("Named type that's neither a class nor union");
             }
         });
-    };
+    }
 
     // You should never have to use this to produce parts of your generated
     // code.  If you need to modify a Name, for example to change its casing,
