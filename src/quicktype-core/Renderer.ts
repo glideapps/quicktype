@@ -34,6 +34,8 @@ export type RenderContext = {
     leadingComments: string[] | undefined;
 };
 
+export type ForEachPosition = "first" | "last" | "middle" | "only";
+
 export abstract class Renderer {
     protected readonly typeGraph: TypeGraph;
     protected readonly leadingComments: string[] | undefined;
@@ -160,7 +162,7 @@ export abstract class Renderer {
         iterable: Iterable<[K, V]>,
         interposedBlankLines: boolean,
         leadingBlankLine: boolean,
-        emitter: (v: V, k: K, onFirst: boolean, onLast: boolean) => void
+        emitter: (v: V, k: K, position: ForEachPosition) => void
     ): void {
         const items = Array.from(iterable);
         let onFirst = true;
@@ -168,7 +170,9 @@ export abstract class Renderer {
             if ((leadingBlankLine && onFirst) || (interposedBlankLines && !onFirst)) {
                 this.ensureBlankLine();
             }
-            emitter(v, k, onFirst, i === items.length - 1);
+            const position =
+                items.length === 1 ? "only" : onFirst ? "first" : i === items.length - 1 ? "last" : "middle";
+            emitter(v, k, position);
             onFirst = false;
         }
     }
@@ -176,7 +180,7 @@ export abstract class Renderer {
     forEachWithBlankLines<K, V>(
         iterable: Iterable<[K, V]>,
         blankLineLocations: BlankLineLocations,
-        emitter: (v: V, k: K, onFirst: boolean, onLast: boolean) => void
+        emitter: (v: V, k: K, position: ForEachPosition) => void
     ): void {
         const interposing = ["interposing", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
         const leading = ["leading", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
