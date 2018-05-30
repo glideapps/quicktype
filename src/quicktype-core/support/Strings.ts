@@ -1,6 +1,8 @@
-import { assert, defined, panic } from "./Support";
+import { assert, defined, panic, assertNever } from "./Support";
 import { acronyms } from "./Acronyms";
 import { messageAssert } from "../Messages";
+
+export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
 
 const unicode = require("unicode-properties");
 
@@ -504,4 +506,61 @@ export function combineWords(
 export function addPrefixIfNecessary(prefix: string, name: string): string {
     // Take care not to doubly-prefix type names
     return name.startsWith(prefix) ? name : prefix + name;
+}
+
+export function makeNameStyle(
+    namingStyle: NamingStyle,
+    legalizeName: (name: string) => string,
+    prefix?: string
+): (rawName: string) => string {
+    let separator: string;
+    let firstWordStyle: WordStyle;
+    let restWordStyle: WordStyle;
+    let firstWordAcronymStyle: WordStyle;
+    let restAcronymStyle: WordStyle;
+
+    if (namingStyle === "pascal" || namingStyle === "camel") {
+        separator = "";
+        restWordStyle = firstUpperWordStyle;
+        restAcronymStyle = allUpperWordStyle;
+    } else {
+        separator = "_";
+    }
+    switch (namingStyle) {
+        case "pascal":
+            firstWordStyle = firstWordAcronymStyle = firstUpperWordStyle;
+            break;
+        case "camel":
+            firstWordStyle = firstWordAcronymStyle = allLowerWordStyle;
+            break;
+        case "underscore":
+            firstWordStyle = restWordStyle = firstWordAcronymStyle = restAcronymStyle = allLowerWordStyle;
+            break;
+        case "upper-underscore":
+            firstWordStyle = restWordStyle = firstWordAcronymStyle = restAcronymStyle = allUpperWordStyle;
+            break;
+        default:
+            return assertNever(namingStyle);
+    }
+
+    return (original: string) => {
+        const words = splitIntoWords(original);
+
+        const styledName = combineWords(
+            words,
+            legalizeName,
+            firstWordStyle,
+            restWordStyle,
+            firstWordAcronymStyle,
+            restAcronymStyle,
+            separator,
+            isLetterOrUnderscore
+        );
+
+        if (prefix !== undefined) {
+            return addPrefixIfNecessary(prefix, styledName);
+        } else {
+            return styledName;
+        }
+    };
 }
