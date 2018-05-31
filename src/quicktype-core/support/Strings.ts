@@ -2,7 +2,13 @@ import { assert, defined, panic, assertNever } from "./Support";
 import { acronyms } from "./Acronyms";
 import { messageAssert } from "../Messages";
 
-export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore" | "pascal-upper-acronyms" | "camel-upper-acronyms";
+export type NamingStyle =
+    | "pascal"
+    | "camel"
+    | "underscore"
+    | "upper-underscore"
+    | "pascal-upper-acronyms"
+    | "camel-upper-acronyms";
 
 const unicode = require("unicode-properties");
 
@@ -32,7 +38,7 @@ function precomputedCodePointPredicate(p: CodePointPredicate): CodePointPredicat
     for (let cp = 0; cp < 128; cp++) {
         asciiResults.push(p(cp));
     }
-    return function (cp: number) {
+    return function(cp: number) {
         return cp < 128 ? asciiResults[cp] : p(cp);
     };
 }
@@ -389,7 +395,7 @@ export function splitIntoWords(s: string): WordInName[] {
         return i - intervalStart;
     }
 
-    for (; ;) {
+    for (;;) {
         skipNonWord();
         if (atEnd()) break;
 
@@ -519,9 +525,14 @@ export function makeNameStyle(
     let firstWordAcronymStyle: WordStyle;
     let restAcronymStyle: WordStyle;
 
-    if (namingStyle === "pascal" || namingStyle === "camel" || namingStyle === "pascal-upper-acronyms" || namingStyle === "camel-upper-acronyms") {
+    if (
+        namingStyle === "pascal" ||
+        namingStyle === "camel" ||
+        namingStyle === "pascal-upper-acronyms" ||
+        namingStyle === "camel-upper-acronyms"
+    ) {
         separator = "";
-        if (namingStyle.includes("upper-acronyms")) {
+        if (namingStyle === "pascal-upper-acronyms" || namingStyle === "camel-upper-acronyms") {
             restWordStyle = restAcronymStyle = firstUpperWordStyle;
         } else {
             restWordStyle = firstUpperWordStyle;
