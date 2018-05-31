@@ -25,6 +25,8 @@ const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
 const camelValue: [string, NamingStyle] = ["camel-case", "camel"];
 const upperUnderscoreValue: [string, NamingStyle] = ["upper-underscore-case", "upper-underscore"];
+const pascalUpperAcronymsValue: [string, NamingStyle] = ["pascal-case-upper-acronyms", "pascal-upper-acronyms"];
+const camelUpperAcronymsValue: [string, NamingStyle] = ["camel-case-upper-acronyms", "camel-upper-acronyms"];
 
 export const cPlusPlusOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
@@ -33,19 +35,25 @@ export const cPlusPlusOptions = {
         pascalValue,
         underscoreValue,
         camelValue,
-        upperUnderscoreValue
+        upperUnderscoreValue,
+        pascalUpperAcronymsValue,
+        camelUpperAcronymsValue
     ]),
     memberNamingStyle: new EnumOption<NamingStyle>("member-style", "Naming style for members", [
         underscoreValue,
         pascalValue,
         camelValue,
-        upperUnderscoreValue
+        upperUnderscoreValue,
+        pascalUpperAcronymsValue,
+        camelUpperAcronymsValue
     ]),
     enumeratorNamingStyle: new EnumOption<NamingStyle>("enumerator-style", "Naming style for enumerators", [
         upperUnderscoreValue,
         underscoreValue,
         pascalValue,
-        camelValue
+        camelValue,
+        pascalUpperAcronymsValue,
+        camelUpperAcronymsValue
     ])
 };
 

@@ -2,7 +2,13 @@ import { assert, defined, panic, assertNever } from "./Support";
 import { acronyms } from "./Acronyms";
 import { messageAssert } from "../Messages";
 
-export type NamingStyle = "pascal" | "camel" | "underscore" | "upper-underscore";
+export type NamingStyle =
+    | "pascal"
+    | "camel"
+    | "underscore"
+    | "upper-underscore"
+    | "pascal-upper-acronyms"
+    | "camel-upper-acronyms";
 
 const unicode = require("unicode-properties");
 
@@ -519,18 +525,29 @@ export function makeNameStyle(
     let firstWordAcronymStyle: WordStyle;
     let restAcronymStyle: WordStyle;
 
-    if (namingStyle === "pascal" || namingStyle === "camel") {
+    if (
+        namingStyle === "pascal" ||
+        namingStyle === "camel" ||
+        namingStyle === "pascal-upper-acronyms" ||
+        namingStyle === "camel-upper-acronyms"
+    ) {
         separator = "";
-        restWordStyle = firstUpperWordStyle;
-        restAcronymStyle = allUpperWordStyle;
+        if (namingStyle === "pascal-upper-acronyms" || namingStyle === "camel-upper-acronyms") {
+            restWordStyle = restAcronymStyle = firstUpperWordStyle;
+        } else {
+            restWordStyle = firstUpperWordStyle;
+            restAcronymStyle = allUpperWordStyle;
+        }
     } else {
         separator = "_";
     }
     switch (namingStyle) {
         case "pascal":
+        case "pascal-upper-acronyms":
             firstWordStyle = firstWordAcronymStyle = firstUpperWordStyle;
             break;
         case "camel":
+        case "camel-upper-acronyms":
             firstWordStyle = firstWordAcronymStyle = allLowerWordStyle;
             break;
         case "underscore":
