@@ -533,10 +533,10 @@ export function makeNameStyle(
     ) {
         separator = "";
         if (namingStyle === "pascal-upper-acronyms" || namingStyle === "camel-upper-acronyms") {
-            restWordStyle = restAcronymStyle = firstUpperWordStyle;
-        } else {
             restWordStyle = firstUpperWordStyle;
             restAcronymStyle = allUpperWordStyle;
+        } else {
+            restWordStyle = restAcronymStyle = firstUpperWordStyle;
         }
     } else {
         separator = "_";
