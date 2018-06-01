@@ -623,7 +623,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         false
                     )
                 ),
-            this.emitUnionFunctions
+            (u: UnionType) => this.emitUnionFunctions(u)
         );
     }
 
@@ -675,7 +675,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (this._options.justTypes) return;
         this.forEachTopLevel(
             "leading",
-            this.emitTopLevelTypedef,
+            (t: Type, name:Name) => this.emitTopLevelTypedef(t, name),
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
         this.emitMultiline(`
@@ -739,7 +739,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
         if (this._options.justTypes) {
             this.emitTypes();
         } else {
-            this.emitNamespaces(this._namespaceNames, this.emitTypes);
+            this.emitNamespaces(this._namespaceNames, () => this.emitTypes());
         }
 
         if (!this._options.justTypes && this.haveNamedTypes) {
@@ -748,8 +748,8 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
                 if (this.haveUnions) {
                     this.emitOptionalHelpers();
                 }
-                this.forEachObject("leading-and-interposing", this.emitClassFunctions);
-                this.forEachEnum("leading-and-interposing", this.emitEnumFunctions);
+                this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) => this.emitClassFunctions(c, className));
+                this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) => this.emitEnumFunctions(e, enumName));
                 if (this.haveUnions) {
                     this.ensureBlankLine();
                     this.emitAllUnionFunctions();
