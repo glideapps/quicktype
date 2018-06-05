@@ -1,3 +1,5 @@
+import { setFilter, iterableSome } from "collection-utils";
+
 import { TypeGraph, TypeRef, derefTypeRef } from "../TypeGraph";
 import { Type, UnionType, IntersectionType } from "../Type";
 import { makeGroupsToFlatten } from "../TypeUtils";
@@ -7,7 +9,6 @@ import { GraphRewriteBuilder } from "../GraphRewriting";
 import { unifyTypes, UnifyUnionBuilder } from "../UnifyClasses";
 import { messageAssert } from "../Messages";
 import { emptyTypeAttributes } from "../TypeAttributes";
-import { setFilter, iterableSome } from "../support/Containers";
 
 export function flattenUnions(
     graph: TypeGraph,

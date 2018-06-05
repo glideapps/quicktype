@@ -1,10 +1,10 @@
 import stringHash = require("string-hash");
+import { setUnionInto, areEqual, hashCodeOf, definedMap } from "collection-utils";
 
 import { UnionType, Type, EnumType, PrimitiveType } from "./Type";
 import { TypeAttributeKind } from "./TypeAttributes";
-import { panic, addHashCode, assert, mapOptional, indentationString } from "./support/Support";
+import { panic, addHashCode, assert, indentationString } from "./support/Support";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { setUnionInto, areEqual, hashCodeOf } from "./support/Containers";
 import { TypeRef, derefTypeRef, TypeGraph } from "./TypeGraph";
 
 function debugStringForType(t: Type): string {
@@ -131,7 +131,7 @@ export class DecodingTransformer extends ProducerTransformer {
         return new DecodingTransformer(
             builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
-            mapOptional(xfer => xfer.reconstitute(builder), this.consumer)
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder))
         );
     }
 
@@ -490,7 +490,7 @@ export class StringProducerTransformer extends ProducerTransformer {
         return new StringProducerTransformer(
             builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
-            mapOptional(xfer => xfer.reconstitute(builder), this.consumer),
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder)),
             this.result
         );
     }
@@ -531,7 +531,7 @@ export class ParseDateTimeTransformer extends ProducerTransformer {
         return new ParseDateTimeTransformer(
             builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
-            mapOptional(xfer => xfer.reconstitute(builder), this.consumer)
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder))
         );
     }
 
@@ -561,7 +561,7 @@ export class StringifyDateTimeTransformer extends ProducerTransformer {
         return new StringifyDateTimeTransformer(
             builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
-            mapOptional(xfer => xfer.reconstitute(builder), this.consumer)
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder))
         );
     }
 

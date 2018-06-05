@@ -1,3 +1,5 @@
+import { mapMap, EqualityMap } from "collection-utils";
+
 import { PrimitiveTypeKind, Type, ClassProperty, MaybeTypeIdentity } from "./Type";
 import { combineTypeAttributesOfTypes } from "./TypeUtils";
 import {
@@ -12,7 +14,6 @@ import {
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 import { assert, panic, indentationString } from "./support/Support";
 import { TypeBuilder, StringTypeMapping } from "./TypeBuilder";
-import { mapMap, EqualityMap } from "./support/Containers";
 
 export interface TypeLookerUp {
     lookupTypeRefs(typeRefs: TypeRef[], forwardingRef?: TypeRef): TypeRef | undefined;

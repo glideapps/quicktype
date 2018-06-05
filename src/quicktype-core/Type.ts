@@ -1,8 +1,3 @@
-import { defined, panic, assert, mapOptional, hashCodeInit, addHashCode } from "./support/Support";
-import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
-import { TypeAttributes } from "./TypeAttributes";
-import { messageAssert } from "./Messages";
 import {
     iterableEvery,
     iterableFind,
@@ -18,8 +13,15 @@ import {
     setSortBy,
     setFilter,
     setUnionInto,
-    mapSortToArray
-} from "./support/Containers";
+    mapSortToArray,
+    definedMap
+} from "collection-utils";
+
+import { defined, panic, assert, hashCodeInit, addHashCode } from "./support/Support";
+import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
+import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
+import { TypeAttributes } from "./TypeAttributes";
+import { messageAssert } from "./Messages";
 import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph, typeRefIndex } from "./TypeGraph";
 
 export type DateTimeTypeKind = "date" | "time" | "date-time";
@@ -490,7 +492,7 @@ export class ObjectType extends Type {
         const sortedProperties = this.getSortedProperties();
         const propertiesInNewOrder = canonicalOrder ? sortedProperties : this.getProperties();
         const maybePropertyTypes = builder.lookupMap(mapMap(sortedProperties, cp => cp.typeRef));
-        const maybeAdditionalProperties = mapOptional(r => builder.lookup(r), this._additionalPropertiesRef);
+        const maybeAdditionalProperties = definedMap(this._additionalPropertiesRef, r => builder.lookup(r));
 
         if (
             maybePropertyTypes !== undefined &&
@@ -538,7 +540,7 @@ export class ObjectType extends Type {
             const properties = mapMap(propertiesInNewOrder, (cp, n) =>
                 builder.makeClassProperty(defined(reconstitutedTypes.get(n)), cp.isOptional)
             );
-            const additionalProperties = mapOptional(r => builder.reconstitute(r), this._additionalPropertiesRef);
+            const additionalProperties = definedMap(this._additionalPropertiesRef, r => builder.reconstitute(r));
             builder.setObjectProperties(properties, additionalProperties);
         }
     }
@@ -588,7 +590,7 @@ export class MapType extends ObjectType {
     readonly kind: "map";
 
     constructor(typeRef: TypeRef, graph: TypeGraph, valuesRef: TypeRef | undefined) {
-        super(typeRef, graph, "map", false, mapOptional(() => new Map(), valuesRef), valuesRef);
+        super(typeRef, graph, "map", false, definedMap(valuesRef, () => new Map()), valuesRef);
     }
 
     // FIXME: Remove and use `getAdditionalProperties()` instead.

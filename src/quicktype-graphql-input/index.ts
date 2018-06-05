@@ -10,6 +10,7 @@ import {
     FieldNode
 } from "graphql/language/ast";
 import * as graphql from "graphql/language";
+import { setMap, iterableFirst, mapFromObject } from "collection-utils";
 
 import {
     UnionType,
@@ -29,9 +30,6 @@ import {
     emptyTypeAttributes,
     StringTypes,
     Input,
-    setMap,
-    iterableFirst,
-    mapFromObject,
     derefTypeRef
 } from "../quicktype-core";
 

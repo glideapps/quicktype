@@ -1,8 +1,17 @@
+import {
+    mapMap,
+    iterableFirst,
+    setIntersect,
+    hashCodeOf,
+    areEqual,
+    mapMergeWithInto,
+    definedMap
+} from "collection-utils";
+
 import { TypeAttributeKind } from "./TypeAttributes";
-import { addHashCode, defined, assert, mapOptional } from "./support/Support";
+import { addHashCode, defined, assert } from "./support/Support";
 import { StringTypeMapping } from "./TypeBuilder";
 import { PrimitiveStringTypeKind } from "./Type";
-import { mapMap, iterableFirst, setIntersect, hashCodeOf, areEqual, mapMergeWithInto } from "./support/Containers";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, false, false, false);
@@ -75,7 +84,7 @@ export class StringTypes {
             const other = othersArray[i];
 
             if (cases === undefined) {
-                cases = mapOptional(m => new Map(m), other.cases);
+                cases = definedMap(other.cases, m => new Map(m));
             } else if (other.cases !== undefined) {
                 const thisCases = cases;
                 const otherCases = other.cases;

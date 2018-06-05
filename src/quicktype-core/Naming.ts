@@ -1,4 +1,3 @@
-import { defined, assert, panic } from "./support/Support";
 import {
     setUnion,
     setUnionInto,
@@ -12,7 +11,9 @@ import {
     iterableFirst,
     iterableEvery,
     mapMergeInto
-} from "./support/Containers";
+} from "collection-utils";
+
+import { defined, assert, panic } from "./support/Support";
 
 export class Namespace {
     readonly forbiddenNamespaces: ReadonlySet<Namespace>;

@@ -1,4 +1,5 @@
 import * as URI from "urijs";
+import { iterableFirst, iterableFind, iterableSome, setFilterMap } from "collection-utils";
 
 import {
     Ref,
@@ -28,7 +29,6 @@ import { TypeInference } from "./Inference";
 import { TargetLanguage } from "../TargetLanguage";
 import { languageNamed } from "../language/All";
 import { accessorNamesAttributeProducer } from "../AccessorNames";
-import { iterableFirst, iterableFind, iterableSome, setFilterMap } from "../support/Containers";
 
 class InputJSONSchemaStore extends JSONSchemaStore {
     constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {

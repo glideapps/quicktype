@@ -1,3 +1,5 @@
+import { iterableFirst, setUnionInto } from "collection-utils";
+
 import { Type, ClassProperty, UnionType, ObjectType } from "./Type";
 import { assertIsObject } from "./TypeUtils";
 import { TypeBuilder } from "./TypeBuilder";
@@ -5,7 +7,6 @@ import { TypeLookerUp, GraphRewriteBuilder, BaseGraphRewriteBuilder } from "./Gr
 import { UnionBuilder, TypeRefUnionAccumulator } from "./UnionBuilder";
 import { panic, assert, defined } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-import { iterableFirst, setUnionInto } from "./support/Containers";
 import { TypeRef, derefTypeRef } from "./TypeGraph";
 
 function getCliqueProperties(

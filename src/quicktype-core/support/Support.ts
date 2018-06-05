@@ -6,10 +6,6 @@ import { messageError } from "../Messages";
 
 const stringToStream = require("string-to-stream");
 
-export function hasOwnProperty(obj: object, name: string): boolean {
-    return Object.prototype.hasOwnProperty.call(obj, name);
-}
-
 export function findInArray<T>(arr: T[], p: (t: T) => boolean): T | undefined {
     for (const t of arr) {
         if (p(t)) return t;
@@ -57,11 +53,6 @@ export function checkArray<T>(x: any, checkItem?: (v: any) => v is T): T[] {
         }
     }
     return x;
-}
-
-export function mapOptional<T, U>(f: (x: T) => U, x: T | undefined): U | undefined {
-    if (x === undefined) return undefined;
-    return f(x);
 }
 
 export function defined<T>(x: T | undefined): T {

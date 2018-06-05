@@ -1,3 +1,5 @@
+import { mapFirst } from "collection-utils";
+
 import * as targetLanguages from "./language/All";
 import { TargetLanguage } from "./TargetLanguage";
 import { SerializedRenderResult, Annotation, Location, Span } from "./Source";
@@ -16,7 +18,6 @@ import { messageError } from "./Messages";
 import { InputData } from "./input/Inputs";
 import { flattenStrings } from "./rewrites/FlattenStrings";
 import { makeTransformations } from "./MakeTransformations";
-import { mapFirst } from "./support/Containers";
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {

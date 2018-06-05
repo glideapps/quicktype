@@ -1,3 +1,5 @@
+import { setFilter, setUnion, iterableFirst, mapMapEntries } from "collection-utils";
+
 import { TypeGraph, TypeRef, typeRefIndex } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
 import { UnionType, TypeKind, EnumType, Type } from "./Type";
@@ -18,7 +20,6 @@ import {
 } from "./Transformers";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { StringTypes } from "./StringTypes";
-import { setFilter, setUnion, iterableFirst, mapMapEntries } from "./support/Containers";
 
 function transformationAttributes(
     graph: TypeGraph,

@@ -1,4 +1,17 @@
 import {
+    EqualityMap,
+    mapMap,
+    mapSortByKey,
+    iterableEvery,
+    mapFilter,
+    mapFind,
+    setMap,
+    areEqual,
+    setUnionManyInto,
+    definedMap
+} from "collection-utils";
+
+import {
     PrimitiveTypeKind,
     Type,
     PrimitiveType,
@@ -24,19 +37,8 @@ import {
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef, typeRefIndex } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
-import { defined, assert, panic, mapOptional, withDefault } from "./support/Support";
+import { defined, assert, panic, withDefault } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
-import {
-    EqualityMap,
-    mapMap,
-    mapSortByKey,
-    iterableEvery,
-    mapFilter,
-    mapFind,
-    setMap,
-    areEqual,
-    setUnionManyInto
-} from "./support/Containers";
 
 // FIXME: Don't infer provenance.  All original types should be present in
 // non-inferred form in the final graph.
@@ -318,7 +320,7 @@ export class TypeBuilder {
         additionalProperties: TypeRef | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
-        properties = mapOptional(p => this.modifyPropertiesIfNecessary(p), properties);
+        properties = definedMap(properties, p => this.modifyPropertiesIfNecessary(p));
         return this.addType(
             forwardingRef,
             tref => new ObjectType(tref, this.typeGraph, "object", true, properties, additionalProperties),
@@ -406,7 +408,7 @@ export class TypeBuilder {
         properties: ReadonlyMap<string, ClassProperty> | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
-        properties = mapOptional(p => this.modifyPropertiesIfNecessary(p), properties);
+        properties = definedMap(properties, p => this.modifyPropertiesIfNecessary(p));
         return this.addType(
             forwardingRef,
             tref => new ClassType(tref, this.typeGraph, isFixed, properties),

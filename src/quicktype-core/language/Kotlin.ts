@@ -1,3 +1,5 @@
+import { iterableSome, arrayIntercalate } from "collection-utils";
+
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import { Name, Namer, funPrefixNamer } from "../Naming";
@@ -24,7 +26,6 @@ import { TargetLanguage } from "../TargetLanguage";
 import { ArrayType, ClassProperty, ClassType, EnumType, MapType, ObjectType, Type, UnionType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { RenderContext } from "../Renderer";
-import { iterableSome, arrayIntercalate } from "../support/Containers";
 
 export enum Framework {
     None,

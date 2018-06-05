@@ -1,3 +1,5 @@
+import { iterableFirst, iterableEvery, setMap } from "collection-utils";
+
 import { Type, ClassType, setOperationCasesEqual, ClassProperty } from "../Type";
 import { removeNullFromType } from "../TypeUtils";
 import { defined, panic } from "../support/Support";
@@ -6,7 +8,6 @@ import { StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { unifyTypes, unionBuilderForUnification } from "../UnifyClasses";
 import { MarkovChain, load, evaluate } from "../MarkovChain";
-import { iterableFirst, iterableEvery, setMap } from "../support/Containers";
 
 const mapSizeThreshold = 20;
 

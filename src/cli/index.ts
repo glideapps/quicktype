@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
+import { Readable } from "stream";
+import { hasOwnProperty, definedMap } from "collection-utils";
 
 import {
     Options,
@@ -21,7 +23,6 @@ import {
     assert,
     defined,
     withDefault,
-    mapOptional,
     assertNever,
     parseJSON,
     getStream,
@@ -34,12 +35,10 @@ import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 import { GraphQLInput } from "../quicktype-graphql-input";
 
 import { urlsFromURLGrammar } from "./URLGrammar";
-import { Readable } from "stream";
 import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { hasOwnProperty } from "../quicktype-core/support/Support";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -744,7 +743,7 @@ export async function makeQuicktypeOptions(
             return messageError("DriverUnknownSourceLanguage", { lang: options.srcLang });
     }
 
-    const components = mapOptional(d => d.split(","), options.debug);
+    const components = definedMap(options.debug, d => d.split(","));
     const debugAll = components !== undefined && components.indexOf("all") >= 0;
     let debugPrintGraph = debugAll;
     let checkProvenance = debugAll;
@@ -798,7 +797,7 @@ export async function makeQuicktypeOptions(
         noRender: options.noRender,
         rendererOptions: options.rendererOptions,
         leadingComments,
-        outputFilename: mapOptional(path.basename, options.out),
+        outputFilename: definedMap(options.out, path.basename),
         debugPrintGraph,
         checkProvenance,
         debugPrintReconstitution,

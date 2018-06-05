@@ -1,3 +1,5 @@
+import { mapFirst } from "collection-utils";
+
 import { TargetLanguage } from "../TargetLanguage";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
 import {
@@ -22,7 +24,6 @@ import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
-import { mapFirst } from "../support/Containers";
 
 export enum Density {
     Normal,

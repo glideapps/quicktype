@@ -1,3 +1,14 @@
+import {
+    setUnion,
+    setFilter,
+    iterableEnumerate,
+    iterableSome,
+    mapFilter,
+    mapSortBy,
+    mapFilterMap,
+    mapSome
+} from "collection-utils";
+
 import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType, ObjectType } from "./Type";
 import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
@@ -13,16 +24,6 @@ import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } f
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
 import { transformationForType, followTargetType } from "./Transformers";
 import { TargetLanguage } from "./TargetLanguage";
-import {
-    setUnion,
-    setFilter,
-    iterableEnumerate,
-    iterableSome,
-    mapFilter,
-    mapSortBy,
-    mapFilterMap,
-    mapSome
-} from "./support/Containers";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 

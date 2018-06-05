@@ -23,7 +23,6 @@ export {
     assert,
     defined,
     withDefault,
-    mapOptional,
     assertNever,
     parseJSON,
     checkStringMap,
@@ -32,7 +31,6 @@ export {
     StringInput,
     toString
 } from "./support/Support";
-export { mapMap, setMap, iterableFirst, mapFromObject } from "./support/Containers";
 export { getStream } from "./get-stream/index";
 export { train as trainMarkovChain } from "./MarkovChain";
 export { QuickTypeError, messageError, messageAssert } from "./Messages";
