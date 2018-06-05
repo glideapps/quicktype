@@ -55,8 +55,8 @@ export interface CLIOptions {
     srcLang: string;
     graphqlSchema?: string;
     graphqlIntrospect?: string;
-    graphqlServerHeader?: string[];
-    template?: string;
+    httpHeader?: string[];
+    httpMethod?: string;
     out?: string;
     buildMarkovChain?: string;
 
@@ -279,8 +279,8 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         buildMarkovChain: opts.buildMarkovChain,
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
-        graphqlServerHeader: opts.graphqlServerHeader,
-        template: opts.template,
+        httpMethod: opts.httpMethod,
+        httpHeader: opts.httpHeader,
         debug: opts.debug,
         telemetry: opts.telemetry
     };
@@ -362,7 +362,13 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             description: "Introspect GraphQL schema from a server."
         },
         {
-            name: "graphql-server-header",
+            name: "http-method",
+            type: String,
+            typeLabel: "METHOD",
+            description: "HTTP method to use for the GraphQL introspection query."
+        },
+        {
+            name: "http-header",
             type: String,
             multiple: true,
             typeLabel: "HEADER",
@@ -683,7 +689,8 @@ export async function makeQuicktypeOptions(
             if (options.graphqlIntrospect !== undefined) {
                 schemaString = await introspectServer(
                     options.graphqlIntrospect,
-                    withDefault<string[]>(options.graphqlServerHeader, [])
+                    withDefault(options.httpMethod, "GET"),
+                    withDefault<string[]>(options.httpHeader, [])
                 );
                 if (options.graphqlSchema !== undefined) {
                     fs.writeFileSync(options.graphqlSchema, schemaString);
