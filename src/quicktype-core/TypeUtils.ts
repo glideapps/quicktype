@@ -1,3 +1,5 @@
+import { setFilter, setSortBy, iterableFirst, setUnion, EqualityMap } from "collection-utils";
+
 import { defined, panic, assert, assertNever } from "./support/Support";
 import { TypeAttributes, combineTypeAttributes, emptyTypeAttributes, CombinationKind } from "./TypeAttributes";
 import {
@@ -13,7 +15,6 @@ import {
     UnionType
 } from "./Type";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
-import { setFilter, setSortBy, iterableFirst, setUnion, EqualityMap } from "./support/Containers";
 
 export function assertIsObject(t: Type): ObjectType {
     if (t instanceof ObjectType) {

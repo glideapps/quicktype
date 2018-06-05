@@ -1,3 +1,5 @@
+import { mapMerge, mapUpdateInto, mapMap, setUnionInto } from "collection-utils";
+
 import { TypeKind, PrimitiveStringTypeKind, Type, UnionType } from "./Type";
 import { matchTypeExhaustive } from "./TypeUtils";
 import {
@@ -9,7 +11,6 @@ import {
 import { defined, assert, panic, assertNever } from "./support/Support";
 import { TypeBuilder } from "./TypeBuilder";
 import { StringTypes, stringTypesTypeAttributeKind } from "./StringTypes";
-import { mapMerge, mapUpdateInto, mapMap, setUnionInto } from "./support/Containers";
 import { TypeRef } from "./TypeGraph";
 
 // FIXME: This interface is badly designed.  All the properties

@@ -1,3 +1,5 @@
+import { iterableSome, iterableFirst, mapContains, mapFirst, mapSome } from "collection-utils";
+
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, ArrayType, MapType, UnionType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion } from "../TypeUtils";
@@ -20,7 +22,6 @@ import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer"
 import { StringOption, BooleanOption, EnumOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { assert, defined } from "../support/Support";
 import { RenderContext } from "../Renderer";
-import { iterableSome, iterableFirst, mapContains, mapFirst, mapSome } from "../support/Containers";
 
 const unicode = require("unicode-properties");
 

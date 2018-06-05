@@ -1,30 +1,6 @@
 import * as pluralize from "pluralize";
 import * as URI from "urijs";
 import stringHash = require("string-hash");
-
-import { PrimitiveTypeKind } from "../Type";
-import {
-    panic,
-    assertNever,
-    StringMap,
-    assert,
-    defined,
-    addHashCode,
-    mapOptional,
-    hasOwnProperty
-} from "../support/Support";
-import { TypeBuilder } from "../TypeBuilder";
-import { TypeNames } from "../TypeNames";
-import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../TypeNames";
-import {
-    TypeAttributes,
-    makeTypeAttributesInferred,
-    emptyTypeAttributes,
-    combineTypeAttributes
-} from "../TypeAttributes";
-import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
-import { messageAssert, messageError } from "../Messages";
-import { StringTypes } from "../StringTypes";
 import {
     setFilter,
     EqualityMap,
@@ -40,8 +16,26 @@ import {
     arrayLast,
     arrayGetFromEnd,
     arrayPop,
-    hashCodeOf
-} from "../support/Containers";
+    hashCodeOf,
+    hasOwnProperty,
+    definedMap
+} from "collection-utils";
+
+import { PrimitiveTypeKind } from "../Type";
+import { panic, assertNever, StringMap, assert, defined, addHashCode } from "../support/Support";
+import { TypeBuilder } from "../TypeBuilder";
+import { TypeNames } from "../TypeNames";
+import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../TypeNames";
+import {
+    TypeAttributes,
+    makeTypeAttributesInferred,
+    emptyTypeAttributes,
+    combineTypeAttributes
+} from "../TypeAttributes";
+import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
+import { messageAssert, messageError } from "../Messages";
+import { StringTypes } from "../StringTypes";
+
 import { TypeRef } from "../TypeGraph";
 
 export enum PathElementKind {
@@ -310,7 +304,7 @@ export class Ref {
     }
 
     hashCode(): number {
-        let acc = hashCodeOf(mapOptional(u => u.toString(), this.addressURI));
+        let acc = hashCodeOf(definedMap(this.addressURI, u => u.toString()));
         for (const pe of this.path) {
             acc = addHashCode(acc, pe.kind);
             switch (pe.kind) {
@@ -501,9 +495,9 @@ export async function addTypesInSchema(
     const canonizer = new Canonizer();
 
     async function resolveVirtualRef(base: Location | undefined, virtualRef: Ref): Promise<[JSONSchema, Location]> {
-        const [canonical, fullVirtual] = canonizer.canonize(mapOptional(b => b.virtualRef, base), virtualRef);
+        const [canonical, fullVirtual] = canonizer.canonize(definedMap(base, b => b.virtualRef), virtualRef);
         assert(canonical.hasAddress, "Canonical ref can't be resolved without an address");
-        const schema = await getFromStore(store, canonical.address, mapOptional(l => l.canonicalRef, base));
+        const schema = await getFromStore(store, canonical.address, definedMap(base, l => l.canonicalRef));
         canonizer.addSchema(schema, canonical.address);
         return [canonical.lookupRef(schema), new Location(canonical, fullVirtual)];
     }
@@ -567,7 +561,7 @@ export async function addTypesInSchema(
 
     async function convertToType(schema: StringMap, loc: Location, typeAttributes: TypeAttributes): Promise<TypeRef> {
         const enumArray = Array.isArray(schema.enum) ? schema.enum : undefined;
-        const typeSet = mapOptional(t => checkTypeList(t, loc), schema.type);
+        const typeSet = definedMap(schema.type, t => checkTypeList(t, loc));
 
         function isTypeIncluded(name: JSONSchemaType): boolean {
             if (typeSet !== undefined && !typeSet.has(name)) {

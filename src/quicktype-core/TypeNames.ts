@@ -1,10 +1,10 @@
 import * as pluralize from "pluralize";
+import { setMap, iterableFirst, iterableSkip, setUnionInto, definedMap } from "collection-utils";
 
-import { panic, defined, assert, mapOptional } from "./support/Support";
+import { panic, defined, assert } from "./support/Support";
 import { TypeAttributeKind, TypeAttributes } from "./TypeAttributes";
 import { splitIntoWords } from "./support/Strings";
 import { Chance } from "./support/Chance";
-import { setMap, iterableFirst, iterableSkip, setUnionInto } from "./support/Containers";
 
 let chance: Chance;
 let usedRandomNames: Set<string>;
@@ -121,7 +121,7 @@ export class RegularTypeNames extends TypeNames {
     add(namesArray: TypeNames[], startIndex: number = 0): TypeNames {
         let newNames = new Set(this.names);
         let newAreInferred = this.areInferred;
-        let newAlternativeNames = mapOptional(s => new Set(s), this._alternativeNames);
+        let newAlternativeNames = definedMap(this._alternativeNames, s => new Set(s));
 
         for (let i = startIndex; i < namesArray.length; i++) {
             const other = namesArray[i];
@@ -184,7 +184,7 @@ export class RegularTypeNames extends TypeNames {
     singularize(): TypeNames {
         return TypeNames.make(
             setMap(this.names, pluralize.singular),
-            mapOptional(an => setMap(an, pluralize.singular), this._alternativeNames),
+            definedMap(this._alternativeNames, an => setMap(an, pluralize.singular)),
             true
         );
     }

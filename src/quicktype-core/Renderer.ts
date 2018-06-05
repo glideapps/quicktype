@@ -1,10 +1,11 @@
+import { iterableEnumerate } from "collection-utils";
+
 import { TypeGraph } from "./TypeGraph";
 import { Name, Namespace, assignNames } from "./Naming";
 import { Source, Sourcelike, NewlineSource, annotated, sourcelikeToSource, newline } from "./Source";
 import { AnnotationData, IssueAnnotationData } from "./Annotation";
 import { assert, panic } from "./support/Support";
 import { TargetLanguage } from "./TargetLanguage";
-import { iterableEnumerate } from "./support/Containers";
 
 export type RenderResult = {
     sources: ReadonlyMap<string, Source>;

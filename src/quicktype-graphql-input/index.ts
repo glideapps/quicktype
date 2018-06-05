@@ -10,6 +10,7 @@ import {
     FieldNode
 } from "graphql/language/ast";
 import * as graphql from "graphql/language";
+import { setMap, iterableFirst, mapFromObject } from "collection-utils";
 
 import {
     UnionType,
@@ -29,9 +30,6 @@ import {
     emptyTypeAttributes,
     StringTypes,
     Input,
-    setMap,
-    iterableFirst,
-    mapFromObject,
     derefTypeRef
 } from "../quicktype-core";
 
@@ -443,6 +441,10 @@ function makeGraphQLQueryTypes(
             return panic(`Duplicate query name ${queryName}`);
         }
         const dataType = query.makeType(builder, odn, queryName);
+        const dataOrNullType = builder.getUnionType(
+            emptyTypeAttributes,
+            new Set([dataType, builder.getPrimitiveType("null")])
+        );
         const errorType = builder.getClassType(
             namesTypeAttributeKind.makeAttributes(TypeNames.make(new Set(["error"]), new Set(["graphQLError"]), false)),
             mapFromObject({
@@ -462,7 +464,7 @@ function makeGraphQLQueryTypes(
         const t = builder.getClassType(
             makeNamesTypeAttributes(queryName, false),
             mapFromObject({
-                data: builder.makeClassProperty(dataType, false),
+                data: builder.makeClassProperty(dataOrNullType, false),
                 errors: builder.makeClassProperty(errorArray, true)
             })
         );

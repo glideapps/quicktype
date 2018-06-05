@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
+import { Readable } from "stream";
+import { hasOwnProperty, definedMap } from "collection-utils";
 
 import {
     Options,
@@ -21,7 +23,6 @@ import {
     assert,
     defined,
     withDefault,
-    mapOptional,
     assertNever,
     parseJSON,
     getStream,
@@ -34,12 +35,10 @@ import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 import { GraphQLInput } from "../quicktype-graphql-input";
 
 import { urlsFromURLGrammar } from "./URLGrammar";
-import { Readable } from "stream";
 import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { hasOwnProperty } from "../quicktype-core/support/Support";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -56,8 +55,8 @@ export interface CLIOptions {
     srcLang: string;
     graphqlSchema?: string;
     graphqlIntrospect?: string;
-    graphqlServerHeader?: string[];
-    template?: string;
+    httpHeader?: string[];
+    httpMethod?: string;
     out?: string;
     buildMarkovChain?: string;
 
@@ -280,8 +279,8 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         buildMarkovChain: opts.buildMarkovChain,
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
-        graphqlServerHeader: opts.graphqlServerHeader,
-        template: opts.template,
+        httpMethod: opts.httpMethod,
+        httpHeader: opts.httpHeader,
         debug: opts.debug,
         telemetry: opts.telemetry
     };
@@ -363,7 +362,13 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             description: "Introspect GraphQL schema from a server."
         },
         {
-            name: "graphql-server-header",
+            name: "http-method",
+            type: String,
+            typeLabel: "METHOD",
+            description: "HTTP method to use for the GraphQL introspection query."
+        },
+        {
+            name: "http-header",
             type: String,
             multiple: true,
             typeLabel: "HEADER",
@@ -684,7 +689,8 @@ export async function makeQuicktypeOptions(
             if (options.graphqlIntrospect !== undefined) {
                 schemaString = await introspectServer(
                     options.graphqlIntrospect,
-                    withDefault<string[]>(options.graphqlServerHeader, [])
+                    withDefault(options.httpMethod, "GET"),
+                    withDefault<string[]>(options.httpHeader, [])
                 );
                 if (options.graphqlSchema !== undefined) {
                     fs.writeFileSync(options.graphqlSchema, schemaString);
@@ -744,7 +750,7 @@ export async function makeQuicktypeOptions(
             return messageError("DriverUnknownSourceLanguage", { lang: options.srcLang });
     }
 
-    const components = mapOptional(d => d.split(","), options.debug);
+    const components = definedMap(options.debug, d => d.split(","));
     const debugAll = components !== undefined && components.indexOf("all") >= 0;
     let debugPrintGraph = debugAll;
     let checkProvenance = debugAll;
@@ -798,7 +804,7 @@ export async function makeQuicktypeOptions(
         noRender: options.noRender,
         rendererOptions: options.rendererOptions,
         leadingComments,
-        outputFilename: mapOptional(path.basename, options.out),
+        outputFilename: definedMap(options.out, path.basename),
         debugPrintGraph,
         checkProvenance,
         debugPrintReconstitution,

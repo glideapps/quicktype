@@ -1,3 +1,17 @@
+import {
+    iterableFirst,
+    iterableEvery,
+    setFilter,
+    mapMapEntries,
+    mapMergeWithInto,
+    mapMap,
+    mapUpdateInto,
+    setMap,
+    iterableFind,
+    setIntersect,
+    setUnionInto
+} from "collection-utils";
+
 import { TypeGraph, TypeRef } from "../TypeGraph";
 import { StringTypeMapping, TypeBuilder } from "../TypeBuilder";
 import { GraphRewriteBuilder, TypeLookerUp } from "../GraphRewriting";
@@ -22,19 +36,6 @@ import {
     emptyTypeAttributes,
     makeTypeAttributesInferred
 } from "../TypeAttributes";
-import {
-    iterableFirst,
-    iterableEvery,
-    setFilter,
-    mapMapEntries,
-    mapMergeWithInto,
-    mapMap,
-    mapUpdateInto,
-    setMap,
-    iterableFind,
-    setIntersect,
-    setUnionInto
-} from "../support/Containers";
 
 function canResolve(t: IntersectionType): boolean {
     const members = setOperationMembersRecursively(t, undefined)[0];

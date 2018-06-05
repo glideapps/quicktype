@@ -1,3 +1,5 @@
+import { arrayIntercalate } from "collection-utils";
+
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, UnionType, ArrayType, MapType, TypeKind, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
@@ -24,7 +26,6 @@ import {
     addPrefixIfNecessary
 } from "../support/Strings";
 import { RenderContext } from "../Renderer";
-import { arrayIntercalate } from "../support/Containers";
 
 const MAX_SAMELINE_PROPERTIES = 4;
 

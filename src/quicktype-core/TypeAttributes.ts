@@ -1,9 +1,9 @@
 import stringHash = require("string-hash");
+import { mapFilterMap, mapFilter, mapTranspose, mapMap } from "collection-utils";
 
 import { panic, assert } from "./support/Support";
 import { Type } from "./Type";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
-import { mapFilterMap, mapFilter, mapTranspose, mapMap } from "./support/Containers";
 
 export class TypeAttributeKind<T> {
     constructor(readonly name: string) {}

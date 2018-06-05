@@ -11,7 +11,7 @@ const defaultHeaders: { [name: string]: string } = {
 
 const headerRegExp = /^([^:]+):\s*(.*)$/;
 
-export async function introspectServer(url: string, headerStrings: string[]): Promise<string> {
+export async function introspectServer(url: string, method: string, headerStrings: string[]): Promise<string> {
     const headers: { [name: string]: string } = {};
 
     console.log(`given headers: ${JSON.stringify(headerStrings)}`);
@@ -30,6 +30,7 @@ export async function introspectServer(url: string, headerStrings: string[]): Pr
     let result;
     try {
         const response = await fetch(url, {
+            method,
             headers: headers,
             body: JSON.stringify({ query: introspectionQuery })
         });
@@ -40,7 +41,7 @@ export async function introspectServer(url: string, headerStrings: string[]): Pr
     }
 
     if (result.errors) {
-        return panic(`Errors in introspection query result: ${result.errors}`);
+        return panic(`Errors in introspection query result: ${JSON.stringify(result.errors)}`);
     }
 
     const schemaData = result;

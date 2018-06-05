@@ -1,3 +1,5 @@
+import { arrayIntercalate } from "collection-utils";
+
 import { Type, ClassProperty, ClassType, ObjectType } from "../Type";
 import { matchType, directlyReachableSingleNamedType } from "../TypeUtils";
 import {
@@ -17,7 +19,6 @@ import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
-import { arrayIntercalate } from "../support/Containers";
 
 const unicode = require("unicode-properties");
 

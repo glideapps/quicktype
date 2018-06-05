@@ -1,3 +1,5 @@
+import { mapMap } from "collection-utils";
+
 import { TypeGraph } from "./TypeGraph";
 import { Renderer, RenderContext } from "./Renderer";
 import { OptionDefinition, Option } from "./RendererOptions";
@@ -6,7 +8,6 @@ import { StringTypeMapping } from "./TypeBuilder";
 import { defined } from "./support/Support";
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
 import { UnionType } from "./Type";
-import { mapMap } from "./support/Containers";
 
 export abstract class TargetLanguage {
     constructor(readonly displayName: string, readonly names: string[], readonly extension: string) {}

@@ -1,3 +1,5 @@
+import { iterableFirst, mapFilter, iterableSome, iterableReduce } from "collection-utils";
+
 import { PrimitiveType } from "../Type";
 import { stringTypesForType } from "../TypeUtils";
 import { TypeGraph, TypeRef } from "../TypeGraph";
@@ -6,7 +8,6 @@ import { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined } from "../support/Support";
 import { emptyTypeAttributes } from "../TypeAttributes";
 import { StringTypes } from "../StringTypes";
-import { iterableFirst, mapFilter, iterableSome, iterableReduce } from "../support/Containers";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 

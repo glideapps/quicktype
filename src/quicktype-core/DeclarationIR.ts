@@ -1,9 +1,10 @@
+import { setUnionInto, setFilter, iterableFirst, setSubtract, setIntersect } from "collection-utils";
+
 import { TypeGraph } from "./TypeGraph";
 import { Type } from "./Type";
 import { panic, defined, assert } from "./support/Support";
 import { Graph } from "./Graph";
 import { messageError } from "./Messages";
-import { setUnionInto, setFilter, iterableFirst, setSubtract, setIntersect } from "./support/Containers";
 
 export type DeclarationKind = "forward" | "define";
 

@@ -1,3 +1,5 @@
+import { arrayIntercalate, toReadonlyArray, iterableFirst, iterableFind } from "collection-utils";
+
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, ClassType, EnumType, UnionType } from "../Type";
 import { nullableFromUnion, matchType, removeNullFromUnion } from "../TypeUtils";
@@ -19,7 +21,6 @@ import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, Optio
 import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 import { RenderContext } from "../Renderer";
-import { arrayIntercalate, toReadonlyArray, iterableFirst, iterableFind } from "../support/Containers";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
@@ -675,7 +676,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (this._options.justTypes) return;
         this.forEachTopLevel(
             "leading",
-            (t: Type, name:Name) => this.emitTopLevelTypedef(t, name),
+            (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
             t => this.namedTypeToNameForTopLevel(t) === undefined
         );
         this.emitMultiline(`
@@ -748,8 +749,12 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
                 if (this.haveUnions) {
                     this.emitOptionalHelpers();
                 }
-                this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) => this.emitClassFunctions(c, className));
-                this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) => this.emitEnumFunctions(e, enumName));
+                this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
+                    this.emitClassFunctions(c, className)
+                );
+                this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
+                    this.emitEnumFunctions(e, enumName)
+                );
                 if (this.haveUnions) {
                     this.ensureBlankLine();
                     this.emitAllUnionFunctions();

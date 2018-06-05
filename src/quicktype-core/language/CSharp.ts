@@ -1,3 +1,5 @@
+import { arrayIntercalate } from "collection-utils";
+
 import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -32,7 +34,6 @@ import {
     StringifyDateTimeTransformer
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
-import { arrayIntercalate } from "../support/Containers";
 
 const unicode = require("unicode-properties");
 

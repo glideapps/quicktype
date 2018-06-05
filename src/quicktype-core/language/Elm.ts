@@ -1,3 +1,5 @@
+import { mapContains, arrayIntercalate } from "collection-utils";
+
 import { TargetLanguage } from "../TargetLanguage";
 import { EnumOption, StringOption, BooleanOption, Option, getOptionValues, OptionValues } from "../RendererOptions";
 import { Type, ClassType, UnionType, EnumType, ClassProperty } from "../Type";
@@ -21,7 +23,6 @@ import { defined } from "../support/Support";
 import { Sourcelike, annotated, MultiWord, singleWord, multiWord, parenIfNeeded } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import { RenderContext } from "../Renderer";
-import { mapContains, arrayIntercalate } from "../support/Containers";
 
 export const elmOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),

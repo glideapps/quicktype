@@ -1,8 +1,9 @@
+import { arrayIntercalate, iterableMax } from "collection-utils";
+
 import { AnnotationData } from "./Annotation";
 import { Name } from "./Naming";
 import { defined, assertNever, panic, assert, withDefault } from "./support/Support";
 import { repeatString } from "./support/Strings";
-import { arrayIntercalate, iterableMax } from "./support/Containers";
 
 export type Source =
     | TextSource

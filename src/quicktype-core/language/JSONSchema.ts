@@ -1,3 +1,5 @@
+import { mapFirst, iterableFirst } from "collection-utils";
+
 import { TargetLanguage } from "../TargetLanguage";
 import { Type, UnionType, EnumType, ObjectType } from "../Type";
 import { matchTypeExhaustive } from "../TypeUtils";
@@ -15,7 +17,6 @@ import { StringTypeMapping } from "../TypeBuilder";
 import { descriptionTypeAttributeKind } from "../Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
-import { mapFirst, iterableFirst } from "../support/Containers";
 
 export class JSONSchemaTargetLanguage extends TargetLanguage {
     constructor() {

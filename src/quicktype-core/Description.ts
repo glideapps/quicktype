@@ -1,6 +1,3 @@
-import { TypeAttributeKind, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
-import { JSONSchemaType, Ref, JSONSchemaAttributes } from "./input/JSONSchemaInput";
-import { JSONSchema } from "./input/JSONSchemaStore";
 import {
     mapFilterMap,
     mapFromObject,
@@ -8,7 +5,11 @@ import {
     iterableFirst,
     setUnionManyInto,
     mapMergeWithInto
-} from "./support/Containers";
+} from "collection-utils";
+
+import { TypeAttributeKind, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { JSONSchemaType, Ref, JSONSchemaAttributes } from "./input/JSONSchemaInput";
+import { JSONSchema } from "./input/JSONSchemaStore";
 
 class DescriptionTypeAttributeKind extends TypeAttributeKind<ReadonlySet<string>> {
     constructor() {
