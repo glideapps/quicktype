@@ -40,7 +40,7 @@ export async function introspectServer(url: string, headerStrings: string[]): Pr
     }
 
     if (result.errors) {
-        return panic(`Errors in introspection query result: ${result.errors}`);
+        return panic(`Errors in introspection query result: ${JSON.stringify(result.errors)}`);
     }
 
     const schemaData = result;
