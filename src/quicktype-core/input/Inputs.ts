@@ -1,5 +1,5 @@
 import * as URI from "urijs";
-import { iterableFirst, iterableFind, iterableSome, setFilterMap } from "collection-utils";
+import { iterableFirst, iterableFind, iterableSome, setFilterMap, withDefault } from "collection-utils";
 
 import {
     Ref,
@@ -10,17 +10,7 @@ import {
 } from "./JSONSchemaInput";
 import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
-import {
-    parseJSON,
-    panic,
-    assert,
-    defined,
-    withDefault,
-    errorMessage,
-    toString,
-    toReadable,
-    StringInput
-} from "../support/Support";
+import { parseJSON, panic, assert, defined, errorMessage, toString, toReadable, StringInput } from "../support/Support";
 import { messageError } from "../Messages";
 import { TypeBuilder } from "../TypeBuilder";
 import { makeNamesTypeAttributes } from "../TypeNames";

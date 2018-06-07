@@ -18,11 +18,12 @@ import {
     arrayPop,
     hashCodeOf,
     hasOwnProperty,
-    definedMap
+    definedMap,
+    addHashCode
 } from "collection-utils";
 
 import { PrimitiveTypeKind } from "../Type";
-import { panic, assertNever, StringMap, assert, defined, addHashCode } from "../support/Support";
+import { panic, assertNever, StringMap, assert, defined } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { TypeNames } from "../TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../TypeNames";

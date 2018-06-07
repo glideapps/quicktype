@@ -8,7 +8,8 @@ import {
     setMap,
     areEqual,
     setUnionManyInto,
-    definedMap
+    definedMap,
+    withDefault
 } from "collection-utils";
 
 import {
@@ -37,7 +38,7 @@ import {
 import { removeNullFromUnion } from "./TypeUtils";
 import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef, typeRefIndex } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
-import { defined, assert, panic, withDefault } from "./support/Support";
+import { defined, assert, panic } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 
 // FIXME: Don't infer provenance.  All original types should be present in

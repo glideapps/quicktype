@@ -5,11 +5,12 @@ import {
     hashCodeOf,
     areEqual,
     mapMergeWithInto,
-    definedMap
+    definedMap,
+    addHashCode
 } from "collection-utils";
 
 import { TypeAttributeKind } from "./TypeAttributes";
-import { addHashCode, defined, assert } from "./support/Support";
+import { defined, assert } from "./support/Support";
 import { StringTypeMapping } from "./TypeBuilder";
 import { PrimitiveStringTypeKind } from "./Type";
 

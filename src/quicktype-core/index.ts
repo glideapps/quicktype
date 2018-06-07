@@ -22,7 +22,6 @@ export {
     panic,
     assert,
     defined,
-    withDefault,
     assertNever,
     parseJSON,
     checkStringMap,
