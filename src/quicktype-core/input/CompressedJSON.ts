@@ -1,8 +1,9 @@
 import * as stream from "stream";
 
 import stringHash = require("string-hash");
+import { addHashCode, hashCodeInit } from "collection-utils";
 
-import { defined, hashCodeInit, addHashCode, panic, assert } from "../support/Support";
+import { defined, panic, assert } from "../support/Support";
 import { isDate, isTime, isDateTime } from "../DateTime";
 
 const Combo = require("stream-json/Combo");

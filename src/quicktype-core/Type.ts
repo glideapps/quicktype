@@ -14,10 +14,12 @@ import {
     setFilter,
     setUnionInto,
     mapSortToArray,
-    definedMap
+    definedMap,
+    hashCodeInit,
+    addHashCode
 } from "collection-utils";
 
-import { defined, panic, assert, hashCodeInit, addHashCode } from "./support/Support";
+import { defined, panic, assert } from "./support/Support";
 import { TypeReconstituter, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { TypeAttributes } from "./TypeAttributes";

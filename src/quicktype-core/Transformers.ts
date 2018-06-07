@@ -1,9 +1,9 @@
 import stringHash = require("string-hash");
-import { setUnionInto, areEqual, hashCodeOf, definedMap } from "collection-utils";
+import { setUnionInto, areEqual, hashCodeOf, definedMap, addHashCode } from "collection-utils";
 
 import { UnionType, Type, EnumType, PrimitiveType } from "./Type";
 import { TypeAttributeKind } from "./TypeAttributes";
-import { panic, addHashCode, assert, indentationString } from "./support/Support";
+import { panic, assert, indentationString } from "./support/Support";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeRef, derefTypeRef, TypeGraph } from "./TypeGraph";
 

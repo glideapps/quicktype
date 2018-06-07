@@ -6,13 +6,6 @@ import { messageError } from "../Messages";
 
 const stringToStream = require("string-to-stream");
 
-export function findInArray<T>(arr: T[], p: (t: T) => boolean): T | undefined {
-    for (const t of arr) {
-        if (p(t)) return t;
-    }
-    return undefined;
-}
-
 export type StringMap = { [name: string]: any };
 
 export function isStringMap(x: any): x is StringMap;
@@ -87,12 +80,6 @@ export function mustNotHappen(): never {
     return panic("This must not happen");
 }
 
-export const hashCodeInit = 17;
-
-export function addHashCode(acc: number, h: number): number {
-    return (acc * 31 + (h | 0)) | 0;
-}
-
 export function repeated<T>(n: number, value: T): T[] {
     const arr: T[] = [];
     for (let i = 0; i < n; i++) {
@@ -107,13 +94,6 @@ export function repeatedCall<T>(n: number, producer: () => T): T[] {
         arr.push(producer());
     }
     return arr;
-}
-
-export function withDefault<T>(x: T | undefined, theDefault: T): T {
-    if (x !== undefined) {
-        return x;
-    }
-    return theDefault;
 }
 
 export function errorMessage(e: any): string {

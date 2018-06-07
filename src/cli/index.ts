@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
 import { Readable } from "stream";
-import { hasOwnProperty, definedMap } from "collection-utils";
+import { hasOwnProperty, definedMap, withDefault } from "collection-utils";
 
 import {
     Options,
@@ -22,7 +22,6 @@ import {
     panic,
     assert,
     defined,
-    withDefault,
     assertNever,
     parseJSON,
     getStream,
