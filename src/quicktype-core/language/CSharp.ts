@@ -507,6 +507,7 @@ export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
         ["attributes-only", { helpers: false, attributes: true }],
         ["just-types", { helpers: false, attributes: false }]
     ]),
+    superclass: new EnumOption("superclass", "Superclass", [["EntityData", "EntityData"], ["none", undefined]], "none"),
     checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
 });
 
@@ -524,7 +525,8 @@ export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
             newtonsoftCSharpOptions.useDecimal,
             newtonsoftCSharpOptions.features,
             newtonsoftCSharpOptions.checkRequired,
-            newtonsoftCSharpOptions.typeForAny
+            newtonsoftCSharpOptions.typeForAny,
+            newtonsoftCSharpOptions.superclass
         ];
     }
 
@@ -573,6 +575,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         if (this._options.dense) {
             forbidden.push("J", "R", "N");
         }
+        if (this._options.superclass) {
+            forbidden.push(this._options.superclass);
+        }
         return super.forbiddenNamesForGlobalNamespace().concat(forbidden);
     }
 
@@ -617,8 +622,16 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitUsing([denseRequiredEnumName, " = Newtonsoft.Json.Required"]);
             this.emitUsing([denseNullValueHandlingEnumName, " = Newtonsoft.Json.NullValueHandling"]);
         }
+        if (this._options.superclass == "EntityData") {
+            this.emitUsing("Microsoft.Azure.Mobile.Server");
+        }
     }
-
+    protected superclassForType(_t: Type): Sourcelike | undefined {
+        if (this._options.superclass) {
+            return this._options.superclass;
+        }
+        return undefined;
+    }
     protected emitDefaultLeadingComments(): void {
         if (!this._needHelpers) return;
 
