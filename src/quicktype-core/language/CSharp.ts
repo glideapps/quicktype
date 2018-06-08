@@ -507,7 +507,13 @@ export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
         ["attributes-only", { helpers: false, attributes: true }],
         ["just-types", { helpers: false, attributes: false }]
     ]),
-    superclass: new EnumOption("superclass", "Superclass", [["EntityData", "EntityData"], ["none", undefined]], "none"),
+    superclass: new EnumOption(
+        "superclass",
+        "Superclass",
+        [["EntityData", "EntityData"], ["none", undefined]],
+        "none",
+        "secondary"
+    ),
     checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
 });
 
