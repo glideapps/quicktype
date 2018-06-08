@@ -581,7 +581,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         if (this._options.dense) {
             forbidden.push("J", "R", "N");
         }
-        if (this._options.superclass) {
+        if (this._options.superclass !== undefined) {
             forbidden.push(this._options.superclass);
         }
         return super.forbiddenNamesForGlobalNamespace().concat(forbidden);
@@ -633,7 +633,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         }
     }
     protected superclassForType(_t: Type): Sourcelike | undefined {
-        if (this._options.superclass) {
+        if (this._options.superclass !== undefined) {
             return this._options.superclass;
         }
         return undefined;
