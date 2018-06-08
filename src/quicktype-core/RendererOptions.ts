@@ -1,6 +1,6 @@
 import { assert } from "./support/Support";
 import { messageError } from "./Messages";
-
+import { hasOwnProperty } from "collection-utils";
 export type OptionKind = "primary" | "secondary";
 
 export interface OptionDefinition {
@@ -153,10 +153,9 @@ export class EnumOption<T> extends Option<T> {
         if (name === undefined) {
             name = this.definition.defaultValue;
         }
-        const value = this._values[name];
-        if (value === undefined) {
+        if (!hasOwnProperty(this._values, name)) {
             return messageError("RendererUnknownOptionValue", { value: name, name: this.definition.name });
         }
-        return value;
+        return this._values[name];
     }
 }
