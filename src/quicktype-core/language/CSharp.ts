@@ -633,10 +633,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         }
     }
     protected superclassForType(_t: Type): Sourcelike | undefined {
-        if (this._options.superclass !== undefined) {
-            return this._options.superclass;
-        }
-        return undefined;
+        return this._options.superclass;
     }
     protected emitDefaultLeadingComments(): void {
         if (!this._needHelpers) return;
