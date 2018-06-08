@@ -628,7 +628,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitUsing([denseRequiredEnumName, " = Newtonsoft.Json.Required"]);
             this.emitUsing([denseNullValueHandlingEnumName, " = Newtonsoft.Json.NullValueHandling"]);
         }
-        if (this._options.superclass == "EntityData") {
+        if (this._options.superclass === "EntityData") {
             this.emitUsing("Microsoft.Azure.Mobile.Server");
         }
     }
