@@ -271,7 +271,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             return csType;
         }
     }
-    protected superclassForType(_t: Type): Sourcelike | undefined {
+    protected baseclassForType(_t: Type): Sourcelike | undefined {
         return undefined;
     }
     protected emitType(
@@ -279,7 +279,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         accessModifier: AccessModifier,
         declaration: Sourcelike,
         name: Sourcelike,
-        superclass: Sourcelike | undefined,
+        baseclass: Sourcelike | undefined,
         emitter: () => void
     ): void {
         switch (accessModifier) {
@@ -293,10 +293,10 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 break;
         }
         this.emitDescription(description);
-        if (superclass === undefined) {
+        if (baseclass === undefined) {
             this.emitLine(declaration, " ", name);
         } else {
-            this.emitLine(declaration, " ", name, " : ", superclass);
+            this.emitLine(declaration, " ", name, " : ", baseclass);
         }
         this.emitBlock(emitter);
     }
@@ -335,7 +335,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             AccessModifier.Public,
             "partial class",
             className,
-            this.superclassForType(c),
+            this.baseclassForType(c),
             () => {
                 if (c.getProperties().size === 0) return;
                 const blankLines = this.blankLinesBetweenAttributes() ? "interposing" : "none";
@@ -385,7 +385,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             AccessModifier.Public,
             "partial struct",
             unionName,
-            this.superclassForType(u),
+            this.baseclassForType(u),
             () => {
                 this.forEachUnionMember(u, nonNulls, "none", null, (fieldName, t) => {
                     const csType = this.nullableCSType(t);
@@ -507,11 +507,11 @@ export const newtonsoftCSharpOptions = Object.assign({}, cSharpOptions, {
         ["attributes-only", { helpers: false, attributes: true }],
         ["just-types", { helpers: false, attributes: false }]
     ]),
-    superclass: new EnumOption(
-        "superclass",
-        "Superclass",
-        [["EntityData", "EntityData"], ["none", undefined]],
-        "none",
+    baseclass: new EnumOption(
+        "base-class",
+        "Base class",
+        [["EntityData", "EntityData"], ["Object", undefined]],
+        "Object",
         "secondary"
     ),
     checkRequired: new BooleanOption("check-required", "Fail if required properties are missing", false)
@@ -532,7 +532,7 @@ export class NewtonsoftCSharpTargetLanguage extends CSharpTargetLanguage {
             newtonsoftCSharpOptions.features,
             newtonsoftCSharpOptions.checkRequired,
             newtonsoftCSharpOptions.typeForAny,
-            newtonsoftCSharpOptions.superclass
+            newtonsoftCSharpOptions.baseclass
         ];
     }
 
@@ -581,8 +581,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         if (this._options.dense) {
             forbidden.push("J", "R", "N");
         }
-        if (this._options.superclass !== undefined) {
-            forbidden.push(this._options.superclass);
+        if (this._options.baseclass !== undefined) {
+            forbidden.push(this._options.baseclass);
         }
         return super.forbiddenNamesForGlobalNamespace().concat(forbidden);
     }
@@ -628,12 +628,12 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitUsing([denseRequiredEnumName, " = Newtonsoft.Json.Required"]);
             this.emitUsing([denseNullValueHandlingEnumName, " = Newtonsoft.Json.NullValueHandling"]);
         }
-        if (this._options.superclass === "EntityData") {
+        if (this._options.baseclass === "EntityData") {
             this.emitUsing("Microsoft.Azure.Mobile.Server");
         }
     }
-    protected superclassForType(_t: Type): Sourcelike | undefined {
-        return this._options.superclass;
+    protected baseclassForType(_t: Type): Sourcelike | undefined {
+        return this._options.baseclass;
     }
     protected emitDefaultLeadingComments(): void {
         if (!this._needHelpers) return;
@@ -722,7 +722,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             typeKind = "class";
         }
         const csType = this.topLevelResultType(t);
-        this.emitType(undefined, AccessModifier.Public, [partial, typeKind], name, this.superclassForType(t), () => {
+        this.emitType(undefined, AccessModifier.Public, [partial, typeKind], name, this.baseclassForType(t), () => {
             // FIXME: Make FromJson a Named
             this.emitExpressionMember(
                 ["public static ", csType, " FromJson(string json)"],
