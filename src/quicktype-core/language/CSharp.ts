@@ -575,6 +575,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         if (this._options.dense) {
             forbidden.push("J", "R", "N");
         }
+        if (this._options.superclass) {
+            forbidden.push(this._options.superclass);
+        }
         return super.forbiddenNamesForGlobalNamespace().concat(forbidden);
     }
 
