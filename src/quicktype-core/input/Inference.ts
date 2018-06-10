@@ -83,17 +83,17 @@ export class TypeInference {
             const t = valueTag(value);
             switch (t) {
                 case Tag.Null:
-                    accumulator.addNull(emptyTypeAttributes);
+                    accumulator.addPrimitive("null", emptyTypeAttributes);
                     break;
                 case Tag.False:
                 case Tag.True:
-                    accumulator.addBool(emptyTypeAttributes);
+                    accumulator.addPrimitive("bool", emptyTypeAttributes);
                     break;
                 case Tag.Integer:
-                    accumulator.addInteger(emptyTypeAttributes);
+                    accumulator.addPrimitive("integer", emptyTypeAttributes);
                     break;
                 case Tag.Double:
-                    accumulator.addDouble(emptyTypeAttributes);
+                    accumulator.addPrimitive("double", emptyTypeAttributes);
                     break;
                 case Tag.InternedString:
                     if (this._inferEnums) {

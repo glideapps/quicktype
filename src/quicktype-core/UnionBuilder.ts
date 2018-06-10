@@ -1,6 +1,6 @@
 import { mapMerge, mapUpdateInto, mapMap, setUnionInto } from "collection-utils";
 
-import { TypeKind, PrimitiveStringTypeKind, Type, UnionType } from "./Type";
+import { TypeKind, PrimitiveStringTypeKind, Type, UnionType, PrimitiveTypeKind } from "./Type";
 import { matchTypeExhaustive } from "./TypeUtils";
 import {
     TypeAttributes,
@@ -102,17 +102,9 @@ export class UnionAccumulator<TArray, TObject> implements UnionTypeProvider<TArr
         addAttributesToBuilder(this._nonStringTypeAttributes, "any", attributes);
         this._lostTypeAttributes = true;
     }
-    addNull(attributes: TypeAttributes): void {
-        addAttributesToBuilder(this._nonStringTypeAttributes, "null", attributes);
-    }
-    addBool(attributes: TypeAttributes): void {
-        addAttributesToBuilder(this._nonStringTypeAttributes, "bool", attributes);
-    }
-    addInteger(attributes: TypeAttributes): void {
-        addAttributesToBuilder(this._nonStringTypeAttributes, "integer", attributes);
-    }
-    addDouble(attributes: TypeAttributes): void {
-        addAttributesToBuilder(this._nonStringTypeAttributes, "double", attributes);
+    addPrimitive(kind: PrimitiveTypeKind, attributes: TypeAttributes): void {
+        assert(kind !== "any", "any must be added with addAny");
+        addAttributesToBuilder(this._nonStringTypeAttributes, kind, attributes);
     }
 
     protected addFullStringType(attributes: TypeAttributes, stringTypes: StringTypes | undefined): void {
@@ -295,10 +287,10 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
             t,
             _noneType => this.addNone(attributes),
             _anyType => this.addAny(attributes),
-            _nullType => this.addNull(attributes),
-            _boolType => this.addBool(attributes),
-            _integerType => this.addInteger(attributes),
-            _doubleType => this.addDouble(attributes),
+            _nullType => this.addPrimitive("null", attributes),
+            _boolType => this.addPrimitive("bool", attributes),
+            _integerType => this.addPrimitive("integer", attributes),
+            _doubleType => this.addPrimitive("double", attributes),
             _stringType => this.addStringType("string", attributes),
             arrayType => this.addArray(arrayType.items.typeRef, attributes),
             classType => this.addObject(classType.typeRef, attributes),
