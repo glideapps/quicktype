@@ -15,15 +15,16 @@ import { StringTypeMapping } from "./TypeBuilder";
 import { PrimitiveStringTypeKind } from "./Type";
 
 export class StringTypes {
-    static readonly unrestricted: StringTypes = new StringTypes(undefined, false, false, false);
-    static readonly date: StringTypes = new StringTypes(new Map(), true, false, false);
-    static readonly time: StringTypes = new StringTypes(new Map(), false, true, false);
-    static readonly dateTime: StringTypes = new StringTypes(new Map(), false, false, true);
+    static readonly unrestricted: StringTypes = new StringTypes(undefined, false, false, false, false);
+    static readonly date: StringTypes = new StringTypes(new Map(), true, false, false, false);
+    static readonly time: StringTypes = new StringTypes(new Map(), false, true, false, false);
+    static readonly dateTime: StringTypes = new StringTypes(new Map(), false, false, true, false);
+    static readonly integer: StringTypes = new StringTypes(new Map(), false, false, false, true);
 
     static fromCase(s: string, count: number): StringTypes {
         const caseMap: { [name: string]: number } = {};
         caseMap[s] = count;
-        return new StringTypes(new Map([[s, count] as [string, number]]), false, false, false);
+        return new StringTypes(new Map([[s, count] as [string, number]]), false, false, false, false);
     }
 
     static fromCases(cases: string[]): StringTypes {
@@ -31,7 +32,7 @@ export class StringTypes {
         for (const s of cases) {
             caseMap[s] = 1;
         }
-        return new StringTypes(new Map(cases.map(s => [s, 1] as [string, number])), false, false, false);
+        return new StringTypes(new Map(cases.map(s => [s, 1] as [string, number])), false, false, false, false);
     }
 
     // undefined means no restrictions
@@ -39,12 +40,13 @@ export class StringTypes {
         readonly cases: ReadonlyMap<string, number> | undefined,
         readonly allowDate: boolean,
         readonly allowTime: boolean,
-        readonly allowDateTime: boolean
+        readonly allowDateTime: boolean,
+        readonly allowInteger: boolean
     ) {
         if (cases === undefined) {
             assert(
-                !this.allowDate && !this.allowTime && !this.allowDateTime,
-                "We can't have an unrestricted string that also allows date/times"
+                !this.allowDate && !this.allowTime && !this.allowDateTime && !this.allowInteger,
+                "We can't have an unrestricted string that also allows date/times or integers"
             );
         }
     }
@@ -60,6 +62,7 @@ export class StringTypes {
         let allowDate = this.allowDate;
         let allowTime = this.allowTime;
         let allowDateTime = this.allowDateTime;
+        let allowInteger = this.allowInteger;
 
         for (let i = startIndex; i < othersArray.length; i++) {
             const other = othersArray[i];
@@ -70,9 +73,10 @@ export class StringTypes {
             allowDate = allowDate || other.allowDate;
             allowTime = allowTime || other.allowTime;
             allowDateTime = allowDateTime || other.allowDateTime;
+            allowInteger = allowInteger || other.allowInteger;
         }
 
-        return new StringTypes(cases, allowDate, allowTime, allowDateTime);
+        return new StringTypes(cases, allowDate, allowTime, allowDateTime, allowInteger);
     }
 
     intersect(othersArray: StringTypes[], startIndex: number): StringTypes {
@@ -80,6 +84,7 @@ export class StringTypes {
         let allowDate = this.allowDate;
         let allowTime = this.allowTime;
         let allowDateTime = this.allowDateTime;
+        let allowInteger = this.allowInteger;
 
         for (let i = startIndex; i < othersArray.length; i++) {
             const other = othersArray[i];
@@ -97,8 +102,9 @@ export class StringTypes {
             allowDate = allowDate && other.allowDate;
             allowTime = allowTime && other.allowTime;
             allowDateTime = allowDateTime && other.allowDateTime;
+            allowInteger = allowInteger && other.allowInteger;
         }
-        return new StringTypes(cases, allowDate, allowTime, allowDateTime);
+        return new StringTypes(cases, allowDate, allowTime, allowDateTime, allowInteger);
     }
 
     applyStringTypeMapping(mapping: StringTypeMapping): StringTypes {
@@ -120,7 +126,7 @@ export class StringTypes {
         const allowDate = kinds.indexOf("date") >= 0;
         const allowTime = kinds.indexOf("time") >= 0;
         const allowDateTime = kinds.indexOf("date-time") >= 0;
-        return new StringTypes(this.cases, allowDate, allowTime, allowDateTime);
+        return new StringTypes(this.cases, allowDate, allowTime, allowDateTime, this.allowInteger);
     }
 
     equals(other: any): boolean {
@@ -129,7 +135,8 @@ export class StringTypes {
             areEqual(this.cases, other.cases) &&
             this.allowDate === other.allowDate &&
             this.allowTime === other.allowTime &&
-            this.allowDateTime === other.allowDateTime
+            this.allowDateTime === other.allowDateTime &&
+            this.allowInteger === other.allowInteger
         );
     }
 
@@ -138,6 +145,7 @@ export class StringTypes {
         h = addHashCode(h, hashCodeOf(this.allowDate));
         h = addHashCode(h, hashCodeOf(this.allowTime));
         h = addHashCode(h, hashCodeOf(this.allowDateTime));
+        h = addHashCode(h, hashCodeOf(this.allowInteger));
         return h;
     }
 
@@ -159,6 +167,7 @@ export class StringTypes {
         if (this.allowDate) parts.push("d");
         if (this.allowTime) parts.push("t");
         if (this.allowDateTime) parts.push("dt");
+        if (this.allowInteger) parts.push("i");
 
         return parts.join(",");
     }

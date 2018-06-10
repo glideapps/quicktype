@@ -22,7 +22,7 @@ import { TypeAttributeStoreView } from "./TypeGraph";
 import { TypeAttributeKind } from "./TypeAttributes";
 import { descriptionTypeAttributeKind, propertyDescriptionsTypeAttributeKind } from "./Description";
 import { enumCaseNames, objectPropertyNames, unionMemberName, getAccessorName } from "./AccessorNames";
-import { transformationForType, followTargetType } from "./Transformers";
+import { transformationForType, followTargetType, Transformation } from "./Transformers";
 import { TargetLanguage } from "./TargetLanguage";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
@@ -30,7 +30,7 @@ const wordWrap: (s: string) => string = require("wordwrap")(90);
 const topLevelNameOrder = 1;
 
 const givenNameOrder = 10;
-const inferredNameOrder = 30;
+export const inferredNameOrder = 30;
 
 const classPropertyNameOrder = 20;
 const assignedClassPropertyNameOrder = 10;
@@ -124,7 +124,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected abstract makeEnumCaseNamer(): Namer | null;
     protected abstract emitSourceStructure(givenOutputFilename: string): void;
 
-    protected makeNameForTransformation(_t: Type, _typeName: Name | undefined): Name | undefined {
+    protected makeNameForTransformation(_xf: Transformation, _typeName: Name | undefined): Name | undefined {
         return undefined;
     }
 
@@ -297,7 +297,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             "Tried to give two names to the same transformation"
         );
 
-        const name = this.makeNameForTransformation(xf.targetType, this.nameStoreView.tryGet(xf.targetType));
+        const name = this.makeNameForTransformation(xf, this.nameStoreView.tryGet(xf.targetType));
         if (name === undefined) return;
         this.globalNamespace.add(name);
 
@@ -542,7 +542,7 @@ export abstract class ConvenienceRenderer extends Renderer {
             matchTypeExhaustive(
                 t,
                 _noneType => {
-                    return panic("None type should have been replaced");
+                    return panic("none type should have been replaced");
                 },
                 _anyType => "anything",
                 _nullType => "null",
@@ -564,7 +564,10 @@ export abstract class ConvenienceRenderer extends Renderer {
                 _unionType => "union",
                 _dateType => "date",
                 _timeType => "time",
-                _dateTimeType => "date_time"
+                _dateTimeType => "date_time",
+                _integerStringType => {
+                    return panic("integer-string type should have been replaced");
+                }
             );
 
         return typeNameForUnionMember(fieldType);

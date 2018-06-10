@@ -305,7 +305,8 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
             },
             _dateType => this.addStringType("date", attributes),
             _timeType => this.addStringType("time", attributes),
-            _dateTimeType => this.addStringType("date-time", attributes)
+            _dateTimeType => this.addStringType("date-time", attributes),
+            _integerStringType => this.addStringType("integer-string", attributes)
         );
     }
 
@@ -348,6 +349,7 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             case "date":
             case "time":
             case "date-time":
+            case "integer-string":
                 return this.typeBuilder.getPrimitiveType(kind, typeAttributes, forwardingRef);
             case "string":
                 return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);

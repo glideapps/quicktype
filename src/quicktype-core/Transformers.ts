@@ -569,6 +569,66 @@ export class StringifyDateTimeTransformer extends ProducerTransformer {
     }
 }
 
+export class ParseIntegerTransformer extends ProducerTransformer {
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
+        super("parse-integer", graph, sourceTypeRef, consumer);
+    }
+
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        if (this.consumer === undefined) {
+            return new StringifyIntegerTransformer(this.graph, targetTypeRef, continuationTransformer);
+        } else {
+            return this.consumer.reverse(
+                targetTypeRef,
+                new StringifyIntegerTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
+            );
+        }
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new ParseIntegerTransformer(
+            builder.typeGraph,
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder))
+        );
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        return other instanceof ParseIntegerTransformer;
+    }
+}
+
+export class StringifyIntegerTransformer extends ProducerTransformer {
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
+        super("stringify-integer", graph, sourceTypeRef, consumer);
+    }
+
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        if (this.consumer === undefined) {
+            return new ParseIntegerTransformer(this.graph, targetTypeRef, continuationTransformer);
+        } else {
+            return this.consumer.reverse(
+                targetTypeRef,
+                new ParseIntegerTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
+            );
+        }
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new StringifyIntegerTransformer(
+            builder.typeGraph,
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder))
+        );
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        return other instanceof StringifyIntegerTransformer;
+    }
+}
+
 export class Transformation {
     constructor(
         private readonly _graph: TypeGraph,

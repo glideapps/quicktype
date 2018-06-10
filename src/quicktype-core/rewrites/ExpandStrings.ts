@@ -3,11 +3,11 @@ import { iterableFirst, mapFilter, iterableSome, iterableReduce } from "collecti
 import { PrimitiveType } from "../Type";
 import { stringTypesForType } from "../TypeUtils";
 import { TypeGraph, TypeRef } from "../TypeGraph";
-import { StringTypeMapping } from "../TypeBuilder";
 import { GraphRewriteBuilder } from "../GraphRewriting";
 import { assert, defined } from "../support/Support";
 import { emptyTypeAttributes } from "../TypeAttributes";
 import { StringTypes } from "../StringTypes";
+import { RunContext } from "../Run";
 
 const MIN_LENGTH_FOR_ENUM = 10;
 
@@ -23,12 +23,9 @@ function shouldBeEnum(enumCases: ReadonlyMap<string, number>): boolean {
 
 export type EnumInference = "none" | "all" | "infer";
 
-export function expandStrings(
-    graph: TypeGraph,
-    stringTypeMapping: StringTypeMapping,
-    inference: EnumInference,
-    debugPrintReconstitution: boolean
-): TypeGraph {
+export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: EnumInference): TypeGraph {
+    const stringTypeMapping = ctx.stringTypeMapping;
+
     function replaceString(
         group: ReadonlySet<PrimitiveType>,
         builder: GraphRewriteBuilder<PrimitiveType>,
@@ -62,6 +59,9 @@ export function expandStrings(
         if (mappedStringTypes.allowDateTime) {
             types.push(builder.getPrimitiveType("date-time"));
         }
+        if (mappedStringTypes.allowInteger) {
+            types.push(builder.getPrimitiveType("integer-string"));
+        }
         assert(types.length > 0, "We got an empty string type");
         return builder.getUnionType(attributes, new Set(types), forwardingRef);
     }
@@ -74,7 +74,7 @@ export function expandStrings(
         stringTypeMapping,
         false,
         allStrings,
-        debugPrintReconstitution,
+        ctx.debugPrintReconstitution,
         replaceString
     );
 }

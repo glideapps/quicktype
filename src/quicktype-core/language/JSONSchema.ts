@@ -114,7 +114,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         const schema = matchTypeExhaustive<{ [name: string]: any }>(
             t,
             _noneType => {
-                return panic("None type should have been replaced");
+                return panic("none type should have been replaced");
             },
             _anyType => ({}),
             _nullType => ({ type: "null" }),
@@ -136,7 +136,10 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             },
             _dateType => ({ type: "string", format: "date" }),
             _timeType => ({ type: "string", format: "time" }),
-            _dateTimeType => ({ type: "string", format: "date-time" })
+            _dateTimeType => ({ type: "string", format: "date-time" }),
+            _integerStringType => {
+                return panic("integer-string type should have been replaced");
+            }
         );
         if (schema.$ref === undefined) {
             this.addDescription(t, schema);

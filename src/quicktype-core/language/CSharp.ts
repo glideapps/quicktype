@@ -12,8 +12,8 @@ import {
     camelCase
 } from "../support/Strings";
 import { defined, assert, panic } from "../support/Support";
-import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
+import { Name, DependencyName, Namer, funPrefixNamer, SimpleName } from "../Naming";
+import { ConvenienceRenderer, ForbiddenWordsInfo, inferredNameOrder } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { StringOption, EnumOption, Option, BooleanOption, OptionValues, getOptionValues } from "../RendererOptions";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -31,7 +31,10 @@ import {
     StringMatchTransformer,
     StringProducerTransformer,
     ParseDateTimeTransformer,
-    StringifyDateTimeTransformer
+    StringifyDateTimeTransformer,
+    ParseIntegerTransformer,
+    StringifyIntegerTransformer,
+    Transformation
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
 
@@ -54,6 +57,11 @@ function noFollow(t: Type): Type {
 
 function needTransformerForUnion(u: UnionType): boolean {
     return nullableFromUnion(u) === null;
+}
+
+function alwaysApplyTransformation(xf: Transformation): boolean {
+    const t = xf.targetType;
+    return t instanceof EnumType || t instanceof UnionType;
 }
 
 export const cSharpOptions = {
@@ -599,9 +607,13 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         return result;
     }
 
-    protected makeNameForTransformation(_t: Type, typeName: Name | undefined): Name {
+    protected makeNameForTransformation(xf: Transformation, typeName: Name | undefined): Name {
         if (typeName === undefined) {
-            return panic("We shouldn't have a transformation for an unnamed type");
+            let xfer = xf.transformer;
+            if (xfer instanceof DecodingTransformer && xfer.consumer !== undefined) {
+                xfer = xfer.consumer;
+            }
+            return new SimpleName([`${xfer.kind}_converter`], namingFunction, inferredNameOrder + 30);
         }
         return new DependencyName(namingFunction, typeName.order + 30, lookup => `${lookup(typeName)}_converter`);
     }
@@ -663,8 +675,13 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         });
     }
 
-    private converterForType(_t: Type): Name | undefined {
-        return undefined;
+    private converterForType(t: Type): Name | undefined {
+        const xf = transformationForType(t);
+        if (xf === undefined) return undefined;
+
+        if (alwaysApplyTransformation(xf)) return undefined;
+
+        return defined(this.nameForTransformation(t));
     }
 
     protected attributesForProperty(
@@ -807,8 +824,10 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.emitLine("DateParseHandling = DateParseHandling.None,");
                 this.emitLine("Converters = {");
                 this.indent(() => {
-                    for (const [_, converter] of this.typesWithNamedTransformations) {
-                        this.emitLine("new ", converter, "(),");
+                    for (const [t, converter] of this.typesWithNamedTransformations) {
+                        if (alwaysApplyTransformation(defined(transformationForType(t)))) {
+                            this.emitLine("new ", converter, "(),");
+                        }
                     }
                     this.emitLine("new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal }");
                 });
@@ -958,6 +977,12 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 xfer.consumer,
                 targetType
             );
+        } else if (xfer instanceof ParseIntegerTransformer) {
+            this.emitLine("long l;");
+            this.emitLine("if (Int64.TryParse(", variable, ", out l))");
+            this.emitBlock(() => this.emitConsume("l", xfer.consumer, targetType));
+        } else if (xfer instanceof StringifyIntegerTransformer) {
+            return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType);
         } else if (xfer instanceof StringProducerTransformer) {
             const value = this.stringCaseValue(directTargetType(xfer.consumer), xfer.result);
             return this.emitConsume(value, xfer.consumer, targetType);

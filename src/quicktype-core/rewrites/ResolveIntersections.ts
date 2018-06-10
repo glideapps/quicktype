@@ -208,7 +208,10 @@ class IntersectionAccumulator
             },
             dateType => this.addUnionSet([dateType]),
             timeType => this.addUnionSet([timeType]),
-            dateTimeType => this.addUnionSet([dateTimeType])
+            dateTimeType => this.addUnionSet([dateTimeType]),
+            _integerStringType => {
+                return panic("integer-string type should not be here yet");
+            }
         );
         return makeTypeAttributesInferred(attributes);
     }

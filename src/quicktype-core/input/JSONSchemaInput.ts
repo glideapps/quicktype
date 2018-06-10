@@ -641,6 +641,8 @@ export async function addTypesInSchema(
                     return typeBuilder.getPrimitiveType("time", inferredAttributes);
                 case "date-time":
                     return typeBuilder.getPrimitiveType("date-time", inferredAttributes);
+                case "integer":
+                    return typeBuilder.getStringType(inferredAttributes, StringTypes.integer);
                 default:
                     break;
             }
