@@ -1,8 +1,8 @@
-import { setFilter, setUnion, iterableFirst, mapMapEntries } from "collection-utils";
+import { setFilter, iterableFirst, mapMapEntries } from "collection-utils";
 
 import { TypeGraph, TypeRef, typeRefIndex } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
-import { UnionType, TypeKind, EnumType, Type, PrimitiveType } from "./Type";
+import { UnionType, TypeKind, EnumType, Type, ArrayType, PrimitiveType } from "./Type";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { defined, assert, panic } from "./support/Support";
 import {
@@ -16,7 +16,8 @@ import {
     Transformer,
     DecodingTransformer,
     ParseDateTimeTransformer,
-    ParseIntegerTransformer
+    ParseIntegerTransformer,
+    ArrayDecodingTransformer
 } from "./Transformers";
 import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
 import { StringTypes } from "./StringTypes";
@@ -146,12 +147,7 @@ function replaceUnion(
         transformerForString = undefined;
     } else if (stringTypes.size === 1) {
         const t = defined(iterableFirst(stringTypes));
-        const memberTypeRef = memberForKind(t.kind);
-        transformerForString = new DecodingTransformer(
-            graph,
-            memberTypeRef,
-            new UnionInstantiationTransformer(graph, memberTypeRef)
-        );
+        transformerForString = new DecodingTransformer(graph, getStringType(), transformerForStringType(t));
     } else {
         transformerForString = new DecodingTransformer(
             graph,
@@ -181,6 +177,38 @@ function replaceUnion(
     );
     const attributes = transformationAttributes(graph, reconstitutedUnion, transformer, debugPrintTransformations);
     return builder.getPrimitiveType("any", attributes, forwardingRef);
+}
+
+function replaceArray(
+    arrayType: ArrayType,
+    builder: GraphRewriteBuilder<Type>,
+    forwardingRef: TypeRef,
+    debugPrintTransformations: boolean
+): TypeRef {
+    const anyType = builder.getPrimitiveType("any");
+    const anyArrayType = builder.getArrayType(emptyTypeAttributes, anyType);
+    const reconstitutedItems = builder.reconstituteType(arrayType.items);
+    const transformer = new ArrayDecodingTransformer(
+        builder.typeGraph,
+        anyArrayType,
+        undefined,
+        reconstitutedItems,
+        new DecodingTransformer(builder.typeGraph, anyType, undefined)
+    );
+
+    const reconstitutedArray = builder.getArrayType(
+        builder.reconstituteTypeAttributes(arrayType.getAttributes()),
+        reconstitutedItems
+    );
+
+    const attributes = transformationAttributes(
+        builder.typeGraph,
+        reconstitutedArray,
+        transformer,
+        debugPrintTransformations
+    );
+
+    return builder.getArrayType(attributes, anyType, forwardingRef);
 }
 
 function replaceEnum(
@@ -235,6 +263,9 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
         const t = defined(iterableFirst(setOfOneUnion));
         if (t instanceof UnionType) {
             return replaceUnion(t, builder, forwardingRef, ctx.debugPrintTransformations);
+        }
+        if (t instanceof ArrayType) {
+            return replaceArray(t, builder, forwardingRef, ctx.debugPrintReconstitution);
         }
         if (t instanceof EnumType) {
             return replaceEnum(t, builder, forwardingRef, ctx.debugPrintTransformations);

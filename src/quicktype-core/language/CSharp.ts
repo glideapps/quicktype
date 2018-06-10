@@ -1,6 +1,6 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
+import { Type, EnumType, UnionType, ClassType, ClassProperty, ArrayType } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
@@ -34,7 +34,9 @@ import {
     StringifyDateTimeTransformer,
     ParseIntegerTransformer,
     StringifyIntegerTransformer,
-    Transformation
+    Transformation,
+    ArrayDecodingTransformer,
+    ArrayEncodingTransformer
 } from "../Transformers";
 import { RenderContext } from "../Renderer";
 
@@ -55,13 +57,26 @@ function noFollow(t: Type): Type {
     return t;
 }
 
-function needTransformerForUnion(u: UnionType): boolean {
-    return nullableFromUnion(u) === null;
+function needTransformerForType(t: Type): "automatic" | "manual" | "none" {
+    if (t instanceof UnionType) {
+        const maybeNullable = nullableFromUnion(t);
+        if (maybeNullable === null) return "automatic";
+        return needTransformerForType(maybeNullable);
+    }
+    if (t instanceof ArrayType) {
+        if (needTransformerForType(t.items) === "manual") return "automatic";
+        return "none";
+    }
+    if (t instanceof EnumType) return "automatic";
+    if (t.kind === "integer-string") return "manual";
+    return "none";
 }
 
 function alwaysApplyTransformation(xf: Transformation): boolean {
     const t = xf.targetType;
-    return t instanceof EnumType || t instanceof UnionType;
+    if (t instanceof EnumType) return true;
+    if (t instanceof UnionType) return nullableFromUnion(t) === null;
+    return false;
 }
 
 export const cSharpOptions = {
@@ -111,10 +126,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
     }
 
     needsTransformerForType(t: Type): boolean {
-        if (t instanceof UnionType) return needTransformerForUnion(t);
-        if (t instanceof EnumType) return true;
-        if (t.kind === "integer-string") return true;
-        return false;
+        return needTransformerForType(t) !== "none";
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): CSharpRenderer {
@@ -848,7 +860,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         tokenCases: string[],
         variableName: string,
         xfer: Transformer | undefined,
-        targetType: Type
+        targetType: Type,
+        emitFinish: (value: Sourcelike) => void
     ): void {
         if (xfer === undefined) return;
 
@@ -856,51 +869,130 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitTokenCase(tokenCase);
         }
         this.indent(() => {
-            const allHandled = this.emitDecodeTransformer(xfer, targetType, variableName);
+            const allHandled = this.emitDecodeTransformer(xfer, targetType, emitFinish, variableName);
             if (!allHandled) {
                 this.emitLine("break;");
             }
         });
     }
 
-    private emitConsume(value: Sourcelike, consumer: Transformer | undefined, targetType: Type): boolean {
+    private emitConsume(
+        value: Sourcelike,
+        consumer: Transformer | undefined,
+        targetType: Type,
+        emitFinish: (variableName: Sourcelike) => void
+    ): boolean {
         if (consumer === undefined) {
-            this.emitLine("return ", value, ";");
+            emitFinish(value);
             return true;
         } else {
-            return this.emitTransformer(value, consumer, targetType);
+            return this.emitTransformer(value, consumer, targetType, emitFinish);
         }
     }
 
-    private emitDecodeTransformer(xfer: Transformer, targetType: Type, variableName: string = "value"): boolean {
+    private converterObject(converterName: Name): Sourcelike {
+        // FIXME: Get a singleton
+        return ["new ", converterName, "()"];
+    }
+
+    private emitDecodeTransformer(
+        xfer: Transformer,
+        targetType: Type,
+        emitFinish: (value: Sourcelike) => void,
+        variableName: string = "value"
+    ): boolean {
         if (xfer instanceof DecodingTransformer) {
-            if (xfer.sourceType.kind !== "null") {
-                this.emitLine("var ", variableName, " = ", this.deserializeTypeCode(this.csType(xfer.sourceType)), ";");
+            const source = xfer.sourceType;
+            const converter = this.converterForType(targetType);
+            if (converter !== undefined) {
+                const typeSource = this.csType(targetType);
+                this.emitLine("var converter = ", this.converterObject(converter), ";");
+                this.emitLine(
+                    "var ",
+                    variableName,
+                    " = (",
+                    typeSource,
+                    ")converter.ReadJson(reader, typeof(",
+                    typeSource,
+                    "), null, serializer);"
+                );
+            } else if (source.kind !== "null") {
+                this.emitLine("var ", variableName, " = ", this.deserializeTypeCode(this.csType(source)), ";");
             }
-            return this.emitConsume(variableName, xfer.consumer, targetType);
+            return this.emitConsume(variableName, xfer.consumer, targetType, emitFinish);
+        } else if (xfer instanceof ArrayDecodingTransformer) {
+            // FIXME: Consume StartArray
+            if (!(targetType instanceof ArrayType)) {
+                return panic("Array decoding must produce an array type");
+            }
+            // FIXME: handle EOF
+            this.emitLine("reader.Read();");
+            this.emitLine("var ", variableName, " = new List<", this.csType(targetType.items), ">();");
+            this.emitLine("while (reader.TokenType != JsonToken.EndArray)");
+            this.emitBlock(() => {
+                this.emitDecodeTransformer(
+                    xfer.itemTransformer,
+                    xfer.itemTargetType,
+                    v => this.emitLine(variableName, ".Add(", v, ");"),
+                    "arrayItem"
+                );
+                // FIXME: handle EOF
+                this.emitLine("reader.Read();");
+            });
+            let result: Sourcelike = variableName;
+            if (!this._options.useList) {
+                result = [result, ".ToArray()"];
+            }
+            emitFinish(result);
+            return true;
         } else if (xfer instanceof DecodingChoiceTransformer) {
             this.emitDecoderSwitch(() => {
                 const nullTransformer = xfer.nullTransformer;
                 if (nullTransformer !== undefined) {
                     this.emitTokenCase("Null");
                     this.indent(() => {
-                        const allHandled = this.emitDecodeTransformer(nullTransformer, targetType, "nullValue");
+                        const allHandled = this.emitDecodeTransformer(nullTransformer, targetType, emitFinish, "null");
                         if (!allHandled) {
                             this.emitLine("break");
                         }
                     });
                 }
-                this.emitDecoderTransformerCase(["Integer"], "integerValue", xfer.integerTransformer, targetType);
+                this.emitDecoderTransformerCase(
+                    ["Integer"],
+                    "integerValue",
+                    xfer.integerTransformer,
+                    targetType,
+                    emitFinish
+                );
                 this.emitDecoderTransformerCase(
                     xfer.integerTransformer === undefined ? ["Integer", "Float"] : ["Float"],
                     "doubleValue",
                     xfer.doubleTransformer,
-                    targetType
+                    targetType,
+                    emitFinish
                 );
-                this.emitDecoderTransformerCase(["Boolean"], "boolValue", xfer.boolTransformer, targetType);
-                this.emitDecoderTransformerCase(["String", "Date"], "stringValue", xfer.stringTransformer, targetType);
-                this.emitDecoderTransformerCase(["StartObject"], "objectValue", xfer.objectTransformer, targetType);
-                this.emitDecoderTransformerCase(["StartArray"], "arrayValue", xfer.arrayTransformer, targetType);
+                this.emitDecoderTransformerCase(["Boolean"], "boolValue", xfer.boolTransformer, targetType, emitFinish);
+                this.emitDecoderTransformerCase(
+                    ["String", "Date"],
+                    "stringValue",
+                    xfer.stringTransformer,
+                    targetType,
+                    emitFinish
+                );
+                this.emitDecoderTransformerCase(
+                    ["StartObject"],
+                    "objectValue",
+                    xfer.objectTransformer,
+                    targetType,
+                    emitFinish
+                );
+                this.emitDecoderTransformerCase(
+                    ["StartArray"],
+                    "arrayValue",
+                    xfer.arrayTransformer,
+                    targetType,
+                    emitFinish
+                );
             });
             return false;
         } else {
@@ -917,7 +1009,12 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         return panic(`Type ${t.kind} does not have string cases`);
     }
 
-    private emitTransformer(variable: Sourcelike, xfer: Transformer, targetType: Type): boolean {
+    private emitTransformer(
+        variable: Sourcelike,
+        xfer: Transformer,
+        targetType: Type,
+        emitFinish: (value: Sourcelike) => void
+    ): boolean {
         function directTargetType(continuation: Transformer | undefined): Type {
             if (continuation === undefined) {
                 return targetType;
@@ -938,7 +1035,12 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                         );
                         this.emitLine("case ", value, ":");
                         this.indent(() => {
-                            const allDone = this.emitTransformer(variable, matchXfer.transformer, targetType);
+                            const allDone = this.emitTransformer(
+                                variable,
+                                matchXfer.transformer,
+                                targetType,
+                                emitFinish
+                            );
                             if (!allDone) {
                                 this.emitLine("break;");
                             }
@@ -949,64 +1051,99 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 return false;
             } else {
                 for (const caseXfer of caseXfers) {
-                    this.emitTransformer(variable, caseXfer, targetType);
+                    this.emitTransformer(variable, caseXfer, targetType, emitFinish);
                 }
             }
         } else if (xfer instanceof UnionMemberMatchTransformer) {
+            const memberType = xfer.memberType;
+            const maybeNullable = nullableFromUnion(xfer.sourceType);
             let test: Sourcelike;
             let member: Sourcelike;
-            if (xfer.memberType.kind === "null") {
+            if (maybeNullable !== null) {
+                if (memberType.kind === "null") {
+                    test = [variable, " == null"];
+                    member = "null";
+                } else {
+                    test = [variable, " != null"];
+                    member = variable;
+                }
+            } else if (memberType.kind === "null") {
                 test = [variable, ".IsNull"];
                 member = "null";
             } else {
-                const memberName = this.nameForUnionMember(xfer.sourceType, xfer.memberType);
+                const memberName = this.nameForUnionMember(xfer.sourceType, memberType);
                 member = [variable, ".", memberName];
                 test = [member, " != null"];
-                if (isValueType(xfer.memberType)) {
-                    member = [member, ".Value"];
-                }
+            }
+            if (memberType.kind !== "null" && isValueType(memberType)) {
+                member = [member, ".Value"];
             }
             this.emitLine("if (", test, ")");
-            this.emitBlock(() => this.emitTransformer(member, xfer.transformer, targetType));
+            this.emitBlock(() => this.emitTransformer(member, xfer.transformer, targetType, emitFinish));
         } else if (xfer instanceof StringMatchTransformer) {
             const value = this.stringCaseValue(followTargetType(xfer.sourceType), xfer.stringCase);
             this.emitLine("if (", variable, " == ", value, ")");
-            this.emitBlock(() => this.emitTransformer(variable, xfer.transformer, targetType));
+            this.emitBlock(() => this.emitTransformer(variable, xfer.transformer, targetType, emitFinish));
         } else if (xfer instanceof EncodingTransformer) {
-            this.emitLine(this.serializeValueCode(variable), "; return;");
+            const converter = this.converterForType(xfer.sourceType);
+            if (converter !== undefined) {
+                this.emitLine("var converter = ", this.converterObject(converter), ";");
+                this.emitLine("converter.WriteJson(writer, ", variable, ", serializer);");
+            } else {
+                this.emitLine(this.serializeValueCode(variable), ";");
+            }
+            emitFinish([]);
+            return true;
+        } else if (xfer instanceof ArrayEncodingTransformer) {
+            this.emitLine("writer.WriteStartArray();");
+            const itemVariable = "arrayItem";
+            this.emitLine("foreach (var ", itemVariable, " in ", variable, ")");
+            this.emitBlock(() => {
+                this.emitTransformer(itemVariable, xfer.itemTransformer, xfer.itemTargetType, () => {
+                    return;
+                });
+            });
+            this.emitLine("writer.WriteEndArray();");
+            emitFinish([]);
             return true;
         } else if (xfer instanceof ParseDateTimeTransformer) {
             this.emitLine("DateTimeOffset dt;");
             this.emitLine("if (DateTimeOffset.TryParse(", variable, ", out dt))");
-            this.emitBlock(() => this.emitConsume("dt", xfer.consumer, targetType));
+            this.emitBlock(() => this.emitConsume("dt", xfer.consumer, targetType, emitFinish));
         } else if (xfer instanceof StringifyDateTimeTransformer) {
             return this.emitConsume(
                 [variable, '.ToString("o", System.Globalization.CultureInfo.InvariantCulture)'],
                 xfer.consumer,
-                targetType
+                targetType,
+                emitFinish
             );
         } else if (xfer instanceof ParseIntegerTransformer) {
             this.emitLine("long l;");
             this.emitLine("if (Int64.TryParse(", variable, ", out l))");
-            this.emitBlock(() => this.emitConsume("l", xfer.consumer, targetType));
+            this.emitBlock(() => this.emitConsume("l", xfer.consumer, targetType, emitFinish));
         } else if (xfer instanceof StringifyIntegerTransformer) {
-            return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType);
+            return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType, emitFinish);
         } else if (xfer instanceof StringProducerTransformer) {
             const value = this.stringCaseValue(directTargetType(xfer.consumer), xfer.result);
-            return this.emitConsume(value, xfer.consumer, targetType);
+            return this.emitConsume(value, xfer.consumer, targetType, emitFinish);
         } else if (xfer instanceof UnionInstantiationTransformer) {
             if (!(targetType instanceof UnionType)) {
                 return panic("Union instantiation transformer must produce a union type");
             }
-            const unionName = this.nameForNamedType(targetType);
-            let initializer: Sourcelike;
-            if (xfer.sourceType.kind === "null") {
-                initializer = " ";
+            const maybeNullable = nullableFromUnion(targetType);
+            if (maybeNullable !== null) {
+                emitFinish(variable);
             } else {
-                const memberName = this.nameForUnionMember(targetType, xfer.sourceType);
-                initializer = [" ", memberName, " = ", variable, " "];
+                const unionName = this.nameForNamedType(targetType);
+                let initializer: Sourcelike;
+                if (xfer.sourceType.kind === "null") {
+                    initializer = " ";
+                } else {
+                    const memberName = this.nameForUnionMember(targetType, xfer.sourceType);
+                    initializer = [" ", memberName, " = ", variable, " "];
+                }
+                emitFinish(["new ", unionName, " {", initializer, "}"]);
             }
-            this.emitLine("return new ", unionName, " {", initializer, "};");
             return true;
         } else {
             return panic("Unknown transformer");
@@ -1020,18 +1157,26 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         const targetType = xf.targetType;
         const xfer = xf.transformer;
         this.emitType(undefined, AccessModifier.Internal, "class", converterName, "JsonConverter", () => {
-            const csType = this.csType(targetType, noFollow);
-            this.emitCanConvert(["t == typeof(", csType, ") || t == typeof(", csType, "?)"]);
+            const csType = this.csType(targetType);
+            let canConvertExpr: Sourcelike = ["t == typeof(", csType, ")"];
+            const haveNullable = isValueType(targetType);
+            if (haveNullable) {
+                canConvertExpr = [canConvertExpr, " || t == typeof(", csType, "?)"];
+            }
+            this.emitCanConvert(canConvertExpr);
             this.ensureBlankLine();
             this.emitReadJson(() => {
-                const allHandled = this.emitDecodeTransformer(xfer, targetType);
                 // FIXME: It's unsatisfying that we need this.  The reason is that we not
                 // only match T, but also T?.  If we didn't, then the T in T? would not be
                 // deserialized with our converter but with the default one.  Can we check
                 // whether the type is a nullable?
-                // FIXMEL: This could duplicate one of the cases handled above in
+                // FIXMEL: This could duplicate one of the cases handled below in
                 // `emitDecodeTransformer`.
-                this.emitLine("if (reader.TokenType == JsonToken.Null) return null;");
+                if (haveNullable) {
+                    this.emitLine("if (reader.TokenType == JsonToken.Null) return null;");
+                }
+
+                const allHandled = this.emitDecodeTransformer(xfer, targetType, v => this.emitLine("return ", v, ";"));
                 if (!allHandled) {
                     this.emitThrow(['"Cannot unmarshal type ', csType, '"']);
                 }
@@ -1039,7 +1184,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.ensureBlankLine();
             this.emitWriteJson("untypedValue", () => {
                 this.emitLine("var value = (", csType, ")untypedValue;");
-                const allHandled = this.emitTransformer("value", reverse.transformer, reverse.targetType);
+                const allHandled = this.emitTransformer("value", reverse.transformer, reverse.targetType, () =>
+                    this.emitLine("return;")
+                );
                 if (!allHandled) {
                     this.emitThrow(['"Cannot marshal type ', csType, '"']);
                 }
