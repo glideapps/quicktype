@@ -1,0 +1,14 @@
+{
+  "one": "123",
+  "optional": "345",
+  "nullable": "456",
+  "arrOne": [
+    "123",
+    "234"
+  ],
+  "arrNullable": [
+    "123",
+    null,
+    "234"
+  ]
+}

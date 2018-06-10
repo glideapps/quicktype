@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "properties": {
+    "one": {
+      "type": "string",
+      "format": "integer"
+    },
+    "optional": {
+      "$ref": "#/properties/one"
+    },
+    "nullable": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/properties/one"
+        }
+      ]
+    },
+    "arrOne": {
+      "type": "array",
+      "items": {
+        "$ref": "#/properties/one"
+      }
+    },
+    "arrNullable": {
+      "type": "array",
+      "items": {
+        "$ref": "#/properties/nullable"
+      }
+    }
+  },
+  "required": [
+    "one",
+    "nullable"
+  ]
+}
