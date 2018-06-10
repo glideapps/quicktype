@@ -676,7 +676,16 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
     }
 
     private converterForType(t: Type): Name | undefined {
-        const xf = transformationForType(t);
+        let xf = transformationForType(t);
+
+        if (xf === undefined && t instanceof UnionType) {
+            const maybeNullable = nullableFromUnion(t);
+            if (maybeNullable !== null) {
+                t = maybeNullable;
+                xf = transformationForType(t);
+            }
+        }
+
         if (xf === undefined) return undefined;
 
         if (alwaysApplyTransformation(xf)) return undefined;
