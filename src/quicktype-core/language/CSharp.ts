@@ -253,7 +253,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return this.nullableCSType(nullable);
+                if (nullable !== null) return this.nullableCSType(nullable, noFollow);
                 return this.nameForNamedType(unionType);
             },
             {
@@ -262,9 +262,13 @@ export class CSharpRenderer extends ConvenienceRenderer {
         );
     }
 
-    protected nullableCSType(t: Type, withIssues: boolean = false): Sourcelike {
+    protected nullableCSType(
+        t: Type,
+        follow: (t: Type) => Type = followTargetType,
+        withIssues: boolean = false
+    ): Sourcelike {
         t = followTargetType(t);
-        const csType = this.csType(t, noFollow, withIssues);
+        const csType = this.csType(t, follow, withIssues);
         if (isValueType(t)) {
             return [csType, "?"];
         } else {
@@ -311,8 +315,10 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected propertyDefinition(property: ClassProperty, name: Name, _c: ClassType, _jsonName: string): Sourcelike {
-        const t = followTargetType(property.type);
-        const csType = property.isOptional ? this.nullableCSType(t, true) : this.csType(t, noFollow, true);
+        const t = property.type;
+        const csType = property.isOptional
+            ? this.nullableCSType(t, followTargetType, true)
+            : this.csType(t, followTargetType, true);
         return ["public ", csType, " ", name, " { get; set; }"];
     }
 
@@ -930,6 +936,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 const memberName = this.nameForUnionMember(xfer.sourceType, xfer.memberType);
                 member = [variable, ".", memberName];
                 test = [member, " != null"];
+                if (isValueType(xfer.memberType)) {
+                    member = [member, ".Value"];
+                }
             }
             this.emitLine("if (", test, ")");
             this.emitBlock(() => this.emitTransformer(member, xfer.transformer, targetType));
@@ -945,7 +954,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitLine("if (DateTimeOffset.TryParse(", variable, ", out dt))");
             this.emitBlock(() => this.emitConsume("dt", xfer.consumer, targetType));
         } else if (xfer instanceof StringifyDateTimeTransformer) {
-            return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType);
+            return this.emitConsume(
+                [variable, '.ToString("o", System.Globalization.CultureInfo.InvariantCulture)'],
+                xfer.consumer,
+                targetType
+            );
         } else if (xfer instanceof StringProducerTransformer) {
             const value = this.stringCaseValue(directTargetType(xfer.consumer), xfer.result);
             return this.emitConsume(value, xfer.consumer, targetType);
@@ -979,11 +992,14 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitCanConvert(["t == typeof(", csType, ") || t == typeof(", csType, "?)"]);
             this.ensureBlankLine();
             this.emitReadJson(() => {
+                const allHandled = this.emitDecodeTransformer(xfer, targetType);
                 // FIXME: It's unsatisfying that we need this.  The reason is that we not
                 // only match T, but also T?.  If we didn't, then the T in T? would not be
-                // deserialized with our converter but with the default one.
+                // deserialized with our converter but with the default one.  Can we check
+                // whether the type is a nullable?
+                // FIXMEL: This could duplicate one of the cases handled above in
+                // `emitDecodeTransformer`.
                 this.emitLine("if (reader.TokenType == JsonToken.Null) return null;");
-                const allHandled = this.emitDecodeTransformer(xfer, targetType);
                 if (!allHandled) {
                     this.emitThrow(['"Cannot unmarshal type ', csType, '"']);
                 }
