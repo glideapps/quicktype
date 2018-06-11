@@ -72,10 +72,6 @@ export function panic(message: string): never {
     return messageError("InternalError", { message });
 }
 
-export function mustNotBeCalled(): never {
-    return panic("This must not be called");
-}
-
 export function mustNotHappen(): never {
     return panic("This must not happen");
 }

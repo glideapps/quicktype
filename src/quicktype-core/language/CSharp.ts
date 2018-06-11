@@ -819,7 +819,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private emitDecoderTransformerCase(
         tokenCases: string[],
-        varName: string,
+        variableName: string,
         xfer: Transformer | undefined,
         targetType: Type
     ): void {
@@ -828,11 +828,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         for (const tokenCase of tokenCases) {
             this.emitTokenCase(tokenCase);
         }
-
-        const deserialized = this.deserializeTypeCode(this.csType(xfer.sourceType, followTargetType));
         this.indent(() => {
-            this.emitLine("var ", varName, " = ", deserialized, ";");
-            const allHandled = this.emitTransformer(varName, xfer, targetType);
+            const allHandled = this.emitDecodeTransformer(xfer, targetType, variableName);
             if (!allHandled) {
                 this.emitLine("break;");
             }
@@ -848,17 +845,19 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         }
     }
 
-    private emitDecodeTransformer(xfer: Transformer, targetType: Type): boolean {
+    private emitDecodeTransformer(xfer: Transformer, targetType: Type, variableName: string = "value"): boolean {
         if (xfer instanceof DecodingTransformer) {
-            this.emitLine("var value = ", this.deserializeTypeCode(this.csType(xfer.sourceType, noFollow)), ";");
-            return this.emitConsume("value", xfer.consumer, targetType);
+            if (xfer.sourceType.kind !== "null") {
+                this.emitLine("var ", variableName, " = ", this.deserializeTypeCode(this.csType(xfer.sourceType)), ";");
+            }
+            return this.emitConsume(variableName, xfer.consumer, targetType);
         } else if (xfer instanceof DecodingChoiceTransformer) {
             this.emitDecoderSwitch(() => {
                 const nullTransformer = xfer.nullTransformer;
                 if (nullTransformer !== undefined) {
                     this.emitTokenCase("Null");
                     this.indent(() => {
-                        const allHandled = this.emitTransformer("null", nullTransformer, targetType);
+                        const allHandled = this.emitDecodeTransformer(nullTransformer, targetType, "nullValue");
                         if (!allHandled) {
                             this.emitLine("break");
                         }

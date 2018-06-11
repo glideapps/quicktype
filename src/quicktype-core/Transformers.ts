@@ -256,9 +256,7 @@ export class DecodingChoiceTransformer extends Transformer {
 
         const addCase = (transformer: Transformer | undefined) => {
             if (transformer === undefined) return;
-            transformers.push(
-                transformer.reverse(targetTypeRef, new EncodingTransformer(this.graph, transformer.sourceTypeRef))
-            );
+            transformers.push(transformer.reverse(targetTypeRef, undefined));
         };
 
         addCase(this.nullTransformer);

@@ -21,7 +21,7 @@ import {
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype-core/Run";
-import { mustNotBeCalled } from "../dist/quicktype-core/support/Support";
+import { mustNotHappen } from "../dist/quicktype-core/support/Support";
 import { isDateTime } from "../dist/quicktype-core/DateTime";
 
 const chalk = require("chalk");
@@ -284,7 +284,7 @@ class JSONToXToYFixture extends JSONFixture {
       name: languageXName,
       base: language.base,
       setupCommand: language.setupCommand,
-      runCommand: (_sample: string) => mustNotBeCalled(),
+      runCommand: mustNotHappen,
       diffViaSchema: false,
       skipDiffViaSchema: [],
       allowMissingNull: language.allowMissingNull,
