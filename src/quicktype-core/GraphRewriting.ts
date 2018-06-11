@@ -375,27 +375,6 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
 
         assert(maybeForwardingRef === undefined, "We can't have a forwarding ref when we remap");
 
-        const [originalType, originalAttributes] = typeAndAttributesForTypeRef(originalRef, this.originalGraph);
-
-        const attributeSources = this._attributeSources.get(originalType);
-        if (attributes === undefined) {
-            attributes = emptyTypeAttributes;
-        }
-        if (attributeSources === undefined) {
-            attributes = combineTypeAttributes(
-                "union",
-                attributes,
-                this.reconstituteTypeAttributes(originalAttributes)
-            );
-        } else {
-            attributes = combineTypeAttributes(
-                "union",
-                attributes,
-                this.reconstituteTypeAttributes(combineTypeAttributesOfTypes("union", attributeSources))
-            );
-        }
-        const newAttributes = attributes;
-
         return this.withForwardingRef(undefined, forwardingRef => {
             this.reconstitutedTypes.set(index, forwardingRef);
 
@@ -403,6 +382,27 @@ export class GraphRemapBuilder extends BaseGraphRewriteBuilder {
                 console.log(`${this.debugPrintIndentation}reconstituting ${index} as ${typeRefIndex(forwardingRef)}`);
                 this.changeDebugPrintIndent(1);
             }
+
+            const [originalType, originalAttributes] = typeAndAttributesForTypeRef(originalRef, this.originalGraph);
+
+            const attributeSources = this._attributeSources.get(originalType);
+            if (attributes === undefined) {
+                attributes = emptyTypeAttributes;
+            }
+            if (attributeSources === undefined) {
+                attributes = combineTypeAttributes(
+                    "union",
+                    attributes,
+                    this.reconstituteTypeAttributes(originalAttributes)
+                );
+            } else {
+                attributes = combineTypeAttributes(
+                    "union",
+                    attributes,
+                    this.reconstituteTypeAttributes(combineTypeAttributesOfTypes("union", attributeSources))
+                );
+            }
+            const newAttributes = attributes;
 
             const reconstituter = new TypeReconstituter(
                 this,
