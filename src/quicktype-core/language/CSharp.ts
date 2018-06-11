@@ -847,7 +847,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
 
     private emitDecodeTransformer(xfer: Transformer, targetType: Type, variableName: string = "value"): boolean {
         if (xfer instanceof DecodingTransformer) {
-            this.emitLine("var ", variableName, " = ", this.deserializeTypeCode(this.csType(xfer.sourceType)), ";");
+            if (xfer.sourceType.kind !== "null") {
+                this.emitLine("var ", variableName, " = ", this.deserializeTypeCode(this.csType(xfer.sourceType)), ";");
+            }
             return this.emitConsume(variableName, xfer.consumer, targetType);
         } else if (xfer instanceof DecodingChoiceTransformer) {
             this.emitDecoderSwitch(() => {
