@@ -80,8 +80,8 @@ function replaceUnion(
     function transformerForKind(kind: TypeKind) {
         const member = union.findMember(kind);
         if (member === undefined) return undefined;
-        const memberTypeRef = defined(reconstitutedMembersByKind.get(kind));
-        return new UnionInstantiationTransformer(graph, memberTypeRef);
+        const memberTypeRef = memberForKind(kind);
+        return new DecodingTransformer(graph, memberTypeRef, new UnionInstantiationTransformer(graph, memberTypeRef));
     }
 
     let maybeStringType: TypeRef | undefined = undefined;
@@ -126,12 +126,17 @@ function replaceUnion(
         transformerForString = undefined;
     } else if (stringTypes.size === 1) {
         const t = defined(iterableFirst(stringTypes));
-        transformerForString = new UnionInstantiationTransformer(graph, memberForKind(t.kind));
+        const memberTypeRef = memberForKind(t.kind);
+        transformerForString = new DecodingTransformer(
+            graph,
+            memberTypeRef,
+            new UnionInstantiationTransformer(graph, memberTypeRef)
+        );
     } else {
-        transformerForString = new ChoiceTransformer(
+        transformerForString = new DecodingTransformer(
             graph,
             getStringType(),
-            Array.from(stringTypes).map(transformerForStringType)
+            new ChoiceTransformer(graph, getStringType(), Array.from(stringTypes).map(transformerForStringType))
         );
     }
 
