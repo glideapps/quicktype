@@ -2,7 +2,7 @@ import { iterableFirst, setFilter, setUnionManyInto, setSubtract, mapMap, mapSom
 
 import { Type, ClassType, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
-import { defined, assert, panic } from "./support/Support";
+import { defined, assert, panic, mustNotHappen } from "./support/Support";
 import { TypeBuilder, StringTypeMapping, NoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
 import { GraphRewriteBuilder, GraphRemapBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
@@ -382,6 +382,25 @@ export class TypeGraph {
             true
         );
         return newGraph;
+    }
+
+    rewriteFixedPoint(alphabetizeProperties: boolean, debugPrintReconstitution: boolean): TypeGraph {
+        let graph: TypeGraph = this;
+        for (;;) {
+            const newGraph = this.rewrite(
+                "fixed-point",
+                NoStringTypeMapping,
+                alphabetizeProperties,
+                [],
+                debugPrintReconstitution,
+                mustNotHappen,
+                true
+            );
+            if (graph.allTypesUnordered().size === newGraph.allTypesUnordered().size) {
+                return graph;
+            }
+            graph = newGraph;
+        }
     }
 
     allTypesUnordered(): ReadonlySet<Type> {

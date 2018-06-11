@@ -321,6 +321,8 @@ class Run implements RunContext {
             );
         }
 
+        this.time("fixed point", () => (graph = graph.rewriteFixedPoint(false, debugPrintReconstitution)));
+
         this.time(
             "make transformations",
             () =>
