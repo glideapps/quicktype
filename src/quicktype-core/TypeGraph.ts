@@ -2,7 +2,7 @@ import { iterableFirst, setFilter, setUnionManyInto, setSubtract, mapMap, mapSom
 
 import { Type, ClassType, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
-import { defined, assert, mustNotBeCalled, panic } from "./support/Support";
+import { defined, assert, panic } from "./support/Support";
 import { TypeBuilder, StringTypeMapping, NoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
 import { GraphRewriteBuilder, GraphRemapBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
@@ -335,7 +335,6 @@ export class TypeGraph {
 
         if (!builder.didAddForwardingIntersection) return newGraph;
 
-        assert(!force, "We shouldn't have introduced forwarding intersections in a forced rewrite");
         return removeIndirectionIntersections(newGraph, stringTypeMapping, debugPrintReconstitution);
     }
 
@@ -344,11 +343,12 @@ export class TypeGraph {
         stringTypeMapping: StringTypeMapping,
         alphabetizeProperties: boolean,
         map: ReadonlyMap<Type, Type>,
-        debugPrintRemapping: boolean
+        debugPrintRemapping: boolean,
+        force: boolean = false
     ): TypeGraph {
         this.printRewrite(title);
 
-        if (map.size === 0) return this;
+        if (!force && map.size === 0) return this;
 
         const builder = new GraphRemapBuilder(
             this,
@@ -373,16 +373,14 @@ export class TypeGraph {
     }
 
     garbageCollect(alphabetizeProperties: boolean, debugPrintReconstitution: boolean): TypeGraph {
-        const newGraph = this.rewrite(
+        const newGraph = this.remap(
             "GC",
             NoStringTypeMapping,
             alphabetizeProperties,
-            [],
+            new Map(),
             debugPrintReconstitution,
-            (_t, _b) => mustNotBeCalled(),
             true
         );
-        // console.log(`GC: ${defined(newGraph._types).length} types`);
         return newGraph;
     }
 
