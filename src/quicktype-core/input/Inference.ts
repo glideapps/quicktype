@@ -53,10 +53,11 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
 
     protected makeArray(
         arrays: NestedValueArray,
-        _typeAttributes: TypeAttributes,
+        typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         return this.typeBuilder.getArrayType(
+            typeAttributes,
             this._typeInference.inferType(emptyTypeAttributes, arrays, this._fixed, forwardingRef)
         );
     }

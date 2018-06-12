@@ -669,7 +669,7 @@ export async function addTypesInSchema(
                 itemType = typeBuilder.getPrimitiveType("any");
             }
             typeBuilder.addAttributes(itemType, singularAttributes);
-            return typeBuilder.getArrayType(itemType);
+            return typeBuilder.getArrayType(emptyTypeAttributes, itemType);
         }
 
         async function makeObjectType(): Promise<TypeRef> {

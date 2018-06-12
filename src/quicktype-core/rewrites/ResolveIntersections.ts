@@ -320,8 +320,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     ): TypeRef {
         // FIXME: attributes
         const itemsType = this.makeIntersection(arrays, emptyTypeAttributes);
-        const tref = this.typeBuilder.getArrayType(itemsType, forwardingRef);
-        this.typeBuilder.addAttributes(tref, typeAttributes);
+        const tref = this.typeBuilder.getArrayType(typeAttributes, itemsType, forwardingRef);
         return tref;
     }
 }

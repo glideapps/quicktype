@@ -160,8 +160,7 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
         typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
-        const ref = this.typeBuilder.getArrayType(this._unifyTypes(arrays), forwardingRef);
-        this.typeBuilder.addAttributes(ref, typeAttributes);
+        const ref = this.typeBuilder.getArrayType(typeAttributes, this._unifyTypes(arrays), forwardingRef);
         return ref;
     }
 }
