@@ -110,12 +110,11 @@ export class CSharpTargetLanguage extends TargetLanguage {
         return true;
     }
 
-    needsTransformerForUnion(u: UnionType): boolean {
-        return needTransformerForUnion(u);
-    }
-
-    get needsTransformerForEnums(): boolean {
-        return true;
+    needsTransformerForType(t: Type): boolean {
+        if (t instanceof UnionType) return needTransformerForUnion(t);
+        if (t instanceof EnumType) return true;
+        if (t.kind === "integer-string") return true;
+        return false;
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): CSharpRenderer {

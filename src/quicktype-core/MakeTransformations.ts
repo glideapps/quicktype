@@ -245,16 +245,8 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
         return panic(`Cannot make transformation for type ${t.kind}`);
     }
 
-    const allTypesUnordered = graph.allTypesUnordered();
-    const unions = setFilter(
-        allTypesUnordered,
-        t => t instanceof UnionType && targetLanguage.needsTransformerForUnion(t)
-    );
-    const enums = targetLanguage.needsTransformerForEnums
-        ? setFilter(allTypesUnordered, t => t instanceof EnumType)
-        : new Set();
-    const integerStrings = setFilter(allTypesUnordered, t => t.kind === "integer-string");
-    const groups = Array.from(setUnion(unions, enums, integerStrings)).map(t => [t]);
+    const transformedTypes = setFilter(graph.allTypesUnordered(), t => targetLanguage.needsTransformerForType(t));
+    const groups = Array.from(transformedTypes).map(t => [t]);
     return graph.rewrite(
         "make-transformations",
         ctx.stringTypeMapping,
