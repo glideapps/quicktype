@@ -33,6 +33,8 @@ function transformationAttributes(
     if (debugPrintTransformations) {
         console.log(`transformation for ${typeRefIndex(reconstitutedTargetType)}:`);
         transformation.debugPrint();
+        console.log(`reverse:`);
+        transformation.reverse.debugPrint();
     }
     return transformationTypeAttributeKind.makeAttributes(transformation);
 }
@@ -82,20 +84,26 @@ function replaceUnion(
     }
 
     const reconstitutedMembersByKind = mapMapEntries(union.members.entries(), m => [m.kind, reconstituteMember(m)]);
-    const reconstitutedUnion = builder.getUnionType(
-        union.getAttributes(),
-        new Set(reconstitutedMembersByKind.values())
-    );
+    const reconstitutedMemberSet = new Set(reconstitutedMembersByKind.values());
+    const haveUnion = reconstitutedMemberSet.size > 1;
+    const reconstitutedTargetType = haveUnion
+        ? builder.getUnionType(union.getAttributes(), reconstitutedMemberSet)
+        : defined(iterableFirst(reconstitutedMemberSet));
 
     function memberForKind(kind: TypeKind) {
         return defined(reconstitutedMembersByKind.get(kind));
+    }
+
+    function consumer(memberTypeRef: TypeRef): Transformer | undefined {
+        if (!haveUnion) return undefined;
+        return new UnionInstantiationTransformer(graph, memberTypeRef);
     }
 
     function transformerForKind(kind: TypeKind) {
         const member = union.findMember(kind);
         if (member === undefined) return undefined;
         const memberTypeRef = memberForKind(kind);
-        return new DecodingTransformer(graph, memberTypeRef, new UnionInstantiationTransformer(graph, memberTypeRef));
+        return new DecodingTransformer(graph, memberTypeRef, consumer(memberTypeRef));
     }
 
     let maybeStringType: TypeRef | undefined = undefined;
@@ -113,28 +121,15 @@ function replaceUnion(
                 return defined(transformerForKind(t.kind));
 
             case "date-time":
-                return new ParseDateTimeTransformer(
-                    graph,
-                    getStringType(),
-                    new UnionInstantiationTransformer(graph, memberRef)
-                );
+                return new ParseDateTimeTransformer(graph, getStringType(), consumer(memberRef));
 
             case "enum": {
                 const enumType = t as EnumType;
-                return makeEnumTransformer(
-                    graph,
-                    enumType,
-                    getStringType(),
-                    new UnionInstantiationTransformer(graph, memberRef)
-                );
+                return makeEnumTransformer(graph, enumType, getStringType(), consumer(memberRef));
             }
 
             case "integer-string":
-                return new ParseIntegerTransformer(
-                    graph,
-                    getStringType(),
-                    new UnionInstantiationTransformer(graph, memberRef)
-                );
+                return new ParseIntegerTransformer(graph, getStringType(), consumer(memberRef));
 
             default:
                 return panic(`Can't transform string type ${t.kind}`);
@@ -175,7 +170,7 @@ function replaceUnion(
         transformerForKind("array"),
         transformerForObject
     );
-    const attributes = transformationAttributes(graph, reconstitutedUnion, transformer, debugPrintTransformations);
+    const attributes = transformationAttributes(graph, reconstitutedTargetType, transformer, debugPrintTransformations);
     return builder.getPrimitiveType("any", attributes, forwardingRef);
 }
 
