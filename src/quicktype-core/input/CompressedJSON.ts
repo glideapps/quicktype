@@ -45,7 +45,6 @@ type Context = {
     currentObject: Value[] | undefined;
     currentArray: Value[] | undefined;
     currentKey: string | undefined;
-    currentString: string | undefined;
     currentNumberIsDouble: boolean | undefined;
 };
 
@@ -148,7 +147,7 @@ export class CompressedJSON {
             );
             this._rootValue = value;
         } else if (this._ctx.currentObject !== undefined) {
-            if (this._ctx.currentKey === undefined || this._ctx.currentString !== undefined) {
+            if (this._ctx.currentKey === undefined) {
                 return panic("Must have key and can't have string when committing");
             }
             this._ctx.currentObject.push(this.internString(this._ctx.currentKey), value);
@@ -178,7 +177,6 @@ export class CompressedJSON {
             currentObject: undefined,
             currentArray: undefined,
             currentKey: undefined,
-            currentString: undefined,
             currentNumberIsDouble: undefined
         };
     };
