@@ -475,6 +475,10 @@ export class DecodingChoiceTransformer extends Transformer {
             arr.push(reversed);
         }
 
+        // FIXME: Actually, keep all the failing transformers and put them first, then
+        // finally do the simplest non-failing one.  Actually actually, maybe not, since
+        // we're reversing to encode?  What's a case where this would be useful?
+
         // If there are non-failing transformers, we ignore the ones that can fail and
         // just pick the "simplest" non-failing one, being the one with the least number
         // of nodes.

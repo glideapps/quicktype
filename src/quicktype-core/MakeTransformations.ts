@@ -119,11 +119,11 @@ function replaceUnion(
         return maybeStringType;
     }
 
-    function transformerForStringType(t: Type): Transformer {
+    function transformerForStringType(t: Type): Transformer | undefined {
         const memberRef = memberForKind(t.kind);
         switch (t.kind) {
             case "string":
-                return defined(transformerForKind(t.kind));
+                return consumer(memberRef);
 
             case "date-time":
                 return new ParseDateTimeTransformer(graph, getStringType(), consumer(memberRef));
@@ -152,7 +152,11 @@ function replaceUnion(
         transformerForString = new DecodingTransformer(
             graph,
             getStringType(),
-            new ChoiceTransformer(graph, getStringType(), Array.from(stringTypes).map(transformerForStringType))
+            new ChoiceTransformer(
+                graph,
+                getStringType(),
+                Array.from(stringTypes).map(t => defined(transformerForStringType(t)))
+            )
         );
     }
 

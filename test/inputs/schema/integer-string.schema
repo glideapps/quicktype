@@ -37,7 +37,16 @@
           "$ref": "#/properties/one"
         }
       ]
+    },
+    "unionWithIntAndEnum": {
+      "oneOf": [
+        { "type": "integer" },
+        {
+          "$ref": "#/properties/one"
+        },
+        { "enum": ["foo"] }
+      ]
     }
   },
-  "required": ["one", "nullable", "unionWithInt"]
+  "required": ["one", "nullable", "unionWithInt", "unionWithIntAndEnum"]
 }

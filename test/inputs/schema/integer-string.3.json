@@ -2,5 +2,5 @@
   "one": "123",
   "nullable": null,
   "unionWithInt": 123,
-  "unionWithIntAndEnum": 234
+  "unionWithIntAndEnum": "foo"
 }

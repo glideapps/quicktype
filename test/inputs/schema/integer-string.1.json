@@ -4,5 +4,6 @@
   "nullable": "456",
   "arrOne": ["123", "234"],
   "arrNullable": ["123", null, "234"],
-  "unionWithInt": "123"
+  "unionWithInt": "123",
+  "unionWithIntAndEnum": "234"
 }
