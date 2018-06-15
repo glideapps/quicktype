@@ -245,8 +245,9 @@ export class CompressedJSON {
     };
 
     protected handleNumberChunk = (s: string): void => {
-        if (s.includes(".") || s.includes("e") || s.includes("E")) {
-            defined(this._ctx).currentNumberIsDouble = true;
+        const ctx = defined(this._ctx);
+        if (!ctx.currentNumberIsDouble && (s.includes(".") || s.includes("e") || s.includes("E"))) {
+            ctx.currentNumberIsDouble = true;
         }
     };
 
