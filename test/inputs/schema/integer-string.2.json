@@ -1,4 +1,5 @@
 {
   "one": "123",
-  "nullable": null
+  "nullable": null,
+  "unionWithInt": 123
 }

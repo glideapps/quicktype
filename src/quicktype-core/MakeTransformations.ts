@@ -86,6 +86,11 @@ function replaceUnion(
     const reconstitutedMembersByKind = mapMapEntries(union.members.entries(), m => [m.kind, reconstituteMember(m)]);
     const reconstitutedMemberSet = new Set(reconstitutedMembersByKind.values());
     const haveUnion = reconstitutedMemberSet.size > 1;
+
+    if (!haveUnion) {
+        builder.setLostTypeAttributes();
+    }
+
     const reconstitutedTargetType = haveUnion
         ? builder.getUnionType(union.getAttributes(), reconstitutedMemberSet)
         : defined(iterableFirst(reconstitutedMemberSet));

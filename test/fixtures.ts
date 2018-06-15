@@ -47,6 +47,10 @@ function additionalTestFiles(base: string, extension: string): string[] {
     fn = `${base}.${i.toString()}.${extension}`;
     if (fs.existsSync(fn)) {
       additionalFiles.push(fn);
+      const outFn = `${base}.${i.toString()}.out.${extension}`;
+      if (fs.existsSync(outFn)) {
+        additionalFiles.push(outFn);
+      }
     } else {
       break;
     }
@@ -456,9 +460,7 @@ class JSONTypeScriptFixture extends JSONToXToYFixture {
   }
 }
 
-// This fixture tests generating code from Schema with features
-// that we can't (yet) get from JSON.  Right now that's only
-// recursive types.
+// This fixture tests generating code from JSON Schema.
 class JSONSchemaFixture extends LanguageFixture {
   constructor(language: languages.Language, readonly name: string = `schema-${language.name}`) {
     super(language);
@@ -495,11 +497,15 @@ class JSONSchemaFixture extends LanguageFixture {
       await execAsync(this.language.compileCommand);
     }
     for (const filename of additionalFiles) {
-      if (!filename.endsWith(".json")) continue;
+      if (!filename.endsWith(".json") || filename.endsWith(".out.json")) continue;
 
       const jsonBase = path.basename(filename);
+      let expected = jsonBase.replace(".json", ".out.json");
+      if (!fs.existsSync(expected)) {
+        expected = jsonBase;
+      }
       compareJsonFileToJson({
-        expectedFile: jsonBase,
+        expectedFile: expected,
         given: { command: this.language.runCommand(jsonBase) },
         strict: false,
         allowMissingNull: this.language.allowMissingNull

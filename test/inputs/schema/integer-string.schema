@@ -29,10 +29,15 @@
       "items": {
         "$ref": "#/properties/nullable"
       }
+    },
+    "unionWithInt": {
+      "oneOf": [
+        { "type": "integer" },
+        {
+          "$ref": "#/properties/one"
+        }
+      ]
     }
   },
-  "required": [
-    "one",
-    "nullable"
-  ]
+  "required": ["one", "nullable", "unionWithInt"]
 }
