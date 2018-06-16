@@ -162,6 +162,7 @@ type ComparisonArgs = {
   given: { file: string } | { command: string };
   strict: boolean;
   allowMissingNull?: boolean;
+  allowStringifiedIntegers?: boolean;
 };
 
 export function compareJsonFileToJson(args: ComparisonArgs) {
@@ -180,12 +181,13 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
   );
 
   const allowMissingNull = !!args.allowMissingNull;
+  const allowStringifiedIntegers = !!args.allowStringifiedIntegers;
   let jsonAreEqual = strict
     ? callAndReportFailure("Failed to strictly compare objects", () =>
         strictDeepEquals(givenJSON, expectedJSON)
       )
     : callAndReportFailure("Failed to compare objects.", () =>
-        deepEquals(expectedJSON, givenJSON, allowMissingNull, ASSUME_STRINGS_EQUAL)
+        deepEquals(expectedJSON, givenJSON, allowMissingNull, ASSUME_STRINGS_EQUAL, allowStringifiedIntegers)
       );
 
   if (!jsonAreEqual) {

@@ -120,13 +120,17 @@ export class StringTypes {
         if (this.allowDateTime) {
             kinds.push(mapping.dateTime);
         }
+        if (this.allowInteger) {
+            kinds.push(mapping.integerString);
+        }
         if (kinds.indexOf("string") >= 0) {
             return StringTypes.unrestricted;
         }
         const allowDate = kinds.indexOf("date") >= 0;
         const allowTime = kinds.indexOf("time") >= 0;
         const allowDateTime = kinds.indexOf("date-time") >= 0;
-        return new StringTypes(this.cases, allowDate, allowTime, allowDateTime, this.allowInteger);
+        const allowInteger = kinds.indexOf("integer-string") >= 0;
+        return new StringTypes(this.cases, allowDate, allowTime, allowDateTime, allowInteger);
     }
 
     equals(other: any): boolean {

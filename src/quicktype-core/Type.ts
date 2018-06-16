@@ -26,8 +26,9 @@ import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
 import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph, typeRefIndex } from "./TypeGraph";
 
-export type DateTimeTypeKind = "date" | "time" | "date-time" | "integer-string";
-export type PrimitiveStringTypeKind = "string" | DateTimeTypeKind;
+// FIXME: Why is "integer-string" a DateTimeTypeKind?
+export type DateTimeTypeKind = "date" | "time" | "date-time";
+export type PrimitiveStringTypeKind = "string" | "integer-string" | DateTimeTypeKind;
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";

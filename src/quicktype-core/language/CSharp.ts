@@ -114,7 +114,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
-        return { date: "date-time", time: "date-time", dateTime: "date-time" };
+        return { date: "date-time", time: "date-time", dateTime: "date-time", integerString: "integer-string" };
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -1172,7 +1172,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 // whether the type is a nullable?
                 // FIXMEL: This could duplicate one of the cases handled below in
                 // `emitDecodeTransformer`.
-                if (haveNullable) {
+                if (haveNullable && !(targetType instanceof UnionType)) {
                     this.emitLine("if (reader.TokenType == JsonToken.Null) return null;");
                 }
 

@@ -62,6 +62,7 @@ export interface CLIOptions {
     noMaps: boolean;
     noEnums: boolean;
     noDateTimes: boolean;
+    noIntegerStrings: boolean;
     alphabetizeProperties: boolean;
     allPropertiesOptional: boolean;
     noCombineClasses: boolean;
@@ -266,6 +267,7 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         noMaps: !!opts.noMaps,
         noEnums: !!opts.noEnums,
         noDateTimes: !!opts.noDateTimes,
+        noIntegerStrings: !!opts.noIntegerStrings,
         noCombineClasses: !!opts.noCombineClasses,
         noRender: !!opts.noRender,
         alphabetizeProperties: !!opts.alphabetizeProperties,
@@ -387,6 +389,11 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             name: "no-date-times",
             type: Boolean,
             description: "Don't infer dates or times."
+        },
+        {
+            name: "no-integer-strings",
+            type: Boolean,
+            description: "Don't convert stringified integers to integers"
         },
         {
             name: "no-render",
@@ -796,6 +803,7 @@ export async function makeQuicktypeOptions(
         inferMaps: !options.noMaps,
         inferEnums: !options.noEnums,
         inferDates: !options.noDateTimes,
+        inferIntegerStrings: !options.noIntegerStrings,
         alphabetizeProperties: options.alphabetizeProperties,
         allPropertiesOptional: options.allPropertiesOptional,
         combineClasses: !options.noCombineClasses,

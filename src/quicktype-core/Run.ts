@@ -48,6 +48,8 @@ export interface Options {
     inferEnums: boolean;
     /** Whether to assume that JSON strings that look like dates are dates */
     inferDates: boolean;
+    /** Whether to convert stringified integers to integers */
+    inferIntegerStrings: boolean;
     /** Put class properties in alphabetical order, instead of in the order found in the JSON */
     alphabetizeProperties: boolean;
     /** Make all class property optional */
@@ -97,6 +99,7 @@ const defaultOptions: Options = {
     inferMaps: true,
     inferEnums: true,
     inferDates: true,
+    inferIntegerStrings: true,
     alphabetizeProperties: false,
     allPropertiesOptional: false,
     combineClasses: true,
@@ -184,6 +187,7 @@ class Run implements RunContext {
                     this._options.inferMaps,
                     this._options.inferEnums,
                     this._options.inferDates,
+                    this._options.inferIntegerStrings,
                     this._options.fixedTopLevels
                 )
         );

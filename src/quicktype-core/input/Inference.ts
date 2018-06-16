@@ -65,6 +65,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
 
 function canBeEnumCase(s: string): boolean {
     if (s.length === 0) return true; // FIXME: Do we really want this?
+    // FIXME: Haven't we dealt with date-time in compressed JSON?
     return !isDate(s) && !isTime(s) && !isDateTime(s);
 }
 
@@ -76,7 +77,8 @@ export class TypeInference {
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferMaps: boolean,
         private readonly _inferEnums: boolean,
-        private readonly _inferDates: boolean
+        private readonly _inferDates: boolean,
+        private readonly _inferIntegerStrings: boolean
     ) {}
 
     addValuesToAccumulator(valueArray: NestedValueArray, accumulator: Accumulator): void {
@@ -136,6 +138,13 @@ export class TypeInference {
                         "string",
                         emptyTypeAttributes,
                         this._inferDates ? StringTypes.dateTime : StringTypes.unrestricted
+                    );
+                    break;
+                case Tag.IntegerString:
+                    accumulator.addStringType(
+                        "string",
+                        emptyTypeAttributes,
+                        this._inferIntegerStrings ? StringTypes.integer : StringTypes.unrestricted
                     );
                     break;
                 default:

@@ -19,7 +19,7 @@ import {
     ParseIntegerTransformer,
     ArrayDecodingTransformer
 } from "./Transformers";
-import { TypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
 import { StringTypes } from "./StringTypes";
 import { RunContext } from "./Run";
 
@@ -70,11 +70,15 @@ function replaceUnion(
 
     const integerMember = union.findMember("integer");
 
+    // Type attributes that we lost during reconstitution.
+    let additionalAttributes = emptyTypeAttributes;
+
     function reconstituteMember(t: Type): TypeRef {
         // Special handling for integer-string: The type in the union must
         // be "integer", so if one already exists, use that one, otherwise
         // make a new one.
         if (t.kind === "integer-string") {
+            additionalAttributes = combineTypeAttributes("union", additionalAttributes, t.getAttributes());
             if (integerMember !== undefined) {
                 return builder.reconstituteType(integerMember);
             }
@@ -180,7 +184,11 @@ function replaceUnion(
         transformerForObject
     );
     const attributes = transformationAttributes(graph, reconstitutedTargetType, transformer, debugPrintTransformations);
-    return builder.getPrimitiveType("any", attributes, forwardingRef);
+    return builder.getPrimitiveType(
+        "any",
+        combineTypeAttributes("union", attributes, additionalAttributes),
+        forwardingRef
+    );
 }
 
 function replaceArray(

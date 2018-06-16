@@ -70,12 +70,14 @@ export type StringTypeMapping = {
     date: PrimitiveStringTypeKind;
     time: PrimitiveStringTypeKind;
     dateTime: PrimitiveStringTypeKind;
+    integerString: PrimitiveStringTypeKind;
 };
 
 export const NoStringTypeMapping: StringTypeMapping = {
     date: "date",
     time: "time",
-    dateTime: "date-time"
+    dateTime: "date-time",
+    integerString: "integer-string"
 };
 
 export class TypeBuilder {

@@ -68,7 +68,8 @@ export abstract class TargetLanguage {
         return {
             date: partial.date || "string",
             time: partial.time || "string",
-            dateTime: partial.dateTime || "string"
+            dateTime: partial.dateTime || "string",
+            integerString: partial.integerString || "string"
         };
         /* tslint:enable */
     }
