@@ -7,7 +7,6 @@ import { defined, panic, assert } from "../support/Support";
 import { isDate, isTime, isDateTime } from "../DateTime";
 
 const Combo = require("stream-json/Combo");
-const Source = require("stream-json/Source");
 
 export enum Tag {
     Null,
@@ -46,8 +45,22 @@ type Context = {
     currentObject: Value[] | undefined;
     currentArray: Value[] | undefined;
     currentKey: string | undefined;
-    currentString: string | undefined;
-    currentNumberIsDouble: boolean | undefined;
+    currentNumberIsDouble: boolean;
+};
+
+const methodMap: {[name: string]: string} = {
+    startObject: "handleStartObject",
+    endObject: "handleEndObject",
+    startArray: "handleStartArray",
+    endArray: "handleEndArray",
+    startNumber: "handleStartNumber",
+    numberChunk: "handleNumberChunk",
+    endNumber: "handleEndNumber",
+    keyValue: "handleKeyValue",
+    stringValue: "handleStringValue",
+    nullValue: "handleNullValue",
+    trueValue: "handleTrueValue",
+    falseValue: "handleFalseValue"
 };
 
 export class CompressedJSON {
@@ -61,6 +74,8 @@ export class CompressedJSON {
     private _objects: Value[][] = [];
     private _arrays: Value[][] = [];
 
+    [key: string]: any;
+
     constructor(
         private readonly _makeDate: boolean,
         private readonly _makeTime: boolean,
@@ -68,25 +83,14 @@ export class CompressedJSON {
     ) {}
 
     async readFromStream(readStream: stream.Readable): Promise<Value> {
-        const combo = new Combo();
-        const jsonSource = new Source([combo]);
-        jsonSource.on("startObject", this.handleStartObject);
-        jsonSource.on("endObject", this.handleEndObject);
-        jsonSource.on("startArray", this.handleStartArray);
-        jsonSource.on("endArray", this.handleEndArray);
-        jsonSource.on("startKey", this.handleStartKey);
-        jsonSource.on("endKey", this.handleEndKey);
-        jsonSource.on("startString", this.handleStartString);
-        jsonSource.on("stringChunk", this.handleStringChunk);
-        jsonSource.on("endString", this.handleEndString);
-        jsonSource.on("startNumber", this.handleStartNumber);
-        jsonSource.on("numberChunk", this.handleNumberChunk);
-        jsonSource.on("endNumber", this.handleEndNumber);
-        jsonSource.on("nullValue", this.handleNullValue);
-        jsonSource.on("trueValue", this.handleTrueValue);
-        jsonSource.on("falseValue", this.handleFalseValue);
+        const combo = new Combo({ packKeys: true, packStrings: true });
+        combo.on("data", (item: {name: string, value: string | undefined}) => {
+            if (typeof methodMap[item.name] === "string") {
+                this[methodMap[item.name]](item.value);
+            }
+        });
         const promise = new Promise<Value>((resolve, reject) => {
-            jsonSource.on("end", () => {
+            combo.on("end", () => {
                 resolve(this.finish());
             });
             combo.on("error", (err: any) => {
@@ -94,7 +98,7 @@ export class CompressedJSON {
             });
         });
         readStream.setEncoding("utf8");
-        readStream.pipe(jsonSource.input);
+        readStream.pipe(combo);
         readStream.resume();
         return promise;
     }
@@ -143,7 +147,7 @@ export class CompressedJSON {
             );
             this._rootValue = value;
         } else if (this._ctx.currentObject !== undefined) {
-            if (this._ctx.currentKey === undefined || this._ctx.currentString !== undefined) {
+            if (this._ctx.currentKey === undefined) {
                 return panic("Must have key and can't have string when committing");
             }
             this._ctx.currentObject.push(this.internString(this._ctx.currentKey), value);
@@ -173,8 +177,7 @@ export class CompressedJSON {
             currentObject: undefined,
             currentArray: undefined,
             currentKey: undefined,
-            currentString: undefined,
-            currentNumberIsDouble: undefined
+            currentNumberIsDouble: false
         };
     };
 
@@ -183,12 +186,12 @@ export class CompressedJSON {
         this._ctx = this._contextStack.pop();
     };
 
-    private handleStartObject = (): void => {
+    protected handleStartObject = (): void => {
         this.pushContext();
         defined(this._ctx).currentObject = [];
     };
 
-    private handleEndObject = (): void => {
+    protected handleEndObject = (): void => {
         const obj = defined(this._ctx).currentObject;
         if (obj === undefined) {
             return panic("Object ended but not started");
@@ -197,12 +200,12 @@ export class CompressedJSON {
         this.commitValue(this.internObject(obj));
     };
 
-    private handleStartArray = (): void => {
+    protected handleStartArray = (): void => {
         this.pushContext();
         defined(this._ctx).currentArray = [];
     };
 
-    private handleEndArray = (): void => {
+    protected handleEndArray = (): void => {
         const arr = defined(this._ctx).currentArray;
         if (arr === undefined) {
             return panic("Array ended but not started");
@@ -211,52 +214,24 @@ export class CompressedJSON {
         this.commitValue(this.internArray(arr));
     };
 
-    private handleStartKey = (): void => {
-        defined(this._ctx).currentString = "";
+    protected handleKeyValue = (s: string): void => {
+        defined(this._ctx).currentKey = s;
     };
 
-    private handleEndKey = (): void => {
-        const ctx = defined(this._ctx);
-        const str = ctx.currentString;
-        if (str === undefined) {
-            return panic("Key ended but no string");
-        }
-        ctx.currentKey = str;
-        ctx.currentString = undefined;
-    };
-
-    private handleStartString = (): void => {
-        this.pushContext();
-        defined(this._ctx).currentString = "";
-    };
-
-    private handleStringChunk = (s: string): void => {
-        const ctx = defined(this._ctx);
-        if (ctx.currentString === undefined) {
-            return panic("String chunk but no string");
-        }
-        ctx.currentString += s;
-    };
-
-    private handleEndString = (): void => {
-        const str = defined(this._ctx).currentString;
-        if (str === undefined) {
-            return panic("String ended but not started");
-        }
-        this.popContext();
+    protected handleStringValue = (s: string): void => {
         let value: Value | undefined = undefined;
-        if (str.length <= 64) {
-            if (str.length > 0 && "0123456789".indexOf(str[0]) >= 0) {
-                if (this._makeDate && isDate(str)) {
+        if (s.length <= 64) {
+            if (s.length > 0 && "0123456789".indexOf(s[0]) >= 0) {
+                if (this._makeDate && isDate(s)) {
                     value = makeValue(Tag.Date, 0);
-                } else if (this._makeTime && isTime(str)) {
+                } else if (this._makeTime && isTime(s)) {
                     value = makeValue(Tag.Time, 0);
-                } else if (this._makeDateTime && isDateTime(str)) {
+                } else if (this._makeDateTime && isDateTime(s)) {
                     value = makeValue(Tag.DateTime, 0);
                 }
             }
             if (value === undefined) {
-                value = this.internString(str);
+                value = this.internString(s);
             }
         } else {
             value = makeValue(Tag.UninternedString, 0);
@@ -264,36 +239,34 @@ export class CompressedJSON {
         this.commitValue(value);
     };
 
-    private handleStartNumber = (): void => {
+    protected handleStartNumber = (): void => {
         this.pushContext();
         defined(this._ctx).currentNumberIsDouble = false;
     };
 
-    private handleNumberChunk = (s: string): void => {
-        if (s.includes(".") || s.includes("e") || s.includes("E")) {
-            defined(this._ctx).currentNumberIsDouble = true;
+    protected handleNumberChunk = (s: string): void => {
+        const ctx = defined(this._ctx);
+        if (!ctx.currentNumberIsDouble && /[\.e]/i.test(s)) {
+            ctx.currentNumberIsDouble = true;
         }
     };
 
-    private handleEndNumber = (): void => {
+    protected handleEndNumber = (): void => {
         const isDouble = defined(this._ctx).currentNumberIsDouble;
-        if (isDouble === undefined) {
-            return panic("Number ended but not started");
-        }
         const numberTag = isDouble ? Tag.Double : Tag.Integer;
         this.popContext();
         this.commitValue(makeValue(numberTag, 0));
     };
 
-    private handleNullValue = (): void => {
+    protected handleNullValue = (): void => {
         this.commitValue(makeValue(Tag.Null, 0));
     };
 
-    private handleTrueValue = (): void => {
+    protected handleTrueValue = (): void => {
         this.commitValue(makeValue(Tag.True, 0));
     };
 
-    private handleFalseValue = (): void => {
+    protected handleFalseValue = (): void => {
         this.commitValue(makeValue(Tag.False, 0));
     };
 
