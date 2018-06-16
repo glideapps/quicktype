@@ -48,7 +48,7 @@ type Context = {
     currentNumberIsDouble: boolean;
 };
 
-const methodMap: any = {
+const methodMap: {[name: string]: string} = {
     startObject: "handleStartObject",
     endObject: "handleEndObject",
     startArray: "handleStartArray",
@@ -84,7 +84,7 @@ export class CompressedJSON {
 
     async readFromStream(readStream: stream.Readable): Promise<Value> {
         const combo = new Combo({ packKeys: true, packStrings: true });
-        combo.on("data", (item: any) => {
+        combo.on("data", (item: {name: string, value: string | undefined}) => {
             if (typeof methodMap[item.name] === "string") {
                 this[methodMap[item.name]](item.value);
             }
