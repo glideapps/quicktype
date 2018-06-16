@@ -45,7 +45,7 @@ type Context = {
     currentObject: Value[] | undefined;
     currentArray: Value[] | undefined;
     currentKey: string | undefined;
-    currentNumberIsDouble: boolean | undefined;
+    currentNumberIsDouble: boolean;
 };
 
 const methodMap: any = {
@@ -177,7 +177,7 @@ export class CompressedJSON {
             currentObject: undefined,
             currentArray: undefined,
             currentKey: undefined,
-            currentNumberIsDouble: undefined
+            currentNumberIsDouble: false
         };
     };
 
