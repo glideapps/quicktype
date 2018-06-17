@@ -37,6 +37,10 @@ function run(cmd, args, returnOutput = false, returnStatus = false) {
     }
 }
 
+function runNPM(args, returnOutput = false, returnStatus = false) {
+    return run("npm", ["--verbose"].concat(args), returnOutput, returnStatus);
+}
+
 function gitRevParse(rev) {
     return run("git", ["rev-parse", rev], true).trim();
 }
@@ -46,7 +50,7 @@ function gitHasDiff(oldRev, inDir) {
 }
 
 function npmShow(packageName, path) {
-    return JSON.parse(run("npm", ["show", "--json", packageName, path], true));
+    return JSON.parse(runNPM(["show", "--json", packageName, path], true));
 }
 
 function latestPackageVersion(packageName) {
@@ -59,7 +63,7 @@ function quicktypeCoreDependency(packageName) {
 }
 
 function packageCommit(packageName, version) {
-    const commit = run("npm", ["show", `${packageName}@${version}`, "config.commit"], true).trim();
+    const commit = runNPM(["show", `${packageName}@${version}`, "config.commit"], true).trim();
     if (commit === "") {
         console.error("Error: No commit for latest package version");
         process.exit(1);
@@ -230,7 +234,7 @@ function buildCore(buildDir, options) {
         makePackage(pkg => {
             pkg.version = latestPackageVersion(packageName);
         });
-        run("npm", ["install"]);
+        runNPM(["install"]);
 
         if (!options.publish) return;
 
@@ -263,7 +267,7 @@ function buildPackage(buildDir, options) {
                 pkg.version = latestPackageVersion(packageName);
                 setQuicktypeCore(pkg, "file:../quicktype-core");
             },
-            () => run("npm", ["install"])
+            () => runNPM(["install"])
         );
 
         if (!options.publish) return;
@@ -306,6 +310,8 @@ function publish(packageName, force, print, update) {
         process.exit(1);
     }
 
+    run("ls", ["-la", "dist"]);
+
     const latestVersion = latestPackageVersion(packageName);
 
     if (!force) {
@@ -321,16 +327,14 @@ function publish(packageName, force, print, update) {
     }
 
     const newVersion = versionToPublish(latestVersion);
-    console.log(`Publishing version ${newVersion} with commit ${commit}`);
-
-    run("ls", ["-la", "dist"]);
+    print(newVersion, commit);
 
     makePackage(pkg => {
         pkg.version = newVersion;
         setCommit(pkg, commit);
         update(pkg);
     });
-    run("npm", ["publish"]);
+    runNPM(["publish"]);
 }
 
 function usage() {
