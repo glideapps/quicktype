@@ -14,7 +14,7 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
     ### Deploy to npm ###
     #####################
 
-    echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
+    echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > ~/.npmrc
     npm run pub
     
     slack_notify_deployed
