@@ -32,7 +32,10 @@ export function getTargetLanguage(nameOrInstance: string | TargetLanguage): Targ
 
 export type RendererOptions = { [name: string]: string };
 
-/** The options for main quicktype entry points */
+/**
+ * The options type for the main quicktype entry points,
+ * `quicktypeMultiFile` and `quicktype`.
+ */
 export interface Options {
     /**
      * The target language for which to produce code.  This can be either an instance of `TargetLanguage`,
@@ -417,7 +420,7 @@ class Run implements RunContext {
 
 /**
  * Run quicktype and produce one or more output files.
- * 
+ *
  * @param options Partial options.  For options that are not defined, the
  * defaults will be used.
  */
@@ -435,11 +438,11 @@ function offsetSpan(span: Span, lineOffset: number): Span {
     return { start: offsetLocation(span.start, lineOffset), end: offsetLocation(span.end, lineOffset) };
 }
 
-/** 
+/**
  * Run quicktype like `quicktypeMultiFile`, but if there are multiple
  * output files they will all be squashed into one output, with comments at the
  * start of each file.
- * 
+ *
  * @param options Partial options.  For options that are not defined, the
  * defaults will be used.
  */
