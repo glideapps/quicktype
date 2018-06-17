@@ -6,7 +6,7 @@ const spawnSync = require("child_process").spawnSync;
 const semver = require("semver");
 
 function mapFile(source, destination, transform) {
-    console.log(`mapping ${source} to ${destination}`);
+    // console.log(`mapping ${source} to ${destination}`);
     const content = fs.readFileSync(source, "utf8");
     fs.writeFileSync(destination, transform(content));
     if (!fs.existsSync(destination)) {
@@ -38,7 +38,7 @@ function run(cmd, args, returnOutput = false, returnStatus = false) {
 }
 
 function runNPM(args, returnOutput = false, returnStatus = false) {
-    return run("npm", ["--verbose"].concat(args), returnOutput, returnStatus);
+    return run("npm", args, returnOutput, returnStatus);
 }
 
 function gitRevParse(rev) {
@@ -72,7 +72,7 @@ function packageCommit(packageName, version) {
 }
 
 function copyFile(src, dst) {
-    console.log(`copying ${src} to ${dst}`);
+    // console.log(`copying ${src} to ${dst}`);
     run("cp", [src, dst]);
     if (!fs.existsSync(dst)) {
         console.error(`Error: Copy from ${src} to ${dst} failed - destination file doesn't exist.`);
