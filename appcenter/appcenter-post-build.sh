@@ -23,11 +23,12 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
     ### Deploy app.quicktype.io ###
     ###############################
 
-    appcenter \
-        build queue \
-        --app quicktype/app.quicktype.io \
-        --branch master \
-        --token $APPCENTER_TOKEN
+    curl -H "Authorization: Bearer $BUILDKITE_TOKEN" \
+        https://api.buildkite.com/v2/organizations/typeguard/pipelines/app-dot-quicktype-dot-io/builds \
+        -X POST \
+        -F "commit=HEAD" \
+        -F "branch=master" \
+        -F "message=Deploy :rocket:"
 
     #########################
     ### Deploy to VS Code ###
