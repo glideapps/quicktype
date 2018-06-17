@@ -310,15 +310,11 @@ function publish(packageName, force, print, update) {
         process.exit(1);
     }
 
-    run("ls", ["-la", "dist"]);
-
     const latestVersion = latestPackageVersion(packageName);
 
     if (!force) {
         const latestCommit = packageCommit(packageName, latestVersion);
         const hasChangesToPackage = gitHasDiff(latestCommit, srcDir);
-
-        print(latestVersion, latestCommit);
 
         if (!hasChangesToPackage) {
             console.log("No changes since the last package - not publishing");
