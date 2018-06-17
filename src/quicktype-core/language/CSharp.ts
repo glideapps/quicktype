@@ -57,14 +57,16 @@ function noFollow(t: Type): Type {
     return t;
 }
 
-function needTransformerForType(t: Type): "automatic" | "manual" | "none" {
+function needTransformerForType(t: Type): "automatic" | "manual" | "nullable" | "none" {
     if (t instanceof UnionType) {
         const maybeNullable = nullableFromUnion(t);
         if (maybeNullable === null) return "automatic";
-        return needTransformerForType(maybeNullable);
+        if (needTransformerForType(maybeNullable) === "manual") return "nullable";
+        return "none";
     }
     if (t instanceof ArrayType) {
-        if (needTransformerForType(t.items) === "manual") return "automatic";
+        const itemsNeed = needTransformerForType(t.items);
+        if (itemsNeed === "manual" || itemsNeed === "nullable") return "automatic";
         return "none";
     }
     if (t instanceof EnumType) return "automatic";
@@ -126,7 +128,8 @@ export class CSharpTargetLanguage extends TargetLanguage {
     }
 
     needsTransformerForType(t: Type): boolean {
-        return needTransformerForType(t) !== "none";
+        const need = needTransformerForType(t);
+        return need !== "none" && need !== "nullable";
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): CSharpRenderer {
@@ -1170,7 +1173,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 // only match T, but also T?.  If we didn't, then the T in T? would not be
                 // deserialized with our converter but with the default one.  Can we check
                 // whether the type is a nullable?
-                // FIXMEL: This could duplicate one of the cases handled below in
+                // FIXME: This could duplicate one of the cases handled below in
                 // `emitDecodeTransformer`.
                 if (haveNullable && !(targetType instanceof UnionType)) {
                     this.emitLine("if (reader.TokenType == JsonToken.Null) return null;");
@@ -1183,6 +1186,14 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             });
             this.ensureBlankLine();
             this.emitWriteJson("untypedValue", () => {
+                // FIXME: See above.
+                if (haveNullable && !(targetType instanceof UnionType)) {
+                    this.emitLine("if (untypedValue == null)");
+                    this.emitBlock(() => {
+                        this.emitLine("serializer.Serialize(writer, null);");
+                        this.emitLine("return;");
+                    });
+                }
                 this.emitLine("var value = (", csType, ")untypedValue;");
                 const allHandled = this.emitTransformer("value", reverse.transformer, reverse.targetType, () =>
                     this.emitLine("return;")
