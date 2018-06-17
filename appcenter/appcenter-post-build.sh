@@ -23,7 +23,7 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
     ### Deploy app.quicktype.io ###
     ###############################
 
-    echo appcenter \
+    appcenter \
         build queue \
         --app quicktype/app.quicktype.io \
         --branch master \
@@ -33,7 +33,7 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
     ### Deploy to VS Code ###
     #########################
 
-    echo appcenter \
+    appcenter \
         build queue \
         --app quicktype/quicktype-vscode \
         --branch master \
@@ -43,7 +43,7 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
     ### Deploy Xcode extension ###
     ##############################
 
-    echo appcenter \
+    appcenter \
         build queue \
         --app quicktype/quicktype-xcode \
         --branch master \
@@ -59,8 +59,8 @@ if [ "$APPCENTER_BRANCH" == "master" ]; then
         git config --global user.name "David Siegel"
         git config --global user.email "djsiegel@gmail.com"
         
-        echo script/homebrew-update.sh
-        echo slack_notify_homebrew_bump
+        script/homebrew-update.sh
+        slack_notify_homebrew_bump
     fi
 fi
 
