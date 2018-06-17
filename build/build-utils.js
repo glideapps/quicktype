@@ -323,7 +323,7 @@ function publish(packageName, force, print, update) {
     const newVersion = versionToPublish(latestVersion);
     console.log(`Publishing version ${newVersion} with commit ${commit}`);
 
-    run("ls", ["dist"]);
+    run("ls", ["-la", "dist"]);
 
     makePackage(pkg => {
         pkg.version = newVersion;
