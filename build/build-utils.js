@@ -6,8 +6,13 @@ const spawnSync = require("child_process").spawnSync;
 const semver = require("semver");
 
 function mapFile(source, destination, transform) {
+    console.log(`mapping ${source} to ${destination}`);
     const content = fs.readFileSync(source, "utf8");
     fs.writeFileSync(destination, transform(content));
+    if (!fs.existsSync(destination)) {
+        console.error(`Error: Map from ${source} to ${destination} failed - destination file doesn't exist.`);
+        process.exit(1);
+    }
 }
 
 function run(cmd, args, returnOutput = false, returnStatus = false) {
@@ -63,7 +68,12 @@ function packageCommit(packageName, version) {
 }
 
 function copyFile(src, dst) {
+    console.log(`copying ${src} to ${dst}`);
     run("cp", [src, dst]);
+    if (!fs.existsSync(dst)) {
+        console.error(`Error: Copy from ${src} to ${dst} failed - destination file doesn't exist.`);
+        process.exit(1);
+    }
 }
 
 function endsWith(str, suffix) {
@@ -227,8 +237,8 @@ function buildCore(buildDir, options) {
         checkCore(packageName);
         publish(
             packageName,
-            true,
-            commit => console.log(`Publishing ${packageName} with commit ${commit}`),
+            options.force,
+            (version, commit) => console.log(`Publishing ${packageName} ${version} with commit ${commit}`),
             () => undefined
         );
     });
@@ -275,15 +285,17 @@ function buildPackage(buildDir, options) {
 
         publish(
             packageName,
-            coreDependencyUpToDate,
-            commit =>
-                console.log(`Publishing ${packageName} with commit ${commit} using quicktype-core ${coreVersion}`),
+            !coreDependencyUpToDate,
+            (version, commit) =>
+                console.log(
+                    `Publishing ${packageName} ${version} with commit ${commit} using quicktype-core ${coreVersion}`
+                ),
             pkg => setQuicktypeCore(pkg, "^" + coreVersion)
         );
     });
 }
 
-function publish(packageName, checkChanges, print, update) {
+function publish(packageName, force, print, update) {
     const commit = gitRevParse("HEAD");
 
     const srcDir = srcDirForPackage(packageName);
@@ -296,11 +308,11 @@ function publish(packageName, checkChanges, print, update) {
 
     const latestVersion = latestPackageVersion(packageName);
 
-    if (checkChanges) {
+    if (!force) {
         const latestCommit = packageCommit(packageName, latestVersion);
         const hasChangesToPackage = gitHasDiff(latestCommit, srcDir);
 
-        console.log(`latest version is ${latestVersion} commit ${latestCommit}`);
+        print(latestVersion, latestCommit);
 
         if (!hasChangesToPackage) {
             console.log("No changes since the last package - not publishing");
@@ -311,6 +323,8 @@ function publish(packageName, checkChanges, print, update) {
     const newVersion = versionToPublish(latestVersion);
     console.log(`Publishing version ${newVersion} with commit ${commit}`);
 
+    run("ls", ["dist"]);
+
     makePackage(pkg => {
         pkg.version = newVersion;
         setCommit(pkg, commit);
@@ -320,23 +334,25 @@ function publish(packageName, checkChanges, print, update) {
 }
 
 function usage() {
-    console.log(`Usage: ${process.argv[1]} [publish]`);
+    console.log(`Usage: ${process.argv[1]} [publish] [force]`);
 }
 
 function getOptions() {
-    if (process.argv.length === 2) {
-        return { publish: false };
-    } else if (process.argv.length === 3) {
-        const arg = process.argv[2];
+    const opts = { publish: false, force: false };
+    for (const arg of process.argv.slice(2)) {
         if (arg === "help") {
             usage();
             process.exit(0);
         } else if (arg === "publish") {
-            return { publish: true };
+            opts.publish = true;
+        } else if (arg === "force") {
+            opts.force = true;
+        } else {
+            usage();
+            process.exit(1);
         }
     }
-    usage();
-    process.exit(1);
+    return opts;
 }
 
 module.exports = { buildCore, buildPackage, getOptions };
