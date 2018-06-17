@@ -344,6 +344,7 @@ export class ArrayEncodingTransformer extends Transformer {
 export class ChoiceTransformer extends Transformer {
     constructor(graph: TypeGraph, sourceTypeRef: TypeRef, public readonly transformers: ReadonlyArray<Transformer>) {
         super("choice", graph, sourceTypeRef);
+        assert(transformers.length > 0, "Choice must have at least one transformer");
     }
 
     getChildren(): Set<Type> {
@@ -368,6 +369,19 @@ export class ChoiceTransformer extends Transformer {
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         const transformers = this.transformers.map(xfer => xfer.reverse(targetTypeRef, continuationTransformer));
+        if (transformers.every(xfer => xfer instanceof UnionMemberMatchTransformer)) {
+            const memberMatchers = transformers as UnionMemberMatchTransformer[];
+            const first = memberMatchers[0];
+            if (memberMatchers.every(xfer => first.memberType.equals(xfer.memberType))) {
+                const subTransformers = memberMatchers.map(xfer => xfer.transformer);
+                return new UnionMemberMatchTransformer(
+                    this.graph,
+                    targetTypeRef,
+                    new ChoiceTransformer(this.graph, subTransformers[0].sourceTypeRef, subTransformers),
+                    first.memberTypeRef
+                );
+            }
+        }
         return new ChoiceTransformer(this.graph, targetTypeRef, transformers);
     }
 
@@ -569,12 +583,7 @@ export class DecodingChoiceTransformer extends Transformer {
 }
 
 export class UnionMemberMatchTransformer extends MatchTransformer {
-    constructor(
-        graph: TypeGraph,
-        sourceTypeRef: TypeRef,
-        transformer: Transformer,
-        private readonly _memberTypeRef: TypeRef
-    ) {
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, transformer: Transformer, readonly memberTypeRef: TypeRef) {
         super("union-member-match", graph, sourceTypeRef, transformer);
     }
 
@@ -591,7 +600,7 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
     }
 
     get memberType(): Type {
-        return derefTypeRef(this._memberTypeRef, this.graph);
+        return derefTypeRef(this.memberTypeRef, this.graph);
     }
 
     getChildren(): Set<Type> {
@@ -607,19 +616,19 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
             builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             this.transformer.reconstitute(builder),
-            builder.reconstituteTypeRef(this._memberTypeRef)
+            builder.reconstituteTypeRef(this.memberTypeRef)
         );
     }
 
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof UnionMemberMatchTransformer)) return false;
-        return this._memberTypeRef === other._memberTypeRef;
+        return this.memberTypeRef === other.memberTypeRef;
     }
 
     hashCode(): number {
         const h = super.hashCode();
-        return addHashCode(h, hashCodeOf(this._memberTypeRef));
+        return addHashCode(h, hashCodeOf(this.memberTypeRef));
     }
 
     protected debugDescription(): string {
