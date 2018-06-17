@@ -311,14 +311,12 @@ function publish(packageName, checkChanges, print, update) {
     const newVersion = versionToPublish(latestVersion);
     console.log(`Publishing version ${newVersion} with commit ${commit}`);
 
-    withPackage(
-        pkg => {
-            pkg.version = newVersion;
-            setCommit(pkg, commit);
-            update(pkg);
-        },
-        () => run("npm", ["publish"])
-    );
+    makePackage(pkg => {
+        pkg.version = newVersion;
+        setCommit(pkg, commit);
+        update(pkg);
+    });
+    run("npm", ["publish"]);
 }
 
 function usage() {
