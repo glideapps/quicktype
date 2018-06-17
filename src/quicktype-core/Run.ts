@@ -415,6 +415,12 @@ class Run implements RunContext {
     }
 }
 
+/**
+ * Run quicktype and produce one or more output files.
+ * 
+ * @param options Partial options.  For options that are not defined, the
+ * defaults will be used.
+ */
 export async function quicktypeMultiFile(
     options: Partial<Options>
 ): Promise<ReadonlyMap<string, SerializedRenderResult>> {
@@ -429,6 +435,14 @@ function offsetSpan(span: Span, lineOffset: number): Span {
     return { start: offsetLocation(span.start, lineOffset), end: offsetLocation(span.end, lineOffset) };
 }
 
+/** 
+ * Run quicktype like `quicktypeMultiFile`, but if there are multiple
+ * output files they will all be squashed into one output, with comments at the
+ * start of each file.
+ * 
+ * @param options Partial options.  For options that are not defined, the
+ * defaults will be used.
+ */
 export async function quicktype(options: Partial<Options>): Promise<SerializedRenderResult> {
     const result = await quicktypeMultiFile(options);
     if (result.size <= 1) {
