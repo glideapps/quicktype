@@ -837,6 +837,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         this.emitBlock(emitBody);
     }
 
+    private converterObject(converterName: Name): Sourcelike {
+        // FIXME: Get a singleton
+        return [converterName, ".Singleton"];
+    }
+
     private emitConverterClass(): void {
         // FIXME: Make Converter a Named
         const converterName: Sourcelike = ["Converter"];
@@ -849,7 +854,7 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 this.indent(() => {
                     for (const [t, converter] of this.typesWithNamedTransformations) {
                         if (alwaysApplyTransformation(defined(transformationForType(t)))) {
-                            this.emitLine("new ", converter, "(),");
+                            this.emitLine(this.converterObject(converter), ",");
                         }
                     }
                     this.emitLine("new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal }");
@@ -891,11 +896,6 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         } else {
             return this.emitTransformer(value, consumer, targetType, emitFinish);
         }
-    }
-
-    private converterObject(converterName: Name): Sourcelike {
-        // FIXME: Get a singleton
-        return ["new ", converterName, "()"];
     }
 
     private emitDecodeTransformer(
@@ -1202,6 +1202,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     this.emitThrow(['"Cannot marshal type ', csType, '"']);
                 }
             });
+            this.ensureBlankLine();
+            this.emitLine("public static readonly ", converterName, " Singleton = new ", converterName, "();");
         });
     }
 
