@@ -151,7 +151,7 @@ function replaceUnion(
         transformerForString = undefined;
     } else if (stringTypes.size === 1) {
         const t = defined(iterableFirst(stringTypes));
-        transformerForString = new DecodingTransformer(graph, getStringType(), transformerForStringType(t));
+        transformerForString = transformerForKind(t.kind);
     } else {
         transformerForString = new DecodingTransformer(
             graph,
