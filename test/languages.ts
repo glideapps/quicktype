@@ -10,6 +10,7 @@ export interface Language {
   diffViaSchema: boolean;
   skipDiffViaSchema: string[];
   allowMissingNull: boolean;
+  handlesStringifiedIntegers: boolean;
   output: string;
   topLevel: string;
   skipJSON: string[];
@@ -29,8 +30,16 @@ export const CSharpLanguage: Language = {
     return `dotnet run "${sample}"`;
   },
   diffViaSchema: true,
-  skipDiffViaSchema: ["bug427.json", "combinations.json", "keywords.json", "34702.json"],
+  skipDiffViaSchema: [
+    "bug427.json",
+    "combinations.json",
+    "keywords.json",
+    "34702.json",
+    "dc44f.json",
+    "dd1ce.json"
+  ],
   allowMissingNull: false,
+  handlesStringifiedIntegers: true,
   output: "QuickType.cs",
   topLevel: "TopLevel",
   skipJSON: [
@@ -65,6 +74,7 @@ export const JavaLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
+  handlesStringifiedIntegers: false,
   output: "src/main/java/io/quicktype/TopLevel.java",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "nst-test-suite.json"],
@@ -90,6 +100,7 @@ export const RustLanguage: Language = {
     "keywords.json",
     "recursive.json",
     "github-events.json",
+    "nst-test-suite.json",
     "0a91a.json",
     "0cffa.json",
     "127a1.json",
@@ -102,6 +113,7 @@ export const RustLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
+  handlesStringifiedIntegers: false,
   output: "module_under_test.rs",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -179,6 +191,7 @@ export const RubyLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: true,
+  handlesStringifiedIntegers: false,
   output: "TopLevel.rb",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -232,6 +245,7 @@ export const GoLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
+  handlesStringifiedIntegers: false,
   output: "quicktype.go",
   topLevel: "TopLevel",
   skipJSON: ["identifiers.json", "simple-identifiers.json", "blns-object.json", "nst-test-suite.json"],
@@ -273,6 +287,7 @@ export const CPlusPlusLanguage: Language = {
     "fcca3.json"
   ],
   allowMissingNull: false,
+  handlesStringifiedIntegers: false,
   output: "quicktype.hpp",
   topLevel: "TopLevel",
   skipJSON: [
@@ -328,6 +343,7 @@ export const ElmLanguage: Language = {
     "f6a65.json"
   ],
   allowMissingNull: false,
+  handlesStringifiedIntegers: false,
   output: "QuickType.elm",
   topLevel: "QuickType",
   skipJSON: [
@@ -382,6 +398,7 @@ export const SwiftLanguage: Language = {
     "f82d9.json"
   ],
   allowMissingNull: true,
+  handlesStringifiedIntegers: false,
   output: "quicktype.swift",
   topLevel: "TopLevel",
   skipJSON: [
@@ -423,6 +440,7 @@ export const ObjectiveCLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: true,
+  handlesStringifiedIntegers: false,
   output: "QTTopLevel.m",
   topLevel: "QTTopLevel",
   skipJSON: [
@@ -459,6 +477,7 @@ export const TypeScriptLanguage: Language = {
     "bug863.json",
     "kitchen-sink.json",
     "nbl-stats.json",
+    "nst-test-suite.json",
     "00c36.json",
     "2df80.json",
     "34702.json",
@@ -470,6 +489,7 @@ export const TypeScriptLanguage: Language = {
     "e8b04.json"
   ],
   allowMissingNull: false,
+  handlesStringifiedIntegers: false,
   output: "TopLevel.ts",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -490,6 +510,7 @@ export const JavaScriptLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
+  handlesStringifiedIntegers: false,
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -509,6 +530,7 @@ export const FlowLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
+  handlesStringifiedIntegers: false,
   output: "TopLevel.js",
   topLevel: "TopLevel",
   skipJSON: [],
@@ -537,6 +559,7 @@ export const KotlinLanguage: Language = {
     "76ae1.json"
   ],
   allowMissingNull: true,
+  handlesStringifiedIntegers: false,
   output: "TopLevel.kt",
   topLevel: "TopLevel",
   skipJSON: [

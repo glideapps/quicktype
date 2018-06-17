@@ -28,7 +28,7 @@ export class JSONSchemaTargetLanguage extends TargetLanguage {
     }
 
     protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
-        return { date: "date", time: "time", dateTime: "date-time" };
+        return { date: "date", time: "time", dateTime: "date-time", integerString: "integer-string" };
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -96,7 +96,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         if (types.size === 1) {
             return this.schemaForType(first);
         }
-        return { oneOf: Array.from(types).map(this.schemaForType) };
+        return { anyOf: Array.from(types).map(this.schemaForType) };
     };
 
     private makeRef(t: Type): Schema {
@@ -114,7 +114,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
         const schema = matchTypeExhaustive<{ [name: string]: any }>(
             t,
             _noneType => {
-                return panic("None type should have been replaced");
+                return panic("none type should have been replaced");
             },
             _anyType => ({}),
             _nullType => ({ type: "null" }),
@@ -136,7 +136,8 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             },
             _dateType => ({ type: "string", format: "date" }),
             _timeType => ({ type: "string", format: "time" }),
-            _dateTimeType => ({ type: "string", format: "date-time" })
+            _dateTimeType => ({ type: "string", format: "date-time" }),
+            _integerStringType => ({ type: "string", format: "integer" })
         );
         if (schema.$ref === undefined) {
             this.addDescription(t, schema);

@@ -7,7 +7,7 @@ import { serializeRenderResult, SerializedRenderResult } from "./Source";
 import { StringTypeMapping } from "./TypeBuilder";
 import { defined } from "./support/Support";
 import { ConvenienceRenderer } from "./ConvenienceRenderer";
-import { UnionType } from "./Type";
+import { Type } from "./Type";
 
 export abstract class TargetLanguage {
     constructor(readonly displayName: string, readonly names: string[], readonly extension: string) {}
@@ -68,7 +68,8 @@ export abstract class TargetLanguage {
         return {
             date: partial.date || "string",
             time: partial.time || "string",
-            dateTime: partial.dateTime || "string"
+            dateTime: partial.dateTime || "string",
+            integerString: partial.integerString || "string"
         };
         /* tslint:enable */
     }
@@ -85,15 +86,7 @@ export abstract class TargetLanguage {
         return false;
     }
 
-    needsTransformerForUnion(_u: UnionType): boolean {
-        return false;
-    }
-
-    get needsTransformerForEnums(): boolean {
-        return false;
-    }
-
-    get needsTransformersForDateTime(): boolean {
+    needsTransformerForType(_t: Type): boolean {
         return false;
     }
 }

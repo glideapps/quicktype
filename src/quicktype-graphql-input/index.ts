@@ -239,6 +239,7 @@ class GQLQuery {
                     return panic("No type for list.");
                 }
                 result = builder.getArrayType(
+                    emptyTypeAttributes,
                     this.makeIRTypeFromFieldNode(builder, fieldNode, fieldType.ofType, containingTypeName)
                 );
                 break;
@@ -454,12 +455,11 @@ function makeGraphQLQueryTypes(
                 )
             })
         );
-        const errorArray = builder.getArrayType(errorType);
-        builder.addAttributes(
-            errorArray,
+        const errorArray = builder.getArrayType(
             namesTypeAttributeKind.makeAttributes(
                 TypeNames.make(new Set(["errors"]), new Set(["graphQLErrors"]), false)
-            )
+            ),
+            errorType
         );
         const t = builder.getClassType(
             makeNamesTypeAttributes(queryName, false),

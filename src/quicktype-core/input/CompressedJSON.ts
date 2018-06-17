@@ -20,7 +20,8 @@ export enum Tag {
     Array,
     Date,
     Time,
-    DateTime
+    DateTime,
+    IntegerString
 }
 
 export type Value = number;
@@ -41,6 +42,20 @@ export function valueTag(v: Value): Tag {
     return v & TAG_MASK;
 }
 
+const INTEGER_STRING = /^(0|-?[1-9]\d*)$/;
+// We're restricting numbers to what's representable as 32 bit
+// signed integers, to be on the safe side of most languages.
+const MIN_INTEGER_STRING = 1 << 31;
+const MAX_INTEGER_STRING = -(MIN_INTEGER_STRING + 1);
+
+function isIntegerString(s: string): boolean {
+    if (s.match(INTEGER_STRING) === null) {
+        return false;
+    }
+    const i = parseInt(s, 10);
+    return i >= MIN_INTEGER_STRING && i <= MAX_INTEGER_STRING;
+}
+
 type Context = {
     currentObject: Value[] | undefined;
     currentArray: Value[] | undefined;
@@ -48,7 +63,7 @@ type Context = {
     currentNumberIsDouble: boolean;
 };
 
-const methodMap: {[name: string]: string} = {
+const methodMap: { [name: string]: string } = {
     startObject: "handleStartObject",
     endObject: "handleEndObject",
     startArray: "handleStartArray",
@@ -84,7 +99,7 @@ export class CompressedJSON {
 
     async readFromStream(readStream: stream.Readable): Promise<Value> {
         const combo = new Combo({ packKeys: true, packStrings: true });
-        combo.on("data", (item: {name: string, value: string | undefined}) => {
+        combo.on("data", (item: { name: string; value: string | undefined }) => {
             if (typeof methodMap[item.name] === "string") {
                 this[methodMap[item.name]](item.value);
             }
@@ -221,13 +236,15 @@ export class CompressedJSON {
     protected handleStringValue = (s: string): void => {
         let value: Value | undefined = undefined;
         if (s.length <= 64) {
-            if (s.length > 0 && "0123456789".indexOf(s[0]) >= 0) {
+            if (s.length > 0 && "0123456789-".indexOf(s[0]) >= 0) {
                 if (this._makeDate && isDate(s)) {
                     value = makeValue(Tag.Date, 0);
                 } else if (this._makeTime && isTime(s)) {
                     value = makeValue(Tag.Time, 0);
                 } else if (this._makeDateTime && isDateTime(s)) {
                     value = makeValue(Tag.DateTime, 0);
+                } else if (isIntegerString(s)) {
+                    value = makeValue(Tag.IntegerString, 0);
                 }
             }
             if (value === undefined) {

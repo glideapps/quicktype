@@ -53,10 +53,11 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
 
     protected makeArray(
         arrays: NestedValueArray,
-        _typeAttributes: TypeAttributes,
+        typeAttributes: TypeAttributes,
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         return this.typeBuilder.getArrayType(
+            typeAttributes,
             this._typeInference.inferType(emptyTypeAttributes, arrays, this._fixed, forwardingRef)
         );
     }
@@ -64,6 +65,7 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
 
 function canBeEnumCase(s: string): boolean {
     if (s.length === 0) return true; // FIXME: Do we really want this?
+    // FIXME: Haven't we dealt with date-time in compressed JSON?
     return !isDate(s) && !isTime(s) && !isDateTime(s);
 }
 
@@ -75,7 +77,8 @@ export class TypeInference {
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferMaps: boolean,
         private readonly _inferEnums: boolean,
-        private readonly _inferDates: boolean
+        private readonly _inferDates: boolean,
+        private readonly _inferIntegerStrings: boolean
     ) {}
 
     addValuesToAccumulator(valueArray: NestedValueArray, accumulator: Accumulator): void {
@@ -83,17 +86,17 @@ export class TypeInference {
             const t = valueTag(value);
             switch (t) {
                 case Tag.Null:
-                    accumulator.addNull(emptyTypeAttributes);
+                    accumulator.addPrimitive("null", emptyTypeAttributes);
                     break;
                 case Tag.False:
                 case Tag.True:
-                    accumulator.addBool(emptyTypeAttributes);
+                    accumulator.addPrimitive("bool", emptyTypeAttributes);
                     break;
                 case Tag.Integer:
-                    accumulator.addInteger(emptyTypeAttributes);
+                    accumulator.addPrimitive("integer", emptyTypeAttributes);
                     break;
                 case Tag.Double:
-                    accumulator.addDouble(emptyTypeAttributes);
+                    accumulator.addPrimitive("double", emptyTypeAttributes);
                     break;
                 case Tag.InternedString:
                     if (this._inferEnums) {
@@ -135,6 +138,13 @@ export class TypeInference {
                         "string",
                         emptyTypeAttributes,
                         this._inferDates ? StringTypes.dateTime : StringTypes.unrestricted
+                    );
+                    break;
+                case Tag.IntegerString:
+                    accumulator.addStringType(
+                        "string",
+                        emptyTypeAttributes,
+                        this._inferIntegerStrings ? StringTypes.integer : StringTypes.unrestricted
                     );
                     break;
                 default:

@@ -124,7 +124,7 @@ export class TypeReconstituter<TBuilder extends BaseGraphRewriteBuilder> {
     }
 
     getArrayType(items: TypeRef): void {
-        this.registerAndAddAttributes(this.builderForNewType().getArrayType(items, this._forwardingRef));
+        this.register(this.builderForNewType().getArrayType(this._typeAttributes, items, this._forwardingRef));
     }
 
     setArrayItems(items: TypeRef): void {

@@ -32,6 +32,15 @@ const ONLY_OUTPUT = process.env.ONLY_OUTPUT !== undefined;
 
 const MAX_TEST_RUNTIME_MS = 30 * 60 * 1000;
 
+// These are tests where we have stringified integers that might be serialized
+// back as integers, which happens in heterogenous arrays such as ["123", 456].
+const testsWithStringifiedIntegers = ["nst-test-suite.json", "kitchen-sink.json"];
+
+function allowStringifiedIntegers(language: languages.Language, test: string): boolean {
+  if (!language.handlesStringifiedIntegers) return false;
+  return testsWithStringifiedIntegers.indexOf(test) >= 0;
+}
+
 function pathWithoutExtension(fullPath: string, extension: string): string {
   return path.join(path.dirname(fullPath), path.basename(fullPath, extension));
 }
@@ -47,6 +56,10 @@ function additionalTestFiles(base: string, extension: string): string[] {
     fn = `${base}.${i.toString()}.${extension}`;
     if (fs.existsSync(fn)) {
       additionalFiles.push(fn);
+      const outFn = `${base}.${i.toString()}.out.${extension}`;
+      if (fs.existsSync(outFn)) {
+        additionalFiles.push(outFn);
+      }
     } else {
       break;
     }
@@ -205,7 +218,8 @@ class JSONFixture extends LanguageFixture {
       expectedFile: filename,
       given: { command: this.language.runCommand(filename) },
       strict: false,
-      allowMissingNull: this.language.allowMissingNull
+      allowMissingNull: this.language.allowMissingNull,
+      allowStringifiedIntegers: allowStringifiedIntegers(this.language, filename)
     });
 
     if (
@@ -288,6 +302,7 @@ class JSONToXToYFixture extends JSONFixture {
       diffViaSchema: false,
       skipDiffViaSchema: [],
       allowMissingNull: language.allowMissingNull,
+      handlesStringifiedIntegers: language.handlesStringifiedIntegers,
       output: languageXOutputFilename,
       topLevel: "TopLevel",
       skipJSON,
@@ -320,7 +335,8 @@ class JSONToXToYFixture extends JSONFixture {
       expectedFile: filename,
       given: { command: this.runLanguage.runCommand(filename) },
       strict: false,
-      allowMissingNull: this.runLanguage.allowMissingNull
+      allowMissingNull: this.runLanguage.allowMissingNull,
+      allowStringifiedIntegers: allowStringifiedIntegers(this.runLanguage, filename)
     });
   }
 
@@ -352,7 +368,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     let input = JSON.parse(fs.readFileSync(filename, "utf8"));
     let schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
 
-    let ajv = new Ajv({ format: "full" });
+    let ajv = new Ajv({ format: "full", unknownFormats: ["integer"] });
     // Make Ajv's date-time compatible with what we recognize
     ajv.addFormat("date-time", isDateTime);
     let valid = ajv.validate(schema, input);
@@ -456,9 +472,7 @@ class JSONTypeScriptFixture extends JSONToXToYFixture {
   }
 }
 
-// This fixture tests generating code from Schema with features
-// that we can't (yet) get from JSON.  Right now that's only
-// recursive types.
+// This fixture tests generating code from JSON Schema.
 class JSONSchemaFixture extends LanguageFixture {
   constructor(language: languages.Language, readonly name: string = `schema-${language.name}`) {
     super(language);
@@ -495,14 +509,19 @@ class JSONSchemaFixture extends LanguageFixture {
       await execAsync(this.language.compileCommand);
     }
     for (const filename of additionalFiles) {
-      if (!filename.endsWith(".json")) continue;
+      if (!filename.endsWith(".json") || filename.endsWith(".out.json")) continue;
 
       const jsonBase = path.basename(filename);
+      let expected = jsonBase.replace(".json", ".out.json");
+      if (!fs.existsSync(expected) || !this.language.handlesStringifiedIntegers) {
+        expected = jsonBase;
+      }
       compareJsonFileToJson({
-        expectedFile: jsonBase,
+        expectedFile: expected,
         given: { command: this.language.runCommand(jsonBase) },
         strict: false,
-        allowMissingNull: this.language.allowMissingNull
+        allowMissingNull: this.language.allowMissingNull,
+        allowStringifiedIntegers: allowStringifiedIntegers(this.language, expected)
       });
     }
   }
@@ -573,7 +592,8 @@ class GraphQLFixture extends LanguageFixture {
         expectedFile: jsonBase,
         given: { command: this.language.runCommand(jsonBase) },
         strict: false,
-        allowMissingNull: this.language.allowMissingNull
+        allowMissingNull: this.language.allowMissingNull,
+        allowStringifiedIntegers: allowStringifiedIntegers(this.language, jsonBase)
       });
     }
   }

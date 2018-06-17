@@ -1,7 +1,15 @@
 import stringHash = require("string-hash");
-import { setUnionInto, areEqual, hashCodeOf, definedMap, addHashCode } from "collection-utils";
+import {
+    setUnionInto,
+    areEqual,
+    hashCodeOf,
+    definedMap,
+    addHashCode,
+    definedMapWithDefault,
+    arraySortByInto
+} from "collection-utils";
 
-import { UnionType, Type, EnumType, PrimitiveType } from "./Type";
+import { UnionType, Type, EnumType, PrimitiveType, TypeKind } from "./Type";
 import { TypeAttributeKind } from "./TypeAttributes";
 import { panic, assert, indentationString } from "./support/Support";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
@@ -15,6 +23,10 @@ function debugStringForType(t: Type): string {
     return `${t.kind} (${target.kind})`;
 }
 
+function getNumberOfNodes(xfer: Transformer | undefined): number {
+    return definedMapWithDefault(xfer, 0, x => x.getNumberOfNodes());
+}
+
 export abstract class Transformer {
     constructor(readonly kind: string, protected readonly graph: TypeGraph, readonly sourceTypeRef: TypeRef) {}
 
@@ -26,6 +38,12 @@ export abstract class Transformer {
     getChildren(): Set<Type> {
         return new Set([this.sourceType]);
     }
+
+    getNumberOfNodes(): number {
+        return 1;
+    }
+
+    abstract get canFail(): boolean;
 
     abstract reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer;
 
@@ -65,6 +83,10 @@ export abstract class ProducerTransformer extends Transformer {
         return setUnionInto(children, this.consumer.getChildren());
     }
 
+    getNumberOfNodes(): number {
+        return super.getNumberOfNodes() + getNumberOfNodes(this.consumer);
+    }
+
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof ProducerTransformer)) return false;
@@ -91,6 +113,10 @@ export abstract class MatchTransformer extends Transformer {
         return setUnionInto(super.getChildren(), this.transformer.getChildren());
     }
 
+    getNumberOfNodes(): number {
+        return super.getNumberOfNodes() + this.transformer.getNumberOfNodes();
+    }
+
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof MatchTransformer)) return false;
@@ -110,6 +136,10 @@ export abstract class MatchTransformer extends Transformer {
 export class DecodingTransformer extends ProducerTransformer {
     constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
         super("decode", graph, sourceTypeRef, consumer);
+    }
+
+    get canFail(): boolean {
+        return false;
     }
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
@@ -137,13 +167,17 @@ export class DecodingTransformer extends ProducerTransformer {
 
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
-        return other instanceof StringProducerTransformer;
+        return other instanceof DecodingTransformer;
     }
 }
 
 export class EncodingTransformer extends Transformer {
     constructor(graph: TypeGraph, sourceTypeRef: TypeRef) {
         super("encode", graph, sourceTypeRef);
+    }
+
+    get canFail(): boolean {
+        return false;
     }
 
     reverse(_targetTypeRef: TypeRef, _continuationTransformer: Transformer | undefined): Transformer {
@@ -161,9 +195,156 @@ export class EncodingTransformer extends Transformer {
     }
 }
 
+export class ArrayDecodingTransformer extends ProducerTransformer {
+    constructor(
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        consumer: Transformer | undefined,
+        private readonly _itemTargetTypeRef: TypeRef,
+        readonly itemTransformer: Transformer
+    ) {
+        super("decode-array", graph, sourceTypeRef, consumer);
+    }
+
+    getChildren(): Set<Type> {
+        const children = super.getChildren();
+        children.add(this.itemTargetType);
+        return setUnionInto(children, this.itemTransformer.getChildren());
+    }
+
+    getNumberOfNodes(): number {
+        return super.getNumberOfNodes() + this.itemTransformer.getNumberOfNodes();
+    }
+
+    get canFail(): boolean {
+        return false;
+    }
+
+    get itemTargetType(): Type {
+        return derefTypeRef(this._itemTargetTypeRef, this.graph);
+    }
+
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        if (continuationTransformer !== undefined) {
+            return panic("Reversing a decoding transformer cannot have a continuation");
+        }
+
+        const itemTransformer = this.itemTransformer.reverse(this._itemTargetTypeRef, undefined);
+
+        if (this.consumer === undefined) {
+            return new ArrayEncodingTransformer(
+                this.graph,
+                targetTypeRef,
+                this.itemTransformer.sourceTypeRef,
+                itemTransformer
+            );
+        } else {
+            return this.consumer.reverse(
+                targetTypeRef,
+                new ArrayEncodingTransformer(
+                    this.graph,
+                    this.consumer.sourceTypeRef,
+                    this.itemTransformer.sourceTypeRef,
+                    itemTransformer
+                )
+            );
+        }
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new ArrayDecodingTransformer(
+            builder.typeGraph,
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder)),
+            builder.reconstituteTypeRef(this._itemTargetTypeRef),
+            this.itemTransformer.reconstitute(builder)
+        );
+    }
+
+    hashCode(): number {
+        let h = super.hashCode();
+        h = addHashCode(h, hashCodeOf(this._itemTargetTypeRef));
+        h = addHashCode(h, this.itemTransformer.hashCode());
+        return h;
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        if (!(other instanceof ArrayDecodingTransformer)) return false;
+        if (!areEqual(this._itemTargetTypeRef, other._itemTargetTypeRef)) return false;
+        return this.itemTransformer.equals(other.itemTransformer);
+    }
+
+    protected debugPrintContinuations(indent: number): void {
+        this.itemTransformer.debugPrint(indent);
+        super.debugPrintContinuations(indent);
+    }
+}
+
+export class ArrayEncodingTransformer extends Transformer {
+    constructor(
+        graph: TypeGraph,
+        sourceTypeRef: TypeRef,
+        private readonly _itemTargetTypeRef: TypeRef,
+        readonly itemTransformer: Transformer
+    ) {
+        super("encode-array", graph, sourceTypeRef);
+    }
+
+    getChildren(): Set<Type> {
+        const children = super.getChildren();
+        children.add(this.itemTargetType);
+        return setUnionInto(children, this.itemTransformer.getChildren());
+    }
+
+    getNumberOfNodes(): number {
+        return super.getNumberOfNodes() + this.itemTransformer.getNumberOfNodes();
+    }
+
+    get canFail(): boolean {
+        return false;
+    }
+
+    get itemTargetType(): Type {
+        return derefTypeRef(this._itemTargetTypeRef, this.graph);
+    }
+
+    reverse(_targetTypeRef: TypeRef, _continuationTransformer: Transformer | undefined): Transformer {
+        return panic("Can't reverse array encoding transformer");
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new ArrayEncodingTransformer(
+            builder.typeGraph,
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            builder.reconstituteTypeRef(this._itemTargetTypeRef),
+            this.itemTransformer.reconstitute(builder)
+        );
+    }
+
+    hashCode(): number {
+        let h = super.hashCode();
+        h = addHashCode(h, hashCodeOf(this._itemTargetTypeRef));
+        return addHashCode(h, this.itemTransformer.hashCode());
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        if (!(other instanceof ArrayEncodingTransformer)) return false;
+        if (!areEqual(this._itemTargetTypeRef, other._itemTargetTypeRef)) return false;
+        return this.itemTransformer.equals(other.itemTransformer);
+    }
+
+    protected debugPrintContinuations(indent: number): void {
+        this.itemTransformer.debugPrint(indent);
+        super.debugPrintContinuations(indent);
+    }
+}
+
 export class ChoiceTransformer extends Transformer {
     constructor(graph: TypeGraph, sourceTypeRef: TypeRef, public readonly transformers: ReadonlyArray<Transformer>) {
         super("choice", graph, sourceTypeRef);
+        assert(transformers.length > 0, "Choice must have at least one transformer");
     }
 
     getChildren(): Set<Type> {
@@ -174,8 +355,33 @@ export class ChoiceTransformer extends Transformer {
         return children;
     }
 
+    getNumberOfNodes(): number {
+        let n = 0;
+        for (const xfer of this.transformers) {
+            n += xfer.getNumberOfNodes();
+        }
+        return super.getNumberOfNodes() + n;
+    }
+
+    get canFail(): boolean {
+        return this.transformers.some(xfer => xfer.canFail);
+    }
+
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         const transformers = this.transformers.map(xfer => xfer.reverse(targetTypeRef, continuationTransformer));
+        if (transformers.every(xfer => xfer instanceof UnionMemberMatchTransformer)) {
+            const memberMatchers = transformers as UnionMemberMatchTransformer[];
+            const first = memberMatchers[0];
+            if (memberMatchers.every(xfer => first.memberType.equals(xfer.memberType))) {
+                const subTransformers = memberMatchers.map(xfer => xfer.transformer);
+                return new UnionMemberMatchTransformer(
+                    this.graph,
+                    targetTypeRef,
+                    new ChoiceTransformer(this.graph, subTransformers[0].sourceTypeRef, subTransformers),
+                    first.memberTypeRef
+                );
+            }
+        }
         return new ChoiceTransformer(this.graph, targetTypeRef, transformers);
     }
 
@@ -246,18 +452,62 @@ export class DecodingChoiceTransformer extends Transformer {
         return children;
     }
 
+    getNumberOfNodes(): number {
+        return (
+            super.getNumberOfNodes() +
+            getNumberOfNodes(this.nullTransformer) +
+            getNumberOfNodes(this.integerTransformer) +
+            getNumberOfNodes(this.doubleTransformer) +
+            getNumberOfNodes(this.boolTransformer) +
+            getNumberOfNodes(this.stringTransformer) +
+            getNumberOfNodes(this.arrayTransformer) +
+            getNumberOfNodes(this.objectTransformer)
+        );
+    }
+
+    get canFail(): boolean {
+        return false;
+    }
+
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         assert(
             continuationTransformer === undefined,
             "Reversing a decoding transformer can't have a target transformer"
         );
 
-        let transformers: Transformer[] = [];
+        let transformers = new Map<TypeKind, Transformer[]>();
 
-        const addCase = (transformer: Transformer | undefined) => {
+        function addCase(transformer: Transformer | undefined) {
             if (transformer === undefined) return;
-            transformers.push(transformer.reverse(targetTypeRef, undefined));
-        };
+            const reversed = transformer.reverse(targetTypeRef, undefined);
+            const kind = reversed.sourceType.kind;
+            let arr = transformers.get(kind);
+            if (arr === undefined) {
+                arr = [];
+                transformers.set(kind, arr);
+            }
+            arr.push(reversed);
+        }
+
+        // FIXME: Actually, keep all the failing transformers and put them first, then
+        // finally do the simplest non-failing one.  Actually actually, maybe not, since
+        // we're reversing to encode?  What's a case where this would be useful?
+
+        // If there are non-failing transformers, we ignore the ones that can fail and
+        // just pick the "simplest" non-failing one, being the one with the least number
+        // of nodes.
+        function filter(xfers: Transformer[]): Transformer[] {
+            assert(xfers.length > 0, "Must have at least one transformer");
+
+            const nonfailing = xfers.filter(xfer => !xfer.canFail);
+            if (nonfailing.length === 0) return xfers;
+
+            const smallest = arraySortByInto(
+                nonfailing.map(x => [x.getNumberOfNodes(), x] as [number, Transformer]),
+                ([c, _]) => c
+            )[0][1];
+            return [smallest];
+        }
 
         addCase(this.nullTransformer);
         addCase(this.integerTransformer);
@@ -267,7 +517,14 @@ export class DecodingChoiceTransformer extends Transformer {
         addCase(this.arrayTransformer);
         addCase(this.objectTransformer);
 
-        return new ChoiceTransformer(this.graph, targetTypeRef, transformers);
+        const resultingTransformers = ([] as Transformer[]).concat(...Array.from(transformers.values()).map(filter));
+
+        // No choice needed if there's only one
+        if (resultingTransformers.length === 1) {
+            return resultingTransformers[0];
+        }
+
+        return new ChoiceTransformer(this.graph, targetTypeRef, resultingTransformers);
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
@@ -326,12 +583,7 @@ export class DecodingChoiceTransformer extends Transformer {
 }
 
 export class UnionMemberMatchTransformer extends MatchTransformer {
-    constructor(
-        graph: TypeGraph,
-        sourceTypeRef: TypeRef,
-        transformer: Transformer,
-        private readonly _memberTypeRef: TypeRef
-    ) {
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, transformer: Transformer, readonly memberTypeRef: TypeRef) {
         super("union-member-match", graph, sourceTypeRef, transformer);
     }
 
@@ -343,8 +595,12 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
         return t;
     }
 
+    get canFail(): boolean {
+        return true;
+    }
+
     get memberType(): Type {
-        return derefTypeRef(this._memberTypeRef, this.graph);
+        return derefTypeRef(this.memberTypeRef, this.graph);
     }
 
     getChildren(): Set<Type> {
@@ -360,19 +616,19 @@ export class UnionMemberMatchTransformer extends MatchTransformer {
             builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             this.transformer.reconstitute(builder),
-            builder.reconstituteTypeRef(this._memberTypeRef)
+            builder.reconstituteTypeRef(this.memberTypeRef)
         );
     }
 
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         if (!(other instanceof UnionMemberMatchTransformer)) return false;
-        return this._memberTypeRef === other._memberTypeRef;
+        return this.memberTypeRef === other.memberTypeRef;
     }
 
     hashCode(): number {
         const h = super.hashCode();
-        return addHashCode(h, hashCodeOf(this._memberTypeRef));
+        return addHashCode(h, hashCodeOf(this.memberTypeRef));
     }
 
     protected debugDescription(): string {
@@ -394,6 +650,10 @@ export class StringMatchTransformer extends MatchTransformer {
             return panic("The source of a string match transformer must be an enum or string type");
         }
         return t;
+    }
+
+    get canFail(): boolean {
+        return true;
     }
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
@@ -438,6 +698,10 @@ export class UnionInstantiationTransformer extends Transformer {
         super("union-instantiation", graph, sourceTypeRef);
     }
 
+    get canFail(): boolean {
+        return false;
+    }
+
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         if (continuationTransformer === undefined) {
             return panic("Union instantiation transformer reverse must have a continuation");
@@ -462,6 +726,10 @@ export class UnionInstantiationTransformer extends Transformer {
 export class StringProducerTransformer extends ProducerTransformer {
     constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined, readonly result: string) {
         super("string-producer", graph, sourceTypeRef, consumer);
+    }
+
+    get canFail(): boolean {
+        return false;
     }
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
@@ -514,6 +782,10 @@ export class ParseDateTimeTransformer extends ProducerTransformer {
         super("parse-date-time", graph, sourceTypeRef, consumer);
     }
 
+    get canFail(): boolean {
+        return true;
+    }
+
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         if (this.consumer === undefined) {
             return new StringifyDateTimeTransformer(this.graph, targetTypeRef, continuationTransformer);
@@ -544,6 +816,10 @@ export class StringifyDateTimeTransformer extends ProducerTransformer {
         super("stringify-date-time", graph, sourceTypeRef, consumer);
     }
 
+    get canFail(): boolean {
+        return false;
+    }
+
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         if (this.consumer === undefined) {
             return new ParseDateTimeTransformer(this.graph, targetTypeRef, continuationTransformer);
@@ -566,6 +842,74 @@ export class StringifyDateTimeTransformer extends ProducerTransformer {
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
         return other instanceof StringifyDateTimeTransformer;
+    }
+}
+
+export class ParseIntegerTransformer extends ProducerTransformer {
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
+        super("parse-integer", graph, sourceTypeRef, consumer);
+    }
+
+    get canFail(): boolean {
+        return true;
+    }
+
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        if (this.consumer === undefined) {
+            return new StringifyIntegerTransformer(this.graph, targetTypeRef, continuationTransformer);
+        } else {
+            return this.consumer.reverse(
+                targetTypeRef,
+                new StringifyIntegerTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
+            );
+        }
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new ParseIntegerTransformer(
+            builder.typeGraph,
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder))
+        );
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        return other instanceof ParseIntegerTransformer;
+    }
+}
+
+export class StringifyIntegerTransformer extends ProducerTransformer {
+    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
+        super("stringify-integer", graph, sourceTypeRef, consumer);
+    }
+
+    get canFail(): boolean {
+        return false;
+    }
+
+    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
+        if (this.consumer === undefined) {
+            return new ParseIntegerTransformer(this.graph, targetTypeRef, continuationTransformer);
+        } else {
+            return this.consumer.reverse(
+                targetTypeRef,
+                new ParseIntegerTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
+            );
+        }
+    }
+
+    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
+        return new StringifyIntegerTransformer(
+            builder.typeGraph,
+            builder.reconstituteTypeRef(this.sourceTypeRef),
+            definedMap(this.consumer, xfer => xfer.reconstitute(builder))
+        );
+    }
+
+    equals(other: any): boolean {
+        if (!super.equals(other)) return false;
+        return other instanceof StringifyIntegerTransformer;
     }
 }
 

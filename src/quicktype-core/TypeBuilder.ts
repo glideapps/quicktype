@@ -70,12 +70,14 @@ export type StringTypeMapping = {
     date: PrimitiveStringTypeKind;
     time: PrimitiveStringTypeKind;
     dateTime: PrimitiveStringTypeKind;
+    integerString: PrimitiveStringTypeKind;
 };
 
 export const NoStringTypeMapping: StringTypeMapping = {
     date: "date",
     time: "time",
-    dateTime: "date-time"
+    dateTime: "date-time",
+    integerString: "integer-string"
 };
 
 export class TypeBuilder {
@@ -359,11 +361,11 @@ export class TypeBuilder {
         return this.addType(forwardingRef, tr => new ArrayType(tr, this.typeGraph, undefined), undefined);
     }
 
-    getArrayType(items: TypeRef, forwardingRef?: TypeRef): TypeRef {
+    getArrayType(attributes: TypeAttributes, items: TypeRef, forwardingRef?: TypeRef): TypeRef {
         return this.getOrAddType(
-            () => arrayTypeIdentity(emptyTypeAttributes, items),
+            () => arrayTypeIdentity(attributes, items),
             tr => new ArrayType(tr, this.typeGraph, items),
-            undefined,
+            attributes,
             forwardingRef
         );
     }

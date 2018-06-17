@@ -48,6 +48,8 @@ export interface Options {
     inferEnums: boolean;
     /** Whether to assume that JSON strings that look like dates are dates */
     inferDates: boolean;
+    /** Whether to convert stringified integers to integers */
+    inferIntegerStrings: boolean;
     /** Put class properties in alphabetical order, instead of in the order found in the JSON */
     alphabetizeProperties: boolean;
     /** Make all class property optional */
@@ -97,6 +99,7 @@ const defaultOptions: Options = {
     inferMaps: true,
     inferEnums: true,
     inferDates: true,
+    inferIntegerStrings: true,
     alphabetizeProperties: false,
     allPropertiesOptional: false,
     combineClasses: true,
@@ -116,6 +119,8 @@ const defaultOptions: Options = {
 
 export interface RunContext {
     stringTypeMapping: StringTypeMapping;
+    debugPrintReconstitution: boolean;
+    debugPrintTransformations: boolean;
 
     timeSync<T>(name: string, f: () => Promise<T>): Promise<T>;
     time<T>(name: string, f: () => T): T;
@@ -131,6 +136,14 @@ class Run implements RunContext {
     get stringTypeMapping(): StringTypeMapping {
         const targetLanguage = getTargetLanguage(this._options.lang);
         return targetLanguage.stringTypeMapping;
+    }
+
+    get debugPrintReconstitution(): boolean {
+        return this._options.debugPrintReconstitution === true;
+    }
+
+    get debugPrintTransformations(): boolean {
+        return this._options.debugPrintTransformations;
     }
 
     async timeSync<T>(name: string, f: () => Promise<T>): Promise<T> {
@@ -155,7 +168,7 @@ class Run implements RunContext {
 
     private async makeGraph(allInputs: InputData): Promise<TypeGraph> {
         const targetLanguage = getTargetLanguage(this._options.lang);
-        const stringTypeMapping = targetLanguage.stringTypeMapping;
+        const stringTypeMapping = this.stringTypeMapping;
         const conflateNumbers = !targetLanguage.supportsUnionsWithBothNumberTypes;
         const typeBuilder = new TypeBuilder(
             0,
@@ -174,6 +187,7 @@ class Run implements RunContext {
                     this._options.inferMaps,
                     this._options.inferEnums,
                     this._options.inferDates,
+                    this._options.inferIntegerStrings,
                     this._options.fixedTopLevels
                 )
         );
@@ -184,7 +198,7 @@ class Run implements RunContext {
             graph.printGraph();
         }
 
-        const debugPrintReconstitution = this._options.debugPrintReconstitution === true;
+        const debugPrintReconstitution = this.debugPrintReconstitution;
 
         if (typeBuilder.didAddForwardingIntersection) {
             this.time(
@@ -289,10 +303,7 @@ class Run implements RunContext {
         }
 
         const enumInference = allInputs.needSchemaProcessing ? "all" : this._options.inferEnums ? "infer" : "none";
-        this.time(
-            "expand strings",
-            () => (graph = expandStrings(graph, stringTypeMapping, enumInference, debugPrintReconstitution))
-        );
+        this.time("expand strings", () => (graph = expandStrings(this, graph, enumInference)));
         this.time(
             "flatten unions",
             () =>
@@ -323,17 +334,8 @@ class Run implements RunContext {
 
         this.time("fixed point", () => (graph = graph.rewriteFixedPoint(false, debugPrintReconstitution)));
 
-        this.time(
-            "make transformations",
-            () =>
-                (graph = makeTransformations(
-                    graph,
-                    stringTypeMapping,
-                    targetLanguage,
-                    this._options.debugPrintTransformations,
-                    debugPrintReconstitution
-                ))
-        );
+        this.time("make transformations", () => (graph = makeTransformations(this, graph, targetLanguage)));
+
         this.time(
             "flatten unions",
             () =>

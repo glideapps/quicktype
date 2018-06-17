@@ -36,6 +36,7 @@ export default function deepEquals(
   y: any,
   allowMissingNull: boolean,
   assumeStringsEqual: boolean,
+  allowStringifiedIntegers: boolean,
   path: string[] = []
 ): boolean {
   // remember that NaN === NaN returns false
@@ -69,6 +70,11 @@ export default function deepEquals(
     console.error(
       `Strings not equal at path ${pathToString(path)}: ${JSON.stringify(x)} !== ${JSON.stringify(y)}.`
     );
+    return false;
+  }
+  if (allowStringifiedIntegers && typeof x === "string" && typeof y === "number") {
+    if (x.toString() === y.toString()) return true;
+    console.error(`String and number not equal at path ${pathToString(path)}.`);
     return false;
   }
 
@@ -107,7 +113,7 @@ export default function deepEquals(
     }
     for (let i = 0; i < x.length; i++) {
       path.push(i.toString());
-      if (!deepEquals(x[i], y[i], allowMissingNull, assumeStringsEqual, path)) {
+      if (!deepEquals(x[i], y[i], allowMissingNull, assumeStringsEqual, allowStringifiedIntegers, path)) {
         return false;
       }
       path.pop();
@@ -115,7 +121,7 @@ export default function deepEquals(
     return true;
   }
 
-  // FIXMEL The way we're looking up properties with `indexOf` makes this
+  // FIXME: The way we're looking up properties with `indexOf` makes this
   // quadratic.  So far no problem, so meh.
   const xKeys = Object.keys(x);
   const yKeys = Object.keys(y);
@@ -128,11 +134,6 @@ export default function deepEquals(
         console.error(`Non-null property ${p} is not expected at path ${pathToString(path)}.`);
         return false;
       }
-      continue;
-    }
-    if (typeof y[p] !== typeof x[p]) {
-      console.error(`Properties ${p} don't have the same types at path ${pathToString(path)}.`);
-      return false;
     }
   }
 
@@ -144,13 +145,9 @@ export default function deepEquals(
       console.error(`Expected property ${p} not found at path ${pathToString(path)}.`);
       return false;
     }
-    if (typeof x[p] !== typeof y[p]) {
-      console.error(`Properties ${p} don't have the same types at path ${pathToString(path)}.`);
-      return false;
-    }
 
     path.push(p);
-    if (!deepEquals(x[p], y[p], allowMissingNull, assumeStringsEqual, path)) {
+    if (!deepEquals(x[p], y[p], allowMissingNull, assumeStringsEqual, allowStringifiedIntegers, path)) {
       return false;
     }
     path.pop();

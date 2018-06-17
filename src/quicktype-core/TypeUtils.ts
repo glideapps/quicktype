@@ -230,9 +230,11 @@ export function matchTypeExhaustive<U>(
     unionType: (unionType: UnionType) => U,
     dateType: (dateType: PrimitiveType) => U,
     timeType: (timeType: PrimitiveType) => U,
-    dateTimeType: (dateTimeType: PrimitiveType) => U
+    dateTimeType: (dateTimeType: PrimitiveType) => U,
+    integerStringType: (integerStringType: PrimitiveType) => U
 ): U {
     if (t.isPrimitive()) {
+        const kind = t.kind;
         const f = {
             none: noneType,
             any: anyType,
@@ -243,8 +245,9 @@ export function matchTypeExhaustive<U>(
             string: stringType as (t: PrimitiveType) => U,
             date: dateType,
             time: timeType,
-            "date-time": dateTimeType
-        }[t.kind];
+            "date-time": dateTimeType,
+            "integer-string": integerStringType
+        }[kind];
         if (f !== undefined) return f(t);
         return assertNever(f);
     } else if (t instanceof ArrayType) return arrayType(t);
@@ -296,7 +299,8 @@ export function matchType<U>(
         unionType,
         stringTypeMatchers.dateType || typeNotSupported,
         stringTypeMatchers.timeType || typeNotSupported,
-        stringTypeMatchers.dateTimeType || typeNotSupported
+        stringTypeMatchers.dateTimeType || typeNotSupported,
+        typeNotSupported
     );
     /* tslint:enable */
 }
@@ -328,6 +332,7 @@ export function matchCompoundType(
         objectType,
         ignore,
         unionType,
+        ignore,
         ignore,
         ignore,
         ignore

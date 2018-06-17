@@ -26,15 +26,16 @@ import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
 import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph, typeRefIndex } from "./TypeGraph";
 
+// FIXME: Why is "integer-string" a DateTimeTypeKind?
 export type DateTimeTypeKind = "date" | "time" | "date-time";
-export type PrimitiveStringTypeKind = "string" | DateTimeTypeKind;
+export type PrimitiveStringTypeKind = "string" | "integer-string" | DateTimeTypeKind;
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
 export type ObjectTypeKind = "object" | "map" | "class";
 
 export function isPrimitiveStringTypeKind(kind: TypeKind): kind is PrimitiveStringTypeKind {
-    return kind === "string" || kind === "date" || kind === "time" || kind === "date-time";
+    return ["string", "date", "time", "date-time", "integer-string"].indexOf(kind) >= 0;
 }
 
 export function isNumberTypeKind(kind: TypeKind): kind is "integer" | "double" {
@@ -791,7 +792,7 @@ export class UnionType extends SetOperationType {
     }
 
     get stringTypeMembers(): ReadonlySet<Type> {
-        return setFilter(this.members, t => ["string", "date", "time", "date-time", "enum"].indexOf(t.kind) >= 0);
+        return setFilter(this.members, t => isPrimitiveStringTypeKind(t.kind) || t.kind === "enum");
     }
 
     findMember(kind: TypeKind): Type | undefined {

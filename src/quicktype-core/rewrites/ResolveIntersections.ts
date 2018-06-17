@@ -208,7 +208,10 @@ class IntersectionAccumulator
             },
             dateType => this.addUnionSet([dateType]),
             timeType => this.addUnionSet([timeType]),
-            dateTimeType => this.addUnionSet([dateTimeType])
+            dateTimeType => this.addUnionSet([dateTimeType]),
+            _integerStringType => {
+                return panic("integer-string type should not be here yet");
+            }
         );
         return makeTypeAttributesInferred(attributes);
     }
@@ -317,8 +320,7 @@ class IntersectionUnionBuilder extends UnionBuilder<
     ): TypeRef {
         // FIXME: attributes
         const itemsType = this.makeIntersection(arrays, emptyTypeAttributes);
-        const tref = this.typeBuilder.getArrayType(itemsType, forwardingRef);
-        this.typeBuilder.addAttributes(tref, typeAttributes);
+        const tref = this.typeBuilder.getArrayType(typeAttributes, itemsType, forwardingRef);
         return tref;
     }
 }
