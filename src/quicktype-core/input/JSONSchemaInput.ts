@@ -224,7 +224,7 @@ export class Ref {
     }
 
     get definitionName(): string | undefined {
-        const pe = arrayGetFromEnd(this.path, -2);
+        const pe = arrayGetFromEnd(this.path, 2);
         if (pe === undefined) return undefined;
         if (keyOrIndex(pe) === "definitions") return keyOrIndex(defined(arrayLast(this.path)));
         return undefined;
