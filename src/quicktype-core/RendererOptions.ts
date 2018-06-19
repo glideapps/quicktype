@@ -1,6 +1,11 @@
 import { assert } from "./support/Support";
 import { messageError } from "./Messages";
 import { hasOwnProperty } from "collection-utils";
+
+/**
+ * Primary options show up in the web UI in the "Language" settings tab,
+ * secondary options in "Other".
+ */
 export type OptionKind = "primary" | "secondary";
 
 export interface OptionDefinition {
@@ -17,6 +22,10 @@ export interface OptionDefinition {
     legalValues?: string[];
 }
 
+/**
+ * The superclass for target language options.  You probably want to use one of its
+ * subclasses, `BooleanOption`, `EnumOption`, or `StringOption`.
+ */
 export abstract class Option<T> {
     readonly definition: OptionDefinition;
 
@@ -53,7 +62,16 @@ export function getOptionValues<T extends { [name: string]: Option<any> }>(
     return optionValues as OptionValues<T>;
 }
 
+/**
+ * A target language option that allows setting a boolean flag.
+ */
 export class BooleanOption extends Option<boolean> {
+    /**
+     * @param name The shorthand name.
+     * @param description Short-ish description of the option.
+     * @param defaultValue The default value.
+     * @param kind Whether it's a primary or secondary option.
+     */
     constructor(name: string, description: string, defaultValue: boolean, kind: OptionKind = "primary") {
         super({
             name,
