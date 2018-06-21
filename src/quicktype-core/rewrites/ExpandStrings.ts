@@ -51,18 +51,7 @@ export function expandStrings(ctx: RunContext, graph: TypeGraph, inference: Enum
                 return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
             }
         }
-        if (mappedStringTypes.allowDate) {
-            types.push(builder.getPrimitiveType("date"));
-        }
-        if (mappedStringTypes.allowTime) {
-            types.push(builder.getPrimitiveType("time"));
-        }
-        if (mappedStringTypes.allowDateTime) {
-            types.push(builder.getPrimitiveType("date-time"));
-        }
-        if (mappedStringTypes.allowInteger) {
-            types.push(builder.getPrimitiveType("integer-string"));
-        }
+        types.push(...Array.from(mappedStringTypes.transformations).map(k => builder.getPrimitiveType(k)));
         assert(types.length > 0, "We got an empty string type");
         return builder.getUnionType(attributes, new Set(types), forwardingRef);
     }

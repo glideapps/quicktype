@@ -33,10 +33,13 @@ import {
     unionTypeIdentity,
     intersectionTypeIdentity,
     MaybeTypeIdentity,
-    TypeIdentity
+    TypeIdentity,
+    TransformedStringTypeKind,
+    isPrimitiveStringTypeKind,
+    transformedStringTypeKinds
 } from "./Type";
 import { removeNullFromUnion } from "./TypeUtils";
-import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef, typeRefIndex } from "./TypeGraph";
+import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef, typeRefIndex, assertTypeRefGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
@@ -66,19 +69,26 @@ class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<number>> {
 
 export const provenanceTypeAttributeKind: TypeAttributeKind<Set<number>> = new ProvenanceTypeAttributeKind();
 
-export type StringTypeMapping = {
-    date: PrimitiveStringTypeKind;
-    time: PrimitiveStringTypeKind;
-    dateTime: PrimitiveStringTypeKind;
-    integerString: PrimitiveStringTypeKind;
-};
+export type StringTypeMapping = ReadonlyMap<TransformedStringTypeKind, PrimitiveStringTypeKind>;
 
-export const NoStringTypeMapping: StringTypeMapping = {
-    date: "date",
-    time: "time",
-    dateTime: "date-time",
-    integerString: "integer-string"
-};
+export function stringTypeMappingGet(stm: StringTypeMapping, kind: TransformedStringTypeKind): PrimitiveStringTypeKind {
+    const mapped = stm.get(kind);
+    if (mapped === undefined) return "string";
+    return mapped;
+}
+
+let noStringTypeMapping: StringTypeMapping | undefined;
+
+export function getNoStringTypeMapping(): StringTypeMapping {
+    if (noStringTypeMapping === undefined) {
+        noStringTypeMapping = new Map(
+            Array.from(transformedStringTypeKinds).map(
+                k => [k, k] as [TransformedStringTypeKind, PrimitiveStringTypeKind]
+            )
+        );
+    }
+    return noStringTypeMapping;
+}
 
 export class TypeBuilder {
     readonly typeGraph: TypeGraph;
@@ -140,6 +150,7 @@ export class TypeBuilder {
         attributes: TypeAttributes | undefined
     ): TypeRef {
         if (forwardingRef !== undefined) {
+            assertTypeRefGraph(forwardingRef, this.typeGraph);
             assert(this.types[typeRefIndex(forwardingRef)] === undefined);
         }
         const tref = forwardingRef !== undefined ? forwardingRef : this.reserveTypeRef();
@@ -269,9 +280,9 @@ export class TypeBuilder {
         // FIXME: Why do date/time types need a StringTypes attribute?
         // FIXME: Remove this from here and put it into flattenStrings
         let stringTypes = kind === "string" ? undefined : StringTypes.unrestricted;
-        if (kind === "date") kind = this._stringTypeMapping.date;
-        if (kind === "time") kind = this._stringTypeMapping.time;
-        if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
+        if (isPrimitiveStringTypeKind(kind) && kind !== "string") {
+            kind = stringTypeMappingGet(this._stringTypeMapping, kind);
+        }
         if (kind === "string") {
             return this.getStringType(attributes, stringTypes, forwardingRef);
         }

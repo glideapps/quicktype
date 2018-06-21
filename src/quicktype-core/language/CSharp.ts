@@ -1,6 +1,6 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { Type, EnumType, UnionType, ClassType, ClassProperty, ArrayType } from "../Type";
+import { Type, EnumType, UnionType, ClassType, ClassProperty, ArrayType, TransformedStringTypeKind, PrimitiveStringTypeKind } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
@@ -115,8 +115,13 @@ export class CSharpTargetLanguage extends TargetLanguage {
         ];
     }
 
-    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
-        return { date: "date-time", time: "date-time", dateTime: "date-time", integerString: "integer-string" };
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        mapping.set("date", "date-time");
+        mapping.set("time", "date-time");
+        mapping.set("date-time", "date-time");
+        mapping.set("integer-string", "integer-string");
+        return mapping;
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {

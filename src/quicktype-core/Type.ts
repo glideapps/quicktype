@@ -16,7 +16,8 @@ import {
     mapSortToArray,
     definedMap,
     hashCodeInit,
-    addHashCode
+    addHashCode,
+    hasOwnProperty
 } from "collection-utils";
 
 import { defined, panic, assert } from "./support/Support";
@@ -26,16 +27,26 @@ import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
 import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph, typeRefIndex } from "./TypeGraph";
 
-// FIXME: Why is "integer-string" a DateTimeTypeKind?
-export type DateTimeTypeKind = "date" | "time" | "date-time";
-export type PrimitiveStringTypeKind = "string" | "integer-string" | DateTimeTypeKind;
+export const transformedStringTypeDescriptions = {
+    date: "Date values",
+    time: "Time of day values",
+    "date-time": "Date and time of day values",
+    "integer-string": "Stringified integers"
+};
+
+export type TransformedStringTypeKind = keyof typeof transformedStringTypeDescriptions;
+export type PrimitiveStringTypeKind = "string" | TransformedStringTypeKind;
 export type PrimitiveTypeKind = "none" | "any" | "null" | "bool" | "integer" | "double" | PrimitiveStringTypeKind;
 export type NamedTypeKind = "class" | "enum" | "union";
 export type TypeKind = PrimitiveTypeKind | NamedTypeKind | "array" | "object" | "map" | "intersection";
 export type ObjectTypeKind = "object" | "map" | "class";
 
+export const transformedStringTypeKinds = new Set(
+    Object.getOwnPropertyNames(transformedStringTypeDescriptions)
+) as ReadonlySet<TransformedStringTypeKind>;
+
 export function isPrimitiveStringTypeKind(kind: TypeKind): kind is PrimitiveStringTypeKind {
-    return ["string", "date", "time", "date-time", "integer-string"].indexOf(kind) >= 0;
+    return kind === "string" || hasOwnProperty(transformedStringTypeDescriptions, kind);
 }
 
 export function isNumberTypeKind(kind: TypeKind): kind is "integer" | "double" {

@@ -12,7 +12,7 @@ import { Value, CompressedJSON } from "./CompressedJSON";
 import { JSONSchemaStore, JSONSchema } from "./JSONSchemaStore";
 import { parseJSON, panic, assert, defined, errorMessage, toString, toReadable, StringInput } from "../support/Support";
 import { messageError } from "../Messages";
-import { TypeBuilder } from "../TypeBuilder";
+import { TypeBuilder, stringTypeMappingGet } from "../TypeBuilder";
 import { makeNamesTypeAttributes } from "../TypeNames";
 import { descriptionTypeAttributeKind, descriptionAttributeProducer } from "../Description";
 import { TypeInference } from "./Inference";
@@ -167,9 +167,9 @@ export function jsonInputForTargetLanguage(
     }
 
     const mapping = lang.stringTypeMapping;
-    const makeDate = mapping.date !== "string";
-    const makeTime = mapping.time !== "string";
-    const makeDateTime = mapping.dateTime !== "string";
+    const makeDate = stringTypeMappingGet(mapping, "date") !== "string";
+    const makeTime = stringTypeMappingGet(mapping, "time") !== "string";
+    const makeDateTime = stringTypeMappingGet(mapping, "date-time") !== "string";
 
     const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
 

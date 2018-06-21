@@ -13,7 +13,7 @@ import {
     allUpperWordStyle
 } from "../support/Strings";
 import { defined, panic } from "../support/Support";
-import { StringTypeMapping } from "../TypeBuilder";
+import { StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
 import { descriptionTypeAttributeKind } from "../Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
@@ -27,8 +27,8 @@ export class JSONSchemaTargetLanguage extends TargetLanguage {
         return [];
     }
 
-    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
-        return { date: "date", time: "time", dateTime: "date-time", integerString: "integer-string" };
+    get stringTypeMapping(): StringTypeMapping {
+        return getNoStringTypeMapping();
     }
 
     get supportsOptionalClassProperties(): boolean {
