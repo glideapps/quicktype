@@ -193,20 +193,6 @@ export class TypeBuilder {
         this.typeAttributes[index] = combineTypeAttributes("union", existingAttributes, nonIdentityAttributes);
     }
 
-    makeNullable(tref: TypeRef, attributes: TypeAttributes): TypeRef {
-        const t = defined(this.types[typeRefIndex(tref)]);
-        if (t.kind === "null" || t.kind === "any") {
-            return tref;
-        }
-        const nullType = this.getPrimitiveType("null");
-        if (!(t instanceof UnionType)) {
-            return this.getUnionType(attributes, new Set([tref, nullType]));
-        }
-        const [maybeNull, nonNulls] = removeNullFromUnion(t);
-        if (maybeNull !== null) return tref;
-        return this.getUnionType(attributes, setMap(nonNulls, nn => nn.typeRef).add(nullType));
-    }
-
     finish(): TypeGraph {
         this.typeGraph.freeze(this.topLevels, this.types.map(defined), this.typeAttributes);
         return this.typeGraph;
