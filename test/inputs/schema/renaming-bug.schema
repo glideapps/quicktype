@@ -1,0 +1,384 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "version": "0.0.1",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d{1,5}.{1}\\d{1,5}.{1}\\d{1,5}$"
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/definitions/box"
+    }
+  ],
+  "definitions": {
+    "box": {
+      "type": "object",
+      "properties": {
+        "fruits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fruit"
+          }
+        },
+        "vehicles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/vehicle"
+          }
+        }
+      }
+    },
+    "fruit": {
+      "type": "object",
+      "properties": {
+        "apple": {
+          "type": "boolean"
+        },
+        "orange": {
+          "type": "boolean"
+        },
+        "berries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/berry"
+          }
+        }
+      }
+    },
+    "berry": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "color": {
+          "$ref": "#/definitions/color"
+        },
+        "shapes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/shape"
+          }
+        }
+      }
+    },
+    "shape": {
+      "type": "object",
+      "properties": {
+        "history": {
+          "$ref": "#/definitions/history"
+        },
+        "geometry": {
+          "$ref": "#/definitions/geometry"
+        }
+      }
+    },
+    "vehicle": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/definitions/vehicle/definitions/vehicleType"
+        },
+        "speed": {
+          "type": "object",
+          "properties": {
+            "velocity": {
+              "$ref": "#/definitions/vehicle/definitions/limit"
+            }
+          }
+        },
+        "year": {
+          "type": "string"
+        },
+        "brand": {
+          "type": "string"
+        },
+        "subModule": {
+          "type": "boolean"
+        }
+      },
+      "definitions": {
+        "vehicleType": {
+          "type": "object",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/vehicle/definitions/truck"
+            },
+            {
+              "$ref": "#/definitions/vehicle/definitions/bus"
+            },
+            {
+              "$ref": "#/definitions/vehicle/definitions/car"
+            },
+            {
+              "$ref": "#/definitions/vehicle/definitions/van"
+            },
+            {
+              "$ref": "#/definitions/vehicle/definitions/train"
+            },
+            {
+              "properties": {
+                "name": {
+                  "enum": [
+                    "Bike",
+                    "Aeroplane",
+                    "Jeep",
+                    "Trolley"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "axis": {
+          "enum": [
+            "X",
+            "Y",
+            "Z"
+          ]
+        },
+        "truck": {
+          "properties": {
+            "name": {
+              "enum": [
+                "truck"
+              ]
+            },
+            "width": {
+              "$ref": "#/definitions/vehicle/definitions/axis"
+            }
+          }
+        },
+        "bus": {
+          "properties": {
+            "name": {
+              "enum": [
+                "bus"
+              ]
+            },
+            "length": {
+              "$ref": "#/definitions/vehicle/definitions/axis"
+            }
+          }
+        },
+        "car": {
+          "properties": {
+            "name": {
+              "enum": [
+                "car"
+              ]
+            }
+          },
+          "anyOf": [
+            {
+              "properties": {
+                "width": {
+                  "enum": [
+                    "X"
+                  ]
+                },
+                "length": {
+                  "enum": [
+                    "X"
+                  ]
+                }
+              }
+            },
+            {
+              "properties": {
+                "width": {
+                  "enum": [
+                    "Y"
+                  ]
+                },
+                "length": {
+                  "enum": [
+                    "Y"
+                  ]
+                }
+              }
+            },
+            {
+              "properties": {
+                "width": {
+                  "enum": [
+                    "Z"
+                  ]
+                },
+                "length": {
+                  "enum": [
+                    "Z"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "van": {
+          "properties": {
+            "name": {
+              "enum": [
+                "van"
+              ]
+            },
+            "width": {
+              "enum": [
+                "XY",
+                "YZ",
+                "ZX"
+              ]
+            }
+          }
+        },
+        "train": {
+          "properties": {
+            "name": {
+              "enum": [
+                "train"
+              ]
+            }
+          },
+          "anyOf": [
+            {
+              "properties": {
+                "width": {
+                  "enum": [
+                    "X"
+                  ]
+                },
+                "length": {
+                  "enum": [
+                    "YZ"
+                  ]
+                }
+              }
+            },
+            {
+              "properties": {
+                "width": {
+                  "enum": [
+                    "Y"
+                  ]
+                },
+                "length": {
+                  "enum": [
+                    "ZX"
+                  ]
+                }
+              }
+            },
+            {
+              "properties": {
+                "width": {
+                  "enum": [
+                    "Z"
+                  ]
+                },
+                "length": {
+                  "enum": [
+                    "XY"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "limit": {
+          "type": "object",
+          "properties": {
+            "minimum": {
+              "type": "number"
+            },
+            "maximum": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "history": {
+      "type": "object",
+      "properties": {
+        "class": {
+          "type": "string"
+        }
+      }
+    },
+    "color": {
+      "type": "object",
+      "properties": {
+        "rgb": {
+          "$ref": "#/definitions/rgb"
+        }
+      }
+    },
+    "rgb": {
+      "type": "number"
+    },
+    "geometry": {
+      "type": "object",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/rectangle"
+        },
+        {
+          "$ref": "#/definitions/circular"
+        }
+      ]
+    },
+    "rectangle": {
+      "type": "object",
+      "properties": {
+        "rectShape": {
+          "type": "object",
+          "properties": {
+            "parts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/part"
+              }
+            }
+          }
+        }
+      }
+    },
+    "part": {
+      "type": "object",
+      "properties": {
+        "length": {
+          "type": "string"
+        },
+        "width": {
+          "type": "string"
+        },
+        "depth": {
+          "type": "string"
+        }
+      }
+    },
+    "circular": {
+      "type": "object",
+      "properties": {
+        "circularShape": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "shapeName": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

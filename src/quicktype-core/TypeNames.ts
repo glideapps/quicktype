@@ -202,10 +202,13 @@ export class RegularTypeNames extends TypeNames {
 export class TooManyTypeNames extends TypeNames {
     readonly names: ReadonlySet<string>;
 
-    constructor(readonly areInferred: boolean) {
+    constructor(readonly areInferred: boolean, name?: string) {
         super();
 
-        this.names = new Set([makeRandomName()]);
+        if (name === undefined) {
+            name = makeRandomName();
+        }
+        this.names = new Set([name]);
     }
 
     get combinedName(): string {
@@ -237,7 +240,10 @@ export class TooManyTypeNames extends TypeNames {
     }
 
     makeInferred(): TypeNames {
-        return this;
+        if (this.areInferred) {
+            return this;
+        }
+        return new TooManyTypeNames(true, iterableFirst(this.names));
     }
 
     singularize(): TypeNames {
