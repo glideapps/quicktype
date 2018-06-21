@@ -1216,8 +1216,8 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
         if (this._needHelpers || (this._needAttributes && (this.haveNamedUnions || this.haveEnums))) {
             this.ensureBlankLine();
             this.emitConverterClass();
+            this.forEachTransformation("leading-and-interposing", (n, t) => this.emitTransformation(n, t));
         }
-        this.forEachTransformation("leading-and-interposing", (n, t) => this.emitTransformation(n, t));
     }
 
     protected needNamespace(): boolean {
