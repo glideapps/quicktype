@@ -133,7 +133,15 @@ class Run implements RunContext {
     private readonly _options: Options;
 
     constructor(options: Partial<Options>) {
-        this._options = Object.assign(Object.assign({}, defaultOptions), options);
+        // We must not overwrite defaults with undefined values, which
+        // we sometimes get.
+        this._options = Object.assign({}, defaultOptions);
+        for (const k of Object.getOwnPropertyNames(options)) {
+            const v = (options as any)[k];
+            if (v !== undefined) {
+                (this._options as any)[k] = v;
+            }
+        }
     }
 
     get stringTypeMapping(): StringTypeMapping {
