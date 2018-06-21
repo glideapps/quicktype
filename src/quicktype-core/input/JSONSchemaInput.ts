@@ -636,11 +636,11 @@ export async function addTypesInSchema(
         function makeStringType(): TypeRef {
             switch (schema.format) {
                 case "date":
-                    return typeBuilder.getPrimitiveType("date", inferredAttributes);
+                    return typeBuilder.getStringType(inferredAttributes, StringTypes.date);
                 case "time":
-                    return typeBuilder.getPrimitiveType("time", inferredAttributes);
+                    return typeBuilder.getStringType(inferredAttributes, StringTypes.time);
                 case "date-time":
-                    return typeBuilder.getPrimitiveType("date-time", inferredAttributes);
+                    return typeBuilder.getStringType(inferredAttributes, StringTypes.dateTime);
                 case "integer":
                     return typeBuilder.getStringType(inferredAttributes, StringTypes.integer);
                 default:
