@@ -31,7 +31,7 @@ function buildTypeScript() {
 }
 
 function makeDistributedCLIExecutable() {
-  const prefix = "#!/usr/bin/env node\n";
+  const prefix = "#!/usr/bin/env node --max-old-space-size=4096\n";
   const cli = path.join(OUTDIR, "cli", "index.js");
   mapFile(cli, cli, content => {
     if (content.substr(0, prefix.length) === prefix) {
