@@ -12,11 +12,12 @@ import { RunContext } from "../Run";
 const MIN_LENGTH_FOR_ENUM = 10;
 
 function shouldBeEnum(enumCases: ReadonlyMap<string, number>): boolean {
-    assert(enumCases.size > 0, "How did we end up with zero enum cases?");
-    const someCaseIsNotNumber = iterableSome(
-        enumCases.keys(),
-        key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false
-    );
+    const keys = Array.from(enumCases.keys());
+    assert(keys.length > 0, "How did we end up with zero enum cases?");
+
+    if (keys.length === 1 && keys[0] === "") return false;
+
+    const someCaseIsNotNumber = iterableSome(keys, key => /^(\-|\+)?[0-9]+(\.[0-9]+)?$/.test(key) === false);
     const numValues = iterableReduce(enumCases.values(), 0, (a, b) => a + b);
     return numValues >= MIN_LENGTH_FOR_ENUM && enumCases.size < Math.sqrt(numValues) && someCaseIsNotNumber;
 }
