@@ -1,4 +1,4 @@
-import { TypeKind, Type, ClassType, EnumType, UnionType } from "../Type";
+import { TypeKind, Type, ClassType, EnumType, UnionType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion } from "../TypeUtils";
 import { Name, DependencyName, Namer, funPrefixNamer } from "../Naming";
 import {
@@ -35,6 +35,10 @@ export class GoTargetLanguage extends TargetLanguage {
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
+    get supportsOptionalClassProperties(): boolean {
         return true;
     }
 
@@ -76,6 +80,12 @@ function isValueType(t: Type): boolean {
 function singleDescriptionComment(description: string[] | undefined): string {
     if (description === undefined) return "";
     return "// " + description.join("; ");
+}
+
+function canOmitEmpty(cp: ClassProperty): boolean {
+    if (!cp.isOptional) return false;
+    const t = cp.type;
+    return ["union", "null", "any", "array"].indexOf(t.kind) < 0;
 }
 
 export class GoRenderer extends ConvenienceRenderer {
@@ -142,12 +152,15 @@ export class GoRenderer extends ConvenienceRenderer {
         }
     };
 
-    private propertyGoType(t: Type): Sourcelike {
-        const goType = this.goType(t, true);
+    private propertyGoType(cp: ClassProperty): Sourcelike {
+        const t = cp.type;
         if (t instanceof UnionType && nullableFromUnion(t) === null) {
-            return ["*", goType];
+            return ["*", this.goType(t, true)];
         }
-        return goType;
+        if (cp.isOptional) {
+            return this.nullableGoType(t, true);
+        }
+        return this.goType(t, true);
     }
 
     private goType = (t: Type, withIssues: boolean = false): Sourcelike => {
@@ -203,9 +216,10 @@ export class GoRenderer extends ConvenienceRenderer {
     private emitClass = (c: ClassType, className: Name): void => {
         let columns: Sourcelike[][] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
-            const goType = this.propertyGoType(p.type);
+            const goType = this.propertyGoType(p);
             const comment = singleDescriptionComment(this.descriptionForClassProperty(c, jsonName));
-            columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), '"`'], comment]);
+            const omitEmpty = canOmitEmpty(p) ? ",omitempty" : [];
+            columns.push([[name, " "], [goType, " "], ['`json:"', stringEscape(jsonName), omitEmpty, '"`'], comment]);
         });
         this.emitDescription(this.descriptionForType(c));
         this.emitStruct(className, columns);
