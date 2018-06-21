@@ -171,3 +171,18 @@ class StringTypesTypeAttributeKind extends TypeAttributeKind<StringTypes> {
 }
 
 export const stringTypesTypeAttributeKind: TypeAttributeKind<StringTypes> = new StringTypesTypeAttributeKind();
+
+export function stringTypesForJSONSchemaFormat(format: string): StringTypes {
+    switch (format) {
+        case "date":
+            return StringTypes.date;
+        case "time":
+            return StringTypes.time;
+        case "date-time":
+            return StringTypes.dateTime;
+        case "integer":
+            return StringTypes.integer;
+        default:
+            return StringTypes.unrestricted;
+    }
+}

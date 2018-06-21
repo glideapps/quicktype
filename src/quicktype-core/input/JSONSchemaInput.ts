@@ -35,7 +35,7 @@ import {
 } from "../TypeAttributes";
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import { messageAssert, messageError } from "../Messages";
-import { StringTypes } from "../StringTypes";
+import { StringTypes, stringTypesForJSONSchemaFormat } from "../StringTypes";
 
 import { TypeRef } from "../TypeGraph";
 
@@ -634,19 +634,13 @@ export async function addTypesInSchema(
         const inferredAttributes = makeTypeAttributesInferred(typeAttributes);
 
         function makeStringType(): TypeRef {
-            switch (schema.format) {
-                case "date":
-                    return typeBuilder.getStringType(inferredAttributes, StringTypes.date);
-                case "time":
-                    return typeBuilder.getStringType(inferredAttributes, StringTypes.time);
-                case "date-time":
-                    return typeBuilder.getStringType(inferredAttributes, StringTypes.dateTime);
-                case "integer":
-                    return typeBuilder.getStringType(inferredAttributes, StringTypes.integer);
-                default:
-                    break;
+            let stringTypes: StringTypes;
+            if (typeof schema.format === "string") {
+                stringTypes = stringTypesForJSONSchemaFormat(schema.format);
+            } else {
+                stringTypes = StringTypes.unrestricted;
             }
-            return typeBuilder.getStringType(inferredAttributes, StringTypes.unrestricted);
+            return typeBuilder.getStringType(inferredAttributes, stringTypes);
         }
 
         async function makeArrayType(): Promise<TypeRef> {
