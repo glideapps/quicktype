@@ -182,6 +182,7 @@ export function unionBuilderForUnification<T extends Type>(
     );
 }
 
+// typeAttributes must not be reconstituted yet.
 // FIXME: The UnionBuilder might end up not being used.
 export function unifyTypes<T extends Type>(
     types: ReadonlySet<Type>,
@@ -191,6 +192,7 @@ export function unifyTypes<T extends Type>(
     conflateNumbers: boolean,
     maybeForwardingRef?: TypeRef
 ): TypeRef {
+    typeAttributes = typeBuilder.reconstituteTypeAttributes(typeAttributes);
     if (types.size === 0) {
         return panic("Cannot unify empty set of types");
     } else if (types.size === 1) {
@@ -208,7 +210,7 @@ export function unifyTypes<T extends Type>(
     }
 
     const accumulator = new TypeRefUnionAccumulator(conflateNumbers);
-    const nestedAttributes = accumulator.addTypes(types);
+    const nestedAttributes = typeBuilder.reconstituteTypeAttributes(accumulator.addTypes(types));
     typeAttributes = combineTypeAttributes("union", typeAttributes, nestedAttributes);
 
     return typeBuilder.withForwardingRef(maybeForwardingRef, forwardingRef => {

@@ -380,6 +380,10 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             this.typeBuilder.setLostTypeAttributes();
         }
 
+        // FIXME: We don't reconstitute type attributes here, so it's possible that
+        // we get type refs for the wrong graphs if the transformation making rewrite
+        // makes unions that have to be unified here.  That's a bug anyway, at least
+        // right now, it's just a very bad way of surfacing that error.
         if (kinds.size === 1) {
             const [[kind, memberAttributes]] = Array.from(kinds);
             const allAttributes = combineTypeAttributes(
