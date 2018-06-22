@@ -45,7 +45,7 @@ export const transformedStringTypeKinds = new Set(
     Object.getOwnPropertyNames(transformedStringTypeDescriptions)
 ) as ReadonlySet<TransformedStringTypeKind>;
 
-export function isPrimitiveStringTypeKind(kind: TypeKind): kind is PrimitiveStringTypeKind {
+export function isPrimitiveStringTypeKind(kind: string): kind is PrimitiveStringTypeKind {
     return kind === "string" || hasOwnProperty(transformedStringTypeDescriptions, kind);
 }
 

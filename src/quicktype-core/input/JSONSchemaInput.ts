@@ -635,7 +635,7 @@ export async function addTypesInSchema(
 
         function makeStringType(): TypeRef {
             const kind = typeKindForJSONSchemaFormat(schema.format);
-            if (kind === "string") {
+            if (kind === undefined) {
                 return typeBuilder.getStringType(inferredAttributes, StringTypes.unrestricted);
             } else {
                 return typeBuilder.getPrimitiveType(kind, inferredAttributes);

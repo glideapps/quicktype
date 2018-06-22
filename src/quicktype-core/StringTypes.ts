@@ -13,7 +13,8 @@ import {
 import { TypeAttributeKind } from "./TypeAttributes";
 import { defined, assert } from "./support/Support";
 import { StringTypeMapping, stringTypeMappingGet } from "./TypeBuilder";
-import { TransformedStringTypeKind, PrimitiveStringTypeKind } from "./Type";
+import { TransformedStringTypeKind } from "./Type";
+import { isDate, isTime, isDateTime } from "./DateTime";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, new Set());
@@ -172,7 +173,7 @@ class StringTypesTypeAttributeKind extends TypeAttributeKind<StringTypes> {
 
 export const stringTypesTypeAttributeKind: TypeAttributeKind<StringTypes> = new StringTypesTypeAttributeKind();
 
-export function typeKindForJSONSchemaFormat(format: string): PrimitiveStringTypeKind {
+export function typeKindForJSONSchemaFormat(format: string): TransformedStringTypeKind | undefined {
     switch (format) {
         case "date":
         case "time":
@@ -181,6 +182,35 @@ export function typeKindForJSONSchemaFormat(format: string): PrimitiveStringType
         case "integer":
             return "integer-string";
         default:
-            return "string";
+            return undefined;
     }
+}
+
+const INTEGER_STRING = /^(0|-?[1-9]\d*)$/;
+// We're restricting numbers to what's representable as 32 bit
+// signed integers, to be on the safe side of most languages.
+const MIN_INTEGER_STRING = 1 << 31;
+const MAX_INTEGER_STRING = -(MIN_INTEGER_STRING + 1);
+
+function isIntegerString(s: string): boolean {
+    if (s.match(INTEGER_STRING) === null) {
+        return false;
+    }
+    const i = parseInt(s, 10);
+    return i >= MIN_INTEGER_STRING && i <= MAX_INTEGER_STRING;
+}
+
+export function inferTransformedStringTypeKindForString(s: string): TransformedStringTypeKind | undefined {
+    if (s.length === 0 || "0123456789-".indexOf(s[0]) < 0) return undefined;
+
+    if (isDate(s)) {
+        return "date";
+    } else if (isTime(s)) {
+        return "time";
+    } else if (isDateTime(s)) {
+        return "date-time";
+    } else if (isIntegerString(s)) {
+        return "integer-string";
+    }
+    return undefined;
 }

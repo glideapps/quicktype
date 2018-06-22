@@ -76,9 +76,7 @@ export class TypeInference {
         private readonly _cjson: CompressedJSON,
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferMaps: boolean,
-        private readonly _inferEnums: boolean,
-        private readonly _inferDates: boolean,
-        private readonly _inferIntegerStrings: boolean
+        private readonly _inferEnums: boolean
     ) {}
 
     addValuesToAccumulator(valueArray: NestedValueArray, accumulator: Accumulator): void {
@@ -119,32 +117,12 @@ export class TypeInference {
                 case Tag.Array:
                     accumulator.addArray(this._cjson.getArrayForValue(value), emptyTypeAttributes);
                     break;
-                case Tag.Date:
+                case Tag.TransformedString:
+                    const kind = this._cjson.getTransformedStringTypeKind(value);
                     accumulator.addStringType(
                         "string",
                         emptyTypeAttributes,
-                        this._inferDates ? StringTypes.date : StringTypes.unrestricted
-                    );
-                    break;
-                case Tag.Time:
-                    accumulator.addStringType(
-                        "string",
-                        emptyTypeAttributes,
-                        this._inferDates ? StringTypes.time : StringTypes.unrestricted
-                    );
-                    break;
-                case Tag.DateTime:
-                    accumulator.addStringType(
-                        "string",
-                        emptyTypeAttributes,
-                        this._inferDates ? StringTypes.dateTime : StringTypes.unrestricted
-                    );
-                    break;
-                case Tag.IntegerString:
-                    accumulator.addStringType(
-                        "string",
-                        emptyTypeAttributes,
-                        this._inferIntegerStrings ? StringTypes.integer : StringTypes.unrestricted
+                        new StringTypes(new Map(), new Set([kind]))
                     );
                     break;
                 default:
