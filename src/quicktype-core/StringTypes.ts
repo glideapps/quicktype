@@ -13,7 +13,7 @@ import {
 import { TypeAttributeKind } from "./TypeAttributes";
 import { defined, assert } from "./support/Support";
 import { StringTypeMapping, stringTypeMappingGet } from "./TypeBuilder";
-import { TransformedStringTypeKind } from "./Type";
+import { TransformedStringTypeKind, PrimitiveStringTypeKind } from "./Type";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, new Set());
@@ -172,17 +172,15 @@ class StringTypesTypeAttributeKind extends TypeAttributeKind<StringTypes> {
 
 export const stringTypesTypeAttributeKind: TypeAttributeKind<StringTypes> = new StringTypesTypeAttributeKind();
 
-export function stringTypesForJSONSchemaFormat(format: string): StringTypes {
+export function typeKindForJSONSchemaFormat(format: string): PrimitiveStringTypeKind {
     switch (format) {
         case "date":
-            return StringTypes.date;
         case "time":
-            return StringTypes.time;
         case "date-time":
-            return StringTypes.dateTime;
+            return format;
         case "integer":
-            return StringTypes.integer;
+            return "integer-string";
         default:
-            return StringTypes.unrestricted;
+            return "string";
     }
 }
