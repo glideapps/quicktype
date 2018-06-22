@@ -81,23 +81,36 @@ function combineNames(names: ReadonlySet<string>): string {
 export const tooManyNamesThreshold = 20;
 
 export abstract class TypeNames {
-    static make(
+    static makeWithDistance(
         names: ReadonlySet<string>,
         alternativeNames: ReadonlySet<string> | undefined,
-        areInferred: boolean
+        distance: number
     ): TypeNames {
         if (names.size >= tooManyNamesThreshold) {
-            return new TooManyTypeNames(areInferred);
+            return new TooManyTypeNames(distance);
         }
 
         if (alternativeNames === undefined || alternativeNames.size > tooManyNamesThreshold) {
             alternativeNames = undefined;
         }
 
-        return new RegularTypeNames(names, alternativeNames, areInferred);
+        return new RegularTypeNames(names, alternativeNames, distance);
     }
 
-    abstract get areInferred(): boolean;
+    static make(
+        names: ReadonlySet<string>,
+        alternativeNames: ReadonlySet<string> | undefined,
+        areInferred: boolean
+    ): TypeNames {
+        return TypeNames.makeWithDistance(names, alternativeNames, areInferred ? 1 : 0);
+    }
+
+    constructor(readonly distance: number) {}
+
+    get areInferred(): boolean {
+        return this.distance > 0;
+    }
+
     abstract get names(): ReadonlySet<string>;
     abstract get combinedName(): string;
     abstract get proposedNames(): ReadonlySet<string>;
@@ -113,54 +126,51 @@ export class RegularTypeNames extends TypeNames {
     constructor(
         readonly names: ReadonlySet<string>,
         private readonly _alternativeNames: ReadonlySet<string> | undefined,
-        readonly areInferred: boolean
+        distance: number
     ) {
-        super();
+        super(distance);
     }
 
     add(namesArray: TypeNames[], startIndex: number = 0): TypeNames {
         let newNames = new Set(this.names);
-        let newAreInferred = this.areInferred;
+        let newDistance = this.distance;
         let newAlternativeNames = definedMap(this._alternativeNames, s => new Set(s));
 
         for (let i = startIndex; i < namesArray.length; i++) {
             const other = namesArray[i];
-            if (!(other instanceof RegularTypeNames)) {
-                assert(other instanceof TooManyTypeNames, "Unknown TypeNames instance");
-                if (!other.areInferred) {
-                    // The other one is given, so it's the final word
-                    return other;
-                }
-                if (newAreInferred === other.areInferred) {
-                    // Both are inferred, so we let the TooMany sort it out
-                    return other.add(namesArray, i + 1);
-                }
-                // Ours is given, the other inferred, so ignore it
-                continue;
-            }
 
-            if (newAreInferred && !other.areInferred) {
-                // Ours is inferred, the other one given, so take the
-                // other's names
-                newNames = new Set(other.names);
-                newAreInferred = false;
-            } else if (this.areInferred === other.areInferred) {
-                setUnionInto(newNames, other.names);
-            }
-
-            if (other._alternativeNames !== undefined) {
+            if (other instanceof RegularTypeNames && other._alternativeNames !== undefined) {
                 if (newAlternativeNames === undefined) {
                     newAlternativeNames = new Set();
                 }
                 setUnionInto(newAlternativeNames, other._alternativeNames);
             }
+
+            if (other.distance > newDistance) continue;
+
+            if (!(other instanceof RegularTypeNames)) {
+                assert(other instanceof TooManyTypeNames, "Unknown TypeNames instance");
+                // The other one is at most our distance, so let it sort it out
+                return other.add(namesArray, i + 1);
+            }
+
+            if (other.distance < newDistance) {
+                // The other one is closer, so take its names
+                newNames = new Set(other.names);
+                newDistance = other.distance;
+                newAlternativeNames = definedMap(other._alternativeNames, s => new Set(s));
+            } else {
+                // Same distance, merge them
+                assert(other.distance === newDistance, "This should be the only case left");
+                setUnionInto(newNames, other.names);
+            }
         }
-        return TypeNames.make(newNames, newAlternativeNames, newAreInferred);
+        return TypeNames.makeWithDistance(newNames, newAlternativeNames, newDistance);
     }
 
     clearInferred(): TypeNames {
         const newNames = this.areInferred ? new Set() : this.names;
-        return TypeNames.make(newNames, new Set(), this.areInferred);
+        return TypeNames.makeWithDistance(newNames, new Set(), this.distance);
     }
 
     get combinedName(): string {
@@ -177,20 +187,19 @@ export class RegularTypeNames extends TypeNames {
     }
 
     makeInferred(): TypeNames {
-        if (this.areInferred) return this;
-        return TypeNames.make(this.names, this._alternativeNames, true);
+        return TypeNames.makeWithDistance(this.names, this._alternativeNames, this.distance + 1);
     }
 
     singularize(): TypeNames {
-        return TypeNames.make(
+        return TypeNames.makeWithDistance(
             setMap(this.names, pluralize.singular),
             definedMap(this._alternativeNames, an => setMap(an, pluralize.singular)),
-            true
+            this.distance + 1
         );
     }
 
     toString(): string {
-        const inferred = this.areInferred ? "inferred" : "given";
+        const inferred = this.areInferred ? `distance ${this.distance}` : "given";
         const names = `${inferred} ${Array.from(this.names).join(",")}`;
         if (this._alternativeNames === undefined) {
             return names;
@@ -202,8 +211,8 @@ export class RegularTypeNames extends TypeNames {
 export class TooManyTypeNames extends TypeNames {
     readonly names: ReadonlySet<string>;
 
-    constructor(readonly areInferred: boolean, name?: string) {
-        super();
+    constructor(distance: number, name?: string) {
+        super(distance);
 
         if (name === undefined) {
             name = makeRandomName();
@@ -224,7 +233,7 @@ export class TooManyTypeNames extends TypeNames {
 
         for (let i = startIndex; i < namesArray.length; i++) {
             const other = namesArray[i];
-            if (!other.areInferred) {
+            if (other.distance < this.distance) {
                 return other.add(namesArray, i + 1);
             }
         }
@@ -236,14 +245,11 @@ export class TooManyTypeNames extends TypeNames {
         if (!this.areInferred) {
             return this;
         }
-        return TypeNames.make(new Set(), new Set(), true);
+        return TypeNames.makeWithDistance(new Set(), new Set(), this.distance);
     }
 
     makeInferred(): TypeNames {
-        if (this.areInferred) {
-            return this;
-        }
-        return new TooManyTypeNames(true, iterableFirst(this.names));
+        return new TooManyTypeNames(this.distance + 1, iterableFirst(this.names));
     }
 
     singularize(): TypeNames {
@@ -255,7 +261,7 @@ export class TooManyTypeNames extends TypeNames {
     }
 }
 
-class DescriptionTypeAttributeKind extends TypeAttributeKind<TypeNames> {
+class TypeNamesTypeAttributeKind extends TypeAttributeKind<TypeNames> {
     constructor() {
         super("names");
     }
@@ -270,12 +276,16 @@ class DescriptionTypeAttributeKind extends TypeAttributeKind<TypeNames> {
         return tn.makeInferred();
     }
 
+    increaseDistance(tn: TypeNames): TypeNames {
+        return tn.makeInferred();
+    }
+
     stringify(tn: TypeNames): string {
         return tn.toString();
     }
 }
 
-export const namesTypeAttributeKind: TypeAttributeKind<TypeNames> = new DescriptionTypeAttributeKind();
+export const namesTypeAttributeKind: TypeAttributeKind<TypeNames> = new TypeNamesTypeAttributeKind();
 
 export function modifyTypeNames(
     attributes: TypeAttributes,

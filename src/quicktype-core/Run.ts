@@ -375,7 +375,9 @@ class Run implements RunContext {
         if (this._options.debugPrintGraph) {
             console.log("\n# gather names");
         }
-        this.time("gather names", () => gatherNames(graph, this._options.debugPrintGatherNames));
+        this.time("gather names", () =>
+            gatherNames(graph, !allInputs.needSchemaProcessing, this._options.debugPrintGatherNames)
+        );
         if (this._options.debugPrintGraph) {
             graph.printGraph();
         }

@@ -20,6 +20,10 @@ export class TypeAttributeKind<T> {
         return panic(`Cannot make type attribute ${this.name} inferred`);
     }
 
+    increaseDistance(attrs: T): T | undefined {
+        return attrs;
+    }
+
     children(_: T): ReadonlySet<Type> {
         return new Set();
     }
@@ -127,4 +131,8 @@ export function combineTypeAttributes(
 
 export function makeTypeAttributesInferred(attr: TypeAttributes): TypeAttributes {
     return mapFilterMap(attr, (value, kind) => kind.makeInferred(value));
+}
+
+export function increaseTypeAttributesDistance(attr: TypeAttributes): TypeAttributes {
+    return mapFilterMap(attr, (value, kind) => kind.increaseDistance(value));
 }

@@ -6,7 +6,8 @@ import {
     TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes,
-    makeTypeAttributesInferred
+    makeTypeAttributesInferred,
+    increaseTypeAttributesDistance
 } from "./TypeAttributes";
 import { defined, assert, panic, assertNever } from "./support/Support";
 import { TypeBuilder } from "./TypeBuilder";
@@ -381,7 +382,11 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
 
         if (kinds.size === 1) {
             const [[kind, memberAttributes]] = Array.from(kinds);
-            const allAttributes = combineTypeAttributes("union", typeAttributes, memberAttributes);
+            const allAttributes = combineTypeAttributes(
+                "union",
+                typeAttributes,
+                increaseTypeAttributesDistance(memberAttributes)
+            );
             const t = this.makeTypeOfKind(typeProvider, kind, allAttributes, forwardingRef);
             return t;
         }
