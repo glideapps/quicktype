@@ -1,6 +1,6 @@
 import { mapMerge, mapUpdateInto, mapMap, setUnionInto } from "collection-utils";
 
-import { TypeKind, PrimitiveStringTypeKind, Type, UnionType, PrimitiveTypeKind } from "./Type";
+import { TypeKind, PrimitiveStringTypeKind, Type, UnionType, PrimitiveTypeKind, isPrimitiveTypeKind } from "./Type";
 import { matchTypeExhaustive } from "./TypeUtils";
 import {
     TypeAttributes,
@@ -341,17 +341,6 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         switch (kind) {
-            case "any":
-            case "none":
-            case "null":
-            case "bool":
-            case "double":
-            case "integer":
-            case "date":
-            case "time":
-            case "date-time":
-            case "integer-string":
-                return this.typeBuilder.getPrimitiveType(kind, typeAttributes, forwardingRef);
             case "string":
                 return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
             case "enum":
@@ -361,6 +350,9 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             case "array":
                 return this.makeArray(typeProvider.arrayData, typeAttributes, forwardingRef);
             default:
+                if (isPrimitiveTypeKind(kind)) {
+                    return this.typeBuilder.getPrimitiveType(kind, typeAttributes, forwardingRef);
+                }
                 if (kind === "union" || kind === "class" || kind === "map" || kind === "intersection") {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
                 }
