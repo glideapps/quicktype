@@ -5,7 +5,6 @@ import {
     iterableEvery,
     mapFilter,
     mapFind,
-    setMap,
     areEqual,
     setUnionManyInto,
     definedMap,
@@ -33,10 +32,12 @@ import {
     unionTypeIdentity,
     intersectionTypeIdentity,
     MaybeTypeIdentity,
-    TypeIdentity
+    TypeIdentity,
+    TransformedStringTypeKind,
+    isPrimitiveStringTypeKind,
+    transformedStringTypeKinds
 } from "./Type";
-import { removeNullFromUnion } from "./TypeUtils";
-import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef, typeRefIndex } from "./TypeGraph";
+import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef, typeRefIndex, assertTypeRefGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { defined, assert, panic } from "./support/Support";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
@@ -66,19 +67,26 @@ class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<number>> {
 
 export const provenanceTypeAttributeKind: TypeAttributeKind<Set<number>> = new ProvenanceTypeAttributeKind();
 
-export type StringTypeMapping = {
-    date: PrimitiveStringTypeKind;
-    time: PrimitiveStringTypeKind;
-    dateTime: PrimitiveStringTypeKind;
-    integerString: PrimitiveStringTypeKind;
-};
+export type StringTypeMapping = ReadonlyMap<TransformedStringTypeKind, PrimitiveStringTypeKind>;
 
-export const NoStringTypeMapping: StringTypeMapping = {
-    date: "date",
-    time: "time",
-    dateTime: "date-time",
-    integerString: "integer-string"
-};
+export function stringTypeMappingGet(stm: StringTypeMapping, kind: TransformedStringTypeKind): PrimitiveStringTypeKind {
+    const mapped = stm.get(kind);
+    if (mapped === undefined) return "string";
+    return mapped;
+}
+
+let noStringTypeMapping: StringTypeMapping | undefined;
+
+export function getNoStringTypeMapping(): StringTypeMapping {
+    if (noStringTypeMapping === undefined) {
+        noStringTypeMapping = new Map(
+            Array.from(transformedStringTypeKinds).map(
+                k => [k, k] as [TransformedStringTypeKind, PrimitiveStringTypeKind]
+            )
+        );
+    }
+    return noStringTypeMapping;
+}
 
 export class TypeBuilder {
     readonly typeGraph: TypeGraph;
@@ -126,13 +134,24 @@ export class TypeBuilder {
         return tref;
     }
 
-    private commitType = (tref: TypeRef, t: Type): void => {
+    private assertTypeRefGraph(tref: TypeRef | undefined): void {
+        if (tref === undefined) return;
+        assertTypeRefGraph(tref, this.typeGraph);
+    }
+
+    private assertTypeRefSetGraph(trefs: ReadonlySet<TypeRef> | undefined): void {
+        if (trefs === undefined) return;
+        trefs.forEach(tref => this.assertTypeRefGraph(tref));
+    }
+
+    private commitType(tref: TypeRef, t: Type): void {
+        this.assertTypeRefGraph(tref);
         const index = typeRefIndex(tref);
         // const name = names !== undefined ? ` ${names.combinedName}` : "";
         // console.log(`committing ${t.kind}${name} to ${index}`);
         assert(this.types[index] === undefined, "A type index was committed twice");
         this.types[index] = t;
-    };
+    }
 
     protected addType<T extends Type>(
         forwardingRef: TypeRef | undefined,
@@ -140,6 +159,7 @@ export class TypeBuilder {
         attributes: TypeAttributes | undefined
     ): TypeRef {
         if (forwardingRef !== undefined) {
+            this.assertTypeRefGraph(forwardingRef);
             assert(this.types[typeRefIndex(forwardingRef)] === undefined);
         }
         const tref = forwardingRef !== undefined ? forwardingRef : this.reserveTypeRef();
@@ -167,6 +187,7 @@ export class TypeBuilder {
     }
 
     addAttributes(tref: TypeRef, attributes: TypeAttributes): void {
+        this.assertTypeRefGraph(tref);
         const index = typeRefIndex(tref);
         const existingAttributes = this.typeAttributes[index];
         assert(
@@ -182,26 +203,13 @@ export class TypeBuilder {
         this.typeAttributes[index] = combineTypeAttributes("union", existingAttributes, nonIdentityAttributes);
     }
 
-    makeNullable(tref: TypeRef, attributes: TypeAttributes): TypeRef {
-        const t = defined(this.types[typeRefIndex(tref)]);
-        if (t.kind === "null" || t.kind === "any") {
-            return tref;
-        }
-        const nullType = this.getPrimitiveType("null");
-        if (!(t instanceof UnionType)) {
-            return this.getUnionType(attributes, new Set([tref, nullType]));
-        }
-        const [maybeNull, nonNulls] = removeNullFromUnion(t);
-        if (maybeNull !== null) return tref;
-        return this.getUnionType(attributes, setMap(nonNulls, nn => nn.typeRef).add(nullType));
-    }
-
     finish(): TypeGraph {
         this.typeGraph.freeze(this.topLevels, this.types.map(defined), this.typeAttributes);
         return this.typeGraph;
     }
 
     protected addForwardingIntersection(forwardingRef: TypeRef, tref: TypeRef): TypeRef {
+        this.assertTypeRefGraph(tref);
         this._addedForwardingIntersection = true;
         return this.addType(forwardingRef, tr => new IntersectionType(tr, this.typeGraph, new Set([tref])), undefined);
     }
@@ -269,9 +277,9 @@ export class TypeBuilder {
         // FIXME: Why do date/time types need a StringTypes attribute?
         // FIXME: Remove this from here and put it into flattenStrings
         let stringTypes = kind === "string" ? undefined : StringTypes.unrestricted;
-        if (kind === "date") kind = this._stringTypeMapping.date;
-        if (kind === "time") kind = this._stringTypeMapping.time;
-        if (kind === "date-time") kind = this._stringTypeMapping.dateTime;
+        if (isPrimitiveStringTypeKind(kind) && kind !== "string") {
+            kind = stringTypeMappingGet(this._stringTypeMapping, kind);
+        }
         if (kind === "string") {
             return this.getStringType(attributes, stringTypes, forwardingRef);
         }
@@ -323,6 +331,8 @@ export class TypeBuilder {
         additionalProperties: TypeRef | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
+        this.assertTypeRefGraph(additionalProperties);
+
         properties = definedMap(properties, p => this.modifyPropertiesIfNecessary(p));
         return this.addType(
             forwardingRef,
@@ -336,6 +346,8 @@ export class TypeBuilder {
     }
 
     getMapType(attributes: TypeAttributes, values: TypeRef, forwardingRef?: TypeRef): TypeRef {
+        this.assertTypeRefGraph(values);
+
         return this.getOrAddType(
             () => mapTypeIdentify(attributes, values),
             tr => new MapType(tr, this.typeGraph, values),
@@ -349,6 +361,8 @@ export class TypeBuilder {
         properties: ReadonlyMap<string, ClassProperty>,
         additionalProperties: TypeRef | undefined
     ): void {
+        this.assertTypeRefGraph(additionalProperties);
+
         const type = derefTypeRef(ref, this.typeGraph);
         if (!(type instanceof ObjectType)) {
             return panic("Tried to set properties of non-object type");
@@ -362,6 +376,8 @@ export class TypeBuilder {
     }
 
     getArrayType(attributes: TypeAttributes, items: TypeRef, forwardingRef?: TypeRef): TypeRef {
+        this.assertTypeRefGraph(items);
+
         return this.getOrAddType(
             () => arrayTypeIdentity(attributes, items),
             tr => new ArrayType(tr, this.typeGraph, items),
@@ -371,6 +387,8 @@ export class TypeBuilder {
     }
 
     setArrayItems(ref: TypeRef, items: TypeRef): void {
+        this.assertTypeRefGraph(items);
+
         const type = derefTypeRef(ref, this.typeGraph);
         if (!(type instanceof ArrayType)) {
             return panic("Tried to set items of non-array type");
@@ -380,6 +398,8 @@ export class TypeBuilder {
     }
 
     modifyPropertiesIfNecessary(properties: ReadonlyMap<string, ClassProperty>): ReadonlyMap<string, ClassProperty> {
+        properties.forEach(p => this.assertTypeRefGraph(p.typeRef));
+
         if (this.canonicalOrder) {
             properties = mapSortByKey(properties);
         }
@@ -420,6 +440,8 @@ export class TypeBuilder {
     }
 
     getUnionType(attributes: TypeAttributes, members: ReadonlySet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
+        this.assertTypeRefSetGraph(members);
+
         return this.getOrAddType(
             () => unionTypeIdentity(attributes, members),
             tr => new UnionType(tr, this.typeGraph, members),
@@ -434,10 +456,14 @@ export class TypeBuilder {
         members: ReadonlySet<TypeRef> | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
+        this.assertTypeRefSetGraph(members);
+
         return this.addType(forwardingRef, tref => new UnionType(tref, this.typeGraph, members), attributes);
     }
 
     getIntersectionType(attributes: TypeAttributes, members: ReadonlySet<TypeRef>, forwardingRef?: TypeRef): TypeRef {
+        this.assertTypeRefSetGraph(members);
+
         return this.getOrAddType(
             () => intersectionTypeIdentity(attributes, members),
             tr => new IntersectionType(tr, this.typeGraph, members),
@@ -452,10 +478,14 @@ export class TypeBuilder {
         members: ReadonlySet<TypeRef> | undefined,
         forwardingRef?: TypeRef
     ): TypeRef {
+        this.assertTypeRefSetGraph(members);
+
         return this.addType(forwardingRef, tref => new IntersectionType(tref, this.typeGraph, members), attributes);
     }
 
     setSetOperationMembers(ref: TypeRef, members: ReadonlySet<TypeRef>): void {
+        this.assertTypeRefSetGraph(members);
+
         const type = derefTypeRef(ref, this.typeGraph);
         if (!(type instanceof UnionType || type instanceof IntersectionType)) {
             return panic("Tried to set members of non-set-operation type");

@@ -1,7 +1,7 @@
 import { mapFirst, iterableFirst } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, UnionType, EnumType, ObjectType } from "../Type";
+import { Type, UnionType, EnumType, ObjectType, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { matchTypeExhaustive } from "../TypeUtils";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer, Name } from "../Naming";
@@ -13,7 +13,7 @@ import {
     allUpperWordStyle
 } from "../support/Strings";
 import { defined, panic } from "../support/Support";
-import { StringTypeMapping } from "../TypeBuilder";
+import { StringTypeMapping, getNoStringTypeMapping } from "../TypeBuilder";
 import { descriptionTypeAttributeKind } from "../Description";
 import { Option } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
@@ -27,8 +27,8 @@ export class JSONSchemaTargetLanguage extends TargetLanguage {
         return [];
     }
 
-    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
-        return { date: "date", time: "time", dateTime: "date-time", integerString: "integer-string" };
+    get stringTypeMapping(): StringTypeMapping {
+        return getNoStringTypeMapping();
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -134,10 +134,13 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
                     return this.definitionForUnion(unionType);
                 }
             },
-            _dateType => ({ type: "string", format: "date" }),
-            _timeType => ({ type: "string", format: "time" }),
-            _dateTimeType => ({ type: "string", format: "date-time" }),
-            _integerStringType => ({ type: "string", format: "integer" })
+            transformedStringType => {
+                const target = transformedStringTypeTargetTypeKindsMap.get(transformedStringType.kind);
+                if (target === undefined) {
+                    return panic(`Unknown transformed string type ${transformedStringType.kind}`);
+                }
+                return { type: "string", format: target.jsonSchema };
+            }
         );
         if (schema.$ref === undefined) {
             this.addDescription(t, schema);

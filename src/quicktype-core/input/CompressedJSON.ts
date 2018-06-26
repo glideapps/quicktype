@@ -4,7 +4,8 @@ import stringHash = require("string-hash");
 import { addHashCode, hashCodeInit } from "collection-utils";
 
 import { defined, panic, assert } from "../support/Support";
-import { isDate, isTime, isDateTime } from "../DateTime";
+import { inferTransformedStringTypeKindForString } from "../StringTypes";
+import { TransformedStringTypeKind, isPrimitiveStringTypeKind } from "../Type";
 
 const Combo = require("stream-json/Combo");
 
@@ -18,10 +19,7 @@ export enum Tag {
     UninternedString,
     Object,
     Array,
-    Date,
-    Time,
-    DateTime,
-    IntegerString
+    TransformedString
 }
 
 export type Value = number;
@@ -40,20 +38,6 @@ function getIndex(v: Value, tag: Tag): number {
 
 export function valueTag(v: Value): Tag {
     return v & TAG_MASK;
-}
-
-const INTEGER_STRING = /^(0|-?[1-9]\d*)$/;
-// We're restricting numbers to what's representable as 32 bit
-// signed integers, to be on the safe side of most languages.
-const MIN_INTEGER_STRING = 1 << 31;
-const MAX_INTEGER_STRING = -(MIN_INTEGER_STRING + 1);
-
-function isIntegerString(s: string): boolean {
-    if (s.match(INTEGER_STRING) === null) {
-        return false;
-    }
-    const i = parseInt(s, 10);
-    return i >= MIN_INTEGER_STRING && i <= MAX_INTEGER_STRING;
 }
 
 type Context = {
@@ -85,17 +69,11 @@ export class CompressedJSON {
     private _contextStack: Context[] = [];
 
     private _strings: string[] = [];
-    private _stringValues: { [str: string]: Value } = {};
+    private _stringIndexes: { [str: string]: number } = {};
     private _objects: Value[][] = [];
     private _arrays: Value[][] = [];
 
     [key: string]: any;
-
-    constructor(
-        private readonly _makeDate: boolean,
-        private readonly _makeTime: boolean,
-        private readonly _makeDateTime: boolean
-    ) {}
 
     async readFromStream(readStream: stream.Readable): Promise<Value> {
         const combo = new Combo({ packKeys: true, packStrings: true });
@@ -130,16 +108,29 @@ export class CompressedJSON {
         return this._arrays[getIndex(v, Tag.Array)];
     };
 
-    private internString = (s: string): Value => {
-        if (Object.prototype.hasOwnProperty.call(this._stringValues, s)) {
-            return this._stringValues[s];
+    getTransformedStringTypeKind(v: Value): TransformedStringTypeKind {
+        const kind = this._strings[getIndex(v, Tag.TransformedString)];
+        if (!isPrimitiveStringTypeKind(kind) || kind === "string") {
+            return panic("Not a transformed string type kind");
         }
-        const value = makeValue(Tag.InternedString, this._strings.length);
+        return kind;
+    }
+
+    private internString(s: string): number {
+        if (Object.prototype.hasOwnProperty.call(this._stringIndexes, s)) {
+            return this._stringIndexes[s];
+        }
+        const index = this._strings.length;
         this._strings.push(s);
-        this._stringValues[s] = value;
+        this._stringIndexes[s] = index;
+        return index;
+    }
+
+    private makeString(s: string): Value {
+        const value = makeValue(Tag.InternedString, this.internString(s));
         assert(typeof value === "number", `Interned string value is not a number: ${value}`);
         return value;
-    };
+    }
 
     private internObject = (obj: Value[]): Value => {
         const index = this._objects.length;
@@ -165,7 +156,7 @@ export class CompressedJSON {
             if (this._ctx.currentKey === undefined) {
                 return panic("Must have key and can't have string when committing");
             }
-            this._ctx.currentObject.push(this.internString(this._ctx.currentKey), value);
+            this._ctx.currentObject.push(this.makeString(this._ctx.currentKey), value);
             this._ctx.currentKey = undefined;
         } else if (this._ctx.currentArray !== undefined) {
             this._ctx.currentArray.push(value);
@@ -235,21 +226,11 @@ export class CompressedJSON {
 
     protected handleStringValue = (s: string): void => {
         let value: Value | undefined = undefined;
-        if (s.length <= 64) {
-            if (s.length > 0 && "0123456789-".indexOf(s[0]) >= 0) {
-                if (this._makeDate && isDate(s)) {
-                    value = makeValue(Tag.Date, 0);
-                } else if (this._makeTime && isTime(s)) {
-                    value = makeValue(Tag.Time, 0);
-                } else if (this._makeDateTime && isDateTime(s)) {
-                    value = makeValue(Tag.DateTime, 0);
-                } else if (isIntegerString(s)) {
-                    value = makeValue(Tag.IntegerString, 0);
-                }
-            }
-            if (value === undefined) {
-                value = this.internString(s);
-            }
+        const format = inferTransformedStringTypeKindForString(s);
+        if (format !== undefined) {
+            value = makeValue(Tag.TransformedString, this.internString(format));
+        } else if (s.length <= 64) {
+            value = this.makeString(s);
         } else {
             value = makeValue(Tag.UninternedString, 0);
         }
@@ -297,9 +278,9 @@ export class CompressedJSON {
             hashAccumulator = addHashCode(hashAccumulator, stringHash(s));
         }
 
-        for (const s of Object.getOwnPropertyNames(this._stringValues).sort()) {
+        for (const s of Object.getOwnPropertyNames(this._stringIndexes).sort()) {
             hashAccumulator = addHashCode(hashAccumulator, stringHash(s));
-            hashAccumulator = addHashCode(hashAccumulator, this._stringValues[s]);
+            hashAccumulator = addHashCode(hashAccumulator, this._stringIndexes[s]);
         }
 
         for (const o of this._objects) {

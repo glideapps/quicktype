@@ -6,25 +6,23 @@ import {
     areEqual,
     mapMergeWithInto,
     definedMap,
-    addHashCode
+    addHashCode,
+    setUnionInto
 } from "collection-utils";
 
 import { TypeAttributeKind } from "./TypeAttributes";
 import { defined, assert } from "./support/Support";
-import { StringTypeMapping } from "./TypeBuilder";
-import { PrimitiveStringTypeKind } from "./Type";
+import { StringTypeMapping, stringTypeMappingGet } from "./TypeBuilder";
+import { TransformedStringTypeKind } from "./Type";
+import { isDate, isTime, isDateTime } from "./DateTime";
 
 export class StringTypes {
-    static readonly unrestricted: StringTypes = new StringTypes(undefined, false, false, false, false);
-    static readonly date: StringTypes = new StringTypes(new Map(), true, false, false, false);
-    static readonly time: StringTypes = new StringTypes(new Map(), false, true, false, false);
-    static readonly dateTime: StringTypes = new StringTypes(new Map(), false, false, true, false);
-    static readonly integer: StringTypes = new StringTypes(new Map(), false, false, false, true);
+    static readonly unrestricted: StringTypes = new StringTypes(undefined, new Set());
 
     static fromCase(s: string, count: number): StringTypes {
         const caseMap: { [name: string]: number } = {};
         caseMap[s] = count;
-        return new StringTypes(new Map([[s, count] as [string, number]]), false, false, false, false);
+        return new StringTypes(new Map([[s, count] as [string, number]]), new Set());
     }
 
     static fromCases(cases: string[]): StringTypes {
@@ -32,22 +30,16 @@ export class StringTypes {
         for (const s of cases) {
             caseMap[s] = 1;
         }
-        return new StringTypes(new Map(cases.map(s => [s, 1] as [string, number])), false, false, false, false);
+        return new StringTypes(new Map(cases.map(s => [s, 1] as [string, number])), new Set());
     }
 
     // undefined means no restrictions
     constructor(
         readonly cases: ReadonlyMap<string, number> | undefined,
-        readonly allowDate: boolean,
-        readonly allowTime: boolean,
-        readonly allowDateTime: boolean,
-        readonly allowInteger: boolean
+        readonly transformations: ReadonlySet<TransformedStringTypeKind>
     ) {
         if (cases === undefined) {
-            assert(
-                !this.allowDate && !this.allowTime && !this.allowDateTime && !this.allowInteger,
-                "We can't have an unrestricted string that also allows date/times or integers"
-            );
+            assert(transformations.size === 0, "We can't have an unrestricted string that also allows transformations");
         }
     }
 
@@ -58,11 +50,8 @@ export class StringTypes {
     union(othersArray: StringTypes[], startIndex: number): StringTypes {
         if (this.cases === undefined) return this;
 
-        let cases = new Map(this.cases);
-        let allowDate = this.allowDate;
-        let allowTime = this.allowTime;
-        let allowDateTime = this.allowDateTime;
-        let allowInteger = this.allowInteger;
+        const cases = new Map(this.cases);
+        const transformations = new Set(this.transformations);
 
         for (let i = startIndex; i < othersArray.length; i++) {
             const other = othersArray[i];
@@ -70,21 +59,15 @@ export class StringTypes {
             if (other.cases === undefined) return other;
             mapMergeWithInto(cases, (x, y) => x + y, other.cases);
 
-            allowDate = allowDate || other.allowDate;
-            allowTime = allowTime || other.allowTime;
-            allowDateTime = allowDateTime || other.allowDateTime;
-            allowInteger = allowInteger || other.allowInteger;
+            setUnionInto(transformations, other.transformations);
         }
 
-        return new StringTypes(cases, allowDate, allowTime, allowDateTime, allowInteger);
+        return new StringTypes(cases, transformations);
     }
 
     intersect(othersArray: StringTypes[], startIndex: number): StringTypes {
         let cases = this.cases;
-        let allowDate = this.allowDate;
-        let allowTime = this.allowTime;
-        let allowDateTime = this.allowDateTime;
-        let allowInteger = this.allowInteger;
+        let transformations = this.transformations;
 
         for (let i = startIndex; i < othersArray.length; i++) {
             const other = othersArray[i];
@@ -99,57 +82,31 @@ export class StringTypes {
                 );
             }
 
-            allowDate = allowDate && other.allowDate;
-            allowTime = allowTime && other.allowTime;
-            allowDateTime = allowDateTime && other.allowDateTime;
-            allowInteger = allowInteger && other.allowInteger;
+            transformations = setIntersect(transformations, other.transformations);
         }
-        return new StringTypes(cases, allowDate, allowTime, allowDateTime, allowInteger);
+        return new StringTypes(cases, transformations);
     }
 
     applyStringTypeMapping(mapping: StringTypeMapping): StringTypes {
         if (!this.isRestricted) return this;
 
-        const kinds: PrimitiveStringTypeKind[] = [];
-        if (this.allowDate) {
-            kinds.push(mapping.date);
+        const kinds = new Set<TransformedStringTypeKind>();
+        for (const kind of this.transformations) {
+            const mapped = stringTypeMappingGet(mapping, kind);
+            if (mapped === "string") return StringTypes.unrestricted;
+            kinds.add(mapped);
         }
-        if (this.allowTime) {
-            kinds.push(mapping.time);
-        }
-        if (this.allowDateTime) {
-            kinds.push(mapping.dateTime);
-        }
-        if (this.allowInteger) {
-            kinds.push(mapping.integerString);
-        }
-        if (kinds.indexOf("string") >= 0) {
-            return StringTypes.unrestricted;
-        }
-        const allowDate = kinds.indexOf("date") >= 0;
-        const allowTime = kinds.indexOf("time") >= 0;
-        const allowDateTime = kinds.indexOf("date-time") >= 0;
-        const allowInteger = kinds.indexOf("integer-string") >= 0;
-        return new StringTypes(this.cases, allowDate, allowTime, allowDateTime, allowInteger);
+        return new StringTypes(this.cases, new Set(kinds));
     }
 
     equals(other: any): boolean {
         if (!(other instanceof StringTypes)) return false;
-        return (
-            areEqual(this.cases, other.cases) &&
-            this.allowDate === other.allowDate &&
-            this.allowTime === other.allowTime &&
-            this.allowDateTime === other.allowDateTime &&
-            this.allowInteger === other.allowInteger
-        );
+        return areEqual(this.cases, other.cases) && areEqual(this.transformations, other.transformations);
     }
 
     hashCode(): number {
         let h = hashCodeOf(this.cases);
-        h = addHashCode(h, hashCodeOf(this.allowDate));
-        h = addHashCode(h, hashCodeOf(this.allowTime));
-        h = addHashCode(h, hashCodeOf(this.allowDateTime));
-        h = addHashCode(h, hashCodeOf(this.allowInteger));
+        h = addHashCode(h, hashCodeOf(this.transformations));
         return h;
     }
 
@@ -168,12 +125,7 @@ export class StringTypes {
             }
         }
 
-        if (this.allowDate) parts.push("d");
-        if (this.allowTime) parts.push("t");
-        if (this.allowDateTime) parts.push("dt");
-        if (this.allowInteger) parts.push("i");
-
-        return parts.join(",");
+        return parts.concat(Array.from(this.transformations)).join(",");
     }
 }
 
@@ -210,3 +162,39 @@ class StringTypesTypeAttributeKind extends TypeAttributeKind<StringTypes> {
 }
 
 export const stringTypesTypeAttributeKind: TypeAttributeKind<StringTypes> = new StringTypesTypeAttributeKind();
+
+const INTEGER_STRING = /^(0|-?[1-9]\d*)$/;
+// We're restricting numbers to what's representable as 32 bit
+// signed integers, to be on the safe side of most languages.
+const MIN_INTEGER_STRING = 1 << 31;
+const MAX_INTEGER_STRING = -(MIN_INTEGER_STRING + 1);
+
+function isIntegerString(s: string): boolean {
+    if (s.match(INTEGER_STRING) === null) {
+        return false;
+    }
+    const i = parseInt(s, 10);
+    return i >= MIN_INTEGER_STRING && i <= MAX_INTEGER_STRING;
+}
+
+/**
+ * JSON inference calls this function to figure out whether a given string is to be
+ * transformed into a higher level type.  Must return undefined if not, otherwise the
+ * type kind of the transformed string type.
+ *
+ * @param s The string for which to determine the transformed string type kind.
+ */
+export function inferTransformedStringTypeKindForString(s: string): TransformedStringTypeKind | undefined {
+    if (s.length === 0 || "0123456789-".indexOf(s[0]) < 0) return undefined;
+
+    if (isDate(s)) {
+        return "date";
+    } else if (isTime(s)) {
+        return "time";
+    } else if (isDateTime(s)) {
+        return "date-time";
+    } else if (isIntegerString(s)) {
+        return "integer-string";
+    }
+    return undefined;
+}

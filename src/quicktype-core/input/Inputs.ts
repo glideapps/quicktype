@@ -17,7 +17,6 @@ import { makeNamesTypeAttributes } from "../TypeNames";
 import { descriptionTypeAttributeKind, descriptionAttributeProducer } from "../Description";
 import { TypeInference } from "./Inference";
 import { TargetLanguage } from "../TargetLanguage";
-import { languageNamed } from "../language/All";
 import { accessorNamesAttributeProducer } from "../AccessorNames";
 
 class InputJSONSchemaStore extends JSONSchemaStore {
@@ -127,18 +126,11 @@ export class JSONInput implements Input<JSONSourceData> {
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
-        inferDates: boolean,
-        inferIntegerStrings: boolean,
+        _inferDates: boolean,
+        _inferIntegerStrings: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
-        const inference = new TypeInference(
-            this._compressedJSON,
-            typeBuilder,
-            inferMaps,
-            inferEnums,
-            inferDates,
-            inferIntegerStrings
-        );
+        const inference = new TypeInference(this._compressedJSON, typeBuilder, inferMaps, inferEnums);
 
         for (const [name, { samples, description }] of this._topLevels) {
             const tref = inference.inferType(makeNamesTypeAttributes(name, false), samples, fixedTopLevels);
@@ -152,27 +144,10 @@ export class JSONInput implements Input<JSONSourceData> {
 }
 
 export function jsonInputForTargetLanguage(
-    targetLanguage: string | TargetLanguage,
-    languages?: TargetLanguage[]
+    _targetLanguage: string | TargetLanguage,
+    _languages?: TargetLanguage[]
 ): JSONInput {
-    let lang: TargetLanguage;
-    if (typeof targetLanguage === "string") {
-        const maybeLang = languageNamed(targetLanguage, languages);
-        if (maybeLang === undefined) {
-            return messageError("DriverUnknownOutputLanguage", { lang: targetLanguage });
-        }
-        lang = maybeLang;
-    } else {
-        lang = targetLanguage;
-    }
-
-    const mapping = lang.stringTypeMapping;
-    const makeDate = mapping.date !== "string";
-    const makeTime = mapping.time !== "string";
-    const makeDateTime = mapping.dateTime !== "string";
-
-    const compressedJSON = new CompressedJSON(makeDate, makeTime, makeDateTime);
-
+    const compressedJSON = new CompressedJSON();
     return new JSONInput(compressedJSON);
 }
 

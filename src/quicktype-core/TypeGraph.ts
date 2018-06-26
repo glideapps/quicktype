@@ -3,7 +3,7 @@ import { iterableFirst, setFilter, setUnionManyInto, setSubtract, mapMap, mapSom
 import { Type, ClassType, UnionType, IntersectionType } from "./Type";
 import { separateNamedTypes, SeparatedNamedTypes, isNamedType, combineTypeAttributesOfTypes } from "./TypeUtils";
 import { defined, assert, panic, mustNotHappen } from "./support/Support";
-import { TypeBuilder, StringTypeMapping, NoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
+import { TypeBuilder, StringTypeMapping, getNoStringTypeMapping, provenanceTypeAttributeKind } from "./TypeBuilder";
 import { GraphRewriteBuilder, GraphRemapBuilder, BaseGraphRewriteBuilder } from "./GraphRewriting";
 import { TypeNames, namesTypeAttributeKind } from "./TypeNames";
 import { Graph } from "./Graph";
@@ -32,7 +32,7 @@ export function typeRefIndex(tref: TypeRef): number {
 
 export function assertTypeRefGraph(tref: TypeRef, graph: TypeGraph): void {
     assert(
-        ((tref >> indexBits) & serialBits) === (graph.serial & serialBits),
+        ((tref >> indexBits) & serialMask) === (graph.serial & serialMask),
         "Mixing the wrong type reference and graph"
     );
 }
@@ -375,7 +375,7 @@ export class TypeGraph {
     garbageCollect(alphabetizeProperties: boolean, debugPrintReconstitution: boolean): TypeGraph {
         const newGraph = this.remap(
             "GC",
-            NoStringTypeMapping,
+            getNoStringTypeMapping(),
             alphabetizeProperties,
             new Map(),
             debugPrintReconstitution,
@@ -389,7 +389,7 @@ export class TypeGraph {
         for (;;) {
             const newGraph = this.rewrite(
                 "fixed-point",
-                NoStringTypeMapping,
+                getNoStringTypeMapping(),
                 alphabetizeProperties,
                 [],
                 debugPrintReconstitution,

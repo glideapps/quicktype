@@ -22,7 +22,7 @@ import {
     addHashCode
 } from "collection-utils";
 
-import { PrimitiveTypeKind } from "../Type";
+import { PrimitiveTypeKind, TransformedStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { panic, assertNever, StringMap, assert, defined } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { TypeNames } from "../TypeNames";
@@ -487,6 +487,15 @@ export type JSONSchemaAttributeProducer = (
     unionCases: JSONSchema[] | undefined
 ) => JSONSchemaAttributes | undefined;
 
+function typeKindForJSONSchemaFormat(format: string): TransformedStringTypeKind | undefined {
+    const target = iterableFind(
+        transformedStringTypeTargetTypeKindsMap,
+        ([_, { jsonSchema }]) => jsonSchema === format
+    );
+    if (target === undefined) return undefined;
+    return target[0] as TransformedStringTypeKind;
+}
+
 export async function addTypesInSchema(
     typeBuilder: TypeBuilder,
     store: JSONSchemaStore,
@@ -634,19 +643,12 @@ export async function addTypesInSchema(
         const inferredAttributes = makeTypeAttributesInferred(typeAttributes);
 
         function makeStringType(): TypeRef {
-            switch (schema.format) {
-                case "date":
-                    return typeBuilder.getPrimitiveType("date", inferredAttributes);
-                case "time":
-                    return typeBuilder.getPrimitiveType("time", inferredAttributes);
-                case "date-time":
-                    return typeBuilder.getPrimitiveType("date-time", inferredAttributes);
-                case "integer":
-                    return typeBuilder.getStringType(inferredAttributes, StringTypes.integer);
-                default:
-                    break;
+            const kind = typeKindForJSONSchemaFormat(schema.format);
+            if (kind === undefined) {
+                return typeBuilder.getStringType(inferredAttributes, StringTypes.unrestricted);
+            } else {
+                return typeBuilder.getPrimitiveType(kind, inferredAttributes);
             }
-            return typeBuilder.getStringType(inferredAttributes, StringTypes.unrestricted);
         }
 
         async function makeArrayType(): Promise<TypeRef> {

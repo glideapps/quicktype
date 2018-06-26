@@ -2,7 +2,6 @@ import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { assertNever } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { UnionBuilder, UnionAccumulator } from "../UnionBuilder";
-import { isTime, isDateTime, isDate } from "../DateTime";
 import { ClassProperty } from "../Type";
 import { TypeAttributes, emptyTypeAttributes } from "../TypeAttributes";
 import { StringTypes } from "../StringTypes";
@@ -63,10 +62,8 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
     }
 }
 
-function canBeEnumCase(s: string): boolean {
-    if (s.length === 0) return true; // FIXME: Do we really want this?
-    // FIXME: Haven't we dealt with date-time in compressed JSON?
-    return !isDate(s) && !isTime(s) && !isDateTime(s);
+function canBeEnumCase(_s: string): boolean {
+    return true;
 }
 
 export type Accumulator = UnionAccumulator<NestedValueArray, NestedValueArray>;
@@ -76,9 +73,7 @@ export class TypeInference {
         private readonly _cjson: CompressedJSON,
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferMaps: boolean,
-        private readonly _inferEnums: boolean,
-        private readonly _inferDates: boolean,
-        private readonly _inferIntegerStrings: boolean
+        private readonly _inferEnums: boolean
     ) {}
 
     addValuesToAccumulator(valueArray: NestedValueArray, accumulator: Accumulator): void {
@@ -119,32 +114,12 @@ export class TypeInference {
                 case Tag.Array:
                     accumulator.addArray(this._cjson.getArrayForValue(value), emptyTypeAttributes);
                     break;
-                case Tag.Date:
+                case Tag.TransformedString:
+                    const kind = this._cjson.getTransformedStringTypeKind(value);
                     accumulator.addStringType(
                         "string",
                         emptyTypeAttributes,
-                        this._inferDates ? StringTypes.date : StringTypes.unrestricted
-                    );
-                    break;
-                case Tag.Time:
-                    accumulator.addStringType(
-                        "string",
-                        emptyTypeAttributes,
-                        this._inferDates ? StringTypes.time : StringTypes.unrestricted
-                    );
-                    break;
-                case Tag.DateTime:
-                    accumulator.addStringType(
-                        "string",
-                        emptyTypeAttributes,
-                        this._inferDates ? StringTypes.dateTime : StringTypes.unrestricted
-                    );
-                    break;
-                case Tag.IntegerString:
-                    accumulator.addStringType(
-                        "string",
-                        emptyTypeAttributes,
-                        this._inferIntegerStrings ? StringTypes.integer : StringTypes.unrestricted
+                        new StringTypes(new Map(), new Set([kind]))
                     );
                     break;
                 default:

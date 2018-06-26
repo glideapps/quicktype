@@ -58,20 +58,8 @@ export abstract class TargetLanguage {
         return "    ";
     }
 
-    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
-        return {};
-    }
-
     get stringTypeMapping(): StringTypeMapping {
-        const partial = this.partialStringTypeMapping;
-        /* tslint:disable:strict-boolean-expressions */
-        return {
-            date: partial.date || "string",
-            time: partial.time || "string",
-            dateTime: partial.dateTime || "string",
-            integerString: partial.integerString || "string"
-        };
-        /* tslint:enable */
+        return new Map();
     }
 
     get supportsOptionalClassProperties(): boolean {

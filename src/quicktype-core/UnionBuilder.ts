@@ -1,6 +1,6 @@
 import { mapMerge, mapUpdateInto, mapMap, setUnionInto } from "collection-utils";
 
-import { TypeKind, PrimitiveStringTypeKind, Type, UnionType, PrimitiveTypeKind } from "./Type";
+import { TypeKind, PrimitiveStringTypeKind, Type, UnionType, PrimitiveTypeKind, isPrimitiveTypeKind } from "./Type";
 import { matchTypeExhaustive } from "./TypeUtils";
 import {
     TypeAttributes,
@@ -304,10 +304,8 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
             _unionType => {
                 return panic("The unions should have been eliminated in attributesForTypesInUnion");
             },
-            _dateType => this.addStringType("date", attributes),
-            _timeType => this.addStringType("time", attributes),
-            _dateTimeType => this.addStringType("date-time", attributes),
-            _integerStringType => this.addStringType("integer-string", attributes)
+            transformedStringType =>
+                this.addStringType(transformedStringType.kind as PrimitiveStringTypeKind, attributes)
         );
     }
 
@@ -341,17 +339,6 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
         forwardingRef: TypeRef | undefined
     ): TypeRef {
         switch (kind) {
-            case "any":
-            case "none":
-            case "null":
-            case "bool":
-            case "double":
-            case "integer":
-            case "date":
-            case "time":
-            case "date-time":
-            case "integer-string":
-                return this.typeBuilder.getPrimitiveType(kind, typeAttributes, forwardingRef);
             case "string":
                 return this.typeBuilder.getStringType(typeAttributes, undefined, forwardingRef);
             case "enum":
@@ -361,6 +348,9 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             case "array":
                 return this.makeArray(typeProvider.arrayData, typeAttributes, forwardingRef);
             default:
+                if (isPrimitiveTypeKind(kind)) {
+                    return this.typeBuilder.getPrimitiveType(kind, typeAttributes, forwardingRef);
+                }
                 if (kind === "union" || kind === "class" || kind === "map" || kind === "intersection") {
                     return panic(`getMemberKinds() shouldn't return ${kind}`);
                 }
@@ -380,6 +370,10 @@ export abstract class UnionBuilder<TBuilder extends TypeBuilder, TArrayData, TOb
             this.typeBuilder.setLostTypeAttributes();
         }
 
+        // FIXME: We don't reconstitute type attributes here, so it's possible that
+        // we get type refs for the wrong graphs if the transformation making rewrite
+        // makes unions that have to be unified here.  That's a bug anyway, at least
+        // right now, it's just a very bad way of surfacing that error.
         if (kinds.size === 1) {
             const [[kind, memberAttributes]] = Array.from(kinds);
             const allAttributes = combineTypeAttributes(

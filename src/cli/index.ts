@@ -385,6 +385,8 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             type: Boolean,
             description: "Don't infer enums, always use strings."
         },
+        // We're getting to the point where we should have just one CLI option for
+        // disabling transformed string types, but right now we have one per type.
         {
             name: "no-date-times",
             type: Boolean,

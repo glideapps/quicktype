@@ -2,7 +2,16 @@ import { setFilter, iterableFirst, mapMapEntries } from "collection-utils";
 
 import { TypeGraph, TypeRef, typeRefIndex } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
-import { UnionType, TypeKind, EnumType, Type, ArrayType, PrimitiveType } from "./Type";
+import {
+    UnionType,
+    TypeKind,
+    EnumType,
+    Type,
+    ArrayType,
+    PrimitiveType,
+    isPrimitiveStringTypeKind,
+    targetTypeKindForTransformedStringTypeKind
+} from "./Type";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { defined, assert, panic } from "./support/Support";
 import {
@@ -15,8 +24,7 @@ import {
     ChoiceTransformer,
     Transformer,
     DecodingTransformer,
-    ParseDateTimeTransformer,
-    ParseIntegerTransformer,
+    ParseStringTransformer,
     ArrayDecodingTransformer
 } from "./Transformers";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
@@ -68,21 +76,23 @@ function replaceUnion(
 
     assert(union.members.size > 0, "We can't have empty unions");
 
-    const integerMember = union.findMember("integer");
-
     // Type attributes that we lost during reconstitution.
     let additionalAttributes = emptyTypeAttributes;
 
     function reconstituteMember(t: Type): TypeRef {
-        // Special handling for integer-string: The type in the union must
-        // be "integer", so if one already exists, use that one, otherwise
-        // make a new one.
-        if (t.kind === "integer-string") {
-            additionalAttributes = combineTypeAttributes("union", additionalAttributes, t.getAttributes());
-            if (integerMember !== undefined) {
-                return builder.reconstituteType(integerMember);
+        // Special handling for some transformed string type kinds: The type in
+        // the union must be the target type, so if one already exists, use that
+        // one, otherwise make a new one.
+        if (isPrimitiveStringTypeKind(t.kind)) {
+            const targetTypeKind = targetTypeKindForTransformedStringTypeKind(t.kind);
+            if (targetTypeKind !== undefined) {
+                const targetTypeMember = union.findMember(targetTypeKind);
+                additionalAttributes = combineTypeAttributes("union", additionalAttributes, t.getAttributes());
+                if (targetTypeMember !== undefined) {
+                    return builder.reconstituteType(targetTypeMember);
+                }
+                return builder.getPrimitiveType(targetTypeKind);
             }
-            return builder.getPrimitiveType("integer");
         }
         return builder.reconstituteType(t);
     }
@@ -125,23 +135,12 @@ function replaceUnion(
 
     function transformerForStringType(t: Type): Transformer | undefined {
         const memberRef = memberForKind(t.kind);
-        switch (t.kind) {
-            case "string":
-                return consumer(memberRef);
-
-            case "date-time":
-                return new ParseDateTimeTransformer(graph, getStringType(), consumer(memberRef));
-
-            case "enum": {
-                const enumType = t as EnumType;
-                return makeEnumTransformer(graph, enumType, getStringType(), consumer(memberRef));
-            }
-
-            case "integer-string":
-                return new ParseIntegerTransformer(graph, getStringType(), consumer(memberRef));
-
-            default:
-                return panic(`Can't transform string type ${t.kind}`);
+        if (t.kind === "string") {
+            return consumer(memberRef);
+        } else if (t instanceof EnumType) {
+            return makeEnumTransformer(graph, t, getStringType(), consumer(memberRef));
+        } else {
+            return new ParseStringTransformer(graph, getStringType(), consumer(memberRef));
         }
     }
 
@@ -255,7 +254,7 @@ function replaceIntegerString(
     const transformer = new DecodingTransformer(
         builder.typeGraph,
         stringType,
-        new ParseIntegerTransformer(builder.typeGraph, stringType, undefined)
+        new ParseStringTransformer(builder.typeGraph, stringType, undefined)
     );
     const attributes = transformationAttributes(
         builder.typeGraph,
@@ -282,8 +281,8 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
         if (t instanceof EnumType) {
             return replaceEnum(t, builder, forwardingRef, ctx.debugPrintTransformations);
         }
-        if (t instanceof PrimitiveType && t.kind === "integer-string") {
-            return replaceIntegerString(t, builder, forwardingRef, ctx.debugPrintReconstitution);
+        if (isPrimitiveStringTypeKind(t.kind)) {
+            return replaceIntegerString(t as PrimitiveType, builder, forwardingRef, ctx.debugPrintReconstitution);
         }
         return panic(`Cannot make transformation for type ${t.kind}`);
     }

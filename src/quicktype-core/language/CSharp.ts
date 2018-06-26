@@ -1,6 +1,16 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { Type, EnumType, UnionType, ClassType, ClassProperty, ArrayType } from "../Type";
+import {
+    Type,
+    EnumType,
+    UnionType,
+    ClassType,
+    ClassProperty,
+    ArrayType,
+    TransformedStringTypeKind,
+    PrimitiveStringTypeKind,
+    PrimitiveType
+} from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
@@ -30,10 +40,8 @@ import {
     EncodingTransformer,
     StringMatchTransformer,
     StringProducerTransformer,
-    ParseDateTimeTransformer,
-    StringifyDateTimeTransformer,
-    ParseIntegerTransformer,
-    StringifyIntegerTransformer,
+    ParseStringTransformer,
+    StringifyTransformer,
     Transformation,
     ArrayDecodingTransformer,
     ArrayEncodingTransformer
@@ -81,6 +89,17 @@ function alwaysApplyTransformation(xf: Transformation): boolean {
     return false;
 }
 
+/**
+ * The C# type for a given transformed string type.  The function can
+ * assume that it will only be called for type kinds that 
+ */
+function csTypeForTransformedStringType(t: PrimitiveType): Sourcelike {
+    if (t.kind === "date-time") {
+        return "DateTimeOffset";
+    }
+    return panic(`Transformed string type ${t.kind} not supported`);
+}
+
 export const cSharpOptions = {
     useList: new EnumOption("array-type", "Use T[] or List<T>", [["array", false], ["list", true]]),
     dense: new EnumOption("density", "Property density", [["normal", false], ["dense", true]], "normal", "secondary"),
@@ -115,8 +134,13 @@ export class CSharpTargetLanguage extends TargetLanguage {
         ];
     }
 
-    protected get partialStringTypeMapping(): Partial<StringTypeMapping> {
-        return { date: "date-time", time: "date-time", dateTime: "date-time", integerString: "integer-string" };
+    get stringTypeMapping(): StringTypeMapping {
+        const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
+        mapping.set("date", "date-time");
+        mapping.set("time", "date-time");
+        mapping.set("date-time", "date-time");
+        mapping.set("integer-string", "integer-string");
+        return mapping;
     }
 
     get supportsUnionsWithBothNumberTypes(): boolean {
@@ -278,9 +302,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 if (nullable !== null) return this.nullableCSType(nullable, noFollow);
                 return this.nameForNamedType(unionType);
             },
-            {
-                dateTimeType: _ => "DateTimeOffset"
-            }
+            transformedStringType => csTypeForTransformedStringType(transformedStringType)
         );
     }
 
@@ -1109,23 +1131,36 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitLine("writer.WriteEndArray();");
             emitFinish([]);
             return true;
-        } else if (xfer instanceof ParseDateTimeTransformer) {
-            this.emitLine("DateTimeOffset dt;");
-            this.emitLine("if (DateTimeOffset.TryParse(", variable, ", out dt))");
-            this.emitBlock(() => this.emitConsume("dt", xfer.consumer, targetType, emitFinish));
-        } else if (xfer instanceof StringifyDateTimeTransformer) {
-            return this.emitConsume(
-                [variable, '.ToString("o", System.Globalization.CultureInfo.InvariantCulture)'],
-                xfer.consumer,
-                targetType,
-                emitFinish
-            );
-        } else if (xfer instanceof ParseIntegerTransformer) {
-            this.emitLine("long l;");
-            this.emitLine("if (Int64.TryParse(", variable, ", out l))");
-            this.emitBlock(() => this.emitConsume("l", xfer.consumer, targetType, emitFinish));
-        } else if (xfer instanceof StringifyIntegerTransformer) {
-            return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType, emitFinish);
+        } else if (xfer instanceof ParseStringTransformer) {
+            const immediateTargetType = xfer.consumer === undefined ? targetType : xfer.consumer.sourceType;
+            switch (immediateTargetType.kind) {
+                case "date-time":
+                    this.emitLine("DateTimeOffset dt;");
+                    this.emitLine("if (DateTimeOffset.TryParse(", variable, ", out dt))");
+                    this.emitBlock(() => this.emitConsume("dt", xfer.consumer, targetType, emitFinish));
+                    break;
+                case "integer":
+                    this.emitLine("long l;");
+                    this.emitLine("if (Int64.TryParse(", variable, ", out l))");
+                    this.emitBlock(() => this.emitConsume("l", xfer.consumer, targetType, emitFinish));
+                    break;
+                default:
+                    return panic(`Parsing string to ${immediateTargetType.kind} not supported`);
+            }
+        } else if (xfer instanceof StringifyTransformer) {
+            switch (xfer.sourceType.kind) {
+                case "date-time":
+                    return this.emitConsume(
+                        [variable, '.ToString("o", System.Globalization.CultureInfo.InvariantCulture)'],
+                        xfer.consumer,
+                        targetType,
+                        emitFinish
+                    );
+                case "integer":
+                    return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType, emitFinish);
+                default:
+                    return panic(`Stringifying ${xfer.sourceType.kind} not supported`);
+            }
         } else if (xfer instanceof StringProducerTransformer) {
             const value = this.stringCaseValue(directTargetType(xfer.consumer), xfer.result);
             return this.emitConsume(value, xfer.consumer, targetType, emitFinish);
