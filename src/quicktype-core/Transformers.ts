@@ -777,9 +777,9 @@ export class StringProducerTransformer extends ProducerTransformer {
     }
 }
 
-export class ParseDateTimeTransformer extends ProducerTransformer {
+export class ParseStringTransformer extends ProducerTransformer {
     constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
-        super("parse-date-time", graph, sourceTypeRef, consumer);
+        super("parse-string", graph, sourceTypeRef, consumer);
     }
 
     get canFail(): boolean {
@@ -788,17 +788,17 @@ export class ParseDateTimeTransformer extends ProducerTransformer {
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         if (this.consumer === undefined) {
-            return new StringifyDateTimeTransformer(this.graph, targetTypeRef, continuationTransformer);
+            return new StringifyTransformer(this.graph, targetTypeRef, continuationTransformer);
         } else {
             return this.consumer.reverse(
                 targetTypeRef,
-                new StringifyDateTimeTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
+                new StringifyTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
             );
         }
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
-        return new ParseDateTimeTransformer(
+        return new ParseStringTransformer(
             builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             definedMap(this.consumer, xfer => xfer.reconstitute(builder))
@@ -807,13 +807,13 @@ export class ParseDateTimeTransformer extends ProducerTransformer {
 
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
-        return other instanceof ParseDateTimeTransformer;
+        return other instanceof ParseStringTransformer;
     }
 }
 
-export class StringifyDateTimeTransformer extends ProducerTransformer {
+export class StringifyTransformer extends ProducerTransformer {
     constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
-        super("stringify-date-time", graph, sourceTypeRef, consumer);
+        super("stringify", graph, sourceTypeRef, consumer);
     }
 
     get canFail(): boolean {
@@ -822,17 +822,17 @@ export class StringifyDateTimeTransformer extends ProducerTransformer {
 
     reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
         if (this.consumer === undefined) {
-            return new ParseDateTimeTransformer(this.graph, targetTypeRef, continuationTransformer);
+            return new ParseStringTransformer(this.graph, targetTypeRef, continuationTransformer);
         } else {
             return this.consumer.reverse(
                 targetTypeRef,
-                new ParseDateTimeTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
+                new ParseStringTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
             );
         }
     }
 
     reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
-        return new StringifyDateTimeTransformer(
+        return new StringifyTransformer(
             builder.typeGraph,
             builder.reconstituteTypeRef(this.sourceTypeRef),
             definedMap(this.consumer, xfer => xfer.reconstitute(builder))
@@ -841,75 +841,7 @@ export class StringifyDateTimeTransformer extends ProducerTransformer {
 
     equals(other: any): boolean {
         if (!super.equals(other)) return false;
-        return other instanceof StringifyDateTimeTransformer;
-    }
-}
-
-export class ParseIntegerTransformer extends ProducerTransformer {
-    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
-        super("parse-integer", graph, sourceTypeRef, consumer);
-    }
-
-    get canFail(): boolean {
-        return true;
-    }
-
-    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
-        if (this.consumer === undefined) {
-            return new StringifyIntegerTransformer(this.graph, targetTypeRef, continuationTransformer);
-        } else {
-            return this.consumer.reverse(
-                targetTypeRef,
-                new StringifyIntegerTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
-            );
-        }
-    }
-
-    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
-        return new ParseIntegerTransformer(
-            builder.typeGraph,
-            builder.reconstituteTypeRef(this.sourceTypeRef),
-            definedMap(this.consumer, xfer => xfer.reconstitute(builder))
-        );
-    }
-
-    equals(other: any): boolean {
-        if (!super.equals(other)) return false;
-        return other instanceof ParseIntegerTransformer;
-    }
-}
-
-export class StringifyIntegerTransformer extends ProducerTransformer {
-    constructor(graph: TypeGraph, sourceTypeRef: TypeRef, consumer: Transformer | undefined) {
-        super("stringify-integer", graph, sourceTypeRef, consumer);
-    }
-
-    get canFail(): boolean {
-        return false;
-    }
-
-    reverse(targetTypeRef: TypeRef, continuationTransformer: Transformer | undefined): Transformer {
-        if (this.consumer === undefined) {
-            return new ParseIntegerTransformer(this.graph, targetTypeRef, continuationTransformer);
-        } else {
-            return this.consumer.reverse(
-                targetTypeRef,
-                new ParseIntegerTransformer(this.graph, this.consumer.sourceTypeRef, continuationTransformer)
-            );
-        }
-    }
-
-    reconstitute<TBuilder extends BaseGraphRewriteBuilder>(builder: TBuilder): Transformer {
-        return new StringifyIntegerTransformer(
-            builder.typeGraph,
-            builder.reconstituteTypeRef(this.sourceTypeRef),
-            definedMap(this.consumer, xfer => xfer.reconstitute(builder))
-        );
-    }
-
-    equals(other: any): boolean {
-        if (!super.equals(other)) return false;
-        return other instanceof StringifyIntegerTransformer;
+        return other instanceof StringifyTransformer;
     }
 }
 

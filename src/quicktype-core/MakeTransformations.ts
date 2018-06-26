@@ -15,8 +15,7 @@ import {
     ChoiceTransformer,
     Transformer,
     DecodingTransformer,
-    ParseDateTimeTransformer,
-    ParseIntegerTransformer,
+    ParseStringTransformer,
     ArrayDecodingTransformer
 } from "./Transformers";
 import { TypeAttributes, emptyTypeAttributes, combineTypeAttributes } from "./TypeAttributes";
@@ -130,15 +129,13 @@ function replaceUnion(
                 return consumer(memberRef);
 
             case "date-time":
-                return new ParseDateTimeTransformer(graph, getStringType(), consumer(memberRef));
+            case "integer-string":
+                return new ParseStringTransformer(graph, getStringType(), consumer(memberRef));
 
             case "enum": {
                 const enumType = t as EnumType;
                 return makeEnumTransformer(graph, enumType, getStringType(), consumer(memberRef));
             }
-
-            case "integer-string":
-                return new ParseIntegerTransformer(graph, getStringType(), consumer(memberRef));
 
             default:
                 return panic(`Can't transform string type ${t.kind}`);
@@ -255,7 +252,7 @@ function replaceIntegerString(
     const transformer = new DecodingTransformer(
         builder.typeGraph,
         stringType,
-        new ParseIntegerTransformer(builder.typeGraph, stringType, undefined)
+        new ParseStringTransformer(builder.typeGraph, stringType, undefined)
     );
     const attributes = transformationAttributes(
         builder.typeGraph,

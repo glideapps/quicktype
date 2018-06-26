@@ -1,6 +1,15 @@
 import { arrayIntercalate } from "collection-utils";
 
-import { Type, EnumType, UnionType, ClassType, ClassProperty, ArrayType, TransformedStringTypeKind, PrimitiveStringTypeKind } from "../Type";
+import {
+    Type,
+    EnumType,
+    UnionType,
+    ClassType,
+    ClassProperty,
+    ArrayType,
+    TransformedStringTypeKind,
+    PrimitiveStringTypeKind
+} from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
 import {
@@ -30,10 +39,8 @@ import {
     EncodingTransformer,
     StringMatchTransformer,
     StringProducerTransformer,
-    ParseDateTimeTransformer,
-    StringifyDateTimeTransformer,
-    ParseIntegerTransformer,
-    StringifyIntegerTransformer,
+    ParseStringTransformer,
+    StringifyTransformer,
     Transformation,
     ArrayDecodingTransformer,
     ArrayEncodingTransformer
@@ -1114,23 +1121,36 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
             this.emitLine("writer.WriteEndArray();");
             emitFinish([]);
             return true;
-        } else if (xfer instanceof ParseDateTimeTransformer) {
-            this.emitLine("DateTimeOffset dt;");
-            this.emitLine("if (DateTimeOffset.TryParse(", variable, ", out dt))");
-            this.emitBlock(() => this.emitConsume("dt", xfer.consumer, targetType, emitFinish));
-        } else if (xfer instanceof StringifyDateTimeTransformer) {
-            return this.emitConsume(
-                [variable, '.ToString("o", System.Globalization.CultureInfo.InvariantCulture)'],
-                xfer.consumer,
-                targetType,
-                emitFinish
-            );
-        } else if (xfer instanceof ParseIntegerTransformer) {
-            this.emitLine("long l;");
-            this.emitLine("if (Int64.TryParse(", variable, ", out l))");
-            this.emitBlock(() => this.emitConsume("l", xfer.consumer, targetType, emitFinish));
-        } else if (xfer instanceof StringifyIntegerTransformer) {
-            return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType, emitFinish);
+        } else if (xfer instanceof ParseStringTransformer) {
+            const immediateTargetType = xfer.consumer === undefined ? targetType : xfer.consumer.sourceType;
+            switch (immediateTargetType.kind) {
+                case "date-time":
+                    this.emitLine("DateTimeOffset dt;");
+                    this.emitLine("if (DateTimeOffset.TryParse(", variable, ", out dt))");
+                    this.emitBlock(() => this.emitConsume("dt", xfer.consumer, targetType, emitFinish));
+                    break;
+                case "integer":
+                    this.emitLine("long l;");
+                    this.emitLine("if (Int64.TryParse(", variable, ", out l))");
+                    this.emitBlock(() => this.emitConsume("l", xfer.consumer, targetType, emitFinish));
+                    break;
+                default:
+                    return panic(`Parsing string to ${immediateTargetType.kind} not supported`);
+            }
+        } else if (xfer instanceof StringifyTransformer) {
+            switch (xfer.sourceType.kind) {
+                case "date-time":
+                    return this.emitConsume(
+                        [variable, '.ToString("o", System.Globalization.CultureInfo.InvariantCulture)'],
+                        xfer.consumer,
+                        targetType,
+                        emitFinish
+                    );
+                case "integer":
+                    return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType, emitFinish);
+                default:
+                    return panic(`Stringifying ${xfer.sourceType.kind} not supported`);
+            }
         } else if (xfer instanceof StringProducerTransformer) {
             const value = this.stringCaseValue(directTargetType(xfer.consumer), xfer.result);
             return this.emitConsume(value, xfer.consumer, targetType, emitFinish);
