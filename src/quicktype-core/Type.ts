@@ -17,7 +17,8 @@ import {
     definedMap,
     hashCodeInit,
     addHashCode,
-    hasOwnProperty
+    hasOwnProperty,
+    mapFromObject
 } from "collection-utils";
 
 import { defined, panic, assert } from "./support/Support";
@@ -44,9 +45,10 @@ export const transformedStringTypeTargetTypeKinds = {
     "date-time": { jsonSchema: "date-time", primitive: undefined },
     "integer-string": { jsonSchema: "integer", primitive: "integer" } as TransformedStringTypeTargets
 };
-export const transformedStringTypeTargetTypeKindsMap = transformedStringTypeTargetTypeKinds as {
+
+export const transformedStringTypeTargetTypeKindsMap = mapFromObject(transformedStringTypeTargetTypeKinds as {
     [kind: string]: TransformedStringTypeTargets;
-};
+});
 
 export type TransformedStringTypeKind = keyof typeof transformedStringTypeTargetTypeKinds;
 export type PrimitiveStringTypeKind = "string" | TransformedStringTypeKind;
@@ -67,7 +69,7 @@ export function isPrimitiveStringTypeKind(kind: string): kind is PrimitiveString
 export function targetTypeKindForTransformedStringTypeKind(
     kind: PrimitiveStringTypeKind
 ): PrimitiveNonStringTypeKind | undefined {
-    const target = transformedStringTypeTargetTypeKindsMap[kind];
+    const target = transformedStringTypeTargetTypeKindsMap.get(kind);
     if (target === undefined) return undefined;
     return target.primitive;
 }

@@ -135,7 +135,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
                 }
             },
             transformedStringType => {
-                const target = transformedStringTypeTargetTypeKindsMap[transformedStringType.kind];
+                const target = transformedStringTypeTargetTypeKindsMap.get(transformedStringType.kind);
                 if (target === undefined) {
                     return panic(`Unknown transformed string type ${transformedStringType.kind}`);
                 }

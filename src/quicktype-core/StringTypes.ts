@@ -163,19 +163,6 @@ class StringTypesTypeAttributeKind extends TypeAttributeKind<StringTypes> {
 
 export const stringTypesTypeAttributeKind: TypeAttributeKind<StringTypes> = new StringTypesTypeAttributeKind();
 
-export function typeKindForJSONSchemaFormat(format: string): TransformedStringTypeKind | undefined {
-    switch (format) {
-        case "date":
-        case "time":
-        case "date-time":
-            return format;
-        case "integer":
-            return "integer-string";
-        default:
-            return undefined;
-    }
-}
-
 const INTEGER_STRING = /^(0|-?[1-9]\d*)$/;
 // We're restricting numbers to what's representable as 32 bit
 // signed integers, to be on the safe side of most languages.

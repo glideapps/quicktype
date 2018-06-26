@@ -22,7 +22,7 @@ import {
     addHashCode
 } from "collection-utils";
 
-import { PrimitiveTypeKind } from "../Type";
+import { PrimitiveTypeKind, TransformedStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { panic, assertNever, StringMap, assert, defined } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { TypeNames } from "../TypeNames";
@@ -35,7 +35,7 @@ import {
 } from "../TypeAttributes";
 import { JSONSchema, JSONSchemaStore } from "./JSONSchemaStore";
 import { messageAssert, messageError } from "../Messages";
-import { StringTypes, typeKindForJSONSchemaFormat } from "../StringTypes";
+import { StringTypes } from "../StringTypes";
 
 import { TypeRef } from "../TypeGraph";
 
@@ -486,6 +486,15 @@ export type JSONSchemaAttributeProducer = (
     types: Set<JSONSchemaType>,
     unionCases: JSONSchema[] | undefined
 ) => JSONSchemaAttributes | undefined;
+
+function typeKindForJSONSchemaFormat(format: string): TransformedStringTypeKind | undefined {
+    const target = iterableFind(
+        transformedStringTypeTargetTypeKindsMap,
+        ([_, { jsonSchema }]) => jsonSchema === format
+    );
+    if (target === undefined) return undefined;
+    return target[0] as TransformedStringTypeKind;
+}
 
 export async function addTypesInSchema(
     typeBuilder: TypeBuilder,
