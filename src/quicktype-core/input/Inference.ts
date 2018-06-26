@@ -2,7 +2,6 @@ import { Value, Tag, valueTag, CompressedJSON } from "./CompressedJSON";
 import { assertNever } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { UnionBuilder, UnionAccumulator } from "../UnionBuilder";
-import { isTime, isDateTime, isDate } from "../DateTime";
 import { ClassProperty } from "../Type";
 import { TypeAttributes, emptyTypeAttributes } from "../TypeAttributes";
 import { StringTypes } from "../StringTypes";
@@ -63,10 +62,8 @@ class InferenceUnionBuilder extends UnionBuilder<TypeBuilder, NestedValueArray, 
     }
 }
 
-function canBeEnumCase(s: string): boolean {
-    if (s.length === 0) return true; // FIXME: Do we really want this?
-    // FIXME: Haven't we dealt with date-time in compressed JSON?
-    return !isDate(s) && !isTime(s) && !isDateTime(s);
+function canBeEnumCase(_s: string): boolean {
+    return true;
 }
 
 export type Accumulator = UnionAccumulator<NestedValueArray, NestedValueArray>;
