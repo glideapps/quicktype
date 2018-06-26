@@ -562,12 +562,7 @@ export abstract class ConvenienceRenderer extends Renderer {
                 },
                 _enumType => "enum",
                 _unionType => "union",
-                _dateType => "date",
-                _timeType => "time",
-                _dateTimeType => "date_time",
-                _integerStringType => {
-                    return panic("integer-string type should have been replaced");
-                }
+                transformedType => transformedType.kind.replace("-", "_")
             );
 
         return typeNameForUnionMember(fieldType);

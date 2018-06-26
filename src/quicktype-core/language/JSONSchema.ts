@@ -1,7 +1,7 @@
 import { mapFirst, iterableFirst } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, UnionType, EnumType, ObjectType } from "../Type";
+import { Type, UnionType, EnumType, ObjectType, transformedStringTypeTargetTypeKindsMap } from "../Type";
 import { matchTypeExhaustive } from "../TypeUtils";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer, Name } from "../Naming";
@@ -134,10 +134,13 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
                     return this.definitionForUnion(unionType);
                 }
             },
-            _dateType => ({ type: "string", format: "date" }),
-            _timeType => ({ type: "string", format: "time" }),
-            _dateTimeType => ({ type: "string", format: "date-time" }),
-            _integerStringType => ({ type: "string", format: "integer" })
+            transformedStringType => {
+                const target = transformedStringTypeTargetTypeKindsMap[transformedStringType.kind];
+                if (target === undefined) {
+                    return panic(`Unknown transformed string type ${transformedStringType.kind}`);
+                }
+                return { type: "string", format: target.jsonSchema };
+            }
         );
         if (schema.$ref === undefined) {
             this.addDescription(t, schema);

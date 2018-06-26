@@ -27,16 +27,25 @@ import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
 import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph, typeRefIndex } from "./TypeGraph";
 
+export type TransformedStringTypeTargets = {
+    jsonSchema: string;
+    primitive: PrimitiveNonStringTypeKind | undefined;
+};
+
 /**
- * All the transformed string type kinds and the primitive type kinds they map
- * to.  Not all transformed string types map to other types.  Date-time types,
- * for example, stand on their own, but stringified integers map to integers.
+ * All the transformed string type kinds and the JSON Schema formats and
+ * primitive type kinds they map to.  Not all transformed string types map to
+ * primitive types.  Date-time types, for example, stand on their own, but
+ * stringified integers map to integers.
  */
 export const transformedStringTypeTargetTypeKinds = {
-    date: undefined,
-    time: undefined,
-    "date-time": undefined,
-    "integer-string": "integer" as PrimitiveNonStringTypeKind
+    date: { jsonSchema: "date", primitive: undefined },
+    time: { jsonSchema: "time", primitive: undefined },
+    "date-time": { jsonSchema: "date-time", primitive: undefined },
+    "integer-string": { jsonSchema: "integer", primitive: "integer" } as TransformedStringTypeTargets
+};
+export const transformedStringTypeTargetTypeKindsMap = transformedStringTypeTargetTypeKinds as {
+    [kind: string]: TransformedStringTypeTargets;
 };
 
 export type TransformedStringTypeKind = keyof typeof transformedStringTypeTargetTypeKinds;
@@ -58,8 +67,9 @@ export function isPrimitiveStringTypeKind(kind: string): kind is PrimitiveString
 export function targetTypeKindForTransformedStringTypeKind(
     kind: PrimitiveStringTypeKind
 ): PrimitiveNonStringTypeKind | undefined {
-    const map: { [kind: string]: PrimitiveNonStringTypeKind | undefined } = transformedStringTypeTargetTypeKinds;
-    return map[kind];
+    const target = transformedStringTypeTargetTypeKindsMap[kind];
+    if (target === undefined) return undefined;
+    return target.primitive;
 }
 
 export function isNumberTypeKind(kind: TypeKind): kind is "integer" | "double" {

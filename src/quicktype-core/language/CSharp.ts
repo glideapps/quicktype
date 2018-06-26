@@ -8,7 +8,8 @@ import {
     ClassProperty,
     ArrayType,
     TransformedStringTypeKind,
-    PrimitiveStringTypeKind
+    PrimitiveStringTypeKind,
+    PrimitiveType
 } from "../Type";
 import { matchType, nullableFromUnion, removeNullFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated, modifySource } from "../Source";
@@ -86,6 +87,13 @@ function alwaysApplyTransformation(xf: Transformation): boolean {
     if (t instanceof EnumType) return true;
     if (t instanceof UnionType) return nullableFromUnion(t) === null;
     return false;
+}
+
+function csTypeForTransformedStringType(t: PrimitiveType): Sourcelike {
+    if (t.kind === "date-time") {
+        return "DateTimeOffset";
+    }
+    return panic(`Transformed string type ${t.kind} not supported`);
 }
 
 export const cSharpOptions = {
@@ -290,9 +298,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                 if (nullable !== null) return this.nullableCSType(nullable, noFollow);
                 return this.nameForNamedType(unionType);
             },
-            {
-                dateTimeType: _ => "DateTimeOffset"
-            }
+            transformedStringType => csTypeForTransformedStringType(transformedStringType)
         );
     }
 

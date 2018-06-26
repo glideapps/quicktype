@@ -304,10 +304,8 @@ export class TypeRefUnionAccumulator extends UnionAccumulator<TypeRef, TypeRef> 
             _unionType => {
                 return panic("The unions should have been eliminated in attributesForTypesInUnion");
             },
-            _dateType => this.addStringType("date", attributes),
-            _timeType => this.addStringType("time", attributes),
-            _dateTimeType => this.addStringType("date-time", attributes),
-            _integerStringType => this.addStringType("integer-string", attributes)
+            transformedStringType =>
+                this.addStringType(transformedStringType.kind as PrimitiveStringTypeKind, attributes)
         );
     }
 

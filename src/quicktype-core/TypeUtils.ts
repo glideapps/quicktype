@@ -12,7 +12,8 @@ import {
     ClassType,
     ClassProperty,
     SetOperationType,
-    UnionType
+    UnionType,
+    isPrimitiveStringTypeKind
 } from "./Type";
 import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 
@@ -228,12 +229,15 @@ export function matchTypeExhaustive<U>(
     objectType: (objectType: ObjectType) => U,
     enumType: (enumType: EnumType) => U,
     unionType: (unionType: UnionType) => U,
-    dateType: (dateType: PrimitiveType) => U,
-    timeType: (timeType: PrimitiveType) => U,
-    dateTimeType: (dateTimeType: PrimitiveType) => U,
-    integerStringType: (integerStringType: PrimitiveType) => U
+    transformedStringType: (transformedStringType: PrimitiveType) => U
 ): U {
     if (t.isPrimitive()) {
+        if (isPrimitiveStringTypeKind(t.kind)) {
+            if (t.kind === "string") {
+                return stringType(t);
+            }
+            return transformedStringType(t);
+        }
         const kind = t.kind;
         const f = {
             none: noneType,
@@ -241,12 +245,7 @@ export function matchTypeExhaustive<U>(
             null: nullType,
             bool: boolType,
             integer: integerType,
-            double: doubleType,
-            string: stringType as (t: PrimitiveType) => U,
-            date: dateType,
-            time: timeType,
-            "date-time": dateTimeType,
-            "integer-string": integerStringType
+            double: doubleType
         }[kind];
         if (f !== undefined) return f(t);
         return assertNever(f);
@@ -272,15 +271,12 @@ export function matchType<U>(
     mapType: (mapType: MapType) => U,
     enumType: (enumType: EnumType) => U,
     unionType: (unionType: UnionType) => U,
-    stringTypeMatchers?: StringTypeMatchers<U>
+    transformedStringType?: (transformedStringType: PrimitiveType) => U
 ): U {
     function typeNotSupported(t: Type) {
         return panic(`Unsupported type ${t.kind} in non-exhaustive match`);
     }
 
-    if (stringTypeMatchers === undefined) {
-        stringTypeMatchers = {};
-    }
     /* tslint:disable:strict-boolean-expressions */
     return matchTypeExhaustive(
         type,
@@ -297,10 +293,7 @@ export function matchType<U>(
         typeNotSupported,
         enumType,
         unionType,
-        stringTypeMatchers.dateType || typeNotSupported,
-        stringTypeMatchers.timeType || typeNotSupported,
-        stringTypeMatchers.dateTimeType || typeNotSupported,
-        typeNotSupported
+        transformedStringType || typeNotSupported
     );
     /* tslint:enable */
 }
@@ -332,9 +325,6 @@ export function matchCompoundType(
         objectType,
         ignore,
         unionType,
-        ignore,
-        ignore,
-        ignore,
         ignore
     );
 }
