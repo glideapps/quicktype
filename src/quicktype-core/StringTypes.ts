@@ -18,16 +18,6 @@ import { isDate, isTime, isDateTime } from "./DateTime";
 
 export class StringTypes {
     static readonly unrestricted: StringTypes = new StringTypes(undefined, new Set());
-    static readonly date: StringTypes = new StringTypes(new Map(), new Set<TransformedStringTypeKind>(["date"]));
-    static readonly time: StringTypes = new StringTypes(new Map(), new Set<TransformedStringTypeKind>(["time"]));
-    static readonly dateTime: StringTypes = new StringTypes(
-        new Map(),
-        new Set<TransformedStringTypeKind>(["date-time"])
-    );
-    static readonly integer: StringTypes = new StringTypes(
-        new Map(),
-        new Set<TransformedStringTypeKind>(["integer-string"])
-    );
 
     static fromCase(s: string, count: number): StringTypes {
         const caseMap: { [name: string]: number } = {};
