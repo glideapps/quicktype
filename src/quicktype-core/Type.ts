@@ -28,6 +28,14 @@ import { TypeAttributes } from "./TypeAttributes";
 import { messageAssert } from "./Messages";
 import { TypeRef, attributesForTypeRef, derefTypeRef, TypeGraph, typeRefIndex } from "./TypeGraph";
 
+/**
+ * `jsonSchema` is the `format` to be used to represent this string type in
+ * JSON Schema.  It's ok to "invent" a new one if the JSON Schema standard doesn't
+ * have that particular type yet.
+ *
+ * For transformed type kinds that map to an existing primitive type, `primitive`
+ * must specify that type kind.
+ */
 export type TransformedStringTypeTargets = {
     jsonSchema: string;
     primitive: PrimitiveNonStringTypeKind | undefined;

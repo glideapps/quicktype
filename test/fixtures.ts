@@ -369,7 +369,10 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     let schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
 
     let ajv = new Ajv({ format: "full", unknownFormats: ["integer"] });
-    // Make Ajv's date-time compatible with what we recognize
+    // Make Ajv's date-time compatible with what we recognize.  All non-standard
+    // JSON formats that we use for transformed type kinds must be registered here
+    // with a validation function.
+    // FIXME: Unify this with what's in StringTypes.ts.
     ajv.addFormat("date-time", isDateTime);
     let valid = ajv.validate(schema, input);
     if (!valid) {

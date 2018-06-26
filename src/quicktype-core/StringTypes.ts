@@ -177,6 +177,13 @@ function isIntegerString(s: string): boolean {
     return i >= MIN_INTEGER_STRING && i <= MAX_INTEGER_STRING;
 }
 
+/**
+ * JSON inference calls this function to figure out whether a given string is to be
+ * transformed into a higher level type.  Must return undefined if not, otherwise the
+ * type kind of the transformed string type.
+ *
+ * @param s The string for which to determine the transformed string type kind.
+ */
 export function inferTransformedStringTypeKindForString(s: string): TransformedStringTypeKind | undefined {
     if (s.length === 0 || "0123456789-".indexOf(s[0]) < 0) return undefined;
 
