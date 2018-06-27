@@ -2,8 +2,8 @@
     "name": "quicktype",
     "version": "15.0.0",
     "license": "Apache-2.0",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "dist/cli/index.js",
+    "types": "dist/cli/index.d.ts",
     "repository": "https://github.com/quicktype/quicktype",
     "scripts": {
         "pub": "script/publish.sh",
