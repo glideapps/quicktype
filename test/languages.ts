@@ -6,7 +6,7 @@ export interface Language {
   base: string;
   setupCommand?: string;
   compileCommand?: string;
-  runCommand(sample: string): string;
+  runCommand?: (sample: string) => string;
   diffViaSchema: boolean;
   skipDiffViaSchema: string[];
   allowMissingNull: boolean;
@@ -76,6 +76,29 @@ export const JavaLanguage: Language = {
   rendererOptions: {},
   quickTestRendererOptions: [],
   sourceFiles: ["src/language/Java.ts"]
+};
+
+export const PythonLanguage: Language = {
+  name: "python",
+  base: "test/fixtures/python",
+  compileCommand: "mypy quicktype.py && python3.6 quicktype.py",
+  diffViaSchema: false,
+  skipDiffViaSchema: [],
+  allowMissingNull: false,
+  handlesStringifiedIntegers: true,
+  output: "quicktype.py",
+  topLevel: "TopLevel",
+  skipJSON: [
+    "no-classes.json", // We don't even emit an empty file?
+    "ed095.json" // same - just a map type
+  ],
+  skipMiscJSON: false,
+  skipSchema: [
+    "any.schema" // We don't even emit an empty file?
+  ],
+  rendererOptions: {},
+  quickTestRendererOptions: [],
+  sourceFiles: []
 };
 
 export const RustLanguage: Language = {

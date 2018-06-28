@@ -126,6 +126,7 @@ instanceof
 int
 interface
 internal
+iterable
 is
 jdec
 jenc
