@@ -254,6 +254,40 @@ export class DartRenderer extends ConvenienceRenderer {
             }
         );
     }
+    protected fromDynamicExpression = (t: Type, ...dynamic: Sourcelike[]): Sourcelike => {
+        return matchType<Sourcelike>(
+            t,
+            _anyType => dynamic,
+            _nullType => dynamic,
+            _boolType => dynamic,
+            _integerType => dynamic,
+            _doubleType => dynamic,
+            _stringType => dynamic,
+            arrayType => ["new List<", this.fromDynamicExpression(arrayType.items, "x"), ">.from(", dynamic, ")"],
+            classType => [this.nameForNamedType(classType), ".fromJson(", dynamic, ")"],
+            mapType => ["new Map<String ", this.fromDynamicExpression(mapType.values, "x"), ">.from(", dynamic, ")"],
+            _enumType => dynamic,
+            unionType => {
+                const nullable = nullableFromUnion(unionType);
+                return nullable !== null ? this.fromDynamicExpression(nullable, dynamic) : dynamic;
+            }
+        );
+    };
+    protected toDynamicExpression = (t: Type, ...dynamic: Sourcelike[]): Sourcelike => {
+        return matchType<Sourcelike>(
+            t,
+            _anyType => dynamic,
+            _nullType => dynamic,
+            _boolType => dynamic,
+            _integerType => dynamic,
+            _doubleType => dynamic,
+            _stringType => dynamic,
+            _arrayType => dynamic,
+            _classType => [dynamic, ".toJson()"],
+            _mapType => dynamic,
+            _enumType => dynamic,
+            _unionType => dynamic);
+    }
 
     protected dartTypeWithoutGenerics(reference: boolean, t: Type): Sourcelike {
         if (t instanceof ArrayType) {
@@ -288,8 +322,8 @@ export class DartRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this.emitLine("factory ", className, ".fromJson(Map<String, dynamic> json) => new ", className, "(")
             this.indent(() => {
-                this.forEachClassProperty(c, "none", (name, jsonName, _) => {
-                    this.emitLine(name, ": json['", jsonName, "'],");
+                this.forEachClassProperty(c, "none", (name, jsonName, property) => {
+                    this.emitLine(name, ": ", this.fromDynamicExpression(property.type, "json['", jsonName, "']"), ",");
                 });
             });
             this.emitLine(");");
@@ -297,8 +331,8 @@ export class DartRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
             this.emitLine("Map<String, dynamic> toJson() => {");
             this.indent(() => {
-                this.forEachClassProperty(c, "none", (name, jsonName, _) => {
-                    this.emitLine("'", jsonName, "': ", name, ",");
+                this.forEachClassProperty(c, "none", (name, jsonName, property) => {
+                    this.emitLine("'", jsonName, "': ", this.toDynamicExpression(property.type, name), ",");
                 });
             });
             this.emitLine("};");
