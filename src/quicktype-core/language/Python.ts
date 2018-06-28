@@ -196,6 +196,18 @@ export class PythonRenderer extends ConvenienceRenderer {
         return funPrefixNamer("enum-case", s => snakeNameStyle(s, true));
     }
 
+    protected get commentLineStart(): string {
+        return "# ";
+    }
+
+    protected emitDescriptionBlock(lines: string[]): void {
+        if (lines.length === 1) {
+            this.emitLine('"""', lines[0], '"""');
+        } else {
+            this.emitCommentLines(lines, "", undefined, '"""', '"""');
+        }
+    }
+
     protected get needsTypeDeclarationBeforeUse(): boolean {
         return true;
     }
@@ -267,6 +279,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected declareType<T extends Type>(t: T, emitter: () => void): void {
+        this.emitDescription(this.descriptionForType(t));
         this.emitBlock(this.declarationLine(t), () => {
             emitter();
         });
@@ -279,7 +292,8 @@ export class PythonRenderer extends ConvenienceRenderer {
                 this.emitLine("pass");
                 return;
             }
-            this.forEachClassProperty(t, "none", (name, _, cp) => {
+            this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
+                this.emitDescription(this.descriptionForClassProperty(t, jsonName));
                 this.emitLine(name, ": ", this.pythonType(cp.type));
             });
         });
@@ -318,11 +332,24 @@ export class PythonRenderer extends ConvenienceRenderer {
         });
     }
 
+    protected emitDefaultLeadingComments(): void {
+        this.emitCommentLines([
+            "Only Python >=3.6 right now, and no (de)serializers yet.",
+            "More features coming soon!"
+        ]);
+    }
+
     protected emitSourceStructure(_givenOutputFilename: string): void {
         const lines = this.gatherSource(() => {
             this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
         });
 
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines(this.leadingComments);
+        } else {
+            this.emitDefaultLeadingComments();
+        }
+        this.ensureBlankLine();
         this.emitImports();
         this.ensureBlankLine();
         this.emitGatheredSource(lines);
