@@ -15,6 +15,7 @@ import { ElmTargetLanguage } from "./Elm";
 import { JSONSchemaTargetLanguage } from "./JSONSchema";
 import { RustTargetLanguage } from "./Rust";
 import { RubyTargetLanguage } from "./ruby";
+import { DartTargetLanguage } from "./dart";
 
 export const all: TargetLanguage[] = [
     new NewtonsoftCSharpTargetLanguage(),
@@ -30,7 +31,8 @@ export const all: TargetLanguage[] = [
     new KotlinTargetLanguage(),
     new ElmTargetLanguage(),
     new JSONSchemaTargetLanguage(),
-    new RubyTargetLanguage()
+    new RubyTargetLanguage(),
+    new DartTargetLanguage(),
 ];
 
 export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
