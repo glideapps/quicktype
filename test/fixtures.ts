@@ -21,7 +21,7 @@ import {
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype-core/Run";
-import { mustNotHappen } from "../dist/quicktype-core/support/Support";
+import { mustNotHappen, defined } from "../dist/quicktype-core/support/Support";
 import { isDateTime } from "../dist/quicktype-core/DateTime";
 
 const chalk = require("chalk");
@@ -214,6 +214,8 @@ class JSONFixture extends LanguageFixture {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
+    if (this.language.runCommand === undefined) return;
+
     compareJsonFileToJson({
       expectedFile: filename,
       given: { command: this.language.runCommand(filename) },
@@ -333,7 +335,7 @@ class JSONToXToYFixture extends JSONFixture {
     // Parse the sample with the code generated from its schema, and compare to the sample
     compareJsonFileToJson({
       expectedFile: filename,
-      given: { command: this.runLanguage.runCommand(filename) },
+      given: { command: defined(this.runLanguage.runCommand)(filename) },
       strict: false,
       allowMissingNull: this.runLanguage.allowMissingNull,
       allowStringifiedIntegers: allowStringifiedIntegers(this.runLanguage, filename)
@@ -511,6 +513,8 @@ class JSONSchemaFixture extends LanguageFixture {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
+    if (this.language.runCommand === undefined) return;
+
     for (const filename of additionalFiles) {
       if (!filename.endsWith(".json") || filename.endsWith(".out.json")) continue;
 
@@ -586,6 +590,8 @@ class GraphQLFixture extends LanguageFixture {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
+    if (this.language.runCommand === undefined) return;
+
     for (const fn of additionalFiles) {
       if (!fn.endsWith(".json")) {
         continue;

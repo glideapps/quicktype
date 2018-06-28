@@ -6,7 +6,7 @@ export interface Language {
   base: string;
   setupCommand?: string;
   compileCommand?: string;
-  runCommand(sample: string): string;
+  runCommand?: (sample: string) => string;
   diffViaSchema: boolean;
   skipDiffViaSchema: string[];
   allowMissingNull: boolean;
