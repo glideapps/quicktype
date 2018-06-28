@@ -5,8 +5,8 @@ steps:
   - command: "FIXTURE=java,schema-java,schema-json-csharp .buildkite/build-pr.sh"
     label: "java schema-json-c#"
 
-  - command: "FIXTURE=typescript,schema-typescript,javascript,schema-javascript,flow,schema-flow,json-ts-csharp .buildkite/build-pr.sh"
-    label: "typescript javascript flow"
+  - command: "FIXTURE=typescript,schema-typescript,javascript,schema-javascript,flow,schema-flow,json-ts-csharp,python,schema-python .buildkite/build-pr.sh"
+    label: "typescript javascript flow python"
 
   - command: "FIXTURE=swift,schema-swift,rust,schema-rust,elm,schema-elm .buildkite/build-pr.sh"
     label: "swift rust elm"

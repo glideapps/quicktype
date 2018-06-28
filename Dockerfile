@@ -46,6 +46,14 @@ RUN curl -s https://get.sdkman.io | bash
 RUN /bin/bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install kotlin"
 ENV PATH="/root/.sdkman/candidates/kotlin/current/bin:${PATH}"
 
+# Python
+RUN apt-get install software-properties-common python-software-properties --assume-yes
+RUN add-apt-repository ppa:jonathonf/python-3.6
+RUN apt-get update
+RUN apt-get install python3.6 --assume-yes
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
+RUN pip3.6 install mypy
+
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
 COPY . .
