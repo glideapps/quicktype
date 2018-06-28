@@ -897,6 +897,13 @@
             ],
             "title": "union_internal"
         },
+        "iterable": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "iterable" }
+            ],
+            "title": "union_iterable"
+        },
         "is": {
             "oneOf": [
                 { "type": "number" },

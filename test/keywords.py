@@ -2,13 +2,23 @@
 
 import argparse
 
+# https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
 with open('keywords.txt') as f:
     keywords = f.read().splitlines()
 
 def generate_classes():
     print('{')
-    for kw in keywords:
-        print('  "%s": { "%s": 123 },' % (kw, kw))
+    for (i, l) in enumerate(chunks(keywords, 64)):
+        print('  "obj%d": {' % (i + 1))
+        for kw in l:
+            print('      "%s": { "%s": 123 },' % (kw, kw))
+        print('      "dummy": 123')
+        print('    },')
     print('  "dummy": 123')
     print('}')
 
