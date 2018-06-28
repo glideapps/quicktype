@@ -130,14 +130,25 @@ export abstract class Renderer {
         }
     }
 
-    emitAnnotated(annotation: AnnotationData, emitter: () => void): void {
+    gatherSource(emitter: () => void): Sourcelike[] {
         const oldEmitTarget: Sourcelike[] = this._currentEmitTarget;
         const emitTarget: Sourcelike[] = [];
         this._currentEmitTarget = emitTarget;
         emitter();
         assert(this._currentEmitTarget === emitTarget, "_currentEmitTarget not restored correctly");
         this._currentEmitTarget = oldEmitTarget;
-        const source = sourcelikeToSource(emitTarget);
+        return emitTarget;
+    }
+
+    emitGatheredSource(items: Sourcelike[]): void {
+        for (const item of items) {
+            this.emitItem(item);
+        }
+    }
+
+    emitAnnotated(annotation: AnnotationData, emitter: () => void): void {
+        const lines = this.gatherSource(emitter);
+        const source = sourcelikeToSource(lines);
         this.pushItem(annotated(annotation, source));
     }
 
