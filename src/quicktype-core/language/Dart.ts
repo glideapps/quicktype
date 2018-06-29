@@ -248,11 +248,7 @@ export class DartRenderer extends ConvenienceRenderer {
             classType => this.nameForNamedType(classType),
             mapType => ["Map<String, ", this.dartType(mapType.values, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
-            unionType => {
-                const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return this.dartType(nullable, withIssues);
-                return this.nameForNamedType(unionType);
-            }
+            unionType => "dynamic";
         );
     }
     protected fromDynamicExpression = (t: Type, ...dynamic: Sourcelike[]): Sourcelike => {
