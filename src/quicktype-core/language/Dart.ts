@@ -223,7 +223,6 @@ export class DartRenderer extends ConvenienceRenderer {
     protected emitFileHeader(fileName: Sourcelike): void {
         this.startFile(fileName);
         this.ensureBlankLine();
-        this.ensureBlankLine();
     }
 
     protected emitDescriptionBlock(lines: string[]): void {
