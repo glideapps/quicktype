@@ -81,24 +81,24 @@ export const JavaLanguage: Language = {
 export const PythonLanguage: Language = {
   name: "python",
   base: "test/fixtures/python",
-  compileCommand: "mypy quicktype.py && python3.6 quicktype.py",
+  compileCommand: "mypy quicktype.py",
+  runCommand(sample: String) {
+    return `python3.6 main.py "${sample}"`;
+  },
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  handlesStringifiedIntegers: true,
+  handlesStringifiedIntegers: false,
   output: "quicktype.py",
   topLevel: "TopLevel",
-  skipJSON: [
-    "no-classes.json", // We don't even emit an empty file?
-    "ed095.json" // same - just a map type
-  ],
+  skipJSON: [],
   skipMiscJSON: false,
   skipSchema: [
     "any.schema" // We don't even emit an empty file?
   ],
   rendererOptions: {},
   quickTestRendererOptions: [],
-  sourceFiles: []
+  sourceFiles: ["src/language/Python.ts"]
 };
 
 export const RustLanguage: Language = {

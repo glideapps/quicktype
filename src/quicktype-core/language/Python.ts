@@ -12,8 +12,8 @@ import {
 } from "../Type";
 import { RenderContext } from "../Renderer";
 import { Option } from "../RendererOptions";
-import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
-import { Namer, funPrefixNamer, Name } from "../Naming";
+import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
+import { Namer, funPrefixNamer, Name, DependencyName } from "../Naming";
 import {
     splitIntoWords,
     combineWords,
@@ -24,8 +24,8 @@ import {
     stringEscape
 } from "../support/Strings";
 import { Declaration } from "../DeclarationIR";
-import { assertNever, panic } from "../support/Support";
-import { Sourcelike } from "../Source";
+import { assertNever, panic, defined } from "../support/Support";
+import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded } from "../Source";
 import { matchType, nullableFromUnion } from "../TypeUtils";
 import { followTargetType } from "../Transformers";
 import { arrayIntercalate, iterableSome, setUnionInto, mapUpdateInto } from "collection-utils";
@@ -78,10 +78,14 @@ export class PythonTargetLanguage extends TargetLanguage {
 
     get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        mapping.set("date", "date-time");
-        mapping.set("time", "date-time");
-        mapping.set("date-time", "date-time");
-        mapping.set("integer-string", "integer-string");
+        // No Python programmer apparently ever needed to parse ISO date/times.
+        // It's only supported in Python 3.7, which isn't out yet.
+        const dateTimeType = "string";
+        mapping.set("date", dateTimeType);
+        mapping.set("time", dateTimeType);
+        mapping.set("date-time", dateTimeType);
+        // FIXME: Implement transformers
+        // mapping.set("integer-string", "integer-string");
         return mapping;
     }
 
@@ -107,7 +111,7 @@ export class PythonTargetLanguage extends TargetLanguage {
         renderContext: RenderContext,
         _untypedOptionValues: { [name: string]: any }
     ): PythonRenderer {
-        return new PythonRenderer(this, renderContext);
+        return new JSONPythonRenderer(this, renderContext);
     }
 }
 
@@ -169,8 +173,8 @@ function snakeNameStyle(original: string, uppercase: boolean): string {
 }
 
 export class PythonRenderer extends ConvenienceRenderer {
-    private imports: Map<string, Set<string>> = new Map();
-    private declaredTypes: Set<Type> = new Set();
+    private readonly imports: Map<string, Set<string>> = new Map();
+    private readonly declaredTypes: Set<Type> = new Set();
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return forbiddenTypeNames;
@@ -286,16 +290,22 @@ export class PythonRenderer extends ConvenienceRenderer {
         this.declaredTypes.add(t);
     }
 
+    protected emitClassMembers(_t: ClassType): void {
+        return;
+    }
+
     protected emitClass(t: ClassType): void {
         this.declareType(t, () => {
             if (t.getProperties().size === 0) {
                 this.emitLine("pass");
-                return;
+            } else {
+                this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
+                    this.emitDescription(this.descriptionForClassProperty(t, jsonName));
+                    this.emitLine(name, ": ", this.pythonType(cp.type));
+                });
+                this.ensureBlankLine();
             }
-            this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                this.emitDescription(this.descriptionForClassProperty(t, jsonName));
-                this.emitLine(name, ": ", this.pythonType(cp.type));
-            });
+            this.emitClassMembers(t);
         });
     }
 
@@ -333,16 +343,24 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitDefaultLeadingComments(): void {
-        this.emitCommentLines([
-            "Only Python >=3.6 right now, and no (de)serializers yet.",
-            "More features coming soon!"
-        ]);
+        this.emitCommentLines(["Only Python >=3.6 right now.  More features coming soon!"]);
+    }
+
+    protected emitSupportCode(): void {
+        return;
+    }
+
+    protected emitClosingCode(): void {
+        return;
     }
 
     protected emitSourceStructure(_givenOutputFilename: string): void {
-        const lines = this.gatherSource(() => {
+        const declarationLines = this.gatherSource(() => {
             this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
         });
+
+        const closingLines = this.gatherSource(() => this.emitClosingCode());
+        const supportLines = this.gatherSource(() => this.emitSupportCode());
 
         if (this.leadingComments !== undefined) {
             this.emitCommentLines(this.leadingComments);
@@ -352,6 +370,224 @@ export class PythonRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
         this.emitImports();
         this.ensureBlankLine();
-        this.emitGatheredSource(lines);
+        this.emitGatheredSource(supportLines);
+        this.ensureBlankLine();
+        this.emitGatheredSource(declarationLines);
+        this.ensureBlankLine();
+        this.emitGatheredSource(closingLines);
+    }
+}
+
+export type ConverterFunction =
+    | "none"
+    | "bool"
+    | "int"
+    | "from-float"
+    | "to-float"
+    | "str"
+    | "to-enum"
+    | "list"
+    | "to-class"
+    | "dict"
+    | "union"
+    | "from-datetime"
+    | "to-datetime";
+
+const converterFunctionCodes: { [CF in ConverterFunction]: string } = {
+    none: `def from_none(x):
+    assert x is None
+    return x`,
+    bool: `def from_bool(x):
+    assert isinstance(x, bool)
+    return x`,
+    int: `def from_int(x):
+    assert isinstance(x, int) and not isinstance(x, bool)
+    return x`,
+    "from-float": `def from_float(x):
+    assert isinstance(x, (float, int)) and not isinstance(x, bool)
+    return float(x)`,
+    "to-float": `def to_float(x):
+    assert isinstance(x, float)
+    return x`,
+    str: `def from_str(x):
+    assert isinstance(x, str)
+    return x`,
+    "to-enum": `def to_enum(c, x):
+    assert isinstance(x, c)
+    return x.value`,
+    list: `def from_list(f, x):
+    assert isinstance(x, list)
+    return [f(y) for y in x]`,
+    "to-class": `def to_class(c, x):
+    assert isinstance(x, c)
+    return x.to_dict()`,
+    dict: `def from_dict(f, x):
+    assert isinstance(x, dict)
+    return { k: f(v) for (k, v) in x.items() }`,
+    union: `def from_union(fs, x):
+    for f in fs:
+        try:
+            return f(x)
+        except:
+            pass
+    assert False`,
+    "from-datetime": `def from_datetime(x):
+    # This is not correct.  Python <3.7 doesn't support ISO date-time
+    # parsing in the standard library.  This is a kludge until we have
+    # that.
+    return datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")`,
+    "to-datetime": `def to_datetime(x):
+    assert isinstance(x, datetime)
+    return x.isoformat()`
+};
+
+function lambda(x: Sourcelike, ...body: Sourcelike[]): MultiWord {
+    return multiWord(" ", "lambda", [x, ":"], body);
+}
+
+function callFn(fn: MultiWord, ...args: Sourcelike[]): Sourcelike {
+    return [parenIfNeeded(fn), "(", arrayIntercalate(", ", args), ")"];
+}
+
+const identityFn = lambda("x", "x");
+
+type TopLevelConverterNames = {
+    fromDict: Name;
+    toDict: Name;
+};
+
+export class JSONPythonRenderer extends PythonRenderer {
+    private readonly _deserializerFunctions = new Set<ConverterFunction>();
+    private readonly _converterNamer = funPrefixNamer("converter", s => snakeNameStyle(s, false));
+    private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
+
+    protected conv(cf: ConverterFunction): Sourcelike {
+        this._deserializerFunctions.add(cf);
+        const name = cf.replace("-", "_");
+        if (cf.startsWith("from-") || cf.startsWith("to-")) return name;
+        return ["from_", name];
+    }
+
+    protected convFn(cf: ConverterFunction): MultiWord {
+        return singleWord(this.conv(cf));
+    }
+
+    protected deserializerFn(t: Type): MultiWord {
+        return matchType<MultiWord>(
+            t,
+            _anyType => identityFn,
+            _nullType => this.convFn("none"),
+            _boolType => this.convFn("bool"),
+            _integerType => this.convFn("int"),
+            _doubleType => this.convFn("from-float"),
+            _stringType => this.convFn("str"),
+            arrayType =>
+                lambda("x", this.conv("list"), "(", parenIfNeeded(this.deserializerFn(arrayType.items)), ", x)"),
+            classType => singleWord(this.nameForNamedType(classType)),
+            mapType => lambda("x", this.conv("dict"), "(", parenIfNeeded(this.deserializerFn(mapType.values)), ", x)"),
+            enumType => singleWord(this.nameForNamedType(enumType)),
+            unionType => {
+                const deserializers = Array.from(unionType.members).map(m => this.deserializerFn(m).source);
+                return lambda("x", this.conv("union"), "([", arrayIntercalate(", ", deserializers), "], x)");
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "date-time") {
+                    return lambda("x", callFn(this.convFn("to-datetime"), "x"));
+                }
+                return panic(`Transformed type ${transformedStringType.kind} not supported`);
+            }
+        );
+    }
+
+    protected deserializer(value: Sourcelike, t: Type): Sourcelike {
+        return callFn(this.deserializerFn(t), value);
+    }
+
+    protected serializerFn(t: Type): MultiWord {
+        return matchType<MultiWord>(
+            t,
+            _anyType => identityFn,
+            _nullType => this.convFn("none"),
+            _boolType => this.convFn("bool"),
+            _integerType => this.convFn("int"),
+            _doubleType => this.convFn("to-float"),
+            _stringType => this.convFn("str"),
+            arrayType => lambda("x", this.conv("list"), "(", parenIfNeeded(this.serializerFn(arrayType.items)), ", x)"),
+            classType => lambda("x", callFn(this.convFn("to-class"), this.nameForNamedType(classType), "x")),
+            mapType => lambda("x", this.conv("dict"), "(", parenIfNeeded(this.serializerFn(mapType.values)), ", x)"),
+            enumType => lambda("x", callFn(this.convFn("to-enum"), this.nameForNamedType(enumType), "x")),
+            unionType => {
+                const serializers = Array.from(unionType.members).map(m => this.serializerFn(m).source);
+                return multiWord(
+                    "",
+                    "lambda x: ",
+                    this.conv("union"),
+                    "([",
+                    arrayIntercalate(", ", serializers),
+                    "], x)"
+                );
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "date-time") {
+                    return lambda("x", "x.isoformat()");
+                }
+                return panic(`Transformed type ${transformedStringType.kind} not supported`);
+            }
+        );
+    }
+
+    protected serializer(value: Sourcelike, t: Type): Sourcelike {
+        return [parenIfNeeded(this.serializerFn(t)), "(", value, ")"];
+    }
+
+    protected emitClassMembers(t: ClassType): void {
+        this.emitBlock("def __init__(self, obj):", () => {
+            this.emitLine("assert isinstance(obj, dict)");
+            this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
+                const property = ['obj.get("', stringEscape(jsonName), '")'];
+                this.emitLine("self.", name, " = ", this.deserializer(property, cp.type));
+            });
+        });
+        this.ensureBlankLine();
+        this.emitBlock("def to_dict(self):", () => {
+            this.emitLine("result = {}");
+            this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
+                const property = ["self.", name];
+                this.emitLine('result["', stringEscape(jsonName), '"] = ', this.serializer(property, cp.type));
+            });
+            this.emitLine("return result");
+        });
+    }
+
+    protected emitSupportCode(): void {
+        for (const df of this._deserializerFunctions) {
+            this.emitMultiline(converterFunctionCodes[df]);
+            this.ensureBlankLine();
+        }
+    }
+
+    protected makeTopLevelDependencyNames(_t: Type, topLevelName: Name): DependencyName[] {
+        const fromDict = new DependencyName(
+            this._converterNamer,
+            topLevelNameOrder,
+            l => `${l(topLevelName)}_from_dict`
+        );
+        const toDict = new DependencyName(this._converterNamer, topLevelNameOrder, l => `${l(topLevelName)}_to_dict`);
+        this._topLevelConverterNames.set(topLevelName, { fromDict, toDict });
+        return [fromDict, toDict];
+    }
+
+    protected emitClosingCode(): void {
+        this.forEachTopLevel("interposing", (t, name) => {
+            const { fromDict, toDict } = defined(this._topLevelConverterNames.get(name));
+            const pythonType = this.pythonType(t);
+            this.emitBlock(["def ", fromDict, "(s: str) -> ", pythonType, ":"], () => {
+                this.emitLine("return ", this.deserializer("s", t));
+            });
+            this.ensureBlankLine();
+            this.emitBlock(["def ", toDict, "(x: ", pythonType, ") -> str:"], () => {
+                this.emitLine("return ", this.serializer("x", t));
+            });
+        });
     }
 }
