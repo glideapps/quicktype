@@ -1,8 +1,9 @@
-import { Type, ArrayType, MapType, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
+import { Type, EnumType, UnionType, ClassType, ClassProperty } from "../Type";
 import { matchType, nullableFromUnion, directlyReachableSingleNamedType } from "../TypeUtils";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import {
     utf16LegalizeCharacters,
+    utf16StringEscape,
     escapeNonPrintableMapper,
     utf16ConcatMap,
     standardUnicodeHexEscape,
@@ -132,7 +133,7 @@ function dartNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
         upperUnderscore ? allUpperWordStyle : firstUpperWordStyle,
         upperUnderscore || startWithUpper ? allUpperWordStyle : allLowerWordStyle,
         allUpperWordStyle,
-        upperUnderscore ? "_" : "",
+        "",
         isStartCharacter
     );
 }
@@ -146,6 +147,7 @@ export class DartRenderer extends ConvenienceRenderer {
         renderContext: RenderContext,
     ) {
         super(targetLanguage, renderContext);
+
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -234,22 +236,22 @@ export class DartRenderer extends ConvenienceRenderer {
         this.emitLine("}");
     }
 
-    protected dartType(reference: boolean, t: Type, withIssues: boolean = false): Sourcelike {
+    protected dartType(t: Type, withIssues: boolean = false): Sourcelike {
         return matchType<Sourcelike>(
             t,
             _anyType => maybeAnnotated(withIssues, anyTypeIssueAnnotation, "dynamic"),
             _nullType => maybeAnnotated(withIssues, nullTypeIssueAnnotation, "dynamic"),
-            _boolType => (reference ? "Boolean" : "boolean"),
-            _integerType => (reference ? "Long" : "int"),
-            _doubleType => (reference ? "Double" : "double"),
+            _boolType => "bool",
+            _integerType => "int",
+            _doubleType => "double",
             _stringType => "String",
-            arrayType => ["List<", this.dartType(false, arrayType.items, withIssues), ">"],
+            arrayType => ["List<", this.dartType(arrayType.items, withIssues), ">"],
             classType => this.nameForNamedType(classType),
-            mapType => ["Map<String, ", this.dartType(true, mapType.values, withIssues), ">"],
+            mapType => ["Map<String, ", this.dartType(mapType.values, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
             unionType => {
                 const nullable = nullableFromUnion(unionType);
-                if (nullable !== null) return this.dartType(true, nullable, withIssues);
+                if (nullable !== null) return this.dartType(nullable, withIssues);
                 return this.nameForNamedType(unionType);
             }
         );
@@ -263,9 +265,9 @@ export class DartRenderer extends ConvenienceRenderer {
             _integerType => dynamic,
             _doubleType => dynamic,
             _stringType => dynamic,
-            arrayType => ["new List<", this.fromDynamicExpression(arrayType.items, "x"), ">.from(", dynamic, ")"],
+            arrayType => ["new List<", this.dartType(arrayType.items), ">.from(", dynamic, ")"],
             classType => [this.nameForNamedType(classType), ".fromJson(", dynamic, ")"],
-            mapType => ["new Map<String ", this.fromDynamicExpression(mapType.values, "x"), ">.from(", dynamic, ")"],
+            mapType => ["new Map<String ", this.dartType(mapType.values), ">.from(", dynamic, ")"],
             _enumType => dynamic,
             unionType => {
                 const nullable = nullableFromUnion(unionType);
@@ -289,25 +291,13 @@ export class DartRenderer extends ConvenienceRenderer {
             _unionType => dynamic);
     }
 
-    protected dartTypeWithoutGenerics(reference: boolean, t: Type): Sourcelike {
-        if (t instanceof ArrayType) {
-            return "List";
-        } else if (t instanceof MapType) {
-            return "Map";
-        } else if (t instanceof UnionType) {
-            const nullable = nullableFromUnion(t);
-            if (nullable !== null) return this.dartTypeWithoutGenerics(true, nullable);
-            return this.nameForNamedType(t);
-        } else {
-            return this.dartType(reference, t);
-        }
-    }
     protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitFileHeader(className);
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["class ", className], () => {
+
             this.forEachClassProperty(c, "none", (name, _, p) => {
-                this.emitLine(this.dartType(false, p.type, true), " ", name, ";")
+                this.emitLine(this.dartType(p.type, true), " ", name, ";")
             });
             this.ensureBlankLine();
             this.emitLine(className, "({")
@@ -323,7 +313,7 @@ export class DartRenderer extends ConvenienceRenderer {
             this.emitLine("factory ", className, ".fromJson(Map<String, dynamic> json) => new ", className, "(")
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, jsonName, property) => {
-                    this.emitLine(name, ": ", this.fromDynamicExpression(property.type, "json['", jsonName, "']"), ",");
+                    this.emitLine(name, ": ", this.fromDynamicExpression(property.type, "json['", utf16StringEscape(jsonName), "']"), ",");
                 });
             });
             this.emitLine(");");
@@ -332,7 +322,7 @@ export class DartRenderer extends ConvenienceRenderer {
             this.emitLine("Map<String, dynamic> toJson() => {");
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, jsonName, property) => {
-                    this.emitLine("'", jsonName, "': ", this.toDynamicExpression(property.type, name), ",");
+                    this.emitLine("'", utf16StringEscape(jsonName), "': ", this.toDynamicExpression(property.type, name), ",");
                 });
             });
             this.emitLine("};");
@@ -349,7 +339,7 @@ export class DartRenderer extends ConvenienceRenderer {
             caseNames.push(name);
         });
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("enum ", enumName, " { ", caseNames, " };");
+        this.emitLine("enum ", enumName, " { ", caseNames, " }");
 
     }
     protected emitSourceStructure(): void {
