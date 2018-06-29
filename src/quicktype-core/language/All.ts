@@ -15,7 +15,7 @@ import { ElmTargetLanguage } from "./Elm";
 import { JSONSchemaTargetLanguage } from "./JSONSchema";
 import { RustTargetLanguage } from "./Rust";
 import { RubyTargetLanguage } from "./ruby";
-import { DartTargetLanguage } from "./dart";
+import { DartTargetLanguage } from "./Dart";
 import { PythonTargetLanguage } from "./Python";
 
 export const all: TargetLanguage[] = [
