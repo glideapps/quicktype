@@ -594,3 +594,27 @@ export const KotlinLanguage: Language = {
   quickTestRendererOptions: [],
   sourceFiles: ["src/Language/Kotlin.ts"]
 };
+
+export const DartLanguage: Language = {
+  name: "dart",
+  base: "test/fixtures/dart",
+  // compileCommand: "./build.sh",
+  runCommand(_sample: string) {
+    return `echo "dart"`;
+  },
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+  ],
+  allowMissingNull: true,
+  handlesStringifiedIntegers: false,
+  output: "TopLevel.dart",
+  topLevel: "TopLevel",
+  skipJSON: [
+
+  ],
+  skipSchema: [],
+  skipMiscJSON: false,
+  rendererOptions: {},
+  quickTestRendererOptions: [],
+  sourceFiles: ["src/Language/Dart.ts"]
+};
