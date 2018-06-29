@@ -248,7 +248,7 @@ export class DartRenderer extends ConvenienceRenderer {
             classType => this.nameForNamedType(classType),
             mapType => ["Map<String, ", this.dartType(mapType.values, withIssues), ">"],
             enumType => this.nameForNamedType(enumType),
-            unionType => "dynamic"
+            _unionType => "dynamic"
         );
     }
     protected fromDynamicExpression = (t: Type, ...dynamic: Sourcelike[]): Sourcelike => {
@@ -264,7 +264,7 @@ export class DartRenderer extends ConvenienceRenderer {
             classType => [this.nameForNamedType(classType), ".fromJson(", dynamic, ")"],
             mapType => ["new Map<String ", this.dartType(mapType.values), ">.from(", dynamic, ")"],
             _enumType => dynamic,
-            unionType => dynamic
+            _unionType => dynamic
         );
     };
     protected toDynamicExpression = (t: Type, ...dynamic: Sourcelike[]): Sourcelike => {
