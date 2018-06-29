@@ -362,7 +362,7 @@ export class PythonRenderer extends ConvenienceRenderer {
         }
 
         const declarationLines = this.gatherSource(() => {
-            this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
+            this.forEachDeclaration(["interposing", 2], decl => this.emitDeclaration(decl));
         });
 
         const closingLines = this.gatherSource(() => this.emitClosingCode());
@@ -370,11 +370,11 @@ export class PythonRenderer extends ConvenienceRenderer {
 
         this.ensureBlankLine();
         this.emitImports();
-        this.ensureBlankLine();
+        this.ensureBlankLine(2);
         this.emitGatheredSource(supportLines);
-        this.ensureBlankLine();
+        this.ensureBlankLine(2);
         this.emitGatheredSource(declarationLines);
-        this.ensureBlankLine();
+        this.ensureBlankLine(2);
         this.emitGatheredSource(closingLines);
     }
 }
@@ -561,10 +561,12 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected emitSupportCode(): void {
-        for (const df of this._deserializerFunctions) {
-            this.emitMultiline(converterFunctionCodes[df]);
-            this.ensureBlankLine();
-        }
+        const map = Array.from(this._deserializerFunctions).map(
+            f => [f, converterFunctionCodes[f]] as [ConverterFunction, string]
+        );
+        this.forEachWithBlankLines(map, ["interposing", 2], code => {
+            this.emitMultiline(code);
+        });
     }
 
     protected makeTopLevelDependencyNames(_t: Type, topLevelName: Name): DependencyName[] {
@@ -579,13 +581,13 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected emitClosingCode(): void {
-        this.forEachTopLevel("interposing", (t, name) => {
+        this.forEachTopLevel(["interposing", 2], (t, name) => {
             const { fromDict, toDict } = defined(this._topLevelConverterNames.get(name));
             const pythonType = this.pythonType(t);
             this.emitBlock(["def ", fromDict, "(s: str) -> ", pythonType, ":"], () => {
                 this.emitLine("return ", this.deserializer("s", t));
             });
-            this.ensureBlankLine();
+            this.ensureBlankLine(2);
             this.emitBlock(["def ", toDict, "(x: ", pythonType, ") -> str:"], () => {
                 this.emitLine("return ", this.serializer("x", t));
             });

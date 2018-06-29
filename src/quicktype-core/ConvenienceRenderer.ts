@@ -12,7 +12,7 @@ import {
 import { Type, ClassType, EnumType, UnionType, TypeKind, ClassProperty, MapType, ObjectType } from "./Type";
 import { separateNamedTypes, nullableFromUnion, matchTypeExhaustive, isNamedType } from "./TypeUtils";
 import { Namespace, Name, Namer, FixedName, SimpleName, DependencyName, keywordNamespace } from "./Naming";
-import { Renderer, BlankLineLocations, RenderContext, ForEachPosition } from "./Renderer";
+import { Renderer, BlankLineConfig, RenderContext, ForEachPosition } from "./Renderer";
 import { defined, panic, nonNull, assert } from "./support/Support";
 import { trimEnd } from "./support/Strings";
 import { Sourcelike, sourcelikeToSource, serializeRenderResult } from "./Source";
@@ -596,7 +596,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachTopLevel(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (t: Type, name: Name, position: ForEachPosition) => void,
         predicate?: (t: Type) => boolean
     ): void {
@@ -612,7 +612,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachDeclaration(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (decl: Declaration, position: ForEachPosition) => void
     ) {
         this.forEachWithBlankLines(
@@ -628,7 +628,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected forEachClassProperty(
         o: ObjectType,
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (name: Name, jsonName: string, p: ClassProperty, position: ForEachPosition) => void
     ): void {
         const propertyNames = defined(this._propertyNamesStoreView).get(o);
@@ -662,7 +662,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected forEachUnionMember(
         u: UnionType,
         members: ReadonlySet<Type> | null,
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         sortOrder: ((n: Name, t: Type) => string) | null,
         f: (name: Name, t: Type, position: ForEachPosition) => void
     ): void {
@@ -677,7 +677,7 @@ export abstract class ConvenienceRenderer extends Renderer {
 
     protected forEachEnumCase(
         e: EnumType,
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (name: Name, jsonName: string, position: ForEachPosition) => void
     ): void {
         const caseNames = defined(this._caseNamesStoreView).get(e);
@@ -686,14 +686,14 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachTransformation(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (n: Name, t: Type, position: ForEachPosition) => void
     ): void {
         this.forEachWithBlankLines(defined(this._namesForTransformations), blankLocations, f);
     }
 
     protected forEachSpecificNamedType<T extends Type>(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         types: Iterable<[any, T]>,
         f: (t: T, name: Name, position: ForEachPosition) => void
     ): void {
@@ -701,7 +701,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachObject(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f:
             | ((c: ClassType, className: Name, position: ForEachPosition) => void)
             | ((o: ObjectType, objectName: Name, position: ForEachPosition) => void)
@@ -711,21 +711,21 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachEnum(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (u: EnumType, enumName: Name, position: ForEachPosition) => void
     ): void {
         this.forEachSpecificNamedType(blankLocations, this.enums.entries(), f);
     }
 
     protected forEachUnion(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         f: (u: UnionType, unionName: Name, position: ForEachPosition) => void
     ): void {
         this.forEachSpecificNamedType(blankLocations, this.namedUnions.entries(), f);
     }
 
     protected forEachUniqueUnion<T>(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         uniqueValue: (u: UnionType) => T,
         f: (firstUnion: UnionType, value: T, position: ForEachPosition) => void
     ): void {
@@ -740,7 +740,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     }
 
     protected forEachNamedType(
-        blankLocations: BlankLineLocations,
+        blankLocations: BlankLineConfig,
         objectFunc:
             | ((c: ClassType, className: Name, position: ForEachPosition) => void)
             | ((o: ObjectType, objectName: Name, position: ForEachPosition) => void),

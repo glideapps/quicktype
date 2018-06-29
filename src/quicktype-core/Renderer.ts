@@ -12,7 +12,15 @@ export type RenderResult = {
     names: ReadonlyMap<Name, string>;
 };
 
-export type BlankLineLocations = "none" | "interposing" | "leading" | "leading-and-interposing";
+export type BlankLinePosition = "none" | "interposing" | "leading" | "leading-and-interposing";
+export type BlankLineConfig = BlankLinePosition | [BlankLinePosition, number];
+
+function getBlankLineConfig(cfg: BlankLineConfig): { position: BlankLinePosition; count: number } {
+    if (Array.isArray(cfg)) {
+        return { position: cfg[0], count: cfg[1] };
+    }
+    return { position: cfg, count: 1 };
+}
 
 function lineIndentation(line: string): { indent: number; text: string | null } {
     const len = line.length;
@@ -50,7 +58,7 @@ export abstract class Renderer {
     // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _currentEmitTarget: Sourcelike[];
     // @ts-ignore: Initialized in startEmit, which is called from the constructor
-    private _needBlankLine: boolean;
+    private _numBlankLinesNeeded: number;
     // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _preventBlankLine: boolean;
 
@@ -64,7 +72,7 @@ export abstract class Renderer {
 
     private startEmit(): void {
         this._currentEmitTarget = this._emitted = [];
-        this._needBlankLine = false;
+        this._numBlankLinesNeeded = 0;
         this._preventBlankLine = true; // no blank lines at start of file
     }
 
@@ -80,20 +88,20 @@ export abstract class Renderer {
     };
 
     private emitItem = (item: Sourcelike): void => {
-        if (this._needBlankLine) {
+        for (let i = 0; i < this._numBlankLinesNeeded; i++) {
             this.emitNewline();
-            this._needBlankLine = false;
         }
+        this._numBlankLinesNeeded = 0;
         this.pushItem(item);
     };
 
-    protected ensureBlankLine(): void {
+    protected ensureBlankLine(numBlankLines: number = 1): void {
         if (this._preventBlankLine) return;
-        this._needBlankLine = true;
+        this._numBlankLinesNeeded = Math.max(this._numBlankLinesNeeded, numBlankLines);
     }
 
     protected preventBlankLine(): void {
-        this._needBlankLine = false;
+        this._numBlankLinesNeeded = 0;
         this._preventBlankLine = true;
     }
 
@@ -172,15 +180,17 @@ export abstract class Renderer {
 
     forEach<K, V>(
         iterable: Iterable<[K, V]>,
-        interposedBlankLines: boolean,
-        leadingBlankLine: boolean,
+        interposedBlankLines: number,
+        leadingBlankLines: number,
         emitter: (v: V, k: K, position: ForEachPosition) => void
     ): void {
         const items = Array.from(iterable);
         let onFirst = true;
         for (const [i, [k, v]] of iterableEnumerate(items)) {
-            if ((leadingBlankLine && onFirst) || (interposedBlankLines && !onFirst)) {
-                this.ensureBlankLine();
+            if (onFirst) {
+                this.ensureBlankLine(leadingBlankLines);
+            } else {
+                this.ensureBlankLine(interposedBlankLines);
             }
             const position =
                 items.length === 1 ? "only" : onFirst ? "first" : i === items.length - 1 ? "last" : "middle";
@@ -191,12 +201,13 @@ export abstract class Renderer {
 
     forEachWithBlankLines<K, V>(
         iterable: Iterable<[K, V]>,
-        blankLineLocations: BlankLineLocations,
+        blankLineConfig: BlankLineConfig,
         emitter: (v: V, k: K, position: ForEachPosition) => void
     ): void {
-        const interposing = ["interposing", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
-        const leading = ["leading", "leading-and-interposing"].indexOf(blankLineLocations) >= 0;
-        this.forEach(iterable, interposing, leading, emitter);
+        const { position, count } = getBlankLineConfig(blankLineConfig);
+        const interposing = ["interposing", "leading-and-interposing"].indexOf(position) >= 0;
+        const leading = ["leading", "leading-and-interposing"].indexOf(position) >= 0;
+        this.forEach(iterable, interposing ? count : 0, leading ? count : 0, emitter);
     }
 
     indent(fn: () => void): void {
