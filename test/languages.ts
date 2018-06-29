@@ -98,7 +98,7 @@ export const PythonLanguage: Language = {
   ],
   rendererOptions: {},
   quickTestRendererOptions: [],
-  sourceFiles: []
+  sourceFiles: ["src/language/Python.ts"]
 };
 
 export const RustLanguage: Language = {
