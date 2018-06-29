@@ -355,6 +355,12 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(_givenOutputFilename: string): void {
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines(this.leadingComments);
+        } else {
+            this.emitDefaultLeadingComments();
+        }
+
         const declarationLines = this.gatherSource(() => {
             this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
         });
@@ -362,11 +368,6 @@ export class PythonRenderer extends ConvenienceRenderer {
         const closingLines = this.gatherSource(() => this.emitClosingCode());
         const supportLines = this.gatherSource(() => this.emitSupportCode());
 
-        if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
-        } else {
-            this.emitDefaultLeadingComments();
-        }
         this.ensureBlankLine();
         this.emitImports();
         this.ensureBlankLine();
