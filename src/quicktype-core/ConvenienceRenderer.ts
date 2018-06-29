@@ -27,7 +27,7 @@ import { TargetLanguage } from "./TargetLanguage";
 
 const wordWrap: (s: string) => string = require("wordwrap")(90);
 
-const topLevelNameOrder = 1;
+export const topLevelNameOrder = 1;
 
 const givenNameOrder = 10;
 export const inferredNameOrder = 30;
