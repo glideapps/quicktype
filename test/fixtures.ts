@@ -21,7 +21,7 @@ import {
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype-core/Run";
-import { mustNotHappen } from "../dist/quicktype-core/support/Support";
+import { mustNotHappen, defined } from "../dist/quicktype-core/support/Support";
 import { isDateTime } from "../dist/quicktype-core/DateTime";
 
 const chalk = require("chalk");
@@ -214,6 +214,8 @@ class JSONFixture extends LanguageFixture {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
+    if (this.language.runCommand === undefined) return;
+
     compareJsonFileToJson({
       expectedFile: filename,
       given: { command: this.language.runCommand(filename) },
@@ -333,7 +335,7 @@ class JSONToXToYFixture extends JSONFixture {
     // Parse the sample with the code generated from its schema, and compare to the sample
     compareJsonFileToJson({
       expectedFile: filename,
-      given: { command: this.runLanguage.runCommand(filename) },
+      given: { command: defined(this.runLanguage.runCommand)(filename) },
       strict: false,
       allowMissingNull: this.runLanguage.allowMissingNull,
       allowStringifiedIntegers: allowStringifiedIntegers(this.runLanguage, filename)
@@ -511,6 +513,8 @@ class JSONSchemaFixture extends LanguageFixture {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
+    if (this.language.runCommand === undefined) return;
+
     for (const filename of additionalFiles) {
       if (!filename.endsWith(".json") || filename.endsWith(".out.json")) continue;
 
@@ -586,6 +590,8 @@ class GraphQLFixture extends LanguageFixture {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
+    if (this.language.runCommand === undefined) return;
+
     for (const fn of additionalFiles) {
       if (!fn.endsWith(".json")) {
         continue;
@@ -609,6 +615,7 @@ export const allFixtures: Fixture[] = [
   new JSONFixture(languages.CPlusPlusLanguage),
   new JSONFixture(languages.RustLanguage),
   new JSONFixture(languages.RubyLanguage),
+  new JSONFixture(languages.PythonLanguage),
   new JSONFixture(languages.ElmLanguage),
   new JSONFixture(languages.SwiftLanguage),
   new JSONFixture(languages.ObjectiveCLanguage),
@@ -624,15 +631,18 @@ export const allFixtures: Fixture[] = [
   new JSONSchemaFixture(languages.CPlusPlusLanguage),
   new JSONSchemaFixture(languages.RustLanguage),
   new JSONSchemaFixture(languages.RubyLanguage),
+  new JSONSchemaFixture(languages.PythonLanguage),
   new JSONSchemaFixture(languages.ElmLanguage),
   new JSONSchemaFixture(languages.SwiftLanguage),
   new JSONSchemaFixture(languages.TypeScriptLanguage),
   new JSONSchemaFixture(languages.FlowLanguage),
   new JSONSchemaFixture(languages.JavaScriptLanguage),
+  // FIXME: Why are we missing so many language with GraphQL?
   new GraphQLFixture(languages.CSharpLanguage),
   new GraphQLFixture(languages.JavaLanguage),
   new GraphQLFixture(languages.GoLanguage),
   new GraphQLFixture(languages.CPlusPlusLanguage),
+  new GraphQLFixture(languages.PythonLanguage),
   new GraphQLFixture(languages.SwiftLanguage),
   new GraphQLFixture(languages.ObjectiveCLanguage, true),
   new GraphQLFixture(languages.TypeScriptLanguage),

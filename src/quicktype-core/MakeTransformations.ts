@@ -10,7 +10,8 @@ import {
     ArrayType,
     PrimitiveType,
     isPrimitiveStringTypeKind,
-    targetTypeKindForTransformedStringTypeKind
+    targetTypeKindForTransformedStringTypeKind,
+    PrimitiveStringTypeKind
 } from "./Type";
 import { GraphRewriteBuilder } from "./GraphRewriting";
 import { defined, assert, panic } from "./support/Support";
@@ -244,12 +245,19 @@ function replaceEnum(
     return builder.getStringType(attributes, StringTypes.unrestricted, forwardingRef);
 }
 
-function replaceIntegerString(
+function replaceTransformedStringType(
     t: PrimitiveType,
+    kind: PrimitiveStringTypeKind,
     builder: GraphRewriteBuilder<Type>,
     forwardingRef: TypeRef,
     debugPrintTransformations: boolean
 ): TypeRef {
+    const reconstitutedAttributes = builder.reconstituteTypeAttributes(t.getAttributes());
+    const targetTypeKind = targetTypeKindForTransformedStringTypeKind(kind);
+    if (targetTypeKind === undefined) {
+        return builder.getPrimitiveType(t.kind, t.getAttributes(), forwardingRef);
+    }
+
     const stringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
     const transformer = new DecodingTransformer(
         builder.typeGraph,
@@ -258,7 +266,7 @@ function replaceIntegerString(
     );
     const attributes = transformationAttributes(
         builder.typeGraph,
-        builder.getPrimitiveType("integer", builder.reconstituteTypeAttributes(t.getAttributes())),
+        builder.getPrimitiveType(targetTypeKind, reconstitutedAttributes),
         transformer,
         debugPrintTransformations
     );
@@ -282,7 +290,13 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
             return replaceEnum(t, builder, forwardingRef, ctx.debugPrintTransformations);
         }
         if (isPrimitiveStringTypeKind(t.kind)) {
-            return replaceIntegerString(t as PrimitiveType, builder, forwardingRef, ctx.debugPrintReconstitution);
+            return replaceTransformedStringType(
+                t as PrimitiveType,
+                t.kind,
+                builder,
+                forwardingRef,
+                ctx.debugPrintReconstitution
+            );
         }
         return panic(`Cannot make transformation for type ${t.kind}`);
     }

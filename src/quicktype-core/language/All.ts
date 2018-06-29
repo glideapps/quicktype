@@ -16,6 +16,7 @@ import { JSONSchemaTargetLanguage } from "./JSONSchema";
 import { RustTargetLanguage } from "./Rust";
 import { RubyTargetLanguage } from "./ruby";
 import { DartTargetLanguage } from "./dart";
+import { PythonTargetLanguage } from "./Python";
 
 export const all: TargetLanguage[] = [
     new NewtonsoftCSharpTargetLanguage(),
@@ -33,6 +34,7 @@ export const all: TargetLanguage[] = [
     new JSONSchemaTargetLanguage(),
     new RubyTargetLanguage(),
     new DartTargetLanguage(),
+    new PythonTargetLanguage("Python", ["python", "py"], "py")
 ];
 
 export function languageNamed(name: string, targetLanguages?: TargetLanguage[]): TargetLanguage | undefined {
