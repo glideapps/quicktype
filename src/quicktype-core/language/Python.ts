@@ -697,20 +697,41 @@ export class JSONPythonRenderer extends PythonRenderer {
     assert False`);
     }
 
-    // FIXME: Types
     protected emitFromDatetimeConverter(): void {
-        this.emitMultiline(`def from_datetime(x):
-    # This is not correct.  Python <3.7 doesn't support ISO date-time
-    # parsing in the standard library.  This is a kludge until we have
-    # that.
-    return datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")`);
+        this.emitBlock(
+            [
+                "def from_datetime(",
+                this.typingDecl("x", "Any"),
+                ")",
+                this.typeHint(" -> ", this.withImport("datetime", "datetime")),
+                ":"
+            ],
+            () => {
+                // FIXME: Python 3.7 datetime
+                this.emitCommentLines([
+                    "This is not correct.  Python <3.7 doesn't support ISO date-time",
+                    "parsing in the standard library.  This is a kludge until we have",
+                    "that."
+                ]);
+                this.emitLine('return datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")');
+            }
+        );
     }
 
-    // FIXME: Types
     protected emitToDatetimeConverter(): void {
-        this.emitMultiline(`def to_datetime(x):
-    assert isinstance(x, datetime)
-    return x.isoformat()`);
+        this.emitBlock(
+            [
+                "def to_datetime(x",
+                this.typeHint(": ", this.withImport("datetime", "datetime")),
+                ")",
+                this.typeHint(" -> str"),
+                ":"
+            ],
+            () => {
+                this.emitLine("assert isinstance(x, datetime)");
+                this.emitLine("return x.isoformat()");
+            }
+        );
     }
 
     protected emitConverter(cf: ConverterFunction): void {
