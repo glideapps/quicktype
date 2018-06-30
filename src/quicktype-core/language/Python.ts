@@ -408,10 +408,10 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected emitDefaultLeadingComments(): void {
         if (this.pyOptions.features.version === 2) {
-            this.emitCommentLines(["# coding: utf-8"]);
+            this.emitCommentLines(["coding: utf-8"]);
             this.ensureBlankLine();
             if (this.haveEnums) {
-                this.emitCommentLines(["# To use this code in Python 2.7 you'll have to", "    pip install enum34"]);
+                this.emitCommentLines(["To use this code in Python 2.7 you'll have to", "    pip install enum34"]);
             }
         }
     }
