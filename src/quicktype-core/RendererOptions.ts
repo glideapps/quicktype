@@ -108,6 +108,12 @@ export class BooleanOption extends Option<boolean> {
             negated = !this.definition.defaultValue;
         }
 
+        if (value === "true") {
+            value = true;
+        } else if (value === "false") {
+            value = false;
+        }
+
         if (this.definition.defaultValue) {
             return value && !negated;
         } else {
