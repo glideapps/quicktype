@@ -35,7 +35,7 @@ import { arrayIntercalate, iterableSome, setUnionInto, mapUpdateInto } from "col
 
 const unicode = require("unicode-properties");
 
-const forbiddenTypeNames = ["True", "False", "None", "Enum", "List", "Dict", "Optional", "Union", "Iterable"];
+const forbiddenTypeNames = ["Any", "True", "False", "None", "Enum", "List", "Dict", "Optional", "Union", "Iterable"];
 const forbiddenPropertyNames = [
     "and",
     "as",
@@ -726,14 +726,30 @@ export class JSONPythonRenderer extends PythonRenderer {
             const { fromDict, toDict } = defined(this._topLevelConverterNames.get(name));
             const pythonType = this.pythonType(t);
             this.emitBlock(
-                ["def ", fromDict, "(s", this.typeHint(": str"), ")", this.typeHint(" -> ", pythonType), ":"],
+                [
+                    "def ",
+                    fromDict,
+                    "(s",
+                    this.typeHint(": ", this.withTyping("Any")),
+                    ")",
+                    this.typeHint(" -> ", pythonType),
+                    ":"
+                ],
                 () => {
                     this.emitLine("return ", this.deserializer("s", t));
                 }
             );
             this.ensureBlankLine(2);
             this.emitBlock(
-                ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typeHint(" -> str"), ":"],
+                [
+                    "def ",
+                    toDict,
+                    "(x",
+                    this.typeHint(": ", pythonType),
+                    ")",
+                    this.typeHint(" -> ", this.withTyping("Any")),
+                    ":"
+                ],
                 () => {
                     this.emitLine("return ", this.serializer("x", t));
                 }
