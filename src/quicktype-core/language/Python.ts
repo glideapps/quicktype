@@ -411,7 +411,12 @@ export class PythonRenderer extends ConvenienceRenderer {
             this.emitCommentLines(["coding: utf-8"]);
             this.ensureBlankLine();
             if (this.haveEnums) {
-                this.emitCommentLines(["To use this code in Python 2.7 you'll have to", "    pip install enum34"]);
+                this.emitCommentLines([
+                    "",
+                    "To use this code in Python 2.7 you'll have to",
+                    "",
+                    "    pip install enum34"
+                ]);
             }
         }
     }
@@ -719,6 +724,23 @@ export class JSONPythonRenderer extends PythonRenderer {
         const toDict = new DependencyName(this._converterNamer, topLevelNameOrder, l => `${l(topLevelName)}_to_dict`);
         this._topLevelConverterNames.set(topLevelName, { fromDict, toDict });
         return [fromDict, toDict];
+    }
+
+    protected emitDefaultLeadingComments(): void {
+        super.emitDefaultLeadingComments();
+        this.ensureBlankLine();
+        this.emitCommentLines([
+            "To use this code, make sure you",
+            "",
+            "    import json",
+            "",
+            "and then, to convert JSON from a string, do",
+            ""
+        ]);
+        this.forEachTopLevel("none", (_, name) => {
+            const { fromDict } = defined(this._topLevelConverterNames.get(name));
+            this.emitLine(this.commentLineStart, "    result = ", fromDict, "(json.loads(json_string))");
+        });
     }
 
     protected emitClosingCode(): void {
