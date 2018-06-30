@@ -54,6 +54,8 @@ const forbiddenPropertyNames = [
     "and",
     "as",
     "assert",
+    "async",
+    "await",
     "bool",
     "break",
     "class",
@@ -95,6 +97,7 @@ export type PythonVersion = 2 | 3;
 export type PythonFeatures = {
     version: 2 | 3;
     typeHints: boolean;
+    dataClasses: boolean;
 };
 
 export const pythonOptions = {
@@ -102,9 +105,10 @@ export const pythonOptions = {
         "python-version",
         "Python version",
         [
-            ["2.7", { version: 2, typeHints: false }],
-            ["3.5", { version: 3, typeHints: false }],
-            ["3.6", { version: 3, typeHints: true }]
+            ["2.7", { version: 2, typeHints: false, dataClasses: false }],
+            ["3.5", { version: 3, typeHints: false, dataClasses: false }],
+            ["3.6", { version: 3, typeHints: true, dataClasses: false }],
+            ["3.7", { version: 3, typeHints: true, dataClasses: true }]
         ],
         "3.6"
     ),
@@ -360,14 +364,16 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected declareType<T extends Type>(t: T, emitter: () => void): void {
-        this.emitDescription(this.descriptionForType(t));
         this.emitBlock(this.declarationLine(t), () => {
+            this.emitDescription(this.descriptionForType(t));
             emitter();
         });
         this.declaredTypes.add(t);
     }
 
     protected emitClassMembers(t: ClassType): void {
+        if (this.pyOptions.features.dataClasses) return;
+
         const args: Sourcelike[] = [];
         this.forEachClassProperty(t, "none", (name, _, cp) => {
             args.push([name, this.typeHint(": ", this.pythonType(cp.type))]);
@@ -384,7 +390,6 @@ export class PythonRenderer extends ConvenienceRenderer {
                 }
             }
         );
-        return;
     }
 
     protected typeHint(...sl: Sourcelike[]): Sourcelike {
@@ -403,6 +408,9 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitClass(t: ClassType): void {
+        if (this.pyOptions.features.dataClasses) {
+            this.emitLine("@", this.withImport("dataclasses", "dataclass"));
+        }
         this.declareType(t, () => {
             if (this.pyOptions.features.typeHints) {
                 if (t.getProperties().size === 0) {
