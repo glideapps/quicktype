@@ -11,7 +11,7 @@ import {
     ArrayType
 } from "../Type";
 import { RenderContext } from "../Renderer";
-import { Option } from "../RendererOptions";
+import { Option, getOptionValues, OptionValues, EnumOption } from "../RendererOptions";
 import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer, Name, DependencyName } from "../Naming";
 import {
@@ -21,7 +21,10 @@ import {
     utf16LegalizeCharacters,
     allUpperWordStyle,
     allLowerWordStyle,
-    stringEscape
+    stringEscape,
+    isAscii,
+    isLetterOrUnderscore,
+    isLetterOrUnderscoreOrDigit
 } from "../support/Strings";
 import { Declaration } from "../DeclarationIR";
 import { assertNever, panic, defined } from "../support/Support";
@@ -62,6 +65,7 @@ const forbiddenPropertyNames = [
     "not",
     "or",
     "pass",
+    "print",
     "raise",
     "return",
     "str",
@@ -71,9 +75,28 @@ const forbiddenPropertyNames = [
     "yield"
 ];
 
+export type PythonVersion = 2 | 3;
+export type PythonFeatures = {
+    version: 2 | 3;
+    typeHints: boolean;
+};
+
+export const pythonOptions = {
+    features: new EnumOption<PythonFeatures>(
+        "python-version",
+        "Python version",
+        [
+            ["2.7", { version: 2, typeHints: false }],
+            ["3.5", { version: 3, typeHints: false }],
+            ["3.6", { version: 3, typeHints: true }]
+        ],
+        "3.6"
+    )
+};
+
 export class PythonTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
-        return [];
+        return [pythonOptions.features];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -107,74 +130,95 @@ export class PythonTargetLanguage extends TargetLanguage {
         return t.kind !== "string" && isPrimitiveStringTypeKind(t.kind);
     }
 
-    protected makeRenderer(
-        renderContext: RenderContext,
-        _untypedOptionValues: { [name: string]: any }
-    ): PythonRenderer {
-        return new JSONPythonRenderer(this, renderContext);
+    protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PythonRenderer {
+        return new JSONPythonRenderer(this, renderContext, getOptionValues(pythonOptions, untypedOptionValues));
     }
 }
 
-function isNormalizedStartCharacter(utf16Unit: number): boolean {
+function isStartCharacter2(utf16Unit: number): boolean {
+    return isAscii(utf16Unit) && isLetterOrUnderscore(utf16Unit);
+}
+
+function isPartCharacter2(utf16Unit: number): boolean {
+    return isAscii(utf16Unit) && isLetterOrUnderscoreOrDigit(utf16Unit);
+}
+
+function isNormalizedStartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Start - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
-    // FIXME: also NFKC normalization
     if (utf16Unit === 0x5f) return true;
     const category: string = unicode.getCategory(utf16Unit);
     return ["Lu", "Ll", "Lt", "Lm", "Lo", "Nl"].indexOf(category) >= 0;
 }
 
-function isNormalizedPartCharacter(utf16Unit: number): boolean {
+function isNormalizedPartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Continue - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
-    // FIXME: also NFKC normalization
-    if (isStartCharacter(utf16Unit)) return true;
+    if (isNormalizedStartCharacter3(utf16Unit)) return true;
     const category: string = unicode.getCategory(utf16Unit);
     return ["Mn", "Mc", "Nd", "Pc"].indexOf(category) >= 0;
 }
 
-function isStartCharacter(utf16Unit: number): boolean {
+function isStartCharacter3(utf16Unit: number): boolean {
     const s = String.fromCharCode(utf16Unit).normalize("NFKC");
     const l = s.length;
-    if (l === 0 || !isNormalizedStartCharacter(s.charCodeAt(0))) return false;
+    if (l === 0 || !isNormalizedStartCharacter3(s.charCodeAt(0))) return false;
     for (let i = 1; i < l; i++) {
-        if (!isNormalizedPartCharacter(s.charCodeAt(i))) return false;
+        if (!isNormalizedPartCharacter3(s.charCodeAt(i))) return false;
     }
     return true;
 }
 
-function isPartCharacter(utf16Unit: number): boolean {
+function isPartCharacter3(utf16Unit: number): boolean {
     const s = String.fromCharCode(utf16Unit).normalize("NFKC");
     const l = s.length;
     for (let i = 0; i < l; i++) {
-        if (!isNormalizedPartCharacter(s.charCodeAt(i))) return false;
+        if (!isNormalizedPartCharacter3(s.charCodeAt(i))) return false;
     }
     return true;
 }
 
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
+const legalizeName2 = utf16LegalizeCharacters(isPartCharacter2);
+const legalizeName3 = utf16LegalizeCharacters(isPartCharacter3);
 
-function classNameStyle(original: string): string {
+function classNameStyle(version: PythonVersion, original: string): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
-        legalizeName,
+        version === 2 ? legalizeName2 : legalizeName3,
         firstUpperWordStyle,
         firstUpperWordStyle,
         allUpperWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter
+        version === 2 ? isStartCharacter2 : isStartCharacter3
     );
 }
 
-function snakeNameStyle(original: string, uppercase: boolean): string {
+function snakeNameStyle(version: PythonVersion, original: string, uppercase: boolean): string {
     const wordStyle = uppercase ? allUpperWordStyle : allLowerWordStyle;
     const words = splitIntoWords(original);
-    return combineWords(words, legalizeName, wordStyle, wordStyle, wordStyle, wordStyle, "_", isStartCharacter);
+    return combineWords(
+        words,
+        version === 2 ? legalizeName2 : legalizeName3,
+        wordStyle,
+        wordStyle,
+        wordStyle,
+        wordStyle,
+        "_",
+        isStartCharacter3
+    );
 }
 
 export class PythonRenderer extends ConvenienceRenderer {
     private readonly imports: Map<string, Set<string>> = new Map();
     private readonly declaredTypes: Set<Type> = new Set();
+
+    constructor(
+        targetLanguage: TargetLanguage,
+        renderContext: RenderContext,
+        protected readonly pyOptions: OptionValues<typeof pythonOptions>
+    ) {
+        super(targetLanguage, renderContext);
+    }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return forbiddenTypeNames;
@@ -185,11 +229,11 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return funPrefixNamer("type", classNameStyle);
+        return funPrefixNamer("type", s => classNameStyle(this.pyOptions.features.version, s));
     }
 
     protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("property", s => snakeNameStyle(s, false));
+        return funPrefixNamer("property", s => snakeNameStyle(this.pyOptions.features.version, s, false));
     }
 
     protected makeUnionMemberNamer(): null {
@@ -197,7 +241,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return funPrefixNamer("enum-case", s => snakeNameStyle(s, true));
+        return funPrefixNamer("enum-case", s => snakeNameStyle(this.pyOptions.features.version, s, true));
     }
 
     protected get commentLineStart(): string {
@@ -226,8 +270,19 @@ export class PythonRenderer extends ConvenienceRenderer {
         this.indent(f);
     }
 
+    protected string(s: string): Sourcelike {
+        const openQuote = this.pyOptions.features.version === 2 ? 'u"' : '"';
+        return [openQuote, stringEscape(s), '"'];
+    }
+
     protected withImport(module: string, name: string): Sourcelike {
-        mapUpdateInto(this.imports, module, s => (s ? setUnionInto(s, [name]) : new Set([name])));
+        if (this.pyOptions.features.typeHints || module !== "typing") {
+            // FIXME: This is ugly.  We should rather not generate that import in the first
+            // place, but right now we just make the type source and then throw it away.  It's
+            // not a performance issue, so it's fine, I just bemoan this special case, and
+            // potential others down the road.
+            mapUpdateInto(this.imports, module, s => (s ? setUnionInto(s, [name]) : new Set([name])));
+        }
         return name;
     }
 
@@ -294,15 +349,24 @@ export class PythonRenderer extends ConvenienceRenderer {
         return;
     }
 
+    protected typeHint(...sl: Sourcelike[]): Sourcelike {
+        if (this.pyOptions.features.typeHints) {
+            return sl;
+        }
+        return [];
+    }
+
     protected emitClass(t: ClassType): void {
         this.declareType(t, () => {
-            if (t.getProperties().size === 0) {
-                this.emitLine("pass");
-            } else {
-                this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                    this.emitDescription(this.descriptionForClassProperty(t, jsonName));
-                    this.emitLine(name, ": ", this.pythonType(cp.type));
-                });
+            if (this.pyOptions.features.typeHints) {
+                if (t.getProperties().size === 0) {
+                    this.emitLine("pass");
+                } else {
+                    this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
+                        this.emitDescription(this.descriptionForClassProperty(t, jsonName));
+                        this.emitLine(name, this.typeHint(": ", this.pythonType(cp.type)));
+                    });
+                }
                 this.ensureBlankLine();
             }
             this.emitClassMembers(t);
@@ -312,7 +376,7 @@ export class PythonRenderer extends ConvenienceRenderer {
     protected emitEnum(t: EnumType): void {
         this.declareType(t, () => {
             this.forEachEnumCase(t, "none", (name, jsonName) => {
-                this.emitLine([name, ' = "', stringEscape(jsonName), '"']);
+                this.emitLine([name, " = ", this.string(jsonName)]);
             });
         });
     }
@@ -343,7 +407,13 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitDefaultLeadingComments(): void {
-        this.emitCommentLines(["Only Python >=3.6 right now.  More features coming soon!"]);
+        if (this.pyOptions.features.version === 2) {
+            this.emitCommentLines(["# coding: utf-8"]);
+            this.ensureBlankLine();
+            if (this.haveEnums) {
+                this.emitCommentLines(["# To use this code in Python 2.7 you'll have to", "    pip install enum34"]);
+            }
+        }
     }
 
     protected emitSupportCode(): void {
@@ -394,54 +464,6 @@ export type ConverterFunction =
     | "from-datetime"
     | "to-datetime";
 
-const converterFunctionCodes: { [CF in ConverterFunction]: string } = {
-    none: `def from_none(x):
-    assert x is None
-    return x`,
-    bool: `def from_bool(x):
-    assert isinstance(x, bool)
-    return x`,
-    int: `def from_int(x):
-    assert isinstance(x, int) and not isinstance(x, bool)
-    return x`,
-    "from-float": `def from_float(x):
-    assert isinstance(x, (float, int)) and not isinstance(x, bool)
-    return float(x)`,
-    "to-float": `def to_float(x):
-    assert isinstance(x, float)
-    return x`,
-    str: `def from_str(x):
-    assert isinstance(x, str)
-    return x`,
-    "to-enum": `def to_enum(c, x):
-    assert isinstance(x, c)
-    return x.value`,
-    list: `def from_list(f, x):
-    assert isinstance(x, list)
-    return [f(y) for y in x]`,
-    "to-class": `def to_class(c, x):
-    assert isinstance(x, c)
-    return x.to_dict()`,
-    dict: `def from_dict(f, x):
-    assert isinstance(x, dict)
-    return { k: f(v) for (k, v) in x.items() }`,
-    union: `def from_union(fs, x):
-    for f in fs:
-        try:
-            return f(x)
-        except:
-            pass
-    assert False`,
-    "from-datetime": `def from_datetime(x):
-    # This is not correct.  Python <3.7 doesn't support ISO date-time
-    # parsing in the standard library.  This is a kludge until we have
-    # that.
-    return datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")`,
-    "to-datetime": `def to_datetime(x):
-    assert isinstance(x, datetime)
-    return x.isoformat()`
-};
-
 function lambda(x: Sourcelike, ...body: Sourcelike[]): MultiWord {
     return multiWord(" ", "lambda", [x, ":"], body);
 }
@@ -459,8 +481,129 @@ type TopLevelConverterNames = {
 
 export class JSONPythonRenderer extends PythonRenderer {
     private readonly _deserializerFunctions = new Set<ConverterFunction>();
-    private readonly _converterNamer = funPrefixNamer("converter", s => snakeNameStyle(s, false));
+    private readonly _converterNamer = funPrefixNamer("converter", s =>
+        snakeNameStyle(this.pyOptions.features.version, s, false)
+    );
     private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
+
+    protected emitNoneConverter(): void {
+        this.emitMultiline(`def from_none(x):
+    assert x is None
+    return x`);
+    }
+
+    protected emitBoolConverter(): void {
+        this.emitMultiline(`def from_bool(x):
+    assert isinstance(x, bool)
+    return x`);
+    }
+
+    protected emitIntConverter(): void {
+        this.emitMultiline(`def from_int(x):
+    assert isinstance(x, int) and not isinstance(x, bool)
+    return x`);
+    }
+
+    protected emitFromFloatConverter(): void {
+        this.emitMultiline(`def from_float(x):
+    assert isinstance(x, (float, int)) and not isinstance(x, bool)
+    return float(x)`);
+    }
+
+    protected emitToFloatConverter(): void {
+        this.emitMultiline(`def to_float(x):
+    assert isinstance(x, float)
+    return x`);
+    }
+
+    protected emitStrConverter(): void {
+        this.emitBlock("def from_str(x):", () => {
+            const strType = this.pyOptions.features.version === 2 ? "(str, unicode)" : "str";
+            this.emitLine("assert isinstance(x, ", strType, ")");
+            this.emitLine("return x");
+        });
+    }
+
+    protected emitToEnumConverter(): void {
+        this.emitMultiline(`def to_enum(c, x):
+    assert isinstance(x, c)
+    return x.value`);
+    }
+
+    protected emitListConverter(): void {
+        this.emitMultiline(`def from_list(f, x):
+    assert isinstance(x, list)
+    return [f(y) for y in x]`);
+    }
+
+    protected emitToClassConverter(): void {
+        this.emitMultiline(`def to_class(c, x):
+    assert isinstance(x, c)
+    return x.to_dict()`);
+    }
+
+    protected emitDictConverter(): void {
+        this.emitMultiline(`def from_dict(f, x):
+    assert isinstance(x, dict)
+    return { k: f(v) for (k, v) in x.items() }`);
+    }
+
+    protected emitUnionConverter(): void {
+        this.emitMultiline(`def from_union(fs, x):
+    for f in fs:
+        try:
+            return f(x)
+        except:
+            pass
+    assert False`);
+    }
+
+    protected emitFromDatetimeConverter(): void {
+        this.emitMultiline(`def from_datetime(x):
+    # This is not correct.  Python <3.7 doesn't support ISO date-time
+    # parsing in the standard library.  This is a kludge until we have
+    # that.
+    return datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")`);
+    }
+
+    protected emitToDatetimeConverter(): void {
+        this.emitMultiline(`def to_datetime(x):
+    assert isinstance(x, datetime)
+    return x.isoformat()`);
+    }
+
+    protected emitConverter(cf: ConverterFunction): void {
+        switch (cf) {
+            case "none":
+                return this.emitNoneConverter();
+            case "bool":
+                return this.emitBoolConverter();
+            case "int":
+                return this.emitIntConverter();
+            case "from-float":
+                return this.emitFromFloatConverter();
+            case "to-float":
+                return this.emitToFloatConverter();
+            case "str":
+                return this.emitStrConverter();
+            case "to-enum":
+                return this.emitToEnumConverter();
+            case "list":
+                return this.emitListConverter();
+            case "to-class":
+                return this.emitToClassConverter();
+            case "dict":
+                return this.emitDictConverter();
+            case "union":
+                return this.emitUnionConverter();
+            case "from-datetime":
+                return this.emitFromDatetimeConverter();
+            case "to-datetime":
+                return this.emitToDatetimeConverter();
+            default:
+                return assertNever(cf);
+        }
+    }
 
     protected conv(cf: ConverterFunction): Sourcelike {
         this._deserializerFunctions.add(cf);
@@ -545,7 +688,7 @@ export class JSONPythonRenderer extends PythonRenderer {
         this.emitBlock("def __init__(self, obj):", () => {
             this.emitLine("assert isinstance(obj, dict)");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                const property = ['obj.get("', stringEscape(jsonName), '")'];
+                const property = ["obj.get(", this.string(jsonName), ")"];
                 this.emitLine("self.", name, " = ", this.deserializer(property, cp.type));
             });
         });
@@ -554,18 +697,16 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitLine("result = {}");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = ["self.", name];
-                this.emitLine('result["', stringEscape(jsonName), '"] = ', this.serializer(property, cp.type));
+                this.emitLine("result[", this.string(jsonName), "] = ", this.serializer(property, cp.type));
             });
             this.emitLine("return result");
         });
     }
 
     protected emitSupportCode(): void {
-        const map = Array.from(this._deserializerFunctions).map(
-            f => [f, converterFunctionCodes[f]] as [ConverterFunction, string]
-        );
-        this.forEachWithBlankLines(map, ["interposing", 2], code => {
-            this.emitMultiline(code);
+        const map = Array.from(this._deserializerFunctions).map(f => [f, f] as [ConverterFunction, ConverterFunction]);
+        this.forEachWithBlankLines(map, ["interposing", 2], cf => {
+            this.emitConverter(cf);
         });
     }
 
@@ -584,13 +725,19 @@ export class JSONPythonRenderer extends PythonRenderer {
         this.forEachTopLevel(["interposing", 2], (t, name) => {
             const { fromDict, toDict } = defined(this._topLevelConverterNames.get(name));
             const pythonType = this.pythonType(t);
-            this.emitBlock(["def ", fromDict, "(s: str) -> ", pythonType, ":"], () => {
-                this.emitLine("return ", this.deserializer("s", t));
-            });
+            this.emitBlock(
+                ["def ", fromDict, "(s", this.typeHint(": str"), ")", this.typeHint(" -> ", pythonType), ":"],
+                () => {
+                    this.emitLine("return ", this.deserializer("s", t));
+                }
+            );
             this.ensureBlankLine(2);
-            this.emitBlock(["def ", toDict, "(x: ", pythonType, ") -> str:"], () => {
-                this.emitLine("return ", this.serializer("x", t));
-            });
+            this.emitBlock(
+                ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typeHint(" -> str"), ":"],
+                () => {
+                    this.emitLine("return ", this.serializer("x", t));
+                }
+            );
         });
     }
 }
