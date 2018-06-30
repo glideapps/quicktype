@@ -47,6 +47,7 @@ const forbiddenPropertyNames = [
     "datetime",
     "def",
     "del",
+    "dict",
     "elif",
     "else",
     "except",
@@ -68,6 +69,7 @@ const forbiddenPropertyNames = [
     "print",
     "raise",
     "return",
+    "self",
     "str",
     "try",
     "while",
@@ -345,7 +347,23 @@ export class PythonRenderer extends ConvenienceRenderer {
         this.declaredTypes.add(t);
     }
 
-    protected emitClassMembers(_t: ClassType): void {
+    protected emitClassMembers(t: ClassType): void {
+        const args: Sourcelike[] = [];
+        this.forEachClassProperty(t, "none", (name, _, cp) => {
+            args.push([name, this.typeHint(": ", this.pythonType(cp.type))]);
+        });
+        this.emitBlock(
+            ["def __init__(self, ", arrayIntercalate(", ", args), ")", this.typeHint(" -> None"), ":"],
+            () => {
+                if (args.length === 0) {
+                    this.emitLine("pass");
+                } else {
+                    this.forEachClassProperty(t, "none", name => {
+                        this.emitLine("self.", name, " = ", name);
+                    });
+                }
+            }
+        );
         return;
     }
 
@@ -632,7 +650,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             _stringType => this.convFn("str"),
             arrayType =>
                 lambda("x", this.conv("list"), "(", parenIfNeeded(this.deserializerFn(arrayType.items)), ", x)"),
-            classType => singleWord(this.nameForNamedType(classType)),
+            classType => singleWord([this.nameForNamedType(classType), ".from_dict"]),
             mapType => lambda("x", this.conv("dict"), "(", parenIfNeeded(this.deserializerFn(mapType.values)), ", x)"),
             enumType => singleWord(this.nameForNamedType(enumType)),
             unionType => {
@@ -690,16 +708,35 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected emitClassMembers(t: ClassType): void {
-        this.emitBlock("def __init__(self, obj):", () => {
+        super.emitClassMembers(t);
+        this.ensureBlankLine();
+
+        const className = this.nameForNamedType(t);
+
+        this.emitLine("@staticmethod");
+        this.emitBlock(
+            [
+                "def from_dict(obj",
+                this.typeHint(": ", this.withTyping("Any")),
+                ")",
+                this.typeHint(" -> ", this.namedType(t)),
+                ":"
+            ],
+            () => {
+                const args: Sourcelike[] = [];
             this.emitLine("assert isinstance(obj, dict)");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = ["obj.get(", this.string(jsonName), ")"];
-                this.emitLine("self.", name, " = ", this.deserializer(property, cp.type));
-            });
+                    this.emitLine(name, " = ", this.deserializer(property, cp.type));
+                    args.push(name);
         });
+                this.emitLine("return ", className, "(", arrayIntercalate(", ", args), ")");
+            }
+        );
         this.ensureBlankLine();
-        this.emitBlock("def to_dict(self):", () => {
-            this.emitLine("result = {}");
+
+        this.emitBlock(["def to_dict(self)", this.typeHint(" -> dict"), ":"], () => {
+            this.emitLine("result", this.typeHint(": dict"), " = {}");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = ["self.", name];
                 this.emitLine("result[", this.string(jsonName), "] = ", this.serializer(property, cp.type));
