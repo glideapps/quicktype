@@ -11,7 +11,7 @@ import {
     ArrayType
 } from "../Type";
 import { RenderContext } from "../Renderer";
-import { Option, getOptionValues, OptionValues, EnumOption } from "../RendererOptions";
+import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
 import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer, Name, DependencyName } from "../Naming";
 import {
@@ -93,12 +93,13 @@ export const pythonOptions = {
             ["3.6", { version: 3, typeHints: true }]
         ],
         "3.6"
-    )
+    ),
+    justTypes: new BooleanOption("just-types", "Interfaces only", false)
 };
 
 export class PythonTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
-        return [pythonOptions.features];
+        return [pythonOptions.features, pythonOptions.justTypes];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -133,7 +134,12 @@ export class PythonTargetLanguage extends TargetLanguage {
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PythonRenderer {
-        return new JSONPythonRenderer(this, renderContext, getOptionValues(pythonOptions, untypedOptionValues));
+        const options = getOptionValues(pythonOptions, untypedOptionValues);
+        if (options.justTypes) {
+            return new PythonRenderer(this, renderContext, options);
+        } else {
+            return new JSONPythonRenderer(this, renderContext, options);
+        }
     }
 }
 
