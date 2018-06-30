@@ -540,32 +540,31 @@ export class JSONPythonRenderer extends PythonRenderer {
     private _haveTypeVar = false;
     private _haveEnumTypeVar = false;
 
-    // FIXME: emit these right after the imports
     protected emitTypeVar(tvar: string, constraints: Sourcelike): void {
         if (!this.pyOptions.features.typeHints) {
             return;
         }
-        this.ensureBlankLine(2);
         this.emitLine(tvar, " = ", this.withTyping("TypeVar"), "(", this.string(tvar), constraints, ")");
-        this.ensureBlankLine(2);
     }
 
-    protected typeVar(): Sourcelike {
-        const tvar = "T";
-        if (!this._haveTypeVar) {
-            this.emitTypeVar(tvar, []);
+    protected typeVar(): string {
             this._haveTypeVar = true;
+        // FIXME: This is ugly, but the code that requires the type variables, in
+        // `emitImports` actually runs after imports have been imported.  The proper
+        // solution would be to either allow more complex dependencies, or to
+        // gather-emit the type variable declarations, too.  Unfortunately the
+        // gather-emit is a bit buggy with blank lines, and I can't be bothered to
+        // fix it now.
+        this.withTyping("TypeVar");
+        return "T";
         }
-        return tvar;
-    }
 
-    protected enumTypeVar(): Sourcelike {
-        const tvar = "EnumT";
-        if (!this._haveEnumTypeVar) {
-            this.emitTypeVar(tvar, [", bound=", this.withImport("enum", "Enum")]);
+    protected enumTypeVar(): string {
             this._haveEnumTypeVar = true;
-        }
-        return tvar;
+        // See the comment above.
+        this.withTyping("TypeVar");
+        this.withImport("enum", "Enum");
+        return "EnumT";
     }
 
     protected cast(type: Sourcelike, v: Sourcelike): Sourcelike {
@@ -856,6 +855,20 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitLine("return result");
         });
     }
+
+    protected emitImports(): void {
+        super.emitImports();
+
+        if (!this._haveTypeVar && !this._haveEnumTypeVar) return;
+
+            this.ensureBlankLine(2);
+            if (this._haveTypeVar) {
+                this.emitTypeVar(this.typeVar(), []);
+            }
+            if (this._haveEnumTypeVar) {
+                this.emitTypeVar(this.enumTypeVar(), [", bound=", this.withImport("enum", "Enum")]);
+            }
+        }
 
     protected emitSupportCode(): void {
         const map = Array.from(this._deserializerFunctions).map(f => [f, f] as [ConverterFunction, ConverterFunction]);
