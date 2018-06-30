@@ -804,7 +804,36 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected deserializer(value: Sourcelike, t: Type): Sourcelike {
-        return callFn(this.deserializerFn(t), value);
+        return matchType<Sourcelike>(
+            t,
+            _anyType => value,
+            _nullType => [this.conv("none"), "(", value, ")"],
+            _boolType => [this.conv("bool"), "(", value, ")"],
+            _integerType => [this.conv("int"), "(", value, ")"],
+            _doubleType => [this.conv("from-float"), "(", value, ")"],
+            _stringType => [this.conv("str"), "(", value, ")"],
+            arrayType => [
+                this.conv("list"),
+                "(",
+                parenIfNeeded(this.deserializerFn(arrayType.items)),
+                ", ",
+                value,
+                ")"
+            ],
+            classType => [this.nameForNamedType(classType), ".from_dict(", value, ")"],
+            mapType => [this.conv("dict"), "(", parenIfNeeded(this.deserializerFn(mapType.values)), ", ", value, ")"],
+            enumType => [this.nameForNamedType(enumType), "(", value, ")"],
+            unionType => {
+                const serializers = Array.from(unionType.members).map(m => this.deserializerFn(m).source);
+                return [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", value, ")"];
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "date-time") {
+                    return [this.conv("from-datetime"), "(", value, ")"];
+                }
+                return panic(`Transformed type ${transformedStringType.kind} not supported`);
+            }
+        );
     }
 
     protected serializerFn(t: Type): MultiWord {
@@ -841,7 +870,29 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected serializer(value: Sourcelike, t: Type): Sourcelike {
-        return [parenIfNeeded(this.serializerFn(t)), "(", value, ")"];
+        return matchType<Sourcelike>(
+            t,
+            _anyType => value,
+            _nullType => [this.conv("none"), "(", value, ")"],
+            _boolType => [this.conv("bool"), "(", value, ")"],
+            _integerType => [this.conv("int"), "(", value, ")"],
+            _doubleType => [this.conv("to-float"), "(", value, ")"],
+            _stringType => [this.conv("str"), "(", value, ")"],
+            arrayType => [this.conv("list"), "(", parenIfNeeded(this.serializerFn(arrayType.items)), ", ", value, ")"],
+            classType => [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", value, ")"],
+            mapType => [this.conv("dict"), "(", parenIfNeeded(this.serializerFn(mapType.values)), ", ", value, ")"],
+            enumType => [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", value, ")"],
+            unionType => {
+                const serializers = Array.from(unionType.members).map(m => this.serializerFn(m).source);
+                return [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", value, ")"];
+            },
+            transformedStringType => {
+                if (transformedStringType.kind === "date-time") {
+                    return [value, ".isoformat()"];
+                }
+                return panic(`Transformed type ${transformedStringType.kind} not supported`);
+            }
+        );
     }
 
     protected emitClassMembers(t: ClassType): void {
