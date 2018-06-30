@@ -35,7 +35,7 @@ import { arrayIntercalate, iterableSome, setUnionInto, mapUpdateInto } from "col
 
 const unicode = require("unicode-properties");
 
-const forbiddenTypeNames = ["True", "False", "None", "Enum", "List", "Dict", "Optional", "Union", "Iterable"];
+const forbiddenTypeNames = ["Any", "True", "False", "None", "Enum", "List", "Dict", "Optional", "Union", "Iterable"];
 const forbiddenPropertyNames = [
     "and",
     "as",
@@ -408,10 +408,15 @@ export class PythonRenderer extends ConvenienceRenderer {
 
     protected emitDefaultLeadingComments(): void {
         if (this.pyOptions.features.version === 2) {
-            this.emitCommentLines(["# coding: utf-8"]);
+            this.emitCommentLines(["coding: utf-8"]);
             this.ensureBlankLine();
             if (this.haveEnums) {
-                this.emitCommentLines(["# To use this code in Python 2.7 you'll have to", "    pip install enum34"]);
+                this.emitCommentLines([
+                    "",
+                    "To use this code in Python 2.7 you'll have to",
+                    "",
+                    "    pip install enum34"
+                ]);
             }
         }
     }
@@ -721,19 +726,52 @@ export class JSONPythonRenderer extends PythonRenderer {
         return [fromDict, toDict];
     }
 
+    protected emitDefaultLeadingComments(): void {
+        super.emitDefaultLeadingComments();
+        this.ensureBlankLine();
+        this.emitCommentLines([
+            "To use this code, make sure you",
+            "",
+            "    import json",
+            "",
+            "and then, to convert JSON from a string, do",
+            ""
+        ]);
+        this.forEachTopLevel("none", (_, name) => {
+            const { fromDict } = defined(this._topLevelConverterNames.get(name));
+            this.emitLine(this.commentLineStart, "    result = ", fromDict, "(json.loads(json_string))");
+        });
+    }
+
     protected emitClosingCode(): void {
         this.forEachTopLevel(["interposing", 2], (t, name) => {
             const { fromDict, toDict } = defined(this._topLevelConverterNames.get(name));
             const pythonType = this.pythonType(t);
             this.emitBlock(
-                ["def ", fromDict, "(s", this.typeHint(": str"), ")", this.typeHint(" -> ", pythonType), ":"],
+                [
+                    "def ",
+                    fromDict,
+                    "(s",
+                    this.typeHint(": ", this.withTyping("Any")),
+                    ")",
+                    this.typeHint(" -> ", pythonType),
+                    ":"
+                ],
                 () => {
                     this.emitLine("return ", this.deserializer("s", t));
                 }
             );
             this.ensureBlankLine(2);
             this.emitBlock(
-                ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typeHint(" -> str"), ":"],
+                [
+                    "def ",
+                    toDict,
+                    "(x",
+                    this.typeHint(": ", pythonType),
+                    ")",
+                    this.typeHint(" -> ", this.withTyping("Any")),
+                    ":"
+                ],
                 () => {
                     this.emitLine("return ", this.serializer("x", t));
                 }
