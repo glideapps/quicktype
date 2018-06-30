@@ -575,7 +575,8 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected emitNoneConverter(): void {
-        // FIXME: We can't return the None type here
+        // FIXME: We can't return the None type here because mypy thinks that means
+        // We're not returning any value, when we're actually returning `None`.
         this.emitBlock(
             ["def from_none(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> ", this.withTyping("Any")), ":"],
             () => {
@@ -678,11 +679,23 @@ export class JSONPythonRenderer extends PythonRenderer {
         );
     }
 
-    // FIXME: Types
     protected emitDictConverter(): void {
-        this.emitMultiline(`def from_dict(f, x):
-    assert isinstance(x, dict)
-    return { k: f(v) for (k, v) in x.items() }`);
+        const tvar = this.typeVar();
+        this.emitBlock(
+            [
+                "def from_dict(f",
+                this.typeHint(": ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], ", tvar, "]"),
+                ", ",
+                this.typingDecl("x", "Any"),
+                ")",
+                this.typeHint(" -> ", this.withTyping("Dict"), "[str, ", tvar, "]"),
+                ":"
+            ],
+            () => {
+                this.emitLine("assert isinstance(x, dict)");
+                this.emitLine("return { k: f(v) for (k, v) in x.items() }");
+            }
+        );
     }
 
     // FIXME: Types
