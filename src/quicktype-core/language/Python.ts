@@ -26,7 +26,6 @@ import {
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit
 } from "../support/Strings";
-import { Declaration } from "../DeclarationIR";
 import { assertNever, panic, defined } from "../support/Support";
 import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded } from "../Source";
 import { matchType, nullableFromUnion } from "../TypeUtils";
@@ -428,25 +427,6 @@ export class PythonRenderer extends ConvenienceRenderer {
         });
     }
 
-    protected emitDeclaration(decl: Declaration): void {
-        if (decl.kind === "forward") {
-            // We don't need forward declarations yet, since we only generate types.
-        } else if (decl.kind === "define") {
-            const t = decl.type;
-            if (t instanceof ClassType) {
-                this.emitClass(t);
-            } else if (t instanceof EnumType) {
-                this.emitEnum(t);
-            } else if (t instanceof UnionType) {
-                return;
-            } else {
-                return panic(`Cannot declare type ${t.kind}`);
-            }
-        } else {
-            return assertNever(decl.kind);
-        }
-    }
-
     protected emitImports(): void {
         this.imports.forEach((names, module) => {
             this.emitLine("from ", module, " import ", Array.from(names).join(", "));
@@ -484,7 +464,14 @@ export class PythonRenderer extends ConvenienceRenderer {
         }
 
         const declarationLines = this.gatherSource(() => {
-            this.forEachDeclaration(["interposing", 2], decl => this.emitDeclaration(decl));
+            this.forEachNamedType(
+                ["interposing", 2],
+                (c: ClassType) => this.emitClass(c),
+                e => this.emitEnum(e),
+                _u => {
+                    return;
+                }
+            );
         });
 
         const closingLines = this.gatherSource(() => this.emitClosingCode());
@@ -548,7 +535,7 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected typeVar(): string {
-            this._haveTypeVar = true;
+        this._haveTypeVar = true;
         // FIXME: This is ugly, but the code that requires the type variables, in
         // `emitImports` actually runs after imports have been imported.  The proper
         // solution would be to either allow more complex dependencies, or to
@@ -557,10 +544,10 @@ export class JSONPythonRenderer extends PythonRenderer {
         // fix it now.
         this.withTyping("TypeVar");
         return "T";
-        }
+    }
 
     protected enumTypeVar(): string {
-            this._haveEnumTypeVar = true;
+        this._haveEnumTypeVar = true;
         // See the comment above.
         this.withTyping("TypeVar");
         this.withImport("enum", "Enum");
@@ -698,7 +685,8 @@ export class JSONPythonRenderer extends PythonRenderer {
         );
     }
 
-    // FIXME: Types
+    // This is not easily idiomatically typeable in Python.  See
+    // https://stackoverflow.com/questions/51066468/computed-types-in-mypy/51084497
     protected emitUnionConverter(): void {
         this.emitMultiline(`def from_union(fs, x):
     for f in fs:
@@ -874,14 +862,14 @@ export class JSONPythonRenderer extends PythonRenderer {
 
         if (!this._haveTypeVar && !this._haveEnumTypeVar) return;
 
-            this.ensureBlankLine(2);
-            if (this._haveTypeVar) {
-                this.emitTypeVar(this.typeVar(), []);
-            }
-            if (this._haveEnumTypeVar) {
-                this.emitTypeVar(this.enumTypeVar(), [", bound=", this.withImport("enum", "Enum")]);
-            }
+        this.ensureBlankLine(2);
+        if (this._haveTypeVar) {
+            this.emitTypeVar(this.typeVar(), []);
         }
+        if (this._haveEnumTypeVar) {
+            this.emitTypeVar(this.enumTypeVar(), [", bound=", this.withImport("enum", "Enum")]);
+        }
+    }
 
     protected emitSupportCode(): void {
         const map = Array.from(this._deserializerFunctions).map(f => [f, f] as [ConverterFunction, ConverterFunction]);
