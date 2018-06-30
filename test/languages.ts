@@ -94,7 +94,7 @@ export const PythonLanguage: Language = {
   skipJSON: [],
   skipMiscJSON: false,
   skipSchema: [
-    "any.schema" // We don't even emit an empty file?
+    "keyword-unions.schema" // Requires more than 255 arguments
   ],
   rendererOptions: {},
   quickTestRendererOptions: [{ "python-version": "3.5" }],

@@ -11,7 +11,7 @@ import {
     ArrayType
 } from "../Type";
 import { RenderContext } from "../Renderer";
-import { Option, getOptionValues, OptionValues, EnumOption } from "../RendererOptions";
+import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
 import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
 import { Namer, funPrefixNamer, Name, DependencyName } from "../Naming";
 import {
@@ -35,7 +35,22 @@ import { arrayIntercalate, iterableSome, setUnionInto, mapUpdateInto } from "col
 
 const unicode = require("unicode-properties");
 
-const forbiddenTypeNames = ["Any", "True", "False", "None", "Enum", "List", "Dict", "Optional", "Union", "Iterable"];
+const forbiddenTypeNames = [
+    "Any",
+    "True",
+    "False",
+    "None",
+    "Enum",
+    "List",
+    "Dict",
+    "Optional",
+    "Union",
+    "Iterable",
+    "Type",
+    "TypeVar",
+    "T",
+    "EnumT"
+];
 const forbiddenPropertyNames = [
     "and",
     "as",
@@ -47,6 +62,7 @@ const forbiddenPropertyNames = [
     "datetime",
     "def",
     "del",
+    "dict",
     "elif",
     "else",
     "except",
@@ -68,6 +84,7 @@ const forbiddenPropertyNames = [
     "print",
     "raise",
     "return",
+    "self",
     "str",
     "try",
     "while",
@@ -91,12 +108,13 @@ export const pythonOptions = {
             ["3.6", { version: 3, typeHints: true }]
         ],
         "3.6"
-    )
+    ),
+    justTypes: new BooleanOption("just-types", "Interfaces only", false)
 };
 
 export class PythonTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
-        return [pythonOptions.features];
+        return [pythonOptions.features, pythonOptions.justTypes];
     }
 
     get stringTypeMapping(): StringTypeMapping {
@@ -131,7 +149,12 @@ export class PythonTargetLanguage extends TargetLanguage {
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PythonRenderer {
-        return new JSONPythonRenderer(this, renderContext, getOptionValues(pythonOptions, untypedOptionValues));
+        const options = getOptionValues(pythonOptions, untypedOptionValues);
+        if (options.justTypes) {
+            return new PythonRenderer(this, renderContext, options);
+        } else {
+            return new JSONPythonRenderer(this, renderContext, options);
+        }
     }
 }
 
@@ -345,7 +368,23 @@ export class PythonRenderer extends ConvenienceRenderer {
         this.declaredTypes.add(t);
     }
 
-    protected emitClassMembers(_t: ClassType): void {
+    protected emitClassMembers(t: ClassType): void {
+        const args: Sourcelike[] = [];
+        this.forEachClassProperty(t, "none", (name, _, cp) => {
+            args.push([name, this.typeHint(": ", this.pythonType(cp.type))]);
+        });
+        this.emitBlock(
+            ["def __init__(self, ", arrayIntercalate(", ", args), ")", this.typeHint(" -> None"), ":"],
+            () => {
+                if (args.length === 0) {
+                    this.emitLine("pass");
+                } else {
+                    this.forEachClassProperty(t, "none", name => {
+                        this.emitLine("self.", name, " = ", name);
+                    });
+                }
+            }
+        );
         return;
     }
 
@@ -354,6 +393,14 @@ export class PythonRenderer extends ConvenienceRenderer {
             return sl;
         }
         return [];
+    }
+
+    protected typingDecl(name: Sourcelike, type: string): Sourcelike {
+        return [name, this.typeHint(": ", this.withTyping(type))];
+    }
+
+    protected typingReturn(type: string): Sourcelike {
+        return this.typeHint(" -> ", this.withTyping(type));
     }
 
     protected emitClass(t: ClassType): void {
@@ -490,39 +537,85 @@ export class JSONPythonRenderer extends PythonRenderer {
         snakeNameStyle(this.pyOptions.features.version, s, false)
     );
     private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
+    private _haveTypeVar = false;
+    private _haveEnumTypeVar = false;
+
+    // FIXME: emit these right after the imports
+    protected emitTypeVar(tvar: string, constraints: Sourcelike): void {
+        if (!this.pyOptions.features.typeHints) {
+            return;
+        }
+        this.ensureBlankLine(2);
+        this.emitLine(tvar, " = ", this.withTyping("TypeVar"), "(", this.string(tvar), constraints, ")");
+        this.ensureBlankLine(2);
+    }
+
+    protected typeVar(): Sourcelike {
+        const tvar = "T";
+        if (!this._haveTypeVar) {
+            this.emitTypeVar(tvar, []);
+            this._haveTypeVar = true;
+        }
+        return tvar;
+    }
+
+    protected enumTypeVar(): Sourcelike {
+        const tvar = "EnumT";
+        if (!this._haveEnumTypeVar) {
+            this.emitTypeVar(tvar, [", bound=", this.withImport("enum", "Enum")]);
+            this._haveEnumTypeVar = true;
+        }
+        return tvar;
+    }
+
+    protected cast(type: Sourcelike, v: Sourcelike): Sourcelike {
+        if (!this.pyOptions.features.typeHints) {
+            return v;
+        }
+        return [this.withTyping("cast"), "(", type, ", ", v, ")"];
+    }
 
     protected emitNoneConverter(): void {
-        this.emitMultiline(`def from_none(x):
-    assert x is None
-    return x`);
+        // FIXME: We can't return the None type here
+        this.emitBlock(
+            ["def from_none(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> ", this.withTyping("Any")), ":"],
+            () => {
+                this.emitLine("assert x is None");
+                this.emitLine("return x");
+            }
+        );
     }
 
     protected emitBoolConverter(): void {
-        this.emitMultiline(`def from_bool(x):
-    assert isinstance(x, bool)
-    return x`);
+        this.emitBlock(["def from_bool(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> bool"), ":"], () => {
+            this.emitLine("assert isinstance(x, bool)");
+            this.emitLine("return x");
+        });
     }
 
     protected emitIntConverter(): void {
-        this.emitMultiline(`def from_int(x):
-    assert isinstance(x, int) and not isinstance(x, bool)
-    return x`);
+        this.emitBlock(["def from_int(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> int"), ":"], () => {
+            this.emitLine("assert isinstance(x, int) and not isinstance(x, bool)");
+            this.emitLine("return x");
+        });
     }
 
     protected emitFromFloatConverter(): void {
-        this.emitMultiline(`def from_float(x):
-    assert isinstance(x, (float, int)) and not isinstance(x, bool)
-    return float(x)`);
+        this.emitBlock(["def from_float(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> float"), ":"], () => {
+            this.emitLine("assert isinstance(x, (float, int)) and not isinstance(x, bool)");
+            this.emitLine("return float(x)");
+        });
     }
 
     protected emitToFloatConverter(): void {
-        this.emitMultiline(`def to_float(x):
-    assert isinstance(x, float)
-    return x`);
+        this.emitBlock(["def to_float(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> float"), ":"], () => {
+            this.emitLine("assert isinstance(x, float)");
+            this.emitLine("return x");
+        });
     }
 
     protected emitStrConverter(): void {
-        this.emitBlock("def from_str(x):", () => {
+        this.emitBlock(["def from_str(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> str"), ":"], () => {
             const strType = this.pyOptions.features.version === 2 ? "(str, unicode)" : "str";
             this.emitLine("assert isinstance(x, ", strType, ")");
             this.emitLine("return x");
@@ -530,29 +623,70 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected emitToEnumConverter(): void {
-        this.emitMultiline(`def to_enum(c, x):
-    assert isinstance(x, c)
-    return x.value`);
+        const tvar = this.enumTypeVar();
+        this.emitBlock(
+            [
+                "def to_enum(c",
+                this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]"),
+                ", ",
+                this.typingDecl("x", "Any"),
+                ")",
+                this.typeHint(" -> ", tvar),
+                ":"
+            ],
+            () => {
+                this.emitLine("assert isinstance(x, c)");
+                this.emitLine("return x.value");
+            }
+        );
     }
 
     protected emitListConverter(): void {
-        this.emitMultiline(`def from_list(f, x):
-    assert isinstance(x, list)
-    return [f(y) for y in x]`);
+        const tvar = this.typeVar();
+        this.emitBlock(
+            [
+                "def from_list(f",
+                this.typeHint(": ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], ", tvar, "]"),
+                ", ",
+                this.typingDecl("x", "Any"),
+                ")",
+                this.typeHint(" -> ", this.withTyping("List"), "[", tvar, "]"),
+                ":"
+            ],
+            () => {
+                this.emitLine("assert isinstance(x, list)");
+                this.emitLine("return [f(y) for y in x]");
+            }
+        );
     }
 
     protected emitToClassConverter(): void {
-        this.emitMultiline(`def to_class(c, x):
-    assert isinstance(x, c)
-    return x.to_dict()`);
+        const tvar = this.typeVar();
+        this.emitBlock(
+            [
+                "def to_class(c",
+                this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]"),
+                ", ",
+                this.typingDecl("x", "Any"),
+                ")",
+                this.typeHint(" -> ", tvar),
+                ":"
+            ],
+            () => {
+                this.emitLine("assert isinstance(x, c)");
+                this.emitLine("return ", this.cast(this.withTyping("Any"), "x"), ".to_dict()");
+            }
+        );
     }
 
+    // FIXME: Types
     protected emitDictConverter(): void {
         this.emitMultiline(`def from_dict(f, x):
     assert isinstance(x, dict)
     return { k: f(v) for (k, v) in x.items() }`);
     }
 
+    // FIXME: Types
     protected emitUnionConverter(): void {
         this.emitMultiline(`def from_union(fs, x):
     for f in fs:
@@ -563,6 +697,7 @@ export class JSONPythonRenderer extends PythonRenderer {
     assert False`);
     }
 
+    // FIXME: Types
     protected emitFromDatetimeConverter(): void {
         this.emitMultiline(`def from_datetime(x):
     # This is not correct.  Python <3.7 doesn't support ISO date-time
@@ -571,6 +706,7 @@ export class JSONPythonRenderer extends PythonRenderer {
     return datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")`);
     }
 
+    // FIXME: Types
     protected emitToDatetimeConverter(): void {
         this.emitMultiline(`def to_datetime(x):
     assert isinstance(x, datetime)
@@ -632,7 +768,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             _stringType => this.convFn("str"),
             arrayType =>
                 lambda("x", this.conv("list"), "(", parenIfNeeded(this.deserializerFn(arrayType.items)), ", x)"),
-            classType => singleWord(this.nameForNamedType(classType)),
+            classType => singleWord([this.nameForNamedType(classType), ".from_dict"]),
             mapType => lambda("x", this.conv("dict"), "(", parenIfNeeded(this.deserializerFn(mapType.values)), ", x)"),
             enumType => singleWord(this.nameForNamedType(enumType)),
             unionType => {
@@ -690,16 +826,29 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected emitClassMembers(t: ClassType): void {
-        this.emitBlock("def __init__(self, obj):", () => {
-            this.emitLine("assert isinstance(obj, dict)");
-            this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                const property = ["obj.get(", this.string(jsonName), ")"];
-                this.emitLine("self.", name, " = ", this.deserializer(property, cp.type));
-            });
-        });
+        super.emitClassMembers(t);
         this.ensureBlankLine();
-        this.emitBlock("def to_dict(self):", () => {
-            this.emitLine("result = {}");
+
+        const className = this.nameForNamedType(t);
+
+        this.emitLine("@staticmethod");
+        this.emitBlock(
+            ["def from_dict(", this.typingDecl("obj", "Any"), ")", this.typeHint(" -> ", this.namedType(t)), ":"],
+            () => {
+                const args: Sourcelike[] = [];
+                this.emitLine("assert isinstance(obj, dict)");
+                this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
+                    const property = ["obj.get(", this.string(jsonName), ")"];
+                    this.emitLine(name, " = ", this.deserializer(property, cp.type));
+                    args.push(name);
+                });
+                this.emitLine("return ", className, "(", arrayIntercalate(", ", args), ")");
+            }
+        );
+        this.ensureBlankLine();
+
+        this.emitBlock(["def to_dict(self)", this.typeHint(" -> dict"), ":"], () => {
+            this.emitLine("result", this.typeHint(": dict"), " = {}");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = ["self.", name];
                 this.emitLine("result[", this.string(jsonName), "] = ", this.serializer(property, cp.type));
@@ -748,30 +897,14 @@ export class JSONPythonRenderer extends PythonRenderer {
             const { fromDict, toDict } = defined(this._topLevelConverterNames.get(name));
             const pythonType = this.pythonType(t);
             this.emitBlock(
-                [
-                    "def ",
-                    fromDict,
-                    "(s",
-                    this.typeHint(": ", this.withTyping("Any")),
-                    ")",
-                    this.typeHint(" -> ", pythonType),
-                    ":"
-                ],
+                ["def ", fromDict, "(", this.typingDecl("s", "Any"), ")", this.typeHint(" -> ", pythonType), ":"],
                 () => {
                     this.emitLine("return ", this.deserializer("s", t));
                 }
             );
             this.ensureBlankLine(2);
             this.emitBlock(
-                [
-                    "def ",
-                    toDict,
-                    "(x",
-                    this.typeHint(": ", pythonType),
-                    ")",
-                    this.typeHint(" -> ", this.withTyping("Any")),
-                    ":"
-                ],
+                ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typingReturn("Any"), ":"],
                 () => {
                     this.emitLine("return ", this.serializer("x", t));
                 }
