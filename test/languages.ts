@@ -97,7 +97,7 @@ export const PythonLanguage: Language = {
     "any.schema" // We don't even emit an empty file?
   ],
   rendererOptions: {},
-  quickTestRendererOptions: [],
+  quickTestRendererOptions: [{ "python-version": "3.5" }],
   sourceFiles: ["src/language/Python.ts"]
 };
 
