@@ -122,9 +122,7 @@ export class PythonTargetLanguage extends TargetLanguage {
 
     get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        // No Python programmer apparently ever needed to parse ISO date/times.
-        // It's only supported in Python 3.7, which isn't out yet.
-        const dateTimeType = "string";
+        const dateTimeType = "date-time";
         mapping.set("date", dateTimeType);
         mapping.set("time", dateTimeType);
         mapping.set("date-time", dateTimeType);
@@ -465,12 +463,6 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(_givenOutputFilename: string): void {
-        if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
-        } else {
-            this.emitDefaultLeadingComments();
-        }
-
         const declarationLines = this.gatherSource(() => {
             this.forEachNamedType(
                 ["interposing", 2],
@@ -485,6 +477,11 @@ export class PythonRenderer extends ConvenienceRenderer {
         const closingLines = this.gatherSource(() => this.emitClosingCode());
         const supportLines = this.gatherSource(() => this.emitSupportCode());
 
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines(this.leadingComments);
+        } else {
+            this.emitDefaultLeadingComments();
+        }
         this.ensureBlankLine();
         this.emitImports();
         this.ensureBlankLine(2);
@@ -508,8 +505,7 @@ export type ConverterFunction =
     | "to-class"
     | "dict"
     | "union"
-    | "from-datetime"
-    | "to-datetime";
+    | "from-datetime";
 
 function lambda(x: Sourcelike, ...body: Sourcelike[]): MultiWord {
     return multiWord(" ", "lambda", [x, ":"], body);
@@ -534,6 +530,7 @@ export class JSONPythonRenderer extends PythonRenderer {
     private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
     private _haveTypeVar = false;
     private _haveEnumTypeVar = false;
+    private _haveDateutil = false;
 
     protected emitTypeVar(tvar: string, constraints: Sourcelike): void {
         if (!this.pyOptions.features.typeHints) {
@@ -715,13 +712,8 @@ export class JSONPythonRenderer extends PythonRenderer {
                 ":"
             ],
             () => {
-                // FIXME: Python 3.7 datetime
-                this.emitCommentLines([
-                    "This is not correct.  Python <3.7 doesn't support ISO date-time",
-                    "parsing in the standard library.  This is a kludge until we have",
-                    "that."
-                ]);
-                this.emitLine('return datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")');
+                this._haveDateutil = true;
+                this.emitLine("return dateutil.parser.parse(x)");
             }
         );
     }
@@ -768,8 +760,6 @@ export class JSONPythonRenderer extends PythonRenderer {
                 return this.emitUnionConverter();
             case "from-datetime":
                 return this.emitFromDatetimeConverter();
-            case "to-datetime":
-                return this.emitToDatetimeConverter();
             default:
                 return assertNever(cf);
         }
@@ -806,7 +796,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
-                    return lambda("x", callFn(this.convFn("to-datetime"), "x"));
+                    return lambda("x", callFn(this.convFn("from-datetime"), "x"));
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
@@ -868,7 +858,8 @@ export class JSONPythonRenderer extends PythonRenderer {
                 this.emitLine("assert isinstance(obj, dict)");
                 this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                     const property = ["obj.get(", this.string(jsonName), ")"];
-                    this.emitLine(name, " = ", this.deserializer(property, cp.type));
+                    const propType = followTargetType(cp.type);
+                    this.emitLine(name, " = ", this.deserializer(property, propType));
                     args.push(name);
                 });
                 this.emitLine("return ", className, "(", arrayIntercalate(", ", args), ")");
@@ -880,7 +871,8 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitLine("result", this.typeHint(": dict"), " = {}");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = ["self.", name];
-                this.emitLine("result[", this.string(jsonName), "] = ", this.serializer(property, cp.type));
+                const propType = followTargetType(cp.type);
+                this.emitLine("result[", this.string(jsonName), "] = ", this.serializer(property, propType));
             });
             this.emitLine("return result");
         });
@@ -888,6 +880,9 @@ export class JSONPythonRenderer extends PythonRenderer {
 
     protected emitImports(): void {
         super.emitImports();
+        if (this._haveDateutil) {
+            this.emitLine("import dateutil.parser");
+        }
 
         if (!this._haveTypeVar && !this._haveEnumTypeVar) return;
 
@@ -921,6 +916,14 @@ export class JSONPythonRenderer extends PythonRenderer {
     protected emitDefaultLeadingComments(): void {
         super.emitDefaultLeadingComments();
         this.ensureBlankLine();
+        if (this._haveDateutil) {
+            this.emitCommentLines([
+                "This code parses date/times, so please",
+                "",
+                "    pip install python-dateutil",
+                ""
+            ]);
+        }
         this.emitCommentLines([
             "To use this code, make sure you",
             "",
