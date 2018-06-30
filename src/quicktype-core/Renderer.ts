@@ -45,13 +45,7 @@ export type RenderContext = {
 
 export type ForEachPosition = "first" | "last" | "middle" | "only";
 
-export abstract class Renderer {
-    protected readonly typeGraph: TypeGraph;
-    protected readonly leadingComments: string[] | undefined;
-
-    private _names: ReadonlyMap<Name, string> | undefined;
-    private _finishedFiles: Map<string, Source>;
-
+class EmitContext {
     private _lastNewline?: NewlineSource;
     // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _emitted: Sourcelike[];
@@ -62,18 +56,22 @@ export abstract class Renderer {
     // @ts-ignore: Initialized in startEmit, which is called from the constructor
     private _preventBlankLine: boolean;
 
-    constructor(protected readonly targetLanguage: TargetLanguage, renderContext: RenderContext) {
-        this.typeGraph = renderContext.typeGraph;
-        this.leadingComments = renderContext.leadingComments;
-
-        this._finishedFiles = new Map();
-        this.startEmit();
-    }
-
-    private startEmit(): void {
+    constructor() {
         this._currentEmitTarget = this._emitted = [];
         this._numBlankLinesNeeded = 0;
         this._preventBlankLine = true; // no blank lines at start of file
+    }
+
+    get isEmpty(): boolean {
+        return this._emitted.length === 0;
+    }
+
+    get isNested(): boolean {
+        return this._emitted !== this._currentEmitTarget;
+    }
+
+    get source(): Sourcelike[] {
+        return this._emitted;
     }
 
     private pushItem(item: Sourcelike): void {
@@ -81,37 +79,72 @@ export abstract class Renderer {
         this._preventBlankLine = false;
     }
 
-    private emitNewline = (): void => {
+    emitNewline(): void {
         const nl = newline();
         this.pushItem(nl);
         this._lastNewline = nl;
-    };
+    }
 
-    private emitItem = (item: Sourcelike): void => {
-        for (let i = 0; i < this._numBlankLinesNeeded; i++) {
-            this.emitNewline();
+    emitItem(item: Sourcelike): void {
+        if (!this.isEmpty) {
+            for (let i = 0; i < this._numBlankLinesNeeded; i++) {
+                this.emitNewline();
+            }
         }
         this._numBlankLinesNeeded = 0;
         this.pushItem(item);
-    };
+    }
 
-    protected ensureBlankLine(numBlankLines: number = 1): void {
+    ensureBlankLine(numBlankLines: number): void {
         if (this._preventBlankLine) return;
         this._numBlankLinesNeeded = Math.max(this._numBlankLinesNeeded, numBlankLines);
     }
 
-    protected preventBlankLine(): void {
+    preventBlankLine(): void {
         this._numBlankLinesNeeded = 0;
         this._preventBlankLine = true;
     }
 
+    changeIndent(offset: number): void {
+        if (this._lastNewline === undefined) {
+            return panic("Cannot change indent for the first line");
+        }
+        this._lastNewline.indentationChange += offset;
+    }
+}
+
+export abstract class Renderer {
+    protected readonly typeGraph: TypeGraph;
+    protected readonly leadingComments: string[] | undefined;
+
+    private _names: ReadonlyMap<Name, string> | undefined;
+    private _finishedFiles: Map<string, Source>;
+
+    private _emitContext: EmitContext;
+
+    constructor(protected readonly targetLanguage: TargetLanguage, renderContext: RenderContext) {
+        this.typeGraph = renderContext.typeGraph;
+        this.leadingComments = renderContext.leadingComments;
+
+        this._finishedFiles = new Map();
+        this._emitContext = new EmitContext();
+    }
+
+    ensureBlankLine(numBlankLines: number = 1): void {
+        this._emitContext.ensureBlankLine(numBlankLines);
+    }
+
+    preventBlankLine(): void {
+        this._emitContext.preventBlankLine();
+    }
+
     emitLine(...lineParts: Sourcelike[]): void {
         if (lineParts.length === 1) {
-            this.emitItem(lineParts[0]);
+            this._emitContext.emitItem(lineParts[0]);
         } else if (lineParts.length > 1) {
-            this.emitItem(lineParts);
+            this._emitContext.emitItem(lineParts);
         }
-        this.emitNewline();
+        this._emitContext.emitNewline();
     }
 
     emitMultiline(linesString: string): void {
@@ -130,7 +163,7 @@ export abstract class Renderer {
                 currentIndent = newIndent;
                 this.emitLine(text);
             } else {
-                this.emitNewline();
+                this._emitContext.emitNewline();
             }
         }
         if (currentIndent !== 0) {
@@ -139,25 +172,25 @@ export abstract class Renderer {
     }
 
     gatherSource(emitter: () => void): Sourcelike[] {
-        const oldEmitTarget: Sourcelike[] = this._currentEmitTarget;
-        const emitTarget: Sourcelike[] = [];
-        this._currentEmitTarget = emitTarget;
+        const oldEmitContext = this._emitContext;
+        this._emitContext = new EmitContext();
         emitter();
-        assert(this._currentEmitTarget === emitTarget, "_currentEmitTarget not restored correctly");
-        this._currentEmitTarget = oldEmitTarget;
-        return emitTarget;
+        assert(!this._emitContext.isNested, "emit context not restored correctly");
+        const source = this._emitContext.source;
+        this._emitContext = oldEmitContext;
+        return source;
     }
 
     emitGatheredSource(items: Sourcelike[]): void {
         for (const item of items) {
-            this.emitItem(item);
+            this._emitContext.emitItem(item);
         }
     }
 
     emitAnnotated(annotation: AnnotationData, emitter: () => void): void {
         const lines = this.gatherSource(emitter);
         const source = sourcelikeToSource(lines);
-        this.pushItem(annotated(annotation, source));
+        this._emitContext.emitItem(annotated(annotation, source));
     }
 
     emitIssue(message: string, emitter: () => void): void {
@@ -167,15 +200,12 @@ export abstract class Renderer {
     protected emitTable = (tableArray: Sourcelike[][]): void => {
         if (tableArray.length === 0) return;
         const table = tableArray.map(r => r.map(sl => sourcelikeToSource(sl)));
-        this.emitItem({ kind: "table", table });
-        this.emitNewline();
+        this._emitContext.emitItem({ kind: "table", table });
+        this._emitContext.emitNewline();
     };
 
-    private changeIndent(offset: number): void {
-        if (this._lastNewline === undefined) {
-            return panic("Cannot change indent for the first line");
-        }
-        this._lastNewline.indentationChange += offset;
+    changeIndent(offset: number): void {
+        this._emitContext.changeIndent(offset);
     }
 
     forEach<K, V>(
@@ -225,15 +255,15 @@ export abstract class Renderer {
 
     protected finishFile(filename: string): void {
         assert(!this._finishedFiles.has(filename), `Tried to emit file ${filename} more than once`);
-        const source = sourcelikeToSource(this._emitted);
+        const source = sourcelikeToSource(this._emitContext.source);
         this._finishedFiles.set(filename, source);
-        this.startEmit();
+        this._emitContext = new EmitContext();
     }
 
     render(givenOutputFilename: string): RenderResult {
         this._names = this.assignNames();
         this.emitSource(givenOutputFilename);
-        if (this._emitted.length > 0) {
+        if (!this._emitContext.isEmpty) {
             this.finishFile(givenOutputFilename);
         }
         return { sources: this._finishedFiles, names: this._names };
