@@ -26,7 +26,6 @@ import {
     isLetterOrUnderscore,
     isLetterOrUnderscoreOrDigit
 } from "../support/Strings";
-import { Declaration } from "../DeclarationIR";
 import { assertNever, panic, defined } from "../support/Support";
 import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded } from "../Source";
 import { matchType, nullableFromUnion } from "../TypeUtils";
@@ -55,6 +54,8 @@ const forbiddenPropertyNames = [
     "and",
     "as",
     "assert",
+    "async",
+    "await",
     "bool",
     "break",
     "class",
@@ -96,6 +97,7 @@ export type PythonVersion = 2 | 3;
 export type PythonFeatures = {
     version: 2 | 3;
     typeHints: boolean;
+    dataClasses: boolean;
 };
 
 export const pythonOptions = {
@@ -103,9 +105,10 @@ export const pythonOptions = {
         "python-version",
         "Python version",
         [
-            ["2.7", { version: 2, typeHints: false }],
-            ["3.5", { version: 3, typeHints: false }],
-            ["3.6", { version: 3, typeHints: true }]
+            ["2.7", { version: 2, typeHints: false, dataClasses: false }],
+            ["3.5", { version: 3, typeHints: false, dataClasses: false }],
+            ["3.6", { version: 3, typeHints: true, dataClasses: false }],
+            ["3.7", { version: 3, typeHints: true, dataClasses: true }]
         ],
         "3.6"
     ),
@@ -119,9 +122,7 @@ export class PythonTargetLanguage extends TargetLanguage {
 
     get stringTypeMapping(): StringTypeMapping {
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> = new Map();
-        // No Python programmer apparently ever needed to parse ISO date/times.
-        // It's only supported in Python 3.7, which isn't out yet.
-        const dateTimeType = "string";
+        const dateTimeType = "date-time";
         mapping.set("date", dateTimeType);
         mapping.set("time", dateTimeType);
         mapping.set("date-time", dateTimeType);
@@ -361,14 +362,16 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected declareType<T extends Type>(t: T, emitter: () => void): void {
-        this.emitDescription(this.descriptionForType(t));
         this.emitBlock(this.declarationLine(t), () => {
+            this.emitDescription(this.descriptionForType(t));
             emitter();
         });
         this.declaredTypes.add(t);
     }
 
     protected emitClassMembers(t: ClassType): void {
+        if (this.pyOptions.features.dataClasses) return;
+
         const args: Sourcelike[] = [];
         this.forEachClassProperty(t, "none", (name, _, cp) => {
             args.push([name, this.typeHint(": ", this.pythonType(cp.type))]);
@@ -385,7 +388,6 @@ export class PythonRenderer extends ConvenienceRenderer {
                 }
             }
         );
-        return;
     }
 
     protected typeHint(...sl: Sourcelike[]): Sourcelike {
@@ -404,6 +406,9 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitClass(t: ClassType): void {
+        if (this.pyOptions.features.dataClasses) {
+            this.emitLine("@", this.withImport("dataclasses", "dataclass"));
+        }
         this.declareType(t, () => {
             if (this.pyOptions.features.typeHints) {
                 if (t.getProperties().size === 0) {
@@ -426,25 +431,6 @@ export class PythonRenderer extends ConvenienceRenderer {
                 this.emitLine([name, " = ", this.string(jsonName)]);
             });
         });
-    }
-
-    protected emitDeclaration(decl: Declaration): void {
-        if (decl.kind === "forward") {
-            // We don't need forward declarations yet, since we only generate types.
-        } else if (decl.kind === "define") {
-            const t = decl.type;
-            if (t instanceof ClassType) {
-                this.emitClass(t);
-            } else if (t instanceof EnumType) {
-                this.emitEnum(t);
-            } else if (t instanceof UnionType) {
-                return;
-            } else {
-                return panic(`Cannot declare type ${t.kind}`);
-            }
-        } else {
-            return assertNever(decl.kind);
-        }
     }
 
     protected emitImports(): void {
@@ -477,19 +463,25 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(_givenOutputFilename: string): void {
-        if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
-        } else {
-            this.emitDefaultLeadingComments();
-        }
-
         const declarationLines = this.gatherSource(() => {
-            this.forEachDeclaration(["interposing", 2], decl => this.emitDeclaration(decl));
+            this.forEachNamedType(
+                ["interposing", 2],
+                (c: ClassType) => this.emitClass(c),
+                e => this.emitEnum(e),
+                _u => {
+                    return;
+                }
+            );
         });
 
         const closingLines = this.gatherSource(() => this.emitClosingCode());
         const supportLines = this.gatherSource(() => this.emitSupportCode());
 
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines(this.leadingComments);
+        } else {
+            this.emitDefaultLeadingComments();
+        }
         this.ensureBlankLine();
         this.emitImports();
         this.ensureBlankLine(2);
@@ -513,8 +505,7 @@ export type ConverterFunction =
     | "to-class"
     | "dict"
     | "union"
-    | "from-datetime"
-    | "to-datetime";
+    | "from-datetime";
 
 function lambda(x: Sourcelike, ...body: Sourcelike[]): MultiWord {
     return multiWord(" ", "lambda", [x, ":"], body);
@@ -539,33 +530,33 @@ export class JSONPythonRenderer extends PythonRenderer {
     private readonly _topLevelConverterNames = new Map<Name, TopLevelConverterNames>();
     private _haveTypeVar = false;
     private _haveEnumTypeVar = false;
+    private _haveDateutil = false;
 
-    // FIXME: emit these right after the imports
     protected emitTypeVar(tvar: string, constraints: Sourcelike): void {
         if (!this.pyOptions.features.typeHints) {
             return;
         }
-        this.ensureBlankLine(2);
         this.emitLine(tvar, " = ", this.withTyping("TypeVar"), "(", this.string(tvar), constraints, ")");
-        this.ensureBlankLine(2);
     }
 
-    protected typeVar(): Sourcelike {
-        const tvar = "T";
-        if (!this._haveTypeVar) {
-            this.emitTypeVar(tvar, []);
-            this._haveTypeVar = true;
-        }
-        return tvar;
+    protected typeVar(): string {
+        this._haveTypeVar = true;
+        // FIXME: This is ugly, but the code that requires the type variables, in
+        // `emitImports` actually runs after imports have been imported.  The proper
+        // solution would be to either allow more complex dependencies, or to
+        // gather-emit the type variable declarations, too.  Unfortunately the
+        // gather-emit is a bit buggy with blank lines, and I can't be bothered to
+        // fix it now.
+        this.withTyping("TypeVar");
+        return "T";
     }
 
-    protected enumTypeVar(): Sourcelike {
-        const tvar = "EnumT";
-        if (!this._haveEnumTypeVar) {
-            this.emitTypeVar(tvar, [", bound=", this.withImport("enum", "Enum")]);
-            this._haveEnumTypeVar = true;
-        }
-        return tvar;
+    protected enumTypeVar(): string {
+        this._haveEnumTypeVar = true;
+        // See the comment above.
+        this.withTyping("TypeVar");
+        this.withImport("enum", "Enum");
+        return "EnumT";
     }
 
     protected cast(type: Sourcelike, v: Sourcelike): Sourcelike {
@@ -576,7 +567,8 @@ export class JSONPythonRenderer extends PythonRenderer {
     }
 
     protected emitNoneConverter(): void {
-        // FIXME: We can't return the None type here
+        // FIXME: We can't return the None type here because mypy thinks that means
+        // We're not returning any value, when we're actually returning `None`.
         this.emitBlock(
             ["def from_none(", this.typingDecl("x", "Any"), ")", this.typeHint(" -> ", this.withTyping("Any")), ":"],
             () => {
@@ -679,14 +671,27 @@ export class JSONPythonRenderer extends PythonRenderer {
         );
     }
 
-    // FIXME: Types
     protected emitDictConverter(): void {
-        this.emitMultiline(`def from_dict(f, x):
-    assert isinstance(x, dict)
-    return { k: f(v) for (k, v) in x.items() }`);
+        const tvar = this.typeVar();
+        this.emitBlock(
+            [
+                "def from_dict(f",
+                this.typeHint(": ", this.withTyping("Callable"), "[[", this.withTyping("Any"), "], ", tvar, "]"),
+                ", ",
+                this.typingDecl("x", "Any"),
+                ")",
+                this.typeHint(" -> ", this.withTyping("Dict"), "[str, ", tvar, "]"),
+                ":"
+            ],
+            () => {
+                this.emitLine("assert isinstance(x, dict)");
+                this.emitLine("return { k: f(v) for (k, v) in x.items() }");
+            }
+        );
     }
 
-    // FIXME: Types
+    // This is not easily idiomatically typeable in Python.  See
+    // https://stackoverflow.com/questions/51066468/computed-types-in-mypy/51084497
     protected emitUnionConverter(): void {
         this.emitMultiline(`def from_union(fs, x):
     for f in fs:
@@ -697,20 +702,36 @@ export class JSONPythonRenderer extends PythonRenderer {
     assert False`);
     }
 
-    // FIXME: Types
     protected emitFromDatetimeConverter(): void {
-        this.emitMultiline(`def from_datetime(x):
-    # This is not correct.  Python <3.7 doesn't support ISO date-time
-    # parsing in the standard library.  This is a kludge until we have
-    # that.
-    return datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")`);
+        this.emitBlock(
+            [
+                "def from_datetime(",
+                this.typingDecl("x", "Any"),
+                ")",
+                this.typeHint(" -> ", this.withImport("datetime", "datetime")),
+                ":"
+            ],
+            () => {
+                this._haveDateutil = true;
+                this.emitLine("return dateutil.parser.parse(x)");
+            }
+        );
     }
 
-    // FIXME: Types
     protected emitToDatetimeConverter(): void {
-        this.emitMultiline(`def to_datetime(x):
-    assert isinstance(x, datetime)
-    return x.isoformat()`);
+        this.emitBlock(
+            [
+                "def to_datetime(x",
+                this.typeHint(": ", this.withImport("datetime", "datetime")),
+                ")",
+                this.typeHint(" -> str"),
+                ":"
+            ],
+            () => {
+                this.emitLine("assert isinstance(x, datetime)");
+                this.emitLine("return x.isoformat()");
+            }
+        );
     }
 
     protected emitConverter(cf: ConverterFunction): void {
@@ -739,8 +760,6 @@ export class JSONPythonRenderer extends PythonRenderer {
                 return this.emitUnionConverter();
             case "from-datetime":
                 return this.emitFromDatetimeConverter();
-            case "to-datetime":
-                return this.emitToDatetimeConverter();
             default:
                 return assertNever(cf);
         }
@@ -777,7 +796,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
-                    return lambda("x", callFn(this.convFn("to-datetime"), "x"));
+                    return lambda("x", callFn(this.convFn("from-datetime"), "x"));
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
@@ -839,7 +858,8 @@ export class JSONPythonRenderer extends PythonRenderer {
                 this.emitLine("assert isinstance(obj, dict)");
                 this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                     const property = ["obj.get(", this.string(jsonName), ")"];
-                    this.emitLine(name, " = ", this.deserializer(property, cp.type));
+                    const propType = followTargetType(cp.type);
+                    this.emitLine(name, " = ", this.deserializer(property, propType));
                     args.push(name);
                 });
                 this.emitLine("return ", className, "(", arrayIntercalate(", ", args), ")");
@@ -851,10 +871,28 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitLine("result", this.typeHint(": dict"), " = {}");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = ["self.", name];
-                this.emitLine("result[", this.string(jsonName), "] = ", this.serializer(property, cp.type));
+                const propType = followTargetType(cp.type);
+                this.emitLine("result[", this.string(jsonName), "] = ", this.serializer(property, propType));
             });
             this.emitLine("return result");
         });
+    }
+
+    protected emitImports(): void {
+        super.emitImports();
+        if (this._haveDateutil) {
+            this.emitLine("import dateutil.parser");
+        }
+
+        if (!this._haveTypeVar && !this._haveEnumTypeVar) return;
+
+        this.ensureBlankLine(2);
+        if (this._haveTypeVar) {
+            this.emitTypeVar(this.typeVar(), []);
+        }
+        if (this._haveEnumTypeVar) {
+            this.emitTypeVar(this.enumTypeVar(), [", bound=", this.withImport("enum", "Enum")]);
+        }
     }
 
     protected emitSupportCode(): void {
@@ -878,6 +916,14 @@ export class JSONPythonRenderer extends PythonRenderer {
     protected emitDefaultLeadingComments(): void {
         super.emitDefaultLeadingComments();
         this.ensureBlankLine();
+        if (this._haveDateutil) {
+            this.emitCommentLines([
+                "This code parses date/times, so please",
+                "",
+                "    pip install python-dateutil",
+                ""
+            ]);
+        }
         this.emitCommentLines([
             "To use this code, make sure you",
             "",

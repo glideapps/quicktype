@@ -91,7 +91,9 @@ export const PythonLanguage: Language = {
   handlesStringifiedIntegers: false,
   output: "quicktype.py",
   topLevel: "TopLevel",
-  skipJSON: [],
+  skipJSON: [
+    "31189.json" // year 0 is out of range
+  ],
   skipMiscJSON: false,
   skipSchema: [
     "keyword-unions.schema" // Requires more than 255 arguments

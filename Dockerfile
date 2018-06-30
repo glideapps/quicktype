@@ -52,7 +52,7 @@ RUN add-apt-repository ppa:jonathonf/python-3.6
 RUN apt-get update
 RUN apt-get install python3.6 --assume-yes
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
-RUN pip3.6 install mypy
+RUN pip3.6 install mypy python-dateutil
 
 ENV PATH="${workdir}/node_modules/.bin:${PATH}"
 
