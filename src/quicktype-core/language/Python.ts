@@ -507,16 +507,6 @@ export type ConverterFunction =
     | "union"
     | "from-datetime";
 
-function lambda(x: Sourcelike, ...body: Sourcelike[]): MultiWord {
-    return multiWord(" ", "lambda", [x, ":"], body);
-}
-
-function callFn(fn: MultiWord, ...args: Sourcelike[]): Sourcelike {
-    return [parenIfNeeded(fn), "(", arrayIntercalate(", ", args), ")"];
-}
-
-const identityFn = lambda("x", "x");
-
 type TopLevelConverterNames = {
     fromDict: Name;
     toDict: Name;
@@ -831,10 +821,10 @@ export class JSONPythonRenderer extends PythonRenderer {
             }),
             enumType => ({ lambda: singleWord(this.nameForNamedType(enumType)) }),
             unionType => {
-                const serializers = Array.from(unionType.members).map(
+                const deserializers = Array.from(unionType.members).map(
                     m => makeLambda(this.deserializer("x", m)).source
                 );
-                return { value: [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", value, ")"] };
+                return { value: [this.conv("union"), "([", arrayIntercalate(", ", deserializers), "], ", value, ")"] };
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
@@ -845,59 +835,44 @@ export class JSONPythonRenderer extends PythonRenderer {
         );
     }
 
-    protected serializerFn(t: Type): MultiWord {
-        return matchType<MultiWord>(
+    protected serializer(value: Sourcelike, t: Type): ValueOrLambda {
+        return matchType<ValueOrLambda>(
             t,
-            _anyType => identityFn,
-            _nullType => this.convFn("none"),
-            _boolType => this.convFn("bool"),
-            _integerType => this.convFn("int"),
-            _doubleType => this.convFn("to-float"),
-            _stringType => this.convFn("str"),
-            arrayType => lambda("x", this.conv("list"), "(", parenIfNeeded(this.serializerFn(arrayType.items)), ", x)"),
-            classType => lambda("x", callFn(this.convFn("to-class"), this.nameForNamedType(classType), "x")),
-            mapType => lambda("x", this.conv("dict"), "(", parenIfNeeded(this.serializerFn(mapType.values)), ", x)"),
-            enumType => lambda("x", callFn(this.convFn("to-enum"), this.nameForNamedType(enumType), "x")),
+            _anyType => ({ value }),
+            _nullType => ({ lambda: this.convFn("none") }),
+            _boolType => ({ lambda: this.convFn("bool") }),
+            _integerType => ({ lambda: this.convFn("int") }),
+            _doubleType => ({ lambda: this.convFn("to-float") }),
+            _stringType => ({ lambda: this.convFn("str") }),
+            arrayType => ({
+                value: [
+                    this.conv("list"),
+                    "(",
+                    makeLambda(this.serializer("x", arrayType.items)).source,
+                    ", ",
+                    value,
+                    ")"
+                ]
+            }),
+            classType => ({ value: [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", value, ")"] }),
+            mapType => ({
+                value: [
+                    this.conv("dict"),
+                    "(",
+                    makeLambda(this.serializer("x", mapType.values)).source,
+                    ", ",
+                    value,
+                    ")"
+                ]
+            }),
+            enumType => ({ value: [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", value, ")"] }),
             unionType => {
-                const serializers = Array.from(unionType.members).map(m => this.serializerFn(m).source);
-                return multiWord(
-                    "",
-                    "lambda x: ",
-                    this.conv("union"),
-                    "([",
-                    arrayIntercalate(", ", serializers),
-                    "], x)"
-                );
+                const serializers = Array.from(unionType.members).map(m => makeLambda(this.serializer("x", m)).source);
+                return { value: [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", value, ")"] };
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
-                    return lambda("x", "x.isoformat()");
-                }
-                return panic(`Transformed type ${transformedStringType.kind} not supported`);
-            }
-        );
-    }
-
-    protected serializer(value: Sourcelike, t: Type): Sourcelike {
-        return matchType<Sourcelike>(
-            t,
-            _anyType => value,
-            _nullType => [this.conv("none"), "(", value, ")"],
-            _boolType => [this.conv("bool"), "(", value, ")"],
-            _integerType => [this.conv("int"), "(", value, ")"],
-            _doubleType => [this.conv("to-float"), "(", value, ")"],
-            _stringType => [this.conv("str"), "(", value, ")"],
-            arrayType => [this.conv("list"), "(", parenIfNeeded(this.serializerFn(arrayType.items)), ", ", value, ")"],
-            classType => [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", value, ")"],
-            mapType => [this.conv("dict"), "(", parenIfNeeded(this.serializerFn(mapType.values)), ", ", value, ")"],
-            enumType => [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", value, ")"],
-            unionType => {
-                const serializers = Array.from(unionType.members).map(m => this.serializerFn(m).source);
-                return [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", value, ")"];
-            },
-            transformedStringType => {
-                if (transformedStringType.kind === "date-time") {
-                    return [value, ".isoformat()"];
+                    return { value: [value, ".isoformat()"] };
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
@@ -932,7 +907,12 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = ["self.", name];
                 const propType = followTargetType(cp.type);
-                this.emitLine("result[", this.string(jsonName), "] = ", this.serializer(property, propType));
+                this.emitLine(
+                    "result[",
+                    this.string(jsonName),
+                    "] = ",
+                    makeValue(property, this.serializer(property, propType))
+                );
             });
             this.emitLine("return result");
         });
@@ -1012,7 +992,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitBlock(
                 ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typingReturn("Any"), ":"],
                 () => {
-                    this.emitLine("return ", this.serializer("x", t));
+                    this.emitLine("return ", makeValue("x", this.serializer("x", t)));
                 }
             );
         });
