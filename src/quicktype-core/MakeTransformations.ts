@@ -284,7 +284,7 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
             return replaceUnion(t, builder, forwardingRef, ctx.debugPrintTransformations);
         }
         if (t instanceof ArrayType) {
-            return replaceArray(t, builder, forwardingRef, ctx.debugPrintReconstitution);
+            return replaceArray(t, builder, forwardingRef, ctx.debugPrintTransformations);
         }
         if (t instanceof EnumType) {
             return replaceEnum(t, builder, forwardingRef, ctx.debugPrintTransformations);
@@ -295,7 +295,7 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
                 t.kind,
                 builder,
                 forwardingRef,
-                ctx.debugPrintReconstitution
+                ctx.debugPrintTransformations
             );
         }
         return panic(`Cannot make transformation for type ${t.kind}`);
