@@ -1,4 +1,4 @@
-import { setFilter, iterableFirst, mapMapEntries } from "collection-utils";
+import { setFilter, iterableFirst, mapMapEntries, withDefault } from "collection-utils";
 
 import { TypeGraph, TypeRef, typeRefIndex } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
@@ -253,11 +253,7 @@ function replaceTransformedStringType(
     debugPrintTransformations: boolean
 ): TypeRef {
     const reconstitutedAttributes = builder.reconstituteTypeAttributes(t.getAttributes());
-    const targetTypeKind = targetTypeKindForTransformedStringTypeKind(kind);
-    if (targetTypeKind === undefined) {
-        return builder.getPrimitiveType(t.kind, t.getAttributes(), forwardingRef);
-    }
-
+    const targetTypeKind = withDefault(targetTypeKindForTransformedStringTypeKind(kind), kind);
     const stringType = builder.getStringType(emptyTypeAttributes, StringTypes.unrestricted);
     const transformer = new DecodingTransformer(
         builder.typeGraph,
