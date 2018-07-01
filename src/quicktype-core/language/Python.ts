@@ -507,20 +507,33 @@ export type ConverterFunction =
     | "union"
     | "from-datetime";
 
-function lambda(x: Sourcelike, ...body: Sourcelike[]): MultiWord {
-    return multiWord(" ", "lambda", [x, ":"], body);
-}
-
-function callFn(fn: MultiWord, ...args: Sourcelike[]): Sourcelike {
-    return [parenIfNeeded(fn), "(", arrayIntercalate(", ", args), ")"];
-}
-
-const identityFn = lambda("x", "x");
-
 type TopLevelConverterNames = {
     fromDict: Name;
     toDict: Name;
 };
+
+export type ValueOrLambda = {
+    value?: Sourcelike;
+    lambda?: MultiWord;
+};
+
+function makeLambda(vol: ValueOrLambda): MultiWord {
+    if (vol.lambda !== undefined) {
+        return vol.lambda;
+    } else if (vol.value !== undefined) {
+        return multiWord(" ", "lambda x:", vol.value);
+    }
+    return panic("Invalid ValueOrLambda");
+}
+
+function makeValue(argument: Sourcelike, vol: ValueOrLambda): Sourcelike {
+    if (vol.value !== undefined) {
+        return vol.value;
+    } else if (vol.lambda !== undefined) {
+        return [parenIfNeeded(vol.lambda), "(", argument, ")"];
+    }
+    return panic("Invalid ValueOrLambda");
+}
 
 export class JSONPythonRenderer extends PythonRenderer {
     private readonly _deserializerFunctions = new Set<ConverterFunction>();
@@ -776,119 +789,90 @@ export class JSONPythonRenderer extends PythonRenderer {
         return singleWord(this.conv(cf));
     }
 
-    protected deserializerFn(t: Type): MultiWord {
-        return matchType<MultiWord>(
+    protected deserializer(value: Sourcelike, t: Type): ValueOrLambda {
+        return matchType<ValueOrLambda>(
             t,
-            _anyType => identityFn,
-            _nullType => this.convFn("none"),
-            _boolType => this.convFn("bool"),
-            _integerType => this.convFn("int"),
-            _doubleType => this.convFn("from-float"),
-            _stringType => this.convFn("str"),
-            arrayType =>
-                lambda("x", this.conv("list"), "(", parenIfNeeded(this.deserializerFn(arrayType.items)), ", x)"),
-            classType => singleWord([this.nameForNamedType(classType), ".from_dict"]),
-            mapType => lambda("x", this.conv("dict"), "(", parenIfNeeded(this.deserializerFn(mapType.values)), ", x)"),
-            enumType => singleWord(this.nameForNamedType(enumType)),
+            _anyType => ({ value }),
+            _nullType => ({ lambda: this.convFn("none") }),
+            _boolType => ({ lambda: this.convFn("bool") }),
+            _integerType => ({ lambda: this.convFn("int") }),
+            _doubleType => ({ lambda: this.convFn("from-float") }),
+            _stringType => ({ lambda: this.convFn("str") }),
+            arrayType => ({
+                value: [
+                    this.conv("list"),
+                    "(",
+                    makeLambda(this.deserializer("x", arrayType.items)).source,
+                    ", ",
+                    value,
+                    ")"
+                ]
+            }),
+            classType => ({ lambda: singleWord(this.nameForNamedType(classType), ".from_dict") }),
+            mapType => ({
+                value: [
+                    this.conv("dict"),
+                    "(",
+                    makeLambda(this.deserializer("x", mapType.values)).source,
+                    ", ",
+                    value,
+                    ")"
+                ]
+            }),
+            enumType => ({ lambda: singleWord(this.nameForNamedType(enumType)) }),
             unionType => {
-                const deserializers = Array.from(unionType.members).map(m => this.deserializerFn(m).source);
-                return lambda("x", this.conv("union"), "([", arrayIntercalate(", ", deserializers), "], x)");
-            },
-            transformedStringType => {
-                if (transformedStringType.kind === "date-time") {
-                    return lambda("x", callFn(this.convFn("from-datetime"), "x"));
-                }
-                return panic(`Transformed type ${transformedStringType.kind} not supported`);
-            }
-        );
-    }
-
-    protected deserializer(value: Sourcelike, t: Type): Sourcelike {
-        return matchType<Sourcelike>(
-            t,
-            _anyType => value,
-            _nullType => [this.conv("none"), "(", value, ")"],
-            _boolType => [this.conv("bool"), "(", value, ")"],
-            _integerType => [this.conv("int"), "(", value, ")"],
-            _doubleType => [this.conv("from-float"), "(", value, ")"],
-            _stringType => [this.conv("str"), "(", value, ")"],
-            arrayType => [
-                this.conv("list"),
-                "(",
-                parenIfNeeded(this.deserializerFn(arrayType.items)),
-                ", ",
-                value,
-                ")"
-            ],
-            classType => [this.nameForNamedType(classType), ".from_dict(", value, ")"],
-            mapType => [this.conv("dict"), "(", parenIfNeeded(this.deserializerFn(mapType.values)), ", ", value, ")"],
-            enumType => [this.nameForNamedType(enumType), "(", value, ")"],
-            unionType => {
-                const serializers = Array.from(unionType.members).map(m => this.deserializerFn(m).source);
-                return [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", value, ")"];
-            },
-            transformedStringType => {
-                if (transformedStringType.kind === "date-time") {
-                    return [this.conv("from-datetime"), "(", value, ")"];
-                }
-                return panic(`Transformed type ${transformedStringType.kind} not supported`);
-            }
-        );
-    }
-
-    protected serializerFn(t: Type): MultiWord {
-        return matchType<MultiWord>(
-            t,
-            _anyType => identityFn,
-            _nullType => this.convFn("none"),
-            _boolType => this.convFn("bool"),
-            _integerType => this.convFn("int"),
-            _doubleType => this.convFn("to-float"),
-            _stringType => this.convFn("str"),
-            arrayType => lambda("x", this.conv("list"), "(", parenIfNeeded(this.serializerFn(arrayType.items)), ", x)"),
-            classType => lambda("x", callFn(this.convFn("to-class"), this.nameForNamedType(classType), "x")),
-            mapType => lambda("x", this.conv("dict"), "(", parenIfNeeded(this.serializerFn(mapType.values)), ", x)"),
-            enumType => lambda("x", callFn(this.convFn("to-enum"), this.nameForNamedType(enumType), "x")),
-            unionType => {
-                const serializers = Array.from(unionType.members).map(m => this.serializerFn(m).source);
-                return multiWord(
-                    "",
-                    "lambda x: ",
-                    this.conv("union"),
-                    "([",
-                    arrayIntercalate(", ", serializers),
-                    "], x)"
+                const deserializers = Array.from(unionType.members).map(
+                    m => makeLambda(this.deserializer("x", m)).source
                 );
+                return { value: [this.conv("union"), "([", arrayIntercalate(", ", deserializers), "], ", value, ")"] };
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
-                    return lambda("x", "x.isoformat()");
+                    return { lambda: this.convFn("from-datetime") };
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
         );
     }
 
-    protected serializer(value: Sourcelike, t: Type): Sourcelike {
-        return matchType<Sourcelike>(
+    protected serializer(value: Sourcelike, t: Type): ValueOrLambda {
+        return matchType<ValueOrLambda>(
             t,
-            _anyType => value,
-            _nullType => [this.conv("none"), "(", value, ")"],
-            _boolType => [this.conv("bool"), "(", value, ")"],
-            _integerType => [this.conv("int"), "(", value, ")"],
-            _doubleType => [this.conv("to-float"), "(", value, ")"],
-            _stringType => [this.conv("str"), "(", value, ")"],
-            arrayType => [this.conv("list"), "(", parenIfNeeded(this.serializerFn(arrayType.items)), ", ", value, ")"],
-            classType => [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", value, ")"],
-            mapType => [this.conv("dict"), "(", parenIfNeeded(this.serializerFn(mapType.values)), ", ", value, ")"],
-            enumType => [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", value, ")"],
+            _anyType => ({ value }),
+            _nullType => ({ lambda: this.convFn("none") }),
+            _boolType => ({ lambda: this.convFn("bool") }),
+            _integerType => ({ lambda: this.convFn("int") }),
+            _doubleType => ({ lambda: this.convFn("to-float") }),
+            _stringType => ({ lambda: this.convFn("str") }),
+            arrayType => ({
+                value: [
+                    this.conv("list"),
+                    "(",
+                    makeLambda(this.serializer("x", arrayType.items)).source,
+                    ", ",
+                    value,
+                    ")"
+                ]
+            }),
+            classType => ({ value: [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", value, ")"] }),
+            mapType => ({
+                value: [
+                    this.conv("dict"),
+                    "(",
+                    makeLambda(this.serializer("x", mapType.values)).source,
+                    ", ",
+                    value,
+                    ")"
+                ]
+            }),
+            enumType => ({ value: [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", value, ")"] }),
             unionType => {
-                const serializers = Array.from(unionType.members).map(m => this.serializerFn(m).source);
-                return [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", value, ")"];
+                const serializers = Array.from(unionType.members).map(m => makeLambda(this.serializer("x", m)).source);
+                return { value: [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", value, ")"] };
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
-                    return [value, ".isoformat()"];
+                    return { value: [value, ".isoformat()"] };
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
@@ -910,7 +894,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                     const property = ["obj.get(", this.string(jsonName), ")"];
                     const propType = followTargetType(cp.type);
-                    this.emitLine(name, " = ", this.deserializer(property, propType));
+                    this.emitLine(name, " = ", makeValue(property, this.deserializer(property, propType)));
                     args.push(name);
                 });
                 this.emitLine("return ", className, "(", arrayIntercalate(", ", args), ")");
@@ -923,7 +907,12 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
                 const property = ["self.", name];
                 const propType = followTargetType(cp.type);
-                this.emitLine("result[", this.string(jsonName), "] = ", this.serializer(property, propType));
+                this.emitLine(
+                    "result[",
+                    this.string(jsonName),
+                    "] = ",
+                    makeValue(property, this.serializer(property, propType))
+                );
             });
             this.emitLine("return result");
         });
@@ -996,14 +985,14 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitBlock(
                 ["def ", fromDict, "(", this.typingDecl("s", "Any"), ")", this.typeHint(" -> ", pythonType), ":"],
                 () => {
-                    this.emitLine("return ", this.deserializer("s", t));
+                    this.emitLine("return ", makeValue("s", this.deserializer("s", t)));
                 }
             );
             this.ensureBlankLine(2);
             this.emitBlock(
                 ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typingReturn("Any"), ":"],
                 () => {
-                    this.emitLine("return ", this.serializer("x", t));
+                    this.emitLine("return ", makeValue("x", this.serializer("x", t)));
                 }
             );
         });
