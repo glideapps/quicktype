@@ -266,7 +266,7 @@ export type MultiWord = {
     needsParens: boolean;
 };
 
-export function singleWord(source: Sourcelike): MultiWord {
+export function singleWord(...source: Sourcelike[]): MultiWord {
     return { source, needsParens: false };
 }
 
