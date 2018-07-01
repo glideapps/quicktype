@@ -1,15 +1,6 @@
 import { TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
-import {
-    TransformedStringTypeKind,
-    PrimitiveStringTypeKind,
-    Type,
-    EnumType,
-    ClassType,
-    UnionType,
-    isPrimitiveStringTypeKind,
-    ArrayType
-} from "../Type";
+import { TransformedStringTypeKind, PrimitiveStringTypeKind, Type, EnumType, ClassType } from "../Type";
 import { RenderContext } from "../Renderer";
 import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
 import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
@@ -30,7 +21,7 @@ import { assertNever, panic, defined } from "../support/Support";
 import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded } from "../Source";
 import { matchType, nullableFromUnion } from "../TypeUtils";
 import { followTargetType } from "../Transformers";
-import { arrayIntercalate, iterableSome, setUnionInto, mapUpdateInto } from "collection-utils";
+import { arrayIntercalate, setUnionInto, mapUpdateInto } from "collection-utils";
 
 const unicode = require("unicode-properties");
 
@@ -139,14 +130,8 @@ export class PythonTargetLanguage extends TargetLanguage {
         return false;
     }
 
-    needsTransformerForType(t: Type): boolean {
-        if (t instanceof UnionType) {
-            return iterableSome(t.members, m => this.needsTransformerForType(m));
-        }
-        if (t instanceof ArrayType) {
-            return this.needsTransformerForType(t.items);
-        }
-        return t.kind !== "string" && isPrimitiveStringTypeKind(t.kind);
+    needsTransformerForType(_t: Type): boolean {
+        return false;
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PythonRenderer {

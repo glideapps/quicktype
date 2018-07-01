@@ -1,4 +1,4 @@
-import { setFilter, iterableFirst, mapMapEntries, withDefault } from "collection-utils";
+import { setFilter, iterableFirst, mapMapEntries, withDefault, iterableSome } from "collection-utils";
 
 import { TypeGraph, TypeRef, typeRefIndex } from "./TypeGraph";
 import { TargetLanguage } from "./TargetLanguage";
@@ -71,6 +71,7 @@ function replaceUnion(
     union: UnionType,
     builder: GraphRewriteBuilder<Type>,
     forwardingRef: TypeRef,
+    transformedTypes: Set<Type>,
     debugPrintTransformations: boolean
 ): TypeRef {
     const graph = builder.typeGraph;
@@ -138,7 +139,7 @@ function replaceUnion(
         const memberRef = memberForKind(t.kind);
         if (t.kind === "string") {
             return consumer(memberRef);
-        } else if (t instanceof EnumType) {
+        } else if (t instanceof EnumType && transformedTypes.has(t)) {
             return makeEnumTransformer(graph, t, getStringType(), consumer(memberRef));
         } else {
             return new ParseStringTransformer(graph, getStringType(), consumer(memberRef));
@@ -270,6 +271,14 @@ function replaceTransformedStringType(
 }
 
 export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLanguage: TargetLanguage): TypeGraph {
+    const transformedTypes = setFilter(graph.allTypesUnordered(), t => {
+        if (targetLanguage.needsTransformerForType(t)) return true;
+        if (!(t instanceof UnionType)) return false;
+        const stringMembers = t.stringTypeMembers;
+        if (stringMembers.size <= 1) return false;
+        return iterableSome(stringMembers, m => targetLanguage.needsTransformerForType(m));
+    });
+
     function replace(
         setOfOneUnion: ReadonlySet<Type>,
         builder: GraphRewriteBuilder<Type>,
@@ -277,7 +286,7 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
     ): TypeRef {
         const t = defined(iterableFirst(setOfOneUnion));
         if (t instanceof UnionType) {
-            return replaceUnion(t, builder, forwardingRef, ctx.debugPrintTransformations);
+            return replaceUnion(t, builder, forwardingRef, transformedTypes, ctx.debugPrintTransformations);
         }
         if (t instanceof ArrayType) {
             return replaceArray(t, builder, forwardingRef, ctx.debugPrintTransformations);
@@ -297,7 +306,6 @@ export function makeTransformations(ctx: RunContext, graph: TypeGraph, targetLan
         return panic(`Cannot make transformation for type ${t.kind}`);
     }
 
-    const transformedTypes = setFilter(graph.allTypesUnordered(), t => targetLanguage.needsTransformerForType(t));
     const groups = Array.from(transformedTypes).map(t => [t]);
     return graph.rewrite(
         "make-transformations",
