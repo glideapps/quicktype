@@ -88,7 +88,7 @@ export const PythonLanguage: Language = {
   diffViaSchema: false,
   skipDiffViaSchema: [],
   allowMissingNull: false,
-  handlesStringifiedIntegers: false,
+  handlesStringifiedIntegers: true,
   output: "quicktype.py",
   topLevel: "TopLevel",
   skipJSON: [
