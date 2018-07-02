@@ -85,10 +85,20 @@ export const PythonLanguage: Language = {
   runCommand(sample: String) {
     return `python3.6 main.py "${sample}"`;
   },
-  diffViaSchema: false,
-  skipDiffViaSchema: [],
+  diffViaSchema: true,
+  skipDiffViaSchema: [
+    "combinations.json",
+    "keywords.json",
+    "0cffa.json",
+    "127a1.json",
+    "26b49.json",
+    "34702.json",
+    "7681c.json",
+    "c3303.json",
+    "f6a65.json"
+  ],
   allowMissingNull: false,
-  handlesStringifiedIntegers: false,
+  handlesStringifiedIntegers: true,
   output: "quicktype.py",
   topLevel: "TopLevel",
   skipJSON: [

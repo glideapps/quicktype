@@ -1,15 +1,6 @@
 import { TargetLanguage } from "../TargetLanguage";
 import { StringTypeMapping } from "../TypeBuilder";
-import {
-    TransformedStringTypeKind,
-    PrimitiveStringTypeKind,
-    Type,
-    EnumType,
-    ClassType,
-    UnionType,
-    isPrimitiveStringTypeKind,
-    ArrayType
-} from "../Type";
+import { TransformedStringTypeKind, PrimitiveStringTypeKind, Type, EnumType, ClassType, UnionType } from "../Type";
 import { RenderContext } from "../Renderer";
 import { Option, getOptionValues, OptionValues, EnumOption, BooleanOption } from "../RendererOptions";
 import { ConvenienceRenderer, ForbiddenWordsInfo, topLevelNameOrder } from "../ConvenienceRenderer";
@@ -29,8 +20,20 @@ import {
 import { assertNever, panic, defined } from "../support/Support";
 import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded } from "../Source";
 import { matchType, nullableFromUnion } from "../TypeUtils";
-import { followTargetType } from "../Transformers";
-import { arrayIntercalate, iterableSome, setUnionInto, mapUpdateInto } from "collection-utils";
+import {
+    followTargetType,
+    transformationForType,
+    Transformer,
+    DecodingChoiceTransformer,
+    ChoiceTransformer,
+    DecodingTransformer,
+    UnionInstantiationTransformer,
+    ParseStringTransformer,
+    UnionMemberMatchTransformer,
+    StringifyTransformer,
+    EncodingTransformer
+} from "../Transformers";
+import { arrayIntercalate, setUnionInto, mapUpdateInto, iterableSome } from "collection-utils";
 
 const unicode = require("unicode-properties");
 
@@ -126,8 +129,7 @@ export class PythonTargetLanguage extends TargetLanguage {
         mapping.set("date", dateTimeType);
         mapping.set("time", dateTimeType);
         mapping.set("date-time", dateTimeType);
-        // FIXME: Implement transformers
-        // mapping.set("integer-string", "integer-string");
+        mapping.set("integer-string", "integer-string");
         return mapping;
     }
 
@@ -143,10 +145,7 @@ export class PythonTargetLanguage extends TargetLanguage {
         if (t instanceof UnionType) {
             return iterableSome(t.members, m => this.needsTransformerForType(m));
         }
-        if (t instanceof ArrayType) {
-            return this.needsTransformerForType(t.items);
-        }
-        return t.kind !== "string" && isPrimitiveStringTypeKind(t.kind);
+        return t.kind === "integer-string";
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PythonRenderer {
@@ -505,7 +504,8 @@ export type ConverterFunction =
     | "to-class"
     | "dict"
     | "union"
-    | "from-datetime";
+    | "from-datetime"
+    | "is-type";
 
 type TopLevelConverterNames = {
     fromDict: Name;
@@ -513,26 +513,65 @@ type TopLevelConverterNames = {
 };
 
 export type ValueOrLambda = {
-    value?: Sourcelike;
+    value: Sourcelike | undefined;
     lambda?: MultiWord;
 };
 
+function compose(input: ValueOrLambda, f: (arg: Sourcelike) => Sourcelike): ValueOrLambda;
+function compose(input: ValueOrLambda, f: ValueOrLambda): ValueOrLambda;
+function compose(input: ValueOrLambda, f: ValueOrLambda | ((arg: Sourcelike) => Sourcelike)): ValueOrLambda {
+    if (typeof f === "function") {
+        if (input.value !== undefined) {
+            return { value: f(makeValue(input)) };
+        }
+        if (input.lambda !== undefined) {
+            return { lambda: multiWord(" ", "lambda x:", f([parenIfNeeded(input.lambda), "(x)"])), value: undefined };
+        }
+        return { lambda: multiWord(" ", "lambda x:", f("x")), value: undefined };
+    }
+
+    if (f.value !== undefined) {
+        return panic("Cannot compose into a value");
+    }
+    if (f.lambda === undefined) {
+        return input;
+    }
+
+    if (input.value === undefined) {
+        if (input.lambda === undefined) {
+            return f;
+        }
+        return {
+            lambda: multiWord("", "lambda x: ", parenIfNeeded(f.lambda), "(", parenIfNeeded(input.lambda), "(x))"),
+            value: undefined
+        };
+    }
+
+    return { lambda: f.lambda, value: makeValue(input) };
+}
+
+const identity: ValueOrLambda = { value: undefined };
+
 function makeLambda(vol: ValueOrLambda): MultiWord {
     if (vol.lambda !== undefined) {
-        return vol.lambda;
+        if (vol.value === undefined) {
+            return vol.lambda;
+        }
+        return multiWord("", "lambda x: ", parenIfNeeded(vol.lambda), "(x)");
     } else if (vol.value !== undefined) {
         return multiWord(" ", "lambda x:", vol.value);
     }
-    return panic("Invalid ValueOrLambda");
+    return multiWord(" ", "lambda x:", "x");
 }
 
-function makeValue(argument: Sourcelike, vol: ValueOrLambda): Sourcelike {
-    if (vol.value !== undefined) {
-        return vol.value;
-    } else if (vol.lambda !== undefined) {
-        return [parenIfNeeded(vol.lambda), "(", argument, ")"];
+function makeValue(vol: ValueOrLambda): Sourcelike {
+    if (vol.value === undefined) {
+        return panic("Cannot make value from lambda without value");
     }
-    return panic("Invalid ValueOrLambda");
+    if (vol.lambda !== undefined) {
+        return [parenIfNeeded(vol.lambda), "(", vol.value, ")"];
+    }
+    return vol.value;
 }
 
 export class JSONPythonRenderer extends PythonRenderer {
@@ -674,7 +713,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 ", ",
                 this.typingDecl("x", "Any"),
                 ")",
-                this.typeHint(" -> ", tvar),
+                this.typeHint(" -> dict"),
                 ":"
             ],
             () => {
@@ -731,18 +770,21 @@ export class JSONPythonRenderer extends PythonRenderer {
         );
     }
 
-    protected emitToDatetimeConverter(): void {
+    protected emitIsTypeConverter(): void {
+        const tvar = this.typeVar();
         this.emitBlock(
             [
-                "def to_datetime(x",
-                this.typeHint(": ", this.withImport("datetime", "datetime")),
+                "def is_type(t",
+                this.typeHint(": ", this.withTyping("Type"), "[", tvar, "]"),
+                ", ",
+                this.typingDecl("x", "Any"),
                 ")",
-                this.typeHint(" -> str"),
+                this.typeHint(" -> ", tvar),
                 ":"
             ],
             () => {
-                this.emitLine("assert isinstance(x, datetime)");
-                this.emitLine("return x.isoformat()");
+                this.emitLine("assert isinstance(x, t)");
+                this.emitLine("return x");
             }
         );
     }
@@ -773,6 +815,8 @@ export class JSONPythonRenderer extends PythonRenderer {
                 return this.emitUnionConverter();
             case "from-datetime":
                 return this.emitFromDatetimeConverter();
+            case "is-type":
+                return this.emitIsTypeConverter();
             default:
                 return assertNever(cf);
         }
@@ -781,98 +825,256 @@ export class JSONPythonRenderer extends PythonRenderer {
     protected conv(cf: ConverterFunction): Sourcelike {
         this._deserializerFunctions.add(cf);
         const name = cf.replace("-", "_");
-        if (cf.startsWith("from-") || cf.startsWith("to-")) return name;
+        if (cf.startsWith("from-") || cf.startsWith("to-") || cf.startsWith("is-")) return name;
         return ["from_", name];
     }
 
-    protected convFn(cf: ConverterFunction): MultiWord {
-        return singleWord(this.conv(cf));
+    protected convFn(cf: ConverterFunction, arg: ValueOrLambda): ValueOrLambda {
+        return compose(
+            arg,
+            { lambda: singleWord(this.conv(cf)), value: undefined }
+        );
     }
 
-    protected deserializer(value: Sourcelike, t: Type): ValueOrLambda {
-        return matchType<ValueOrLambda>(
+    protected typeObject(t: Type): Sourcelike {
+        const s = matchType<Sourcelike | undefined>(
             t,
-            _anyType => ({ value }),
-            _nullType => ({ lambda: this.convFn("none") }),
-            _boolType => ({ lambda: this.convFn("bool") }),
-            _integerType => ({ lambda: this.convFn("int") }),
-            _doubleType => ({ lambda: this.convFn("from-float") }),
-            _stringType => ({ lambda: this.convFn("str") }),
-            arrayType => ({
-                value: [
-                    this.conv("list"),
-                    "(",
-                    makeLambda(this.deserializer("x", arrayType.items)).source,
-                    ", ",
-                    value,
-                    ")"
-                ]
-            }),
-            classType => ({ lambda: singleWord(this.nameForNamedType(classType), ".from_dict") }),
-            mapType => ({
-                value: [
-                    this.conv("dict"),
-                    "(",
-                    makeLambda(this.deserializer("x", mapType.values)).source,
-                    ", ",
-                    value,
-                    ")"
-                ]
-            }),
-            enumType => ({ lambda: singleWord(this.nameForNamedType(enumType)) }),
-            unionType => {
-                const deserializers = Array.from(unionType.members).map(
-                    m => makeLambda(this.deserializer("x", m)).source
-                );
-                return { value: [this.conv("union"), "([", arrayIntercalate(", ", deserializers), "], ", value, ")"] };
-            },
+            _anyType => undefined,
+            _nullType => "type(None)",
+            _boolType => "bool",
+            _integerType => "int",
+            _doubleType => "float",
+            _stringType => "str",
+            _arrayType => "List",
+            classType => this.nameForNamedType(classType),
+            _mapType => "dict",
+            enumType => this.nameForNamedType(enumType),
+            _unionType => undefined,
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
-                    return { lambda: this.convFn("from-datetime") };
+                    return this.withImport("datetime", "datetime");
+                }
+                return undefined;
+            }
+        );
+        if (s === undefined) {
+            return panic(`No type object for ${t.kind}`);
+        }
+        return s;
+    }
+
+    protected transformer(inputTransformer: ValueOrLambda, xfer: Transformer, targetType: Type): ValueOrLambda {
+        const consume = (consumer: Transformer | undefined, vol: ValueOrLambda) => {
+            if (consumer === undefined) {
+                return vol;
+            }
+            return this.transformer(vol, consumer, targetType);
+        };
+
+        const isType = (t: Type, valueToCheck: ValueOrLambda): ValueOrLambda => {
+            return compose(
+                valueToCheck,
+                v => [this.conv("is-type"), "(", this.typeObject(t), ", ", v, ")"]
+            );
+        };
+
+        if (xfer instanceof DecodingChoiceTransformer || xfer instanceof ChoiceTransformer) {
+            const lambdas = xfer.transformers.map(x => makeLambda(this.transformer(identity, x, targetType)).source);
+            return compose(
+                inputTransformer,
+                v => [this.conv("union"), "([", arrayIntercalate(", ", lambdas), "], ", v, ")"]
+            );
+        } else if (xfer instanceof DecodingTransformer) {
+            const consumer = xfer.consumer;
+            const vol = this.deserializer(inputTransformer, xfer.sourceType);
+            return consume(consumer, vol);
+        } else if (xfer instanceof EncodingTransformer) {
+            return this.serializer(inputTransformer, xfer.sourceType);
+        } else if (xfer instanceof UnionInstantiationTransformer) {
+            return inputTransformer;
+        } else if (xfer instanceof UnionMemberMatchTransformer) {
+            const consumer = xfer.transformer;
+            const vol = isType(xfer.memberType, inputTransformer);
+            return consume(consumer, vol);
+        } else if (xfer instanceof ParseStringTransformer) {
+            const consumer = xfer.consumer;
+            const immediateTargetType = consumer === undefined ? targetType : consumer.sourceType;
+            let vol: ValueOrLambda;
+            switch (immediateTargetType.kind) {
+                case "integer":
+                    vol = compose(
+                        inputTransformer,
+                        v => ["int(", v, ")"]
+                    );
+                    break;
+                case "enum":
+                    vol = this.deserializer(inputTransformer, immediateTargetType);
+                    break;
+                case "date-time":
+                    vol = this.convFn("from-datetime", inputTransformer);
+                    break;
+                default:
+                    return panic(`Parsing of ${immediateTargetType.kind} in a transformer is not supported`);
+            }
+            return consume(consumer, vol);
+        } else if (xfer instanceof StringifyTransformer) {
+            const consumer = xfer.consumer;
+            let vol: ValueOrLambda;
+            switch (xfer.sourceType.kind) {
+                case "integer":
+                    vol = compose(
+                        inputTransformer,
+                        v => ["str(", v, ")"]
+                    );
+                    break;
+                case "enum":
+                    vol = this.serializer(inputTransformer, xfer.sourceType);
+                    break;
+                case "date-time":
+                    vol = compose(
+                        inputTransformer,
+                        v => [v, ".isoformat()"]
+                    );
+                    break;
+                default:
+                    return panic(`Parsing of ${xfer.sourceType.kind} in a transformer is not supported`);
+            }
+            return consume(consumer, vol);
+        } else {
+            return panic(`Transformer ${xfer.kind} is not supported`);
+        }
+    }
+
+    protected deserializer(value: ValueOrLambda, t: Type): ValueOrLambda {
+        const xf = transformationForType(t);
+        if (xf !== undefined) {
+            return this.transformer(value, xf.transformer, xf.targetType);
+        }
+        return matchType<ValueOrLambda>(
+            t,
+            _anyType => value,
+            _nullType => this.convFn("none", value),
+            _boolType => this.convFn("bool", value),
+            _integerType => this.convFn("int", value),
+            _doubleType => this.convFn("from-float", value),
+            _stringType => this.convFn("str", value),
+            arrayType =>
+                compose(
+                    value,
+                    v => [
+                        this.conv("list"),
+                        "(",
+                        makeLambda(this.deserializer(identity, arrayType.items)).source,
+                        ", ",
+                        v,
+                        ")"
+                    ]
+                ),
+            classType =>
+                compose(
+                    value,
+                    { lambda: singleWord(this.nameForNamedType(classType), ".from_dict"), value: undefined }
+                ),
+            mapType =>
+                compose(
+                    value,
+                    v => [
+                        this.conv("dict"),
+                        "(",
+                        makeLambda(this.deserializer(identity, mapType.values)).source,
+                        ", ",
+                        v,
+                        ")"
+                    ]
+                ),
+            enumType =>
+                compose(
+                    value,
+                    { lambda: singleWord(this.nameForNamedType(enumType)), value: undefined }
+                ),
+            unionType => {
+                // FIXME: handle via transformers
+                const deserializers = Array.from(unionType.members).map(
+                    m => makeLambda(this.deserializer(identity, m)).source
+                );
+                return compose(
+                    value,
+                    v => [this.conv("union"), "([", arrayIntercalate(", ", deserializers), "], ", v, ")"]
+                );
+            },
+            transformedStringType => {
+                // FIXME: handle via transformers
+                if (transformedStringType.kind === "date-time") {
+                    return this.convFn("from-datetime", value);
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
         );
     }
 
-    protected serializer(value: Sourcelike, t: Type): ValueOrLambda {
+    protected serializer(value: ValueOrLambda, t: Type): ValueOrLambda {
+        const xf = transformationForType(t);
+        if (xf !== undefined) {
+            const reverse = xf.reverse;
+            return this.transformer(value, reverse.transformer, reverse.targetType);
+        }
         return matchType<ValueOrLambda>(
             t,
-            _anyType => ({ value }),
-            _nullType => ({ lambda: this.convFn("none") }),
-            _boolType => ({ lambda: this.convFn("bool") }),
-            _integerType => ({ lambda: this.convFn("int") }),
-            _doubleType => ({ lambda: this.convFn("to-float") }),
-            _stringType => ({ lambda: this.convFn("str") }),
-            arrayType => ({
-                value: [
-                    this.conv("list"),
-                    "(",
-                    makeLambda(this.serializer("x", arrayType.items)).source,
-                    ", ",
+            _anyType => value,
+            _nullType => this.convFn("none", value),
+            _boolType => this.convFn("bool", value),
+            _integerType => this.convFn("int", value),
+            _doubleType => this.convFn("to-float", value),
+            _stringType => this.convFn("str", value),
+            arrayType =>
+                compose(
                     value,
-                    ")"
-                ]
-            }),
-            classType => ({ value: [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", value, ")"] }),
-            mapType => ({
-                value: [
-                    this.conv("dict"),
-                    "(",
-                    makeLambda(this.serializer("x", mapType.values)).source,
-                    ", ",
+                    v => [
+                        this.conv("list"),
+                        "(",
+                        makeLambda(this.serializer(identity, arrayType.items)).source,
+                        ", ",
+                        v,
+                        ")"
+                    ]
+                ),
+            classType =>
+                compose(
                     value,
-                    ")"
-                ]
-            }),
-            enumType => ({ value: [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", value, ")"] }),
+                    v => [this.conv("to-class"), "(", this.nameForNamedType(classType), ", ", v, ")"]
+                ),
+            mapType =>
+                compose(
+                    value,
+                    v => [
+                        this.conv("dict"),
+                        "(",
+                        makeLambda(this.serializer(identity, mapType.values)).source,
+                        ", ",
+                        v,
+                        ")"
+                    ]
+                ),
+            enumType =>
+                compose(
+                    value,
+                    v => [this.conv("to-enum"), "(", this.nameForNamedType(enumType), ", ", v, ")"]
+                ),
             unionType => {
-                const serializers = Array.from(unionType.members).map(m => makeLambda(this.serializer("x", m)).source);
-                return { value: [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", value, ")"] };
+                const serializers = Array.from(unionType.members).map(
+                    m => makeLambda(this.serializer(identity, m)).source
+                );
+                return compose(
+                    value,
+                    v => [this.conv("union"), "([", arrayIntercalate(", ", serializers), "], ", v, ")"]
+                );
             },
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
-                    return { value: [value, ".isoformat()"] };
+                    return compose(
+                        value,
+                        v => [v, ".isoformat()"]
+                    );
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
@@ -892,9 +1094,8 @@ export class JSONPythonRenderer extends PythonRenderer {
                 const args: Sourcelike[] = [];
                 this.emitLine("assert isinstance(obj, dict)");
                 this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                    const property = ["obj.get(", this.string(jsonName), ")"];
-                    const propType = followTargetType(cp.type);
-                    this.emitLine(name, " = ", makeValue(property, this.deserializer(property, propType)));
+                    const property = { value: ["obj.get(", this.string(jsonName), ")"] };
+                    this.emitLine(name, " = ", makeValue(this.deserializer(property, cp.type)));
                     args.push(name);
                 });
                 this.emitLine("return ", className, "(", arrayIntercalate(", ", args), ")");
@@ -905,14 +1106,8 @@ export class JSONPythonRenderer extends PythonRenderer {
         this.emitBlock(["def to_dict(self)", this.typeHint(" -> dict"), ":"], () => {
             this.emitLine("result", this.typeHint(": dict"), " = {}");
             this.forEachClassProperty(t, "none", (name, jsonName, cp) => {
-                const property = ["self.", name];
-                const propType = followTargetType(cp.type);
-                this.emitLine(
-                    "result[",
-                    this.string(jsonName),
-                    "] = ",
-                    makeValue(property, this.serializer(property, propType))
-                );
+                const property = { value: ["self.", name] };
+                this.emitLine("result[", this.string(jsonName), "] = ", makeValue(this.serializer(property, cp.type)));
             });
             this.emitLine("return result");
         });
@@ -985,14 +1180,14 @@ export class JSONPythonRenderer extends PythonRenderer {
             this.emitBlock(
                 ["def ", fromDict, "(", this.typingDecl("s", "Any"), ")", this.typeHint(" -> ", pythonType), ":"],
                 () => {
-                    this.emitLine("return ", makeValue("s", this.deserializer("s", t)));
+                    this.emitLine("return ", makeValue(this.deserializer({ value: "s" }, t)));
                 }
             );
             this.ensureBlankLine(2);
             this.emitBlock(
                 ["def ", toDict, "(x", this.typeHint(": ", pythonType), ")", this.typingReturn("Any"), ":"],
                 () => {
-                    this.emitLine("return ", makeValue("x", this.serializer("x", t)));
+                    this.emitLine("return ", makeValue(this.serializer({ value: "x" }, t)));
                 }
             );
         });
