@@ -14,8 +14,8 @@ import {
     allLowerWordStyle,
     stringEscape,
     isAscii,
-    isLetterOrUnderscore,
-    isLetterOrUnderscoreOrDigit
+    isLetterOrUnderscoreOrDigit,
+    isLetter
 } from "../support/Strings";
 import { assertNever, panic, defined } from "../support/Support";
 import { Sourcelike, MultiWord, multiWord, singleWord, parenIfNeeded } from "../Source";
@@ -159,7 +159,7 @@ export class PythonTargetLanguage extends TargetLanguage {
 }
 
 function isStartCharacter2(utf16Unit: number): boolean {
-    return isAscii(utf16Unit) && isLetterOrUnderscore(utf16Unit);
+    return isAscii(utf16Unit) && isLetter(utf16Unit);
 }
 
 function isPartCharacter2(utf16Unit: number): boolean {
@@ -168,7 +168,6 @@ function isPartCharacter2(utf16Unit: number): boolean {
 
 function isNormalizedStartCharacter3(utf16Unit: number): boolean {
     // FIXME: add Other_ID_Start - https://docs.python.org/3/reference/lexical_analysis.html#identifiers
-    if (utf16Unit === 0x5f) return true;
     const category: string = unicode.getCategory(utf16Unit);
     return ["Lu", "Ll", "Lt", "Lm", "Lo", "Nl"].indexOf(category) >= 0;
 }
