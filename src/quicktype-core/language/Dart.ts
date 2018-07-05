@@ -110,7 +110,7 @@ const enumCaseNamingFunction = funPrefixNamer("enum-cases", n => dartNameStyle(t
 export const stringEscape = utf16ConcatMap(escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape));
 
 function isStartCharacter(codePoint: number): boolean {
-    if (codePoint === 0x5f) return true; // underscore
+    if (codePoint === 0x5f) return false; // underscore
     return isAscii(codePoint) && isLetter(codePoint);
 }
 
@@ -260,7 +260,7 @@ export class DartRenderer extends ConvenienceRenderer {
             _integerType => dynamic,
             _doubleType => dynamic,
             _stringType => dynamic,
-            arrayType => ["new List<", this.dartType(arrayType.items), ">.from(", dynamic, ")"],
+            arrayType => {
             classType => [this.nameForNamedType(classType), ".fromJson(", dynamic, ")"],
             mapType => ["new Map<String ", this.dartType(mapType.values), ">.from(", dynamic, ")"],
             _enumType => dynamic,

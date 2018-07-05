@@ -598,9 +598,8 @@ export const KotlinLanguage: Language = {
 export const DartLanguage: Language = {
   name: "dart",
   base: "test/fixtures/dart",
-  // compileCommand: "./build.sh",
-  runCommand(_sample: string) {
-    return `echo "dart"`;
+  runCommand(sample: string) {
+    return `dart parser.dart \"${sample}\"`;
   },
   diffViaSchema: true,
   skipDiffViaSchema: [
