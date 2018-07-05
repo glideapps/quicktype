@@ -3,7 +3,6 @@ import { matchType, nullableFromUnion, directlyReachableSingleNamedType } from "
 import { Sourcelike, maybeAnnotated } from "../Source";
 import {
     utf16LegalizeCharacters,
-    utf16StringEscape,
     escapeNonPrintableMapper,
     utf16ConcatMap,
     standardUnicodeHexEscape,
@@ -14,7 +13,8 @@ import {
     combineWords,
     allUpperWordStyle,
     firstUpperWordStyle,
-    allLowerWordStyle
+    allLowerWordStyle,
+    isPrintable
 } from "../support/Strings";
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { ConvenienceRenderer, ForbiddenWordsInfo } from "../ConvenienceRenderer";
@@ -107,7 +107,10 @@ const typeNamingFunction = funPrefixNamer("types", n => dartNameStyle(true, fals
 const propertyNamingFunction = funPrefixNamer("properties", n => dartNameStyle(false, false, n));
 const enumCaseNamingFunction = funPrefixNamer("enum-cases", n => dartNameStyle(true, true, n));
 
-export const stringEscape = utf16ConcatMap(escapeNonPrintableMapper(isAscii, standardUnicodeHexEscape));
+// Escape the dollar sign, which is used in string interpolation
+const stringEscape = utf16ConcatMap(
+    escapeNonPrintableMapper(cp => isPrintable(cp) && cp !== 0x24, standardUnicodeHexEscape)
+);
 
 function isStartCharacter(codePoint: number): boolean {
     if (codePoint === 0x5f) return false; // underscore
@@ -142,12 +145,8 @@ export class DartRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
     private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name]>();
 
-    constructor(
-        targetLanguage: TargetLanguage,
-        renderContext: RenderContext,
-    ) {
+    constructor(targetLanguage: TargetLanguage, renderContext: RenderContext) {
         super(targetLanguage, renderContext);
-
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -262,9 +261,26 @@ export class DartRenderer extends ConvenienceRenderer {
             _stringType => dynamic,
             arrayType => {
                 let type = this.dartType(arrayType.items);
-                if (type === "dynamic" || type === "String" || type === "bool" || type === "int" || type === "double" || type.toString().startsWith("List") || type.toString().startsWith("Map"))
+                if (
+                    type === "dynamic" ||
+                    type === "String" ||
+                    type === "bool" ||
+                    type === "int" ||
+                    type === "double" ||
+                    type.toString().startsWith("List") ||
+                    type.toString().startsWith("Map")
+                )
                     return ["new List<", this.dartType(arrayType.items), ">.from(", dynamic, ".map((x) => x))"];
-                return ["new List<", this.dartType(arrayType.items), ">.from(", dynamic, ".map((x) => new ", this.dartType(arrayType.items), ".fromJson(x)", "))"];
+                return [
+                    "new List<",
+                    this.dartType(arrayType.items),
+                    ">.from(",
+                    dynamic,
+                    ".map((x) => new ",
+                    this.dartType(arrayType.items),
+                    ".fromJson(x)",
+                    "))"
+                ];
             },
             classType => [this.nameForNamedType(classType), ".fromJson(", dynamic, ")"],
             _mapType => ["new Map.from(", dynamic, ")"],
@@ -286,13 +302,13 @@ export class DartRenderer extends ConvenienceRenderer {
             _classType => [dynamic, ".toJson()"],
             _mapType => dynamic,
             _enumType => dynamic,
-            _unionType => dynamic);
-    }
+            _unionType => dynamic
+        );
+    };
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["class ", className], () => {
-
             this.forEachClassProperty(c, "none", (name, _, p) => {
                 this.emitLine(this.dartType(p.type, true), " ", name, ";");
             });
@@ -302,14 +318,18 @@ export class DartRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, _, _p) => {
                     this.emitLine("this.", name, ",");
                 });
-
             });
             this.emitLine("});");
             this.ensureBlankLine();
             this.emitLine("factory ", className, ".fromJson(Map<String, dynamic> json) => new ", className, "(");
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, jsonName, property) => {
-                    this.emitLine(name, ": ", this.fromDynamicExpression(property.type, "json['", utf16StringEscape(jsonName), "']"), ",");
+                    this.emitLine(
+                        name,
+                        ": ",
+                        this.fromDynamicExpression(property.type, 'json["', stringEscape(jsonName), '"]'),
+                        ","
+                    );
                 });
             });
             this.emitLine(");");
@@ -318,11 +338,16 @@ export class DartRenderer extends ConvenienceRenderer {
             this.emitLine("Map<String, dynamic> toJson() => {");
             this.indent(() => {
                 this.forEachClassProperty(c, "none", (name, jsonName, property) => {
-                    this.emitLine("'", utf16StringEscape(jsonName), "': ", this.toDynamicExpression(property.type, name), ",");
+                    this.emitLine(
+                        '"',
+                        stringEscape(jsonName),
+                        '": ',
+                        this.toDynamicExpression(property.type, name),
+                        ","
+                    );
                 });
             });
             this.emitLine("};");
-
         });
     }
 
@@ -334,7 +359,6 @@ export class DartRenderer extends ConvenienceRenderer {
         });
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("enum ", enumName, " { ", caseNames, " }");
-
     }
     protected emitSourceStructure(): void {
         this.emitFileHeader("TopLevel");
