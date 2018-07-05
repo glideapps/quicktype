@@ -261,10 +261,10 @@ export class DartRenderer extends ConvenienceRenderer {
             _doubleType => dynamic,
             _stringType => dynamic,
             arrayType => {
-                var type = this.dartType(arrayType.items);
+                let type = this.dartType(arrayType.items);
                 if (type === "dynamic" || type === "String" || type === "bool" || type === "int" || type === "double" || type.toString().startsWith("List") || type.toString().startsWith("Map"))
                     return ["new List<", this.dartType(arrayType.items), ">.from(", dynamic, ".map((x) => x))"];
-                return ["new List<", this.dartType(arrayType.items), ">.from(", dynamic, ".map((x) => new ", this.dartType(arrayType.items), ".fromJson(x)", "))"];;
+                return ["new List<", this.dartType(arrayType.items), ">.from(", dynamic, ".map((x) => new ", this.dartType(arrayType.items), ".fromJson(x)", "))"];
             },
             classType => [this.nameForNamedType(classType), ".fromJson(", dynamic, ")"],
             _mapType => ["new Map.from(", dynamic, ")"],
@@ -290,7 +290,6 @@ export class DartRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
-        //this.emitFileHeader(className);
         this.emitDescription(this.descriptionForType(c));
         this.emitBlock(["class ", className], () => {
 
@@ -344,7 +343,7 @@ export class DartRenderer extends ConvenienceRenderer {
             (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
             (e, n) => this.emitEnumDefinition(e, n),
             (_e, _n) => {
-                //We don't support this yet.
+                // We don't support this yet.
             }
         );
 
