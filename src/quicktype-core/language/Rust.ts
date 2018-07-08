@@ -349,7 +349,12 @@ export class RustRenderer extends ConvenienceRenderer {
         this.emitLine("pub type ", name, " = ", this.rustType(t), ";");
     }
 
-    protected emitUsageExample(): void {
+    protected emitLeadingComments(): void {
+        if (this.leadingComments !== undefined) {
+            this.emitCommentLines(this.leadingComments);
+            return;
+        }
+
         const topLevelName = defined(mapFirst(this.topLevels));
         this.emitMultiline(
             `// Example code that deserializes and serializes the model.
@@ -368,8 +373,8 @@ export class RustRenderer extends ConvenienceRenderer {
     }
 
     protected emitSourceStructure(): void {
-        this.emitUsageExample();
-        this.emitLine();
+        this.emitLeadingComments();
+        this.ensureBlankLine();
         this.emitLine("extern crate serde_json;");
 
         if (this.haveMaps) {

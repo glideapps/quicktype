@@ -837,6 +837,9 @@ export function writeOutput(
             if (!onFirst) {
                 process.stdout.write("\n");
             }
+            if (resultsByFilename.size > 1) {
+                process.stdout.write(`// ${filename}\n\n`);
+            }
             process.stdout.write(output);
         }
         if (cliOptions.quiet) {
