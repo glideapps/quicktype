@@ -1,4 +1,8 @@
-FROM ubuntu:xenial-20180412
+# To push this repo, log in as "schani" on DockerHub, and
+#   docker tag IMAGE-ID schani/quicktype
+#   docker push schani/quicktype
+
+FROM ubuntu:xenial-20180525
 
 ENV workdir /app
 
