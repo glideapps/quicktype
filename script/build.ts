@@ -26,9 +26,7 @@ function buildTypeScript() {
     }
 }
 
-const scriptPrefix = `#!/bin/sh
-":" //# comment; exec /usr/bin/env node --max-old-space-size=4096 "$0" "$@"
-`;
+const scriptPrefix = "#!/usr/bin/env node\n";
 
 function makeDistributedCLIExecutable() {
     const cli = path.join(OUTDIR, "cli", "index.js");
