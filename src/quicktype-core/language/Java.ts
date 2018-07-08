@@ -163,6 +163,7 @@ function javaNameStyle(startWithUpper: boolean, upperUnderscore: boolean, origin
 export class JavaRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
     private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name]>();
+    private _haveEmittedLeadingComments = false;
 
     constructor(
         targetLanguage: TargetLanguage,
@@ -265,6 +266,13 @@ export class JavaRenderer extends ConvenienceRenderer {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         // FIXME: The filenames should actually be Sourcelikes, too
         this._currentFilename = `${this.sourcelikeToString(basename)}.java`;
+        // FIXME: Why is this necessary?
+        this.ensureBlankLine();
+        if (!this._haveEmittedLeadingComments && this.leadingComments !== undefined) {
+            this.emitCommentLines(this.leadingComments);
+            this.ensureBlankLine();
+            this._haveEmittedLeadingComments = true;
+        }
     }
 
     protected finishFile(): void {
@@ -283,7 +291,6 @@ export class JavaRenderer extends ConvenienceRenderer {
 
     protected emitFileHeader(fileName: Sourcelike, imports: string[]): void {
         this.startFile(fileName);
-        this.ensureBlankLine();
         this.emitPackageAndImports(imports);
         this.ensureBlankLine();
     }
@@ -542,19 +549,14 @@ export class JavaRenderer extends ConvenienceRenderer {
 
     protected emitConverterClass(): void {
         this.startFile("Converter");
-        this.ensureBlankLine();
-        if (this.leadingComments !== undefined) {
-            this.emitCommentLines(this.leadingComments);
-        } else {
-            this.emitCommentLines([
-                "To use this code, add the following Maven dependency to your project:",
-                "",
-                "    com.fasterxml.jackson.core : jackson-databind : 2.9.0",
-                "",
-                "Import this package:",
-                ""
-            ]);
-        }
+        this.emitCommentLines([
+            "To use this code, add the following Maven dependency to your project:",
+            "",
+            "    com.fasterxml.jackson.core : jackson-databind : 2.9.0",
+            "",
+            "Import this package:",
+            ""
+        ]);
         this.emitLine("//     import ", this._options.packageName, ".Converter;");
         this.emitMultiline(`//
 // Then you can deserialize a JSON string with
