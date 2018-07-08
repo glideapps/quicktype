@@ -52,7 +52,7 @@ export class RustTargetLanguage extends TargetLanguage {
     }
 
     constructor() {
-        super("Rust", ["rs", "rust", "rustlang"], "rs");
+        super("Rust", ["rust", "rs", "rustlang"], "rs");
     }
 
     protected getOptions(): Option<any>[] {
