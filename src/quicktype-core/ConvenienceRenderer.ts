@@ -94,6 +94,13 @@ export abstract class ConvenienceRenderer extends Renderer {
         return this.typeGraph.topLevels;
     }
 
+    /**
+     * Return an array of strings which are not allowed as names in the global
+     * namespace.  Since names of generated types are in the global namespace,
+     * this will include anything built into the language or default libraries
+     * that can conflict with that, such as reserved keywords or common type
+     * names.
+     */
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return [];
     }
