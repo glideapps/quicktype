@@ -105,6 +105,16 @@ export abstract class ConvenienceRenderer extends Renderer {
         return [];
     }
 
+    /**
+     * Returns which names are forbidden for the property names of an object
+     * type.  `names` can contain strings as well as `Name`s.  In some
+     * languages, the class name can't be used as the name for a property, for
+     * example, in which case `_className` would have to be return in `names`.
+     * If `includeGlobalForbidden` is set, then all names that are forbidden
+     * in the global namespace will also be forbidden for the properties.
+     * Note: That doesn't mean that the names in the global namespace will be
+     * forbidden, too!
+     */
     protected forbiddenForObjectProperties(_o: ObjectType, _className: Name): ForbiddenWordsInfo {
         return { names: [], includeGlobalForbidden: false };
     }
