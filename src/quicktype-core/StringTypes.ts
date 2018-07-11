@@ -185,7 +185,7 @@ function isIntegerString(s: string): boolean {
  * @param s The string for which to determine the transformed string type kind.
  */
 export function inferTransformedStringTypeKindForString(s: string): TransformedStringTypeKind | undefined {
-    if (s.length === 0 || "0123456789-".indexOf(s[0]) < 0) return undefined;
+    if (s.length === 0 || "0123456789-ft".indexOf(s[0]) < 0) return undefined;
 
     if (isDate(s)) {
         return "date";
@@ -195,6 +195,8 @@ export function inferTransformedStringTypeKindForString(s: string): TransformedS
         return "date-time";
     } else if (isIntegerString(s)) {
         return "integer-string";
+    } else if (s === "false" || s === "true") {
+        return "bool-string";
     }
     return undefined;
 }

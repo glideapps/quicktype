@@ -375,7 +375,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     let input = JSON.parse(fs.readFileSync(filename, "utf8"));
     let schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
 
-    let ajv = new Ajv({ format: "full", unknownFormats: ["integer"] });
+    let ajv = new Ajv({ format: "full", unknownFormats: ["integer", "boolean"] });
     // Make Ajv's date-time compatible with what we recognize.  All non-standard
     // JSON formats that we use for transformed type kinds must be registered here
     // with a validation function.
