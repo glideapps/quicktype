@@ -37,23 +37,23 @@ function shouldBeMap(properties: ReadonlyMap<string, ClassProperty>): ReadonlySe
         const probabilities = names.map(nameProbability);
         const product = probabilities.reduce((a, b) => a * b, 1);
         const probability = Math.pow(product, 1 / numProperties);
-        // The idea behind this is to have a probability around 0.0004 for
+        // The idea behind this is to have a probability around 0.0025 for
         // n=1, up to around 1.0 for n=20.  I.e. when we only have a few
         // properties, they need to look really weird to infer a map, but
         // when we have more we'll accept more ordinary names.  The details
         // of the formula are immaterial because I pulled it out of my ass.
+
+        // FIXME: Use different exponents and start values depending on
+        // the property type kind.  For string properties, for example, we
+        // should be more conservative, with class properties more
+        // aggressive.  An exponent of 6 is probably good for string
+        // properties, and maybe a start value of 0.002, whereas for classes
+        // we want maybe 0.004 and 5, or maybe something even more
+        // trigger-happy.
         const exponent = 5;
         const scale = Math.pow(22, exponent);
-        const limit = Math.pow(numProperties + 2, exponent) / scale + (0.004 - Math.pow(3, exponent) / scale);
+        const limit = Math.pow(numProperties + 2, exponent) / scale + (0.0025 - Math.pow(3, exponent) / scale);
         if (probability > limit) return undefined;
-
-        /*
-        console.log(
-            `limit for ${JSON.stringify(names.toArray())} - ${JSON.stringify(
-                probabilities.toArray()
-            )} is ${limit}, we are at ${probability}`
-        );
-        */
     }
 
     // FIXME: simplify this - it's no longer necessary with the new
