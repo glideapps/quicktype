@@ -129,6 +129,7 @@ export class PythonTargetLanguage extends TargetLanguage {
         mapping.set("date", dateTimeType);
         mapping.set("time", dateTimeType);
         mapping.set("date-time", dateTimeType);
+        mapping.set("uuid", "uuid");
         mapping.set("integer-string", "integer-string");
         mapping.set("bool-string", "bool-string");
         return mapping;
@@ -344,6 +345,9 @@ export class PythonRenderer extends ConvenienceRenderer {
             transformedStringType => {
                 if (transformedStringType.kind === "date-time") {
                     return this.withImport("datetime", "datetime");
+                }
+                if (transformedStringType.kind === "uuid") {
+                    return this.withImport("uuid", "UUID");
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
@@ -868,6 +872,9 @@ export class JSONPythonRenderer extends PythonRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return this.withImport("datetime", "datetime");
                 }
+                if (transformedStringType.kind === "uuid") {
+                    return this.withImport("uuid", "UUID");
+                }
                 return undefined;
             }
         );
@@ -930,6 +937,12 @@ export class JSONPythonRenderer extends PythonRenderer {
                 case "date-time":
                     vol = this.convFn("from-datetime", inputTransformer);
                     break;
+                case "uuid":
+                    vol = compose(
+                        inputTransformer,
+                        v => [this.withImport("uuid", "UUID"), "(", v, ")"]
+                    );
+                    break;
                 default:
                     return panic(`Parsing of ${immediateTargetType.kind} in a transformer is not supported`);
             }
@@ -957,6 +970,12 @@ export class JSONPythonRenderer extends PythonRenderer {
                     vol = compose(
                         inputTransformer,
                         v => [v, ".isoformat()"]
+                    );
+                    break;
+                case "uuid":
+                    vol = compose(
+                        inputTransformer,
+                        v => ["str(", v, ")"]
                     );
                     break;
                 default:
@@ -1030,6 +1049,12 @@ export class JSONPythonRenderer extends PythonRenderer {
                 if (transformedStringType.kind === "date-time") {
                     return this.convFn("from-datetime", value);
                 }
+                if (transformedStringType.kind === "uuid") {
+                    return compose(
+                        value,
+                        v => [this.withImport("uuid", "UUID"), "(", v, ")"]
+                    );
+                }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
             }
         );
@@ -1097,6 +1122,12 @@ export class JSONPythonRenderer extends PythonRenderer {
                     return compose(
                         value,
                         v => [v, ".isoformat()"]
+                    );
+                }
+                if (transformedStringType.kind === "uuid") {
+                    return compose(
+                        value,
+                        v => ["str(", v, ")"]
                     );
                 }
                 return panic(`Transformed type ${transformedStringType.kind} not supported`);
