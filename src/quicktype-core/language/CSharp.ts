@@ -97,6 +97,9 @@ function csTypeForTransformedStringType(t: PrimitiveType): Sourcelike {
     if (t.kind === "date-time") {
         return "DateTimeOffset";
     }
+    if (t.kind === "uuid") {
+        return "Guid";
+    }
     return panic(`Transformed string type ${t.kind} not supported`);
 }
 
@@ -139,6 +142,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
         mapping.set("date", "date-time");
         mapping.set("time", "date-time");
         mapping.set("date-time", "date-time");
+        mapping.set("uuid", "uuid");
         mapping.set("integer-string", "integer-string");
         mapping.set("bool-string", "bool-string");
         return mapping;
@@ -204,7 +208,7 @@ function isValueType(t: Type): boolean {
     if (t instanceof UnionType) {
         return nullableFromUnion(t) === null;
     }
-    return ["integer", "double", "bool", "enum", "date-time"].indexOf(t.kind) >= 0;
+    return ["integer", "double", "bool", "enum", "date-time", "uuid"].indexOf(t.kind) >= 0;
 }
 
 export class CSharpRenderer extends ConvenienceRenderer {
@@ -217,7 +221,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
-        return ["QuickType", "Type", "System", "Console", "Exception", "DateTimeOffset"];
+        return ["QuickType", "Type", "System", "Console", "Exception", "DateTimeOffset", "Guid"];
     }
 
     protected forbiddenForObjectProperties(_: ClassType, classNamed: Name): ForbiddenWordsInfo {
@@ -1140,6 +1144,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     this.emitLine("if (DateTimeOffset.TryParse(", variable, ", out dt))");
                     this.emitBlock(() => this.emitConsume("dt", xfer.consumer, targetType, emitFinish));
                     break;
+                case "uuid":
+                    this.emitLine("Guid guid;");
+                    this.emitLine("if (Guid.TryParse(", variable, ", out guid))");
+                    this.emitBlock(() => this.emitConsume("guid", xfer.consumer, targetType, emitFinish));
+                    break;
                 case "integer":
                     this.emitLine("long l;");
                     this.emitLine("if (Int64.TryParse(", variable, ", out l))");
@@ -1158,6 +1167,13 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                 case "date-time":
                     return this.emitConsume(
                         [variable, '.ToString("o", System.Globalization.CultureInfo.InvariantCulture)'],
+                        xfer.consumer,
+                        targetType,
+                        emitFinish
+                    );
+                case "uuid":
+                    return this.emitConsume(
+                        [variable, '.ToString("D", System.Globalization.CultureInfo.InvariantCulture)'],
                         xfer.consumer,
                         targetType,
                         emitFinish
