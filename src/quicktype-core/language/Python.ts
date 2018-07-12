@@ -130,6 +130,7 @@ export class PythonTargetLanguage extends TargetLanguage {
         mapping.set("time", dateTimeType);
         mapping.set("date-time", dateTimeType);
         mapping.set("integer-string", "integer-string");
+        mapping.set("bool-string", "bool-string");
         return mapping;
     }
 
@@ -145,7 +146,7 @@ export class PythonTargetLanguage extends TargetLanguage {
         if (t instanceof UnionType) {
             return iterableSome(t.members, m => this.needsTransformerForType(m));
         }
-        return t.kind === "integer-string";
+        return t.kind === "integer-string" || t.kind === "bool-string";
     }
 
     protected makeRenderer(renderContext: RenderContext, untypedOptionValues: { [name: string]: any }): PythonRenderer {
@@ -504,6 +505,7 @@ export type ConverterFunction =
     | "dict"
     | "union"
     | "from-datetime"
+    | "from-stringified-bool"
     | "is-type";
 
 type TopLevelConverterNames = {
@@ -769,6 +771,17 @@ export class JSONPythonRenderer extends PythonRenderer {
         );
     }
 
+    protected emitFromStringifiedBoolConverter(): void {
+        this.emitBlock(
+            ["def from_stringified_bool(x", this.typeHint(": str"), ")", this.typeHint(" -> bool"), ":"],
+            () => {
+                this.emitBlock('if x == "true":', () => this.emitLine("return True"));
+                this.emitBlock('if x == "false":', () => this.emitLine("return False"));
+                this.emitLine("assert False");
+            }
+        );
+    }
+
     protected emitIsTypeConverter(): void {
         const tvar = this.typeVar();
         this.emitBlock(
@@ -814,6 +827,8 @@ export class JSONPythonRenderer extends PythonRenderer {
                 return this.emitUnionConverter();
             case "from-datetime":
                 return this.emitFromDatetimeConverter();
+            case "from-stringified-bool":
+                return this.emitFromStringifiedBoolConverter();
             case "is-type":
                 return this.emitIsTypeConverter();
             default:
@@ -823,7 +838,7 @@ export class JSONPythonRenderer extends PythonRenderer {
 
     protected conv(cf: ConverterFunction): Sourcelike {
         this._deserializerFunctions.add(cf);
-        const name = cf.replace("-", "_");
+        const name = cf.replace(/-/g, "_");
         if (cf.startsWith("from-") || cf.startsWith("to-") || cf.startsWith("is-")) return name;
         return ["from_", name];
     }
@@ -906,6 +921,9 @@ export class JSONPythonRenderer extends PythonRenderer {
                         v => ["int(", v, ")"]
                     );
                     break;
+                case "bool":
+                    vol = this.convFn("from-stringified-bool", inputTransformer);
+                    break;
                 case "enum":
                     vol = this.deserializer(inputTransformer, immediateTargetType);
                     break;
@@ -924,6 +942,12 @@ export class JSONPythonRenderer extends PythonRenderer {
                     vol = compose(
                         inputTransformer,
                         v => ["str(", v, ")"]
+                    );
+                    break;
+                case "bool":
+                    vol = compose(
+                        inputTransformer,
+                        v => ["str(", v, ").lower()"]
                     );
                     break;
                 case "enum":
