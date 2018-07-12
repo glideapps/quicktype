@@ -17,7 +17,8 @@ import {
   quicktypeForLanguage,
   Sample,
   samplesFromSources,
-  testsInDir
+  testsInDir,
+  ComparisonArgs
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype-core/Run";
@@ -32,12 +33,14 @@ const ONLY_OUTPUT = process.env.ONLY_OUTPUT !== undefined;
 
 const MAX_TEST_RUNTIME_MS = 30 * 60 * 1000;
 
-// These are tests where we have stringified integers that might be serialized
-// back as integers, which happens in heterogenous arrays such as ["123", 456].
+/**
+ * These are tests where we have stringified integers that might be serialized
+ * back as integers, which happens in heterogenous arrays such as ["123", 456].
+ */
 const testsWithStringifiedIntegers = ["nst-test-suite.json", "kitchen-sink.json"];
 
 function allowStringifiedIntegers(language: languages.Language, test: string): boolean {
-  if (!language.handlesStringifiedIntegers) return false;
+  if (language.handlesStringifiedIntegers !== true) return false;
   return testsWithStringifiedIntegers.indexOf(test) >= 0;
 }
 
@@ -66,6 +69,20 @@ function additionalTestFiles(base: string, extension: string): string[] {
     i++;
   }
   return additionalFiles;
+}
+
+function comparisonArgs(
+  language: languages.Language,
+  inputFilename: string,
+  expectedFilename: string
+): ComparisonArgs {
+  return {
+    expectedFile: expectedFilename,
+    given: { command: defined(language.runCommand)(inputFilename) },
+    strict: false,
+    allowMissingNull: language.allowMissingNull,
+    allowStringifiedIntegers: allowStringifiedIntegers(language, expectedFilename)
+  };
 }
 
 export abstract class Fixture {
@@ -216,13 +233,7 @@ class JSONFixture extends LanguageFixture {
     }
     if (this.language.runCommand === undefined) return;
 
-    compareJsonFileToJson({
-      expectedFile: filename,
-      given: { command: this.language.runCommand(filename) },
-      strict: false,
-      allowMissingNull: this.language.allowMissingNull,
-      allowStringifiedIntegers: allowStringifiedIntegers(this.language, filename)
-    });
+    compareJsonFileToJson(comparisonArgs(this.language, filename, filename));
 
     if (
       this.language.diffViaSchema &&
@@ -333,13 +344,7 @@ class JSONToXToYFixture extends JSONFixture {
     );
 
     // Parse the sample with the code generated from its schema, and compare to the sample
-    compareJsonFileToJson({
-      expectedFile: filename,
-      given: { command: defined(this.runLanguage.runCommand)(filename) },
-      strict: false,
-      allowMissingNull: this.runLanguage.allowMissingNull,
-      allowStringifiedIntegers: allowStringifiedIntegers(this.runLanguage, filename)
-    });
+    compareJsonFileToJson(comparisonArgs(this.runLanguage, filename, filename));
   }
 
   shouldSkipTest(sample: Sample): boolean {
@@ -370,7 +375,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     let input = JSON.parse(fs.readFileSync(filename, "utf8"));
     let schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
 
-    let ajv = new Ajv({ format: "full", unknownFormats: ["integer"] });
+    let ajv = new Ajv({ format: "full", unknownFormats: ["integer", "boolean"] });
     // Make Ajv's date-time compatible with what we recognize.  All non-standard
     // JSON formats that we use for transformed type kinds must be registered here
     // with a validation function.
@@ -523,13 +528,7 @@ class JSONSchemaFixture extends LanguageFixture {
       if (!fs.existsSync(expected) || !this.language.handlesStringifiedIntegers) {
         expected = jsonBase;
       }
-      compareJsonFileToJson({
-        expectedFile: expected,
-        given: { command: this.language.runCommand(jsonBase) },
-        strict: false,
-        allowMissingNull: this.language.allowMissingNull,
-        allowStringifiedIntegers: allowStringifiedIntegers(this.language, expected)
-      });
+      compareJsonFileToJson(comparisonArgs(this.language, jsonBase, expected));
     }
   }
 }
@@ -597,13 +596,7 @@ class GraphQLFixture extends LanguageFixture {
         continue;
       }
       const jsonBase = path.basename(fn);
-      compareJsonFileToJson({
-        expectedFile: jsonBase,
-        given: { command: this.language.runCommand(jsonBase) },
-        strict: false,
-        allowMissingNull: this.language.allowMissingNull,
-        allowStringifiedIntegers: allowStringifiedIntegers(this.language, jsonBase)
-      });
+      compareJsonFileToJson(comparisonArgs(this.language, jsonBase, jsonBase));
     }
   }
 }

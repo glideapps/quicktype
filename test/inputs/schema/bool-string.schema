@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "properties": {
+    "one": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "optional": {
+      "$ref": "#/properties/one"
+    },
+    "nullable": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/properties/one"
+        }
+      ]
+    },
+    "arrOne": {
+      "type": "array",
+      "items": {
+        "$ref": "#/properties/one"
+      }
+    },
+    "arrNullable": {
+      "type": "array",
+      "items": {
+        "$ref": "#/properties/nullable"
+      }
+    },
+    "unionWithBool": {
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "$ref": "#/properties/one"
+        }
+      ]
+    },
+    "unionWithBoolAndEnum": {
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "$ref": "#/properties/one"
+        },
+        { "enum": ["foo"] }
+      ]
+    }
+  },
+  "required": ["one", "nullable", "unionWithBool", "unionWithBoolAndEnum"]
+}

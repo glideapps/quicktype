@@ -157,12 +157,15 @@ export function samplesFromSources(
   }
 }
 
-type ComparisonArgs = {
+export type ComparisonRelaxations = {
+  allowMissingNull?: boolean;
+  allowStringifiedIntegers?: boolean;
+};
+
+export type ComparisonArgs = ComparisonRelaxations & {
   expectedFile: string;
   given: { file: string } | { command: string };
   strict: boolean;
-  allowMissingNull?: boolean;
-  allowStringifiedIntegers?: boolean;
 };
 
 export function compareJsonFileToJson(args: ComparisonArgs) {
@@ -180,14 +183,12 @@ export function compareJsonFileToJson(args: ComparisonArgs) {
     JSON.parse(fs.readFileSync(expectedFile, "utf8"))
   );
 
-  const allowMissingNull = !!args.allowMissingNull;
-  const allowStringifiedIntegers = !!args.allowStringifiedIntegers;
   let jsonAreEqual = strict
     ? callAndReportFailure("Failed to strictly compare objects", () =>
         strictDeepEquals(givenJSON, expectedJSON)
       )
     : callAndReportFailure("Failed to compare objects.", () =>
-        deepEquals(expectedJSON, givenJSON, allowMissingNull, ASSUME_STRINGS_EQUAL, allowStringifiedIntegers)
+        deepEquals(expectedJSON, givenJSON, ASSUME_STRINGS_EQUAL, args)
       );
 
   if (!jsonAreEqual) {
