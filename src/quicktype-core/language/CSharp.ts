@@ -78,7 +78,7 @@ function needTransformerForType(t: Type): "automatic" | "manual" | "nullable" | 
         return "none";
     }
     if (t instanceof EnumType) return "automatic";
-    if (t.kind === "integer-string") return "manual";
+    if (t.kind === "integer-string" || t.kind === "bool-string") return "manual";
     return "none";
 }
 
@@ -91,7 +91,7 @@ function alwaysApplyTransformation(xf: Transformation): boolean {
 
 /**
  * The C# type for a given transformed string type.  The function can
- * assume that it will only be called for type kinds that 
+ * assume that it will only be called for type kinds that
  */
 function csTypeForTransformedStringType(t: PrimitiveType): Sourcelike {
     if (t.kind === "date-time") {
@@ -140,6 +140,7 @@ export class CSharpTargetLanguage extends TargetLanguage {
         mapping.set("time", "date-time");
         mapping.set("date-time", "date-time");
         mapping.set("integer-string", "integer-string");
+        mapping.set("bool-string", "bool-string");
         return mapping;
     }
 
@@ -1144,6 +1145,11 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     this.emitLine("if (Int64.TryParse(", variable, ", out l))");
                     this.emitBlock(() => this.emitConsume("l", xfer.consumer, targetType, emitFinish));
                     break;
+                case "bool":
+                    this.emitLine("bool b;");
+                    this.emitLine("if (Boolean.TryParse(", variable, ", out b))");
+                    this.emitBlock(() => this.emitConsume("b", xfer.consumer, targetType, emitFinish));
+                    break;
                 default:
                     return panic(`Parsing string to ${immediateTargetType.kind} not supported`);
             }
@@ -1158,6 +1164,9 @@ export class NewtonsoftCSharpRenderer extends CSharpRenderer {
                     );
                 case "integer":
                     return this.emitConsume([variable, ".ToString()"], xfer.consumer, targetType, emitFinish);
+                case "bool":
+                    this.emitLine("var boolString = ", variable, ' ? "true" : "false";');
+                    return this.emitConsume("boolString", xfer.consumer, targetType, emitFinish);
                 default:
                     return panic(`Stringifying ${xfer.sourceType.kind} not supported`);
             }
