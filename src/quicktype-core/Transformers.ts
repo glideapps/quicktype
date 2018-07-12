@@ -471,16 +471,40 @@ export class DecodingChoiceTransformer extends Transformer {
         );
 
         let transformers = new Map<TypeKind, Transformer[]>();
+        let memberMatchTransformers = new Map<Type, Transformer[]>();
 
-        function addCase(transformer: Transformer) {
-            const reversed = transformer.reverse(targetTypeRef, undefined);
-            const kind = reversed.sourceType.kind;
-            let arr = transformers.get(kind);
-            if (arr === undefined) {
-                arr = [];
-                transformers.set(kind, arr);
+        function addCase(reversed: Transformer) {
+            if (reversed instanceof UnionMemberMatchTransformer) {
+                const memberType = reversed.memberType;
+                let arr = memberMatchTransformers.get(memberType);
+                if (arr === undefined) {
+                    arr = [];
+                    memberMatchTransformers.set(memberType, arr);
+                }
+                arr.push(reversed);
+            } else {
+                const kind = reversed.sourceType.kind;
+                let arr = transformers.get(kind);
+                if (arr === undefined) {
+                    arr = [];
+                    transformers.set(kind, arr);
+                }
+                arr.push(reversed);
             }
-            arr.push(reversed);
+        }
+
+        function reverseAndAdd(transformer: Transformer) {
+            const reversed = transformer.reverse(targetTypeRef, undefined);
+            let cases: ReadonlyArray<Transformer> = [];
+            // Flatten nested ChoiceTransformers
+            if (reversed instanceof ChoiceTransformer) {
+                cases = reversed.transformers;
+            } else {
+                cases = [reversed];
+            }
+            for (const xfer of cases) {
+                addCase(xfer);
+            }
         }
 
         // FIXME: Actually, keep all the failing transformers and put them first, then
@@ -493,7 +517,18 @@ export class DecodingChoiceTransformer extends Transformer {
         function filter(xfers: Transformer[]): Transformer[] {
             assert(xfers.length > 0, "Must have at least one transformer");
 
-            const nonfailing = xfers.filter(xfer => !xfer.canFail);
+            const nonfailing = xfers.filter(xfer => {
+                // For member match transformers we're deciding between
+                // multiple that match against the same member, so the fact
+                // that the match can fail is not important, since if it fails
+                // it will fail for all candidates.  The question is whether
+                // its continuation can fail.
+                if (xfer instanceof UnionMemberMatchTransformer) {
+                    return !xfer.transformer.canFail;
+                } else {
+                    return !xfer.canFail;
+                }
+            });
             if (nonfailing.length === 0) return xfers;
 
             const smallest = arraySortByInto(
@@ -503,9 +538,10 @@ export class DecodingChoiceTransformer extends Transformer {
             return [smallest];
         }
 
-        this.transformers.forEach(addCase);
+        this.transformers.forEach(reverseAndAdd);
 
-        const resultingTransformers = ([] as Transformer[]).concat(...Array.from(transformers.values()).map(filter));
+        const allTransformers = Array.from(transformers.values()).concat(Array.from(memberMatchTransformers.values()));
+        const resultingTransformers = ([] as Transformer[]).concat(...allTransformers.map(filter));
 
         // No choice needed if there's only one
         if (resultingTransformers.length === 1) {
