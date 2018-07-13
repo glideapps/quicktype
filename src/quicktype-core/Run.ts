@@ -18,6 +18,7 @@ import { messageError } from "./Messages";
 import { InputData } from "./input/Inputs";
 import { flattenStrings } from "./rewrites/FlattenStrings";
 import { makeTransformations } from "./MakeTransformations";
+import { TransformedStringTypeKind } from "./Type";
 
 export function getTargetLanguage(nameOrInstance: string | TargetLanguage): TargetLanguage {
     if (typeof nameOrInstance === "object") {
@@ -35,9 +36,10 @@ export type RendererOptions = { [name: string]: string };
 export interface InferenceFlag {
     description: string;
     negationDescription: string;
+    stringType?: TransformedStringTypeKind;
 }
 
-export const inferenceFlags = {
+export const inferenceFlagsObject = {
     /** Combine similar classes.  This doesn't apply to classes from a schema, only from inference. */
     combineClasses: { description: "Merge similar classes", negationDescription: "Don't combine similar classes" },
     /** Whether to infer map types from JSON data */
@@ -45,16 +47,24 @@ export const inferenceFlags = {
     /** Whether to infer enum types from JSON data */
     inferEnums: { description: "Detect enums", negationDescription: "Don't infer enums, always use strings" },
     /** Whether to assume that JSON strings that look like dates are dates */
-    inferDates: { description: "Detect dates & times", negationDescription: "Don't infer dates or times" },
+    inferDates: {
+        description: "Detect dates & times",
+        negationDescription: "Don't infer dates or times",
+        stringType: "date-time" as TransformedStringTypeKind
+    },
     /** Whether to convert stringified integers to integers */
     inferIntegerStrings: {
         description: "Detect integers in strings",
-        negationDescription: "Don't convert stringified integers to integers"
+        negationDescription: "Don't convert stringified integers to integers",
+        stringType: "integer-string" as TransformedStringTypeKind
     }
 };
-export const inferenceFlagNames = Object.getOwnPropertyNames(inferenceFlags) as (keyof typeof inferenceFlags)[];
+export const inferenceFlagNames = Object.getOwnPropertyNames(
+    inferenceFlagsObject
+) as (keyof typeof inferenceFlagsObject)[];
+export const inferenceFlags: { [F in keyof typeof inferenceFlagsObject]: InferenceFlag } = inferenceFlagsObject;
 
-export type InferenceFlags = { [F in keyof typeof inferenceFlags]: boolean };
+export type InferenceFlags = { [F in keyof typeof inferenceFlagsObject]: boolean };
 
 /**
  * The options type for the main quicktype entry points,
@@ -162,7 +172,14 @@ class Run implements RunContext {
 
     get stringTypeMapping(): StringTypeMapping {
         const targetLanguage = getTargetLanguage(this._options.lang);
-        return targetLanguage.stringTypeMapping;
+        const mapping = new Map(targetLanguage.stringTypeMapping);
+        for (const flag of inferenceFlagNames) {
+            const stringType = inferenceFlags[flag].stringType;
+            if (!this._options[flag] && stringType !== undefined) {
+                mapping.set(stringType, "string");
+            }
+        }
+        return mapping;
     }
 
     get debugPrintReconstitution(): boolean {
