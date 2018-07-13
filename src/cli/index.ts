@@ -28,7 +28,11 @@ import {
     trainMarkovChain,
     messageError,
     messageAssert,
-    sourcesFromPostmanCollection
+    sourcesFromPostmanCollection,
+    inferenceFlags,
+    inferenceFlagNames,
+    splitIntoWords,
+    capitalize
 } from "../quicktype-core";
 import { schemaForTypeScriptSources } from "../quicktype-typescript-input";
 import { GraphQLInput } from "../quicktype-graphql-input";
@@ -38,8 +42,6 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { inferenceFlags, inferenceFlagNames } from "../quicktype-core/Run";
-import { splitIntoWords, capitalize } from "../quicktype-core/support/Strings";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");

@@ -68,3 +68,5 @@ export { ElmTargetLanguage, ElmRenderer } from "./language/Elm";
 export { JSONSchemaTargetLanguage, JSONSchemaRenderer } from "./language/JSONSchema";
 export { RustTargetLanguage, RustRenderer } from "./language/Rust";
 export { RubyTargetLanguage, RubyRenderer } from "./language/ruby";
+export { inferenceFlags, inferenceFlagNames } from "../quicktype-core/Run";
+export { splitIntoWords, capitalize } from "../quicktype-core/support/Strings";
