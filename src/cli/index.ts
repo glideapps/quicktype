@@ -367,7 +367,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             return {
                 name: dashedFromCamelCase(negatedInferenceFlagName(name)),
                 type: Boolean,
-                description: flag.negationDescription
+                description: flag.negationDescription + "."
             };
         }).values()
     );
