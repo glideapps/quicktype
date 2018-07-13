@@ -57,6 +57,12 @@ export const inferenceFlagsObject = {
         description: "Detect integers in strings",
         negationDescription: "Don't convert stringified integers to integers",
         stringType: "integer-string" as TransformedStringTypeKind
+    },
+    /** Whether to convert stringified booleans to boolean values */
+    inferBooleanStrings: {
+        description: "Detect booleans in strings",
+        negationDescription: "Don't convert stringified booleans to booleans",
+        stringType: "bool-string" as TransformedStringTypeKind
     }
 };
 export const inferenceFlagNames = Object.getOwnPropertyNames(
