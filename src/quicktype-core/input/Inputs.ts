@@ -49,14 +49,7 @@ export interface Input<T> {
 
     singleStringSchemaSource(): string | undefined;
 
-    addTypes(
-        typeBuilder: TypeBuilder,
-        inferMaps: boolean,
-        inferEnums: boolean,
-        inferDates: boolean,
-        inferIntegerStrings: boolean,
-        fixedTopLevels: boolean
-    ): Promise<void>;
+    addTypes(typeBuilder: TypeBuilder, inferMaps: boolean, inferEnums: boolean, fixedTopLevels: boolean): Promise<void>;
 }
 
 type JSONTopLevel = { samples: Value[]; description: string | undefined };
@@ -126,8 +119,6 @@ export class JSONInput implements Input<JSONSourceData> {
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
-        _inferDates: boolean,
-        _inferIntegerStrings: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
         const inference = new TypeInference(this._compressedJSON, typeBuilder, inferMaps, inferEnums);
@@ -311,12 +302,10 @@ export class InputData {
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
-        inferDates: boolean,
-        inferIntegerStrings: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
         for (const input of this._inputs) {
-            await input.addTypes(typeBuilder, inferMaps, inferEnums, inferDates, inferIntegerStrings, fixedTopLevels);
+            await input.addTypes(typeBuilder, inferMaps, inferEnums, fixedTopLevels);
         }
     }
 
