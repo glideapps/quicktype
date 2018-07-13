@@ -47,7 +47,7 @@ export const inferenceFlagsObject = {
     /** Whether to infer enum types from JSON data */
     inferEnums: { description: "Detect enums", negationDescription: "Don't infer enums, always use strings" },
     /** Whether to assume that JSON strings that look like dates are dates */
-    inferDates: {
+    inferDateTimes: {
         description: "Detect dates & times",
         negationDescription: "Don't infer dates or times",
         stringType: "date-time" as TransformedStringTypeKind
