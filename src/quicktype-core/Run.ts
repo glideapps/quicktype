@@ -52,6 +52,7 @@ export const inferenceFlags = {
         negationDescription: "Don't convert stringified integers to integers"
     }
 };
+export const inferenceFlagNames = Object.getOwnPropertyNames(inferenceFlags) as (keyof typeof inferenceFlags)[];
 
 export type InferenceFlags = { [F in keyof typeof inferenceFlags]: boolean };
 
@@ -212,8 +213,6 @@ class Run implements RunContext {
                     typeBuilder,
                     this._options.inferMaps,
                     this._options.inferEnums,
-                    this._options.inferDates,
-                    this._options.inferIntegerStrings,
                     this._options.fixedTopLevels
                 )
         );

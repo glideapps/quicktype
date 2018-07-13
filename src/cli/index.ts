@@ -38,7 +38,7 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
-import { inferenceFlags } from "../quicktype-core/Run";
+import { inferenceFlags, inferenceFlagNames } from "../quicktype-core/Run";
 import { splitIntoWords, capitalize } from "../quicktype-core/support/Strings";
 
 const commandLineArgs = require("command-line-args");
@@ -61,13 +61,8 @@ export interface CLIOptions {
     out?: string;
     buildMarkovChain?: string;
 
-    noMaps: boolean;
-    noEnums: boolean;
-    noDateTimes: boolean;
-    noIntegerStrings: boolean;
     alphabetizeProperties: boolean;
     allPropertiesOptional: boolean;
-    noCombineClasses: boolean;
     noRender: boolean;
 
     rendererOptions: RendererOptions;
@@ -77,6 +72,9 @@ export interface CLIOptions {
     version: boolean;
     debug?: string;
     telemetry?: string;
+
+    // We use this to access the inference flags
+    [option: string]: any;
 }
 
 const defaultDefaultTargetLanguageName: string = "go";
@@ -261,16 +259,11 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
     }
 
     /* tslint:disable:strict-boolean-expressions */
-    return {
+    const options: CLIOptions = {
         src: opts.src || [],
         srcLang: srcLang,
         lang: language.displayName,
         topLevel: opts.topLevel || inferTopLevel(opts),
-        noMaps: !!opts.noMaps,
-        noEnums: !!opts.noEnums,
-        noDateTimes: !!opts.noDateTimes,
-        noIntegerStrings: !!opts.noIntegerStrings,
-        noCombineClasses: !!opts.noCombineClasses,
         noRender: !!opts.noRender,
         alphabetizeProperties: !!opts.alphabetizeProperties,
         allPropertiesOptional: !!opts.allPropertiesOptional,
@@ -288,6 +281,11 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         telemetry: opts.telemetry
     };
     /* tslint:enable */
+    for (const flagName of inferenceFlagNames) {
+        const cliName = negatedInferenceFlagName(flagName);
+        options[cliName] = !!opts[cliName];
+    }
+    return options;
 }
 
 function makeLangTypeLabel(targetLanguages: TargetLanguage[]): string {
@@ -799,16 +797,11 @@ export async function makeQuicktypeOptions(
 
     const inputData = await makeInputData(sources, lang);
 
-    return {
+    const quicktypeOptions: Partial<Options> = {
         lang,
         inputData,
-        inferMaps: !options.noMaps,
-        inferEnums: !options.noEnums,
-        inferDates: !options.noDateTimes,
-        inferIntegerStrings: !options.noIntegerStrings,
         alphabetizeProperties: options.alphabetizeProperties,
         allPropertiesOptional: options.allPropertiesOptional,
-        combineClasses: !options.noCombineClasses,
         fixedTopLevels,
         noRender: options.noRender,
         rendererOptions: options.rendererOptions,
@@ -821,6 +814,16 @@ export async function makeQuicktypeOptions(
         debugPrintTransformations,
         debugPrintTimes
     };
+    for (const flagName of inferenceFlagNames) {
+        const cliName = negatedInferenceFlagName(flagName);
+        const v = options[cliName];
+        if (typeof v === "boolean") {
+            quicktypeOptions[flagName] = !v;
+        } else {
+            quicktypeOptions[flagName] = true;
+        }
+    }
+    return quicktypeOptions;
 }
 
 export function writeOutput(
