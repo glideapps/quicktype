@@ -59,7 +59,7 @@ export type InferenceFlags = { [F in keyof typeof inferenceFlags]: boolean };
  * The options type for the main quicktype entry points,
  * `quicktypeMultiFile` and `quicktype`.
  */
-export type Options = InferenceFlags & {
+export type NonInferenceOptions = {
     /**
      * The target language for which to produce code.  This can be either an instance of `TargetLanguage`,
      * or a string specifying one of the names for quicktype's built-in target languages.  For example,
@@ -109,10 +109,11 @@ export type Options = InferenceFlags & {
     debugPrintTimes: boolean;
 };
 
-const defaultOptions: Options = {
+export type Options = NonInferenceOptions & InferenceFlags;
+
+const defaultOptions: NonInferenceOptions = {
     lang: "ts",
     inputData: new InputData(),
-    combineClasses: true,
     alphabetizeProperties: false,
     allPropertiesOptional: false,
     fixedTopLevels: false,
@@ -126,12 +127,7 @@ const defaultOptions: Options = {
     debugPrintReconstitution: false,
     debugPrintGatherNames: false,
     debugPrintTransformations: false,
-    debugPrintTimes: false,
-
-    inferMaps: true,
-    inferEnums: true,
-    inferDates: true,
-    inferIntegerStrings: true
+    debugPrintTimes: false
 };
 
 export interface RunContext {
@@ -147,9 +143,14 @@ class Run implements RunContext {
     private readonly _options: Options;
 
     constructor(options: Partial<Options>) {
+        const inferenceOptions: { [flag: string]: boolean } = {};
+        for (const flag of inferenceFlagNames) {
+            inferenceOptions[flag] = true;
+        }
+
         // We must not overwrite defaults with undefined values, which
         // we sometimes get.
-        this._options = Object.assign({}, defaultOptions);
+        this._options = Object.assign({}, defaultOptions, inferenceOptions as InferenceFlags);
         for (const k of Object.getOwnPropertyNames(options)) {
             const v = (options as any)[k];
             if (v !== undefined) {
