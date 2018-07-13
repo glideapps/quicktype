@@ -52,6 +52,12 @@ export const inferenceFlagsObject = {
         negationDescription: "Don't infer dates or times",
         stringType: "date-time" as TransformedStringTypeKind
     },
+    /** Whether to convert UUID strings to UUID objects */
+    inferUuids: {
+        description: "Detect UUIDs",
+        negationDescription: "Don't convert UUIDs to UUID objects",
+        stringType: "uuid" as TransformedStringTypeKind
+    },
     /** Whether to convert stringified integers to integers */
     inferIntegerStrings: {
         description: "Detect integers in strings",
