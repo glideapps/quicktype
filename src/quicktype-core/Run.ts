@@ -32,11 +32,34 @@ export function getTargetLanguage(nameOrInstance: string | TargetLanguage): Targ
 
 export type RendererOptions = { [name: string]: string };
 
+export interface InferenceFlag {
+    description: string;
+    negationDescription: string;
+}
+
+export const inferenceFlags = {
+    /** Whether to infer map types from JSON data */
+    inferMaps: { description: "Detect maps", negationDescription: "Don't infer maps, always use classes" },
+    /** Whether to infer enum types from JSON data */
+    inferEnums: { description: "Detect enums", negationDescription: "Don't infer enums, always use strings" },
+    /** Whether to assume that JSON strings that look like dates are dates */
+    inferDates: { description: "Detect dates & times", negationDescription: "Don't infer dates or times" },
+    /** Whether to convert stringified integers to integers */
+    inferIntegerStrings: {
+        description: "Detect integers in strings",
+        negationDescription: "Don't convert stringified integers to integers"
+    },
+    /** Combine similar classes.  This doesn't apply to classes from a schema, only from inference. */
+    combineClasses: { description: "Merge similar classes", negationDescription: "Don't combine similar classes" }
+};
+
+export type InferenceFlags = { [F in keyof typeof inferenceFlags]: boolean };
+
 /**
  * The options type for the main quicktype entry points,
  * `quicktypeMultiFile` and `quicktype`.
  */
-export interface Options {
+export type Options = InferenceFlags & {
     /**
      * The target language for which to produce code.  This can be either an instance of `TargetLanguage`,
      * or a string specifying one of the names for quicktype's built-in target languages.  For example,
@@ -45,20 +68,10 @@ export interface Options {
     lang: string | TargetLanguage;
     /** The input data from which to produce types */
     inputData: InputData;
-    /** Whether to infer map types from JSON data */
-    inferMaps: boolean;
-    /** Whether to infer enum types from JSON data */
-    inferEnums: boolean;
-    /** Whether to assume that JSON strings that look like dates are dates */
-    inferDates: boolean;
-    /** Whether to convert stringified integers to integers */
-    inferIntegerStrings: boolean;
     /** Put class properties in alphabetical order, instead of in the order found in the JSON */
     alphabetizeProperties: boolean;
     /** Make all class property optional */
     allPropertiesOptional: boolean;
-    /** Combine similar classes.  This doesn't apply to classes from a schema, only from inference. */
-    combineClasses: boolean;
     /**
      * Make top-levels classes from JSON fixed.  That means even if two top-level classes are exactly
      * the same, quicktype will still generate two separate types for them.
@@ -94,18 +107,14 @@ export interface Options {
     debugPrintTransformations: boolean;
     /** Print the time it took for each pass to run */
     debugPrintTimes: boolean;
-}
+};
 
 const defaultOptions: Options = {
     lang: "ts",
     inputData: new InputData(),
-    inferMaps: true,
-    inferEnums: true,
-    inferDates: true,
-    inferIntegerStrings: true,
+    combineClasses: true,
     alphabetizeProperties: false,
     allPropertiesOptional: false,
-    combineClasses: true,
     fixedTopLevels: false,
     noRender: false,
     leadingComments: undefined,
@@ -117,7 +126,12 @@ const defaultOptions: Options = {
     debugPrintReconstitution: false,
     debugPrintGatherNames: false,
     debugPrintTransformations: false,
-    debugPrintTimes: false
+    debugPrintTimes: false,
+
+    inferMaps: true,
+    inferEnums: true,
+    inferDates: true,
+    inferIntegerStrings: true
 };
 
 export interface RunContext {
