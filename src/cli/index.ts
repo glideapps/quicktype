@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as _ from "lodash";
 import { Readable } from "stream";
-import { hasOwnProperty, definedMap, withDefault } from "collection-utils";
+import { hasOwnProperty, definedMap, withDefault, mapFromObject, mapMap } from "collection-utils";
 
 import {
     Options,
@@ -38,6 +38,8 @@ import { introspectServer } from "./GraphQLIntrospection";
 import { JSONTypeSource, TypeSource, GraphQLTypeSource, SchemaTypeSource } from "./TypeSource";
 import { readableFromFileOrURL, readFromFileOrURL, FetchingJSONSchemaStore } from "./NodeIO";
 import * as telemetry from "./telemetry";
+import { inferenceFlags } from "../quicktype-core/Run";
+import { splitIntoWords, capitalize } from "../quicktype-core/support/Strings";
 
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
@@ -293,6 +295,20 @@ function makeLangTypeLabel(targetLanguages: TargetLanguage[]): string {
     return targetLanguages.map(r => _.minBy(r.names, s => s.length)).join("|");
 }
 
+function negatedInferenceFlagName(name: string): string {
+    const prefix = "infer";
+    if (name.startsWith(prefix)) {
+        name = name.substr(prefix.length);
+    }
+    return "no" + capitalize(name);
+}
+
+function dashedFromCamelCase(name: string): string {
+    return splitIntoWords(name)
+        .map(w => w.word.toLowerCase())
+        .join("-");
+}
+
 function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinition[] {
     const beforeLang: OptionDefinition[] = [
         {
@@ -344,12 +360,18 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             type: String,
             typeLabel: "FILE",
             description: "Tracery grammar describing URLs to crawl."
-        },
-        {
-            name: "no-combine-classes",
-            type: Boolean,
-            description: "Don't combine similar classes."
-        },
+        }
+    ];
+    const inference: OptionDefinition[] = Array.from(
+        mapMap(mapFromObject(inferenceFlags), (flag, name) => {
+            return {
+                name: dashedFromCamelCase(negatedInferenceFlagName(name)),
+                type: Boolean,
+                description: flag.negationDescription
+            };
+        }).values()
+    );
+    const afterInference: OptionDefinition[] = [
         {
             name: "graphql-schema",
             type: String,
@@ -374,28 +396,6 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             multiple: true,
             typeLabel: "HEADER",
             description: "HTTP header for the GraphQL introspection query."
-        },
-        {
-            name: "no-maps",
-            type: Boolean,
-            description: "Don't infer maps, always use classes."
-        },
-        {
-            name: "no-enums",
-            type: Boolean,
-            description: "Don't infer enums, always use strings."
-        },
-        // We're getting to the point where we should have just one CLI option for
-        // disabling transformed string types, but right now we have one per type.
-        {
-            name: "no-date-times",
-            type: Boolean,
-            description: "Don't infer dates or times."
-        },
-        {
-            name: "no-integer-strings",
-            type: Boolean,
-            description: "Don't convert stringified integers to integers"
         },
         {
             name: "no-render",
@@ -449,7 +449,7 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             description: "Display the version of quicktype"
         }
     ];
-    return beforeLang.concat(lang, afterLang);
+    return beforeLang.concat(lang, afterLang, inference, afterInference);
 }
 
 interface UsageSection {

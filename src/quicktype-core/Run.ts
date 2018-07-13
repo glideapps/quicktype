@@ -38,6 +38,8 @@ export interface InferenceFlag {
 }
 
 export const inferenceFlags = {
+    /** Combine similar classes.  This doesn't apply to classes from a schema, only from inference. */
+    combineClasses: { description: "Merge similar classes", negationDescription: "Don't combine similar classes" },
     /** Whether to infer map types from JSON data */
     inferMaps: { description: "Detect maps", negationDescription: "Don't infer maps, always use classes" },
     /** Whether to infer enum types from JSON data */
@@ -48,9 +50,7 @@ export const inferenceFlags = {
     inferIntegerStrings: {
         description: "Detect integers in strings",
         negationDescription: "Don't convert stringified integers to integers"
-    },
-    /** Combine similar classes.  This doesn't apply to classes from a schema, only from inference. */
-    combineClasses: { description: "Merge similar classes", negationDescription: "Don't combine similar classes" }
+    }
 };
 
 export type InferenceFlags = { [F in keyof typeof inferenceFlags]: boolean };
