@@ -1,4 +1,12 @@
-export { Options, RendererOptions, getTargetLanguage, quicktypeMultiFile, quicktype } from "./Run";
+export {
+    Options,
+    RendererOptions,
+    getTargetLanguage,
+    quicktypeMultiFile,
+    quicktype,
+    inferenceFlags,
+    inferenceFlagNames
+} from "./Run";
 export { CompressedJSON } from "./input/CompressedJSON";
 export {
     Input,
@@ -30,6 +38,7 @@ export {
     StringInput,
     toString
 } from "./support/Support";
+export { splitIntoWords, capitalize } from "./support/Strings";
 export { getStream } from "./get-stream/index";
 export { train as trainMarkovChain } from "./MarkovChain";
 export { QuickTypeError, messageError, messageAssert } from "./Messages";
@@ -68,5 +77,3 @@ export { ElmTargetLanguage, ElmRenderer } from "./language/Elm";
 export { JSONSchemaTargetLanguage, JSONSchemaRenderer } from "./language/JSONSchema";
 export { RustTargetLanguage, RustRenderer } from "./language/Rust";
 export { RubyTargetLanguage, RubyRenderer } from "./language/ruby";
-export { inferenceFlags, inferenceFlagNames } from "../quicktype-core/Run";
-export { splitIntoWords, capitalize } from "../quicktype-core/support/Strings";
