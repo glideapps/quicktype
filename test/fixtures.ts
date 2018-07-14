@@ -85,6 +85,23 @@ function comparisonArgs(
   };
 }
 
+const timeMap = new Map<string, number>();
+
+function timeStart(message: string): void {
+  timeMap.set(message, Date.now());
+}
+
+function timeEnd(message: string, suffix: string): void {
+  const start = timeMap.get(message);
+  const fullMessage = message + suffix;
+  if (start === undefined) {
+    console.log(fullMessage + ": " + chalk.red("UNKNOWN TIMING"));
+    return;
+  }
+  const diff = Date.now() - start;
+  console.log(fullMessage + `: ${diff} ms`);
+}
+
 export abstract class Fixture {
   abstract name: string;
 
@@ -108,19 +125,25 @@ export abstract class Fixture {
 
   runMessageStart(sample: Sample, index: number, total: number, cwd: string, shouldSkip: boolean): string {
     const rendererOptions = _.map(sample.additionalRendererOptions, (v, k) => `${k}: ${v}`).join(", ");
-    const message = [
+    const messageParts = [
       `*`,
       chalk.dim(`[${index + 1}/${total}]`),
       chalk.magenta(this.name) + chalk.dim(`(${rendererOptions})`),
-      path.join(cwd, chalk.cyan(path.basename(sample.path))),
-      shouldSkip ? chalk.red("SKIP") : ""
-    ].join(" ");
-    console.time(message);
+      path.join(cwd, chalk.cyan(path.basename(sample.path)))
+    ];
+    if (shouldSkip) {
+      messageParts.push(chalk.red("SKIP"));
+    }
+    const message = messageParts.join(" ");
+    timeStart(message);
     return message;
   }
 
-  runMessageEnd(message: string) {
-    console.timeEnd(message);
+  runMessageEnd(message: string, numFiles: number) {
+    const numFilesString = ` (${numFiles} files)`;
+    const suffix =
+      numFiles <= 0 ? chalk.red(numFilesString) : numFiles > 1 ? chalk.green(numFilesString) : "";
+    timeEnd(message, suffix);
   }
 }
 
@@ -148,7 +171,7 @@ abstract class LanguageFixture extends Fixture {
     filename: string,
     additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
-  ): Promise<void>;
+  ): Promise<number>;
 
   additionalFiles(_sample: Sample): string[] {
     return [];
@@ -168,6 +191,7 @@ abstract class LanguageFixture extends Fixture {
 
     shell.cp("-R", this.language.base, cwd);
 
+    let numFiles = -1;
     await inDir(cwd, async () => {
       await this.runQuicktype(sampleFile, sample.additionalRendererOptions);
 
@@ -176,7 +200,7 @@ abstract class LanguageFixture extends Fixture {
       }
 
       try {
-        await timeout(
+        numFiles = await timeout(
           this.test(sampleFile, sample.additionalRendererOptions, additionalFiles),
           MAX_TEST_RUNTIME_MS
         );
@@ -204,7 +228,7 @@ abstract class LanguageFixture extends Fixture {
 
     shell.rm("-rf", cwd);
 
-    this.runMessageEnd(message);
+    this.runMessageEnd(message, numFiles);
   }
 }
 
@@ -226,11 +250,11 @@ class JSONFixture extends LanguageFixture {
     filename: string,
     additionalRendererOptions: RendererOptions,
     _additionalFiles: string[]
-  ): Promise<void> {
+  ): Promise<number> {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
-    if (this.language.runCommand === undefined) return;
+    if (this.language.runCommand === undefined) return 0;
 
     compareJsonFileToJson(comparisonArgs(this.language, filename, filename));
 
@@ -254,6 +278,8 @@ class JSONFixture extends LanguageFixture {
       // Compare fixture.output to fixture.output.expected
       exec(`diff -Naur ${this.language.output}.expected ${this.language.output} > /dev/null 2>&1`);
     }
+
+    return 1;
   }
 
   shouldSkipTest(sample: Sample): boolean {
@@ -332,7 +358,11 @@ class JSONToXToYFixture extends JSONFixture {
     return this.name === name || name === this._fixturePrefix;
   }
 
-  async test(filename: string, additionalRendererOptions: RendererOptions, _additionalFiles: string[]) {
+  async test(
+    filename: string,
+    additionalRendererOptions: RendererOptions,
+    _additionalFiles: string[]
+  ): Promise<number> {
     // Generate code for Y from X
     await quicktypeForLanguage(
       this.runLanguage,
@@ -344,6 +374,8 @@ class JSONToXToYFixture extends JSONFixture {
 
     // Parse the sample with the code generated from its schema, and compare to the sample
     compareJsonFileToJson(comparisonArgs(this.runLanguage, filename, filename));
+
+    return 1;
   }
 
   shouldSkipTest(sample: Sample): boolean {
@@ -370,7 +402,7 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
     filename: string,
     additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
-  ): Promise<void> {
+  ): Promise<number> {
     let input = JSON.parse(fs.readFileSync(filename, "utf8"));
     let schema = JSON.parse(fs.readFileSync(this.language.output, "utf8"));
 
@@ -405,6 +437,8 @@ class JSONSchemaJSONFixture extends JSONToXToYFixture {
       given: { file: schemaSchema },
       strict: true
     });
+
+    return 1;
   }
 }
 
@@ -506,28 +540,27 @@ class JSONSchemaFixture extends LanguageFixture {
 
   additionalFiles(sample: Sample): string[] {
     const baseName = pathWithoutExtension(sample.path, ".schema");
-    return additionalTestFiles(baseName, "json").concat(additionalTestFiles(baseName, "ref"));
+    return additionalTestFiles(baseName, "json").filter(fn => !fn.endsWith(".out.json"));
   }
 
   async test(
     _sample: string,
     _additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
-  ): Promise<void> {
+  ): Promise<number> {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
-    if (this.language.runCommand === undefined) return;
+    if (this.language.runCommand === undefined) return 0;
 
     for (const filename of additionalFiles) {
-      if (!filename.endsWith(".json") || filename.endsWith(".out.json")) continue;
-
       let expected = filename.replace(".json", ".out.json");
       if (!fs.existsSync(expected) || !this.language.handlesStringifiedIntegers) {
         expected = filename;
       }
       compareJsonFileToJson(comparisonArgs(this.language, filename, expected));
     }
+    return additionalFiles.length;
   }
 }
 
@@ -576,25 +609,23 @@ class GraphQLFixture extends LanguageFixture {
 
   additionalFiles(sample: Sample): string[] {
     const baseName = pathWithoutExtension(sample.path, ".graphql");
-    return additionalTestFiles(baseName, "json").concat(graphQLSchemaFilename(baseName));
+    return additionalTestFiles(baseName, "json");
   }
 
   async test(
     _filename: string,
     _additionalRendererOptions: RendererOptions,
     additionalFiles: string[]
-  ): Promise<void> {
+  ): Promise<number> {
     if (this.language.compileCommand) {
       await execAsync(this.language.compileCommand);
     }
-    if (this.language.runCommand === undefined) return;
+    if (this.language.runCommand === undefined) return 0;
 
     for (const fn of additionalFiles) {
-      if (!fn.endsWith(".json")) {
-        continue;
-      }
       compareJsonFileToJson(comparisonArgs(this.language, fn, fn));
     }
+    return additionalFiles.length;
   }
 }
 
