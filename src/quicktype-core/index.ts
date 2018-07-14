@@ -5,7 +5,8 @@ export {
     quicktypeMultiFile,
     quicktype,
     inferenceFlags,
-    inferenceFlagNames
+    inferenceFlagNames,
+    RunContext
 } from "./Run";
 export { CompressedJSON } from "./input/CompressedJSON";
 export {
