@@ -363,6 +363,7 @@ export const ElmLanguage: Language = {
   skipSchema: [
     "union-list.schema", // recursion
     "list.schema", // recursion
+    "ref-remote.schema", // recursion
     "mutually-recursive.schema", // recursion
     "postman-collection.schema", // recursion
     "vega-lite.schema", // recursion
