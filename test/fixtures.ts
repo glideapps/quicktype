@@ -41,7 +41,7 @@ const testsWithStringifiedIntegers = ["nst-test-suite.json", "kitchen-sink.json"
 
 function allowStringifiedIntegers(language: languages.Language, test: string): boolean {
   if (language.handlesStringifiedIntegers !== true) return false;
-  return testsWithStringifiedIntegers.indexOf(test) >= 0;
+  return testsWithStringifiedIntegers.indexOf(path.basename(test)) >= 0;
 }
 
 function pathWithoutExtension(fullPath: string, extension: string): string {
@@ -156,9 +156,9 @@ abstract class LanguageFixture extends Fixture {
 
   async runWithSample(sample: Sample, index: number, total: number) {
     const cwd = this.getRunDirectory();
-    let sampleFile = path.basename(sample.path);
-    let shouldSkip = this.shouldSkipTest(sample);
-    const additionalFiles = this.additionalFiles(sample);
+    const sampleFile = path.resolve(sample.path);
+    const shouldSkip = this.shouldSkipTest(sample);
+    const additionalFiles = this.additionalFiles(sample).map(p => path.resolve(p));
 
     const message = this.runMessageStart(sample, index, total, cwd, shouldSkip);
 
@@ -167,7 +167,6 @@ abstract class LanguageFixture extends Fixture {
     }
 
     shell.cp("-R", this.language.base, cwd);
-    shell.cp.apply(null, _.concat(sample.path, additionalFiles, cwd));
 
     await inDir(cwd, async () => {
       await this.runQuicktype(sampleFile, sample.additionalRendererOptions);
@@ -523,12 +522,11 @@ class JSONSchemaFixture extends LanguageFixture {
     for (const filename of additionalFiles) {
       if (!filename.endsWith(".json") || filename.endsWith(".out.json")) continue;
 
-      const jsonBase = path.basename(filename);
-      let expected = jsonBase.replace(".json", ".out.json");
+      let expected = filename.replace(".json", ".out.json");
       if (!fs.existsSync(expected) || !this.language.handlesStringifiedIntegers) {
-        expected = jsonBase;
+        expected = filename;
       }
-      compareJsonFileToJson(comparisonArgs(this.language, jsonBase, expected));
+      compareJsonFileToJson(comparisonArgs(this.language, filename, expected));
     }
   }
 }
@@ -595,8 +593,7 @@ class GraphQLFixture extends LanguageFixture {
       if (!fn.endsWith(".json")) {
         continue;
       }
-      const jsonBase = path.basename(fn);
-      compareJsonFileToJson(comparisonArgs(this.language, jsonBase, jsonBase));
+      compareJsonFileToJson(comparisonArgs(this.language, fn, fn));
     }
   }
 }
