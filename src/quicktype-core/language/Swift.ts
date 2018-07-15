@@ -519,7 +519,12 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
             // this main initializer must be defined within the class
             // declaration since it assigns let constants
-            if (isClass) {
+            if (
+                isClass ||
+                // Public structs need explicit initializers
+                // https://github.com/quicktype/quicktype/issues/899
+                this._options.accessLevel === "public"
+            ) {
                 // Make an initializer that initalizes all fields
                 this.ensureBlankLine();
                 let properties: Sourcelike[] = [];
