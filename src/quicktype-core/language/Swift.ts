@@ -31,7 +31,7 @@ const MAX_SAMELINE_PROPERTIES = 4;
 
 export const swiftOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    convenienceInitializers: new BooleanOption("initializers", "Convenience initializers", true),
+    convenienceInitializers: new BooleanOption("initializers", "Convenient initializers & mutators", true),
     urlSession: new BooleanOption("url-session", "URLSession task extensions", false),
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
@@ -280,6 +280,14 @@ export class SwiftRenderer extends ConvenienceRenderer {
         else return notJustTypes;
     };
 
+    protected swiftPropertyType(p: ClassProperty): Sourcelike {
+        if (p.isOptional) {
+            return [this.swiftType(p.type, true, true), "?"];
+        } else {
+            return this.swiftType(p.type, true);
+        }
+    }
+
     protected swiftType(t: Type, withIssues: boolean = false, noOptional: boolean = false): Sourcelike {
         const optional = noOptional ? "" : "?";
         return matchType<Sourcelike>(
@@ -436,14 +444,6 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     private renderClassDefinition = (c: ClassType, className: Name): void => {
-        const swiftType = (p: ClassProperty) => {
-            if (p.isOptional) {
-                return [this.swiftType(p.type, true, true), "?"];
-            } else {
-                return this.swiftType(p.type, true);
-            }
-        };
-
         this.emitDescription(this.descriptionForType(c));
 
         const isClass = this._options.useClasses || this.isCycleBreakerType(c);
@@ -462,7 +462,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         sources.push(n);
                     });
                     sources.push(": ");
-                    sources.push(swiftType(lastProperty));
+                    sources.push(this.swiftPropertyType(lastProperty));
                     this.emitLine(sources);
 
                     lastProperty = undefined;
@@ -492,7 +492,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.forEachClassProperty(c, "none", (name, jsonName, p) => {
                     const description = this.descriptionForClassProperty(c, jsonName);
                     this.emitDescription(description);
-                    this.emitLine(this.accessLevel, "let ", name, ": ", swiftType(p));
+                    this.emitLine(this.accessLevel, "let ", name, ": ", this.swiftPropertyType(p));
                 });
             }
 
@@ -530,7 +530,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 let properties: Sourcelike[] = [];
                 this.forEachClassProperty(c, "none", (name, _, p) => {
                     if (properties.length > 0) properties.push(", ");
-                    properties.push(name, ": ", swiftType(p));
+                    properties.push(name, ": ", this.swiftPropertyType(p));
                 });
                 this.emitBlockWithAccess(["init(", ...properties, ")"], () => {
                     this.forEachClassProperty(c, "none", name => {
@@ -575,6 +575,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitBlockWithAccess([convenience, `init(fromURL url: URL) throws`], () => {
                 this.emitLine("try self.init(data: try Data(contentsOf: url))");
             });
+
+            this.ensureBlankLine();
+            this.emitConvenienceMutator(c, className);
 
             // Convenience serializers
             this.ensureBlankLine();
@@ -956,6 +959,37 @@ ${this.accessLevel}class JSONAny: Codable {
 }`);
         }
     };
+
+    private emitConvenienceMutator(c: ClassType, className: Name) {
+        this.emitLine(this.accessLevel, "func with(");
+        this.indent(() => {
+            this.forEachClassProperty(c, "none", (name, _, p, position) => {
+                this.emitLine(
+                    name,
+                    ": ",
+                    this.swiftPropertyType(p),
+                    "? = nil",
+                    position !== "only" && position !== "last" ? "," : ""
+                );
+            });
+        });
+        this.emitBlock([") -> ", className], () => {
+            this.emitLine("return ", className, "(");
+            this.indent(() => {
+                this.forEachClassProperty(c, "none", (name, _, _p, position) => {
+                    this.emitLine(
+                        name,
+                        ": ",
+                        name,
+                        " ?? self.",
+                        name,
+                        position !== "only" && position !== "last" ? "," : ""
+                    );
+                });
+            });
+            this.emitLine(")");
+        });
+    }
 
     protected emitMark(line: Sourcelike, horizontalLine: boolean = false) {
         this.emitLine("// MARK:", horizontalLine ? " - " : " ", line);
