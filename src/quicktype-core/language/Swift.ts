@@ -31,7 +31,7 @@ const MAX_SAMELINE_PROPERTIES = 4;
 
 export const swiftOptions = {
     justTypes: new BooleanOption("just-types", "Plain types only", false),
-    convenienceInitializers: new BooleanOption("initializers", "Convenient initializers & mutators", true),
+    convenienceInitializers: new BooleanOption("initializers", "Generate initializers and mutators", true),
     urlSession: new BooleanOption("url-session", "URLSession task extensions", false),
     alamofire: new BooleanOption("alamofire", "Alamofire extensions", false),
     namedTypePrefix: new StringOption("type-prefix", "Prefix for type names", "PREFIX", "", "secondary"),
@@ -1015,7 +1015,7 @@ ${this.accessLevel}class JSONAny: Codable {
             // FIXME: We emit only the MARK line for top-level-enum.schema
             if (this._options.convenienceInitializers) {
                 this.ensureBlankLine();
-                this.emitMark("Convenience initializers");
+                this.emitMark("Convenience initializers and mutators");
                 this.forEachNamedType(
                     "leading-and-interposing",
                     this.emitConvenienceInitializersExtension,
