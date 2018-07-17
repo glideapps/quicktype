@@ -39,6 +39,7 @@ export type ErrorProperties =
     | { kind: "SchemaKeyNotInObject"; properties: { key: string; ref: Ref } }
     | { kind: "SchemaFetchError"; properties: { address: string; base: Ref } }
     | { kind: "SchemaFetchErrorTopLevel"; properties: { address: string } }
+    | { kind: "SchemaFetchErrorAdditional"; properties: { address: string } }
 
     // GraphQL input
     | { kind: "GraphQLNoQueriesDefined"; properties: {} }
@@ -110,8 +111,9 @@ const errorMessages: ErrorMessages = {
         "Trying to index array in schema with key that is not a number, but is ${actual} at ${ref}",
     SchemaIndexNotInArray: "Index ${index} out of range of schema array at ${ref}",
     SchemaKeyNotInObject: "Key ${key} not in schema object at ${ref}",
-    SchemaFetchError: "Could not fetch schema ${address}, referred to from ${base}: ${error}",
-    SchemaFetchErrorTopLevel: "Could not fetch top-level schema ${address}: ${error}",
+    SchemaFetchError: "Could not fetch schema ${address}, referred to from ${base}",
+    SchemaFetchErrorTopLevel: "Could not fetch top-level schema ${address}",
+    SchemaFetchErrorAdditional: "Could not fetch additional schema ${address}",
 
     // GraphQL input
     GraphQLNoQueriesDefined: "GraphQL file doesn't have any queries defined.",

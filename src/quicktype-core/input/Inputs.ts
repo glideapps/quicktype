@@ -161,7 +161,6 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     readonly kind: string = "schema";
     readonly needSchemaProcessing: boolean = true;
 
-    private _schemaStore: JSONSchemaStore | undefined = undefined;
     private readonly _attributeProducers: JSONSchemaAttributeProducer[];
 
     private readonly _schemaInputs: Map<string, StringInput> = new Map();
@@ -172,10 +171,10 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     private _needIR: boolean = false;
 
     constructor(
-        givenSchemaStore: JSONSchemaStore | undefined,
-        additionalAttributeProducers: JSONSchemaAttributeProducer[] = []
+        private _schemaStore: JSONSchemaStore | undefined,
+        additionalAttributeProducers: JSONSchemaAttributeProducer[] = [],
+        private readonly _additionalSchemaAddresses: ReadonlyArray<string> = []
     ) {
-        this._schemaStore = givenSchemaStore;
         this._attributeProducers = [descriptionAttributeProducer, accessorNamesAttributeProducer].concat(
             additionalAttributeProducers
         );
@@ -190,7 +189,14 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
     }
 
     async addTypes(ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
-        await addTypesInSchema(ctx, typeBuilder, defined(this._schemaStore), this._topLevels, this._attributeProducers);
+        await addTypesInSchema(
+            ctx,
+            typeBuilder,
+            defined(this._schemaStore),
+            this._topLevels,
+            this._attributeProducers,
+            this._additionalSchemaAddresses
+        );
     }
 
     async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {

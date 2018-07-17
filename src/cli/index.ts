@@ -56,6 +56,7 @@ export interface CLIOptions {
     src: string[];
     srcUrls?: string;
     srcLang: string;
+    additionalSchema: string[];
     graphqlSchema?: string;
     graphqlIntrospect?: string;
     httpHeader?: string[];
@@ -275,6 +276,7 @@ function inferCLIOptions(opts: Partial<CLIOptions>, targetLanguage: TargetLangua
         version: opts.version || false,
         out: opts.out,
         buildMarkovChain: opts.buildMarkovChain,
+        additionalSchema: opts.additionalSchema || [],
         graphqlSchema: opts.graphqlSchema,
         graphqlIntrospect: opts.graphqlIntrospect,
         httpMethod: opts.httpMethod,
@@ -396,6 +398,14 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
             multiple: true,
             typeLabel: "HEADER",
             description: "HTTP header for the GraphQL introspection query."
+        },
+        {
+            name: "additional-schema",
+            alias: "S",
+            type: String,
+            multiple: true,
+            typeLabel: "FILE",
+            description: "Register the $id's of additional JSON Schema files."
         },
         {
             name: "no-render",
@@ -644,7 +654,11 @@ function makeTypeScriptSource(fileNames: string[]): SchemaTypeSource {
     return Object.assign({ kind: "schema" }, schemaForTypeScriptSources(sources)) as SchemaTypeSource;
 }
 
-async function makeInputData(sources: TypeSource[], targetLanguage: TargetLanguage): Promise<InputData> {
+async function makeInputData(
+    sources: TypeSource[],
+    targetLanguage: TargetLanguage,
+    additionalSchemaAddresses: ReadonlyArray<string>
+): Promise<InputData> {
     const inputData = new InputData();
 
     for (const source of sources) {
@@ -656,7 +670,11 @@ async function makeInputData(sources: TypeSource[], targetLanguage: TargetLangua
                 await inputData.addSource("json", source, () => jsonInputForTargetLanguage(targetLanguage));
                 break;
             case "schema":
-                await inputData.addSource("schema", source, () => new JSONSchemaInput(new FetchingJSONSchemaStore()));
+                await inputData.addSource(
+                    "schema",
+                    source,
+                    () => new JSONSchemaInput(new FetchingJSONSchemaStore(), [], additionalSchemaAddresses)
+                );
                 break;
             default:
                 return assertNever(source);
@@ -800,7 +818,7 @@ export async function makeQuicktypeOptions(
         return messageError("DriverUnknownOutputLanguage", { lang: options.lang });
     }
 
-    const inputData = await makeInputData(sources, lang);
+    const inputData = await makeInputData(sources, lang, options.additionalSchema);
 
     const quicktypeOptions: Partial<Options> = {
         lang,
