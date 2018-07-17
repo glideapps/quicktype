@@ -130,6 +130,8 @@ export type NonInferenceOptions = {
     debugPrintTransformations: boolean;
     /** Print the time it took for each pass to run */
     debugPrintTimes: boolean;
+    /** Print schema resolving steps */
+    debugPrintSchemaResolving: boolean;
 };
 
 export type Options = NonInferenceOptions & InferenceFlags;
@@ -150,13 +152,15 @@ const defaultOptions: NonInferenceOptions = {
     debugPrintReconstitution: false,
     debugPrintGatherNames: false,
     debugPrintTransformations: false,
-    debugPrintTimes: false
+    debugPrintTimes: false,
+    debugPrintSchemaResolving: false
 };
 
 export interface RunContext {
     stringTypeMapping: StringTypeMapping;
     debugPrintReconstitution: boolean;
     debugPrintTransformations: boolean;
+    debugPrintSchemaResolving: boolean;
 
     timeSync<T>(name: string, f: () => Promise<T>): Promise<T>;
     time<T>(name: string, f: () => T): T;
@@ -202,6 +206,10 @@ class Run implements RunContext {
         return this._options.debugPrintTransformations;
     }
 
+    get debugPrintSchemaResolving(): boolean {
+        return this._options.debugPrintSchemaResolving;
+    }
+
     async timeSync<T>(name: string, f: () => Promise<T>): Promise<T> {
         const start = Date.now();
         const result = await f();
@@ -239,6 +247,7 @@ class Run implements RunContext {
             "read input",
             async () =>
                 await allInputs.addTypes(
+                    this,
                     typeBuilder,
                     this._options.inferMaps,
                     this._options.inferEnums,

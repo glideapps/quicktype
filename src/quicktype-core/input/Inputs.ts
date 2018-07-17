@@ -18,6 +18,7 @@ import { descriptionTypeAttributeKind, descriptionAttributeProducer } from "../D
 import { TypeInference } from "./Inference";
 import { TargetLanguage } from "../TargetLanguage";
 import { accessorNamesAttributeProducer } from "../AccessorNames";
+import { RunContext } from "../Run";
 
 class InputJSONSchemaStore extends JSONSchemaStore {
     constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
@@ -49,7 +50,13 @@ export interface Input<T> {
 
     singleStringSchemaSource(): string | undefined;
 
-    addTypes(typeBuilder: TypeBuilder, inferMaps: boolean, inferEnums: boolean, fixedTopLevels: boolean): Promise<void>;
+    addTypes(
+        ctx: RunContext,
+        typeBuilder: TypeBuilder,
+        inferMaps: boolean,
+        inferEnums: boolean,
+        fixedTopLevels: boolean
+    ): Promise<void>;
 }
 
 type JSONTopLevel = { samples: Value[]; description: string | undefined };
@@ -116,6 +123,7 @@ export class JSONInput implements Input<JSONSourceData> {
     }
 
     async addTypes(
+        _ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
@@ -181,8 +189,8 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
         this._topLevels.set(name, ref);
     }
 
-    async addTypes(typeBuilder: TypeBuilder): Promise<void> {
-        await addTypesInSchema(typeBuilder, defined(this._schemaStore), this._topLevels, this._attributeProducers);
+    async addTypes(ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
+        await addTypesInSchema(ctx, typeBuilder, defined(this._schemaStore), this._topLevels, this._attributeProducers);
     }
 
     async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
@@ -299,13 +307,14 @@ export class InputData {
     }
 
     async addTypes(
+        ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
         fixedTopLevels: boolean
     ): Promise<void> {
         for (const input of this._inputs) {
-            await input.addTypes(typeBuilder, inferMaps, inferEnums, fixedTopLevels);
+            await input.addTypes(ctx, typeBuilder, inferMaps, inferEnums, fixedTopLevels);
         }
     }
 

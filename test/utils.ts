@@ -108,7 +108,14 @@ export async function quicktypeForLanguage(
       debug: graphqlSchema === undefined ? "provenance" : undefined
     });
   } catch (e) {
-    failWith("quicktype threw an exception", { error: e });
+    failWith("quicktype threw an exception", {
+      error: e,
+      languageName: language.name,
+      sourceFile,
+      sourceLanguage,
+      graphqlSchema,
+      additionalRendererOptions
+    });
   }
 }
 

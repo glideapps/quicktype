@@ -1,5 +1,4 @@
 import { StringMap, assert } from "../support/Support";
-import { messageError } from "../Messages";
 
 export type JSONSchema = StringMap | boolean;
 
@@ -14,14 +13,25 @@ export abstract class JSONSchemaStore {
     // FIXME: Remove the undefined option
     abstract async fetch(_address: string): Promise<JSONSchema | undefined>;
 
-    async get(address: string): Promise<JSONSchema> {
+    async get(address: string, debugPrint: boolean): Promise<JSONSchema | undefined> {
         let schema = this._schemas.get(address);
         if (schema !== undefined) {
             return schema;
         }
-        schema = await this.fetch(address);
+        if (debugPrint) {
+            console.log(`trying to fetch ${address}`);
+        }
+        try {
+            schema = await this.fetch(address);
+        } catch {}
         if (schema === undefined) {
-            return messageError("SchemaCannotFetch", { address });
+            if (debugPrint) {
+                console.log(`couldn't fetch ${address}`);
+            }
+            return undefined;
+        }
+        if (debugPrint) {
+            console.log(`successully fetched ${address}`);
         }
         this.add(address, schema);
         return schema;
