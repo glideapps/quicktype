@@ -493,7 +493,8 @@ export async function addTypesInSchema(
     typeBuilder: TypeBuilder,
     store: JSONSchemaStore,
     references: ReadonlyMap<string, Ref>,
-    attributeProducers: JSONSchemaAttributeProducer[]
+    attributeProducers: JSONSchemaAttributeProducer[],
+    additionalSchemaAddresses: ReadonlyArray<string>
 ): Promise<void> {
     const canonizer = new Canonizer(ctx);
 
@@ -892,6 +893,14 @@ export async function addTypesInSchema(
 
         setTypeForLocation(loc, result);
         return result;
+    }
+
+    for (const address of additionalSchemaAddresses) {
+        const schema = await store.get(address, ctx.debugPrintSchemaResolving);
+        if (schema === undefined) {
+            return messageError("SchemaFetchErrorAdditional", { address });
+        }
+        canonizer.addSchema(schema, address);
     }
 
     for (const [topLevelName, topLevelRef] of references) {
