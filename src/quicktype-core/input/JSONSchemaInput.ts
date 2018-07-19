@@ -492,15 +492,14 @@ function schemaFetchError(base: Location | undefined, address: string): never {
     }
 }
 
-async function addTypesInSchema(
-    ctx: RunContext,
-    typeBuilder: TypeBuilder,
-    store: JSONSchemaStore,
-    references: ReadonlyMap<string, Ref>,
-    attributeProducers: JSONSchemaAttributeProducer[],
-    canonizer: Canonizer
-): Promise<void> {
-    async function tryResolveVirtualRef(
+class Resolver {
+    constructor(
+        private readonly _ctx: RunContext,
+        private readonly _store: JSONSchemaStore,
+        private readonly _canonizer: Canonizer
+    ) {}
+
+    private async tryResolveVirtualRef(
         fetchBase: Location,
         lookupBase: Location,
         virtualRef: Ref
@@ -511,7 +510,7 @@ async function addTypesInSchema(
         // will end up.  What we do if we encounter a new schema is add all its
         // IDs first, and then try to canonize again.
         for (;;) {
-            const loc = canonizer.canonize(fetchBase, virtualRef);
+            const loc = this._canonizer.canonize(fetchBase, virtualRef);
             const canonical = loc.canonicalRef;
             assert(canonical.hasAddress, "Canonical ref can't be resolved without an address");
             const address = canonical.address;
@@ -519,16 +518,16 @@ async function addTypesInSchema(
             let schema =
                 canonical.addressURI === undefined
                     ? undefined
-                    : await store.get(address, ctx.debugPrintSchemaResolving);
+                    : await this._store.get(address, this._ctx.debugPrintSchemaResolving);
             if (schema === undefined) {
                 return [undefined, loc];
             }
 
-            if (canonizer.addSchema(schema, address)) {
+            if (this._canonizer.addSchema(schema, address)) {
                 assert(!didAdd, "We can't add a schema twice");
                 didAdd = true;
             } else {
-                let lookupLoc = canonizer.canonize(lookupBase, virtualRef);
+                let lookupLoc = this._canonizer.canonize(lookupBase, virtualRef);
                 if (fetchBase !== undefined) {
                     lookupLoc = new Location(
                         new Ref(loc.canonicalRef.addressURI, lookupLoc.canonicalRef.path),
@@ -541,17 +540,17 @@ async function addTypesInSchema(
         }
     }
 
-    async function resolveVirtualRef(base: Location, virtualRef: Ref): Promise<[JSONSchema, Location]> {
-        if (ctx.debugPrintSchemaResolving) {
+    async resolveVirtualRef(base: Location, virtualRef: Ref): Promise<[JSONSchema, Location]> {
+        if (this._ctx.debugPrintSchemaResolving) {
             console.log(`resolving ${virtualRef.toString()} relative to ${base.toString()}`);
         }
 
         // Try with the virtual base first.  If that doesn't work, use the
         // canonical ref's address with the virtual base's path.
-        let result = await tryResolveVirtualRef(base, base, virtualRef);
+        let result = await this.tryResolveVirtualRef(base, base, virtualRef);
         let schema = result[0];
         if (schema !== undefined) {
-            if (ctx.debugPrintSchemaResolving) {
+            if (this._ctx.debugPrintSchemaResolving) {
                 console.log(`resolved to ${result[1].toString()}`);
             }
             return [schema, result[1]];
@@ -562,10 +561,10 @@ async function addTypesInSchema(
             new Ref(base.canonicalRef.addressURI, base.virtualRef.path),
             base.haveID
         );
-        result = await tryResolveVirtualRef(altBase, base, virtualRef);
+        result = await this.tryResolveVirtualRef(altBase, base, virtualRef);
         schema = result[0];
         if (schema !== undefined) {
-            if (ctx.debugPrintSchemaResolving) {
+            if (this._ctx.debugPrintSchemaResolving) {
                 console.log(`resolved to ${result[1].toString()}`);
             }
             return [schema, result[1]];
@@ -573,7 +572,14 @@ async function addTypesInSchema(
 
         return schemaFetchError(base, virtualRef.address);
     }
+}
 
+async function addTypesInSchema(
+    resolver: Resolver,
+    typeBuilder: TypeBuilder,
+    references: ReadonlyMap<string, Ref>,
+    attributeProducers: JSONSchemaAttributeProducer[]
+): Promise<void> {
     let typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
 
     function setTypeForLocation(loc: Location, t: TypeRef): void {
@@ -854,7 +860,7 @@ async function addTypesInSchema(
                 return messageError("SchemaRefMustBeString", withRef(loc, { actual: typeof schema.$ref }));
             }
             const virtualRef = Ref.parse(schema.$ref);
-            const [target, newLoc] = await resolveVirtualRef(loc, virtualRef);
+            const [target, newLoc] = await resolver.resolveVirtualRef(loc, virtualRef);
             const attributes = modifyTypeNames(typeAttributes, tn => {
                 if (!defined(tn).areInferred) return tn;
                 return TypeNames.make(new Set([newLoc.canonicalRef.name]), new Set(), true);
@@ -898,7 +904,7 @@ async function addTypesInSchema(
     }
 
     for (const [topLevelName, topLevelRef] of references) {
-        const [target, loc] = await resolveVirtualRef(
+        const [target, loc] = await resolver.resolveVirtualRef(
             new Location(new Ref(topLevelRef.addressURI, [])),
             new Ref(undefined, topLevelRef.path)
         );
@@ -1063,14 +1069,9 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             }
         }
 
-        await addTypesInSchema(
-            ctx,
-            typeBuilder,
-            defined(this._schemaStore),
-            this._topLevels,
-            this._attributeProducers,
-            canonizer
-        );
+        const resolver = new Resolver(ctx, defined(this._schemaStore), canonizer);
+
+        await addTypesInSchema(resolver, typeBuilder, this._topLevels, this._attributeProducers);
     }
 
     async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
