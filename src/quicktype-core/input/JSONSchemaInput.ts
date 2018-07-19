@@ -18,11 +18,12 @@ import {
     hashCodeOf,
     hasOwnProperty,
     definedMap,
-    addHashCode
+    addHashCode,
+    iterableFirst
 } from "collection-utils";
 
 import { PrimitiveTypeKind, TransformedStringTypeKind, transformedStringTypeTargetTypeKindsMap } from "../Type";
-import { panic, assertNever, StringMap, assert, defined } from "../support/Support";
+import { panic, assertNever, StringMap, assert, defined, StringInput, parseJSON, toString } from "../support/Support";
 import { TypeBuilder } from "../TypeBuilder";
 import { TypeNames } from "../TypeNames";
 import { makeNamesTypeAttributes, modifyTypeNames, singularizeTypeNames } from "../TypeNames";
@@ -38,6 +39,9 @@ import { StringTypes } from "../StringTypes";
 
 import { TypeRef } from "../TypeGraph";
 import { RunContext } from "../Run";
+import { Input } from "./Inputs";
+import { descriptionAttributeProducer } from "../Description";
+import { accessorNamesAttributeProducer } from "../AccessorNames";
 
 export enum PathElementKind {
     Root,
@@ -77,7 +81,7 @@ function withRef<T extends object>(refOrLoc: Ref | (() => Ref) | Location, props
     return Object.assign({ ref }, props === undefined ? {} : props);
 }
 
-export function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): StringMap {
+function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): StringMap {
     if (Array.isArray(x)) {
         return messageError("SchemaArrayIsInvalidSchema", withRef(refOrLoc));
     }
@@ -90,7 +94,7 @@ export function checkJSONSchemaObject(x: any, refOrLoc: Ref | (() => Ref)): Stri
     return x;
 }
 
-export function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema {
+function checkJSONSchema(x: any, refOrLoc: Ref | (() => Ref)): JSONSchema {
     if (typeof x === "boolean") return x;
     return checkJSONSchemaObject(x, refOrLoc);
 }
@@ -488,17 +492,14 @@ function schemaFetchError(base: Location | undefined, address: string): never {
     }
 }
 
-export async function addTypesInSchema(
-    ctx: RunContext,
-    typeBuilder: TypeBuilder,
-    store: JSONSchemaStore,
-    references: ReadonlyMap<string, Ref>,
-    attributeProducers: JSONSchemaAttributeProducer[],
-    additionalSchemaAddresses: ReadonlyArray<string>
-): Promise<void> {
-    const canonizer = new Canonizer(ctx);
+class Resolver {
+    constructor(
+        private readonly _ctx: RunContext,
+        private readonly _store: JSONSchemaStore,
+        private readonly _canonizer: Canonizer
+    ) {}
 
-    async function tryResolveVirtualRef(
+    private async tryResolveVirtualRef(
         fetchBase: Location,
         lookupBase: Location,
         virtualRef: Ref
@@ -509,7 +510,7 @@ export async function addTypesInSchema(
         // will end up.  What we do if we encounter a new schema is add all its
         // IDs first, and then try to canonize again.
         for (;;) {
-            const loc = canonizer.canonize(fetchBase, virtualRef);
+            const loc = this._canonizer.canonize(fetchBase, virtualRef);
             const canonical = loc.canonicalRef;
             assert(canonical.hasAddress, "Canonical ref can't be resolved without an address");
             const address = canonical.address;
@@ -517,16 +518,16 @@ export async function addTypesInSchema(
             let schema =
                 canonical.addressURI === undefined
                     ? undefined
-                    : await store.get(address, ctx.debugPrintSchemaResolving);
+                    : await this._store.get(address, this._ctx.debugPrintSchemaResolving);
             if (schema === undefined) {
                 return [undefined, loc];
             }
 
-            if (canonizer.addSchema(schema, address)) {
+            if (this._canonizer.addSchema(schema, address)) {
                 assert(!didAdd, "We can't add a schema twice");
                 didAdd = true;
             } else {
-                let lookupLoc = canonizer.canonize(lookupBase, virtualRef);
+                let lookupLoc = this._canonizer.canonize(lookupBase, virtualRef);
                 if (fetchBase !== undefined) {
                     lookupLoc = new Location(
                         new Ref(loc.canonicalRef.addressURI, lookupLoc.canonicalRef.path),
@@ -539,17 +540,17 @@ export async function addTypesInSchema(
         }
     }
 
-    async function resolveVirtualRef(base: Location, virtualRef: Ref): Promise<[JSONSchema, Location]> {
-        if (ctx.debugPrintSchemaResolving) {
+    async resolveVirtualRef(base: Location, virtualRef: Ref): Promise<[JSONSchema, Location]> {
+        if (this._ctx.debugPrintSchemaResolving) {
             console.log(`resolving ${virtualRef.toString()} relative to ${base.toString()}`);
         }
 
         // Try with the virtual base first.  If that doesn't work, use the
         // canonical ref's address with the virtual base's path.
-        let result = await tryResolveVirtualRef(base, base, virtualRef);
+        let result = await this.tryResolveVirtualRef(base, base, virtualRef);
         let schema = result[0];
         if (schema !== undefined) {
-            if (ctx.debugPrintSchemaResolving) {
+            if (this._ctx.debugPrintSchemaResolving) {
                 console.log(`resolved to ${result[1].toString()}`);
             }
             return [schema, result[1]];
@@ -560,10 +561,10 @@ export async function addTypesInSchema(
             new Ref(base.canonicalRef.addressURI, base.virtualRef.path),
             base.haveID
         );
-        result = await tryResolveVirtualRef(altBase, base, virtualRef);
+        result = await this.tryResolveVirtualRef(altBase, base, virtualRef);
         schema = result[0];
         if (schema !== undefined) {
-            if (ctx.debugPrintSchemaResolving) {
+            if (this._ctx.debugPrintSchemaResolving) {
                 console.log(`resolved to ${result[1].toString()}`);
             }
             return [schema, result[1]];
@@ -572,6 +573,17 @@ export async function addTypesInSchema(
         return schemaFetchError(base, virtualRef.address);
     }
 
+    async resolveTopLevelRef(ref: Ref): Promise<[JSONSchema, Location]> {
+        return await this.resolveVirtualRef(new Location(new Ref(ref.addressURI, [])), new Ref(undefined, ref.path));
+    }
+}
+
+async function addTypesInSchema(
+    resolver: Resolver,
+    typeBuilder: TypeBuilder,
+    references: ReadonlyMap<string, Ref>,
+    attributeProducers: JSONSchemaAttributeProducer[]
+): Promise<void> {
     let typeForCanonicalRef = new EqualityMap<Ref, TypeRef>();
 
     function setTypeForLocation(loc: Location, t: TypeRef): void {
@@ -852,7 +864,7 @@ export async function addTypesInSchema(
                 return messageError("SchemaRefMustBeString", withRef(loc, { actual: typeof schema.$ref }));
             }
             const virtualRef = Ref.parse(schema.$ref);
-            const [target, newLoc] = await resolveVirtualRef(loc, virtualRef);
+            const [target, newLoc] = await resolver.resolveVirtualRef(loc, virtualRef);
             const attributes = modifyTypeNames(typeAttributes, tn => {
                 if (!defined(tn).areInferred) return tn;
                 return TypeNames.make(new Set([newLoc.canonicalRef.name]), new Set(), true);
@@ -895,19 +907,8 @@ export async function addTypesInSchema(
         return result;
     }
 
-    for (const address of additionalSchemaAddresses) {
-        const schema = await store.get(address, ctx.debugPrintSchemaResolving);
-        if (schema === undefined) {
-            return messageError("SchemaFetchErrorAdditional", { address });
-        }
-        canonizer.addSchema(schema, address);
-    }
-
     for (const [topLevelName, topLevelRef] of references) {
-        const [target, loc] = await resolveVirtualRef(
-            new Location(new Ref(topLevelRef.addressURI, [])),
-            new Ref(undefined, topLevelRef.path)
-        );
+        const [target, loc] = await resolver.resolveTopLevelRef(topLevelRef);
         const t = await toType(target, loc, makeNamesTypeAttributes(topLevelName, false));
         typeBuilder.addTopLevel(topLevelName, t);
     }
@@ -933,8 +934,8 @@ function nameFromURI(uri: uri.URI): string | undefined {
     return messageError("DriverCannotInferNameForSchema", { uri: uri.toString() });
 }
 
-export async function refsInSchemaForURI(
-    store: JSONSchemaStore,
+async function refsInSchemaForURI(
+    resolver: Resolver,
     uri: uri.URI,
     defaultName: string
 ): Promise<ReadonlyMap<string, Ref> | [string, Ref]> {
@@ -948,11 +949,7 @@ export async function refsInSchemaForURI(
         propertiesAreTypes = false;
     }
 
-    let rootSchema = await store.get(ref.address, false);
-    if (rootSchema === undefined) {
-        return schemaFetchError(undefined, ref.address);
-    }
-    const schema = ref.lookupRef(rootSchema);
+    const schema = (await resolver.resolveTopLevelRef(ref))[0];
 
     if (propertiesAreTypes) {
         if (typeof schema !== "object") {
@@ -968,5 +965,169 @@ export async function refsInSchemaForURI(
             name = maybeName !== undefined ? maybeName : defaultName;
         }
         return [name, ref];
+    }
+}
+
+class InputJSONSchemaStore extends JSONSchemaStore {
+    constructor(private readonly _inputs: Map<string, StringInput>, private readonly _delegate?: JSONSchemaStore) {
+        super();
+    }
+
+    async fetch(address: string): Promise<JSONSchema | undefined> {
+        const maybeInput = this._inputs.get(address);
+        if (maybeInput !== undefined) {
+            return checkJSONSchema(parseJSON(await toString(maybeInput), "JSON Schema", address), () =>
+                Ref.root(address)
+            );
+        }
+        if (this._delegate === undefined) {
+            return panic(`Schema URI ${address} requested, but no store given`);
+        }
+        return await this._delegate.fetch(address);
+    }
+}
+
+export interface JSONSchemaSourceData {
+    name: string;
+    uris?: string[];
+    schema?: StringInput;
+    isConverted?: boolean;
+}
+
+export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
+    readonly kind: string = "schema";
+    readonly needSchemaProcessing: boolean = true;
+
+    private readonly _attributeProducers: JSONSchemaAttributeProducer[];
+
+    private readonly _schemaInputs: Map<string, StringInput> = new Map();
+    private _schemaSources: [uri.URI, JSONSchemaSourceData][] = [];
+
+    private readonly _topLevels: Map<string, Ref> = new Map();
+
+    private _needIR: boolean = false;
+
+    constructor(
+        private _schemaStore: JSONSchemaStore | undefined,
+        additionalAttributeProducers: JSONSchemaAttributeProducer[] = [],
+        private readonly _additionalSchemaAddresses: ReadonlyArray<string> = []
+    ) {
+        this._attributeProducers = [descriptionAttributeProducer, accessorNamesAttributeProducer].concat(
+            additionalAttributeProducers
+        );
+    }
+
+    get needIR(): boolean {
+        return this._needIR;
+    }
+
+    addTopLevel(name: string, ref: Ref): void {
+        this._topLevels.set(name, ref);
+    }
+
+    async addTypes(ctx: RunContext, typeBuilder: TypeBuilder): Promise<void> {
+        if (this._schemaSources.length === 0) return;
+
+        let maybeSchemaStore = this._schemaStore;
+        if (this._schemaInputs.size === 0) {
+            if (maybeSchemaStore === undefined) {
+                return panic("Must have a schema store to process JSON Schema");
+            }
+        } else {
+            maybeSchemaStore = this._schemaStore = new InputJSONSchemaStore(this._schemaInputs, maybeSchemaStore);
+        }
+        const schemaStore = maybeSchemaStore;
+        const canonizer = new Canonizer(ctx);
+
+        for (const address of this._additionalSchemaAddresses) {
+            const schema = await schemaStore.get(address, ctx.debugPrintSchemaResolving);
+            if (schema === undefined) {
+                return messageError("SchemaFetchErrorAdditional", { address });
+            }
+            canonizer.addSchema(schema, address);
+        }
+
+        const resolver = new Resolver(ctx, defined(this._schemaStore), canonizer);
+
+        for (const [normalizedURI, source] of this._schemaSources) {
+            const givenName = source.name;
+
+            const refs = await refsInSchemaForURI(resolver, normalizedURI, givenName);
+            if (Array.isArray(refs)) {
+                let name: string;
+                if (this._schemaSources.length === 1) {
+                    name = givenName;
+                } else {
+                    name = refs[0];
+                }
+                this.addTopLevel(name, refs[1]);
+            } else {
+                for (const [refName, ref] of refs) {
+                    this.addTopLevel(refName, ref);
+                }
+            }
+        }
+
+        await addTypesInSchema(resolver, typeBuilder, this._topLevels, this._attributeProducers);
+    }
+
+    async addSource(schemaSource: JSONSchemaSourceData): Promise<void> {
+        const { uris, schema, isConverted } = schemaSource;
+
+        if (isConverted !== true) {
+            this._needIR = true;
+        }
+
+        let normalizedURIs: uri.URI[];
+        const uriPath = `-${this._schemaInputs.size + 1}`;
+        if (uris === undefined) {
+            normalizedURIs = [new URI(uriPath)];
+        } else {
+            normalizedURIs = uris.map(uri => {
+                const normalizedURI = new URI(uri).normalize();
+                if (
+                    normalizedURI
+                        .clone()
+                        .hash("")
+                        .toString() === ""
+                ) {
+                    normalizedURI.path(uriPath);
+                }
+                return normalizedURI;
+            });
+        }
+
+        if (schema === undefined) {
+            assert(uris !== undefined, "URIs must be given if schema source is not specified");
+        } else {
+            for (const normalizedURI of normalizedURIs) {
+                this._schemaInputs.set(
+                    normalizedURI
+                        .clone()
+                        .hash("")
+                        .toString(),
+                    schema
+                );
+            }
+        }
+
+        for (const normalizedURI of normalizedURIs) {
+            this._schemaSources.push([normalizedURI, schemaSource]);
+        }
+    }
+
+    async finishAddingInputs(): Promise<void> {
+        return;
+    }
+
+    singleStringSchemaSource(): string | undefined {
+        if (!this._schemaSources.every(([_, { schema }]) => typeof schema === "string")) {
+            return undefined;
+        }
+        const set = new Set(this._schemaSources.map(([_, { schema }]) => schema as string));
+        if (set.size === 1) {
+            return defined(iterableFirst(set));
+        }
+        return undefined;
     }
 }
