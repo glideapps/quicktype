@@ -572,6 +572,10 @@ class Resolver {
 
         return schemaFetchError(base, virtualRef.address);
     }
+
+    async resolveTopLevelRef(ref: Ref): Promise<[JSONSchema, Location]> {
+        return await this.resolveVirtualRef(new Location(new Ref(ref.addressURI, [])), new Ref(undefined, ref.path));
+    }
 }
 
 async function addTypesInSchema(
@@ -904,10 +908,7 @@ async function addTypesInSchema(
     }
 
     for (const [topLevelName, topLevelRef] of references) {
-        const [target, loc] = await resolver.resolveVirtualRef(
-            new Location(new Ref(topLevelRef.addressURI, [])),
-            new Ref(undefined, topLevelRef.path)
-        );
+        const [target, loc] = await resolver.resolveTopLevelRef(topLevelRef);
         const t = await toType(target, loc, makeNamesTypeAttributes(topLevelName, false));
         typeBuilder.addTopLevel(topLevelName, t);
     }
@@ -934,7 +935,7 @@ function nameFromURI(uri: uri.URI): string | undefined {
 }
 
 async function refsInSchemaForURI(
-    store: JSONSchemaStore,
+    resolver: Resolver,
     uri: uri.URI,
     defaultName: string
 ): Promise<ReadonlyMap<string, Ref> | [string, Ref]> {
@@ -948,11 +949,7 @@ async function refsInSchemaForURI(
         propertiesAreTypes = false;
     }
 
-    let rootSchema = await store.get(ref.address, false);
-    if (rootSchema === undefined) {
-        return schemaFetchError(undefined, ref.address);
-    }
-    const schema = ref.lookupRef(rootSchema);
+    const schema = (await resolver.resolveTopLevelRef(ref))[0];
 
     if (propertiesAreTypes) {
         if (typeof schema !== "object") {
@@ -1050,10 +1047,12 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             canonizer.addSchema(schema, address);
         }
 
+        const resolver = new Resolver(ctx, defined(this._schemaStore), canonizer);
+
         for (const [normalizedURI, source] of this._schemaSources) {
             const givenName = source.name;
 
-            const refs = await refsInSchemaForURI(schemaStore, normalizedURI, givenName);
+            const refs = await refsInSchemaForURI(resolver, normalizedURI, givenName);
             if (Array.isArray(refs)) {
                 let name: string;
                 if (this._schemaSources.length === 1) {
@@ -1068,8 +1067,6 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
                 }
             }
         }
-
-        const resolver = new Resolver(ctx, defined(this._schemaStore), canonizer);
 
         await addTypesInSchema(resolver, typeBuilder, this._topLevels, this._attributeProducers);
     }
