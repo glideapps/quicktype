@@ -26,6 +26,16 @@ export const javaScriptOptions = {
     runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true)
 };
 
+export type JavaScriptTypeAnnotations = {
+    any: string;
+    anyArray: string;
+    anyMap: string;
+    string: string;
+    stringArray: string;
+    boolean: string;
+    never: string;
+};
+
 export class JavaScriptTargetLanguage extends TargetLanguage {
     constructor(
         displayName: string = "JavaScript",
@@ -226,18 +236,11 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected get castFunctionLine(): string {
-        return "function cast(obj, typ)";
+        return "function cast(val, typ)";
     }
 
-    protected get typeAnnotations(): {
-        any: string;
-        anyArray: string;
-        anyMap: string;
-        string: string;
-        stringArray: string;
-        boolean: string;
-    } {
-        return { any: "", anyArray: "", anyMap: "", string: "", stringArray: "", boolean: "" };
+    protected get typeAnnotations(): JavaScriptTypeAnnotations {
+        return { any: "", anyArray: "", anyMap: "", string: "", stringArray: "", boolean: "", never: "" };
     }
 
     private emitConvertModuleBody(): void {
@@ -262,64 +265,75 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 anyMap: anyMapAnnotation,
                 string: stringAnnotation,
                 stringArray: stringArrayAnnotation,
-                boolean: booleanAnnotation
+                never: neverAnnotation
             } = this.typeAnnotations;
             this.ensureBlankLine();
-            this.emitMultiline(`${this.castFunctionLine} {
-    if (!isValid(typ, obj)) {
-        throw Error(\`Invalid value\`);
-    }
-    return obj;
+            this.emitMultiline(`function invalidValue(typ${anyAnnotation}, val${anyAnnotation})${neverAnnotation} {
+    throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\`);
 }
 
-function isValid(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (typ === "any") { return true; }
-    if (typ === null) { return val === null; }
-    if (typ === false) { return false; }
+${this.castFunctionLine} {
+    if (typ === "any") return val;
+    if (typ === null) {
+        if (val === null) return val;
+        return invalidValue(typ, val);
+    }
+    if (typ === false) return invalidValue(typ, val);
     while (typeof typ === "object" && typ.ref !== undefined) {
         typ = typeMap[typ.ref];
     }
-    if (Array.isArray(typ)) { return isValidEnum(typ, val); }
+    if (Array.isArray(typ)) return transformEnum(typ, val);
     if (typeof typ === "object") {
-        return typ.hasOwnProperty("unionMembers") ? isValidUnion(typ.unionMembers, val)
-            : typ.hasOwnProperty("arrayItems")    ? isValidArray(typ.arrayItems, val)
-            : typ.hasOwnProperty("props")         ? isValidObject(typ.props, typ.additional, val)
-            : false;
+        return typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
+            : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
+            : typ.hasOwnProperty("props")         ? transformObject(typ.props, typ.additional, val)
+            : invalidValue(typ, val);
     }
-    return isValidPrimitive(typ, val);
+    return transformPrimitive(typ, val);
 }
 
-function isValidPrimitive(typ${stringAnnotation}, val${anyAnnotation}) {
-    return typeof typ === typeof val;
+function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
+    if (typeof typ === typeof val) return val;
+    return invalidValue(typ, val);
 }
 
-function isValidUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${booleanAnnotation} {
+function transformUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
     // val must validate against one typ in typs
-    return typs.some((typ) => isValid(typ, val));
-}
-
-function isValidEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    return cases.indexOf(val) !== -1;
-}
-
-function isValidArray(typ${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    // val must be an array with no invalid elements
-    return Array.isArray(val) && val.every((element) => {
-        return isValid(typ, element);
-    });
-}
-
-function isValidObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${booleanAnnotation} {
-    if (val === null || typeof val !== "object" || Array.isArray(val)) {
-        return false;
+    var l = typs.length;
+    for (var i = 0; i < l; i++) {
+        var typ = typs[i];
+        try {
+            return cast(val, typ);
+        } catch (_) {}
     }
-    return Object.getOwnPropertyNames(val).every((key) => {
+    return invalidValue(typs, val);
+}
+
+function transformEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
+    if (cases.indexOf(val) !== -1) return val;
+    return invalidValue(cases, val);
+}
+
+function transformArray(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
+    // val must be an array with no invalid elements
+    if (!Array.isArray(val)) return invalidValue("array", val);
+    return val.map(el => cast(el, typ));
+}
+
+function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
+    if (val === null || typeof val !== "object" || Array.isArray(val)) {
+        return invalidValue("object", val);
+    }
+    var result = {};
+    Object.getOwnPropertyNames(val).forEach(key => {
         const prop = val[key];
         if (Object.prototype.hasOwnProperty.call(props, key)) {
-            return isValid(props[key], prop);
+            result[key] = cast(prop, props[key]);
+        } else {
+            result[key] = cast(prop, additional);
         }
-        return isValid(additional, prop);
     });
+    return result;
 }
 
 function a(typ${anyAnnotation}) {

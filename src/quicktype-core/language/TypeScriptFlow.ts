@@ -5,7 +5,12 @@ import { utf16StringEscape, camelCase } from "../support/Strings";
 import { Sourcelike, modifySource, MultiWord, singleWord, parenIfNeeded, multiWord } from "../Source";
 import { Name } from "../Naming";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
-import { javaScriptOptions, JavaScriptTargetLanguage, JavaScriptRenderer } from "./JavaScript";
+import {
+    javaScriptOptions,
+    JavaScriptTargetLanguage,
+    JavaScriptRenderer,
+    JavaScriptTypeAnnotations
+} from "./JavaScript";
 import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { RenderContext } from "../Renderer";
@@ -14,6 +19,15 @@ export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     justTypes: new BooleanOption("just-types", "Interfaces only", false),
     declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false)
 });
+
+const tsFlowTypeAnnotations = {
+    any: ": any",
+    anyArray: ": any[]",
+    anyMap: ": { [k: string]: any }",
+    string: ": string",
+    stringArray: ": string[]",
+    boolean: ": boolean"
+};
 
 export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
     protected getOptions(): Option<any>[] {
@@ -144,25 +158,11 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     }
 
     protected get castFunctionLine(): string {
-        return "function cast<T>(obj: any, typ: any): T";
+        return "function cast<T>(val: any, typ: any): T";
     }
 
-    protected get typeAnnotations(): {
-        any: string;
-        anyArray: string;
-        anyMap: string;
-        string: string;
-        stringArray: string;
-        boolean: string;
-    } {
-        return {
-            any: ": any",
-            anyArray: ": any[]",
-            anyMap: ": { [k: string]: any }",
-            string: ": string",
-            stringArray: ": string[]",
-            boolean: ": boolean"
-        };
+    protected get typeAnnotations(): JavaScriptTypeAnnotations {
+        throw new Error("not implemented");
     }
 
     protected emitConvertModule(): void {
@@ -186,6 +186,10 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
     protected get moduleLine(): string | undefined {
         return "export namespace Convert";
+    }
+
+    protected get typeAnnotations(): JavaScriptTypeAnnotations {
+        return Object.assign({ never: ": never" }, tsFlowTypeAnnotations);
     }
 
     protected emitModuleExports(): void {
@@ -233,6 +237,10 @@ export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
 export class FlowRenderer extends TypeScriptFlowBaseRenderer {
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return ["Class", "Object", "String", "Array", "JSON", "Error"];
+    }
+
+    protected get typeAnnotations(): JavaScriptTypeAnnotations {
+        return Object.assign({ never: "" }, tsFlowTypeAnnotations);
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {
