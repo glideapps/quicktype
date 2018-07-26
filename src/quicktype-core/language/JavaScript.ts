@@ -272,7 +272,11 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\`);
 }
 
-function transform(val${anyAnnotation}, typ${anyAnnotation})${anyAnnotation} {
+function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
+    return typ.props;
+}
+
+function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation})${anyAnnotation} {
     function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (typeof typ === typeof val) return val;
         return invalidValue(typ, val);
@@ -330,14 +334,14 @@ function transform(val${anyAnnotation}, typ${anyAnnotation})${anyAnnotation} {
     if (typeof typ === "object") {
         return typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
             : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
-            : typ.hasOwnProperty("props")         ? transformObject(typ.props, typ.additional, val)
+            : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val)
             : invalidValue(typ, val);
     }
     return transformPrimitive(typ, val);
 }
 
 ${this.castFunctionLine} {
-    return transform(val, typ);
+    return transform(val, typ, jsonToJSProps);
 }
 
 function a(typ${anyAnnotation}) {
