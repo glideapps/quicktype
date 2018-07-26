@@ -272,7 +272,51 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     throw Error(\`Invalid value \${JSON.stringify(val)} for type \${JSON.stringify(typ)}\`);
 }
 
-${this.castFunctionLine} {
+function transform(val${anyAnnotation}, typ${anyAnnotation})${anyAnnotation} {
+    function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        if (typeof typ === typeof val) return val;
+        return invalidValue(typ, val);
+    }
+
+    function transformUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        // val must validate against one typ in typs
+        var l = typs.length;
+        for (var i = 0; i < l; i++) {
+            var typ = typs[i];
+            try {
+                return cast(val, typ);
+            } catch (_) {}
+        }
+        return invalidValue(typs, val);
+    }
+
+    function transformEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        if (cases.indexOf(val) !== -1) return val;
+        return invalidValue(cases, val);
+    }
+
+    function transformArray(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        // val must be an array with no invalid elements
+        if (!Array.isArray(val)) return invalidValue("array", val);
+        return val.map(el => cast(el, typ));
+    }
+
+    function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
+        if (val === null || typeof val !== "object" || Array.isArray(val)) {
+            return invalidValue("object", val);
+        }
+        var result = {};
+        Object.getOwnPropertyNames(val).forEach(key => {
+            const prop = val[key];
+            if (Object.prototype.hasOwnProperty.call(props, key)) {
+                result[key] = cast(prop, props[key]);
+            } else {
+                result[key] = cast(prop, additional);
+            }
+        });
+        return result;
+    }
+
     if (typ === "any") return val;
     if (typ === null) {
         if (val === null) return val;
@@ -292,48 +336,8 @@ ${this.castFunctionLine} {
     return transformPrimitive(typ, val);
 }
 
-function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
-    if (typeof typ === typeof val) return val;
-    return invalidValue(typ, val);
-}
-
-function transformUnion(typs${anyArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
-    // val must validate against one typ in typs
-    var l = typs.length;
-    for (var i = 0; i < l; i++) {
-        var typ = typs[i];
-        try {
-            return cast(val, typ);
-        } catch (_) {}
-    }
-    return invalidValue(typs, val);
-}
-
-function transformEnum(cases${stringArrayAnnotation}, val${anyAnnotation})${anyAnnotation} {
-    if (cases.indexOf(val) !== -1) return val;
-    return invalidValue(cases, val);
-}
-
-function transformArray(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
-    // val must be an array with no invalid elements
-    if (!Array.isArray(val)) return invalidValue("array", val);
-    return val.map(el => cast(el, typ));
-}
-
-function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
-    if (val === null || typeof val !== "object" || Array.isArray(val)) {
-        return invalidValue("object", val);
-    }
-    var result = {};
-    Object.getOwnPropertyNames(val).forEach(key => {
-        const prop = val[key];
-        if (Object.prototype.hasOwnProperty.call(props, key)) {
-            result[key] = cast(prop, props[key]);
-        } else {
-            result[key] = cast(prop, additional);
-        }
-    });
-    return result;
+${this.castFunctionLine} {
+    return transform(val, typ);
 }
 
 function a(typ${anyAnnotation}) {
