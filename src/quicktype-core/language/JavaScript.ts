@@ -281,7 +281,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
     if (typ.jsonToJS === undefined) {
         var map = {};
-        typ.props.forEach(p => map[p.json] = p.typ);
+        typ.props.forEach(p => map[p.json] = { key: p.json, typ: p.typ });
         typ.jsonToJS = map;
     }
     return typ.jsonToJS;
@@ -324,7 +324,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         Object.getOwnPropertyNames(val).forEach(key => {
             const prop = val[key];
             if (Object.prototype.hasOwnProperty.call(props, key)) {
-                result[key] = cast(prop, props[key]);
+                result[props[key].key] = cast(prop, props[key].typ);
             } else {
                 result[key] = cast(prop, additional);
             }
