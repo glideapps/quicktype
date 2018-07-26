@@ -196,11 +196,17 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 const additionalProperties = t.getAdditionalProperties();
                 const additional =
                     additionalProperties !== undefined ? this.typeMapTypeFor(additionalProperties) : "false";
-                this.emitBlock(['"', name, '": o('], [", ", additional, "),"], () => {
-                    this.forEachClassProperty(t, "none", (propName, _propJsonName, property) => {
-                        this.emitLine(propName, ": ", this.typeMapTypeForProperty(property), ",");
-                    });
+                this.emitLine('"', name, '": o([');
+                this.forEachClassProperty(t, "none", (_propName, jsonName, property) => {
+                    this.emitLine(
+                        '{ json: "',
+                        utf16StringEscape(jsonName),
+                        '", typ: ',
+                        this.typeMapTypeForProperty(property),
+                        " },"
+                    );
                 });
+                this.emitLine("], ", additional, "),");
             });
             this.forEachEnum("none", (e, name) => {
                 this.emitLine('"', name, '": [');
@@ -273,7 +279,12 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 }
 
 function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
-    return typ.props;
+    if (typ.jsonToJS === undefined) {
+        var map = {};
+        typ.props.forEach(p => map[p.json] = p.typ);
+        typ.jsonToJS = map;
+    }
+    return typ.jsonToJS;
 }
 
 function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation})${anyAnnotation} {
@@ -352,12 +363,12 @@ function u(...typs${anyArrayAnnotation}) {
     return { unionMembers: typs };
 }
 
-function o(props${anyMapAnnotation}, additional${anyAnnotation}) {
+function o(props${anyArrayAnnotation}, additional${anyAnnotation}) {
     return { props, additional };
 }
 
 function m(additional${anyAnnotation}) {
-    return { props: {}, additional };
+    return { props: [], additional };
 }
 
 function r(name${stringAnnotation}) {
