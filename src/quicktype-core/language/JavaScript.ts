@@ -201,6 +201,8 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                     this.emitLine(
                         '{ json: "',
                         utf16StringEscape(jsonName),
+                        '", js: "',
+                        utf16StringEscape(jsonName),
                         '", typ: ',
                         this.typeMapTypeForProperty(property),
                         " },"
@@ -281,7 +283,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
     if (typ.jsonToJS === undefined) {
         var map = {};
-        typ.props.forEach(p => map[p.json] = { key: p.json, typ: p.typ });
+        typ.props.forEach(p => map[p.json] = { key: p.js, typ: p.typ });
         typ.jsonToJS = map;
     }
     return typ.jsonToJS;
