@@ -65,7 +65,7 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 }
 
-function isStartCharacter(utf16Unit: number): boolean {
+export function isStartCharacter(utf16Unit: number): boolean {
     return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
 }
 
@@ -74,7 +74,7 @@ function isPartCharacter(utf16Unit: number): boolean {
     return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
 }
 
-const legalizeName = utf16LegalizeCharacters(isPartCharacter);
+export const legalizeName = utf16LegalizeCharacters(isPartCharacter);
 
 function typeNameStyle(original: string): string {
     const words = splitIntoWords(original);
@@ -88,23 +88,6 @@ function typeNameStyle(original: string): string {
         "",
         isStartCharacter
     );
-}
-
-function propertyNameStyle(original: string): string {
-    const escaped = utf16StringEscape(original);
-    const quoted = `"${escaped}"`;
-
-    if (original.length === 0) {
-        return quoted;
-    } else if (!isStartCharacter(original.codePointAt(0) as number)) {
-        return quoted;
-    } else if (escaped !== original) {
-        return quoted;
-    } else if (legalizeName(original) !== original) {
-        return quoted;
-    } else {
-        return original;
-    }
 }
 
 export class JavaScriptRenderer extends ConvenienceRenderer {
@@ -121,7 +104,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        return new Namer("properties", propertyNameStyle, []);
+        return new Namer("properties", s => s, []);
     }
 
     protected makeUnionMemberNamer(): null {

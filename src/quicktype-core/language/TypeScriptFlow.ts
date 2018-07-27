@@ -9,7 +9,9 @@ import {
     javaScriptOptions,
     JavaScriptTargetLanguage,
     JavaScriptRenderer,
-    JavaScriptTypeAnnotations
+    JavaScriptTypeAnnotations,
+    isStartCharacter,
+    legalizeName
 } from "./JavaScript";
 import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
@@ -54,6 +56,23 @@ export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
         untypedOptionValues: { [name: string]: any }
     ): TypeScriptRenderer {
         return new TypeScriptRenderer(this, renderContext, getOptionValues(tsFlowOptions, untypedOptionValues));
+    }
+}
+
+function quotePropertyName(original: string): string {
+    const escaped = utf16StringEscape(original);
+    const quoted = `"${escaped}"`;
+
+    if (original.length === 0) {
+        return quoted;
+    } else if (!isStartCharacter(original.codePointAt(0) as number)) {
+        return quoted;
+    } else if (escaped !== original) {
+        return quoted;
+    } else if (legalizeName(original) !== original) {
+        return quoted;
+    } else {
+        return original;
     }
 }
 
@@ -110,7 +129,10 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     protected emitClassBlockBody(c: ClassType): void {
         this.emitPropertyTable(c, (name, _jsonName, p) => {
             const t = p.type;
-            return [[name, p.isOptional ? "?" : "", ": "], [this.sourceFor(t).source, ";"]];
+            return [
+                [modifySource(quotePropertyName, name), p.isOptional ? "?" : "", ": "],
+                [this.sourceFor(t).source, ";"]
+            ];
         });
     }
 
