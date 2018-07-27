@@ -467,7 +467,12 @@ export type JSONSchemaType = keyof typeof schemaTypeDict;
 
 const schemaTypes = Object.getOwnPropertyNames(schemaTypeDict) as JSONSchemaType[];
 
-export type JSONSchemaAttributes = { forType?: TypeAttributes; forUnion?: TypeAttributes; forCases?: TypeAttributes[] };
+export type JSONSchemaAttributes = {
+    forType?: TypeAttributes;
+    forUnion?: TypeAttributes;
+    forObject?: TypeAttributes;
+    forCases?: TypeAttributes[];
+};
 export type JSONSchemaAttributeProducer = (
     schema: JSONSchema,
     canonicalRef: Ref,
@@ -669,15 +674,28 @@ async function addTypesInSchema(
         }
 
         const includedTypes = setFilter(schemaTypes, isTypeIncluded);
+        let producedAttributesForNoCases: JSONSchemaAttributes[] | undefined = undefined;
 
         function forEachProducedAttribute(
             cases: JSONSchema[] | undefined,
             f: (attributes: JSONSchemaAttributes) => void
         ): void {
-            for (const producer of attributeProducers) {
-                const newAttributes = producer(schema, loc.canonicalRef, includedTypes, cases);
-                if (newAttributes === undefined) continue;
-                f(newAttributes);
+            let attributes: JSONSchemaAttributes[];
+            if (cases === undefined && producedAttributesForNoCases !== undefined) {
+                attributes = producedAttributesForNoCases;
+            } else {
+                attributes = [];
+                for (const producer of attributeProducers) {
+                    const newAttributes = producer(schema, loc.canonicalRef, includedTypes, cases);
+                    if (newAttributes === undefined) continue;
+                    attributes.push(newAttributes);
+                }
+                if (cases === undefined) {
+                    producedAttributesForNoCases = attributes;
+                }
+            }
+            for (const a of attributes) {
+                f(a);
             }
         }
 
@@ -763,7 +781,14 @@ async function addTypesInSchema(
 
             const additionalProperties = schema.additionalProperties;
 
-            return await makeObject(loc, inferredAttributes, properties, required, additionalProperties);
+            let objectAttributes = inferredAttributes;
+
+            forEachProducedAttribute(undefined, ({ forObject }) => {
+                if (forObject === undefined) return;
+                objectAttributes = combineTypeAttributes("union", objectAttributes, forObject);
+            });
+
+            return await makeObject(loc, objectAttributes, properties, required, additionalProperties);
         }
 
         async function makeTypesFromCases(cases: any, kind: string): Promise<TypeRef[]> {

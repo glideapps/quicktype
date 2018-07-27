@@ -1,1 +1,1 @@
-{ "union": "bla", "enum": "bar" }
+{ "union": "bla", "enum": "bar", "object-or-string": { "prop": 123 } }
