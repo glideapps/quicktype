@@ -7,7 +7,7 @@ import {
     mapMergeWithInto
 } from "collection-utils";
 
-import { TypeAttributeKind, combineTypeAttributes, emptyTypeAttributes } from "./TypeAttributes";
+import { TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
 import { JSONSchemaType, Ref, JSONSchemaAttributes } from "./input/JSONSchemaInput";
 import { JSONSchema } from "./input/JSONSchemaStore";
 
@@ -56,6 +56,11 @@ class PropertyDescriptionsTypeAttributeKind extends TypeAttributeKind<Map<string
     makeInferred(_: Map<string, ReadonlySet<string>>): undefined {
         return undefined;
     }
+
+    stringify(propertyDescriptions: Map<string, ReadonlySet<string>>): string | undefined {
+        if (propertyDescriptions.size === 0) return undefined;
+        return `prop descs: ${propertyDescriptions.size}`;
+    }
 }
 
 export const propertyDescriptionsTypeAttributeKind: TypeAttributeKind<
@@ -92,5 +97,5 @@ export function descriptionAttributeProducer(
         }
     }
 
-    return { forType: combineTypeAttributes("union", description, propertyDescription) };
+    return { forType: description, forObject: propertyDescription };
 }

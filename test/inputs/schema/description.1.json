@@ -1,1 +1,1 @@
-{ "union": 123, "enum": "foo" }
+{ "union": 123, "enum": "foo", "object-or-string": "abc" }
