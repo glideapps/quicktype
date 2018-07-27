@@ -3,21 +3,44 @@ import { matchType, nullableFromUnion, isNamedType } from "../TypeUtils";
 import { utf16StringEscape, camelCase } from "../support/Strings";
 
 import { Sourcelike, modifySource, MultiWord, singleWord, parenIfNeeded, multiWord } from "../Source";
-import { Name } from "../Naming";
+import { Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
-import { javaScriptOptions, JavaScriptTargetLanguage, JavaScriptRenderer } from "./JavaScript";
+import {
+    javaScriptOptions,
+    JavaScriptTargetLanguage,
+    JavaScriptRenderer,
+    JavaScriptTypeAnnotations,
+    legalizeName,
+    nameStyle
+} from "./JavaScript";
 import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { RenderContext } from "../Renderer";
+import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     justTypes: new BooleanOption("just-types", "Interfaces only", false),
+    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be JavaScripty", false),
     declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false)
 });
 
+const tsFlowTypeAnnotations = {
+    any: ": any",
+    anyArray: ": any[]",
+    anyMap: ": { [k: string]: any }",
+    string: ": string",
+    stringArray: ": string[]",
+    boolean: ": boolean"
+};
+
 export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
     protected getOptions(): Option<any>[] {
-        return [tsFlowOptions.justTypes, tsFlowOptions.declareUnions, tsFlowOptions.runtimeTypecheck];
+        return [
+            tsFlowOptions.justTypes,
+            tsFlowOptions.nicePropertyNames,
+            tsFlowOptions.declareUnions,
+            tsFlowOptions.runtimeTypecheck
+        ];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -43,6 +66,25 @@ export class TypeScriptTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
     }
 }
 
+function quotePropertyName(original: string): string {
+    const escaped = utf16StringEscape(original);
+    const quoted = `"${escaped}"`;
+
+    if (original.length === 0) {
+        return quoted;
+    } else if (!isES3IdentifierStart(original.codePointAt(0) as number)) {
+        return quoted;
+    } else if (escaped !== original) {
+        return quoted;
+    } else if (legalizeName(original) !== original) {
+        return quoted;
+    } else {
+        return original;
+    }
+}
+
+const nicePropertiesNamingFunction = funPrefixNamer("properties", s => nameStyle(s, false));
+
 export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     constructor(
         targetLanguage: TargetLanguage,
@@ -50,6 +92,14 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         private readonly _tsFlowOptions: OptionValues<typeof tsFlowOptions>
     ) {
         super(targetLanguage, renderContext, _tsFlowOptions);
+    }
+
+    protected namerForObjectProperty(): Namer {
+        if (this._tsFlowOptions.nicePropertyNames) {
+            return nicePropertiesNamingFunction;
+        } else {
+            return super.namerForObjectProperty();
+        }
     }
 
     private sourceFor(t: Type): MultiWord {
@@ -96,7 +146,10 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     protected emitClassBlockBody(c: ClassType): void {
         this.emitPropertyTable(c, (name, _jsonName, p) => {
             const t = p.type;
-            return [[name, p.isOptional ? "?" : "", ": "], [this.sourceFor(t).source, ";"]];
+            return [
+                [modifySource(quotePropertyName, name), p.isOptional ? "?" : "", ": "],
+                [this.sourceFor(t).source, ";"]
+            ];
         });
     }
 
@@ -143,26 +196,12 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         return undefined;
     }
 
-    protected get castFunctionLine(): string {
-        return "function cast<T>(obj: any, typ: any): T";
+    protected get castFunctionLines(): [string, string] {
+        return ["function cast<T>(val: any, typ: any): T", "function uncast<T>(val: T, typ: any): any"];
     }
 
-    protected get typeAnnotations(): {
-        any: string;
-        anyArray: string;
-        anyMap: string;
-        string: string;
-        stringArray: string;
-        boolean: string;
-    } {
-        return {
-            any: ": any",
-            anyArray: ": any[]",
-            anyMap: ": { [k: string]: any }",
-            string: ": string",
-            stringArray: ": string[]",
-            boolean: ": boolean"
-        };
+    protected get typeAnnotations(): JavaScriptTypeAnnotations {
+        throw new Error("not implemented");
     }
 
     protected emitConvertModule(): void {
@@ -186,6 +225,10 @@ export class TypeScriptRenderer extends TypeScriptFlowBaseRenderer {
 
     protected get moduleLine(): string | undefined {
         return "export namespace Convert";
+    }
+
+    protected get typeAnnotations(): JavaScriptTypeAnnotations {
+        return Object.assign({ never: ": never" }, tsFlowTypeAnnotations);
     }
 
     protected emitModuleExports(): void {
@@ -233,6 +276,10 @@ export class FlowTargetLanguage extends TypeScriptFlowBaseTargetLanguage {
 export class FlowRenderer extends TypeScriptFlowBaseRenderer {
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return ["Class", "Object", "String", "Array", "JSON", "Error"];
+    }
+
+    protected get typeAnnotations(): JavaScriptTypeAnnotations {
+        return Object.assign({ never: "" }, tsFlowTypeAnnotations);
     }
 
     protected emitEnum(e: EnumType, enumName: Name): void {

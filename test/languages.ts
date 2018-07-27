@@ -495,7 +495,7 @@ export const TypeScriptLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: ["keyword-unions.schema"], // can't handle "constructor" property
   rendererOptions: { "explicit-unions": "yes" },
-  quickTestRendererOptions: [],
+  quickTestRendererOptions: [{ "nice-property-names": "true" }, { "declare-unions": "true" }],
   sourceFiles: ["src/language/TypeScript.ts"]
 };
 
