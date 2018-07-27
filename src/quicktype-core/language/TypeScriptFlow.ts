@@ -3,22 +3,24 @@ import { matchType, nullableFromUnion, isNamedType } from "../TypeUtils";
 import { utf16StringEscape, camelCase } from "../support/Strings";
 
 import { Sourcelike, modifySource, MultiWord, singleWord, parenIfNeeded, multiWord } from "../Source";
-import { Name } from "../Naming";
+import { Name, Namer, funPrefixNamer } from "../Naming";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import {
     javaScriptOptions,
     JavaScriptTargetLanguage,
     JavaScriptRenderer,
     JavaScriptTypeAnnotations,
-    isStartCharacter,
-    legalizeName
+    legalizeName,
+    nameStyle
 } from "./JavaScript";
 import { defined, panic } from "../support/Support";
 import { TargetLanguage } from "../TargetLanguage";
 import { RenderContext } from "../Renderer";
+import { isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const tsFlowOptions = Object.assign({}, javaScriptOptions, {
     justTypes: new BooleanOption("just-types", "Interfaces only", false),
+    nicePropertyNames: new BooleanOption("nice-property-names", "Transform property names to be JavaScripty", false),
     declareUnions: new BooleanOption("explicit-unions", "Explicitly name unions", false)
 });
 
@@ -33,7 +35,12 @@ const tsFlowTypeAnnotations = {
 
 export abstract class TypeScriptFlowBaseTargetLanguage extends JavaScriptTargetLanguage {
     protected getOptions(): Option<any>[] {
-        return [tsFlowOptions.justTypes, tsFlowOptions.declareUnions, tsFlowOptions.runtimeTypecheck];
+        return [
+            tsFlowOptions.justTypes,
+            tsFlowOptions.nicePropertyNames,
+            tsFlowOptions.declareUnions,
+            tsFlowOptions.runtimeTypecheck
+        ];
     }
 
     get supportsOptionalClassProperties(): boolean {
@@ -65,7 +72,7 @@ function quotePropertyName(original: string): string {
 
     if (original.length === 0) {
         return quoted;
-    } else if (!isStartCharacter(original.codePointAt(0) as number)) {
+    } else if (!isES3IdentifierStart(original.codePointAt(0) as number)) {
         return quoted;
     } else if (escaped !== original) {
         return quoted;
@@ -76,6 +83,8 @@ function quotePropertyName(original: string): string {
     }
 }
 
+const nicePropertiesNamingFunction = funPrefixNamer("properties", s => nameStyle(s, false));
+
 export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
     constructor(
         targetLanguage: TargetLanguage,
@@ -83,6 +92,14 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         private readonly _tsFlowOptions: OptionValues<typeof tsFlowOptions>
     ) {
         super(targetLanguage, renderContext, _tsFlowOptions);
+    }
+
+    protected namerForObjectProperty(): Namer {
+        if (this._tsFlowOptions.nicePropertyNames) {
+            return nicePropertiesNamingFunction;
+        } else {
+            return super.namerForObjectProperty();
+        }
     }
 
     private sourceFor(t: Type): MultiWord {
@@ -179,8 +196,8 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
         return undefined;
     }
 
-    protected get castFunctionLine(): string {
-        return "function cast<T>(val: any, typ: any): T";
+    protected get castFunctionLines(): [string, string] {
+        return ["function cast<T>(val: any, typ: any): T", "function uncast<T>(val: T, typ: any): any"];
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {

@@ -9,18 +9,18 @@ import {
     combineWords,
     firstUpperWordStyle,
     allUpperWordStyle,
-    camelCase
+    camelCase,
+    allLowerWordStyle
 } from "../support/Strings";
 import { panic } from "../support/Support";
 
 import { Sourcelike, modifySource } from "../Source";
-import { Namer, Name } from "../Naming";
+import { Namer, Name, funPrefixNamer } from "../Naming";
 import { ConvenienceRenderer } from "../ConvenienceRenderer";
 import { TargetLanguage } from "../TargetLanguage";
 import { BooleanOption, Option, OptionValues, getOptionValues } from "../RendererOptions";
 import { RenderContext } from "../Renderer";
-
-const unicode = require("unicode-properties");
+import { isES3IdentifierPart, isES3IdentifierStart } from "./JavaScriptUnicodeMaps";
 
 export const javaScriptOptions = {
     runtimeTypecheck: new BooleanOption("runtime-typecheck", "Verify JSON.parse results at runtime", true)
@@ -65,30 +65,23 @@ export class JavaScriptTargetLanguage extends TargetLanguage {
     }
 }
 
-export function isStartCharacter(utf16Unit: number): boolean {
-    return unicode.isAlphabetic(utf16Unit) || utf16Unit === 0x5f; // underscore
-}
+export const legalizeName = utf16LegalizeCharacters(isES3IdentifierPart);
 
-function isPartCharacter(utf16Unit: number): boolean {
-    const category: string = unicode.getCategory(utf16Unit);
-    return ["Nd", "Pc", "Mn", "Mc"].indexOf(category) >= 0 || isStartCharacter(utf16Unit);
-}
-
-export const legalizeName = utf16LegalizeCharacters(isPartCharacter);
-
-function typeNameStyle(original: string): string {
+export function nameStyle(original: string, upper: boolean): string {
     const words = splitIntoWords(original);
     return combineWords(
         words,
         legalizeName,
+        upper ? firstUpperWordStyle : allLowerWordStyle,
         firstUpperWordStyle,
-        firstUpperWordStyle,
-        allUpperWordStyle,
+        upper ? allUpperWordStyle : allLowerWordStyle,
         allUpperWordStyle,
         "",
-        isStartCharacter
+        isES3IdentifierStart
     );
 }
+
+const identityNamingFunction = funPrefixNamer("properties", s => s);
 
 export class JavaScriptRenderer extends ConvenienceRenderer {
     constructor(
@@ -100,11 +93,11 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected makeNamedTypeNamer(): Namer {
-        return new Namer("types", typeNameStyle, []);
+        return funPrefixNamer("types", s => nameStyle(s, true));
     }
 
     protected namerForObjectProperty(): Namer {
-        return new Namer("properties", s => s, []);
+        return identityNamingFunction;
     }
 
     protected makeUnionMemberNamer(): null {
@@ -112,7 +105,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
     }
 
     protected makeEnumCaseNamer(): Namer {
-        return new Namer("enum-cases", typeNameStyle, []);
+        return funPrefixNamer("enum-cases", s => nameStyle(s, true));
     }
 
     protected namedTypeToNameForTopLevel(type: Type): Type | undefined {
@@ -180,16 +173,18 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
                 const additional =
                     additionalProperties !== undefined ? this.typeMapTypeFor(additionalProperties) : "false";
                 this.emitLine('"', name, '": o([');
-                this.forEachClassProperty(t, "none", (_propName, jsonName, property) => {
-                    this.emitLine(
-                        '{ json: "',
-                        utf16StringEscape(jsonName),
-                        '", js: "',
-                        utf16StringEscape(jsonName),
-                        '", typ: ',
-                        this.typeMapTypeForProperty(property),
-                        " },"
-                    );
+                this.indent(() => {
+                    this.forEachClassProperty(t, "none", (propName, jsonName, property) => {
+                        this.emitLine(
+                            '{ json: "',
+                            utf16StringEscape(jsonName),
+                            '", js: "',
+                            modifySource(utf16StringEscape, propName),
+                            '", typ: ',
+                            this.typeMapTypeForProperty(property),
+                            " },"
+                        );
+                    });
                 });
                 this.emitLine("], ", additional, "),");
             });
@@ -226,8 +221,8 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return undefined;
     }
 
-    protected get castFunctionLine(): string {
-        return "function cast(val, typ)";
+    protected get castFunctionLines(): [string, string] {
+        return ["function cast(val, typ)", "function uncast(val, typ)"];
     }
 
     protected get typeAnnotations(): JavaScriptTypeAnnotations {
@@ -236,17 +231,18 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 
     private emitConvertModuleBody(): void {
         this.forEachTopLevel("interposing", (t, name) => {
+            const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
                 if (!this._jsOptions.runtimeTypecheck) {
                     this.emitLine("return JSON.parse(json);");
                 } else {
-                    this.emitLine("return cast(JSON.parse(json), ", this.typeMapTypeFor(t), ");");
+                    this.emitLine("return cast(JSON.parse(json), ", typeMap, ");");
                 }
             });
             this.ensureBlankLine();
 
             this.emitBlock([this.serializerFunctionLine(t, name), " "], "", () => {
-                this.emitLine("return JSON.stringify(value, null, 2);");
+                this.emitLine("return JSON.stringify(uncast(value, ", typeMap, "), null, 2);");
             });
         });
         if (this._jsOptions.runtimeTypecheck) {
@@ -272,6 +268,15 @@ function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
     return typ.jsonToJS;
 }
 
+function jsToJSONProps(typ${anyAnnotation})${anyAnnotation} {
+    if (typ.jsToJSON === undefined) {
+        var map = {};
+        typ.props.forEach(p => map[p.js] = { key: p.json, typ: p.typ });
+        typ.jsToJSON = map;
+    }
+    return typ.jsToJSON;
+}
+
 function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnotation})${anyAnnotation} {
     function transformPrimitive(typ${stringAnnotation}, val${anyAnnotation})${anyAnnotation} {
         if (typeof typ === typeof val) return val;
@@ -284,7 +289,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         for (var i = 0; i < l; i++) {
             var typ = typs[i];
             try {
-                return cast(val, typ);
+                return transform(val, typ, getProps);
             } catch (_) {}
         }
         return invalidValue(typs, val);
@@ -298,7 +303,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
     function transformArray(typ${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
         // val must be an array with no invalid elements
         if (!Array.isArray(val)) return invalidValue("array", val);
-        return val.map(el => cast(el, typ));
+        return val.map(el => transform(el, typ, getProps));
     }
 
     function transformObject(props${anyMapAnnotation}, additional${anyAnnotation}, val${anyAnnotation})${anyAnnotation} {
@@ -309,9 +314,9 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         Object.getOwnPropertyNames(val).forEach(key => {
             const prop = val[key];
             if (Object.prototype.hasOwnProperty.call(props, key)) {
-                result[props[key].key] = cast(prop, props[key].typ);
+                result[props[key].key] = transform(prop, props[key].typ, getProps);
             } else {
-                result[key] = cast(prop, additional);
+                result[key] = transform(prop, additional, getProps);
             }
         });
         return result;
@@ -336,8 +341,12 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
     return transformPrimitive(typ, val);
 }
 
-${this.castFunctionLine} {
+${this.castFunctionLines[0]} {
     return transform(val, typ, jsonToJSProps);
+}
+
+${this.castFunctionLines[1]} {
+    return transform(val, typ, jsToJSONProps);
 }
 
 function a(typ${anyAnnotation}) {
