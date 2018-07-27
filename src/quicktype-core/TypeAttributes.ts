@@ -2,11 +2,15 @@ import stringHash = require("string-hash");
 import { mapFilterMap, mapFilter, mapTranspose, mapMap } from "collection-utils";
 
 import { panic, assert } from "./support/Support";
-import { Type } from "./Type";
+import { Type, TypeKind } from "./Type";
 import { BaseGraphRewriteBuilder } from "./GraphRewriting";
 
 export class TypeAttributeKind<T> {
     constructor(readonly name: string) {}
+
+    appliesToTypeKind(kind: TypeKind): boolean {
+        return kind !== "any";
+    }
 
     combine(_attrs: T[]): T {
         return panic(`Cannot combine type attribute ${this.name}`);

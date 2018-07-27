@@ -35,7 +35,8 @@ import {
     TypeIdentity,
     TransformedStringTypeKind,
     isPrimitiveStringTypeKind,
-    transformedStringTypeKinds
+    transformedStringTypeKinds,
+    TypeKind
 } from "./Type";
 import { TypeGraph, TypeRef, makeTypeRef, derefTypeRef, typeRefIndex, assertTypeRefGraph } from "./TypeGraph";
 import { TypeAttributes, combineTypeAttributes, TypeAttributeKind, emptyTypeAttributes } from "./TypeAttributes";
@@ -47,6 +48,10 @@ import { stringTypesTypeAttributeKind, StringTypes } from "./StringTypes";
 class ProvenanceTypeAttributeKind extends TypeAttributeKind<Set<number>> {
     constructor() {
         super("provenance");
+    }
+
+    appliesToTypeKind(_kind: TypeKind): boolean {
+        return true;
     }
 
     combine(arr: Set<number>[]): Set<number> {
@@ -144,6 +149,14 @@ export class TypeBuilder {
         trefs.forEach(tref => this.assertTypeRefGraph(tref));
     }
 
+    private filterTypeAttributes(t: Type, attributes: TypeAttributes): TypeAttributes {
+        const filtered = mapFilter(attributes, (_, k) => k.appliesToTypeKind(t.kind));
+        if (attributes.size !== filtered.size) {
+            this.setLostTypeAttributes();
+        }
+        return filtered;
+    }
+
     private commitType(tref: TypeRef, t: Type): void {
         this.assertTypeRefGraph(tref);
         const index = typeRefIndex(tref);
@@ -151,6 +164,7 @@ export class TypeBuilder {
         // console.log(`committing ${t.kind}${name} to ${index}`);
         assert(this.types[index] === undefined, "A type index was committed twice");
         this.types[index] = t;
+        this.typeAttributes[index] = this.filterTypeAttributes(t, this.typeAttributes[index]);
     }
 
     protected addType<T extends Type>(
@@ -199,6 +213,10 @@ export class TypeBuilder {
             }),
             "Can't add different identity type attributes to an existing type"
         );
+        const maybeType = this.types[index];
+        if (maybeType !== undefined) {
+            attributes = this.filterTypeAttributes(maybeType, attributes);
+        }
         const nonIdentityAttributes = mapFilter(attributes, (_, k) => !k.inIdentity);
         this.typeAttributes[index] = combineTypeAttributes("union", existingAttributes, nonIdentityAttributes);
     }

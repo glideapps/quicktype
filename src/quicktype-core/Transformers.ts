@@ -922,6 +922,10 @@ class TransformationTypeAttributeKind extends TypeAttributeKind<Transformation> 
         super("transformation");
     }
 
+    appliesToTypeKind(_kind: TypeKind): boolean {
+        return true;
+    }
+
     get inIdentity(): boolean {
         return true;
     }
