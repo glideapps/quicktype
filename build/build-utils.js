@@ -169,7 +169,13 @@ function mkdirs(dir) {
     if (components.length === 0) {
         throw new Error("mkdirs must be called with at least one path component");
     }
-    let soFar = ".";
+    let soFar;
+    if (components[0].length === 0) {
+        soFar = "/";
+        components.shift();
+    } else {
+        soFar = ".";
+    }
     for (const c of components) {
         soFar = path.join(soFar, c);
         try {
