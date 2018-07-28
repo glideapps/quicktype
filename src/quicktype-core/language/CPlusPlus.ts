@@ -21,6 +21,7 @@ import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, Optio
 import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 import { RenderContext } from "../Renderer";
+import { enumValuesTypeAttributeKind, getEnumValue } from "../EnumValues";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
@@ -479,9 +480,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitEnum(e: EnumType, enumName: Name): void {
         const caseNames: Sourcelike[] = [];
+        const attributes = e.getAttributes();
+        const enumValues = enumValuesTypeAttributeKind.tryGetInAttributes(attributes);
+
         this.forEachEnumCase(e, "none", name => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
+
+            if (enumValues !== undefined) {
+                const enumvalue = getEnumValue(enumValues, jsonName);
+                if (enumvalue !== undefined) {
+                    caseNames.push(" = " + enumvalue);
+                }
+            }
         });
         this.emitDescription(this.descriptionForType(e));
         this.emitLine("enum class ", enumName, " { ", caseNames, " };");
