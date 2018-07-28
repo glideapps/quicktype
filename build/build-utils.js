@@ -80,11 +80,6 @@ function copyFile(src, dst) {
     }
 }
 
-function endsWith(str, suffix) {
-    if (str.length < suffix.length) return false;
-    return str.substr(str.length - suffix.length) === suffix;
-}
-
 function replaceAll(content, from, to) {
     for (;;) {
         const newContent = content.replace(from, to);
@@ -169,7 +164,13 @@ function mkdirs(dir) {
     if (components.length === 0) {
         throw new Error("mkdirs must be called with at least one path component");
     }
-    let soFar = ".";
+    let soFar;
+    if (components[0].length === 0) {
+        soFar = "/";
+        components.shift();
+    } else {
+        soFar = ".";
+    }
     for (const c of components) {
         soFar = path.join(soFar, c);
         try {

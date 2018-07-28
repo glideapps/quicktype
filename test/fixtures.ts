@@ -18,7 +18,8 @@ import {
   Sample,
   samplesFromSources,
   testsInDir,
-  ComparisonArgs
+  ComparisonArgs,
+  mkdirs
 } from "./utils";
 import * as languages from "./languages";
 import { RendererOptions } from "../dist/quicktype-core/Run";
@@ -218,11 +219,7 @@ abstract class LanguageFixture extends Fixture {
         path.dirname(sample.path),
         path.basename(sample.path, path.extname(sample.path))
       );
-      try {
-        shell.mkdir("-p", outputDir);
-      } catch (e) {
-        console.error(`Error creating directory "${outputDir}" - probably another thread created it`);
-      }
+      mkdirs(outputDir);
       shell.cp(path.join(cwd, this.language.output), outputDir);
     }
 
