@@ -1,69 +1,41 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const collection_utils_1 = require("collection-utils");
-const Support_1 = require("./support/Support");
+import {
+    mapMap,
+} from "collection-utils";
 
-class EnumValuesTypeAttributeKind extends TypeAttributes_1.TypeAttributeKind {
+import { lookupKey, AccessorNames, makeAccessorNames } from "./AccessorNames";
+import { EnumType } from "./Type";
+import { TypeAttributeKind } from "./TypeAttributes";
+import { JSONSchema } from "./input/JSONSchemaStore";
+import { Ref, JSONSchemaType, JSONSchemaAttributes } from "./input/JSONSchemaInput";
+
+class EnumValuesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
     constructor() {
         super("enumValues");
     }
-    makeInferred(_) {
+    makeInferred(_: AccessorNames) {
         return undefined;
     }
 }
-exports.enumValuesTypeAttributeKind = new EnumValuesTypeAttributeKind();
 
-// Returns [name, isFixed].
-function getFromEntry(entry, language) {
-    if (typeof entry === "string")
-        return [entry, false];
-    const maybeForLanguage = entry.get(language);
-    if (maybeForLanguage !== undefined)
-        return [maybeForLanguage, true];
-    const maybeWildcard = entry.get("*");
-    if (maybeWildcard !== undefined)
-        return [maybeWildcard, false];
-    return undefined;
+export const enumValuesTypeAttributeKind: TypeAttributeKind<AccessorNames> = new EnumValuesTypeAttributeKind();
+
+export function enumCaseNames(e: EnumType, language: string): Map<string, [string, boolean] | undefined> {
+    const enumvalues = enumValuesTypeAttributeKind.tryGetInAttributes(e.getAttributes());
+    if (enumvalues === undefined) return mapMap(e.cases.entries(), _ => undefined);
+    return mapMap(e.cases.entries(), c => lookupKey(enumvalues, c, language));
 }
 
-function lookupKey(enumvalues, key, language) {
-    const entry = enumvalues.get(key);
-    if (entry === undefined)
-        return undefined;
-    return getFromEntry(entry, language);
-}
+export function enumValuesAttributeProducer(
+    schema: JSONSchema,
+    _canonicalRef: Ref | undefined,
+    _types: Set<JSONSchemaType>
+): JSONSchemaAttributes | undefined {
 
-function isEnumValuesEntry(x) {
-    if (typeof x === "string") {
-        return true;
-    }
-    return Support_1.isStringMap(x, (v) => typeof v === "string");
-}
+    if (typeof schema !== "object") return undefined;
 
-function makeEnumValuesEntry(ae) {
-    if (typeof ae === "string")
-        return ae;
-    return collection_utils_1.mapFromObject(ae);
-}
-
-function makeEnumValues(x) {
-    // FIXME: Do proper error reporting
-    const stringMap = Support_1.checkStringMap(x, isEnumValuesEntry);
-    return collection_utils_1.mapMap(collection_utils_1.mapFromObject(stringMap), makeEnumValuesEntry);
-}
-function enumValuesAttributeProducer(schema, canonicalRef, _types) {
-    if (typeof schema !== "object")
-        return undefined;
     const maybeEnumValues = schema["qt-enum-values"];
-    if (maybeEnumValues === undefined)
-        return undefined;
 
-    return { forType: exports.enumValuesTypeAttributeKind.makeAttributes(makeEnumValues(maybeEnumValues)) };
-}
+    if (maybeEnumValues === undefined) return undefined;
 
-exports.enumValuesAttributeProducer = enumValuesAttributeProducer;
-function getEnumValue(names, original) {
-    const maybeName = names.get(original);
-    return maybeName;
+    return { forType: enumValuesTypeAttributeKind.makeAttributes(makeAccessorNames(maybeEnumValues)) };
 }
-exports.getEnumValue = getEnumValue;

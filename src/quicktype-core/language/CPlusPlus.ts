@@ -21,7 +21,8 @@ import { StringOption, EnumOption, BooleanOption, Option, getOptionValues, Optio
 import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 import { RenderContext } from "../Renderer";
-import { enumValuesTypeAttributeKind, getEnumValue } from "../EnumValues";
+import { getAccessorName } from "../AccessorNames";
+import { enumCaseNames } from "../EnumValues";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
@@ -480,16 +481,15 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitEnum(e: EnumType, enumName: Name): void {
         const caseNames: Sourcelike[] = [];
-        const attributes = e.getAttributes();
-        const enumValues = enumValuesTypeAttributeKind.tryGetInAttributes(attributes);
+        const enumValues = enumCaseNames(e, this.targetLanguage.name );
 
-        this.forEachEnumCase(e, "none", name => {
+        this.forEachEnumCase(e, "none", (name, jsonName) => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
 
             if (enumValues !== undefined) {
-                const enumvalue = getEnumValue(enumValues, jsonName);
-                if (enumvalue !== undefined) {
+                const [ enumvalue, isFixed ] = getAccessorName(enumValues, jsonName);
+                if (enumvalue !== undefined && isFixed !== undefined) {
                     caseNames.push(" = " + enumvalue);
                 }
             }

@@ -43,7 +43,7 @@ function getFromEntry(entry: AccessorEntry, language: string): [string, boolean]
     return undefined;
 }
 
-function lookupKey(accessors: AccessorNames, key: string, language: string): [string, boolean] | undefined {
+export function lookupKey(accessors: AccessorNames, key: string, language: string): [string, boolean] | undefined {
     const entry = accessors.get(key);
     if (entry === undefined) return undefined;
     return getFromEntry(entry, language);
@@ -180,7 +180,7 @@ function makeAccessorEntry(ae: string | { [language: string]: string }): Accesso
     return mapFromObject(ae);
 }
 
-function makeAccessorNames(x: any): AccessorNames {
+export function makeAccessorNames(x: any): AccessorNames {
     // FIXME: Do proper error reporting
     const stringMap = checkStringMap(x, isAccessorEntry);
     return mapMap(mapFromObject(stringMap), makeAccessorEntry);
