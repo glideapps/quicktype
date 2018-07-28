@@ -185,8 +185,8 @@ export abstract class ConvenienceRenderer extends Renderer {
         return splitDescription(description);
     }
 
-    protected descriptionForClassProperty(c: ClassType, name: string): string[] | undefined {
-        const descriptions = this.typeGraph.attributeStore.tryGet(propertyDescriptionsTypeAttributeKind, c);
+    protected descriptionForClassProperty(o: ObjectType, name: string): string[] | undefined {
+        const descriptions = this.typeGraph.attributeStore.tryGet(propertyDescriptionsTypeAttributeKind, o);
         if (descriptions === undefined) return undefined;
         return splitDescription(descriptions.get(name));
     }
