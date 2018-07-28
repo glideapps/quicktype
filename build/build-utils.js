@@ -80,11 +80,6 @@ function copyFile(src, dst) {
     }
 }
 
-function endsWith(str, suffix) {
-    if (str.length < suffix.length) return false;
-    return str.substr(str.length - suffix.length) === suffix;
-}
-
 function replaceAll(content, from, to) {
     for (;;) {
         const newContent = content.replace(from, to);
