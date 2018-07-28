@@ -361,6 +361,7 @@ export const ElmLanguage: Language = {
   ],
   skipMiscJSON: false,
   skipSchema: [
+    "constructor.schema", // can't handle "constructor" property
     "union-list.schema", // recursion
     "list.schema", // recursion
     "ref-remote.schema", // recursion
