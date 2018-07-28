@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "map": {
+      "type": "object",
+      "patternProperties": {
+        ".*": { "type": "integer" }
+      }
+    }
+  },
+  "required": ["map"]
+}
