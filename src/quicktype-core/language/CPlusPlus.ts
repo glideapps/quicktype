@@ -1,9 +1,9 @@
 import { arrayIntercalate, toReadonlyArray, iterableFirst, iterableFind } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, ClassType, EnumType, UnionType } from "../Type";
+import { Type, ClassType, ClassProperty, EnumType, UnionType } from "../Type";
 import { nullableFromUnion, matchType, removeNullFromUnion } from "../TypeUtils";
-import { Name, Namer, funPrefixNamer } from "../Naming";
+import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
 import {
@@ -201,6 +201,7 @@ export type TypeContext = {
 };
 
 export class CPlusPlusRenderer extends ConvenienceRenderer {
+    private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name, Name]>();
     private readonly _namespaceNames: ReadonlyArray<string>;
 
     private readonly _memberNamingFunction: Namer;
@@ -221,6 +222,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.enumeratorNamingStyle = _options.enumeratorNamingStyle;
 
         this._memberNamingFunction = funPrefixNamer("members", makeNameStyle(_options.memberNamingStyle, legalizeName));
+        this._gettersAndSettersForPropertyName = new Map();
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -249,6 +251,31 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected makeEnumCaseNamer(): Namer {
         return funPrefixNamer("enumerators", makeNameStyle(this.enumeratorNamingStyle, legalizeName));
+    }
+
+    protected makeNamesForPropertyGetterAndSetter(
+        _c: ClassType,
+        _className: Name,
+        _p: ClassProperty,
+        _jsonName: string,
+        name: Name
+    ): [Name, Name, Name] {
+        const getterName = new DependencyName(this._memberNamingFunction, name.order, lookup => `get_${lookup(name)}`);
+        const mutableGetterName = new DependencyName(this._memberNamingFunction, name.order, lookup => `getMutable_${lookup(name)}`);
+        const setterName = new DependencyName(this._memberNamingFunction, name.order, lookup => `set_${lookup(name)}`);
+        return [getterName, mutableGetterName, setterName];
+    }
+
+    protected makePropertyDependencyNames(
+        c: ClassType,
+        className: Name,
+        p: ClassProperty,
+        jsonName: string,
+        name: Name
+    ): Name[] {
+        const getterAndSetterNames = this.makeNamesForPropertyGetterAndSetter(c, className, p, jsonName, name);
+        this._gettersAndSettersForPropertyName.set(name, getterAndSetterNames);
+        return getterAndSetterNames;
     }
 
     protected get needsTypeDeclarationBeforeUse(): boolean {
@@ -370,7 +397,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             ],
             classType =>
                 this.variantIndirection(ctx.needsForwardIndirection && this.isForwardDeclaredType(classType), [
-                    "struct ",
                     this.ourQualifier(inJsonNamespace),
                     this.nameForNamedType(classType)
                 ]),
@@ -402,24 +428,51 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitClassMembers(c: ClassType): void {
-        this.forEachClassProperty(c, "none", (name, jsonName, property) => {
+        this.emitLine("private:");
+        this.ensureBlankLine();
+
+        this.forEachClassProperty(c, "none", (name, _jsonName, property) => {
+            this.emitLine(this.cppType(property.type, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true), " ", name, ";");
+        });
+
+        this.emitLine("public:");
+        this.ensureBlankLine();
+
+        this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, property) => {
             this.emitDescription(this.descriptionForClassProperty(c, jsonName));
-            this.emitLine(
-                this.cppType(
-                    property.type,
-                    { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false },
-                    true
-                ),
-                " ",
-                name,
-                ";"
-            );
+            //this.emitLine(this.cppType(property.type, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true), " ", name, ";");
+
+            const [getterName, mutableGetterName, setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
+            const rendered = this.cppType(property.type, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true);
+            this.emitLine("const ", rendered, " & ", getterName, "() const { return ", name, "; }");
+            this.emitLine(rendered, " & ", mutableGetterName, "() { return ", name, "; }");
+            this.emitLine("void ", setterName, "( const ", rendered, "& value) { ", name, " = value; }");
         });
     }
 
     protected emitClass(c: ClassType, className: Name): void {
         this.emitDescription(this.descriptionForType(c));
-        this.emitBlock(["struct ", className], true, () => {
+        this.emitBlock(["class ", className], true, () => {
+            this.emitLine("public:");
+            this.ensureBlankLine();
+            this.emitLine(className, "() = default;");
+            this.emitLine("virtual ~", className, "() = default;");
+            this.ensureBlankLine();
+
+            this.emitLine("friend std::ostream& operator<<(std::ostream& os, ", className, " const& ms){");
+            this.forEachClassProperty(c, "none", (name, _jsonName, property) => {
+                const [getterName, , ] = defined(this._gettersAndSettersForPropertyName.get(name));
+                if (property.type.kind == "array") {
+                    this.emitLine("    os << \"", name, " : \" << stringify(ms.", getterName, "()) << std::endl;");
+                } else {
+                    this.emitLine("    os << \"", name, " : \" << ms.", getterName, "() << std::endl;");
+                }
+            });
+
+            this.emitLine("    return os;");
+            this.emitLine("}");
+            this.ensureBlankLine();
+
             this.emitClassMembers(c);
         });
     }
@@ -427,18 +480,19 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitClassFunctions(c: ClassType, className: Name): void {
         const ourQualifier = this.ourQualifier(true);
         this.emitBlock(
-            ["inline void from_json(const json& _j, struct ", ourQualifier, className, "& _x)"],
+            ["inline void from_json(const json& _j, ", ourQualifier, className, "& _x)"],
             false,
             () => {
                 this.forEachClassProperty(c, "none", (name, json, p) => {
+                    const [getterName, , setterName] = defined(this._gettersAndSettersForPropertyName.get(name));
                     const t = p.type;
                     if (t instanceof UnionType) {
                         const [maybeNull, nonNulls] = removeNullFromUnion(t, true);
                         if (maybeNull !== null) {
                             this.emitLine(
                                 "_x.",
-                                name,
-                                " = ",
+                                getterName,
+                                "( ",
                                 ourQualifier,
                                 "get_optional<",
                                 this.cppTypeInOptional(
@@ -452,13 +506,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                                 ),
                                 '>(_j, "',
                                 stringEscape(json),
-                                '");'
+                                '") );'
                             );
                             return;
                         }
                     }
                     if (t.kind === "null" || t.kind === "any") {
-                        this.emitLine("_x.", name, " = ", ourQualifier, 'get_untyped(_j, "', stringEscape(json), '");');
+                        this.emitLine("_x.", setterName, "( ", ourQualifier, 'get_untyped(_j, "', stringEscape(json), '") );');
                         return;
                     }
                     const cppType = this.cppType(
@@ -466,15 +520,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: true },
                         false
                     );
-                    this.emitLine("_x.", name, ' = _j.at("', stringEscape(json), '").get<', cppType, ">();");
+                    this.emitLine("_x.", setterName, '( _j.at("', stringEscape(json), '").get<', cppType, ">() );");
                 });
             }
         );
         this.ensureBlankLine();
-        this.emitBlock(["inline void to_json(json& _j, const struct ", ourQualifier, className, "& _x)"], false, () => {
+        this.emitBlock(["inline void to_json(json& _j, const ", ourQualifier, className, "& _x)"], false, () => {
             this.emitLine("_j = json::object();");
             this.forEachClassProperty(c, "none", (name, json, _) => {
-                this.emitLine('_j["', stringEscape(json), '"] = _x.', name, ";");
+                const [getterName, , ] = defined(this._gettersAndSettersForPropertyName.get(name));
+                this.emitLine('_j["', stringEscape(json), '"] = _x.', getterName, "();");
             });
         });
     }
@@ -495,7 +550,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             }
         });
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("enum class ", enumName, " { ", caseNames, " };");
+        this.emitLine("enum ", enumName, " { ", caseNames, " };");
     }
 
     protected emitUnionTypedefs(u: UnionType, unionName: Name): void {
@@ -660,7 +715,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitDeclaration(decl: Declaration): void {
         if (decl.kind === "forward") {
-            this.emitLine("struct ", this.nameForNamedType(decl.type), ";");
+            this.emitLine("class ", this.nameForNamedType(decl.type), ";");
         } else if (decl.kind === "define") {
             const t = decl.type;
             const name = this.nameForNamedType(t);
@@ -681,6 +736,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitTypes(): void {
         if (!this._options.justTypes) {
             this.emitLine("using nlohmann::json;");
+            this.ensureBlankLine();
+
+            this.emitLine("template <typename T>");
+            this.emitLine("std::string stringify(const T &t)");
+            this.emitLine("{");
+            this.emitLine("    std::stringstream ss;");
+            this.emitLine("    for (auto e : t) ss << e << \", \";");
+            this.emitLine("    ss << std::endl;");
+            this.emitLine("    return ss.str();");
+            this.emitLine("}");
             this.ensureBlankLine();
         }
         this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
@@ -745,7 +810,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
             this.emitLine(`#include ${name}`);
         };
         if (this.haveNamedUnions) include("<boost/variant.hpp>");
-        if (!this._options.justTypes) include('"json.hpp"');
+        if (!this._options.justTypes) include('<nlohmann/json.hpp>');
         this.ensureBlankLine();
 
         if (this._options.justTypes) {
