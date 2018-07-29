@@ -532,7 +532,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitLine("friend std::ostream& operator<<(std::ostream& os, ", className, " const& ms){");
                 this.forEachClassProperty(c, "none", (name, _jsonName, property) => {
                     const [getterName, , ] = defined(this._gettersAndSettersForPropertyName.get(name));
-                    if (property.type.kind == "array") {
+                    if (property.type.kind === "array") {
                         this.emitLine("    os << \"", name, " : \" << stringify(ms.", getterName, "()) << std::endl;");
                     } else {
                         this.emitLine("    os << \"", name, " : \" << ms.", getterName, "() << std::endl;");
@@ -915,10 +915,10 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
          * Need to generate "imports", in terms 'c' has members, which
          * are defined by others
          */
-        var included : boolean = false;
+        let included: boolean = false;
         this.forEachClassProperty(c, "none", (_name, _jsonName, property) => {
 
-            var p = property.type;
+            let p = property.type;
 
             if (p instanceof ArrayType) {
                 p = p.items;
@@ -935,7 +935,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
                     if (t instanceof ClassType ||
                         t instanceof EnumType ||
                         t instanceof UnionType) {
-                        if (propertytype == decltype) {
+                        if (propertytype === decltype) {
                             const include = (name: string): void => {
                                 this.emitLine(`#include ${name}`);
                             };
