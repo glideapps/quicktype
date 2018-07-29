@@ -290,7 +290,7 @@ export const CPlusPlusLanguage: Language = {
     "fcca3.json"
   ],
   allowMissingNull: false,
-  output: "quicktype.hpp",
+  output: "TopLevel.hpp",
   topLevel: "TopLevel",
   skipJSON: [
     // fails on a string containing null

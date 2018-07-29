@@ -3,7 +3,7 @@
 #include <fstream>
 #include <streambuf>
 
-#include "quicktype.hpp"
+#include "TopLevel.hpp"
 
 using quicktype::TopLevel;
 using nlohmann::json;
