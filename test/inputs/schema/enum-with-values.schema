@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "properties": {
+    "weekdays": {
+      "type": "string",
+      "enum": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ],
+      "qt-enum-values": {
+        "Monday": "1",
+        "Tuesday": "2",
+        "Wednesday": "3",
+        "Thursday": "4",
+        "Friday": "5",
+        "Saturday": "6",
+        "Sunday": "7"
+      }
+    }
+  },
+  "required": [
+    "weekdays"
+  ]
+}
