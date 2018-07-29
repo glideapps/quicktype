@@ -21,7 +21,7 @@ import { assert } from "../support/Support";
 import { Declaration } from "../DeclarationIR";
 import { RenderContext } from "../Renderer";
 import { getAccessorName } from "../AccessorNames";
-import { enumCaseNames } from "../EnumValues";
+import { enumCaseValues } from "../EnumValues";
 
 const pascalValue: [string, NamingStyle] = ["pascal-case", "pascal"];
 const underscoreValue: [string, NamingStyle] = ["underscore-case", "underscore"];
@@ -647,16 +647,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitEnum(e: EnumType, enumName: Name): void {
         const caseNames: Sourcelike[] = [];
-        const enumValues = enumCaseNames(e, this.targetLanguage.name );
+        const enumValues = enumCaseValues(e, this.targetLanguage.name );
 
         this.forEachEnumCase(e, "none", (name, jsonName) => {
             if (caseNames.length > 0) caseNames.push(", ");
             caseNames.push(name);
 
             if (enumValues !== undefined) {
-                const [ enumvalue, isFixed ] = getAccessorName(enumValues, jsonName);
-                if (enumvalue !== undefined && isFixed !== undefined) {
-                    caseNames.push(" = " + enumvalue);
+                const [ enumValue, ] = getAccessorName(enumValues, jsonName);
+                if (enumValue !== undefined) {
+                    caseNames.push(" = ", enumValue.toString());
                 }
             }
         });
@@ -930,22 +930,22 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
                 p = p.items;
             }
 
-            const propertytype = this.sourcelikeToString(this.cppType(p, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true));
+            const propertyType = this.sourcelikeToString(this.cppType(p, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true));
             if (p instanceof ClassType ||
                 p instanceof EnumType ||
                 p instanceof UnionType) {
 
                 this.forEachDeclaration("none", decl => {
                     const t = decl.type;
-                    const decltype = this.sourcelikeToString(this.cppType(t, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true));
+                    const declType = this.sourcelikeToString(this.cppType(t, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true));
                     if (t instanceof ClassType ||
                         t instanceof EnumType ||
                         t instanceof UnionType) {
-                        if (propertytype === decltype) {
+                        if (propertyType === declType) {
                             const include = (name: string): void => {
                                 this.emitLine(`#include ${name}`);
                             };
-                            include("\""+decltype+".hpp\"");
+                            include("\""+declType+".hpp\"");
                             included = true;
                         }
                     }

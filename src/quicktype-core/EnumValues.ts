@@ -19,10 +19,10 @@ class EnumValuesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
 
 export const enumValuesTypeAttributeKind: TypeAttributeKind<AccessorNames> = new EnumValuesTypeAttributeKind();
 
-export function enumCaseNames(e: EnumType, language: string): Map<string, [string, boolean] | undefined> {
-    const enumvalues = enumValuesTypeAttributeKind.tryGetInAttributes(e.getAttributes());
-    if (enumvalues === undefined) return mapMap(e.cases.entries(), _ => undefined);
-    return mapMap(e.cases.entries(), c => lookupKey(enumvalues, c, language));
+export function enumCaseValues(e: EnumType, language: string): Map<string, [string, boolean] | undefined> {
+    const enumValues = enumValuesTypeAttributeKind.tryGetInAttributes(e.getAttributes());
+    if (enumValues === undefined) return mapMap(e.cases.entries(), _ => undefined);
+    return mapMap(e.cases.entries(), c => lookupKey(enumValues, c, language));
 }
 
 export function enumValuesAttributeProducer(
