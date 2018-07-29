@@ -36,6 +36,7 @@ export const cPlusPlusOptions = {
         "single-source",
         "secondary"
     ),
+    buildWithHunter: new BooleanOption("build-with-hunter", "Whether Hunter is used to build the generated source (e.g. location of json.hpp)", false),
     withGetterSetter: new BooleanOption("with-getter-setter", "Whether to generate classes with getters/setters instead of structs", false),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
@@ -288,7 +289,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected startFile(basename: Sourcelike): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         if (basename !== undefined) {
-            this._currentFilename = `${this.sourcelikeToString(basename)}.h`;
+            this._currentFilename = `${this.sourcelikeToString(basename)}`;
         }
 
         if (this.leadingComments !== undefined) {
@@ -331,14 +332,17 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.emitLine(`#include ${name}`);
         };
         if (this.haveNamedUnions) include("<boost/variant.hpp>");
-        if (!this._options.justTypes) include("<nlohmann/json.hpp>");
+        if (!this._options.justTypes) {
+            if (this._options.buildWithHunter) {
+                include("<nlohmann/json.hpp>");
+            } else {
+                include("\"json.hpp\"");
+            }
+        }
         this.ensureBlankLine();
     }
 
     protected finishFile(): void {
-        this.ensureBlankLine();
-        this.emitLine("#endif");
-
         super.finishFile(defined(this._currentFilename));
         this._currentFilename = undefined;
     }
@@ -655,7 +659,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             }
         });
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("enum ", enumName, " { ", caseNames, " };");
+        this.emitLine("enum class ", enumName, " { ", caseNames, " };");
     }
 
     protected emitUnionTypedefs(u: UnionType, unionName: Name): void {
@@ -910,7 +914,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
     }
 
     protected emitClassDefinition(c: ClassType, className: Name): void {
-        this.startFile(className);
+        this.startFile(this.sourcelikeToString(className)+".hpp");
         /** 
          * Need to generate "imports", in terms 'c' has members, which
          * are defined by others
@@ -939,7 +943,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
                             const include = (name: string): void => {
                                 this.emitLine(`#include ${name}`);
                             };
-                            include("\""+decltype+".h\"");
+                            include("\""+decltype+".hpp\"");
                             included = true;
                         }
                     }
@@ -965,7 +969,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
     }
 
     protected emitEnumDefinition(e: EnumType, enumName: Name): void {
-        this.startFile(enumName);
+        this.startFile(this.sourcelikeToString(enumName)+".hpp");
         this.emitNamespaces(this._namespaceNames, () => {
             this.ensureBlankLine();
             this.emitDescription(this.descriptionForType(e));
@@ -980,7 +984,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
     }
 
     protected emitUnionDefinition(u: UnionType, unionName: Name): void {
-        this.startFile(unionName);
+        this.startFile(this.sourcelikeToString(unionName)+".hpp");
         this.emitNamespaces(this._namespaceNames, () => {
             this.ensureBlankLine();
             this.emitDescription(this.descriptionForType(u));
