@@ -75,6 +75,8 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
         return [
             cPlusPlusOptions.justTypes,
             cPlusPlusOptions.typeSourceStyle,
+            cPlusPlusOptions.buildWithHunter,
+            cPlusPlusOptions.withGetterSetter,
             cPlusPlusOptions.namespace,
             cPlusPlusOptions.typeNamingStyle,
             cPlusPlusOptions.memberNamingStyle,
