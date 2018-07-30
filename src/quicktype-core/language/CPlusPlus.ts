@@ -304,7 +304,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected startFile(basename: Sourcelike, includeHelper: boolean = true): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         if (basename !== undefined) {
-            this._currentFilename = `${this.sourcelikeToString(basename)}`;
+            this._currentFilename = this.sourcelikeToString(basename);
         }
 
         if (this.leadingComments !== undefined) {
@@ -868,7 +868,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
-    protected emitHelperFunctions() : void {
+    protected emitHelperFunctions(): void {
         this.emitBlock(["template <typename T>\nstd::string stringify(const T &t)"], false, () => {
             this.emitLine("std::stringstream ss;");
             this.emitLine("for (auto e : t) ss << e << \", \";");
@@ -885,7 +885,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.ensureBlankLine();
     }
 
-    protected emitHelper() : void {
+    protected emitHelper(): void {
         this.startFile("helper.hpp", false);
         this.emitNamespaces(this._namespaceNames, () => {
             this.emitHelperFunctions();
@@ -980,7 +980,7 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
              */
             propertyTypes.forEach(pt => {
                 this._allTypeNames.forEach(tt => {
-                    if (pt == tt) {
+                    if (pt === tt) {
                         const include = (name: string): void => {
                             this.emitLine(`#include ${name}`);
                         };
@@ -1011,11 +1011,9 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
             this.ensureBlankLine();
             if (d instanceof ClassType) {
                 this.emitClass(d, defName);
-            }
-            else if (d instanceof EnumType) {
+            } else if (d instanceof EnumType) {
                 this.emitEnum(d, defName);
-            }
-            else if (d instanceof UnionType) {
+            } else if (d instanceof UnionType) {
                 this.emitUnionTypedefs(d, defName);
             }
         });
@@ -1023,11 +1021,9 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
         this.emitNamespaces(["nlohmann"], () => {
             if (d instanceof ClassType) {
                 this.emitClassFunctions(d, defName);
-            }
-            else if (d instanceof EnumType) {
+            } else if (d instanceof EnumType) {
                 this.emitEnumFunctions(d, defName);
-            }
-            else if (d instanceof UnionType) {
+            } else if (d instanceof UnionType) {
                 this.emitUnionFunctions(d);
             }
         });
