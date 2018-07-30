@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as path from "path";
 
 import * as _ from "lodash";
 import * as shell from "shelljs";
@@ -75,6 +76,31 @@ async function time<T>(work: () => Promise<T>): Promise<[T, number]> {
   let result = await work();
   let end = +new Date();
   return [result, end - start];
+}
+
+// FIXME: This is from build-utils.js.  Don't duplicate code.
+export function mkdirs(dir: string): void {
+  const components = dir.split(path.sep);
+  if (components.length === 0) {
+    throw new Error("mkdirs must be called with at least one path component");
+  }
+  let soFar: string;
+  if (components[0].length === 0) {
+    soFar = "/";
+    components.shift();
+  } else {
+    soFar = ".";
+  }
+  for (const c of components) {
+    soFar = path.join(soFar, c);
+    try {
+      fs.mkdirSync(soFar);
+    } catch (e) {
+      const stat = fs.statSync(soFar);
+      if (stat.isDirectory()) continue;
+      throw e;
+    }
+  }
 }
 
 export async function quicktype(opts: Partial<CLIOptions>) {
