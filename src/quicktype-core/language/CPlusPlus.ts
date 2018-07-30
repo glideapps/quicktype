@@ -1,8 +1,8 @@
-import { arrayIntercalate, toReadonlyArray, iterableFirst, iterableFind } from "collection-utils";
+import { setUnion, arrayIntercalate, toReadonlyArray, iterableFirst, iterableFind } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, ArrayType, ClassType, ClassProperty, EnumType, UnionType } from "../Type";
-import { nullableFromUnion, matchType, removeNullFromUnion } from "../TypeUtils";
+import { Type, ClassType, ClassProperty, EnumType, UnionType } from "../Type";
+import { nullableFromUnion, matchType, removeNullFromUnion, isNamedType, directlyReachableTypes } from "../TypeUtils";
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
 import { anyTypeIssueAnnotation, nullTypeIssueAnnotation } from "../Annotation";
@@ -36,8 +36,16 @@ export const cPlusPlusOptions = {
         "single-source",
         "secondary"
     ),
-    buildWithHunter: new BooleanOption("build-with-hunter", "Whether Hunter is used to build the generated source (e.g. location of json.hpp)", false),
-    withGetterSetter: new BooleanOption("with-getter-setter", "Whether to generate classes with getters/setters instead of structs", false),
+    includeLocation: new EnumOption("include-location", "Whether json.hpp is to be located globally or locally", 
+        [["local-include", true], ["global-include", false]],
+        "local-include",
+        "secondary"
+    ),
+    withGetterSetter: new EnumOption("with-getter-setter", "Generate classes with getters/setters, instead of structs", 
+        [["with-struct", false], ["with-getter-setter", true]],
+        "with-struct",
+        "secondary"
+    ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
     typeNamingStyle: new EnumOption<NamingStyle>("type-style", "Naming style for types", [
@@ -75,7 +83,7 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
         return [
             cPlusPlusOptions.justTypes,
             cPlusPlusOptions.typeSourceStyle,
-            cPlusPlusOptions.buildWithHunter,
+            cPlusPlusOptions.includeLocation,
             cPlusPlusOptions.withGetterSetter,
             cPlusPlusOptions.namespace,
             cPlusPlusOptions.typeNamingStyle,
@@ -211,6 +219,7 @@ export type TypeContext = {
 
 export class CPlusPlusRenderer extends ConvenienceRenderer {
     private _currentFilename: string | undefined;
+    private _allTypeNames: Set<string>;
     private readonly _gettersAndSettersForPropertyName = new Map<Name, [Name, Name, Name]>();
     private readonly _namespaceNames: ReadonlyArray<string>;
 
@@ -233,6 +242,23 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
         this._memberNamingFunction = funPrefixNamer("members", makeNameStyle(_options.memberNamingStyle, legalizeName));
         this._gettersAndSettersForPropertyName = new Map();
+
+        /** Gather all the unique/custom types used by the schema */
+        this._allTypeNames = new Set<string>();
+        this.forEachDeclaration("none", decl => {
+            const definedTypes = directlyReachableTypes<string>(decl.type, t => {
+                if (isNamedType(t) &&
+                    (t instanceof ClassType ||
+                     t instanceof EnumType ||
+                     t instanceof UnionType)) {
+                    return new Set([ this.sourcelikeToString(this.cppType(t, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true)) ]);
+                }
+
+                return null;
+            });
+
+            this._allTypeNames = setUnion(definedTypes, this._allTypeNames);
+        });
     }
 
     protected forbiddenNamesForGlobalNamespace(): string[] {
@@ -291,7 +317,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected startFile(basename: Sourcelike, includeHelper: boolean = true): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         if (basename !== undefined) {
-            this._currentFilename = `${this.sourcelikeToString(basename)}`;
+            this._currentFilename = `${this.sourcelikeToString(basename)}.java`;
         }
 
         if (this.leadingComments !== undefined) {
@@ -335,7 +361,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         };
         if (this.haveNamedUnions) include("<boost/variant.hpp>");
         if (!this._options.justTypes) {
-            if (this._options.buildWithHunter) {
+            if (!this._options.includeLocation) {
                 include("<nlohmann/json.hpp>");
             } else {
                 include("\"json.hpp\"");
@@ -524,7 +550,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 const rendered = this.cppType(property.type, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true);
                 this.emitLine("const ", rendered, " & ", getterName, "() const { return ", name, "; }");
                 this.emitLine(rendered, " & ", mutableGetterName, "() { return ", name, "; }");
-                this.emitLine("void ", setterName, "( const ", rendered, "& value) { ", name, " = value; }");   
+                this.emitLine("void ", setterName, "(const ", rendered, "& value) { ", name, " = value; }");   
             }
         });
     }
@@ -539,19 +565,18 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitLine("virtual ~", className, "() = default;");
                 this.ensureBlankLine();
 
-                this.emitLine("friend std::ostream& operator<<(std::ostream& os, ", className, " const& ms){");
-                this.forEachClassProperty(c, "none", (name, _jsonName, property) => {
-                    const [getterName, , ] = defined(this._gettersAndSettersForPropertyName.get(name));
-                    if (property.type.kind === "array") {
-                        this.emitLine("    os << \"", name, " : \" << stringify(ms.", getterName, "()) << std::endl;");
-                    } else {
-                        this.emitLine("    os << \"", name, " : \" << ms.", getterName, "() << std::endl;");
-                    }
-                });
+                this.emitBlock(["friend std::ostream& operator<<(std::ostream& os, ", className, " const& ms)"], false, () => {
+                    this.forEachClassProperty(c, "none", (name, _jsonName, property) => {
+                        const [getterName, , ] = defined(this._gettersAndSettersForPropertyName.get(name));
+                        if (property.type.kind === "array") {
+                            this.emitLine("os << \"", name, " : \" << stringify(ms.", getterName, "()) << std::endl;");
+                        } else {
+                            this.emitLine("os << \"", name, " : \" << ms.", getterName, "() << std::endl;");
+                        }
+                    });
 
-                this.emitLine("    return os;");
-                this.emitLine("}");
-                this.ensureBlankLine();
+                    this.emitLine("return os;");
+                });
             }
 
             this.emitClassMembers(c);
@@ -830,7 +855,11 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
     protected emitDeclaration(decl: Declaration): void {
         if (decl.kind === "forward") {
-            this.emitLine("class ", this.nameForNamedType(decl.type), ";");
+            if (this._options.withGetterSetter) {
+                this.emitLine("class ", this.nameForNamedType(decl.type), ";");
+            } else {
+                this.emitLine("struct ", this.nameForNamedType(decl.type), ";");
+            }
         } else if (decl.kind === "define") {
             const t = decl.type;
             const name = this.nameForNamedType(t);
@@ -852,14 +881,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.startFile("helper.hpp", false);
         this.emitNamespaces(this._namespaceNames, () => {
             this.emitLine("template <typename T>");
-            this.emitLine("std::string stringify(const T &t)");
-            this.emitLine("{");
-            this.emitLine("    std::stringstream ss;");
-            this.emitLine("    for (auto e : t) ss << e << \", \";");
-            this.emitLine("    ss << std::endl;");
-            this.emitLine("    return ss.str();");
-            this.emitLine("}");
-            this.ensureBlankLine();
+            this.emitBlock(["template <typename T>\nstd::string stringify(const T &t)"], false, () => {
+                this.emitLine("std::stringstream ss;");
+                this.emitLine("for (auto e : t) ss << e << \", \";");
+                this.emitLine("ss << std::endl;");
+                this.emitLine("return ss.str();");
+            });
         });
         this.finishFile();
     }
@@ -870,14 +897,12 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             this.ensureBlankLine();
 
             this.emitLine("template <typename T>");
-            this.emitLine("std::string stringify(const T &t)");
-            this.emitLine("{");
-            this.emitLine("    std::stringstream ss;");
-            this.emitLine("    for (auto e : t) ss << e << \", \";");
-            this.emitLine("    ss << std::endl;");
-            this.emitLine("    return ss.str();");
-            this.emitLine("}");
-            this.ensureBlankLine();
+            this.emitBlock(["template <typename T>\nstd::string stringify(const T &t)"], false, () => {
+                this.emitLine("std::stringstream ss;");
+                this.emitLine("for (auto e : t) ss << e << \", \";");
+                this.emitLine("ss << std::endl;");
+                this.emitLine("return ss.str();");
+            });
         }
         this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
         if (this._options.justTypes) return;
@@ -935,91 +960,83 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
         this.finishFile();
     }
 
-    protected emitClassDefinition(c: ClassType, className: Name): void {
-        this.startFile(this.sourcelikeToString(className)+".hpp");
+    protected emitIncludes(c: ClassType): void {
         /** 
-         * Need to generate "imports", in terms 'c' has members, which
+         * Need to generate "includes", in terms 'c' has members, which
          * are defined by others
          */
         let included: boolean = false;
+
         this.forEachClassProperty(c, "none", (_name, _jsonName, property) => {
+            const propertyTypes = directlyReachableTypes<string>(property.type, t => {
+                if (isNamedType(t) &&
+                    (t instanceof ClassType ||
+                     t instanceof EnumType ||
+                     t instanceof UnionType)) {
+                    return new Set([ this.sourcelikeToString(this.cppType(t, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true)) ]);
+                }
 
-            let p = property.type;
+                return null;
+            });
 
-            if (p instanceof ArrayType) {
-                p = p.items;
-            }
-
-            const propertyType = this.sourcelikeToString(this.cppType(p, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true));
-            if (p instanceof ClassType ||
-                p instanceof EnumType ||
-                p instanceof UnionType) {
-
-                this.forEachDeclaration("none", decl => {
-                    const t = decl.type;
-                    const declType = this.sourcelikeToString(this.cppType(t, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true));
-                    if (t instanceof ClassType ||
-                        t instanceof EnumType ||
-                        t instanceof UnionType) {
-                        if (propertyType === declType) {
-                            const include = (name: string): void => {
-                                this.emitLine(`#include ${name}`);
-                            };
-                            include("\""+declType+".hpp\"");
-                            included = true;
-                        }
+            /** 
+             * Need to check which elements are included in _allTypeNames and
+             * list them as includes
+             */
+            propertyTypes.forEach(pt => {
+                this._allTypeNames.forEach(tt => {
+                    if (pt == tt) {
+                        const include = (name: string): void => {
+                            this.emitLine(`#include ${name}`);
+                        };
+                        include("\""+tt+".hpp\"");
+                        included = true;
                     }
                 });
-            }
+            });
         });
 
         if (included) {
             this.ensureBlankLine();
         }
-
-        this.emitNamespaces(this._namespaceNames, () => {
-            this.ensureBlankLine();
-            this.emitDescription(this.descriptionForType(c));
-            this.ensureBlankLine();
-            this.emitLine("using nlohmann::json;");
-            this.ensureBlankLine();
-            this.emitClass(c, className);
-        });
-        this.emitNamespaces(["nlohmann"], () => {
-            this.emitClassFunctions(c, className);
-        });
-        this.finishFile();
     }
 
-    protected emitEnumDefinition(e: EnumType, enumName: Name): void {
-        this.startFile(this.sourcelikeToString(enumName)+".hpp");
-        this.emitNamespaces(this._namespaceNames, () => {
-            this.ensureBlankLine();
-            this.emitDescription(this.descriptionForType(e));
-            this.ensureBlankLine();
-            this.emitLine("using nlohmann::json;");
-            this.ensureBlankLine();
-            this.emitEnum(e, enumName);
-        });        
-        this.emitNamespaces(["nlohmann"], () => {
-            this.emitEnumFunctions(e, enumName);
-        });
-        this.finishFile();
-    }
+    protected emitDefinition(d: ClassType | EnumType | UnionType, defName: Name): void {
+        this.startFile(this.sourcelikeToString(defName)+".hpp");
 
-    protected emitUnionDefinition(u: UnionType, unionName: Name): void {
-        this.startFile(this.sourcelikeToString(unionName)+".hpp");
+        if (d instanceof ClassType) {
+            this.emitIncludes(d);
+        }
+
         this.emitNamespaces(this._namespaceNames, () => {
             this.ensureBlankLine();
-            this.emitDescription(this.descriptionForType(u));
+            this.emitDescription(this.descriptionForType(d));
             this.ensureBlankLine();
             this.emitLine("using nlohmann::json;");
             this.ensureBlankLine();
-            this.emitUnionTypedefs(u, unionName);
+            if (d instanceof ClassType) {
+                this.emitClass(d, defName);
+            }
+            else if (d instanceof EnumType) {
+                this.emitEnum(d, defName);
+            }
+            else if (d instanceof UnionType) {
+                this.emitUnionTypedefs(d, defName);
+            }
         });
+
         this.emitNamespaces(["nlohmann"], () => {
-            this.emitUnionFunctions(u);
+            if (d instanceof ClassType) {
+                this.emitClassFunctions(d, defName);
+            }
+            else if (d instanceof EnumType) {
+                this.emitEnumFunctions(d, defName);
+            }
+            else if (d instanceof UnionType) {
+                this.emitUnionFunctions(d);
+            }
         });
+
         this.finishFile();
     }
 
@@ -1030,9 +1047,9 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
 
         this.forEachNamedType(
             "leading-and-interposing",
-            (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
-            (e, n) => this.emitEnumDefinition(e, n),
-            (u, n) => this.emitUnionDefinition(u, n)
+            (c: ClassType, n: Name) => this.emitDefinition(c, n),
+            (e, n) => this.emitDefinition(e, n),
+            (u, n) => this.emitDefinition(u, n)
         );
     }
 
