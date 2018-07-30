@@ -462,28 +462,47 @@ function makeOptionDefinitions(targetLanguages: TargetLanguage[]): OptionDefinit
     return beforeLang.concat(lang, afterLang, inference, afterInference);
 }
 
+interface ColumnDefinition {
+    name: string;
+    width?: number;
+    padding?: { left: string; right: string };
+}
+
+interface TableOptions {
+    columns: ColumnDefinition[];
+}
+
 interface UsageSection {
     header?: string;
     content?: string | string[];
     optionList?: OptionDefinition[];
+    tableOptions?: TableOptions;
     hide?: string[];
 }
 
-function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSection[] {
-    let langsString: string;
-    if (targetLanguages.length < 2) {
-        langsString = "";
-    } else {
-        const langs = makeLangTypeLabel(targetLanguages);
-        langsString = ` [[bold]{--lang} ${langs}]`;
-    }
+const tableOptionsForOptions: TableOptions = {
+    columns: [
+        {
+            name: "option",
+            width: 50
+        },
+        {
+            name: "description"
+        }
+    ]
+};
 
+function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSection[] {
     const langDisplayNames = targetLanguages.map(r => r.displayName).join(", ");
 
     return [
         {
             header: "Synopsis",
-            content: `$ quicktype${langsString} FILE|URL ...`
+            content: [
+                `$ quicktype [${chalk.bold("--lang")} LANG] [${chalk.bold("--out")} FILE] FILE|URL ...`,
+                "",
+                `  LANG ... ${makeLangTypeLabel(targetLanguages)}`
+            ]
         },
         {
             header: "Description",
@@ -492,7 +511,8 @@ function makeSectionsBeforeRenderers(targetLanguages: TargetLanguage[]): UsageSe
         {
             header: "Options",
             optionList: makeOptionDefinitions(targetLanguages),
-            hide: ["no-render", "build-markov-chain"]
+            hide: ["no-render", "build-markov-chain"],
+            tableOptions: tableOptionsForOptions
         }
     ];
 }
@@ -520,7 +540,7 @@ const sectionsAfterRenderers: UsageSection[] = [
         ]
     },
     {
-        content: "Learn more at [bold]{quicktype.io}"
+        content: `Learn more at ${chalk.bold("quicktype.io")}`
     }
 ];
 
@@ -586,7 +606,8 @@ function usage(targetLanguages: TargetLanguage[]) {
 
         rendererSections.push({
             header: `Options for ${language.displayName}`,
-            optionList: definitions
+            optionList: definitions,
+            tableOptions: tableOptionsForOptions
         });
     }
 
