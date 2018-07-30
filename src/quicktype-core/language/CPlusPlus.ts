@@ -46,6 +46,7 @@ export const cPlusPlusOptions = {
         "with-struct",
         "secondary"
     ),
+    generateStringConverter: new BooleanOption("generate-string-converter", "If set a helper function is generated which can dump the structure", false),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
     typeNamingStyle: new EnumOption<NamingStyle>("type-style", "Naming style for types", [
@@ -82,6 +83,7 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
     protected getOptions(): Option<any>[] {
         return [
             cPlusPlusOptions.justTypes,
+            cPlusPlusOptions.generateStringConverter,
             cPlusPlusOptions.typeSourceStyle,
             cPlusPlusOptions.includeLocation,
             cPlusPlusOptions.codeFormat,
@@ -550,18 +552,22 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 this.emitLine("virtual ~", className, "() = default;");
                 this.ensureBlankLine();
 
-                this.emitBlock(["friend std::ostream& operator<<(std::ostream& os, ", className, " const& ms)"], false, () => {
-                    this.forEachClassProperty(c, "none", (name, _jsonName, property) => {
-                        const [getterName, , ] = defined(this._gettersAndSettersForPropertyName.get(name));
-                        if (property.type.kind === "array") {
-                            this.emitLine("os << \"", name, " : \" << stringify(ms.", getterName, "()) << std::endl;");
-                        } else {
-                            this.emitLine("os << \"", name, " : \" << ms.", getterName, "() << std::endl;");
-                        }
-                    });
+                if (this._options.generateStringConverter) {
+                    this.emitBlock(["friend std::ostream& operator<<(std::ostream& os, ", className, " const& ms)"], false, () => {
+                        this.forEachClassProperty(c, "none", (name, _jsonName, property) => {
+                            const [getterName, , ] = defined(this._gettersAndSettersForPropertyName.get(name));
+                            if (property.type.kind === "array") {
+                                this.emitLine("os << \"", name, " : \" << stringify(ms.", getterName, "()) << std::endl;");
+                            } else if (property.type.kind === "enum") {
+                                this.emitLine("os << \"", name, " : \" << as_integer(ms.", getterName, "()) << std::endl;");
+                            } else {
+                                this.emitLine("os << \"", name, " : \" << ms.", getterName, "() << std::endl;");
+                            }
+                        });
 
-                    this.emitLine("return os;");
-                });
+                        this.emitLine("return os;");
+                    });
+                }
             }
 
             this.emitClassMembers(c);
@@ -862,16 +868,27 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
+    protected emitHelperFunctions() : void {
+        this.emitBlock(["template <typename T>\nstd::string stringify(const T &t)"], false, () => {
+            this.emitLine("std::stringstream ss;");
+            this.emitLine("for (auto e : t) ss << e << \", \";");
+            this.emitLine("ss << std::endl;");
+            this.emitLine("return ss.str();");
+        });
+
+        this.ensureBlankLine();
+
+        this.emitBlock(["template <typename Enumeration>\nauto as_integer(Enumeration const value)\n-> typename std::underlying_type<Enumeration>::type"], false, () => {
+            this.emitLine("return static_cast<typename std::underlying_type<Enumeration>::type>(value);");
+        });
+
+        this.ensureBlankLine();
+    }
+
     protected emitHelper() : void {
         this.startFile("helper.hpp", false);
         this.emitNamespaces(this._namespaceNames, () => {
-            this.emitLine("template <typename T>");
-            this.emitBlock(["template <typename T>\nstd::string stringify(const T &t)"], false, () => {
-                this.emitLine("std::stringstream ss;");
-                this.emitLine("for (auto e : t) ss << e << \", \";");
-                this.emitLine("ss << std::endl;");
-                this.emitLine("return ss.str();");
-            });
+            this.emitHelperFunctions();
         });
         this.finishFile();
     }
@@ -880,14 +897,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (!this._options.justTypes) {
             this.emitLine("using nlohmann::json;");
             this.ensureBlankLine();
-
-            this.emitLine("template <typename T>");
-            this.emitBlock(["template <typename T>\nstd::string stringify(const T &t)"], false, () => {
-                this.emitLine("std::stringstream ss;");
-                this.emitLine("for (auto e : t) ss << e << \", \";");
-                this.emitLine("ss << std::endl;");
-                this.emitLine("return ss.str();");
-            });
+            this.emitHelperFunctions();
         }
         this.forEachDeclaration("interposing", decl => this.emitDeclaration(decl));
         if (this._options.justTypes) return;
