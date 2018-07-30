@@ -288,7 +288,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return getterAndSetterNames;
     }
 
-    protected startFile(basename: Sourcelike): void {
+    protected startFile(basename: Sourcelike, includeHelper: boolean = true): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         if (basename !== undefined) {
             this._currentFilename = `${this.sourcelikeToString(basename)}`;
@@ -339,6 +339,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 include("<nlohmann/json.hpp>");
             } else {
                 include("\"json.hpp\"");
+            }
+
+            if (includeHelper && this._options.withGetterSetter && !this._options.typeSourceStyle) {
+                include("\"helper.hpp\"");
             }
         }
         this.ensureBlankLine();
@@ -844,6 +848,22 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         }
     }
 
+    protected emitHelper() : void {
+        this.startFile("helper.hpp", false);
+        this.emitNamespaces(this._namespaceNames, () => {
+            this.emitLine("template <typename T>");
+            this.emitLine("std::string stringify(const T &t)");
+            this.emitLine("{");
+            this.emitLine("    std::stringstream ss;");
+            this.emitLine("    for (auto e : t) ss << e << \", \";");
+            this.emitLine("    ss << std::endl;");
+            this.emitLine("    return ss.str();");
+            this.emitLine("}");
+            this.ensureBlankLine();
+        });
+        this.finishFile();
+    }
+
     protected emitTypes(): void {
         if (!this._options.justTypes) {
             this.emitLine("using nlohmann::json;");
@@ -964,7 +984,8 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
             this.emitLine("using nlohmann::json;");
             this.ensureBlankLine();
             this.emitClass(c, className);
-            this.ensureBlankLine();
+        });
+        this.emitNamespaces(["nlohmann"], () => {
             this.emitClassFunctions(c, className);
         });
         this.finishFile();
@@ -979,7 +1000,8 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
             this.emitLine("using nlohmann::json;");
             this.ensureBlankLine();
             this.emitEnum(e, enumName);
-            this.ensureBlankLine();
+        });        
+        this.emitNamespaces(["nlohmann"], () => {
             this.emitEnumFunctions(e, enumName);
         });
         this.finishFile();
@@ -994,33 +1016,24 @@ inline ${optionalType}<T> get_optional(const json &j, const char *property) {
             this.emitLine("using nlohmann::json;");
             this.ensureBlankLine();
             this.emitUnionTypedefs(u, unionName);
-            this.ensureBlankLine();
+        });
+        this.emitNamespaces(["nlohmann"], () => {
             this.emitUnionFunctions(u);
         });
         this.finishFile();
     }
 
     protected emitMultiSourceStructure(_proposedFilename: string): void {
+        if (this._options.withGetterSetter) {
+            this.emitHelper();
+        }
+
         this.forEachNamedType(
             "leading-and-interposing",
             (c: ClassType, n: Name) => this.emitClassDefinition(c, n),
             (e, n) => this.emitEnumDefinition(e, n),
             (u, n) => this.emitUnionDefinition(u, n)
         );
-
-/*
-        if (this._options.justTypes) {
-            this.emitTypes();
-        } else {
-            this.emitNamespaces(this._namespaceNames, () => this.emitTypes());
-        }
-
---> helper.h
-                if (this.haveUnions) {
-                    this.emitOptionalHelpers();
-                }
-
-*/
     }
 
     protected emitSourceStructure(proposedFilename: string): void {
