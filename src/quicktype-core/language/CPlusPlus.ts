@@ -31,7 +31,7 @@ const pascalUpperAcronymsValue: [string, NamingStyle] = ["pascal-case-upper-acro
 const camelUpperAcronymsValue: [string, NamingStyle] = ["camel-case-upper-acronyms", "camel-upper-acronyms"];
 
 export const cPlusPlusOptions = {
-    typeSourceStyle: new EnumOption("source-style", "Source code generation type, ",
+    typeSourceStyle: new EnumOption("source-style", "Source code generation type,  whether to generate single or multiple source files",
         [["single-source", true], ["multi-source", false]],
         "single-source",
         "secondary"
