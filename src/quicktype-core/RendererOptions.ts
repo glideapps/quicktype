@@ -1,6 +1,7 @@
 import { assert } from "./support/Support";
 import { messageError } from "./Messages";
 import { hasOwnProperty } from "collection-utils";
+import { splitIntoWords, capitalize } from "./support/Strings";
 
 /**
  * Primary options show up in the web UI in the "Language" settings tab,
@@ -20,6 +21,7 @@ export interface OptionDefinition {
     typeLabel?: string;
     description: string;
     legalValues?: string[];
+    legalValueDescriptions?: string[];
 }
 
 /**
@@ -142,13 +144,23 @@ export class StringOption extends Option<string> {
     }
 }
 
+function enumOptionToLabel(option: string) {
+    if (!Number.isNaN(Number.parseFloat(option))) {
+        // Leave numbers untouched (e.g. "4.1" for Swift version)
+        return option;
+    }
+    return splitIntoWords(option)
+        .map(w => capitalize(w.word))
+        .join(" ");
+}
+
 export class EnumOption<T> extends Option<T> {
     private readonly _values: { [name: string]: T };
 
     constructor(
         name: string,
         description: string,
-        values: [string, T][],
+        values: ([string, T] | [string, T, string])[],
         defaultValue: string | undefined = undefined,
         kind: OptionKind = "primary"
     ) {
@@ -162,6 +174,7 @@ export class EnumOption<T> extends Option<T> {
             description,
             typeLabel: values.map(([n, _]) => n).join("|"),
             legalValues: values.map(([n, _]) => n),
+            legalValueDefinitions: values.map(v => (v.length < 3 ? enumOptionToLabel(v[0]) : (v[2] as string))),
             defaultValue
         };
         super(definition);
