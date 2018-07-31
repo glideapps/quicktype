@@ -780,7 +780,16 @@ async function addTypesInSchema(
                 properties = checkJSONSchemaObject(schema.properties, loc.canonicalRef);
             }
 
-            const additionalProperties = schema.additionalProperties;
+            let additionalProperties = schema.additionalProperties;
+            // This is an incorrect hack to fix an issue with a Go->Schema generator:
+            // https://github.com/quicktype/quicktype/issues/976
+            if (
+                additionalProperties === undefined &&
+                typeof schema.patternProperties === "object" &&
+                hasOwnProperty(schema.patternProperties, ".*")
+            ) {
+                additionalProperties = schema.patternProperties[".*"];
+            }
 
             let objectAttributes = inferredAttributes;
 
