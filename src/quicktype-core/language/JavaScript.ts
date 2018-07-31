@@ -261,8 +261,8 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
 
 function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
     if (typ.jsonToJS === undefined) {
-        var map = {};
-        typ.props.forEach(p => map[p.json] = { key: p.js, typ: p.typ });
+        var map${anyAnnotation} = {};
+        typ.props.forEach((p${anyAnnotation}) => map[p.json] = { key: p.js, typ: p.typ });
         typ.jsonToJS = map;
     }
     return typ.jsonToJS;
@@ -270,8 +270,8 @@ function jsonToJSProps(typ${anyAnnotation})${anyAnnotation} {
 
 function jsToJSONProps(typ${anyAnnotation})${anyAnnotation} {
     if (typ.jsToJSON === undefined) {
-        var map = {};
-        typ.props.forEach(p => map[p.js] = { key: p.json, typ: p.typ });
+        var map${anyAnnotation} = {};
+        typ.props.forEach((p${anyAnnotation}) => map[p.js] = { key: p.json, typ: p.typ });
         typ.jsToJSON = map;
     }
     return typ.jsToJSON;
@@ -310,7 +310,7 @@ function transform(val${anyAnnotation}, typ${anyAnnotation}, getProps${anyAnnota
         if (val === null || typeof val !== "object" || Array.isArray(val)) {
             return invalidValue("object", val);
         }
-        var result = {};
+        var result${anyAnnotation} = {};
         Object.getOwnPropertyNames(props).forEach(key => {
             const prop = props[key];
             const v = Object.prototype.hasOwnProperty.call(val, key) ? val[key] : undefined;
