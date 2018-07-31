@@ -995,8 +995,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     return new Set([ this.sourcelikeToString(this.cppType(t, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true)) ]);
                 }
 
-                return null;
-            });
+            return null;
+        });
 
         /** 
          * Need to check which elements are included in _allTypeNames and
@@ -1093,7 +1093,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
          * Quite a hack, this is ONLY to satisfy the test subsystem, which
          * explicitly looks for a Toplevel.hpp
          */
-        if (this._allTypeNames.size == 0) {
+        if (this._allTypeNames.size === 0) {
             this.startFile(proposedFilename);
             this.finishFile();
         }
