@@ -309,7 +309,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         return getterAndSetterNames;
     }
 
-    protected startFile(basename: Sourcelike, includeHelper: boolean = true): void {
+    protected startFile(basename: Sourcelike, includeHelper: boolean = true, includeGenerators: boolean = false): void {
         assert(this._currentFilename === undefined, "Previous file wasn't finished");
         if (basename !== undefined) {
             this._currentFilename = this.sourcelikeToString(basename);
@@ -364,6 +364,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
 
             if (includeHelper && !this._options.typeSourceStyle) {
                 include("\"helper.hpp\"");
+            }
+
+            if (includeGenerators && !this._options.typeSourceStyle) {
+                include("\"Generators.hpp\"");
             }
         }
         this.ensureBlankLine();
@@ -961,26 +965,14 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         if (this._options.justTypes) {
             this.emitTypes();
         } else {
+            if (!this._options.justTypes && this.haveNamedTypes && this.haveUnions) {
+                this.emitNamespaces(["nlohmann"], () => {
+                    if (this.haveUnions) {
+                        this.emitOptionalHelpers();
+                    }
+                });
+            };
             this.emitNamespaces(this._namespaceNames, () => this.emitTypes());
-        }
-
-        if (!this._options.justTypes && this.haveNamedTypes) {
-            this.ensureBlankLine();
-            this.emitNamespaces(["nlohmann"], () => {
-                if (this.haveUnions) {
-                    this.emitOptionalHelpers();
-                }
-                this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
-                    this.emitClassFunctions(c, className)
-                );
-                this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
-                    this.emitEnumFunctions(e, enumName)
-                );
-                if (this.haveUnions) {
-                    this.ensureBlankLine();
-                    this.emitAllUnionFunctions();
-                }
-            });
         }
 
         this.finishFile();
@@ -1045,12 +1037,33 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected emitDefinition(d: ClassType | EnumType | UnionType, defName: Name): void {
-        this.startFile(this.sourcelikeToString(defName)+".hpp");
+        /** 
+         * YES, do NOT include Generators.hpp, as that would end up in
+         * circular reference
+         */
+        this.startFile(this.sourcelikeToString(defName)+".hpp", true);
 
         if (d instanceof ClassType || d instanceof UnionType) {
             this.emitIncludes(d);
         }
 
+        /** 
+         * Important fix for multi-source.
+         * as different classes might use the same generic types, e.g.
+         * vector<int64_t>, it means that in multi-source world those
+         * functions will be generated multiple times.
+         * If we have one namespace (e.g. this._namespaceNames), it
+         * would cause a definition collision.
+         * To avoid that we would have - theoretically - 2 options:
+         * a.) generate every from_json/to_json converter into one single
+         * file
+         * b.) generate them in to separate namespaces per type.
+         *
+         * The latter wouldn't work, as if class#A has member class#B,
+         * it would mean that from_json/to_json conversion of class#B 
+         * would have to be in class#A's namespace, which would complicate
+         * things A LOT.
+         */
         this.emitNamespaces(this._namespaceNames, () => {
             this.ensureBlankLine();
             this.emitDescription(this.descriptionForType(d));
@@ -1066,15 +1079,39 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
             }
         });
 
-        this.emitNamespaces(["nlohmann"], () => {
-            if (d instanceof ClassType) {
-                this.emitClassFunctions(d, defName);
-            } else if (d instanceof EnumType) {
-                this.emitEnumFunctions(d, defName);
-            } else if (d instanceof UnionType) {
-                this.emitUnionFunctions(d);
-            }
-        });
+        this.finishFile();
+    }
+
+    protected emitGenerators(proposedFilename: string | undefined): void {
+        this.startFile("Generators.hpp", true);
+
+        if (proposedFilename !== undefined) {
+            this.emitLine(`#include "${proposedFilename}"`);
+            this.ensureBlankLine();
+        } else {
+            this.forEachNamedType(
+                "leading-and-interposing",
+                (c: ClassType, _n: Name) => this.emitIncludes(c),
+                (_e, _n) => {},
+                (u, _n) => this.emitIncludes(u)
+            );
+        }
+
+        if (!this._options.justTypes && this.haveNamedTypes) {
+            this.emitNamespaces(["nlohmann"], () => {
+                this.forEachObject("leading-and-interposing", (c: ClassType, className: Name) =>
+                    this.emitClassFunctions(c, className)
+                );
+
+                this.forEachEnum("leading-and-interposing", (e: EnumType, enumName: Name) =>
+                    this.emitEnumFunctions(e, enumName)
+                );
+
+                if (this.haveUnions) {
+                    this.emitAllUnionFunctions();
+                }
+            });
+        }
 
         this.finishFile();
     }
@@ -1107,7 +1144,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     (t instanceof ClassType ||
                      t instanceof EnumType ||
                      t instanceof UnionType)) {
-                    return new Set([ this.sourcelikeToString(this.cppType(t, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true)) ]);
+                    return new Set([ this.sourcelikeToString(this.cppType(t, { needsForwardIndirection: false, needsOptionalIndirection: false, inJsonNamespace: false }, true)) ]);
                 }
 
                 return null;
@@ -1117,8 +1154,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         });
 
         if (this._options.typeSourceStyle) {
+            this.emitGenerators(proposedFilename);
             this.emitSingleSourceStructure(proposedFilename);
         } else {
+            this.emitGenerators(undefined);
             this.emitMultiSourceStructure(proposedFilename);
         }
     }
