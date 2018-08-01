@@ -766,10 +766,10 @@ async function addTypesInSchema(
 
         async function makeObjectType(): Promise<TypeRef> {
             let required: string[];
-            if (schema.required === undefined) {
+            if (schema.required === undefined || typeof schema.required === "boolean") {
                 required = [];
             } else {
-                required = checkRequiredArray(schema.required, loc);
+                required = Array.from(checkRequiredArray(schema.required, loc));
             }
 
             let properties: StringMap;
@@ -777,6 +777,13 @@ async function addTypesInSchema(
                 properties = {};
             } else {
                 properties = checkJSONSchemaObject(schema.properties, loc.canonicalRef);
+            }
+
+            // In Schema Draft 3, `required` is `true` on a property that's required.
+            for (const p of Object.getOwnPropertyNames(properties)) {
+                if (properties[p].required === true && required.indexOf(p) < 0) {
+                    required.push(p);
+                }
             }
 
             let additionalProperties = schema.additionalProperties;
