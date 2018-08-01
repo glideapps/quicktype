@@ -456,7 +456,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
                     const csType = this.csType(t);
                     this.emitExpressionMember(
                         ["public static implicit operator ", unionName, "(", csType, " ", fieldName, ")"],
-                        ["new ", unionName, "{", fieldName, " = ", fieldName, "}"]
+                        ["new ", unionName, " { ", fieldName, " = ", fieldName, " }"]
                     );
                 });
                 this.emitExpressionMember("public bool IsNull", arrayIntercalate(" && ", nullTests), true);
