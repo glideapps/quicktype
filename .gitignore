@@ -24,3 +24,4 @@ test/fixtures/objective-c/quicktype
 *.xcuserstate
 /bin
 /.node-persist
+/.vs
