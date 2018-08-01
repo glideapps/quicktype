@@ -109,6 +109,10 @@ export class UnifyUnionBuilder extends UnionBuilder<BaseGraphRewriteBuilder, Typ
             return maybeTypeRef;
         }
 
+        if (objectRefs.length === 1) {
+            return this.typeBuilder.reconstituteTypeRef(objectRefs[0], typeAttributes, forwardingRef);
+        }
+
         const objectTypes = objectRefs.map(r => assertIsObject(derefTypeRef(r, this.typeBuilder)));
         const { hasProperties, hasAdditionalProperties, hasNonAnyAdditionalProperties } = countProperties(objectTypes);
 
