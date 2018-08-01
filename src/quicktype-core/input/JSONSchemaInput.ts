@@ -766,7 +766,7 @@ async function addTypesInSchema(
 
         async function makeObjectType(): Promise<TypeRef> {
             let required: string[];
-            if (schema.required === undefined) {
+            if (schema.required === undefined || typeof schema.required === "boolean") {
                 required = [];
             } else {
                 required = checkRequiredArray(schema.required, loc);
