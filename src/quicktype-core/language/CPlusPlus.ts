@@ -49,13 +49,13 @@ export const cPlusPlusOptions = {
         "code-format",
         "Generate classes with getters/setters, instead of structs",
         [["with-struct", false], ["with-getter-setter", true]],
-        "with-struct",
-        "secondary"
+        "with-struct"
     ),
     generateStringConverter: new BooleanOption(
         "generate-string-converter",
-        "If set a helper function is generated which can dump the structure",
-        false
+        "Generate an operator<< to debug-print",
+        false,
+        "secondary"
     ),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
