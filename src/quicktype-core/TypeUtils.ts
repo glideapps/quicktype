@@ -179,7 +179,7 @@ export function separateNamedTypes(types: Iterable<Type>): SeparatedNamedTypes {
     return { objects, enums, unions };
 }
 
-function directlyReachableTypes<T>(t: Type, setForType: (t: Type) => ReadonlySet<T> | null): ReadonlySet<T> {
+export function directlyReachableTypes<T>(t: Type, setForType: (t: Type) => ReadonlySet<T> | null): ReadonlySet<T> {
     const set = setForType(t);
     if (set !== null) return set;
     return setUnion(...Array.from(t.getNonAttributeChildren()).map(c => directlyReachableTypes(c, setForType)));
