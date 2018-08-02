@@ -3,4 +3,4 @@
  * depending on how you call quicktype to generate the source code
  * [multi source or single source]
  */
-#pragme once
+#pragma once
