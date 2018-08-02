@@ -1,7 +1,7 @@
 import { setUnion, arrayIntercalate, toReadonlyArray, iterableFirst, iterableFind } from "collection-utils";
 
 import { TargetLanguage } from "../TargetLanguage";
-import { Type, ClassType, ClassProperty, ArrayType, EnumType, UnionType } from "../Type";
+import { Type, TypeKind, ClassType, ClassProperty, ArrayType, EnumType, UnionType } from "../Type";
 import { nullableFromUnion, matchType, removeNullFromUnion, isNamedType, directlyReachableTypes } from "../TypeUtils";
 import { Name, Namer, funPrefixNamer, DependencyName } from "../Naming";
 import { Sourcelike, maybeAnnotated } from "../Source";
@@ -49,6 +49,7 @@ export const cPlusPlusOptions = {
     generateStringConverter: new BooleanOption("generate-string-converter", "If set a helper function is generated which can dump the structure", false),
     justTypes: new BooleanOption("just-types", "Plain types only", false),
     namespace: new StringOption("namespace", "Name of the generated namespace(s)", "NAME", "quicktype"),
+    enumType: new StringOption("enum-type", "Type of enum class", "NAME", "int"),
     typeNamingStyle: new EnumOption<NamingStyle>("type-style", "Naming style for types", [
         pascalValue,
         underscoreValue,
@@ -88,6 +89,7 @@ export class CPlusPlusTargetLanguage extends TargetLanguage {
             cPlusPlusOptions.includeLocation,
             cPlusPlusOptions.codeFormat,
             cPlusPlusOptions.namespace,
+            cPlusPlusOptions.enumType,
             cPlusPlusOptions.typeNamingStyle,
             cPlusPlusOptions.memberNamingStyle,
             cPlusPlusOptions.enumeratorNamingStyle
@@ -235,15 +237,9 @@ export enum IncludeKind {
     Include
 }
 
-export enum ObjectType {
-    Class,
-    Enum,
-    Union
-}
-
 export type IncludeRecord = {
     kind: IncludeKind | undefined; /** How to include that */
-    objectType: ObjectType | undefined; /** What exactly to include */
+    typeKind: TypeKind | undefined; /** What exactly to include */
 };
 
 /**
@@ -282,7 +278,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     ) {
         super(targetLanguage, renderContext);
 
-        this._enumType = "int";
+        this._enumType = _options.enumType;
         this._namespaceNames = _options.namespace.split("::");
 
         this.typeNamingStyle = _options.typeNamingStyle;
@@ -1048,7 +1044,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     }
 
     protected updatePropertyTypes(recurseIntoUnion:boolean, level:number, includes: IncludeMap, propertyTypes: Map<string, IncludeRecord>, proposedIncludeKind:IncludeKind|undefined, typeName:string, t:Type, defName:string): void {
-        let propRecord: IncludeRecord = { kind: undefined, objectType: undefined };
+        let propRecord: IncludeRecord = { kind: undefined, typeKind: undefined };
 
         if (t instanceof ClassType) {
             /** 
@@ -1056,10 +1052,10 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
              * at level#0. HOWEVER if it is not a direct class member (e.g. std::shared_ptr<Class>),
              * - level > 0 - then we can SURELY forward declare it.
              */
-            propRecord.objectType = ObjectType.Class;
+            propRecord.typeKind = "class";
             propRecord.kind = proposedIncludeKind !== undefined ? proposedIncludeKind : level === 0 ? IncludeKind.Include : IncludeKind.ForwardDeclare;
         } else if (t instanceof EnumType) {
-            propRecord.objectType = ObjectType.Enum;
+            propRecord.typeKind = "enum";
             propRecord.kind = proposedIncludeKind !== undefined ? proposedIncludeKind : IncludeKind.ForwardDeclare;
         } else if (t instanceof UnionType) {
             /** Recurse into the union */
@@ -1083,7 +1079,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
              * but we don't want to check every possible union
              * member types, simple include the definition.
              */
-            propRecord.objectType = ObjectType.Union;
+            propRecord.typeKind = "union";
             propRecord.kind = IncludeKind.Include;
         }
 
@@ -1215,13 +1211,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                             return;
                         }
 
-                        if (rec.objectType === ObjectType.Class || rec.objectType === ObjectType.Union) {
+                        if (rec.typeKind === "class" || rec.typeKind === "union") {
                             if (this._options.codeFormat) {
                                 this.emitLine(`class ${name};`);
                             } else {
                                 this.emitLine(`struct ${name};`);
                             }
-                        } else if (rec.objectType === ObjectType.Enum) {
+                        } else if (rec.typeKind === "enum") {
                             this.emitLine(`enum class ${name} : ${this._enumType};`);
                         }
                     });
