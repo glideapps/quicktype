@@ -1101,7 +1101,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
      * deep we are in in the definition
      */
     protected updateIncludes(forwardDeclare: boolean | undefined, level:number, includes: IncludeMap, propertyType: Type, defName:string): void {
-        /** God we don't really have custom sets */
         let propertyTypes: Map<string, IncludeRecord> = new Map();
 
         /** 
