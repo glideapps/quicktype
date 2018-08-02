@@ -301,7 +301,11 @@ export const CPlusPlusLanguage: Language = {
   skipMiscJSON: false,
   skipSchema: [],
   rendererOptions: {},
-  quickTestRendererOptions: [{ unions: "indirection" }],
+  quickTestRendererOptions: [
+    { unions: "indirection" },
+    { "source-style": "multi-source" },
+    { "code-format": "with-getter-setter" }
+  ],
   sourceFiles: ["src/language/CPlusPlus.ts"]
 };
 

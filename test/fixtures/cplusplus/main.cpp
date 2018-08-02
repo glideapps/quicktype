@@ -4,6 +4,7 @@
 #include <streambuf>
 
 #include "TopLevel.hpp"
+#include "Generators.hpp"
 
 using quicktype::TopLevel;
 using nlohmann::json;
