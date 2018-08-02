@@ -290,7 +290,7 @@ export const CPlusPlusLanguage: Language = {
     "fcca3.json"
   ],
   allowMissingNull: false,
-  output: "quicktype.hpp",
+  output: "TopLevel.hpp",
   topLevel: "TopLevel",
   skipJSON: [
     // fails on a string containing null
@@ -361,6 +361,7 @@ export const ElmLanguage: Language = {
   ],
   skipMiscJSON: false,
   skipSchema: [
+    "constructor.schema", // can't handle "constructor" property
     "union-list.schema", // recursion
     "list.schema", // recursion
     "ref-remote.schema", // recursion

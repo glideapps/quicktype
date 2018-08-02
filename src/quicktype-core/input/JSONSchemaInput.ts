@@ -767,10 +767,10 @@ async function addTypesInSchema(
 
         async function makeObjectType(): Promise<TypeRef> {
             let required: string[];
-            if (schema.required === undefined) {
+            if (schema.required === undefined || typeof schema.required === "boolean") {
                 required = [];
             } else {
-                required = checkRequiredArray(schema.required, loc);
+                required = Array.from(checkRequiredArray(schema.required, loc));
             }
 
             let properties: StringMap;
@@ -780,7 +780,23 @@ async function addTypesInSchema(
                 properties = checkJSONSchemaObject(schema.properties, loc.canonicalRef);
             }
 
-            const additionalProperties = schema.additionalProperties;
+            // In Schema Draft 3, `required` is `true` on a property that's required.
+            for (const p of Object.getOwnPropertyNames(properties)) {
+                if (properties[p].required === true && required.indexOf(p) < 0) {
+                    required.push(p);
+                }
+            }
+
+            let additionalProperties = schema.additionalProperties;
+            // This is an incorrect hack to fix an issue with a Go->Schema generator:
+            // https://github.com/quicktype/quicktype/issues/976
+            if (
+                additionalProperties === undefined &&
+                typeof schema.patternProperties === "object" &&
+                hasOwnProperty(schema.patternProperties, ".*")
+            ) {
+                additionalProperties = schema.patternProperties[".*"];
+            }
 
             let objectAttributes = inferredAttributes;
 

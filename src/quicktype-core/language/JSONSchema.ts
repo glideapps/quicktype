@@ -67,6 +67,11 @@ function jsonNameStyle(original: string): string {
 
 type Schema = { [name: string]: any };
 
+function addDescription(schema: Schema, description: Iterable<string> | undefined): void {
+    if (description === undefined) return;
+    schema.description = Array.from(description).join("\n");
+}
+
 export class JSONSchemaRenderer extends ConvenienceRenderer {
     protected makeNamedTypeNamer(): Namer {
         return namingFunction;
@@ -105,9 +110,7 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
 
     private addDescription(t: Type, schema: Schema): void {
         const description = this.typeGraph.attributeStore.tryGet(descriptionTypeAttributeKind, t);
-        if (description !== undefined) {
-            schema.description = Array.from(description).join("\n");
-        }
+        addDescription(schema, description);
     }
 
     private schemaForType = (t: Type): Schema => {
@@ -158,7 +161,11 @@ export class JSONSchemaRenderer extends ConvenienceRenderer {
             const props: Schema = {};
             const req: string[] = [];
             for (const [name, p] of o.getProperties()) {
-                props[name] = this.schemaForType(p.type);
+                const prop = this.schemaForType(p.type);
+                if (prop.description === undefined) {
+                    addDescription(prop, this.descriptionForClassProperty(o, name));
+                }
+                props[name] = prop;
                 if (!p.isOptional) {
                     req.push(name);
                 }
