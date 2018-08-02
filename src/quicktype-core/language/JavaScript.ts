@@ -229,7 +229,7 @@ export class JavaScriptRenderer extends ConvenienceRenderer {
         return { any: "", anyArray: "", anyMap: "", string: "", stringArray: "", boolean: "", never: "" };
     }
 
-    private emitConvertModuleBody(): void {
+    protected emitConvertModuleBody(): void {
         this.forEachTopLevel("interposing", (t, name) => {
             const typeMap = this.typeMapTypeFor(t);
             this.emitBlock([this.deserializerFunctionLine(t, name), " "], "", () => {
