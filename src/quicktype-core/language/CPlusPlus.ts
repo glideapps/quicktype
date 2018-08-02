@@ -1030,6 +1030,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.startFile("helper.hpp", false);
 
         this.emitLine(`#include <sstream>`);
+        this.ensureBlankLine();
         this.emitNamespaces(this._namespaceNames, () => {
             this.emitLine("using nlohmann::json;");
             this.ensureBlankLine();
@@ -1037,6 +1038,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         });
 
         if (this.haveUnions) {
+            this.ensureBlankLine();
             this.emitNamespaces(["nlohmann"], () => {
                 this.emitOptionalHelpers();
             });
@@ -1067,8 +1069,8 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                 (t: Type, name: Name) => this.emitTopLevelTypedef(t, name),
                 t => this.namedTypeToNameForTopLevel(t) === undefined
             );
-            this.ensureBlankLine();
         });
+        this.ensureBlankLine();
 
         if (!this._options.justTypes && this.haveNamedTypes) {
             this.emitNamespaces(["nlohmann"], () => {
@@ -1100,13 +1102,13 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                         this.emitOptionalHelpers();
                     }
                 });
+                this.ensureBlankLine();
             }
             this.emitNamespaces(this._namespaceNames, () => this.emitTypes());
         }
 
         this.ensureBlankLine();
         this.emitGenerators();
-        this.ensureBlankLine();
 
         this.finishFile();
     }
