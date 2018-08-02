@@ -561,17 +561,16 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
     protected emitClassMembers(c: ClassType): void {
         if (this._options.codeFormat) {
             this.emitLine("private:");
-            this.ensureBlankLine();
 
             this.forEachClassProperty(c, "none", (name, _jsonName, property) => {
                 this.emitLine(this.cppType(property.type, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true), " ", name, ";");
             });
 
-            this.emitLine("public:");
             this.ensureBlankLine();
+            this.emitLine("public:");
         }
 
-        this.forEachClassProperty(c, "leading-and-interposing", (name, jsonName, property) => {
+        this.forEachClassProperty(c, "none", (name, jsonName, property) => {
             this.emitDescription(this.descriptionForClassProperty(c, jsonName));
             if (!this._options.codeFormat) {
                 this.emitLine(this.cppType(property.type, { needsForwardIndirection: true, needsOptionalIndirection: true, inJsonNamespace: false }, true), " ", name, ";");
@@ -592,6 +591,7 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
                     this.emitLine(rendered, " & ", mutableGetterName, "() { return ", name, "; }");
                     this.emitLine("void ", setterName, "(const ", rendered, "& value) { this->", name, " = value; }");   
                 }
+                this.ensureBlankLine();
             }
         });
     }
@@ -601,7 +601,6 @@ export class CPlusPlusRenderer extends ConvenienceRenderer {
         this.emitBlock([ this._options.codeFormat ? "class " : "struct ", className], true, () => {
             if (this._options.codeFormat) {
                 this.emitLine("public:");
-                this.ensureBlankLine();
                 this.emitLine(className, "() = default;");
                 this.emitLine("virtual ~", className, "() = default;");
                 this.ensureBlankLine();
